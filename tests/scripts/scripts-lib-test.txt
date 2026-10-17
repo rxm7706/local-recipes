@@ -24,9 +24,11 @@ tests/scripts/test_lint_types_gate.py
 tests/scripts/test_pin_policy_check.py
 tests/scripts/test_pin_policy_restore.py
 tests/scripts/test_pixi_env_matrix.py
+tests/scripts/test_pyforge_ci_is_stdlib_only.py
 tests/scripts/test_realization_register_check.py
 tests/scripts/test_sbom_laptop_gate.py
 tests/scripts/test_session_denial_forms.py
 tests/scripts/test_skf_provenance_gap_dispatch.py
 tests/scripts/test_upstream_todos_check.py
 tests/scripts/test_workflow_push_tag_filters.py
+tests/scripts/test_worktree_sweep.py

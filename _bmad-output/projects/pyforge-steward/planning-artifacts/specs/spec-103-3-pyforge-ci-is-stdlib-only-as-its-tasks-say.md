@@ -264,10 +264,20 @@ Type / Effort / Deps: fix / M / none.
   Auto Run Result. Recorded as `DW-steward-103-3-1`; not fixed here.
 - A library a future `tests/scripts` file imports without a module-level guard, and which only a tool's tree brings
   into `pyforge-ci` (`requests`, `packaging`, `rich`), would still pass there. The guard test catches a module-level
-  `importorskip` that no library task names, and AC4 catches the named runtime libraries. It does not police
-  imports of the tools' own libraries.
+  guard on any library, and a guard inside a test on a runtime library, that no CI library task runs; AC4 catches
+  the named runtime libraries. It does not police imports of the tools' own libraries, nor a guard inside a test on
+  a library outside the runtime list (today `apscheduler`, `DW-scribe-103-3-1`).
 - Installing `pyforge-guild` adds time to `scripts-suite`. `lint-types`, `ci-canary` and `copilot-setup-steps` already
   install it.
+- (Added at review, 2026-10-17.) `scripts-lib-test` runs serially: `pyforge-guild` has no `pytest-xdist`, and adding it
+  would change another environment's packages (AC1/AC2). Measured 56-156 s for its 876 tests (102 s in the review's
+  run), and steward's preflight selection makes it an always-on lane in every touched `pr-preflight`, because the
+  `scripts-suite` job has no paths filter. That is over CAP-159 FR-32's advisory 60 s single-station budget; the lane
+  belongs in the next preflight budget review.
+- (Added at review.) The guard test's mirror assertion (every library a library task's files guard imports where the
+  task runs) runs in CI for `scripts-lib-test` only, from `pyforge-guild`. Its `pyforge-doctor` half asserts only when
+  the file is run in `pyforge-doctor`: the aggregate task's command is Doctor's and lists its two files (Boundaries:
+  never edit Doctor's tasks' commands).
 
 ## I/O & Edge-Case Matrix
 
@@ -438,6 +448,69 @@ interpreter and `PIXI_ENVIRONMENT_NAME=pyforge-ci`, never in the worktree:
 - `scripts-lib-test` dropped from `pr-preflight-lanes`' `depends-on`: doctor's
   `test_every_scripts_suite_step_is_a_pr_preflight_leg` fails.
 
+Review pass 1 fixes (2026-10-17, on `40afdc3cf1`; exit codes read directly):
+- Files: `tests/scripts/test_pyforge_ci_is_stdlib_only.py` (guard detection rewritten; 27 tests),
+  `tests/scripts/scripts-lib-test.txt` (34 files: adds `test_worktree_sweep.py` and the guard test), `pixi.toml`
+  (definition and `scripts-lib-test` text only), `docs/how-to/pixi-tasks.md` and `docs/map.yaml` (regenerated), three
+  ledger rows (`DW-steward-103-3-2`, `DW-doctor-103-3-1`, `DW-scribe-103-3-1`), nine memlog entries, nine scoped stamps.
+- `test_pyforge_ci_is_stdlib_only.py`: 25 passed, 2 skipped in each of `pyforge-ci`, `pyforge-guild` and
+  `pyforge-doctor` (each skips the two environment assertions that are not its own; the `pyforge-doctor` run asserts
+  the aggregate's half of the mirror).
+- `pyforge-doctor-scripts-test` in `pyforge-ci` 0: 765 passed, 64 skipped, 0 failed, 0 errors.
+  `pyforge-doctor-aggregate-scripts-test` 0: 59 passed. `scripts-lib-test` 0: 957 passed, 2 skipped (the guard
+  test's `pyforge-ci` and `pyforge-doctor` assertions; none for a missing library), 65 s; it now runs
+  `test_preserve_refs_flag_states_decorator_contract[on]` / `[off]` (passed). AC8 re-checked: 0 of the 1618 baseline
+  node ids lost. The only library skips left in CI are `test_scribe_install_nightly_trigger.py`'s three
+  `apscheduler` tests (`DW-scribe-103-3-1`).
+- `pyforge-steward-test` 0 (2882 passed, 2 skipped); `lint-types` 0; doctor's `test_preflight_mirrors_scripts_suite.py`
+  0 (5 passed); `pyforge-deps-test` 0; `pixi lock --check` 0; `ci_surface_gates.py --check` 0; `llms-full-check` 0;
+  `docs_pixi_tasks.py --check` 0 after the regeneration; `docs_environments.py --check` 0; `pixi_env_matrix.py
+  --check` 0; the `environment.yaml` export identical. Planning detectors (chain-completeness, dream-chain,
+  dreams-hygiene, deferred-work, ledger-regression, story-status, flag-gate, chain-currency-sweep, tea-playwright)
+  all 0; `deferred-work-check` reads the three new rows clean.
+- Mutations, on a `git archive` copy of the staged tree (controls: 25 passed, 2 skipped in `pyforge-ci` and in
+  `pyforge-guild`). Each fails the named test:
+  - M1 `spec-kit` back in `python`, M2 `pyforge-ci` composing it, M3 `build` without it, M5 `ruamel.yaml` back in
+    the `pyforge-ci` feature: `test_the_composition_keeps_pyforge_ci_stdlib_only`;
+  - the review's M3b (a guarded file named only in `docs-gen-test`), M3c (a module-level `yaml` guard in no task), the
+    review's M4 (a guard in a module-level `if`), M4b (`from pytest import importorskip`), M4c (a `pytestmark`
+    `skipif` on a `try: import yaml` flag), M6 (`test_deck_facts.py` off the list), the review's M8 (a function-level
+    `importorskip("openfeature")`), M8b (`test_worktree_sweep.py` off the list), M8c (a test taking `flag_provider`):
+    `test_every_guarded_file_runs_in_a_library_task` (plus the exact-list self-tests);
+  - M7 (the list inline in `cmd`): `test_no_detector_maps_to_a_library_task`;
+  - M9 (the `scripts-lib-test` step removed from `detectors.yml`): `test_every_library_task_is_a_scripts_suite_step_in_its_environment`;
+  - M10 (a `yaml` stub importable in `pyforge-ci`): `test_no_runtime_library_is_importable_in_pyforge_ci`;
+  - M11 / M11b (`yaml` / `openfeature` blocked in `pyforge-guild`):
+    `test_every_module_a_library_task_file_guards_imports_where_the_task_runs[scripts-lib-test]`.
+
+## Review Triage Log
+
+### 2026-10-17 — Review pass 1 (independent review of `b1270318ed`)
+- verdict: FAIL — 1 should-fix, 5 nits; two out-of-surface defects confirmed
+- findings:
+  - `[should-fix]` `[patch]` `tests/scripts/test_worktree_sweep.py:682` guards `openfeature` inside a test and no library
+    task ran the file, so its `flag_states` tests ran nowhere in CI; `test_scribe_install_nightly_trigger.py`'s three
+    `apscheduler` tests are the same shape. Fixed: `test_worktree_sweep.py` is listed in `scripts-lib-test.txt`
+    (`pyforge-guild` carries `openfeature-sdk`; 56 passed there, 0 skipped). `apscheduler` is in no library env
+    (`pyforge-scribe` and `pyforge-foundry-full` only), so the definition names it as the one exception and
+    `DW-scribe-103-3-1` records it for scribe. The guard test now flags a guard inside a test on a runtime library
+    (`importorskip`, `skipif`, the `flag_provider` / `flag_states` hooks) in a file no library task runs.
+  - `[nit]` `[patch]` `LIBRARY_TASKS` counted `docs-gen-test` and `docs-map-render-test`, which no CI step runs. Fixed:
+    only `scripts-lib-test` (pyforge-guild) and `pyforge-doctor-aggregate-scripts-test` (pyforge-doctor) count, and a
+    test pins each as a `scripts-suite` step in its environment.
+  - `[nit]` `[patch]` module-level guard detection missed a guard in a module-level `if` / `try`, `from pytest import
+    importorskip`, and a `pytestmark` `skipif`. Fixed: every statement that runs at import is read (module-level
+    blocks and class bodies, never function bodies), a `pytest` alias and an imported `importorskip` count, and a
+    `pytestmark` `skipif` resolves its library from a `find_spec` / `import_module` string or a `try: import` flag.
+  - `[nit]` `[patch]` nothing failed if the library steps all skipped. Fixed: the mirror of the import assertion —
+    where each library task runs, every library its files guard imports — and `scripts-lib-test` runs the guard test.
+  - `[nit]` `[patch]` `typing_extensions` did not leave `pyforge-ci`. Fixed in the definition; the change-log
+    deviation is withdrawn.
+  - `[nit]` `[defer]` `scripts-lib-test` runs serially, over CAP-159 FR-32's advisory 60 s. Recorded in Residual risk.
+  - `[defer]` (a) `estate_reconcile.py:113-121` passes the Dream path positionally, so the `env-matrix` generator exits
+    2 unreported: `DW-steward-103-3-2`. (b) `scripts/detectors.py:166-167` matches a detector to its task by
+    substring: `DW-doctor-103-3-1` (no Spec surface governs the file; Doctor's ledger owns the registry's mapping).
+
 ## Spec Change Log
 
 - 2026-10-14: minted from `DW-doctor-47-1-1` and the operator's ruling "yes stdlib only" (2026-10-14). `type: fix`,
@@ -466,8 +539,11 @@ interpreter and `PIXI_ENVIRONMENT_NAME=pyforge-ci`, never in the worktree:
     there.
   - `test_session_denial_forms.py` skips whole in `pyforge-ci`: one of its 17 tests needs PyYAML (steward's parser) and
     `packaging` (mason's), and AC5 asks for a module-level guard; its 17 tests run in `scripts-lib-test`.
-  - The definition says `gitpython` brings `gitdb` and `smmap`, not `typing_extensions`: `typing-extensions` is one of
-    the 40 packages that leave `pyforge-ci`, so only `spec-kit`'s tree brought it.
+  - (Withdrawn at review, 2026-10-17; the reason was wrong.) The first cut's definition dropped `typing_extensions`
+    from what `gitpython` brings, on the reading that `typing-extensions` is one of the 40 packages that leave
+    `pyforge-ci`. Only the `typing-extensions` metapackage leaves; `typing_extensions-4.16.0-pyhcf101f3_0` stays, as a
+    dependency of `gitpython`, `rich` and `exceptiongroup`, and the module imports in the new env. The definition
+    names it again, as the spec's Intent did.
   - `src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py`, outside the Surface line, changes:
     its oracle lists the always-on lanes, and the new `scripts-suite` step makes `scripts-lib-test` one.
   - Healed tissue in touched files: test docstrings that said PyYAML "arrives transitively" in `pyforge-ci`, or that
@@ -482,3 +558,11 @@ interpreter and `PIXI_ENVIRONMENT_NAME=pyforge-ci`, never in the worktree:
     generator did not rewrite it, because it passes the Dream path positionally
     (`estate_reconcile.py` `_build_generators`), which `pixi_env_matrix.py` refuses with exit 2 ("unrecognized
     arguments"). That generator defect is outside this story's surface and is not fixed here.
+- 2026-10-17 (review pass 1 fixes, on `40afdc3cf1`, after merging `origin/main` with marshal 101.1): the Review Triage
+  Log's six findings. `tests/scripts/scripts-lib-test.txt` adds `test_worktree_sweep.py` and
+  `test_pyforge_ci_is_stdlib_only.py` (34 lines); the guard test reads every guard form, counts only CI-run library
+  tasks, flags runtime-library guards inside tests, and asserts the mirror; the `pyforge-ci` definition in
+  `pixi.toml` names the `apscheduler` exception and `typing_extensions` again, and the `scripts-lib-test` comment and
+  description say what the task now runs; Residual risk records the serial cost and the mirror's doctor half. New
+  rows: `DW-steward-103-3-2`, `DW-doctor-103-3-1`, `DW-scribe-103-3-1`. All scoped stamps re-taken after the merge.
+  Status stays `in-review`.

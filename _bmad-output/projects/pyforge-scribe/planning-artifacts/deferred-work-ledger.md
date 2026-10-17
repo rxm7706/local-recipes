@@ -419,3 +419,15 @@ sibling ledgers and the detector both use.
   severity: low
   promoted: 2026-10-08 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-scribe-103-3-1: The three apscheduler-backend tests in `tests/scripts/test_scribe_install_nightly_trigger.py` run in no CI step
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-103-3-pyforge-ci-is-stdlib-only-as-its-tasks-say.md`
+  summary: `test_apscheduler_backend_writes_runner_and_warns_no_persistence`, `test_apscheduler_backend_bakes_graphstore_owner` and `test_apscheduler_backend_refuses_cleanly_without_pixi` carry `@_needs_apscheduler` (a `skipif` on a `try: import apscheduler`). `apscheduler` is declared only in the `pyforge-scribe` feature (Story 8.1), and the only CI step that runs the file is the Detectors `scripts-suite` job, whose environments (`pyforge-ci`, `pyforge-doctor`, `pyforge-guild`) none carry it, so the three tests only ever skip. Steward Story 103.3's stdlib-only definition (the comment above `pyforge-ci = …` in `pixi.toml`) names this as its one exception. Follow-up, scribe's call: run the file (or those three tests) in a `pyforge-scribe` step, or declare `apscheduler` where a library step runs, or retire the backend's tests.
+  evidence: Story 103.3 independent review of `b1270318ed`, finding 1 (2026-10-17). `tests/scripts/test_scribe_install_nightly_trigger.py:25`-`:35` (the try-import and `_needs_apscheduler`), `:252`, `:268`, `:282` (the three tests); `pixi.toml` `apscheduler = ">=3.11.3"` only under `[feature.pyforge-scribe.dependencies]`; `pixi list --frozen -e pyforge-guild` and `-e pyforge-doctor` carry no `apscheduler` (read at `40afdc3cf1`); `grep -rn scribe_install_nightly_trigger .github/workflows pixi.toml` names no test step.
+  location: tests/scripts/test_scribe_install_nightly_trigger.py:252
+  origin: steward Story 103.3 independent review, 2026-10-17 (finding 1; no implementation)
+  owner: scribe
+  severity: low
+  promoted: 2026-10-17 — recorded with steward Story 103.3's review fixes
+  status: open
