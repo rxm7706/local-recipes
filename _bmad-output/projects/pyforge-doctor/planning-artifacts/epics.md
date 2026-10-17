@@ -3400,7 +3400,7 @@ So that a task listing test files cannot take a detector, and a detector that lo
 **When** a task ahead of a detector's own task lists `tests/scripts/test_<detector>.py` in its `cmd`, or a detector's own task is removed while such a task remains
 **Then** the detector maps to the first task whose `cmd` holds its repo-relative path, optionally `./`-prefixed, as one shell word (before it the start of the `cmd`, whitespace, a quote, a backtick or `(`; after it the end, whitespace, a quote, a backtick or `;` `&` `|` `)` `<` `>`), skipping a `--json` task as today; a test file, a same-named file in another directory and a longer name never match; a detector whose only mention is another task's test list reads as a registry gap
 **And** on the live tree all 28 detectors map to the tasks they map to at `ab38be642f`, each task's `cmd` running that detector's path, with no registry finding; the inline reproduction maps none of the nine; `pyforge-doctor-scripts-test` in `pyforge-ci`, `scripts-lib-test`, `detectors-ci` and `docs-detectors --check` stay green; each of these fails a named test (mutation): the substring matcher restored, the path matched without its left boundary, the path matched without its right boundary, the bare file name matched with both boundaries (the row's first option), the `--json` skip dropped, the optional `./` prefix dropped, `<` and `>` removed from the right set, `(` removed from the left set, the backtick removed from the left set, the backtick removed from the right set
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

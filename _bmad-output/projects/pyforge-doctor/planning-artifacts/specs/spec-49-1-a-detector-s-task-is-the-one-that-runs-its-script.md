@@ -2,7 +2,7 @@
 title: "49.1: A detector's task is the one that runs its script"
 type: 'fix'
 created: '2026-10-17'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 1
 followup_review_recommended: false
 context:
@@ -120,7 +120,7 @@ and the review filed `DW-doctor-103-3-1` with Doctor, which owns the registry's 
   `pytest tests/scripts/test_flag_gate_check.py`, `python tests/scripts/flag_gate_check.py`,
   `python vendor/scripts/flag_gate_check.py`, `python xscripts/flag_gate_check.py`,
   `python scripts/flag_gate_check.pyc`, `python scripts/flag_gate_check.py.bak`, `python scripts/flag_gate_check_v2.py`
-  and `python scripts/other_check.py>scripts/flag_gate_check.py` (a redirect target is not run).
+  and `python scripts/other_check.py>scripts/flag_gate_check.py` (an unspaced redirect target is not run; a spaced one, `> scripts/x.py`, still matches, as it did before, and no live task uses one).
 - **AC5 — The `--json` skip stays.** With a task placed first whose `cmd` is `python scripts/flag_gate_check.py --json`,
   `flag_gate_check` maps to `flag-gate-check`.
 - **AC6 — The whole scan.** On a fixture tree (its own `pixi.toml`, one `scripts/*_check.py` and one
@@ -317,6 +317,9 @@ detectors were re-run on the final tree, each exit 0, and `spec-surface-check` r
     ledgers; `test-architecture.md` is regenerated after that edit. The spine's 2026-10-17 section says "no new
     dependency (stdlib `re` only)".
   - The dated Verification run above. `review_loop_iteration` is 1; the status stays `in-review`.
+
+- 2026-10-17 (re-review of `22ccedb9d8`): RESOLVED; every finding fixed. Eight Specs govern `pixi.toml` (`spec_surface_check.parse_surface`), as the DW row says. Its optional nit, AC4's redirect note, is narrowed to an unspaced redirect target by the orchestrator.
+- 2026-10-17 (landing): status `done`; the ledger key and `epic-49` `done`.
 
 ## Review (2026-10-17, independent)
 
