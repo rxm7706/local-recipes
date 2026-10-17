@@ -2,7 +2,7 @@
 title: "101.1: The landing line lists every surface the CI master switch pauses"
 type: 'fix'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -222,7 +222,7 @@ row).
 - `pixi run --frozen -e pyforge-marshal python -m pytest src/shared/packages/pyforge-marshal/tests/unit/test_landing_ci_pauses.py src/shared/packages/pyforge-marshal/tests/meta/test_no_steward_internals_import.py -q` — expected: pass.
 - `git grep -n -e PAUSE_ALL_CI -e ci-surfaces.yaml -- src/shared/packages/pyforge-marshal/src` — expected: no match, exit 1 (AC6).
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
-- `python3 scripts/spec_surface_reconcile.py` and `pixi run --frozen -e pyforge-guild spec-surface-check` — expected: exit 0 after the memlog entries and the scoped stamps.
+- `pixi run --frozen -e pyforge-guild python scripts/spec_surface_reconcile.py` and `pixi run --frozen -e pyforge-guild spec-surface-check` — expected: exit 0 after the memlog entries and the scoped stamps.
 - `pixi run --frozen -e pyforge-guild pr-preflight` — expected: exit 0.
 - The five mutations of AC7 — expected: each fails its named test. Restore each.
 - `git diff origin/main...HEAD --stat` — expected: outside `_bmad-output/` and `scripts/.spec-surface-baseline.json`, only `core/landing_ci_pauses.py` and `tests/unit/test_landing_ci_pauses.py` under `pyforge-marshal`, and nothing under `pyforge-steward`.
@@ -232,7 +232,103 @@ row).
 - 2026-10-14: minted from the Dream entry of 2026-10-14 (the master switch's surfaces at merge) at the operator's ask
   "chain it here", the follow-up that Story 100.1's Residual risk names. `type: fix`, no flag, no CAP. The key is
   minted `blocked` on steward Story 103.1.
+- 2026-10-17 (implementation): the Verification list's `python3 scripts/spec_surface_reconcile.py` becomes
+  `pixi run --frozen -e pyforge-guild python scripts/spec_surface_reconcile.py`. The host's `python3` is 3.12 and
+  cannot parse the script (`except FileNotFoundError, NotADirectoryError:` is Python 3.14 syntax, PEP 758), so the
+  bare form exits 1 with a `SyntaxError` before checking anything; the pixi form runs it on 3.14. No AC, boundary or
+  surface changes. Two Verification items are not the builder's: `pr-preflight` is run by the orchestrator at
+  landing, and with no commit yet `git diff origin/main...HEAD --stat` is read as `git diff --cached --stat
+  origin/main`.
 
 ## Review Triage Log
 
 - No review has run yet.
+
+## Implementation Result
+
+Hand-built on branch `chain-marshal-101-1-master-switch-surfaces-2026-10-17`, from baseline `05fed5cb19`. The diff is
+for an independent review against this spec, not against this summary.
+
+- **`core/landing_ci_pauses.py`:** `row_counts_as_paused_at_merge` keeps the `unregistered:` /
+  `unregistered-workflow:` and `retired` skips first, then lists a row whose `paused_by_master` `is True` unless it
+  is declared `opt-in-off` with its own switch (stripped, lower-cased) not `true`; after that, Story 100.1's rule runs
+  unchanged (`paused-manually` listed, `opt-in-off` skipped, otherwise the row's own switch). The module and function
+  docstrings say why. `surfaces_from_envelope`, `envelope_is_valid`, the record, the PR-body line, the adapter and
+  the flag are untouched.
+- **`tests/unit/test_landing_ci_pauses.py`:** the existing tests are unedited (the module docstring and the one
+  import line gain Story 101.1 and `StewardCiStatusOutcome`). New:
+  - `test_101_1_row_rule_under_the_master_switch` (AC1/AC2, 18 cases): every AC1 row and every AC2 row alone, plus
+    the matrix's `paused-manually`, ungated `retired`, `value` and `unregistered-workflow:` rows;
+  - `test_101_1_ac1_master_surfaces_are_listed_sorted_once` and `test_101_1_ac2_unlisted_rows_stay_out_of_the_same_envelope`:
+    one envelope holding AC1's six rows interleaved with AC2's eight;
+  - `test_101_1_ac3_no_field_or_false_field_keeps_story_100_1_record`: `_sample_envelope()` carries no
+    `paused_by_master`, and the same rows with `paused_by_master: false` (the master off) give the identical record;
+  - `test_101_1_ac4_journal_record_and_pr_line_agree`: `execute_dispatch_land` with the flag on and
+    `StewardCli.ci_status` faked to return AC1's envelope, so the real `ci_status_record` → `record_from_envelope`
+    path builds the record; one steward read, the journal record is `{state: read, surfaces: AC1's ids, fetched_at}`,
+    and the last `update_pr` body holds one `CI paused at merge:` line, ending with the same ids in the same order;
+  - `test_101_1_ac5_steward_master_on_fixture`: reads
+    `src/shared/packages/pyforge-steward/tests/fixtures/ci_status_master_on.json` as a file (`Path(__file__)`-anchored,
+    `assert … is_file()`, so it fails, never skips); `envelope_is_valid`; the master row and the three gated
+    `paused` rows listed; each `paused_by_master: false` row listed exactly when Story 100.1's rule alone (the row
+    without the field) lists it; two non-vacuity asserts.
+- **AC6:** `tests/meta/test_no_steward_internals_import.py` unedited and green; `git grep -n -e PAUSE_ALL_CI -e
+  ci-surfaces.yaml -- src/shared/packages/pyforge-marshal/src` exits 1. The `.github/workflows` mentions under marshal's
+  `src/` are three pre-existing docstrings and comments (`context_bootstrap.py`, `init.py`, `substrate.py`), no read.
+- **AC7 — mutations (the Auto Run Result AC7 names).** Run against a scratch copy (`git archive HEAD` of the marshal
+  package and the steward fixture, the two changed files copied in), the mutated line restored after each and checked
+  with `filecmp` (byte-identical every time):
+  - ignoring `paused_by_master` (`if False:`): 6 failed, among them `test_101_1_ac1_master_surfaces_are_listed_sorted_once`,
+    `test_101_1_ac4_…`, `test_101_1_ac5_…` and the row cases `gated.live-paused`, `gated.live-stuck`, `gated.opt-in-on`;
+  - listing an opt-in that is off (the opt-in clause dropped): 5 failed, among them
+    `test_101_1_ac2_unlisted_rows_stay_out_of_the_same_envelope` and the row cases `gated.opt-in-off-false`,
+    `gated.opt-in-off-null`;
+  - accepting the string `"true"` (`str(field).strip().lower() == "true"`): 4 failed, among them
+    `test_101_1_ac2_…` and the row case `field.string-true`;
+  - dropping an opt-in that is on (`declared != "opt-in-off"` alone): 3 failed, among them `test_101_1_ac1_…` and the
+    row case `gated.opt-in-on`;
+  - listing a gated row by `verdict == "paused"` alone (in place of the field): 4 failed, among them `test_101_1_ac1_…`
+    and the row case `gated.live-stuck`;
+  - extra, not in AC7: `== True` in place of `is True` (accepts `1`): 4 failed, among them `test_101_1_ac2_…` and the
+    row case `field.int-one`.
+- **Not changed:** steward and its fixture, `adapters/steward_cli.py`, `dispatch_land.py`, the finalize and supervisor
+  copies, the flag tree, `pixi.toml`, `pixi.lock`, `environment.yaml`, `.github/workflows/pyforge-station-tests.yml`.
+  The new test's one read outside marshal's package (steward's fixture) is already on marshal's trigger list: the
+  `changes` step's `'src/shared/packages/pyforge-*/tests/*'` pathspec and the `on.*.paths` glob
+  `'src/shared/packages/pyforge-*/tests/**'`; steward's `test_station_tests_trigger_map.py` derives the read
+  (`real_derivation()["marshal"]` names it, from `test_landing_ci_pauses.py`) and passes, so Story 98.1's guard needs
+  no workflow edit.
+
+## Verification run (2026-10-17)
+
+At the branch's working tree (baseline `05fed5cb19` plus this change, every path staged); every exit code read
+directly, never through a pipe.
+
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`: exit 0, 13193 passed, 20 skipped.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test`: exit 0, 130 passed, 3 skipped.
+- `pixi run --frozen -e pyforge-marshal python -m pytest …/tests/unit/test_landing_ci_pauses.py
+  …/tests/meta/test_no_steward_internals_import.py -q`: exit 0, 455 passed (the 23 new Story 101.1 cases among the
+  file's 45).
+- `COVERAGE_GATES_STATIONS=marshal pixi run --frozen -e pyforge-marshal python scripts/coverage_gates_ci.py --suites
+  unit --paths-file <the staged paths>`: exit 0; `core/landing_ci_pauses.py` 91% against the 80% unit floor.
+- `git grep -n -e PAUSE_ALL_CI -e ci-surfaces.yaml -- src/shared/packages/pyforge-marshal/src`: exit 1, no match (AC6).
+- `pixi run --frozen -e pyforge-steward python -m pytest …/pyforge-steward/tests/meta/test_station_tests_trigger_map.py
+  -q`: exit 0, 45 passed (Story 98.1's guard; the new steward-fixture read is derived and fires marshal's job).
+- `pixi run --frozen -e pyforge-guild lint-types`: exit 0 (ruff, ruff format and mypy over every package,
+  target-version, precommit-config).
+- `pixi run --frozen -e pyforge-guild` `chain-completeness-check`, `dream-chain-check`, `dreams-hygiene-check`,
+  `deferred-work-check`, `ledger-regression-check`, `story-status-check`, `flag-gate-check`,
+  `chain-currency-sweep-check` (re-run after the memlog entries), `tea-playwright-check`, `llms-full-check`: each
+  exit 0.
+- `pixi run --frozen -e pyforge-guild python scripts/ci_surface_gates.py --check`: exit 0.
+- `pixi run --frozen -e pyforge-guild detectors-ci`: exit 0 (after the scoped stamps).
+- Spec surface: memlog entries on `spec-pyforge-marshal` and `spec-pyforge-core` (both under `pyforge-marshal`,
+  the two Specs `spec-surface-check` named); `git add`; one scoped stamp each,
+  `--write-baseline --spec pyforge-marshal/spec-pyforge-marshal` and
+  `--write-baseline --spec pyforge-marshal/spec-pyforge-core` (each exit 0; the baseline moves only the two files'
+  hashes and the two memlog hashes); `pixi run --frozen -e pyforge-guild spec-surface-check`: exit 0;
+  `pixi run --frozen -e pyforge-guild python scripts/spec_surface_reconcile.py`: exit 0.
+- `git diff --cached --stat origin/main`: outside `_bmad-output/` and `scripts/.spec-surface-baseline.json`, only
+  `core/landing_ci_pauses.py` and `tests/unit/test_landing_ci_pauses.py` under `pyforge-marshal`; nothing under
+  `pyforge-steward`.
+- Not run here: `pr-preflight` (the orchestrator runs it at landing).
