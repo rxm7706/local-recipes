@@ -207,6 +207,22 @@ with and one without the artifact are recorded
 - `gh workflow run pages.yml --ref main` once atlas 30.1 and herald's half are on `main`; read the run's download
   step and `pages-check` exit; record both run ids (present and absent) here.
 
+## AC7 records (2026-10-17)
+
+- **`present`:** `pages.yml` run `39020410506` (`workflow_dispatch` via `pyforge steward pages deploy --wait`, on `main`
+  `6fa7150e2b`, 2026-10-17), conclusion `success`. Its "Download the Kedro-Viz export artifact" step logged
+  `kedro-viz-export: run 39019867740 (2026-10-17T09:06:31Z) downloaded into docs/dashboard/kedro-viz`, and the later
+  steps read `KEDRO_VIZ_EXPORT: present`, `KEDRO_VIZ_EXPORT_RUN: 39019867740`. `pages-check` printed
+  `exempt vendored root dashboard/kedro-viz/` and `… docs-site/build/site passes`, and the uploaded artifact lists
+  `./dashboard/kedro-viz/index.html`, `api/main` and `api/deploy-viz-metadata`. The producer run `39019867740`
+  (`kedro-viz-publish.yml`, dispatched after atlas Story 32.1, #2248) uploaded `kedro-viz-export` (3.4 MB). Live after
+  the deploy: `https://rxm7706.github.io/local-recipes/dashboard/kedro-viz/` and `…/api/main` answer 200, `build.json`
+  reads `run_id` `39020410506` and `built_from` `6fa7150e2b`, and the page renders Kedro-Viz 12.5.0 with the
+  `__default__` pipeline (82 nodes, 122 datasets; seen in a browser).
+- **`absent`:** `pages.yml` run `38831558913` (`pull_request`, the Pages chain PR #2240 at `44e13daa9b`, 2026-10-16),
+  conclusion `success`: `kedro-viz-export: none found; mount skipped`, `KEDRO_VIZ_EXPORT: absent`, and `pages-check`
+  `… docs-site/build/site passes`.
+
 ## Verification run (2026-10-15)
 
 - `pixi run --frozen -e pyforge-steward python -m pytest src/shared/packages/pyforge-steward/tests/unit/test_pages_export.py src/shared/packages/pyforge-steward/tests/unit/test_pages_export_flag_states.py -q`
@@ -358,3 +374,4 @@ with and one without the artifact are recorded
     `test_a_live_artifact_without_a_readable_run_fails_naming_the_listing`.
   - **AC1 is annotated in place** with the selection-by-artifact rule (the AC is the oracle), and so is steward
     `epics.md`'s Story 102.4 When line.
+- 2026-10-17 (AC7 recorded): both dispatched records are filled in § AC7 records: `present` `39020410506`, `absent` `38831558913`. `DW-steward-102-4-1` is closed. The producer had been `paused-manually` until the operator resumed every CI surface (#2247); its first run then failed on stale stub credentials, which atlas Story 32.1 (#2248) fixed.
