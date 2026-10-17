@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: d2550d7121e98ee6
-story_count: 108
-test_file_count: 146
+source_fingerprint: 1ce5843f488fb475
+story_count: 109
+test_file_count: 155
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 108
-- **Epics parsed:** 31
-- **Test files inventoried:** 146 under `src/shared/packages/pyforge-atlas/tests/`
+- **Stories parsed:** 109
+- **Epics parsed:** 32
+- **Test files inventoried:** 155 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `d2550d7121e98ee6`
+- **Source fingerprint:** `1ce5843f488fb475`
 
 ## Risk Assessment
 
@@ -64,6 +64,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 29: The range test server records each response before the client can read it (fix under spec-pyforge-atlas CAP-16)
 - Epic 30: The DAG export and the Vizro boards reach Pages as workflow artifacts (spec-pyforge-atlas CAP-62, CAP-63)
 - Epic 31: Atlas passes mypy in `pyforge-foundry-full`, and a lane keeps it so (fix under spec-pyforge-atlas CAP-20)
+- Epic 32: The DAG export builds in CI, and a failed build fails its task (fix under spec-pyforge-atlas CAP-62)
 
 ### Low-risk epics
 
@@ -82,10 +83,13 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_ops_page.py` | integration | none observed |
 | `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_parity.py` | integration | none observed |
 | `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_workbook_page.py` | integration | none observed |
+| `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_vizro_static_export.py` | integration | none observed |
+| `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_vizro_static_export_flag.py` | integration | none observed |
 | `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_zero_deferred_e2e_gate.py` | integration | none observed |
 | `src/shared/packages/pyforge-atlas/tests/integration/publish/test_emit_range.py` | integration | none observed |
 | `src/shared/packages/pyforge-atlas/tests/integration/wasm/test_wasm_smoke.py` | integration | none observed |
 | `src/shared/packages/pyforge-atlas/tests/meta/test_cli_tool_parity.py` | meta | none observed |
+| `src/shared/packages/pyforge-atlas/tests/meta/test_foundry_full_mypy_lane.py` | meta | none observed |
 | `src/shared/packages/pyforge-atlas/tests/meta/test_planning_record.py` | meta | none observed |
 | `src/shared/packages/pyforge-atlas/tests/meta/test_portal_inventory_row.py` | meta | none observed |
 | `src/shared/packages/pyforge-atlas/tests/meta/test_skf_skill_and_persona.py` | meta | none observed |
@@ -126,6 +130,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/factory/test_personas.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/factory/test_wiki_scaffold.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/mcp/test_audit_mapping.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/mcp/test_bootstrapped_session.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/mcp/test_kedro_mcp_absent.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/mcp/test_no_business_logic_in_tool_bodies.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/mcp/test_official_sdk_server.py` | unit | none observed |
@@ -181,6 +186,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vulnerability/test_nodes.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/policy_gate/test_policy_gate.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/query_plane/test_face_parity.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/rag/test_store_vss_free.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/rag/test_vss_similarity_search.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/semantic/test_bsl_metric_parity.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/semantic/test_composite_scores.py` | unit | none observed |
@@ -194,6 +200,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/test_dashboard_data.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_dashboard_factory_status.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_dashboard_identity_gist.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_dashboard_static_export.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_duckdb_boundary.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_estate_cache_bsl.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_hooks.py` | unit | none observed |
@@ -209,6 +216,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/test_scan_submit.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_scribe_plane_recall.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_semantic_packages_pipeline.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_viz_export_artifact.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_viz_publish_build.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_vizro_static_boards.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/trending_candidates/test_handoff.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/trending_candidates/test_main.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/trending_candidates/test_query.py` | unit | none observed |
@@ -332,6 +342,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 30.1 | The DAG export reaches Pages as a workflow artifact | none observed |
 | 30.2 | Vizro boards publish as static exports under /dashboard/vizro/ | none observed |
 | 31.1 | Atlas passes mypy in `pyforge-foundry-full`, and a lane keeps it so | none observed |
+| 32.1 | The DAG export builds in CI, and a failed build fails its task | none observed |
 
 ## Quality Gates
 

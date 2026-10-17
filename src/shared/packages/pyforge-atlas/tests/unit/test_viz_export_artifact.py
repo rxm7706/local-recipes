@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import subprocess
 from pathlib import Path
@@ -38,8 +37,6 @@ VIZRO_TRIGGER_PATHS = [
     "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/**",
     "src/shared/packages/pyforge-atlas/src/pyforge/atlas/semantic/**",
 ]
-# sha256 of the baseline's "Materialize stub credentials" step `run:` text (byte-for-byte, AC4).
-BASELINE_STUB_RUN_SHA256 = "cf84a9860fb3cb7910940fe596c968a96f444e78d342754d500a7fd6b2e6d505"
 CI_SURFACES = REPO_ROOT / "docs/governance/ci-surfaces.yaml"
 README = REPO_ROOT / "docs/dashboard/README.md"
 
@@ -112,10 +109,11 @@ def test_ac4_kedro_viz_publish_workflow_shape() -> None:
     ):
         assert forbidden not in run_text
 
+    # The stub-credentials step stays. Story 32.1 (fix under CAP-62) replaced the two-key heredoc this test pinned
+    # by digest since Story 30.1, which had drifted from the catalog's eight keys, with tools/bootstrap.py's one
+    # list; test_viz_publish_build.py pins that source and the absence of a list here.
     stub = next(s for s in steps if isinstance(s, dict) and "Materialize stub credentials" in s.get("name", ""))
-    assert hashlib.sha256(stub["run"].encode("utf-8")).hexdigest() == BASELINE_STUB_RUN_SHA256
-    assert "credentials.yml" in stub["run"]
-    assert "bigquery_adc" in stub["run"] and "github_token" in stub["run"]
+    assert "tools/bootstrap.py --credentials-only" in stub["run"]
 
     pixi = next(s for s in steps if isinstance(s, dict) and "setup-pixi" in str(s.get("uses", "")))
     envs = pixi["with"]["environments"]

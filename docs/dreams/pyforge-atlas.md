@@ -414,6 +414,48 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   Owner `spec-pyforge-atlas` (CAP-41 amended); → `bmad-spec` after herald's, one M2 story for the handoff, one later
   story for Vizro. → CAP-62, CAP-63 / FR-70, FR-71 / Epic 30 / Stories 30.1–30.2, specced 2026-10-14.
 
+- **2026-10-17 (kedro-viz-publish's stub credentials drifted) — Found: the producer cannot build the DAG export in CI,
+  and its build task reports the failure as a success.** The operator lifted every CI pause on 2026-10-16 (PR #2247),
+  which re-enabled `kedro-viz-publish.yml` after two months disabled by hand. Story 30.1 names the step after that:
+  dispatch the workflow once and confirm the `kedro-viz-export` artifact. That run, `39002722593` on `990d796c7f`,
+  failed in its `publish` job and uploaded no `kedro-viz-export`; the `vizro` job passed.
+  **Evidence:**
+  - `kedro viz build` logged `ERROR: Failed to build/deploy Kedro-Viz : "Unable to find credentials 'gitlab_token'
+    ..."`. The next command, `normalize_viz_build.py`, raised `build does not exist -- run the viz-build pixi task
+    first`, and the job failed on that line, one step after the cause.
+  - The workflow writes its own stub `conf/local/credentials.yml` with two keys, `bigquery_adc` and `github_token`
+    (`kedro-viz-publish.yml:122`-`:141` at `17670a0580`). `conf/base/catalog.yml` names eight. Story 27.2
+    (`99af53f690`, 2026-10-04) added `gitlab_token`, `codeberg_token`, `npm_token`, `crates_token`, `rubygems_token`
+    and `nuget_token` while the workflow was disabled, and updated `tools/bootstrap.py`'s stub, the second copy, but
+    not the workflow's. The workflow's comment says its shapes mirror `tests/catalog/conftest.py`, which moved to
+    `tests/unit/catalog/` on 2026-09-07.
+  - kedro-viz 12.5.0's `create_shareableviz_process` catches every exception, prints it and returns
+    (`kedro_viz/launchers/cli/utils.py:97`-`:98`), so `kedro viz build` exits 0 on a failed build. `viz-build` reads
+    green, and the `depends-on` meant to stop a failed build from staging never fires.
+  - Reproduced on a scratch copy of `17670a0580`: with no credentials file, and with the workflow's two-key stub (the
+    two keys the operator's own local file carries too), `viz-build` exits 0, writes no `build/`, and names the first
+    missing key. With `tools/bootstrap.py`'s eight-key stub it builds in 8.7 s. An all-`{}` stub and an all-pair stub
+    both build, so the workflow comment's claim that `APIDataset`-family entries need an auth pair does not hold:
+    viz only introspects the DAG.
+  - Found by the story's independent review (`f52936ff75`): past the build, the job's flag step runs
+    `print_viz_export_flag.py` in `-e pyforge-guild`, which cannot import `pyforge.atlas` (`ModuleNotFoundError`,
+    exit 1; `enabled=true` in `-e pyforge-atlas`), so the upload would still not run. Latent since Story 30.1: no run
+    had reached the step. Folded into the same story by orchestrator ruling.
+  **What it looks like when fixed:** the workflow writes its stub from the one source `tools/bootstrap.py` holds, a
+  test fails the day the catalog names a key that source lacks, `viz-build` exits non-zero when `kedro viz build`
+  writes no build, and every atlas tool the workflow runs runs in `-e pyforge-atlas`. The next dispatched run uploads
+  `kedro-viz-export`.
+  **Constraints:**
+  - A `fix` story: no CAP, no FR, no flag (`spec-feature-flag-governance` Q1).
+  - The stub writer never overwrites a file that holds anything, and no credential, token or secret enters the
+    workflow (AD-11).
+  - The `vizro` job, the upload step, the artifact's name and retention, the flag gate (beyond its step's
+    environment) and the CI-pause `if:` fragments do not change.
+  - A new epic: Epic 30, which shipped the producer, is done.
+  **Kinships:** [[pyforge-steward]] (the CI resume; `pages.yml`, whose Story 102.4 AC7 waits on the artifact,
+  `DW-steward-102-4-1`). Owner `spec-pyforge-atlas` (CAP-62, the DAG export reaches Pages as a workflow artifact).
+  → Epic 32 / Story 32.1, specced 2026-10-17.
+
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 
 Atlas rebases to one Dream, one Spec, one PRD, one spine, one epic chain.

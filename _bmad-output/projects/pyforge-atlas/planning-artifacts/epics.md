@@ -2326,6 +2326,43 @@ So that a type error only real library types reveal reds the PR that adds it, no
 **And** the `lint-types` CI job installs `pyforge-guild pyforge-foundry-full` and runs `pixi run --frozen -e pyforge-foundry-full mypy`. `pr-preflight-lanes` gains `{ task = "mypy", environment = "pyforge-foundry-full" }`, and an atlas meta test pins both. Reverting one typed fix reds the foundry-full leg while the guild leg stays green (mutation). `pyforge-atlas-coverage-gate`, `kedro-test`, `kedro-catalog-check`, `pyforge-atlas-test` and `pyforge-station-tests` exit 0. Every governing Spec is reconciled and stamped scoped, and the DW row closes citing the merge
 **Status:** done
 
+## Epic 32: The DAG export builds in CI, and a failed build fails its task (fix under spec-pyforge-atlas CAP-62)
+
+Minted 2026-10-17 from the station Dream's entry of that date (kedro-viz-publish's stub credentials drifted). The
+operator lifted every CI pause on 2026-10-16 (PR #2247), which re-enabled `kedro-viz-publish.yml`, and the dispatch
+Story 30.1 names as the operator's step (run `39002722593`, `990d796c7f`) failed in its `publish` job with
+`Unable to find credentials 'gitlab_token'`: the workflow's own stub carries two of the eight credential keys
+`conf/base/catalog.yml` names, while `tools/bootstrap.py`'s stub, a second copy, carries all eight. kedro-viz 12.5.0
+exits 0 when its build fails, so `viz-build` read green and the failure surfaced one step later as `build does not
+exist`. Past the build, the job's flag step ran `print_viz_export_flag.py` in `-e pyforge-guild`, which cannot import
+`pyforge.atlas` (found by the story's independent review; folded into 32.1 by orchestrator ruling, 2026-10-17). A
+defect against `spec-pyforge-atlas` CAP-62 (the DAG export reaches Pages as a workflow artifact), so no CAP is minted;
+a new epic because Epic 30, which shipped the producer, is done. **HARD boundaries:**
+- One source for the stub: the workflow writes it through `tools/bootstrap.py`, never from a key list of its own, and
+  the writer never overwrites a file that holds anything. No credential, token or secret enters the workflow (AD-11).
+- The `vizro` job, the upload step, the artifact's name and retention, the flag gate (beyond its step's environment,
+  `-e pyforge-guild` → `-e pyforge-atlas`), `on.push.paths` and the CI-pause `if:` fragments do not change;
+  `ci_surface_gates.py --check` stays at exit 0.
+- No test is weakened (AD-11). Story 30.1's byte pin on the old stub step hands over to a pin on its source; every other
+  assertion in `test_viz_export_artifact.py` stays.
+
+### Story 32.1: The DAG export builds in CI, and a failed build fails its task
+
+As the operator who dispatched `kedro-viz-publish.yml` to hand Pages its first `kedro-viz-export`,
+I want the workflow's stub credentials to come from the one list the catalog is checked against, and `viz-build` to
+fail when `kedro viz build` does,
+So that a new catalog credential reds a PR instead of the publish run, and a failed build stops at the step that failed.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** — (a `fix`, so no new CAP and no FR; `spec-feature-flag-governance` Q1: a `fix` needs no flag) • spec-pyforge-atlas CAP-62 (FR-70) • AD-11, AD-21 • Dream 2026-10-17 (kedro-viz-publish's stub credentials drifted) • run `39002722593`
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix)
+**Surface:** `.github/workflows/kedro-viz-publish.yml` (the `publish` job's stub step and its comment, and the flag step's environment, only), `src/shared/packages/pyforge-atlas/tools/bootstrap.py` (`CREDENTIAL_KEYS`, `--credentials-only`), a new `src/shared/packages/pyforge-atlas/tools/viz_build_check.py`, `pixi.toml` (`viz-build`'s `cmd` and description, `pyforge-atlas-bootstrap`'s description), a new `src/shared/packages/pyforge-atlas/tests/unit/test_viz_publish_build.py`, `src/shared/packages/pyforge-atlas/tests/unit/test_viz_export_artifact.py` (AC4's stub byte pin only), each governor's memlog, `scripts/.spec-surface-baseline.json`
+**Spec:** `planning-artifacts/specs/spec-32-1-the-dag-export-builds-in-ci-and-a-failed-build-fails-its-task.md`
+**Given** `17670a0580`, where the workflow's stub step writes `bigquery_adc` and `github_token` as auth pairs, `conf/base/catalog.yml` names eight credential keys, `tools/bootstrap.py`'s `_CREDENTIALS_STUB` names all eight as `{}`, and `viz-build` is `rm -rf build && kedro viz build`
+**When** the workflow's `publish` job runs on a runner with no `conf/local/credentials.yml`, or `viz-build` runs where a catalog key is missing
+**Then** the stub step runs `tools/bootstrap.py --credentials-only`, which writes every key in `CREDENTIAL_KEYS` as `{}` when the file is absent or empty and leaves a non-empty file untouched; no string in the workflow names a credential key or `credentials.yml`; the flag step and every other `pixi run … python …/pyforge-atlas/tools/*.py` step runs in `-e pyforge-atlas`, where the flag prints `enabled=true`; `viz-build` on a scratch copy built that way exits 0 and writes `build/index.html`, `build/api/main` and `build/api/deploy-viz-metadata`, and `viz-publish-stage` exits 0 and fills `docs/dashboard/kedro-viz/`; with a key missing, `viz-build` exits 1 naming the missing build files
+**And** a test reads every `credentials:` key in every `conf/base/**/catalog*.y*ml` and fails when `CREDENTIAL_KEYS` lacks one (mutation: drop a key; a second catalog file) or the workflow carries a key list again, in any string (mutation); a test pins `viz-build`'s check against kedro-viz's deployer and fails when it is removed (mutation); a test fails when an atlas tool step names another env (mutation: `pyforge-guild` back); `pyforge-atlas-test`, `kedro-test`, `kedro-catalog-check`, `pyforge-atlas-coverage-gate`, `lint-types` and `ci_surface_gates.py --check` exit 0; every governing Spec is reconciled and stamped scoped
+**Status:** done
+
 ## Validation note — 2026-08-26 (chain-currency sweep)
 
 Validated against the architecture spine as re-cut today (its `## Currency

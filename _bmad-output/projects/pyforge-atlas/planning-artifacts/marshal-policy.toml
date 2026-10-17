@@ -306,6 +306,34 @@ harness_preference = ["cursor"]
   "_bmad-output/projects/*/planning-artifacts/briefs/**",
   "_bmad-output/projects/*/planning-artifacts/epics.md",
 ]
+"32" = [  # the DAG export builds in CI, and a failed build fails its task (fix under spec-pyforge-atlas CAP-62; Story
+  # 32.1), added 2026-10-17. The default surface, restated because a declared entry replaces it outright (the package
+  # glob covers tools/bootstrap.py, the new tools/viz_build_check.py and the two test modules), plus: the producer
+  # workflow's stub step, viz-build's cmd in pixi.toml, the task doc and map stamp it regenerates, atlas's TEA
+  # coverage matrix (regenerated for the new story), and every Spec memlog (pixi.toml alone has eight governors). The
+  # PRD, spine, brief and epics globs are for the chain-currency re-stamps those co-governor memlogs can trip, and
+  # nothing else.
+  "src/shared/packages/pyforge-atlas/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/test-architecture.md",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  ".github/workflows/kedro-viz-publish.yml",
+  "docs/how-to/pixi-tasks.md",
+  "docs/map.yaml",
+  # co-governor reconciles
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+  # chain-currency re-stamps only
+  "_bmad-output/projects/*/planning-artifacts/prds/**",
+  "_bmad-output/projects/*/planning-artifacts/architecture/**",
+  "_bmad-output/projects/*/planning-artifacts/briefs/**",
+  "_bmad-output/projects/*/planning-artifacts/epics.md",
+]
 
 # dispatch (Story 102.1 / spec-pyforge-marshal CAP-161), added 2026-10-15: a re-landing reuses this station's own
 # verified verdict when only merges of main and planning-only commits moved the branch since the head it judged,
