@@ -86,6 +86,27 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-10-17 (the detector registry finds a detector's task by its path)** — **Found: `scripts/detectors.py` gives a
+  detector the first pixi task whose `cmd` contains the detector's file name, so a task that names the detector's test
+  file takes the detector.** `discover()` tests `path.name in c` (`scripts/detectors.py:166`-`:167` at `ab38be642f`),
+  and `test_flag_gate_check.py` contains `flag_gate_check.py`. Steward Story 103.3's review saw six detectors go to
+  `scripts-lib-test` while that task listed its test files in `cmd`. Story 103.3 moved the list into an argument file
+  and pinned only its own library tasks; the matcher stayed (`DW-doctor-103-3-1`). Measured at `ab38be642f`, with the 36
+  files of `tests/scripts/scripts-lib-test.txt` inline in a task ahead of the others, nine of the 28 detectors map to
+  it. The registry never runs a task (`run_one` runs the script), but the task is what `--list`, `--json` and the
+  generated `docs/reference/detectors.md` name, and its absence is the registry's own gap finding ("declares scope but
+  has no pixi task"). A wrong match hides that gap: a detector whose own task is gone still reads as tasked while any
+  task names its test. Today all 28 map to their own tasks, so the defect is latent. **What it looks like when fixed:**
+  a detector's task is the first task, in `pixi.toml` order and skipping a `--json` task as today, whose `cmd` holds the
+  detector's repo-relative path as one shell word: `scripts/flag_gate_check.py`, or `./scripts/flag_gate_check.py`.
+  `tests/scripts/test_flag_gate_check.py`, or a same-named file in another directory, is a different path and never
+  matches. A test reproduces the capture and fails on the old matcher, a detector left with only a test listing reads
+  as a registry gap, and all 28 live detectors keep the task they map to today, each task's `cmd` running that
+  detector's path. **Constraints:** a fix under FR-15 (the registry Doctor owns; Stories 6.2 and 6.9), no CAP, no flag.
+  No live mapping changes, and no detector is added or dropped. `run_one` and the Doctor-source half
+  (`_DOCTOR_SOURCE_TASKS`, which `DW-FU-6-9-3` pinned in Story 41.2) do not change. `scripts/detectors.py` and the new
+  test stay stdlib-only, so the test runs in `pyforge-ci`. `pixi.toml` is not edited. Owner `spec-pyforge-doctor`.
+  → Epic 49 / Story 49.1, specced 2026-10-17.
 - **2026-10-14 (the Detectors scripts lane outgrew its timeout)** — **Found: the `scripts-suite` job ran past its
   15-minute limit, and GitHub cancelled it.** It happened on `main` at `8d04520770` and on PR #2204. The job has two
   test steps: `tests/scripts` in `pyforge-ci` (5m22s to 9m10s across six runs on 2026-10-14), then

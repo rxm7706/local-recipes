@@ -15,7 +15,8 @@ forced. `pyforge.doctor.sources.fleet_scan` already derives a task's *command* f
 was typed by hand, and that was the bug.
 
 So: discover detectors by scanning, and **fail on the registry's own gaps**. A
-script that declares itself a detector but has no pixi task is a finding; a
+script that declares itself a detector but has no pixi task (no task whose
+command runs the script's path, `_runs_detector`) is a finding; a
 script that looks like a detector but declares nothing is a finding. The
 registry cannot silently omit a detector, which is the only property that makes
 it worth having.
@@ -66,6 +67,7 @@ import ast
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 import time
@@ -134,6 +136,23 @@ def _pixi_tasks() -> dict[str, str]:
     return out
 
 
+def _runs_detector(cmd: str, rel: str) -> bool:
+    """True when a task's ``cmd`` runs the detector at ``rel`` (repo-relative).
+
+    The path, optionally ``./``-prefixed, must be one shell word of the
+    command: before it, the start of the command, whitespace or a quote;
+    after it, the end, whitespace, a quote or one of ``; & | )``.
+
+    Doctor Story 49.1 (DW-doctor-103-3-1): this was ``path.name in cmd``, so
+    a task listing ``tests/scripts/test_flag_gate_check.py`` became
+    ``flag_gate_check``'s task, and a detector that had lost its own task
+    still read as tasked. The path, not the bare file name, so a same-named
+    file in another directory is not the detector either.
+    """
+    word = rf"(?<![^\s\"'])(?:\./)?{re.escape(rel)}(?![^\s\"';&|)])"
+    return re.search(word, cmd) is not None
+
+
 def discover() -> tuple[list[dict], list[str]]:
     """Return (detectors, registry_findings). Findings are gaps in the registry itself."""
     tasks = _pixi_tasks()
@@ -164,7 +183,7 @@ def discover() -> tuple[list[dict], list[str]]:
                 f"to CI, the board and the loop")
             continue
         task = next((t for t, c in tasks.items()
-                     if path.name in c and "--json" not in c), None)
+                     if _runs_detector(c, rel) and "--json" not in c), None)
         if task is None:
             findings.append(
                 f"{rel}: declares scope={scope} but has no pixi task — "

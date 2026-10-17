@@ -433,6 +433,24 @@ verify_commands = [
   "tests/scripts/**",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"49" = [  # the detector registry finds each detector's task by its path (a fix under FR-15, the registry Doctor owns, no
+  # CAP; Story 49.1), added 2026-10-17. The default surface, restated because a declared entry replaces it outright, plus
+  # the registry, the new test and steward's library-task test it corrects, the ledger row it closes, and every Spec
+  # memlog a reconcile names.
+  "src/shared/packages/pyforge-doctor/**",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-doctor/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "scripts/detectors.py",
+  "tests/scripts/test_detectors_task_match.py",
+  "tests/scripts/test_pyforge_ci_is_stdlib_only.py",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "41" = [  # Phases 4 and 5 of the deferral burn-down: doctor's medium and low deferrals (fix stories, no new CAP), added 2026-10-03
   # The default surface, restated because a declared entry replaces it outright, plus what the four stories touch
   # outside the package: the spec-surface, verdict-writer and baseline scripts and their tests (41.1), the detectors

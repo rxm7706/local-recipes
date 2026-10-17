@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: c4bfef4d508b4682
-story_count: 157
+source_fingerprint: 519466878425039c
+story_count: 158
 test_file_count: 98
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 157
-- **Epics parsed:** 48
+- **Stories parsed:** 158
+- **Epics parsed:** 49
 - **Test files inventoried:** 98 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `c4bfef4d508b4682`
+- **Source fingerprint:** `519466878425039c`
 
 ## Risk Assessment
 
@@ -84,6 +84,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 46: The env-hygiene scan stops growing with the test suite (spec-pyforge-doctor CAP-1, NFR-4)
 - Epic 47: The Detectors scripts lane finishes inside its timeout (spec-pyforge-doctor CAP-42, CAP-43)
 - Epic 48: One registry orders the whole Pages site, and a stale site tells on itself (spec-pyforge-doctor CAP-90, CAP-91)
+- Epic 49: The detector registry finds each detector's task by its path (spec-pyforge-doctor FR-15)
 
 ## Test Inventory
 
@@ -349,6 +350,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 47.1 | The aggregate scripts test checks scope filtering without gathering | none observed |
 | 48.1 | One registry orders every section of the Pages site | none observed |
 | 48.2 | A Pages deploy more than a day behind its inputs is named in fleet-picture | none observed |
+| 49.1 | A detector's task is the one that runs its script | none observed |
 
 ## Quality Gates
 
