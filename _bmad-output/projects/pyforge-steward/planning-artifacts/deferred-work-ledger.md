@@ -6489,7 +6489,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   fix: resume the producer (`pyforge steward ci resume kedro-viz-publish --yes`) with `pyforge.atlas.viz_export_artifact` on, let it run once on `main`, then `pyforge steward pages deploy --wait`; record that run's id in the 102.4 spec (the download step's `KEDRO_VIZ_EXPORT=present` line and the green `pages-check`) and close this row. The same run shows atlas 30.2's `vizro-static-export` step once that producer job lands.
   severity: low
   promoted: 2026-10-15 — recorded with Story 102.4's review (Pages redesign chain)
-  status: open
+  closed: 2026-10-17 — AC7's `present` record is `pages.yml` run `39020410506` (`pyforge steward pages deploy --wait` on `main` `6fa7150e2b`): its download step found `kedro-viz-export` from producer run `39019867740` (`KEDRO_VIZ_EXPORT: present`), `pages-check` passed with `dashboard/kedro-viz/` in the artifact, and the live `/dashboard/kedro-viz/` page answers 200 and renders. The producer was resumed by #2247 (operator 2026-10-16) and fixed by atlas Story 32.1 (#2248); the `absent` record is #2240's run `38831558913`. Both are recorded in the 102.4 spec's § AC7 records.
+  status: closed
 
 ### DW-steward-102-5-1: None of the four declared protected-refs rulesets exists on live GitHub, so archive/preserve/rescue tags are unprotected
 
