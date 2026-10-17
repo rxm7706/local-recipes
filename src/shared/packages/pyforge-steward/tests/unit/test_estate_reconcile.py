@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import importlib.util
 import json
 import shlex
 import shutil
@@ -25,7 +27,6 @@ from pyforge.steward.estate_reconcile import (
     WATCH_PATHS,
     ReconcileDeps,
     _build_generators,
-    _guild_python,
     run_reconcile,
     specs_for_moved_paths,
 )
@@ -540,7 +541,10 @@ def test_108_1_ac2_the_generator_argv_runs_under_the_script_s_own_parser(tmp_pat
     text = dream.read_text(encoding="utf-8")
     assert "## Pixi environment matrix (measured)" in text
     assert "``demo``" in text
-    # The script's own --check is the oracle that the block was written from this lock.
+    # AC2's own words: the block's lock-sha256 is the fixture lock's digest (sha256, first 16 hex digits) ...
+    digest = hashlib.sha256((scratch / "pixi.lock").read_bytes()).hexdigest()[:16]
+    assert f"<!-- pixi-env-matrix:begin lock-sha256={digest} -->" in text
+    # ... and the script's own --check, the oracle the gating check uses, agrees.
     current = _run_from(scratch, check_here)
     assert current.returncode == 0, current.stderr
 
@@ -647,9 +651,19 @@ def test_108_1_ac5_generate_bmad_suite_still_stops_and_names_an_earlier_failure(
 def test_108_1_ac6_the_matrix_check_follows_bmad_estate_and_the_rest_are_unchanged() -> None:
     names = [name for name, _argv in GATING_CHECKS]
     assert names.index("pixi-env-matrix-check") == names.index("bmad-estate-check") + 1
-    assert _check_argv("pixi-env-matrix-check") == _guild_python(
-        "scripts/pixi_env_matrix.py", "--check", "--dream", ENV_MATRIX_DREAM
-    )
+    assert _check_argv("pixi-env-matrix-check") == [
+        "pixi",
+        "run",
+        "--as-is",
+        "-x",
+        "-e",
+        "pyforge-guild",
+        "python",
+        "scripts/pixi_env_matrix.py",
+        "--check",
+        "--dream",
+        "docs/dreams/pyforge-unifying-strategy.md",
+    ]
     others = [(name, argv) for name, argv in GATING_CHECKS if name != "pixi-env-matrix-check"]
     assert others == _BASE_GATING_CHECKS
 
@@ -663,3 +677,69 @@ def test_108_1_ac6_a_stale_matrix_reds_the_run_naming_the_check(tmp_path: Path) 
     assert result.summary.splitlines()[0] == "estate reconcile: check pixi-env-matrix-check failed"
     by_name = {check["name"]: check for check in result.details["reconcile"]["checks"]}
     assert by_name["pixi-env-matrix-check"]["exit"] == 1
+
+
+# ---------------------------------------------------------------------------
+# Story 108.1 review: every generator runs in an interpreter that carries what it imports
+# ---------------------------------------------------------------------------
+
+
+def _all_generators(root: Path) -> list[tuple[str, list[str], str | None]]:
+    """Every generator, the two conditional ones included (the batch moves pixi and a bmad-* package)."""
+    journal = {
+        "moves": [
+            {"package": "pixi", "feature": "*", "from": "0.80", "to": "0.81"},
+            {"package": "bmad-method", "feature": "*", "from": "6.12.0", "to": "6.12.2"},
+        ]
+    }
+    return _build_generators(journal, root, journal_path=_journal_path(root))
+
+
+def _repo_path(*parts: str) -> str:
+    # Joined, so the trigger-map meta test does not read a literal path as a file this suite opens: these are argv
+    # strings, never read.
+    return "/".join(parts)
+
+
+def test_108_1_review_each_generator_runs_in_its_pinned_environment(tmp_path: Path) -> None:
+    """The exact argv of every generator. Run by ``sys.executable`` means the duty's own env (``pixi run -e
+    pyforge-steward``); the BMAD-estate catalog runs in pyforge-guild, the env that has ``pyforge.scribe``."""
+    root = _root(tmp_path)
+    py = sys.executable
+    guild = ["pixi", "run", "--as-is", "-x", "-e", "pyforge-guild", "python"]
+    assert _all_generators(root) == [
+        ("environment.yaml", ["pixi", "project", "export", "conda-environment", "-e", "build"], "environment.yaml"),
+        ("library-catalog-floors", [py, _repo_path("scripts", "llms_full_check.py"), "--fix-floors"], None),
+        ("bmad-estate-catalog", [*guild, "-m", "pyforge.scribe.cli", "catalog", "bmad-estate", "--write"], None),
+        (
+            "env-matrix",
+            [py, "scripts/pixi_env_matrix.py", "--update", "--dream", "docs/dreams/pyforge-unifying-strategy.md"],
+            None,
+        ),
+        ("docs-environments", [py, _repo_path("scripts", "docs_environments.py")], None),
+        ("docs-pixi-tasks", [py, _repo_path("scripts", "docs_pixi_tasks.py")], None),
+        ("bump-pixi-version", [py, _repo_path("scripts", "bump_pixi_version.py")], None),
+        (
+            "generate-bmad-suite",
+            [
+                py,
+                _repo_path(".claude", "scripts", "conda-forge-expert", "bmad_suite_metapackage.py"),
+                "--journal",
+                str(_journal_path(root)),
+                "--json",
+            ],
+            None,
+        ),
+    ]
+
+
+def test_108_1_review_a_module_generator_in_the_duty_s_interpreter_resolves_its_module(tmp_path: Path) -> None:
+    """A ``-m`` generator run by ``sys.executable`` imports its module in the env this suite and the duty share
+    (pyforge-steward). ``pyforge.scribe`` is not there, which is why the catalog generator runs in the Guild env."""
+    root = _root(tmp_path)
+    module_generators = [
+        (label, argv[2]) for label, argv, _out in _all_generators(root) if argv[0] == sys.executable and argv[1] == "-m"
+    ]
+    for label, module in module_generators:
+        assert importlib.util.find_spec(module.split(".")[0]) is not None, (label, module)
+        assert importlib.util.find_spec(module) is not None, (label, module)

@@ -1950,14 +1950,18 @@ Drift — orphaned between stations.
   later as `bmad-drift`'s `pixi-env-matrix-stale` warning. Story 103.3's lock change hit it, and its builder
   regenerated the matrix by hand (`DW-steward-103-3-2`). Measured at `ab38be642f` in a scratch copy with the lock
   moved: the reconcile's argv exits 2, and the matrix check still exits 1 after it; `--update --dream <path>` exits
-  0, and the check then exits 0. The script's own usage docstring shows the same wrong form. (2) `_row_gated_by_master`
+  0, and the check then exits 0. The script's own usage docstring shows the same wrong form. *(Added at the story's
+  review:)* the BMAD-estate catalog generator fails unseen too. It runs `sys.executable -m pyforge.scribe.cli`, and
+  the `pyforge-steward` env the duty runs in has no `pyforge.scribe`, so it exits 1; the 2026-10-14 journal records
+  both failures. (2) `_row_gated_by_master`
   (`ci.py:500`-`:503`) leaves out rows whose `kind` is `value` or `retired`. The registry records retirement in
   `state`, though, and its schema has no `retired` kind. So a retired row whose workflow file still exists and reads
   the master carries `paused_by_master: true`, against Story 103.1's contract (`DW-steward-101-1-2`). Probed at
   `ab38be642f` with retired `workflow`, `ci-job` and `ci-step` rows and the master `true`: each reads `drift` with
   `paused_by_master: true`. It is latent on the live registry: all six retired rows' workflow files are deleted, and
   marshal Story 101.1 skips `retired` before it reads the field. **What it looks like when fixed:** the `env-matrix`
-  generator passes `--update --dream docs/dreams/pyforge-unifying-strategy.md`. Every generator's journal row carries
+  generator passes `--update --dream docs/dreams/pyforge-unifying-strategy.md`, and the BMAD-estate catalog generator
+  runs in `pyforge-guild`, the env that has scribe, as the checks do. Every generator's journal row carries
   its label, and a generator that exits non-zero reds the run with exit 1, naming its label, exit code and command,
   after the other generators and the checks have run. That is what Story 100.3's I/O matrix asked of the scribe
   catalog generator, which the code never did. `GATING_CHECKS` gains `pixi_env_matrix.py --check`. A unit test runs

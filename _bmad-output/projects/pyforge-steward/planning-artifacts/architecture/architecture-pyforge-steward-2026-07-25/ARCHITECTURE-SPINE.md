@@ -2421,7 +2421,8 @@ Checked against the decisions as written:
 
 - **AD-1 (wrap, never reimplement).** `estate reconcile` still runs `scripts/pixi_env_matrix.py` by subprocess, now
   with the argv the script's own parser accepts (`--update --dream <Dream>`), and its new gating check is the same
-  script's `--check`, a Guild task like the other eight. `ci status` still derives master gating from the CI-surface
+  script's `--check`, a Guild task like the other eight. Scribe's own catalog command stays a subprocess too, now run
+  in `pyforge-guild`, the env that has `pyforge.scribe` *(added at the story's review)*. `ci status` still derives master gating from the CI-surface
   gate's own parser; it now reads retirement through `_is_retired` (the registry's `state`), as Story 103.7's run-list
   skip already did.
 - **AD-8 (exit-code sole ownership).** A failed generator reds the run with `EXIT_RECONCILE_CHECKS` (1), the code a

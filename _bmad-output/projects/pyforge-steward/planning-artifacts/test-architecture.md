@@ -5,7 +5,7 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: c1f1d1efbb19bfa2
+source_fingerprint: 32dcd1a7d004eef9
 story_count: 388
 test_file_count: 140
 coverage_target_unit: ">=80%"
@@ -24,7 +24,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Test files inventoried:** 140 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `c1f1d1efbb19bfa2`
+- **Source fingerprint:** `32dcd1a7d004eef9`
 
 ## Risk Assessment
 

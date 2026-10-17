@@ -109,11 +109,9 @@ def _build_generators(
             "environment.yaml",
         ),
         ("library-catalog-floors", [py, "scripts/llms_full_check.py", "--fix-floors"], None),
-        (
-            "bmad-estate-catalog",
-            [py, "-m", "pyforge.scribe.cli", "catalog", "bmad-estate", "--write"],
-            None,
-        ),
+        # scribe's own command, in the Guild env: the steward env the duty runs in has no ``pyforge.scribe``, so
+        # ``sys.executable -m pyforge.scribe.cli`` always exited 1 (Story 108.1).
+        ("bmad-estate-catalog", _guild_python("-m", "pyforge.scribe.cli", "catalog", "bmad-estate", "--write"), None),
         ("env-matrix", [py, "scripts/pixi_env_matrix.py", "--update", "--dream", ENV_MATRIX_DREAM], None),
         ("docs-environments", [py, "scripts/docs_environments.py"], None),
         ("docs-pixi-tasks", [py, "scripts/docs_pixi_tasks.py"], None),
@@ -130,7 +128,8 @@ def _build_generators(
 
 
 def _guild_python(*args: str) -> list[str]:
-    """Checks are Guild tasks: the steward env carries no ``pyforge.doctor``, so they run in pyforge-guild."""
+    """A Guild-env Python argv. The steward env the duty runs in carries no ``pyforge.doctor`` or ``pyforge.scribe``,
+    so the checks and the BMAD-estate catalog generator run in pyforge-guild."""
     return ["pixi", "run", "--as-is", "-x", "-e", "pyforge-guild", "python", *args]
 
 

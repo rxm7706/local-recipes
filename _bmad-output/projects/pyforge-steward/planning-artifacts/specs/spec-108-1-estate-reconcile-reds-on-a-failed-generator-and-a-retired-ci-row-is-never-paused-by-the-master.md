@@ -5,7 +5,7 @@ created: '2026-10-17'
 status: 'in-review'
 baseline_revision: 'ab38be642f0f3ea30e4c7f76c318e7809beef242'
 flag-exempt: detector-or-gate   # a fix needs no flag (spec-feature-flag-governance Q1); both changes sit behind their duties' existing flags (pyforge.steward.estate_refresh, pyforge.steward.ci_pause_control), and each corrects a verdict a gate or a detector reads (reconcile's exit, ci status's paused_by_master), so a flag-OFF path would keep the false green reachable (Q2's gate exemption), as 105.1, 106.1 and 107.1 recorded
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -47,6 +47,13 @@ declared_low_risk: false
   turns up later as `detectors-ci`'s `bmad-drift` warning `pixi-env-matrix-stale`. Story 103.3's lock change hit it;
   its builder regenerated the matrix by hand. `tests/unit/test_estate_reconcile.py:120` asserts only that some argv
   contains `pixi_env_matrix.py`.
+- **The BMAD-estate catalog generator never runs either** *(added at review, 2026-10-17: should-fix 1)*. It is
+  `[sys.executable, "-m", "pyforge.scribe.cli", "catalog", "bmad-estate", "--write"]` (`:108`-`:112`). The duty runs as
+  `pixi run -e pyforge-steward pyforge steward estate reconcile` (AGENTS.md § Policy; `docs/how-to/refresh-the-estate.md`),
+  so `sys.executable` is the `pyforge-steward` env's Python, and that env has no `pyforge.scribe` (`pixi.toml` composes
+  it from the `pyforge-steward` and `openfeature-file-eval` features). The generator exits 1, "No module named
+  'pyforge.scribe'", every time. Once a failed generator reds the run, every documented reconcile would exit 1 on it,
+  so the duty could never be green in its own env.
 - **A retired row can read paused by the master (`DW-steward-101-1-2`).** `_row_gated_by_master` (`ci.py:500`) returns
   `False` for `kind in ("value", "retired")` or `state == "paused-manually"` (`:501`-`:503`). The registry records
   retirement in `state`; its schema's `kind` enum (`docs/governance/ci-surfaces.schema.json:44`-`:47`) has no
@@ -75,6 +82,17 @@ declared_low_risk: false
   find no job and no gate; marshal Story 101.1 skips `retired` before it reads the field. The live registry's kinds are
   `ci-job`, `ci-step`, `value` and `workflow`. The reconcile defect is live: every reconcile since Story 100.3 skipped
   the matrix.
+- **Every generator's interpreter** *(added at review)*. The last real reconcile's tracked journal,
+  `.steward/estate-refresh/2026-10-14.json`, records seven generator rows: the scribe catalog at exit 1 and the env
+  matrix at exit 2, the other five at exit 0. Re-measured in a scratch clone of `5ed998b0e7`
+  (`b108/tools/probe_generators.py`, the `pyforge-steward` env's Python as `sys.executable`, a journal that also
+  moves `pixi` and `bmad-method` so all eight generators run): only `bmad-estate-catalog` fails (exit 1,
+  `ModuleNotFoundError: No module named 'pyforge.scribe'`). The other seven exit 0
+  (`b108/generators-before.txt`). By their imports, the six script generators need only PyYAML (and sibling modules)
+  beyond the standard library, and the steward env has PyYAML; the seventh is `pixi project export`. The same command
+  in `pyforge-guild` (`pixi run --as-is -x -e pyforge-guild python -m pyforge.scribe.cli catalog bmad-estate --write`,
+  run in the clone) exits 0, and `bmad_estate_check.py` exits 0 after it. Its only change is the catalog's
+  `Generated:` date.
 
 **Approach:** run the generator as the script expects, red the run on any failed generator after everything else has
 run, add the matrix check, and read retirement from `state`.
@@ -96,6 +114,11 @@ run, add the matrix check, and read retirement from `state`.
 - **The matrix check.** `GATING_CHECKS` gains `("pixi-env-matrix-check", _guild_python("scripts/pixi_env_matrix.py",
   "--check", "--dream", ENV_MATRIX_DREAM))`, after `bmad-estate-check`, in the order the generators run. The other eight
   keep their names, argv and order.
+- **The catalog generator runs where scribe is** *(added at review; the orchestrator's ruling: fix it inside this
+  story)*. `bmad-estate-catalog` becomes `_guild_python("-m", "pyforge.scribe.cli", "catalog", "bmad-estate",
+  "--write")`: the Guild env, through the same helper the checks use, and the env scribe's own `REGENERATE_COMMAND`
+  names (`pixi run -e pyforge-guild scribe catalog bmad-estate --write`, `catalog.py:51`). Scribe's `--root`
+  defaults to the working directory, which the runner sets to the repository root. The other seven generators keep their interpreters, because each one measured above runs where it is.
 - **A retired row is never gated.** `_row_gated_by_master` returns `False` for `kind == "value"`, for
   `_is_retired(row)`, and for `state == "paused-manually"`. The dead `kind == "retired"` test goes.
 - **Pinned by a test that runs the script.** `test_estate_reconcile.py` asserts the exact argv, and runs the generator's
@@ -113,6 +136,9 @@ run, add the matrix check, and read retirement from `state`.
   sees every failure in one run. Only `generate-bmad-suite` stops early, and it keeps doing so (Story 103.2).
 - **Keep the `kind == "retired"` test beside the state test.** No registry row and no schema value has that kind, so
   the test is dead.
+- **Add `pyforge-scribe` to the `pyforge-steward` env** *(review)*. That would grow a station env by a station
+  package and its dependency tree to run one command, against the station envs' own composition. The Guild env already
+  carries scribe, and the checks already shell to it.
 - **Re-run a real `estate reconcile` to prove the argv.** A bare reconcile rewrites the latest tracked journal and
   re-runs that batch's generators (`DW-steward-103-3-1`).
 
@@ -169,13 +195,21 @@ the real `run_status` with a fake `gh` runner over a fixture registry and workfl
   `drift`, detail `registry row <id> is retired but <workflow> still exists`. The same three rows declared `live`
   carry `paused_by_master` `true` and read `paused` (the control, so the fixture does read the master). The
   checked-in `ci_status_master_on.json` fixture is unchanged.
+- **AC10 — Each generator runs where its imports are** *(added at review)*. Every generator's argv, the two
+  conditional ones included, equals a literal list. Every generator but the export and the catalog runs with
+  `sys.executable` (the duty's env); the catalog runs as `pixi run --as-is -x -e pyforge-guild python -m
+  pyforge.scribe.cli catalog bmad-estate --write`. A `-m` generator run with `sys.executable` names a module that
+  resolves in that env, which is the env the steward suite and the duty share.
 - **AC8 — Mutation.** Each change below fails a named test, and the Implementation Result records which: the argv back
   to positional; `--dream` and its path dropped; a failed generator not collected; only the first failed generator
   named; the generators stopping at the first failure; the run stopping before the checks at the first failure; the
   label missing from a row; no `error` on a failed row; the check line dropped when a generator also failed; the check
   line before the generator lines; the bmad-suite stop not naming an earlier failure; the matrix check dropped; the
   check's Dream not the generator's; in `ci.py`, the base form (`kind` tested for `retired`) and no retirement test at
-  all; and in the workflow, steward's `changes` paths without `scripts/pixi_env_matrix.py`.
+  all; and in the workflow, steward's `changes` paths without `scripts/pixi_env_matrix.py`. *(Added at review:)*
+  the catalog generator back on `sys.executable` (the base form); the catalog generator without `--write`; the matrix
+  block's digest cut to 12 digits, which the script's own `--check` cannot see; and `_guild_python` without
+  `--as-is`.
 - **AC9 — Green, the surface reconciled.** `pixi run --frozen -e pyforge-steward pyforge-steward-test`, the steward
   coverage gate and `pixi run --frozen -e pyforge-guild lint-types` exit 0; each changed governed path gets a
   surface-reconcile entry on the memlog of every Spec that governs it.
@@ -193,8 +227,17 @@ the real `run_status` with a fake `gh` runner over a fixture registry and workfl
 - Never weaken or delete an existing assertion.
 
 **Residual risk:**
-- **A reconcile now reds where it read green.** Any generator that fails today was silent; the first reconcile after
-  this lands reds on it by name. That is the point. The env-matrix generator was the only one known to fail.
+- **A reconcile now reds where it read green.** Any generator that fails was silent before this story; a reconcile
+  after it reds on that generator by name. That is the point. Two generators were known to fail, both in the
+  2026-10-14 journal: the env matrix (exit 2) and the BMAD-estate catalog (exit 1, run in an env without scribe). This
+  story fixes both. Measured after the fix in a scratch clone, all eight generators exit 0 *(corrected at review: the
+  first cut said the env matrix was the only failure)*.
+- **The catalog generator now writes.** `scribe catalog bmad-estate --write` stamps its `Generated:` line with the day
+  it runs, so a reconcile on a later day than the catalog's stamp moves `docs/reference/bmad-estate-llms-full.md` by
+  that one line, as the docs generators already move their own stamps. The path is in `WATCH_PATHS` and in no Spec's
+  baseline, so it adds a commit line and no memlog append.
+- **A reconcile run outside pixi needs `pixi` on `PATH`.** The catalog generator now shells to `pixi run`, as the
+  checks and the export already do (Story 100.3's residual risk).
 - **The matrix check is a ninth gating check.** It reds a reconcile whose matrix is stale after the generator, which
   can only happen when the generator wrote somewhere else or failed (and is then named too). It runs in the Guild
   env like the others.
@@ -214,6 +257,7 @@ the real `run_status` with a fake `gh` runner over a fixture registry and workfl
 | Situation | Before (`ab38be642f`) | After |
 |---|---|---|
 | reconcile runs the `env-matrix` generator | exit 2, "unrecognized arguments", nothing written; the run reads green | `--update --dream <Dream>`: exit 0, the matrix regenerated |
+| reconcile runs the `bmad-estate-catalog` generator in the steward env | exit 1, "No module named 'pyforge.scribe'"; silent | runs in `pyforge-guild`: exit 0, the catalog written *(review)* |
 | a generator other than `generate-bmad-suite` exits non-zero | unlabeled `{"argv", "exit"}` row; `ok` from the checks alone | labelled row with `error`; the rest runs; `ok` false, exit 1, the generator named with its exit and command |
 | the scribe catalog generator exits non-zero | silent (`pass`) | as above (Story 100.3's matrix row) |
 | two generators fail | both silent | both named, in run order |
@@ -265,6 +309,9 @@ paused by the master.
 - `python scripts/pixi_env_matrix.py --update --dream docs/dreams/pyforge-unifying-strategy.md` in a scratch copy with
   a moved lock, then `--check --dream …` — expected: exit 0 each; the old argv exit 2.
 - `pixi run --frozen -e pyforge-guild python scripts/pixi_env_matrix.py --check --dream docs/dreams/pyforge-unifying-strategy.md` in the worktree — expected: exit 0 (the live matrix is current; the check this story adds to reconcile).
+- Every generator `_build_generators` returns, run as `run_reconcile` runs it (cwd the root, `sys.executable` the
+  `pyforge-steward` env's Python), in a scratch clone, never the worktree (scratchpad `b108/tools/probe_generators.py`)
+  — expected: all eight exit 0 *(added at review)*.
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
 - The steward coverage gate, `COVERAGE_GATES_STATIONS=steward pixi run --frozen -e pyforge-steward python scripts/coverage_gates_ci.py --paths-file <changed paths> --suites unit` — expected: exit 0.
 - `pixi run --frozen -e pyforge-guild python scripts/ci_surface_gates.py --check` — expected: exit 0.
@@ -284,6 +331,36 @@ paused by the master.
   2026-10-14 stamp, so the PRD and the spine were re-stamped with `## Currency reconciliation — 2026-10-17` sections
   (no FR or AD change), and a memlog correction records it against the mint entry's "no PRD or spine change".
   Status `in-review`.
+- 2026-10-17 (review of `5ed998b0e7`): FAIL, one should-fix and two nits (scratchpad `r108/review.md`). (1,
+  should-fix) The `bmad-estate-catalog` generator ran `sys.executable -m pyforge.scribe.cli`, and the `pyforge-steward`
+  env the duty runs in has no `pyforge.scribe`. It always exited 1, as the 2026-10-14 journal records. With a failed
+  generator now redding the run, no reconcile could exit 0 in its own env. The chain claimed the env matrix was the
+  only failure. (2, nit) AC2's test proved the block's digest only through the script's `--check`. (3, nit) AC6's test
+  compared the matrix check with the implementation's `_guild_python`.
+- 2026-10-17 (the orchestrator's ruling): fix the should-fix inside this story, not as a recorded follow-up.
+- 2026-10-17 (review fixes, on `5ed998b0e7`): the catalog generator runs
+  `_guild_python("-m", "pyforge.scribe.cli", "catalog", "bmad-estate", "--write")`. Every generator was re-measured in
+  a scratch clone under the steward env's Python: the catalog failed there (exit 1) and passes in the Guild env, and
+  the other seven exit 0 where they run. Two review tests pin every generator's argv as a literal and the module of a
+  `-m` generator in the duty's interpreter. AC2 asserts the digest directly, and AC6 compares a literal argv. The
+  Intent, Approach, Rejected, AC8, AC10 (new), residual risk and I/O matrix follow, and so do the PRD's 2026-10-17
+  FR-40 sentence (corrected in place, no second section), the spine's AD-1 note, Epic 108 and Story 108.1, the
+  DW-steward-103-3-2 closure and the Dream entry. Status stays `in-review`; `review_loop_iteration` 1.
+
+## Review Triage Log
+
+### 2026-10-17 — Review pass (independent reviewer, `5ed998b0e7`)
+- verdicts: 3 findings — high 0, medium 1, low 2, false 0
+- findings:
+  - `[medium]` `[patch]` `estate_reconcile.py:113`: the BMAD-estate catalog generator ran in the steward env, which
+    has no `pyforge.scribe`, so it always exited 1, and with this story every reconcile would red on it. The chain's
+    "only known failure" and "FR-40 met" claims were wrong. Fixed in this story by the orchestrator's ruling: it runs
+    in `pyforge-guild`, pinned by exact-argv and module-resolution tests, and the claims are corrected.
+  - `[low]` `[patch]` AC2's test asserted the digest only through `--check`. It now asserts `lock-sha256` against the
+    fixture lock's digest, which kills mutation N1; the pre-review test survived N1.
+  - `[low]` `[patch]` AC6's test compared the matrix check with `_guild_python(...)`. It now compares a literal argv.
+    The pre-review file already caught N2 through its `_BASE_GATING_CHECKS` literal, as the review said, so this
+    change makes the pin direct; it closes no gap.
 
 ## Implementation Result
 
@@ -297,10 +374,14 @@ The diff is for an independent review against this spec, not against this summar
   per failed generator; `run_reconcile` collects the failed rows, names them after `generate-bmad-suite`'s own line
   when that one stops the run, and otherwise reds the run after the checks and the spec-surface reconcile, the
   generator lines first, then the existing check line. The `pass` branch is gone.
+- **`estate_reconcile.py`, review fix:** `bmad-estate-catalog` is
+  `_guild_python("-m", "pyforge.scribe.cli", "catalog", "bmad-estate", "--write")`, with a comment that says why;
+  `_guild_python`'s docstring names both reasons the Guild env is used.
 - **`ci.py`:** `_row_gated_by_master` tests `_is_retired(row)` in place of `kind == "retired"`, with a docstring.
 - **`scripts/pixi_env_matrix.py`:** the two usage lines of the module docstring (also the `--help` description).
 - **Tests:** `tests/unit/test_estate_reconcile.py` (`test_ac1_generators_order_and_conditional` asserts the exact argv;
-  14 new `test_108_1_*` cases, AC1-AC6); `tests/unit/test_ci_status.py` (3 new cases, AC7).
+  14 new `test_108_1_*` cases, AC1-AC6, and 2 review cases, AC10; AC2 asserts the digest directly and AC6 compares a
+  literal argv); `tests/unit/test_ci_status.py` (3 new cases, AC7).
 - **Workflow:** `pyforge-station-tests.yml`'s `steward_paths` gains `scripts/pixi_env_matrix.py`, which the AC2 test
   copies; `on.*.paths` already carry `scripts/**`. The trigger map's first run after the new tests also named five
   script paths the AC6 base-list literal spelled out; the test builds those argv strings with a join, as
@@ -311,13 +392,14 @@ The diff is for an independent review against this spec, not against this summar
   failed-check summaries of Story 100.3's fixture (scratchpad `b108/tools/probe_green_summary.py`) are byte-identical
   at the base and after (`diff` exit 0).
 - **AC8, each mutation on a scratch copy of the staged tree (`git write-tree` then `git archive`), the copy restored and
-  byte-compared after each** (scratchpad `b108/tools/mutate.py`, `b108/mutations.txt`): the control passed 64 (the two
-  files and the trigger map's read-to-trigger test) before and after.
+  byte-compared after each.** The table is the run after the review fixes (scratchpad `b108/tools/mutate2.py`,
+  `b108/mutations2.txt`). The control passed 66 tests (the two files and the trigger map's read-to-trigger test) before
+  and after. The first cut's run of M1-W1 is `b108/mutations.txt`.
 
   | Mutation | Failed |
   |---|---|
-  | M1 the argv positional again | 3: AC1, AC2, `test_ac1_generators_order_and_conditional` |
-  | M2 `--dream` and its path dropped | 2: AC1, `test_ac1_generators_order_and_conditional` |
+  | M1 the argv positional again | 4: AC1, AC2, AC10's argv test, `test_ac1_generators_order_and_conditional` |
+  | M2 `--dream` and its path dropped | 3: AC1, AC10's argv test, `test_ac1_generators_order_and_conditional` |
   | M3 a failed generator not collected | 8: the six AC4 cases, the two-failures test, AC5 |
   | M4 only the first failed generator named | 1: the two-failures test |
   | M5a the generators stop at the first failure | 7: five AC4 cases (not `docs-pixi-tasks`, the last), the two-failures test, AC5 |
@@ -329,6 +411,10 @@ The diff is for an independent review against this spec, not against this summar
   | M10 the check's Dream not the generator's | 2: AC2, the AC6 order test |
   | M11 no `error` on a failed row | 6: the six AC4 cases |
   | M12 the check line before the generator lines | 1: the two-failures test |
+  | S1 the catalog generator back on `sys.executable` (the base form) | 2: both AC10 tests |
+  | S2 the catalog generator without `--write` | 1: AC10's argv test |
+  | N1 the matrix block's digest cut to 12 digits (the script's `--check` stays consistent) | 1: AC2 (the pre-review AC2 test passed it: 2 passed) |
+  | N2 `_guild_python` without `--as-is` | 2: AC6's order test, AC10's argv test |
   | C1 `ci.py`: the base form (`kind` tested for `retired`) | 3: the three AC7 cases |
   | C2 `ci.py`: no retirement test at all | 3: the three AC7 cases |
   | W1 the workflow without `scripts/pixi_env_matrix.py` | 1: `test_every_read_and_declared_glob_fires_its_job` |
@@ -337,6 +423,33 @@ The diff is for an independent review against this spec, not against this summar
   scratch copy's index comes from `git init` and `git add -A`, which honours `.gitignore`'s `.cursor/` rule, so the
   `.cursor/**` files the real index force-tracks are missing there and the test fails for that reason alone; it passes
   in the worktree.
+
+## Verification run (2026-10-17, after the review)
+
+On the 16-core host, at the staged tree (`5ed998b0e7` plus the review fixes); every exit code read directly, never
+through a pipe.
+
+- Every generator, run in a scratch clone of `5ed998b0e7` as `run_reconcile` runs it, with the `pyforge-steward`
+  env's Python (`b108/tools/probe_generators.py`). Before the fix (`b108/generators-before.txt`):
+  `bmad-estate-catalog` exits 1 (`No module named 'pyforge.scribe'`), and the other seven exit 0. After it
+  (`b108/generators-after.txt`): all eight exit 0. `bmad_estate_check.py` in the Guild env exits 0 after the catalog
+  write, which changed only its `Generated:` date.
+- The two changed test files: exit 0, 65 passed (30 in `test_estate_reconcile.py`, 35 in `test_ci_status.py`).
+- The mutations (Implementation Result): each of the 20 failed its named tests, and the scratch copy passed 66 before
+  and after.
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test`: exit 0, 2901 passed, 2 skipped, 1 warning, in 421 s
+  (after the memlog entries and the stamps).
+- The steward coverage gate (`--paths-file` = the staged paths against `ab38be642f`, `--suites unit`): exit 0;
+  `estate_reconcile.py` 91%, `ci.py` 87%.
+- `pixi run --frozen -e pyforge-guild lint-types`: exit 0.
+- Planning detectors, each `pixi run --frozen -e pyforge-guild <task>` on the staged tree, in `$W`: chain-completeness,
+  dream-chain, dreams-hygiene (warnings only, the same 121), deferred-work, ledger-regression, story-status,
+  flag-gate, chain-currency-sweep, tea-playwright-check, ad-citation, frontmatter-duplicate-keys, governance-currency
+  and llms-full-check, each exit 0; `python scripts/ci_surface_gates.py --check` exit 0. `bmad_tea_playwright.py
+  --project pyforge-steward` exit 0 (388 stories, 140 test files). `detectors-ci`: exit 0, 49 detectors pass.
+- `spec-surface-check`: exit 0, last, after the review's memlog entries on `spec-pyforge-steward` (a decision and a
+  surface reconcile) and on `spec-pyforge-core` (a surface reconcile), and one scoped stamp each. The baseline moves
+  only those two Specs' memlog hashes and the two changed paths.
 
 ## Verification run (2026-10-17, before the review)
 
