@@ -6689,7 +6689,7 @@ So that a test built to skip there skips, nothing that ran stops running, and th
 **When** `spec-kit` moves to its own feature, composed by the 13 other environments that compose `python`, and `ruamel.yaml` leaves the `pyforge-ci` feature
 **Then** `pixi lock` changes only `pyforge-ci`'s packages (linux-64: 146 → 106) and `estate reconcile` regenerates `environment.yaml` and the generated docs; none of `yaml`, `jsonschema`, `ruamel.yaml`, `mcp`, `pydantic`, `httpx` or `openfeature` imports in `pyforge-ci`; each of the 32 files guards its libraries with a module-level `pytest.importorskip`, so `pyforge-doctor-scripts-test` has 0 failures and 0 errors; 31 of them run in a new `scripts-lib-test` task in `pyforge-guild`, a new `scripts-suite` step and `pr-preflight` leg, and the 32nd stays with the doctor aggregate step; Doctor's dispatch and verdict-writer tests skip in `pyforge-ci` in either collection order and run in `pyforge-doctor`
 **And** every test node id that passed in `pyforge-ci` at `846d8383f5` passes in one of the job's three steps; the six descriptions, the env comments, the `scripts-suite` comments and `_doctor_dispatch`'s docstring are true against one definition of stdlib-only written in the `pyforge-ci` env comment, which names what the env still carries (the `python` feature's binaries, `gitpython`, `truststore`, the build, test and upload tools); a stdlib-only guard test pins the composition and the library split, and four mutations fail it; `pyforge-steward-test` and `pyforge-station-tests` are green, and each governing Spec's memlog reconciles the changed paths before its scoped stamp
-**Status:** backlog
+**Status:** done
 
 ### Story 103.4: The `ci-surface-gates` tests write their fixtures under `tmp_path`
 

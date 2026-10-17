@@ -56,8 +56,8 @@ def test_doctor_projects_fail_to_2_and_never_uses_1():
 
 def test_warden_keeps_1_for_policy_and_2_for_error():
     """`{0, 1, 2, 130}` — the domain doctor's is a subset of."""
-    # Skips in envs without warden installed (e.g. `local-recipes`); it runs
-    # for real in `pyforge-warden`, which is where this contract matters.
+    # Skips wherever warden is not installed, including `pyforge-ci` and `pyforge-guild`, the two envs CI runs
+    # this file in; no CI step runs it in `pyforge-warden` yet (DW-warden-103-3-1).
     warden = pytest.importorskip("pyforge.warden.verdict")
     codes = set(warden._EXIT_BY_STATUS.values())
     assert codes <= {0, 1, 2}, f"warden's projected codes drifted: {sorted(codes)}"

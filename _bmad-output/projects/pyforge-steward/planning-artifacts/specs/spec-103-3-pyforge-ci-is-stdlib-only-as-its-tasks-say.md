@@ -2,7 +2,7 @@
 title: "103.3: `pyforge-ci` is stdlib-only, as its tasks say"
 type: 'fix'
 created: '2026-10-14'
-status: 'in-review'
+status: 'done'
 baseline_revision: '846d8383f5b4a1f86cbb09f6fd8ae8616b34950f'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -623,3 +623,4 @@ Re-review fixes (2026-10-17, on `570690b7de`; exit codes read directly):
   `scripts-lib-test.txt` adds `test_bmad_estate_check.py` and `test_exit_code_domains_are_declared.py`; the
   definition in `pixi.toml` names both pinned exceptions and treats the other pyforge station packages as libraries;
   new row `DW-warden-103-3-1`. Status stays `in-review`.
+- 2026-10-17 (landing): the second re-review RESOLVED; its nits 1-4 fixed, nit 5 recorded as a follow-up. The orchestrator corrected `test_exit_code_domains_are_declared.py`'s comment, which said the warden test runs in `pyforge-warden` (no CI step does; DW-warden-103-3-1). Status `done`; the ledger key and `epic-103` `done`.
