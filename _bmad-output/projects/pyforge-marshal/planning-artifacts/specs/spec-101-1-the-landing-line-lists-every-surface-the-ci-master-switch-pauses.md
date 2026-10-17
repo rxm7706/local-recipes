@@ -2,7 +2,7 @@
 title: "101.1: The landing line lists every surface the CI master switch pauses"
 type: 'fix'
 created: '2026-10-14'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -249,6 +249,9 @@ row).
   `DW-steward-101-1-2`, not the `DW-steward-101-1-1` the coordinator named: that id already belongs to steward's own
   Story 101.1 row (the master switch had no row, promoted to steward 103.1), and the ledger keys each row
   `DW-steward-<story>-<n>` by its source story, so the next free id under a "101.1" source is `-2`.
+
+- 2026-10-17 (re-review of `aa2033230a`): RESOLVED; every nit fixed, each new test bites, and the id skip changes no verdict for any envelope steward can send (13,440 generated rows and steward's `ci_status_master_on.json` fixture agree under both rules).
+- 2026-10-17 (landing): status `done`; the ledger key and `epic-101` `done`.
 
 ## Review Triage Log
 
