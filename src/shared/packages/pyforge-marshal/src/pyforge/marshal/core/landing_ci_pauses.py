@@ -1,7 +1,10 @@
 """Pure CI-pause-at-merge record and PR-body rendering (Story 100.1, CAP-292).
 
 Steward's envelope is interpreted here; the subprocess lives in
-``adapters/steward_cli.py`` only.
+``adapters/steward_cli.py`` only. Story 101.1 reads steward 103.1's
+``paused_by_master`` row property, so a landing made under the CI master
+switch lists every surface the master stopped; marshal never decides for
+itself which jobs read the master.
 """
 
 from __future__ import annotations
@@ -26,17 +29,30 @@ def _bound(text: str) -> str:
 
 
 def row_counts_as_paused_at_merge(row: dict[str, Any]) -> bool:
-    """Whether one steward row belongs in ``surfaces`` at merge time."""
-    row_id = str(row.get("id", ""))
+    """Whether one steward row belongs in ``surfaces`` at merge time.
+
+    Story 100.1's rule reads the row's declared state and its own switch. Story 101.1 adds
+    steward's ``paused_by_master``: only the JSON boolean ``true`` counts, and an opt-in
+    whose own switch is off is still left out, since it would not have run anyway. A row
+    whose ``id`` is not a non-empty string names no surface and is skipped, so a malformed
+    row can never raise out of ``surfaces_from_envelope`` and the landing.
+    """
+    row_id = row.get("id")
+    if not isinstance(row_id, str) or not row_id:
+        return False
     if row_id.startswith("unregistered:") or row_id.startswith("unregistered-workflow:"):
         return False
     declared = str(row.get("declared_state", ""))
+    if declared == "retired":
+        return False
+    switch_on = str(row.get("live_switch_value") or "").strip().lower() == "true"
+    if row.get("paused_by_master") is True and (declared != "opt-in-off" or switch_on):
+        return True
     if declared == "paused-manually":
         return True
-    if declared in ("opt-in-off", "retired"):
+    if declared == "opt-in-off":
         return False
-    live = str(row.get("live_switch_value") or "").strip().lower()
-    return live == "true"
+    return switch_on
 
 
 def surfaces_from_envelope(envelope: dict[str, Any]) -> list[str]:

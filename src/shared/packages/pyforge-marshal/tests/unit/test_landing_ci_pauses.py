@@ -1,4 +1,8 @@
-"""Story 100.1 (CAP-292): CI pause surfaces recorded at dispatch landing merge time."""
+"""Story 100.1 (CAP-292): CI pause surfaces recorded at dispatch landing merge time.
+
+Story 101.1 (a fix under CAP-292): under the CI master switch, steward 103.1's
+``paused_by_master`` row property adds every surface the master stopped.
+"""
 
 from __future__ import annotations
 
@@ -11,7 +15,7 @@ import pytest
 from pyforge.core.process import ProcessError, ProcessResult
 from pyforge.testing_kit.flags import flag_states
 
-from pyforge.marshal.adapters.steward_cli import StewardCli
+from pyforge.marshal.adapters.steward_cli import StewardCiStatusOutcome, StewardCli
 from pyforge.marshal.core import policy
 from pyforge.marshal.core.dispatch_landing import DispatchLandingVerdict
 from pyforge.marshal.core.dispatch_verification import DispatchVerificationVerdict
@@ -372,12 +376,14 @@ def test_steward_cli_partial_envelope_on_stdout_is_a_read_carrying_partial() -> 
     complete = _sample_envelope()
     partial = {**complete, "partial": True, "run_list_errors": [".github/workflows/x.yml: HTTP 404"]}
 
-    read = StewardCli(_StewardProcess(stdout=json.dumps(complete))).ci_status_record(repo_root=Path("/tmp"))
+    read = StewardCli(_StewardProcess(stdout=json.dumps(complete))).ci_status_record(
+        repo_root=Path("/tmp"), binary_path="/bin/true"
+    )
     assert read["state"] == "read"
     assert "partial" not in read
 
     partial_read = StewardCli(_StewardProcess(returncode=1, stdout=json.dumps(partial))).ci_status_record(
-        repo_root=Path("/tmp")
+        repo_root=Path("/tmp"), binary_path="/bin/true"
     )
     assert partial_read["state"] == "read"
     assert partial_read["partial"] is True
@@ -385,9 +391,308 @@ def test_steward_cli_partial_envelope_on_stdout_is_a_read_carrying_partial() -> 
     assert render_ci_pauses_pr_line(partial_read) == render_ci_pauses_pr_line(read)
 
     on_stderr_only = StewardCli(_StewardProcess(returncode=1, stderr=json.dumps(partial))).ci_status_record(
-        repo_root=Path("/tmp")
+        repo_root=Path("/tmp"), binary_path="/bin/true"
     )
     assert on_stderr_only["state"] == "unknown"
     assert "partial read (exit 1)" in on_stderr_only["reason"]
-    not_envelope = StewardCli(_StewardProcess(returncode=1, stdout="{}")).ci_status_record(repo_root=Path("/tmp"))
+    not_envelope = StewardCli(_StewardProcess(returncode=1, stdout="{}")).ci_status_record(
+        repo_root=Path("/tmp"), binary_path="/bin/true"
+    )
     assert not_envelope["state"] == "unknown"
+
+
+# ---------------------------------------------------------------------------
+# Story 101.1: the master switch's surfaces, read from steward's ``paused_by_master``
+# ---------------------------------------------------------------------------
+
+# tests/unit -> tests -> pyforge-marshal -> packages: steward 103.1's AC6 fixture, read as a file, never imported.
+_STEWARD_MASTER_ON_FIXTURE = (
+    Path(__file__).resolve().parents[3] / "pyforge-steward" / "tests" / "fixtures" / "ci_status_master_on.json"
+)
+
+_MASTER_ROW: dict[str, Any] = {
+    "id": "master:PAUSE_ALL_CI",
+    "declared_state": "live",
+    "live_switch_value": "true",
+    "verdict": "drift",
+    "paused_by_master": False,
+}
+
+# AC1: each of these is listed while the master is on.
+_MASTER_LISTED_ROWS: tuple[dict[str, Any], ...] = (
+    _MASTER_ROW,
+    {
+        "id": "gated.live-paused",
+        "declared_state": "live",
+        "live_switch_value": None,
+        "verdict": "paused",
+        "paused_by_master": True,
+    },
+    {
+        "id": "gated.live-stuck",
+        "declared_state": "live",
+        "live_switch_value": "false",
+        "verdict": "stuck",
+        "paused_by_master": True,
+    },
+    {
+        "id": "gated.paused-overdue",
+        "declared_state": "paused",
+        "live_switch_value": "true",
+        "verdict": "overdue",
+        "paused_by_master": True,
+    },
+    {
+        "id": "gated.live-drift",
+        "declared_state": "live",
+        "live_switch_value": "true",
+        "verdict": "drift",
+        "paused_by_master": True,
+    },
+    {
+        "id": "gated.opt-in-on",
+        "declared_state": "opt-in-off",
+        "live_switch_value": "true",
+        "verdict": "drift",
+        "paused_by_master": True,
+    },
+    {
+        # Review nit 2: the opt-in clause strips and lower-cases the switch, as Story 100.1's own-switch path does.
+        "id": "gated.opt-in-on-padded",
+        "declared_state": "opt-in-off",
+        "live_switch_value": " TRUE ",
+        "verdict": "drift",
+        "paused_by_master": True,
+    },
+)
+
+# AC2: none of these is listed, in the same envelope.
+_MASTER_UNLISTED_ROWS: tuple[dict[str, Any], ...] = (
+    {
+        # Review nit 1: an opt-in that is off is left out by its declared state and switch, never by its verdict
+        # (the spec's rejected design, `verdict != "opt-in-off"`, would list this stuck one).
+        "id": "gated.opt-in-off-stuck",
+        "declared_state": "opt-in-off",
+        "live_switch_value": "false",
+        "verdict": "stuck",
+        "paused_by_master": True,
+    },
+    {
+        "id": "gated.opt-in-off-false",
+        "declared_state": "opt-in-off",
+        "live_switch_value": "false",
+        "verdict": "opt-in-off",
+        "paused_by_master": True,
+    },
+    {
+        "id": "gated.opt-in-off-null",
+        "declared_state": "opt-in-off",
+        "live_switch_value": None,
+        "verdict": "opt-in-off",
+        "paused_by_master": True,
+    },
+    {
+        "id": "ungated.live",
+        "declared_state": "live",
+        "live_switch_value": "false",
+        "verdict": "live",
+        "paused_by_master": False,
+    },
+    {
+        "id": "gated.retired",
+        "declared_state": "retired",
+        "live_switch_value": "true",
+        "verdict": "retired",
+        "paused_by_master": True,
+    },
+    {
+        "id": "unregistered:PAUSE_FOO",
+        "declared_state": "drift",
+        "live_switch_value": "true",
+        "verdict": "drift",
+        "paused_by_master": True,
+    },
+    {
+        "id": "field.string-true",
+        "declared_state": "live",
+        "live_switch_value": "false",
+        "verdict": "live",
+        "paused_by_master": "true",
+    },
+    {
+        "id": "field.int-one",
+        "declared_state": "live",
+        "live_switch_value": "false",
+        "verdict": "live",
+        "paused_by_master": 1,
+    },
+    {
+        "id": "field.null",
+        "declared_state": "live",
+        "live_switch_value": None,
+        "verdict": "live",
+        "paused_by_master": None,
+    },
+)
+
+_MASTER_LISTED_IDS: list[str] = sorted(str(row["id"]) for row in _MASTER_LISTED_ROWS)
+
+
+def _master_on_envelope() -> dict[str, Any]:
+    """AC1's envelope: the listed rows and AC2's unlisted rows, interleaved, the master ``true``."""
+    rows: list[dict[str, Any]] = []
+    for listed, unlisted in zip(_MASTER_LISTED_ROWS, _MASTER_UNLISTED_ROWS, strict=False):
+        rows += [dict(unlisted), dict(listed)]
+    rows += [dict(row) for row in _MASTER_UNLISTED_ROWS[len(_MASTER_LISTED_ROWS) :]]
+    return {
+        "fetched_at": "2026-10-17T09:00:00Z",
+        "repo": "rxm7706/local-recipes",
+        "rate_limit": {"core_limit": 5000, "core_remaining": 4998},
+        "rows": rows,
+    }
+
+
+def _listed_by_story_100_1(row: dict[str, Any]) -> bool:
+    """Story 100.1's rule alone: the row as a steward before 103.1 would send it."""
+    return row_counts_as_paused_at_merge({k: v for k, v in row.items() if k != "paused_by_master"})
+
+
+@pytest.mark.parametrize(
+    ("row", "expected"),
+    [pytest.param(row, True, id=str(row["id"])) for row in _MASTER_LISTED_ROWS]
+    + [pytest.param(row, False, id=str(row["id"])) for row in _MASTER_UNLISTED_ROWS]
+    + [
+        pytest.param(
+            {
+                "id": "row.manual",
+                "declared_state": "paused-manually",
+                "live_switch_value": None,
+                "paused_by_master": False,
+            },
+            True,
+            id="paused-manually",
+        ),
+        pytest.param(
+            {"id": "row.retired", "declared_state": "retired", "live_switch_value": None, "paused_by_master": False},
+            False,
+            id="retired-ungated",
+        ),
+        pytest.param(
+            {"id": "row.value", "declared_state": "live", "live_switch_value": "https://x", "paused_by_master": False},
+            False,
+            id="value-row",
+        ),
+        pytest.param(
+            {"id": "unregistered-workflow:x.yml", "declared_state": "drift", "paused_by_master": True},
+            False,
+            id="unregistered-workflow",
+        ),
+    ],
+)
+def test_101_1_row_rule_under_the_master_switch(row: dict[str, Any], expected: bool) -> None:
+    """AC1/AC2: each row kind of the I/O matrix, alone."""
+    assert row_counts_as_paused_at_merge(row) is expected
+
+
+def test_101_1_ac1_master_surfaces_are_listed_sorted_once() -> None:
+    surfaces = surfaces_from_envelope(_master_on_envelope())
+    assert surfaces == _MASTER_LISTED_IDS
+    assert len(surfaces) == len(set(surfaces))
+    assert "master:PAUSE_ALL_CI" in surfaces
+
+
+def test_101_1_ac2_unlisted_rows_stay_out_of_the_same_envelope() -> None:
+    surfaces = set(surfaces_from_envelope(_master_on_envelope()))
+    for row in _MASTER_UNLISTED_ROWS:
+        assert row["id"] not in surfaces, row
+
+
+def test_101_1_ac3_no_field_or_false_field_keeps_story_100_1_record() -> None:
+    """AC3: no existing envelope carries the field, and the master off (``false`` on every row) changes nothing."""
+    sample = _sample_envelope()
+    assert all("paused_by_master" not in row for row in sample["rows"])
+    master_off = {**sample, "rows": [{**row, "paused_by_master": False} for row in sample["rows"]]}
+    assert record_from_envelope(master_off) == record_from_envelope(sample)
+
+
+def test_101_1_ac4_journal_record_and_pr_line_agree(tmp_path: Path, monkeypatch) -> None:
+    _install_flag_tree(tmp_path, enabled=True)
+    master_on = _master_on_envelope()
+    calls: list[Path] = []
+
+    def _fake_ci_status(self, *, repo_root: Path, binary_path: str | None = None) -> StewardCiStatusOutcome:
+        calls.append(repo_root)
+        return StewardCiStatusOutcome(ok=True, envelope=master_on, argv=("pyforge", "steward", "ci", "status"))
+
+    monkeypatch.setattr("pyforge.marshal.dispatch_land.StewardCli.ci_status", _fake_ci_status)
+    forge = _BodyRecordingForge(_GREEN)
+    clock = _FakeClock()
+    result, envelope = _land_with_ci_pauses(tmp_path, forge, clock, monkeypatch)
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert len(calls) == 1
+    record = envelope.data[CI_PAUSES_AT_MERGE_FIELD]
+    assert record == {"state": "read", "surfaces": _MASTER_LISTED_IDS, "fetched_at": "2026-10-17T09:00:00Z"}
+    body = forge.bodies[-1]
+    assert body.count("CI paused at merge:") == 1
+    assert body.endswith("\nCI paused at merge: " + ", ".join(_MASTER_LISTED_IDS))
+
+
+def test_101_1_ac5_steward_master_on_fixture() -> None:
+    """AC5: steward 103.1's checked-in payload, read as a file; a missing file fails, never skips."""
+    assert _STEWARD_MASTER_ON_FIXTURE.is_file(), f"steward 103.1's fixture is missing: {_STEWARD_MASTER_ON_FIXTURE}"
+    payload = json.loads(_STEWARD_MASTER_ON_FIXTURE.read_text(encoding="utf-8"))
+    assert envelope_is_valid(payload) is True
+    rows = [row for row in payload["rows"] if isinstance(row, dict)]
+    surfaces = surfaces_from_envelope(payload)
+    assert surfaces == sorted(set(surfaces))
+    assert "master:PAUSE_ALL_CI" in surfaces
+    gated_paused = [row["id"] for row in rows if row.get("verdict") == "paused" and row.get("paused_by_master") is True]
+    assert gated_paused, "the fixture holds no gated paused row; the check below would be vacuous"
+    for row_id in gated_paused:
+        assert row_id in surfaces, row_id
+    ungated = [row for row in rows if row.get("paused_by_master") is False]
+    assert ungated, "the fixture holds no ungated row; the check below would be vacuous"
+    for row in ungated:
+        assert (row["id"] in surfaces) is _listed_by_story_100_1(row), row
+
+
+# Review nit 4: a row with no usable id names no surface; it is skipped, never a KeyError out of the landing.
+_ROWS_WITHOUT_AN_ID: tuple[dict[str, Any], ...] = (
+    {"declared_state": "paused-manually", "live_switch_value": None, "verdict": "paused-manually"},
+    {"declared_state": "live", "live_switch_value": None, "verdict": "paused", "paused_by_master": True},
+    {"id": "", "declared_state": "live", "live_switch_value": None, "verdict": "paused", "paused_by_master": True},
+    {"id": None, "declared_state": "paused", "live_switch_value": "true", "verdict": "paused"},
+    {"id": 7, "declared_state": "live", "live_switch_value": None, "verdict": "paused", "paused_by_master": True},
+)
+
+
+@pytest.mark.parametrize("row", [pytest.param(row, id=f"row-{n}") for n, row in enumerate(_ROWS_WITHOUT_AN_ID)])
+def test_101_1_a_row_without_a_string_id_is_skipped(row: dict[str, Any]) -> None:
+    assert row_counts_as_paused_at_merge(row) is False
+
+
+def test_101_1_rows_without_an_id_never_raise_out_of_the_record() -> None:
+    envelope = _master_on_envelope()
+    envelope["rows"] = [dict(row) for row in _ROWS_WITHOUT_AN_ID] + envelope["rows"]
+    assert surfaces_from_envelope(envelope) == _MASTER_LISTED_IDS
+    record = StewardCli(_StewardProcess(stdout=json.dumps(envelope))).ci_status_record(
+        repo_root=Path("/tmp"), binary_path="/bin/true"
+    )
+    assert record == {"state": "read", "surfaces": _MASTER_LISTED_IDS, "fetched_at": "2026-10-17T09:00:00Z"}
+
+
+# Review nit 3, AC6's second half as a standing test: marshal's own src/ names neither the master switch nor the
+# registry (steward is the one reader of the pause state). tests/unit -> tests -> pyforge-marshal.
+_MARSHAL_SRC = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal"
+
+
+def test_101_1_ac6_no_marshal_src_module_names_the_master_switch_or_the_registry() -> None:
+    modules = sorted(_MARSHAL_SRC.rglob("*.py"))
+    assert _MARSHAL_SRC / "core" / "landing_ci_pauses.py" in modules, "the scan found no marshal src; it is vacuous"
+    offenders = [
+        f"{path.relative_to(_MARSHAL_SRC).as_posix()}: {name}"
+        for path in modules
+        for name in ("PAUSE_ALL_CI", "ci-surfaces.yaml")
+        if name in path.read_text(encoding="utf-8")
+    ]
+    assert offenders == []
