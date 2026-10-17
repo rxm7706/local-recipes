@@ -239,10 +239,44 @@ row).
   surface changes. Two Verification items are not the builder's: `pr-preflight` is run by the orchestrator at
   landing, and with no commit yet `git diff origin/main...HEAD --stat` is read as `git diff --cached --stat
   origin/main`.
+- 2026-10-17 (review fixes, on `d9b740ffdf`): the independent review passed with five nits (Review Triage Log), and
+  all five are fixed in the same surface. One behaviour change, in `core/landing_ci_pauses.py`: a row whose `id` is
+  not a non-empty string is skipped by `row_counts_as_paused_at_merge`, so `surfaces_from_envelope` no longer raises
+  `KeyError` out of `ci_status_record` (documented "Never raises") and the landing. Steward's schema requires `id`,
+  so a valid steward never sends such a row; the I/O matrix gains no row, since the record for every valid envelope
+  is unchanged. The other four are tests. The review's observation outside this story, steward's
+  `_row_gated_by_master` reading retirement from `kind`, is recorded in steward's deferred-work ledger as
+  `DW-steward-101-1-2`, not the `DW-steward-101-1-1` the coordinator named: that id already belongs to steward's own
+  Story 101.1 row (the master switch had no row, promoted to steward 103.1), and the ledger keys each row
+  `DW-steward-<story>-<n>` by its source story, so the next free id under a "101.1" source is `-2`.
 
 ## Review Triage Log
 
-- No review has run yet.
+- **2026-10-17, independent review of `d9b740ffdf` (scratchpad `r101/review.md`): PASS, no blocker or should-fix,
+  five nits.** Each is fixed on the same branch (the review-fix pass), and each fix is pinned by a test and a
+  mutation (Verification run, review fixes, below).
+  1. *(nit)* The spec's rejected design (opt-ins left out by `verdict != "opt-in-off"`, the review's M9) passed every
+     test. **Fix:** an unlisted row `gated.opt-in-off-stuck` (declared `opt-in-off`, switch `"false"`, verdict
+     `stuck`, `paused_by_master` true); that mutation now fails 5 tests.
+  2. *(nit)* The opt-in clause's strip and lower-case was untested (the review's M8 survived). **Fix:** a listed row
+     `gated.opt-in-on-padded` (declared `opt-in-off`, switch `" TRUE "`, `paused_by_master` true); `== "true"` in the
+     opt-in clause now fails 4 tests.
+  3. *(nit)* AC6's second half (no marshal `src/` module names `PAUSE_ALL_CI` or `ci-surfaces.yaml`) had no standing
+     test, only the Verification `git grep`. **Fix:** `test_101_1_ac6_no_marshal_src_module_names_the_master_switch_or_the_registry`
+     scans `pyforge/marshal/**/*.py` (with a non-vacuity assert); `tests/meta/test_no_steward_internals_import.py`
+     stays unedited. Naming either string in a src module fails it.
+  4. *(nit)* `surfaces_from_envelope` indexed `row["id"]`, so an id-less row that counts as paused raised `KeyError`.
+     **Fix:** the rule skips a row whose `id` is not a non-empty `str`;
+     `test_101_1_a_row_without_a_string_id_is_skipped` (5 rows: no id, no id with the field, `""`, `None`, `7`) and
+     `test_101_1_rows_without_an_id_never_raise_out_of_the_record` (through `StewardCli.ci_status_record`). Story
+     100.1's `str(row.get("id", ""))` with no check fails 6 tests; a check without the non-empty test fails 2.
+  5. *(nit)* Steward 103.7's `test_steward_cli_partial_envelope_on_stdout_is_a_read_carrying_partial` called
+     `ci_status_record` with no `binary_path`, so outside `pixi run` it resolved no `pyforge` and failed. **Fix:**
+     its four calls pass `binary_path="/bin/true"`, as the neighbouring tests do. HEAD's version fails under a bare
+     python (exit 1); the fixed one passes (exit 0). Story 100.1's `test_steward_cli_unknown_paths` makes the same
+     binary-less calls, but it passes either way (each asserts `unknown`), and the Epic keeps 100.1's tests unedited,
+     so it is left as is.
+  - *Observation outside this story (steward):* recorded as `DW-steward-101-1-2` (Spec Change Log, above).
 
 ## Implementation Result
 
@@ -332,3 +366,39 @@ directly, never through a pipe.
   `core/landing_ci_pauses.py` and `tests/unit/test_landing_ci_pauses.py` under `pyforge-marshal`; nothing under
   `pyforge-steward`.
 - Not run here: `pr-preflight` (the orchestrator runs it at landing).
+
+## Verification run (2026-10-17, review fixes)
+
+On `d9b740ffdf` plus the review fixes (every path staged); every exit code read directly, never through a pipe.
+`test_landing_ci_pauses.py` now holds 54 tests (32 for Story 101.1: the row-rule test has 20 cases, plus 5 id-less
+rows, the record test and the AC6 scan).
+
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`: exit 0, 13202 passed, 20 skipped.
+- The two focused files (`test_landing_ci_pauses.py`, `tests/meta/test_no_steward_internals_import.py`) under
+  `pixi run --frozen -e pyforge-marshal python -m pytest -q`: exit 0, 464 passed; and under a bare python (the env's
+  interpreter with `PIXI_ENVIRONMENT_NAME`, `CONDA_PREFIX` and `PIXI_PROJECT_ROOT` unset and no `pyforge` on `PATH`,
+  `which pyforge` exit 1): exit 0, 464 passed.
+- `COVERAGE_GATES_STATIONS=marshal pixi run --frozen -e pyforge-marshal python scripts/coverage_gates_ci.py --suites
+  unit --paths-file <the staged paths>`: exit 0; `core/landing_ci_pauses.py` 91% against the 80% floor.
+- `pixi run --frozen -e pyforge-guild lint-types`: exit 0.
+- `deferred-work-check`, `story-status-check`, `chain-currency-sweep-check` (each `pixi run --frozen -e pyforge-guild`,
+  re-run after the memlog entries): each exit 0. `detectors-ci`: exit 0.
+- Mutations, on a scratch copy under a bare python, each restored and byte-compared (`filecmp`, identical every time):
+  - nit 1, the rejected design (`paused_by_master is True and verdict != "opt-in-off"`): 5 failed, among them
+    `test_101_1_ac2_unlisted_rows_stay_out_of_the_same_envelope` and the row case `gated.opt-in-off-stuck`;
+  - nit 2, the opt-in clause's switch read without strip or lower-case (`live_switch_value == "true"`): 4 failed,
+    among them `test_101_1_ac1_…` and the row case `gated.opt-in-on-padded`;
+  - nit 3, `PAUSE_ALL_CI` in a comment of `core/journal.py`, and `docs/governance/ci-surfaces.yaml` in a comment of
+    `core/landing_ci_pauses.py`: each failed `test_101_1_ac6_no_marshal_src_module_names_the_master_switch_or_the_registry`;
+  - nit 4, Story 100.1's `str(row.get("id", ""))` with no check: 6 failed (the five
+    `test_101_1_a_row_without_a_string_id_is_skipped` cases and `test_101_1_rows_without_an_id_never_raise_out_of_the_record`);
+    the check without its non-empty test: 2 failed (the `""` case and the record test);
+  - nit 5: HEAD's `test_steward_cli_partial_envelope_on_stdout_is_a_read_carrying_partial` under a bare python exit 1
+    (1 failed); the fixed test exit 0 (1 passed);
+  - AC7's five, re-run: 8, 7, 5, 5 and 6 failed, each failing its named test as before.
+- Spec surface: memlog entries on `spec-pyforge-marshal` and `spec-pyforge-core` (the two Specs `spec-surface-check`
+  named; steward's deferred-work ledger is not a governed path), `git add`, one scoped stamp each
+  (`--write-baseline --spec pyforge-marshal/spec-pyforge-marshal`, `--write-baseline --spec pyforge-marshal/spec-pyforge-core`,
+  each exit 0; the baseline moves only the two files' hashes and the two memlog hashes);
+  `pixi run --frozen -e pyforge-guild python scripts/spec_surface_reconcile.py`: exit 0; `spec-surface-check`, last:
+  exit 0.

@@ -33,9 +33,13 @@ def row_counts_as_paused_at_merge(row: dict[str, Any]) -> bool:
 
     Story 100.1's rule reads the row's declared state and its own switch. Story 101.1 adds
     steward's ``paused_by_master``: only the JSON boolean ``true`` counts, and an opt-in
-    whose own switch is off is still left out, since it would not have run anyway.
+    whose own switch is off is still left out, since it would not have run anyway. A row
+    whose ``id`` is not a non-empty string names no surface and is skipped, so a malformed
+    row can never raise out of ``surfaces_from_envelope`` and the landing.
     """
-    row_id = str(row.get("id", ""))
+    row_id = row.get("id")
+    if not isinstance(row_id, str) or not row_id:
+        return False
     if row_id.startswith("unregistered:") or row_id.startswith("unregistered-workflow:"):
         return False
     declared = str(row.get("declared_state", ""))
