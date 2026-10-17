@@ -2,7 +2,7 @@
 id: SPEC-pyforge-atlas
 spec: pyforge-atlas
 status: ready
-updated: "2026-10-15"
+updated: "2026-10-17"
 owner-dream: docs/dreams/pyforge-atlas.md
 covers-dreams:
   - docs/dreams/pyforge-atlas.md
@@ -352,16 +352,18 @@ One-chain rebase 2026-09-17. Each reminted CAP keeps provenance `← spec-<old> 
     anywhere; no `sqlite3` import exists under `src/pyforge/atlas` (the F1 grep gate); a sensor tick with unchanged
     heads skips and one with a moved head yields one run request and advances the cursor; an unreachable inventory
     repo keeps its last-good partition with a `stale` marker; `kedro-test` and `kedro-catalog-check` green.
-- **CAP-62 — the DAG export reaches Pages as a workflow artifact** ← spec-pyforge-atlas CAP-62 (ready 2026-10-14; amends CAP-41; works with CAP-16; reads `pyforge-steward:CAP-166`)
+- **CAP-62 — the DAG export reaches Pages as a workflow artifact** ← spec-pyforge-atlas CAP-62 (ready 2026-10-14; amends CAP-41; works with CAP-16; reads `pyforge-steward:CAP-166`; amended 2026-10-17 by Story 32.1: the stub comes from `tools/bootstrap.py`, a failed build fails `viz-build`, and the flag step runs in `-e pyforge-atlas`)
   - **intent:** `.github/workflows/kedro-viz-publish.yml` keeps its path filter (`pipelines/**`, `conf/base/catalog.yml`,
-    `conf/base/globals.yml`, `datasets/**`) and `workflow_dispatch`, materializes the stub `conf/local/credentials.yml`
-    as today, runs `viz-publish-stage`, and uploads the staged tree as the workflow artifact `kedro-viz-export` with
+    `conf/base/globals.yml`, `datasets/**`) and `workflow_dispatch`, writes the stub `conf/local/credentials.yml`
+    through `tools/bootstrap.py --credentials-only` (every `credentials:` key the catalog names, as `{}`; the
+    workflow keeps no key list of its own), runs `viz-publish-stage`, and uploads the staged tree as the workflow artifact `kedro-viz-export` with
     90-day retention instead of calling `steward deploy dashboard`. No step commits or pushes: the re-attach-to-`main`
     and git-identity steps go, and the job's `permissions.contents` drops to `read`. `viz-publish-stage` writes
     `manifest.json` beside `index.html` — `export_commit` (the 40-hex commit the DAG was read from: `GITHUB_SHA` when
     set, else `git rev-parse HEAD`), `export_date` (that commit's committer date, ISO 8601 UTC) and `kedro_viz_version`
     (equal to the `version` field of `build/api/deploy-viz-metadata`); `tools/normalize_viz_build.py` still strips the
-    checkout path and the wall-clock timestamp, so two builds of one DAG still agree. The committed
+    checkout path and the wall-clock timestamp, so two builds of one DAG still agree. `viz-build` fails when `kedro
+    viz build` leaves no build (kedro-viz exits 0 on a failed build), so a failed build never reaches staging. The committed
     `docs/dashboard/kedro-viz/` tree leaves git in the same story (`git rm -r --cached`, a `.gitignore` entry for the
     staging path), so no export bytes sit on `main`. The job carries the CI-pause fragment reading
     `vars.PAUSE_KEDRO_VIZ_PUBLISH` in the shape steward Story 99.2 rendered on every other job; the registry row
@@ -370,8 +372,8 @@ One-chain rebase 2026-09-17. Each reminted CAP keeps provenance `← spec-<old> 
     hand-disabled workflow is re-enabled on GitHub. The consumer is steward Story 102.4 on the renamed `pages.yml`
     (steward 102.2): it downloads the newest successful `kedro-viz-export` into `/dashboard/kedro-viz/`, skips the mount
     and hides the tile when none exists, and shows the manifest's `export_commit` and `export_date` on that page, which
-    keeps its URL. Flag `pyforge.atlas.viz_export_artifact`; off, `viz-publish-stage` stages as today and writes no
-    manifest, and the workflow's upload step is skipped. (Operator ruling 2026-10-13; the placement rule on the herald
+    keeps its URL. Flag `pyforge.atlas.viz_export_artifact`, read by a step that runs in `-e pyforge-atlas`; off,
+    `viz-publish-stage` stages as today and writes no manifest, and the workflow's upload step is skipped. (Operator ruling 2026-10-13; the placement rule on the herald
     Dream; decisions in `.memlog.md`, 2026-10-14.)
   - **success:** on the story's tree `git ls-files docs/dashboard/kedro-viz | wc -l` prints 0 and `git check-ignore
     docs/dashboard/kedro-viz/index.html` exits 0. `pixi run -e pyforge-atlas viz-publish-stage` with the flag on leaves
@@ -380,8 +382,12 @@ One-chain rebase 2026-09-17. Each reminted CAP keeps provenance `← spec-<old> 
     `version`; with the flag off no `manifest.json` is written and the staged tree is byte-identical to today's. A
     workflow test reads `kedro-viz-publish.yml` as YAML and asserts one `actions/upload-artifact` step with `name:
     kedro-viz-export`, `retention-days: 90` and the staged path; no step naming `steward deploy dashboard`, `git checkout
-    -B main` or `git config user.name`; `permissions.contents` equal to `read`; the path filter, `workflow_dispatch` and
-    the stub-credentials step unchanged; and the job's `if:` carrying `PAUSE_KEDRO_VIZ_PUBLISH`. The registry row
+    -B main` or `git config user.name`; `permissions.contents` equal to `read`; the path filter and `workflow_dispatch`
+    unchanged; the stub-credentials step in its place, writing the stub through `tools/bootstrap.py
+    --credentials-only` with no key list of its own, and `tools/bootstrap.py` naming every `credentials:` key the
+    catalog files under `conf/base` name; every `pixi run` step that runs an atlas tool naming `-e pyforge-atlas`;
+    and the job's `if:` carrying `PAUSE_KEDRO_VIZ_PUBLISH`. `viz-build` exits 1 when `build/api/main`,
+    `build/index.html` or `build/api/deploy-viz-metadata` is missing after `kedro viz build`. The registry row
     `kedro-viz-publish` names `switch: PAUSE_KEDRO_VIZ_PUBLISH`. `docs/dashboard/README.md` names the artifact and no
     longer names `steward deploy dashboard`. `kedro-test` and `kedro-catalog-check` green; the flag test runs the key in
     both states with `pyforge.testing_kit.flags.flag_states`.
@@ -904,7 +910,10 @@ Two questions the mint of 2026-10-14 leaves to the operator; both sit on `.memlo
   carries `PAUSE_KEDRO_VIZ_PUBLISH`? As landed on 2026-10-14, steward's `run_resume` (`ci.py`) accepts only a row whose
   state is `paused` and which names one switch, and this row reads `paused-manually` with `switch: null` — so the move
   needs a steward story that lets `ci resume` accept a re-enabled hand-disabled workflow, or an operator hand edit of
-  the row with `gh workflow enable`. Named as Story 30.1's operator gate until decided.
+  the row with `gh workflow enable`. Named as Story 30.1's operator gate until decided. *(Answered 2026-10-16: the
+  operator's "unpause everything" (#2247) re-enabled the workflow with `gh workflow enable` and set the row `live`
+  by hand; the producer's run `39019867740` uploaded `kedro-viz-export` after atlas Story 32.1, and Pages run
+  `39020410506` mounted it.)*
 - **CAP-63:** does the Vizro producer run as a second job on `kedro-viz-publish.yml` (one atlas producer workflow, one
   registry row) or as its own workflow with its own row? One owner per workflow holds either way. Story 30.2 is written
   for the second job and names the alternative.
