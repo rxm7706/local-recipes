@@ -1940,6 +1940,35 @@ Drift — orphaned between stations.
   and the scheduler loop is not restructured. The `pixi.toml` edit changes no dependency, version or lock, and the
   preflight's lane graph stays as it is. Orchestrating session's brief, 2026-10-16; revised the same day by its review
   ruling (refuse, never pull in). Owner `spec-pyforge-steward`. → Epic 107 / Story 107.1, specced 2026-10-16.
+- **2026-10-17 (reconcile's env matrix never regenerates, and a retired row reads paused by the master) — Found: two
+  steward reports say less than what happened, one in `estate reconcile` and one in `ci status`.** Two independent
+  reviews of 2026-10-17 found them, each outside its own story. (1) `estate reconcile`'s `env-matrix` generator passes
+  the Dream path as a positional argument (`estate_reconcile.py:113`-`:121`), but `scripts/pixi_env_matrix.py` takes
+  it only as `--dream` (`:156`). Argparse refuses the call with exit 2 ("unrecognized arguments"), and nothing is
+  written. `run_reconcile` acts on a generator's exit only for `generate-bmad-suite` (`:370`-`:391`; the scribe
+  branch is a `pass`), and `GATING_CHECKS` has no matrix check. So the run reads green, and the stale matrix turns up
+  later as `bmad-drift`'s `pixi-env-matrix-stale` warning. Story 103.3's lock change hit it, and its builder
+  regenerated the matrix by hand (`DW-steward-103-3-2`). Measured at `ab38be642f` in a scratch copy with the lock
+  moved: the reconcile's argv exits 2, and the matrix check still exits 1 after it; `--update --dream <path>` exits
+  0, and the check then exits 0. The script's own usage docstring shows the same wrong form. (2) `_row_gated_by_master`
+  (`ci.py:500`-`:503`) leaves out rows whose `kind` is `value` or `retired`. The registry records retirement in
+  `state`, though, and its schema has no `retired` kind. So a retired row whose workflow file still exists and reads
+  the master carries `paused_by_master: true`, against Story 103.1's contract (`DW-steward-101-1-2`). Probed at
+  `ab38be642f` with retired `workflow`, `ci-job` and `ci-step` rows and the master `true`: each reads `drift` with
+  `paused_by_master: true`. It is latent on the live registry: all six retired rows' workflow files are deleted, and
+  marshal Story 101.1 skips `retired` before it reads the field. **What it looks like when fixed:** the `env-matrix`
+  generator passes `--update --dream docs/dreams/pyforge-unifying-strategy.md`. Every generator's journal row carries
+  its label, and a generator that exits non-zero reds the run with exit 1, naming its label, exit code and command,
+  after the other generators and the checks have run. That is what Story 100.3's I/O matrix asked of the scribe
+  catalog generator, which the code never did. `GATING_CHECKS` gains `pixi_env_matrix.py --check`. A unit test runs
+  the generator's argv against a scratch copy of the script, and the old argv against it exits 2. A retired row is
+  never gated by the master, because its `state` is read through `_is_retired`. A test holds a retired row whose
+  workflow reads the master while the master is `true`: `paused_by_master` `false`, verdict `drift` ("retired but …
+  still exists"). **Constraints:** fixes under CAP-167 and CAP-166, with no CAP, no flag and no `SPEC.md` change.
+  `generate-bmad-suite`'s early stop, the existing checks' order, the verdicts and the `ci status` envelope do not
+  change, and no consumer of `ci status --json` changes. `pixi_env_matrix.py` changes only in its usage docstring. No
+  test runs a bare `estate reconcile`, which rewrites the latest journal (`DW-steward-103-3-1`). Orchestrating
+  session's brief, 2026-10-17. Owner `spec-pyforge-steward`. → Epic 108 / Story 108.1, specced 2026-10-17.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

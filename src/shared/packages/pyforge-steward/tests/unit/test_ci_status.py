@@ -1350,3 +1350,74 @@ def test_main_partial_read_prints_the_envelope_on_stdout_and_exits_one(
     out, err = capsys.readouterr()
     assert out == ""
     assert err.startswith("id\tverdict")
+
+
+_MASTER_GATE_IF = "${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true') }}"
+
+
+def _retired_master_tree(root: Path, kind: str) -> Path:
+    """A retired row and a live control row of one kind, each workflow present and its job reading the master."""
+    surfaces: list[dict] = []
+    wf_dir = root / ".github" / "workflows"
+    wf_dir.mkdir(parents=True, exist_ok=True)
+    for state in ("retired", "live"):
+        row: dict[str, Any] = {
+            "id": f"{state}.{kind}",
+            "workflow": f".github/workflows/{state}-{kind}.yml",
+            "kind": kind,
+            "switch": None,
+            "switch_class": "pause",
+            "state": state,
+            "owner": "pyforge-steward",
+        }
+        if kind in ("ci-job", "ci-step"):
+            row["job"] = "only"
+        if kind == "ci-step":
+            row["step"] = "the-step"
+        surfaces.append(row)
+        (wf_dir / f"{state}-{kind}.yml").write_text(
+            f"on: push\njobs:\n  only:\n    if: {_MASTER_GATE_IF}\n    runs-on: ubuntu-latest\n"
+            "    steps:\n      - name: the-step\n        run: echo ok\n",
+            encoding="utf-8",
+        )
+    reg = {
+        "version": 1,
+        "conventions": {"pause_prefix": "PAUSE_", "enable_prefix": "ENABLE_", "master": "PAUSE_ALL_CI"},
+        "surfaces": surfaces,
+    }
+    reg_path = root / "docs" / "governance" / "ci-surfaces.yaml"
+    reg_path.parent.mkdir(parents=True, exist_ok=True)
+    reg_path.write_text(yaml.safe_dump(reg), encoding="utf-8")
+    return reg_path
+
+
+@pytest.mark.parametrize("kind", ["workflow", "ci-job", "ci-step"])
+def test_108_1_ac7_a_retired_row_that_reads_the_master_is_never_paused_by_it(tmp_path: Path, kind: str) -> None:
+    """Story 103.1's contract: a retired row carries ``paused_by_master: false``, read from ``state`` (Story 108.1)."""
+    reg_path = _retired_master_tree(tmp_path, kind)
+    fixed_now = datetime(2026, 10, 17, 12, 0, 0, tzinfo=timezone.utc)
+    variables = [{"name": "PAUSE_ALL_CI", "value": "true", "updatedAt": _MASTER_UPDATED}]
+    deps = CiDeps(
+        root=tmp_path,
+        runner=_minimal_gh_runner(tmp_path, variables, fixed_now),
+        registry_path=reg_path,
+        flag_on=lambda: True,
+        now=lambda: fixed_now,
+    )
+    result = run_status(deps, json_out=True)
+    assert result.ok is True
+    by_id = {r["id"]: r for r in result.details["payload"]["rows"]}
+
+    retired = by_id[f"retired.{kind}"]
+    assert retired["paused_by_master"] is False
+    assert retired["verdict"] == "drift"
+    assert (
+        retired["detail"]
+        == f"registry row retired.{kind} is retired but .github/workflows/retired-{kind}.yml still exists"
+    )
+
+    # The control: the same row declared live is gated, so the fixture does read the master.
+    control = by_id[f"live.{kind}"]
+    assert control["paused_by_master"] is True
+    assert control["verdict"] == "paused"
+    assert control["detail"] == _MASTER_PAUSE_DETAIL

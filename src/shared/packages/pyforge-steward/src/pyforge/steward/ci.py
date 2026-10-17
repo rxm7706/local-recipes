@@ -498,8 +498,13 @@ def _var_use_gates_master(use: Any, master: str) -> bool:
 
 
 def _row_gated_by_master(row: dict[str, Any], uses: list[Any], deps: CiDeps, master: str) -> bool:
+    """Whether the master switch gates the row: its jobs (or its step) read ``vars.<master> != 'true'`` in ``if:``.
+
+    A ``value`` row, a retired row and a ``paused-manually`` row are never gated (Story 103.1). Retirement is the
+    registry's ``state``, never its ``kind`` (Story 108.1): no schema ``kind`` is ``retired``.
+    """
     kind = str(row.get("kind") or "workflow")
-    if kind in ("value", "retired") or str(row.get("state") or "") == "paused-manually":
+    if kind == "value" or _is_retired(row) or str(row.get("state") or "") == "paused-manually":
         return False
     wf = str(row.get("workflow") or "")
     if not wf:
