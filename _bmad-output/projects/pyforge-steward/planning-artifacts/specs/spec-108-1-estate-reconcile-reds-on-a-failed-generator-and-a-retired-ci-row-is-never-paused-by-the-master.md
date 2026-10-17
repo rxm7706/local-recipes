@@ -2,7 +2,7 @@
 title: '108.1: `estate reconcile` reds on a failed generator, and a retired CI row is never paused by the master'
 type: 'fix'
 created: '2026-10-17'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'ab38be642f0f3ea30e4c7f76c318e7809beef242'
 flag-exempt: detector-or-gate   # a fix needs no flag (spec-feature-flag-governance Q1); both changes sit behind their duties' existing flags (pyforge.steward.estate_refresh, pyforge.steward.ci_pause_control), and each corrects a verdict a gate or a detector reads (reconcile's exit, ci status's paused_by_master), so a flag-OFF path would keep the false green reachable (Q2's gate exemption), as 105.1, 106.1 and 107.1 recorded
 review_loop_iteration: 1
@@ -346,6 +346,9 @@ paused by the master.
   Intent, Approach, Rejected, AC8, AC10 (new), residual risk and I/O matrix follow, and so do the PRD's 2026-10-17
   FR-40 sentence (corrected in place, no second section), the spine's AD-1 note, Epic 108 and Story 108.1, the
   DW-steward-103-3-2 closure and the Dream entry. Status stays `in-review`; `review_loop_iteration` 1.
+
+- 2026-10-17 (re-review of `9faf801251`): RESOLVED; every finding fixed, and all eight generators verified in their envs in a scratch clone. Nit 1 (the PRD `updated:` comment's "env-matrix consequence") fixed by the orchestrator; nit 2 (the module-resolution test passes vacuously on the fixed code) left as is, since the exact-argv test is the pin. Main (doctor 49.1) merged in at `04980decc7`.
+- 2026-10-17 (landing): status `done`; the ledger key and `epic-108` `done`.
 
 ## Review Triage Log
 

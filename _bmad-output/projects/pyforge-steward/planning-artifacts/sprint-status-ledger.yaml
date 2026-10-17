@@ -50,7 +50,7 @@ development_status:
   105-1-the-preflight-never-runs-two-docs-site-lanes-at-once: done
   106-1-the-two-mypy-lanes-keep-separate-caches: done
   107-1-a-stranded-preflight-lane-is-refused-and-pr-preflight-lanes-resolves-under-pixi: done
-  108-1-estate-reconcile-reds-on-a-failed-generator-and-a-retired-ci-row-is-never-paused-by-the-master: backlog
+  108-1-estate-reconcile-reds-on-a-failed-generator-and-a-retired-ci-row-is-never-paused-by-the-master: done
   11-1-langflow-joins-as-a-pluggable-app: done
   11-2-db-gpt-joins-via-its-configured-integration-pattern: done
   11-3-async-work-never-blocks-django: done
@@ -422,7 +422,7 @@ development_status:
   epic-106-retrospective: optional
   epic-107: done
   epic-107-retrospective: optional
-  epic-108: backlog
+  epic-108: done
   epic-108-retrospective: optional
   epic-11: done
   epic-11-retrospective: optional
