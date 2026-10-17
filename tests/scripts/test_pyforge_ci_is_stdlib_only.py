@@ -655,11 +655,12 @@ def test_every_module_a_library_task_file_guards_imports_where_the_task_runs(tas
 
 
 def detectors_run_by_a_library_task(found: list[dict[str, Any]]) -> list[str]:
-    """``scripts/detectors.py`` maps a detector to the first task whose ``cmd`` contains its file name, and
-    ``test_flag_gate_check.py`` contains ``flag_gate_check.py``; so a library task that listed its files inline in
-    ``cmd`` would become those detectors' task. One problem per detector the registry maps to a library task."""
+    """``scripts/detectors.py`` maps a detector to the first task whose ``cmd`` runs the detector's path (doctor Story
+    49.1). Until then it took the first whose ``cmd`` contained the file name, so a library task that listed
+    ``test_flag_gate_check.py`` inline became ``flag_gate_check.py``'s task. A library task runs tests; one that also
+    ran a detector would become that detector's task. One problem per detector the registry maps to a library task."""
     return [
-        f"{row['path']} maps to library task {row['task']}; list that task's files in an argument file (`@path`)"
+        f"{row['path']} maps to library task {row['task']}; run the detector from its own task, not a library task"
         for row in found
         if row.get("task") in LIBRARY_TASKS
     ]
@@ -679,15 +680,21 @@ def test_no_detector_maps_to_a_library_task() -> None:
     assert detectors_run_by_a_library_task(found) == []
 
 
-def test_a_library_task_listing_a_detectors_test_inline_is_named(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_a_library_task_is_named_when_it_runs_a_detector_not_when_it_lists_its_test(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     detectors = _detectors_module()
     tasks = dict(detectors._pixi_tasks())
     inline = {"scripts-lib-test": "python -m pytest tests/scripts/test_flag_gate_check.py -q"}
     monkeypatch.setattr(detectors, "_pixi_tasks", lambda: {**inline, **tasks, **inline})
     found, _gaps = detectors.discover()
+    assert detectors_run_by_a_library_task(found) == []
+    runs = {"scripts-lib-test": f"{inline['scripts-lib-test']} && python scripts/flag_gate_check.py"}
+    monkeypatch.setattr(detectors, "_pixi_tasks", lambda: {**runs, **tasks, **runs})
+    found, _gaps = detectors.discover()
     assert detectors_run_by_a_library_task(found) == [
-        "scripts/flag_gate_check.py maps to library task scripts-lib-test; list that task's files in an argument "
-        "file (`@path`)"
+        "scripts/flag_gate_check.py maps to library task scripts-lib-test; run the detector from its own task, not a "
+        "library task"
     ]
 
 
