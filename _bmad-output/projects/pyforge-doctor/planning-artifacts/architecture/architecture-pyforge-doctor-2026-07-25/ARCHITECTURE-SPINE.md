@@ -746,9 +746,10 @@ CAP-90's `unnamed-top-level` class reads the git index through `cli_bridge.run_g
 *The `prd→arch` cascade for the PRD's 2026-10-17 re-stamp: Story 49.1, the detector registry's task match.*
 
 Checked against every AD. It lands as written:
-- **49.1** changes `scripts/detectors.py`'s `discover()` only: a task is a detector's when its `cmd` runs the detector's
-  repo-relative path. The registry sits at the repo root, outside the package, and reads tracked files with `ast` and
-  `tomllib`; it imports nothing new and spawns no new subprocess, so AD-5 and AD-12 do not move.
+- **49.1** changes only `scripts/detectors.py`'s task match (`discover()` and a new `_runs_detector` helper): a task
+  is a detector's when its `cmd` runs the detector's repo-relative path. The registry sits at the repo root, outside
+  the package, and reads tracked files with `ast` and `tomllib`; it takes no new dependency (stdlib `re` only) and
+  spawns no new subprocess, so AD-5 and AD-12 do not move.
 - **AD-2 and AD-3.** No exit code, `Finding` shape or `Source` member changes; the registry's own exit codes
   (0 / 1 / 2) are unchanged, and the Doctor-source half (`_DOCTOR_SOURCE_TASKS`, `_run_doctor_sources`) is untouched.
 

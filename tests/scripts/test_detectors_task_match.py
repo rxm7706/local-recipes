@@ -137,6 +137,11 @@ def test_a_detector_whose_own_task_is_gone_reads_as_a_registry_gap(monkeypatch: 
         "python scripts/flag_gate_check.py|tee out.txt",
         "scripts/flag_gate_check.py",
         "python\tscripts/flag_gate_check.py",
+        "python scripts/flag_gate_check.py>out.txt",
+        "python scripts/flag_gate_check.py<in.txt",
+        "(scripts/flag_gate_check.py)",
+        "echo `python scripts/flag_gate_check.py`",
+        "`scripts/flag_gate_check.py`",
     ],
 )
 def test_a_command_running_the_path_runs_the_detector(cmd: str) -> None:
@@ -157,6 +162,7 @@ def test_a_command_running_the_path_runs_the_detector(cmd: str) -> None:
         "python scripts/flag_gate_check.py:main",
         "python -m pytest --deselect=scripts/flag_gate_check.py",
         "python scripts/other_check.py",
+        "python scripts/other_check.py>scripts/flag_gate_check.py",
         "",
     ],
 )

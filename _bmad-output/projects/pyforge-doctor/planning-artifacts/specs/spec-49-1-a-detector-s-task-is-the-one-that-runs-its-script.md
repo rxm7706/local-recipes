@@ -3,7 +3,7 @@ title: "49.1: A detector's task is the one that runs its script"
 type: 'fix'
 created: '2026-10-17'
 status: 'in-review'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
@@ -63,9 +63,10 @@ and the review filed `DW-doctor-103-3-1` with Doctor, which owns the registry's 
 **Approach:**
 1. A task runs a detector when its `cmd` holds the detector's repo-relative path (`rel`, already computed in
    `discover()`), optionally prefixed `./`, as one shell word. The character before the path is the start of the
-   `cmd`, whitespace or a quote; the character after it is the end of the `cmd`, whitespace, a quote, or one of
-   `;`, `&`, `|`, `)`. A new helper, `_runs_detector(cmd, rel)`, holds the rule. `discover()` keeps its order (first
-   match in `_pixi_tasks()` order) and its `--json` skip.
+   `cmd`, whitespace, a quote, a backtick or `(`; the character after it is the end of the `cmd`, whitespace, a quote,
+   a backtick, or one of `;`, `&`, `|`, `)`, `<`, `>` (the backtick, `(`, `<` and `>` added at review). A new
+   helper, `_runs_detector(cmd, rel)`, holds the rule. `discover()` keeps its order (first match in `_pixi_tasks()`
+   order) and its `--json` skip.
 2. The path, not the bare file name. The row's suggested `(?<![\w])<name>` would stop `test_flag_gate_check.py`, but
    would still take `tests/scripts/flag_gate_check.py` or `vendor/flag_gate_check.py`, which are other files. The
    registry runs `ROOT / rel`, so the task that runs the detector names `rel`.
@@ -99,7 +100,8 @@ and the review filed `DW-doctor-103-3-1` with Doctor, which owns the registry's 
 
 - **AC1 — The path, as one word.** `discover()` gives a detector the first task, in `_pixi_tasks()` order, whose
   `cmd` contains no `--json` and holds `rel` (or `./` + `rel`) as one shell word: preceded by the start of the `cmd`,
-  whitespace, `"` or `'`, and followed by the end of the `cmd`, whitespace, `"`, `'`, `;`, `&`, `|` or `)`.
+  whitespace, `"`, `'`, `` ` `` or `(`, and followed by the end of the `cmd`, whitespace, `"`, `'`, `` ` ``, `;`, `&`,
+  `|`, `)`, `<` or `>`.
 - **AC2 — The capture is gone.** With a task placed first whose `cmd` lists the files of
   `tests/scripts/scripts-lib-test.txt` inline, no detector maps to it, every detector keeps its live task, and the
   inline `cmd` contains the file name of `flag_gate_check.py` and of the other detectors the old matcher took. With a
@@ -111,11 +113,14 @@ and the review filed `DW-doctor-103-3-1` with Doctor, which owns the registry's 
 - **AC4 — Boundaries.** For `rel = scripts/flag_gate_check.py`, `_runs_detector` is true for
   `python scripts/flag_gate_check.py`, `python ./scripts/flag_gate_check.py --check`,
   `python "scripts/flag_gate_check.py"`, `python 'scripts/flag_gate_check.py'`,
-  `python scripts/flag_gate_check.py && echo ok`, `(python scripts/flag_gate_check.py)` and
-  `python scripts/flag_gate_check.py;echo ok`; it is false for `pytest tests/scripts/test_flag_gate_check.py`,
-  `python tests/scripts/flag_gate_check.py`, `python vendor/scripts/flag_gate_check.py`,
-  `python xscripts/flag_gate_check.py`, `python scripts/flag_gate_check.pyc`, `python scripts/flag_gate_check.py.bak`
-  and `python scripts/flag_gate_check_v2.py`.
+  `python scripts/flag_gate_check.py && echo ok`, `(python scripts/flag_gate_check.py)`,
+  `python scripts/flag_gate_check.py;echo ok`, `python scripts/flag_gate_check.py>out.txt`,
+  `python scripts/flag_gate_check.py<in.txt`, `(scripts/flag_gate_check.py)`,
+  ``echo `python scripts/flag_gate_check.py` `` and `` `scripts/flag_gate_check.py` ``; it is false for
+  `pytest tests/scripts/test_flag_gate_check.py`, `python tests/scripts/flag_gate_check.py`,
+  `python vendor/scripts/flag_gate_check.py`, `python xscripts/flag_gate_check.py`,
+  `python scripts/flag_gate_check.pyc`, `python scripts/flag_gate_check.py.bak`, `python scripts/flag_gate_check_v2.py`
+  and `python scripts/other_check.py>scripts/flag_gate_check.py` (a redirect target is not run).
 - **AC5 — The `--json` skip stays.** With a task placed first whose `cmd` is `python scripts/flag_gate_check.py --json`,
   `flag_gate_check` maps to `flag-gate-check`.
 - **AC6 — The whole scan.** On a fixture tree (its own `pixi.toml`, one `scripts/*_check.py` and one
@@ -140,9 +145,15 @@ and the review filed `DW-doctor-103-3-1` with Doctor, which owns the registry's 
   - the right boundary dropped;
   - the bare file name matched with both boundaries (the row's first option);
   - the `--json` skip dropped;
-  - the optional `./` prefix dropped.
-- **AC11 — The row closes.** `DW-doctor-103-3-1` reads `status: closed`, with a `closed:` line citing this story, the
-  tests and the evidence.
+  - the optional `./` prefix dropped;
+  - `<` and `>` removed from the right set;
+  - `(` removed from the left set;
+  - the backtick removed from the left set;
+  - the backtick removed from the right set.
+- **AC11 — The rows close.** `DW-doctor-103-3-1` reads `status: closed`, with a `closed:` line citing this story, the
+  tests and the evidence. Added at review: `DW-doctor-47-1-1` reads `status: closed`, citing steward 103.3's merge
+  `56d0a1e050` and the `spec-kit` feature split, and `DW-steward-49-1-1` is open in steward's ledger for the stale
+  `pixi.toml` comment.
 
 ## Boundaries & Constraints
 
@@ -188,7 +199,8 @@ and the review filed `DW-doctor-103-3-1` with Doctor, which owns the registry's 
 - Ledger key: `49-1-a-detector-s-task-is-the-one-that-runs-its-script`.
 - Ledger status at mint: `backlog`.
 - Deps: none.
-- Closes: `DW-doctor-103-3-1`.
+- Closes: `DW-doctor-103-3-1`; at review, `DW-doctor-47-1-1` (its close condition, steward 103.3's landing, was met).
+- Opens, at review: `DW-steward-49-1-1` (owner steward), the `pixi.toml` comment this story made stale.
 - Surface: `marshal-policy.toml` `[epic_surfaces]."49"`, added with this mint. `scripts/detectors.py` stays allowlisted
   "governed by none" (`scripts/spec_surface_allowlist.txt:54`); whether `spec-pyforge-doctor` should claim it is named
   below for the coordinator.
@@ -211,7 +223,29 @@ and the review filed `DW-doctor-103-3-1` with Doctor, which owns the registry's 
   regenerated for Story 49.1.
 - `pixi run --frozen -e pyforge-guild chain-currency-sweep-check` — expected: exit 0 after the PRD and spine
   re-stamps.
-- The six mutations of AC10, on a scratch copy — expected: each fails a named test. Restore each.
+- The ten mutations of AC10, on a scratch copy — expected: each fails a named test. Restore each.
+
+**Verification run, 2026-10-17** (the review-fix tree, staged on `7aace40691`; every exit code read directly, none
+through a pipe):
+
+| Command | Exit | Counts |
+|---|---|---|
+| `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` | 0 | 3785 passed, 1 skipped (169.52 s), then 4 passed |
+| `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test` | 0 | 810 passed, 64 skipped |
+| `pixi run --frozen -e pyforge-guild scripts-lib-test` | 0 | 976 passed, 3 skipped |
+| `pixi run --frozen -e pyforge-ci python -m pytest tests/scripts/test_detectors_task_match.py tests/scripts/test_pyforge_ci_is_stdlib_only.py -q` | 0 | 70 passed, 2 skipped |
+| the same two files in `pyforge-guild` | 0 | 70 passed, 2 skipped |
+| `pixi run --frozen -e pyforge-guild python scripts/docs_detectors.py --check` | 0 | `[reference/detectors.md] current` |
+| `pixi run --frozen -e pyforge-guild detectors-ci` | 0 | 49 of 49 `pass`, no registry finding |
+| `pixi run --frozen -e pyforge-guild tea-playwright-check` | 0 | 8 stations OK; `pyforge-doctor: 158 story ids covered` |
+| `pixi run --frozen -e pyforge-guild chain-currency-sweep-check` | 0 | no finding |
+| `pixi run --frozen -e pyforge-guild deferred-work-check` | 0 | ok |
+| `pixi run --frozen -e pyforge-guild spec-surface-check` | 0 | no drift; no Spec named, so no stamp |
+
+The other planning detectors (chain-completeness, dream-chain, dreams-hygiene, ledger-regression, story-status,
+flag-gate, llms-full, ci-surface-gates) each exit 0. AC10's ten mutations, on a scratch copy of the staged tree, are in
+the Spec Change Log. After the review records were written, `detectors-ci` (49 of 49 `pass`) and the planning
+detectors were re-run on the final tree, each exit 0, and `spec-surface-check` ran last.
 
 ## Named, not fixed here
 
@@ -219,8 +253,11 @@ and the review filed `DW-doctor-103-3-1` with Doctor, which owns the registry's 
   comment reads "scripts/detectors.py maps a detector to the first task whose `cmd` contains its file name, and
   `test_flag_gate_check.py` contains `flag_gate_check.py`". After this story that sentence is history. The argument
   file stays useful (`test_pyforge_ci_is_stdlib_only.py` reads it), so only the comment's reason is stale. `pixi.toml`
-  is not edited here: a `pixi.toml` change fires every station suite and the `environment.yaml` rule (Story 47.1's
-  precedent). The coordinator decides whether the comment moves with this story or later.
+  is not edited here: eight Specs govern it, so a comment edit needs eight memlog reconciles and scoped stamps, and it
+  fires every station suite and the `environment.yaml` rule (Story 47.1's precedent; the independent review's
+  ruling, finding 3). Tracked as `DW-steward-49-1-1` in
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md` (owner steward, low, open): the
+  next story that touches `pixi.toml` rewords the comment.
 - **`scripts/detectors.py` is governed by no Spec surface.** The allowlist line says "§6 re-home decides its home".
   Doctor owns its task mapping under FR-15, and `spec-pyforge-doctor`'s surface already claims four `scripts/`
   files. Claiming `scripts/detectors.py` there is a `bmad-spec` re-derive, a surface baseline and an allowlist edit. It
@@ -261,3 +298,46 @@ and the review filed `DW-doctor-103-3-1` with Doctor, which owns the registry's 
     `docs/reference/detectors.md`, and it hid the registry's gap finding.
   - `spec-surface-check` exits 0 with no drift: `scripts/detectors.py` and `tests/**` are allowlisted, and the planning
     files sit under `_bmad-output/**`, so no Spec is named and no stamp is taken.
+- 2026-10-17, after the independent review (FAIL: three should-fix, all chain and records gaps; three nits; the code
+  judged correct). See *Review (2026-10-17, independent)*. Fixed on the same branch, not amended:
+  - `scripts/detectors.py:153`: `_runs_detector` also accepts a backtick or `(` before the path and a backtick, `<` or
+    `>` after it. `tests/scripts/test_detectors_task_match.py` gains five matching shapes (`>out.txt`, `<in.txt`, a
+    leading `(`, a backticked command, a backticked path) and one non-matching shape (a redirect target), 36 tests in
+    all. AC1, AC4 and Approach item 1 say the new sets.
+  - AC10, ten mutations on a scratch copy of the staged tree (`git write-tree`), the new test file and steward's run
+    together: the substring matcher restored, 6 failed; the left boundary dropped, 7; the right boundary dropped, 3; the
+    row's bare-name option, 10; the `--json` skip dropped, 1; the `./` prefix dropped, 2; `<` and `>` removed from the
+    right set, 2; `(` removed from the left set, 1; the backtick removed from the left set, 1; the backtick removed
+    from the right set, 2. The restored copy: 69 passed, 3 skipped.
+  - `DW-doctor-47-1-1` closed: steward 103.3 landed as `56d0a1e050`, `spec-kit` is its own feature that `pyforge-ci`
+    does not compose, and `test_no_runtime_library_is_importable_in_pyforge_ci` passes there.
+  - `DW-steward-49-1-1` opened in steward's ledger for the stale `pixi.toml:1369`-`:1372` comment; *Named, not fixed
+    here* points at it. `[epic_surfaces]."49"` names steward's ledger.
+  - The Story 49.1 epics text lists the ten mutations and the new boundary sets, and its Surface line names both
+    ledgers; `test-architecture.md` is regenerated after that edit. The spine's 2026-10-17 section says "no new
+    dependency (stdlib `re` only)".
+  - The dated Verification run above. `review_loop_iteration` is 1; the status stays `in-review`.
+
+## Review (2026-10-17, independent)
+
+**Iteration 1, review of `7aace40691`: FAIL.** The code is correct, and every AC is met with a test that reds it; the
+reviewer's nine mutations (four of the builder's re-run, five new) were each killed. The failures were in chain records.
+Each finding, and what changed:
+
+1. **(should-fix) No verification run in the change log.** The Verification section's own commands had no recorded
+   result. **Changed:** a dated Verification run, with each command's exit code and counts.
+2. **(should-fix) `DW-doctor-47-1-1` still read `open`.** Its condition (steward 103.3 lands) was met at the base, and
+   103.3's reconcile entry promised the closure. **Changed:** closed, citing `56d0a1e050`, the `spec-kit` feature split
+   and the passing runtime-library test.
+3. **(should-fix) The stale `pixi.toml:1369`-`:1372` comment was named but not tracked.** **Changed:**
+   `DW-steward-49-1-1` (owner steward), carried by the next story that touches `pixi.toml`; `pixi.toml` is not edited.
+4. **(nit) Three boundary spellings did not count** (no-space redirection, a leading `(`, backticks). **Changed:**
+   added, tested, and each mutation killed.
+5. **(nit) The epics text listed four mutations; AC10 listed six.** **Changed:** both list the ten.
+6. **(nit) The spine said the registry "imports nothing new".** **Changed:** "no new dependency (stdlib `re` only)".
+
+## Review Triage Log
+
+- Independent review, 2026-10-17 (iteration 1): FAIL on chain records; findings 1-3 (should-fix) and 4-6 (nits) fixed
+  as above. The reviewer's open item on `scripts/detectors.py`'s missing Spec governor stays named under *Named, not
+  fixed here* for the coordinator.

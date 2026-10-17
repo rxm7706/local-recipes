@@ -140,8 +140,9 @@ def _runs_detector(cmd: str, rel: str) -> bool:
     """True when a task's ``cmd`` runs the detector at ``rel`` (repo-relative).
 
     The path, optionally ``./``-prefixed, must be one shell word of the
-    command: before it, the start of the command, whitespace or a quote;
-    after it, the end, whitespace, a quote or one of ``; & | )``.
+    command: before it, the start of the command, whitespace, a quote, a
+    backtick or ``(``; after it, the end, whitespace, a quote, a backtick or
+    one of ``; & | ) < >``.
 
     Doctor Story 49.1 (DW-doctor-103-3-1): this was ``path.name in cmd``, so
     a task listing ``tests/scripts/test_flag_gate_check.py`` became
@@ -149,7 +150,7 @@ def _runs_detector(cmd: str, rel: str) -> bool:
     still read as tasked. The path, not the bare file name, so a same-named
     file in another directory is not the detector either.
     """
-    word = rf"(?<![^\s\"'])(?:\./)?{re.escape(rel)}(?![^\s\"';&|)])"
+    word = rf"(?<![^\s\"'`(])(?:\./)?{re.escape(rel)}(?![^\s\"'`;&|)<>])"
     return re.search(word, cmd) is not None
 
 

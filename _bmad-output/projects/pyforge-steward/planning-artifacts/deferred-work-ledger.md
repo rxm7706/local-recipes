@@ -6579,3 +6579,16 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-10-17 — recorded with Story 103.3's review fixes
   status: open
+
+### DW-steward-49-1-1: The `scripts-lib-test` comment in `pixi.toml` gives a reason for the argument file that doctor Story 49.1 made false
+
+- source_spec: `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-49-1-a-detector-s-task-is-the-one-that-runs-its-script.md`
+  summary: The comment above `[feature.guild-tasks.tasks.scripts-lib-test]` (`pixi.toml:1369`-`:1372`, steward Story 103.3) says the task's files sit in `tests/scripts/scripts-lib-test.txt`, not in `cmd`, because "scripts/detectors.py maps a detector to the first task whose `cmd` contains its file name, and `test_flag_gate_check.py` contains `flag_gate_check.py`". Doctor Story 49.1 replaced that substring match: `discover()` now gives a detector the first task whose `cmd` runs the detector's repo-relative path as one shell word, so a task listing `tests/scripts/test_flag_gate_check.py` inline no longer takes the detector. The argument file is still the task's form (`tests/scripts/test_pyforge_ci_is_stdlib_only.py` reads it), but the stated reason is history. The `cmd` and the task's description are unaffected.
+  evidence: `pixi.toml:1370`-`:1371` at doctor 49.1's base `ab38be642f` and its commit `7aace40691`; `scripts/detectors.py` `_runs_detector` and `discover()` after 49.1; `tests/scripts/test_detectors_task_match.py::test_a_task_listing_the_library_tests_inline_takes_no_detector` (the 36 files inline in a task placed first take no detector; 9 did before). Doctor 49.1's independent review, finding 3, ruled the comment is not edited in that story: eight Specs govern `pixi.toml` (doctor `spec-pixi-candidate-currency`; herald `spec-deck-family-currency`, `spec-deck-family-lockstep`, `spec-pyforge-pages`; `spec-pyforge-core`, `spec-pyforge-marshal`; steward `spec-pyforge-steward`, `spec-pyforge-unifying-strategy`), so a one-line comment edit needs eight memlog reconciles and scoped stamps, fires every station suite and the `environment.yaml` rule.
+  location: pixi.toml:1369 (the comment above `[feature.guild-tasks.tasks.scripts-lib-test]`)
+  origin: doctor Story 49.1 independent review, 2026-10-17 (finding 3; the comment's claim was made false by 49.1's own change)
+  fix: in the next story that touches `pixi.toml`, reword the comment's reason: the files sit in an argument file so the list has one home that `tests/scripts/test_pyforge_ci_is_stdlib_only.py` reads; drop the sentence about `scripts/detectors.py`'s matcher, or say that before doctor Story 49.1 a task listing a detector's test file inline took that detector. Reconcile the memlog of every Spec `spec-surface-check` names for `pixi.toml` in that story.
+  owner: steward (the task registry)
+  severity: low
+  promoted: 2026-10-17 — recorded with doctor Story 49.1's review fixes
+  status: open
