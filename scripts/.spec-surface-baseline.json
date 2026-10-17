@@ -451,7 +451,7 @@
    "src/shared/packages/pyforge-atlas/tests/unit/test_scan_submit.py": "eaecd6b3452ebdfdb4fabdeb56078b0629f00bcc",
    "src/shared/packages/pyforge-atlas/tests/unit/test_scribe_plane_recall.py": "35ff93a11060b204221449f66be27e9a493434ab",
    "src/shared/packages/pyforge-atlas/tests/unit/test_semantic_packages_pipeline.py": "97b0389f9bf8b38ea137ed392a88ef66115e10a1",
-   "src/shared/packages/pyforge-atlas/tests/unit/test_viz_export_artifact.py": "3419289b7c96e385010e51962ec9c461f76862e4",
+   "src/shared/packages/pyforge-atlas/tests/unit/test_viz_export_artifact.py": "7779e337148b9a85b42138b1e17f84a00afaaee9",
    "src/shared/packages/pyforge-atlas/tests/unit/test_vizro_static_boards.py": "3d125025c4d36199adf755756d18143b79f95341",
    "src/shared/packages/pyforge-atlas/tests/unit/trending_candidates/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-atlas/tests/unit/trending_candidates/conftest.py": "af847b31c74c2defe05554bd07d938a370676b84",
@@ -483,7 +483,7 @@
    "src/shared/packages/pyforge-atlas/wasm/index.html": "58d44155379ec640d36caf59b8c701ec8fcfce27",
    "src/shared/packages/pyforge-atlas/wasm/package.json": "e8ec7eef8dff664e2910f4fee67ada79e4105d93"
   },
-  "memlog": "1aeff26b818fc9e616129d27a40876d7eac0b7eb"
+  "memlog": "8090c482c83e47e429c6c2bb541a97740865249e"
  },
  "pyforge-atlas/spec-pyforge-atlas-intelligence-platform": {
   "files": {},
@@ -6086,7 +6086,7 @@
    "tests/scripts/fixtures/pin_policy/pin-policy.yaml": "0a1e842e817fb4c853531b0b3932f77bed9d14c8",
    "tests/scripts/fixtures/pin_policy/pixi.toml.after": "de2f979701008c09e465977e94faab891b85398c",
    "tests/scripts/fixtures/pin_policy/pixi.toml.base": "95d98b47795403125f52f41ab46fd46853c471c1",
-   "tests/scripts/test_ci_surface_gates.py": "d4c7699544875ef2bd3403723d8d2d45ddc374f8",
+   "tests/scripts/test_ci_surface_gates.py": "48555bc005f08c09842c0bbc8eef1785ffbc8dc4",
    "tests/scripts/test_pin_policy_check.py": "a8d05fc2cd52310e342375e78d08ef70145db208",
    "tests/scripts/test_pin_policy_restore.py": "9c6699a6e335a085ce626734574a438c185d7ae1",
    "tests/scripts/test_realization_register_check.py": "2aaae3034a8aefabd475af58420a3c90d39ee768",
@@ -6094,7 +6094,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "dd8f51f192dbc95f42877e9f7362dfa6da5c4514"
+  "memlog": "9ca4a43f5af907e9e7a56c465f7c6db0a3e4406f"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
@@ -7104,7 +7104,7 @@
    "src/shared/packages/pyforge-atlas/tests/unit/test_scan_submit.py": "eaecd6b3452ebdfdb4fabdeb56078b0629f00bcc",
    "src/shared/packages/pyforge-atlas/tests/unit/test_scribe_plane_recall.py": "35ff93a11060b204221449f66be27e9a493434ab",
    "src/shared/packages/pyforge-atlas/tests/unit/test_semantic_packages_pipeline.py": "97b0389f9bf8b38ea137ed392a88ef66115e10a1",
-   "src/shared/packages/pyforge-atlas/tests/unit/test_viz_export_artifact.py": "3419289b7c96e385010e51962ec9c461f76862e4",
+   "src/shared/packages/pyforge-atlas/tests/unit/test_viz_export_artifact.py": "7779e337148b9a85b42138b1e17f84a00afaaee9",
    "src/shared/packages/pyforge-atlas/tests/unit/test_vizro_static_boards.py": "3d125025c4d36199adf755756d18143b79f95341",
    "src/shared/packages/pyforge-atlas/tests/unit/trending_candidates/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-atlas/tests/unit/trending_candidates/conftest.py": "af847b31c74c2defe05554bd07d938a370676b84",
@@ -7237,7 +7237,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "f902c2e547a06cf5b8ac42a06fd5f896505b287c"
+  "memlog": "aede0573470f60e2a5b7c8260cbc5c53d8621f94"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {},
