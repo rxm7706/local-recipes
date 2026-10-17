@@ -26,7 +26,9 @@ MEMBER_DIR = REPO_ROOT / "src" / "shared" / "packages" / "pyforge-atlas"
 CONF_BASE = MEMBER_DIR / "conf" / "base"
 # Kedro's default catalog patterns (`catalog*`, `catalog*/**`, `**/catalog*`; settings.py keeps them) load every
 # catalog file under conf/base, so the key walk reads all of them, not only catalog.yml.
-CATALOG_GLOB = "**/catalog*.y*ml"
+# `**/catalog*.y*ml` covers `catalog*` and `**/catalog*`; `**/catalog*/**/*.y*ml` covers files inside a `catalog*/` folder.
+CATALOG_GLOBS = ("**/catalog*.y*ml", "**/catalog*/**/*.y*ml")
+CATALOG_GLOB = " + ".join(CATALOG_GLOBS)
 WORKFLOW = REPO_ROOT / ".github" / "workflows" / "kedro-viz-publish.yml"
 PIXI_TOML = REPO_ROOT / "pixi.toml"
 TOOLS = MEMBER_DIR / "tools"
@@ -54,7 +56,7 @@ def _walk_credentials(node: Any, found: set[str]) -> None:
 
 
 def _catalog_files() -> list[Path]:
-    files = sorted(CONF_BASE.glob(CATALOG_GLOB))
+    files = sorted({path for pattern in CATALOG_GLOBS for path in CONF_BASE.glob(pattern) if path.is_file()})
     assert CONF_BASE / "catalog.yml" in files, f"{CATALOG_GLOB} under conf/base found no catalog.yml: {files}"
     return files
 

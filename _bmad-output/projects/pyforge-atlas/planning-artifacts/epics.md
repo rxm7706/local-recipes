@@ -2361,7 +2361,7 @@ So that a new catalog credential reds a PR instead of the publish run, and a fai
 **When** the workflow's `publish` job runs on a runner with no `conf/local/credentials.yml`, or `viz-build` runs where a catalog key is missing
 **Then** the stub step runs `tools/bootstrap.py --credentials-only`, which writes every key in `CREDENTIAL_KEYS` as `{}` when the file is absent or empty and leaves a non-empty file untouched; no string in the workflow names a credential key or `credentials.yml`; the flag step and every other `pixi run … python …/pyforge-atlas/tools/*.py` step runs in `-e pyforge-atlas`, where the flag prints `enabled=true`; `viz-build` on a scratch copy built that way exits 0 and writes `build/index.html`, `build/api/main` and `build/api/deploy-viz-metadata`, and `viz-publish-stage` exits 0 and fills `docs/dashboard/kedro-viz/`; with a key missing, `viz-build` exits 1 naming the missing build files
 **And** a test reads every `credentials:` key in every `conf/base/**/catalog*.y*ml` and fails when `CREDENTIAL_KEYS` lacks one (mutation: drop a key; a second catalog file) or the workflow carries a key list again, in any string (mutation); a test pins `viz-build`'s check against kedro-viz's deployer and fails when it is removed (mutation); a test fails when an atlas tool step names another env (mutation: `pyforge-guild` back); `pyforge-atlas-test`, `kedro-test`, `kedro-catalog-check`, `pyforge-atlas-coverage-gate`, `lint-types` and `ci_surface_gates.py --check` exit 0; every governing Spec is reconciled and stamped scoped
-**Status:** backlog
+**Status:** done
 
 ## Validation note — 2026-08-26 (chain-currency sweep)
 

@@ -2,7 +2,7 @@
 title: '32.1: The DAG export builds in CI, and a failed build fails its task'
 type: 'fix'
 created: '2026-10-17'
-status: 'in-review'
+status: 'done'
 baseline_revision: '17670a0580df2e84d19f9b5ca679f395818951a3'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -327,6 +327,9 @@ was reconciled and stamped scoped, one `--spec` each):
   `setup-pixi` already installs only `pyforge-atlas`, so no step in the job needs `pyforge-guild` any more. AC2, AC3 and
   AC4 are amended for the nits (every string of the workflow, every catalog file, the deployer binding, no key counts
   in prose). The Dream entry and the Epic 32 / Story 32.1 block record the same.
+
+- 2026-10-17 (re-review of `b3bf686db1`): RESOLVED; every finding fixed. One new nit: the catalog walk's glob missed files inside a `catalog*/` folder, which Kedro's `catalog*/**` pattern loads, though the comment said the walk covered it. Fixed by the orchestrator before landing: `CATALOG_GLOBS` adds `**/catalog*/**/*.y*ml`; a probe `conf/base/catalog_probe_n1/vcs.yml` naming `credentials: extra_token` failed `test_stub_names_every_catalog_credential_key`, then was removed.
+- 2026-10-17 (landing): status `done`; the ledger key and `epic-32` `done`. The operator step (dispatch `kedro-viz-publish.yml`, confirm `kedro-viz-export`) follows the merge.
 
 ## Review Triage Log
 
