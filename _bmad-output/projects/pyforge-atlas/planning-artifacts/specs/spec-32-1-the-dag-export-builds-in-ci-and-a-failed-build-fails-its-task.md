@@ -53,6 +53,15 @@ the failed build as a success. Line numbers below are at `17670a0580`.
   therefore exits 0 on a failed build, and `viz-publish-stage`'s `depends-on = ["viz-build"]` (:2870), whose
   description says it exists "so a failed build never stages stale/partial output", never stops anything. The failure
   surfaces one command later, in `normalize_viz_build.py:158`, with a message that names the wrong step.
+- **Cause 4, found by the independent review (2026-10-17, of `f52936ff75`): the flag step runs in an env without
+  `pyforge.atlas`.** The `publish` job's step `Resolve viz export artifact flag` (`kedro-viz-publish.yml:130`-`:134`
+  at `f52936ff75`, unchanged since Story 30.1) runs `print_viz_export_flag.py` in `-e pyforge-guild`. That script
+  imports `pyforge.atlas.viz_export_artifact` (line 6), and `pyforge-guild` deliberately does not carry
+  `pyforge-atlas`. Measured by the reviewer from a clone root: `ModuleNotFoundError: No module named 'pyforge.atlas'`,
+  exit 1, in the guild env; `enabled=true`, exit 0, in the atlas env. Under `bash -e` the job would fail at that step
+  once the build passes, before the upload. No run had reached the step (the workflow was disabled until 2026-10-16,
+  and run `39002722593` died earlier), and no test pinned its environment. The `vizro` job's flag step already runs
+  in `-e pyforge-atlas`.
 
 **Measured on a scratch copy of `17670a0580`** (`git archive HEAD`, its own `pyforge-atlas` env, kedro-viz 12.5.0,
 kedro 1.6.0, kedro-datasets 9.6.0), `pixi run --frozen -e pyforge-atlas viz-build` from the copy's root, each with only
@@ -85,13 +94,14 @@ kedro 1.6.0, kedro-datasets 9.6.0), `pixi run --frozen -e pyforge-atlas viz-buil
    the stub from it (every key `{}`). A `--credentials-only` flag writes only the stub, through the same
    `_ensure_credentials_stub` guard (absent or empty file only), and makes no store directory. The workflow's stub step
    runs `pixi run --frozen -e pyforge-atlas python src/shared/packages/pyforge-atlas/tools/bootstrap.py
-   --credentials-only` and carries no key list of its own; its comment is corrected (eight keys, the moved conftest,
-   the measured shape). The step keeps its name and its place before `viz-publish-stage`. The stale docstring and
+   --credentials-only` and carries no key list of its own; its comment is corrected (every key the catalog names, with
+   no count that can go stale; the moved conftest; the measured shape). The step keeps its name and its place before `viz-publish-stage`. The stale docstring and
    printed message in `bootstrap.py` are corrected in the same edit.
 2. **A test keeps the stub complete.** A new `tests/unit/test_viz_publish_build.py` reads every `credentials:` value in
-   `conf/base/catalog.yml` (a YAML walk, cross-checked against a raw-text scan so the walk cannot go blind) and fails
-   when `CREDENTIAL_KEYS` lacks one or names one the catalog does not. It also fails when any `run:` in the workflow
-   names a catalog credential key or writes `credentials.yml` itself.
+   every catalog file under `conf/base` (`**/catalog*.y*ml`, the files Kedro's default catalog patterns load; a YAML
+   walk, cross-checked against a raw-text scan so the walk cannot go blind) and fails when `CREDENTIAL_KEYS` lacks one
+   or names one the catalog does not. It also fails when any string in the workflow (a `run:`, an `env:`, a `with:`,
+   a key) names a catalog credential key or `credentials.yml`.
 3. **`viz-build` fails when the build fails.** A new `tools/viz_build_check.py` exits 1 naming each of `api/main`,
    `index.html` and `api/deploy-viz-metadata` missing under `build/`, and 0 when all three are there. `viz-build`
    becomes `rm -rf build && kedro viz build && python tools/viz_build_check.py`. The test pins that command and the
@@ -100,6 +110,10 @@ kedro 1.6.0, kedro-datasets 9.6.0), `pixi run --frozen -e pyforge-atlas viz-buil
    pinned the old stub step's `run:` by sha256 and asserted its two key names (Story 30.1 AC4: the stub step
    "unchanged"). That pin now asserts the step runs `tools/bootstrap.py --credentials-only`; the new test pins the
    source. Every other assertion in that test stays.
+5. **The flag step runs in the atlas env** (Cause 4; folded into this story by orchestrator ruling, 2026-10-17, "fold it
+   into 32.1. Do not mint 32.2"). The step's `-e pyforge-guild` becomes `-e pyforge-atlas`, the env the job's
+   `setup-pixi` already installs; nothing else in the gate changes, and nothing in the job needs `pyforge-guild` any
+   more. A test fails when any `pixi run … python …/pyforge-atlas/tools/*.py` step in the workflow names another env.
 
 Ledger key: `32-1-the-dag-export-builds-in-ci-and-a-failed-build-fails-its-task`.
 Type / Effort / Deps: fix / S / none.
@@ -128,27 +142,36 @@ Type / Effort / Deps: fix / S / none.
   0. A bare `python tools/bootstrap.py` behaves as before (store dirs, then the stub).
 - **AC2 — The workflow reads it.** In `.github/workflows/kedro-viz-publish.yml`'s `publish` job, the step `Materialize
   stub credentials for offline catalog resolution` runs `tools/bootstrap.py --credentials-only` and comes before the
-  `viz-publish-stage` step. No `run:` in any job names a credential key `conf/base/catalog.yml` names, and none
-  contains `credentials.yml`. The comment above the step names eight keys, `tests/unit/catalog/conftest.py` is no
-  longer cited for shapes, and the measured shape is stated.
+  `viz-publish-stage` step. No string in the workflow (any `run:`, `env:`, `with:` value or key) names a credential
+  key the catalog names, and none contains `credentials.yml`. The comment above the step says every key
+  `conf/base/catalog.yml` names (no count), `tests/unit/catalog/conftest.py` is no longer cited for shapes, and the
+  measured shape is stated. *(Amended 2026-10-17 after review: was "no `run:`" and "names eight keys".)*
 - **AC3 — Complete, and kept so.** `tests/unit/test_viz_publish_build.py` asserts `set(CREDENTIAL_KEYS)` equals the set
-  of `credentials:` values in `conf/base/catalog.yml`, read two ways that must agree. Mutations, each on a scratch edit
-  and undone: dropping one key from `CREDENTIAL_KEYS` fails the test naming that key; restoring a key list (the old
-  heredoc) in the workflow's stub step fails the workflow test.
+  of `credentials:` values in every `conf/base/**/catalog*.y*ml`, read two ways that must agree. Mutations, each on a
+  scratch edit and undone: dropping one key from `CREDENTIAL_KEYS` fails the test naming that key; a second catalog
+  file naming a new key fails it; restoring a key list (the old heredoc) in the workflow's stub step, or putting one
+  in a step's `env:`, fails the workflow test.
 - **AC4 — `viz-build` fails when the build fails.** `tools/viz_build_check.py --build-dir <dir>` exits 1 naming each
   missing file of `api/main`, `index.html`, `api/deploy-viz-metadata`, and exits 0 when all three exist. `pixi.toml`'s
   `viz-build` `cmd` is `rm -rf build && kedro viz build && python tools/viz_build_check.py`, with `cwd` unchanged. The
-  test pins the command and the verdicts. Mutations: dropping the check from the `cmd` fails the pin; a checker that
-  always returns 0 fails the verdict tests.
+  test pins the command and the verdicts, and reads kedro-viz's own deployer for the three files (`_METADATA_PATH`,
+  `_HTML_DIR/index.html`, the `api/main` write, metadata written last); a plain pin of the tuple stands beside it.
+  Mutations: dropping the check from the `cmd` fails the pin; a checker that always returns 0 fails the verdict tests;
+  a metadata path the deployer does not write fails the deployer test.
 - **AC5 — The real build.** On a scratch copy of this tree with no `conf/local/credentials.yml`, `python
   src/shared/packages/pyforge-atlas/tools/bootstrap.py --credentials-only` then `pixi run --frozen -e pyforge-atlas
   viz-build` exits 0 and writes the build; `pixi run --frozen -e pyforge-atlas viz-publish-stage` exits 0 and fills
   `docs/dashboard/kedro-viz/`. With the old two-key stub in place, `viz-build` exits 1 and the checker names the
   missing files after kedro-viz's `Unable to find credentials 'gitlab_token'` line.
 - **AC6 — Nothing else moves.** The `vizro` job, the upload step, the artifact's name (`kedro-viz-export`) and
-  retention (90), the flag gate (`viz_export_flag`), `on.push.paths`, the `changes` job's pathspecs and every CI-pause
-  `if:` fragment are byte-identical to `17670a0580`. `pixi run --frozen -e pyforge-guild python
-  scripts/ci_surface_gates.py --check` exits 0. `test_viz_export_artifact.py` changes only in AC4's stub pin.
+  retention (90), the flag gate (`viz_export_flag`) byte-identical except its environment, `on.push.paths`, the
+  `changes` job's pathspecs and every CI-pause `if:` fragment are byte-identical to `17670a0580`. The flag step runs
+  `print_viz_export_flag.py` in `-e pyforge-atlas` (was `-e pyforge-guild`, which cannot import `pyforge.atlas`), and
+  a test fails when any `pixi run … python …/pyforge-atlas/tools/*.py` step in the workflow names another env
+  (mutation: `pyforge-guild` back on the flag step). A scratch run of the step in `-e pyforge-atlas` prints
+  `enabled=true`. `pixi run --frozen -e pyforge-guild python scripts/ci_surface_gates.py --check` exits 0.
+  `test_viz_export_artifact.py` changes only in AC4's stub pin. *(Amended 2026-10-17 after review: was "the flag gate
+  byte-identical".)*
 - **AC7 — Gates.** `pixi run --frozen -e pyforge-atlas pyforge-atlas-test`, `kedro-test` and `kedro-catalog-check`
   exit 0; the atlas coverage gate (`scripts/coverage_gates_ci.py --suites unit`, atlas's env) exits 0;
   `pixi run --frozen -e pyforge-guild lint-types` exits 0; steward's `tests/meta/test_station_tests_trigger_map.py`
@@ -167,8 +190,8 @@ Type / Effort / Deps: fix / S / none.
 
 **Never:**
 - Never write a credential, token, secret or fake auth pair into the workflow or the stub.
-- Never change the `vizro` job, the upload step, the artifact's name or retention, the flag gate, `on.push.paths`, the
-  `changes` job or a CI-pause `if:` fragment.
+- Never change the `vizro` job, the upload step, the artifact's name or retention, the flag gate (beyond its step's
+  environment, AC6), `on.push.paths`, the `changes` job or a CI-pause `if:` fragment.
 - Never edit an operator's `conf/local/credentials.yml`; the measurement reads key names only.
 - Never hand-edit `SPEC.md` or `sprint-status-ledger.yaml`.
 - Never import `pyforge.atlas` internals, Dagster or `kedro-mcp` from the tools; both stay stdlib-only (AD-1).
@@ -199,7 +222,10 @@ was reconciled and stamped scoped, one `--spec` each):
 - **Operators' existing local files.** A `conf/local/credentials.yml` written before 2026-10-04 lacks six keys (the
   operator's does). `pyforge-atlas-bootstrap` and `viz-build` still fail there; `viz-build` now exits 1 with the
   checker's message, which names the remedy: add each missing key as `<key>: {}`. Not auto-repaired (see the
-  deviation).
+  deviation). **Operator step:** in the primary checkout's `conf/local/credentials.yml`, add `<key>: {}` for each key
+  `viz-build` names (kedro-viz's `Unable to find credentials '<key>'` line; at this mint the six are `gitlab_token`,
+  `codeberg_token`, `npm_token`, `crates_token`, `rubygems_token` and `nuget_token`). Only the operator edits that file;
+  the orchestrator captures this at session close.
 - **The producer re-runs only on a DAG change.** `on.push.paths` does not carry `tools/bootstrap.py`,
   `tools/viz_build_check.py` or `pixi.toml`, so a change there is proven by this test on the PR and by the next
   dispatched or DAG-triggered run, not by a run of its own. Adding paths would change Story 30.1's pinned trigger; left
@@ -207,7 +233,8 @@ was reconciled and stamped scoped, one `--spec` each):
 - **A later kedro-viz that writes different files** fails the checker on a good build, loudly, naming the file; the
   fix is the `REQUIRED_OUTPUTS` tuple, read against the deployer.
 - **The flag.** The upload still depends on `pyforge.atlas.viz_export_artifact` resolving on in CI (dev, the default
-  when `PYFORGE_ENVIRONMENT` is unset; run `39002722593` uploaded `vizro-static-export` through the same kind of gate).
+  when `PYFORGE_ENVIRONMENT` is unset). Its step now runs in the atlas env, where a scratch run prints `enabled=true`;
+  run `39002722593` uploaded `vizro-static-export` through the same kind of gate in that env.
 
 ## I/O & Edge-Case Matrix
 
@@ -218,7 +245,10 @@ was reconciled and stamped scoped, one `--spec` each):
 | A zero-byte `credentials.yml` present | workflow: left untouched (build fails); bootstrap: filled | filled, by both writers |
 | `credentials.yml` lacks a catalog key | `viz-build` exit 0, no build | `viz-build` exit 1, checker names the missing files and the remedy |
 | The catalog gains a credential key | nothing notices until a run fails | `test_viz_publish_build.py` fails naming the key |
-| The workflow gains a key list again | nothing notices | `test_viz_publish_build.py` fails |
+| The workflow gains a key list again (in a `run:`, `env:` or `with:`) | nothing notices | `test_viz_publish_build.py` fails |
+| A second `conf/base/catalog*.yml` names a new key | nothing notices | `test_viz_publish_build.py` fails naming the key |
+| The flag step runs | `-e pyforge-guild`: `ModuleNotFoundError`, exit 1, no upload | `-e pyforge-atlas`: `enabled=true`, upload |
+| An atlas tool step names another env | nothing notices | `test_viz_publish_build.py` fails naming the step |
 | `kedro viz build` succeeds | exit 0 | exit 0, checker prints the three files |
 
 </intent-contract>
@@ -246,7 +276,8 @@ was reconciled and stamped scoped, one `--spec` each):
 
 **Run before the push (not dispatch gates):**
 - AC1-AC4: `pixi run --frozen -e pyforge-atlas python -m pytest src/shared/packages/pyforge-atlas/tests/unit/test_viz_publish_build.py src/shared/packages/pyforge-atlas/tests/unit/test_viz_export_artifact.py -q -p no:cacheprovider` — expected: pass.
-- AC3/AC4 mutations, each on a scratch edit and undone: drop `"nuget_token"` from `CREDENTIAL_KEYS`; restore the old heredoc in the stub step; drop `&& python tools/viz_build_check.py` from `viz-build`; make `viz_build_check.main` return 0 — expected: the named test fails each time.
+- AC1/AC3/AC4/AC6 mutations, each on a scratch edit and undone: drop `"nuget_token"` from `CREDENTIAL_KEYS`; add a `conf/base/catalog_extra.yml` naming `extra_token`; restore the old heredoc in the stub step; put a key list in a step's `env:`; drop `&& python tools/viz_build_check.py` from `viz-build`; make `viz_build_check.main` return 0; name a metadata file the deployer does not write; make `--credentials-only` also call `_ensure_store_dirs`; put `-e pyforge-guild` back on the flag step — expected: the named test fails each time.
+- AC6, the flag step, from the root of a scratch copy: `pixi run --frozen -e pyforge-atlas python src/shared/packages/pyforge-atlas/tools/print_viz_export_flag.py` — expected: `enabled=true`, exit 0.
 - AC5, on `git archive` of this tree into a scratch dir with no `conf/local/credentials.yml`: `pixi run --frozen -e pyforge-atlas python src/shared/packages/pyforge-atlas/tools/bootstrap.py --credentials-only`, `pixi run --frozen -e pyforge-atlas viz-build`, `pixi run --frozen -e pyforge-atlas viz-publish-stage` — expected: exit 0 each, `docs/dashboard/kedro-viz/index.html` present. With the old two-key stub: `viz-build` — expected: exit 1.
 - AC6: `pixi run --frozen -e pyforge-guild python scripts/ci_surface_gates.py --check` — expected: exit 0.
 - AC7: `pixi run --frozen -e pyforge-atlas pyforge-atlas-test`; `COVERAGE_GATES_STATIONS=atlas pixi run --frozen -e pyforge-atlas python scripts/coverage_gates_ci.py --suites unit --paths-file <changed paths>`; `pixi run --frozen -e pyforge-guild lint-types`; `pixi run --frozen -e pyforge-steward python -m pytest src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py -q -p no:cacheprovider` — expected: exit 0 each.
@@ -258,6 +289,8 @@ was reconciled and stamped scoped, one `--spec` each):
   and the run lists the `kedro-viz-export` artifact (`gh api repos/rxm7706/local-recipes/actions/runs/<id>/artifacts`).
   That run is the producer half of steward's `DW-steward-102-4-1` (Story 102.4 AC7): a `pages.yml` run after it records
   `KEDRO_VIZ_EXPORT=present`.
+- In the primary checkout's own `conf/local/credentials.yml`, add `<key>: {}` for each key `viz-build` names (Residual
+  risk, the operator step); until then a local `viz-build` or `pyforge-atlas-bootstrap` there exits 1 naming them.
 
 ## Spec Change Log
 
@@ -285,8 +318,41 @@ was reconciled and stamped scoped, one `--spec` each):
   pyforge-atlas` (its inventory also catches up on the test files Stories 30.x and 31.1 added). `ad_citation_check`
   found the three herald co-governor memlog lines citing a bare `CAP-62`; those unlanded lines, in all nine
   co-governor memlogs, now cite `pyforge-atlas:CAP-62`.
+- 2026-10-17 (review fixes, on `f52936ff75`): the independent review failed the story (2 should-fix, 6 nits; see the
+  Review Triage Log). **Deviation from the spec as minted:** AC6 said the flag gate stays byte-identical; its step's
+  environment now moves from `-e pyforge-guild` to `-e pyforge-atlas` (Cause 4, Approach 5), by orchestrator ruling
+  ("fold it into 32.1. Do not mint 32.2"): the story's goal is that the next dispatch uploads `kedro-viz-export`, and
+  the flag step blocked that. AC6 now reads "byte-identical except its environment". Nothing else in the gate moves:
+  the step's `id`, its script, the `>> "$GITHUB_OUTPUT"` and the upload step's `if:` are as they were, and the job's
+  `setup-pixi` already installs only `pyforge-atlas`, so no step in the job needs `pyforge-guild` any more. AC2, AC3 and
+  AC4 are amended for the nits (every string of the workflow, every catalog file, the deployer binding, no key counts
+  in prose). The Dream entry and the Epic 32 / Story 32.1 block record the same.
 
 ## Review Triage Log
+
+### 2026-10-17 — Independent review of `f52936ff75` (FAIL)
+- verdicts: 8 findings — should-fix 2, nit 6; all 8 accepted and fixed in the follow-up commit, none deferred.
+- findings:
+  - `[should-fix]` `[fixed]` F1 — the flag step ran `print_viz_export_flag.py` in `-e pyforge-guild`
+    (`ModuleNotFoundError`, exit 1), so the upload would never run. Now `-e pyforge-atlas`; new test
+    `test_every_atlas_tool_step_runs_in_the_atlas_env`. Folded into 32.1 by orchestrator ruling; AC6 amended.
+  - `[should-fix]` `[fixed]` F2 — AC1's "creates no store directory" was untested (the test listed regular files only).
+    The test now lists every path under `tmp_path` and asserts `not (tmp_path / "data").exists()`.
+  - `[nit]` `[fixed]` N1 — the key walk read only `catalog.yml`; it now reads every `conf/base/**/catalog*.y*ml`, both
+    the YAML walk and the raw scan.
+  - `[nit]` `[fixed]` N2 — the no-list guard read only `run:`; it now reads every string key and value of the parsed
+    workflow.
+  - `[nit]` `[fixed]` N3 — the deployer test compared the tuple with itself. Now `test_required_outputs_pin` (a pin,
+    named so) and `test_required_outputs_match_the_kedro_viz_deployer` (kedro-viz's `_METADATA_PATH`,
+    `_HTML_DIR/index.html`, the `api/main` write in `save_api_responses_to_fs`, and the order of `deploy()`).
+  - `[nit]` `[fixed]` N4 — `bootstrap.py`'s docstring cited `tests/catalog/test_no_inline_io.py`; now
+    `tests/unit/catalog/test_no_inline_io.py`.
+  - `[nit]` `[fixed]` N5 — "the eight keys" in the workflow comment and `pyforge-atlas-bootstrap`'s description is now
+    "every key `conf/base/catalog.yml` names"; `pixi-tasks.md` and `map.yaml` regenerated. (`viz-build`'s
+    description never named a count.)
+  - `[nit]` `[recorded]` N6 — the operator's own `conf/local/credentials.yml` lacks six keys: Residual risk and the
+    operator step now say "add `<key>: {}` for each key `viz-build` names". The orchestrator captures it at session
+    close; the file is not touched.
 
 ## Auto Run Result
 
@@ -314,3 +380,20 @@ Mutations, each on a scratch edit, undone and `cmp`-checked against the saved fi
 - one extra step appending `gitlab_token: {}` to the file — 1 failed (`test_workflow_carries_no_credentials_list_of_its_own`).
 - `&& python tools/viz_build_check.py` dropped from `viz-build` — 1 failed (`test_viz_build_task_checks_its_output_after_the_build`).
 - `viz_build_check.main` returning 0 on a missing file — 6 failed (every failure-verdict test, the script-exit test included).
+
+Review fixes, measured on the revised staged tree (`git archive` of `git write-tree` into a fresh scratch dir, its own
+`pyforge-atlas` env, no `conf/local/credentials.yml`):
+- `bootstrap.py --credentials-only` — exit 0; `conf/local/credentials.yml` written, no `data/` directory.
+- `viz-build` — exit 0 in 11.8 s (the atlas suite ran alongside), 293 files; `viz-publish-stage` — exit 0 in 9.1 s,
+  294 files in `docs/dashboard/kedro-viz/`, `manifest.json` with `export_commit` `f52936ff75…`.
+- The flag step's command from the copy's root: `-e pyforge-atlas` — `enabled=true`, exit 0; `-e pyforge-guild` —
+  `ModuleNotFoundError: No module named 'pyforge.atlas'`, exit 1.
+
+Review-fix mutations, each on a scratch edit, undone and `cmp`-checked:
+- `-e pyforge-guild` back on the flag step — 1 failed (`test_every_atlas_tool_step_runs_in_the_atlas_env`).
+- `--credentials-only` also calling `_ensure_store_dirs(_resolve_data_root())` — 1 failed
+  (`test_credentials_only_writes_the_stub_and_nothing_else`).
+- a `conf/base/catalog_extra.yml` naming `credentials: extra_token` — 1 failed (`test_stub_names_every_catalog_credential_key`).
+- a step whose `env:` carries `STUB: "gitlab_token: {}"` — 1 failed (`test_workflow_carries_no_credentials_list_of_its_own`).
+- `REQUIRED_OUTPUTS` naming `api/viz-metadata` — 3 failed (the pin, the deployer test, one partial-build case).
+- `"nuget_token"` dropped again, after the glob change — 1 failed (`test_stub_names_every_catalog_credential_key`).

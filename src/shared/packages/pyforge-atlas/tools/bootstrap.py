@@ -42,12 +42,12 @@ exit 0 (the spec's "Bootstrap smoke" row):
 `.github/workflows/kedro-viz-publish.yml` runs it before `kedro viz build`, so
 the workflow and this task write their stub from the one list, `CREDENTIAL_KEYS`
 (atlas Story 32.1: the workflow's own two-key list had drifted from the
-catalog's eight and failed run 39002722593). `tests/unit/test_viz_publish_build.py`
+catalog's keys and failed run 39002722593). `tests/unit/test_viz_publish_build.py`
 fails when that list and the catalog's `credentials:` keys differ.
 
 Never touches the network. Never imports `dagster`/`kedro_mcp`. This is an
 operator convenience script (`tools/`), not dataset code -- it is exempt
-from `tests/catalog/test_no_inline_io.py`'s package-only IO_DENYLIST scan,
+from `tests/unit/catalog/test_no_inline_io.py`'s package-only IO_DENYLIST scan,
 the same way `normalize_viz_build.py` is.
 """
 

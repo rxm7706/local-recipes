@@ -107,9 +107,9 @@ jobs:
       # and out of the image. So a runner has no credentials file at all.
       #
       # The stub comes from the one list `tools/bootstrap.py` holds
-      # (`CREDENTIAL_KEYS`, the eight keys `conf/base/catalog.yml` names, each
-      # written `{}`), never from a list kept here: the two-key list this step used
-      # to carry drifted from the catalog's eight (atlas Story 27.2 added six) and
+      # (`CREDENTIAL_KEYS`, every key `conf/base/catalog.yml` names, each written
+      # `{}`), never from a list kept here: the two-key list this step used to
+      # carry drifted from the catalog's keys (atlas Story 27.2 added six) and
       # run 39002722593 died with "Unable to find credentials 'gitlab_token'"
       # (atlas Story 32.1). `{}` is enough for every key, `api.APIDataset`-family
       # included: viz only INTROSPECTS the DAG and never loads through a
@@ -127,10 +127,15 @@ jobs:
       - name: Build + normalize + stage the real DAG's kedro-viz export
         run: pixi run -e pyforge-atlas viz-publish-stage
 
+      # The flag reader imports `pyforge.atlas`, which only `pyforge-atlas` (the env
+      # setup-pixi installs above) carries; `pyforge-guild` deliberately does not, and
+      # there the reader exits 1 with ModuleNotFoundError (measured in atlas Story
+      # 32.1's review; no run had reached this step before). Every `tools/*.py` step
+      # here runs in `-e pyforge-atlas`, as the vizro job's does.
       - name: Resolve viz export artifact flag
         id: viz_export_flag
         run: |
-          pixi run --frozen -e pyforge-guild python \
+          pixi run --frozen -e pyforge-atlas python \
             src/shared/packages/pyforge-atlas/tools/print_viz_export_flag.py >> "$GITHUB_OUTPUT"
 
       - name: Upload kedro-viz export artifact

@@ -437,15 +437,20 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
     missing key. With `tools/bootstrap.py`'s eight-key stub it builds in 8.7 s. An all-`{}` stub and an all-pair stub
     both build, so the workflow comment's claim that `APIDataset`-family entries need an auth pair does not hold:
     viz only introspects the DAG.
+  - Found by the story's independent review (`f52936ff75`): past the build, the job's flag step runs
+    `print_viz_export_flag.py` in `-e pyforge-guild`, which cannot import `pyforge.atlas` (`ModuleNotFoundError`,
+    exit 1; `enabled=true` in `-e pyforge-atlas`), so the upload would still not run. Latent since Story 30.1: no run
+    had reached the step. Folded into the same story by orchestrator ruling.
   **What it looks like when fixed:** the workflow writes its stub from the one source `tools/bootstrap.py` holds, a
-  test fails the day the catalog names a key that source lacks, and `viz-build` exits non-zero when `kedro viz build`
-  writes no build. The next dispatched run uploads `kedro-viz-export`.
+  test fails the day the catalog names a key that source lacks, `viz-build` exits non-zero when `kedro viz build`
+  writes no build, and every atlas tool the workflow runs runs in `-e pyforge-atlas`. The next dispatched run uploads
+  `kedro-viz-export`.
   **Constraints:**
   - A `fix` story: no CAP, no FR, no flag (`spec-feature-flag-governance` Q1).
   - The stub writer never overwrites a file that holds anything, and no credential, token or secret enters the
     workflow (AD-11).
-  - The `vizro` job, the upload step, the artifact's name and retention, the flag gate and the CI-pause `if:`
-    fragments do not change.
+  - The `vizro` job, the upload step, the artifact's name and retention, the flag gate (beyond its step's
+    environment) and the CI-pause `if:` fragments do not change.
   - A new epic: Epic 30, which shipped the producer, is done.
   **Kinships:** [[pyforge-steward]] (the CI resume; `pages.yml`, whose Story 102.4 AC7 waits on the artifact,
   `DW-steward-102-4-1`). Owner `spec-pyforge-atlas` (CAP-62, the DAG export reaches Pages as a workflow artifact).

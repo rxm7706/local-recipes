@@ -1,14 +1,16 @@
 """Story 32.1 (fix under CAP-62): the DAG export builds in CI, and a failed build fails its task.
 
 kedro-viz-publish.yml run 39002722593 failed because the workflow carried its own stub credentials list, two of
-the eight keys conf/base/catalog.yml names, and `viz-build` read green because `kedro viz build` exits 0 when its
-build fails. These tests keep the stub's one source (tools/bootstrap.py's CREDENTIAL_KEYS) equal to the catalog,
-keep the workflow off a list of its own, and pin the check that fails `viz-build` on an incomplete build.
+the eight keys conf/base/catalog.yml named at the time, and `viz-build` read green because `kedro viz build` exits 0
+when its build fails. These tests keep the stub's one source (tools/bootstrap.py's CREDENTIAL_KEYS) equal to the
+catalog, keep the workflow off a list of its own, keep every atlas tool the workflow runs in the env that carries
+`pyforge.atlas`, and pin the check that fails `viz-build` on an incomplete build.
 Offline, fixture-free reads of tracked files, plus tmp_path writes only (NFR-1).
 """
 
 from __future__ import annotations
 
+import inspect
 import re
 import subprocess
 import sys
@@ -21,7 +23,10 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[6]
 MEMBER_DIR = REPO_ROOT / "src" / "shared" / "packages" / "pyforge-atlas"
-CATALOG = MEMBER_DIR / "conf" / "base" / "catalog.yml"
+CONF_BASE = MEMBER_DIR / "conf" / "base"
+# Kedro's default catalog patterns (`catalog*`, `catalog*/**`, `**/catalog*`; settings.py keeps them) load every
+# catalog file under conf/base, so the key walk reads all of them, not only catalog.yml.
+CATALOG_GLOB = "**/catalog*.y*ml"
 WORKFLOW = REPO_ROOT / ".github" / "workflows" / "kedro-viz-publish.yml"
 PIXI_TOML = REPO_ROOT / "pixi.toml"
 TOOLS = MEMBER_DIR / "tools"
@@ -48,9 +53,23 @@ def _walk_credentials(node: Any, found: set[str]) -> None:
             _walk_credentials(item, found)
 
 
+def _catalog_files() -> list[Path]:
+    files = sorted(CONF_BASE.glob(CATALOG_GLOB))
+    assert CONF_BASE / "catalog.yml" in files, f"{CATALOG_GLOB} under conf/base found no catalog.yml: {files}"
+    return files
+
+
 def _catalog_credential_keys() -> set[str]:
     found: set[str] = set()
-    _walk_credentials(yaml.safe_load(CATALOG.read_text(encoding="utf-8")), found)
+    for catalog in _catalog_files():
+        _walk_credentials(yaml.safe_load(catalog.read_text(encoding="utf-8")), found)
+    return found
+
+
+def _catalog_credential_keys_scanned() -> set[str]:
+    found: set[str] = set()
+    for catalog in _catalog_files():
+        found |= set(_RAW_CREDENTIALS_LINE.findall(catalog.read_text(encoding="utf-8")))
     return found
 
 
@@ -69,6 +88,23 @@ def _all_run_texts(document: dict[str, Any]) -> list[tuple[str, str, str]]:
     return runs
 
 
+def _all_strings(node: Any, where: str = "") -> list[tuple[str, str]]:
+    """Every string key and value of the parsed workflow, with its path (comments are gone after safe_load)."""
+    found: list[tuple[str, str]] = []
+    if isinstance(node, dict):
+        for key, value in node.items():
+            here = f"{where}.{key}"
+            if isinstance(key, str):
+                found.append((here, key))
+            found.extend(_all_strings(value, here))
+    elif isinstance(node, list):
+        for i, item in enumerate(node):
+            found.extend(_all_strings(item, f"{where}[{i}]"))
+    elif isinstance(node, str):
+        found.append((where, node))
+    return found
+
+
 # ---------------------------------------------------------------------------------------------------------------------
 # One source, complete (AC1, AC3)
 # ---------------------------------------------------------------------------------------------------------------------
@@ -77,8 +113,8 @@ def _all_run_texts(document: dict[str, Any]) -> list[tuple[str, str, str]]:
 def test_catalog_reading_is_not_blind() -> None:
     """The YAML walk and a raw-text scan of the catalog agree, and both find keys."""
     walked = _catalog_credential_keys()
-    scanned = set(_RAW_CREDENTIALS_LINE.findall(CATALOG.read_text(encoding="utf-8")))
-    assert walked, "found no `credentials:` key in conf/base/catalog.yml"
+    scanned = _catalog_credential_keys_scanned()
+    assert walked, f"found no `credentials:` key in conf/base/{CATALOG_GLOB}"
     assert walked == scanned
 
 
@@ -88,7 +124,7 @@ def test_stub_names_every_catalog_credential_key() -> None:
     missing = sorted(catalog_keys - stub_keys)
     extra = sorted(stub_keys - catalog_keys)
     assert not missing, (
-        f"conf/base/catalog.yml names credential key(s) {missing} that tools/bootstrap.py's CREDENTIAL_KEYS lacks: "
+        f"conf/base/{CATALOG_GLOB} names credential key(s) {missing} that tools/bootstrap.py's CREDENTIAL_KEYS lacks: "
         "kedro viz build and kedro run fail with 'Unable to find credentials' on a fresh clone and in CI"
     )
     assert not extra, f"tools/bootstrap.py's CREDENTIAL_KEYS names key(s) {extra} the catalog no longer names"
@@ -109,8 +145,11 @@ def test_credentials_only_writes_the_stub_and_nothing_else(tmp_path: Path, monke
     creds = _point_bootstrap_at(tmp_path, monkeypatch)
     assert bootstrap.main(["--credentials-only"]) == 0
     assert creds.read_text(encoding="utf-8") == bootstrap._CREDENTIALS_STUB
-    written = sorted(p.relative_to(tmp_path).as_posix() for p in tmp_path.rglob("*") if p.is_file())
-    assert written == ["conf/local/credentials.yml"], "--credentials-only must create no store directory"
+    created = sorted(p.relative_to(tmp_path).as_posix() for p in tmp_path.rglob("*"))
+    assert created == ["conf", "conf/local", "conf/local/credentials.yml"], (
+        f"--credentials-only must create the stub and its parents only, no store directory: {created}"
+    )
+    assert not (tmp_path / "data").exists()
 
 
 def test_credentials_only_fills_a_zero_byte_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -141,7 +180,7 @@ def test_bare_bootstrap_still_makes_the_store_dirs_and_the_stub(
 
 
 # ---------------------------------------------------------------------------------------------------------------------
-# The workflow reads the one source and carries no list (AC2, AC3)
+# The workflow reads the one source, carries no list, and runs atlas's tools in atlas's env (AC2, AC3, AC6)
 # ---------------------------------------------------------------------------------------------------------------------
 
 
@@ -157,16 +196,40 @@ def test_workflow_writes_the_stub_through_bootstrap_before_the_build() -> None:
 
 
 def test_workflow_carries_no_credentials_list_of_its_own() -> None:
+    """No string anywhere in the workflow (a `run:`, an `env:`, a `with:`, a key) names a credential key or the file."""
     keys = _catalog_credential_keys() | set(bootstrap.CREDENTIAL_KEYS)
     offenders = []
-    for job_id, name, run in _all_run_texts(_workflow()):
-        named = sorted(key for key in keys if re.search(rf"\b{re.escape(key)}\b", run))
-        if named or "credentials.yml" in run:
-            offenders.append(f"{job_id} / {name!r}: keys {named}, writes credentials.yml: {'credentials.yml' in run}")
+    for where, text in _all_strings(_workflow()):
+        named = sorted(key for key in keys if re.search(rf"\b{re.escape(key)}\b", text))
+        if named or "credentials.yml" in text:
+            offenders.append(f"{where}: keys {named}, names credentials.yml: {'credentials.yml' in text}")
     assert not offenders, (
         "kedro-viz-publish.yml must write its stub only through tools/bootstrap.py --credentials-only, never from "
         f"a list of its own: {offenders}"
     )
+
+
+_PIXI_PYTHON_TOOL = re.compile(
+    r"pixi run\b(?P<flags>[^\n]*?)\bpython\s+(?P<tool>\S*src/shared/packages/pyforge-atlas/tools/[^\s/]+\.py)"
+)
+_ATLAS_ENV = re.compile(r"(?:^|\s)(?:-e|--environment)[ =]pyforge-atlas(?:\s|$)")
+
+
+def test_every_atlas_tool_step_runs_in_the_atlas_env() -> None:
+    """An atlas tool imports `pyforge.atlas`, which only `pyforge-atlas` carries (`pyforge-guild` deliberately not)."""
+    calls = []
+    for job_id, name, run in _all_run_texts(_workflow()):
+        joined = re.sub(r"\\\n\s*", " ", run)  # fold shell line continuations
+        for match in _PIXI_PYTHON_TOOL.finditer(joined):
+            calls.append((job_id, name, Path(match.group("tool")).name, match.group("flags").strip()))
+    found = {tool for _, _, tool, _ in calls}
+    assert {"bootstrap.py", "print_viz_export_flag.py", "vizro_static_export.py"} <= found, found
+    wrong = [
+        f"{job} / {name!r}: {tool} runs with `{flags}`"
+        for job, name, tool, flags in calls
+        if not _ATLAS_ENV.search(flags)
+    ]
+    assert not wrong, f"every pixi-run atlas tool step must name -e pyforge-atlas: {wrong}"
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -198,8 +261,22 @@ def _complete_build(build_dir: Path) -> None:
         path.write_text("{}\n", encoding="utf-8")
 
 
-def test_required_outputs_are_what_the_deployer_writes() -> None:
+def test_required_outputs_pin() -> None:
+    """A pin: the three files, in the order the deployer writes them; the next test reads kedro-viz itself."""
     assert viz_build_check.REQUIRED_OUTPUTS == ("api/main", "index.html", "api/deploy-viz-metadata")
+
+
+def test_required_outputs_match_the_kedro_viz_deployer() -> None:
+    base_deployer = pytest.importorskip("kedro_viz.integrations.deployment.base_deployer")
+    save_responses = pytest.importorskip("kedro_viz.api.rest.responses.save_responses")
+    main, index, metadata = viz_build_check.REQUIRED_OUTPUTS
+    assert base_deployer._METADATA_PATH == metadata
+    assert (base_deployer._HTML_DIR / index).is_file(), "the deployer's static upload carries no index.html"
+    assert "{path}/" + main in inspect.getsource(save_responses.save_api_responses_to_fs)
+    deploy = inspect.getsource(base_deployer.BaseDeployer.deploy)
+    calls = ("_upload_api_responses(", "_upload_static_files(", "_upload_deploy_viz_metadata_file(")
+    positions = [deploy.index(call) for call in calls]
+    assert positions == sorted(positions), "the deployer no longer writes the metadata file last"
 
 
 def test_check_passes_on_a_complete_build(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
