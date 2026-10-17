@@ -12,8 +12,8 @@ Dream block is older than ``pixi.lock`` (``check_pixi_env_matrix`` in
 
 Usage:
   python scripts/pixi_env_matrix.py
-  python scripts/pixi_env_matrix.py --update docs/dreams/pyforge-unifying-strategy.md
-  python scripts/pixi_env_matrix.py --check docs/dreams/pyforge-unifying-strategy.md
+  python scripts/pixi_env_matrix.py --update --dream docs/dreams/pyforge-unifying-strategy.md
+  python scripts/pixi_env_matrix.py --check --dream docs/dreams/pyforge-unifying-strategy.md
 """
 from __future__ import annotations
 

@@ -402,6 +402,7 @@ jobs:
             scripts/pages_artifact_download.py
             scripts/pages_build_stamp.py
             scripts/pages_fleet_status.py
+            scripts/pixi_env_matrix.py
             scripts/platform-ci-local.sh
             scripts/precommit_config_check.py
             scripts/target_version_check.py

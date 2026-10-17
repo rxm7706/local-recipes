@@ -1333,6 +1333,25 @@ verify_commands = [
   "src/shared/packages/pyforge-herald/tests/meta/test_built_site_tests_install_first.py",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"108" = [  # estate reconcile reds on a failed generator, and a retired CI row is never paused by the master (fixes under
+  # spec-pyforge-steward CAP-167 and CAP-166; no CAP, no flag; Story 108.1), added 2026-10-17. The default surface,
+  # restated because a declared entry replaces it outright, plus the env-matrix script (its usage docstring only), the
+  # station-tests workflow (steward's job fires on scripts/pixi_env_matrix.py, which the new reconcile test reads;
+  # Story 98.1's rule), the deferred-work rows the story closes, the regenerated TEA matrix, the PRD and spine (their
+  # 2026-10-17 chain-currency re-stamp, no FR or AD change), and every Spec memlog a reconcile names. pixi.toml,
+  # pixi.lock and environment.yaml are left off on purpose: the story changes none of them.
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/test-architecture.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/prds/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/**",
+  "scripts/.spec-surface-baseline.json",
+  "scripts/pixi_env_matrix.py",
+  ".github/workflows/pyforge-station-tests.yml",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "85" = [  # the protected refs are declared once, and no session deletes what would orphan commits (spec-pyforge-steward
   # CAP-165; Story 85.1's hook fix), added 2026-10-04. The default surface, restated because a declared entry replaces it
   # outright, plus: the session hook and the roster (85.1, 85.4), the rendered ruleset document (85.2), the repo scripts

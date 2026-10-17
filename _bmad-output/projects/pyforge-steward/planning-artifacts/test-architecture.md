@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 3267d47aebb3c94b
-story_count: 387
+source_fingerprint: 32dcd1a7d004eef9
+story_count: 388
 test_file_count: 140
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 387
-- **Epics parsed:** 107
+- **Stories parsed:** 388
+- **Epics parsed:** 108
 - **Test files inventoried:** 140 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `3267d47aebb3c94b`
+- **Source fingerprint:** `32dcd1a7d004eef9`
 
 ## Risk Assessment
 
@@ -133,6 +133,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 104: The CFE regression lane runs when what its tests load changes (fix under spec-pyforge-steward CAP-159; no CAP)
 - Epic 106: The two `mypy` lanes keep separate caches (fix under spec-pyforge-steward CAP-159; no CAP)
 - Epic 107: The preflight refuses a stranded lane, and its serial reference resolves under pixi (fix under spec-pyforge-steward CAP-159; no CAP)
+- Epic 108: `estate reconcile` and `ci status` report what happened (fixes under spec-pyforge-steward CAP-167 and CAP-166; no CAP)
 
 ### Low-risk epics
 
@@ -680,6 +681,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 105.1 | The preflight never runs two docs-site lanes at once | none observed |
 | 106.1 | The two `mypy` lanes keep separate caches | none observed |
 | 107.1 | A stranded preflight lane is refused, and pr-preflight-lanes resolves under pixi | none observed |
+| 108.1 | `estate reconcile` reds on a failed generator, and a retired CI row is never ... | none observed |
 
 ## Quality Gates
 

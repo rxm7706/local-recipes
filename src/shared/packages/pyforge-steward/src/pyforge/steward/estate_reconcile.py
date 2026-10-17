@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shlex
 import sys
 import time
 from dataclasses import dataclass, field
@@ -16,12 +17,15 @@ from .estate import (
     _ensure_flag,
     _list_journals,
     _load_journal,
-    _record_step,
     _refusal,
 )
 from .interfaces import DutyResult
 
 EXIT_RECONCILE_CHECKS = 1
+
+# The Dream whose measured matrix ``scripts/pixi_env_matrix.py`` writes. The script takes it only as ``--dream``
+# (Story 108.1: a positional path made argparse exit 2 and the matrix never regenerated).
+ENV_MATRIX_DREAM = "docs/dreams/pyforge-unifying-strategy.md"
 
 WATCH_PATHS: tuple[str, ...] = (
     "pixi.toml",
@@ -29,7 +33,7 @@ WATCH_PATHS: tuple[str, ...] = (
     "environment.yaml",
     "docs/reference/library-llms-full.md",
     "docs/reference/bmad-estate-llms-full.md",
-    "docs/dreams/pyforge-unifying-strategy.md",
+    ENV_MATRIX_DREAM,
     "docs/reference/environments.md",
     "docs/how-to/pixi-tasks.md",
     # the docs generators restamp the map entry of each page they write
@@ -105,21 +109,10 @@ def _build_generators(
             "environment.yaml",
         ),
         ("library-catalog-floors", [py, "scripts/llms_full_check.py", "--fix-floors"], None),
-        (
-            "bmad-estate-catalog",
-            [py, "-m", "pyforge.scribe.cli", "catalog", "bmad-estate", "--write"],
-            None,
-        ),
-        (
-            "env-matrix",
-            [
-                py,
-                "scripts/pixi_env_matrix.py",
-                "--update",
-                "docs/dreams/pyforge-unifying-strategy.md",
-            ],
-            None,
-        ),
+        # scribe's own command, in the Guild env: the steward env the duty runs in has no ``pyforge.scribe``, so
+        # ``sys.executable -m pyforge.scribe.cli`` always exited 1 (Story 108.1).
+        ("bmad-estate-catalog", _guild_python("-m", "pyforge.scribe.cli", "catalog", "bmad-estate", "--write"), None),
+        ("env-matrix", [py, "scripts/pixi_env_matrix.py", "--update", "--dream", ENV_MATRIX_DREAM], None),
         ("docs-environments", [py, "scripts/docs_environments.py"], None),
         ("docs-pixi-tasks", [py, "scripts/docs_pixi_tasks.py"], None),
     ]
@@ -135,13 +128,15 @@ def _build_generators(
 
 
 def _guild_python(*args: str) -> list[str]:
-    """Checks are Guild tasks: the steward env carries no ``pyforge.doctor``, so they run in pyforge-guild."""
+    """A Guild-env Python argv. The steward env the duty runs in carries no ``pyforge.doctor`` or ``pyforge.scribe``,
+    so the checks and the BMAD-estate catalog generator run in pyforge-guild."""
     return ["pixi", "run", "--as-is", "-x", "-e", "pyforge-guild", "python", *args]
 
 
 GATING_CHECKS: tuple[tuple[str, list[str]], ...] = (
     ("llms-full-check", _guild_python("scripts/llms_full_check.py")),
     ("bmad-estate-check", _guild_python("scripts/bmad_estate_check.py")),
+    ("pixi-env-matrix-check", _guild_python("scripts/pixi_env_matrix.py", "--check", "--dream", ENV_MATRIX_DREAM)),
     ("pixi-version-check", _guild_python("scripts/pixi_version_check.py")),
     ("target-version-check", _guild_python("scripts/target_version_check.py")),
     ("sbom-gaps-check", _guild_python("scripts/sbom_gap_derive.py")),
@@ -237,18 +232,36 @@ class ReconcileDeps(EstateDeps):
 
 def _run_generator(
     deps: ReconcileDeps,
+    label: str,
     argv: list[str],
     output_rel: str | None,
     steps: list[dict],
 ) -> int:
+    """Run one generator and journal it as the ``generate-bmad-suite`` row is: label, argv, exit, seconds."""
     started = time.monotonic()
     proc = deps.runner(argv, deps.root)
     if output_rel is not None and proc.returncode == 0:
         out_path = deps.root / output_rel
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(proc.stdout or "", encoding="utf-8")
-    _record_step(steps, argv, proc, started)
+    step: dict[str, Any] = {
+        "label": label,
+        "argv": list(argv),
+        "exit": int(proc.returncode),
+        "seconds": round(time.monotonic() - started, 3),
+    }
+    if proc.returncode != 0:
+        step["error"] = "non-zero exit"
+    steps.append(step)
     return int(proc.returncode)
+
+
+def _generator_failure_lines(failed_steps: list[dict]) -> list[str]:
+    """One summary line per failed generator, in run order: its label, exit code and command (Story 108.1)."""
+    return [
+        f"estate reconcile: generator {s['label']} failed (exit {s['exit']}): {shlex.join(s['argv'])}"
+        for s in failed_steps
+    ]
 
 
 def _run_check(
@@ -365,6 +378,7 @@ def run_reconcile(deps: ReconcileDeps, *, journal_path: Path | None = None) -> D
 
     before = _fingerprints(deps.root, WATCH_PATHS)
     gen_steps: list[dict] = []
+    failed_steps: list[dict] = []
     bmad_floor_lines: list[str] = []
     generator_failed = False
     for label, argv, output_rel in _build_generators(journal_doc, deps.root, journal_path=journal_path):
@@ -389,11 +403,11 @@ def run_reconcile(deps: ReconcileDeps, *, journal_path: Path | None = None) -> D
                     bmad_floor_lines = _bmad_suite_floor_summary(parsed)
                     step["bmad_suite"] = parsed
             gen_steps.append(step)
-        else:
-            code = _run_generator(deps, argv, output_rel, gen_steps)
-            if code != 0 and "bmad-estate" in " ".join(argv):
-                # scribe non-zero: continue remaining checks per spec I/O matrix
-                pass
+        elif _run_generator(deps, label, argv, output_rel, gen_steps) != 0:
+            # A failed generator reds the run once everything else has run, as a failed gating check does (Story
+            # 100.3's I/O matrix: "reds naming scribe's command, continues the remaining checks"; Story 108.1).
+            failed_steps.append(gen_steps[-1])
+    generator_lines = _generator_failure_lines(failed_steps)
 
     if generator_failed:
         reconcile_block: dict[str, Any] = {
@@ -409,7 +423,7 @@ def run_reconcile(deps: ReconcileDeps, *, journal_path: Path | None = None) -> D
         reason = fail_step.get("error") or "unknown"
         return DutyResult(
             ok=False,
-            summary=f"estate reconcile: generate-bmad-suite failed ({reason})",
+            summary="\n".join([f"estate reconcile: generate-bmad-suite failed ({reason})", *generator_lines]),
             details={"exit_code": EXIT_RECONCILE_CHECKS, "reconcile": reconcile_block},
         )
 
@@ -472,10 +486,13 @@ def run_reconcile(deps: ReconcileDeps, *, journal_path: Path | None = None) -> D
     ]
     summary_lines.extend(bmad_floor_lines)
     summary_lines.append(f"recommended commit:\n{recommended}")
+    failure_lines = list(generator_lines)
     if gating_failed:
+        failure_lines.append(f"estate reconcile: check {first_fail_name} failed")
+    if failure_lines:
         return DutyResult(
             ok=False,
-            summary=f"estate reconcile: check {first_fail_name} failed\n" + "\n".join(summary_lines),
+            summary="\n".join([*failure_lines, *summary_lines]),
             details={"exit_code": EXIT_RECONCILE_CHECKS, "reconcile": reconcile_block},
         )
     return DutyResult(
