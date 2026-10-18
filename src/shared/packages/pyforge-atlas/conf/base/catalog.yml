@@ -1213,7 +1213,9 @@ discovery_aoss_premium_python_raw:
 
 # rxm7706/about README maintainer + co-maintainer feedstock lists
 # ("N. conda-forge/<feedstock>-feedstock" under the two "List Of FeedStocks - As
-# (Co-)Maintainer" headers — live snapshot 2026-07-11). Deliberately UNAUTHENTICATED
+# (Co-)Maintainer" headers — live snapshot 2026-07-11; since 2026-10-18 "### Sole
+# maintainer (N)" / "### Co-maintainer (N)" with backticked slugs, Story 34.6, which also
+# wires the public fetch when live public sources are on). Deliberately UNAUTHENTICATED
 # (mirrors TrendingSnapshotDataset / the 5 conda-forge-bot-data entries) — reuses the
 # EXISTING GITHUB_RAW_BASE_URL override point, no new global. parse_about_readme
 # degrades to [] per list on a header/line-format break — never raises, never

@@ -65,6 +65,7 @@ from typing import Any, Callable
 import pandas as pd
 from kedro.io import AbstractDataset
 
+from . import public_sources
 from .refresh import (
     DEFAULT_REFRESH_MAX_RETRIES,
     DEFAULT_REFRESH_TIMEOUT_SECONDS,
@@ -198,12 +199,12 @@ class PurlAssociatorMappingsDataset(ExternalRefreshDataset):
             metadata=metadata,
         )
 
-    def _do_refresh(self) -> pd.DataFrame:
+    def _refresh_with(self, fetch: Callable[..., Any]) -> pd.DataFrame:
         """Fetch + parse the index once. Never raises — a fetch failure WARNs and
         returns an empty frame (which ``save()`` turns into keep-last-good + mark
         stale)."""
         try:
-            payload = self._fetcher(self._url)
+            payload = fetch(self._url)
         except Exception as exc:  # AD-13
             logger.warning("purl associator index fetch failed: %s", exc)
             return pd.DataFrame(columns=list(_PURL_ASSOC_COLUMNS))
@@ -211,6 +212,18 @@ class PurlAssociatorMappingsDataset(ExternalRefreshDataset):
         if not rows:
             logger.warning("purl associator index parsed zero packages (layout break?) — keeping last-good")
         return pd.DataFrame(rows, columns=list(_PURL_ASSOC_COLUMNS))
+
+    def _do_refresh(self) -> pd.DataFrame:
+        assert self._fetcher is not None
+        return self._refresh_with(self._fetcher)
+
+    def _live_refresher(self) -> Callable[[], pd.DataFrame] | None:
+        # Story 34.6: the store's own public page(s), unauthenticated, when live public sources are
+        # on -- read at each refresh, never at construction (a Dagster code location constructs at import)
+        return self._refresh_public if public_sources.live() else None
+
+    def _refresh_public(self) -> pd.DataFrame:
+        return self._refresh_with(public_sources.fetch_text)
 
     def fetch_shard(self, key: str, *, fetcher: Callable[[str], Any] | None = None) -> dict:
         """On-demand per-package shard fetch for ``alternative_purls``/``cpes``

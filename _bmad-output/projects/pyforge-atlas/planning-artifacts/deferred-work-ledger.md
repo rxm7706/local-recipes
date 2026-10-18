@@ -5001,3 +5001,25 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-10-18 -- implementer response to 34.5 review round 2
   status: open
+
+### DW-atlas-34-6-1: The `pyforge-atlas-bootstrap` task description still names all three discovery stores as fetcher-less.
+
+- source_spec: `planning-artifacts/specs/spec-34-6-the-public-discovery-stores-refresh-themselves.md`
+  summary: Since Story 34.6, `tools/bootstrap.py` lists the AOSS premium and Anaconda distribution stores as expected stale only while `pyforge.atlas.live_public_sources` is off; the Basilisk package listing is always listed. The `pyforge-atlas-bootstrap` task description in `pixi.toml` (mirrored in the generated `docs/how-to/pixi-tasks.md`) still says it lists all three. Fifteen Specs govern `pixi.toml`, so a description-only edit would move fifteen memlogs and their chain-currency gates; the edit belongs with the next `pixi.toml` change that touches those Specs anyway.
+  evidence: Story 34.6 review round 1, should-fix 2 (2026-10-18); `scripts/.spec-surface-baseline.json` names `pixi.toml` under 15 Specs.
+  location: pixi.toml (`[feature.pyforge-atlas.tasks.pyforge-atlas-bootstrap]` description); docs/how-to/pixi-tasks.md (regenerate with `pixi run -e pyforge-guild docs-pixi-tasks`)
+  origin: review finding, atlas Story 34.6 independent review round 1
+  severity: low
+  promoted: 2026-10-18 -- implementer response to 34.6 review round 1
+  status: open
+
+### DW-atlas-34-6-2: No story owns the Basilisk package listing, which answers unauthenticated.
+
+- source_spec: `planning-artifacts/specs/spec-34-6-the-public-discovery-stores-refresh-themselves.md`
+  summary: `discovery_basilisk_packages_raw` (`BasiliskPackagesDataset`, `GET {BASILISK_BASE_URL}/v1/packages`) answered 200 with no credential on 2026-10-18, but stays fetcher-less. Whether Basilisk runs unattended is the Spec's open question on CAP-66, and Story 36.1 covers only the three `vulnerability_basilisk_*` datasets. The operator's ruling on that question decides whether 36.1 also wires this store or a new story does.
+  evidence: Story 34.6 review round 1, should-fix 2 (a `limit=1` probe answered 200 unauthenticated); `spec-pyforge-atlas` Open Questions; `epics.md` Story 36.1's Surface line.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/basilisk.py (BasiliskPackagesDataset); src/shared/packages/pyforge-atlas/tools/bootstrap.py (_NO_PUBLIC_REFRESHER)
+  origin: review finding, atlas Story 34.6 independent review round 1
+  severity: low
+  promoted: 2026-10-18 -- implementer response to 34.6 review round 1
+  status: open

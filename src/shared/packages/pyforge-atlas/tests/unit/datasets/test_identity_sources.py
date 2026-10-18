@@ -519,3 +519,46 @@ def test_local_recipes_overlay_dataset_is_read_only(tmp_path):
 def test_local_recipes_overlay_dataset_rejects_unexpected_kwargs():
     with pytest.raises(TypeError):
         LocalRecipesOverlayDataset(filepath="recipes", bogus_kwarg=True)  # type: ignore[call-arg]
+
+
+# -- Story 34.6: the purl associator fetches its own public index (flag on) ----------------
+
+from pyforge.testing_kit import flag_states  # noqa: E402
+
+from pyforge.atlas.datasets import public_sources  # noqa: E402
+
+
+@flag_states("pyforge.atlas.live_public_sources")  # spelled out: the flag gate reads this file for the key
+def test_the_purl_associator_with_no_fetcher_reads_its_public_index(tmp_path, flag_provider, monkeypatch):
+    import json
+
+    requested: list[str] = []
+
+    def _fetch_text(url: str, *, timeout: int = 300) -> str:
+        requested.append(url)
+        return json.dumps(_ASSOC_PAYLOAD)
+
+    monkeypatch.setattr(public_sources, "fetch_text", _fetch_text)
+    monkeypatch.setattr(public_sources, "live", lambda: flag_provider[public_sources.FLAG_KEY])
+    ds = _assoc(tmp_path / "assoc")
+
+    ds.save(RefreshRequest(store="purl_associator_mappings_raw", force=True))
+
+    if flag_provider[public_sources.FLAG_KEY]:
+        assert requested == [ASSOC_URL] and list(ds.load()["assoc_key"]) == ["requests"]
+    else:
+        assert requested == [] and ds.load().empty
+
+
+def test_the_purl_associator_injected_fetcher_wins(tmp_path, monkeypatch):
+    import json
+
+    monkeypatch.setattr(public_sources, "live", lambda: True)
+    monkeypatch.setattr(
+        public_sources, "fetch_text", lambda url, **kw: pytest.fail("the injected fetcher must be used")
+    )
+    ds = _assoc(tmp_path / "assoc", fetcher=lambda url: json.dumps(_ASSOC_PAYLOAD))
+
+    ds.save(RefreshRequest(store="purl_associator_mappings_raw", force=True))
+
+    assert list(ds.load()["assoc_key"]) == ["requests"]

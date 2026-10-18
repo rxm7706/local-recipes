@@ -134,12 +134,13 @@ already degrade to an offline no-op by default, so the stub only matters
 for getting PAST catalog construction, never for a real fetch. A real
 operator's own `credentials.yml` (with real tokens) is left untouched.
 
-**Fetcher-less discovery stores (Story 27.2):** `discovery_basilisk_packages_raw`,
-`discovery_aoss_premium_python_raw`, and `discovery_anaconda_dist_2026x_raw` have
-no live refresher on an unattended bootstrap — their refresh-trigger nodes fire,
-but the dataset classes degrade to last-good/empty plus a stale marker (AD-13).
-`tools/bootstrap.py` prints them in the pre-run summary as *expected stale*; populate
-them only on an attended run with a wired fetcher.
+**Fetcher-less discovery stores (Story 27.2; Story 34.6):** `discovery_basilisk_packages_raw`
+has no live refresher on an unattended bootstrap, and neither do `discovery_aoss_premium_python_raw`
+and `discovery_anaconda_dist_2026x_raw` when live public sources are off
+(`pyforge.atlas.live_public_sources`; on, the default in dev and staging, they fetch their own
+public pages). A store with no refresher still has its refresh-trigger node fire, but degrades to
+last-good/empty plus a stale marker (AD-13). `tools/bootstrap.py` prints the stores that apply in
+the pre-run summary as *expected stale*.
 
 **Operator env block (Story 21.8: extended past the CAP-1 subset to cover
 every variable touched by the full bootstrap + `--live-catalog` chain,
