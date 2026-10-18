@@ -20,7 +20,7 @@ import pandas as pd
 from kedro.io import AbstractDataset
 from kedro_datasets.api import APIDataset
 
-from .refresh import MappingCacheDataset
+from .json_sources import JSONSourceDataset
 
 logger = logging.getLogger(__name__)
 
@@ -657,46 +657,47 @@ class CrossChannelRepodataDataset(AbstractDataset):
 
 
 class ParselmouthMappingDataset(AbstractDataset):
-    """Phase C: parselmouth / verified mapping slice for ``pypi_parselmouth_mapping_raw``.
+    """Phase C: the conda-forge bot's verified PyPI <-> conda name mapping, for
+    ``pypi_parselmouth_mapping_raw`` (legacy ``phase_c_parselmouth_join``, CFA:1744).
 
-    Story 21.2: reads the already-populated ``pypi_conda_map_store`` flat cache
-    (produced by the ``export_pypi_conda_map`` node, Story 21.1's bootstrap chain) via
-    a composed :class:`~.refresh.MappingCacheDataset` pointed at the SAME ``filepath``
-    — never a second fetch (the intent's "Parselmouth reads from the existing
-    pypi_conda_map_store rather than a new fetch"). The composed dataset ALREADY owns
-    the AD-13 last-good/staleness discipline; this class only reprojects its flat
-    ``{pypi_name: conda_name}`` map to the 3-column shape Phase C nodes expect.
+    Story 34.2 (CAP-64): reads ``mappings/pypi/name_mapping.yaml`` from
+    ``conda-forge/conda-forge-bot-data`` -- the file legacy reads through
+    ``conda_forge_metadata``'s ``get_pypi_name_mapping`` -- through a composed
+    :class:`~.json_sources.JSONSourceDataset` (YAML decode, AD-13 last-good + marker).
+    Until then (Story 21.2) it read the flat ``pypi_conda_map_store``, which only
+    ``export_pypi_conda_map`` writes, from the mapping this dataset feeds: on a fresh
+    data root it never filled. Rows keep legacy's projection: ``pypi_name`` lowercased,
+    ``conda_name`` as given, ``match_source`` ``parselmouth``.
     """
 
     _COLUMNS = ("pypi_name", "conda_name", "match_source")
-    _MATCH_SOURCE = "pypi_conda_map_store"
+    _MATCH_SOURCE = "parselmouth"
 
-    def __init__(self, *, filepath: str, metadata: dict[str, Any] | None = None) -> None:
+    def __init__(self, *, url: str, filepath: str, metadata: dict[str, Any] | None = None) -> None:
         # No **kwargs sink: an unrecognized catalog key must raise loudly (a stale
         # catalog misconfiguration) rather than be silently discarded.
+        self._url = url
         self._filepath = filepath
         self.metadata = metadata
-        self._cache = MappingCacheDataset(filepath=filepath)
+        self.source = JSONSourceDataset(url=url, filepath=filepath, expect="list", decode="yaml")
 
     def load(self) -> pd.DataFrame:
-        try:
-            mapping = self._cache.load()
-        except Exception as exc:  # never raise (AD-13): degrade to empty.
-            logger.warning("pypi_conda_map_store unreadable, degrading to empty: %s", exc)
-            mapping = {}
-        if not isinstance(mapping, dict):
-            mapping = {}
-        if not mapping:
+        entries = self.source.load()  # never raises (AD-13): last-good or [] under a marker
+        rows: dict[tuple[str, str], dict[str, str]] = {}
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            pypi_name, conda_name = entry.get("pypi_name"), entry.get("conda_name")
+            if not (isinstance(pypi_name, str) and pypi_name and isinstance(conda_name, str) and conda_name):
+                continue
+            key = (pypi_name.lower(), conda_name)
+            rows[key] = {"pypi_name": key[0], "conda_name": conda_name, "match_source": self._MATCH_SOURCE}
+        if not rows:
             return pd.DataFrame(columns=self._COLUMNS)
-        rows = [
-            {"pypi_name": k, "conda_name": v, "match_source": self._MATCH_SOURCE}
-            for k, v in sorted(mapping.items())
-            if isinstance(k, str) and isinstance(v, str)
-        ]
-        return pd.DataFrame(rows, columns=self._COLUMNS).reset_index(drop=True)
+        return pd.DataFrame([rows[k] for k in sorted(rows)], columns=self._COLUMNS).reset_index(drop=True)
 
     def save(self, data: Any) -> None:
         raise NotImplementedError(f"{type(self).__name__} is read-only")
 
     def _describe(self) -> dict[str, Any]:
-        return {"parameterization": type(self).__name__, "filepath": self._filepath}
+        return {"parameterization": type(self).__name__, "url": self._url, "filepath": self._filepath}

@@ -3305,7 +3305,7 @@ unauthenticated, live and in-package. Realizes UJ-2's "the atlas answers from it
   the legacy `cf_atlas.db` measure of the same day.
 - With the network blocked the same run exits 0 and every public store keeps last-good under a `stale` marker (AD-13).
 - The no-inline-IO denylist is unchanged; fetches compose `APIDataset` or run through `pyforge.core.process`.
-- Decomposes into **Epic 34**, Stories 34.1–34.9.
+- Decomposes into **Epic 34**, Stories 34.1–34.10 (34.10, Phase H coverage, minted 2026-10-18 with Story 34.2).
 
 #### FR-73: VCS and registry fetches cover the full universe, credentialed on opt-in ← CAP-65
 

@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: c5262e8d25ad1bb3
-story_count: 126
-test_file_count: 156
+source_fingerprint: a467a460bf569323
+story_count: 127
+test_file_count: 158
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 126
+- **Stories parsed:** 127
 - **Epics parsed:** 36
-- **Test files inventoried:** 156 under `src/shared/packages/pyforge-atlas/tests/`
+- **Test files inventoried:** 158 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `c5262e8d25ad1bb3`
+- **Source fingerprint:** `a467a460bf569323`
 
 ## Risk Assessment
 
@@ -103,6 +103,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/catalog/test_catalog_resolution.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/catalog/test_conventions.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/catalog/test_credential_scoping.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/catalog/test_json_sources_catalog.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/catalog/test_no_inline_io.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/catalog/test_override_points.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/catalog/test_scale_floors.py` | unit | none observed |
@@ -114,6 +115,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_dependency_history.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_identity_sources.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_incremental_parquet.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_json_sources.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_migration_status.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_no_thirty_gb_lie.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_pypi_json_request_dataset.py` | unit | none observed |
@@ -357,6 +359,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 34.7 | The vulnerability stores refresh themselves | none observed |
 | 34.8 | Migration status fills through a driver node | none observed |
 | 34.9 | Phase P fills from the public ClickHouse mirror | none observed |
+| 34.10 | Phase H covers every mapped PyPI project, gated by its serial | none observed |
 | 35.1 | One opt-in switch, and GitHub authenticates | none observed |
 | 35.2 | The VCS batches come from the whole universe | none observed |
 | 35.3 | Upstream versions and feedstock health come from GitHub | none observed |

@@ -217,16 +217,18 @@ def resolve_for_catalog_dataset(catalog: Any, name: str, loaded_value: Any) -> P
                 reason=f"non-local protocol {protocol!r}: cannot stat the backing file locally",
             )
         return resolve_for_file(described["filepath"])
-    if isinstance(dataset, JSONSourceDataset):
+    source = dataset if isinstance(dataset, JSONSourceDataset) else getattr(dataset, "source", None)
+    if isinstance(source, JSONSourceDataset):
         # Story 34.1: a fresh fetch is "now"; a load that served last-good (or nothing) says
         # so, with the copy's own mtime and the AD-13 marker's reason -- never "now".
-        marker = dataset.staleness()
+        # Story 34.2: a dataset that composes one (ParselmouthMappingDataset) reports it.
+        marker = source.staleness()
         if marker is None:
             return ProvenanceInfo(
                 kind="live-fetch",
                 build_stamp=datetime.datetime.now(tz=datetime.UTC).isoformat(),
             )
-        copy = resolve_for_file(dataset.last_good_path)
+        copy = resolve_for_file(source.last_good_path)
         return ProvenanceInfo(
             kind=copy.kind,
             build_stamp=copy.build_stamp,

@@ -11,6 +11,7 @@ substitute oracle). **Credential:** `—` public, unauthenticated; `opt-in` runs
 | endoflife.date `api/all.json` | `pypi_endoflife_raw` → `seed_gaps_lts_registry_report` | `lts_registry_gap.py` | product list parses; report rows > 0 | — | 34.1 |
 | SPDX `license-list-data` `licenses.json` | `seed_spdx_upstream_list_raw` → `seed_gaps_spdx_report` | `spdx_schema_gap.py` | license ids parse; report rows > 0 | — | 34.1 |
 | conda-forge-bot-data `mappings/pypi/name_mapping.yaml` | `pypi_parselmouth_mapping_raw` → `pypi_conda_mapping` → H, R, S, release velocity | C | legacy C matched 11,005 conda rows | — | 34.2 |
+| pypi.org `/pypi/<name>/json` (per mapped project) | `pypi_json_raw` → `pypi_current_versions`, `pypi_intelligence_enriched`, `pypi_intelligence_scored` | H | legacy H's eligible set (never fetched, serial moved, 30-day re-check) | — | 34.2 (candidates), 34.10 (coverage) |
 | conda-forge-bot-data-node_attrs, -pr_info, -version_pr_info (sharded) | `core_cf_graph_raw` → `core_dependencies`, `core_feedstock_health`, `vcs_maintainers`, `vcs_package_maintainers`, Phase E fields | E, J, M | feedstock count vs `all_feedstocks.json`; edges vs node_attrs requirements (legacy reads 0 since the split) | — | 34.3 |
 | `anaconda-package-data` monthly S3 parquet | `core_downloads` + 3 breakdowns, `core_version_download_history` | F (s3) | legacy F fetched 31,041 packages | — | 34.4 |
 | Homebrew, Nixpkgs, Spack, Debian, Fedora indexes | 5 Tier-3 stores → `pypi_tier3_channel_flags` | — (new signal) | each store non-empty; flags rows > 0 | — | 34.5 |

@@ -120,30 +120,82 @@ def test_parse_cf_graph_tarball_empty():
     assert "feedstock_name" in df.columns
 
 
-# -- ParselmouthMappingDataset (Story 21.2: reads pypi_conda_map_store) ------
+# -- ParselmouthMappingDataset (Story 34.2: the bot's name_mapping.yaml) ------
+
+_NAME_MAPPING_YAML = """
+- conda_name: 21cmfast
+  import_name: py21cmfast
+  mapping_source: regro-bot
+  pypi_name: 21cmfast
+- conda_name: beautifulsoup4
+  import_name: bs4
+  mapping_source: regro-bot
+  pypi_name: BeautifulSoup4
+- conda_name: pytorch
+  import_name: torch
+  mapping_source: static
+  pypi_name: torch
+- conda_name: beautifulsoup4
+  pypi_name: beautifulsoup4
+- conda_name: ''
+  pypi_name: broken
+- just a string
+"""
 
 
-def test_parselmouth_reads_pypi_conda_map_store(tmp_path):
-    cache_path = tmp_path / "pypi_conda_map.json"
-    cache_path.write_text(json.dumps({"numpy": "numpy", "beautifulsoup4": "beautifulsoup4"}))
-    ds = ParselmouthMappingDataset(filepath=str(cache_path))
-    out = ds.load()
-    assert set(out["pypi_name"]) == {"numpy", "beautifulsoup4"}
-    assert (out["match_source"] == "pypi_conda_map_store").all()
+class _YamlResponse:
+    def __init__(self, text: str) -> None:
+        self.text = text
 
 
-def test_parselmouth_absent_store_returns_empty_frame_not_stale_crash(tmp_path):
-    ds = ParselmouthMappingDataset(filepath=str(tmp_path / "never-written.json"))
-    out = ds.load()
+def _parselmouth(tmp_path, outcome):
+    ds = ParselmouthMappingDataset(url="https://example.invalid/name_mapping.yaml", filepath=str(tmp_path / "pm"))
+
+    class _Inner:
+        def load(self):
+            if isinstance(outcome, Exception):
+                raise outcome
+            return _YamlResponse(outcome)
+
+    ds.source._inner = _Inner()  # network-free (AD-11)
+    return ds
+
+
+def test_parselmouth_reads_the_bot_name_mapping(tmp_path):
+    out = _parselmouth(tmp_path, _NAME_MAPPING_YAML).load()
+
+    assert list(out.columns) == ["pypi_name", "conda_name", "match_source"]
+    assert out.to_dict("records") == [
+        {"pypi_name": "21cmfast", "conda_name": "21cmfast", "match_source": "parselmouth"},
+        {"pypi_name": "beautifulsoup4", "conda_name": "beautifulsoup4", "match_source": "parselmouth"},
+        {"pypi_name": "torch", "conda_name": "pytorch", "match_source": "parselmouth"},
+    ]  # pypi_name lowercased as legacy Phase C does; the BeautifulSoup4 / beautifulsoup4 pair
+    # collapses to one row; malformed entries dropped
+
+
+def test_parselmouth_unreachable_with_no_last_good_returns_empty_frame(tmp_path):
+    from kedro.io.core import DatasetError
+
+    out = _parselmouth(tmp_path, DatasetError("unreachable")).load()  # never raises (AD-13)
+
     assert out.empty
     assert list(out.columns) == ["pypi_name", "conda_name", "match_source"]
 
 
-def test_parselmouth_corrupt_store_degrades_to_empty_never_raises(tmp_path):
-    cache_path = tmp_path / "pypi_conda_map.json"
-    cache_path.write_text("{not valid json")
-    ds = ParselmouthMappingDataset(filepath=str(cache_path))
-    out = ds.load()  # never raises (AD-13)
+def test_parselmouth_unreachable_keeps_last_good(tmp_path):
+    from kedro.io.core import DatasetError
+
+    _parselmouth(tmp_path, _NAME_MAPPING_YAML).load()
+
+    out = _parselmouth(tmp_path, DatasetError("unreachable")).load()
+
+    assert len(out) == 3
+    assert _parselmouth(tmp_path, DatasetError("unreachable")).source.staleness() is not None
+
+
+def test_parselmouth_corrupt_yaml_degrades_never_raises(tmp_path):
+    out = _parselmouth(tmp_path, "- [unclosed").load()
+
     assert out.empty
 
 
@@ -151,13 +203,13 @@ def test_parselmouth_rejects_unexpected_kwargs():
     """Catches stale catalog misconfiguration loudly rather than silently
     discarding an unrecognized key (review finding)."""
     with pytest.raises(TypeError):
-        ParselmouthMappingDataset(filepath="whatever", url="https://example.invalid")
+        ParselmouthMappingDataset(url="https://example.invalid", filepath="whatever", mapping_filepath="x")
 
 
 def test_parselmouth_save_is_read_only(tmp_path):
     from kedro.io.core import DatasetError
 
-    ds = ParselmouthMappingDataset(filepath=str(tmp_path / "map.json"))
+    ds = ParselmouthMappingDataset(url="https://example.invalid/m.yaml", filepath=str(tmp_path / "pm"))
     with pytest.raises(DatasetError, match="read-only"):
         ds.save({"a": "b"})
 
@@ -510,24 +562,6 @@ def test_resolve_anaconda_channel_urls_honors_channel_env_override(monkeypatch):
     monkeypatch.setenv("PYTORCH_BASE_URL", "https://custom.example/pytorch")
     urls = CS._resolve_anaconda_channel_urls("pytorch", "noarch", "repodata.json")
     assert urls[0] == "https://custom.example/pytorch/noarch/repodata.json"
-
-
-def test_parselmouth_mapping_cache_exception_degrades_empty(monkeypatch, tmp_path):
-    ds = ParselmouthMappingDataset(filepath=str(tmp_path / "map.json"))
-
-    def _boom() -> None:
-        raise OSError("cache unreadable")
-
-    monkeypatch.setattr(ds._cache, "load", _boom)
-    out = ds.load()
-    assert out.empty
-    assert list(out.columns) == ["pypi_name", "conda_name", "match_source"]
-
-
-def test_parselmouth_non_dict_cache_degrades_empty(monkeypatch, tmp_path):
-    ds = ParselmouthMappingDataset(filepath=str(tmp_path / "map.json"))
-    monkeypatch.setattr(ds._cache, "load", lambda: ["not-a-dict"])
-    assert ds.load().empty
 
 
 def test_conda_repodata_dataset_iterates_default_subdirs(monkeypatch):

@@ -250,13 +250,15 @@ pypi_bigquery_downloads_raw:
   metadata:
     layer: raw
 
-# Phase C parselmouth / verified mapping slice. Story 21.2: reads the already-
-# populated `pypi_conda_map_store` flat cache (export_pypi_conda_map's single-writer
-# output) instead of a live cf-graph-countyfair fetch — no cf_atlas.db seed, no
-# second fetch (AD-13 last-good/staleness already owned by MappingCacheDataset).
+# Phase C parselmouth / verified mapping slice. Story 34.2: the conda-forge bot's
+# `mappings/pypi/name_mapping.yaml` (legacy Phase C's source, via conda_forge_metadata),
+# fetched live with a last-good copy and the AD-13 marker under filepath. Story 21.2 read the
+# flat `pypi_conda_map_store` instead, which only export_pypi_conda_map writes from the
+# mapping this entry feeds, so a fresh data root never filled it.
 pypi_parselmouth_mapping_raw:
   type: pyforge.atlas.datasets.ParselmouthMappingDataset
-  filepath: ${globals:paths.pypi_conda_map}
+  url: ${globals:endpoint_bases.GITHUB_RAW_BASE_URL}/conda-forge/conda-forge-bot-data/main/mappings/pypi/name_mapping.yaml
+  filepath: ${globals:paths.data_root}/raw/pypi_parselmouth_mapping_raw
   metadata:
     layer: raw
 
