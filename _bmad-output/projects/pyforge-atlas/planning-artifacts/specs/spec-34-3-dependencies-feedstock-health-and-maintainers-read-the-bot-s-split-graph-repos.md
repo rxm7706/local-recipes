@@ -2,9 +2,9 @@
 title: "34.3: Dependencies, feedstock health and maintainers read the bot's split graph repos"
 type: 'fix'
 created: '2026-10-18'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'bdffa4c135'
-review_loop_iteration: 1
+review_loop_iteration: 3
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -162,3 +162,7 @@ a schema change that drops a column consumers read.
   `tests/unit/semantic/test_metric_classifiers.py` runs them on DuckDB against verbatim ports of legacy `_classify` and
   `policy_check_status`; a malformed `python_min` is a documented departure (legacy keys it `(99, 99)`, the metric says
   `unknown`). Every earlier finding verified fixed; 26 of 26 mutants killed.
+- 2026-10-18: round 3 FAIL on one blocker the full preflight also caught: `_SourceEmpty` lacked `PyforgeError` as a
+  base (`spec-pyforge-core` CAP-5, `test_exception_root_sole_ownership`). Fixed; the new classifier test verified
+  against the legacy originals (7 of 7 mutants killed) and the coverage gate green CI's way. Verdict PASS with the fix;
+  promoted to `done`.

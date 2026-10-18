@@ -2455,7 +2455,7 @@ So that `core_dependencies`, `core_feedstock_health` and the maintainer tables f
 **When** the dataset loads
 **Then** it reads the three split tarballs, walks the sharded paths, emits a `maintainers` column, and `core_dependencies`, `core_feedstock_health`, `vcs_maintainers` and `vcs_package_maintainers` hold rows; the feedstock count is checked against the bot's `all_feedstocks.json` (legacy reads nothing since the split, so it is not the oracle here)
 **And** each source URL is an override point (AD-2), and an unreachable repo keeps last-good under `stale`
-**Status:** backlog
+**Status:** done
 
 ### Story 34.4: The download tables fill from Anaconda's monthly parquet
 

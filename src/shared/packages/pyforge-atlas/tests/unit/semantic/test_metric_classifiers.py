@@ -107,8 +107,8 @@ def test_python_min_bump_status_matches_legacy_policy_check(parquet_table) -> No
 
 
 def test_python_min_bump_status_calls_a_malformed_version_unknown(parquet_table) -> None:
-    """A deliberate departure: legacy keys a malformed value as ``(99, 99)`` (``"garbage"`` reads
-    as aggressive, ``"3.9.1"`` as aligned); the metric folds it to NULL and says ``unknown``."""
+    """A deliberate departure: legacy keys ``"garbage"`` as ``(99, 99)`` (aggressive) and reads
+    ``"3.9.1"`` as ``(3, 9)`` (aligned); the metric folds both to NULL and says ``unknown``."""
     frame = pd.DataFrame({"i": [0, 1], "declared_python_min": ["garbage", "3.9"], "empirical_floor": ["3.10", "3.9.1"]})
 
     assert _column(parquet_table, frame, metrics.python_min_bump_status) == ["unknown", "unknown"]

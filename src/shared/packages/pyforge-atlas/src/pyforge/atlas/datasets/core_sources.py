@@ -23,6 +23,7 @@ import pandas as pd
 from kedro.io import AbstractDataset, DatasetError
 from kedro_datasets.api import APIDataset
 from pyforge.core.atomic_write import atomic_write
+from pyforge.core.errors import PyforgeError
 
 from .json_sources import JSONSourceDataset, _describe_exc
 from .refresh import StalenessMarker, _safe_int
@@ -513,7 +514,7 @@ class CondaChanneldataDataset(AbstractDataset):
         return {"url": "channeldata.json"}
 
 
-class _SourceEmpty(Exception):
+class _SourceEmpty(PyforgeError, Exception):
     """A configured bot repo answered, but with no records (a redirect, an empty repo)."""
 
 
