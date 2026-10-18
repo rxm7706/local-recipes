@@ -111,11 +111,19 @@ core_s3_download_stats_raw:
   metadata:
     layer: raw
 
-# regro/cf-graph tarball (Phases J/M; consumed cross-pipeline by E per AD-3 —
-# declared ONCE here by the core producer). Cached with ttls.core_cf_graph_raw.
+# The conda-forge bot's graph (Phases E/J/M; consumed cross-pipeline by E per AD-3 —
+# declared ONCE here by the core producer). Story 34.3: regro/cf-graph-countyfair now serves
+# conda-forge/conda-forge-bot-data, whose tarball no longer holds node_attrs/, pr_info/ or
+# version_pr_info/; cf-scripts publishes them as separate repos (sha1-sharded paths), with live
+# bot PRs as pr_info references into a fourth, -pr_json. Last-good
+# parquet + AD-13 marker under filepath.
 core_cf_graph_raw:
   type: pyforge.atlas.datasets.CfGraphTarballDataset
-  url: ${globals:endpoint_bases.GITHUB_BASE_URL}/regro/cf-graph-countyfair/archive/refs/heads/master.tar.gz
+  url: ${globals:endpoint_bases.GITHUB_BASE_URL}/conda-forge/conda-forge-bot-data-node_attrs/archive/refs/heads/main.tar.gz
+  pr_info_url: ${globals:endpoint_bases.GITHUB_BASE_URL}/conda-forge/conda-forge-bot-data-pr_info/archive/refs/heads/main.tar.gz
+  version_pr_info_url: ${globals:endpoint_bases.GITHUB_BASE_URL}/conda-forge/conda-forge-bot-data-version_pr_info/archive/refs/heads/main.tar.gz
+  pr_json_url: ${globals:endpoint_bases.GITHUB_BASE_URL}/conda-forge/conda-forge-bot-data-pr_json/archive/refs/heads/main.tar.gz
+  filepath: ${globals:paths.data_root}/raw/core_cf_graph_raw
   metadata:
     layer: raw
 

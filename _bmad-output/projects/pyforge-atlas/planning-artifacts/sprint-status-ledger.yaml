@@ -109,7 +109,7 @@ development_status:
   34-1-endoflife-date-and-the-spdx-list-arrive-as-records-the-seed-gap-reports-read: done
   34-10-phase-h-covers-every-mapped-pypi-project-gated-by-its-serial: backlog
   34-2-the-phase-c-mapping-fills-from-the-conda-forge-bot-s-name-mapping: done
-  34-3-dependencies-feedstock-health-and-maintainers-read-the-bot-s-split-graph-repos: backlog
+  34-3-dependencies-feedstock-health-and-maintainers-read-the-bot-s-split-graph-repos: done
   34-4-the-download-tables-fill-from-anaconda-s-monthly-parquet: backlog
   34-5-the-five-os-distro-indexes-refresh-themselves: backlog
   34-6-the-public-discovery-stores-refresh-themselves: backlog

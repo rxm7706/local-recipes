@@ -101,7 +101,8 @@ def test_parse_cf_graph_tarball_emits_dependency_edges():
             }
         }
     }
-    pr_info = {"prs": [{"state": "open"}], "issues": [{}]}
+    # Story 34.3: the bot's real pr_info shape (legacy Phase M), not the invented prs/issues.
+    pr_info = {"PRed": [{"PR": {"state": "open"}, "data": {"version": "2.1"}}]}
     tar_bytes = _multi_file_tar(
         ("cf-graph/pr_info/numpy-feedstock.json", pr_info),
         ("cf-graph/node_attrs/numpy-feedstock.json", node_attrs),
@@ -112,6 +113,7 @@ def test_parse_cf_graph_tarball_emits_dependency_edges():
     assert edge["feedstock_name"] == "numpy-feedstock"
     assert edge["dep_type"] == "run"
     assert edge["open_prs"] == 1
+    assert edge["bot_last_pr_version"] == "2.1"
 
 
 def test_parse_cf_graph_tarball_empty():
@@ -548,7 +550,7 @@ def test_cf_graph_tarball_dataset_parses_tar(monkeypatch):
             return tar_bytes
 
     ds = CS.CfGraphTarballDataset(url="https://example/graph.tgz")
-    ds._inner = _BytesInner()
+    ds._inners = {"node_attrs": _BytesInner()}
     assert isinstance(ds.load(), pd.DataFrame)
 
 
