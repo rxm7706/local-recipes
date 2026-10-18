@@ -2,7 +2,7 @@
 title: "34.6: The public discovery stores refresh themselves"
 type: 'feature'
 created: '2026-10-18'
-status: 'in-review'
+status: 'done'
 baseline_revision: '5908e99603'
 flag:
   key: pyforge.atlas.live_public_sources          # shared with Stories 34.4 (registered it) and 34.5
@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'a store with no injected fetcher keeps today''s behaviour: a due refresh marks it stale, "refresh due but no refresher wired"'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -80,8 +80,9 @@ Type / Effort / Deps: feature / M / Story 34.4 (the flag and `public_sources`).
 
 - **AC1 — The refreshers.** Flag on with no injected fetcher, each of the five stores requests its own URL(s)
   through `public_sources.fetch_text` with no credential and holds rows. Flag off: nothing requested, today's marker.
-  Both states are tested with `flag_states`. `fetch_text` composes `APIDataset` with a timeout and no credentials,
-  and a body with no text raises `DatasetError`.
+  Both states are tested with `flag_states`. `fetch_text` composes `APIDataset` with a timeout and a no-op auth (no
+  `~/.netrc` credential), decodes by the declared charset (UTF-8 when none is declared or the declared one is
+  unknown), and a body that is not bytes raises `DatasetError`.
 - **AC2 — The about README.** Both the 2026-07-11 and the 2026-10-18 shapes parse into slug and role rows.
 - **AC3 — Live:** see Verification.
 - **AC4 — Gates.** `pyforge-atlas-test`, `kedro-test`, `kedro-catalog-check`, the coverage gate, `lint-types` (and
@@ -176,3 +177,13 @@ package; a test that touches the network.
   - **Nits:** charset (UTF-8 unless declared); the flag is read at the refresh (34.5's blocker, applied here too);
     the missing slug's wording; residual risks. `fetch_shard` is no longer live, because it uses only an injected
     fetcher.
+- 2026-10-18: re-review round 2 PASS. All 34 hand mutants were killed, and every gate exits 0. Its nits:
+  - An unknown declared charset now reads as UTF-8 instead of raising `LookupError`.
+  - AC1's wording is fixed.
+  - The rest are recorded as accepted:
+    - a Latin-1 page with no declared charset decodes with replacements;
+    - the injected-fetcher test sets the attributes directly;
+    - `_describe()` reports `refresher_wired` False for a live store (34.5's base);
+    - the bootstrap function has no test (`tools/` is not coverage-gated);
+    - an earlier memlog entry names `docs/map.yaml`, whose edit was reverted.
+  Promoted to `done`.

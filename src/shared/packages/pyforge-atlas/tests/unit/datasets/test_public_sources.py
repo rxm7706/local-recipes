@@ -60,3 +60,9 @@ def test_a_body_that_is_not_bytes_is_a_fetch_failure(monkeypatch, content):
 def test_the_suite_runs_offline():
     """The root conftest pins ``live()`` OFF for every test (Epic 34's hard boundary)."""
     assert public_sources.live() is False
+
+
+def test_an_unknown_declared_charset_reads_as_utf8(monkeypatch):
+    _api(monkeypatch, _Response("café".encode(), "text/html; charset=x-made-up", "x-made-up"), [])
+
+    assert public_sources.fetch_text("https://example.invalid/page") == "café"

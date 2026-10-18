@@ -48,4 +48,7 @@ def fetch_text(url: str, *, timeout: int = 300) -> str:
     headers = getattr(payload, "headers", None) or {}
     declared = "charset=" in str(headers.get("content-type", "")).lower()
     encoding = getattr(payload, "encoding", None) if declared else None
-    return content.decode(encoding or "utf-8", errors="replace")
+    try:
+        return content.decode(encoding or "utf-8", errors="replace")
+    except LookupError:  # a declared charset Python does not know: read it as UTF-8
+        return content.decode("utf-8", errors="replace")
