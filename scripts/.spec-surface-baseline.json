@@ -3728,7 +3728,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "4a70aec827a2c7cf3d41b85edb6c7de86d26c11b"
+  "memlog": "54a404e7f70b719a2c44112f855ac70ae94540a9"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -7254,7 +7254,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "97b4902ee5ca8a71d3f67e258eb491a954d3ffa3"
+  "memlog": "3ec9cb8b502978ebbcd0439dd8dda0d856a7c5c5"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {},
