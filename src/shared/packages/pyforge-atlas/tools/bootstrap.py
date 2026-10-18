@@ -116,11 +116,9 @@ def _ensure_credentials_stub() -> Path | None:
     return creds_path
 
 
-_FETCHER_LESS_DISCOVERY_STORES = (
-    "discovery_basilisk_packages_raw",
-    "discovery_aoss_premium_python_raw",
-    "discovery_anaconda_dist_2026x_raw",
-)
+# Story 34.6: the AOSS premium and Anaconda distribution stores fetch their own public pages
+# when live public sources are on; Basilisk's credentialed batch waits for Story 36.1.
+_FETCHER_LESS_DISCOVERY_STORES = ("discovery_basilisk_packages_raw",)
 
 
 def _report_stub(stub_path: Path | None) -> None:

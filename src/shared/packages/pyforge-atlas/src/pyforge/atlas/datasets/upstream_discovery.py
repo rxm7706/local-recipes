@@ -64,6 +64,7 @@ import pandas as pd
 from bs4 import BeautifulSoup
 from kedro.io import AbstractDataset
 
+from . import public_sources
 from .refresh import (
     DAILY_SECONDS,
     DEFAULT_REFRESH_MAX_RETRIES,
@@ -282,6 +283,8 @@ class TrendingSnapshotDataset(ExternalRefreshDataset):
         # like every other ExternalRefreshDataset subclass. NEVER imported here; the
         # concrete fetcher is supplied by the Dagster resource / an attended run (mirrors
         # DW-B5-2) — this dataset only ever calls the injected seam.
+        if fetcher is None and public_sources.live():
+            fetcher = public_sources.fetch_text  # Story 34.6: the store's own public page, unauthenticated
         self._fetcher = fetcher
         super().__init__(
             filepath=filepath,
@@ -586,6 +589,8 @@ class AnacondaDist2026Dataset(ExternalRefreshDataset):
     ) -> None:
         self._url = str(url)
         self._seed_path = str(seed_path)
+        if fetcher is None and public_sources.live():
+            fetcher = public_sources.fetch_text  # Story 34.6: the store's own public page, unauthenticated
         self._fetcher = fetcher
         super().__init__(
             filepath=filepath,
@@ -767,6 +772,8 @@ class AossPremiumPythonDataset(ExternalRefreshDataset):
         metadata: dict[str, Any] | None = None,
     ) -> None:
         self._url = str(url)
+        if fetcher is None and public_sources.live():
+            fetcher = public_sources.fetch_text  # Story 34.6: the store's own public page, unauthenticated
         self._fetcher = fetcher
         super().__init__(
             filepath=filepath,
@@ -848,18 +855,24 @@ _ABOUT_MAINTAINERS_SOURCE = "about_readme"
 _ABOUT_SECTION_HEADERS: tuple[tuple[str, str], ...] = (
     ("List Of FeedStocks - As Maintainer", "Maintainer"),
     ("List Of FeedStocks - As Co-Maintainer", "Co-Maintainer"),
+    # Story 34.6: the README's shape as of 2026-10-18 ("### Sole maintainer (606)",
+    # "### Co-maintainer (266)"); the 2026-07-11 headers above stay accepted
+    ("### Sole maintainer", "Maintainer"),
+    ("### Co-maintainer", "Co-Maintainer"),
 )
 
 # Captures the FULL ``conda-forge/<feedstock>-feedstock`` slug (not just the bare
 # name) — join_enterprise_conda_maintainers (pipelines/upstream_discovery/nodes.py)
 # strips the prefix/suffix at JOIN time, per the story spec's explicit "strip before
 # comparing" contract.
-_ABOUT_FEEDSTOCK_LINE_RE = re.compile(r"^\d+\.\s+(conda-forge/[a-zA-Z0-9._-]+-feedstock)\s*$")
+# Story 34.6: the slug may be backticked (``1. `conda-forge/x-feedstock` ``, the 2026-10-18 shape).
+_ABOUT_FEEDSTOCK_LINE_RE = re.compile(r"^\d+\.\s+`?(conda-forge/[a-zA-Z0-9._-]+-feedstock)`?\s*$")
 
 
 def parse_about_readme(markdown: str) -> list[dict]:
     """Parse ``rxm7706/about``'s ``README.md`` two numbered feedstock lists
-    ("List Of FeedStocks - As Maintainer" / "... - As Co-Maintainer") into
+    ("List Of FeedStocks - As Maintainer" / "... - As Co-Maintainer", or since 2026-10-18
+    "### Sole maintainer (N)" / "### Co-maintainer (N)" with backticked slugs) into
     ``feedstock_slug``/``role`` rows. PURE — mirrors :func:`parse_trending_html`'s
     degrade contract exactly: a missing/renamed section header, a malformed
     ``N. conda-forge/<x>-feedstock`` line, or an empty README all degrade the
@@ -934,6 +947,8 @@ class AboutMaintainersDataset(ExternalRefreshDataset):
         metadata: dict[str, Any] | None = None,
     ) -> None:
         self._readme_url = str(readme_url)
+        if fetcher is None and public_sources.live():
+            fetcher = public_sources.fetch_text  # Story 34.6: the store's own public page, unauthenticated
         self._fetcher = fetcher
         super().__init__(
             filepath=filepath,

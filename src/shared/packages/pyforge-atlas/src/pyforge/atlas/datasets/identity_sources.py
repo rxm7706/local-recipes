@@ -65,6 +65,7 @@ from typing import Any, Callable
 import pandas as pd
 from kedro.io import AbstractDataset
 
+from . import public_sources
 from .refresh import (
     DEFAULT_REFRESH_MAX_RETRIES,
     DEFAULT_REFRESH_TIMEOUT_SECONDS,
@@ -187,6 +188,8 @@ class PurlAssociatorMappingsDataset(ExternalRefreshDataset):
         metadata: dict[str, Any] | None = None,
     ) -> None:
         self._url = str(url)
+        if fetcher is None and public_sources.live():
+            fetcher = public_sources.fetch_text  # Story 34.6: the store's own public page, unauthenticated
         self._fetcher = fetcher
         super().__init__(
             filepath=filepath,

@@ -519,3 +519,32 @@ def test_local_recipes_overlay_dataset_is_read_only(tmp_path):
 def test_local_recipes_overlay_dataset_rejects_unexpected_kwargs():
     with pytest.raises(TypeError):
         LocalRecipesOverlayDataset(filepath="recipes", bogus_kwarg=True)  # type: ignore[call-arg]
+
+
+# -- Story 34.6: the purl associator fetches its own public index (flag on) ----------------
+
+from pyforge.testing_kit import flag_states  # noqa: E402
+
+from pyforge.atlas.datasets import public_sources  # noqa: E402
+
+
+@flag_states(public_sources.FLAG_KEY)
+def test_the_purl_associator_with_no_fetcher_reads_its_public_index(tmp_path, flag_provider, monkeypatch):
+    import json
+
+    requested: list[str] = []
+
+    def _fetch_text(url: str, *, timeout: int = 300) -> str:
+        requested.append(url)
+        return json.dumps(_ASSOC_PAYLOAD)
+
+    monkeypatch.setattr(public_sources, "fetch_text", _fetch_text)
+    monkeypatch.setattr(public_sources, "live", lambda: flag_provider[public_sources.FLAG_KEY])
+    ds = _assoc(tmp_path / "assoc")
+
+    ds.save(RefreshRequest(store="purl_associator_mappings_raw", force=True))
+
+    if flag_provider[public_sources.FLAG_KEY]:
+        assert requested == [ASSOC_URL] and list(ds.load()["assoc_key"]) == ["requests"]
+    else:
+        assert requested == [] and ds.load().empty
