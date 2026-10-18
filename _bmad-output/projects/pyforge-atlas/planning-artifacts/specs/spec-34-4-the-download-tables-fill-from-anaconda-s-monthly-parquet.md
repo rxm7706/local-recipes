@@ -2,7 +2,7 @@
 title: "34.4: The download tables fill from Anaconda's monthly parquet"
 type: 'feature'
 created: '2026-10-18'
-status: 'in-review'
+status: 'done'
 baseline_revision: '80754b2026'
 flag:
   key: pyforge.atlas.live_public_sources          # new; minted by this story, shared by Epic 34's feature stories
@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'S3DownloadStatsDataset serves its month cache and fetches nothing; on a fresh data root that is the empty frame of today'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 2
+review_loop_iteration: 3
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -129,8 +129,11 @@ Type / Effort / Deps: feature / M / none.
 
 ## Verification
 
-- Unit: `tests/unit/datasets/test_s3_downloads.py`, `tests/unit/datasets/test_request_datasets.py`,
-  `tests/unit/pipelines/core/test_nodes.py`, `tests/unit/parity` (Phases F and I fixtures).
+- Unit, each named from the repo root:
+  - `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_s3_downloads.py`
+  - `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_request_datasets.py`
+  - `src/shared/packages/pyforge-atlas/tests/unit/pipelines/core/test_nodes.py`
+  - `src/shared/packages/pyforge-atlas/tests/unit/parity/test_parity_core.py` (Phases F and I fixtures)
 - Live (AC7), recorded 2026-10-18 after the review fixes. Cold run: fresh scratch data root, flag on (dev),
   `--pipelines core --nodes compute_downloads,compute_version_download_history`, exit 0, 2:48, peak RSS 3.59 GB. It
   fetched 117 months, with no marker. Warm re-run (listing only): 12 s, peak RSS 2.65 GB.
@@ -231,3 +234,6 @@ download sources summed.
   auth) keeps `~/.netrc` out of every public GET; the S3 fetch passes a fresh copy per request, because
   `APIDataset` pops `auth` from the dict it is given. Rounds 1 and 2 are squashed into one commit, so
   `pyproject.toml` never appears in the branch's history.
+- 2026-10-18: re-review round 3 PASS. Every earlier finding is fixed and every gate exits 0, `detectors-ci` included
+  (49 of 49). 56 of 63 mutants were killed; the 7 survivors are benign. Its two nits were fixed: the
+  production-tree test now names the shipped tree, and `live()`'s docstring. Promoted to `done`.

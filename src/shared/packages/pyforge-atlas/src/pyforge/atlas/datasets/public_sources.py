@@ -18,7 +18,8 @@ FLAG_KEY = "pyforge.atlas.live_public_sources"
 
 
 def live() -> bool:
-    """Whether a public-source dataset may fetch now (``False`` when the flag tree is unreadable)."""
+    """Whether a public-source dataset may fetch now. ``False`` when the flag tree is missing or
+    unreadable; an unknown ``PYFORGE_ENVIRONMENT`` raises ``FlagConfigError`` (core's design)."""
     return read_boolean(FLAG_KEY, default=False)
 
 
