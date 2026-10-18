@@ -253,7 +253,7 @@ pypi_json_raw:
   metadata:
     layer: raw
 
-# Phase P BigQuery `pypi.file_downloads` (admin opt-in, PHASE_P_ENABLED=1;
+# Phase P BigQuery `pypi.file_downloads` (admin opt-in, PHASE_P_ENABLED=1 with PHASE_P_SOURCE=bigquery;
 # credentialed runs attended-only per NFR-2 — the gate never touches it).
 # Declared with a standard resolvable type NOW (same A2-A1 rationale: the
 # lean env does not carry google-cloud-bigquery); the credentialed
@@ -270,6 +270,20 @@ pypi_bigquery_downloads_raw:
   type: pyforge.atlas.datasets.PyPIBigQueryDownloadsDataset
   url: ${globals:extra_overrides.BIGQUERY_BASE_URL}/projects
   credentials: bigquery_adc
+  metadata:
+    layer: raw
+
+# Phase P's default source (Story 34.9, CAP-64): ClickHouse's public PyPI mirror (clickpy),
+# legacy's own default (_phase_p_clickhouse, CFA:7399). The top 1,000 projects by downloads
+# over the last 90 days -- legacy's ranking -- and their downloads per calendar month over the
+# three complete months before this one. Read-only GETs as the `play` user, no credential,
+# behind pyforge.atlas.live_public_sources; last-good and the AD-13 marker live under filepath.
+pypi_clickhouse_downloads_raw:
+  type: pyforge.atlas.datasets.PyPIClickHouseDownloadsDataset
+  url: ${globals:extra_overrides.CLICKHOUSE_PYPI_BASE_URL}
+  filepath: ${globals:paths.data_root}/raw/pypi_clickhouse_downloads_raw
+  top_n: 1000
+  months: 3
   metadata:
     layer: raw
 
@@ -405,7 +419,8 @@ pypi_current_versions:
   metadata:
     layer: primary
 
-# Phase P 30 d monthly partitions (admin-only).
+# Phase P 30 d monthly partitions: ClickHouse by default, BigQuery when an attended run supplies
+# it (Story 34.9); `downloads_source` names which.
 # A3: IncrementalParquetDataset
 pypi_downloads_monthly:
   type: pyforge.atlas.datasets.IncrementalParquetDataset
