@@ -8,17 +8,20 @@ shapes measured on 2026-10-18 (``JSONEachRow`` lines, ``UInt64`` quoted, ``month
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 import pytest
+import requests
 from kedro.io import DatasetError
 from pyforge.testing_kit import flag_states
 
-from pyforge.atlas.datasets import PyPIClickHouseDownloadsDataset, public_sources
+from pyforge.atlas.datasets import PyPIBigQueryDownloadsDataset, PyPIClickHouseDownloadsDataset, public_sources
 from pyforge.atlas.datasets import clickhouse_downloads as CH
 from pyforge.atlas.pipelines.pypi_intelligence.nodes import fetch_pypi_downloads
+from pyforge.atlas.provenance import resolve_for_catalog_dataset
 
 BASE = "https://clickhouse.example.invalid"
 RANKED = ["boto3", "Foo_Bar", "foo-bar", "packaging", "o'brien"]  # 90-day order, as the mirror ranks
@@ -294,10 +297,195 @@ def test_clickhouse_rows_stand_when_bigquery_supplies_none():
 def test_bigquery_rows_win_when_an_attended_run_supplies_them():
     out = fetch_pypi_downloads(_monthly(["boto3"]), _monthly(["numpy", "pandas"]))
 
-    assert list(out["pypi_name"]) == ["numpy", "pandas"] and set(out["downloads_source"]) == {"bigquery"}
+    assert list(out["pypi_name"]) == ["numpy", "pandas"]
+    assert set(out["downloads_source"]) == {"bigquery-incremental"}  # legacy's label (CFA:7803)
 
 
 def test_neither_source_is_a_no_op_with_the_full_columns():
     for ch, bq in ((pd.DataFrame(), pd.DataFrame()), (None, None), (pd.DataFrame({"x": [1]}), pd.DataFrame())):
         out = fetch_pypi_downloads(ch, bq)
         assert out.empty and list(out.columns) == ["pypi_name", "month", "downloads", "downloads_source"]
+
+
+# -- review round 1 -------------------------------------------------------------------------
+
+
+def test_the_cap_is_the_play_users_and_a_default_batch_holds_333_names(tmp_path, monkeypatch):
+    """The ``play`` user's ``max_result_rows`` is 1,000 with ``result_overflow_mode = break``: a
+    larger batch would be cut silently, so the cap is pinned."""
+    assert CH.RESULT_CAP == 1000
+    _live(monkeypatch)
+    many = [f"p{i:04d}" for i in range(400)]
+    monkeypatch.setattr(sys.modules[__name__], "RANKED", many)
+    mirror = _Mirror()
+
+    _dataset(tmp_path, mirror, monkeypatch, top_n=400).load()
+
+    monthly = [q for q in mirror.queries() if "pypi_downloads_per_month" in q]
+    assert [q.split("project IN (")[1].count("', '") + 1 for q in monthly] == [333, 67]
+
+
+def _http_500(body: str) -> DatasetError:
+    response = requests.Response()
+    response.status_code = 500
+    response._content = body.encode()
+    try:
+        raise requests.HTTPError("500 Server Error", response=response)
+    except requests.HTTPError as exc:
+        try:
+            raise DatasetError("Failed to fetch data") from exc
+        except DatasetError as wrapped:
+            return wrapped
+
+
+@pytest.mark.parametrize(
+    ("body", "reason"),
+    [
+        ('{"exception": "Code: 386. DB::Exception: There is no supertype for types String, Date"}', "Code: 386"),
+        ("upstream connect error", "Failed to fetch data"),
+    ],
+    ids=["the-servers-exception", "no-json-body"],
+)
+def test_an_http_500_carries_the_servers_reason_into_the_marker(tmp_path, monkeypatch, body, reason):
+    _live(monkeypatch)
+    error = _http_500(body)
+
+    class _Failing(_Mirror):
+        def __call__(self, *, url, load_args):
+            class _One:
+                def load(self):
+                    raise error
+
+            return _One()
+
+    ds = _dataset(tmp_path, _Failing(), monkeypatch)
+    ds.load()
+
+    assert reason in ds.staleness().reason
+
+
+@pytest.mark.parametrize(
+    ("body", "reason"),
+    [
+        (b'{"today": "2026-10-18"}\n{"project": "boto3"}\n', "KeyError"),  # a monthly row with no project
+        (b'{"today": "2026-10-18x"}\n', "is not a date"),
+    ],
+    ids=["row-missing-a-column", "date-with-trailing-text"],
+)
+def test_a_malformed_answer_keeps_last_good_under_the_marker(tmp_path, monkeypatch, body, reason):
+    _live(monkeypatch)
+
+    class _Odd(_Mirror):
+        def answer(self, query):
+            if "today()" in query and "pypi_downloads_per_day" not in query:
+                return body.decode().split("\n")[0] + "\n"
+            if "pypi_downloads_per_day" in query:
+                return '{"project": "boto3"}\n'
+            return '{"month_start": "2026-09-01", "downloads": "3"}\n'
+
+    ds = _dataset(tmp_path, _Odd(), monkeypatch)
+
+    assert ds.load().empty and reason in ds.staleness().reason
+
+
+def test_a_downloads_value_that_is_not_a_number_is_a_failure(tmp_path, monkeypatch):
+    _live(monkeypatch)
+    mirror = _Mirror()
+    mirror.answer = lambda q, _a=mirror.answer: (  # type: ignore[method-assign]
+        '{"project": "boto3", "month_start": "2026-09-01", "downloads": null}\n'
+        if "pypi_downloads_per_month" in q
+        else _a(q)
+    )
+
+    ds = _dataset(tmp_path, mirror, monkeypatch)
+
+    assert ds.load().empty and "TypeError" in ds.staleness().reason
+
+
+def test_a_body_that_is_not_bytes_is_a_failure(tmp_path, monkeypatch):
+    _live(monkeypatch)
+
+    class _Text(_Mirror):
+        def __call__(self, *, url, load_args):
+            class _One:
+                def load(self):
+                    return {"not": "a response"}
+
+            return _One()
+
+    ds = _dataset(tmp_path, _Text(), monkeypatch)
+
+    assert ds.load().empty and "expected a bytes body" in ds.staleness().reason
+
+
+def test_blank_lines_between_rows_are_skipped(tmp_path, monkeypatch):
+    _live(monkeypatch)
+    mirror = _Mirror()
+    mirror.answer = lambda q, _a=mirror.answer: "\n" + _a(q).replace("\n", "\n\n")  # type: ignore[method-assign]
+
+    assert len(_dataset(tmp_path, mirror, monkeypatch).load()) == 6
+
+
+def test_a_backslash_in_a_name_is_escaped():
+    assert CH._quote("a\\b'c") == "'a\\\\b\\'c'"
+
+
+def test_a_url_with_a_query_string_is_refused():
+    with pytest.raises(ValueError, match="no query string"):
+        PyPIClickHouseDownloadsDataset(url="https://sql-clickhouse.clickhouse.com/?user=play")
+
+
+def test_a_file_where_the_store_belongs_never_raises(tmp_path, monkeypatch):
+    _live(monkeypatch)
+    (tmp_path / "ch").write_text("not a directory")
+
+    out = _dataset(tmp_path, _Mirror(), monkeypatch).load()
+
+    assert out.empty
+
+
+# -- provenance -----------------------------------------------------------------------------
+
+
+def test_provenance_reports_the_last_good_and_the_marker(tmp_path, monkeypatch):
+    _live(monkeypatch)
+    fresh = _dataset(tmp_path, _Mirror(), monkeypatch)
+    assert resolve_for_catalog_dataset({"x": fresh}, "x", fresh.load()).kind == "live-fetch"
+
+    stale = _dataset(tmp_path, _Mirror(fail_on="today()"), monkeypatch)
+    info = resolve_for_catalog_dataset({"x": stale}, "x", stale.load())
+
+    assert info.kind == "file-mtime" and info.build_stamp is not None
+    assert info.reason is not None and info.reason.startswith("stale: ClickHouse Phase P refresh failed")
+
+
+def test_provenance_with_the_flag_off_reports_the_copy_as_it_stood(tmp_path, monkeypatch):
+    _live(monkeypatch)
+    _dataset(tmp_path, _Mirror(), monkeypatch).load()
+    _live(monkeypatch, on=False)
+
+    ds = _dataset(tmp_path, _Mirror(), monkeypatch)
+    info = resolve_for_catalog_dataset({"x": ds}, "x", ds.load())
+
+    assert info.kind == "file-mtime" and info.reason == "not fetched this load: the copy as last fetched"
+    fresh_root = _dataset(tmp_path / "empty", _Mirror(), monkeypatch)
+    none = resolve_for_catalog_dataset({"x": fresh_root}, "x", fresh_root.load())
+    assert none.kind == "unavailable" and none.reason.startswith("not fetched this load, and no copy:")
+
+
+# -- PHASE_P_ENABLED, as a legacy shell exports it ------------------------------------------
+
+
+def test_phase_p_enabled_alone_leaves_the_clickhouse_rows_standing(monkeypatch):
+    monkeypatch.setenv("PHASE_P_ENABLED", "1")
+    monkeypatch.delenv("PHASE_P_SOURCE", raising=False)
+
+    assert PyPIBigQueryDownloadsDataset().load().empty
+
+
+def test_phase_p_source_bigquery_still_demands_the_attended_run(monkeypatch):
+    monkeypatch.setenv("PHASE_P_ENABLED", "1")
+    monkeypatch.setenv("PHASE_P_SOURCE", "BigQuery")
+
+    with pytest.raises(DatasetError, match="attended credentialed run"):
+        PyPIBigQueryDownloadsDataset().load()

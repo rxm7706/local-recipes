@@ -94,6 +94,8 @@ class PyPIClickHouseDownloadsDataset(AbstractDataset):
     ) -> None:
         if int(top_n) < 1 or int(months) < 1:
             raise ValueError(f"top_n and months must be at least 1, not {top_n!r} and {months!r}")
+        if "?" in url:  # legacy's PHASE_P_CH_BASE_URL carried ?user=play; here the user is an argument
+            raise ValueError(f"url must be the mirror's base, with no query string: {url!r}")
         self._url = url.rstrip("/") + "/"
         self._dir = Path(filepath) if filepath else None
         self._user = user
@@ -156,7 +158,19 @@ class PyPIClickHouseDownloadsDataset(AbstractDataset):
             **public_sources.request_args(self._timeout),
             "params": {"user": self._user, "query": f"{sql} FORMAT JSONEachRow"},
         }
-        payload = APIDataset(url=self._url, load_args=load_args).load()
+        try:
+            payload = APIDataset(url=self._url, load_args=load_args).load()
+        except DatasetError as exc:
+            # the mirror's main error mode is HTTP 500 with a {"exception": ...} body, which
+            # raise_for_status drops; carry the server's own reason into the marker
+            body = getattr(getattr(exc.__cause__, "response", None), "text", "") or ""
+            try:
+                reason = json.loads(body).get("exception") if body.lstrip().startswith("{") else None
+            except ValueError:
+                reason = None
+            if reason:
+                raise DatasetError(f"the mirror answered with an error: {str(reason)[:200]}") from exc
+            raise
         content = getattr(payload, "content", None)
         if not isinstance(content, bytes):
             raise DatasetError(f"{self._url}: expected a bytes body, got {type(content).__name__}")
@@ -258,7 +272,6 @@ class PyPIClickHouseDownloadsDataset(AbstractDataset):
         if self._dir is None:
             return pd.DataFrame(columns=COLUMNS)
         if public_sources.live():
-            self._dir.mkdir(parents=True, exist_ok=True)
             self.refresh()
             self.refreshed = True
         return self._read_last_good()

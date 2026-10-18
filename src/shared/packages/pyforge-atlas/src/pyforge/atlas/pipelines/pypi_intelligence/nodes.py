@@ -428,14 +428,15 @@ def fetch_pypi_downloads(
     covers every project (its two-layer cost gate is ``BigQueryDownloadsDataset``'s, and the
     default catalog load yields none, AD-6). Otherwise the ClickHouse public mirror's rows
     stand: the top projects by 90-day downloads, legacy's default source. ``downloads_source``
-    names the source on every row (legacy: ``clickhouse-clickpy`` / ``bigquery``). Neither
+    names the source on every row, with legacy's labels: ``clickhouse-clickpy`` and
+    ``bigquery-incremental`` (CFA:7543, CFA:7803). Neither
     source has rows: the node no-ops (mode-machine ``_phase_p_skip`` CFA:7342).
 
     ``INSERT OR IGNORE`` idempotency → drop duplicate ``(pypi_name, month)`` rows.
     Input: ``pypi_name``, ``month``, ``downloads``. Output ``pypi_downloads_monthly``:
     those columns plus ``downloads_source``, deduped."""
     if _has_downloads(pypi_bigquery_downloads_raw):
-        df, source = pypi_bigquery_downloads_raw, "bigquery"
+        df, source = pypi_bigquery_downloads_raw, "bigquery-incremental"
     elif _has_downloads(pypi_clickhouse_downloads_raw):
         df, source = pypi_clickhouse_downloads_raw, "clickhouse-clickpy"
     else:

@@ -11,8 +11,8 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'the ClickHouse dataset serves its last-good frame (empty on a fresh root) and fetches nothing; pypi_downloads_monthly is then empty, as before'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 0
-followup_review_recommended: false
+review_loop_iteration: 1
+followup_review_recommended: true
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/live-sources.md
@@ -51,7 +51,8 @@ declared_low_risk: false
    with `public_sources.request_args`: a 60 s timeout and no `~/.netrc` credential.
    1. **The server's `today()`.** It pins every later query to one window.
    2. **The ranking.** The top `top_n` projects (default 1,000) by `sum(count)` over `[today - 90, today)`, ordered
-      by downloads then project. This is legacy's ranking. Each query returns one page of at most 1,000 rows.
+      by downloads. This is legacy's ranking; `project` as a tiebreak is new, so paging is deterministic. Each query
+      returns one page of at most 1,000 rows.
    3. **The months.** Those projects' downloads per calendar month over the `months` complete months before
       today's month (default 3), from `pypi_downloads_per_month`. Names go in batches of `1000 // months`, so a
       batch's rows stay under the cap.
@@ -59,7 +60,8 @@ declared_low_risk: false
    (`YYYY-MM`) and `downloads`.
 3. **Persistence.** Last-good is kept at `<filepath>/downloads.parquet` beside the AD-13 marker.
 4. **Failures.** These keep last-good under the marker and never raise:
-   - an HTTP error;
+   - an HTTP error (for an HTTP 500, the marker carries the server's `{"exception": ...}` text, which
+     `raise_for_status` would drop);
    - a non-JSON line, or a streamed `{"exception": ...}` object;
    - a date that is not a date;
    - an empty ranking, or no monthly rows.
@@ -69,7 +71,12 @@ declared_low_risk: false
    - BigQuery rows win when present. The attended, credentialed path covers every project, and the default
      catalog load yields none.
    - Otherwise ClickHouse's rows stand.
-   - A new `downloads_source` column names the source with legacy's labels, `clickhouse-clickpy` or `bigquery`.
+   - A new `downloads_source` column names the source with legacy's labels, `clickhouse-clickpy` or
+     `bigquery-incremental` (CFA:7543, CFA:7803).
+   - Provenance reads the dataset's marker and last-good, as it does for Story 34.4's S3 dataset.
+   - `PHASE_P_ENABLED=1` alone no longer fails the run. Legacy routes it to ClickHouse unless `PHASE_P_SOURCE`
+     is `bigquery` (CFA:7387). The BigQuery stub raises its "attended credentialed run" error only when both are
+     set. A shell that exports `PHASE_P_ENABLED=1` for legacy therefore leaves ClickHouse's rows standing.
 7. **A new override point, `CLICKHOUSE_PYPI_BASE_URL`** (`extra_overrides`; legacy's own is
    `PHASE_P_CH_BASE_URL`). The env-override surface goes from 42 to 43.
 
@@ -101,12 +108,14 @@ Type / Effort / Deps: feature / S / Story 34.2 (done), Story 34.4 (`public_sourc
   credential. It pages the ranking under the cap and stops on a short page, and batches names so each batch stays
   under the cap. Names are PEP 503, collisions are summed, `UInt64` arrives quoted, and a quote in a name is
   escaped.
-- **AC2 — AD-13.** Each failure kind keeps last-good under a marker that names it. No monthly rows writes no
-  last-good. A clean refresh clears an earlier marker.
+- **AC2 — AD-13.** Each failure kind keeps last-good under a marker that names it, an HTTP 500's server
+  exception included. No monthly rows writes no last-good. A clean refresh clears an earlier marker. Provenance
+  reports a fresh fetch, the marker, or the copy as it stood. A file where the store belongs never raises.
 - **AC3 — The flag, read at the load.** A dataset built while the flag was on fetches only if the flag is on at
   the load. Off, it serves last-good untouched with no marker. Tested with `flag_states`.
 - **AC4 — Source selection.** BigQuery rows win; otherwise ClickHouse's; neither gives the full columns, empty.
-  `downloads_source` names the source on every row.
+  `downloads_source` names the source on every row with legacy's labels. `PHASE_P_ENABLED=1` alone leaves
+  ClickHouse's rows standing; with `PHASE_P_SOURCE=bigquery` the stub still demands the attended run.
 - **AC5 — Live.** `pypi_downloads_monthly` holds the top 1,000 projects × 3 months, and its project set equals
   legacy Phase P's current 1,000 rows (tolerance: 100% of today's set). No BigQuery call is made.
 - **AC6 — Gates.** `pyforge-atlas-test`, `kedro-test`, `kedro-catalog-check`, the coverage gate, `lint-types`
@@ -127,10 +136,12 @@ Type / Effort / Deps: feature / S / Story 34.2 (done), Story 34.4 (`public_sourc
     now with both inputs.
 - Live, recorded 2026-10-18: a scratch copy of the 2026-10-17 data root, flag on (dev),
   `--pipelines pypi_intelligence --nodes fetch_pypi_downloads`.
-  - **The first run failed, and the marker named the cause.** The alias `month` shadowed the column in `WHERE`
-    (ClickHouse `NO_COMMON_TYPE`). The alias is now `month_start`. The in-memory stand-in cannot catch a semantic
-    SQL error; the live run is what does.
+  - **The first run failed under the marker.** The marker said HTTP 500 and nothing more. Replaying the query by
+    hand gave the cause: the alias `month` shadowed the column in `WHERE` (ClickHouse code 386, `NO_COMMON_TYPE`).
+    The alias is now `month_start`, and since review round 1 the marker carries the server's exception text. The
+    in-memory stand-in cannot catch a semantic SQL error; the live run is what does.
   - **Second run:** exit 0, 6.2 s, peak RSS 0.27 GB, no marker.
+  - **After review round 1, with `PHASE_P_ENABLED=1` exported:** exit 0, 4.5 s, the same 3,000 rows, no marker.
   - **`pypi_downloads_monthly`:** 0 → 3,000 rows, 1,000 projects × `2026-07`, `2026-08` and `2026-09`, all
     `clickhouse-clickpy`.
   - **Against legacy `cf_atlas.db`:**
@@ -150,7 +161,13 @@ package; a test that touches the network; a write to the mirror (the `play` user
   BigQuery is the full-coverage fallback, attended.
 - **Coverage is the top 1,000**, as legacy's default. `top_n` pages past 1,000; legacy measured HTTP 500s above
   about four concurrent queries, and these queries run one at a time.
-- **The mirror lags about a day,** and the current month is never read.
+- **The mirror lags about a day,** and the current month is never read. On the 1st of a month the lag leaves the
+  previous month, read as complete, one day short.
+- **The `play` user reads at most 10 billion rows a query** (`max_rows_to_read`, `read_overflow_mode = break`,
+  read-only, so it cannot be raised). The ranking reads about 1.1 billion today. If the per-day table grew about
+  nine-fold, the ranking would truncate silently.
+- **The generated kedro-viz prototype** (`src/prototype/packages/pyforge-atlas-kedro-viz/`) still shows the
+  node's single input. It has been stale since 2026-07-18, and no gate reads it.
 - **A new project with no complete month** ranks but has no monthly rows.
 - **netrc on a redirect:** a redirect to another host still consults `~/.netrc` for that host. The mirror does
   not redirect today.
@@ -162,7 +179,9 @@ package; a test that touches the network; a write to the mirror (the `play` user
 | Live run, flag on | `pypi_downloads_monthly` empty | 3,000 rows, `clickhouse-clickpy` |
 | Flag off | empty | last-good served, nothing requested |
 | The mirror errors or streams an exception | — | last-good kept, marker names it |
-| An attended BigQuery run supplies rows | BigQuery rows | BigQuery rows win, `downloads_source = bigquery` |
+| An attended BigQuery run supplies rows | BigQuery rows | BigQuery rows win, `downloads_source = bigquery-incremental` |
+| `PHASE_P_ENABLED=1` exported for legacy | the run fails | ClickHouse's rows stand |
+| `PHASE_P_ENABLED=1` and `PHASE_P_SOURCE=bigquery` | the run fails | unchanged: the attended run is required |
 
 </intent-contract>
 
@@ -178,3 +197,21 @@ package; a test that touches the network; a write to the mirror (the `play` user
 
 - 2026-10-18: written with the implementation (branch `atlas-34-9-clickhouse-phase-p`, cut from `main` at
   `bde97f7f80`).
+- 2026-10-18: independent review round 1 FAIL: 1 blocker, 4 should-fix, 7 nits; 48 mutants, 9 survived. No
+  code-correctness blocker.
+  - **B1, two false claims in this spec.**
+    - The BigQuery label is now legacy's `bigquery-incremental`.
+    - The first live run's marker did not name the cause; the sentence is corrected, and S2 now makes it true.
+  - **Should-fix:**
+    - **S1:** provenance reads the dataset, with 34.4's two provenance tests ported.
+    - **S2:** an HTTP 500's `{"exception": ...}` body reaches the marker.
+    - **S3:** `PHASE_P_ENABLED=1` alone no longer fails the run (legacy's dispatch), pinned both ways.
+    - **S4:** `RESULT_CAP` and the 333-name batch are pinned.
+  - **Nits:**
+    - **N1:** the redundant `mkdir` is gone; a file at the store path never raises.
+    - **N2:** each defensive branch has a test.
+    - **N3:** two residual risks are added.
+    - **N4:** the tiebreak is named as new.
+    - **N5:** a URL with a query string is refused.
+    - **N6:** epics.md and the ledger are promoted at landing.
+    - **N7:** the kedro-viz prototype is recorded as a residual risk.

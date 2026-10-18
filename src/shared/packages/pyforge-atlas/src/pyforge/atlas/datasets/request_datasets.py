@@ -839,7 +839,11 @@ class PyPIBigQueryDownloadsDataset(AbstractDataset):
         self.metadata = metadata
 
     def load(self) -> pd.DataFrame:
-        if BigQueryDownloadsDataset.is_enabled():
+        # Story 34.9: legacy routes PHASE_P_ENABLED=1 to ClickHouse unless PHASE_P_SOURCE=bigquery
+        # (CFA:7387), so a shell that exports it for legacy must not fail the atlas run; the
+        # ClickHouse rows then stand
+        bigquery = os.environ.get("PHASE_P_SOURCE", "clickhouse").strip().lower() == "bigquery"
+        if BigQueryDownloadsDataset.is_enabled() and bigquery:
             from kedro.io.core import DatasetError
 
             raise DatasetError(
