@@ -49,6 +49,7 @@ from typing import Any
 from kedro.io import AbstractDataset
 from pyforge.core.atomic_write import atomic_write_text
 
+from . import public_sources
 from .refresh import StalenessMarker, _safe_int
 
 logger = logging.getLogger(__name__)
@@ -143,6 +144,13 @@ def migration_names(payload: Any) -> list[str]:
     return names
 
 
+def _public_json(url: str) -> Any:
+    """Story 34.8: one unauthenticated GET of a conda-forge-bot-data status file, parsed. A failed
+    request raises ``DatasetError``; a body that is not JSON raises ``ValueError``; both are the
+    caller's AD-13 degrade."""
+    return json.loads(public_sources.fetch_text(url))
+
+
 class _StaleAwareStatusSource(AbstractDataset):
     """Shared AD-13 base for the two migration-status source datasets.
 
@@ -171,6 +179,13 @@ class _StaleAwareStatusSource(AbstractDataset):
         # (subprocess/HTTP are on the A2 no-inline-IO denylist).
         self._fetcher = fetcher
         self.metadata = metadata
+
+    def _effective_fetcher(self) -> Callable[..., Any] | None:
+        """The injected fetcher, else (Story 34.8) the bot's public status file when live public
+        sources are on -- asked at each load or save, never at construction."""
+        if self._fetcher is not None:
+            return self._fetcher
+        return _public_json if public_sources.live() else None
 
     # -- AD-13 staleness sidecar (reused ExternalRefreshDataset shape) ------
 
@@ -295,8 +310,11 @@ class MigrationCategoryDataset(_StaleAwareStatusSource):
 
     def load(self) -> Any:
         """OFFLINE-safe entry: with no fetcher wired, keep last-good + mark stale + return
-        the last-good (or ``None``). The credentialed refresh is attended-driven via
-        :meth:`refresh` (AD-11)."""
+        the last-good (or ``None``). Story 34.8: with live public sources on and no injected
+        fetcher, the load refreshes from the bot's public status file first (the category
+        files are small and public; the driver node reads them every run)."""
+        if self._fetcher is None and public_sources.live():
+            return self.refresh(fetcher=_public_json)
         if self._fetcher is None:
             self._mark_stale(
                 "offline: no GitHub-raw fetcher wired (consumer profile)",
@@ -420,22 +438,52 @@ class MigrationDetailDataset(_StaleAwareStatusSource):
                 continue
         return out
 
+    def save(self, data: Any) -> None:
+        """Story 34.8: the driver node's sweep. ``data`` is the active migration names; one
+        detail partition is fetched per name with the effective fetcher (injected, else the
+        public status file while live public sources are on). With neither, keep last-good and
+        mark stale, as :meth:`fetch_partitions` does offline. Never raises (AD-13).
+
+        No names is never a clean sweep: last-good stays, under the marker. After a clean
+        sweep, a partition the names no longer list (a closed or retired migration) is removed,
+        so the readiness node classifies only the active set."""
+        fetcher = self._effective_fetcher()
+        names = [n for n in _as_name_list(data) if n not in EXCLUDED_STATUS_FILES]
+        if fetcher is not None and not names:
+            self._mark_stale(
+                "no active migration names to sweep (category lists empty or unreadable)",
+                last_good_exists=bool(self._load_partitions()),
+            )
+            return
+        self.fetch_partitions(names, fetcher=fetcher)
+        if fetcher is None or self.staleness() is not None:
+            return
+        keep = {self._partition_filename(n) for n in names}
+        for path in self._partitions_dir.glob("*.json"):
+            if path.name not in keep:
+                try:
+                    path.unlink()
+                except OSError as exc:  # a stale partition left behind is logged, never fatal
+                    logger.warning("migration detail partition not removed: %s: %s", path, exc)
+
     def load(self) -> dict[str, Any]:
         """OFFLINE-safe entry: return the resolved ``{name: detail}`` partitions (or ``{}``).
         With no fetcher wired AND no partitions yet, surface staleness (a never-populated
         store must not present 'no migrations' as healthy — the AD-13 false-negative guard).
-        The credentialed sweep is attended-driven via :meth:`fetch_partitions` (AD-11)."""
+        The sweep itself is the driver node's save (Story 34.8) or :meth:`fetch_partitions`;
+        the load never fetches, so it never overwrites the sweep's own marker."""
         partitions = self._load_partitions()
-        if self._fetcher is None:
-            self._mark_stale(
-                "offline: no GitHub-raw fetcher wired (consumer profile)",
-                last_good_exists=bool(partitions),
-            )
-        elif not partitions:
-            self._mark_stale(
-                "wired fetcher but no detail partitions yet (attended sweep pending)",
-                last_good_exists=False,
-            )
+        if self._effective_fetcher() is not None:
+            if not partitions:
+                self._mark_stale(
+                    "wired fetcher but no detail partitions yet (sweep pending)",
+                    last_good_exists=False,
+                )
+            return partitions
+        self._mark_stale(
+            "offline: no GitHub-raw fetcher wired (consumer profile)",
+            last_good_exists=bool(partitions),
+        )
         return partitions
 
     def _describe(self) -> dict[str, Any]:

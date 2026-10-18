@@ -8,16 +8,22 @@ offline-skip + keep-last-good + staleness marker for BOTH dataset kinds.
 
 from __future__ import annotations
 
+import json as _json
+from pathlib import Path
+
 import pandas as pd
 import pytest
 from kedro.io.core import DatasetError
+from pyforge.testing_kit import flag_states
 
+from pyforge.atlas.datasets import public_sources
 from pyforge.atlas.datasets.migration_status import (
     EXCLUDED_STATUS_FILES,
     MigrationCategoryDataset,
     MigrationDetailDataset,
     migration_names,
 )
+from pyforge.atlas.pipelines.vcs_health.nodes import classify_migration_readiness, drive_migration_status
 
 # --- migration_names (the pure partition-key derivation) --------------------
 
@@ -240,10 +246,14 @@ def test_detail_accepts_series_of_names(tmp_path):
     assert len(seen) == 2
 
 
-def test_detail_save_is_read_only(tmp_path):
+def test_detail_save_offline_keeps_last_good_and_marks_stale(tmp_path):
+    """Story 34.8: the save is the driver node's sweep; offline (no fetcher, flag off) it fetches
+    nothing, keeps last-good and marks stale -- it never raises (AD-13)."""
     ds = _detail(tmp_path)
-    with pytest.raises((NotImplementedError, DatasetError), match="read-only"):
-        ds.save({"x": 1})
+
+    ds.save(["python314"])
+
+    assert ds.is_stale() is True and ds.load() == {}
 
 
 def test_detail_load_includes_orphaned_partitions(tmp_path):
@@ -270,3 +280,138 @@ def test_datasets_construct_offline_no_network():
     det = MigrationDetailDataset(url="https://x/status/migration_json", filepath="/tmp/y")
     assert cat._describe()["fetcher_wired"] is False
     assert det._describe()["partitioned_by"] == "active_migration"
+
+
+# --- Story 34.8: the bot's public status files, and the driver node's sweep ----------------
+
+
+_BOT = "https://raw.githubusercontent.com/conda-forge/conda-forge-bot-data/main/status"
+_PUBLIC = {
+    f"{_BOT}/regular_status.json": {"python314": "python314 Migration Status", "gsl28": "gsl28 Migration Status"},
+    f"{_BOT}/migration_json/python314.json": {"done": ["numpy"], "in-pr": ["scipy"]},
+    f"{_BOT}/migration_json/gsl28.json": {"done": ["gsl"]},
+}
+
+
+def _public_text(requested):
+    def fetch_text(url, **_kw):
+        requested.append(url)
+        if url not in _PUBLIC:
+            raise DatasetError(f"404 {url}")
+        return _json.dumps(_PUBLIC[url])
+
+    return fetch_text
+
+
+@flag_states("pyforge.atlas.live_public_sources")  # spelled out: the flag gate reads this file for the key
+def test_a_category_with_no_fetcher_reads_the_public_status_file(tmp_path, flag_provider, monkeypatch):
+    requested: list[str] = []
+    monkeypatch.setattr(public_sources, "fetch_text", _public_text(requested))
+    monkeypatch.setattr(public_sources, "live", lambda: flag_provider["pyforge.atlas.live_public_sources"])
+
+    payload = _cat(tmp_path).load()
+
+    if flag_provider["pyforge.atlas.live_public_sources"]:
+        assert requested == [f"{_BOT}/regular_status.json"]
+        assert migration_names(payload) == ["python314", "gsl28"] and not _cat(tmp_path).is_stale()
+    else:
+        assert requested == [] and payload is None and _cat(tmp_path).is_stale()
+
+
+def test_the_driver_names_the_active_migrations_less_the_closed():
+    regular = {"python314": "s", "gsl28": "s"}
+    longterm = {"python315": "s"}
+    paused = {"flang19": "s", "gsl28": "s"}
+    closed = {"flang19": "closed at ..."}
+
+    assert drive_migration_status(regular, longterm, paused, closed, {"x": "s"}) == ["python314", "gsl28", "python315"]
+    # with no active list loaded, the total list (less closed) stands in
+    assert drive_migration_status(None, None, None, closed, {"a": "s", "flang19": "s"}) == ["a"]
+
+
+@flag_states("pyforge.atlas.live_public_sources")
+def test_the_detail_save_sweeps_one_partition_per_name(tmp_path, flag_provider, monkeypatch):
+    requested: list[str] = []
+    monkeypatch.setattr(public_sources, "fetch_text", _public_text(requested))
+    monkeypatch.setattr(public_sources, "live", lambda: flag_provider["pyforge.atlas.live_public_sources"])
+    ds = MigrationDetailDataset(url=f"{_BOT}/migration_json", filepath=str(tmp_path / "detail"))
+
+    ds.save(["python314", "gsl28", "gone"])  # "gone" answers 404: skipped, run marked stale
+    loaded = ds.load()
+
+    if flag_provider["pyforge.atlas.live_public_sources"]:
+        assert set(loaded) == {"python314", "gsl28"}
+        assert ds.staleness().reason == "one or more migration detail partitions could not refresh"  # the load kept it
+    else:
+        assert requested == [] and loaded == {} and ds.is_stale()
+
+
+def test_a_clean_sweep_clears_the_marker_and_feeds_the_readiness_node(tmp_path, monkeypatch):
+    requested: list[str] = []
+    monkeypatch.setattr(public_sources, "fetch_text", _public_text(requested))
+    monkeypatch.setattr(public_sources, "live", lambda: True)
+    detail = MigrationDetailDataset(url=f"{_BOT}/migration_json", filepath=str(tmp_path / "detail"))
+    names = drive_migration_status(_cat(tmp_path).load(), None, None, None, None)
+
+    detail.save(names)
+    out = classify_migration_readiness(
+        detail.load(),
+        pd.DataFrame({"conda_name": ["numpy", "scipy"], "subdirs": [["linux-64"], ["linux-64"]]}),
+        pd.DataFrame({"conda_name": ["numpy"], "downloads_total": [5]}),
+    )
+
+    assert detail.staleness() is None
+    assert set(map(tuple, out[["migration", "conda_name", "readiness"]].values)) >= {
+        ("python314", "numpy", "rebuild-done"),
+        ("python314", "scipy", "confirmed-pending"),
+    }
+
+
+def _live_detail(tmp_path, monkeypatch, requested):
+    monkeypatch.setattr(public_sources, "fetch_text", _public_text(requested))
+    monkeypatch.setattr(public_sources, "live", lambda: True)
+    ds = MigrationDetailDataset(url=f"{_BOT}/migration_json", filepath=str(tmp_path / "detail"))
+    (tmp_path / "detail").mkdir()
+    (tmp_path / "detail" / "closed_one.json").write_text(_json.dumps({"done": ["old"]}))
+    return ds
+
+
+def test_a_clean_sweep_removes_the_partition_of_a_migration_no_longer_active(tmp_path, monkeypatch):
+    ds = _live_detail(tmp_path, monkeypatch, [])
+
+    ds.save(["python314", "gsl28"])
+
+    assert set(ds.load()) == {"python314", "gsl28"} and ds.staleness() is None
+
+
+def test_a_sweep_with_a_failed_partition_removes_nothing(tmp_path, monkeypatch):
+    ds = _live_detail(tmp_path, monkeypatch, [])
+
+    ds.save(["python314", "gone"])
+
+    assert set(ds.load()) == {"closed_one", "python314"} and ds.is_stale()
+
+
+def test_no_names_is_never_a_clean_sweep(tmp_path, monkeypatch):
+    requested: list[str] = []
+    ds = _live_detail(tmp_path, monkeypatch, requested)
+
+    ds.save([])
+
+    assert requested == [] and set(ds.load()) == {"closed_one"}
+    assert ds.staleness().reason == "no active migration names to sweep (category lists empty or unreadable)"
+
+
+def test_a_partition_that_cannot_be_removed_is_logged_and_the_sweep_stands(tmp_path, monkeypatch, caplog):
+    ds = _live_detail(tmp_path, monkeypatch, [])
+    real_unlink = Path.unlink
+
+    def refuse(self, *a, **kw):
+        if self.name == "closed_one.json":
+            raise PermissionError("read-only")
+        return real_unlink(self, *a, **kw)
+
+    monkeypatch.setattr(Path, "unlink", refuse)
+    ds.save(["python314"])
+
+    assert "migration detail partition not removed" in caplog.text and ds.staleness() is None

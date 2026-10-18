@@ -762,8 +762,10 @@ vcs_release_velocity:
 # The data behind conda-forge.org/status/#migrations. AD-14 NEW-SIGNAL family:
 # NEVER parity-gated. All fetches route through the EXISTING GITHUB_RAW_BASE_URL
 # override point (no new resolve_*_urls helper; enterprise/JFrog mirror routing
-# inherited). IO is DATASET-owned via an INJECTED fetcher (default None == OFFLINE
-# -> keep last-good + mark stale, AD-13). DELIBERATELY EXCLUDED: version_status.v2.json
+# inherited). IO is DATASET-owned: an INJECTED fetcher, else (Story 34.8) a public GET
+# while pyforge.atlas.live_public_sources is on; neither -> keep last-good + mark stale
+# (AD-13). The drive_migration_status node feeds the active names to the detail
+# dataset's save(), which sweeps one partition per name. DELIBERATELY EXCLUDED: version_status.v2.json
 # (the bot's version-update queue) — the atlas measures currency itself (Phases H/K).
 
 # Category-list sources — enumerate active/closed/paused migrations; regular +

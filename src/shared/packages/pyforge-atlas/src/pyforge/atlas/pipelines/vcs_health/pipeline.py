@@ -14,6 +14,7 @@ from .nodes import (
     classify_migration_readiness,
     derive_release_velocity,
     detect_archived_feedstocks,
+    drive_migration_status,
     enrich_maintainers,
     fetch_live_health,
     refresh_vcs_github_store,
@@ -125,6 +126,22 @@ def create_pipeline(**kwargs) -> Pipeline:
             # ownership=producer, AD-3). Four-way readiness split + inferred not-in-tracker
             # label + top-unmigrated-by-volume ranking; the per-migration partitioning is
             # driven by the category lists (zero code change per new migration).
+            # Story 34.8 (CAP-64) -- the migration-status driver: reads the five category lists
+            # (each refreshes from the bot's public status file while live public sources are
+            # on) and writes the active names to `vcs_migration_detail_raw`, whose save sweeps
+            # one detail partition per migration. The detail dataset's single writer (AD-10).
+            node(
+                func=drive_migration_status,
+                inputs=[
+                    "vcs_migration_regular_status_raw",
+                    "vcs_migration_longterm_status_raw",
+                    "vcs_migration_paused_status_raw",
+                    "vcs_migration_closed_status_raw",
+                    "vcs_migration_total_status_raw",
+                ],
+                outputs="vcs_migration_detail_raw",
+                name="drive_migration_status",
+            ),
             node(
                 func=classify_migration_readiness,
                 inputs=[

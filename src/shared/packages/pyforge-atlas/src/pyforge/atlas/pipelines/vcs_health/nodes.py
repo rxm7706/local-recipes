@@ -21,7 +21,7 @@ import pandas as pd
 from pyforge.core.flags import read_boolean
 
 from pyforge.atlas.datasets import dependency_history
-from pyforge.atlas.datasets.migration_status import BLOCKER_BUCKETS
+from pyforge.atlas.datasets.migration_status import BLOCKER_BUCKETS, migration_names
 from pyforge.atlas.datasets.refresh import RefreshRequest, clamp_ttl_cadence
 
 from .vcs_refresh_identifiers import batches_from_identity
@@ -551,6 +551,37 @@ def _empty_migration_readiness() -> pd.DataFrame:
             "unmigrated_volume_rank": pd.Series(dtype="Int64"),
         }
     )
+
+
+def drive_migration_status(
+    vcs_migration_regular_status_raw: Any,
+    vcs_migration_longterm_status_raw: Any,
+    vcs_migration_paused_status_raw: Any,
+    vcs_migration_closed_status_raw: Any,
+    vcs_migration_total_status_raw: Any,
+) -> list[str]:
+    """Story 34.8: the active migrations the bot's category lists name, for the one detail sweep.
+
+    PURE. Active = regular + longterm + paused, less any migration the closed list names (a
+    closed migration's tracker no longer moves); order is first-seen, duplicates dropped. With
+    none of the three lists loaded, the total list (less closed) stands in. The output is the
+    ``vcs_migration_detail_raw`` save -- its single writer (AD-10) -- which fetches one
+    ``migration_json/<name>.json`` partition per name; this node does no IO."""
+    closed = set(migration_names(vcs_migration_closed_status_raw))
+    active: dict[str, None] = {}
+    for payload in (
+        vcs_migration_regular_status_raw,
+        vcs_migration_longterm_status_raw,
+        vcs_migration_paused_status_raw,
+    ):
+        for name in migration_names(payload):
+            if name not in closed:
+                active[name] = None
+    if not active:
+        for name in migration_names(vcs_migration_total_status_raw):
+            if name not in closed:
+                active[name] = None
+    return list(active)
 
 
 def classify_migration_readiness(
