@@ -2,7 +2,7 @@
 title: "34.5: The five OS-distro indexes refresh themselves"
 type: 'feature'
 created: '2026-10-18'
-status: 'in-review'
+status: 'done'
 baseline_revision: '8c04b291e5'
 flag:
   key: pyforge.atlas.live_public_sources          # shared with Story 34.4, which registered it
@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'a store with no injected fetcher keeps today''s behaviour: a due refresh marks it stale, "refresh due but no refresher wired"'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -23,7 +23,7 @@ context:
   - src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/tier3_sources.py
   - src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/public_sources.py
   - src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/nodes.py
-deferred: []
+deferred: ['DW-atlas-34-5-1']
 declared_low_risk: false
 ---
 
@@ -100,7 +100,9 @@ Type / Effort / Deps: feature / M / Story 34.4 (the flag and `public_sources`).
 
 ## Verification
 
-- Unit: `tests/unit/datasets/test_tier3_sources.py`, `tests/unit/catalog/` (override points).
+- Unit, each named from the repo root:
+  - `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_tier3_sources.py`
+  - `src/shared/packages/pyforge-atlas/tests/unit/catalog/test_override_points.py`
 - Live (AC3), recorded 2026-10-18: fresh scratch data root, flag on (dev), `--pipelines pypi_intelligence --nodes
   refresh_discovery_{homebrew,nixpkgs,spack,debian,fedora}_store,flag_tier3_channels`. Exit 0, 23 s, peak RSS
   1.07 GB, no marker on any store.
@@ -123,7 +125,8 @@ Type / Effort / Deps: feature / M / Story 34.4 (the flag and `public_sources`).
 - **brotli:** the nixpkgs index needs it, either in the HTTP stack (`Content-Encoding: br`) or for the parser's
   fallback. The atlas env has `brotli` 1.2.0 only transitively, through conda-forge's `urllib3`, which depends on
   `brotli-python`; PyPI's `urllib3` makes it an extra. Without it the store marks stale and says why. Declaring it
-  touches `pyproject.toml`, atlas's chain-currency code stage, so that belongs with the next atlas retro.
+  touches `pyproject.toml`, atlas's chain-currency code stage, so that belongs with the next atlas retro
+  (`DW-atlas-34-5-1`).
 - **Name matching:** nixpkgs `pname`s and Homebrew names now meet PyPI names verbatim, including non-Python packages
   that happen to share one.
 - **Spack:** a non-string item in a name list is now dropped, where it was `str()`-ed; the live index has none.
@@ -168,3 +171,10 @@ Type / Effort / Deps: feature / M / Story 34.4 (the flag and `public_sources`).
   - **N4:** the scan's depth is documented.
   - **N5, N6, N8:** the spec wording.
   - **Also:** `public_sources.request_args()` keeps `~/.netrc` out of the GET (from Story 34.6's review).
+- 2026-10-18: re-review round 2 PASS. Its nits were fixed:
+  - Tests cover the missing-brotli marker's guards with brotli present, and the dict path's empty-`pname` filter.
+  - The brotli deferral is ledgered as `DW-atlas-34-5-1`.
+  - The test hygiene items: a no-op line was dropped, and `find_spec` is narrowed to the `brotli` name.
+  - `_describe` names `public_index` without reading the flag.
+  - Verification names its tests from the repo root, and the two-state test spells the flag key.
+  Promoted to `done`.

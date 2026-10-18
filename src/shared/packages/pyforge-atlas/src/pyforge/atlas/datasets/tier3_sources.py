@@ -355,7 +355,9 @@ class _Tier3PackagesDatasetBase(ExternalRefreshDataset):
 
     def _describe(self) -> dict[str, Any]:
         base = super()._describe()
-        base.update({"url": self._url, "fetcher_wired": self._fetcher is not None})
+        # public_index: the store refreshes from it when live public sources are on (Story 34.5);
+        # the flag itself is read only at the refresh, never here
+        base.update({"url": self._url, "fetcher_wired": self._fetcher is not None, "public_index": self._url})
         return base
 
 
