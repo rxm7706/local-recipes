@@ -371,7 +371,7 @@ def test_without_filepath_the_dataset_is_the_empty_frame() -> None:
     assert out.empty and list(out.columns) == S3.BREAKDOWN_COLUMNS
 
 
-@flag_states(S3.FLAG_KEY)
+@flag_states("pyforge.atlas.live_public_sources")  # spelled out: the flag gate reads this file for the key
 def test_the_flag_gates_every_fetch(
     tmp_path: Path, flag_provider: dict[str, bool], monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -477,7 +477,9 @@ def test_live_reads_the_flag_key_from_the_tree(
 
 
 def test_the_shipped_tree_reads_off_in_production(monkeypatch: pytest.MonkeyPatch, real_live: Any) -> None:
-    monkeypatch.delenv("PYFORGE_FLAGS_PATH", raising=False)
+    tree = Path(__file__).resolve().parents[7] / "src" / "platform" / "config" / "flags.json"
+    assert tree.is_file()  # the shipped tree itself, never a lookup that could pass without it
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(tree))
     monkeypatch.setenv("PYFORGE_ENVIRONMENT", "production")
 
     assert real_live() is False

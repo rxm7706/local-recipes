@@ -4991,6 +4991,16 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-10-15 — atlas's 2026-10-15 retrospective
   status: open
 
+### DW-atlas-34-5-1: The nixpkgs Tier-3 store needs `brotli`, which pyforge-atlas does not declare.
+
+- source_spec: `planning-artifacts/specs/spec-34-5-the-five-os-distro-indexes-refresh-themselves.md`
+  summary: The nixpkgs index is `packages.json.br`, served with `Content-Encoding: br`. The atlas env decodes it only because conda-forge's `urllib3` depends on `brotli-python`; PyPI's `urllib3` makes brotli an extra, so a pip install has none, and the store then marks stale ("the nixpkgs index arrived brotli-compressed and no brotli module is installed"). Declare `brotli>=1.2` in pyforge-atlas, following the `filelock` precedent. That edit moves `pyproject.toml`, which is atlas's chain-currency code stage, so make it alongside the next atlas retrospective.
+  evidence: Story 34.5 review round 1, should-fix S4 (2026-10-18; brotli blocked, urllib3's decoders were gzip, x-gzip, deflate and zstd); round 2 nit 3.
+  location: src/shared/packages/pyforge-atlas/pyproject.toml (dependencies); src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/tier3_sources.py (_brotli_decompress, NixpkgsPackagesDataset._frame)
+  origin: review finding, atlas Story 34.5 independent review rounds 1-2
+  severity: low
+  promoted: 2026-10-18 -- implementer response to 34.5 review round 2
+
 ### DW-atlas-34-6-1: The `pyforge-atlas-bootstrap` task description still names all three discovery stores as fetcher-less.
 
 - source_spec: `planning-artifacts/specs/spec-34-6-the-public-discovery-stores-refresh-themselves.md`

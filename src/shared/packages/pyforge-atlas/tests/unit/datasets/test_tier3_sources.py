@@ -267,7 +267,7 @@ class _Response:
         self.content = content
 
 
-@flag_states(public_sources.FLAG_KEY)
+@flag_states("pyforge.atlas.live_public_sources")  # spelled out: the flag gate reads this file for the key
 @pytest.mark.parametrize("cls", list(_LIVE_SHAPES))
 def test_a_store_with_no_fetcher_refreshes_from_its_own_index(tmp_path, flag_provider, monkeypatch, cls):
     """On: the store fetches its URL through a composed APIDataset (with a timeout) and holds its
@@ -374,7 +374,6 @@ def test_the_request_timeout_is_the_stores_own(tmp_path, monkeypatch):
 
 def test_parse_nixpkgs_skips_a_bad_escape_and_an_empty_pname():
     body = b'{"packages": {"a": {"pname": "bad\\xescape"}, "b": {"pname": ""}, "c": {"pname": "ok"}}}'
-    body = body.replace(b"\\\\x", b"\\x")
 
     assert parse_nixpkgs_packages_json(body) == ["ok"]
 
@@ -405,9 +404,38 @@ def test_a_nixpkgs_body_with_no_brotli_installed_says_so(tmp_path, monkeypatch):
         return real_import(name, *a, **kw)
 
     monkeypatch.setattr(T.importlib, "import_module", _no_brotli)
-    monkeypatch.setattr(T.importlib.util, "find_spec", lambda name, *a: None if name == "brotli" else object())
+    real_find_spec = T.importlib.util.find_spec
+    monkeypatch.setattr(
+        T.importlib.util, "find_spec", lambda name, *a: None if name == "brotli" else real_find_spec(name, *a)
+    )
     ds = NixpkgsPackagesDataset(url="https://example.test/i", filepath=str(tmp_path / "s"), fetcher=lambda: body)
 
     ds.save(RefreshRequest(store="x", force=True))
 
     assert "no brotli module is installed" in ds.staleness().reason
+
+
+def test_an_empty_parse_with_brotli_installed_is_no_data_not_a_missing_module(tmp_path):
+    """The missing-brotli marker needs all three: an empty parse, a non-JSON body, and no brotli."""
+    pytest.importorskip("brotli")
+    ds = NixpkgsPackagesDataset(
+        url="https://example.test/i", filepath=str(tmp_path / "s"), fetcher=lambda: b"<html>x</html>"
+    )
+
+    ds.save(RefreshRequest(store="x", force=True))
+
+    assert ds.staleness().reason == "refresh returned no data"
+
+
+def test_parse_nixpkgs_dict_path_drops_an_empty_pname():
+    doc = {"packages": {"a": {"pname": ""}, "b": {"pname": "ok"}, "c": {"pname": None}}}
+
+    assert parse_nixpkgs_packages_json(doc) == ["ok"]
+
+
+def test_describe_names_the_public_index(tmp_path):
+    """A store with no injected fetcher still has its own public index; _describe says so without
+    reading the flag (reading it here would bring the import-time read back)."""
+    ds = HomebrewPackagesDataset(url="https://example.test/i", filepath=str(tmp_path / "s"))
+
+    assert ds._describe()["public_index"] == "https://example.test/i"

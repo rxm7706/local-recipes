@@ -2470,7 +2470,7 @@ So that `core_downloads`, its three breakdowns and `core_version_download_histor
 **When** the core pipeline runs with the flag on
 **Then** the five download tables hold rows within the story's tolerance of legacy Phase F (31,041 packages, 2026-10-18), month files cache incrementally, and `fetch_one` requests the key it is given
 **And** with the flag off the stores keep last-good, unchanged from today
-**Status:** backlog
+**Status:** done
 
 ### Story 34.5: The five OS-distro indexes refresh themselves
 
@@ -2485,7 +2485,7 @@ So that `pypi_tier3_channel_flags` fills.
 **When** a run reaches the stores with the flag on
 **Then** each store fetches its index over `APIDataset`, holds rows, and `pypi_tier3_channel_flags` holds rows
 **And** the bootstrap no longer lists the five as expected stale
-**Status:** backlog
+**Status:** done
 
 ### Story 34.6: The public discovery stores refresh themselves
 
