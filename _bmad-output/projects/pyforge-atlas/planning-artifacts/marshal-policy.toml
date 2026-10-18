@@ -334,6 +334,29 @@ harness_preference = ["cursor"]
   "_bmad-output/projects/*/planning-artifacts/briefs/**",
   "_bmad-output/projects/*/planning-artifacts/epics.md",
 ]
+"33" = [  # the atlas CLI reaches the verbs its contracts name, from any directory (fix under spec-pyforge-atlas CAP-9;
+  # Story 33.1), added 2026-10-18. The default surface, restated because a declared entry replaces it outright (the
+  # package glob covers __main__.py, mcp/tools.py, README.md and the three test modules), plus: the SKF skill and the
+  # persona's customize.toml that name the grammar, atlas's TEA coverage matrix (regenerated for the new story), and
+  # every Spec memlog. The PRD, spine, brief and epics globs are for the chain-currency re-stamps those memlogs can
+  # trip, and nothing else.
+  "src/shared/packages/pyforge-atlas/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/test-architecture.md",
+  ".claude/skills/pyforge-atlas/**",
+  ".claude/skills/bmad-agent-atlas/customize.toml",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md",  # the decks' row (review)
+  "scripts/.spec-surface-baseline.json",
+  # co-governor reconciles
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+  # chain-currency re-stamps only
+  "_bmad-output/projects/*/planning-artifacts/prds/**",
+  "_bmad-output/projects/*/planning-artifacts/architecture/**",
+  "_bmad-output/projects/*/planning-artifacts/briefs/**",
+  "_bmad-output/projects/*/planning-artifacts/epics.md",
+]
 
 # dispatch (Story 102.1 / spec-pyforge-marshal CAP-161), added 2026-10-15: a re-landing reuses this station's own
 # verified verdict when only merges of main and planning-only commits moved the branch since the head it judged,

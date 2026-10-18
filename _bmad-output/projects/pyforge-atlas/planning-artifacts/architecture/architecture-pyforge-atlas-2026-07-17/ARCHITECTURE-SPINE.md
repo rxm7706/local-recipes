@@ -7,7 +7,7 @@ paradigm: 'declarative dataflow (pipes-and-filters over a declared Data Catalog)
 scope: 'Migration of the cf_atlas orchestrator to Kedro pipelines + Dagster orchestration + DuckDB compute, with BSL/Vizro read surface and MCP/A2A agent interfaces (FR-1..FR-22, Waves 0 + A–H)'
 status: final
 created: '2026-07-17'
-updated: "2026-10-14"   # RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD -> arch) for FR-70 / CAP-62 and FR-71 / CAP-63 (Epic 30: the DAG export reaches Pages as a workflow artifact; Vizro boards publish as static exports). AD-21 amended (every static surface atlas publishes reaches Pages as a workflow artifact); no AD added or removed. See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD -> arch) for Stories 28.1 and 29.1, two test-only fixes (CAP-6, CAP-16); no AD added, amended or removed. See § Currency reconciliation — 2026-10-13. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD -> arch) for Story 25.1's gate clearing (key blocked -> backlog by operator ruling); no AD amended. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD -> arch) for marshal Story 66.2's deferred-work backfill; no AD amended. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch) for FR-69 / CAP-61 (Epic 25); lands on AD-1, AD-2, AD-3, AD-4, AD-5, AD-6 and AD-13 as written, no AD amended. Prior 2026-09-20 (fleet consistency pass).
+updated: "2026-10-18"   # RE-STAMPED 2026-10-18: chain-currency cascade (PRD -> arch) for atlas Story 33.1 (fix under spec-pyforge-atlas CAP-9): AD-23 checked and now holds for the CLI entry point; no AD added, removed or amended. See § Currency reconciliation — 2026-10-18. Prior: RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD -> arch) for FR-70 / CAP-62 and FR-71 / CAP-63 (Epic 30: the DAG export reaches Pages as a workflow artifact; Vizro boards publish as static exports). AD-21 amended (every static surface atlas publishes reaches Pages as a workflow artifact); no AD added or removed. See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD -> arch) for Stories 28.1 and 29.1, two test-only fixes (CAP-6, CAP-16); no AD added, amended or removed. See § Currency reconciliation — 2026-10-13. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD -> arch) for Story 25.1's gate clearing (key blocked -> backlog by operator ruling); no AD amended. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD -> arch) for marshal Story 66.2's deferred-work backfill; no AD amended. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch) for FR-69 / CAP-61 (Epic 25); lands on AD-1, AD-2, AD-3, AD-4, AD-5, AD-6 and AD-13 as written, no AD amended. Prior 2026-09-20 (fleet consistency pass).
 currency_review: "Reviewed 2026-08-02 — the FR-9 Capability Map row still stated the pre-correction '28-CLI port' claim after the PRD's 2026-08-01 CAP-8 fix (AUD-ATLAS-041). Row corrected to match: 8 dashboard pages + factory-status ship in v1, full 28-CLI inventory deferred (DW-D2-1). No other capability-map row referenced the overclaim. Reviewed again 2026-08-26 — AD-3 amended for the three governed pipeline additions; post-08-02 as-built deltas (CAP-19 query plane, host MCP face, CAP-18 hooks, vizro-ai deprecation, canopy AD-numbering disambiguation) reconciled in the appended section 'Currency reconciliation — 2026-08-26'. Reviewed again 2026-09-18 (fleet chain-currency sweep) — the 2026-09-17 PRD fold/rekey and 2026-09-10 code motion (Story 24.4 live Artifactory transport) reconciled in the appended section 'Currency reconciliation — 2026-09-18'; AD-3's Epic 13/15 citations corrected to post-rekey Epic 12/14."
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22]
 sources:
@@ -1544,3 +1544,20 @@ AD. **AD-21 is amended** (in place above); no AD is added or removed:
   steward's and its `paused-manually → live` move is the operator's gate).
 
 **Content changed:** AD-21's 2026-10-14 amendment and this section. `updated:` bumped. No AD added or removed.
+
+## Currency reconciliation — 2026-10-18
+
+*Trigger: the PRD's re-stamp of the same date (`prd→arch`) for atlas Story 33.1, a fix under `spec-pyforge-atlas`
+CAP-9: the atlas CLI reaches the verbs its contracts name, from any directory.* Checked against every AD; none is
+added, removed or amended.
+
+- **AD-23 (one execution plane; binds the CLI).** The rule names three entry points that "execute the identical named
+  pipeline with identical machinery": the Dagster job, the MCP trigger and the CLI. Before the fix the CLI did not:
+  started from the repo root, Kedro resolved the project to the cwd and read the repo root's own `conf/`, and the
+  binary reached no verb but a bare `run`. It now dispatches to Kedro's `project_group` after `bootstrap_project` on
+  the member dir that `mcp/session.py`'s `PROJECT_ROOT` names, with that dir as the cwd for the command, so the CLI and
+  the MCP trigger resolve one project, one catalog and one hook set. The AD reads as written; the code now meets it.
+- **AD-1 (import direction).** `__main__.py` imports only `kedro.framework.cli.project` and
+  `kedro.framework.startup` below the `--version` intercept; nothing imports Dagster or `kedro-mcp`.
+- **AD-11 (gates are fixtures).** The new dispatch tests replace each command's callback with a recorder; no pipeline
+  runs and no credential is read.

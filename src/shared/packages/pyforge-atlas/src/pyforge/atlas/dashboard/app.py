@@ -132,7 +132,7 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "staleness-report",
         "bsl-shell",
         note="Wired to build_packages_model.staleness_age_days over the composed "
-        "semantic_packages store (`kedro run --pipeline semantic_packages`). "
+        "semantic_packages store (`pyforge atlas run --pipelines semantic_packages`). "
         "latest_conda_upload is declared NULL by that pipeline's node — it has no "
         "migrated input — so the staleness age is null wherever that is the only source.",
     ),
@@ -142,7 +142,7 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "query-atlas",
         "bsl-shell",
         note="Wired to build_packages_model (is_actionable + adoption stage + downloads) "
-        "over the composed semantic_packages store (`kedro run --pipeline "
+        "over the composed semantic_packages store (`pyforge atlas run --pipelines "
         "semantic_packages`).",
     ),
     PageDef(
@@ -151,7 +151,7 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "detail-cf-atlas",
         "bsl-shell",
         note="Wired to build_packages_model (full per-package metric row) over the "
-        "composed semantic_packages store (`kedro run --pipeline semantic_packages`).",
+        "composed semantic_packages store (`pyforge atlas run --pipelines semantic_packages`).",
     ),
     PageDef(
         "behind-upstream",

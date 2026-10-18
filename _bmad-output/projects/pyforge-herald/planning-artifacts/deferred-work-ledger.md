@@ -1563,3 +1563,15 @@ deployment.
   promoted: 2026-10-15 — herald Story 42.1 re-review (Pages redesign chain)
   note: re-pointed 2026-10-15 — herald Story 43.7 retired `docsite/` (its independent review, part B, should-fix 2): the location, the fix, the reader and the test ids follow; the decision itself is unchanged
   status: open
+
+### DW-herald-atlas-33-1-1: The atlas deck family still presents `pyforge atlas run --pipeline <name>` and a `catalog list` verb that does not exist
+
+- source_spec: `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-33-1-the-atlas-cli-reaches-the-verbs-its-contracts-name.md`
+  summary: atlas Story 33.1 made `pyforge atlas` Kedro's project command group (`run`, `ipython`, `package`), with `--pipelines` (kedro 1.6 deprecates `--pipeline`); there is no `catalog list` verb (datasets are listed through the MCP tool `list_atlas_datasets`). The atlas deck family's current surfaces still show the old grammar: `presentations/pyforge-atlas/project/PyForge Atlas - Infographic Deck.dc.html:113,348,431,482,649,705`, `…/PyForge Atlas - Infographic.dc.html:109,315,396,442,602,666` and `…/PyForge Atlas Infographic standalone.html:106,312,393,439,599,663` (e.g. "pyforge atlas run --pipeline <name> · catalog list · --version").
+  evidence: atlas Story 33.1 independent review (2026-10-18, should-fix 6); `git grep -n -E "run --pipeline\b|catalog list" -- presentations/pyforge-atlas` lists the lines above. Not hand-edited: `docs/how-to/presentation-deck.md` puts deck content in the Design prototype and derives every export from it; a hand edit would diverge from Design and be reverted by the next pull (the `DW-herald-102-3-1` precedent).
+  location: presentations/pyforge-atlas/
+  origin: atlas Story 33.1 review, 2026-10-18 (prose outside atlas's surface; the skill, persona, README and in-package strings were fixed in the story)
+  fix: an atlas deck refresh through the claude-design bridge: `pyforge atlas run --pipelines <name>` for the run verb, drop `catalog list` (or name MCP `list_atlas_datasets`), in the three Design files; pull, re-extract and re-run `deck-export pyforge-atlas`. Operator-owned: it writes to the operator's Design project.
+  severity: low
+  promoted: 2026-10-18 — atlas Story 33.1 review
+  status: open
