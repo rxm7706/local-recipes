@@ -312,14 +312,14 @@ discovery_homebrew_packages_raw:
 
 discovery_nixpkgs_packages_raw:
   type: pyforge.atlas.datasets.NixpkgsPackagesDataset
-  url: ${globals:endpoint_bases.NIXPKGS_BASE_URL}/nixpkgs-unstable/packages.json
+  url: ${globals:endpoint_bases.NIXPKGS_BASE_URL}/nixpkgs-unstable/packages.json.br
   filepath: ${globals:paths.data_root}/stores/discovery_nixpkgs_packages_raw
   metadata:
     layer: raw
 
 discovery_spack_packages_raw:
   type: pyforge.atlas.datasets.SpackPackagesDataset
-  url: ${globals:endpoint_bases.SPACK_RAW_BASE_URL}/spack/spack/develop/var/spack/repos/builtin/package_index.json
+  url: ${globals:endpoint_bases.SPACK_PACKAGES_BASE_URL}/data/packages.json
   filepath: ${globals:paths.data_root}/stores/discovery_spack_packages_raw
   metadata:
     layer: raw
@@ -333,7 +333,7 @@ discovery_debian_packages_raw:
 
 discovery_fedora_packages_raw:
   type: pyforge.atlas.datasets.FedoraPackagesDataset
-  url: ${globals:endpoint_bases.FEDORA_SRC_BASE_URL}/rest/projects/
+  url: ${globals:endpoint_bases.FEDORA_SRC_BASE_URL}/extras/pagure_owner_alias.json
   filepath: ${globals:paths.data_root}/stores/discovery_fedora_packages_raw
   metadata:
     layer: raw

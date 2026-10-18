@@ -7,7 +7,10 @@ import json
 
 import pandas as pd
 import pytest
+from pyforge.testing_kit import flag_states
 
+from pyforge.atlas.datasets import public_sources
+from pyforge.atlas.datasets import tier3_sources as T
 from pyforge.atlas.datasets.refresh import RefreshRequest
 from pyforge.atlas.datasets.tier3_sources import (
     DebianPackagesDataset,
@@ -46,6 +49,47 @@ def test_parse_nixpkgs_packages_json_happy_path():
 
 def test_parse_nixpkgs_packages_json_malformed_returns_empty():
     assert parse_nixpkgs_packages_json(None) == []
+
+
+# -- Story 34.5: the shapes the live indexes serve (measured 2026-10-18) ----------------
+
+_NIXPKGS_V2 = json.dumps(
+    {
+        "version": 2,
+        "packages": {
+            "python312Packages.numpy": {"name": "python3.12-numpy-2.3.1", "pname": "numpy", "version": "2.3.1"},
+            "python313Packages.numpy": {"name": "python3.13-numpy-2.3.1", "pname": "numpy", "version": "2.3.1"},
+            "ripgrep": {"name": "ripgrep-14.1.1", "pname": "ripgrep", "meta": {"description": 'a "quoted" tool'}},
+            "weird": {"pname": 'we"ird'},
+        },
+    }
+)
+
+
+def test_parse_nixpkgs_reports_each_pname_once():
+    assert parse_nixpkgs_packages_json(_NIXPKGS_V2.encode()) == ["numpy", "ripgrep", 'we"ird']
+
+
+def test_parse_nixpkgs_decodes_a_still_compressed_brotli_body():
+    brotli = pytest.importorskip("brotli")
+
+    assert parse_nixpkgs_packages_json(brotli.compress(_NIXPKGS_V2.encode())) == ["numpy", "ripgrep", 'we"ird']
+
+
+def test_parse_nixpkgs_garbage_bytes_return_empty():
+    assert parse_nixpkgs_packages_json(b"\x00\x01 not brotli, not json") == []
+
+
+def test_parse_spack_records_with_a_name():
+    payload = json.dumps([{"name": "py-numpy", "description": "x"}, {"description": "no name"}, {"name": "zlib"}])
+
+    assert parse_spack_packages(payload) == ["py-numpy", "zlib"]
+
+
+def test_parse_fedora_pagure_owner_alias_rpms():
+    payload = json.dumps({"container": {"bcg729": []}, "rpms": {"python-numpy": ["a"], "0ad": ["b"]}, "modules": {}})
+
+    assert parse_fedora_packages(payload) == ["python-numpy", "0ad"]
 
 
 def test_parse_spack_packages_happy_path():
@@ -202,3 +246,81 @@ def test_each_tier3_dataset_persists_fixture(tmp_path, cls, fixture, store):
     frame = ds.load()
     assert not frame.empty
     assert "name" in frame.columns
+
+
+# -- Story 34.5: each store refreshes itself from its public index ------------------------
+
+_LIVE_SHAPES = {
+    HomebrewPackagesDataset: (_HOMEBREW_FIXTURE.encode(), ["python", "numpy"]),
+    NixpkgsPackagesDataset: (_NIXPKGS_V2.encode(), ["numpy", "ripgrep", 'we"ird']),
+    SpackPackagesDataset: (json.dumps([{"name": "py-numpy"}, {"name": "zlib"}]).encode(), ["py-numpy", "zlib"]),
+    DebianPackagesDataset: (  # a name repeated across stanzas is one row
+        gzip.compress((_DEBIAN_FIXTURE + "\nPackage: python3-numpy\n").encode()),
+        ["python3-numpy", "python3-requests"],
+    ),
+    FedoraPackagesDataset: (json.dumps({"rpms": {"python-numpy": []}}).encode(), ["python-numpy"]),
+}
+
+
+class _Response:
+    def __init__(self, content):
+        self.content = content
+
+
+@flag_states(public_sources.FLAG_KEY)
+@pytest.mark.parametrize("cls", list(_LIVE_SHAPES))
+def test_a_store_with_no_fetcher_refreshes_from_its_own_index(tmp_path, flag_provider, monkeypatch, cls):
+    """On: the store fetches its URL through a composed APIDataset (with a timeout) and holds its
+    names. Off: today's behaviour, nothing requested and a 'no refresher wired' marker."""
+    body, names = _LIVE_SHAPES[cls]
+    requested = []
+
+    class _API:
+        def __init__(self, *, url, load_args=None):
+            requested.append((url, load_args))
+
+        def load(self):
+            return _Response(body)
+
+    monkeypatch.setattr(T, "APIDataset", _API)
+    monkeypatch.setattr(public_sources, "live", lambda: flag_provider[public_sources.FLAG_KEY])
+    ds = cls(url="https://example.test/index", filepath=str(tmp_path / "store"))
+
+    ds.save(RefreshRequest(store="x", force=True))
+    frame = ds.load()
+
+    if flag_provider[public_sources.FLAG_KEY]:
+        assert requested == [("https://example.test/index", {"timeout": 900})]
+        assert list(frame["name"]) == names and not ds.is_stale()
+    else:
+        assert requested == [] and frame.empty
+        assert ds.staleness().reason.startswith("refresh due but no refresher wired")
+
+
+def test_a_public_body_that_is_not_bytes_keeps_last_good(tmp_path, monkeypatch):
+    class _API:
+        def __init__(self, *, url, load_args=None):
+            pass
+
+        def load(self):
+            return _Response("a text body")
+
+    monkeypatch.setattr(T, "APIDataset", _API)
+    monkeypatch.setattr(public_sources, "live", lambda: True)
+    ds = HomebrewPackagesDataset(url="https://example.test/index", filepath=str(tmp_path / "store"))
+
+    ds.save(RefreshRequest(store="x", force=True))
+
+    assert ds.load().empty and "refresh failed: DatasetError" in ds.staleness().reason
+
+
+def test_an_injected_fetcher_wins_over_the_public_fetch(tmp_path, monkeypatch):
+    monkeypatch.setattr(public_sources, "live", lambda: True)
+    monkeypatch.setattr(T, "APIDataset", lambda **_kw: pytest.fail("the injected fetcher must be used"))
+    ds = HomebrewPackagesDataset(
+        url="https://example.test/index", filepath=str(tmp_path / "store"), fetcher=lambda: _HOMEBREW_FIXTURE
+    )
+
+    ds.save(RefreshRequest(store="x", force=True))
+
+    assert list(ds.load()["name"]) == ["python", "numpy"]

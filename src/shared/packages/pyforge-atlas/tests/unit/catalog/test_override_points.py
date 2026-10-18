@@ -48,7 +48,7 @@ def test_override_points_are_19_live_plus_1_reserved_plus_2_story_21_4_plus_5_st
     assert STORY_23_1_OVERRIDE_POINTS == {
         "HOMEBREW_BASE_URL",
         "NIXPKGS_BASE_URL",
-        "SPACK_RAW_BASE_URL",
+        "SPACK_PACKAGES_BASE_URL",
         "DEBIAN_BASE_URL",
         "FEDORA_SRC_BASE_URL",
     }

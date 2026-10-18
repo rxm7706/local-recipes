@@ -4,13 +4,19 @@ Five independent :class:`ExternalRefreshDataset` subclasses — one per source
 (homebrew, nixpkgs, spack, debian, fedora) — each owning fetch + parse IO via
 an injected zero-arg ``fetcher`` and persisting a ``name``-column Parquet store
 with genuine AD-13 last-good / staleness discipline.
+
+Story 34.5: with no injected ``fetcher`` and ``pyforge.atlas.live_public_sources`` on,
+each store fetches its own public index through a composed ``APIDataset``; off, it
+keeps today's behaviour (a due refresh marks stale: no refresher wired).
 """
 
 from __future__ import annotations
 
 import gzip
+import importlib
 import json
 import logging
+import re
 import xml.etree.ElementTree as ET
 from collections.abc import Callable
 from email.parser import Parser as EmailParser
@@ -18,7 +24,10 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+from kedro.io import DatasetError
+from kedro_datasets.api import APIDataset
 
+from . import public_sources
 from .refresh import (
     DEFAULT_REFRESH_MAX_RETRIES,
     DEFAULT_REFRESH_TIMEOUT_SECONDS,
@@ -74,36 +83,83 @@ def parse_homebrew_formulae_json(payload: Any) -> list[str]:
     return names
 
 
+_NIX_PNAME = re.compile(rb'"pname"\s*:\s*"((?:[^"\\]|\\.)*)"')
+
+
+def _brotli_or_raw(data: bytes) -> bytes:
+    """``packages.json.br`` arrives decoded when the HTTP stack has brotli (it is served with
+    ``Content-Encoding: br``); a still-compressed body is decoded here, lazily imported."""
+    if data.lstrip()[:1] in (b"{", b"["):
+        return data
+    try:
+        brotli = importlib.import_module("brotli")
+        return bytes(brotli.decompress(data))
+    except Exception:  # noqa: BLE001 -- not brotli either: the caller's parse degrades to []
+        return data
+
+
 def parse_nixpkgs_packages_json(payload: Any) -> list[str]:
-    """Parse nixpkgs ``packages.json`` — a JSON object keyed by attribute path.
-    v1 uses each key verbatim as the reported ``name`` (no nesting heuristic).
-    Returns ``[]`` (never raises) on a malformed payload."""
-    if isinstance(payload, (str, bytes)):
-        try:
-            payload = json.loads(payload)
-        except TypeError, ValueError:
-            return []
-    if not isinstance(payload, dict):
+    """Parse nixpkgs ``packages.json`` (``{"version": 2, "packages": {attr: {"pname": ...}}}``).
+
+    Story 34.5: reports each package's ``pname`` -- its declared name, ``numpy`` for the attr
+    ``python313Packages.numpy`` -- once, in first-seen order. The live index decodes to ~400 MB
+    (measured 2026-10-18), so the names are read with a byte-level scan, never ``json.loads``.
+    A payload with no ``pname`` (an attr-keyed object) falls back to the attribute keys. Returns
+    ``[]`` (never raises) on a malformed payload."""
+    if isinstance(payload, dict):
+        nested = payload.get("packages")
+        pkgs: dict[Any, Any] = nested if isinstance(nested, dict) else payload
+        return [str(k) for k in pkgs if k]
+    if isinstance(payload, str):
+        payload = payload.encode("utf-8")
+    if not isinstance(payload, bytes):
         return []
-    return [str(k) for k in payload if k]
+    data = _brotli_or_raw(payload)
+    names: dict[str, None] = {}
+    for match in _NIX_PNAME.finditer(data):
+        try:
+            name = json.loads(b'"' + match.group(1) + b'"')
+        except ValueError:
+            continue
+        if isinstance(name, str) and name:
+            names[name] = None
+    if names:
+        return list(names)
+    try:
+        doc = json.loads(data)
+    except TypeError, ValueError:
+        return []
+    return parse_nixpkgs_packages_json(doc) if isinstance(doc, dict) else []
 
 
 def parse_spack_packages(payload: Any) -> list[str]:
-    """Parse a Spack bulk package index. Accepts a JSON array of names, a JSON
-    object keyed by package name, or a JSON object with a ``packages`` list.
-    Returns ``[]`` (never raises) on a malformed payload."""
+    """Parse a Spack bulk package index. Accepts a JSON array of names or of
+    ``{"name": ...}`` records, a JSON object keyed by package name, or a JSON object
+    with a ``packages`` list. Returns ``[]`` (never raises) on a malformed payload."""
     if isinstance(payload, (str, bytes)):
         try:
             payload = json.loads(payload)
         except TypeError, ValueError:
             return []
     if isinstance(payload, list):
-        return [str(x) for x in payload if x]
+        return _names_from_items(payload)
     if isinstance(payload, dict):
         if isinstance(payload.get("packages"), list):
-            return [str(x) for x in payload["packages"] if x]
+            return _names_from_items(payload["packages"])
         return [str(k) for k in payload if k]
     return []
+
+
+def _names_from_items(items: list[Any]) -> list[str]:
+    """A list of names, or of records with a ``name`` (``packages.spack.io/data/packages.json``
+    is ``[{"name", "description"}, ...]``, measured 2026-10-18)."""
+    names: list[str] = []
+    for item in items:
+        if isinstance(item, dict):
+            item = item.get("name")
+        if isinstance(item, str) and item:
+            names.append(item)
+    return names
 
 
 def parse_debian_packages_control(payload: Any) -> list[str]:
@@ -131,9 +187,9 @@ def parse_debian_packages_control(payload: Any) -> list[str]:
 
 
 def parse_fedora_packages(payload: Any) -> list[str]:
-    """Parse a Fedora bulk index — JSON ``projects``/``items`` list or XML
-    ``<name>`` / ``<pkg:name>`` elements. Returns ``[]`` (never raises) on a
-    malformed payload."""
+    """Parse a Fedora bulk index — JSON ``projects``/``items`` list, the
+    ``pagure_owner_alias.json`` ``rpms`` map, or XML ``<name>`` / ``<pkg:name>``
+    elements. Returns ``[]`` (never raises) on a malformed payload."""
     text = _maybe_decompress(payload)
     if not text.strip():
         return []
@@ -149,6 +205,10 @@ def parse_fedora_packages(payload: Any) -> list[str]:
             for key in ("projects", "items", "packages"):
                 if isinstance(data.get(key), list):
                     return _names_from_fedora_items(data[key])
+            # Story 34.5: ``src.fedoraproject.org/extras/pagure_owner_alias.json`` -- the
+            # ``rpms`` namespace keyed by package name (measured 2026-10-18)
+            if isinstance(data.get("rpms"), dict):
+                return [str(k) for k in data["rpms"] if k]
         return []
     try:
         root = ET.fromstring(text)
@@ -195,6 +255,9 @@ class _Tier3PackagesDatasetBase(ExternalRefreshDataset):
         metadata: dict[str, Any] | None = None,
     ) -> None:
         self._url = str(url)
+        self._timeout = int(timeout_seconds)
+        if fetcher is None and public_sources.live():
+            fetcher = self._public_fetch
         self._fetcher = fetcher
         super().__init__(
             filepath=filepath,
@@ -206,9 +269,18 @@ class _Tier3PackagesDatasetBase(ExternalRefreshDataset):
             metadata=metadata,
         )
 
+    def _public_fetch(self) -> bytes:
+        """The store's own public index (Story 34.5), as bytes; a non-bytes body is a fetch failure."""
+        payload = APIDataset(url=self._url, load_args={"timeout": self._timeout}).load()
+        content = getattr(payload, "content", None)
+        if not isinstance(content, bytes):
+            raise DatasetError(f"{self._url}: expected a bytes body, got {type(content).__name__}")
+        return content
+
     def _do_refresh(self) -> pd.DataFrame:
         payload = self._fetcher()
-        names = self._PARSER(payload)
+        # one row per name: Debian's Packages repeats a name across stanzas (349 of 76,665 on 2026-10-18)
+        names = list(dict.fromkeys(self._PARSER(payload)))
         return pd.DataFrame({"name": names})
 
     @property
