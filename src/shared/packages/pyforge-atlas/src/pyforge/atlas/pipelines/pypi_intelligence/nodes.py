@@ -20,6 +20,7 @@ from __future__ import annotations
 import logging
 import re
 import time
+from typing import Any
 
 import pandas as pd
 
@@ -403,34 +404,50 @@ def snapshot_pypi_serials(pypi_simple_index_raw: pd.DataFrame) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
-# Phase P — monthly download counts (BigQuery; the two-layer cost gate is
-#           DATASET-owned, this node stays PURE)  [AC-4]
+# Phase P — monthly download counts (ClickHouse by default, BigQuery when an
+#           attended run supplies it; every fetch is DATASET-owned, this node
+#           stays PURE)  [AC-4]
 # ---------------------------------------------------------------------------
 
+_PHASE_P_COLUMNS = ["pypi_name", "month", "downloads", "downloads_source"]
 
-def fetch_pypi_downloads(pypi_bigquery_downloads_raw: pd.DataFrame) -> pd.DataFrame:
-    # legacy: Phase P  (phase_p_pypi_downloads CFA:7352)
-    """Normalize the already-fetched monthly-download frame. **The node stays PURE**:
-    the two-layer BigQuery cost gate (dry-run preflight above cap + ``maximum_bytes_billed``
-    + ``PHASE_P_JOB_TIMEOUT_MS`` + literal-TIMESTAMP bounds, D1) lives in the request
-    DATASET (``BigQueryDownloadsDataset``, THE CRUX). If ``PHASE_P_ENABLED`` is unset OR
-    the dry-run aborts above cap, the dataset yields no rows and this node no-ops
-    (mode-machine ``_phase_p_skip`` CFA:7342). AD-6: never a default schedule.
+
+def _has_downloads(df: Any) -> bool:
+    return df is not None and not getattr(df, "empty", True) and "pypi_name" in getattr(df, "columns", [])
+
+
+def fetch_pypi_downloads(
+    pypi_clickhouse_downloads_raw: pd.DataFrame,
+    pypi_bigquery_downloads_raw: pd.DataFrame,
+) -> pd.DataFrame:
+    # legacy: Phase P  (phase_p_pypi_downloads CFA:7352; source dispatch CFA:7387)
+    """Select the Phase P source and normalize its monthly-download frame. **The node stays
+    PURE**: each source's fetch lives in its DATASET.
+
+    Story 34.9 (CAP-64): BigQuery rows win when present -- the attended, credentialed path
+    covers every project (its two-layer cost gate is ``BigQueryDownloadsDataset``'s, and the
+    default catalog load yields none, AD-6). Otherwise the ClickHouse public mirror's rows
+    stand: the top projects by 90-day downloads, legacy's default source. ``downloads_source``
+    names the source on every row (legacy: ``clickhouse-clickpy`` / ``bigquery``). Neither
+    source has rows: the node no-ops (mode-machine ``_phase_p_skip`` CFA:7342).
 
     ``INSERT OR IGNORE`` idempotency → drop duplicate ``(pypi_name, month)`` rows.
     Input: ``pypi_name``, ``month``, ``downloads``. Output ``pypi_downloads_monthly``:
-    same columns, deduped."""
-    cols = ["pypi_name", "month", "downloads"]
-    df = pypi_bigquery_downloads_raw
-    if df is None or getattr(df, "empty", True) or "pypi_name" not in getattr(df, "columns", []):
-        return pd.DataFrame(columns=cols)
+    those columns plus ``downloads_source``, deduped."""
+    if _has_downloads(pypi_bigquery_downloads_raw):
+        df, source = pypi_bigquery_downloads_raw, "bigquery"
+    elif _has_downloads(pypi_clickhouse_downloads_raw):
+        df, source = pypi_clickhouse_downloads_raw, "clickhouse-clickpy"
+    else:
+        return pd.DataFrame(columns=_PHASE_P_COLUMNS)
     out = df.copy()
     for c in ("month", "downloads"):
         if c not in out.columns:
             out[c] = pd.NA
+    out["downloads_source"] = source
     # INSERT OR IGNORE idempotency (CFA): first write per (pypi_name, month) wins.
     out = out.drop_duplicates(subset=["pypi_name", "month"], keep="first")
-    return out[cols].reset_index(drop=True)
+    return out[_PHASE_P_COLUMNS].reset_index(drop=True)
 
 
 # ---------------------------------------------------------------------------

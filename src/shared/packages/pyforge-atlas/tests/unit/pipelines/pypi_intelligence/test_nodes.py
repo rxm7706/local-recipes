@@ -113,15 +113,15 @@ def test_fetch_pypi_downloads_idempotent_dedup():
             "downloads": [100, 999, 50],
         }
     )
-    out = fetch_pypi_downloads(df)
+    out = fetch_pypi_downloads(df, pd.DataFrame())
     assert len(out) == 2  # (numpy,2026-01) deduped, first wins
     assert out.set_index("pypi_name").loc["numpy", "downloads"] == 100
 
 
 def test_fetch_pypi_downloads_disabled_no_op():
-    # Phase P off / dry-run abort -> dataset yields empty -> node no-ops (AD-6)
-    out = fetch_pypi_downloads(pd.DataFrame())
-    assert out.empty and list(out.columns) == ["pypi_name", "month", "downloads"]
+    # Phase P off / dry-run abort -> both datasets yield empty -> node no-ops (AD-6)
+    out = fetch_pypi_downloads(pd.DataFrame(), pd.DataFrame())
+    assert out.empty and list(out.columns) == ["pypi_name", "month", "downloads", "downloads_source"]
 
 
 # -- Phase Q (cross-channel BOOL pivot) --------------------------------------
