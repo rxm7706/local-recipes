@@ -28,19 +28,23 @@ from typing import Any
 
 import pandas as pd
 import pyarrow as pa
+
+# pyarrow.compute's functions are generated at import, so mypy against a real pyarrow (the
+# pyforge-foundry-full lane) cannot see pc.equal / pc.if_else / ...; under pyforge-guild (no
+# pyarrow) the same lines type as Any. Hence the per-line ignores below carry unused-ignore too.
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
 from kedro.io import AbstractDataset, DatasetError
 from kedro_datasets.api import APIDataset
 from pyforge.core.atomic_write import atomic_write
-from pyforge.core.flags import read_boolean
 
+from . import public_sources
 from .json_sources import _describe_exc
 from .refresh import StalenessMarker, _safe_int
 
 logger = logging.getLogger(__name__)
 
-FLAG_KEY = "pyforge.atlas.live_public_sources"
+FLAG_KEY = public_sources.FLAG_KEY
 
 #: the channel legacy Phase F's totals, platform and Python cuts read (CFA:3009, Wave 2)
 HOME_CHANNEL = "conda-forge"
@@ -49,34 +53,54 @@ BREAKDOWN_COLUMNS = ["conda_name", "month", "platform", "pyver", "channel", "dow
 VERSION_COLUMNS = ["conda_name", "version", "downloads"]
 VIEWS = {"breakdown": BREAKDOWN_COLUMNS, "versions": VERSION_COLUMNS}
 
-_MONTH_KEY = re.compile(r"(\d{4}-\d{2})\.parquet$")
-_S3_NS = "{http://s3.amazonaws.com/doc/2006-03-01/}"
+_MONTH_KEY = re.compile(r"(?:^|/)(\d{4})/(\d{4})-(\d{2})\.parquet$")
+# a conda package name (lowercase, conda-build's grammar); the parquet also carries URL-encoded
+# and query-string debris (``python%5fabi``, ``ocrmypdf-12.7.0-....tar.bz2?spm=...``), 413 strings
+# and 639 downloads over every month (measured 2026-10-18), which name no package
+_CONDA_NAME = r"^[a-z0-9_][a-z0-9_.+-]*$"
 _MAX_LIST_PAGES = 50  # ~50k keys; the bucket held 117 month keys on 2026-10-18
+_REQUEST_TIMEOUT = 300  # seconds; APIDataset sets none, and a stalled GET would hang the run
+# bump when aggregate_month's output changes: a manifest of another version is empty, so every
+# month is fetched and aggregated again (an unchanged ETag alone would keep the old aggregate)
+AGGREGATE_VERSION = 1
 _PARQUET_COLUMNS = ["data_source", "pkg_name", "pkg_version", "pkg_platform", "pkg_python", "counts"]
 
 # a fetch failure (kedro's wrapper), or a body pyarrow cannot read as the expected parquet
 _MONTH_ERRORS = (DatasetError, pa.ArrowException, OSError)
 
 
+def _local(tag: str) -> str:
+    return tag.rsplit("}", 1)[-1]
+
+
+def _child_text(elem: ET.Element, name: str) -> str:
+    for child in elem:
+        if _local(child.tag) == name:
+            return child.text or ""
+    return ""
+
+
 def parse_s3_listing(body: bytes) -> tuple[dict[str, str], str | None]:
     """One ListObjectsV2 page -> ``({YYYY-MM: ETag}, continuation token or None)``.
 
-    Keys that do not end in ``YYYY-MM.parquet`` are ignored; a body that is not an S3
-    listing raises ``ValueError``."""
+    Only ``.../<YYYY>/<YYYY-MM>.parquet`` keys whose folder year matches count; any other key is
+    ignored. Element namespaces are ignored too, so an S3-compatible mirror that omits the S3
+    namespace parses the same. A body that is not a ListBucketResult raises ``ValueError``."""
     try:
         root = ET.fromstring(body)
     except ET.ParseError as exc:
         raise ValueError(f"listing is not XML: {exc}") from exc
-    if root.tag != f"{_S3_NS}ListBucketResult":
+    if _local(root.tag) != "ListBucketResult":
         raise ValueError(f"listing root is {root.tag!r}, not ListBucketResult")
     months: dict[str, str] = {}
-    for item in root.iter(f"{_S3_NS}Contents"):
-        key = item.findtext(f"{_S3_NS}Key") or ""
-        match = _MONTH_KEY.search(key)
-        if match:
-            months[match.group(1)] = (item.findtext(f"{_S3_NS}ETag") or "").strip('"')
-    truncated = (root.findtext(f"{_S3_NS}IsTruncated") or "").strip().lower() == "true"
-    token = root.findtext(f"{_S3_NS}NextContinuationToken") if truncated else None
+    for item in root:
+        if _local(item.tag) != "Contents":
+            continue
+        match = _MONTH_KEY.search(_child_text(item, "Key"))
+        if match and match.group(1) == match.group(2):
+            months[f"{match.group(2)}-{match.group(3)}"] = _child_text(item, "ETag").strip('"')
+    truncated = _child_text(root, "IsTruncated").strip().lower() == "true"
+    token = _child_text(root, "NextContinuationToken") if truncated else ""
     return months, token or None
 
 
@@ -96,12 +120,13 @@ def aggregate_month(month: str, body: bytes) -> tuple[pd.DataFrame, pd.DataFrame
     ``pkg_name`` is kept exactly: a conda name is not a PyPI name, and ``typing_extensions``
     and ``typing-extensions`` are two conda-forge packages. (Legacy DW-W2-2 PEP 503
     canonicalizes it after filtering, so legacy writes 0 for every eligible name holding
-    ``_`` or ``.``.) An empty ``pkg_platform`` is ``noarch`` (legacy Wave 2); rows with no
-    package name or channel are dropped."""
+    ``_`` or ``.``.) A ``pkg_name`` outside conda's name grammar names no package and is
+    dropped, as are rows with no channel. An empty ``pkg_platform`` is ``noarch`` (legacy
+    Wave 2)."""
     table = pq.read_table(io.BytesIO(body), columns=_PARQUET_COLUMNS)
     name = _string(table, "pkg_name")
     platform = _string(table, "pkg_platform")
-    platform = pc.if_else(pc.equal(platform, ""), "noarch", platform)
+    platform = pc.if_else(pc.equal(platform, ""), "noarch", platform)  # type: ignore[attr-defined, unused-ignore]
     flat = pa.table(
         {
             "conda_name": name,
@@ -112,12 +137,14 @@ def aggregate_month(month: str, body: bytes) -> tuple[pd.DataFrame, pd.DataFrame
             "downloads": pc.fill_null(table.column("counts"), 0),
         }
     )
-    flat = flat.filter(pc.and_(pc.not_equal(flat["conda_name"], ""), pc.not_equal(flat["channel"], "")))
+    flat = flat.filter(
+        pc.and_(pc.match_substring_regex(flat["conda_name"], pattern=_CONDA_NAME), pc.not_equal(flat["channel"], ""))  # type: ignore[attr-defined, unused-ignore]
+    )
     breakdown = _summed(flat, ["conda_name", "platform", "pyver", "channel"])
     breakdown = breakdown.append_column("month", pa.array([month] * breakdown.num_rows, pa.string()))
-    home = flat.filter(pc.equal(flat["channel"], HOME_CHANNEL))
+    home = flat.filter(pc.equal(flat["channel"], HOME_CHANNEL))  # type: ignore[attr-defined, unused-ignore]
     versions = _summed(home, ["conda_name", "version"])
-    versions = versions.filter(pc.not_equal(versions["version"], ""))
+    versions = versions.filter(pc.not_equal(versions["version"], ""))  # type: ignore[attr-defined, unused-ignore]
     return (
         breakdown.select(BREAKDOWN_COLUMNS).to_pandas(),
         versions.select(VERSION_COLUMNS).to_pandas(),
@@ -137,7 +164,7 @@ class S3DownloadStatsDataset(AbstractDataset):
     ``url`` is the bucket base (``S3_PARQUET_BASE_URL``) and ``prefix`` the month folder.
     With ``filepath``, months are cached under ``<filepath>/months/``: ``<YYYY-MM>.breakdown.parquet``
     and ``<YYYY-MM>.versions.parquet``, with ``manifest.json`` holding each cached month's
-    ETag. Two catalog entries share one ``filepath``; whichever loads first fetches, the
+    ETag under the aggregate version that wrote it. Two catalog entries share one ``filepath``; whichever loads first fetches, the
     other finds every ETag current. A failed listing or month keeps the cache under the
     AD-13 ``.staleness.json`` marker and never raises. Without ``filepath`` (fixtures) the
     dataset is the empty frame it always was.
@@ -162,8 +189,12 @@ class S3DownloadStatsDataset(AbstractDataset):
         self._prefix = prefix.strip("/")
         self._view = view
         self._dir = Path(filepath) if filepath else None
-        self._load_args = load_args
+        # a timeout, and no credential: public_sources.request_args keeps ~/.netrc out of it
+        self._load_args = {**public_sources.request_args(_REQUEST_TIMEOUT), **(load_args or {})}
         self.metadata = metadata
+        # whether the last load ran a refresh; with the flag off it serves the cache untouched,
+        # and provenance must then report the cache's own age, never "now"
+        self.refreshed = False
 
     # -- paths ---------------------------------------------------------------
 
@@ -201,7 +232,8 @@ class S3DownloadStatsDataset(AbstractDataset):
 
     def _mark_stale(self, reason: str) -> None:
         assert self._dir is not None
-        marker = StalenessMarker(stale=True, reason=reason[:300], last_good_exists=bool(self._read_manifest()))
+        cached = self._months_dir.is_dir() and any(self._months_dir.glob("*.parquet"))
+        marker = StalenessMarker(stale=True, reason=reason[:300], last_good_exists=cached)
 
         def _write(path: Path) -> None:
             path.write_text(json.dumps(marker.to_dict(), indent=2), encoding="utf-8")
@@ -220,20 +252,25 @@ class S3DownloadStatsDataset(AbstractDataset):
             raw = json.loads((self._dir / self.MANIFEST_FILENAME).read_text(encoding="utf-8"))
         except OSError, ValueError:
             return {}
-        return {str(k): str(v) for k, v in raw.items()} if isinstance(raw, dict) else {}
+        if not isinstance(raw, dict) or raw.get("aggregate_version") != AGGREGATE_VERSION:
+            return {}
+        months = raw.get("months")
+        return {str(k): str(v) for k, v in months.items()} if isinstance(months, dict) else {}
 
     def _write_manifest(self, manifest: dict[str, str]) -> None:
         assert self._dir is not None
 
         def _write(path: Path) -> None:
-            path.write_text(json.dumps(dict(sorted(manifest.items())), indent=2), encoding="utf-8")
+            doc = {"aggregate_version": AGGREGATE_VERSION, "months": dict(sorted(manifest.items()))}
+            path.write_text(json.dumps(doc, indent=2), encoding="utf-8")
 
         atomic_write(self._dir / self.MANIFEST_FILENAME, _write)
 
     # -- fetch ---------------------------------------------------------------------
 
     def _get(self, url: str) -> bytes:
-        payload = APIDataset(url=url, load_args=self._load_args).load()
+        # a fresh dict each time: APIDataset pops "auth" out of the load_args it is given
+        payload = APIDataset(url=url, load_args=dict(self._load_args)).load()
         content = getattr(payload, "content", payload)
         if not isinstance(content, bytes):
             raise DatasetError(f"{url}: expected a bytes body, got {type(content).__name__}")
@@ -256,7 +293,8 @@ class S3DownloadStatsDataset(AbstractDataset):
         return f"{self._url}/{self._prefix}/{month[:4]}/{month}.parquet"
 
     def refresh(self) -> None:
-        """Fetch every month the listing names that is absent or has a new ETag. Never raises."""
+        """Fetch every month the listing names that is absent, is missing a view file, has a new
+        ETag, or was cached under another aggregate version. Never raises."""
         assert self._dir is not None
         try:
             listed = self._list()
@@ -308,10 +346,12 @@ class S3DownloadStatsDataset(AbstractDataset):
         return frame
 
     def load(self) -> pd.DataFrame:
+        self.refreshed = False
         if self._dir is None:
             return pd.DataFrame(columns=VIEWS[self._view])
-        if read_boolean(FLAG_KEY, default=False):
+        if public_sources.live():
             self.refresh()
+            self.refreshed = True
         return self._read_cache()
 
     def save(self, data: Any) -> None:

@@ -320,6 +320,14 @@ def test_fetch_one_requests_the_key_it_is_given(monkeypatch, key, url):
     assert list(map(tuple, out.values)) == [("numpy", "2.0", 7)]
 
 
+def test_fetch_one_refuses_a_key_on_another_host():
+    """The dataset's credentials go to its own host only."""
+    ds = AnacondaDownloadsDataset(url="https://api.anaconda.org/package", credentials={"token": "t"})
+
+    with pytest.raises(ValueError, match="is not on"):
+        ds.fetch_one("https://elsewhere.example.invalid/package/conda-forge/numpy")
+
+
 def test_request_datasets_are_read_only_sources():
     from kedro.io.core import DatasetError
 

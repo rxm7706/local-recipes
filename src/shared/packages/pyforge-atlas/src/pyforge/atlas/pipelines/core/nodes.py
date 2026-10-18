@@ -225,8 +225,13 @@ def compute_downloads(
       s3-parquet path (CFA:538/549/572); the anaconda-api fallback never touches them
       → empty (but correctly-columned) frames.
     - ``downloads_30d`` = the latest CALENDAR month's downloads, NOT a rolling window
-      (CFA:3162) — parquet is monthly, so it is the single most-recent month.
-    - The dirty ``pkg_python`` column is regex-filtered before the pyver aggregation.
+      (CFA:3162) — parquet is monthly, so it is the single most-recent month; an
+      ``s3-parquet`` package with no downloads that month reads 0, as legacy writes it.
+    - Story 34.4: totals, ``downloads_30d`` and the platform and pyver cuts read the
+      ``conda-forge`` channel only (legacy Wave 2); the channel cut reads every channel
+      (legacy Wave 3, CFA:3279).
+    - The dirty ``pkg_python`` column is filtered through legacy's regex (CFA:3246) before
+      the pyver aggregation.
     - This is one consolidated pyarrow-style sweep (do not split passes); the
       replace-by-scope-key WRITE is dataset-owned (the node returns full frames).
 
@@ -317,6 +322,8 @@ def compute_downloads(
 
     if d30 is not None:
         downloads = downloads.merge(d30, on="conda_name", how="left")
+        on_s3 = downloads["downloads_source"] == "s3-parquet"
+        downloads.loc[on_s3, "downloads_30d"] = downloads.loc[on_s3, "downloads_30d"].fillna(0)
     else:
         downloads["downloads_30d"] = pd.NA
 

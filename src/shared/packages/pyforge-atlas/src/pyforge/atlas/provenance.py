@@ -229,20 +229,24 @@ def resolve_for_catalog_dataset(catalog: Any, name: str, loaded_value: Any) -> P
         # so, with the copy's own mtime and the AD-13 marker's reason -- never "now".
         # Story 34.2: a dataset that composes one (ParselmouthMappingDataset) reports it.
         # Story 34.3: CfGraphTarballDataset keeps the same marker beside its parquet copy.
-        # Story 34.4: S3DownloadStatsDataset's copy is its month cache, dated by its manifest.
+        # Story 34.4: S3DownloadStatsDataset's copy is its month cache, dated by its manifest;
+        # a load that fetched nothing (its flag off) served that copy as it stood.
         marker = source.staleness()
         last_good = source.last_good_path
-        if marker is None or last_good is None:
+        fetched = bool(getattr(source, "refreshed", True))
+        if last_good is None or (marker is None and fetched):
             return ProvenanceInfo(
                 kind="live-fetch",
                 build_stamp=datetime.datetime.now(tz=datetime.UTC).isoformat(),
             )
         copy = resolve_for_file(last_good)
-        return ProvenanceInfo(
-            kind=copy.kind,
-            build_stamp=copy.build_stamp,
-            reason=f"stale: {marker.reason}",
-        )
+        if marker is not None:
+            reason = f"stale: {marker.reason}"
+        elif copy.kind == "unavailable":
+            reason = f"not fetched this load, and no copy: {copy.reason}"
+        else:
+            reason = "not fetched this load: the copy as last fetched"
+        return ProvenanceInfo(kind=copy.kind, build_stamp=copy.build_stamp, reason=reason)
     api_dataset = _api_dataset_cls()
     if api_dataset is not None and isinstance(dataset, api_dataset):
         # The read IS the fetch — "now" is the genuine provenance, not a

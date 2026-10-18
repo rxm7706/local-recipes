@@ -35,6 +35,7 @@ import json
 import logging
 import os
 import time
+import urllib.parse
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any
@@ -239,6 +240,9 @@ class _RequestParameterizedAPIDataset(AbstractDataset):
             return fetcher(request_key)
         key = str(request_key)
         url = key if key.startswith(("http://", "https://")) else f"{self._base_url.rstrip('/')}/{key.lstrip('/')}"
+        # the dataset's credentials go to its own host only, never to an absolute key elsewhere
+        if urllib.parse.urlsplit(url).netloc != urllib.parse.urlsplit(self._base_url).netloc:
+            raise ValueError(f"{type(self).__name__}.fetch_one: {url!r} is not on {self._base_url!r}")
         inner = APIDataset(
             url=url,
             method=self._method,
