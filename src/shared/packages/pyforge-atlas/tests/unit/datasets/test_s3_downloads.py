@@ -477,7 +477,9 @@ def test_live_reads_the_flag_key_from_the_tree(
 
 
 def test_the_shipped_tree_reads_off_in_production(monkeypatch: pytest.MonkeyPatch, real_live: Any) -> None:
-    monkeypatch.delenv("PYFORGE_FLAGS_PATH", raising=False)
+    tree = Path(__file__).resolve().parents[7] / "src" / "platform" / "config" / "flags.json"
+    assert tree.is_file()  # the shipped tree itself, never a lookup that could pass without it
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(tree))
     monkeypatch.setenv("PYFORGE_ENVIRONMENT", "production")
 
     assert real_live() is False
