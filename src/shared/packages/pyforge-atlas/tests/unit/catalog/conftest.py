@@ -104,7 +104,7 @@ PREFIX_TO_PIPELINE = {
 # deferred to F4 per AD-12; recorded in the Dev Agent Record).
 EXPECTED_PIPELINE_COUNTS = {
     "core": 19,  # Story 21.4: + core_anaconda_main_channeldata_raw + core_anaconda_main_packages; Story 34.4: + core_s3_version_downloads_raw
-    "pypi_intelligence": 21,  # Story 23.1: +5 Tier-3 raw stores + pypi_tier3_channel_flags (+6 nodes)
+    "pypi_intelligence": 22,  # Story 23.1: +5 Tier-3 raw stores + pypi_tier3_channel_flags (+6 nodes); Story 34.9: + pypi_clickhouse_downloads_raw
     "vulnerability": 15,  # Story 23.3: + vulnerability_basilisk_rollup (rollup lives under vulnerability_* prefix)
     "vcs_health": 28,  # Story 25.2: +warden_fleet_inventory +repo_dependency_history catalog entries; Story 34.8: +vcs_migration_categories
     "universal_sbom": 6,  # F4: + sbom_hygiene_entry + sbom_compliance_report_entry (FR-16/FR-18, AD-12)
@@ -115,7 +115,7 @@ EXPECTED_PIPELINE_COUNTS = {
     "query_plane_cache": 2,  # Story 34.2 (FR-47): query_plane_estate_source + query_plane_estate
     "semantic_packages": 1,  # Story 20.3 (CAP-6): semantic_packages
 }
-EXPECTED_TOTAL = 129  # Story 25.2: +warden_fleet_inventory +repo_dependency_history; Story 34.4: +core_s3_version_downloads_raw; Story 34.8: +vcs_migration_categories
+EXPECTED_TOTAL = 130  # Story 25.2: +warden_fleet_inventory +repo_dependency_history; Story 34.4: +core_s3_version_downloads_raw; Story 34.8: +vcs_migration_categories; Story 34.9: +pypi_clickhouse_downloads_raw
 
 # The A3 IncrementalParquetDataset flip list (TTL-gated persisted outputs).
 FLIP_LIST = {
@@ -220,6 +220,7 @@ EXPECTED_EXTRA_OVERRIDES = {
     "OSV_VULNS_BUCKET_URL",  # § 3.4 store 2 refresh endpoint (B5)
     "BIGQUERY_BASE_URL",  # Phase P connection base (A2-J1; B3 flips to GBQ)
     "PURL_ASSOCIATOR_BASE_URL",  # Story 21.6 (CAP-3 identity join): purl_associator_mappings_raw
+    "CLICKHOUSE_PYPI_BASE_URL",  # Story 34.9 (CAP-64): pypi_clickhouse_downloads_raw, Phase P's default source
 }
 
 # Full-URL fetcher settings (outside the 20-count) — set-pinned (P7).
@@ -280,10 +281,10 @@ MEMBER_DIR_RELATIVE_PATHS = {"local_recipes_dir", "seed_root"}
 
 # Total env-override surface (review-pass P7 accounting, adjusted +1 by P9's
 # data_root, +2 by Story 21.4, +1 extra_override +1 path by Story 21.6, +1 path
-# by Story 25.1's repo_dependency_cache):
+# by Story 25.1's repo_dependency_cache, +1 extra_override by Story 34.9):
 # endpoint_bases 27 (19 live + 1 reserved + 2 Story 21.4 + 5 Story 23.1) +
-# extra_overrides 4 + fetcher_urls 3 + paths 8 = 42. Mirrored by a comment in globals.yml.
-EXPECTED_ENV_OVERRIDE_SURFACE = 42
+# extra_overrides 5 + fetcher_urls 3 + paths 8 = 43. Mirrored by a comment in globals.yml.
+EXPECTED_ENV_OVERRIDE_SURFACE = 43
 
 # Per-host credential allowlist (FR-1/AD-2): entry -> the ONLY credential
 # key it may carry. No other entry may carry any credentials key, and the

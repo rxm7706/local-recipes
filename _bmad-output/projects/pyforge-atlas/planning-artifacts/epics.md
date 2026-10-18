@@ -2543,7 +2543,7 @@ So that PyPI download counts fill without BigQuery.
 **Given** only `PyPIBigQueryDownloadsDataset` exists and the operator ruled BigQuery off
 **When** the pipeline runs with the flag on
 **Then** `pypi_downloads_monthly` holds rows from the ClickHouse mirror within the story's tolerance of legacy Phase P (1,000 rows, top by 90-day downloads, 2026-10-18), and no BigQuery call is made
-**Status:** backlog
+**Status:** done
 
 ### Story 34.10: Phase H covers every mapped PyPI project, gated by its serial
 

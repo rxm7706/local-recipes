@@ -115,7 +115,7 @@ development_status:
   34-6-the-public-discovery-stores-refresh-themselves: done
   34-7-the-vulnerability-stores-refresh-themselves: backlog
   34-8-migration-status-fills-through-a-driver-node: done
-  34-9-phase-p-fills-from-the-public-clickhouse-mirror: backlog
+  34-9-phase-p-fills-from-the-public-clickhouse-mirror: done
   35-1-one-opt-in-switch-and-github-authenticates: backlog
   35-2-the-vcs-batches-come-from-the-whole-universe: backlog
   35-3-upstream-versions-and-feedstock-health-come-from-github: backlog

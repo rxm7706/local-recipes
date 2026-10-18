@@ -45,6 +45,7 @@ from pyforge.atlas.datasets import (
     CfGraphTarballDataset,
     IncrementalParquetDataset,
     JSONSourceDataset,
+    PyPIClickHouseDownloadsDataset,
     S3DownloadStatsDataset,
 )
 
@@ -222,7 +223,7 @@ def resolve_for_catalog_dataset(catalog: Any, name: str, loaded_value: Any) -> P
                 reason=f"non-local protocol {protocol!r}: cannot stat the backing file locally",
             )
         return resolve_for_file(described["filepath"])
-    marked = (JSONSourceDataset, CfGraphTarballDataset, S3DownloadStatsDataset)
+    marked = (JSONSourceDataset, CfGraphTarballDataset, S3DownloadStatsDataset, PyPIClickHouseDownloadsDataset)
     source = dataset if isinstance(dataset, marked) else getattr(dataset, "source", None)
     if isinstance(source, marked):
         # Story 34.1: a fresh fetch is "now"; a load that served last-good (or nothing) says
@@ -231,6 +232,7 @@ def resolve_for_catalog_dataset(catalog: Any, name: str, loaded_value: Any) -> P
         # Story 34.3: CfGraphTarballDataset keeps the same marker beside its parquet copy.
         # Story 34.4: S3DownloadStatsDataset's copy is its month cache, dated by its manifest;
         # a load that fetched nothing (its flag off) served that copy as it stood.
+        # Story 34.9: PyPIClickHouseDownloadsDataset keeps the same marker beside its last-good.
         marker = source.staleness()
         last_good = source.last_good_path
         fetched = bool(getattr(source, "refreshed", True))
