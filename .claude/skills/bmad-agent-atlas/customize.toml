@@ -35,7 +35,7 @@ prompt = "Complete the station task by running `pyforge atlas --version` only. D
 [[agent.menu]]
 code = "RUN"
 description = "Run a pipeline via FR-13 grammar"
-prompt = "Complete the station task by running `pyforge atlas run --pipeline <name>` with the operator's pipeline name only. Do not write catalog files. Do not call HTTP except POST /stations/atlas/mcp."
+prompt = "Complete the station task by running `pyforge atlas run --pipelines <name>` with the operator's pipeline name only (comma-separated for several). Do not write catalog files. Do not call HTTP except POST /stations/atlas/mcp."
 
 [[agent.menu]]
 code = "MCP"

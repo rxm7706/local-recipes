@@ -25,12 +25,16 @@ def test_tool_specs_covers_registered_server_tools():
 
 
 def test_run_tool_cli_pipeline_tokens_match_tool_names():
-    """Full argv tail must match the pipeline each run_* tool triggers."""
+    """Full argv tail must match the pipeline each run_* tool triggers.
+
+    Story 33.1: the flag is Kedro 1.6's ``--pipelines``; ``--pipeline`` still
+    parses but is deprecated, so a tool declaring it fails here.
+    """
     for name, spec in TOOL_SPECS.items():
         if not name.startswith("run_") or not name.endswith("_pipeline"):
             continue
         cli = spec.get("cli")
-        assert isinstance(cli, list) and len(cli) == 3 and cli[1] == "--pipeline"
+        assert isinstance(cli, list) and len(cli) == 3 and cli[1] == "--pipelines"
         expected = name.removeprefix("run_").removesuffix("_pipeline")
         assert cli[2] == expected, f"{name}: cli pipeline token {cli[2]!r} != {expected!r}"
 
@@ -71,7 +75,7 @@ def test_fixture_tool_claims_unknown_cli_fails():
         **{n: dict(s) for n, s in TOOL_SPECS.items()},
         "run_phantom_pipeline": {
             "description": "fixture-only",
-            "cli": ["not-a-real-verb", "--pipeline", "core"],
+            "cli": ["not-a-real-verb", "--pipelines", "core"],
         },
     }
     findings = parity_findings(tool_specs=broken)
@@ -121,7 +125,7 @@ def test_fixture_tool_cli_malformed_fails():
     """Deliberate FR-155 miss: tool cli is not a usable argv sequence."""
     broken = {
         **{n: dict(s) for n, s in TOOL_SPECS.items()},
-        "run_bad_pipeline": {"description": "fixture", "cli": "run --pipeline core"},
+        "run_bad_pipeline": {"description": "fixture", "cli": "run --pipelines core"},
     }
     findings = parity_findings(tool_specs=broken)
     assert any(f.code == "tool_cli_malformed" for f in findings)

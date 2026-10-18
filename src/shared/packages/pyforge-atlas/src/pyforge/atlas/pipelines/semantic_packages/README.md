@@ -12,9 +12,9 @@ In a fresh checkout, none of `data/`'s Parquet outputs exist yet. To materialize
 dashboard-bound stores, run, in order:
 
 ```
-kedro run --pipeline core
-kedro run --pipeline vcs_health
-kedro run --pipeline semantic_packages
+pyforge atlas run --pipelines core
+pyforge atlas run --pipelines vcs_health
+pyforge atlas run --pipelines semantic_packages
 ```
 
 Running `core` alone is also what makes `core_feedstock_health` stop being absent in a fresh

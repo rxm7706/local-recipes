@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: 1ce5843f488fb475
-story_count: 109
-test_file_count: 155
+source_fingerprint: ad91254f9a7b0ea1
+story_count: 110
+test_file_count: 156
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 109
-- **Epics parsed:** 32
-- **Test files inventoried:** 155 under `src/shared/packages/pyforge-atlas/tests/`
+- **Stories parsed:** 110
+- **Epics parsed:** 33
+- **Test files inventoried:** 156 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `1ce5843f488fb475`
+- **Source fingerprint:** `ad91254f9a7b0ea1`
 
 ## Risk Assessment
 
@@ -65,6 +65,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 30: The DAG export and the Vizro boards reach Pages as workflow artifacts (spec-pyforge-atlas CAP-62, CAP-63)
 - Epic 31: Atlas passes mypy in `pyforge-foundry-full`, and a lane keeps it so (fix under spec-pyforge-atlas CAP-20)
 - Epic 32: The DAG export builds in CI, and a failed build fails its task (fix under spec-pyforge-atlas CAP-62)
+- Epic 33: The atlas CLI reaches the verbs its contracts name, from any directory (fix under spec-pyforge-atlas CAP-9)
 
 ### Low-risk epics
 
@@ -205,6 +206,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/test_estate_cache_bsl.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_hooks.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_import_smoke.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_main_dispatch.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_main_version.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_one_duckdb_writer.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_pipeline_inventory.py` | unit | none observed |
@@ -343,6 +345,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 30.2 | Vizro boards publish as static exports under /dashboard/vizro/ | none observed |
 | 31.1 | Atlas passes mypy in `pyforge-foundry-full`, and a lane keeps it so | none observed |
 | 32.1 | The DAG export builds in CI, and a failed build fails its task | none observed |
+| 33.1 | The atlas CLI reaches the verbs its contracts name, from any directory | none observed |
 
 ## Quality Gates
 

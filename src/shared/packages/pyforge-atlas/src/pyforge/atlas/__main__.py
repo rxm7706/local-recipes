@@ -2,10 +2,17 @@
 as `pyforge-atlas` and `python -m pyforge.atlas`
 """
 
+import os
 import sys
+from pathlib import Path
 from typing import Any
 
 from . import __version__
+
+# The member dir (the Kedro project root), the same root the MCP face pins in
+# `mcp/session.py`: .../pyforge-atlas/src/pyforge/atlas/__main__.py
+#     parents[0]=atlas  [1]=pyforge  [2]=src  [3]=pyforge-atlas
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
 def discover_cli_verbs() -> frozenset[str]:
@@ -64,20 +71,35 @@ def main(*args, **kwargs) -> Any:
         print(f"pyforge-atlas {__version__}")
         return None
 
-    from kedro.framework.cli.utils import find_run_command
-    from kedro.framework.project import configure_project
+    from kedro.framework.cli.project import project_group
+    from kedro.framework.startup import bootstrap_project
 
-    # PEP 420 namespace package: the Kedro package name is the dotted
-    # `pyforge.atlas` (Story A1 AC-7) — derive it from __package__, not the
-    # directory name (which would yield the bare "atlas").
-    package_name = __package__ or "pyforge.atlas"
-    configure_project(package_name)
+    # Story 33.1: dispatch to Kedro's project command group (`ipython`,
+    # `package`, `run`) -- the group `discover_cli_verbs` reads for the
+    # parity gate -- not to the bare `run` command `find_run_command`
+    # returns, which made `pyforge atlas run …` an unexpected extra argument.
+    # `bootstrap_project` configures the dotted `pyforge.atlas` package from
+    # `[tool.kedro]` and hands back the metadata the group's commands take
+    # as their Click `obj`. `KedroSession.create` finds its project from the
+    # cwd, so the cwd moves to the member dir: from the repo root it would
+    # otherwise read the repo root's own `conf/`, not atlas's catalog. The
+    # caller's cwd comes back afterwards, so an in-process caller (a test, a
+    # REPL) is left where it was.
+    metadata = bootstrap_project(PROJECT_ROOT)
 
     interactive = hasattr(sys, "ps1")
     kwargs["standalone_mode"] = not interactive
+    kwargs.setdefault("prog_name", "pyforge-atlas")
+    # Always the project's metadata: the group's commands read it as their
+    # `obj`, and no caller has another to give.
+    kwargs["obj"] = metadata
 
-    run = find_run_command(package_name)
-    return run(*args, **kwargs)
+    caller_cwd = os.getcwd()
+    os.chdir(PROJECT_ROOT)
+    try:
+        return project_group(*args, **kwargs)
+    finally:
+        os.chdir(caller_cwd)
 
 
 if __name__ == "__main__":

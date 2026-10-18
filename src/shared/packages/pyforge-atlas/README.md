@@ -21,6 +21,38 @@ trending-candidates engine. That list is the one `find_pipelines()` discovers
 and `tests/unit/test_pipeline_inventory.py` reds when the two drift (it carried
 8 names for three pipelines' worth of drift — Story 27.3, DW-FU-20-3-2).
 
+## Run
+
+`pyforge atlas …` (or the `pyforge-atlas` binary) is Kedro's project command
+group for this project: `run`, `ipython` and `package` (Story 33.1). It works
+from any directory of the repo checkout (the package is repo-local; an install
+outside the checkout has no project to bootstrap): the binary runs each command
+against this member dir's `conf/` and `data/`, the same project root the MCP
+face uses, and gives the caller its cwd back afterwards. Because the command
+runs with the member dir as its cwd, a relative path you pass to `run`
+(`--config`, `--conf-source`) or put in a `PYFORGE_ATLAS_*` variable resolves
+against `src/shared/packages/pyforge-atlas/`, not your shell's directory; pass
+absolute paths.
+
+```bash
+pixi run -e pyforge-atlas pyforge atlas --version               # one line, no Kedro loaded
+pixi run -e pyforge-atlas pyforge atlas run --pipelines core    # one pipeline
+pixi run -e pyforge-atlas pyforge atlas run --pipelines core,vcs_health
+pixi run -e pyforge-atlas pyforge atlas run                     # the whole __default__ DAG
+pixi run -e pyforge-atlas pyforge atlas                         # lists the commands, runs nothing
+pixi run -e pyforge-atlas pyforge-atlas ipython                 # interactive: call the binary directly
+```
+
+The unified `pyforge` front door runs the station binary with captured output
+and no stdin (`pyforge-core`'s `PosixProcess`), so `pyforge atlas ipython` is not
+interactive and a long `pyforge atlas run` prints its log only when it exits.
+Call the `pyforge-atlas` binary directly for an IPython shell or a streamed log.
+
+`--pipelines` takes comma-separated names (Kedro 1.6 deprecates the singular
+`--pipeline`). Catalog datasets are listed through the MCP tool
+`list_atlas_datasets`, not the CLI. For a fresh clone, run
+`pyforge-atlas-bootstrap` (below) first.
+
 ## Develop
 
 Run from the repository root (the parent pixi workspace):

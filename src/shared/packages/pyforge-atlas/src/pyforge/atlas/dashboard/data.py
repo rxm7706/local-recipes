@@ -37,7 +37,7 @@ PACKAGE_MAINTAINERS_PARQUET = "intermediate/vcs_package_maintainers/vcs_package_
 # downloads_* + per-version fields) is derived by the named, downstream-only
 # ``semantic_packages`` Kedro pipeline (Story 20.3, CAP-6 / ``query-plane-catalog``
 # ruling) from the sealed ``core`` + ``vcs_health`` pipelines' own catalog outputs —
-# run it (after ``core`` + ``vcs_health``) with ``kedro run --pipeline
+# run it (after ``core`` + ``vcs_health``) with ``pyforge atlas run --pipelines
 # semantic_packages`` to materialize this Parquet. ``latest_conda_upload`` / the
 # per-version inputs are themselves ``deferred-input-not-in-migrated-store`` (D1
 # ``metrics.METRIC_PROVENANCE``) — the pipeline node declares them NULL, never

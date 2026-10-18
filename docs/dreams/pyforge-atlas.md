@@ -456,6 +456,46 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   `DW-steward-102-4-1`). Owner `spec-pyforge-atlas` (CAP-62, the DAG export reaches Pages as a workflow artifact).
   → Epic 32 / Story 32.1, specced 2026-10-17.
 
+- **2026-10-18 (the atlas CLI has no verbs) — Found: `pyforge atlas run --pipeline core`, the command atlas's skill,
+  persona and parity gate all name, fails, and the one form that works reads the wrong project from the repo root.**
+  The operator asked for a data refresh on 2026-10-17 and ran the skill's quick-start command from the repo root.
+  **Evidence:**
+  - `pixi run -e pyforge-atlas pyforge atlas run` exits 2 with `Error: Got unexpected extra argument (run)`;
+    `pyforge atlas catalog list` exits 2 with `Got unexpected extra arguments (catalog list)`.
+  - `pyforge.atlas.__main__.main` hands every argument to Kedro's `find_run_command`, which returns the `run` command
+    itself, not Kedro's project command group. So the binary IS `run`: `ipython` and `package` are unreachable, and
+    a bare `pyforge atlas` starts a whole-DAG run.
+  - Four contracts say otherwise. The SKF skill `.claude/skills/pyforge-atlas` (Quick Start, Common Workflows, CLI)
+    and the `bmad-agent-atlas` persona's RUN menu name `pyforge atlas run --pipeline <name>`. The FR-155 parity gate
+    (`mcp/parity.py`, Story 24.3) derives its verbs from `kedro.framework.cli.project.project_group` (`ipython`,
+    `package`, `run`), and `mcp/tools.py`'s `TOOL_SPECS` declares each `run_*_pipeline` tool's CLI as
+    `["run", "--pipeline", <name>]`. The gate checks a verb exists in that group, never that the binary reaches it,
+    so it has passed since 2026-09-10 while the binary reached none of them.
+  - From the repo root, where the skill and canopy FR-13 say to run it, Kedro's `KedroSession.create` finds no
+    `[tool.kedro]` project (`find_kedro_project` returns `None`) and falls back to the cwd: the repo root's own
+    `conf/` (one `knowledge.yml`), not atlas's catalog. Every real run today goes through a pixi task whose `cwd` is
+    the member dir. The MCP face already pins it (`mcp/session.py`'s `PROJECT_ROOT`, `bootstrap_project`). Measured
+    2026-10-17 23:04, the operator's own bare `pyforge atlas` from the repo root: `MissingConfigException: Given
+    configuration path either does not exist or is not a valid directory: <repo>/conf/local`, before any node ran.
+    An older root-relative write survives as the gitignored `<repo>/data/raw/` (atlas staleness sidecars for
+    `vulnerability_basilisk_raw`, `vulnerability_basilisk_detail_raw` and `vcs_migration_detail_raw`, dated
+    2026-08-29).
+  - Kedro 1.6.0 deprecates `--pipeline` in favour of `--pipelines` (a `KedroDeprecationWarning` on every use).
+  **What it looks like when fixed:** `pyforge atlas run --pipelines core` runs atlas's `core` from any cwd against
+  atlas's own `conf/`, the same project root the MCP face uses; `pyforge atlas ipython` and `pyforge atlas package`
+  reach Kedro's commands; a bare `pyforge atlas` prints the verbs instead of running the DAG; a test fails the day a
+  verb the parity gate counts is unreachable through the binary; the skill, the persona and `TOOL_SPECS` name the
+  grammar the binary accepts, with `--pipelines`; listing datasets points at the MCP `list_atlas_datasets` tool.
+  **Constraints:**
+  - A `fix` story: no CAP, no FR, no flag (`spec-feature-flag-governance` Q1).
+  - Kedro's routing is not reimplemented: the binary dispatches to Kedro's own `project_group`, the group the parity
+    gate already reads (Story 24.3's boundary).
+  - `--version` stays a first-token-only intercept that loads no Kedro (Story 7.1).
+  - A new epic: the epics that shipped the CLI, the skill and the parity gate are done.
+  **Kinships:** [[pyforge-steward]] (canopy FR-13, `pyforge <station> …` reaches the station binary unchanged;
+  `pyforge-core` dispatch). Owner `spec-pyforge-atlas` (CAP-9, agents trigger and read the pipeline natively).
+  → Epic 33 / Story 33.1, specced 2026-10-18.
+
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 
 Atlas rebases to one Dream, one Spec, one PRD, one spine, one epic chain.

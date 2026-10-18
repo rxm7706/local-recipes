@@ -19,7 +19,10 @@ agentskills.io content skill for the **atlas** station. Source: local path
 Forge tier: **Quick** (SKF `skf-extract-public-api` + source-reading; T1-low).
 Public CLI export documented (`main`). Package `__init__.py` pins pandas
 `future.infer_string` and exports `__version__` only
-[SRC:src/pyforge/atlas/__init__.py:L34]. This skill is **not** `cf-atlas-legacy`
+[SRC:src/pyforge/atlas/__init__.py:L34]. The `[SRC:…]` line citations and
+`provenance-map.json`'s `source_line`s were re-pointed by hand on 2026-10-18
+(atlas Story 33.1) against that story's landing tree; the compile commit above is unchanged.
+This skill is **not** `cf-atlas-legacy`
 and does **not** replace `conda-forge-expert`.
 
 ## Description
@@ -32,20 +35,23 @@ through FR-13 grammar (`pyforge atlas …`) and FR-11 MCP
 
 ## Quick Start
 
-Run from the repository root (never a hardcoded absolute path)
-[SRC:README.md:L21]:
+Run from the repository root, or any directory (never a hardcoded absolute
+path) [SRC:README.md:L24-L55]:
 
 ```bash
 pyforge atlas --version
-pyforge atlas run --pipeline core
-pyforge atlas catalog list
+pyforge atlas run --pipelines core
+pyforge atlas run --pipelines core,vcs_health
 ```
 
 `pyforge atlas …` is unified dispatch onto the `pyforge-atlas` console script
 [SRC:pyproject.toml:L87-L88]. `--version` is intercepted before Kedro import
-and prints `pyforge-atlas <version>` [SRC:src/pyforge/atlas/__main__.py:L47-L49].
-Any other argv is forwarded to Kedro `find_run_command` after
-`configure_project("pyforge.atlas")` [SRC:src/pyforge/atlas/__main__.py:L51-L64].
+and prints `pyforge-atlas <version>` [SRC:src/pyforge/atlas/__main__.py:L70-L72].
+Any other argv goes to Kedro's project command group (`run`, `ipython`,
+`package`) after `bootstrap_project(PROJECT_ROOT)`; each command runs with the
+atlas member dir as its cwd, the root the MCP face uses, and the caller's cwd
+comes back afterwards [SRC:src/pyforge/atlas/__main__.py:L74-L102]. A bare
+`pyforge atlas` lists the commands and runs nothing.
 
 <!-- [MANUAL:additional-notes] -->
 <!-- CAP-15: personas consult this skill; they must not freelance the filesystem. -->
@@ -53,17 +59,20 @@ Any other argv is forwarded to Kedro `find_run_command` after
 
 ## Common Workflows
 
-**Version check:** `main(["--version"])` [SRC:src/pyforge/atlas/__main__.py:L10]
+**Version check:** `main(["--version"])` [SRC:src/pyforge/atlas/__main__.py:L33]
 prints one line and returns without loading Kedro.
 
-**Pipeline run (CLI):** `pyforge atlas run --pipeline <name>` — same execution
-plane as MCP `run_pipeline` (AD-23). Registered names live in `PIPELINE_NAMES`
-[SRC:src/pyforge/atlas/mcp/tools.py:L38-L47].
+**Pipeline run (CLI):** `pyforge atlas run --pipelines <name>[,<name>…]` —
+same execution plane as MCP `run_pipeline` (AD-23). The MCP trigger accepts the
+names in `PIPELINE_NAMES` [SRC:src/pyforge/atlas/mcp/tools.py:L97-L106]; the
+CLI accepts every registered Kedro pipeline. Kedro 1.6 deprecates the singular
+`--pipeline`.
 
-**Catalog list (CLI):** `pyforge atlas catalog list` — Kedro catalog keys.
+**Catalog list:** no CLI verb — use the MCP tool `list_atlas_datasets`
+(`list_datasets` [SRC:src/pyforge/atlas/mcp/tools.py:L252-L260]).
 
 **MCP read/trigger:** `run_pipeline`, `read_dataset`, `list_pipelines`,
-`list_datasets` [SRC:src/pyforge/atlas/mcp/tools.py:L57-L201]. Host face is
+`list_datasets` [SRC:src/pyforge/atlas/mcp/tools.py:L116-L260]. Host face is
 `POST /stations/atlas/mcp`, not ad-hoc HTTP.
 
 ## Key API Summary
@@ -81,7 +90,7 @@ plane as MCP `run_pipeline` (AD-23). Registered names live in `PIPELINE_NAMES`
 ## Key Exports
 
 Public SKF extract of `__main__.py` (Quick mode): `main`
-[SRC:src/pyforge/atlas/__main__.py:L10]. Console script:
+[SRC:src/pyforge/atlas/__main__.py:L33]. Console script:
 `pyforge-atlas = pyforge.atlas.__main__:main` [SRC:pyproject.toml:L87-L88].
 MCP surface re-exports from `mcp/tools.py` [SRC:src/pyforge/atlas/mcp/__init__.py:L31-L50].
 
@@ -94,17 +103,17 @@ here — that remains `conda-forge-expert`.
 
 ## Key Types
 
-**`AtlasMCPError`** [SRC:src/pyforge/atlas/mcp/tools.py:L50-L54] — invalid
+**`AtlasMCPError`** [SRC:src/pyforge/atlas/mcp/tools.py:L109-L113] — invalid
 MCP-surface request (unknown pipeline).
 
-**`PIPELINE_NAMES`** [SRC:src/pyforge/atlas/mcp/tools.py:L38-L47] — static
+**`PIPELINE_NAMES`** [SRC:src/pyforge/atlas/mcp/tools.py:L97-L106] — static
 registry mirror (`core`, `vcs_health`, `pypi_intelligence`, `vulnerability`,
 `seed_gaps`, `universal_sbom`, `derived_artifacts`, `upstream_discovery`).
 
 ## Architecture at a Glance
 
-- **CLI** — `main` intercepts `--version`, then Kedro project CLI
-  [SRC:src/pyforge/atlas/__main__.py:L10-L64].
+- **CLI** — `main` intercepts `--version`, then Kedro's project command group
+  [SRC:src/pyforge/atlas/__main__.py:L33-L102].
 - **MCP** — thin tools over Kedro session/catalog; not `kedro-mcp`
   [SRC:src/pyforge/atlas/mcp/__init__.py:L1-L21].
 - **Pipelines** — Kedro packages under `pipelines/`; Vizro stays off the host
@@ -114,12 +123,15 @@ registry mirror (`core`, `vcs_health`, `pypi_intelligence`, `vulnerability`,
 
 ```text
 pyforge atlas --version
-pyforge atlas run --pipeline <name>
-pyforge atlas catalog list
+pyforge atlas run --pipelines <name>[,<name>…]
+pyforge atlas run
+pyforge-atlas ipython          # the binary directly: the pyforge front door has no stdin
+pyforge atlas package
 ```
 
-Unknown pipelines on the MCP trigger raise `AtlasMCPError`
-[SRC:src/pyforge/atlas/mcp/tools.py:L70-L71].
+`run` with no `--pipelines` runs the whole `__default__` DAG. Unknown pipelines
+on the MCP trigger raise `AtlasMCPError`
+[SRC:src/pyforge/atlas/mcp/tools.py:L129-L130].
 
 <!-- [MANUAL:api-notes] -->
 <!-- Add custom notes here. This section is preserved during skill updates. -->

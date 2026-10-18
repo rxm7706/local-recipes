@@ -33,35 +33,35 @@ from pyforge.atlas.trending_candidates import query as _trending
 TOOL_SPECS: dict[str, dict[str, Any]] = {
     "run_core_pipeline": {
         "description": "Trigger the `core` pipeline run.",
-        "cli": ["run", "--pipeline", "core"],
+        "cli": ["run", "--pipelines", "core"],
     },
     "run_vcs_health_pipeline": {
         "description": "Trigger the `vcs_health` pipeline run.",
-        "cli": ["run", "--pipeline", "vcs_health"],
+        "cli": ["run", "--pipelines", "vcs_health"],
     },
     "run_pypi_intelligence_pipeline": {
         "description": "Trigger the `pypi_intelligence` pipeline run.",
-        "cli": ["run", "--pipeline", "pypi_intelligence"],
+        "cli": ["run", "--pipelines", "pypi_intelligence"],
     },
     "run_vulnerability_pipeline": {
         "description": "Trigger the `vulnerability` pipeline run.",
-        "cli": ["run", "--pipeline", "vulnerability"],
+        "cli": ["run", "--pipelines", "vulnerability"],
     },
     "run_seed_gaps_pipeline": {
         "description": "Trigger the `seed_gaps` pipeline run.",
-        "cli": ["run", "--pipeline", "seed_gaps"],
+        "cli": ["run", "--pipelines", "seed_gaps"],
     },
     "run_universal_sbom_pipeline": {
         "description": "Trigger the `universal_sbom` pipeline run.",
-        "cli": ["run", "--pipeline", "universal_sbom"],
+        "cli": ["run", "--pipelines", "universal_sbom"],
     },
     "run_derived_artifacts_pipeline": {
         "description": "Trigger the `derived_artifacts` pipeline run.",
-        "cli": ["run", "--pipeline", "derived_artifacts"],
+        "cli": ["run", "--pipelines", "derived_artifacts"],
     },
     "run_upstream_discovery_pipeline": {
         "description": "Trigger the `upstream_discovery` pipeline run.",
-        "cli": ["run", "--pipeline", "upstream_discovery"],
+        "cli": ["run", "--pipelines", "upstream_discovery"],
     },
     "read_atlas_dataset": {
         "description": "Read a catalog dataset with build-provenance envelope.",

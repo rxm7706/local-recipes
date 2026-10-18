@@ -81,9 +81,13 @@ def test_version_not_first_token_does_not_short_circuit(
 
     # Click's own "No such option" usage error, not a print-version
     # short-circuit and not an unrelated failure swallowed into exit 1.
+    # Story 33.1: before `main` dispatched to Kedro's project group, `run`
+    # itself was the unexpected token here, so the exit code alone passed for
+    # the wrong reason; the message pins the right one.
     assert excinfo.value.code == 2
     captured = capsys.readouterr()
     assert f"pyforge-atlas {__version__}" not in captured.out
+    assert "No such option '--version'" in captured.err
 
 
 def test_version_is_one_clean_line_in_a_real_process() -> None:
