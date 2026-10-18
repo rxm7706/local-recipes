@@ -67,7 +67,7 @@ def create_pipeline(**kwargs) -> Pipeline:
             ),
             node(
                 func=compute_version_download_history,
-                inputs="core_anaconda_downloads_raw",
+                inputs=["core_anaconda_downloads_raw", "core_s3_version_downloads_raw"],
                 outputs="core_version_download_history",
                 name="compute_version_download_history",
             ),

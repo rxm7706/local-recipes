@@ -18,19 +18,31 @@
         "version": "1.0",
         "downloads": 50
       }
+    ],
+    "core_s3_version_downloads_raw": [
+      {
+        "conda_name": "numpy",
+        "version": "2.0",
+        "downloads": 140
+      },
+      {
+        "conda_name": "numpy",
+        "version": "2.1",
+        "downloads": 73
+      }
     ]
   },
   "expected": {
     "core_version_download_history": [
       {
         "conda_name": "numpy",
-        "version": "1.0",
-        "downloads": 100
+        "version": "2.0",
+        "downloads": 140
       },
       {
         "conda_name": "numpy",
-        "version": "2.0",
-        "downloads": 200
+        "version": "2.1",
+        "downloads": 73
       },
       {
         "conda_name": "scipy",

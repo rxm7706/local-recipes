@@ -667,28 +667,6 @@ class CfGraphTarballDataset(AbstractDataset):
         return {"urls": dict(self._urls), "filepath": str(self._dir) if self._dir else None}
 
 
-class S3DownloadStatsDataset(AbstractDataset):
-    """Phase F s3-parquet source placeholder.
-
-    Full monthly-parquet fan-out is attended/credentialed; until wired the node
-    receives an empty but correctly-columned frame (graceful no-op in
-    ``compute_downloads``).
-    """
-
-    def __init__(self, *, url: str, metadata: dict[str, Any] | None = None) -> None:
-        self._url = url
-        self.metadata = metadata
-
-    def load(self) -> pd.DataFrame:
-        return pd.DataFrame(columns=["conda_name", "month", "platform", "pyver", "channel", "downloads"])
-
-    def save(self, data: Any) -> None:
-        raise NotImplementedError(f"{type(self).__name__} is read-only")
-
-    def _describe(self) -> dict[str, Any]:
-        return {"url": self._url, "note": "stub-empty until s3-parquet fan-out lands"}
-
-
 def parse_pypi_simple_index(payload: Any) -> pd.DataFrame:
     """PyPI Simple API v1 JSON → ``pypi_name``, ``last_serial`` frame."""
     doc = _api_json(payload)

@@ -25,7 +25,7 @@
         "month": "2026-05",
         "platform": "linux-64",
         "pyver": "3.11",
-        "channel": "main",
+        "channel": "conda-forge",
         "downloads": 10
       },
       {
@@ -33,7 +33,7 @@
         "month": "2026-06",
         "platform": "linux-64",
         "pyver": "3.12",
-        "channel": "main",
+        "channel": "conda-forge",
         "downloads": 20
       },
       {
@@ -41,7 +41,7 @@
         "month": "2026-06",
         "platform": "osx-64",
         "pyver": "bad",
-        "channel": "main",
+        "channel": "conda-forge",
         "downloads": 5
       },
       {
@@ -49,8 +49,16 @@
         "month": "2026-06",
         "platform": "linux-64",
         "pyver": "3.11",
-        "channel": "main",
+        "channel": "conda-forge",
         "downloads": 7
+      },
+      {
+        "conda_name": "numpy",
+        "month": "2026-06",
+        "platform": "linux-64",
+        "pyver": "3.12",
+        "channel": "anaconda",
+        "downloads": 900
       }
     ]
   },
@@ -112,12 +120,17 @@
     "core_downloads_channel_breakdown": [
       {
         "conda_name": "numpy",
-        "channel": "main",
+        "channel": "anaconda",
+        "downloads": 900
+      },
+      {
+        "conda_name": "numpy",
+        "channel": "conda-forge",
         "downloads": 35
       },
       {
         "conda_name": "pandas",
-        "channel": "main",
+        "channel": "conda-forge",
         "downloads": 7
       }
     ]

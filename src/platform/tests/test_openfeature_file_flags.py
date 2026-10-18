@@ -649,6 +649,11 @@ _SHIPPED_BOOLEANS = {
         "staging": False,
         "production": False,
     },
+    "pyforge.atlas.live_public_sources": {
+        "dev": True,
+        "staging": True,
+        "production": False,
+    },
     "pyforge.warden.fix_target_resolution": {
         "dev": True,
         "staging": True,
