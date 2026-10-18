@@ -9,33 +9,51 @@ from pyforge.atlas.datasets import public_sources
 
 
 class _Response:
-    def __init__(self, text):
-        self.text = text
+    def __init__(self, content, content_type="text/html; charset=utf-8", encoding="utf-8"):
+        self.content = content
+        self.headers = {"content-type": content_type}
+        self.encoding = encoding
 
 
-def _api(monkeypatch, body, calls):
+def _api(monkeypatch, response, calls):
     class _API:
         def __init__(self, *, url, load_args=None, **kwargs):
-            calls.append((url, load_args, kwargs))
+            calls.append((url, dict(load_args or {}), kwargs))
 
         def load(self):
-            return _Response(body)
+            return response
 
     monkeypatch.setattr(public_sources, "APIDataset", _API)
 
 
 def test_fetch_text_composes_an_api_dataset_with_a_timeout_and_no_credential(monkeypatch):
     calls: list = []
-    _api(monkeypatch, "<html>ok</html>", calls)
+    _api(monkeypatch, _Response(b"<html>ok</html>"), calls)
 
     assert public_sources.fetch_text("https://example.invalid/page", timeout=12) == "<html>ok</html>"
-    assert calls == [("https://example.invalid/page", {"timeout": 12}, {})]  # no credentials passed
+    ((url, load_args, kwargs),) = calls
+    assert url == "https://example.invalid/page" and load_args["timeout"] == 12 and kwargs == {}
+    assert load_args["auth"]("req") == "req"  # a no-op auth: requests never reads ~/.netrc
 
 
-def test_a_body_with_no_text_is_a_fetch_failure(monkeypatch):
-    _api(monkeypatch, None, [])
+def test_a_body_with_no_declared_charset_reads_as_utf8(monkeypatch):
+    """requests would read a text/* body with no charset as ISO-8859-1 ('cafÃ©')."""
+    _api(monkeypatch, _Response("café".encode(), content_type="text/html", encoding="ISO-8859-1"), [])
 
-    with pytest.raises(DatasetError, match="expected a text body"):
+    assert public_sources.fetch_text("https://example.invalid/page") == "café"
+
+
+def test_a_declared_charset_is_honoured(monkeypatch):
+    _api(monkeypatch, _Response("café".encode("latin-1"), "text/plain; charset=ISO-8859-1", "ISO-8859-1"), [])
+
+    assert public_sources.fetch_text("https://example.invalid/page") == "café"
+
+
+@pytest.mark.parametrize("content", [None, "already text"])
+def test_a_body_that_is_not_bytes_is_a_fetch_failure(monkeypatch, content):
+    _api(monkeypatch, _Response(content), [])
+
+    with pytest.raises(DatasetError, match="expected a bytes body"):
         public_sources.fetch_text("https://example.invalid/page")
 
 

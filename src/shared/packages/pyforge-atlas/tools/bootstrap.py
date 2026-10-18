@@ -116,9 +116,18 @@ def _ensure_credentials_stub() -> Path | None:
     return creds_path
 
 
-# Story 34.6: the AOSS premium and Anaconda distribution stores fetch their own public pages
-# when live public sources are on; Basilisk's credentialed batch waits for Story 36.1.
-_FETCHER_LESS_DISCOVERY_STORES = ("discovery_basilisk_packages_raw",)
+# Stores with no refresher of their own on an unattended run. Story 34.6: the AOSS premium and
+# Anaconda distribution stores fetch their own public pages when live public sources are on.
+# The Basilisk package listing stays fetcher-less until the operator rules on Basilisk
+# (spec-pyforge-atlas Open Questions, CAP-66); no Epic 34-36 story wires that store yet.
+_NO_PUBLIC_REFRESHER = ("discovery_basilisk_packages_raw",)
+_PUBLIC_REFRESHER_WHEN_LIVE = ("discovery_aoss_premium_python_raw", "discovery_anaconda_dist_2026x_raw")
+
+
+def _fetcher_less_discovery_stores() -> tuple[str, ...]:
+    from pyforge.atlas.datasets import public_sources
+
+    return _NO_PUBLIC_REFRESHER if public_sources.live() else _NO_PUBLIC_REFRESHER + _PUBLIC_REFRESHER_WHEN_LIVE
 
 
 def _report_stub(stub_path: Path | None) -> None:
@@ -153,7 +162,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"pyforge-atlas-bootstrap: data root = {data_root}")
     print(
         "pyforge-atlas-bootstrap: fetcher-less discovery stores (expected stale on "
-        "unattended bootstrap — no live refresher wired): " + ", ".join(_FETCHER_LESS_DISCOVERY_STORES)
+        "unattended bootstrap — no live refresher wired): " + ", ".join(_fetcher_less_discovery_stores())
     )
     if created_dirs:
         print("pyforge-atlas-bootstrap: created " + ", ".join(str(p) for p in created_dirs))

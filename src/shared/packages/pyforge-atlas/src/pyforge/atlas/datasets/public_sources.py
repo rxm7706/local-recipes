@@ -37,11 +37,15 @@ def request_args(timeout: int) -> dict[str, Any]:
 
 def fetch_text(url: str, *, timeout: int = 300) -> str:
     """Story 34.6: one unauthenticated public GET over a composed ``APIDataset`` (AD-2), as
-    the body text the response's own charset decodes; the per-URL fetcher the discovery
-    stores take. A failed request raises ``DatasetError`` (kedro's wrapper); the store's
-    refresh keeps last-good under its AD-13 marker."""
+    text: the declared charset, else UTF-8 (requests would read a ``text/*`` body with no
+    charset as ISO-8859-1). The per-URL fetcher the discovery stores take. A failed request
+    raises ``DatasetError`` (kedro's wrapper); the store's refresh keeps last-good under its
+    AD-13 marker."""
     payload = APIDataset(url=url, load_args=request_args(timeout)).load()
-    text = getattr(payload, "text", None)
-    if not isinstance(text, str):
-        raise DatasetError(f"{url}: expected a text body, got {type(payload).__name__}")
-    return text
+    content = getattr(payload, "content", None)
+    if not isinstance(content, bytes):
+        raise DatasetError(f"{url}: expected a bytes body, got {type(content).__name__}")
+    headers = getattr(payload, "headers", None) or {}
+    declared = "charset=" in str(headers.get("content-type", "")).lower()
+    encoding = getattr(payload, "encoding", None) if declared else None
+    return content.decode(encoding or "utf-8", errors="replace")

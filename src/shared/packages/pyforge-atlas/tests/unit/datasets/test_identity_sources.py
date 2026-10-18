@@ -528,7 +528,7 @@ from pyforge.testing_kit import flag_states  # noqa: E402
 from pyforge.atlas.datasets import public_sources  # noqa: E402
 
 
-@flag_states(public_sources.FLAG_KEY)
+@flag_states("pyforge.atlas.live_public_sources")  # spelled out: the flag gate reads this file for the key
 def test_the_purl_associator_with_no_fetcher_reads_its_public_index(tmp_path, flag_provider, monkeypatch):
     import json
 
@@ -548,3 +548,17 @@ def test_the_purl_associator_with_no_fetcher_reads_its_public_index(tmp_path, fl
         assert requested == [ASSOC_URL] and list(ds.load()["assoc_key"]) == ["requests"]
     else:
         assert requested == [] and ds.load().empty
+
+
+def test_the_purl_associator_injected_fetcher_wins(tmp_path, monkeypatch):
+    import json
+
+    monkeypatch.setattr(public_sources, "live", lambda: True)
+    monkeypatch.setattr(
+        public_sources, "fetch_text", lambda url, **kw: pytest.fail("the injected fetcher must be used")
+    )
+    ds = _assoc(tmp_path / "assoc", fetcher=lambda url: json.dumps(_ASSOC_PAYLOAD))
+
+    ds.save(RefreshRequest(store="purl_associator_mappings_raw", force=True))
+
+    assert list(ds.load()["assoc_key"]) == ["requests"]
