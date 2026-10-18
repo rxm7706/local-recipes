@@ -92,9 +92,10 @@ def build_feedstock_health_model(table: Any) -> SemanticModel:
     Declares the feedstock-health filters expressible over the migrated
     ``core_feedstock_health`` shape (``feedstock_name``, ``ci_status``, ``open_prs``,
     ``open_issues``): ``ci_red`` / ``has_open_prs`` / ``has_open_issues`` dimensions and
-    their counts. The legacy ``stuck`` / ``bad`` filters need Phase M columns absent
-    from the migrated shape — deliberately NOT declared, documented in
-    ``metrics.DEFERRED_FEEDSTOCK_HEALTH_FILTERS`` (no fabricated legacy signal).
+    their counts. The legacy ``stuck`` / ``bad`` filters read Phase M columns
+    (``bot_version_errors_count``, ``feedstock_bad``) that reach ``core_feedstock_health``
+    since Story 34.3; they stay undeclared until D2's legacy recapture, documented in
+    ``metrics.DEFERRED_FEEDSTOCK_HEALTH_FILTERS``.
     """
     return SemanticModel(
         table=table,

@@ -41,7 +41,7 @@ from typing import Any
 import pandas as pd
 from kedro_datasets.pandas import ParquetDataset
 
-from pyforge.atlas.datasets import IncrementalParquetDataset, JSONSourceDataset
+from pyforge.atlas.datasets import CfGraphTarballDataset, IncrementalParquetDataset, JSONSourceDataset
 
 SCHEMA_VERSION = "1"
 
@@ -217,18 +217,21 @@ def resolve_for_catalog_dataset(catalog: Any, name: str, loaded_value: Any) -> P
                 reason=f"non-local protocol {protocol!r}: cannot stat the backing file locally",
             )
         return resolve_for_file(described["filepath"])
-    source = dataset if isinstance(dataset, JSONSourceDataset) else getattr(dataset, "source", None)
-    if isinstance(source, JSONSourceDataset):
+    marked = (JSONSourceDataset, CfGraphTarballDataset)
+    source = dataset if isinstance(dataset, marked) else getattr(dataset, "source", None)
+    if isinstance(source, marked):
         # Story 34.1: a fresh fetch is "now"; a load that served last-good (or nothing) says
         # so, with the copy's own mtime and the AD-13 marker's reason -- never "now".
         # Story 34.2: a dataset that composes one (ParselmouthMappingDataset) reports it.
+        # Story 34.3: CfGraphTarballDataset keeps the same marker beside its parquet copy.
         marker = source.staleness()
-        if marker is None:
+        last_good = source.last_good_path
+        if marker is None or last_good is None:
             return ProvenanceInfo(
                 kind="live-fetch",
                 build_stamp=datetime.datetime.now(tz=datetime.UTC).isoformat(),
             )
-        copy = resolve_for_file(source.last_good_path)
+        copy = resolve_for_file(last_good)
         return ProvenanceInfo(
             kind=copy.kind,
             build_stamp=copy.build_stamp,

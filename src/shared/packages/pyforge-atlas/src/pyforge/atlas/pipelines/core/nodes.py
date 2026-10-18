@@ -362,6 +362,19 @@ def build_dependency_graph(core_cf_graph_raw: pd.DataFrame) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 
 
+# Story 34.3: the legacy Phase M bot columns ride along additively when the source carries them.
+_FEEDSTOCK_HEALTH_COLUMNS = (
+    "feedstock_name",
+    "ci_status",
+    "open_prs",
+    "open_issues",
+    "bot_last_pr_state",
+    "bot_last_pr_version",
+    "bot_version_errors_count",
+    "feedstock_bad",
+)
+
+
 def compute_feedstock_health(core_cf_graph_raw: pd.DataFrame) -> pd.DataFrame:
     # legacy: Phase M  (phase_m_feedstock_health CFA:6263)
     """Compute per-feedstock health rows, applying the same archived-feedstock scope
@@ -370,9 +383,10 @@ def compute_feedstock_health(core_cf_graph_raw: pd.DataFrame) -> pd.DataFrame:
     one row per ACTIVE feedstock with its health signals."""
     g = core_cf_graph_raw
     if g is None or g.empty or "feedstock_name" not in getattr(g, "columns", []):
-        return pd.DataFrame(columns=["feedstock_name", "ci_status", "open_prs", "open_issues"])
+        # every column, so a degraded run keeps the schema a good run writes
+        return pd.DataFrame(columns=list(_FEEDSTOCK_HEALTH_COLUMNS))
     skip = _inactive_feedstocks(g)
     active = g[~g["feedstock_name"].isin(skip)]
-    cols = [c for c in ("feedstock_name", "ci_status", "open_prs", "open_issues") if c in active.columns]
+    cols = [c for c in _FEEDSTOCK_HEALTH_COLUMNS if c in active.columns]
     health = active[cols].drop_duplicates("feedstock_name")
     return health.reset_index(drop=True)

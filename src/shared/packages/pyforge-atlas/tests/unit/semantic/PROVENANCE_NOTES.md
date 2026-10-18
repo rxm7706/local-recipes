@@ -41,16 +41,19 @@ the two fails the gate.
   `ci_status`'s value domain equals the legacy `gh_default_branch_status`
   ({failure, error, …}) and coalesces a NULL `ci_status` to FALSE (AUD-ATLAS-012
   `.fill_null` — an unobserved CI state is not ci-red, matching the legacy filter's
-  NULL-excludes behavior); `has_open_prs` loses the bot(Phase M) vs human(Phase N) split;
-  `has_open_issues` rides the unverified `gh_open_issues_count → open_issues` rename. A
+  NULL-excludes behavior); `has_open_prs` is the bot-only Phase M count since Story 34.3
+  (legacy `open-pr`; `open-prs-human` waits for Phase N, Story 35.3); `has_open_issues` rides
+  the unverified `gh_open_issues_count → open_issues` rename, and `open_issues` stays null
+  until Phase N fills it (Story 35.3). A
   green gate proves the Ibis expression is self-consistent, NOT that it reproduces the
   credentialed legacy value — B4-style recapture confirms that.
 
 ## Deferred (NOT declared in D1 — no fabricated legacy signal)
 
 - **feedstock-health `--filter stuck`** (`bot_version_errors_count > 0`) and **`--filter bad`**
-  (`feedstock_bad = 1`) — Phase M columns absent from the migrated `core_feedstock_health`
-  shape. Documented in `metrics.DEFERRED_FEEDSTOCK_HEALTH_FILTERS`; recapture with D2.
+  (`feedstock_bad = 1`) — their Phase M columns reach `core_feedstock_health` since Story 34.3;
+  the filters stay undeclared until D2's recapture. Documented in
+  `metrics.DEFERRED_FEEDSTOCK_HEALTH_FILTERS`.
 - **Data wiring** for `staleness_age_days` / `adoption_stage` — the FORMULA + its legacy
   anchor land in D1; the live catalog column (`latest_conda_upload`, per-version upload
   times) is wired when D2 ports the pages.

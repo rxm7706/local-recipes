@@ -160,10 +160,11 @@ def has_open_prs(t: Any) -> Any:
     """Feedstock has open PRs.
 
     Legacy split this into ``--filter open-pr`` (``bot_open_pr_count > 0``, bot-only,
-    Phase M) and ``--filter open-prs-human`` (``gh_open_prs_count > 0``, Phase N). The
-    migrated ``core_feedstock_health.open_prs`` column does NOT preserve the bot vs
-    human distinction, so this collapses to ``open_prs > 0`` and is FLAGGED for legacy
-    recapture (the bot/human split needs the un-ported Phase M/N columns).
+    Phase M) and ``--filter open-prs-human`` (``gh_open_prs_count > 0``, Phase N). Since
+    Story 34.3, ``core_feedstock_health.open_prs`` is the Phase M bot-only count (the bot's
+    open PRs, resolved through ``conda-forge-bot-data-pr_json``), so this is legacy's
+    ``open-pr``. The human-PR count is Phase N's live GitHub signal (Story 35.3) and is not
+    ported yet.
     """
     return t.open_prs.fill_null(0) > 0
 
@@ -436,10 +437,10 @@ def verification_match_bucket(t: Any) -> Any:
     )
 
 
-# Legacy feedstock-health filters that the migrated shape port does NOT carry, so
-# D1 deliberately does NOT declare them (would require fabricating a legacy signal).
-# Documented here + asserted by the provenance test so the gap is explicit, not silent.
+# Legacy feedstock-health filters D1 does NOT declare. Their Phase M columns reach
+# core_feedstock_health since Story 34.3; the filters themselves wait for D2's legacy
+# recapture. Documented here + asserted by the provenance test so the gap is explicit.
 DEFERRED_FEEDSTOCK_HEALTH_FILTERS: dict[str, str] = {
-    "stuck": "bot_version_errors_count > 0 — Phase M column not in core_feedstock_health.",
-    "bad": "feedstock_bad = 1 — Phase M column not in core_feedstock_health.",
+    "stuck": "bot_version_errors_count > 0 — column present since Story 34.3; filter undeclared until D2.",
+    "bad": "feedstock_bad = 1 — column present since Story 34.3; filter undeclared until D2.",
 }
