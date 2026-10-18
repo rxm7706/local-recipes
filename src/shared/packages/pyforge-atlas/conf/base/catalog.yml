@@ -253,7 +253,7 @@ pypi_json_raw:
   metadata:
     layer: raw
 
-# Phase P BigQuery `pypi.file_downloads` (admin opt-in, PHASE_P_ENABLED=1;
+# Phase P BigQuery `pypi.file_downloads` (admin opt-in, PHASE_P_ENABLED=1 with PHASE_P_SOURCE=bigquery;
 # credentialed runs attended-only per NFR-2 — the gate never touches it).
 # Declared with a standard resolvable type NOW (same A2-A1 rationale: the
 # lean env does not carry google-cloud-bigquery); the credentialed

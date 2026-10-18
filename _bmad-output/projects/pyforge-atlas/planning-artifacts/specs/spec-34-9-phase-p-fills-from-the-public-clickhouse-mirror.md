@@ -2,7 +2,7 @@
 title: "34.9: Phase P fills from the public ClickHouse mirror"
 type: 'feature'
 created: '2026-10-18'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'bde97f7f80'
 flag:
   key: pyforge.atlas.live_public_sources          # shared with Stories 34.4 (registered it), 34.5, 34.6 and 34.8
@@ -11,8 +11,8 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'the ClickHouse dataset serves its last-good frame (empty on a fresh root) and fetches nothing; pypi_downloads_monthly is then empty, as before'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 1
-followup_review_recommended: true
+review_loop_iteration: 2
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/live-sources.md
@@ -84,6 +84,8 @@ declared_low_risk: false
 - **Opt-in gate.** Legacy runs even ClickHouse only under `PHASE_P_ENABLED=1`. Here the ClickHouse path runs
   whenever the flag is on, per AD-6's 2026-10-18 amendment and the operator's ruling (public sources fetch in a
   plain run). `PHASE_P_ENABLED` remains BigQuery's gate.
+- **Legacy's other Phase P switches.** Legacy skips Phase P for a `PHASE_P_SOURCE` it does not recognise, and
+  for `PHASE_P_DISABLED=1`. Here ClickHouse's rows stand in both cases; the flag is the ClickHouse switch.
 - **Dagster schedule.** Phase P stays its own unscheduled job (AD-6, "never a default schedule"); a plain
   `kedro run` fills it.
 - **Monthly shape.** The output keeps `pypi_downloads_monthly`'s calendar-month shape rather than legacy's rolling
@@ -215,3 +217,12 @@ package; a test that touches the network; a write to the mirror (the `play` user
     - **N5:** a URL with a query string is refused.
     - **N6:** epics.md and the ledger are promoted at landing.
     - **N7:** the kedro-viz prototype is recorded as a residual risk.
+- 2026-10-18: re-review round 2 PASS. All gates exit 0; 59 mutants, 57 killed. Every round-1 finding was tested,
+  not taken from this log, and the spec-surface stamp was checked against the tree. Its nits were fixed:
+  - **N1:** the BigQuery stub's docstring, the catalog comment and `tools/bootstrap.py` now name
+    `PHASE_P_SOURCE=bigquery`.
+  - **N2:** legacy's other Phase P switches are added to Deviations.
+  - **N3:** a 500 body that starts with `{` but is not JSON, and a `PHASE_P_SOURCE` with surrounding space, are
+    tested.
+  - **N4:** the misleading test parameter is trimmed.
+  Promoted to `done`.

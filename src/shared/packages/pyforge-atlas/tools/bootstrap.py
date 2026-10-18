@@ -30,7 +30,7 @@ exit 0 (the spec's "Bootstrap smoke" row):
    refresh-trigger node hands it an empty repo-identifier batch by default,
    Story 21.2 -- `save()` short-circuits to zero network calls before the
    credential is ever touched; `PyPIBigQueryDownloadsDataset.load()` returns
-   an empty frame unless `PHASE_P_ENABLED=1`; the GitLab/Codeberg and registry
+   an empty frame unless `PHASE_P_ENABLED=1` and `PHASE_P_SOURCE=bigquery`; the GitLab/Codeberg and registry
    tokens are optional, anonymous when unset, Story 27.2) -- none reads the
    credential VALUE on that default path, so a genuinely empty stub satisfies the
    catalog-construction gate without fabricating a fake-looking token. A

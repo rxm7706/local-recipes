@@ -343,8 +343,9 @@ def _http_500(body: str) -> DatasetError:
     [
         ('{"exception": "Code: 386. DB::Exception: There is no supertype for types String, Date"}', "Code: 386"),
         ("upstream connect error", "Failed to fetch data"),
+        ("{not json", "Failed to fetch data"),
     ],
-    ids=["the-servers-exception", "no-json-body"],
+    ids=["the-servers-exception", "no-json-body", "a-brace-but-not-json"],
 )
 def test_an_http_500_carries_the_servers_reason_into_the_marker(tmp_path, monkeypatch, body, reason):
     _live(monkeypatch)
@@ -367,7 +368,7 @@ def test_an_http_500_carries_the_servers_reason_into_the_marker(tmp_path, monkey
 @pytest.mark.parametrize(
     ("body", "reason"),
     [
-        (b'{"today": "2026-10-18"}\n{"project": "boto3"}\n', "KeyError"),  # a monthly row with no project
+        (b'{"today": "2026-10-18"}\n', "KeyError"),  # the stand-in's monthly row carries no project
         (b'{"today": "2026-10-18x"}\n', "is not a date"),
     ],
     ids=["row-missing-a-column", "date-with-trailing-text"],
@@ -485,7 +486,7 @@ def test_phase_p_enabled_alone_leaves_the_clickhouse_rows_standing(monkeypatch):
 
 def test_phase_p_source_bigquery_still_demands_the_attended_run(monkeypatch):
     monkeypatch.setenv("PHASE_P_ENABLED", "1")
-    monkeypatch.setenv("PHASE_P_SOURCE", "BigQuery")
+    monkeypatch.setenv("PHASE_P_SOURCE", " BigQuery ")  # any case, as legacy; surrounding space trimmed
 
     with pytest.raises(DatasetError, match="attended credentialed run"):
         PyPIBigQueryDownloadsDataset().load()
