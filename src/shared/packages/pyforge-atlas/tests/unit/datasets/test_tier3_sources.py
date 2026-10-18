@@ -290,7 +290,8 @@ def test_a_store_with_no_fetcher_refreshes_from_its_own_index(tmp_path, flag_pro
     frame = ds.load()
 
     if flag_provider[public_sources.FLAG_KEY]:
-        assert requested == [("https://example.test/index", {"timeout": 900})]
+        assert [(u, a["timeout"]) for u, a in requested] == [("https://example.test/index", 300)]
+        assert requested[0][1]["auth"]("req") == "req"  # a no-op auth: requests never reads ~/.netrc
         assert list(frame["name"]) == names and not ds.is_stale()
     else:
         assert requested == [] and frame.empty
@@ -324,3 +325,89 @@ def test_an_injected_fetcher_wins_over_the_public_fetch(tmp_path, monkeypatch):
     ds.save(RefreshRequest(store="x", force=True))
 
     assert list(ds.load()["name"]) == ["python", "numpy"]
+
+
+def test_the_flag_is_read_at_the_refresh_not_at_construction(tmp_path, monkeypatch):
+    """A Dagster code location constructs its stores at import: turning the flag off afterwards
+    must stop the fetch, and turning it on must start one."""
+    requested = []
+
+    class _API:
+        def __init__(self, *, url, load_args=None):
+            requested.append(url)
+
+        def load(self):
+            return _Response(_HOMEBREW_FIXTURE.encode())
+
+    monkeypatch.setattr(T, "APIDataset", _API)
+    monkeypatch.setattr(public_sources, "live", lambda: True)
+    built_on = HomebrewPackagesDataset(url="https://example.test/on", filepath=str(tmp_path / "on"))
+    monkeypatch.setattr(public_sources, "live", lambda: False)
+    built_off = HomebrewPackagesDataset(url="https://example.test/off", filepath=str(tmp_path / "off"))
+
+    built_on.save(RefreshRequest(store="x", force=True))  # flag now off
+    assert requested == [] and built_on.staleness().reason.startswith("refresh due but no refresher wired")
+
+    monkeypatch.setattr(public_sources, "live", lambda: True)
+    built_off.save(RefreshRequest(store="x", force=True))  # flag now on
+    assert requested == ["https://example.test/off"] and list(built_off.load()["name"]) == ["python", "numpy"]
+
+
+def test_the_request_timeout_is_the_stores_own(tmp_path, monkeypatch):
+    seen = []
+
+    class _API:
+        def __init__(self, *, url, load_args=None):
+            seen.append(load_args)
+
+        def load(self):
+            return _Response(_HOMEBREW_FIXTURE.encode())
+
+    monkeypatch.setattr(T, "APIDataset", _API)
+    monkeypatch.setattr(public_sources, "live", lambda: True)
+    ds = HomebrewPackagesDataset(url="https://example.test/i", filepath=str(tmp_path / "s"), request_timeout_seconds=7)
+
+    ds.save(RefreshRequest(store="x", force=True))
+
+    assert [a["timeout"] for a in seen] == [7]
+
+
+def test_parse_nixpkgs_skips_a_bad_escape_and_an_empty_pname():
+    body = b'{"packages": {"a": {"pname": "bad\\xescape"}, "b": {"pname": ""}, "c": {"pname": "ok"}}}'
+    body = body.replace(b"\\\\x", b"\\x")
+
+    assert parse_nixpkgs_packages_json(body) == ["ok"]
+
+
+def test_parse_nixpkgs_reads_pnames_from_a_decoded_object_too():
+    doc = json.loads(_NIXPKGS_V2)
+
+    assert parse_nixpkgs_packages_json(doc) == ["numpy", "ripgrep", 'we"ird']  # same as the bytes
+
+
+def test_a_compressed_body_starting_with_a_bracket_still_decodes(monkeypatch):
+    """The JSON sniff used to skip decompression for a brotli stream whose first byte is '['
+    (3 of 80 sampled streams, review 2026-10-18): decompression is now tried whatever the byte."""
+    opaque = b"[\x8b\x07\x00 not json, a compressed stream"
+    monkeypatch.setattr(T, "_brotli_decompress", lambda data: _NIXPKGS_V2.encode() if data == opaque else None)
+
+    assert parse_nixpkgs_packages_json(opaque) == ["numpy", "ripgrep", 'we"ird']
+
+
+def test_a_nixpkgs_body_with_no_brotli_installed_says_so(tmp_path, monkeypatch):
+    brotli = pytest.importorskip("brotli")
+    body = brotli.compress(_NIXPKGS_V2.encode())
+    real_import = T.importlib.import_module
+
+    def _no_brotli(name, *a, **kw):
+        if name == "brotli":
+            raise ModuleNotFoundError("No module named 'brotli'")
+        return real_import(name, *a, **kw)
+
+    monkeypatch.setattr(T.importlib, "import_module", _no_brotli)
+    monkeypatch.setattr(T.importlib.util, "find_spec", lambda name, *a: None if name == "brotli" else object())
+    ds = NixpkgsPackagesDataset(url="https://example.test/i", filepath=str(tmp_path / "s"), fetcher=lambda: body)
+
+    ds.save(RefreshRequest(store="x", force=True))
+
+    assert "no brotli module is installed" in ds.staleness().reason

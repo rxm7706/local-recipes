@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import gzip
 import importlib
+import importlib.util
 import json
 import logging
 import re
@@ -83,38 +84,24 @@ def parse_homebrew_formulae_json(payload: Any) -> list[str]:
     return names
 
 
+# Matches a ``"pname": "..."`` pair at any depth. In the live index every one sits directly in
+# a package record (150,922 matches = 150,922 top-level pnames, 2026-10-18); a ``pname`` nested
+# deeper, under ``meta``, would add a name, so a shape change here is worth a look.
 _NIX_PNAME = re.compile(rb'"pname"\s*:\s*"((?:[^"\\]|\\.)*)"')
 
 
-def _brotli_or_raw(data: bytes) -> bytes:
-    """``packages.json.br`` arrives decoded when the HTTP stack has brotli (it is served with
-    ``Content-Encoding: br``); a still-compressed body is decoded here, lazily imported."""
-    if data.lstrip()[:1] in (b"{", b"["):
-        return data
+def _brotli_decompress(data: bytes) -> bytes | None:
+    """A still-compressed ``packages.json.br`` body, decoded; ``None`` when it is not brotli or
+    no brotli module is installed (the index is served with ``Content-Encoding: br``, which the
+    HTTP stack decodes when it has brotli)."""
     try:
         brotli = importlib.import_module("brotli")
         return bytes(brotli.decompress(data))
-    except Exception:  # noqa: BLE001 -- not brotli either: the caller's parse degrades to []
-        return data
+    except Exception:  # noqa: BLE001 -- not brotli, or no brotli: the caller degrades to []
+        return None
 
 
-def parse_nixpkgs_packages_json(payload: Any) -> list[str]:
-    """Parse nixpkgs ``packages.json`` (``{"version": 2, "packages": {attr: {"pname": ...}}}``).
-
-    Story 34.5: reports each package's ``pname`` -- its declared name, ``numpy`` for the attr
-    ``python313Packages.numpy`` -- once, in first-seen order. The live index decodes to ~400 MB
-    (measured 2026-10-18), so the names are read with a byte-level scan, never ``json.loads``.
-    A payload with no ``pname`` (an attr-keyed object) falls back to the attribute keys. Returns
-    ``[]`` (never raises) on a malformed payload."""
-    if isinstance(payload, dict):
-        nested = payload.get("packages")
-        pkgs: dict[Any, Any] = nested if isinstance(nested, dict) else payload
-        return [str(k) for k in pkgs if k]
-    if isinstance(payload, str):
-        payload = payload.encode("utf-8")
-    if not isinstance(payload, bytes):
-        return []
-    data = _brotli_or_raw(payload)
+def _scan_pnames(data: bytes) -> list[str]:
     names: dict[str, None] = {}
     for match in _NIX_PNAME.finditer(data):
         try:
@@ -123,8 +110,40 @@ def parse_nixpkgs_packages_json(payload: Any) -> list[str]:
             continue
         if isinstance(name, str) and name:
             names[name] = None
+    return list(names)
+
+
+def _pnames_of(pkgs: dict[Any, Any]) -> list[str]:
+    names = (rec.get("pname") for rec in pkgs.values() if isinstance(rec, dict))
+    return list(dict.fromkeys(n for n in names if isinstance(n, str) and n))
+
+
+def parse_nixpkgs_packages_json(payload: Any) -> list[str]:
+    """Parse nixpkgs ``packages.json`` (``{"version": 2, "packages": {attr: {"pname": ...}}}``).
+
+    Story 34.5: reports each package's ``pname`` -- its declared name, ``numpy`` for the attr
+    ``python313Packages.numpy`` -- once, in first-seen order, whether the payload is the decoded
+    object or its bytes. The live index decodes to ~400 MB (measured 2026-10-18), so bytes are
+    read with a byte-level scan, never ``json.loads``; a still-brotli body is decoded first when
+    the scan finds nothing. A payload with no ``pname`` (an attr-keyed object) falls back to the
+    attribute keys. Returns ``[]`` (never raises) on a malformed payload."""
+    if isinstance(payload, dict):
+        nested = payload.get("packages")
+        pkgs: dict[Any, Any] = nested if isinstance(nested, dict) else payload
+        return _pnames_of(pkgs) or [str(k) for k in pkgs if k]
+    if isinstance(payload, str):
+        payload = payload.encode("utf-8")
+    if not isinstance(payload, bytes):
+        return []
+    data = payload
+    names = _scan_pnames(data)
+    if not names:
+        decoded = _brotli_decompress(data)
+        if decoded is not None:
+            data = decoded
+            names = _scan_pnames(data)
     if names:
-        return list(names)
+        return names
     try:
         doc = json.loads(data)
     except TypeError, ValueError:
@@ -252,12 +271,11 @@ class _Tier3PackagesDatasetBase(ExternalRefreshDataset):
         cadence_seconds: int | None = None,
         timeout_seconds: int = DEFAULT_REFRESH_TIMEOUT_SECONDS,
         max_retries: int = DEFAULT_REFRESH_MAX_RETRIES,
+        request_timeout_seconds: int = 300,
         metadata: dict[str, Any] | None = None,
     ) -> None:
         self._url = str(url)
-        self._timeout = int(timeout_seconds)
-        if fetcher is None and public_sources.live():
-            fetcher = self._public_fetch
+        self._request_timeout = int(request_timeout_seconds)
         self._fetcher = fetcher
         super().__init__(
             filepath=filepath,
@@ -269,16 +287,30 @@ class _Tier3PackagesDatasetBase(ExternalRefreshDataset):
             metadata=metadata,
         )
 
+    def _live_refresher(self) -> Callable[[], pd.DataFrame] | None:
+        # Story 34.5: the store's own public index, when live public sources are on -- read now,
+        # at the refresh, never at construction (a Dagster code location constructs at import)
+        return self._refresh_from_public_index if public_sources.live() else None
+
     def _public_fetch(self) -> bytes:
-        """The store's own public index (Story 34.5), as bytes; a non-bytes body is a fetch failure."""
-        payload = APIDataset(url=self._url, load_args={"timeout": self._timeout}).load()
+        """The store's own public index (Story 34.5), as bytes; a non-bytes body is a fetch failure.
+        ``request_timeout_seconds`` bounds the GET (connect and each read); ``timeout_seconds``
+        stays the whole-asset budget the orchestrator reads."""
+        # a timeout and no credential: public_sources.request_args keeps ~/.netrc out of it
+        payload = APIDataset(url=self._url, load_args=public_sources.request_args(self._request_timeout)).load()
         content = getattr(payload, "content", None)
         if not isinstance(content, bytes):
             raise DatasetError(f"{self._url}: expected a bytes body, got {type(content).__name__}")
         return content
 
+    def _refresh_from_public_index(self) -> pd.DataFrame:
+        return self._frame(self._public_fetch())
+
     def _do_refresh(self) -> pd.DataFrame:
-        payload = self._fetcher()
+        assert self._fetcher is not None
+        return self._frame(self._fetcher())
+
+    def _frame(self, payload: Any) -> pd.DataFrame:
         # one row per name: Debian's Packages repeats a name across stanzas (349 of 76,665 on 2026-10-18)
         names = list(dict.fromkeys(self._PARSER(payload)))
         return pd.DataFrame({"name": names})
@@ -334,9 +366,17 @@ class HomebrewPackagesDataset(_Tier3PackagesDatasetBase):
 
 
 class NixpkgsPackagesDataset(_Tier3PackagesDatasetBase):
-    """nixpkgs-unstable packages bulk index — ``packages.json`` keyed by attr path."""
+    """nixpkgs-unstable packages bulk index — ``packages.json.br``, reported by ``pname``."""
 
     _PARSER = staticmethod(parse_nixpkgs_packages_json)
+
+    def _frame(self, payload: Any) -> pd.DataFrame:
+        frame = super()._frame(payload)
+        not_json = isinstance(payload, bytes) and payload.lstrip()[:1] not in (b"{", b"[")
+        if frame.empty and not_json and importlib.util.find_spec("brotli") is None:
+            # a brotli body nothing here can decode: say why, not "refresh returned no data"
+            raise DatasetError("the nixpkgs index arrived brotli-compressed and no brotli module is installed")
+        return frame
 
 
 class SpackPackagesDataset(_Tier3PackagesDatasetBase):

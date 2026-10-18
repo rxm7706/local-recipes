@@ -302,7 +302,8 @@ pypi_cross_channel_repodata_raw:
 # Story 23.1 — Tier 3 OS-distro bulk indexes (homebrew/nixpkgs/spack/debian/fedora).
 # Five independent ExternalRefreshDataset subclasses in datasets/tier3_sources.py;
 # routed to pypi_intelligence via PREFIX_TO_PIPELINE's discovery_<source> keys.
-# fetch mode: external-refresh (dataset-owned IO; injected fetcher at attended run)
+# fetch mode: external-refresh (dataset-owned IO; injected fetcher at attended run; Story 34.5:
+# otherwise the store's own public index, fetched when live public sources are on)
 discovery_homebrew_packages_raw:
   type: pyforge.atlas.datasets.HomebrewPackagesDataset
   url: ${globals:endpoint_bases.HOMEBREW_BASE_URL}/api/formula.json
