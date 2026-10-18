@@ -133,7 +133,8 @@ class RefreshRequest:
     small declarative trigger (never the fetched bytes) is what keeps the node pure.
 
     Story 27.2: optional ``vcs_pairs`` / ``github_repos`` carry identifier batches from
-    the identity join (never raw fetch payloads).
+    the identity join (never raw fetch payloads). Story 34.2: optional ``pypi_pairs``
+    carries ``(pypi_name, conda_name)`` pairs from the same run's Phase C mapping.
     """
 
     store: str
@@ -142,6 +143,7 @@ class RefreshRequest:
     resource: RequiredResource | None = None
     vcs_pairs: tuple[tuple[str, str], ...] = ()
     github_repos: tuple[tuple[str, str], ...] = ()
+    pypi_pairs: tuple[tuple[str, str], ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -151,6 +153,7 @@ class RefreshRequest:
             "resource": self.resource.to_dict() if self.resource else None,
             "vcs_pairs": list(self.vcs_pairs),
             "github_repos": list(self.github_repos),
+            "pypi_pairs": list(self.pypi_pairs),
         }
 
 

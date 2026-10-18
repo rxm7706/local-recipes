@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: atlas
-# stories: 198
+# stories: 199
 development_status:
   1-1-generate-legacy-contextual-skill: done
   10-1-restore-atlas-dependency-completeness-so-the-suite-can-collect: done
@@ -107,7 +107,8 @@ development_status:
   32-1-the-dag-export-builds-in-ci-and-a-failed-build-fails-its-task: done
   33-1-the-atlas-cli-reaches-the-verbs-its-contracts-name: done
   34-1-endoflife-date-and-the-spdx-list-arrive-as-records-the-seed-gap-reports-read: done
-  34-2-the-phase-c-mapping-fills-from-the-conda-forge-bot-s-name-mapping: backlog
+  34-10-phase-h-covers-every-mapped-pypi-project-gated-by-its-serial: backlog
+  34-2-the-phase-c-mapping-fills-from-the-conda-forge-bot-s-name-mapping: done
   34-3-dependencies-feedstock-health-and-maintainers-read-the-bot-s-split-graph-repos: backlog
   34-4-the-download-tables-fill-from-anaconda-s-monthly-parquet: backlog
   34-5-the-five-os-distro-indexes-refresh-themselves: backlog

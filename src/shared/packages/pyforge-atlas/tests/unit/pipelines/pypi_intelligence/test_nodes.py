@@ -291,3 +291,39 @@ def test_refresh_pypi_json_store_returns_a_refresh_request_for_its_own_store():
 def test_refresh_pypi_json_store_defaults_cadence_to_weekly():
     req = refresh_pypi_json_store({})
     assert req.cadence_seconds == WEEKLY_SECONDS
+
+
+def test_refresh_pypi_json_store_carries_the_same_run_phase_c_pairs():
+    """Story 34.2: the trigger hands the fan-out the run's own mapping, deduped and
+    filtered to real strings, so a fresh data root has candidates."""
+    base = pd.DataFrame(
+        {
+            "pypi_name": ["torch", "numpy", "numpy", None, ""],
+            "conda_name": ["pytorch", "numpy", "numpy", "x", "y"],
+            "match_source": ["parselmouth"] * 5,
+        }
+    )
+
+    req = refresh_pypi_json_store({}, base)
+
+    assert req.pypi_pairs == (("numpy", "numpy"), ("torch", "pytorch"))
+
+
+def test_refresh_pypi_json_store_without_a_mapping_carries_no_pairs():
+    assert refresh_pypi_json_store({}).pypi_pairs == ()
+    assert refresh_pypi_json_store({}, pd.DataFrame(columns=["pypi_name", "conda_name"])).pypi_pairs == ()
+
+
+def test_the_fan_out_trigger_runs_after_phase_c_and_before_the_c5_match():
+    """Story 34.2 (review S3): the wiring, not only the node signature. Reverting the
+    trigger's inputs to ``params:ttls`` alone lets Kedro run it before the mapping
+    exists, and a fresh data root fetches nothing."""
+    from kedro.pipeline import Pipeline
+
+    from pyforge.atlas.pipelines.pypi_intelligence.pipeline import create_pipeline
+
+    pipe: Pipeline = create_pipeline()
+    node = next(n for n in pipe.nodes if n.name == "refresh_pypi_json_store")
+    assert node.inputs == ["params:ttls", "pypi_conda_mapping_base"]
+    order = [n.name for n in pipe.nodes]  # topologically sorted
+    assert order.index("map_pypi_conda") < order.index("refresh_pypi_json_store") < order.index("match_source_urls")

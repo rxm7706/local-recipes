@@ -40,7 +40,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
-from kedro.io import AbstractDataset
+from kedro.io import AbstractDataset, DatasetError
 from kedro_datasets.api import APIDataset
 from pyforge.core.atomic_write import atomic_write
 from pyforge.core.errors import PyforgeError
@@ -200,6 +200,8 @@ class _RequestParameterizedAPIDataset(AbstractDataset):
         # acquires a token per request. Injectable clock/sleep keep it fixture-safe;
         # an injected scheduler lets a fixture supply an advancing fake clock.
         self.scheduler = scheduler if scheduler is not None else RateLimitedScheduler(rps=rps)
+        # Story 34.2: per-request misses from the last fan-out, ``name -> reason``.
+        self.last_failures: dict[str, str] = {}
         # Compose the physical HTTP IO lazily (no network at __init__).
         self._inner = APIDataset(
             url=url,
@@ -612,11 +614,25 @@ class PyPIJsonRequestDataset(_RequestParameterizedAPIDataset):
         ``tests/datasets/test_pypi_json_request_dataset.py``).
         """
         out: dict[str, Any] = {}
+        failures: dict[str, str] = {}
         for name in names:
             if name is None or (isinstance(name, float) and name != name):  # None / NaN
                 continue
             key = self.request_path(name)
-            out[name] = self.fetch_one(key, fetcher=fetcher)
+            try:
+                out[name] = self.fetch_one(key, fetcher=fetcher)
+            except DatasetError as exc:
+                # Story 34.2: kedro's APIDataset wraps every HTTP and connection failure as
+                # DatasetError; one project's miss never aborts the fan-out. Anything else (a
+                # rate-limiter guard, a programming error) still raises. Retrying 429/503 with
+                # Retry-After, as legacy Phase H does, is Story 34.10's (it lifts the cap).
+                cause = exc.__cause__ if exc.__cause__ is not None else exc
+                status = getattr(getattr(cause, "response", None), "status_code", None)
+                prefix = f"HTTP {status}: " if status is not None else ""
+                failures[name] = f"{prefix}{type(cause).__name__}: {cause}"[:200]
+        # Story 34.2: a name PyPI does not serve (the bot's mapping carries a few) is a
+        # per-project miss; callers read the misses here.
+        self.last_failures = failures
         return out
 
 
@@ -680,7 +696,10 @@ class PyPIJsonFanOutDataset(_ParquetRefreshStore, PyPIJsonRequestDataset):
         # review fix #8: exactly one catalog entry — validated in save().
         self._expected_store = "pypi_json_raw"
 
-    def _candidate_names(self) -> tuple[list[str], dict[str, str]]:
+    def _candidate_names(self, pairs: Sequence[tuple[str, str]] = ()) -> tuple[list[str], dict[str, str]]:
+        """The candidate universe: ``pairs`` from the same run's Phase C mapping (Story
+        34.2; on a fresh data root the flat cache below does not exist yet) united with the
+        flat ``pypi_conda_map_store`` from the previous run (its C.5 source-URL matches)."""
         try:
             mapping = self._mapping_cache.load()
         except Exception as exc:  # never raise: degrade to an empty candidate set.
@@ -688,13 +707,22 @@ class PyPIJsonFanOutDataset(_ParquetRefreshStore, PyPIJsonRequestDataset):
             mapping = {}
         if not isinstance(mapping, dict):
             mapping = {}
+        mapping = dict(mapping)
+        for pair in pairs:
+            if len(pair) == 2 and isinstance(pair[0], str) and pair[0] and isinstance(pair[1], str) and pair[1]:
+                mapping.setdefault(pair[0], pair[1])
         # review fix #12: filter BOTH key and value to real strings (matches
         # ParselmouthMappingDataset's filter) — a malformed entry must not crash the
         # fan-out or surface a non-string conda_name downstream.
         names = sorted(k for k, v in mapping.items() if isinstance(k, str) and k and isinstance(v, str))
         return names, mapping
 
-    def fetch_candidates(self, *, fetcher: Callable[[str], Any] | None = None) -> pd.DataFrame:
+    def fetch_candidates(
+        self,
+        *,
+        fetcher: Callable[[str], Any] | None = None,
+        pairs: Sequence[tuple[str, str]] = (),
+    ) -> pd.DataFrame:
         """The real per-project fan-out (Story 21.2, dataset-owned IO, AD-2): bounded
         by ``PYPI_JSON_FANOUT_LIMIT`` (``0`` explicitly disables it this cycle —
         review fix #7). Persists through the AD-13 last-good pattern; :meth:`load_many`
@@ -705,7 +733,7 @@ class PyPIJsonFanOutDataset(_ParquetRefreshStore, PyPIJsonRequestDataset):
         if limit == 0:
             self._mark_stale("fan-out disabled this cycle (PYPI_JSON_FANOUT_LIMIT=0)")
             return empty
-        names, mapping = self._candidate_names()
+        names, mapping = self._candidate_names(pairs)
         if not names:
             self._persist(empty)
             return empty
@@ -721,18 +749,35 @@ class PyPIJsonFanOutDataset(_ParquetRefreshStore, PyPIJsonRequestDataset):
         rotated = names[offset:] + names[:offset]
         batch = rotated[:limit]
         next_offset = (offset + len(batch)) % len(names) if names else 0
-        try:
-            offset_path.parent.mkdir(parents=True, exist_ok=True)
-
-            def _write_offset(path: Path) -> None:
-                path.write_text(str(next_offset), encoding="utf-8")
-
-            atomic_write(offset_path, _write_offset)
-        except OSError as exc:
-            logger.warning("could not persist pypi fan-out offset: %s", exc)
         payloads = self.load_many(batch, fetcher=fetcher)
+        failures = self.last_failures
+        if payloads:
+            # Story 34.2: advance the rotation only when the batch got answers, so an outage
+            # does not skip a whole batch of names.
+            try:
+                offset_path.parent.mkdir(parents=True, exist_ok=True)
+
+                def _write_offset(path: Path) -> None:
+                    path.write_text(str(next_offset), encoding="utf-8")
+
+                atomic_write(offset_path, _write_offset)
+            except OSError as exc:
+                logger.warning("could not persist pypi fan-out offset: %s", exc)
+        if failures:
+            logger.warning(
+                "pypi_json_raw fan-out: %d of %d projects failed (e.g. %s)",
+                len(failures),
+                len(batch),
+                next(iter(failures.items())),
+            )
+        if batch and not payloads:
+            # Every request failed (an outage, not a few missing projects): keep last-good (AD-13).
+            self._mark_stale(f"every request in the batch failed ({len(failures)}) -- keeping last-good")
+            return empty
         rows: list[dict[str, Any]] = []
         for name in batch:
+            if name not in payloads:  # a failed project keeps its last-good row, if any
+                continue
             row = _payload_to_pypi_json_row(name, payloads.get(name))
             row["conda_name"] = mapping.get(name)
             rows.append(row)
@@ -759,7 +804,7 @@ class PyPIJsonFanOutDataset(_ParquetRefreshStore, PyPIJsonRequestDataset):
         if not data.force and not self._refresh_due(data.cadence_seconds):
             self._clear_stale()
             return
-        self.fetch_candidates()
+        self.fetch_candidates(pairs=data.pypi_pairs)
 
 
 class PyPIBigQueryDownloadsDataset(AbstractDataset):

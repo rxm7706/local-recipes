@@ -23,6 +23,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
+import yaml
 from kedro.io import AbstractDataset
 from kedro_datasets.api import APIDataset
 from pyforge.core.atomic_write import atomic_write
@@ -32,6 +33,7 @@ from .refresh import StalenessMarker, _safe_int
 logger = logging.getLogger(__name__)
 
 _SHAPES: dict[str, type] = {"list": list, "dict": dict}
+_DECODES = ("json", "yaml")
 _REASON_MAX = 300
 
 
@@ -58,6 +60,7 @@ class JSONSourceDataset(AbstractDataset):
         filepath: str,
         expect: str,
         require_key: str | None = None,
+        decode: str = "json",
         load_args: dict[str, Any] | None = None,
         credentials: dict[str, Any] | None = None,
         metadata: dict[str, Any] | None = None,
@@ -66,6 +69,9 @@ class JSONSourceDataset(AbstractDataset):
             raise ValueError(f"expect must be one of {sorted(_SHAPES)}, got {expect!r}")
         if require_key is not None and expect != "dict":
             raise ValueError("require_key applies only to expect: dict")
+        if decode not in _DECODES:
+            raise ValueError(f"decode must be one of {list(_DECODES)}, got {decode!r}")
+        self._decode = decode
         self._url = url
         self._dir = Path(filepath)
         self._expect = expect
@@ -153,14 +159,25 @@ class JSONSourceDataset(AbstractDataset):
         except Exception as exc:  # noqa: BLE001 -- kedro wraps every fetch failure as DatasetError (AD-13)
             return self._degrade(f"fetch failed: {_describe_exc(exc)}")
         try:
-            data = payload.json() if hasattr(payload, "json") else json.loads(payload)
-        except (ValueError, TypeError) as exc:
-            return self._degrade(f"body not JSON: {_describe_exc(exc)}")
+            data = self._decode_body(payload)
+        except (ValueError, TypeError, yaml.YAMLError) as exc:
+            return self._degrade(f"body not {self._decode.upper()}: {_describe_exc(exc)}")
         problem = self._problem(data)
         if problem is not None:
             return self._degrade(problem)
         self._write_last_good(data)
         return data
+
+    def _decode_body(self, payload: Any) -> Any:
+        if self._decode == "yaml":
+            # Story 34.2: the conda-forge bot publishes the PyPI name mapping as YAML.
+            text = payload.text if hasattr(payload, "text") else payload
+            loader = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+            obj = yaml.load(text, Loader=loader)  # noqa: S506 -- a safe loader, chosen above
+            # YAML can carry what JSON cannot (a bare date, !!binary); the last-good copy is
+            # JSON, so such a body is refused here as undecodable, never raised later.
+            return json.loads(json.dumps(obj))
+        return payload.json() if hasattr(payload, "json") else json.loads(payload)
 
     def save(self, data: Any) -> None:
         raise NotImplementedError(f"{type(self).__name__} is read-only")
@@ -174,4 +191,5 @@ class JSONSourceDataset(AbstractDataset):
             "filepath": str(self._dir),
             "expect": self._expect,
             "require_key": self._require_key,
+            "decode": self._decode,
         }

@@ -776,16 +776,31 @@ def _ttl_cadence(ttls: dict, key: str) -> int:
     return clamp_ttl_cadence((ttls or {}).get(key), key=key, log=logger)
 
 
-def refresh_pypi_json_store(ttls: dict) -> RefreshRequest:
+def refresh_pypi_json_store(ttls: dict, pypi_conda_mapping_base: pd.DataFrame | None = None) -> RefreshRequest:
     # Story 21.2 review fix #6: single writer of pypi_json_raw (PyPIJsonFanOutDataset).
+    # Story 34.2: the same run's Phase C pairs ride the request, so a fresh data root
+    # (no flat pypi_conda_map_store yet) still has a candidate universe.
     """External-refresh trigger for the PyPI-JSON per-project fan-out store. PURE:
     emits the ``RefreshRequest`` ``PyPIJsonFanOutDataset.save()`` honors (cadence/
     force), which invokes the dataset-owned ``fetch_candidates()`` for the actual IO
     (KEEP that method as-is — do not duplicate fetch logic here). Cadence == the
     Phase H TTL (``pypi_current_versions``, weekly)."""
+    pairs: tuple[tuple[str, str], ...] = ()
+    m = pypi_conda_mapping_base
+    if m is not None and not m.empty and {"pypi_name", "conda_name"} <= set(m.columns):
+        pairs = tuple(
+            sorted(
+                {
+                    (p, c)
+                    for p, c in zip(m["pypi_name"], m["conda_name"], strict=True)
+                    if isinstance(p, str) and p and isinstance(c, str) and c
+                }
+            )
+        )
     return RefreshRequest(
         store="pypi_json_raw",
         cadence_seconds=_ttl_cadence(ttls, "pypi_current_versions"),
+        pypi_pairs=pairs,
     )
 
 

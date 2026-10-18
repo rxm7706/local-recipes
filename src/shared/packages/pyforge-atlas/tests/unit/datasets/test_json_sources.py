@@ -291,3 +291,64 @@ def test_provenance_is_unavailable_when_stale_with_no_last_good(tmp_path: Path) 
 
     assert info.kind == "unavailable"
     assert info.reason is not None and info.reason.startswith("stale:")
+
+
+# -- Story 34.2: YAML sources ------------------------------------------------------
+
+
+class _TextResponse:
+    def __init__(self, text: str) -> None:
+        self.text = text
+
+
+def test_a_yaml_body_decodes_and_becomes_last_good(tmp_path: Path) -> None:
+    ds = JSONSourceDataset(url=URL, filepath=str(tmp_path / "store"), expect="list", decode="yaml")
+    ds._inner = _FakeInner(None)
+    ds._inner.load = lambda: _TextResponse("- conda_name: a\n  pypi_name: A\n")  # type: ignore[method-assign]
+
+    assert ds.load() == [{"conda_name": "a", "pypi_name": "A"}]
+    assert _last_good(tmp_path) == [{"conda_name": "a", "pypi_name": "A"}]
+
+
+def test_a_broken_yaml_body_degrades_as_not_yaml(tmp_path: Path) -> None:
+    ds = JSONSourceDataset(url=URL, filepath=str(tmp_path / "store"), expect="list", decode="yaml")
+    ds._inner = _FakeInner(None)
+    ds._inner.load = lambda: _TextResponse("- [unclosed")  # type: ignore[method-assign]
+
+    assert ds.load() == []
+    assert _marker(tmp_path)["reason"].startswith("body not YAML")
+
+
+def test_decode_must_name_a_format(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="decode must be one of"):
+        JSONSourceDataset(url=URL, filepath=str(tmp_path), expect="list", decode="toml")
+
+
+def test_provenance_reads_a_dataset_that_composes_a_json_source(tmp_path: Path) -> None:
+    """Story 34.2: ParselmouthMappingDataset exposes its JSONSourceDataset as ``source``."""
+    from pyforge.atlas.datasets import ParselmouthMappingDataset
+
+    ds = ParselmouthMappingDataset(url=URL, filepath=str(tmp_path / "store"))
+    ds.source._inner = _FakeInner(DatasetError("unreachable"))
+    value = ds.load()
+
+    info = resolve_for_catalog_dataset({"x": ds}, "x", value)
+
+    assert info.kind == "unavailable" and info.reason is not None and info.reason.startswith("stale:")
+
+
+@pytest.mark.parametrize(
+    ("body", "why"),
+    [
+        ("- {conda_name: a, pypi_name: 2024-01-01}\n", "a bare YAML date"),
+        ("- !!binary aGVsbG8=\n", "YAML binary"),
+        ("- !!python/object/apply:os.system [echo pwned]\n", "an object tag the safe loader refuses"),
+    ],
+)
+def test_a_yaml_body_json_cannot_hold_degrades(tmp_path: Path, body: str, why: str) -> None:
+    ds = JSONSourceDataset(url=URL, filepath=str(tmp_path / "store"), expect="list", decode="yaml")
+    ds._inner = _FakeInner(None)
+    ds._inner.load = lambda: _TextResponse(body)  # type: ignore[method-assign]
+
+    assert ds.load() == [], why  # never raises (AD-13); never constructs an object
+    assert _marker(tmp_path)["reason"].startswith("body not YAML"), why

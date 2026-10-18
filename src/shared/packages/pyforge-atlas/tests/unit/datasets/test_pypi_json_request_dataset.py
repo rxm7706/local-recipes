@@ -298,3 +298,141 @@ def test_fanout_limit_unset_uses_bounded_default(monkeypatch):
 
     monkeypatch.delenv("PYPI_JSON_FANOUT_LIMIT", raising=False)
     assert _pypi_json_fanout_limit() == _DEFAULT_PYPI_JSON_FANOUT_LIMIT > 0
+
+
+def test_fanout_candidates_come_from_the_same_run_pairs_on_a_fresh_root(tmp_path):
+    """Story 34.2: with no flat ``pypi_conda_map_store`` yet (a fresh data root), the
+    RefreshRequest's Phase C pairs are the candidate universe, so the fan-out fetches
+    in the same run instead of persisting an empty store."""
+    from pyforge.atlas.datasets import PyPIJsonFanOutDataset, RefreshRequest
+
+    ds = PyPIJsonFanOutDataset(
+        url="https://pypi.org", filepath=str(tmp_path / "store"), mapping_filepath=str(tmp_path / "absent.json")
+    )
+    seen: list[str] = []
+
+    def fake_load_many(names, *, fetcher=None):
+        seen.extend(names)
+        return {n: {"info": {"version": "2.0"}} for n in names}
+
+    ds.load_many = fake_load_many
+    ds.save(RefreshRequest(store="pypi_json_raw", force=True, pypi_pairs=(("numpy", "numpy"), ("torch", "pytorch"))))
+
+    assert seen == ["numpy", "torch"]
+    loaded = ds.load()
+    assert dict(zip(loaded["pypi_name"], loaded["conda_name"], strict=True)) == {"numpy": "numpy", "torch": "pytorch"}
+
+
+def test_fanout_pairs_unite_with_the_flat_cache_which_wins_on_conflict(tmp_path):
+    from pyforge.atlas.datasets import PyPIJsonFanOutDataset
+
+    mapping_path = tmp_path / "pypi_conda_map.json"
+    mapping_path.write_text(json.dumps({"bs4": "beautifulsoup4", "numpy": "numpy"}))  # incl. a C.5 match
+    ds = PyPIJsonFanOutDataset(
+        url="https://pypi.org", filepath=str(tmp_path / "store"), mapping_filepath=str(mapping_path)
+    )
+
+    names, mapping = ds._candidate_names((("numpy", "numpy-other"), ("pandas", "pandas"), ("", "x"), ("y", "")))
+
+    assert names == ["bs4", "numpy", "pandas"]
+    assert mapping["numpy"] == "numpy"  # the flat cache's entry is kept; pairs only add
+
+
+def test_fanout_a_missing_project_is_a_per_project_miss_not_an_abort(tmp_path):
+    """Story 34.2, found live: the bot's mapping carries a hash-like pypi_name PyPI
+    does not serve; its 404 used to raise out of the fan-out and fail the run."""
+    from kedro.io import DatasetError
+
+    from pyforge.atlas.datasets import PyPIJsonFanOutDataset
+
+    ds = PyPIJsonFanOutDataset(
+        url="https://pypi.org", filepath=str(tmp_path / "store"), mapping_filepath=str(tmp_path / "absent.json")
+    )
+
+    def fetcher(key):
+        if "/ghost/" in key:
+            raise DatasetError("Failed to fetch data")
+        return {"info": {"version": "1.0"}}
+
+    out = ds.fetch_candidates(fetcher=fetcher, pairs=(("ghost", "ghost"), ("numpy", "numpy")))
+
+    assert list(out["pypi_name"]) == ["numpy"]
+    assert "ghost" in ds.last_failures
+    assert not ds.is_stale()
+
+
+def test_fanout_every_request_failing_keeps_last_good_under_a_marker(tmp_path):
+    from kedro.io import DatasetError
+
+    from pyforge.atlas.datasets import PyPIJsonFanOutDataset
+
+    ds = PyPIJsonFanOutDataset(
+        url="https://pypi.org", filepath=str(tmp_path / "store"), mapping_filepath=str(tmp_path / "absent.json")
+    )
+    ds.fetch_candidates(fetcher=lambda key: {"info": {"version": "1.0"}}, pairs=(("numpy", "numpy"),))
+
+    def down(key):
+        raise DatasetError("Failed to connect to the remote server")
+
+    out = ds.fetch_candidates(fetcher=down, pairs=(("numpy", "numpy"),))
+
+    assert out.empty
+    assert ds.is_stale()
+    assert list(ds.load()["pypi_name"]) == ["numpy"]  # last-good kept
+
+
+def test_fanout_only_dataset_errors_are_misses(tmp_path):
+    """Review S2: a rate-limiter guard or a programming error still raises; only
+    kedro's DatasetError (every HTTP / connection failure) is a per-project miss."""
+    from pyforge.atlas.datasets import PyPIJsonFanOutDataset
+
+    ds = PyPIJsonFanOutDataset(
+        url="https://pypi.org", filepath=str(tmp_path / "store"), mapping_filepath=str(tmp_path / "absent.json")
+    )
+
+    def broken(key):
+        raise RuntimeError("scheduler ceiling")
+
+    with pytest.raises(RuntimeError, match="scheduler ceiling"):
+        ds.load_many(["numpy"], fetcher=broken)
+
+
+def test_fanout_an_outage_does_not_advance_the_rotation(tmp_path):
+    from kedro.io import DatasetError
+
+    from pyforge.atlas.datasets import PyPIJsonFanOutDataset
+
+    ds = PyPIJsonFanOutDataset(
+        url="https://pypi.org", filepath=str(tmp_path / "store"), mapping_filepath=str(tmp_path / "absent.json")
+    )
+
+    def down(key):
+        raise DatasetError("Failed to connect to the remote server")
+
+    ds.fetch_candidates(fetcher=down, pairs=(("numpy", "numpy"), ("pandas", "pandas")))
+
+    assert not (tmp_path / "store" / ".fanout_offset").exists()
+
+
+def test_fanout_a_miss_records_its_http_status(tmp_path):
+    """Review nit: the reason names the HTTP status kedro's DatasetError carries in its cause."""
+    import requests
+    from kedro.io import DatasetError
+
+    from pyforge.atlas.datasets import PyPIJsonFanOutDataset
+
+    ds = PyPIJsonFanOutDataset(
+        url="https://pypi.org", filepath=str(tmp_path / "store"), mapping_filepath=str(tmp_path / "absent.json")
+    )
+
+    def not_found(key):
+        response = requests.Response()
+        response.status_code = 404
+        try:
+            raise requests.HTTPError("404 Client Error: Not Found", response=response)
+        except requests.HTTPError as exc:
+            raise DatasetError("Failed to fetch data") from exc
+
+    ds.load_many(["ghost"], fetcher=not_found)
+
+    assert ds.last_failures["ghost"].startswith("HTTP 404: HTTPError")
