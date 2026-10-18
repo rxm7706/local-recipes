@@ -33,6 +33,7 @@ import pandas as pd
 from kedro.io import AbstractDataset, DatasetError
 from kedro_datasets.api import APIDataset
 from pyforge.core.atomic_write import atomic_write
+from pyforge.core.errors import PyforgeError
 
 from . import public_sources
 from .json_sources import _describe_exc
@@ -49,7 +50,7 @@ _DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 _PEP503 = re.compile(r"[-_.]+")
 
 
-class _SourceEmpty(ValueError):
+class _SourceEmpty(PyforgeError, ValueError):
     """The mirror answered, but named no project."""
 
 
