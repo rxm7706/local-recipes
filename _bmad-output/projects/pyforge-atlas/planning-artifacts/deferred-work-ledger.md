@@ -5023,3 +5023,14 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-10-18 -- implementer response to 34.6 review round 1
   status: open
+
+### DW-atlas-34-10-1: Phase C.5 does not map PyPI names from recipe source URLs, so Phase H's universe is half legacy's.
+
+- source_spec: `planning-artifacts/specs/spec-34-10-phase-h-covers-every-mapped-pypi-project-gated-by-its-serial.md`
+  summary: Atlas's Phase H now fetches every candidate its mapping names (10,875 of 10,955, 2026-10-18), and its candidates match legacy's parselmouth-mapped set (legacy 10,965). Legacy's Phase H universe is 20,938 names because its Phase C.5, folded into Phase E, also maps a PyPI name from each recipe's `source.url` when the registry is PyPI (`_classify_source_url`, CFA:2434-2446). 10,565 of the names legacy fetches carry `match_source = 'none'` today: Phase B resets `match_source` on every run but never clears `pypi_name`, so these are recipe-source-URL matches from earlier Phase E runs. Atlas's `match_source_urls` reads `pypi_json_raw`, the projects already fetched, so it cannot add a project the mapping missed. A C.5 that reads node_attrs' source URLs (available since Story 34.3) would close the gap.
+  evidence: Story 34.10 live run 2026-10-18 against `cf_atlas.db` (v_actionable_packages: parselmouth 10,965, none 10,846, name_coincidence 35); legacy CFA:1482 (Phase B resets match_source), CFA:2434-2446 (the source-URL match).
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/nodes.py (map_pypi_conda, match_source_urls); src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/core_sources.py (node_attrs source URLs)
+  origin: implementer finding, atlas Story 34.10 live parity
+  severity: medium
+  promoted: 2026-10-18 -- atlas Story 34.10 live parity against legacy Phase H
+  status: open
