@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: atlas
-# stories: 176
+# stories: 198
 development_status:
   1-1-generate-legacy-contextual-skill: done
   10-1-restore-atlas-dependency-completeness-so-the-suite-can-collect: done
@@ -106,6 +106,22 @@ development_status:
   31-1-atlas-passes-mypy-in-pyforge-foundry-full-and-a-lane-keeps-it-so: done
   32-1-the-dag-export-builds-in-ci-and-a-failed-build-fails-its-task: done
   33-1-the-atlas-cli-reaches-the-verbs-its-contracts-name: done
+  34-1-endoflife-date-and-the-spdx-list-arrive-as-records-the-seed-gap-reports-read: backlog
+  34-2-the-phase-c-mapping-fills-from-the-conda-forge-bot-s-name-mapping: backlog
+  34-3-dependencies-feedstock-health-and-maintainers-read-the-bot-s-split-graph-repos: backlog
+  34-4-the-download-tables-fill-from-anaconda-s-monthly-parquet: backlog
+  34-5-the-five-os-distro-indexes-refresh-themselves: backlog
+  34-6-the-public-discovery-stores-refresh-themselves: backlog
+  34-7-the-vulnerability-stores-refresh-themselves: backlog
+  34-8-migration-status-fills-through-a-driver-node: backlog
+  34-9-phase-p-fills-from-the-public-clickhouse-mirror: backlog
+  35-1-one-opt-in-switch-and-github-authenticates: backlog
+  35-2-the-vcs-batches-come-from-the-whole-universe: backlog
+  35-3-upstream-versions-and-feedstock-health-come-from-github: backlog
+  35-4-gitlab-codeberg-and-the-eight-registries-fill: backlog
+  36-1-the-basilisk-population-runs: backlog
+  36-2-the-openteams-board-and-the-staged-recipes-prs-fill-on-opt-in: backlog
+  36-3-the-query-plane-estate-source-has-a-producer: backlog
   4-1-integrate-kedro-dagster-for-scheduling-execution: done
   4-2-integrate-kedro-viz-expose-a-pixi-task: done
   5-1-define-the-boring-semantic-layer-bsl-models: done
@@ -178,6 +194,12 @@ development_status:
   epic-32-retrospective: optional
   epic-33: done
   epic-33-retrospective: optional
+  epic-34: backlog
+  epic-34-retrospective: optional
+  epic-35: backlog
+  epic-35-retrospective: optional
+  epic-36: backlog
+  epic-36-retrospective: optional
   epic-4: done
   epic-4-retrospective: done
   epic-5: done

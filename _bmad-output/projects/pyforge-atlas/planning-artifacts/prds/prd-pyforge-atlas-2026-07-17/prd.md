@@ -3,7 +3,7 @@ fr-derivation-from: "2026-09-17"
 title: cf_atlas Kedro/Dagster/DuckDB Migration
 status: final
 created: 2026-07-17
-updated: "2026-10-18"   # RE-STAMPED 2026-10-18: chain-currency cascade (spec -> PRD) for atlas Story 33.1, a fix under spec-pyforge-atlas CAP-9 (the atlas CLI reaches the verbs its contracts name, from any directory); no FR added, renumbered or amended, no AD moved. See § Currency reconciliation — 2026-10-18. Prior: RE-STAMPED 2026-10-15: CAP-63 amended (the vizro-static-export task and job run in -e pyforge-atlas; the vendored plotly.min.js is the one exact-file VENDORED_ROOTS entry); FR-71 follows in place, no FR added or removed, no AD moved. See § Currency reconciliation — 2026-10-15. Prior: RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for CAP-62 and CAP-63 (Epic 30): FR-70 and FR-71 registered (the Kedro-Viz DAG export reaches Pages as a workflow artifact, amending CAP-41 / FR-62's producer; Vizro boards publish as static exports under /dashboard/vizro/). See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-13 entries (Story 28.1 landed; Epic 29 / Story 29.1 minted and implemented, a fix under CAP-16 -- the range test server records each response before writing it); no CAP added or amended, no FR moved. See § Currency reconciliation — 2026-10-13. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Story 25.1's gate cleared, its key flipped blocked -> backlog by operator ruling); no FR registered. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for marshal Story 66.2's backfill of atlas's deferred-work ledger (co-governor surface reconcile); no FR registered. See § Currency reconciliation — 2026-10-03. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-61 (Epic 25); FR-69 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-20 (fleet consistency pass).
+updated: "2026-10-18"   # RE-STAMPED 2026-10-18 (later): FR-72..FR-76 registered from spec-pyforge-atlas CAP-64..CAP-68 (atlas fills its own data; Epics 34-36). Earlier the same day: chain-currency cascade (spec -> PRD) for atlas Story 33.1, a fix under spec-pyforge-atlas CAP-9 (the atlas CLI reaches the verbs its contracts name, from any directory); no FR added, renumbered or amended, no AD moved. See § Currency reconciliation — 2026-10-18. Prior: RE-STAMPED 2026-10-15: CAP-63 amended (the vizro-static-export task and job run in -e pyforge-atlas; the vendored plotly.min.js is the one exact-file VENDORED_ROOTS entry); FR-71 follows in place, no FR added or removed, no AD moved. See § Currency reconciliation — 2026-10-15. Prior: RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for CAP-62 and CAP-63 (Epic 30): FR-70 and FR-71 registered (the Kedro-Viz DAG export reaches Pages as a workflow artifact, amending CAP-41 / FR-62's producer; Vizro boards publish as static exports under /dashboard/vizro/). See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-13 entries (Story 28.1 landed; Epic 29 / Story 29.1 minted and implemented, a fix under CAP-16 -- the range test server records each response before writing it); no CAP added or amended, no FR moved. See § Currency reconciliation — 2026-10-13. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Story 25.1's gate cleared, its key flipped blocked -> backlog by operator ruling); no FR registered. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for marshal Story 66.2's backfill of atlas's deferred-work ledger (co-governor surface reconcile); no FR registered. See § Currency reconciliation — 2026-10-03. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-61 (Epic 25); FR-69 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-20 (fleet consistency pass).
 project: pyforge-atlas
 intent_source: docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.6, ANALYSIS COMPLETE)
 currency_review: Reviewed 2026-08-01 — spec corrections applied to PRD. CAP-8 "28-CLI inventory is answerable" false claim corrected to "8 pages + factory-status; full 28-CLI deferred (DW-D2-1)". FR-4 run-admission retirement (silent-drop cap) already correctly stated (line 248-249). AD-23 lock-store placement details remain architectural (not PRD-level). Reviewed again 2026-08-26 — post-08-08 spec-estate and code motion reconciled in the appended section "Currency reconciliation — 2026-08-26" (Epics 12-19 delivery, four post-migration capability specs, CAP-19 query-plane ownership, spec archivals/parking).
@@ -3289,3 +3289,57 @@ member dir the MCP face already pins.
 
 **Content changed:** this section and `updated:`. No FR added, renumbered or amended; no AD moves (the spine's
 reconciliation of the same date records why AD-23 now holds for the CLI entry point).
+
+*Later the same day: FR-72..FR-76 registered.* Trigger: `spec-pyforge-atlas` CAP-64..CAP-68, minted 2026-10-18 from the
+Dream entry of that date (atlas fills its own data) and the operator's rulings recorded on the Spec's memlog. The
+unattended refresh of 2026-10-17 left 40 of the 57 Parquet datasets on disk at 0 rows; every source and its legacy
+parity measure: the Spec companion `live-sources.md`.
+
+#### FR-72: A plain run fills every dataset a public source serves ← CAP-64
+
+On a fresh data root, `pyforge-atlas-bootstrap` then `pyforge atlas run` fills every dataset whose source is public and
+unauthenticated, live and in-package. Realizes UJ-2's "the atlas answers from its own data".
+
+**Consequences (testable):**
+- Each dataset `live-sources.md` lists for a public source holds rows within the tolerance its story records against
+  the legacy `cf_atlas.db` measure of the same day.
+- With the network blocked the same run exits 0 and every public store keeps last-good under a `stale` marker (AD-13).
+- The no-inline-IO denylist is unchanged; fetches compose `APIDataset` or run through `pyforge.core.process`.
+- Decomposes into **Epic 34**, Stories 34.1–34.9.
+
+#### FR-73: VCS and registry fetches cover the full universe, credentialed on opt-in ← CAP-65
+
+The GitHub, GitLab, Codeberg and eight registry fetches cover the actionable conda-forge universe, as legacy Phases K,
+L and N select it; a request that carries a credential runs only under `PYFORGE_ATLAS_CREDENTIALED=1`.
+
+**Consequences (testable):**
+- With the opt-in, the four `vcs_*` primaries fill within tolerance of legacy K, L, N and E.5.
+- Without it, a transport fixture proves no request carries a credential.
+- The batch population comes from the universe, not `identity_packages_primary`.
+- Decomposes into **Epic 35**, Stories 35.1–35.4.
+
+#### FR-74: The Basilisk population runs ← CAP-66
+
+Driver nodes query Basilisk for the conda PURL population and fetch details for matched advisories.
+
+**Consequences (testable):** against a recorded fixture the three Basilisk datasets fill; a live run's population
+equals `core_packages_enumerated`; an unreachable endpoint keeps last-good. Decomposes into **Epic 36**, Story 36.1.
+
+#### FR-75: The OpenTeams identity sources fill on opt-in ← CAP-67
+
+The OpenTeams board and the staged-recipes PR list fetch under the opt-in, beside the public identity lists.
+
+**Consequences (testable):** with the opt-in, `identity_packages_primary` holds rows from each `identity_source`, and the
+identity exports and inventory priorities fill; without it, no request carries a credential. Decomposes into
+**Epic 36**, Story 36.2.
+
+#### FR-76: The query-plane estate source has a producer ← CAP-68
+
+A named atlas node writes `query_plane_estate_source`, so `query_plane_cache` builds from data.
+
+**Consequences (testable):** `pyforge atlas run --pipelines query_plane_cache` on a fresh data root exits 0 and the
+estate model answers its measures. Decomposes into **Epic 36**, Story 36.3 (its source tables are an open question on
+the Spec).
+
+**ONE FR space now FR-1..FR-76** (FR-77 = next free id). **Content changed:** FR-72..FR-76 registered; no FR
+renumbered or removed. The spine amends AD-6 and notes AD-11 and AD-13 (its reconciliation of the same date).

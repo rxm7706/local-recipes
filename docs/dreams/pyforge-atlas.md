@@ -496,6 +496,53 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   `pyforge-core` dispatch). Owner `spec-pyforge-atlas` (CAP-9, agents trigger and read the pipeline natively).
   → Epic 33 / Story 33.1, specced 2026-10-18.
 
+- **2026-10-18 (atlas fills its own data) — Ruled: a plain `pyforge atlas run` fills every dataset a public source
+  can fill, and the credentialed ones fill when the operator opts in; the VCS and registry fetches cover the whole
+  conda-forge universe.** Operator rulings 2026-10-18 (AskUserQuestion, verbatim choices): "Wire the fetchers now";
+  "In-package, public live (Recommended)"; "Full universe (Recommended)"; extras "Phase P via ClickHouse, Basilisk
+  vulns, OpenTeams identity sources, Estate-source producer"; "Kedro first, legacy after".
+  **Evidence:** the full unattended refresh of 2026-10-17 23:08 (`pyforge-atlas-bootstrap`, 76 nodes, exit 0 in
+  121 s) left 40 of the 57 Parquet datasets on disk at 0 rows, among them every download table, `core_feedstock_health`,
+  `core_dependencies`, `pypi_conda_mapping`, `pypi_current_versions`, every `vcs_*` primary, every vulnerability
+  rollup and `identity_packages_primary`. The filled ones are package enumeration (34,666), the PyPI universe
+  (916,440), EPSS (390,724), KEV, CWE and cross-channel flags. The legacy admin refresh the same night filled the same
+  tables in `cf_atlas.db`. Root causes, read in code:
+  - **R1, the cf-graph source moved.** `regro/cf-graph-countyfair` now redirects to `conda-forge/conda-forge-bot-data`,
+    whose tarball has no `node_attrs/`, `pr_info/` or `version_pr_info/`; cf-scripts' settings put them in
+    `conda-forge/conda-forge-bot-data-node_attrs`, `-pr_info` and `-version_pr_info`, sharded five directories deep
+    (`get_sharded_path`). Atlas's `CfGraphTarballDataset` and the legacy Phases E, J and M read nothing (legacy, this
+    run: E enriched 0 rows, J left `dependencies` at 0 rows, M updated 0).
+  - **R2, the download sources are stubs.** `AnacondaDownloadsDataset.load()` and `S3DownloadStatsDataset.load()`
+    return empty frames by design; `fetch_one` ignores its request key without a fetcher.
+  - **R3, the Phase C mapping is circular.** `pypi_parselmouth_mapping_raw` reads the file only
+    `export_pypi_conda_map` writes, from the mapping it should produce, so a fresh root never fills it, and every
+    PyPI-keyed dataset downstream stays empty.
+  - **R4, external-refresh stores have no refresher.** The vdb and OSV stores, the five OS-distro stores, trending,
+    about-maintainers, the purl associator, the OpenTeams board and staged-recipes PRs are constructed with no
+    `refresher`/`fetcher`, by the AD-13 "default `None` is offline" design; DW-B5-2 put the injection in a Dagster
+    resource at the attended C1 bring-up, which has not happened.
+  - **R5-R9.** Artifactory is off by default (`virtual_repos: []`; Story 24.2 stays `blocked`); the Basilisk and
+    migration datasets have no driver node; `pypi_endoflife_raw` and `seed_spdx_upstream_list_raw` return a
+    `requests.Response` the seed-gap nodes cannot read; the VCS batches derive from `identity_packages_primary`, the
+    OpenTeams subset, which is empty; the GitHub query asks only for health, never releases or tags, and the
+    `github_token` dict cannot authenticate `APIDataset`; Phase P ports only BigQuery, which the operator ruled off.
+  **What it looks like when real:** on a fresh data root, `pyforge-atlas-bootstrap` followed by `pyforge atlas run`
+  fills every dataset a public endpoint serves, and each one's row count sits within a stated tolerance of the legacy
+  `cf_atlas.db` table it ports (recorded per story); with the operator's credentialed opt-in, the GitHub-backed VCS
+  health, upstream versions, OpenTeams identity sources and the Basilisk population fill too. An unreachable endpoint
+  still keeps last-good and marks stale (AD-13). The Vizro boards read populated stores.
+  **Constraints:**
+  - Public sources go live in-package by composing `kedro_datasets.api.APIDataset` (the Story 21.2 precedent) or
+    `pyforge.core.process` for a subprocess; the no-inline-IO denylist does not change.
+  - Credentialed calls run only when the operator opts in for that run (AD-11: attended-only); no gate or loop path
+    makes one.
+  - The VCS and registry population is the full actionable universe, as legacy's Phases K, L and N select it.
+  - Phase P ports legacy's free ClickHouse source; BigQuery stays off.
+  - The legacy cf-graph fix follows as its own conda-forge-expert story under mason's chain, after this effort.
+  **Kinships:** [[pyforge-mason]] (the legacy `conda_forge_atlas.py` port target, R1's second half),
+  [[pyforge-steward]] (`query_plane_estate_source`, declared by steward Story 34.2 and produced by nothing),
+  [[pyforge-herald]] (the boards and decks that read these stores). Owner `spec-pyforge-atlas`; → `bmad-spec`.
+
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 
 Atlas rebases to one Dream, one Spec, one PRD, one spine, one epic chain.

@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: ad91254f9a7b0ea1
-story_count: 110
+source_fingerprint: c5262e8d25ad1bb3
+story_count: 126
 test_file_count: 156
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,18 +19,18 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 110
-- **Epics parsed:** 33
+- **Stories parsed:** 126
+- **Epics parsed:** 36
 - **Test files inventoried:** 156 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `ad91254f9a7b0ea1`
+- **Source fingerprint:** `c5262e8d25ad1bb3`
 
 ## Risk Assessment
 
 ### High-risk epics
 
-- none observed
+- Epic 35: VCS and registry fetches cover the full universe, credentialed on opt-in (spec-pyforge-atlas CAP-65, FR-73)
 
 ### Medium-risk epics
 
@@ -66,6 +66,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 31: Atlas passes mypy in `pyforge-foundry-full`, and a lane keeps it so (fix under spec-pyforge-atlas CAP-20)
 - Epic 32: The DAG export builds in CI, and a failed build fails its task (fix under spec-pyforge-atlas CAP-62)
 - Epic 33: The atlas CLI reaches the verbs its contracts name, from any directory (fix under spec-pyforge-atlas CAP-9)
+- Epic 34: A plain run fills every dataset a public source serves (spec-pyforge-atlas CAP-64, FR-72)
+- Epic 36: Basilisk, the OpenTeams identity sources and the estate source (spec-pyforge-atlas CAP-66..CAP-68, FR-74..FR-76)
 
 ### Low-risk epics
 
@@ -346,6 +348,22 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 31.1 | Atlas passes mypy in `pyforge-foundry-full`, and a lane keeps it so | none observed |
 | 32.1 | The DAG export builds in CI, and a failed build fails its task | none observed |
 | 33.1 | The atlas CLI reaches the verbs its contracts name, from any directory | none observed |
+| 34.1 | endoflife.date and the SPDX list arrive as records the seed-gap reports read | none observed |
+| 34.2 | The Phase C mapping fills from the conda-forge bot's name mapping | none observed |
+| 34.3 | Dependencies, feedstock health and maintainers read the bot's split graph repos | none observed |
+| 34.4 | The download tables fill from Anaconda's monthly parquet | none observed |
+| 34.5 | The five OS-distro indexes refresh themselves | none observed |
+| 34.6 | The public discovery stores refresh themselves | none observed |
+| 34.7 | The vulnerability stores refresh themselves | none observed |
+| 34.8 | Migration status fills through a driver node | none observed |
+| 34.9 | Phase P fills from the public ClickHouse mirror | none observed |
+| 35.1 | One opt-in switch, and GitHub authenticates | none observed |
+| 35.2 | The VCS batches come from the whole universe | none observed |
+| 35.3 | Upstream versions and feedstock health come from GitHub | none observed |
+| 35.4 | GitLab, Codeberg and the eight registries fill | none observed |
+| 36.1 | The Basilisk population runs | none observed |
+| 36.2 | The OpenTeams board and the staged-recipes PRs fill on opt-in | none observed |
+| 36.3 | The query-plane estate source has a producer | none observed |
 
 ## Quality Gates
 
