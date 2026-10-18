@@ -106,7 +106,7 @@ development_status:
   31-1-atlas-passes-mypy-in-pyforge-foundry-full-and-a-lane-keeps-it-so: done
   32-1-the-dag-export-builds-in-ci-and-a-failed-build-fails-its-task: done
   33-1-the-atlas-cli-reaches-the-verbs-its-contracts-name: done
-  34-1-endoflife-date-and-the-spdx-list-arrive-as-records-the-seed-gap-reports-read: backlog
+  34-1-endoflife-date-and-the-spdx-list-arrive-as-records-the-seed-gap-reports-read: done
   34-2-the-phase-c-mapping-fills-from-the-conda-forge-bot-s-name-mapping: backlog
   34-3-dependencies-feedstock-health-and-maintainers-read-the-bot-s-split-graph-repos: backlog
   34-4-the-download-tables-fill-from-anaconda-s-monthly-parquet: backlog
@@ -194,7 +194,7 @@ development_status:
   epic-32-retrospective: optional
   epic-33: done
   epic-33-retrospective: optional
-  epic-34: backlog
+  epic-34: in-progress
   epic-34-retrospective: optional
   epic-35: backlog
   epic-35-retrospective: optional

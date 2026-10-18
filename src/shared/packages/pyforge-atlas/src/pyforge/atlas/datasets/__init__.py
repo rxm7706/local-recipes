@@ -59,6 +59,7 @@ from .identity_sources import (
     parse_staged_pr_page,
 )
 from .incremental_parquet import IncrementalParquetDataset
+from .json_sources import JSONSourceDataset
 from .migration_status import (
     ACTIVE_CATEGORIES,
     BLOCKER_BUCKETS,
@@ -256,6 +257,8 @@ __all__ = [
     "repodata_json_to_rows",
     "channeldata_json_to_rows",
     "parse_cf_graph_tarball",
+    # Story 34.1 — public JSON sources decoded to records (endoflife.date, SPDX list)
+    "JSONSourceDataset",
     # Vulnerability side-catalog feeds (KEV / EPSS / CWE)
     "CisaKevDataset",
     "EpssFeedDataset",
