@@ -203,8 +203,8 @@ def test_combined_seven_pipeline_dag_resolves_topologically():
     combined = (
         core_create() + vcs_create() + pypi_create() + vuln_create() + seed_create() + sbom_create() + derived_create()
     )
-    # 8 core + 11 vcs + 17 pypi + 9 vuln + 4 seed_gaps + 4 universal_sbom
-    # + 7 derived_artifacts = 60 nodes (Story 25.2: vcs_health 10 -> 11).
+    # 8 core + 12 vcs + 17 pypi + 9 vuln + 4 seed_gaps + 4 universal_sbom
+    # + 7 derived_artifacts = 61 nodes (Story 25.2: vcs_health 10 -> 11; Story 34.8: 11 -> 12).
     assert len(combined.nodes) == 61  # Story 34.8: + drive_migration_status
     grouped = combined.grouped_nodes
     assert sum(len(g) for g in grouped) == 61
@@ -301,6 +301,7 @@ def test_tier_1_external_refresh_stores_have_exactly_one_writer_each():
         "discovery_staged_recipes_prs_raw": "refresh_staged_recipes_prs",
         "identity_packages_primary": "build_identity_packages_primary",
         "identity_export_parquet": "build_identity_export_parquet",
+        "vcs_migration_detail_raw": "drive_migration_status",  # Story 34.8
     }
     for store, expected in writers.items():
         producers = [n.name for n in combined.nodes if store in n.outputs]

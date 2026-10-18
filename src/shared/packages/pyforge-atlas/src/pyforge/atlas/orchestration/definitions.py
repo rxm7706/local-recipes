@@ -265,11 +265,11 @@ NODE_TIMEOUTS: dict[str, int] = {
     "score_pypi_readiness": 600,  # Phase R scoring
     "export_pypi_conda_map": 120,  # update-mapping-cache export shim
     "refresh_pypi_json_store": 1800,  # Story 27.2 — bounded live fan-out refresh
-    "refresh_discovery_homebrew_store": 600,  # Story 34.5 — one public index GET each
-    "refresh_discovery_nixpkgs_store": 600,  # Story 34.5 — 10 MB brotli, 403 MB byte scan
-    "refresh_discovery_spack_store": 600,  # Story 34.5
-    "refresh_discovery_debian_store": 600,  # Story 34.5
-    "refresh_discovery_fedora_store": 600,  # Story 34.5
+    "refresh_discovery_homebrew_store": 600,  # Story 23.1 — one public index GET each (Story 34.5)
+    "refresh_discovery_nixpkgs_store": 600,  # Story 23.1 — 10 MB brotli, 403 MB byte scan (34.5)
+    "refresh_discovery_spack_store": 600,  # Story 23.1
+    "refresh_discovery_debian_store": 600,  # Story 23.1
+    "refresh_discovery_fedora_store": 600,  # Story 23.1
     "flag_tier3_channels": 120,  # Story 23.1 (pure in-memory pivot, no network)
     "assemble_and_gate": 600,
     "compose_semantic_packages": 300,
@@ -295,7 +295,7 @@ NODE_TIMEOUTS: dict[str, int] = {
     "track_registry_versions": 900,  # Phase L
     "fetch_live_health": 600,  # Phase N
     "derive_release_velocity": 300,  # FR-20
-    "drive_migration_status": 900,  # Story 34.8 — one public GET per active migration
+    "drive_migration_status": 900,  # Story 34.8 — five category GETs, then one per migration
     "classify_migration_readiness": 300,  # FR-21
     "build_repo_dependency_history": 900,  # Story 25.1 / 25.2 sensor target (CAP-61)
     # -- universal_sbom ---------------------------------------------------- #

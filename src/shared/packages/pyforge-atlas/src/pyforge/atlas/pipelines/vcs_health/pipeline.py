@@ -119,17 +119,10 @@ def create_pipeline(**kwargs) -> Pipeline:
                 outputs="vcs_release_velocity",
                 name="derive_release_velocity",
             ),
-            # FR-21 (Story B10) — NEW-SIGNAL, NOT parity-gated (AD-14). Reads the
-            # partitioned conda-forge-bot-data status detail (`vcs_migration_detail_raw`)
-            # + the Phase B atlas feedstock set (`core_packages_enumerated`) + the Phase F
-            # downloads (`core_downloads`) by catalog name (cross-pipeline shared datasets,
-            # ownership=producer, AD-3). Four-way readiness split + inferred not-in-tracker
-            # label + top-unmigrated-by-volume ranking; the per-migration partitioning is
-            # driven by the category lists (zero code change per new migration).
             # Story 34.8 (CAP-64) -- the migration-status driver: reads the five category lists
             # (each refreshes from the bot's public status file while live public sources are
-            # on) and writes the active names to `vcs_migration_detail_raw`, whose save sweeps
-            # one detail partition per migration. The detail dataset's single writer (AD-10).
+            # on) and writes every name they carry to `vcs_migration_detail_raw`, whose save
+            # sweeps one detail partition per migration. The detail dataset's single writer (AD-10).
             node(
                 func=drive_migration_status,
                 inputs=[
@@ -142,6 +135,13 @@ def create_pipeline(**kwargs) -> Pipeline:
                 outputs="vcs_migration_detail_raw",
                 name="drive_migration_status",
             ),
+            # FR-21 (Story B10) — NEW-SIGNAL, NOT parity-gated (AD-14). Reads the
+            # partitioned conda-forge-bot-data status detail (`vcs_migration_detail_raw`)
+            # + the Phase B atlas feedstock set (`core_packages_enumerated`) + the Phase F
+            # downloads (`core_downloads`) by catalog name (cross-pipeline shared datasets,
+            # ownership=producer, AD-3). Four-way readiness split + inferred not-in-tracker
+            # label + top-unmigrated-by-volume ranking; the per-migration partitioning is
+            # driven by the category lists (zero code change per new migration).
             node(
                 func=classify_migration_readiness,
                 inputs=[

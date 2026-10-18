@@ -560,28 +560,26 @@ def drive_migration_status(
     vcs_migration_closed_status_raw: Any,
     vcs_migration_total_status_raw: Any,
 ) -> list[str]:
-    """Story 34.8: the active migrations the bot's category lists name, for the one detail sweep.
+    """Story 34.8: every migration the bot's category lists name, for the one detail sweep.
 
-    PURE. Active = regular + longterm + paused, less any migration the closed list names (a
-    closed migration's tracker no longer moves); order is first-seen, duplicates dropped. With
-    none of the three lists loaded, the total list (less closed) stands in. The output is the
-    ``vcs_migration_detail_raw`` save -- its single writer (AD-10) -- which fetches one
-    ``migration_json/<name>.json`` partition per name; this node does no IO."""
-    closed = set(migration_names(vcs_migration_closed_status_raw))
-    active: dict[str, None] = {}
+    PURE. The names regular, longterm, paused, closed and total carry, in that order, first
+    seen, duplicates dropped -- the status page renders all four categories, and closed
+    migrations keep their detail files. ``total`` lists the open and paused set again, so a
+    regular, longterm or paused list that failed with no last-good still has its names.
+    The output is the ``vcs_migration_detail_raw`` save --
+    its single writer (AD-10) -- which fetches one ``migration_json/<name>.json`` partition
+    per name; this node does no IO."""
+    names: dict[str, None] = {}
     for payload in (
         vcs_migration_regular_status_raw,
         vcs_migration_longterm_status_raw,
         vcs_migration_paused_status_raw,
+        vcs_migration_closed_status_raw,
+        vcs_migration_total_status_raw,
     ):
         for name in migration_names(payload):
-            if name not in closed:
-                active[name] = None
-    if not active:
-        for name in migration_names(vcs_migration_total_status_raw):
-            if name not in closed:
-                active[name] = None
-    return list(active)
+            names[name] = None
+    return list(names)
 
 
 def classify_migration_readiness(
