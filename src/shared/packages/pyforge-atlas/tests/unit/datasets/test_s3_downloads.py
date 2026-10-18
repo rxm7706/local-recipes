@@ -371,7 +371,7 @@ def test_without_filepath_the_dataset_is_the_empty_frame() -> None:
     assert out.empty and list(out.columns) == S3.BREAKDOWN_COLUMNS
 
 
-@flag_states(S3.FLAG_KEY)
+@flag_states("pyforge.atlas.live_public_sources")  # spelled out: the flag gate reads this file for the key
 def test_the_flag_gates_every_fetch(
     tmp_path: Path, flag_provider: dict[str, bool], monkeypatch: pytest.MonkeyPatch
 ) -> None:

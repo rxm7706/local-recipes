@@ -129,8 +129,11 @@ Type / Effort / Deps: feature / M / none.
 
 ## Verification
 
-- Unit: `tests/unit/datasets/test_s3_downloads.py`, `tests/unit/datasets/test_request_datasets.py`,
-  `tests/unit/pipelines/core/test_nodes.py`, `tests/unit/parity` (Phases F and I fixtures).
+- Unit, each named from the repo root:
+  - `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_s3_downloads.py`
+  - `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_request_datasets.py`
+  - `src/shared/packages/pyforge-atlas/tests/unit/pipelines/core/test_nodes.py`
+  - `src/shared/packages/pyforge-atlas/tests/unit/parity/test_parity_core.py` (Phases F and I fixtures)
 - Live (AC7), recorded 2026-10-18 after the review fixes. Cold run: fresh scratch data root, flag on (dev),
   `--pipelines core --nodes compute_downloads,compute_version_download_history`, exit 0, 2:48, peak RSS 3.59 GB. It
   fetched 117 months, with no marker. Warm re-run (listing only): 12 s, peak RSS 2.65 GB.
