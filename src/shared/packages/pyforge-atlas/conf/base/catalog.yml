@@ -104,10 +104,25 @@ core_anaconda_downloads_raw:
   metadata:
     layer: raw
 
-# Phase F alternative source / consumer profile (PHASE_F_SOURCE=s3-parquet).
+# Phases F + I: Anaconda's public monthly download parquet (legacy PHASE_F_SOURCE=s3-parquet).
+# Story 34.4: both entries share one month cache under stores/core_s3_downloads (fetched once per
+# month, again only when the bucket listing gives it a new ETag), behind
+# pyforge.atlas.live_public_sources (off: serve the cache, fetch nothing). No credential.
 core_s3_download_stats_raw:
   type: pyforge.atlas.datasets.S3DownloadStatsDataset
-  url: ${globals:endpoint_bases.S3_PARQUET_BASE_URL}/conda/monthly
+  url: ${globals:endpoint_bases.S3_PARQUET_BASE_URL}
+  prefix: conda/monthly
+  view: breakdown
+  filepath: ${globals:paths.data_root}/stores/core_s3_downloads
+  metadata:
+    layer: raw
+
+core_s3_version_downloads_raw:
+  type: pyforge.atlas.datasets.S3DownloadStatsDataset
+  url: ${globals:endpoint_bases.S3_PARQUET_BASE_URL}
+  prefix: conda/monthly
+  view: versions
+  filepath: ${globals:paths.data_root}/stores/core_s3_downloads
   metadata:
     layer: raw
 

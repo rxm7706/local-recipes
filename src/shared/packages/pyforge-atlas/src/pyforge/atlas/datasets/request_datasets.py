@@ -229,11 +229,24 @@ class _RequestParameterizedAPIDataset(AbstractDataset):
         physical fetch is dataset-owned: ``fetcher`` is injectable so the discipline
         is fixture-testable against a stub; the default delegates to the composed
         ``APIDataset``. ``acquire()`` is called for EVERY request — see the fake-clock
-        coupling note on the class docstring."""
+        coupling note on the class docstring.
+
+        Story 34.4: the default fetch requests ``request_key`` (an absolute URL, or a path
+        under the base URL) and decodes a JSON body; it used to load the composed base URL,
+        whatever key it was given."""
         self.scheduler.acquire()
         if fetcher is not None:
             return fetcher(request_key)
-        return self._inner.load()
+        key = str(request_key)
+        url = key if key.startswith(("http://", "https://")) else f"{self._base_url.rstrip('/')}/{key.lstrip('/')}"
+        inner = APIDataset(
+            url=url,
+            method=self._method,
+            load_args=self._load_args,
+            credentials=self._credentials,
+            metadata=self.metadata,
+        )
+        return _coerce_api_json(inner.load())
 
     def save(self, data: Any) -> None:
         raise NotImplementedError(f"{type(self).__name__} is a read-only request source; it is never saved to.")

@@ -554,12 +554,6 @@ def test_cf_graph_tarball_dataset_parses_tar(monkeypatch):
     assert isinstance(ds.load(), pd.DataFrame)
 
 
-def test_s3_download_stats_returns_empty_columned_frame():
-    df = CS.S3DownloadStatsDataset(url="s3://bucket/prefix").load()
-    assert list(df.columns) == ["conda_name", "month", "platform", "pyver", "channel", "downloads"]
-    assert df.empty
-
-
 def test_resolve_anaconda_channel_urls_honors_channel_env_override(monkeypatch):
     monkeypatch.setenv("PYTORCH_BASE_URL", "https://custom.example/pytorch")
     urls = CS._resolve_anaconda_channel_urls("pytorch", "noarch", "repodata.json")

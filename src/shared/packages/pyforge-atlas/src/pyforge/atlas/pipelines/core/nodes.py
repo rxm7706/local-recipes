@@ -22,7 +22,18 @@ logger = logging.getLogger(__name__)
 
 # Clean Python-version token (Phase F ``pkg_python`` regex-filter — the dirty column
 # carries values like "", "unknown", "3" that must be dropped before aggregation).
-_CLEAN_PYVER = re.compile(r"^\d+\.\d+$")
+# legacy Phase F Wave 2's filter for the dirty ``pkg_python`` column (CFA:3246): 2.7 or 3.0-3.20
+_CLEAN_PYVER = re.compile(r"^(2\.7|3\.([0-9]|1[0-9]|20))$")
+# legacy Phase F reads totals, the latest month and the platform and Python cuts from this channel only;
+# the channel cut alone spans every channel (Wave 3, CFA:3279)
+_HOME_CHANNEL = "conda-forge"
+
+
+def _plain(frame: pd.DataFrame) -> pd.DataFrame:
+    """Categorical columns (the s3 source's dictionary-encoded text) as plain strings."""
+    cats = [c for c in frame.columns if isinstance(frame[c].dtype, pd.CategoricalDtype)]
+    return frame.astype({c: "str" for c in cats}) if cats else frame
+
 
 # ms-vs-seconds magnitude split (mirrors IncrementalParquetDataset._MS_EPOCH_THRESHOLD).
 _MS_THRESHOLD = 1_000_000_000_000
@@ -243,22 +254,33 @@ def compute_downloads(
         parts["anaconda-api"] = ana_tot
 
     if s3_present:
-        s3_tot = s3.groupby("conda_name", as_index=False)["downloads"].sum()
+        # Story 34.4: totals, the latest month and the platform/pyver cuts read the home channel
+        # (legacy Wave 2); the channel cut keeps every channel (legacy Wave 3).
+        home = s3[s3["channel"] == _HOME_CHANNEL]
+        s3_tot = _plain(home.groupby("conda_name", as_index=False, observed=True)["downloads"].sum())
         s3_tot = s3_tot.rename(columns={"downloads": "downloads_total"})
         parts["s3-parquet"] = s3_tot
 
         # downloads_30d = latest CALENDAR month (not rolling). month is YYYY-MM.
-        latest_month = s3["month"].max()
-        last = s3[s3["month"] == latest_month]
-        d30 = last.groupby("conda_name", as_index=False)["downloads"].sum()
+        latest_month = home["month"].max()
+        last = home[home["month"] == latest_month]
+        d30 = _plain(last.groupby("conda_name", as_index=False, observed=True)["downloads"].sum())
         d30 = d30.rename(columns={"downloads": "downloads_30d"})
 
         # Breakdown tables — s3-parquet path ONLY.
-        platform_breakdown = (s3.groupby(["conda_name", "platform"], as_index=False)["downloads"].sum())[plat_cols]
-        # regex-filter the dirty pkg_python column BEFORE aggregation.
-        clean = s3[s3["pyver"].astype(str).str.match(_CLEAN_PYVER)]
-        pyver_breakdown = (clean.groupby(["conda_name", "pyver"], as_index=False)["downloads"].sum())[pyver_cols]
-        channel_breakdown = (s3.groupby(["conda_name", "channel"], as_index=False)["downloads"].sum())[chan_cols]
+        platform_breakdown = _plain(
+            home.groupby(["conda_name", "platform"], as_index=False, observed=True)["downloads"].sum()
+        )[plat_cols]
+        # regex-filter the dirty pkg_python column BEFORE aggregation (over its distinct values:
+        # the s3 source holds ~19M rows of a few dozen pyver strings).
+        clean_pyvers = [v for v in pd.unique(home["pyver"]) if isinstance(v, str) and _CLEAN_PYVER.match(v)]
+        clean = home[home["pyver"].isin(clean_pyvers)]
+        pyver_breakdown = _plain(
+            clean.groupby(["conda_name", "pyver"], as_index=False, observed=True)["downloads"].sum()
+        )[pyver_cols]
+        channel_breakdown = _plain(
+            s3.groupby(["conda_name", "channel"], as_index=False, observed=True)["downloads"].sum()
+        )[chan_cols]
     else:
         d30 = None
 
@@ -312,18 +334,36 @@ def compute_downloads(
 # ---------------------------------------------------------------------------
 
 
-def compute_version_download_history(core_anaconda_downloads_raw: pd.DataFrame) -> pd.DataFrame:
+def compute_version_download_history(
+    core_anaconda_downloads_raw: pd.DataFrame,
+    core_s3_version_downloads_raw: pd.DataFrame | None = None,
+) -> pd.DataFrame:
     # legacy: Phase I  (promoted from Phase F side-effect: api CFA:2931 / s3 CFA:3402; table CFA:312-316)
     """Per-version download history as an EXPLICIT declared output (AC-3) — no longer
     an unregistered side-effect of Phase F's anaconda-api path. Consumed downstream by
     Phase G', ``version-downloads``, ``release-cadence`` (which resolve it by catalog
-    name, AD-3). Input: ``conda_name``, ``version``, ``downloads``. Output:
-    ``conda_name``, ``version``, ``downloads`` aggregated per (package, version)."""
+    name, AD-3). Input: ``conda_name``, ``version``, ``downloads`` from either source.
+    Output: ``conda_name``, ``version``, ``downloads`` aggregated per (package, version).
+
+    Story 34.4: like ``compute_downloads``, a package the s3-parquet source covers takes its
+    versions from there (legacy Aggregate 2, CFA:3402); the anaconda-api rows fill only the
+    packages s3 lacks. The two sources are never summed (correlated measurements)."""
+    cols = ["conda_name", "version", "downloads"]
+    parts: list[pd.DataFrame] = []
+    s3 = core_s3_version_downloads_raw
+    s3_names: set[str] = set()
+    if s3 is not None and not s3.empty and set(cols) <= set(s3.columns):
+        s3_hist = _plain(s3.groupby(["conda_name", "version"], as_index=False, observed=True)["downloads"].sum())
+        s3_names = set(s3_hist["conda_name"])
+        parts.append(s3_hist[cols])
     ana = core_anaconda_downloads_raw
-    if ana is None or ana.empty:
-        return pd.DataFrame(columns=["conda_name", "version", "downloads"])
-    hist = ana.groupby(["conda_name", "version"], as_index=False)["downloads"].sum()
-    return hist.reset_index(drop=True)
+    if ana is not None and not ana.empty and set(cols) <= set(ana.columns):
+        ana = ana[~ana["conda_name"].isin(s3_names)]
+        parts.append(ana.groupby(["conda_name", "version"], as_index=False)["downloads"].sum()[cols])
+    parts = [p for p in parts if not p.empty]
+    if not parts:
+        return pd.DataFrame(columns=cols)
+    return pd.concat(parts, ignore_index=True)
 
 
 # ---------------------------------------------------------------------------

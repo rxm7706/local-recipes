@@ -117,7 +117,7 @@ def _s3():
             "month": ["2026-05", "2026-06", "2026-06", "2026-06"],
             "platform": ["linux-64", "linux-64", "osx-64", "linux-64"],
             "pyver": ["3.11", "3.12", "bad", "3.11"],  # 'bad' is dirty -> filtered
-            "channel": ["main", "main", "main", "main"],
+            "channel": ["conda-forge", "conda-forge", "conda-forge", "conda-forge"],  # Phase F's home channel
             "downloads": [10, 20, 5, 7],
         }
     )
@@ -158,6 +158,26 @@ def test_f_downloads_30d_is_latest_calendar_month_not_rolling():
     # latest month is 2026-06: numpy = 20 + 5 = 25 (NOT the 10 from 2026-05)
     assert d30["numpy"] == 25
     assert d30["pandas"] == 7
+
+
+def test_f_other_channels_reach_only_the_channel_breakdown():
+    """Story 34.4: legacy Phase F reads totals, the latest month and the platform/pyver cuts from
+    conda-forge only (Wave 2); the channel cut keeps every channel (Wave 3, CFA:3279)."""
+    other = pd.DataFrame(
+        {
+            "conda_name": ["numpy"],
+            "month": ["2026-07"],
+            "platform": ["win-64"],
+            "pyver": ["3.13"],
+            "channel": ["anaconda"],
+            "downloads": [900],
+        }
+    )
+    downloads, plat, pyv, chan = compute_downloads(pd.DataFrame(), pd.concat([_s3(), other]))
+    row = downloads.set_index("conda_name").loc["numpy"]
+    assert row["downloads_total"] == 35 and row["downloads_30d"] == 25  # 2026-07 is anaconda's month, not ours
+    assert "win-64" not in set(plat["platform"]) and "3.13" not in set(pyv["pyver"])
+    assert ("numpy", "anaconda", 900) in set(map(tuple, chan.values))
 
 
 def test_f_pkg_python_regex_filter_drops_dirty_rows():

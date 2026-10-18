@@ -103,7 +103,7 @@ PREFIX_TO_PIPELINE = {
 # collapse into ONE partitioned dataset and the repo-scope sbom report is
 # deferred to F4 per AD-12; recorded in the Dev Agent Record).
 EXPECTED_PIPELINE_COUNTS = {
-    "core": 18,  # Story 21.4: + core_anaconda_main_channeldata_raw + core_anaconda_main_packages
+    "core": 19,  # Story 21.4: + core_anaconda_main_channeldata_raw + core_anaconda_main_packages; Story 34.4: + core_s3_version_downloads_raw
     "pypi_intelligence": 21,  # Story 23.1: +5 Tier-3 raw stores + pypi_tier3_channel_flags (+6 nodes)
     "vulnerability": 15,  # Story 23.3: + vulnerability_basilisk_rollup (rollup lives under vulnerability_* prefix)
     "vcs_health": 27,  # Story 25.2: +warden_fleet_inventory +repo_dependency_history catalog entries
@@ -115,7 +115,9 @@ EXPECTED_PIPELINE_COUNTS = {
     "query_plane_cache": 2,  # Story 34.2 (FR-47): query_plane_estate_source + query_plane_estate
     "semantic_packages": 1,  # Story 20.3 (CAP-6): semantic_packages
 }
-EXPECTED_TOTAL = 127  # Story 25.2: +warden_fleet_inventory +repo_dependency_history
+EXPECTED_TOTAL = (
+    128  # Story 25.2: +warden_fleet_inventory +repo_dependency_history; Story 34.4: +core_s3_version_downloads_raw
+)
 
 # The A3 IncrementalParquetDataset flip list (TTL-gated persisted outputs).
 FLIP_LIST = {

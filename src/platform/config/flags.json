@@ -210,6 +210,21 @@
         "cleanup_by": ""
       }
     },
+    "pyforge.atlas.live_public_sources": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "atlas",
+        "story": "34-4-the-download-tables-fill-from-anaconda-s-monthly-parquet",
+        "created": "2026-10-18",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
     "pyforge.warden.fix_target_resolution": {
       "state": "ENABLED",
       "variants": {

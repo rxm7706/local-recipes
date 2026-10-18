@@ -285,6 +285,41 @@ def test_anaconda_load_many_uses_injected_fetcher():
     assert out["downloads"].sum() == 150
 
 
+@pytest.mark.parametrize(
+    ("key", "url"),
+    [
+        ("https://api.anaconda.org/package/conda-forge/numpy", "https://api.anaconda.org/package/conda-forge/numpy"),
+        ("conda-forge/numpy", "https://api.anaconda.org/package/conda-forge/numpy"),
+    ],
+)
+def test_fetch_one_requests_the_key_it_is_given(monkeypatch, key, url):
+    """Story 34.4: the default fetch requested the composed base URL whatever key it was given."""
+    import pyforge.atlas.datasets.request_datasets as RD
+
+    requested: list[str] = []
+
+    class _Response:
+        def json(self):
+            return {"files": [{"version": "2.0", "ndownloads": 7}]}
+
+    class _API:
+        def __init__(self, *, url, **_kwargs):
+            requested.append(url)
+
+        def load(self):
+            return _Response()
+
+    ds = AnacondaDownloadsDataset(url="https://api.anaconda.org/package")
+    monkeypatch.setattr(RD, "APIDataset", _API)  # after construction: only fetch_one's request is recorded
+
+    payload = ds.fetch_one(key)
+
+    assert requested == [url]
+    assert payload == {"files": [{"version": "2.0", "ndownloads": 7}]}  # the JSON body, decoded
+    out = ds.load_many(["numpy"])
+    assert list(map(tuple, out.values)) == [("numpy", "2.0", 7)]
+
+
 def test_request_datasets_are_read_only_sources():
     from kedro.io.core import DatasetError
 

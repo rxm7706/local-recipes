@@ -59,7 +59,7 @@ NODE_REGISTRY: dict[str, tuple] = {
     ),
     "compute_version_download_history": (
         core_nodes.compute_version_download_history,
-        ["core_anaconda_downloads_raw"],
+        ["core_anaconda_downloads_raw", "core_s3_version_downloads_raw"],
         ["core_version_download_history"],
     ),
     "build_dependency_graph": (

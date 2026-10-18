@@ -32,7 +32,6 @@ from .core_sources import (
     FeedstockOutputsArchiveDataset,
     ParselmouthMappingDataset,
     PyPISimpleIndexDataset,
-    S3DownloadStatsDataset,
     channeldata_json_to_rows,
     parse_cf_graph_tarball,
     parse_feedstock_outputs_zip,
@@ -99,6 +98,7 @@ from .request_datasets import (
     PyPIJsonFanOutDataset,
     PyPIJsonRequestDataset,
 )
+from .s3_downloads import S3DownloadStatsDataset
 from .sbom_intake import (
     SbomIntakeDataset,
     TransitiveResolverDataset,

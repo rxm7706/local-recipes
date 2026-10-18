@@ -41,7 +41,12 @@ from typing import Any
 import pandas as pd
 from kedro_datasets.pandas import ParquetDataset
 
-from pyforge.atlas.datasets import CfGraphTarballDataset, IncrementalParquetDataset, JSONSourceDataset
+from pyforge.atlas.datasets import (
+    CfGraphTarballDataset,
+    IncrementalParquetDataset,
+    JSONSourceDataset,
+    S3DownloadStatsDataset,
+)
 
 SCHEMA_VERSION = "1"
 
@@ -217,13 +222,14 @@ def resolve_for_catalog_dataset(catalog: Any, name: str, loaded_value: Any) -> P
                 reason=f"non-local protocol {protocol!r}: cannot stat the backing file locally",
             )
         return resolve_for_file(described["filepath"])
-    marked = (JSONSourceDataset, CfGraphTarballDataset)
+    marked = (JSONSourceDataset, CfGraphTarballDataset, S3DownloadStatsDataset)
     source = dataset if isinstance(dataset, marked) else getattr(dataset, "source", None)
     if isinstance(source, marked):
         # Story 34.1: a fresh fetch is "now"; a load that served last-good (or nothing) says
         # so, with the copy's own mtime and the AD-13 marker's reason -- never "now".
         # Story 34.2: a dataset that composes one (ParselmouthMappingDataset) reports it.
         # Story 34.3: CfGraphTarballDataset keeps the same marker beside its parquet copy.
+        # Story 34.4: S3DownloadStatsDataset's copy is its month cache, dated by its manifest.
         marker = source.staleness()
         last_good = source.last_good_path
         if marker is None or last_good is None:
