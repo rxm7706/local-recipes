@@ -357,6 +357,72 @@ harness_preference = ["cursor"]
   "_bmad-output/projects/*/planning-artifacts/briefs/**",
   "_bmad-output/projects/*/planning-artifacts/epics.md",
 ]
+"34" = [  # a plain run fills every dataset a public source serves (spec-pyforge-atlas CAP-64; Stories 34.1-34.9), added 2026-10-18.
+  # The default surface restated, plus flag registration (feature stories) and the memlog / chain-currency globs.
+  "src/shared/packages/pyforge-atlas/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/test-architecture.md",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md",
+  "scripts/.spec-surface-baseline.json",
+  # flag registration (feature stories; docs/reference/story-spec-flag-block.md)
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
+  "src/platform/tests/test_openfeature_file_flags.py",
+  # co-governor reconciles
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+  # chain-currency re-stamps only
+  "_bmad-output/projects/*/planning-artifacts/prds/**",
+  "_bmad-output/projects/*/planning-artifacts/architecture/**",
+  "_bmad-output/projects/*/planning-artifacts/briefs/**",
+  "_bmad-output/projects/*/planning-artifacts/epics.md",
+]
+"35" = [  # VCS and registry fetches cover the full universe, credentialed on opt-in (CAP-65; Stories 35.1-35.4), added 2026-10-18.
+  # The default surface restated, plus flag registration (feature stories) and the memlog / chain-currency globs.
+  "src/shared/packages/pyforge-atlas/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/test-architecture.md",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md",
+  "scripts/.spec-surface-baseline.json",
+  # flag registration (feature stories; docs/reference/story-spec-flag-block.md)
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
+  "src/platform/tests/test_openfeature_file_flags.py",
+  # co-governor reconciles
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+  # chain-currency re-stamps only
+  "_bmad-output/projects/*/planning-artifacts/prds/**",
+  "_bmad-output/projects/*/planning-artifacts/architecture/**",
+  "_bmad-output/projects/*/planning-artifacts/briefs/**",
+  "_bmad-output/projects/*/planning-artifacts/epics.md",
+]
+"36" = [  # Basilisk, the OpenTeams identity sources and the estate source (CAP-66..CAP-68; Stories 36.1-36.3), added 2026-10-18.
+  # The default surface restated, plus flag registration (feature stories) and the memlog / chain-currency globs.
+  "src/shared/packages/pyforge-atlas/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/test-architecture.md",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md",
+  "scripts/.spec-surface-baseline.json",
+  # flag registration (feature stories; docs/reference/story-spec-flag-block.md)
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
+  "src/platform/tests/test_openfeature_file_flags.py",
+  # co-governor reconciles
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+  # chain-currency re-stamps only
+  "_bmad-output/projects/*/planning-artifacts/prds/**",
+  "_bmad-output/projects/*/planning-artifacts/architecture/**",
+  "_bmad-output/projects/*/planning-artifacts/briefs/**",
+  "_bmad-output/projects/*/planning-artifacts/epics.md",
+]
 
 # dispatch (Story 102.1 / spec-pyforge-marshal CAP-161), added 2026-10-15: a re-landing reuses this station's own
 # verified verdict when only merges of main and planning-only commits moved the branch since the head it judged,

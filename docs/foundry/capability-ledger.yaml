@@ -4975,6 +4975,37 @@ capabilities:
     heading: "Vizro boards publish as static exports under `/dashboard/vizro/`"
     mode: rebuild
     path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  # 2026-10-18 atlas fills its own data (Epics 34-36)
+  - id: pyforge-atlas:CAP-64
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "a plain run fills every dataset a public source serves"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-65
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "VCS and registry fetches cover the full universe, credentialed on opt-in"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-66
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "the Basilisk population runs"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-67
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "the OpenTeams identity sources fill on opt-in"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-68
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "the query-plane estate source has a producer"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
   - id: pyforge-mason:CAP-1
     spec: pyforge-mason
     station: pyforge-mason
