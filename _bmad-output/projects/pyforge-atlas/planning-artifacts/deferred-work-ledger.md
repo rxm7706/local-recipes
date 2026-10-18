@@ -5000,6 +5000,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: review finding, atlas Story 34.5 independent review rounds 1-2
   severity: low
   promoted: 2026-10-18 -- implementer response to 34.5 review round 2
+  status: open
 
 ### DW-atlas-34-6-1: The `pyforge-atlas-bootstrap` task description still names all three discovery stores as fetcher-less.
 
