@@ -302,7 +302,8 @@ pypi_cross_channel_repodata_raw:
 # Story 23.1 — Tier 3 OS-distro bulk indexes (homebrew/nixpkgs/spack/debian/fedora).
 # Five independent ExternalRefreshDataset subclasses in datasets/tier3_sources.py;
 # routed to pypi_intelligence via PREFIX_TO_PIPELINE's discovery_<source> keys.
-# fetch mode: external-refresh (dataset-owned IO; injected fetcher at attended run)
+# fetch mode: external-refresh (dataset-owned IO; injected fetcher at attended run; Story 34.5:
+# otherwise the store's own public index, fetched when live public sources are on)
 discovery_homebrew_packages_raw:
   type: pyforge.atlas.datasets.HomebrewPackagesDataset
   url: ${globals:endpoint_bases.HOMEBREW_BASE_URL}/api/formula.json
@@ -312,14 +313,14 @@ discovery_homebrew_packages_raw:
 
 discovery_nixpkgs_packages_raw:
   type: pyforge.atlas.datasets.NixpkgsPackagesDataset
-  url: ${globals:endpoint_bases.NIXPKGS_BASE_URL}/nixpkgs-unstable/packages.json
+  url: ${globals:endpoint_bases.NIXPKGS_BASE_URL}/nixpkgs-unstable/packages.json.br
   filepath: ${globals:paths.data_root}/stores/discovery_nixpkgs_packages_raw
   metadata:
     layer: raw
 
 discovery_spack_packages_raw:
   type: pyforge.atlas.datasets.SpackPackagesDataset
-  url: ${globals:endpoint_bases.SPACK_RAW_BASE_URL}/spack/spack/develop/var/spack/repos/builtin/package_index.json
+  url: ${globals:endpoint_bases.SPACK_PACKAGES_BASE_URL}/data/packages.json
   filepath: ${globals:paths.data_root}/stores/discovery_spack_packages_raw
   metadata:
     layer: raw
@@ -333,7 +334,7 @@ discovery_debian_packages_raw:
 
 discovery_fedora_packages_raw:
   type: pyforge.atlas.datasets.FedoraPackagesDataset
-  url: ${globals:endpoint_bases.FEDORA_SRC_BASE_URL}/rest/projects/
+  url: ${globals:endpoint_bases.FEDORA_SRC_BASE_URL}/extras/pagure_owner_alias.json
   filepath: ${globals:paths.data_root}/stores/discovery_fedora_packages_raw
   metadata:
     layer: raw

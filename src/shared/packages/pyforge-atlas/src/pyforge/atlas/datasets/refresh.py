@@ -316,12 +316,15 @@ class ExternalRefreshDataset(AbstractDataset):
             self._clear_stale()
             return
 
-        if self._refresher is None:
+        # Story 34.5: a store that owns a public refresher is asked for it now, at the moment of
+        # the refresh -- never at construction, which a Dagster code location runs at import.
+        refresher = self._refresher if self._refresher is not None else self._live_refresher()
+        if refresher is None:
             # Due (or forced) but no refresher wired here — offline / unattended run.
             self._mark_stale("refresh due but no refresher wired (offline / unattended run)")
             return
         try:
-            fetched = self._refresher()
+            fetched = refresher()
         except Exception as exc:  # AD-13: an unreachable endpoint never fails the run.
             logger.warning("refresh of %s failed, keeping last-good: %s", self._filepath, exc)
             self._mark_stale(f"refresh failed: {type(exc).__name__}: {exc}")
@@ -351,6 +354,12 @@ class ExternalRefreshDataset(AbstractDataset):
         atomic_write(target, write_fn)
 
     # -- subclass hooks ----------------------------------------------------
+
+    def _live_refresher(self) -> Callable[[], Any] | None:
+        """The store's own public refresher, when it has one and live public sources are on
+        (Story 34.5); ``None`` keeps today's behaviour. Asked by :meth:`save` each refresh, so
+        the flag is read at the moment of the fetch. An injected ``refresher`` always wins."""
+        return None
 
     @staticmethod
     def _is_empty(fetched: Any) -> bool:

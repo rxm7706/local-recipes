@@ -69,7 +69,7 @@ endpoint_bases:
   # external-refresh datasets routed to pypi_intelligence.
   HOMEBREW_BASE_URL: ${env_or:HOMEBREW_BASE_URL,https://formulae.brew.sh}
   NIXPKGS_BASE_URL: ${env_or:NIXPKGS_BASE_URL,https://channels.nixos.org}
-  SPACK_RAW_BASE_URL: ${env_or:SPACK_RAW_BASE_URL,https://raw.githubusercontent.com}
+  SPACK_PACKAGES_BASE_URL: ${env_or:SPACK_PACKAGES_BASE_URL,https://packages.spack.io}  # Story 34.5: was SPACK_RAW_BASE_URL (the builtin repo left spack/spack)
   DEBIAN_BASE_URL: ${env_or:DEBIAN_BASE_URL,https://deb.debian.org}
   FEDORA_SRC_BASE_URL: ${env_or:FEDORA_SRC_BASE_URL,https://src.fedoraproject.org}
 

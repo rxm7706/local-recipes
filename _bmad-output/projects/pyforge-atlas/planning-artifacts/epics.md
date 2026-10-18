@@ -2485,7 +2485,7 @@ So that `pypi_tier3_channel_flags` fills.
 **When** a run reaches the stores with the flag on
 **Then** each store fetches its index over `APIDataset`, holds rows, and `pypi_tier3_channel_flags` holds rows
 **And** the bootstrap no longer lists the five as expected stale
-**Status:** backlog
+**Status:** done
 
 ### Story 34.6: The public discovery stores refresh themselves
 
