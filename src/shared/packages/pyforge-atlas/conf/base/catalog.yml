@@ -250,6 +250,9 @@ pypi_json_raw:
   url: ${globals:endpoint_bases.PYPI_JSON_BASE_URL}
   filepath: ${globals:paths.data_root}/raw/pypi_json_raw
   mapping_filepath: ${globals:paths.pypi_conda_map}
+  # Story 34.10: the uncapped eligible set (~11k mapped projects cold). pypi.org's JSON API
+  # allows ~30 requests a second per IP (legacy Phase H, CFA:4197); legacy ran 3 workers.
+  rps: 10
   metadata:
     layer: raw
 
