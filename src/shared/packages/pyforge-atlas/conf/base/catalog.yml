@@ -313,11 +313,16 @@ discovery_fedora_packages_raw:
   metadata:
     layer: raw
 
-# endoflife.date (TTL 7 d; consumed cross-pipeline by seed_gaps per AD-3).
+# endoflife.date (consumed cross-pipeline by seed_gaps per AD-3). Fetched on every load since
+# Story 34.1, with a last-good copy and the AD-13 marker; `params:ttls.pypi_endoflife_raw` (7 d) has no consumer yet.
 # `skip_auth` semantics — NO credential is ever attached to this host.
 pypi_endoflife_raw:
-  type: api.APIDataset
+  # Story 34.1: decoded to endoflife.date's product-slug list (was a bare APIDataset whose
+  # load() returned a requests.Response); last-good + AD-13 staleness marker under filepath.
+  type: pyforge.atlas.datasets.JSONSourceDataset
   url: ${globals:endpoint_bases.ENDOFLIFE_BASE_URL}/api/all.json
+  filepath: ${globals:paths.data_root}/raw/pypi_endoflife_raw
+  expect: list
   metadata:
     layer: raw
 
@@ -900,8 +905,12 @@ seed_spdx_schema:
 # Upstream SPDX license list (spdx-schema-gap ground truth; § 13.1 override
 # "—" — rides the existing GITHUB_RAW_BASE_URL point).
 seed_spdx_upstream_list_raw:
-  type: api.APIDataset
+  # Story 34.1: decoded to SPDX's licenses.json document (a dict with `licenses`).
+  type: pyforge.atlas.datasets.JSONSourceDataset
   url: ${globals:endpoint_bases.GITHUB_RAW_BASE_URL}/spdx/license-list-data/main/json/licenses.json
+  filepath: ${globals:paths.data_root}/raw/seed_spdx_upstream_list_raw
+  expect: dict
+  require_key: licenses
   metadata:
     layer: raw
 

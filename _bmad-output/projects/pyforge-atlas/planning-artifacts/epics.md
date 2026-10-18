@@ -2425,7 +2425,7 @@ So that `seed_gaps_spdx_report` and `seed_gaps_lts_registry_report` stop reading
 **When** the catalog loads either entry
 **Then** it returns the decoded JSON (endoflife.date's product list; SPDX's `licenses` document), the SPDX report holds rows on a fixture and on a live run, and an unreachable host degrades per AD-13
 **And** a test feeds a recorded response and fails when the dataset returns a `Response` again (mutation)
-**Status:** backlog
+**Status:** done
 
 ### Story 34.2: The Phase C mapping fills from the conda-forge bot's name mapping
 
