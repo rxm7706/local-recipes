@@ -1057,3 +1057,126 @@ def test_about_dataset_accepts_response_like_fetcher_payload(tmp_path):
     ds = _about(tmp_path / "about", fetcher=lambda url: _StubTextResponse(text=ABOUT_README_MD))
     ds.save(RefreshRequest(store="discovery_about_maintainers_raw", force=True))
     assert len(ds.load()) == 4
+
+
+# ---------------------------------------------------------------------------
+# Story 34.6 — each discovery store fetches its own public page (flag on)
+# ---------------------------------------------------------------------------
+
+from pyforge.testing_kit import flag_states  # noqa: E402
+
+from pyforge.atlas.datasets import public_sources  # noqa: E402
+
+_PUBLIC_PAGES = {
+    DAILY_URL: GOOD_HTML,
+    WEEKLY_URL: "",
+    MONTHLY_URL: "",
+    SEARCH_URL: _json.dumps({"items": []}),
+    DIST_URL: DIST_HTML,
+    AOSS_PREMIUM_URL: AOSS_HTML,
+    README_URL: ABOUT_README_MD,
+}
+_STORES = {
+    "trending": lambda path: _ds(path),
+    "anaconda_dist": lambda path: AnacondaDist2026Dataset(filepath=str(path), url=DIST_URL, seed_path=None),
+    "aoss_premium": lambda path: AossPremiumPythonDataset(filepath=str(path), url=AOSS_PREMIUM_URL),
+    "about_maintainers": lambda path: AboutMaintainersDataset(filepath=str(path), readme_url=README_URL),
+}
+
+
+@flag_states("pyforge.atlas.live_public_sources")  # spelled out: the flag gate reads this file for the key
+@pytest.mark.parametrize("store", list(_STORES))
+def test_a_discovery_store_with_no_fetcher_reads_its_public_page(tmp_path, flag_provider, monkeypatch, store):
+    """On: the store fetches its own page(s) through ``public_sources.fetch_text`` (unauthenticated)
+    and holds rows. Off: nothing requested, today's 'no refresher wired' marker."""
+    requested: list[str] = []
+
+    def _fetch_text(url: str, *, timeout: int = 300) -> str:
+        requested.append(url)
+        return _PUBLIC_PAGES[url]
+
+    monkeypatch.setattr(public_sources, "fetch_text", _fetch_text)
+    monkeypatch.setattr(public_sources, "live", lambda: flag_provider[public_sources.FLAG_KEY])
+    ds = _STORES[store](tmp_path / store)
+
+    ds.save(RefreshRequest(store=store, force=True))
+
+    if flag_provider[public_sources.FLAG_KEY]:
+        assert requested and set(requested) <= set(_PUBLIC_PAGES)
+        assert not ds.load().empty and not ds.is_stale()
+    else:
+        assert requested == []
+        assert ds.staleness().reason.startswith("refresh due but no refresher wired")
+
+
+ABOUT_README_MD_2026_10 = """## Feedstocks
+
+| Category | Count |
+|---|---:|
+| Total | 3 |
+
+### Sole maintainer (2)
+
+1. `conda-forge/a2a-sdk-feedstock`
+2. `conda-forge/a2wsgi-feedstock`
+
+### Co-maintainer (1)
+
+1. `conda-forge/numpy-feedstock`
+
+## Other
+1. `conda-forge/not-a-list-entry-feedstock`
+"""
+
+
+def test_parse_about_readme_reads_the_2026_10_shape():
+    """Story 34.6: the README moved to '### Sole maintainer (N)' headings and backticked slugs."""
+    rows = parse_about_readme(ABOUT_README_MD_2026_10)
+
+    assert [(r["feedstock_slug"], r["role"]) for r in rows] == [
+        ("conda-forge/a2a-sdk-feedstock", "Maintainer"),
+        ("conda-forge/a2wsgi-feedstock", "Maintainer"),
+        ("conda-forge/numpy-feedstock", "Co-Maintainer"),
+    ]
+
+
+def test_parse_about_readme_needs_the_slug_alone_on_its_line():
+    """Trailing text after a slug inside a real section is not a list entry (the line regex's anchor)."""
+    md = "### Sole maintainer (2)\n\n1. `conda-forge/kept-feedstock`\n2. `conda-forge/dropped-feedstock` (archived)\n"
+
+    assert [r["feedstock_slug"] for r in parse_about_readme(md)] == ["conda-forge/kept-feedstock"]
+
+
+@pytest.mark.parametrize("store", list(_STORES))
+def test_an_injected_fetcher_wins_over_the_public_page(tmp_path, monkeypatch, store):
+    monkeypatch.setattr(public_sources, "live", lambda: True)
+    monkeypatch.setattr(
+        public_sources, "fetch_text", lambda url, **kw: pytest.fail("the injected fetcher must be used")
+    )
+    injected: list[str] = []
+
+    def _fetch(url: str) -> str:
+        injected.append(url)
+        return _PUBLIC_PAGES[url]
+
+    ds = _STORES[store](tmp_path / store)
+    ds._fetcher = _fetch
+    ds._refresher = ds._do_refresh
+
+    ds.save(RefreshRequest(store=store, force=True))
+
+    assert injected and not ds.load().empty
+
+
+def test_the_flag_is_read_at_the_refresh_not_at_construction(tmp_path, monkeypatch):
+    """A Dagster code location constructs its stores at import: turning the flag off afterwards
+    must stop the fetch."""
+    requested: list[str] = []
+    monkeypatch.setattr(public_sources, "fetch_text", lambda url, **kw: requested.append(url) or _PUBLIC_PAGES[url])
+    monkeypatch.setattr(public_sources, "live", lambda: True)
+    ds = AossPremiumPythonDataset(filepath=str(tmp_path / "aoss"), url=AOSS_PREMIUM_URL)
+    monkeypatch.setattr(public_sources, "live", lambda: False)
+
+    ds.save(RefreshRequest(store="aoss", force=True))
+
+    assert requested == [] and ds.staleness().reason.startswith("refresh due but no refresher wired")

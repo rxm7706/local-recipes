@@ -2500,7 +2500,7 @@ So that `trending_candidates_classified`, `enterprise_conda_maintainers` and the
 **When** a run reaches them with the flag on
 **Then** each fetches over `APIDataset`, holds rows, and the three downstream datasets hold rows
 **And** the GitHub trending page is read unauthenticated (no credential)
-**Status:** backlog
+**Status:** done
 
 ### Story 34.7: The vulnerability stores refresh themselves
 

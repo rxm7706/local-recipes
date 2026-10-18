@@ -64,6 +64,7 @@ import pandas as pd
 from bs4 import BeautifulSoup
 from kedro.io import AbstractDataset
 
+from . import public_sources
 from .refresh import (
     DAILY_SECONDS,
     DEFAULT_REFRESH_MAX_RETRIES,
@@ -298,7 +299,7 @@ class TrendingSnapshotDataset(ExternalRefreshDataset):
 
     # -- refresh (dataset-owned IO; the injected fetcher is the ONLY seam) --
 
-    def _do_refresh(self) -> pd.DataFrame:
+    def _refresh_with(self, fetch: Callable[..., Any]) -> pd.DataFrame:
         """Fetch + parse the 3 period pages; fall back to the Search API when the
         combined result is empty (a scrape layout break). Never raises — a per-period
         fetch/parse failure is WARNed and treated as zero rows for that period only."""
@@ -309,7 +310,7 @@ class TrendingSnapshotDataset(ExternalRefreshDataset):
             ("monthly", self._monthly_url),
         ):
             try:
-                html = self._fetcher(url)
+                html = fetch(url)
             except Exception as exc:  # AD-13: one bad period never aborts the run.
                 logger.warning("trending scrape fetch failed for period=%s: %s", period, exc)
                 continue
@@ -329,7 +330,7 @@ class TrendingSnapshotDataset(ExternalRefreshDataset):
             )
             payload = None
             try:
-                payload = self._fetcher(self._search_api_url)
+                payload = fetch(self._search_api_url)
             except Exception as exc:  # AD-13: fallback failure keeps last-good, never raises.
                 logger.warning("Search API fallback fetch failed: %s", exc)
             if payload is not None:
@@ -338,6 +339,18 @@ class TrendingSnapshotDataset(ExternalRefreshDataset):
         return pd.DataFrame(rows)
 
     # -- store (Parquet under filepath/STORE_FILENAME) -----------------------
+
+    def _do_refresh(self) -> pd.DataFrame:
+        assert self._fetcher is not None
+        return self._refresh_with(self._fetcher)
+
+    def _live_refresher(self) -> Callable[[], pd.DataFrame] | None:
+        # Story 34.6: the store's own public page(s), unauthenticated, when live public sources are
+        # on -- read at each refresh, never at construction (a Dagster code location constructs at import)
+        return self._refresh_public if public_sources.live() else None
+
+    def _refresh_public(self) -> pd.DataFrame:
+        return self._refresh_with(public_sources.fetch_text)
 
     @property
     def _store_path(self) -> Path:
@@ -625,12 +638,12 @@ class AnacondaDist2026Dataset(ExternalRefreshDataset):
             )
         return rows
 
-    def _do_refresh(self) -> pd.DataFrame:
+    def _refresh_with(self, fetch: Callable[..., Any]) -> pd.DataFrame:
         """Scrape; on zero rows (fetch failure OR layout break) fall back to the tracked
         seed. Never raises."""
         rows: list[dict] = []
         try:
-            html = self._fetcher(self._url)
+            html = fetch(self._url)
         except Exception as exc:  # AD-13: a fetch failure degrades, never aborts.
             logger.warning("anaconda dist scrape fetch failed: %s", exc)
             html = None
@@ -644,6 +657,18 @@ class AnacondaDist2026Dataset(ExternalRefreshDataset):
             )
             rows = self._seed_rows()
         return pd.DataFrame(rows, columns=list(_ANACONDA_DIST_COLUMNS))
+
+    def _do_refresh(self) -> pd.DataFrame:
+        assert self._fetcher is not None
+        return self._refresh_with(self._fetcher)
+
+    def _live_refresher(self) -> Callable[[], pd.DataFrame] | None:
+        # Story 34.6: the store's own public page(s), unauthenticated, when live public sources are
+        # on -- read at each refresh, never at construction (a Dagster code location constructs at import)
+        return self._refresh_public if public_sources.live() else None
+
+    def _refresh_public(self) -> pd.DataFrame:
+        return self._refresh_with(public_sources.fetch_text)
 
     @property
     def _store_path(self) -> Path:
@@ -778,11 +803,11 @@ class AossPremiumPythonDataset(ExternalRefreshDataset):
             metadata=metadata,
         )
 
-    def _do_refresh(self) -> pd.DataFrame:
+    def _refresh_with(self, fetch: Callable[..., Any]) -> pd.DataFrame:
         """Fetch + parse the live doc. Never raises — a fetch failure WARNs and returns
         an empty frame (which ``save()`` turns into keep-last-good + mark stale)."""
         try:
-            payload = self._fetcher(self._url)
+            payload = fetch(self._url)
         except Exception as exc:  # AD-13
             logger.warning("AOSS premium doc fetch failed: %s", exc)
             return pd.DataFrame(columns=list(_AOSS_PREMIUM_COLUMNS))
@@ -790,6 +815,18 @@ class AossPremiumPythonDataset(ExternalRefreshDataset):
         if not rows:
             logger.warning("AOSS premium doc parsed zero packages (layout break?) — keeping last-good")
         return pd.DataFrame(rows, columns=list(_AOSS_PREMIUM_COLUMNS))
+
+    def _do_refresh(self) -> pd.DataFrame:
+        assert self._fetcher is not None
+        return self._refresh_with(self._fetcher)
+
+    def _live_refresher(self) -> Callable[[], pd.DataFrame] | None:
+        # Story 34.6: the store's own public page(s), unauthenticated, when live public sources are
+        # on -- read at each refresh, never at construction (a Dagster code location constructs at import)
+        return self._refresh_public if public_sources.live() else None
+
+    def _refresh_public(self) -> pd.DataFrame:
+        return self._refresh_with(public_sources.fetch_text)
 
     @property
     def _store_path(self) -> Path:
@@ -848,18 +885,24 @@ _ABOUT_MAINTAINERS_SOURCE = "about_readme"
 _ABOUT_SECTION_HEADERS: tuple[tuple[str, str], ...] = (
     ("List Of FeedStocks - As Maintainer", "Maintainer"),
     ("List Of FeedStocks - As Co-Maintainer", "Co-Maintainer"),
+    # Story 34.6: the README's shape as of 2026-10-18 ("### Sole maintainer (606)",
+    # "### Co-maintainer (266)"); the 2026-07-11 headers above stay accepted
+    ("### Sole maintainer", "Maintainer"),
+    ("### Co-maintainer", "Co-Maintainer"),
 )
 
 # Captures the FULL ``conda-forge/<feedstock>-feedstock`` slug (not just the bare
 # name) — join_enterprise_conda_maintainers (pipelines/upstream_discovery/nodes.py)
 # strips the prefix/suffix at JOIN time, per the story spec's explicit "strip before
 # comparing" contract.
-_ABOUT_FEEDSTOCK_LINE_RE = re.compile(r"^\d+\.\s+(conda-forge/[a-zA-Z0-9._-]+-feedstock)\s*$")
+# Story 34.6: the slug may be backticked (``1. `conda-forge/x-feedstock` ``, the 2026-10-18 shape).
+_ABOUT_FEEDSTOCK_LINE_RE = re.compile(r"^\d+\.\s+`?(conda-forge/[a-zA-Z0-9._-]+-feedstock)`?\s*$")
 
 
 def parse_about_readme(markdown: str) -> list[dict]:
     """Parse ``rxm7706/about``'s ``README.md`` two numbered feedstock lists
-    ("List Of FeedStocks - As Maintainer" / "... - As Co-Maintainer") into
+    ("List Of FeedStocks - As Maintainer" / "... - As Co-Maintainer", or since 2026-10-18
+    "### Sole maintainer (N)" / "### Co-maintainer (N)" with backticked slugs) into
     ``feedstock_slug``/``role`` rows. PURE — mirrors :func:`parse_trending_html`'s
     degrade contract exactly: a missing/renamed section header, a malformed
     ``N. conda-forge/<x>-feedstock`` line, or an empty README all degrade the
@@ -945,12 +988,12 @@ class AboutMaintainersDataset(ExternalRefreshDataset):
             metadata=metadata,
         )
 
-    def _do_refresh(self) -> pd.DataFrame:
+    def _refresh_with(self, fetch: Callable[..., Any]) -> pd.DataFrame:
         """Fetch + parse the README once. Never raises — a fetch failure WARNs and
         returns an empty frame (which ``save()`` turns into keep-last-good + mark
         stale)."""
         try:
-            payload = self._fetcher(self._readme_url)
+            payload = fetch(self._readme_url)
         except Exception as exc:  # AD-13
             logger.warning("about README fetch failed: %s", exc)
             return pd.DataFrame(columns=list(_ABOUT_MAINTAINERS_COLUMNS))
@@ -959,6 +1002,18 @@ class AboutMaintainersDataset(ExternalRefreshDataset):
         if not rows:
             logger.warning("about README parsed zero maintainer rows (layout break / empty fetch) — keeping last-good")
         return pd.DataFrame(rows, columns=list(_ABOUT_MAINTAINERS_COLUMNS))
+
+    def _do_refresh(self) -> pd.DataFrame:
+        assert self._fetcher is not None
+        return self._refresh_with(self._fetcher)
+
+    def _live_refresher(self) -> Callable[[], pd.DataFrame] | None:
+        # Story 34.6: the store's own public page(s), unauthenticated, when live public sources are
+        # on -- read at each refresh, never at construction (a Dagster code location constructs at import)
+        return self._refresh_public if public_sources.live() else None
+
+    def _refresh_public(self) -> pd.DataFrame:
+        return self._refresh_with(public_sources.fetch_text)
 
     @property
     def _store_path(self) -> Path:
