@@ -223,7 +223,8 @@ def _safety_recheck(fetched_at, now: int) -> bool:
     fetched_num = pd.to_numeric(fetched_at, errors="coerce")
     if pd.isna(fetched_num):
         return True
-    return (now - int(fetched_num)) >= _PHASE_H_SAFETY_RECHECK_SECONDS
+    # strictly older than 30 days, as legacy's `pypi_version_fetched_at < now - 30d` (CFA:4229)
+    return (now - int(fetched_num)) > _PHASE_H_SAFETY_RECHECK_SECONDS
 
 
 def phase_h_eligibility_stats(pypi_json_raw: pd.DataFrame, now: int | None = None) -> dict:
@@ -325,8 +326,28 @@ def fetch_pypi_current_versions(
     # widens the row set — validate=many_to_one keeps it a pure lookup).
     uni = pypi_universe
     if uni is not None and not uni.empty and {"pypi_name", "last_serial"} <= set(uni.columns):
-        serial_map = dict(zip(uni["pypi_name"], uni["last_serial"]))
-        work["pypi_last_serial"] = [serial_map.get(n, s) for n, s in zip(work["pypi_name"], work["pypi_last_serial"])]
+        # Story 34.10: matched under PEP 503, and never below the serial the row was fetched at
+        # (the weekly universe can lag the same run's snapshot the fan-out stamps)
+        serial_map = {
+            _normalize_pypi_name(n): s
+            for n, s in zip(uni["pypi_name"], uni["last_serial"], strict=True)
+            if isinstance(n, str)
+        }
+
+        def _current(name: object, stored: object) -> object:
+            known = [
+                v
+                for v in (
+                    pd.to_numeric(serial_map.get(_normalize_pypi_name(str(name))), errors="coerce"),
+                    pd.to_numeric(stored, errors="coerce"),
+                )
+                if pd.notna(v)
+            ]
+            return int(max(known)) if known else pd.NA
+
+        work["pypi_last_serial"] = [
+            _current(n, s) for n, s in zip(work["pypi_name"], work["pypi_last_serial"], strict=True)
+        ]
 
     rows = []
     for _, r in work.iterrows():
@@ -768,10 +789,6 @@ def _ttl_cadence(ttls: dict, key: str) -> int:
     return clamp_ttl_cadence((ttls or {}).get(key), key=key, log=logger)
 
 
-def _pep503(name: str) -> str:
-    return re.sub(r"[-_.]+", "-", name.lower())
-
-
 def refresh_pypi_json_store(
     ttls: dict,
     pypi_conda_mapping_base: pd.DataFrame | None = None,
@@ -804,11 +821,11 @@ def refresh_pypi_json_store(
     serials: tuple[tuple[str, int], ...] = ()
     snap = pypi_universe_serial_snapshots
     if pairs and snap is not None and not snap.empty and {"pypi_name", "last_serial"} <= set(snap.columns):
-        wanted = {_pep503(p): p for p, _ in pairs}
+        wanted = {_normalize_pypi_name(p): p for p, _ in pairs}
         found: dict[str, int] = {}
         for name, serial in zip(snap["pypi_name"], pd.to_numeric(snap["last_serial"], errors="coerce"), strict=True):
             if isinstance(name, str) and pd.notna(serial):
-                original = wanted.get(_pep503(name))
+                original = wanted.get(_normalize_pypi_name(name))
                 if original is not None:
                     found[original] = int(serial)
         serials = tuple(sorted(found.items()))

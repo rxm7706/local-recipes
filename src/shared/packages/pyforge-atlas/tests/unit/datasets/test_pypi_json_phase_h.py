@@ -71,11 +71,19 @@ def live(monkeypatch: pytest.MonkeyPatch) -> None:
 # -- the eligible set -------------------------------------------------------------------
 
 
-def test_a_cold_live_run_fetches_every_candidate_uncapped(tmp_path, live):
+def test_a_cold_live_run_fetches_every_candidate_uncapped_and_persists_in_chunks(tmp_path, live, monkeypatch):
+    pairs = tuple((f"p{i:03d}", f"p{i:03d}") for i in range(250))  # past the old 200 cap
+    monkeypatch.setattr(PyPIJsonFanOutDataset, "PERSIST_EVERY", 100)
+    persisted: list[int] = []
+    ds = _ds(tmp_path)
+    real = ds._persist
+    ds._persist = lambda frame: persisted.append(len(frame)) or real(frame)  # type: ignore[method-assign]
     pypi = _PyPI()
-    out = _ds(tmp_path).fetch_candidates(fetcher=pypi, pairs=PAIRS * 60)  # far past the old 200 cap
 
-    assert sorted(pypi.requested) == ["numpy", "pandas", "scipy", "torch"] and len(out) == 4
+    out = ds.fetch_candidates(fetcher=pypi, pairs=pairs)
+
+    assert len(pypi.requested) == 250 and len(out) == 250 and persisted == [100, 100, 50]
+    assert len(ds.load()) == 250
 
 
 def test_the_eligible_set_is_never_fetched_then_serial_moved_then_the_30_day_recheck(tmp_path, live):
@@ -182,16 +190,54 @@ def test_an_explicit_zero_skips_the_cycle_under_a_marker(tmp_path, live, monkeyp
     assert "disabled this cycle" in ds.staleness().reason
 
 
-def test_a_failed_project_stays_eligible_and_an_outage_keeps_last_good(tmp_path, live):
-    pypi = _PyPI(fail={"pandas": [404]})
+def test_a_404_is_a_recorded_miss_and_other_failures_stay_eligible(tmp_path, live):
+    pypi = _PyPI(fail={"pandas": [404], "scipy": [500]})
     ds = _ds(tmp_path)
-    ds.fetch_candidates(fetcher=pypi, pairs=PAIRS[:2])
-    assert set(ds.load()["pypi_name"]) == {"numpy"}
-    assert ds._eligible(["numpy", "pandas"], {}, time.time()) == ["pandas"]
+    ds.fetch_candidates(fetcher=pypi, pairs=PAIRS[:3], serials=(("pandas", 7),))
+    now = time.time()
 
-    down = _PyPI(fail={"pandas": [500]})
-    assert ds.fetch_candidates(fetcher=down, pairs=PAIRS[1:2]).empty
+    assert set(ds.load()["pypi_name"]) == {"numpy"}
+    assert ds._read_misses()["pandas"]["serial"] == 7
+    assert ds._eligible(["numpy", "pandas", "scipy"], {"pandas": 7}, now) == ["scipy"]
+    # a miss comes back, last, once its serial moves or 30 days pass
+    assert ds._eligible(["numpy", "pandas", "scipy"], {"pandas": 8}, now) == ["scipy", "pandas"]
+    assert ds._eligible(["pandas"], {"pandas": 7}, now + 31 * DAY) == ["pandas"]
+
+
+def test_a_run_of_only_known_misses_is_not_an_outage(tmp_path, live):
+    ds = _ds(tmp_path)
+    ds.fetch_candidates(fetcher=_PyPI(fail={"pandas": [404]}), pairs=PAIRS[1:2])
+    ds._mark_stale("an older marker")
+
+    out = ds.fetch_candidates(fetcher=_PyPI(fail={"pandas": [404]}), pairs=PAIRS[1:2], serials=(("pandas", 9),))
+
+    assert out.empty and ds.staleness() is None
+
+
+def test_an_outage_keeps_last_good_under_the_marker(tmp_path, live):
+    ds = _ds(tmp_path)
+    ds.fetch_candidates(fetcher=_PyPI(), pairs=PAIRS[:1])
+
+    assert ds.fetch_candidates(fetcher=_PyPI(fail={"pandas": [500]}), pairs=PAIRS[1:2]).empty
     assert "every request in the batch failed" in ds.staleness().reason and set(ds.load()["pypi_name"]) == {"numpy"}
+
+
+def test_a_cap_never_spends_itself_on_known_misses(tmp_path, live, monkeypatch):
+    ds = _ds(tmp_path)
+    ds.fetch_candidates(fetcher=_PyPI(fail={"pandas": [404], "scipy": [404]}), pairs=PAIRS[:3], serials=(("numpy", 1),))
+    monkeypatch.setenv("PYPI_JSON_FANOUT_LIMIT", "2")
+    pypi = _PyPI()
+
+    ds.fetch_candidates(fetcher=pypi, pairs=PAIRS[:3], serials=(("numpy", 2),))
+
+    assert pypi.requested == ["numpy"]  # the moved serial, not the two misses
+
+
+def test_an_empty_candidate_universe_is_stale_not_clean(tmp_path, live):
+    ds = _ds(tmp_path)
+
+    assert ds.fetch_candidates(fetcher=_PyPI(), pairs=()).empty
+    assert "the mapping names no PyPI project" in ds.staleness().reason
 
 
 def test_the_store_keeps_one_row_per_pypi_project_even_when_two_map_to_one_conda_package(tmp_path, live):
@@ -319,3 +365,114 @@ def test_the_trigger_carries_each_candidates_serial_matched_under_pep_503():
     assert request.pypi_serials == (("Flask_Login", 11), ("numpy", 22))
     assert refresh_pypi_json_store({}, mapping, None).pypi_serials == ()
     assert refresh_pypi_json_store({}, None, snapshot).pypi_serials == ()
+
+
+# -- review round 1: the boundaries and branches the first tests left open --------------------
+
+
+def test_the_30_day_recheck_is_strictly_older_and_oldest_first(tmp_path, live):
+    now = 1_800_000_000.0
+    _store(
+        tmp_path,
+        [
+            {"pypi_name": "edge", "fetched_at": now - 30 * DAY, "pypi_version_serial_at_fetch": 1},
+            {"pypi_name": "newer", "fetched_at": now - 30 * DAY - 10, "pypi_version_serial_at_fetch": 1},
+            {"pypi_name": "older", "fetched_at": now - 45 * DAY, "pypi_version_serial_at_fetch": 1},
+            {"pypi_name": "unstamped", "fetched_at": pd.NA, "pypi_version_serial_at_fetch": 1},
+        ],
+    )
+
+    # exactly 30 days is not yet due (legacy: fetched_at < now - 30d); a missing stamp is due
+    assert _ds(tmp_path)._eligible(["newer", "edge", "older", "unstamped"], {}, now) == ["unstamped", "older", "newer"]
+
+
+def test_retry_after_is_capped_at_60_seconds(tmp_path, live):
+    pypi = _PyPI(fail={"numpy": [429]})
+    original = pypi.__call__
+
+    def long_wait(key: str) -> dict[str, Any]:
+        try:
+            return original(key)
+        except DatasetError as exc:
+            exc.__cause__.response.headers["Retry-After"] = "999"  # type: ignore[union-attr]
+            raise
+
+    ds = _ds(tmp_path)
+    waits: list[float] = []
+    ds.retry_sleep = waits.append  # type: ignore[assignment]
+
+    ds.load_many(["numpy"], fetcher=long_wait)
+
+    assert waits == [60.0]
+
+
+def test_a_failure_with_no_http_status_is_never_retried(tmp_path, live):
+    calls = {"n": 0}
+
+    def unreachable(key: str) -> dict[str, Any]:
+        calls["n"] += 1
+        try:
+            raise requests.ConnectionError("dns")
+        except requests.ConnectionError as exc:
+            raise DatasetError("Failed to connect to the remote server") from exc
+
+    ds = _ds(tmp_path)
+    ds.retry_sleep = lambda s: pytest.fail("not retried")  # type: ignore[assignment]
+
+    assert ds.load_many(["numpy"], fetcher=unreachable) == {} and calls["n"] == 1
+
+
+def test_a_credentialed_config_gets_no_public_args(tmp_path, monkeypatch):
+    captured: list[dict[str, Any]] = []
+
+    class _Api:
+        def __init__(self, *, url: str, load_args: dict[str, Any], credentials: Any = None, **_kw: Any):
+            captured.append({"load_args": load_args, "credentials": credentials})
+
+        def load(self) -> Any:
+            return {"info": {"version": "1"}}
+
+    ds = PyPIJsonFanOutDataset(
+        url="https://pypi.example.invalid",
+        filepath=str(tmp_path / "store"),
+        mapping_filepath=str(tmp_path / "absent.json"),
+        credentials=("user", "token"),
+    )
+    monkeypatch.setattr(R, "APIDataset", _Api)
+    ds.scheduler.acquire = lambda n=1: 0.0  # type: ignore[method-assign]
+
+    ds.load_many(["numpy"])
+
+    assert "auth" not in captured[0]["load_args"] and captured[0]["credentials"] == ("user", "token")
+
+
+def test_the_live_store_writes_the_serials_and_the_request_carries_them():
+    request = RefreshRequest(store="pypi_json_raw", pypi_serials=(("numpy", 3),))
+    assert request.to_dict()["pypi_serials"] == [("numpy", 3)]
+
+
+def test_a_stored_row_carries_its_current_serial(tmp_path, live):
+    ds = _ds(tmp_path)
+    ds.fetch_candidates(fetcher=_PyPI(serials={"numpy": 55}), pairs=PAIRS[:1])
+
+    assert ds.load().set_index("pypi_name").loc["numpy", "pypi_last_serial"] == 55
+
+
+@pytest.mark.parametrize(("raw", "cap"), [("abc", None), ("-5", None), ("3", 3), ("0", 0)])
+def test_an_unusable_limit_leaves_the_live_run_uncapped(monkeypatch, raw, cap):
+    monkeypatch.setenv("PYPI_JSON_FANOUT_LIMIT", raw)
+    assert R._pypi_json_fanout_cap() == cap
+
+
+def test_the_trigger_skips_a_snapshot_row_with_no_serial():
+    mapping = pd.DataFrame({"pypi_name": ["numpy", "scipy"], "conda_name": ["numpy", "scipy"]})
+    snapshot = pd.DataFrame({"pypi_name": ["numpy", "scipy"], "last_serial": [pd.NA, 4]})
+
+    assert refresh_pypi_json_store({}, mapping, snapshot).pypi_serials == (("scipy", 4),)
+
+
+def test_the_catalog_runs_the_fan_out_at_10_requests_a_second():
+    import yaml
+
+    catalog = yaml.safe_load((Path(R.__file__).parents[4] / "conf" / "base" / "catalog.yml").read_text())
+    assert catalog["pypi_json_raw"]["rps"] == 10

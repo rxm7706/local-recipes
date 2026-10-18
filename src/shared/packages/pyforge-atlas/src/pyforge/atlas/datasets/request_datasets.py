@@ -115,7 +115,12 @@ def _pypi_json_fanout_cap() -> int | None:
     raw = os.environ.get("PYPI_JSON_FANOUT_LIMIT")
     if raw is None or raw.strip() == "":
         return None
-    return _pypi_json_fanout_limit()
+    try:
+        cap = int(raw)
+    except ValueError:
+        logger.warning("PYPI_JSON_FANOUT_LIMIT=%r is not an int -- the live fan-out stays uncapped", raw)
+        return None
+    return cap if cap >= 0 else None
 
 
 def _pypi_json_fanout_limit() -> int:
@@ -673,8 +678,9 @@ class PyPIJsonRequestDataset(_RequestParameterizedAPIDataset):
                     response = getattr(cause, "response", None)
                     status = getattr(response, "status_code", None)
                     if status in _PYPI_JSON_RETRY_STATUSES and attempt + 1 < _PYPI_JSON_ATTEMPTS:
-                        # Story 34.10: legacy Phase H's retry -- the server's Retry-After
-                        # (capped at 60 s), else exponential backoff (CFA:4117)
+                        # Story 34.10: legacy Phase H's 429/503 retry -- the server's Retry-After
+                        # (capped at 60 s), else 1 s then 2 s (CFA:4117). Unlike legacy, there is
+                        # no jitter (one sequential worker) and no retry of non-HTTP failures.
                         headers = getattr(response, "headers", None) or {}
                         wait = parse_retry_after(headers.get("Retry-After")) or float(2**attempt)
                         self.retry_sleep(wait)
@@ -776,8 +782,13 @@ class PyPIJsonFanOutDataset(_ParquetRefreshStore, PyPIJsonRequestDataset):
         """Story 34.10: legacy Phase H's eligible set (``_phase_h_eligible_pypi_names``,
         CFA:4174) over the candidates: never fetched, then serial moved (NULL-safe, as
         legacy's ``IS NOT``: a known serial against a missing stamp counts as moved), then
-        fetched more than 30 days ago, oldest first. Anything else is current."""
+        fetched more than 30 days ago, oldest first. Anything else is current.
+
+        A known miss (a 404, kept in ``misses.json`` as legacy stamps it, CFA:4300) is not
+        "never fetched": it waits, like a stored row, for its serial to move or 30 days, and
+        then goes last, so permanent misses never crowd out a moved serial under a cap."""
         stored = self._read_store(("pypi_name", "fetched_at", "pypi_version_serial_at_fetch"))
+        misses = self._read_misses()
         fetched_at: dict[str, float] = {}
         stamped: dict[str, int | None] = {}
         for name, at, serial in zip(
@@ -789,16 +800,41 @@ class PyPIJsonFanOutDataset(_ParquetRefreshStore, PyPIJsonRequestDataset):
             if isinstance(name, str):
                 fetched_at[name] = float(at) if pd.notna(at) else 0.0
                 stamped[name] = int(serial) if pd.notna(serial) else None
-        never, moved, recheck = [], [], []
+        never, moved, recheck, missed = [], [], [], []
         for name in names:
             if name not in fetched_at:
-                never.append(name)
+                miss = misses.get(name)
+                if miss is None:
+                    never.append(name)
+                elif (name in serials and serials[name] != miss.get("serial")) or float(
+                    miss.get("fetched_at") or 0
+                ) < now - _PHASE_H_RECHECK_SECONDS:
+                    missed.append(name)
             elif name in serials and serials[name] != stamped.get(name):
                 moved.append(name)
             elif fetched_at[name] < now - _PHASE_H_RECHECK_SECONDS:
                 recheck.append(name)
         recheck.sort(key=lambda n: fetched_at[n])
-        return never + moved + recheck
+        return never + moved + recheck + missed
+
+    _MISSES_FILENAME = "misses.json"
+
+    def _read_misses(self) -> dict[str, dict[str, Any]]:
+        try:
+            raw = json.loads((Path(self._filepath) / self._MISSES_FILENAME).read_text(encoding="utf-8"))
+        except OSError, ValueError:
+            return {}
+        return {k: v for k, v in raw.items() if isinstance(v, dict)} if isinstance(raw, dict) else {}
+
+    def _write_misses(self, misses: dict[str, dict[str, Any]]) -> None:
+        def _write(path: Path) -> None:
+            path.write_text(json.dumps(dict(sorted(misses.items())), indent=1), encoding="utf-8")
+
+        try:
+            Path(self._filepath).mkdir(parents=True, exist_ok=True)
+            atomic_write(Path(self._filepath) / self._MISSES_FILENAME, _write)
+        except OSError as exc:
+            logger.warning("could not keep the pypi fan-out misses: %s", exc)
 
     def fetch_candidates(
         self,
@@ -876,6 +912,10 @@ class PyPIJsonFanOutDataset(_ParquetRefreshStore, PyPIJsonRequestDataset):
         self._persist(frame)
         return frame
 
+    #: Story 34.10: a cold run persists every this many projects, so a crash keeps what it
+    #: fetched (legacy commits every 500 rows, CFA:4265) and stamps spread across the run
+    PERSIST_EVERY = 500
+
     def _fetch_eligible(
         self,
         *,
@@ -883,15 +923,20 @@ class PyPIJsonFanOutDataset(_ParquetRefreshStore, PyPIJsonRequestDataset):
         pairs: Sequence[tuple[str, str]],
         serials: dict[str, int],
     ) -> pd.DataFrame:
-        """Story 34.10: fetch the eligible set, stamping each row's serial at fetch: the
-        snapshot's serial when the trigger supplied it (legacy stamps Phase D's), else the
-        payload's own ``last_serial``. A project that fails stays eligible next run."""
+        """Story 34.10: fetch the eligible set in chunks, persisting each, and stamp each row's
+        serial at fetch: the snapshot's serial when the trigger supplied it (legacy stamps Phase
+        D's), else the payload's own ``last_serial``. A 404 is recorded as a miss; any other
+        failure leaves the project eligible next run. An outage -- nothing answered and no 404
+        -- keeps last-good under the marker."""
         empty = pd.DataFrame(columns=list(self._COLUMNS))
         cap = _pypi_json_fanout_cap()
         if cap == 0:
             self._mark_stale("fan-out disabled this cycle (PYPI_JSON_FANOUT_LIMIT=0)")
             return empty
         names, mapping = self._candidate_names(pairs)
+        if not names:
+            self._mark_stale("no candidates: the mapping names no PyPI project -- keeping last-good")
+            return empty
         batch = self._eligible(names, serials, time.time())
         if cap is not None:
             batch = batch[:cap]
@@ -899,33 +944,50 @@ class PyPIJsonFanOutDataset(_ParquetRefreshStore, PyPIJsonRequestDataset):
         if not batch:
             self._clear_stale()  # every candidate is current: nothing to do is a clean run
             return empty
-        payloads = self.load_many(batch, fetcher=fetcher)
-        failures = self.last_failures
+        misses = self._read_misses()
+        failures: dict[str, str] = {}
+        frames: list[pd.DataFrame] = []
+        answered = recorded = 0
+        for start in range(0, len(batch), self.PERSIST_EVERY):
+            chunk = batch[start : start + self.PERSIST_EVERY]
+            payloads = self.load_many(chunk, fetcher=fetcher)
+            failures.update(self.last_failures)
+            rows: list[dict[str, Any]] = []
+            for name in chunk:
+                if name in payloads:
+                    payload = payloads[name]
+                    row = _payload_to_pypi_json_row(name, payload)
+                    row["conda_name"] = mapping.get(name)
+                    own = payload.get("last_serial") if isinstance(payload, dict) else None
+                    own_serial = int(own) if isinstance(own, int) and not isinstance(own, bool) else None
+                    row["pypi_last_serial"] = serials.get(name, own_serial)
+                    row["pypi_version_serial_at_fetch"] = serials.get(name, own_serial)
+                    rows.append(row)
+                    misses.pop(name, None)
+                elif self.last_failures.get(name, "").startswith("HTTP 404"):
+                    misses[name] = {"fetched_at": int(time.time()), "serial": serials.get(name)}
+                    recorded += 1
+            answered += len(rows)
+            if rows:
+                frame = pd.DataFrame(rows, columns=_PYPI_JSON_FRAME_COLUMNS).reset_index(drop=True)
+                self._persist(frame)
+                frames.append(frame)
+        self._write_misses(misses)
+        self.last_failures = failures
         if failures:
             logger.warning(
-                "pypi_json_raw fan-out: %d of %d projects failed (e.g. %s)",
+                "pypi_json_raw fan-out: %d of %d projects failed, %d of them 404 (e.g. %s)",
                 len(failures),
                 len(batch),
+                recorded,
                 next(iter(failures.items())),
             )
-        if not payloads:
+        if not answered and not recorded:
             self._mark_stale(f"every request in the batch failed ({len(failures)}) -- keeping last-good")
             return empty
-        rows: list[dict[str, Any]] = []
-        for name in batch:
-            if name not in payloads:
-                continue
-            payload = payloads[name]
-            row = _payload_to_pypi_json_row(name, payload)
-            row["conda_name"] = mapping.get(name)
-            own = payload.get("last_serial") if isinstance(payload, dict) else None
-            own_serial = int(own) if isinstance(own, int) and not isinstance(own, bool) else None
-            row["pypi_last_serial"] = serials.get(name, own_serial)
-            row["pypi_version_serial_at_fetch"] = serials.get(name, own_serial)
-            rows.append(row)
-        frame = pd.DataFrame(rows, columns=_PYPI_JSON_FRAME_COLUMNS).reset_index(drop=True)
-        self._persist(frame)
-        return frame
+        if not answered:
+            self._clear_stale()  # only known-missing names this run: the endpoint answered
+        return pd.concat(frames, ignore_index=True) if frames else empty
 
     def load(self) -> pd.DataFrame:
         return self._read_store(self._COLUMNS)

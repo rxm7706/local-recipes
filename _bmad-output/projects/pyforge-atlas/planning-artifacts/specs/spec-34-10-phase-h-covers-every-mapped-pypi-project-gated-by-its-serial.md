@@ -11,8 +11,8 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'the fan-out keeps today''s bounded behaviour: PYPI_JSON_FANOUT_LIMIT names (default 200) per run from a rotating offset, behind the store''s weekly cadence'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 0
-followup_review_recommended: false
+review_loop_iteration: 1
+followup_review_recommended: true
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/live-sources.md
@@ -58,17 +58,28 @@ declared_low_risk: false
    - The store's weekly cadence no longer holds a moved serial back.
    - Each row stamps the serial it was fetched at: the snapshot's when known (legacy stamps Phase D's), else the
      payload's own `last_serial`.
-   - A project that fails is not stored, so it stays eligible.
-   - Nothing eligible is a clean run.
-   - Flag off: today's bounded rotation, unchanged.
+   - **A 404 is recorded as a miss** in `misses.json` beside the store, as legacy stamps one (CFA:4300). It is not
+     stored as a row, so Phase R never enriches it. A miss waits, like a stored row, for its serial to move or 30
+     days, and then goes last, so permanent misses never crowd out a moved serial under a cap. Any other failure
+     stays eligible next run.
+   - **The batch is fetched and persisted in chunks of 500** (legacy commits every 500 rows), so a crash keeps what
+     was fetched and the 30-day re-checks spread across the run.
+   - Nothing eligible is a clean run, and so is a run of only known misses. An empty candidate set is stale, never
+     clean. An outage (nothing answered and no 404) keeps last-good under the marker.
+   - An unusable `PYPI_JSON_FANOUT_LIMIT` (not an int, negative) leaves the live run uncapped.
+   - **Flag off:** today's bounded rotation is unchanged. The retries, request arguments, store key and node
+     change below apply in both states.
 3. **Retries.** `load_many` retries 429 and 503 up to three attempts. It waits the server's `Retry-After`
-   (capped at 60 s, `parse_retry_after`), else 1 s then 2 s. Other failures stay one per-project miss.
+   (capped at 60 s, `parse_retry_after`), else 1 s then 2 s. Unlike legacy, there is no jitter (one sequential
+   worker) and no retry of a non-HTTP failure. Other failures stay one per-project miss.
 4. **Public GETs.** With no credentials, every request carries a 30 s timeout and a no-op auth, so requests never
    reads `~/.netrc` (`public_sources.request_args`).
 5. **The node keeps every fetched project's version.** `fetch_pypi_current_versions` emits every stored row:
-   - `pypi_last_serial` comes from the universe join;
+   - `pypi_last_serial` is the universe's serial, matched under PEP 503, and never below the row's stamp (the
+     weekly universe can lag the snapshot the fan-out stamps);
    - `pypi_version_serial_at_fetch` is the row's stamp, else the current serial.
-   The gate now lives in the fetch, as legacy's does; `phase_h_eligibility_stats` still reports its split.
+   The gate now lives in the fetch, as legacy's does. `phase_h_eligibility_stats` keeps its B2 tests but is not
+   on the run path; its 30-day boundary is now strict, as legacy's is.
 6. **One row per PyPI project.** The store merges on `pypi_name`.
 7. **Rate.** The catalog raises the fan-out's rate to 10 requests a second. pypi.org allows about 30 per IP
    (CFA:4197), and legacy ran 3 workers.
@@ -106,7 +117,7 @@ Type / Effort / Deps: feature / M / Story 34.2 (the Phase C candidates), Story 3
 - **AC7 — Live.** See Verification. Tolerance against legacy Phase H, measured the same day:
   - **(a)** atlas fetches at least 99% of its candidates;
   - **(b)** on the shared names, at least 99% of current versions are equal;
-  - **(c)** its candidates cover legacy's parselmouth-mapped names to within 1%.
+  - **(c)** its candidates miss at most 1% of legacy's parselmouth-mapped names.
 - **AC8 — Gates.** `pyforge-atlas-test`, `kedro-test`, `kedro-catalog-check`, the coverage gate, `lint-types`
   (and mypy in `pyforge-foundry-full`), `flag-gate-check`; governing Specs reconciled and stamped scoped.
 
@@ -122,21 +133,31 @@ Type / Effort / Deps: feature / M / Story 34.2 (the Phase C candidates), Story 3
     after Phase D.
 - **Live, recorded 2026-10-18.** A scratch copy of the 2026-10-17 data root, flag on (dev),
   `--pipelines pypi_intelligence --nodes snapshot_pypi_serials,map_pypi_conda,refresh_pypi_json_store,fetch_pypi_current_versions`.
-  - **Cold:** exit 0, 19.7 min, peak RSS 2.8 GB (the simple index).
+  - **Cold:** exit 0, 19.7 min, peak RSS 2.8 GB.
+    - The peak was the fan-out holding every payload until the end (a warm run with the same simple index peaks at
+      0.82 GB). Round 1 persists in chunks of 500.
     - 10,955 of 10,955 candidates were eligible; 10,875 were stored.
-    - The 80 misses failed again on the warm run. The one the log names is a hash-like name in the bot's
-      mapping that PyPI answers 404.
+    - The 80 misses are 404s: 77 names the simple index does not list (47 hash-like), plus google-colab, gplite
+      and jupyterpack, which it lists but whose JSON answers 404.
     - This run predates the node fix: `pypi_current_versions` held 34 rows.
-  - **Warm, one hour later, with the node fixed:** exit 0, 57 s.
-    - 84 eligible: the 80 misses, never stored, plus 4 serials that moved.
+  - **Warm, six minutes later, with the node fixed:** exit 0, 57 s.
+    - 84 eligible: the 80 misses plus 4 moved serials (pyopengl, pyopengl-accelerate, seamm-util, zipline-reloaded).
     - `pypi_current_versions` holds 10,875 rows, 10,874 with an upload time.
+  - **After review round 1:**
+    - **First warm run:** 82 eligible (the 80 misses plus 2 moved serials), 24.6 s. All 80 404s were recorded.
+    - **Second warm run:** 0 eligible, 10.6 s, clean.
+    - `pypi_current_versions` holds 10,875 rows, and no row's current serial is below its stamp.
   - **Against legacy `cf_atlas.db`** (`v_actionable_packages`, PEP 503 keys):
     - (a) 10,875 of 10,955 candidates are fetched: 99.3%.
     - (b) Of the 10,873 shared names, 10,827 have equal versions: 99.58%. The rest released since legacy's fetch.
-    - (c) Legacy's parselmouth-mapped set is 10,965 names, of which 81 are not in atlas's candidates: 0.74%.
-  - **Legacy's universe is 20,938 names.** The other 10,565 carry `match_source = 'none'`: recipe-source-URL
-    matches (legacy's Phase C.5, folded into Phase E) kept from earlier runs. Atlas has no such match; it is
-    `DW-atlas-34-10-1`, and outside this story, which fetches what the mapping names.
+    - (c) Legacy's parselmouth-mapped set is 10,953 distinct names (10,965 rows). One is not among atlas's
+      candidates (`fairchem-core`): 0.01%. 81 were not stored, the 80 misses among them: 0.74%.
+  - **Legacy's universe is 20,938 names, about twice the mapping's.**
+    - Legacy fills two tiers the atlas mapping lacked: Phase D's name coincidence (pandas, requests, django …)
+      and Phase C.5's recipe-source-URL match.
+    - Phase B resets their `match_source` to 'none' (10,846 rows, 9,949 names).
+    - This story fetches what the mapping names. Story 34.11 adds both tiers (`DW-atlas-34-10-1`); on its branch
+      the mapping names 21,292 projects, 20,923 of legacy's 20,938.
 
 ## Boundaries & Constraints
 
@@ -144,8 +165,10 @@ Type / Effort / Deps: feature / M / Story 34.2 (the Phase C candidates), Story 3
 fetch of a PyPI-only project (the candidates are the mapping's, never `pypi_universe`).
 
 **Residual risk:**
-- **The 80 misses are requested on every run** (about 10 s). Legacy stamps a 404 to stop that; here a miss is
-  never stored, so it stays eligible.
+- **Known misses come back every 30 days, or when their serial moves.** That is about 80 requests.
+- **Dagster's daily job does not refresh the store.** `phase_h_pypi_versions` selects only
+  `fetch_pypi_current_versions` and `snapshot_pypi_serials`, so the serial gate fetches in the weekly
+  `bootstrap_data` job. A plain `kedro run` fetches every run.
 - **A cold run takes about 20 minutes** at 10 requests a second, sequentially; warm runs take about a minute.
 - **The serial snapshot comes from the simple index**, about 2.8 GB of peak memory in the same run.
 - **netrc on a redirect:** a redirect to another host still consults `~/.netrc` for that host. pypi.org does not
@@ -159,7 +182,8 @@ fetch of a PyPI-only project (the candidates are the mapping's, never `pypi_univ
 | Warm run, nothing moved | weekly cadence: nothing, or 200 names | only the 30-day re-checks and misses |
 | A serial moved | wait for the cadence and the rotation | fetched this run |
 | 429 / 503 | a per-project miss | retried after `Retry-After`, three attempts |
-| Flag off | bounded rotation | unchanged |
+| Flag off | bounded rotation | the rotation is unchanged |
+| A 404 | a miss, retried every run | recorded; back after a serial move or 30 days |
 | A run that stamps serials | — | `pypi_current_versions` keeps every fetched project (it would have shrunk) |
 
 </intent-contract>
@@ -176,3 +200,22 @@ fetch of a PyPI-only project (the candidates are the mapping's, never `pypi_univ
 - 2026-10-18: written with the implementation (branch `atlas-34-10-phase-h-coverage`, cut from `main` at
   `bde97f7f80`). The node's re-applied gate was found by the first live run; `DW-atlas-34-10-1` records the
   Phase C.5 gap the parity check exposed.
+- 2026-10-18: independent review round 1 FAIL. 1 blocker (spec facts), 6 should-fix items, nits; 49 mutants, 13
+  survived.
+  - **B1, the spec's figures:**
+    - AC7(c) is restated as the candidate gap (1 of 10,953).
+    - The 'none' counts are given as names.
+    - The legacy universe's two tiers are named; `DW-atlas-34-10-1` is rewritten with both, and Story 34.11 owns
+      it.
+    - The cold peak's cause and the warm run's timing are corrected.
+  - **S1:** a 404 is a recorded miss, ranked last, so it neither fills a cap nor reads as an outage.
+  - **S2:** an empty candidate set is stale.
+  - **S3:** the batch persists in chunks of 500.
+  - **S4:** the node's current serial is matched under PEP 503 and never below the stamp. The stats claim is
+    dropped, and the 30-day boundary is strict.
+  - **S5:** tests pin the 30-day boundary, oldest-first ordering, a run past 200 distinct names, the Retry-After
+    cap, no retry without a status, the credentialed path, a NaN snapshot serial, the stored serial, the serials in
+    `to_dict`, and the catalog rate.
+  - **S6:** the Dagster daily job is named in Residual risk.
+  - **Nits:** the duplicate PEP 503 helper; the retry comment's deviation from legacy; the flag-off wording; an
+    unusable limit.
