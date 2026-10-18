@@ -132,7 +132,7 @@ def create_pipeline(**kwargs) -> Pipeline:
                     "vcs_migration_closed_status_raw",
                     "vcs_migration_total_status_raw",
                 ],
-                outputs="vcs_migration_detail_raw",
+                outputs=["vcs_migration_detail_raw", "vcs_migration_categories"],
                 name="drive_migration_status",
             ),
             # FR-21 (Story B10) — NEW-SIGNAL, NOT parity-gated (AD-14). Reads the
@@ -148,6 +148,7 @@ def create_pipeline(**kwargs) -> Pipeline:
                     "vcs_migration_detail_raw",
                     "core_packages_enumerated",
                     "core_downloads",
+                    "vcs_migration_categories",  # Story 34.8: each migration's list
                 ],
                 outputs="vcs_migration_readiness",
                 name="classify_migration_readiness",

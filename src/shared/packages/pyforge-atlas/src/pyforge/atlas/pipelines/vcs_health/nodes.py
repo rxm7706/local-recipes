@@ -486,6 +486,7 @@ READINESS_NOT_IN_TRACKER = "not-in-tracker"
 
 _MIGRATION_READINESS_COLS = [
     "migration",
+    "category",  # Story 34.8: regular / longterm / paused / closed, so the open set filters
     "conda_name",
     "readiness",
     "blocker",
@@ -543,6 +544,7 @@ def _empty_migration_readiness() -> pd.DataFrame:
     return pd.DataFrame(
         {
             "migration": pd.Series(dtype=object),
+            "category": pd.Series(dtype=object),
             "conda_name": pd.Series(dtype=object),
             "readiness": pd.Series(dtype=object),
             "blocker": pd.Series(dtype=object),
@@ -559,40 +561,48 @@ def drive_migration_status(
     vcs_migration_paused_status_raw: Any,
     vcs_migration_closed_status_raw: Any,
     vcs_migration_total_status_raw: Any,
-) -> list[str]:
+) -> tuple[list[str], pd.DataFrame]:
     """Story 34.8: every migration the bot's category lists name, for the one detail sweep.
 
     PURE. The names regular, longterm, paused, closed and total carry, in that order, first
     seen, duplicates dropped -- the status page renders all four categories, and closed
     migrations keep their detail files. ``total`` lists the open and paused set again, so a
     regular, longterm or paused list that failed with no last-good still has its names.
-    The output is the ``vcs_migration_detail_raw`` save --
-    its single writer (AD-10) -- which fetches one ``migration_json/<name>.json`` partition
-    per name; this node does no IO."""
-    names: dict[str, None] = {}
-    for payload in (
-        vcs_migration_regular_status_raw,
-        vcs_migration_longterm_status_raw,
-        vcs_migration_paused_status_raw,
-        vcs_migration_closed_status_raw,
-        vcs_migration_total_status_raw,
+
+    Two outputs. The names are the ``vcs_migration_detail_raw`` save -- its single writer
+    (AD-10) -- which fetches one ``migration_json/<name>.json`` partition per name. The
+    ``vcs_migration_categories`` frame (``migration``, ``category``) names each one's first
+    list, so readiness can tell the open set (FR-21's "active") from paused and closed; a
+    name only ``total`` carries is ``unlisted``. This node does no IO."""
+    category: dict[str, str] = {}
+    for label, payload in (
+        ("regular", vcs_migration_regular_status_raw),
+        ("longterm", vcs_migration_longterm_status_raw),
+        ("paused", vcs_migration_paused_status_raw),
+        ("closed", vcs_migration_closed_status_raw),
+        ("unlisted", vcs_migration_total_status_raw),
     ):
         for name in migration_names(payload):
-            names[name] = None
-    return list(names)
+            category.setdefault(name, label)
+    frame = pd.DataFrame({"migration": list(category), "category": list(category.values())}, dtype=object)
+    return list(category), frame
 
 
 def classify_migration_readiness(
     vcs_migration_detail_raw: dict,
     core_packages_enumerated: pd.DataFrame,
     core_downloads: pd.DataFrame,
+    vcs_migration_categories: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     # legacy: FR-21 migration readiness  (Story B10; spec § 5.2 item 4 / § FR-21 / § 9)
-    """Classify each atlas feedstock's readiness for every ACTIVE migration.
+    """Classify each atlas feedstock's readiness for every migration the bot lists.
 
     ``vcs_migration_detail_raw`` is the PARTITIONED conda-forge-bot-data status detail
-    (``{migration_name: detail}``, one partition per active migration the category lists
-    surfaced — see ``datasets/migration_status.py``). Iterating the partitions is what makes
+    (``{migration_name: detail}``, one partition per migration the category lists surfaced
+    — see ``datasets/migration_status.py``). Story 34.8: that is every listed migration, paused
+    and closed included; the ``category`` column (from ``vcs_migration_categories``) names
+    each one's list, so FR-21's active set is ``category in {"regular", "longterm"}``. A
+    migration the frame does not name has a null category. Iterating the partitions is what makes
     the surface generalize with ZERO code change: a new migration upstream (python314 →
     python315) becomes a new partition and classifies with no edit here — NO migration name is
     hardcoded in this node.
@@ -627,7 +637,7 @@ def classify_migration_readiness(
     ready rows (``noarch`` / ``rebuild-done``) carry a null rank. A feedstock with no download
     row ranks as volume 0 (kept, never dropped).
 
-    Output ``vcs_migration_readiness``: ``migration``, ``conda_name``, ``readiness``,
+    Output ``vcs_migration_readiness``: ``migration``, ``category``, ``conda_name``, ``readiness``,
     ``blocker``, ``not_in_tracker_inferred``, ``downloads_total``, ``unmigrated_volume_rank``.
     Empty / missing inputs → typed empty frame, never raises (AD-13).
     """
@@ -662,6 +672,11 @@ def classify_migration_readiness(
                 prev = dl_lookup.get(name)
                 dl_lookup[name] = val if prev is None else max(prev, val)
 
+    categories: dict[str, str] = {}
+    cats = vcs_migration_categories
+    if cats is not None and not cats.empty and {"migration", "category"} <= set(cats.columns):
+        categories = {str(m): str(c) for m, c in zip(cats["migration"], cats["category"], strict=True)}
+
     rows: list[dict[str, Any]] = []
     # Iterate migrations in a STABLE (sorted) order so the output is deterministic across the
     # dict's insertion order; NO migration name is referenced literally.
@@ -684,6 +699,7 @@ def classify_migration_readiness(
             rows.append(
                 {
                     "migration": migration,
+                    "category": categories.get(migration),
                     "conda_name": name,
                     "readiness": readiness,
                     "blocker": blocker,

@@ -807,10 +807,10 @@ vcs_migration_total_status_raw:
   metadata:
     layer: raw
 
-# Per-migration detail — PARTITIONED by active migration (mirrors the
+# Per-migration detail — PARTITIONED by migration (mirrors the
 # partitions.PartitionedDataset shape with the AD-13 offline-safety a stock
 # PartitionedDataset cannot provide). The fetch appends /<name>.json to the url;
-# one <name>.json partition per active migration the category lists surfaced.
+# one <name>.json partition per migration the category lists surfaced (Story 34.8: every list).
 # Consumed by the classify_migration_readiness node.
 vcs_migration_detail_raw:
   type: pyforge.atlas.datasets.MigrationDetailDataset
@@ -818,6 +818,15 @@ vcs_migration_detail_raw:
   filepath: ${globals:paths.data_root}/raw/vcs_migration_detail_raw
   metadata:
     layer: raw
+
+# Story 34.8 — each listed migration's category (regular / longterm / paused / closed; a name
+# only total carries is `unlisted`), written by drive_migration_status beside the detail sweep,
+# so readiness can tell FR-21's active set from paused and closed migrations.
+vcs_migration_categories:
+  type: pandas.ParquetDataset
+  filepath: ${globals:paths.data_root}/intermediate/vcs_migration_categories/vcs_migration_categories.parquet
+  metadata:
+    layer: intermediate
 
 # Story B10 output — the FR-21 readiness classification (four-way split +
 # blocker buckets + inferred not-in-tracker label + top-unmigrated-by-volume

@@ -278,7 +278,9 @@ class MigrationCategoryDataset(_StaleAwareStatusSource):
 
     def refresh(self, *, fetcher: Callable[[str], Any] | None = None) -> Any:
         """Fetch the category list via the injected ``fetcher`` (attended / Dagster-driven).
-        Offline / on failure / empty → keep last-good + mark stale + return last-good (AD-13).
+        Offline / on failure / empty → keep last-good + mark stale + return last-good (AD-13);
+        except that the bot's public file parsing to an empty object or list is a valid empty
+        category (Story 34.8).
         Never raises. This is the DATASET-owned fetch; the pure node consumes :meth:`load`."""
         fetcher = fetcher if fetcher is not None else self._fetcher
         last_good_exists = self._store_path.is_file()
@@ -349,10 +351,10 @@ class MigrationCategoryDataset(_StaleAwareStatusSource):
 
 class MigrationDetailDataset(_StaleAwareStatusSource):
     """The per-migration ``status/migration_json/<name>.json`` detail — PARTITIONED by
-    active migration (mirrors the catalog ``partitions.PartitionedDataset`` shape, with the
+    migration (mirrors the catalog ``partitions.PartitionedDataset`` shape, with the
     AD-13 offline-safety a stock ``PartitionedDataset`` cannot provide).
 
-    :meth:`fetch_partitions` takes the active migration names the CATEGORY LISTS surface and
+    :meth:`fetch_partitions` takes the migration names the CATEGORY LISTS surface and
     fetches one ``migration_json/<name>.json`` per name via the injected ``fetcher`` (GET of
     ``<url>/<name>.json``), writing one ``<name>.json`` partition each. ``load()`` returns
     ``{migration_name: detail_dict}`` — the resolved partitions the pure classification node
@@ -489,7 +491,9 @@ class MigrationDetailDataset(_StaleAwareStatusSource):
         the load never fetches, and never overwrites a marker the sweep left."""
         partitions = self._load_partitions()
         if self._effective_fetcher() is not None:
-            if not partitions and self.staleness() is None:
+            marker = self.staleness()
+            # an offline marker from a run with no fetcher says nothing about this one
+            if not partitions and (marker is None or marker.reason.startswith("offline:")):
                 self._mark_stale(
                     "no detail partitions yet (sweep pending)",
                     last_good_exists=False,

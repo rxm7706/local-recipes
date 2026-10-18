@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'with no injected fetcher, the category and detail datasets keep today''s behaviour: last-good under the marker "offline: no GitHub-raw fetcher wired (consumer profile)"'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: true
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -64,7 +64,13 @@ declared_low_risk: false
    - The status page renders all four categories, so every listed migration gets a partition: 37 today.
    - `total` lists the open and paused set again. A list that failed with no last-good therefore still has its
      names.
-   - Its output is the detail dataset's `save()`.
+   - **It has two outputs.** The names are the detail dataset's `save()`. The new `vcs_migration_categories`
+     frame (`migration`, `category`) names each migration's first list; a name only `total` carries is
+     `unlisted`.
+   - **Readiness gains a `category` column**, so FR-21's "active" set is `category in {regular, longterm}`.
+     - Deviation, recorded: PRD FR-21 says partitioned by *active* migration. The Spec's R6 measure, 37, counts
+       every listed one.
+     - Readiness therefore covers every listed migration, and the column keeps FR-21's subset one filter away.
 3. **`MigrationDetailDataset.save(names)` is the sweep.** It shares `_sweep` with `fetch_partitions`: one
    `migration_json/<name>.json` partition per name. Its guards:
    - **Names:** a name that is not a migrator slug (`[A-Za-z0-9_][A-Za-z0-9_.+-]*`: never a path, never hidden)
@@ -94,7 +100,8 @@ Type / Effort / Deps: feature / S / Story 34.4 (the flag and `public_sources`), 
 ## Acceptance Criteria
 
 - **AC1 — The driver.** `drive_migration_status` names every migration each of the five lists carries, once,
-  in list order. A list that failed still leaves `total`'s names. It does no IO.
+  in list order, with each one's first list as its category. A list that failed still leaves `total`'s names
+  (`unlisted`). It does no IO.
 - **AC2 — Public reads, read at the call.**
   - Flag on with no injected fetcher, a category load requests its status file, and the detail save requests one
     `migration_json/<name>.json` per name.
@@ -106,11 +113,13 @@ Type / Effort / Deps: feature / S / Story 34.4 (the flag and `public_sources`), 
   - A clean sweep clears the marker and removes partitions the names no longer list, never a hidden file.
   - A failed partition keeps last-good, removes nothing, and marks the run stale.
   - No names keeps last-good under the marker.
-  - A name that is not a slug is never fetched or written.
+  - A name that is not a slug is never fetched or written, a path behind a slug prefix included.
+  - A flag-off save removes nothing, whatever names it is given.
   - A partition that cannot be removed is logged, and the sweep stands.
-  - The load keeps the sweep's marker, on a fresh root too.
+  - The load keeps the sweep's marker, on a fresh root too. An offline marker from an earlier flag-off run gives
+    way to "sweep pending".
 - **AC4 — Readiness fills.** The swept partitions feed `classify_migration_readiness` end to end, in a test and
-  live (see Verification).
+  live (see Verification). Every readiness row carries its migration's category.
 - **AC5 — Budgets.** Every node of the default pipeline has a `NODE_TIMEOUTS` entry, and every entry names a node.
 - **AC6 — Gates.** `pyforge-atlas-test`, `kedro-test`, `kedro-catalog-check`, the coverage gate, `lint-types`
   (and mypy in `pyforge-foundry-full`), `flag-gate-check`; governing Specs reconciled and stamped scoped.
@@ -128,6 +137,10 @@ Type / Effort / Deps: feature / S / Story 34.4 (the flag and `public_sources`), 
   - `src/shared/packages/pyforge-atlas/tests/unit/pipelines/test_dag_resolves.py`: the node counts (vcs_health 12),
     and the detail store's single writer.
   - `src/shared/packages/pyforge-atlas/tests/unit/parity/test_parity_complete.py`: the new-signal node list.
+  - `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vcs_health/test_migration_readiness.py`: the readiness
+    columns, `category` among them.
+  - `src/shared/packages/pyforge-atlas/tests/unit/catalog/test_catalog_resolution.py`: the entry counts
+    (`vcs_health` 28, total 129).
 - **Live, recorded 2026-10-18.**
   - **Setup:** a scratch copy of the 2026-10-17 data root with Story 34.4's `core_downloads`, flag on (dev),
     `--pipelines vcs_health --nodes drive_migration_status,classify_migration_readiness`.
@@ -138,6 +151,9 @@ Type / Effort / Deps: feature / S / Story 34.4 (the flag and `public_sources`), 
     884,596; `not-in-tracker` 387,372; `rebuild-done` 7,768; `confirmed-pending` 2,906.
   - **Warm, with a planted `retired_migration.json`:** exit 0, 6.8 s. The planted partition was removed and 37
     remain.
+  - **After review round 2, cold:** exit 0, 13.2 s, peak RSS 0.85 GB, the same 37 partitions and 1,282,642 rows.
+    `vcs_migration_categories` holds 22 regular, 6 longterm, 3 paused and 6 closed, and every readiness row
+    carries one.
 
 ## Boundaries & Constraints
 
@@ -152,6 +168,9 @@ Type / Effort / Deps: feature / S / Story 34.4 (the flag and `public_sources`), 
 - **A closed migration that leaves `closed_status.json`** has its partition removed on the next clean sweep, as
   any name that leaves every list does.
 - **Every list failing with no last-good** leaves no names. That is never a clean sweep, so nothing is removed.
+- **A public `{}` for every open list.** If regular, longterm, paused and total all answer `{}` while closed is
+  intact, the sweep is clean over the closed names alone and removes every open partition. This is unlikely: the
+  bot writes every list from one migrator load. The next good run restores the partitions.
 - **Readiness size:** the node emits one row per enumerated package per migration (Story B10's design), about
   35,000 rows per migration.
 - **netrc on a redirect:** a redirect to another host still consults `~/.netrc` for that host (requests'
@@ -214,3 +233,20 @@ Type / Effort / Deps: feature / S / Story 34.4 (the flag and `public_sources`), 
     - **N9:** the detail store joins the single-writer pin.
     - **N10:** requested URLs, the offline reason and `last_good_exists` are asserted.
     - **N11:** `_describe` names the public URL, and the marker text no longer says "wired fetcher".
+- 2026-10-18: re-review round 2 FAIL: 2 blockers, 3 should-fix, 4 nits; 42 mutants, 7 survived.
+  - **Blockers:**
+    - **RB1:** no test failed when a flag-off sweep pruned. With the flag off by default in production, that
+      path could unlink every partition. Fixed: a flag-off save with unlisted names, or with none, removes nothing.
+    - **RB2:** the merge of 34.6's branch reverted 34.8's scoped stamp. The scoped stamps then refused, printing
+      only "baseline untouched", which was read as success. Fixed: re-stamped after the round-2 merge of `main`,
+      with the full output read and each governed file's baseline hash checked against the tree.
+  - **Should-fix:**
+    - **RS1:** readiness could not tell closed or paused migrations from open ones. Fixed by the category column;
+      the FR-21 deviation is recorded.
+    - **RS2:** stale "active" wording is fixed in the dataset, node and catalog docstrings.
+    - **RS3:** a path behind a slug prefix is now tested.
+  - **Nits:**
+    - **N1:** an offline marker gives way to "sweep pending" on a flag-on load.
+    - **N2:** the public-empty-open-lists prune is named in Residual risk.
+    - **N3:** `last_good_exists` and a public `null` are pinned.
+    - **N4:** the driver fixture's `total` is now the realistic union.

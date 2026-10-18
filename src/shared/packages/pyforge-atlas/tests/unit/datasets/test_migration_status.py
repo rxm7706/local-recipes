@@ -325,23 +325,29 @@ def test_the_driver_names_every_migration_each_list_carries_once_in_list_order()
     longterm = {"python315": "s"}
     paused = {"cuda130": "s", "gsl28": "s"}  # cuda130 is in no other list
     closed = {"giflib6": "giflib6 closed at 2026-10-15"}
-    total = {"python314": "s", "python315": "s", "cuda130": "s", "gsl28": "s", "late": "s"}
+    total = {"python314": "s", "python315": "s", "cuda130": "s", "gsl28": "s"}  # upstream: the open + paused union
 
-    assert drive_migration_status(regular, longterm, paused, closed, total) == [
-        "python314",
-        "gsl28",
-        "python315",
-        "cuda130",
-        "giflib6",
-        "late",
-    ]
+    names, categories = drive_migration_status(regular, longterm, paused, closed, total)
+
+    assert names == ["python314", "gsl28", "python315", "cuda130", "giflib6"]
+    assert dict(zip(categories["migration"], categories["category"], strict=True)) == {
+        "python314": "regular",
+        "gsl28": "regular",  # its first list
+        "python315": "longterm",
+        "cuda130": "paused",
+        "giflib6": "closed",
+    }
 
 
 def test_total_keeps_the_open_names_when_their_own_list_failed_with_no_last_good():
     total = {"python314": "s", "python315": "s"}
 
-    assert drive_migration_status(None, None, None, {"giflib6": "c"}, total) == ["giflib6", "python314", "python315"]
-    assert drive_migration_status(None, None, None, None, None) == []
+    names, categories = drive_migration_status(None, None, None, {"giflib6": "c"}, total)
+
+    assert names == ["giflib6", "python314", "python315"]
+    assert list(categories["category"]) == ["closed", "unlisted", "unlisted"]
+    empty_names, empty = drive_migration_status(None, None, None, None, None)
+    assert empty_names == [] and list(empty.columns) == ["migration", "category"] and empty.empty
 
 
 @flag_states("pyforge.atlas.live_public_sources")
@@ -368,14 +374,16 @@ def test_a_clean_sweep_clears_the_marker_and_feeds_the_readiness_node(tmp_path, 
     monkeypatch.setattr(public_sources, "fetch_text", _public_text(requested))
     monkeypatch.setattr(public_sources, "live", lambda: True)
     detail = MigrationDetailDataset(url=f"{_BOT}/migration_json", filepath=str(tmp_path / "detail"))
-    names = drive_migration_status(_cat(tmp_path).load(), None, None, None, None)
+    names, categories = drive_migration_status(_cat(tmp_path).load(), None, None, None, None)
 
     detail.save(names)
     out = classify_migration_readiness(
         detail.load(),
         pd.DataFrame({"conda_name": ["numpy", "scipy"], "subdirs": [["linux-64"], ["linux-64"]]}),
         pd.DataFrame({"conda_name": ["numpy"], "downloads_total": [5]}),
+        categories,
     )
+    assert set(out["category"]) == {"regular"}
 
     assert detail.staleness() is None
     assert set(map(tuple, out[["migration", "conda_name", "readiness"]].values)) >= {
@@ -526,3 +534,75 @@ def test_the_detail_describe_names_the_public_url(tmp_path):
     described = MigrationDetailDataset(url=f"{_BOT}/migration_json", filepath=str(tmp_path))._describe()
 
     assert described["public_url"] == f"{_BOT}/migration_json" and described["partitioned_by"] == "migration"
+
+
+# --- Story 34.8 review round 2 -------------------------------------------------------------
+
+
+def _planted(tmp_path):
+    (tmp_path / "detail").mkdir()
+    for name in ("kept", "other_one"):
+        (tmp_path / "detail" / f"{name}.json").write_text(_json.dumps({"done": [name]}))
+
+
+@pytest.mark.parametrize("names", [["other"], []], ids=["unlisted-partitions", "no-names"])
+def test_a_flag_off_save_removes_nothing(tmp_path, monkeypatch, names):
+    """Production's default is off: the offline sweep is never clean, so the prune never runs."""
+    monkeypatch.setattr(public_sources, "live", lambda: False)
+    _planted(tmp_path)
+    ds = MigrationDetailDataset(url=f"{_BOT}/migration_json", filepath=str(tmp_path / "detail"))
+
+    ds.save(names)
+
+    assert set(ds.load()) == {"kept", "other_one"}
+    marker = ds.staleness()
+    assert marker.reason == "offline: no GitHub-raw fetcher wired (consumer profile)" and marker.last_good_exists
+
+
+def test_a_path_behind_a_slug_prefix_is_never_fetched_or_written(tmp_path, monkeypatch):
+    requested: list[str] = []
+    ds = _fresh_live_detail(tmp_path, monkeypatch, requested)
+
+    ds.save(["python314/../../regular/category", "python314"])
+
+    assert requested == [f"{_BOT}/migration_json/python314.json"] and set(ds.load()) == {"python314"}
+
+
+def test_a_flag_on_load_replaces_an_earlier_offline_reason(tmp_path, monkeypatch):
+    ds = MigrationDetailDataset(url=f"{_BOT}/migration_json", filepath=str(tmp_path / "detail"))
+    monkeypatch.setattr(public_sources, "live", lambda: False)
+    ds.load()
+    assert ds.staleness().reason.startswith("offline:")
+
+    monkeypatch.setattr(public_sources, "live", lambda: True)
+    ds.load()
+
+    assert ds.staleness().reason == "no detail partitions yet (sweep pending)"
+
+
+def test_a_failed_sweep_marks_last_good_as_present(tmp_path, monkeypatch):
+    ds = _live_detail(tmp_path, monkeypatch, [])
+
+    ds.save(["gone"])
+
+    marker = ds.staleness()
+    assert marker.reason == "one or more migration detail partitions could not refresh" and marker.last_good_exists
+
+
+def test_the_bots_public_null_is_no_data_not_an_empty_category(tmp_path, monkeypatch):
+    monkeypatch.setattr(public_sources, "fetch_text", lambda url, **_kw: "null")
+    monkeypatch.setattr(public_sources, "live", lambda: True)
+    ds = _cat(tmp_path)
+    ds._atomic_write(ds._store_path, _json.dumps({"flang19": "s"}))
+
+    assert ds.load() == {"flang19": "s"} and ds.staleness().reason == "category fetch returned no data"
+
+
+def test_readiness_without_a_categories_frame_has_a_null_category():
+    out = classify_migration_readiness(
+        {"python314": {"done": ["numpy"]}},
+        pd.DataFrame({"conda_name": ["numpy"], "subdirs": [["linux-64"]]}),
+        pd.DataFrame(),
+    )
+
+    assert list(out["category"]) == [None]
