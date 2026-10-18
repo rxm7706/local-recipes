@@ -544,7 +544,7 @@ def _empty_migration_readiness() -> pd.DataFrame:
     return pd.DataFrame(
         {
             "migration": pd.Series(dtype=object),
-            "category": pd.Series(dtype=object),
+            "category": pd.Series(dtype="string"),
             "conda_name": pd.Series(dtype=object),
             "readiness": pd.Series(dtype=object),
             "blocker": pd.Series(dtype=object),
@@ -711,6 +711,9 @@ def classify_migration_readiness(
     out = pd.DataFrame(rows, columns=_MIGRATION_READINESS_COLS[:-1])
     out["not_in_tracker_inferred"] = out["not_in_tracker_inferred"].astype(bool)
     out["downloads_total"] = pd.to_numeric(out["downloads_total"], errors="coerce")
+    # a string column even when every category is unknown, so the parquet schema never depends
+    # on the data (an all-None object column writes as Arrow null)
+    out["category"] = out["category"].astype("string")
 
     # -- top-unmigrated-by-volume rank (per migration; ready rows carry a null rank).
     unmigrated_mask = out["readiness"].isin([READINESS_CONFIRMED_PENDING, READINESS_NOT_IN_TRACKER])

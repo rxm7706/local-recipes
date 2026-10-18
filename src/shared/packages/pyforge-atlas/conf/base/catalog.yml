@@ -821,10 +821,12 @@ vcs_migration_detail_raw:
 
 # Story 34.8 — each listed migration's category (regular / longterm / paused / closed; a name
 # only total carries is `unlisted`), written by drive_migration_status beside the detail sweep,
-# so readiness can tell FR-21's active set from paused and closed migrations.
+# so readiness can tell FR-21's active set from paused and closed migrations. Degrading: a
+# readiness run on its own, on a root the driver never wrote, gets null categories (AD-13).
 vcs_migration_categories:
-  type: pandas.ParquetDataset
+  type: pyforge.atlas.datasets.DegradingParquetDataset
   filepath: ${globals:paths.data_root}/intermediate/vcs_migration_categories/vcs_migration_categories.parquet
+  columns: [migration, category]
   metadata:
     layer: intermediate
 

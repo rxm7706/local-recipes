@@ -605,4 +605,37 @@ def test_readiness_without_a_categories_frame_has_a_null_category():
         pd.DataFrame(),
     )
 
-    assert list(out["category"]) == [None]
+    assert out["category"].isna().all() and str(out["category"].dtype) == "string"
+
+
+# --- Story 34.8 review round 3 -------------------------------------------------------------
+
+
+def test_with_nothing_to_keep_every_marker_says_no_last_good(tmp_path, monkeypatch):
+    requested: list[str] = []
+    fresh = _fresh_live_detail(tmp_path, monkeypatch, requested)
+    fresh.save([])
+    assert fresh.staleness().last_good_exists is False  # no names
+
+    failed = MigrationDetailDataset(url=f"{_BOT}/migration_json", filepath=str(tmp_path / "failed"))
+    failed.save(["gone"])
+    assert failed.staleness().last_good_exists is False  # every partition failed
+
+    monkeypatch.setattr(public_sources, "live", lambda: False)
+    offline = MigrationDetailDataset(url=f"{_BOT}/migration_json", filepath=str(tmp_path / "offline"))
+    offline.save(["python314"])
+    assert offline.staleness().last_good_exists is False  # offline
+
+
+def test_readiness_writes_a_string_category_even_when_every_category_is_unknown(tmp_path):
+    import pyarrow.parquet as pq
+
+    out = classify_migration_readiness(
+        {"python314": {"done": ["numpy"]}},
+        pd.DataFrame({"conda_name": ["numpy"], "subdirs": [["linux-64"]]}),
+        pd.DataFrame(),
+        pd.DataFrame({"migration": [], "category": []}, dtype=object),
+    )
+    out.to_parquet(tmp_path / "r.parquet", index=False)
+
+    assert str(pq.read_schema(tmp_path / "r.parquet").field("category").type) in {"string", "large_string"}

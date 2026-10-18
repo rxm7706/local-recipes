@@ -302,6 +302,7 @@ def test_tier_1_external_refresh_stores_have_exactly_one_writer_each():
         "identity_packages_primary": "build_identity_packages_primary",
         "identity_export_parquet": "build_identity_export_parquet",
         "vcs_migration_detail_raw": "drive_migration_status",  # Story 34.8
+        "vcs_migration_categories": "drive_migration_status",  # Story 34.8
     }
     for store, expected in writers.items():
         producers = [n.name for n in combined.nodes if store in n.outputs]

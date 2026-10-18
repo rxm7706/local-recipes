@@ -2,7 +2,7 @@
 title: "34.8: Migration status fills through a driver node"
 type: 'feature'
 created: '2026-10-18'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'c8cc5de8e3'
 flag:
   key: pyforge.atlas.live_public_sources          # shared with Stories 34.4 (registered it), 34.5 and 34.6
@@ -11,8 +11,8 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'with no injected fetcher, the category and detail datasets keep today''s behaviour: last-good under the marker "offline: no GitHub-raw fetcher wired (consumer profile)"'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 2
-followup_review_recommended: true
+review_loop_iteration: 3
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/live-sources.md
@@ -119,7 +119,8 @@ Type / Effort / Deps: feature / S / Story 34.4 (the flag and `public_sources`), 
   - The load keeps the sweep's marker, on a fresh root too. An offline marker from an earlier flag-off run gives
     way to "sweep pending".
 - **AC4 — Readiness fills.** The swept partitions feed `classify_migration_readiness` end to end, in a test and
-  live (see Verification). Every readiness row carries its migration's category.
+  live (see Verification). Every listed migration's rows carry its category, as a string column; a partition
+  the categories frame does not name (a leftover of a partial sweep) has a null category.
 - **AC5 — Budgets.** Every node of the default pipeline has a `NODE_TIMEOUTS` entry, and every entry names a node.
 - **AC6 — Gates.** `pyforge-atlas-test`, `kedro-test`, `kedro-catalog-check`, the coverage gate, `lint-types`
   (and mypy in `pyforge-foundry-full`), `flag-gate-check`; governing Specs reconciled and stamped scoped.
@@ -250,3 +251,14 @@ Type / Effort / Deps: feature / S / Story 34.4 (the flag and `public_sources`), 
     - **N2:** the public-empty-open-lists prune is named in Residual risk.
     - **N3:** `last_good_exists` and a public `null` are pinned.
     - **N4:** the driver fixture's `total` is now the realistic union.
+- 2026-10-18: re-review round 3 PASS. Every gate exits 0. All three Specs' baselines match the tree, checked
+  with the detector's own live state. The category was traced through a Kedro `SequentialRunner` run and the
+  Dagster bootstrap job's IO managers. 51 mutants, 48 killed. Its nits were fixed:
+  - **N1:** `vcs_migration_categories` is a `DegradingParquetDataset`, so readiness run on its own over a root the
+    driver never wrote gets null categories, not an error.
+  - **N2:** `category` is a string column even when every value is unknown, so the parquet schema never depends on
+    the data.
+  - **N3:** `last_good_exists` is pinned False for the no-names, failure and offline markers.
+  - **N4:** the categories dataset joins the single-writer pin.
+  - **N5:** AC4's wording.
+  Promoted to `done`.
