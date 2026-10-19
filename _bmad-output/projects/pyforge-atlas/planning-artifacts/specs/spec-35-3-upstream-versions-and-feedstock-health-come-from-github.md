@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'vcs_github_api_raw asks the identity repos for their health, as before Story 35.1; the three consumers read those rows'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -67,8 +67,20 @@ Legacy makes three GitHub reads:
 8. **The run says what it is doing:** a progress line every 25 batches and a line per retry, with the HTTP status
    only, never the exception's text.
 9. **Phase N runs four batches side by side,** as legacy does (`PHASE_N_CONCURRENCY` 4, CFA:6585), its rows in batch
-   order; each failed batch names its own failure; a refusal stops every batch not yet sent. Run one at a time, the
-   1,176 batches took about two hours on 2026-10-19, past the node's 3,600 s budget.
+   order; each failed batch names its own failure. A refusal (401, a 403 or 429 with no wait, or a `RATE_LIMITED`
+   answer) stops every request not yet sent in every thread, a batch's retries included; a `Retry-After` one thread
+   waits out pauses the others.
+10. **A repository the run could not read keeps its last-good values** with its `last_error` set, as legacy Phase N
+    sets `gh_status_last_error` and keeps the rest; one never asked (after a stop) writes no row. When no Phase K or N
+    repository was read, nothing is written; the archived listing alone is no success.
+11. **Halving has a floor and the run a breaker:** a batch of 12 repositories or fewer is not halved again, and ten
+    batches failing whole in a row stop the run (a lasting outage would otherwise cost about 800 POSTs a batch).
+12. **The flag off reads as before:** with `pyforge.atlas.live_vcs_universe` off, `load()` gives only the identity
+    health rows, so a store written under the flag never feeds the consumers' pre-story path.
+13. **The CI state is lowercased,** as legacy stores it (`_row_from_payload`) and as `semantic/metrics.py`'s red
+    states expect. A failed archived-listing page is named in the marker.
+14. **Budget:** `refresh_vcs_github_store` gets 10,800 s. Measured 2026-10-18/19, one batch at a time: Phase K 32 min,
+    Phase N 1 h 54 min, 39 min of it `Retry-After` waits.
 
 Ledger key: `35-3-upstream-versions-and-feedstock-health-come-from-github`.
 Type / Effort / Deps: feature / L / Story 35.1 (the switch, bearer auth), Story 35.2 (the batches).
@@ -90,6 +102,8 @@ Type / Effort / Deps: feature / L / Story 35.1 (the switch, bearer auth), Story 
   renumbered back; another failure is not halved; a POST waits 60 s at most.
 - **AC4b — Phase N side by side.** At most four batches at once, rows in order, each batch's own failure on its rows.
 - **AC4c — The marker is true.** A batch halved and answered leaves no marker; repositories that still fail are counted.
+- **AC4d — Last-good is never clobbered.** A repository not read keeps its last-good values; one never asked writes no
+  row; no Phase K or N read writes nothing; the flag off reads only the health rows.
 - **AC5 — Consumers.** Each reads its own kind; a store without kinds reads as before; a pre-35.3 store's rows survive
   the first write.
 - **AC6 — Live.** See Verification. Tolerance against legacy the same day: Phase K versions for at least 95% of the
@@ -111,9 +125,10 @@ Type / Effort / Deps: feature / L / Story 35.1 (the switch, bearer auth), Story 
     - **Phase K:** of legacy's 23,578 GitHub packages with a version, 23,551 asked (99.89%); of those both hold,
       23,255 the same version (98.74%), above the 95% tolerance; the differences sampled are releases after legacy's
       fetch (litellm 1.107.0-rc.1 against 1.103.5). Atlas rows without a version: 1,859 "no tags", 434 not found.
-    - **Phase N:** 29,393 of 29,395 feedstocks answered; open PRs equal to legacy's for 28,532 (97.07%); CI state equal
-      for 10,949 of the 10,959 both record (99.91%), the rest null in both.
-    - **Phase E.5:** 902 archived feedstocks (legacy marks 864 packages archived; a feedstock can carry several).
+    - **Phase N:** 29,393 of 29,395 feedstocks answered (legacy's own: 28,719 of 28,721); open PRs equal to legacy's
+      for 28,532 (97.07% of those answered, 99.35% where both hold a value); CI state equal, ignoring case, for 10,949
+      of the 10,959 both record (99.91%); 4 record a CI state only in legacy and 24 only in atlas.
+    - **Phase E.5:** 902 archived feedstocks, among them all 726 that legacy marks archived.
   - The run's marker read "stopped after HTTP 502" though both halved batches were answered; fixed: the marker now
     counts only the repositories that still failed.
 
@@ -147,6 +162,15 @@ Type / Effort / Deps: feature / L / Story 35.1 (the switch, bearer auth), Story 
 ## Spec Change Log
 
 - 2026-10-18: written with the implementation (branch `atlas-35-3-github-versions-health`, stacked on Story 35.2).
+- 2026-10-19, review round 1 (FAIL), fixed:
+  - B1: rows the run could not read overwrote last-good, and the archived listing counted as success (Approach 10).
+  - B2: a store written under the flag fed the consumers with the flag off (Approach 12).
+  - Should-fix: the budget (Approach 14); halving's floor and the breaker (Approach 11); threads honour each other's
+    stop and pause, and a `RATE_LIMITED` answer stops (Approach 9); a failed archived page is in the marker; the CI
+    state lowercased; tests for the query text, a log without exception text, a read timeout halved, a feedstock's
+    GraphQL error, the live-health dedupe and error, and each fix above.
+  - Nits: the scheduler lock is module-level, so a dataset stays picklable; the marker names the first failure;
+    Verification's Phase N and E.5 comparisons corrected.
 - 2026-10-18: the first credentialed live run sat 45 minutes in its retries with nothing logged (the POST timeout was
   900 s; the first batch, alphabetically the tag-heavy repositories, answered 502 four times). A probe of the same
   batch answered 200 in 5.5 s, so the 502s come and go. Approach 7 and 8 added; the re-run halved batch 1 and
