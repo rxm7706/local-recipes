@@ -14,6 +14,7 @@ prepared request, so :class:`BearerAuth` is a plain class.
 from __future__ import annotations
 
 import os
+import re
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -22,6 +23,9 @@ from pyforge.core.flags import read_boolean
 SWITCH = "PYFORGE_ATLAS_CREDENTIALED"
 FLAG_KEY = "pyforge.atlas.live_vcs_universe"
 GITHUB_API_HOST = "api.github.com"
+# a token is printable ASCII with no space or control character: a newline inside one would make
+# http.client refuse the header with an error that quotes the header, token included
+_TOKEN = re.compile(r"[\x21-\x7e]+")
 
 
 def credentialed() -> bool:
@@ -36,16 +40,22 @@ def live_vcs_universe() -> bool:
 
 def token_of(credentials: Any) -> str | None:
     """The token a catalog credential carries: ``{token: ...}`` (``github_token``) or a bare
-    string. Anything else (a ``[user, password]`` pair, an empty value) is no token."""
+    string, without surrounding whitespace. Anything else (a ``[user, password]`` pair, an empty
+    value, a value with a space or control character inside) is no token."""
     value = credentials.get("token") if isinstance(credentials, dict) else credentials
-    if isinstance(value, str) and value.strip():
+    if isinstance(value, str) and _TOKEN.fullmatch(value.strip()):
         return value.strip()
     return None
 
 
+def _https_on(url: str, host: str) -> bool:
+    parts = urlsplit(url)
+    return parts.scheme == "https" and parts.hostname == host
+
+
 class BearerAuth:
-    """A requests ``auth`` callable: ``Authorization: Bearer <token>``, set only on a request to
-    ``host``. A redirect to another host drops it (requests' ``rebuild_auth`` never re-applies a
+    """A requests ``auth`` callable: ``Authorization: Bearer <token>``, set only on an https request
+    to ``host``. A redirect to another host drops it (requests' ``rebuild_auth`` never re-applies a
     callable auth). The token never appears in ``repr``."""
 
     def __init__(self, token: str, host: str) -> None:
@@ -53,7 +63,7 @@ class BearerAuth:
         self.host = host
 
     def __call__(self, request: Any) -> Any:
-        if urlsplit(request.url).hostname == self.host:
+        if _https_on(request.url, self.host):
             request.headers["Authorization"] = f"Bearer {self._token}"
         return request
 
@@ -63,11 +73,12 @@ class BearerAuth:
 
 def github_auth(credentials: Any, url: str) -> BearerAuth | None:
     """Bearer auth for a GitHub API ``url``, or ``None``: the switch is off, there is no token, or
-    ``url`` is not on ``api.github.com`` (an override to another host never receives the token)."""
+    ``url`` is not https on ``api.github.com`` (an override to another host never receives the
+    token, and neither does plain http)."""
     if not credentialed():
         return None
     token = token_of(credentials)
-    if token is None or urlsplit(url).hostname != GITHUB_API_HOST:
+    if token is None or not _https_on(url, GITHUB_API_HOST):
         return None
     return BearerAuth(token, GITHUB_API_HOST)
 
@@ -76,7 +87,10 @@ def skip_reason(url: str) -> str:
     """The staleness reason a credentialed store records when it sends nothing (no secret)."""
     if not credentialed():
         return f"credentialed fetch not run: {SWITCH} is not 1 -- keeping last-good"
-    host = urlsplit(url).hostname
-    if host != GITHUB_API_HOST:
-        return f"credentialed fetch not run: {host!r} is not {GITHUB_API_HOST} -- keeping last-good"
+    if not _https_on(url, GITHUB_API_HOST):
+        parts = urlsplit(url)
+        return (
+            f"credentialed fetch not run: {parts.scheme}://{parts.hostname} is not https://{GITHUB_API_HOST}"
+            " -- keeping last-good"
+        )
     return "credentialed fetch not run: no github_token -- keeping last-good"

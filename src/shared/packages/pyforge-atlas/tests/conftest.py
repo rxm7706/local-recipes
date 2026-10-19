@@ -48,8 +48,11 @@ def _no_credential_without_the_switch(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(requests.adapters.HTTPAdapter, "send", guarded)
 
 
+_CREDENTIAL_HEADERS = ("Authorization", "Proxy-Authorization", "PRIVATE-TOKEN", "X-NuGet-ApiKey")
+
+
 def refuse_credential_without_switch(request) -> None:  # noqa: ANN001 -- a requests PreparedRequest
-    if request.headers.get("Authorization") and not credential_switch.credentialed():
+    if not credential_switch.credentialed() and any(request.headers.get(h) for h in _CREDENTIAL_HEADERS):
         pytest.fail(f"a request to {request.url} carried a credential without {credential_switch.SWITCH}=1")
 
 
@@ -63,11 +66,12 @@ def fake_transport(monkeypatch: pytest.MonkeyPatch):
     import requests
     import requests.adapters
 
-    state = SimpleNamespace(sent=[], answers={})
+    state = SimpleNamespace(sent=[], answers={}, timeouts=[])
 
     def send(self, request, *args, **kwargs):  # noqa: ANN001, ANN202 -- requests' own signature
         refuse_credential_without_switch(request)
         state.sent.append(request)
+        state.timeouts.append(kwargs.get("timeout"))
         status, body = state.answers.get(request.url, (404, {"message": "Not Found"}))
         response = requests.models.Response()
         response.status_code = status
