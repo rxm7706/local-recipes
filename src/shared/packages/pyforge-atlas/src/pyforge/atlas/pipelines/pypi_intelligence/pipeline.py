@@ -51,13 +51,15 @@ def create_pipeline(**kwargs) -> Pipeline:
             ),
             node(
                 func=map_pypi_conda,
-                # Story 34.11: each output's recipe source URL (legacy Phase C.5 in Phase E) and
-                # the PyPI project names (legacy Phase D's name coincidence)
+                # Story 34.11: each output's recipe source URL (legacy Phase C.5 in Phase E), the
+                # PyPI project names (legacy Phase D's name coincidence) and each output's
+                # feedstock (legacy Phase B.5)
                 inputs=[
                     "pypi_parselmouth_mapping_raw",
                     "core_packages_enumerated",
                     "core_cf_graph_raw",
                     "pypi_universe",
+                    "core_feedstock_attribution",
                 ],
                 outputs="pypi_conda_mapping_base",
                 name="map_pypi_conda",

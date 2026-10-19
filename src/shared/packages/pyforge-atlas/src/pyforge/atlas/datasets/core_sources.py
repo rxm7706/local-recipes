@@ -13,6 +13,7 @@ import logging
 import os
 import re
 import tarfile
+import time
 import zipfile
 import zlib
 from collections.abc import Callable, Iterable, Iterator
@@ -577,6 +578,7 @@ class CfGraphTarballDataset(AbstractDataset):
 
     LAST_GOOD_FILENAME = "last_good.parquet"
     STALENESS_FILENAME = ".staleness.json"
+    MEMO_SECONDS = 3600.0  # a host that keeps this instance across runs never serves an older graph
 
     def __init__(
         self,
@@ -600,6 +602,7 @@ class CfGraphTarballDataset(AbstractDataset):
         self.metadata = metadata
         # Story 34.11: one fetch per session; every consuming node gets this frame
         self._memo: pd.DataFrame | None = None
+        self._memo_at = 0.0
 
     @property
     def last_good_path(self) -> Path | None:
@@ -643,9 +646,11 @@ class CfGraphTarballDataset(AbstractDataset):
 
     def load(self) -> pd.DataFrame:
         """Story 34.11: four consuming nodes (Phases E, J, M and C's recipe source URLs) load
-        this in one run; the first load fetches and the rest reuse its frame."""
-        if self._memo is None:
-            self._memo = self._load_once()
+        this in one run; the first load fetches and the rest reuse its frame for
+        :attr:`MEMO_SECONDS`, so a host that keeps the instance across runs still refetches."""
+        now = time.monotonic()
+        if self._memo is None or now - self._memo_at >= self.MEMO_SECONDS:
+            self._memo, self._memo_at = self._load_once(), now
         return self._memo.copy(deep=False)  # a node that assigns a column never reaches the next
 
     def _load_once(self) -> pd.DataFrame:

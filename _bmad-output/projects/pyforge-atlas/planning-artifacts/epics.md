@@ -2568,8 +2568,8 @@ So that Phase H, the vdb scan and everything keyed on a PyPI name cover legacy's
 
 **Type:** feature • **Effort:** M • **Deps:** 34.2 (the parselmouth tier), 34.3 (node_attrs) • **FR/AD:** spec-pyforge-atlas CAP-64 (FR-72) • AD-3, AD-13
 **Flag:** `pyforge.atlas.live_public_sources` (the node_attrs and simple-index fetches it reads; the mapping itself is pure)
-**Surface:** `datasets/core_sources.py` (each output's recipe `source_url` in the cf-graph frame), `pipelines/pypi_intelligence/` (`map_pypi_conda` and its inputs), tests
-**Given** `map_pypi_conda` maps only the bot's parselmouth names (10,955 on 2026-10-18), while legacy's Phase H universe is 20,938 names, because legacy also maps a PyPI project whose lower-cased name is the conda name (Phase D, CFA:1835-1890) and every output of a feedstock whose recipe downloads from PyPI (Phase C.5 in Phase E, CFA:2434-2446) (`DW-atlas-34-10-1`)
+**Surface:** `datasets/core_sources.py` (each output's recipe `source_url` in the cf-graph frame), `pipelines/pypi_intelligence/` (`map_pypi_conda` and its inputs), `orchestration/definitions.py` (its budget), tests
+**Given** `map_pypi_conda` maps only the bot's parselmouth names (10,967 on 2026-10-18), while legacy's Phase H universe is 20,938 names, because legacy also maps a PyPI project whose lower-cased name is the conda name (Phase D, CFA:1837-1895) and every output attributed to a feedstock whose recipe downloads from PyPI (Phase C.5 in Phase E, CFA:2434-2446) (`DW-atlas-34-10-1`)
 **When** the pipeline runs
 **Then** `pypi_conda_mapping` carries `name_coincidence` and `recipe_source_url` rows, each only for a package the tier before left unmapped, and its PyPI names cover legacy Phase H's universe within the story's tolerance, measured the same day
 **Status:** backlog
@@ -2649,15 +2649,16 @@ credentials; each feature story names its own flag.
 ### Story 36.1: The Basilisk population runs
 
 As the vulnerability pipeline,
-I want driver nodes to query Basilisk for the conda PURL population and fetch details for matched advisories,
-So that the three Basilisk datasets fill.
+I want the public Basilisk package listing refreshed on every run, and driver nodes to query Basilisk for the conda PURL population and fetch details for matched advisories under the opt-in,
+So that the listing fills unattended and the three Basilisk datasets fill once the operator supplies a token.
 
-**Type:** feature • **Effort:** M • **Deps:** — (the CAP-66 open question first) • **FR/AD:** spec-pyforge-atlas CAP-66 (FR-74) • AD-13, AD-14
+**Type:** feature • **Effort:** M • **Deps:** 35.1 (the opt-in switch) • **FR/AD:** spec-pyforge-atlas CAP-66 (FR-74, amended 2026-10-18 by operator ruling) • AD-2, AD-13, AD-14
 **Flag:** `pyforge.atlas.basilisk_population`
-**Surface:** `datasets/basilisk.py`, `pipelines/vulnerability/` (driver nodes), `pipelines/derived_artifacts/` (the rollup input), `conf/base/catalog.yml`, flag registration, tests
-**Given** `query_population` and `fetch_details` are never called and `load()` returns last-good even with a fetcher
+**Surface:** `datasets/basilisk.py`, `pipelines/vulnerability/` (driver nodes), `pipelines/derived_artifacts/` (the rollup input), `conf/base/catalog.yml`, `tools/bootstrap.py` (the listing's refresher), flag registration, tests
+**Given** `query_population` and `fetch_details` are never called, `load()` returns last-good even with a fetcher, the package listing has no refresher (`DW-atlas-34-6-2`), and the advisory endpoints answer 401 without a bearer token (probed 2026-10-18)
 **When** the pipeline runs with the flag on
-**Then** against a recorded fixture the advisories, details and rollup fill, and a live run's population equals `core_packages_enumerated`'s row count
+**Then** a plain run with network fills `discovery_basilisk_packages_raw`; against a recorded fixture the advisories, details and rollup fill; without `PYFORGE_ATLAS_CREDENTIALED=1` no request carries a credential and the three stores keep last-good under `stale`
+**And** with the opt-in and a `basilisk_token`, a live run's population equals `core_packages_enumerated`'s row count (operator-attended; no token exists today)
 **Status:** backlog
 
 ### Story 36.2: The OpenTeams board and the staged-recipes PRs fill on opt-in
@@ -2680,13 +2681,13 @@ As the query plane,
 I want a named atlas node to write `query_plane_estate_source`,
 So that `query_plane_cache` builds the estate cache from data.
 
-**Type:** feature • **Effort:** M • **Deps:** — (the CAP-68 open question first) • **FR/AD:** spec-pyforge-atlas CAP-68 (FR-76) • canopy FR-47 • AD-1
+**Type:** feature • **Effort:** M • **Deps:** — (BLOCKED, operator ruling 2026-10-18: deferred until a steward story exports the platform tables through `pyforge.core.station_port`; atlas never reads platform OLTP directly) • **FR/AD:** spec-pyforge-atlas CAP-68 (FR-76) • canopy FR-47 • AD-1
 **Flag:** `pyforge.atlas.estate_source_producer`
-**Surface:** decided with the CAP-68 answer (a node under `pipelines/query_plane_cache/`, its catalog entry, tests); any steward-side export is a steward story
+**Surface:** decided with the steward export (a node under `pipelines/query_plane_cache/`, its catalog entry, tests); the export itself is a steward story
 **Given** steward Story 34.2 declared `query_plane_estate_source` and nothing produces it
 **When** `pyforge atlas run --pipelines query_plane_cache` runs on a fresh data root with the flag on
 **Then** it exits 0, writes `query_plane_estate`, and the estate model answers its measures
-**Status:** backlog
+**Status:** blocked
 
 ## Validation note — 2026-08-26 (chain-currency sweep)
 

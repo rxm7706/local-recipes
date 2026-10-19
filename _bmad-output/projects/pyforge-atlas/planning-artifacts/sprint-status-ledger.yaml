@@ -115,7 +115,7 @@ development_status:
   34-5-the-five-os-distro-indexes-refresh-themselves: done
   34-6-the-public-discovery-stores-refresh-themselves: done
   34-7-the-vulnerability-stores-refresh-themselves: backlog
-  34-8-migration-status-fills-through-a-driver-node: backlog
+  34-8-migration-status-fills-through-a-driver-node: done
   34-9-phase-p-fills-from-the-public-clickhouse-mirror: done
   35-1-one-opt-in-switch-and-github-authenticates: backlog
   35-2-the-vcs-batches-come-from-the-whole-universe: backlog
@@ -123,7 +123,7 @@ development_status:
   35-4-gitlab-codeberg-and-the-eight-registries-fill: backlog
   36-1-the-basilisk-population-runs: backlog
   36-2-the-openteams-board-and-the-staged-recipes-prs-fill-on-opt-in: backlog
-  36-3-the-query-plane-estate-source-has-a-producer: backlog
+  36-3-the-query-plane-estate-source-has-a-producer: blocked
   4-1-integrate-kedro-dagster-for-scheduling-execution: done
   4-2-integrate-kedro-viz-expose-a-pixi-task: done
   5-1-define-the-boring-semantic-layer-bsl-models: done

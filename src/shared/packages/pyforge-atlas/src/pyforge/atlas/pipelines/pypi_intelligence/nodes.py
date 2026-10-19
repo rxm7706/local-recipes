@@ -20,6 +20,7 @@ from __future__ import annotations
 import logging
 import re
 import time
+from typing import TypeGuard
 
 import pandas as pd
 
@@ -69,8 +70,8 @@ def _is_missing(v) -> bool:
 
 # Story 34.11: legacy's PyPI source-URL name (``_PYPI_NAME_RE``, CFA:2050), lower-cased as
 # legacy stores it (CFA:2089). files.pythonhosted.org serves the same /packages/source/ path;
-# legacy counts that host as PyPI (``_SRC_REGEX_PATTERNS``) but its name pattern omits it,
-# which drops 677 recipes (2026-10-18), so it is read here too.
+# legacy counts that host as PyPI (``_SRC_REGEX_PATTERNS``) but its name pattern omits it, so
+# it is read here too (161 more rows on 2026-10-18).
 _RECIPE_SOURCE_PYPI = re.compile(r"(?:pypi\.io|pypi\.org|files\.pythonhosted\.org)/packages/source/[^/]/([^/]+)/")
 
 
@@ -80,11 +81,44 @@ def recipe_source_pypi_name(url: object) -> str | None:
     return m.group(1).lower() if m else None
 
 
+def _has(frame: pd.DataFrame | None, columns: set[str]) -> TypeGuard[pd.DataFrame]:
+    return frame is not None and not frame.empty and columns <= set(frame.columns)
+
+
+def _recipe_source_names(graph: pd.DataFrame | None, attribution: pd.DataFrame | None) -> dict[str, str]:
+    """``conda_name -> PyPI project`` its feedstock's recipe downloads.
+
+    Legacy Phase E maps every output Phase B.5 attributes to the feedstock (``feedstock_to_conda``,
+    CFA:2283-2287); ``core_feedstock_attribution`` is that attribution. A package attribution
+    has no row for falls back to the frame's anchor rows, the first with a URL."""
+    if not _has(graph, {"conda_name", "source_url"}):
+        if graph is not None and not graph.empty:  # a last-good frame from before Story 34.11
+            logger.warning("core_cf_graph_raw has no source_url column: the recipe-source tier is skipped")
+        return {}
+    anchors = graph.loc[graph["source_url"].notna()]
+    names: dict[str, str] = {}
+    attributed: set[str] = set()
+    if "feedstock_name" in anchors.columns and _has(attribution, {"conda_name", "feedstock_name"}):
+        by_feedstock: dict[str, str | None] = {}
+        for feedstock, url in zip(anchors["feedstock_name"], anchors["source_url"], strict=True):
+            by_feedstock.setdefault(feedstock, recipe_source_pypi_name(url))
+        for conda, feedstock in zip(attribution["conda_name"], attribution["feedstock_name"], strict=True):
+            if isinstance(conda, str) and (name := by_feedstock.get(feedstock)):
+                names.setdefault(conda, name)
+        attributed = set(attribution["conda_name"].dropna())
+    for conda, url in zip(anchors["conda_name"], anchors["source_url"], strict=True):
+        if isinstance(conda, str) and conda not in attributed and conda not in names:
+            if name := recipe_source_pypi_name(url):
+                names[conda] = name
+    return names
+
+
 def map_pypi_conda(
     pypi_parselmouth_mapping_raw: pd.DataFrame,
     core_packages_enumerated: pd.DataFrame,
     core_cf_graph_raw: pd.DataFrame | None = None,
     pypi_universe: pd.DataFrame | None = None,
+    core_feedstock_attribution: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     # legacy: Phase C  (phase_c_parselmouth_join CFA:1744)
     """Join the parselmouth ``pypi_name -> conda_name`` mapping against the conda
@@ -97,14 +131,17 @@ def map_pypi_conda(
     the mapping to REAL conda packages (``conda_name``). Output (intermediate, fed to
     Phase C.5): ``pypi_name``, ``conda_name``, ``match_source``.
 
-    Story 34.11: legacy fills two more tiers, each only for a conda package with no PyPI name
-    yet, in its own phase order:
+    Story 34.11: legacy fills two more tiers, in its own phase order:
 
-    1. ``name_coincidence`` -- Phase D (``_phase_d_update_working_set``, CFA:1835-1890): a PyPI
-       project whose lower-cased name equals the conda name (``pypi_universe``).
-    2. ``recipe_source_url`` -- Phase C.5, folded into Phase E (CFA:2434-2446): every output of
-       a feedstock whose recipe downloads from PyPI (``.../packages/source/<l>/<name>/``) maps
-       to that project. ``core_cf_graph_raw`` carries each output's ``source_url``.
+    1. ``name_coincidence`` -- Phase D (``_phase_d_update_working_set``, CFA:1837-1895): a PyPI
+       project whose lower-cased name equals the name of a conda package with no PyPI name yet
+       (``pypi_universe``). Legacy checks the PyPI side first: a project already mapped to
+       another conda package never matches by name (GNU ``flex`` is not PyPI ``flex``).
+    2. ``recipe_source_url`` -- Phase C.5, folded into Phase E (CFA:2434-2446): every output
+       attributed to a feedstock whose recipe downloads from PyPI
+       (``.../packages/source/<l>/<name>/``) maps to that project
+       (:func:`_recipe_source_names`). As legacy's ``COALESCE``, a name coincidence keeps its
+       name and takes this label; a parselmouth row is never touched.
 
     These matches join the candidates Phase H fetches (Story 34.10) and the purls the vdb scan
     queries (Story 34.7).
@@ -120,39 +157,43 @@ def map_pypi_conda(
         # a missing per-row match_source defaults to parselmouth; a provided tier
         # (incl. g10_spelling) is preserved verbatim.
         out["match_source"] = out["match_source"].fillna("parselmouth")
-    # restrict to conda_names the core pipeline actually enumerated (real feedstocks)
-    universe = pypi_universe
-    enum_for_names = core_packages_enumerated
-    if (
-        universe is not None
-        and not universe.empty
-        and "pypi_name" in universe.columns
-        and enum_for_names is not None
-        and not enum_for_names.empty
-        and "conda_name" in enum_for_names.columns
-    ):
-        mapped = set(out["conda_name"].dropna())
-        projects = {str(p).lower() for p in universe["pypi_name"].dropna()}
-        coincidences = [
-            {"pypi_name": conda.lower(), "conda_name": conda, "match_source": "name_coincidence"}
-            for conda in dict.fromkeys(enum_for_names["conda_name"].dropna())
-            if isinstance(conda, str) and conda not in mapped and conda.lower() in projects
-        ]
-        if coincidences:
-            out = pd.concat([out, pd.DataFrame(coincidences, columns=cols)], ignore_index=True)
-    graph = core_cf_graph_raw
-    if graph is not None and not graph.empty and {"conda_name", "source_url"} <= set(graph.columns):
-        mapped = set(out["conda_name"].dropna())
-        anchors = graph.loc[graph["source_url"].notna(), ["conda_name", "source_url"]].drop_duplicates("conda_name")
-        recipe = [
-            {"pypi_name": name, "conda_name": conda, "match_source": "recipe_source_url"}
-            for conda, url in zip(anchors["conda_name"], anchors["source_url"], strict=True)
-            if isinstance(conda, str) and conda not in mapped and (name := recipe_source_pypi_name(url))
-        ]
-        if recipe:
-            out = pd.concat([out, pd.DataFrame(recipe, columns=cols)], ignore_index=True)
+    enumerated = (
+        list(dict.fromkeys(c for c in core_packages_enumerated["conda_name"].dropna() if isinstance(c, str)))
+        if _has(core_packages_enumerated, {"conda_name"})
+        else []
+    )
+    recipe = _recipe_source_names(core_cf_graph_raw, core_feedstock_attribution)
+    mapped = set(out["conda_name"].dropna())
+    coincident: dict[str, str] = {}
+    if _has(pypi_universe, {"pypi_name"}):
+        projects = {str(p).lower() for p in pypi_universe["pypi_name"].dropna()}
+        taken = {_PEP503_RUN_RE.sub("-", str(p)).lower() for p in out["pypi_name"].dropna()}
+        for conda in enumerated:
+            name = conda.lower()
+            key = _PEP503_RUN_RE.sub("-", name)
+            if conda in mapped or name not in projects or key in taken:
+                continue
+            coincident[conda] = name
+            taken.add(key)
+    rows = [
+        {
+            "pypi_name": name,
+            "conda_name": conda,
+            "match_source": "recipe_source_url" if conda in recipe else "name_coincidence",
+        }
+        for conda, name in coincident.items()
+    ]
+    mapped |= set(coincident)
+    rows += [
+        {"pypi_name": recipe[conda], "conda_name": conda, "match_source": "recipe_source_url"}
+        for conda in enumerated
+        if conda in recipe and conda not in mapped
+    ]
+    if rows:
+        out = pd.concat([out, pd.DataFrame(rows, columns=cols)], ignore_index=True)
     if out.empty:
         return pd.DataFrame(columns=cols)
+    # restrict to conda_names the core pipeline actually enumerated (real feedstocks)
     enum = core_packages_enumerated
     if enum is not None and not enum.empty and "conda_name" in enum.columns:
         valid = set(enum["conda_name"].dropna())

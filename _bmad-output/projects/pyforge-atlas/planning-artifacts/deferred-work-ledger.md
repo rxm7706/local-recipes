@@ -5016,10 +5016,10 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 ### DW-atlas-34-6-2: No story owns the Basilisk package listing, which answers unauthenticated.
 
 - source_spec: `planning-artifacts/specs/spec-34-6-the-public-discovery-stores-refresh-themselves.md`
-  summary: `discovery_basilisk_packages_raw` (`BasiliskPackagesDataset`, `GET {BASILISK_BASE_URL}/v1/packages`) answered 200 with no credential on 2026-10-18, but stays fetcher-less. Whether Basilisk runs unattended is the Spec's open question on CAP-66, and Story 36.1 covers only the three `vulnerability_basilisk_*` datasets. The operator's ruling on that question decides whether 36.1 also wires this store or a new story does.
+  summary: `discovery_basilisk_packages_raw` (`BasiliskPackagesDataset`, `GET {BASILISK_BASE_URL}/v1/packages`) answered 200 with no credential on 2026-10-18, but stays fetcher-less. Whether Basilisk runs unattended is the Spec's open question on CAP-66, and Story 36.1 covers only the three `vulnerability_basilisk_*` datasets. The operator's ruling on that question decides whether 36.1 also wires this store or a new story does. Ruled 2026-10-18: the listing refreshes unattended and Story 36.1 wires it; the advisory endpoints now need a bearer token.
   evidence: Story 34.6 review round 1, should-fix 2 (a `limit=1` probe answered 200 unauthenticated); `spec-pyforge-atlas` Open Questions; `epics.md` Story 36.1's Surface line.
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/basilisk.py (BasiliskPackagesDataset); src/shared/packages/pyforge-atlas/tools/bootstrap.py (_NO_PUBLIC_REFRESHER)
   origin: review finding, atlas Story 34.6 independent review round 1
   severity: low
-  promoted: 2026-10-18 -- implementer response to 34.6 review round 1
+  promoted: 2026-10-18 -- implementer response to 34.6 review round 1; owned by Story 36.1 (operator ruling 2026-10-18)
   status: open

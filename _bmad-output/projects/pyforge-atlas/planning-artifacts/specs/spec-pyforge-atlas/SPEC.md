@@ -456,13 +456,18 @@ One-chain rebase 2026-09-17. Each reminted CAP keeps provenance `← spec-<old> 
     legacy K, L, N and E.5 measured the same day; without the opt-in a transport fixture proves no request carries a
     credential and the credentialed stores mark stale; a population test proves the batches come from the universe,
     not from `identity_packages_primary`.
-- **CAP-66 — the Basilisk population runs** ← spec-pyforge-atlas CAP-66 (ready 2026-10-18)
-  - **intent:** driver nodes call `BasiliskBatchDataset.query_population` over `core_packages_enumerated` (conda PURL
-    keys) and `BasiliskDetailDataset.fetch_details` for the matched advisories, through a public fetcher; the
-    pre-announcement endpoint degrades per AD-13.
-  - **success:** against a recorded Basilisk fixture the drivers fill `vulnerability_basilisk_advisories`,
-    `vulnerability_basilisk_details` and `vulnerability_basilisk_rollup`; a live run's population equals
-    `core_packages_enumerated`'s row count; an unreachable endpoint keeps last-good under `stale`.
+- **CAP-66 — the Basilisk population runs** ← spec-pyforge-atlas CAP-66 (ready 2026-10-18; amended 2026-10-18 by operator ruling: the advisory endpoints need a bearer token)
+  - **intent:** the public package listing (`/v1/packages`: each package's highest CVSS and coverage) refreshes
+    unattended into `discovery_basilisk_packages_raw`. Driver nodes call `BasiliskBatchDataset.query_population` over
+    `core_packages_enumerated` (conda PURL keys) and `BasiliskDetailDataset.fetch_details` for the matched advisories
+    with a bearer header built from `basilisk_token`, sent to the Basilisk host only and only under
+    `PYFORGE_ATLAS_CREDENTIALED=1`; unset, those stores keep last-good under `stale`. The pre-announcement endpoint
+    degrades per AD-13.
+  - **success:** a plain run with network fills `discovery_basilisk_packages_raw`; against a recorded Basilisk fixture
+    the drivers fill `vulnerability_basilisk_advisories`, `vulnerability_basilisk_details` and
+    `vulnerability_basilisk_rollup`; without the opt-in a transport fixture proves no request carries a credential;
+    with the opt-in and a token a live run's population equals `core_packages_enumerated`'s row count; an unreachable
+    endpoint keeps last-good under `stale`.
 - **CAP-67 — the OpenTeams identity sources fill on opt-in** ← spec-pyforge-atlas CAP-67 (ready 2026-10-18)
   - **intent:** the OpenTeams project board (GraphQL) and the staged-recipes PR list (REST) fetch with `github_token`
     under `PYFORGE_ATLAS_CREDENTIALED=1`, beside the public purl-associator and about-maintainers lists (CAP-64), so
@@ -978,7 +983,11 @@ Two questions the mint of 2026-10-18 leaves to the operator; both sit on `.memlo
 
 - **CAP-66:** does the Basilisk population run unattended on every plain run (public, about 35 batched requests over
   the universe) or only on an operator opt-in (DW-B8-3 recorded the full population run as attended)? To settle before
-  Story 36.1.
+  Story 36.1. *(Answered 2026-10-18: the advisory endpoints now answer 401 and need a bearer token; only the package
+  listing is public. The listing refreshes unattended; the advisories and details run under the opt-in with a
+  `basilisk_token` and stay stale until the operator adds one. CAP-66 is amended; Story 36.1 carries both halves.)*
 - **CAP-68:** which platform OLTP table or tables does the estate source extract (canopy FR-47 Mode B names "heavy
   tables"; the model today is a `sku`/`units` toy), and through which seam does atlas read them
-  (`pyforge.core.station_port`, a steward export)? To settle before Story 36.3.
+  (`pyforge.core.station_port`, a steward export)? To settle before Story 36.3. *(Answered 2026-10-18: deferred.
+  Story 36.3 stays blocked until a steward story exports the platform tables through `pyforge.core.station_port`;
+  atlas never reads platform OLTP directly.)*

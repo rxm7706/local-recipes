@@ -254,7 +254,7 @@ NODE_TIMEOUTS: dict[str, int] = {
     "build_dependency_graph": 600,  # Phase J
     "compute_feedstock_health": 300,  # Phase M
     # -- pypi_intelligence ------------------------------------------------- #
-    "map_pypi_conda": 300,  # Phase C
+    "map_pypi_conda": 600,  # Phase C (+ D's name coincidence; loads the cf-graph, Story 34.11)
     "match_source_urls": 600,  # Phase C.5
     "enumerate_pypi_universe": 900,  # Phase D
     "fetch_pypi_current_versions": 900,  # Phase H
