@@ -2619,7 +2619,7 @@ So that `vcs_upstream_versions`, `vcs_live_health` and `vcs_archived_feedstocks`
 
 **Type:** feature • **Effort:** L • **Deps:** 35.1, 35.2 • **FR/AD:** spec-pyforge-atlas CAP-65 (FR-73) • AD-13
 **Flag:** `pyforge.atlas.live_vcs_universe`
-**Surface:** `datasets/request_datasets.py` (`fetch_repo_health` and the GraphQL query), `datasets/vcs_sources.py`, `pipelines/vcs_health/nodes.py`, tests
+**Surface:** `datasets/request_datasets.py` (`fetch_github`, the Phase K, N and E.5 queries, the store's `(kind, key)`), `pipelines/vcs_health/nodes.py` (the three consumers), `orchestration/definitions.py` (the budget), tests
 **Given** `fetch_repo_health` asks only for archived status, stars, last push and open issues, so `upstream_version` is always NA
 **When** a credentialed run reaches the GitHub stores
 **Then** the three datasets hold rows within the story's tolerance of legacy K (23,896 fetched), N (28,682 feedstocks) and E.5 (864 archived), all measured 2026-10-18

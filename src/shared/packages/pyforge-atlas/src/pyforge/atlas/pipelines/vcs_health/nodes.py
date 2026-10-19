@@ -218,14 +218,27 @@ def enrich_maintainers(
 # ---------------------------------------------------------------------------
 
 
+def _of_kind(src: pd.DataFrame, kind: str) -> pd.DataFrame | None:
+    """Story 35.3: the GitHub store's rows of one ``kind``, or ``None`` when it holds none (a store
+    written before Story 35.3, or with ``pyforge.atlas.live_vcs_universe`` off)."""
+    if "kind" not in src.columns:
+        return None
+    rows = src[src["kind"] == kind]
+    return rows if not rows.empty else None
+
+
 def detect_archived_feedstocks(vcs_github_api_raw: pd.DataFrame) -> pd.DataFrame:
     # legacy: Phase E.5  (phase_e5_archived_feedstocks CFA:2504)
     """Detect archived feedstocks from the GitHub API response. Input:
     ``feedstock_name``, ``archived`` (bool). Output: the ``feedstock_name`` rows whose
-    repo is archived (``archived=True``)."""
+    repo is archived (``archived=True``). Story 35.3: the conda-forge organization's archived
+    listing (``kind="archived"``) when the store holds it."""
     src = vcs_github_api_raw
     if src is None or src.empty or not {"feedstock_name", "archived"} <= set(src.columns):
         return pd.DataFrame(columns=["feedstock_name", "archived"])
+    listing = _of_kind(src, "archived")
+    if listing is not None:
+        src = listing
     archived = src[_as_bool_series(src["archived"])]
     return archived[["feedstock_name", "archived"]].drop_duplicates().reset_index(drop=True)
 
@@ -253,8 +266,13 @@ def track_upstream_versions(
     ``conda_name``, ``host``, ``upstream_version``, ``last_error``."""
     cols = ["conda_name", "host", "upstream_version", "last_error"]
     frames = []
+    github = vcs_github_api_raw
+    if github is not None and not github.empty:
+        # Story 35.3: the upstream releases and tags (kind "upstream") when the store holds them
+        upstream = _of_kind(github, "upstream")
+        github = upstream if upstream is not None else github
     for host, df in (
-        ("github", vcs_github_api_raw),
+        ("github", github),
         ("gitlab", vcs_gitlab_api_raw),
         ("codeberg", vcs_codeberg_api_raw),
     ):
@@ -350,6 +368,15 @@ def fetch_live_health(vcs_github_api_raw: pd.DataFrame) -> pd.DataFrame:
     base_cols = ["feedstock_name", "stars", "last_commit", "open_issues"]
     if src is None or src.empty or "feedstock_name" not in getattr(src, "columns", []):
         return pd.DataFrame(columns=base_cols)
+    feedstocks = _of_kind(src, "feedstock")
+    if feedstocks is not None:
+        # Story 35.3: the feedstock repos' health (Phase N), with its open PRs and CI state
+        cols = [*base_cols, "open_prs", "ci_status", "last_error"]
+        out = feedstocks.drop_duplicates("feedstock_name").reset_index(drop=True)
+        for c in cols:
+            if c not in out.columns:
+                out[c] = pd.NA
+        return out[cols]
     # Stable output schema: always the full base_cols, missing signals filled NA
     # (a variable schema depending on which inputs happen to be present is unstable
     # for downstream consumers + the parity harness).

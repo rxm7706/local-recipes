@@ -45,6 +45,11 @@ def _request(*repos: tuple[str, str]) -> RefreshRequest:
     )
 
 
+def _release(tag: str = "v1.2") -> dict:
+    """Story 35.3: a Phase K repository node (latest release, latest tag)."""
+    return {"releases": {"nodes": [{"tagName": tag}]}, "refs": {"nodes": []}}
+
+
 def _health() -> dict:
     return {"isArchived": False, "stargazerCount": 7, "pushedAt": "2026-10-18T00:00:00Z", "issues": {"totalCount": 2}}
 
@@ -87,17 +92,17 @@ def test_only_the_exact_value_1_turns_the_switch_on(monkeypatch, value):
 
 
 def test_with_the_switch_github_gets_a_bearer_header_and_the_rows_land(fake_transport, flag_on, switch_on, tmp_path):
-    fake_transport.answers[GRAPHQL] = (200, {"data": {"r0": _health()}})
+    fake_transport.answers[GRAPHQL] = (200, {"data": {"r0": _release()}})
     ds = _dataset(tmp_path)
 
     ds.save(_request(("o", "r")))
 
-    (sent,) = fake_transport.sent
-    assert sent.method == "POST" and sent.headers["Authorization"] == f"Bearer {TOKEN}"
-    assert fake_transport.timeouts == [ds._timeout_seconds]
+    sent = fake_transport.sent[0]  # Phase K's batch; Phase E.5's listing follows (Story 35.3)
+    assert all(r.method == "POST" and r.headers["Authorization"] == f"Bearer {TOKEN}" for r in fake_transport.sent)
+    assert set(fake_transport.timeouts) == {ds._timeout_seconds}
     assert 'repository(owner: "o", name: "r")' in json.loads(sent.body)["query"]
-    row = ds.load().iloc[0]
-    assert (row["feedstock_name"], row["stars"], row["open_issues"]) == ("r", 7, 2)
+    row = ds.load().set_index("key").loc["conda-r"]
+    assert (row["kind"], row["repo"], row["upstream_version"]) == ("upstream", "o/r", "1.2")
     assert ds.staleness() is None
 
 
@@ -119,11 +124,11 @@ def test_a_url_off_https_api_github_com_never_receives_the_token(
 def test_the_switch_is_read_at_save_not_at_construction(fake_transport, flag_on, tmp_path, monkeypatch):
     ds = _dataset(tmp_path)  # built with the switch unset
     monkeypatch.setenv(credential_switch.SWITCH, "1")
-    fake_transport.answers[GRAPHQL] = (200, {"data": {"r0": _health()}})
+    fake_transport.answers[GRAPHQL] = (200, {"data": {"r0": _release()}})
 
     ds.save(_request(("o", "r")))
 
-    assert len(fake_transport.sent) == 1
+    assert fake_transport.sent
 
 
 @pytest.mark.parametrize(
@@ -158,7 +163,7 @@ def test_a_refusal_is_sent_once_and_never_reaches_a_marker_or_a_row(
 def test_a_refusal_after_a_good_chunk_keeps_its_rows_and_marks_the_store_stale(
     fake_transport, flag_on, switch_on, tmp_path, monkeypatch
 ):
-    answers = iter([(200, {"data": {f"r{i}": _health() for i in range(GITHUB_BATCH_QUERY_MAX)}}), (429, {})])
+    answers = iter([(200, {"data": {f"r{i}": _release() for i in range(GITHUB_BATCH_QUERY_MAX)}}), (429, {})])
     fake_transport.answers = _Each(answers)
     ds = _dataset(tmp_path)
     repos = [("o", f"r{i}") for i in range(GITHUB_BATCH_QUERY_MAX * 2 + 1)]  # three chunks
@@ -217,13 +222,13 @@ def test_a_graphql_error_body_says_why(fake_transport, flag_on, switch_on, tmp_p
 
 def test_a_missing_repository_keeps_its_own_graphql_error(fake_transport, flag_on, switch_on, tmp_path):
     missing = {"type": "NOT_FOUND", "path": ["r0"], "message": "Could not resolve to a Repository"}
-    fake_transport.answers[GRAPHQL] = (200, {"data": {"r0": None, "r1": _health()}, "errors": [missing]})
+    fake_transport.answers[GRAPHQL] = (200, {"data": {"r0": None, "r1": _release()}, "errors": [missing]})
     ds = _dataset(tmp_path)
 
     ds.save(_request(("o", "gone"), ("o", "here")))
 
-    errors = dict(zip(ds.load()["feedstock_name"], ds.load()["last_error"], strict=True))
-    assert errors["gone"].startswith("NOT_FOUND") and errors["here"] is None
+    errors = dict(zip(ds.load()["key"], ds.load()["last_error"], strict=True))
+    assert errors["conda-gone"].startswith("NOT_FOUND") and errors["conda-here"] is None
 
 
 def test_flag_off_keeps_the_path_this_story_found(fake_transport, switch_on, tmp_path):
@@ -331,7 +336,7 @@ def test_the_flag_is_read_at_each_save(fake_transport, switch_on, tmp_path, flag
     flag_on = flag_provider[credential_switch.FLAG_KEY]
     ds = _dataset(tmp_path)  # built before the flag is read
     monkeypatch.setattr(credential_switch, "live_vcs_universe", lambda: flag_on)
-    fake_transport.answers[GRAPHQL] = (200, {"data": {"r0": _health()}})
+    fake_transport.answers[GRAPHQL] = (200, {"data": {"r0": _release()}})
 
     ds.save(_request(("o", "r")))
 

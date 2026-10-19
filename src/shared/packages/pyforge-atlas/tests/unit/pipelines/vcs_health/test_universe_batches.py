@@ -187,7 +187,9 @@ def test_with_the_flag_on_the_identity_subset_no_longer_drives_the_github_batch(
     ds = GitHubRequestDataset(
         url="https://api.github.com/graphql", filepath=str(tmp_path / "gh"), credentials={"token": "t"}
     )
-    monkeypatch.setattr(ds, "fetch_repo_health", lambda repos, **_k: asked.extend(repos))
+    monkeypatch.setattr(
+        ds, "fetch_github", lambda upstream, feedstocks, **_k: asked.extend((o, r) for _c, o, r in upstream)
+    )
 
     ds.save(refresh_vcs_github_store({}, IDENTITY, ENUM, GRAPH, ATTRIBUTION))
 

@@ -106,6 +106,29 @@ def _http_status(exc: BaseException) -> int | None:
     return None
 
 
+def _retry_after(exc: BaseException) -> float:
+    """The ``Retry-After`` wait (seconds, capped) inside kedro's ``DatasetError``, else ``0.0``."""
+    for arg in (exc, *getattr(exc, "args", ())):
+        headers = getattr(getattr(arg, "response", None), "headers", None)
+        if headers is not None and headers.get("Retry-After") is not None:
+            return parse_retry_after(headers.get("Retry-After"))
+    return 0.0
+
+
+def normalize_release_tag(tag: str | None) -> str | None:
+    """Story 35.3: a release tag as a version, as legacy Phase K normalizes it
+    (``_normalize_release_tag``, CFA:4608): one case-insensitive prefix of ``release-``,
+    ``release_``, ``rel-``, ``rel_`` or ``v`` is stripped."""
+    if not tag:
+        return None
+    s = tag.strip()
+    for prefix in ("release-", "release_", "rel-", "rel_", "v"):
+        if s.lower().startswith(prefix):
+            s = s[len(prefix) :]
+            break
+    return s or None
+
+
 def _graphql_errors(payload: Any) -> dict[str | None, str]:
     """GitHub GraphQL ``errors``: the first message per alias (``path[0]``), and the first message
     of all under ``None`` (a body of errors and no data: rate limit, a bad query)."""
@@ -396,7 +419,9 @@ class AnacondaDownloadsDataset(_RequestParameterizedAPIDataset):
 
 
 class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset):
-    merge_on = ("feedstock_name",)
+    # Story 35.3: one row per (kind, key): "upstream" (Phase K, keyed by conda_name), "feedstock"
+    # (Phase N) and "archived" (Phase E.5), keyed by feedstock name; "health" is the path before 35.3
+    merge_on = ("kind", "key")
 
     """Per-query GitHub GraphQL request-body source (Phases E.5 / K / N).
 
@@ -422,7 +447,18 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
         "stars",
         "last_commit",
         "open_issues",
+        # Story 35.3
+        "kind",
+        "key",
+        "repo",
+        "open_prs",
+        "ci_status",
+        "archived_at",
     )
+    #: Story 35.3: legacy's batch sizes (Phase K 100, CFA:4697; Phase N 25, CFA:6600)
+    UPSTREAM_BATCH = 100
+    FEEDSTOCK_BATCH = 25
+    ARCHIVED_MAX_PAGES = 200
 
     def __init__(
         self,
@@ -505,8 +541,10 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
         *,
         fetcher: Callable[[dict[str, Any]], Any] | None = None,
         auth: credential_switch.BearerAuth | None = None,
+        build: Callable[[Sequence[Any]], dict[str, Any]] | None = None,
     ) -> tuple[Any, Exception | None]:
-        """One chunk's batched POST, retried up to ``max_retries`` times. The
+        """One chunk's batched POST, retried up to ``max_retries`` times. ``build`` makes the body
+        (default :meth:`build_batch_query`). The
         rate-limit token is acquired on EVERY attempt (review fix #3/#4 — mirrors
         ``VcsHostSeedDataset.fetch_one``), with a short injectable backoff between
         retries. Building the query lives INSIDE the try (review finding) so a
@@ -517,7 +555,7 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
         while True:
             try:
                 self.scheduler.acquire()
-                body = self.build_batch_query(chunk)
+                body = (build or self.build_batch_query)(chunk)
                 if fetcher is not None:
                     return fetcher(body), None
                 if auth is not None:
@@ -534,9 +572,12 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
                 attempt += 1
                 # Story 35.1: a rejected token is never sent again (GitHub can block a client that
                 # keeps sending bad credentials)
-                if attempt > self._max_retries or (auth is not None and _http_status(exc) in _STOP_STATUSES):
+                status = _http_status(exc) if auth is not None else None
+                wait = _retry_after(exc) if status in (403, 429) else 0.0
+                if attempt > self._max_retries or (status in _STOP_STATUSES and not wait):
                     return None, exc
-                self._sleep(retry_backoff_seconds(attempt))
+                # Story 35.3: a 403 or 429 that names its wait (a secondary rate limit) is retried after it
+                self._sleep(wait or retry_backoff_seconds(attempt))
 
     def fetch_repo_health(
         self,
@@ -580,6 +621,8 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
                 for owner, name in chunk:
                     rows.append(
                         {
+                            "kind": "health",
+                            "key": name,
                             "feedstock_name": name,
                             "conda_name": pd.NA,
                             "archived": pd.NA,
@@ -601,6 +644,8 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
                 if not isinstance(repo, dict):
                     rows.append(
                         {
+                            "kind": "health",
+                            "key": name,
                             "feedstock_name": name,
                             "conda_name": pd.NA,
                             "archived": pd.NA,
@@ -615,6 +660,8 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
                 issues = repo.get("issues") if isinstance(repo.get("issues"), dict) else {}
                 rows.append(
                     {
+                        "kind": "health",
+                        "key": name,
                         "feedstock_name": name,
                         "conda_name": pd.NA,
                         "archived": bool(repo.get("isArchived")),
@@ -639,6 +686,190 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
             # the rows fetched before the refusal are kept, but the store is not current
             self._mark_stale(f"stopped after {last_failure} -- the remaining batches keep last-good")
         return frame
+
+    # -- Story 35.3: legacy's three GitHub reads (Phases K, N and E.5) -------------------------
+
+    def build_upstream_query(self, repos: Sequence[tuple[str, str]]) -> dict[str, Any]:
+        """Phase K (``_phase_k_github_graphql_batch``, CFA:4695-4760): each repo's latest release
+        and latest tag, and the rate limit."""
+        parts = [
+            f"r{i}: repository(owner: {json.dumps(str(owner))}, name: {json.dumps(str(name))}) {{ "
+            "releases(first: 1, orderBy: {field: CREATED_AT, direction: DESC}) { nodes { tagName } } "
+            'refs(refPrefix: "refs/tags/", first: 1, orderBy: {field: TAG_COMMIT_DATE, direction: DESC}) '
+            "{ nodes { name } } }"
+            for i, (owner, name) in enumerate(repos)
+        ]
+        return self.with_query("query { " + " ".join(parts) + " rateLimit { cost remaining resetAt } }")
+
+    def build_feedstock_query(self, feedstocks: Sequence[str]) -> dict[str, Any]:
+        """Phase N (CFA:6461-6474): each ``conda-forge/<name>-feedstock``'s last push, default-branch
+        CI state and open issues and PRs (and whether it is archived)."""
+        parts = [
+            f'r{i}: repository(owner: "conda-forge", name: {json.dumps(str(fs) + "-feedstock")}) {{ '
+            "pushedAt isArchived defaultBranchRef { target { ... on Commit { statusCheckRollup { state } } } } "
+            "issues(states: OPEN) { totalCount } pullRequests(states: OPEN) { totalCount } }"
+            for i, fs in enumerate(feedstocks)
+        ]
+        return self.with_query("query { " + " ".join(parts) + " }")
+
+    def build_archived_query(self, cursor: str | None) -> dict[str, Any]:
+        """Phase E.5 (``phase_e5_archived_feedstocks``, CFA:2504): one page of the conda-forge
+        organization's archived repositories."""
+        after = f", after: {json.dumps(cursor)}" if cursor else ""
+        return self.with_query(
+            'query { organization(login: "conda-forge") { '
+            f"repositories(first: 100, isArchived: true{after}) {{ "
+            "nodes { name archivedAt } pageInfo { hasNextPage endCursor } } } }"
+        )
+
+    def fetch_github(
+        self,
+        upstream_repos: Sequence[tuple[str, str, str]],
+        feedstocks: Sequence[str],
+        *,
+        auth: credential_switch.BearerAuth | None = None,
+        fetcher: Callable[[dict[str, Any]], Any] | None = None,
+    ) -> pd.DataFrame:
+        """Story 35.3: the upstream versions (Phase K), the feedstock health (Phase N) and the
+        archived feedstocks (Phase E.5), as rows of ``kind`` ``upstream``, ``feedstock`` and
+        ``archived``. A 401, 403 or 429 that names no wait stops the run (Story 35.1); the rows
+        fetched before it are kept and the store is marked stale. Never raises (AD-13)."""
+        rows: list[dict[str, Any]] = []
+        state: dict[str, Any] = {"failure": "", "stopped": False}
+
+        def run(chunk: Sequence[Any], build: Callable[[Sequence[Any]], dict[str, Any]]) -> tuple[dict, dict] | None:
+            payload, exc = self._fetch_batch_with_retry(chunk, fetcher=fetcher, auth=auth, build=build)
+            if exc is not None:
+                status = _http_status(exc)
+                # never the exception text on the credentialed path: it can quote a request header
+                state["failure"] = f"HTTP {status}" if status else type(exc).__name__
+                state["stopped"] = status in _STOP_STATUSES
+                logger.warning("GitHub batch fetch failed, keeping last-good: %s", state["failure"])
+                return None
+            errors = _graphql_errors(payload)
+            data = payload.get("data") if isinstance(payload, dict) else None
+            if not isinstance(data, dict):
+                state["failure"] = f"GraphQL error: {errors.get(None) or 'no data'}"
+                return None
+            return data, errors
+
+        # Phase K: each distinct repo once, its version written to every package that names it
+        packages: dict[tuple[str, str], list[str]] = {}
+        for conda, owner, name in upstream_repos:
+            packages.setdefault((owner, name), []).append(conda)
+        for chunk in chunk_queries(sorted(packages), self.UPSTREAM_BATCH):
+            if state["stopped"]:
+                break
+            got = run(chunk, self.build_upstream_query)
+            for i, (owner, name) in enumerate(chunk):
+                version, error = None, state["failure"] or "batch failed"
+                if got is not None:
+                    data, errors = got
+                    node = data.get(f"r{i}")
+                    if isinstance(node, dict):
+                        releases = (node.get("releases") or {}).get("nodes") or []
+                        tags = (node.get("refs") or {}).get("nodes") or []
+                        tag = releases[0].get("tagName") if releases and isinstance(releases[0], dict) else None
+                        if not tag and tags and isinstance(tags[0], dict):
+                            tag = tags[0].get("name")
+                        version = normalize_release_tag(tag)
+                        error = None if version else "no tags"
+                    else:
+                        error = errors.get(f"r{i}") or "repository not found in response"
+                for conda in packages[(owner, name)]:
+                    rows.append(
+                        {
+                            "kind": "upstream",
+                            "key": conda,
+                            "conda_name": conda,
+                            "repo": f"{owner}/{name}",
+                            "upstream_version": version,
+                            "last_error": error,
+                        }
+                    )
+        # Phase N
+        for chunk in chunk_queries(sorted(set(feedstocks)), self.FEEDSTOCK_BATCH):
+            if state["stopped"]:
+                break
+            got = run(chunk, self.build_feedstock_query)
+            for i, fs in enumerate(chunk):
+                row: dict[str, Any] = {
+                    "kind": "feedstock",
+                    "key": fs,
+                    "feedstock_name": fs,
+                    "repo": f"conda-forge/{fs}-feedstock",
+                }
+                node = got[0].get(f"r{i}") if got is not None else None
+                if isinstance(node, dict):
+                    target = (node.get("defaultBranchRef") or {}).get("target") or {}
+                    rollup = target.get("statusCheckRollup") if isinstance(target, dict) else None
+                    row.update(
+                        last_commit=node.get("pushedAt"),
+                        archived=bool(node.get("isArchived")),
+                        open_issues=(node.get("issues") or {}).get("totalCount"),
+                        open_prs=(node.get("pullRequests") or {}).get("totalCount"),
+                        ci_status=rollup.get("state") if isinstance(rollup, dict) else None,
+                        last_error=None,
+                    )
+                else:
+                    failed = got[1].get(f"r{i}") if got is not None else None
+                    row["last_error"] = failed or state["failure"] or "repository not found in response"
+                rows.append(row)
+        # Phase E.5: the organization's archived repositories, page by page
+        cursor: str | None = None
+        for _page in range(self.ARCHIVED_MAX_PAGES):
+            if state["stopped"]:
+                break
+            got = run([cursor], lambda chunk: self.build_archived_query(chunk[0]))
+            listing = ((got[0].get("organization") or {}).get("repositories") or {}) if got is not None else {}
+            for node in listing.get("nodes") or []:
+                repo_name = node.get("name") if isinstance(node, dict) else None
+                if isinstance(repo_name, str) and repo_name.endswith("-feedstock"):
+                    fs = repo_name[: -len("-feedstock")]
+                    rows.append(
+                        {
+                            "kind": "archived",
+                            "key": fs,
+                            "feedstock_name": fs,
+                            "archived": True,
+                            "archived_at": node.get("archivedAt"),
+                            "last_error": None,
+                        }
+                    )
+            page = listing.get("pageInfo") or {}
+            if got is None or not page.get("hasNextPage") or not page.get("endCursor"):
+                break
+            cursor = str(page["endCursor"])
+
+        frame = pd.DataFrame(rows, columns=list(self._COLUMNS))
+        has_success = bool(rows) and frame["last_error"].isna().any()
+        if not has_success:
+            self._mark_stale(
+                f"every GitHub batch failed ({state['failure'] or 'nothing to fetch'}) -- keeping last-good"
+            )
+            return frame
+        self._persist(frame)
+        if state["stopped"] or state["failure"]:
+            self._mark_stale(f"stopped after {state['failure']} -- the remaining batches keep last-good")
+        return frame
+
+    def _persist(self, frame: pd.DataFrame) -> None:
+        """Story 35.3: a store written before this story has no ``kind`` or ``key``; its rows are
+        the identity health rows, so they take ``kind="health"`` and ``key=feedstock_name`` before
+        the merge, rather than all collapsing onto one empty key."""
+        if self._store_exists():
+            try:
+                existing = pd.read_parquet(self._store_path)
+                if "kind" not in existing.columns or "key" not in existing.columns:
+                    for column in ("kind", "key"):
+                        if column not in existing.columns:
+                            existing[column] = pd.Series(index=existing.index, dtype=object)
+                    existing["kind"] = existing["kind"].fillna("health")
+                    existing["key"] = existing["key"].fillna(existing["feedstock_name"])
+                    self._atomic_write(self._store_path, lambda p: existing.to_parquet(p, index=False))
+            except Exception as exc:  # noqa: BLE001 -- the base merge then writes the batch alone
+                logger.warning("could not migrate %s to kind/key rows: %s", self._store_path, exc)
+        super()._persist(frame)
 
     def load(self) -> pd.DataFrame:
         return self._read_store(self._COLUMNS)
@@ -666,9 +897,8 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
             if auth is None:
                 self._mark_stale(credential_switch.skip_reason(self._base_url))
                 return
-            # Story 35.2: the universe's GitHub upstreams, not the identity subset
-            repos = sorted({(owner, repo) for _conda, owner, repo in data.upstream_repos})
-            self.fetch_repo_health(repos, auth=auth)
+            # Stories 35.2 and 35.3: the universe's upstreams and feedstocks, read as legacy reads them
+            self.fetch_github(data.upstream_repos, data.feedstocks, auth=auth)
             return
         self.fetch_repo_health(data.github_repos)
 
