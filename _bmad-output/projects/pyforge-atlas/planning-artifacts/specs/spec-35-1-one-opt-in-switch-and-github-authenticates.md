@@ -2,7 +2,7 @@
 title: "35.1: One opt-in switch, and GitHub authenticates"
 type: 'feature'
 created: '2026-10-18'
-status: 'in-review'
+status: 'done'
 baseline_revision: '3c9cf29e1f'
 flag:
   key: pyforge.atlas.live_vcs_universe            # new; minted by this story, shared by Epic 35's feature stories
@@ -22,7 +22,7 @@ context:
 deferred: []
 declared_low_risk: false
 review_loop_iteration: 2
-followup_review_recommended: true
+followup_review_recommended: false
 ---
 
 <intent-contract>
@@ -192,3 +192,4 @@ a dataset or a marker; a test or CI job that sets the switch or reaches the netw
     the reader's default when the tree lacks the key.
   - **Live with an accepted token** (operator ruling 2026-10-18, the `gh` CLI's token): every repo came back; see
     Verification. `DW-atlas-35-1-1` closes.
+- 2026-10-18: independent review round 3 PASS (the 401, 403 and 429 paths and the round-2 test gaps pinned). Promoted to done.

@@ -182,7 +182,7 @@ def test_a_failure_without_a_status_names_only_its_type_on_the_credentialed_path
     import requests.adapters
 
     def refuse(self, request, *args, **kwargs):  # noqa: ANN001, ANN202
-        raise ConnectionError(f"could not send {request.headers}")  # text that quotes the header
+        raise ValueError(f"could not send {request.headers}")  # kedro keeps this text; it quotes the header
 
     monkeypatch.setattr(requests.adapters.HTTPAdapter, "send", refuse)
     ds = _dataset(tmp_path)
@@ -260,6 +260,7 @@ def test_the_autouse_guard_fails_a_credentialed_request_without_the_switch(heade
         raise OSError("sockets are refused in this test")
 
     monkeypatch.setattr(socket.socket, "connect", no_socket)
+    monkeypatch.setattr(socket, "getaddrinfo", no_socket)
     # no fake_transport: the suite's own guard refuses before anything reaches a socket
     with pytest.raises(pytest.fail.Exception, match=credential_switch.SWITCH):
         requests.get("https://api.github.com/x", headers={header: "t"}, timeout=1)
