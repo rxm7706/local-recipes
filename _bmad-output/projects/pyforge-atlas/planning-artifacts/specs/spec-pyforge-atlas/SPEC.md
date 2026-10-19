@@ -2,7 +2,7 @@
 id: SPEC-pyforge-atlas
 spec: pyforge-atlas
 status: ready
-updated: "2026-10-18"
+updated: "2026-10-19"
 owner-dream: docs/dreams/pyforge-atlas.md
 covers-dreams:
   - docs/dreams/pyforge-atlas.md
@@ -392,7 +392,7 @@ One-chain rebase 2026-09-17. Each reminted CAP keeps provenance `← spec-<old> 
     `kedro-viz-publish` names `switch: PAUSE_KEDRO_VIZ_PUBLISH`. `docs/dashboard/README.md` names the artifact and no
     longer names `steward deploy dashboard`. `kedro-test` and `kedro-catalog-check` green; the flag test runs the key in
     both states with `pyforge.testing_kit.flags.flag_states`.
-- **CAP-63 — Vizro boards publish as static exports under `/dashboard/vizro/`** ← spec-pyforge-atlas CAP-63 (ready 2026-10-14; amended 2026-10-15: runs in `-e pyforge-atlas`, and the vendored `plotly.min.js` is the one exact-file vendored entry, in `docs-site/scripts/pages.mts` since herald Story 43.7; extends CAP-8, CAP-40, CAP-42, CAP-50 and CAP-62; binds `sld:AD-10` of the steward spine)
+- **CAP-63 — Vizro boards publish as static exports under `/dashboard/vizro/`** ← spec-pyforge-atlas CAP-63 (ready 2026-10-14; amended 2026-10-15: runs in `-e pyforge-atlas`, and the vendored `plotly.min.js` is the one exact-file vendored entry, in `docs-site/scripts/pages.mts` since herald Story 43.7; amended 2026-10-19 by operator ruling: the producer builds the public data first, weekly and on push; extends CAP-8, CAP-40, CAP-42, CAP-50 and CAP-62; binds `sld:AD-10` of the steward spine)
   - **intent:** a `vizro-static-export` task in `-e pyforge-atlas` (the env that carries vizro and plotly 7.1.0; `pyforge-guild`
     has none; `-e local-recipes` until the 2026-10-15 ruling) builds the same BSL-driven `Dashboard` object `dashboard-dryrun` builds
     (`pyforge.atlas.dashboard.app.build_dashboard`, 34 pages, no server, no `.run()`) and writes one static page per
@@ -416,6 +416,11 @@ One-chain rebase 2026-09-17. Each reminted CAP keeps provenance `← spec-<old> 
     `docsite/tools/assemble_pages.py` until herald Story 43.7, 2026-10-15) is the exact file
     `dashboard/vizro/assets/plotly.min.js` (herald:AD-21 rule 5, a vendored upstream bundle), never the tree. The live Vizro server and the console stay Lane 1. Flag
     `pyforge.atlas.vizro_static_boards`; off, the task refuses with the flag-off message and writes nothing.
+    *(Amended 2026-10-19.)* The producer builds the public atlas data before it exports: the credentials stub, then
+    `pyforge atlas run` over the public pipelines with no `PYFORGE_ATLAS_CREDENTIALED` and BigQuery off (AD-11), then
+    the export against that data root; it runs weekly on a schedule as well as on its push trigger and
+    `workflow_dispatch`. The identity and enterprise boards carry no rows on Pages: their sources are credentialed or
+    internal.
   - **success:** `pixi run -e pyforge-atlas vizro-static-export` with the flag on and the fixture data root exits 0 and
     writes `docs/dashboard/vizro/index.html`, one `<page-id>/index.html` per exported page, exactly one
     `assets/plotly.min.js`, and `manifest.json` whose `boards[]` holds one entry per exported page with the four keys and
@@ -481,6 +486,20 @@ One-chain rebase 2026-09-17. Each reminted CAP keeps provenance `← spec-<old> 
     `query_plane_cache`, canopy FR-47 Mode B), so the estate cache builds from data rather than a test fixture.
   - **success:** `pyforge atlas run --pipelines query_plane_cache` on a fresh data root exits 0 and writes
     `query_plane_estate` from the producer's output; the estate semantic model answers its declared measures over it.
+- **CAP-69 — the Vizro boards read the datasets the pipelines write** ← spec-pyforge-atlas CAP-69 (ready 2026-10-19; operator ruling 2026-10-19; extends CAP-8 and CAP-63)
+  - **intent:** `dashboard.data.default_data_root` resolves the data root Kedro writes (the member's `data/`, or
+    `PYFORGE_ATLAS_DATA_ROOT`). Each board whose content a pipeline already produces reads that dataset: the four
+    seed-gap boards from `seed_gaps`' derived reports, version-downloads from `core_version_download_history`,
+    distribution-breakdown from the three `core_downloads_*_breakdown` tables, behind-upstream from
+    `vcs_upstream_versions` against the enumerated latest version, whodepends from `core_dependencies`,
+    live-catalog-coverage from the inventory flags, universe-sbom from the universal SBOM. A board's dimension names
+    stay; only its path and its expressions move. The six boards no pipeline feeds (cve-watcher history, release
+    cadence, find-alternative, export-purls, mapping-gap, bootstrap-index-health) are backlog stories; the on-demand
+    boards stay honest-empty until their tool runs.
+  - **success:** on a data root a public `pyforge atlas run` wrote, every board among the 12 already wired and the 10
+    rewired whose dataset holds rows renders a non-empty table in `dashboard-dryrun` and in the static export; a test
+    per rewired board proves its loader on a fixture shaped like the produced dataset; `dashboard-dryrun`, the
+    provenance test and `kedro-catalog-check` stay green.
 
 ## Constraints
 
