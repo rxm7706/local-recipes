@@ -666,7 +666,9 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
             if auth is None:
                 self._mark_stale(credential_switch.skip_reason(self._base_url))
                 return
-            self.fetch_repo_health(data.github_repos, auth=auth)
+            # Story 35.2: the universe's GitHub upstreams, not the identity subset
+            repos = sorted({(owner, repo) for _conda, owner, repo in data.upstream_repos})
+            self.fetch_repo_health(repos, auth=auth)
             return
         self.fetch_repo_health(data.github_repos)
 

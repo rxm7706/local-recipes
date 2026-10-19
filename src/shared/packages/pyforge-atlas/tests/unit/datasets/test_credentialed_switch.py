@@ -38,7 +38,11 @@ def _dataset(tmp_path: Path, url: str = GRAPHQL, credentials=None) -> GitHubRequ
 
 
 def _request(*repos: tuple[str, str]) -> RefreshRequest:
-    return RefreshRequest(store="vcs_github_api_raw", cadence_seconds=0, force=True, github_repos=tuple(repos))
+    # Story 35.2: with the flag on the store reads the universe's upstreams (conda_name, owner, repo)
+    upstream = tuple((f"conda-{repo}", owner, repo) for owner, repo in repos)
+    return RefreshRequest(
+        store="vcs_github_api_raw", cadence_seconds=0, force=True, github_repos=tuple(repos), upstream_repos=upstream
+    )
 
 
 def _health() -> dict:

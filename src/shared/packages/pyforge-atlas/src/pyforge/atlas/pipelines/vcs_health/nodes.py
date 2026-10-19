@@ -24,7 +24,7 @@ from pyforge.atlas.datasets import dependency_history
 from pyforge.atlas.datasets.migration_status import BLOCKER_BUCKETS, migration_names
 from pyforge.atlas.datasets.refresh import RefreshRequest, clamp_ttl_cadence
 
-from .vcs_refresh_identifiers import batches_from_identity
+from .vcs_refresh_identifiers import batches_from_identity, batches_from_universe
 
 # ms-vs-seconds magnitude split (mirrors core.nodes._MS_THRESHOLD +
 # IncrementalParquetDataset._MS_EPOCH_THRESHOLD — "convert once, at the boundary",
@@ -98,36 +98,67 @@ def _ttl_cadence(ttls: dict, key: str) -> int:
     return clamp_ttl_cadence((ttls or {}).get(key), key=key, log=logging.getLogger(__name__))
 
 
-def refresh_vcs_github_store(ttls: dict, identity_packages_primary: pd.DataFrame):
-    """External-refresh trigger for the GitHub batched-GraphQL store."""
+def refresh_vcs_github_store(
+    ttls: dict,
+    identity_packages_primary: pd.DataFrame,
+    core_packages_enumerated: pd.DataFrame | None = None,
+    core_cf_graph_raw: pd.DataFrame | None = None,
+    core_feedstock_attribution: pd.DataFrame | None = None,
+):
+    """External-refresh trigger for the GitHub batched-GraphQL store. Story 35.2: it carries both
+    the identity batch and the universe's (legacy Phases K and N); the store reads the flag."""
     batches = batches_from_identity(identity_packages_primary)
+    universe = batches_from_universe(core_packages_enumerated, core_cf_graph_raw, core_feedstock_attribution)
     return RefreshRequest(
         store="vcs_github_api_raw",
         cadence_seconds=_ttl_cadence(ttls, "vcs_upstream_versions"),
         github_repos=batches["github_repos"],
+        upstream_repos=universe["upstream_repos"],
+        feedstocks=universe["feedstocks"],
     )
 
 
-def refresh_vcs_host_stores(ttls: dict, identity_packages_primary: pd.DataFrame):
-    """External-refresh trigger for the GitLab + Codeberg last-good stores."""
+def refresh_vcs_host_stores(
+    ttls: dict,
+    identity_packages_primary: pd.DataFrame,
+    core_packages_enumerated: pd.DataFrame | None = None,
+    core_cf_graph_raw: pd.DataFrame | None = None,
+    core_feedstock_attribution: pd.DataFrame | None = None,
+):
+    """External-refresh trigger for the GitLab + Codeberg last-good stores (both batches, Story 35.2)."""
     batches = batches_from_identity(identity_packages_primary)
+    universe = batches_from_universe(core_packages_enumerated, core_cf_graph_raw, core_feedstock_attribution)
     cadence = _ttl_cadence(ttls, "vcs_upstream_versions")
-    return (
-        RefreshRequest(store="vcs_gitlab_api_raw", cadence_seconds=cadence, vcs_pairs=batches["gitlab"]),
-        RefreshRequest(store="vcs_codeberg_api_raw", cadence_seconds=cadence, vcs_pairs=batches["codeberg"]),
+    return tuple(
+        RefreshRequest(
+            store=f"vcs_{host}_api_raw",
+            cadence_seconds=cadence,
+            vcs_pairs=batches[host],
+            universe_pairs=universe[host],
+        )
+        for host in ("gitlab", "codeberg")
     )
 
 
-def refresh_vcs_registry_stores(ttls: dict, identity_packages_primary: pd.DataFrame):
-    """External-refresh trigger for the 8 cross-ecosystem registry last-good stores."""
+def refresh_vcs_registry_stores(
+    ttls: dict,
+    identity_packages_primary: pd.DataFrame,
+    core_packages_enumerated: pd.DataFrame | None = None,
+    core_cf_graph_raw: pd.DataFrame | None = None,
+    core_feedstock_attribution: pd.DataFrame | None = None,
+):
+    """External-refresh trigger for the 8 cross-ecosystem registry last-good stores (both batches,
+    Story 35.2)."""
     batches = batches_from_identity(identity_packages_primary)
+    universe = batches_from_universe(core_packages_enumerated, core_cf_graph_raw, core_feedstock_attribution)
     cadence = _ttl_cadence(ttls, "vcs_registry_versions")
-    reg = batches["registries"]
+    reg, uni = batches["registries"], universe["registries"]
     return tuple(
         RefreshRequest(
             store=f"vcs_registry_{registry}_raw",
             cadence_seconds=cadence,
             vcs_pairs=reg.get(registry, ()),
+            universe_pairs=uni.get(registry, ()),
         )
         for registry in _REGISTRY_INPUTS
     )
