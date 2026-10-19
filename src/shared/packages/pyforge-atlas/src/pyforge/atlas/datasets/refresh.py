@@ -156,6 +156,9 @@ class RefreshRequest:
     vdb_targets: tuple[tuple[str, ...], ...] = ()
     # Story 34.7: (conda_name, version) per version with download history (legacy Phase G')
     vdb_versions: tuple[tuple[str, str], ...] = ()
+    # Story 36.1: the conda PURLs Basilisk's querybatch asks about, and the advisory ids to detail
+    basilisk_purls: tuple[str, ...] = ()
+    basilisk_ids: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -169,6 +172,8 @@ class RefreshRequest:
             "pypi_serials": list(self.pypi_serials),
             "vdb_targets": list(self.vdb_targets),
             "vdb_versions": list(self.vdb_versions),
+            "basilisk_purls": list(self.basilisk_purls),
+            "basilisk_ids": list(self.basilisk_ids),
         }
 
 

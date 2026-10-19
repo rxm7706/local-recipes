@@ -460,7 +460,8 @@ One-chain rebase 2026-09-17. Each reminted CAP keeps provenance `← spec-<old> 
   - **intent:** the public package listing (`/v1/packages`: each package's highest CVSS and coverage) refreshes
     unattended into `discovery_basilisk_packages_raw`. Driver nodes call `BasiliskBatchDataset.query_population` over
     `core_packages_enumerated` (conda PURL keys) and `BasiliskDetailDataset.fetch_details` for the matched advisories
-    with a bearer header built from `basilisk_token`, sent to the Basilisk host only and only under
+    with a bearer header built from the token in `PYFORGE_ATLAS_BASILISK_TOKEN` (read at the fetch: a catalog
+    `credentials:` key would fail every run whose `credentials.yml` lacks it), sent to the Basilisk host only and only under
     `PYFORGE_ATLAS_CREDENTIALED=1`; unset, those stores keep last-good under `stale`. The pre-announcement endpoint
     degrades per AD-13.
   - **success:** a plain run with network fills `discovery_basilisk_packages_raw`; against a recorded Basilisk fixture
@@ -985,7 +986,7 @@ Two questions the mint of 2026-10-18 leaves to the operator; both sit on `.memlo
   the universe) or only on an operator opt-in (DW-B8-3 recorded the full population run as attended)? To settle before
   Story 36.1. *(Answered 2026-10-18: the advisory endpoints now answer 401 and need a bearer token; only the package
   listing is public. The listing refreshes unattended; the advisories and details run under the opt-in with a
-  `basilisk_token` and stay stale until the operator adds one. CAP-66 is amended; Story 36.1 carries both halves.)*
+  Basilisk token (`PYFORGE_ATLAS_BASILISK_TOKEN`, Story 36.1) and stay stale until the operator adds one. CAP-66 is amended; Story 36.1 carries both halves.)*
 - **CAP-68:** which platform OLTP table or tables does the estate source extract (canopy FR-47 Mode B names "heavy
   tables"; the model today is a `sku`/`units` toy), and through which seam does atlas read them
   (`pyforge.core.station_port`, a steward export)? To settle before Story 36.3. *(Answered 2026-10-18: deferred.

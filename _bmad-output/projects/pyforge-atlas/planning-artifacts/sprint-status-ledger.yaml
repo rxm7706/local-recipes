@@ -121,7 +121,7 @@ development_status:
   35-2-the-vcs-batches-come-from-the-whole-universe: backlog
   35-3-upstream-versions-and-feedstock-health-come-from-github: backlog
   35-4-gitlab-codeberg-and-the-eight-registries-fill: backlog
-  36-1-the-basilisk-population-runs: backlog
+  36-1-the-basilisk-population-runs: done
   36-2-the-openteams-board-and-the-staged-recipes-prs-fill-on-opt-in: backlog
   36-3-the-query-plane-estate-source-has-a-producer: blocked
   4-1-integrate-kedro-dagster-for-scheduling-execution: done
@@ -200,7 +200,7 @@ development_status:
   epic-34-retrospective: optional
   epic-35: in-progress
   epic-35-retrospective: optional
-  epic-36: backlog
+  epic-36: in-progress
   epic-36-retrospective: optional
   epic-4: done
   epic-4-retrospective: done

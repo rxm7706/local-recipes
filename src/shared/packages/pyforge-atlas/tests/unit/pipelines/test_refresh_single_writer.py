@@ -27,6 +27,9 @@ _UPSTREAM_REFRESH_STORES = {
     "trending_candidates": "refresh_trending_candidates",
     "discovery_anaconda_dist_2026x_raw": "refresh_anaconda_dist_2026x",
     "discovery_basilisk_packages_raw": "refresh_basilisk_packages",
+    # Story 36.1: the Basilisk advisory stores' triggers
+    "vulnerability_basilisk_raw": "refresh_basilisk_population",
+    "vulnerability_basilisk_detail_raw": "refresh_basilisk_details",
     "discovery_aoss_premium_python_raw": "refresh_aoss_premium_python",
 }
 

@@ -2654,12 +2654,12 @@ So that the listing fills unattended and the three Basilisk datasets fill once t
 
 **Type:** feature • **Effort:** M • **Deps:** 35.1 (the opt-in switch) • **FR/AD:** spec-pyforge-atlas CAP-66 (FR-74, amended 2026-10-18 by operator ruling) • AD-2, AD-13, AD-14
 **Flag:** `pyforge.atlas.basilisk_population` (the drivers); the listing's refresher reads `pyforge.atlas.live_public_sources`, as the other public discovery stores do
-**Surface:** `datasets/basilisk.py`, `pipelines/vulnerability/` (driver nodes), `pipelines/derived_artifacts/` (the rollup input), `conf/base/catalog.yml`, `tools/bootstrap.py` (the listing's refresher), flag registration, tests
+**Surface:** `datasets/basilisk.py` (the listing's refresher, the two drivers), `datasets/credentials.py` (`basilisk_auth`), `datasets/refresh.py` (`RefreshRequest`), `pipelines/vulnerability/` (the two trigger nodes), `orchestration/definitions.py` (their budgets), `tools/bootstrap.py`, flag registration, README, tests
 **Given** `query_population` and `fetch_details` are never called, `load()` returns last-good even with a fetcher, the package listing has no refresher (`DW-atlas-34-6-2`), and the advisory endpoints answer 401 without a bearer token (probed 2026-10-18)
 **When** the pipeline runs with the flag on
 **Then** a plain run with network fills `discovery_basilisk_packages_raw`; against a recorded fixture the advisories, details and rollup fill; without `PYFORGE_ATLAS_CREDENTIALED=1` no request carries a credential and the three stores keep last-good under `stale`
-**And** with the opt-in and a `basilisk_token`, a live run's population equals `core_packages_enumerated`'s row count (operator-attended; no token exists today)
-**Status:** backlog
+**And** with the opt-in and a Basilisk token in `PYFORGE_ATLAS_BASILISK_TOKEN`, a live run's population equals `core_packages_enumerated`'s row count (operator-attended; no token exists today)
+**Status:** done
 
 ### Story 36.2: The OpenTeams board and the staged-recipes PRs fill on opt-in
 
