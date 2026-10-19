@@ -30,7 +30,7 @@
  "pyforge-atlas/spec-pyforge-atlas": {
   "files": {
    ".github/workflows/kedro-viz-publish.yml": "95e967ddb7c47c59c144f0c0abcc2d81e643f191",
-   "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md": "b345b9ffd9abebc70fbd208b0e60bfb887a356e3",
+   "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md": "bd3d8a08989fb2da964207cb604088f390972514",
    "conf/conda-forge-packaging-inventory-operations.local.env.example": "e55c099b03392fa21a2ebd9aec433a0252024656",
    "conf/conda-forge-packaging-inventory-operations_curated_groups.json": "07c799631537e1ff4e9b3c81770ad2082a0060fb",
    "scripts/conda-forge-packaging-inventory-operations_metrics.py": "be74945eb4937c831e11f146630485f6779a1193",
@@ -97,7 +97,7 @@
    "src/shared/packages/pyforge-atlas/.gitignore": "8b9e0d2cf2c060de6f13a5e80225b558449040d8",
    "src/shared/packages/pyforge-atlas/.telemetry": "d495bdc38416d4aa236f4d89d4719b12eb0dc4db",
    "src/shared/packages/pyforge-atlas/AGENTS.md": "b4b057dd3738aeab02ee9623057b2826aa4ca6f8",
-   "src/shared/packages/pyforge-atlas/README.md": "348b0a9100cd701af39bc312d30204b59ce72fdb",
+   "src/shared/packages/pyforge-atlas/README.md": "278475c320005bdd289d4ccec2f3075766eafba1",
    "src/shared/packages/pyforge-atlas/conf/README.md": "a994ee8ba4c4464ceb3bc96fa26d92595a71e0b0",
    "src/shared/packages/pyforge-atlas/conf/base/catalog.yml": "5315b640696fc2bccc6835c06e396d404ccd400f",
    "src/shared/packages/pyforge-atlas/conf/base/curated_groups.json": "4edccaacc36b24c7e503ca8801547d640972e06a",
@@ -139,7 +139,7 @@
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/public_sources.py": "ca07ae17ff166b63d4ddff4ff2497a858484970e",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/rate_limit.py": "e40a1b244b5d75308c32b4c301a68aa6a3edb4e0",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/refresh.py": "192545f87aa2269bad93b5e1eb8a4a120a30a418",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/request_datasets.py": "96997116a10f4141a007dd4ce973ad4ae5b36d70",
+   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/request_datasets.py": "4a61c5ccb01d8e13034abb2b4701768767b19fdf",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/s3_downloads.py": "79dfb88feffd2f4a1dba8684003de9ea5b707fcf",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/sbom_intake.py": "c7913b2b33014c8453f901f05e719be85ed3f4c6",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/tier3_sources.py": "27e435322310bc512dee4045a9dfd9a36a7af029",
@@ -298,7 +298,7 @@
    "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_cf_graph_split.py": "fd2be340199a723e6fbe6dee7148667706c0e41f",
    "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_clickhouse_downloads.py": "9efc92695c80f9a1553fc691125589a28cf9bff1",
    "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_core_sources.py": "39230a37d6cea72543ead06c776f8c8d4c6e6aff",
-   "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_credentialed_switch.py": "b44a523bd9b0b3f05859b9e694421ea94dab991e",
+   "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_credentialed_switch.py": "3dd6e1c40fd4d2265cbf9eabe647b1c0d05d62fe",
    "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_dependency_history.py": "f6d0f988f199f803dd8a9f4d26572a03d574ae83",
    "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_identity_sources.py": "6827694882b117a7c5570b22877e7bc9c13ef5b2",
    "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_incremental_parquet.py": "e37deadc8ab896ad559452eb18872365eb10843b",
@@ -502,7 +502,7 @@
    "src/shared/packages/pyforge-atlas/wasm/index.html": "58d44155379ec640d36caf59b8c701ec8fcfce27",
    "src/shared/packages/pyforge-atlas/wasm/package.json": "e8ec7eef8dff664e2910f4fee67ada79e4105d93"
   },
-  "memlog": "391c4fb5cdbeae7149851f977d5ad81cc84a168d"
+  "memlog": "6b38b367ec33a1d457a0f8a32705123d8966ac78"
  },
  "pyforge-atlas/spec-pyforge-atlas-intelligence-platform": {
   "files": {},
@@ -3102,7 +3102,7 @@
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/public_sources.py": "ca07ae17ff166b63d4ddff4ff2497a858484970e",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/rate_limit.py": "e40a1b244b5d75308c32b4c301a68aa6a3edb4e0",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/refresh.py": "192545f87aa2269bad93b5e1eb8a4a120a30a418",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/request_datasets.py": "96997116a10f4141a007dd4ce973ad4ae5b36d70",
+   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/request_datasets.py": "4a61c5ccb01d8e13034abb2b4701768767b19fdf",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/s3_downloads.py": "79dfb88feffd2f4a1dba8684003de9ea5b707fcf",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/sbom_intake.py": "c7913b2b33014c8453f901f05e719be85ed3f4c6",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/tier3_sources.py": "27e435322310bc512dee4045a9dfd9a36a7af029",
@@ -3743,7 +3743,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "51099ecb06a7a19ed2face7dda9e3ccb9188999e"
+  "memlog": "f830fb8bb0f1b9841be129a20031e56932bf989e"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -6761,7 +6761,7 @@
    "src/shared/packages/pyforge-atlas/.gitignore": "8b9e0d2cf2c060de6f13a5e80225b558449040d8",
    "src/shared/packages/pyforge-atlas/.telemetry": "d495bdc38416d4aa236f4d89d4719b12eb0dc4db",
    "src/shared/packages/pyforge-atlas/AGENTS.md": "b4b057dd3738aeab02ee9623057b2826aa4ca6f8",
-   "src/shared/packages/pyforge-atlas/README.md": "348b0a9100cd701af39bc312d30204b59ce72fdb",
+   "src/shared/packages/pyforge-atlas/README.md": "278475c320005bdd289d4ccec2f3075766eafba1",
    "src/shared/packages/pyforge-atlas/conf/README.md": "a994ee8ba4c4464ceb3bc96fa26d92595a71e0b0",
    "src/shared/packages/pyforge-atlas/conf/base/catalog.yml": "5315b640696fc2bccc6835c06e396d404ccd400f",
    "src/shared/packages/pyforge-atlas/conf/base/curated_groups.json": "4edccaacc36b24c7e503ca8801547d640972e06a",
@@ -6806,7 +6806,7 @@
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/public_sources.py": "ca07ae17ff166b63d4ddff4ff2497a858484970e",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/rate_limit.py": "e40a1b244b5d75308c32b4c301a68aa6a3edb4e0",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/refresh.py": "192545f87aa2269bad93b5e1eb8a4a120a30a418",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/request_datasets.py": "96997116a10f4141a007dd4ce973ad4ae5b36d70",
+   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/request_datasets.py": "4a61c5ccb01d8e13034abb2b4701768767b19fdf",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/s3_downloads.py": "79dfb88feffd2f4a1dba8684003de9ea5b707fcf",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/sbom_intake.py": "c7913b2b33014c8453f901f05e719be85ed3f4c6",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/tier3_sources.py": "27e435322310bc512dee4045a9dfd9a36a7af029",
@@ -6970,7 +6970,7 @@
    "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_cf_graph_split.py": "fd2be340199a723e6fbe6dee7148667706c0e41f",
    "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_clickhouse_downloads.py": "9efc92695c80f9a1553fc691125589a28cf9bff1",
    "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_core_sources.py": "39230a37d6cea72543ead06c776f8c8d4c6e6aff",
-   "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_credentialed_switch.py": "b44a523bd9b0b3f05859b9e694421ea94dab991e",
+   "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_credentialed_switch.py": "3dd6e1c40fd4d2265cbf9eabe647b1c0d05d62fe",
    "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_dependency_history.py": "f6d0f988f199f803dd8a9f4d26572a03d574ae83",
    "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_identity_sources.py": "6827694882b117a7c5570b22877e7bc9c13ef5b2",
    "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_incremental_parquet.py": "e37deadc8ab896ad559452eb18872365eb10843b",
@@ -7280,7 +7280,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "e702152bd214a1ae52f477311919d0c8f3063d90"
+  "memlog": "27fb9389e6ebadfc335f827131886d1e151a7408"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {},
