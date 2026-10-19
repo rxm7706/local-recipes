@@ -31,11 +31,19 @@ def test_default_data_root_honors_env_override(monkeypatch, tmp_path: Path):
     assert data.default_data_root() == tmp_path
 
 
-def test_default_data_root_walks_up_to_the_repo_root(monkeypatch):
+def test_default_data_root_is_the_data_root_kedro_writes(monkeypatch):
+    # Story 37.1: globals.yml's paths.data_root is `data`, relative to the Kedro project (the member)
     monkeypatch.delenv("PYFORGE_ATLAS_DATA_ROOT", raising=False)
     root = data.default_data_root()
-    assert root.name == "data"
-    assert (root.parent / ".git").exists() or (root.parent / "_bmad-output").is_dir()
+    assert root.name == "data" and (root.parent / "conf" / "base" / "catalog.yml").is_file()
+    assert root.parent.name == "pyforge-atlas"
+
+
+def test_default_data_root_falls_back_to_the_working_directory(monkeypatch, tmp_path: Path):
+    monkeypatch.delenv("PYFORGE_ATLAS_DATA_ROOT", raising=False)
+    monkeypatch.setattr(data, "_MEMBER_ROOT", tmp_path / "site-packages")  # an installed layout
+    monkeypatch.chdir(tmp_path)
+    assert data.default_data_root() == tmp_path / "data"
 
 
 # --------------------------------------------------------------------------- #

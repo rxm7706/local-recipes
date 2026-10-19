@@ -93,23 +93,26 @@ _IDENTITY_WORKBOOK_DIMENSIONS = ["match_bucket"]
 _IDENTITY_WORKBOOK_MEASURES = ["package_count", "artifactory_downloads_total"]
 
 
-def default_data_root() -> Path:
-    """The catalog ``data_root`` (env-overridable, mirrors globals.yml `paths.data_root`).
+#: Story 37.1: the Kedro project this module ships in (``src/shared/packages/pyforge-atlas``)
+_MEMBER_ROOT = Path(__file__).resolve().parents[4]
 
-    Defaults to ``<repo>/data`` — the repo-root-relative default the catalog resolves
-    against the process CWD (review-pass P9). ``PYFORGE_ATLAS_DATA_ROOT`` overrides it.
+
+def default_data_root() -> Path:
+    """The data root Kedro writes, which the boards read.
+
+    ``PYFORGE_ATLAS_DATA_ROOT`` wins. Otherwise Story 37.1: the member's ``data/`` --
+    ``globals.yml``'s ``paths.data_root`` is ``data``, relative to the Kedro project, and
+    ``pyforge atlas run`` runs there (Story 33.1). Before this story the walk went up to the repo
+    root's ``data/``, which holds only ``raw/``, so a local run never showed on the boards. An
+    installed layout with no member falls back to ``data/`` under the working directory, as Kedro
+    resolves it.
     """
     env = os.environ.get("PYFORGE_ATLAS_DATA_ROOT")
     if env:
         return Path(env)
-    # Walk up to the repo root so this resolves whether run from the source tree or an installed
-    # layout. Anchor on ``.git`` (a UNIQUE repo-root marker) — NOT ``pixi.toml``, which the
-    # pyforge-atlas member also ships, so a pixi.toml walk would stop at the member dir.
-    current = Path(__file__).resolve()
-    for parent in current.parents:
-        if (parent / ".git").exists() or (parent / "_bmad-output").is_dir():
-            return parent / "data"
-    return (current.parents[8] if len(current.parents) > 8 else current.parent) / "data"
+    if (_MEMBER_ROOT / "conf" / "base" / "catalog.yml").is_file():
+        return _MEMBER_ROOT / "data"
+    return Path.cwd() / "data"
 
 
 def _bsl_query_or_empty(
