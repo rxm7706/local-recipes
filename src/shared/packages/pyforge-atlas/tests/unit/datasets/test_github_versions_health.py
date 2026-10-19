@@ -306,3 +306,68 @@ def test_the_graphql_post_stops_waiting_after_a_minute(tmp_path, monkeypatch):
     _dataset(tmp_path)._post({"query": "{}"}, auth=object())  # type: ignore[arg-type]
 
     assert seen["save_args"] == {"timeout": GitHubRequestDataset.GRAPHQL_TIMEOUT_SECONDS} == {"timeout": 60}
+
+
+def _feedstock_answer(body: dict[str, Any]) -> dict[str, Any]:
+    n = body["query"].count("repository(")
+    node = {"pushedAt": "t", "isArchived": False, "issues": {"totalCount": 0}, "pullRequests": {"totalCount": 0}}
+    return {"data": {f"r{i}": node for i in range(n)}}
+
+
+def test_phase_n_runs_four_batches_side_by_side_and_keeps_their_order(tmp_path):
+    import threading
+    import time as _time
+
+    lock, live, peak = threading.Lock(), [0], [0]
+
+    def fetch(body: dict[str, Any]) -> dict[str, Any]:
+        if "organization" in body["query"]:
+            return _NO_ARCHIVED
+        with lock:
+            live[0] += 1
+            peak[0] = max(peak[0], live[0])
+        _time.sleep(0.02)
+        with lock:
+            live[0] -= 1
+        return _feedstock_answer(body)
+
+    feedstocks = [f"fs{i:03d}" for i in range(200)]  # 8 batches of 25
+    frame = _dataset(tmp_path).fetch_github((), feedstocks[::-1], fetcher=fetch)
+
+    assert frame["key"].tolist() == feedstocks and frame["last_error"].isna().all()
+    assert 2 <= peak[0] <= GitHubRequestDataset.FEEDSTOCK_CONCURRENCY == 4
+
+
+def test_each_failed_batch_names_its_own_failure(tmp_path):
+    def fetch(body: dict[str, Any]) -> dict[str, Any]:
+        query = body["query"]
+        if "organization" in query:
+            return _NO_ARCHIVED
+        if '"fs000-feedstock"' in query:
+            raise _timed_out(500)
+        if '"fs025-feedstock"' in query:
+            raise _timed_out(503)
+        return _feedstock_answer(body)
+
+    feedstocks = [f"fs{i:03d}" for i in range(75)]
+    frame = _dataset(tmp_path, max_retries=0).fetch_github((), feedstocks, fetcher=fetch).set_index("key")
+
+    assert frame.loc["fs000", "last_error"] == "HTTP 500" and frame.loc["fs024", "last_error"] == "HTTP 500"
+    assert frame.loc["fs025", "last_error"] == "HTTP 503" and frame.loc["fs050", "last_error"] is None
+
+
+def test_a_refusal_stops_the_feedstock_batches_not_yet_sent(tmp_path):
+    sent: list[str] = []
+
+    def fetch(body: dict[str, Any]) -> dict[str, Any]:
+        query = body["query"]
+        sent.append(query)
+        if "organization" in query:
+            return _NO_ARCHIVED
+        raise _timed_out(401)
+
+    feedstocks = [f"fs{i:03d}" for i in range(25 * 40)]
+    frame = _dataset(tmp_path, max_retries=0).fetch_github((), feedstocks, fetcher=fetch)
+
+    assert len(sent) <= GitHubRequestDataset.FEEDSTOCK_CONCURRENCY  # at most the batches already in flight
+    assert set(frame["last_error"]) == {"HTTP 401"}

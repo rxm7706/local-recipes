@@ -35,9 +35,11 @@ import json
 import logging
 import os
 import re
+import threading
 import time
 import urllib.parse
 from collections.abc import Callable, Sequence
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -294,6 +296,7 @@ class _RequestParameterizedAPIDataset(AbstractDataset):
         # acquires a token per request. Injectable clock/sleep keep it fixture-safe;
         # an injected scheduler lets a fixture supply an advancing fake clock.
         self.scheduler = scheduler if scheduler is not None else RateLimitedScheduler(rps=rps)
+        self._acquire_lock = threading.Lock()  # Story 35.3: Phase N's batches acquire side by side
         # Story 34.2: per-request misses from the last fan-out, ``name -> reason``.
         self.last_failures: dict[str, str] = {}
         # Compose the physical HTTP IO lazily (no network at __init__).
@@ -470,6 +473,7 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
     FEEDSTOCK_BATCH = 25
     PROGRESS_EVERY = 25  # a progress line every this many batches, as legacy Phase K prints
     GRAPHQL_TIMEOUT_SECONDS = 60
+    FEEDSTOCK_CONCURRENCY = 4  # legacy PHASE_N_CONCURRENCY's default
     ARCHIVED_MAX_PAGES = 200
 
     def __init__(
@@ -568,7 +572,8 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
         attempt = 0
         while True:
             try:
-                self.scheduler.acquire()
+                with self._acquire_lock:  # Phase N's batches run side by side; the scheduler has no lock
+                    self.scheduler.acquire()
                 body = (build or self.build_batch_query)(chunk)
                 if fetcher is not None:
                     return fetcher(body), None
@@ -753,47 +758,55 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
         ``archived``. A 401, 403 or 429 that names no wait stops the run (Story 35.1); the rows
         fetched before it are kept and the store is marked stale. Never raises (AD-13)."""
         rows: list[dict[str, Any]] = []
-        state: dict[str, Any] = {"failure": "", "stopped": False, "timed_out": False}
+        state: dict[str, Any] = {"failure": "", "stopped": False}
 
-        def run(chunk: Sequence[Any], build: Callable[[Sequence[Any]], dict[str, Any]]) -> tuple[dict, dict] | None:
+        def run(
+            chunk: Sequence[Any], build: Callable[[Sequence[Any]], dict[str, Any]]
+        ) -> tuple[tuple[dict, dict] | None, str, bool]:
+            """One batch: ``(data and errors, or None; the failure; whether it timed out)``. The
+            failure is the batch's own (Phase N runs batches side by side)."""
+            if state["stopped"]:  # a refusal stops every later request (Story 35.1)
+                return None, str(state["failure"]), False
             payload, exc = self._fetch_batch_with_retry(chunk, fetcher=fetcher, auth=auth, build=build)
             if exc is not None:
                 status = _http_status(exc)
                 # never the exception text on the credentialed path: it can quote a request header
-                state["failure"] = f"HTTP {status}" if status else type(exc).__name__
-                state["stopped"] = status in _STOP_STATUSES
-                state["timed_out"] = status in (502, 504) or "Timeout" in type(exc.__cause__).__name__
-                logger.warning("GitHub batch fetch failed, keeping last-good: %s", state["failure"])
-                return None
+                failure = f"HTTP {status}" if status else type(exc).__name__
+                state["failure"] = failure
+                if status in _STOP_STATUSES:
+                    state["stopped"] = True
+                logger.warning("GitHub batch fetch failed, keeping last-good: %s", failure)
+                timed_out = status in (502, 504) or "Timeout" in type(exc.__cause__).__name__
+                return None, failure, timed_out
             errors = _graphql_errors(payload)
             data = payload.get("data") if isinstance(payload, dict) else None
             if not isinstance(data, dict):
-                state["failure"] = f"GraphQL error: {errors.get(None) or 'no data'}"
-                state["timed_out"] = False
-                return None
-            return data, errors
+                failure = f"GraphQL error: {errors.get(None) or 'no data'}"
+                state["failure"] = failure
+                return None, failure, False
+            return (data, errors), "", False
 
         def run_split(
             chunk: Sequence[Any], build: Callable[[Sequence[Any]], dict[str, Any]]
-        ) -> tuple[dict, dict] | None:
+        ) -> tuple[tuple[dict, dict] | None, str]:
             """Story 35.3: a batch GitHub could not answer in time (502, 504 or a timeout) is halved
             and each half asked, down to one repository; legacy Phase K drops the whole batch. The
             halves' aliases are renumbered to the batch's, and a half that still fails gives each
             of its repositories the failure as its error."""
-            got = run(chunk, build)
-            if got is not None or len(chunk) < 2 or state["stopped"] or not state["timed_out"]:
-                return got
+            got, failure, timed_out = run(chunk, build)
+            if got is not None or len(chunk) < 2 or state["stopped"] or not timed_out:
+                return got, failure
             half = len(chunk) // 2
             data: dict[str, Any] = {}
             errors: dict[str | None, str] = {}
             for offset, part in ((0, chunk[:half]), (half, chunk[half:])):
-                sub = run_split(part, build)
+                sub, sub_failure = run_split(part, build)
                 if sub is None:
-                    errors.update({f"r{i + offset}": state["failure"] for i in range(len(part))})
+                    errors.update({f"r{i + offset}": sub_failure for i in range(len(part))})
                     continue
                 data.update(_renumbered(sub[0], offset))
                 errors.update(_renumbered(sub[1], offset))
-            return data, errors
+            return (data, errors), ""
 
         # Phase K: each distinct repo once, its version written to every package that names it
         packages: dict[tuple[str, str], list[str]] = {}
@@ -805,9 +818,10 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
                 break
             if n % self.PROGRESS_EVERY == 1:
                 logger.info("GitHub upstream versions: batch %d of %d", n, upstream_batches)
-            got = run_split(chunk, self.build_upstream_query)
+            got, failure = run_split(chunk, self.build_upstream_query)
             for i, (owner, name) in enumerate(chunk):
-                version, error = None, state["failure"] or "batch failed"
+                version: str | None = None
+                error: str | None = failure or "batch failed"
                 if got is not None:
                     data, errors = got
                     node = data.get(f"r{i}")
@@ -832,43 +846,42 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
                             "last_error": error,
                         }
                     )
-        # Phase N
-        feedstock_batches = -(-len(set(feedstocks)) // self.FEEDSTOCK_BATCH)
-        for n, chunk in enumerate(chunk_queries(sorted(set(feedstocks)), self.FEEDSTOCK_BATCH), start=1):
-            if state["stopped"]:
-                break
-            if n % self.PROGRESS_EVERY == 1:
-                logger.info("GitHub feedstock health: batch %d of %d", n, feedstock_batches)
-            got = run_split(chunk, self.build_feedstock_query)
-            for i, fs in enumerate(chunk):
-                row: dict[str, Any] = {
-                    "kind": "feedstock",
-                    "key": fs,
-                    "feedstock_name": fs,
-                    "repo": f"conda-forge/{fs}-feedstock",
-                }
-                node = got[0].get(f"r{i}") if got is not None else None
-                if isinstance(node, dict):
-                    target = (node.get("defaultBranchRef") or {}).get("target") or {}
-                    rollup = target.get("statusCheckRollup") if isinstance(target, dict) else None
-                    row.update(
-                        last_commit=node.get("pushedAt"),
-                        archived=bool(node.get("isArchived")),
-                        open_issues=(node.get("issues") or {}).get("totalCount"),
-                        open_prs=(node.get("pullRequests") or {}).get("totalCount"),
-                        ci_status=rollup.get("state") if isinstance(rollup, dict) else None,
-                        last_error=None,
-                    )
-                else:
-                    failed = got[1].get(f"r{i}") if got is not None else None
-                    row["last_error"] = failed or state["failure"] or "repository not found in response"
-                rows.append(row)
+        # Phase N: legacy runs its batches four at a time (PHASE_N_CONCURRENCY, CFA:6585); in order
+        feedstock_chunks = list(chunk_queries(sorted(set(feedstocks)), self.FEEDSTOCK_BATCH))
+        with ThreadPoolExecutor(max_workers=self.FEEDSTOCK_CONCURRENCY) as pool:
+            answers = pool.map(lambda chunk: run_split(chunk, self.build_feedstock_query), feedstock_chunks)
+            for n, (chunk, (got, failure)) in enumerate(zip(feedstock_chunks, answers, strict=True), start=1):
+                if n % self.PROGRESS_EVERY == 1:
+                    logger.info("GitHub feedstock health: batch %d of %d", n, len(feedstock_chunks))
+                for i, fs in enumerate(chunk):
+                    row: dict[str, Any] = {
+                        "kind": "feedstock",
+                        "key": fs,
+                        "feedstock_name": fs,
+                        "repo": f"conda-forge/{fs}-feedstock",
+                    }
+                    node = got[0].get(f"r{i}") if got is not None else None
+                    if isinstance(node, dict):
+                        target = (node.get("defaultBranchRef") or {}).get("target") or {}
+                        rollup = target.get("statusCheckRollup") if isinstance(target, dict) else None
+                        row.update(
+                            last_commit=node.get("pushedAt"),
+                            archived=bool(node.get("isArchived")),
+                            open_issues=(node.get("issues") or {}).get("totalCount"),
+                            open_prs=(node.get("pullRequests") or {}).get("totalCount"),
+                            ci_status=rollup.get("state") if isinstance(rollup, dict) else None,
+                            last_error=None,
+                        )
+                    else:
+                        failed = got[1].get(f"r{i}") if got is not None else None
+                        row["last_error"] = failed or failure or "repository not found in response"
+                    rows.append(row)
         # Phase E.5: the organization's archived repositories, page by page
         cursor: str | None = None
         for _page in range(self.ARCHIVED_MAX_PAGES):
             if state["stopped"]:
                 break
-            got = run([cursor], lambda chunk: self.build_archived_query(chunk[0]))
+            got, _failure, _timed_out = run([cursor], lambda chunk: self.build_archived_query(chunk[0]))
             listing = ((got[0].get("organization") or {}).get("repositories") or {}) if got is not None else {}
             for node in listing.get("nodes") or []:
                 repo_name = node.get("name") if isinstance(node, dict) else None

@@ -66,6 +66,9 @@ Legacy makes three GitHub reads:
    the whole batch). Each POST stops waiting after 60 s (legacy: 45 s; the default here was 900 s).
 8. **The run says what it is doing:** a progress line every 25 batches and a line per retry, with the HTTP status
    only, never the exception's text.
+9. **Phase N runs four batches side by side,** as legacy does (`PHASE_N_CONCURRENCY` 4, CFA:6585), its rows in batch
+   order; each failed batch names its own failure; a refusal stops every batch not yet sent. Run one at a time, the
+   1,176 batches took about two hours on 2026-10-19, past the node's 3,600 s budget.
 
 Ledger key: `35-3-upstream-versions-and-feedstock-health-come-from-github`.
 Type / Effort / Deps: feature / L / Story 35.1 (the switch, bearer auth), Story 35.2 (the batches).
@@ -85,6 +88,7 @@ Type / Effort / Deps: feature / L / Story 35.1 (the switch, bearer auth), Story 
 - **AC4 — Refusals and timeouts.** A refusal with no wait stops the run; one with `Retry-After` is waited and retried;
   rows before a stop are kept under `stale`. A batch answered 502 or 504 is halved down to one repository, its rows
   renumbered back; another failure is not halved; a POST waits 60 s at most.
+- **AC4b — Phase N side by side.** At most four batches at once, rows in order, each batch's own failure on its rows.
 - **AC5 — Consumers.** Each reads its own kind; a store without kinds reads as before; a pre-35.3 store's rows survive
   the first write.
 - **AC6 — Live.** See Verification. Tolerance against legacy the same day: Phase K versions for at least 95% of the
