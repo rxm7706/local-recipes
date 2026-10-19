@@ -10,11 +10,14 @@ Two commands:
 
 - ``age`` prints the vdb's age in seconds (from ``$VDB_HOME/vdb.meta``'s ``created_utc``), or
   ``-1`` when there is no vdb yet, so the refresher knows whether to run ``vdb-refresh``.
-- ``extract --targets FILE --out FILE`` reads ``[[conda_name, pypi_name, version, npm_name,
-  github_repo], ...]`` (the last two optional) and
+- ``extract --targets FILE [--versions FILE] --out FILE`` reads ``[[conda_name, pypi_name,
+  version, npm_name, github_repo], ...]`` (the last two optional) and, optionally,
+  ``{conda_name: [version, ...]}`` (each package's versions with download history), and
   writes one parquet row per (package, vulnerability): ``package_name``, ``version``,
   ``cve_id``, ``cvss_score``, ``severity``, ``cwe_id``. ``version`` is the package's current
-  version when a version-pinned purl matched (the vulnerability affects it), else null.
+  version when a version-pinned purl matched (the vulnerability affects it), else null. Each
+  other listed version adds one row per vulnerability its pinned purls match (legacy Phase G',
+  CFA:6808, which scores every version with download history).
 
 Legacy reference: Phase G (``phase_g_vdb_summary``, CFA:3771) queries the same purls per
 package through ``detail_cf_atlas.fetch_vdb_data`` (DCA:499): ``pkg:pypi/<name>``,
@@ -139,11 +142,15 @@ def purls(
 def extract(
     targets: Iterable[list[str] | tuple[str, ...]],
     search: Callable[[str], Iterable[dict[str, Any]]],
+    versions: dict[str, list[str]] | None = None,
 ) -> tuple[list[dict[str, Any]], int]:
     """One row per (package, vulnerability id); ``version`` is set when a pinned purl matched.
-    Returns the rows and the count of purl searches that raised (each skipped)."""
+    Then one row per (package, other version, vulnerability id) a pinned purl matches, for each
+    version in ``versions[conda_name]``. Returns the rows and the count of purl searches that
+    raised (each skipped)."""
     rows: list[dict[str, Any]] = []
     errors = 0
+    versions = versions or {}
     for target in targets:
         conda_name, pypi_name, version, npm_name, github_repo = (str(v or "") for v in [*target, "", ""][:5])
         if not conda_name:
@@ -164,6 +171,21 @@ def extract(
                 if pinned:
                     kept["version"] = version
         rows.extend(seen.values())
+        for other in dict.fromkeys(str(v) for v in versions.get(conda_name, []) if v and str(v) != version):
+            affecting: dict[str, dict[str, Any]] = {}
+            for purl, pinned in purls(conda_name, pypi_name, other, npm_name):
+                if not pinned:
+                    continue
+                try:
+                    results = list(search(purl) or [])
+                except Exception:  # noqa: BLE001 -- one bad purl never stops the extraction
+                    errors += 1
+                    continue
+                for result in results:
+                    row = fields(result)
+                    if row["cve_id"]:
+                        affecting.setdefault(row["cve_id"], {"package_name": conda_name, **row, "version": other})
+            rows.extend(affecting.values())
     return rows, errors
 
 
@@ -187,6 +209,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("age")
     ext = sub.add_parser("extract")
     ext.add_argument("--targets", required=True)
+    ext.add_argument("--versions")
     ext.add_argument("--out", required=True)
     args = parser.parse_args(argv)
 
@@ -202,7 +225,8 @@ def main(argv: list[str] | None = None) -> int:
     from vdb.lib import search as vdb_search  # type: ignore[import-not-found, unused-ignore]
 
     targets = json.loads(Path(args.targets).read_text(encoding="utf-8"))
-    rows, errors = extract(targets, lambda purl: vdb_search.search_by_purl_like(purl, with_data=True))
+    versions = json.loads(Path(args.versions).read_text(encoding="utf-8")) if args.versions else {}
+    rows, errors = extract(targets, lambda purl: vdb_search.search_by_purl_like(purl, with_data=True), versions)
     table = pa.table({c: [r.get(c) for r in rows] for c in COLUMNS})
     pq.write_table(table, args.out)
     print(json.dumps({"targets": len(targets), "rows": len(rows), "search_errors": errors}))

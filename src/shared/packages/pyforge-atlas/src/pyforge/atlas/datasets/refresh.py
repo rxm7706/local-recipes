@@ -154,6 +154,8 @@ class RefreshRequest:
     pypi_serials: tuple[tuple[str, int], ...] = ()
     # Story 34.7: (conda_name, pypi_name, version, npm_name, github_repo) per package the vdb scan covers
     vdb_targets: tuple[tuple[str, ...], ...] = ()
+    # Story 34.7: (conda_name, version) per version with download history (legacy Phase G')
+    vdb_versions: tuple[tuple[str, str], ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -166,6 +168,7 @@ class RefreshRequest:
             "pypi_pairs": list(self.pypi_pairs),
             "pypi_serials": list(self.pypi_serials),
             "vdb_targets": list(self.vdb_targets),
+            "vdb_versions": list(self.vdb_versions),
         }
 
 
@@ -469,7 +472,8 @@ class VDBStoreDataset(ExternalRefreshDataset):
         )
         self._process = process
         self._pixi_project = Path(pixi_project) if pixi_project else None
-        self._targets: tuple[tuple[str, str, str], ...] = ()
+        self._targets: tuple[tuple[str, ...], ...] = ()
+        self._versions: tuple[tuple[str, str], ...] = ()
 
     # -- Story 34.7: the live refresher, through the vuln-db env --------------------
 
@@ -477,6 +481,7 @@ class VDBStoreDataset(ExternalRefreshDataset):
         """The trigger carries the packages to scan (``RefreshRequest.vdb_targets``); the base
         save decides whether a refresh is due and runs the refresher."""
         self._targets = tuple(data.vdb_targets) if isinstance(data, RefreshRequest) else ()
+        self._versions = tuple(data.vdb_versions) if isinstance(data, RefreshRequest) else ()
         super().save(data)
 
     def _live_refresher(self) -> Callable[[], Any] | None:
@@ -528,12 +533,15 @@ class VDBStoreDataset(ExternalRefreshDataset):
             self._in_env(["python", "-c", self.VDB_REFRESH_CODE, "--cache"], self.VDB_REFRESH_TIMEOUT_SECONDS)
         with tempfile.TemporaryDirectory(prefix="atlas-vdb-") as scratch:
             targets = Path(scratch) / "targets.json"
+            versions = Path(scratch) / "versions.json"
             out = Path(scratch) / "vdb_parsed.parquet"
             targets.write_text(json.dumps([list(t) for t in self._targets]), encoding="utf-8")
-            summary = self._in_env(
-                ["python", "-I", extractor, "extract", "--targets", str(targets), "--out", str(out)],
-                self.EXTRACT_TIMEOUT_SECONDS,
-            )
+            by_package: dict[str, list[str]] = {}
+            for conda, version in self._versions:
+                by_package.setdefault(conda, []).append(version)
+            versions.write_text(json.dumps(by_package), encoding="utf-8")
+            argv = ["python", "-I", extractor, "extract", "--targets", str(targets), "--versions", str(versions)]
+            summary = self._in_env([*argv, "--out", str(out)], self.EXTRACT_TIMEOUT_SECONDS)
             logger.info("vdb extract: %s", summary.strip().splitlines()[-1:] or "")
             return pd.read_parquet(out)
 
