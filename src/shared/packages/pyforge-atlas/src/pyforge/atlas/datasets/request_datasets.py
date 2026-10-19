@@ -1038,9 +1038,10 @@ class PyPIJsonFanOutDataset(_ParquetRefreshStore, PyPIJsonRequestDataset):
 class PyPIBigQueryDownloadsDataset(AbstractDataset):
     """Catalog entry for ``pypi_bigquery_downloads_raw`` — Phase P admin opt-in stub.
 
-    ``PHASE_P_ENABLED=1`` runs are attended-only (NFR-2/AD-11); the default pipeline
-    path returns an empty but correctly-columned frame so ``fetch_pypi_downloads``
-    no-ops (AD-6, never a default BigQuery job).
+    ``PHASE_P_ENABLED=1`` with ``PHASE_P_SOURCE=bigquery`` runs are attended-only
+    (NFR-2/AD-11); every other path (``PHASE_P_ENABLED=1`` alone routes to ClickHouse, as
+    legacy does -- Story 34.9) returns an empty but correctly-columned frame, so
+    ``fetch_pypi_downloads`` keeps the ClickHouse rows (AD-6, never a default BigQuery job).
     """
 
     _COLS = ["pypi_name", "month", "downloads"]
@@ -1050,7 +1051,11 @@ class PyPIBigQueryDownloadsDataset(AbstractDataset):
         self.metadata = metadata
 
     def load(self) -> pd.DataFrame:
-        if BigQueryDownloadsDataset.is_enabled():
+        # Story 34.9: legacy routes PHASE_P_ENABLED=1 to ClickHouse unless PHASE_P_SOURCE=bigquery
+        # (CFA:7387), so a shell that exports it for legacy must not fail the atlas run; the
+        # ClickHouse rows then stand
+        bigquery = os.environ.get("PHASE_P_SOURCE", "clickhouse").strip().lower() == "bigquery"
+        if BigQueryDownloadsDataset.is_enabled() and bigquery:
             from kedro.io.core import DatasetError
 
             raise DatasetError(

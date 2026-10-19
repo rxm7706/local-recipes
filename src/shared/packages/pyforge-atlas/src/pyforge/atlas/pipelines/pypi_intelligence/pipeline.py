@@ -82,7 +82,7 @@ def create_pipeline(**kwargs) -> Pipeline:
             ),
             node(
                 func=fetch_pypi_downloads,
-                inputs="pypi_bigquery_downloads_raw",
+                inputs=["pypi_clickhouse_downloads_raw", "pypi_bigquery_downloads_raw"],
                 outputs="pypi_downloads_monthly",
                 name="fetch_pypi_downloads",
             ),
