@@ -436,4 +436,83 @@ def test_scattered_files_failures_do_not_trip_the_breaker(tmp_path, in_turn, ide
     _save(ds)
 
     assert sum("/files" in r.url for r in in_turn.sent) == 24  # never ten in a row
-    assert json.loads(_marker(ds))["reason"] == "PR files failed for 16 PRs (they keep last-good paths)"
+    assert json.loads(_marker(ds))["reason"] == "PR files failed for 16 PRs (each keeps its last-good paths, if any)"
+
+
+# -- review round 4 ------------------------------------------------------------------------------
+
+
+def _stopped_board(tmp_path, in_turn):  # noqa: ANN001, ANN202
+    in_turn.answers[GRAPHQL] = [(200, _page([1], "C1")), (502, {})]
+    ds = _board(tmp_path)
+    _save(ds)
+    in_turn.answers[GRAPHQL] = (200, _page([1, 2], None))
+    return ds
+
+
+def _stopped_list(tmp_path, in_turn):  # noqa: ANN001, ANN202
+    in_turn.answers[_list_page(1)] = (200, _FULL_CLOSED)
+    in_turn.answers[_list_page(2)] = (502, {})
+    ds = _prs(tmp_path)
+    _save(ds)
+    in_turn.answers[_list_page(2)] = (200, [_pr(1, "closed")])
+    return ds
+
+
+def _stopped_files(tmp_path, in_turn):  # noqa: ANN001, ANN202
+    in_turn.answers[_list_page(1)] = (200, [_pr(1), _pr(2)])
+    in_turn.answers[_files(1)] = (403, {})
+    ds = _prs(tmp_path)
+    _save(ds)
+    in_turn.answers[_files(1)] = (200, [{"filename": "recipes/a/meta.yaml"}])
+    in_turn.answers[_files(2)] = (200, [{"filename": "recipes/b/meta.yaml"}])
+    return ds
+
+
+@pytest.mark.parametrize(
+    ("stopped", "reason"),
+    [(_stopped_board, "board stopped"), (_stopped_list, "PR list stopped"), (_stopped_files, "PR files stopped")],
+    ids=["board", "list", "files"],
+)
+def test_each_stop_marker_brings_the_next_refresh_forward(tmp_path, in_turn, identity_on, switch_on, stopped, reason):
+    ds = stopped(tmp_path, in_turn)
+    assert json.loads(_marker(ds))["reason"].startswith(reason)
+    sent = len(in_turn.sent)
+
+    ds.save(RefreshRequest(store="x"))  # not forced, inside the cadence
+
+    assert len(in_turn.sent) > sent and ds.staleness() is None
+
+
+def test_a_files_failure_notice_lasts_one_run(tmp_path, in_turn, identity_on, switch_on):
+    in_turn.answers[_list_page(1)] = (200, [_pr(1), _pr(2)])
+    in_turn.answers[_files(2)] = (200, [{"filename": "recipes/b/meta.yaml"}])  # PR 1's files: 404
+    ds = _prs(tmp_path)
+    _save(ds)
+    assert json.loads(_marker(ds))["reason"] == "PR files failed for 1 PR (each keeps its last-good paths, if any)"
+    sent = len(in_turn.sent)
+
+    ds.save(RefreshRequest(store="x"))  # not forced, inside the cadence: a notice, not a stop
+
+    assert len(in_turn.sent) == sent and ds.staleness() is None
+
+
+def test_a_list_stop_and_files_failures_are_both_named(tmp_path, in_turn, identity_on, switch_on):
+    in_turn.answers[_list_page(1)] = (200, [_pr(n) for n in range(1, 101)])
+    in_turn.answers[_list_page(2)] = (502, {})
+    for n in range(2, 101):
+        in_turn.answers[_files(n)] = (200, [{"filename": f"recipes/p{n}/meta.yaml"}])
+    ds = _prs(tmp_path)
+
+    _save(ds)
+
+    assert json.loads(_marker(ds))["reason"] == (
+        "PR list stopped at page 2: HTTP 502; PR files failed for 1 PR (each keeps its last-good paths, if any)"
+    )
+
+
+def test_the_identity_budgets_cover_the_measured_runs():
+    from pyforge.atlas.orchestration.definitions import NODE_TIMEOUTS
+
+    assert NODE_TIMEOUTS["refresh_staged_recipes_prs"] >= 19 * 60 * 2  # 19 min live, 2026-10-18
+    assert NODE_TIMEOUTS["refresh_openteams_board"] >= 600

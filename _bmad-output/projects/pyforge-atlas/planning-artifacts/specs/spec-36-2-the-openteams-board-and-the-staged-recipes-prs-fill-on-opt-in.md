@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'both stores keep the path before this story: no fetcher, last-good under a stale marker'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 3
+review_loop_iteration: 4
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -50,8 +50,9 @@ lack their rows. Both stores accept `credentials: github_token` and never use it
    - A 401, 403 or 429 stops every later request (Story 35.1's stop statuses): on the list, no files request goes
      out; on a PR's files, none after it. Ten PRs in a row whose files fail stop the files requests too.
    - A PR whose files are not read keeps its last-good file paths, so a refusal never empties the column.
-   - A store whose last refresh stopped short is due again at once: inside its cadence it would otherwise read as
-     fresh and its marker be cleared.
+   - A store whose last refresh stopped short (a board, list or files stop) is due again at once: inside its cadence
+     it would otherwise read as fresh and its marker be cleared. A count of files failures short of a stop is a
+     one-run notice: the next refresh inside the cadence clears it and reads nothing again.
    - The first page's failure names its status or the GraphQL error.
 4. **The caps cover the whole history.** The PR list reads up to 500 pages (Story 21.x: 200, which stopped at PR
    #14,827) and the files of up to 2,000 open PRs (500, of 1,222 open); about 1,600 requests, inside GitHub's 5,000
@@ -132,6 +133,11 @@ identity sources).
 ## Spec Change Log
 
 - 2026-10-18: written with the implementation (branch `atlas-36-2-identity-sources`, cut from `main` at `24581b35b8`).
+- 2026-10-19, review round 4 (FAIL, tests only), fixed:
+  - B1: each of the three stop markers (board, list, files) is tested to bring the next refresh forward.
+  - Should-fix: the files-failures count is a one-run notice, said so in Approach 3 and tested.
+  - Nits: the count is kept beside an earlier stop reason; "1 PR"; the notice no longer claims last-good paths a PR
+    never had; the identity budgets are pinned by a test.
 - 2026-10-19, review round 3 (FAIL, tests only), fixed:
   - B1: a test that the reasons add up in the marker. B2: a test that a clean store inside its cadence sends nothing.
   - Should-fix: the Dagster budgets match the measured runs (`refresh_staged_recipes_prs` 2,400 s, 19 min live;

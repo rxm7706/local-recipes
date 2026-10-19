@@ -845,8 +845,10 @@ class StagedRecipesPRDataset(_HonestPagination, ExternalRefreshDataset):
                 for row in rows:
                     if row["number"] == number:
                         row["file_paths"] = file_paths
-        if files_failed and not self._stopped:
-            self._stop(f"PR files failed for {files_failed} PRs (they keep last-good paths)")
+        if files_failed and not refused and failures_in_a_row < _FILES_FAILURES_IN_A_ROW_LIMIT:
+            # a one-run notice (not a stop marker): the next refresh inside the cadence clears it
+            noun = "PR" if files_failed == 1 else "PRs"
+            self._stop(f"PR files failed for {files_failed} {noun} (each keeps its last-good paths, if any)")
         for row in rows:  # every open PR whose files were not read: its last-good paths
             if row.get("state") == "open" and not row.get("file_paths") and last_paths.get(row["number"]):
                 row["file_paths"] = last_paths[row["number"]]
