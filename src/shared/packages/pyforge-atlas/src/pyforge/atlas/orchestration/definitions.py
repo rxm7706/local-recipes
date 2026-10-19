@@ -325,8 +325,8 @@ NODE_TIMEOUTS: dict[str, int] = {
     "refresh_about_maintainers": 300,  # Story 21.5 — one unauthenticated GitHub-raw GET
     "join_enterprise_conda_maintainers": 120,  # Story 21.5 (pure in-memory join, no network)
     "refresh_purl_associator_mappings": 300,  # Story 21.6 — one public GET (Story 34.6)
-    "refresh_openteams_board": 600,  # Story 21.6 — credentialed, operator opt-in
-    "refresh_staged_recipes_prs": 600,  # Story 21.6 — credentialed, operator opt-in
+    "refresh_openteams_board": 1200,  # Story 21.6/36.2 — ~100 GraphQL pages, credentialed opt-in (one of 12 min, 2026-10-18)
+    "refresh_staged_recipes_prs": 2400,  # Story 36.2 — ~350 pages + ~1,200 files GETs; 19 min live 2026-10-18
     "build_identity_packages_primary": 300,  # Story 21.6 (pure in-memory join, no network)
     "build_identity_export_parquet": 120,  # Story 21.6 (pure in-memory shaping, no network)
     # -- artifactory_downloads --------------------------------------------- #

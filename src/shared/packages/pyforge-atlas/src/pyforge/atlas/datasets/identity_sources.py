@@ -401,6 +401,10 @@ def _why(exc: BaseException) -> str:
     return f"HTTP {status}" if status else type(exc).__name__
 
 
+#: the reasons :class:`_HonestPagination` writes when a refresh stops short
+_STOP_MARKER_PREFIXES = ("board stopped", "PR list stopped", "PR files stopped")
+
+
 class _HonestPagination:
     """Story 36.2 (AD-13): a pagination a failure stops part-way. With a store already written,
     the refresh fails and last-good is kept; with none, the pages read are written. Either way the
@@ -417,8 +421,8 @@ class _HonestPagination:
         """A store whose last refresh stopped short (its marker still stands) is due now: inside
         its cadence it would otherwise read as fresh and the marker be cleared."""
         marker = self.staleness()  # type: ignore[attr-defined]
-        if marker is not None and marker.stale:
-            return True
+        if marker is not None and marker.stale and marker.reason.startswith(_STOP_MARKER_PREFIXES):
+            return True  # only this mixin's own stop markers: a flag-off or offline marker behaves as before
         return super()._refresh_due(cadence_seconds, now)  # type: ignore[misc, unused-ignore]
 
     def _fetch_page(self, fetch: Callable[..., Any], *args: Any) -> Any:
@@ -792,8 +796,8 @@ class StagedRecipesPRDataset(_HonestPagination, ExternalRefreshDataset):
                 _STAGED_PR_MAX_PAGES,
             )
 
-        # Bounded per-open-PR files() fan-out — never raises: a per-PR failure
-        # degrades that PR's file_paths to empty, never drops the PR row.
+        # Bounded per-open-PR files() fan-out — never raises: a PR whose files are not read keeps
+        # its last-good file paths (Story 36.2), and its row is never dropped.
         open_numbers = [r["number"] for r in rows if r.get("state") == "open"]
         if len(open_numbers) > _STAGED_PR_OPEN_FILES_FANOUT_LIMIT:
             logger.warning(
@@ -805,7 +809,7 @@ class StagedRecipesPRDataset(_HonestPagination, ExternalRefreshDataset):
         # Story 36.2: a PR whose files are not read keeps its last-good file paths
         last_paths = self._last_good_file_paths()
         refused = list_refused  # a refusal on the list stops the files requests too
-        failures_in_a_row = 0
+        failures_in_a_row = files_failed = 0
         for number in open_numbers[:_STAGED_PR_OPEN_FILES_FANOUT_LIMIT]:
             if refused or failures_in_a_row >= _FILES_FAILURES_IN_A_ROW_LIMIT:
                 if not refused:
@@ -835,11 +839,14 @@ class StagedRecipesPRDataset(_HonestPagination, ExternalRefreshDataset):
                     break
                 page += 1
             failures_in_a_row = 0 if read else failures_in_a_row + 1
+            files_failed += 0 if read else 1
             if paths:
                 file_paths = _join_list(paths)
                 for row in rows:
                     if row["number"] == number:
                         row["file_paths"] = file_paths
+        if files_failed and not self._stopped:
+            self._stop(f"PR files failed for {files_failed} PRs (they keep last-good paths)")
         for row in rows:  # every open PR whose files were not read: its last-good paths
             if row.get("state") == "open" and not row.get("file_paths") and last_paths.get(row["number"]):
                 row["file_paths"] = last_paths[row["number"]]

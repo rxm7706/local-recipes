@@ -384,3 +384,56 @@ def test_a_clean_save_after_a_stopped_one_reads_fresh(tmp_path, in_turn, identit
     _save(ds)
 
     assert ds.staleness() is None and sorted(ds.load()["number"]) == [1, 2]
+
+
+# -- review round 3 ------------------------------------------------------------------------------
+
+
+def test_the_reasons_add_up_in_the_marker(tmp_path, in_turn, identity_on, switch_on):
+    in_turn.answers[_list_page(1)] = (200, [_pr(n) for n in range(1, 101)])
+    in_turn.answers[_list_page(2)] = (502, {})
+    in_turn.answers[_files(1)] = (403, {})
+    ds = _prs(tmp_path)
+
+    _save(ds)
+
+    assert (
+        json.loads(_marker(ds))["reason"] == "PR list stopped at page 2: HTTP 502; PR files stopped at PR #1: HTTP 403"
+    )
+
+
+def test_a_clean_store_inside_its_cadence_sends_nothing(tmp_path, in_turn, identity_on, switch_on):
+    in_turn.answers[GRAPHQL] = (200, _page([1], None))
+    ds = _board(tmp_path)
+    _save(ds)
+    sent = len(in_turn.sent)
+
+    ds.save(RefreshRequest(store="x"))  # not forced; the store is minutes old and clean
+
+    assert len(in_turn.sent) == sent and ds.staleness() is None
+
+
+def test_an_offline_marker_does_not_make_the_store_due(tmp_path, in_turn, identity_on, switch_on):
+    in_turn.answers[GRAPHQL] = (200, _page([1], None))
+    ds = _board(tmp_path)
+    _save(ds)
+    ds._mark_stale("refresh due but no refresher wired (offline / unattended run)")
+    sent = len(in_turn.sent)
+
+    ds.save(RefreshRequest(store="x"))
+
+    assert len(in_turn.sent) == sent  # only this mixin's own stop markers bring a refresh forward
+
+
+def test_scattered_files_failures_do_not_trip_the_breaker(tmp_path, in_turn, identity_on, switch_on):
+    in_turn.answers[_list_page(1)] = (200, [_pr(n) for n in range(1, 25)])
+    for n in range(1, 25):
+        if n % 3:  # two of every three PRs fail (404); every third answers
+            continue
+        in_turn.answers[_files(n)] = (200, [{"filename": f"recipes/p{n}/meta.yaml"}])
+    ds = _prs(tmp_path)
+
+    _save(ds)
+
+    assert sum("/files" in r.url for r in in_turn.sent) == 24  # never ten in a row
+    assert json.loads(_marker(ds))["reason"] == "PR files failed for 16 PRs (they keep last-good paths)"

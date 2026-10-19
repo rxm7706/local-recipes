@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'both stores keep the path before this story: no fetcher, last-good under a stale marker'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 2
+review_loop_iteration: 3
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -132,6 +132,13 @@ identity sources).
 ## Spec Change Log
 
 - 2026-10-18: written with the implementation (branch `atlas-36-2-identity-sources`, cut from `main` at `24581b35b8`).
+- 2026-10-19, review round 3 (FAIL, tests only), fixed:
+  - B1: a test that the reasons add up in the marker. B2: a test that a clean store inside its cadence sends nothing.
+  - Should-fix: the Dagster budgets match the measured runs (`refresh_staged_recipes_prs` 2,400 s, 19 min live;
+    `refresh_openteams_board` 1,200 s, part of a 12 min run); a test that scattered files failures never trip the
+    ten-in-a-row breaker.
+  - Nits: only this mixin's own stop markers bring a refresh forward (a flag-off or offline marker behaves as
+    before); files failures short of the breaker are counted in the marker; the stale comment corrected.
 - 2026-10-19, review round 2 (FAIL), fixed:
   - B1: the PR list's part-way tests (a fuller last-good kept; with no store, the pages read written).
   - B2: a store that stopped short is due again at once (`_HonestPagination._refresh_due`), so its marker never
