@@ -114,10 +114,10 @@ development_status:
   34-4-the-download-tables-fill-from-anaconda-s-monthly-parquet: done
   34-5-the-five-os-distro-indexes-refresh-themselves: done
   34-6-the-public-discovery-stores-refresh-themselves: done
-  34-7-the-vulnerability-stores-refresh-themselves: backlog
+  34-7-the-vulnerability-stores-refresh-themselves: done
   34-8-migration-status-fills-through-a-driver-node: done
   34-9-phase-p-fills-from-the-public-clickhouse-mirror: done
-  35-1-one-opt-in-switch-and-github-authenticates: backlog
+  35-1-one-opt-in-switch-and-github-authenticates: done
   35-2-the-vcs-batches-come-from-the-whole-universe: backlog
   35-3-upstream-versions-and-feedstock-health-come-from-github: backlog
   35-4-gitlab-codeberg-and-the-eight-registries-fill: backlog
@@ -196,9 +196,9 @@ development_status:
   epic-32-retrospective: optional
   epic-33: done
   epic-33-retrospective: optional
-  epic-34: in-progress
+  epic-34: done
   epic-34-retrospective: optional
-  epic-35: backlog
+  epic-35: in-progress
   epic-35-retrospective: optional
   epic-36: backlog
   epic-36-retrospective: optional
