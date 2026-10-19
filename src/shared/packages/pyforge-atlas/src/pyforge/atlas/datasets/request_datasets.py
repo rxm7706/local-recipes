@@ -97,6 +97,16 @@ _PYPI_JSON_FRAME_COLUMNS = [
 _STOP_STATUSES = (401, 403, 429)
 
 
+def _renumbered(by_alias: dict[Any, Any], offset: int) -> dict[str, Any]:
+    """Story 35.3: a half batch's ``r<i>`` aliases as the whole batch's ``r<i + offset>``; any
+    other key (``rateLimit``, a body-level error) is dropped."""
+    return {
+        f"r{int(alias[1:]) + offset}": value
+        for alias, value in by_alias.items()
+        if isinstance(alias, str) and alias[:1] == "r" and alias[1:].isdigit()
+    }
+
+
 def _http_status(exc: BaseException) -> int | None:
     """The HTTP status inside kedro's ``DatasetError("Failed to send data", HTTPError)``, if any."""
     for arg in (exc, *getattr(exc, "args", ())):
@@ -458,6 +468,8 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
     #: Story 35.3: legacy's batch sizes (Phase K 100, CFA:4697; Phase N 25, CFA:6600)
     UPSTREAM_BATCH = 100
     FEEDSTOCK_BATCH = 25
+    PROGRESS_EVERY = 25  # a progress line every this many batches, as legacy Phase K prints
+    GRAPHQL_TIMEOUT_SECONDS = 60
     ARCHIVED_MAX_PAGES = 200
 
     def __init__(
@@ -527,7 +539,9 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
         inner = APIDataset(
             url=self._base_url,
             method="POST",
-            save_args={"timeout": self._timeout_seconds},
+            # Story 35.3: GitHub ends a GraphQL query after about ten seconds; legacy Phase K stops
+            # waiting at 45 (PHASE_K_BATCH_HARD_TIMEOUT_S), so a stalled connection never holds the run
+            save_args={"timeout": min(self._timeout_seconds, self.GRAPHQL_TIMEOUT_SECONDS)},
             credentials=auth,  # type: ignore[arg-type, unused-ignore]  # a callable auth; requests accepts it
             metadata=self.metadata,
             response_dataset={"type": "kedro.io.MemoryDataset", "copy_mode": "assign"},
@@ -577,7 +591,11 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
                 if attempt > self._max_retries or (status in _STOP_STATUSES and not wait):
                     return None, exc
                 # Story 35.3: a 403 or 429 that names its wait (a secondary rate limit) is retried after it
-                self._sleep(wait or retry_backoff_seconds(attempt))
+                delay = wait or retry_backoff_seconds(attempt)
+                # the status or the exception's type only: its text can quote a request header
+                reason = f"HTTP {_http_status(exc)}" if _http_status(exc) else type(exc).__name__
+                logger.info("GitHub batch: %s, retry %d/%d in %.1fs", reason, attempt, self._max_retries, delay)
+                self._sleep(delay)
 
     def fetch_repo_health(
         self,
@@ -735,7 +753,7 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
         ``archived``. A 401, 403 or 429 that names no wait stops the run (Story 35.1); the rows
         fetched before it are kept and the store is marked stale. Never raises (AD-13)."""
         rows: list[dict[str, Any]] = []
-        state: dict[str, Any] = {"failure": "", "stopped": False}
+        state: dict[str, Any] = {"failure": "", "stopped": False, "timed_out": False}
 
         def run(chunk: Sequence[Any], build: Callable[[Sequence[Any]], dict[str, Any]]) -> tuple[dict, dict] | None:
             payload, exc = self._fetch_batch_with_retry(chunk, fetcher=fetcher, auth=auth, build=build)
@@ -744,23 +762,50 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
                 # never the exception text on the credentialed path: it can quote a request header
                 state["failure"] = f"HTTP {status}" if status else type(exc).__name__
                 state["stopped"] = status in _STOP_STATUSES
+                state["timed_out"] = status in (502, 504) or "Timeout" in type(exc.__cause__).__name__
                 logger.warning("GitHub batch fetch failed, keeping last-good: %s", state["failure"])
                 return None
             errors = _graphql_errors(payload)
             data = payload.get("data") if isinstance(payload, dict) else None
             if not isinstance(data, dict):
                 state["failure"] = f"GraphQL error: {errors.get(None) or 'no data'}"
+                state["timed_out"] = False
                 return None
+            return data, errors
+
+        def run_split(
+            chunk: Sequence[Any], build: Callable[[Sequence[Any]], dict[str, Any]]
+        ) -> tuple[dict, dict] | None:
+            """Story 35.3: a batch GitHub could not answer in time (502, 504 or a timeout) is halved
+            and each half asked, down to one repository; legacy Phase K drops the whole batch. The
+            halves' aliases are renumbered to the batch's, and a half that still fails gives each
+            of its repositories the failure as its error."""
+            got = run(chunk, build)
+            if got is not None or len(chunk) < 2 or state["stopped"] or not state["timed_out"]:
+                return got
+            half = len(chunk) // 2
+            data: dict[str, Any] = {}
+            errors: dict[str | None, str] = {}
+            for offset, part in ((0, chunk[:half]), (half, chunk[half:])):
+                sub = run_split(part, build)
+                if sub is None:
+                    errors.update({f"r{i + offset}": state["failure"] for i in range(len(part))})
+                    continue
+                data.update(_renumbered(sub[0], offset))
+                errors.update(_renumbered(sub[1], offset))
             return data, errors
 
         # Phase K: each distinct repo once, its version written to every package that names it
         packages: dict[tuple[str, str], list[str]] = {}
         for conda, owner, name in upstream_repos:
             packages.setdefault((owner, name), []).append(conda)
-        for chunk in chunk_queries(sorted(packages), self.UPSTREAM_BATCH):
+        upstream_batches = -(-len(packages) // self.UPSTREAM_BATCH)
+        for n, chunk in enumerate(chunk_queries(sorted(packages), self.UPSTREAM_BATCH), start=1):
             if state["stopped"]:
                 break
-            got = run(chunk, self.build_upstream_query)
+            if n % self.PROGRESS_EVERY == 1:
+                logger.info("GitHub upstream versions: batch %d of %d", n, upstream_batches)
+            got = run_split(chunk, self.build_upstream_query)
             for i, (owner, name) in enumerate(chunk):
                 version, error = None, state["failure"] or "batch failed"
                 if got is not None:
@@ -788,10 +833,13 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
                         }
                     )
         # Phase N
-        for chunk in chunk_queries(sorted(set(feedstocks)), self.FEEDSTOCK_BATCH):
+        feedstock_batches = -(-len(set(feedstocks)) // self.FEEDSTOCK_BATCH)
+        for n, chunk in enumerate(chunk_queries(sorted(set(feedstocks)), self.FEEDSTOCK_BATCH), start=1):
             if state["stopped"]:
                 break
-            got = run(chunk, self.build_feedstock_query)
+            if n % self.PROGRESS_EVERY == 1:
+                logger.info("GitHub feedstock health: batch %d of %d", n, feedstock_batches)
+            got = run_split(chunk, self.build_feedstock_query)
             for i, fs in enumerate(chunk):
                 row: dict[str, Any] = {
                     "kind": "feedstock",

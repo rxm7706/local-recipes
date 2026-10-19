@@ -60,6 +60,12 @@ Legacy makes three GitHub reads:
    `track_upstream_versions` the `upstream` rows (Phase K), `fetch_live_health` the `feedstock` rows (Phase N, with
    open PRs, CI state and the row's error). A store with none of a kind reads as before.
 6. **Budget.** `refresh_vcs_github_store`'s budget is 3,600 s (about 1,400 queries for the universe).
+7. **A batch GitHub cannot answer in time is halved.** GitHub ends a GraphQL query after about ten seconds with a 502
+   or 504. A batch that still fails that way after its retries is split in two and each half asked, down to one
+   repository; a half that still fails gives each of its repositories the failure as its error (legacy Phase K drops
+   the whole batch). Each POST stops waiting after 60 s (legacy: 45 s; the default here was 900 s).
+8. **The run says what it is doing:** a progress line every 25 batches and a line per retry, with the HTTP status
+   only, never the exception's text.
 
 Ledger key: `35-3-upstream-versions-and-feedstock-health-come-from-github`.
 Type / Effort / Deps: feature / L / Story 35.1 (the switch, bearer auth), Story 35.2 (the batches).
@@ -76,8 +82,9 @@ Type / Effort / Deps: feature / L / Story 35.1 (the switch, bearer auth), Story 
   repository keeps its GraphQL error; 100 repos per query, each asked once.
 - **AC2 — Phase N.** Each feedstock's last push, CI state, open issues and PRs, 25 per query.
 - **AC3 — Phase E.5.** The organization's archived repositories, every page, `-feedstock` stripped, other repos ignored.
-- **AC4 — Refusals.** A refusal with no wait stops the run; one with `Retry-After` is waited and retried; rows before a
-  stop are kept under `stale`.
+- **AC4 — Refusals and timeouts.** A refusal with no wait stops the run; one with `Retry-After` is waited and retried;
+  rows before a stop are kept under `stale`. A batch answered 502 or 504 is halved down to one repository, its rows
+  renumbered back; another failure is not halved; a POST waits 60 s at most.
 - **AC5 — Consumers.** Each reads its own kind; a store without kinds reads as before; a pre-35.3 store's rows survive
   the first write.
 - **AC6 — Live.** See Verification. Tolerance against legacy the same day: Phase K versions for at least 95% of the
@@ -122,3 +129,7 @@ Type / Effort / Deps: feature / L / Story 35.1 (the switch, bearer auth), Story 
 ## Spec Change Log
 
 - 2026-10-18: written with the implementation (branch `atlas-35-3-github-versions-health`, stacked on Story 35.2).
+- 2026-10-18: the first credentialed live run sat 45 minutes in its retries with nothing logged (the POST timeout was
+  900 s; the first batch, alphabetically the tag-heavy repositories, answered 502 four times). A probe of the same
+  batch answered 200 in 5.5 s, so the 502s come and go. Approach 7 and 8 added; the re-run halved batch 1 and
+  continued.
