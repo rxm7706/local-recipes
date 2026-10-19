@@ -138,7 +138,7 @@ def test_every_output_attributed_to_the_feedstock_maps_to_its_recipe_project():
         "airflow": ("apache-airflow", "recipe_source_url"),
         "airflow-with-amazon": ("apache-airflow", "recipe_source_url"),  # attributed, not an anchor
         "x": ("new-name", "recipe_source_url"),  # attribution picks the feedstock, not the first anchor
-        "y": ("y-py", "recipe_source_url"),  # no attribution row: the first anchor with a URL
+        "y": ("y-py", "recipe_source_url"),  # no attribution row: the first anchor whose URL names a PyPI project
     }  # z: attribution names a GitHub-sourced feedstock, so its PyPI-sourced anchor never counts
 
 

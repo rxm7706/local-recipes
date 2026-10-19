@@ -2572,7 +2572,7 @@ So that Phase H, the vdb scan and everything keyed on a PyPI name cover legacy's
 **Given** `map_pypi_conda` maps only the bot's parselmouth names (10,967 on 2026-10-18), while legacy's Phase H universe is 20,938 names, because legacy also maps a PyPI project whose lower-cased name is the conda name (Phase D, CFA:1837-1895) and every output attributed to a feedstock whose recipe downloads from PyPI (Phase C.5 in Phase E, CFA:2434-2446) (`DW-atlas-34-10-1`)
 **When** the pipeline runs
 **Then** `pypi_conda_mapping` carries `name_coincidence` and `recipe_source_url` rows, each only for a package the tier before left unmapped, and its PyPI names cover legacy Phase H's universe within the story's tolerance, measured the same day
-**Status:** backlog
+**Status:** done
 
 ## Epic 35: VCS and registry fetches cover the full universe, credentialed on opt-in (spec-pyforge-atlas CAP-65, FR-73)
 

@@ -2,7 +2,7 @@
 title: "34.11: The Phase C mapping fills legacy's name-coincidence and recipe-source tiers"
 type: 'feature'
 created: '2026-10-18'
-status: 'in-review'
+status: 'done'
 baseline_revision: '2282c7bbf9'
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -17,7 +17,7 @@ context:
 deferred: []
 declared_low_risk: false
 review_loop_iteration: 2
-followup_review_recommended: true
+followup_review_recommended: false
 ---
 
 <intent-contract>
@@ -210,3 +210,4 @@ Type / Effort / Deps: feature / M / Story 34.2 (parselmouth), Story 34.3 (node_a
     PyPI-side check's breadth are recorded as deviations; the fallback's wording is corrected.
   - **Nits:** tests pin the PEP 503 check, the unenumerated parselmouth name, and the one-hour window; the 292 is
     restated as 244; a degraded load reused for the hour is a residual risk; Story 36.1's Flag line names both flags.
+- 2026-10-18: independent review round 3 PASS (R2, R6, R12, R25 killed; planning detectors green). Promoted to done.
