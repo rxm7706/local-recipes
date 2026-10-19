@@ -19,7 +19,7 @@ from pyforge.atlas.datasets import credentials as credential_switch
 from pyforge.atlas.datasets.rate_limit import RateLimitedScheduler
 from pyforge.atlas.datasets.refresh import RefreshRequest
 from pyforge.atlas.datasets.request_datasets import GITHUB_BATCH_QUERY_MAX, GitHubRequestDataset
-from pyforge.atlas.datasets.vcs_sources import VcsHostSeedDataset
+from pyforge.atlas.datasets.vcs_sources import RegistryUpstreamDataset, VcsHostSeedDataset
 
 GRAPHQL = "https://api.github.com/graphql"
 TOKEN = "ghp_test_not_a_real_token"
@@ -135,10 +135,11 @@ def test_no_usable_token_sends_nothing(fake_transport, flag_on, switch_on, tmp_p
     assert fake_transport.sent == [] and "no github_token" in _marker_text(ds)
 
 
-def test_a_rejected_token_is_sent_once_and_never_reaches_a_marker_or_a_row(
-    fake_transport, flag_on, switch_on, tmp_path
+@pytest.mark.parametrize("status", [401, 403, 429])
+def test_a_refusal_is_sent_once_and_never_reaches_a_marker_or_a_row(
+    fake_transport, flag_on, switch_on, tmp_path, status
 ):
-    fake_transport.answers[GRAPHQL] = (401, {"message": "Bad credentials"})
+    fake_transport.answers[GRAPHQL] = (status, {"message": "refused"})
     ds = _dataset(tmp_path)
     _write_last_good(ds)
     repos = [("o", f"r{i}") for i in range(GITHUB_BATCH_QUERY_MAX + 1)]  # two chunks
@@ -146,8 +147,58 @@ def test_a_rejected_token_is_sent_once_and_never_reaches_a_marker_or_a_row(
     ds.save(_request(*repos))
 
     assert len(fake_transport.sent) == 1  # no retry, and the second chunk is never sent
-    assert "HTTP 401" in _marker_text(ds) and TOKEN not in _marker_text(ds)
+    assert f"HTTP {status}" in _marker_text(ds) and TOKEN not in _marker_text(ds)
     assert list(ds.load()["feedstock_name"]) == ["old"]  # last-good kept
+
+
+def test_a_refusal_after_a_good_chunk_keeps_its_rows_and_marks_the_store_stale(
+    fake_transport, flag_on, switch_on, tmp_path, monkeypatch
+):
+    answers = iter([(200, {"data": {f"r{i}": _health() for i in range(GITHUB_BATCH_QUERY_MAX)}}), (429, {})])
+    fake_transport.answers = _Each(answers)
+    ds = _dataset(tmp_path)
+    repos = [("o", f"r{i}") for i in range(GITHUB_BATCH_QUERY_MAX * 2 + 1)]  # three chunks
+
+    ds.save(_request(*repos))
+
+    assert len(fake_transport.sent) == 2 and len(ds.load()) == GITHUB_BATCH_QUERY_MAX * 2
+    assert "stopped after HTTP 429" in _marker_text(ds)
+
+
+class _Each(dict):
+    """``answers.get(url, default)`` that hands out the next scripted answer per request."""
+
+    def __init__(self, answers) -> None:  # noqa: ANN001
+        super().__init__()
+        self._answers = answers
+
+    def get(self, _url, default=None):  # noqa: ANN001, ANN202
+        return next(self._answers, default)
+
+
+def test_a_failure_without_a_status_names_only_its_type_on_the_credentialed_path(
+    fake_transport, flag_on, switch_on, tmp_path, monkeypatch
+):
+    import requests.adapters
+
+    def refuse(self, request, *args, **kwargs):  # noqa: ANN001, ANN202
+        raise ConnectionError(f"could not send {request.headers}")  # text that quotes the header
+
+    monkeypatch.setattr(requests.adapters.HTTPAdapter, "send", refuse)
+    ds = _dataset(tmp_path)
+
+    ds.save(_request(("o", "r")))
+
+    marker = _marker_text(ds)
+    assert "DatasetError" in marker and TOKEN not in marker and "could not send" not in marker
+
+
+def test_a_malformed_graphql_error_path_never_fails_the_run(fake_transport, flag_on, switch_on, tmp_path):
+    odd = {"type": "NOT_FOUND", "path": [["r0"]], "message": "x"}
+    fake_transport.answers[GRAPHQL] = (200, {"data": {"r0": None}, "errors": [odd]})
+    ds = _dataset(tmp_path)
+
+    ds.save(_request(("o", "gone")))  # no raise (AD-13)
 
 
 def test_a_graphql_error_body_says_why(fake_transport, flag_on, switch_on, tmp_path):
@@ -178,14 +229,16 @@ def test_flag_off_keeps_the_path_this_story_found(fake_transport, switch_on, tmp
     frame = ds.fetch_repo_health([("o", "r")])
 
     assert fake_transport.sent == [] and frame["last_error"].str.contains("Only GET").all()
+    assert "fetch returned no data" in _marker_text(ds)  # the marker this story found
 
 
 def test_bearer_auth_sets_the_header_only_for_its_host_and_hides_the_token():
     auth = credential_switch.BearerAuth(TOKEN, "api.github.com")
     own = auth(SimpleNamespace(url="https://api.github.com/graphql", headers={}))
     other = auth(SimpleNamespace(url="https://evil.example/graphql", headers={}))
+    cleartext = auth(SimpleNamespace(url="http://api.github.com/graphql", headers={}))
 
-    assert own.headers == {"Authorization": f"Bearer {TOKEN}"} and other.headers == {}
+    assert own.headers == {"Authorization": f"Bearer {TOKEN}"} and other.headers == {} and cleartext.headers == {}
     assert TOKEN not in repr(auth)
 
 
@@ -197,27 +250,48 @@ def test_token_of_reads_the_two_catalog_shapes(credentials, token):
     assert credential_switch.token_of(credentials) == token
 
 
-@pytest.mark.parametrize("header", ["Authorization", "PRIVATE-TOKEN", "X-NuGet-ApiKey"])
-def test_the_autouse_guard_fails_a_credentialed_request_without_the_switch(header):
+@pytest.mark.parametrize("header", ["Authorization", "Proxy-Authorization", "PRIVATE-TOKEN", "X-NuGet-ApiKey"])
+def test_the_autouse_guard_fails_a_credentialed_request_without_the_switch(header, monkeypatch):
+    import socket
+
     import requests
 
+    def no_socket(*_a, **_k):  # noqa: ANN002, ANN003, ANN202 -- were the guard ever gone, no network
+        raise OSError("sockets are refused in this test")
+
+    monkeypatch.setattr(socket.socket, "connect", no_socket)
     # no fake_transport: the suite's own guard refuses before anything reaches a socket
     with pytest.raises(pytest.fail.Exception, match=credential_switch.SWITCH):
         requests.get("https://api.github.com/x", headers={header: "t"}, timeout=1)
 
 
+def test_with_the_flag_on_a_host_or_registry_request_carries_a_no_op_auth_and_no_credential(monkeypatch):
+    from pyforge.atlas.datasets import public_sources
+    from pyforge.atlas.datasets.vcs_sources import _request_kwargs
+
+    monkeypatch.setattr(credential_switch, "live_vcs_universe", lambda: True)
+    on = _request_kwargs(30, ["PRIVATE-TOKEN", "stub"])
+    monkeypatch.setattr(credential_switch, "live_vcs_universe", lambda: False)
+    off = _request_kwargs(30, ["PRIVATE-TOKEN", "stub"])
+
+    assert on == {"load_args": public_sources.request_args(30)}  # no credential; the no-op auth keeps ~/.netrc out
+    assert off == {"load_args": {"timeout": 30}, "credentials": ["PRIVATE-TOKEN", "stub"]}
+
+
 @pytest.mark.parametrize("flag", [True, False], ids=["flag-on", "flag-off"])
-def test_a_vcs_host_sends_its_credential_only_with_the_flag_off(fake_transport, tmp_path, monkeypatch, flag):
+@pytest.mark.parametrize("kind", ["gitlab-host", "npm-registry"])
+def test_a_vcs_host_sends_its_credential_only_with_the_flag_off(fake_transport, tmp_path, monkeypatch, flag, kind):
     # Story 35.4 decides which hosts may authenticate; until then the flag-on path is public
     monkeypatch.setattr(credential_switch, "live_vcs_universe", lambda: flag)
-    ds = VcsHostSeedDataset(
-        url="https://gitlab.com/api/v4",
-        host="gitlab",
-        filepath=str(tmp_path / "store"),
-        credentials=["PRIVATE-TOKEN", "stub"],
-        max_retries=0,
-        sleep=lambda _s: None,
-    )
+    common = {"filepath": str(tmp_path / "store"), "max_retries": 0, "sleep": lambda _s: None}
+    if kind == "gitlab-host":
+        ds = VcsHostSeedDataset(
+            url="https://gitlab.com/api/v4", host="gitlab", credentials=["PRIVATE-TOKEN", "stub"], **common
+        )
+    else:
+        ds = RegistryUpstreamDataset(
+            url="https://registry.npmjs.org", registry="npm", credentials=["npm", "stub"], **common
+        )
 
     if flag:
         with contextlib.suppress(Exception):  # the fake transport answers 404; only the request matters
@@ -227,6 +301,14 @@ def test_a_vcs_host_sends_its_credential_only_with_the_flag_off(fake_transport, 
     else:
         with pytest.raises(pytest.fail.Exception):  # today's path sends the pair as Basic auth: the guard refuses
             ds.fetch_one("group/project")
+
+
+def test_the_real_reader_reads_off_when_the_tree_lacks_the_key(tmp_path, monkeypatch):
+    from pyforge.testing_kit import flagd_tree
+
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(flagd_tree(tmp_path, {"pyforge.atlas.live_public_sources": "on"})))
+
+    assert _REAL_FLAG_READER() is False
 
 
 @pytest.mark.parametrize("variant", ["on", "off"])

@@ -91,6 +91,12 @@ _PYPI_JSON_FRAME_COLUMNS = [
 ]
 
 
+# Story 35.1: on the credentialed path these are sent once and stop the remaining chunks: a rejected
+# token (401), a refusal or secondary rate limit (403) and a rate limit (429) do not clear in
+# milliseconds, and GitHub can block a client that keeps sending through them
+_STOP_STATUSES = (401, 403, 429)
+
+
 def _http_status(exc: BaseException) -> int | None:
     """The HTTP status inside kedro's ``DatasetError("Failed to send data", HTTPError)``, if any."""
     for arg in (exc, *getattr(exc, "args", ())):
@@ -110,7 +116,8 @@ def _graphql_errors(payload: Any) -> dict[str | None, str]:
             continue
         message = str(err.get("type") or "") + (": " if err.get("type") else "") + str(err.get("message", ""))[:200]
         path = err.get("path")
-        out.setdefault(path[0] if isinstance(path, list) and path else None, message)
+        alias = path[0] if isinstance(path, list) and path and isinstance(path[0], (str, int)) else None
+        out.setdefault(str(alias) if alias is not None else None, message)
         out.setdefault(None, message)
     return out
 
@@ -527,7 +534,7 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
                 attempt += 1
                 # Story 35.1: a rejected token is never sent again (GitHub can block a client that
                 # keeps sending bad credentials)
-                if attempt > self._max_retries or (auth is not None and _http_status(exc) == 401):
+                if attempt > self._max_retries or (auth is not None and _http_status(exc) in _STOP_STATUSES):
                     return None, exc
                 self._sleep(retry_backoff_seconds(attempt))
 
@@ -556,15 +563,17 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
             return empty
         rows: list[dict[str, Any]] = []
         last_failure = ""
+        stopped = False
         for chunk in chunk_queries(list(repos), GITHUB_BATCH_QUERY_MAX):
-            if auth is not None and last_failure.startswith("HTTP 401"):
-                break  # Story 35.1: the token was rejected; the remaining chunks would be too
+            if stopped:
+                break  # Story 35.1: the remaining chunks would meet the same refusal
             payload, exc = self._fetch_batch_with_retry(chunk, fetcher=fetcher, auth=auth)
             if exc is not None:
                 status = _http_status(exc)
                 if auth is not None:
                     # never the exception text on the credentialed path: it can quote a request header
                     last_failure = f"HTTP {status}" if status else type(exc).__name__
+                    stopped = status in _STOP_STATUSES
                 else:
                     last_failure = f"{type(exc).__name__}: {exc}"
                 logger.warning("GitHub batch fetch failed, keeping last-good: %s", last_failure)
@@ -626,6 +635,9 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
             self._mark_stale(f"every GitHub batch failed ({last_failure}) -- keeping last-good")
             return frame
         self._persist(frame if has_success else empty)
+        if stopped and has_success:
+            # the rows fetched before the refusal are kept, but the store is not current
+            self._mark_stale(f"stopped after {last_failure} -- the remaining batches keep last-good")
         return frame
 
     def load(self) -> pd.DataFrame:

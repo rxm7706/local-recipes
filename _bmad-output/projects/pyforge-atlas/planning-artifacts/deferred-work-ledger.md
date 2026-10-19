@@ -5044,7 +5044,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: implementer finding, atlas Story 35.1 live verification
   severity: medium
   promoted: 2026-10-18 -- atlas Story 35.1; operator-owned (a credential)
-  status: open
+  verified: 2026-10-18 by operator ruling the verification run took the `gh` CLI's token through a gitignored `--env verify` (`src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/credentials.py::github_auth`); `pyforge atlas run --env verify --pipelines vcs_health --nodes refresh_vcs_github_store` with `PYFORGE_ATLAS_CREDENTIALED=1` exit 0, 727 repos: 723 health rows and 4 NOT_FOUND rows, no marker. The operator's own runs still need a real token in `conf/local/credentials.yml` (README, the `PYFORGE_ATLAS_CREDENTIALED` row).
+  status: closed
 
 ### DW-atlas-35-1-2: The query-plane face-parity test can fail under xdist load on an ephemeral-port race.
 

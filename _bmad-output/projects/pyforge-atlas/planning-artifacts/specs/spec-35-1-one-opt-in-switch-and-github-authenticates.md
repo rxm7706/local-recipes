@@ -21,7 +21,7 @@ context:
   - src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/vcs_sources.py
 deferred: []
 declared_low_risk: false
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: true
 ---
 
@@ -123,8 +123,11 @@ Type / Effort / Deps: feature / M / none.
     orchestration testing").
   - **After review round 1:** exit 0. One bearer POST, answered 401, then the remaining chunks were skipped. The
     marker reads "every GitHub batch failed (HTTP 401) -- keeping last-good"; the log carries no token.
-  - **Not yet shown live:** rows landing from an accepted token. That needs a real `github_token` in
-    `conf/local/credentials.yml` (for example `token: ${oc.env:GITHUB_TOKEN}`), an operator step.
+  - **With an accepted token** (operator ruling 2026-10-18: a verification run may take the token from
+    `gh auth token`, through a gitignored `--env verify` whose `credentials.yml` reads `${oc.env:GITHUB_TOKEN}`; the
+    operator's `conf/local/credentials.yml` is untouched): exit 0, 32 s, peak RSS 0.28 GB. All 727 repos came back:
+    723 health rows (37 archived) and 4 `NOT_FOUND` rows, each with its own GraphQL error. No marker. Neither the run's
+    log nor the store carries the token.
 
 ## Boundaries & Constraints
 
@@ -132,7 +135,8 @@ Type / Effort / Deps: feature / M / none.
 a dataset or a marker; a test or CI job that sets the switch or reaches the network.
 
 **Residual risk:**
-- **The live fill is unproven** until the operator supplies a real token (see Verification; `DW-atlas-35-1-1`).
+- **The operator's own credentialed run** needs a real token in `conf/local/credentials.yml` (for example
+  `github_token: {token: ${oc.env:GITHUB_TOKEN}}`); the shipped file is the bootstrap's placeholder.
 - **Epic 35's "every credentialed dataset reads the one switch"** holds for GitHub here; Basilisk and the identity
   sources join in Stories 36.1 and 36.2.
 - **The flag-off path still cannot send** (the GET-only `load()`). It is the state this story found, kept as the
@@ -146,6 +150,7 @@ a dataset or a marker; a test or CI job that sets the switch or reaches the netw
 | Switch unset | the POST raised before sending; error rows; "fetch returned no data" | nothing sent; marker names the switch |
 | Switch `1`, real token | the POST raised before sending | bearer POST to `api.github.com`; rows land |
 | Switch `1`, placeholder token | the POST raised before sending | one POST, 401; the other chunks skipped; marker carries HTTP 401 |
+| Switch `1`, a 403 or 429 | the POST raised before sending | sent once; the other chunks skipped; rows already fetched kept; marker says it stopped |
 | Switch `1`, `GITHUB_API_BASE_URL` on another host or over http | the POST raised before sending | nothing sent; marker names the host or scheme |
 | A GraphQL body of errors and no data | "fetch returned no data" | marker carries the error (`RATE_LIMITED: ...`) |
 | Flag on, a GitLab or registry request | the catalog credential passed as auth | no credential; no `~/.netrc` |
@@ -178,3 +183,12 @@ a dataset or a marker; a test or CI job that sets the switch or reaches the netw
   - **Nits:** the real flag reader is tested against a tree; the autouse guard is tested without `fake_transport` and
     covers four credential headers; the timeout is asserted; the `env_or` deviation is recorded; an unused parameter
     is gone.
+- 2026-10-18: independent review round 2 PASS, with one should-fix and nits; 22 mutants, 5 survived.
+  - **Should-fix:** a 403 or 429 on the credentialed path is now sent once and stops the remaining chunks, like a
+    401; rows fetched before it are kept and the marker says the run stopped.
+  - **Nits:** a GraphQL error path that cannot be a key no longer fails the run; tests pin http to the token's own
+    host, the flag-off marker, the no-op auth with the flag on, a status-less failure naming only its type, the
+    registry call site in both flag states, the guard's fourth header and a refused socket in the guard test, and
+    the reader's default when the tree lacks the key.
+  - **Live with an accepted token** (operator ruling 2026-10-18, the `gh` CLI's token): every repo came back; see
+    Verification. `DW-atlas-35-1-1` closes.
