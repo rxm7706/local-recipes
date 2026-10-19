@@ -166,6 +166,17 @@ def test_crates_prefers_the_stable_version_with_the_flag_on(monkeypatch, flag, v
     assert V._crates_extract(payload) == version
 
 
+def test_a_registry_request_names_atlas_as_its_agent_with_the_flag_on(tmp_path, flag_on, fake_transport):
+    url = "https://crates.io/api/v1/crates/serde"
+    fake_transport.answers[url] = (200, {"crate": {"max_stable_version": "1.0.0"}})
+    ds = RegistryUpstreamDataset(url="https://crates.io", registry="crates", filepath=str(tmp_path / "c"), rps=1000.0)
+
+    ds.load_many([("rust-serde", "serde")])
+
+    (sent,) = fake_transport.sent
+    assert sent.headers["User-Agent"] == V.USER_AGENT and "Authorization" not in sent.headers
+
+
 def test_the_slow_registries_run_at_one_request_a_second():
     import yaml
 

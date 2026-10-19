@@ -54,6 +54,8 @@ Legacy reads:
 3. **Registries.** Maven asks for the group and the artifact; NuGet takes the last stable version; crates the newest
    stable version.
 4. **Rate.** crates and rubygems run at one request a second (catalog `rps: 1.0`).
+5. **Agent.** Every registry request names atlas in its `User-Agent`, as legacy Phase L does (`cf-atlas/phase-l`):
+   crates.io answers requests' default agent with a 403.
 
 Ledger key: `35-4-gitlab-codeberg-and-the-eight-registries-fill`.
 Type / Effort / Deps: feature / M / Story 35.2 (the batches), Story 35.3 (`normalize_release_tag`).
@@ -71,7 +73,8 @@ Type / Effort / Deps: feature / M / Story 35.2 (the batches), Story 35.3 (`norma
 - **AC2 — GitLab's token.** Sent only with the switch, a usable token and an https `gitlab.com` URL; never to Codeberg;
   never in `repr`.
 - **AC3 — Registries.** Maven `g:"…" AND a:"…"`; NuGet's last stable; crates' newest stable; flag off unchanged.
-- **AC4 — Rate.** crates and rubygems at 1.0 request a second.
+- **AC4 — Rate and agent.** crates and rubygems at 1.0 request a second; every registry request carries atlas's
+  `User-Agent`.
 - **AC5 — Live.** See Verification. Tolerance against legacy's stored versions: every legacy GitLab, Codeberg and
   registry package asked; the same version for at least 80% of the packages both hold (legacy's values are from its
   last run, not today's).
@@ -81,7 +84,26 @@ Type / Effort / Deps: feature / M / Story 35.2 (the batches), Story 35.3 (`norma
 ## Verification
 
 - Unit, from the repo root: `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_hosts_and_registries.py`.
-- **Live, recorded 2026-10-18** — PENDING (a public run, no credential).
+- **Live, recorded 2026-10-18,** on a scratch data root (dev, flag on, no switch, no credential):
+  - `--pipelines vcs_health --nodes refresh_vcs_host_stores,refresh_vcs_registry_stores,track_upstream_versions,track_registry_versions`
+    exit 0 in 22 min. crates.io answered every request 403; the registry node was re-run with the `User-Agent`
+    fix (39 s, exit 0).
+  - Against legacy `cf_atlas.db` (`upstream_versions`, fetched the same day): every one of legacy's 725 packages with
+    a version was asked.
+
+    | Source | Atlas asked / with a version | Legacy with a version | Same version where both hold |
+    |---|---|---|---|
+    | GitLab | 411 / 372 | 331 | 330 of 330 |
+    | Codeberg | 31 / 23 | 19 | 19 of 19 |
+    | npm | 211 / 211 | 198 | 195 of 198 |
+    | rubygems | 165 / 165 | 165 | 164 of 165 |
+    | crates | 10 / 10 | 10 | 10 of 10 |
+    | maven | 3 / 3 | 2 | 2 of 2 |
+    | nuget | 0 | 0 | — |
+
+    720 of 724 (99.45%), above the 80% tolerance. The four that differ are newer in atlas (ava 8.1.0, commitlint
+    21.2.4, knip 6.42.0, rb-pkg-config 1.6.6): releases after legacy's fetch.
+  - GitLab rows without a version: 25 "no tags", 14 a fetch error.
 
 ## Boundaries & Constraints
 
@@ -112,3 +134,5 @@ Type / Effort / Deps: feature / M / Story 35.2 (the batches), Story 35.3 (`norma
 ## Spec Change Log
 
 - 2026-10-18: written with the implementation (branch `atlas-35-4-hosts-and-registries`, stacked on Story 35.3).
+- 2026-10-18: the live run found crates.io refusing requests' default `User-Agent` (403); registry requests now send
+  `vcs_sources.USER_AGENT`.

@@ -57,6 +57,7 @@ from .request_datasets import normalize_release_tag
 logger = logging.getLogger(__name__)
 
 _VERSION_SEGMENT_RE = re.compile(r"\d+|\D+")
+USER_AGENT = "pyforge-atlas (+https://github.com/rxm7706/local-recipes)"
 
 
 def _version_sort_key(version: str) -> tuple:
@@ -105,7 +106,9 @@ def _request_kwargs(timeout: int, credentials: Any) -> dict[str, Any]:
     may authenticate, and only under the switch), and a no-op auth keeps ``~/.netrc`` out. Off,
     the request is the one this story found."""
     if credential_switch.live_vcs_universe():
-        return {"load_args": public_sources.request_args(timeout)}
+        # Story 35.4: an identifying User-Agent, as legacy Phase L sends; crates.io answers
+        # requests' default agent with a 403.
+        return {"load_args": {**public_sources.request_args(timeout), "headers": {"User-Agent": USER_AGENT}}}
     return {"load_args": {"timeout": timeout}, "credentials": credentials}
 
 

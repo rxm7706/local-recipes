@@ -277,14 +277,15 @@ def test_the_autouse_guard_fails_a_credentialed_request_without_the_switch(heade
 
 def test_with_the_flag_on_a_host_or_registry_request_carries_a_no_op_auth_and_no_credential(monkeypatch):
     from pyforge.atlas.datasets import public_sources
-    from pyforge.atlas.datasets.vcs_sources import _request_kwargs
+    from pyforge.atlas.datasets.vcs_sources import USER_AGENT, _request_kwargs
 
     monkeypatch.setattr(credential_switch, "live_vcs_universe", lambda: True)
     on = _request_kwargs(30, ["PRIVATE-TOKEN", "stub"])
     monkeypatch.setattr(credential_switch, "live_vcs_universe", lambda: False)
     off = _request_kwargs(30, ["PRIVATE-TOKEN", "stub"])
 
-    assert on == {"load_args": public_sources.request_args(30)}  # no credential; the no-op auth keeps ~/.netrc out
+    # no credential; the no-op auth keeps ~/.netrc out; Story 35.4 names atlas as the agent
+    assert on == {"load_args": {**public_sources.request_args(30), "headers": {"User-Agent": USER_AGENT}}}
     assert off == {"load_args": {"timeout": 30}, "credentials": ["PRIVATE-TOKEN", "stub"]}
 
 
