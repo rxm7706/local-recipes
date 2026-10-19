@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'the hosts read their latest tag only and the registries keep the version choices they had before this story'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -50,7 +50,13 @@ Legacy reads:
    falls to the tags; a project with neither reads "no tags".
 2. **GitLab's token.** `PRIVATE-TOKEN` from `gitlab_token`, only under `PYFORGE_ATLAS_CREDENTIALED=1`, only over https
    to `gitlab.com` (`credentials.HeaderAuth`, `gitlab_auth`). Unset, GitLab is asked unauthenticated, as it answers.
-   Codeberg never sends a credential. A no-op auth keeps `~/.netrc` out.
+   Codeberg never sends a credential. A no-op auth keeps `~/.netrc` out. A request that carries the token never
+   follows a redirect: requests strips only `Authorization` on a host change, so a custom header would follow it.
+   - The token is `{token: ...}` or a bare string; a `[user, password]` pair is no token and sends nothing.
+3a. **Retries and errors as legacy.** A 429 or 5xx is retried (its `Retry-After` waited); a 404 release goes to the
+   tags at once. A row's error is the status (`HTTP 404`), never the exception's text. A GitLab release without a
+   `tag_name` reads its `name`, and a Maven hit without `latestVersion` its `v`, as legacy does. Host requests name
+   atlas in their `User-Agent` too.
 3. **Registries.** Maven asks for the group and the artifact; NuGet takes the last stable version; crates the newest
    stable version.
 4. **Rate.** crates and rubygems run at one request a second (catalog `rps: 1.0`).
@@ -109,6 +115,9 @@ Type / Effort / Deps: feature / M / Story 35.2 (the batches), Story 35.3 (`norma
 
 **Never:** a credential to a public registry or to Codeberg; GitLab's token without the switch.
 
+**Deviation:** crates and rubygems run at one request a second with the flag off too (the catalog's `rps`); a stricter
+rate never sends more, and it is those registries' documented limit.
+
 **Residual risk:**
 - **GitLab unauthenticated** is rate-limited per IP; a large batch may meet 429s until the operator adds a token.
 - **cran, cpan and luarocks** stay empty: legacy never writes their names (Story 35.2).
@@ -134,5 +143,13 @@ Type / Effort / Deps: feature / M / Story 35.2 (the batches), Story 35.3 (`norma
 ## Spec Change Log
 
 - 2026-10-18: written with the implementation (branch `atlas-35-4-hosts-and-registries`, stacked on Story 35.3).
+- 2026-10-19, review round 1 (FAIL), fixed:
+  - B1: GitLab's `PRIVATE-TOKEN` followed a redirect to another host or to http; a request carrying it never follows
+    one now (Approach 2), tested with a redirecting transport.
+  - Should-fix: the flag-off rate recorded as a deviation; tests for a malformed Codeberg identifier through
+    `load_many`, `~/.netrc` kept out of a host request, the first tag taken; a row's error is its HTTP status.
+  - Nits: a 404 release no longer retried before the tags; a 429 or 5xx waits its `Retry-After`; legacy's `name` and
+    `v` fallbacks; host requests' `User-Agent`; the token shapes the store accepts. Not changed: Codeberg's tags use
+    `limit=10` (Gitea's parameter; legacy's `per_page` is ignored by Gitea, so the first tag is the same).
 - 2026-10-18: the live run found crates.io refusing requests' default `User-Agent` (403); registry requests now send
   `vcs_sources.USER_AGENT`.

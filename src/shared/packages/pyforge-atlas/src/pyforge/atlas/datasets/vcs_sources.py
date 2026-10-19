@@ -44,15 +44,16 @@ from kedro_datasets.api import APIDataset
 
 from . import credentials as credential_switch
 from . import public_sources
-from .rate_limit import DEFAULT_RPS, RateLimitedScheduler
+from .rate_limit import DEFAULT_RPS, FetchError, RateLimitedScheduler
 from .refresh import (
     DEFAULT_REFRESH_MAX_RETRIES,
     DEFAULT_REFRESH_TIMEOUT_SECONDS,
     RefreshRequest,
     _ParquetRefreshStore,
     fetch_one_with_retry,
+    retry_backoff_seconds,
 )
-from .request_datasets import normalize_release_tag
+from .request_datasets import _http_status, _retry_after, normalize_release_tag
 
 logger = logging.getLogger(__name__)
 
@@ -151,6 +152,19 @@ def _codeberg_path(base: str, identifier: str) -> str:
     return f"{base.rstrip('/')}/repos/{quote(owner, safe='')}/{quote(repo, safe='')}/tags?sort=updated&limit=1"
 
 
+def _status_of(exc: BaseException) -> int | None:
+    """The HTTP status a failed GET carries (a ``FetchError``'s or the response's), if any."""
+    status = getattr(exc, "status", None)
+    return status if isinstance(status, int) else _http_status(exc)
+
+
+def _why(exc: BaseException) -> str:
+    """Story 35.4: a row's error as legacy records it (``HTTP 404``), else the failure's type --
+    never its text, which can quote the request."""
+    status = _status_of(exc)
+    return f"HTTP {status}" if status else type(exc).__name__
+
+
 def _live_host_paths(host: str, base: str, identifier: str) -> tuple[str, str]:
     """Story 35.4: legacy Phase K's REST pair for a host (``_phase_k_fetch_one``, CFA:4922-5036):
     the latest release, then the tags. GitLab keeps the project path whole (subgroups)."""
@@ -164,9 +178,13 @@ def _live_host_paths(host: str, base: str, identifier: str) -> tuple[str, str]:
 
 
 def _release_tag(payload: Any) -> str | None:
-    """The tag of a release: GitLab lists releases, Codeberg (Gitea) returns the latest one."""
-    release = payload[0] if isinstance(payload, list) and payload else payload
-    tag = release.get("tag_name") if isinstance(release, dict) else None
+    """The tag of a release: GitLab lists releases (``tag_name``, else ``name``, as legacy reads them,
+    CFA:4997), Codeberg (Gitea) returns the latest one (``tag_name``)."""
+    if isinstance(payload, list):
+        first = payload[0] if payload and isinstance(payload[0], dict) else {}
+        tag = first.get("tag_name") or first.get("name")
+    else:
+        tag = payload.get("tag_name") if isinstance(payload, dict) else None
     return str(tag) if tag else None
 
 
@@ -279,7 +297,7 @@ def _maven_extract(payload: Any) -> str | None:
         if isinstance(resp, dict):
             docs = resp.get("docs")
             if isinstance(docs, list) and docs and isinstance(docs[0], dict):
-                v = docs[0].get("latestVersion")
+                v = docs[0].get("latestVersion") or docs[0].get("v")  # legacy's fallback (CFA:5697)
                 return str(v) if v else None
     return None
 
@@ -378,20 +396,36 @@ class VcsHostSeedDataset(_ParquetRefreshStore, AbstractDataset):
 
     def _get(self, url: str, fetcher: Callable[[str], Any] | None) -> Any:
         """Story 35.4: one bounded GET with legacy's auth: GitLab's ``PRIVATE-TOKEN`` only under the
-        switch, else nothing (a no-op auth keeps ``~/.netrc`` out). ``fetcher`` takes the URL."""
+        switch, else nothing (a no-op auth keeps ``~/.netrc`` out). ``fetcher`` takes the URL. A 429 or
+        5xx is retried (a ``Retry-After`` waited); any other refusal (a 404 release) is not, so the tags
+        are asked at once, as legacy does."""
 
         def _do_fetch() -> Any:
             if fetcher is not None:
                 return fetcher(url)
-            args = public_sources.request_args(self._timeout_seconds)
+            args = {**public_sources.request_args(self._timeout_seconds), "headers": {"User-Agent": USER_AGENT}}
             auth = credential_switch.gitlab_auth(self._credentials, url) if self._host == "gitlab" else None
             if auth is not None:
                 args["auth"] = auth
-            return _coerce_json(APIDataset(url=url, load_args=args).load())
+                # requests strips only ``Authorization`` on a redirect to another host; a custom header
+                # would follow it, so a request that carries the token never follows a redirect (AD-2)
+                args["allow_redirects"] = False
+            response = APIDataset(url=url, load_args=args).load()
+            if getattr(response, "is_redirect", False):
+                raise FetchError(self._host, int(response.status_code))
+            return _coerce_json(response)
 
-        return fetch_one_with_retry(
-            acquire=self.scheduler.acquire, fetch=_do_fetch, max_retries=self._max_retries, sleep=self._sleep
-        )
+        attempt = 0
+        while True:
+            self.scheduler.acquire()
+            try:
+                return _do_fetch()
+            except Exception as exc:
+                attempt += 1
+                status = _status_of(exc)
+                if attempt > self._max_retries or not (status == 429 or (status or 0) >= 500):
+                    raise
+                self._sleep(_retry_after(exc) or retry_backoff_seconds(attempt))
 
     def _release_or_tag(
         self, identifier: str, *, fetcher: Callable[[str], Any] | None
@@ -410,7 +444,7 @@ class VcsHostSeedDataset(_ParquetRefreshStore, AbstractDataset):
             try:
                 tags = self._get(tags_url, fetcher)
             except Exception as exc:  # noqa: BLE001 -- one project's failure is its row's error (AD-13)
-                return None, f"{type(exc).__name__}"
+                return None, _why(exc)
             names = [t.get("name") for t in tags if isinstance(t, dict)] if isinstance(tags, list) else []
             tag = next((str(n) for n in names if n), None)
         version = normalize_release_tag(tag)

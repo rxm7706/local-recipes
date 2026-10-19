@@ -189,3 +189,92 @@ def test_the_slow_registries_run_at_one_request_a_second():
         RegistryUpstreamDataset(url="https://crates.io", registry="crates", filepath="/tmp/x", rps=1.0).scheduler.rps
         == 1.0
     )
+
+
+# -- review round 1 ------------------------------------------------------------------------------
+
+
+def _redirecting(monkeypatch, location: str) -> list:  # noqa: ANN001
+    """Answer every request with a 302 to ``location``; record what is sent."""
+    import requests
+    import requests.adapters
+
+    sent: list = []
+
+    def send(self, request, *args, **kwargs):  # noqa: ANN001, ANN202
+        sent.append(request)
+        response = requests.models.Response()
+        response.status_code, response._content, response.url, response.request = 302, b"", request.url, request
+        response.headers["Location"] = location
+        return response
+
+    monkeypatch.setattr(requests.adapters.HTTPAdapter, "send", send)
+    return sent
+
+
+@pytest.mark.parametrize("location", ["https://evil.example/x", "http://gitlab.com.evil.example/x"])
+def test_a_request_carrying_gitlabs_token_never_follows_a_redirect(tmp_path, flag_on, monkeypatch, location):
+    monkeypatch.setenv(credential_switch.SWITCH, "1")
+    sent = _redirecting(monkeypatch, location)
+
+    frame = _host(tmp_path, "gitlab", credentials="glpat-real").load_many([("pkg", "g/p")])
+
+    assert all(r.url.startswith(GITLAB) for r in sent)  # the release, then the tags; never the Location
+    assert frame["last_error"].tolist() == ["HTTP 302"]
+
+
+def test_a_malformed_codeberg_identifier_is_its_rows_error(tmp_path, flag_on, fake_transport):
+    frame = _host(tmp_path, "codeberg").load_many([("pkg", "owner/repo/extra")])
+
+    assert fake_transport.sent == [] and "codeberg" in frame["last_error"].iloc[0]
+
+
+def test_a_hosts_request_never_reads_netrc(tmp_path, flag_on, fake_transport, monkeypatch):
+    netrc = tmp_path / "netrc"
+    netrc.write_text("machine codeberg.org login someone password secret\n", encoding="utf-8")
+    netrc.chmod(0o600)
+    monkeypatch.setenv("NETRC", str(netrc))
+    release_url, _ = V._live_host_paths("codeberg", CODEBERG, "o/r")
+    fake_transport.answers[release_url] = (200, {"tag_name": "v1"})
+
+    _host(tmp_path, "codeberg").load_many([("pkg", "o/r")])
+
+    assert all("Authorization" not in r.headers for r in fake_transport.sent)
+
+
+def test_the_first_tag_is_the_latest(tmp_path, flag_on):
+    release_url, tags_url = V._live_host_paths("gitlab", GITLAB, "g/p")
+    fetch, _asked = _answers({release_url: [], tags_url: [{"name": "v3"}, {"name": "v2"}]})
+
+    assert _host(tmp_path, "gitlab")._release_or_tag("g/p", fetcher=fetch) == ("3", None)
+
+
+def test_a_release_that_answers_404_goes_to_the_tags_at_once(tmp_path, flag_on, fake_transport):
+    release_url, tags_url = V._live_host_paths("gitlab", GITLAB, "g/p")
+    fake_transport.answers[tags_url] = (200, [{"name": "v7"}])  # the release URL answers 404 (default)
+    ds = VcsHostSeedDataset(
+        url=GITLAB, host="gitlab", filepath=str(tmp_path / "g"), max_retries=3, sleep=lambda _s: None
+    )
+
+    frame = ds.load_many([("pkg", "g/p")])
+
+    assert [r.url for r in fake_transport.sent] == [release_url, tags_url] and frame["upstream_version"].tolist() == [
+        "7"
+    ]
+
+
+def test_a_tags_failure_is_recorded_as_its_status(tmp_path, flag_on, fake_transport):
+    frame = _host(tmp_path, "gitlab").load_many([("pkg", "g/p")])  # both URLs answer 404
+
+    assert frame["last_error"].tolist() == ["HTTP 404"]
+
+
+def test_a_gitlab_release_without_a_tag_name_reads_its_name_and_maven_its_v():
+    assert V._release_tag([{"name": "v1.4"}]) == "v1.4" and V._release_tag({"name": "x"}) is None
+    assert V._maven_extract({"response": {"docs": [{"v": "2.0"}]}}) == "2.0"
+
+
+def test_a_hosts_request_names_atlas_as_its_agent(tmp_path, flag_on, fake_transport):
+    _host(tmp_path, "codeberg").load_many([("pkg", "o/r")])
+
+    assert {r.headers["User-Agent"] for r in fake_transport.sent} == {V.USER_AGENT}
