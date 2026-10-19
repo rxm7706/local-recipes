@@ -2558,7 +2558,7 @@ So that `pypi_current_versions` and everything after it cover the mapped univers
 **When** the pipeline runs with the flag on
 **Then** the fan-out's batch is that eligible set (serials from `pypi_universe_serial_snapshots`, stored per row at fetch), rate-limited and uncapped by default (`PYPI_JSON_FANOUT_LIMIT` stays an explicit cap), a 429 or 503 is retried with `Retry-After` as legacy Phase H does (Story 34.2 counts every `DatasetError`, 429/503 and timeouts included, as a per-project miss), and `pypi_current_versions` holds rows within the story's tolerance of legacy Phase H's coverage measured the same day
 **And** a warm run with no serial movement fetches only the 30-day re-checks; with the flag off the fan-out keeps today's bounded behaviour
-**Status:** backlog
+**Status:** done
 
 ## Epic 35: VCS and registry fetches cover the full universe, credentialed on opt-in (spec-pyforge-atlas CAP-65, FR-73)
 

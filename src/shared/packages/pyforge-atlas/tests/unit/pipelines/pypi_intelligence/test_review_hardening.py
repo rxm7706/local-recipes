@@ -66,7 +66,7 @@ def test_phase_h_non_numeric_fetched_at_does_not_crash():
     )
     uni = pd.DataFrame({"pypi_name": ["p"], "last_serial": [5]})
     out = fetch_pypi_current_versions(df, uni, now=1_800_000_000)
-    # unparseable stamp -> safety_recheck True -> eligible (fail-safe), no crash
+    # an unparseable stamp never crashes the node (Story 34.10: every fetched row is kept)
     assert set(out["pypi_name"]) == {"p"}
 
 

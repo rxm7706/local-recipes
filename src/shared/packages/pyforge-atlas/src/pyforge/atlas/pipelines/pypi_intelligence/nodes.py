@@ -224,24 +224,16 @@ def _safety_recheck(fetched_at, now: int) -> bool:
     fetched_num = pd.to_numeric(fetched_at, errors="coerce")
     if pd.isna(fetched_num):
         return True
-    return (now - int(fetched_num)) >= _PHASE_H_SAFETY_RECHECK_SECONDS
-
-
-def _phase_h_eligibility(row_serial_at_fetch, row_last_serial, row_fetched_at, now: int) -> bool:
-    """The 3-condition Phase H serial gate (CFA:4177-4189): eligible iff never-fetched
-    OR serial-moved OR 30-day safety re-check. NULL-safe (CFA:4223-4231)."""
-    return bool(
-        _never_fetched(row_serial_at_fetch)
-        or _serial_moved(row_serial_at_fetch, row_last_serial)
-        or _safety_recheck(row_fetched_at, now)
-    )
+    # strictly older than 30 days, as legacy's `pypi_version_fetched_at < now - 30d` (CFA:4229)
+    return (now - int(fetched_num)) > _PHASE_H_SAFETY_RECHECK_SECONDS
 
 
 def phase_h_eligibility_stats(pypi_json_raw: pd.DataFrame, now: int | None = None) -> dict:
     """Split the eligible set into its three branches (legacy ``_phase_h_eligibility_stats``
     CFA:4135): ``eligible_never_fetched`` / ``eligible_serial_moved`` /
-    ``eligible_safety_recheck`` (+ ``total`` / ``eligible``). Uses the SAME predicates as
-    :func:`_phase_h_eligibility` (no drift). A row can satisfy more than one branch;
+    ``eligible_safety_recheck`` (+ ``total`` / ``eligible``): the 3-condition serial gate
+    (CFA:4177-4189, NULL-safe CFA:4223-4231) over a frame's rows. Story 34.10: not on the run
+    path; the fan-out's own ``_eligible`` chooses what it fetches. A row can satisfy more than one branch;
     branch counts use first-match precedence (never-fetched > serial-moved >
     safety-recheck) so they sum to ``eligible``."""
     if now is None:
@@ -282,9 +274,16 @@ def fetch_pypi_current_versions(
     now: int | None = None,
 ) -> pd.DataFrame:
     # legacy: Phase H  (phase_h_pypi_versions CFA:4517; _phase_h_eligible_pypi_names CFA:4174)
-    """Stamp the current version for the serial-gated eligible set.
+    """The current version of every fetched project (Phase H's output).
 
-    **AC-5 — the serial gate.** ``pypi_json_raw`` is the already-fetched, ACTIONABLE
+    Story 34.10: the serial gate decides what the fan-out FETCHES
+    (``PyPIJsonFanOutDataset._eligible``), as legacy's decides what Phase H fetches; legacy
+    then keeps every project's version. This node therefore emits every fetched row. It used
+    to re-apply the gate and emit the eligible rows only, which a run that stamps the serial at
+    fetch would shrink to the few projects whose serial moved; ``pypi_current_versions`` is
+    overwritten each run, never merged.
+
+    **AC-5 — the denominator.** ``pypi_json_raw`` is the already-fetched, ACTIONABLE
     slice (the fan-out is bounded at dataset level to ``v_actionable_packages WHERE
     pypi_name IS NOT NULL``); this node NEVER iterates ``pypi_universe`` (where the
     pypi-only rows live post-v20) — it only LEFT-JOINs it for the authoritative current
@@ -292,9 +291,8 @@ def fetch_pypi_current_versions(
     (CFA:4224-4225): pypi-only rows are never re-included (the pre-v7.9.0 6-hour cold-run
     bug the gate must not reintroduce).
 
-    Eligibility = never-fetched OR serial-moved OR 30-day safety re-check
-    (CFA:4177-4189, NULL-safe CFA:4223-4231). On fetch, ``pypi_version_serial_at_fetch``
-    is stamped to the current ``pypi_last_serial`` (CFA:4293/4321/4476). **RETAIN
+    ``pypi_version_serial_at_fetch`` is the serial the row was fetched at; a row fetched
+    before stamps existed takes the current ``pypi_last_serial`` (CFA:4293/4321/4476). **RETAIN
     ``upload_time_iso_8601``** per the current release — B9/FR-20 (``release_lag_hours``)
     consumes it downstream with NO new fetch (spec:680).
 
@@ -328,30 +326,44 @@ def fetch_pypi_current_versions(
     # widens the row set — validate=many_to_one keeps it a pure lookup).
     uni = pypi_universe
     if uni is not None and not uni.empty and {"pypi_name", "last_serial"} <= set(uni.columns):
-        serial_map = dict(zip(uni["pypi_name"], uni["last_serial"]))
-        work["pypi_last_serial"] = [serial_map.get(n, s) for n, s in zip(work["pypi_name"], work["pypi_last_serial"])]
+        # Story 34.10: matched under PEP 503, and never below the serial the row was fetched at
+        # (the weekly universe can lag the same run's snapshot the fan-out stamps)
+        serial_map = {
+            _normalize_pypi_name(n): s
+            for n, s in zip(uni["pypi_name"], uni["last_serial"], strict=True)
+            if isinstance(n, str)
+        }
 
-    eligible_rows = []
+        def _current(name: object, stored: object) -> object:
+            known = [
+                v
+                for v in (
+                    pd.to_numeric(serial_map.get(_normalize_pypi_name(str(name))), errors="coerce"),
+                    pd.to_numeric(stored, errors="coerce"),
+                )
+                if pd.notna(v)
+            ]
+            return int(max(known)) if known else pd.NA
+
+        work["pypi_last_serial"] = [
+            _current(n, s) for n, s in zip(work["pypi_name"], work["pypi_last_serial"], strict=True)
+        ]
+
+    rows = []
     for _, r in work.iterrows():
-        if not _phase_h_eligibility(
-            r.get("pypi_version_serial_at_fetch"),
-            r.get("pypi_last_serial"),
-            r.get("fetched_at"),
-            now,
-        ):
-            continue
-        eligible_rows.append(
+        stamped = r.get("pypi_version_serial_at_fetch")
+        rows.append(
             {
                 "pypi_name": r["pypi_name"],
                 "version": r.get("version"),
                 "pypi_last_serial": r.get("pypi_last_serial"),
-                # stamp serial_at_fetch to the current serial ON fetch (CFA:4293).
-                "pypi_version_serial_at_fetch": r.get("pypi_last_serial"),
+                # the serial it was fetched at; an unstamped row takes the current (CFA:4293)
+                "pypi_version_serial_at_fetch": r.get("pypi_last_serial") if pd.isna(stamped) else stamped,
                 # RETAIN upload_time_iso_8601 for B9 (do NOT discard after info.version).
                 "upload_time_iso_8601": r.get("upload_time_iso_8601"),
             }
         )
-    return pd.DataFrame(eligible_rows, columns=cols).reset_index(drop=True)
+    return pd.DataFrame(rows, columns=cols).reset_index(drop=True)
 
 
 # ---------------------------------------------------------------------------
@@ -794,7 +806,11 @@ def _ttl_cadence(ttls: dict, key: str) -> int:
     return clamp_ttl_cadence((ttls or {}).get(key), key=key, log=logger)
 
 
-def refresh_pypi_json_store(ttls: dict, pypi_conda_mapping_base: pd.DataFrame | None = None) -> RefreshRequest:
+def refresh_pypi_json_store(
+    ttls: dict,
+    pypi_conda_mapping_base: pd.DataFrame | None = None,
+    pypi_universe_serial_snapshots: pd.DataFrame | None = None,
+) -> RefreshRequest:
     # Story 21.2 review fix #6: single writer of pypi_json_raw (PyPIJsonFanOutDataset).
     # Story 34.2: the same run's Phase C pairs ride the request, so a fresh data root
     # (no flat pypi_conda_map_store yet) still has a candidate universe.
@@ -802,7 +818,11 @@ def refresh_pypi_json_store(ttls: dict, pypi_conda_mapping_base: pd.DataFrame | 
     emits the ``RefreshRequest`` ``PyPIJsonFanOutDataset.save()`` honors (cadence/
     force), which invokes the dataset-owned ``fetch_candidates()`` for the actual IO
     (KEEP that method as-is — do not duplicate fetch logic here). Cadence == the
-    Phase H TTL (``pypi_current_versions``, weekly)."""
+    Phase H TTL (``pypi_current_versions``, weekly).
+
+    Story 34.10: each candidate's current PyPI serial rides the request too, from the
+    same run's Phase D snapshot (matched under PEP 503), so the fan-out can re-fetch a
+    project whose serial moved -- legacy Phase H's serial gate (CFA:4174)."""
     pairs: tuple[tuple[str, str], ...] = ()
     m = pypi_conda_mapping_base
     if m is not None and not m.empty and {"pypi_name", "conda_name"} <= set(m.columns):
@@ -815,10 +835,22 @@ def refresh_pypi_json_store(ttls: dict, pypi_conda_mapping_base: pd.DataFrame | 
                 }
             )
         )
+    serials: tuple[tuple[str, int], ...] = ()
+    snap = pypi_universe_serial_snapshots
+    if pairs and snap is not None and not snap.empty and {"pypi_name", "last_serial"} <= set(snap.columns):
+        wanted = {_normalize_pypi_name(p): p for p, _ in pairs}
+        found: dict[str, int] = {}
+        for name, serial in zip(snap["pypi_name"], pd.to_numeric(snap["last_serial"], errors="coerce"), strict=True):
+            if isinstance(name, str) and pd.notna(serial):
+                original = wanted.get(_normalize_pypi_name(name))
+                if original is not None:
+                    found[_normalize_pypi_name(original)] = int(serial)  # the fan-out keys by PEP 503
+        serials = tuple(sorted(found.items()))
     return RefreshRequest(
         store="pypi_json_raw",
         cadence_seconds=_ttl_cadence(ttls, "pypi_current_versions"),
         pypi_pairs=pairs,
+        pypi_serials=serials,
     )
 
 

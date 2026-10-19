@@ -324,6 +324,8 @@ def test_the_fan_out_trigger_runs_after_phase_c_and_before_the_c5_match():
 
     pipe: Pipeline = create_pipeline()
     node = next(n for n in pipe.nodes if n.name == "refresh_pypi_json_store")
-    assert node.inputs == ["params:ttls", "pypi_conda_mapping_base"]
+    assert node.inputs == ["params:ttls", "pypi_conda_mapping_base", "pypi_universe_serial_snapshots"]
     order = [n.name for n in pipe.nodes]  # topologically sorted
     assert order.index("map_pypi_conda") < order.index("refresh_pypi_json_store") < order.index("match_source_urls")
+    # Story 34.10: the serial gate reads the same run's Phase D snapshot
+    assert order.index("snapshot_pypi_serials") < order.index("refresh_pypi_json_store")
