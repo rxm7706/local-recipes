@@ -890,10 +890,13 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
                     if failed:
                         state["first_failure"] = state["first_failure"] or next(iter(failed.values()))
 
-        # Phase K: each distinct repo once, its version written to every package that names it
+        # Phase K: each distinct repo once (GitHub names ignore case), its version written to every
+        # package that names it; the first spelling met is the one asked
         packages: dict[tuple[str, str], list[str]] = {}
+        spelled: dict[tuple[str, str], tuple[str, str]] = {}
         for conda, owner, name in upstream_repos:
-            packages.setdefault((owner, name), []).append(conda)
+            repo = spelled.setdefault((owner.lower(), name.lower()), (owner, name))
+            packages.setdefault(repo, []).append(conda)
         upstream_chunks = list(chunk_queries(sorted(packages), self.UPSTREAM_BATCH))
         for n, chunk in enumerate(upstream_chunks, start=1):
             if n % self.PROGRESS_EVERY == 1:

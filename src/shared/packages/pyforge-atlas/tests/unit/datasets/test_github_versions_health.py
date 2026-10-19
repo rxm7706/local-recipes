@@ -676,3 +676,17 @@ def test_the_live_health_keeps_one_row_per_feedstock_with_its_error():
     out = fetch_live_health(store)
 
     assert out["feedstock_name"].tolist() == ["a", "b"] and out["last_error"].tolist()[1] == "HTTP 500"
+
+
+def test_a_repo_named_in_two_cases_is_asked_once(tmp_path):
+    asked: list[int] = []
+
+    def fetch(body: dict[str, Any]) -> dict[str, Any]:
+        asked.append(body["query"].count("repository("))
+        return _answer_each(body)
+
+    frame = _dataset(tmp_path).fetch_github(
+        (("a", "Owner", "Repo"), ("b", "owner", "repo")), [], fetcher=_upstream_only(fetch)
+    )
+
+    assert asked == [1] and frame.set_index("key").loc[["a", "b"], "upstream_version"].tolist() == ["1.0", "1.0"]
