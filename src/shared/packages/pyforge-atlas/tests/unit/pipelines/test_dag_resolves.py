@@ -126,11 +126,12 @@ def test_pypi_intelligence_pipeline_has_seventeen_nodes():
     }
 
 
-def test_vulnerability_pipeline_has_nine_nodes():
+def test_vulnerability_pipeline_has_eleven_nodes():
     # B5 added refresh_vdb_store + refresh_osv_offline_store (§ 3.4 refresh assets).
     # B8 added the two Basilisk ingestion nodes (FR-19; ADDITIVE, not parity-gated AD-14).
+    # Story 36.1 added the two Basilisk triggers.
     vuln = vuln_create()
-    assert len(vuln.nodes) == 9
+    assert len(vuln.nodes) == 11
     assert {n.name for n in vuln.nodes} == {
         "refresh_vdb_store",
         "refresh_osv_offline_store",
@@ -139,6 +140,8 @@ def test_vulnerability_pipeline_has_nine_nodes():
         "ingest_cwe_catalog",
         "summarize_vdb_vulns",
         "per_version_vulns",
+        "refresh_basilisk_population",
+        "refresh_basilisk_details",
         "ingest_basilisk_advisories",
         "fetch_basilisk_details",
     }
@@ -205,9 +208,9 @@ def test_combined_seven_pipeline_dag_resolves_topologically():
     )
     # 8 core + 12 vcs + 17 pypi + 9 vuln + 4 seed_gaps + 4 universal_sbom
     # + 7 derived_artifacts = 61 nodes (Story 25.2: vcs_health 10 -> 11; Story 34.8: 11 -> 12).
-    assert len(combined.nodes) == 61  # Story 34.8: + drive_migration_status
+    assert len(combined.nodes) == 63  # Story 34.8: + drive_migration_status; Story 36.1: + 2 Basilisk triggers
     grouped = combined.grouped_nodes
-    assert sum(len(g) for g in grouped) == 61
+    assert sum(len(g) for g in grouped) == 63
 
 
 def test_no_dataset_is_written_by_two_pipelines_b7():

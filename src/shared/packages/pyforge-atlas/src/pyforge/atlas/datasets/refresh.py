@@ -147,6 +147,9 @@ class RefreshRequest:
     github_repos: tuple[tuple[str, str], ...] = ()
     pypi_pairs: tuple[tuple[str, str], ...] = ()
     pypi_serials: tuple[tuple[str, int], ...] = ()
+    # Story 36.1: the conda PURLs Basilisk's querybatch asks about, and the advisory ids to detail
+    basilisk_purls: tuple[str, ...] = ()
+    basilisk_ids: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -158,6 +161,8 @@ class RefreshRequest:
             "github_repos": list(self.github_repos),
             "pypi_pairs": list(self.pypi_pairs),
             "pypi_serials": list(self.pypi_serials),
+            "basilisk_purls": list(self.basilisk_purls),
+            "basilisk_ids": list(self.basilisk_ids),
         }
 
 

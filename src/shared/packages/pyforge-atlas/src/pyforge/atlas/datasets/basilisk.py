@@ -50,11 +50,16 @@ import time
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 import pandas as pd
-from kedro.io import AbstractDataset
+from kedro.io import AbstractDataset, DatasetError
+from kedro_datasets.api import APIDataset
 from pyforge.core.atomic_write import atomic_write_text
+from pyforge.core.flags import read_boolean
 
+from . import credentials as credential_switch
+from . import public_sources
 from .rate_limit import (
     RETRY_AFTER_CAP_SECONDS,
     RETRY_AFTER_JITTER,
@@ -68,6 +73,7 @@ from .refresh import (
     DEFAULT_REFRESH_TIMEOUT_SECONDS,
     WEEKLY_SECONDS,
     ExternalRefreshDataset,
+    RefreshRequest,
     StalenessMarker,
     _safe_int,
 )
@@ -115,6 +121,34 @@ def _as_item_list(value: Any) -> list[Any]:
         return [v for v in value if not (v is None or (pd.api.types.is_scalar(v) and pd.isna(v)))]
     except TypeError:
         return []
+
+
+#: Story 36.1: the flag that gates the advisory drivers (the listing reads live_public_sources)
+POPULATION_FLAG_KEY = "pyforge.atlas.basilisk_population"
+_REQUEST_TIMEOUT_SECONDS = 120
+
+
+def population_live() -> bool:
+    """Whether the Basilisk advisory drivers run (read at the save, never at import)."""
+    return read_boolean(POPULATION_FLAG_KEY, default=False)
+
+
+def conda_name_of(purl: str) -> str:
+    """The conda name a ``pkg:conda/conda-forge/<name>[@<version>]`` query key names."""
+    prefix = f"{CONDA_PURL_PREFIX}/"
+    rest = purl[len(prefix) :] if purl.startswith(prefix) else purl
+    return rest.split("@", 1)[0]
+
+
+def _status_and_wait(exc: BaseException) -> tuple[int | None, Any]:
+    """The HTTP status and ``Retry-After`` inside kedro's ``DatasetError``, if any."""
+    for arg in (exc, *getattr(exc, "args", ())):
+        response = getattr(arg, "response", None)
+        status = getattr(response, "status_code", None)
+        if isinstance(status, int):
+            headers = getattr(response, "headers", None) or {}
+            return status, headers.get("Retry-After")
+    return None, None
 
 
 def build_conda_purl(conda_name: str, version: Any = None) -> str:
@@ -327,10 +361,62 @@ class BasiliskBatchDataset(_StaleAwareBasiliskSource):
         self._persist(out)
         return out
 
+    def save(self, data: Any) -> None:
+        """Story 36.1: the population trigger (``refresh_basilisk_population``). With
+        ``pyforge.atlas.basilisk_population`` on, the querybatch runs: through the injected
+        fetcher when there is one, else a bearer POST only under ``PYFORGE_ATLAS_CREDENTIALED=1``
+        with a token in ``PYFORGE_ATLAS_BASILISK_TOKEN`` (the endpoint answers 401 without one,
+        2026-10-18); otherwise nothing is sent and last-good is kept under a marker."""
+        if not isinstance(data, RefreshRequest):
+            super().save(data)
+            return
+        if not population_live():
+            return  # flag off: the attended path (DW-B8-1), as before this story
+        fetcher = self._fetcher
+        if fetcher is None:
+            auth = credential_switch.basilisk_auth(self._url)
+            if auth is None:
+                self._mark_stale(credential_switch.basilisk_skip_reason(self._url))
+                return
+
+            def fetcher(chunk: list[Any]) -> list[Any]:
+                return self._post_querybatch(chunk, auth)
+
+        self.query_population(list(data.basilisk_purls), fetcher=fetcher)
+
+    def _post_querybatch(self, purls: list[Any], auth: credential_switch.BearerAuth) -> list[Any]:
+        """One OSV-compatible ``POST /v1/querybatch``: ``{"queries": [{"package": {"purl"}}]}``
+        answered by ``{"results": [{"vulns": [...]}]}`` in query order. ``load()`` sends only
+        GET, so the POST goes through ``save()`` and an in-memory ``response_dataset``."""
+        inner = APIDataset(
+            url=self._url,
+            method="POST",
+            save_args={"timeout": _REQUEST_TIMEOUT_SECONDS},
+            credentials=auth,  # type: ignore[arg-type, unused-ignore]  # a callable auth; requests accepts it
+            response_dataset={"type": "kedro.io.MemoryDataset", "copy_mode": "assign"},
+        )
+        inner.save({"queries": [{"package": {"purl": str(p)}} for p in purls]})
+        response = inner.get_last_response()
+        payload = response.json() if hasattr(response, "json") else response
+        results = payload.get("results") if isinstance(payload, dict) else None
+        if not isinstance(results, list) or len(results) != len(purls):
+            got = len(results) if isinstance(results, list) else "no"
+            raise ValueError(f"querybatch answered {got} results for {len(purls)} queries")
+        return [
+            {
+                "conda_name": conda_name_of(str(purl)),
+                "advisories": [v for v in (result.get("vulns") or []) if isinstance(v, dict)],
+            }
+            for purl, result in zip(purls, results, strict=True)
+            if isinstance(result, dict)
+        ]
+
     def load(self) -> list[Any]:
         """OFFLINE-safe entry (consumer profile): with no fetcher wired, keep last-good + mark
         stale + return the last-good (or ``[]``). The credentialed population fan-out is
         attended/Dagster-driven via :meth:`query_population` (DW-B8-1, AD-11)."""
+        if population_live() and self._read_last_good():
+            return self._read_last_good()  # Story 36.1: a refreshed store reads as itself
         if self._fetcher is None:
             self._mark_stale("offline: no Basilisk fetcher wired (consumer profile)")
             return self._read_last_good()
@@ -437,10 +523,47 @@ class BasiliskDetailDataset(_StaleAwareBasiliskSource):
         self._persist(out)
         return out
 
+    def save(self, data: Any) -> None:
+        """Story 36.1: the detail trigger (``refresh_basilisk_details``), gated as
+        :meth:`BasiliskBatchDataset.save` is."""
+        if not isinstance(data, RefreshRequest):
+            super().save(data)
+            return
+        if not population_live():
+            return
+        fetcher = self._fetcher
+        if fetcher is None:
+            auth = credential_switch.basilisk_auth(self._url)
+            if auth is None:
+                self._mark_stale(credential_switch.basilisk_skip_reason(self._url))
+                return
+
+            def fetcher(advisory_id: str) -> Any:
+                return self._get_detail(advisory_id, auth)
+
+        self.fetch_details(list(data.basilisk_ids), fetcher=fetcher)
+
+    def _get_detail(self, advisory_id: Any, auth: credential_switch.BearerAuth) -> Any:
+        """One ``GET /v1/vulns/{id}`` with bearer auth; a 429 or 503 becomes a ``FetchError``
+        carrying its ``Retry-After``, so :meth:`fetch_details` waits and retries."""
+        url = f"{self._url.rstrip('/')}/{quote(str(advisory_id), safe='')}"
+        try:
+            response = APIDataset(url=url, load_args={"timeout": _REQUEST_TIMEOUT_SECONDS, "auth": auth}).load()
+        except DatasetError as exc:
+            status, wait = _status_and_wait(exc)
+            if status in (429, 503):
+                error = FetchError(str(advisory_id), status)
+                error.retry_after = wait  # type: ignore[attr-defined]
+                raise error from exc
+            raise
+        return response.json() if hasattr(response, "json") else response
+
     def load(self) -> list[Any]:
         """OFFLINE-safe entry (consumer profile): keep last-good + mark stale + return the
         last-good (or ``[]``). The bounded detail fan-out is attended-driven via
         :meth:`fetch_details` (DW-B8-1, AD-11)."""
+        if population_live() and self._read_last_good():
+            return self._read_last_good()  # Story 36.1: a refreshed store reads as itself
         if self._fetcher is None:
             self._mark_stale("offline: no Basilisk detail fetcher wired (consumer profile)")
             return self._read_last_good()
@@ -500,6 +623,11 @@ def _coerce_payload(payload: Any) -> Any:
         except ValueError, TypeError:
             return None
     return payload
+
+
+def _public_json(url: str) -> Any:
+    """Story 36.1: one public ``/v1/packages`` page, parsed (``public_sources.fetch_text``)."""
+    return json.loads(public_sources.fetch_text(url, timeout=120))
 
 
 def parse_basilisk_packages_response(payload: Any) -> pd.DataFrame:
@@ -641,7 +769,15 @@ class BasiliskPackagesDataset(ExternalRefreshDataset):
         sep = "&" if "?" in self._url else "?"
         return f"{self._url}{sep}limit={self._page_size}&offset={int(offset)}"
 
-    def _do_refresh(self) -> pd.DataFrame:
+    def _live_refresher(self) -> Callable[[], Any] | None:
+        """Story 36.1: ``/v1/packages`` answers unauthenticated (probed 2026-10-18), so with
+        ``pyforge.atlas.live_public_sources`` on the store walks it itself, one public GET per
+        page (a no-op auth keeps ``~/.netrc`` out). The flag is read at the refresh."""
+        if not public_sources.live():
+            return None
+        return lambda: self._do_refresh(fetcher=_public_json)
+
+    def _do_refresh(self, fetcher: Callable[[str], Any] | None = None) -> pd.DataFrame:
         """Walk every page until ``total`` is reached or a short/empty page arrives (a
         COMPLETE walk). A page-fetch failure or the ``max_pages`` cap ends the walk
         PARTIAL: with a last-good store on disk an empty frame is returned so
@@ -663,7 +799,10 @@ class BasiliskPackagesDataset(ExternalRefreshDataset):
                 break  # the never-hang guard
             try:
                 self.scheduler.acquire()
-                payload = self._fetcher(self.page_url(offset))
+                fetch = fetcher if fetcher is not None else self._fetcher
+                if fetch is None:
+                    raise RuntimeError("no Basilisk packages fetcher")
+                payload = fetch(self.page_url(offset))
             except Exception as exc:  # AD-13: an unreachable endpoint never fails the run.
                 partial_reason = f"page fetch failed at offset={offset}: {type(exc).__name__}: {exc}"
                 break

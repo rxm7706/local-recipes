@@ -283,7 +283,9 @@ NODE_TIMEOUTS: dict[str, int] = {
     "ingest_cwe_catalog": 300,
     "summarize_vdb_vulns": 300,  # Phase G
     "per_version_vulns": 900,  # Phase G'
+    "refresh_basilisk_population": 900,  # Story 36.1 — ~35 querybatch POSTs (credentialed)
     "ingest_basilisk_advisories": 600,  # FR-19
+    "refresh_basilisk_details": 1800,  # Story 36.1 — one GET per matched advisory
     "fetch_basilisk_details": 600,  # FR-19
     # -- vcs_health -------------------------------------------------------- #
     "refresh_vcs_github_store": 900,  # Story 21.2 — GitHub batched-GraphQL refresh

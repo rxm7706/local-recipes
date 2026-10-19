@@ -120,8 +120,13 @@ def _ensure_credentials_stub() -> Path | None:
 # Anaconda distribution stores fetch their own public pages when live public sources are on.
 # The Basilisk package listing stays fetcher-less until the operator rules on Basilisk
 # (spec-pyforge-atlas Open Questions, CAP-66); no Epic 34-36 story wires that store yet.
-_NO_PUBLIC_REFRESHER = ("discovery_basilisk_packages_raw",)
-_PUBLIC_REFRESHER_WHEN_LIVE = ("discovery_aoss_premium_python_raw", "discovery_anaconda_dist_2026x_raw")
+# Story 36.1: every fetcher-less discovery store now refreshes itself when live public sources are on
+_NO_PUBLIC_REFRESHER: tuple[str, ...] = ()
+_PUBLIC_REFRESHER_WHEN_LIVE = (
+    "discovery_aoss_premium_python_raw",
+    "discovery_anaconda_dist_2026x_raw",
+    "discovery_basilisk_packages_raw",
+)
 
 
 def _fetcher_less_discovery_stores() -> tuple[str, ...]:

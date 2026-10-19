@@ -5059,3 +5059,14 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-10-18 -- atlas Story 35.1
   status: open
+
+### DW-atlas-36-1-1: The Basilisk advisories stay empty until the operator supplies a Basilisk token.
+
+- source_spec: `planning-artifacts/specs/spec-36-1-the-basilisk-population-runs.md`
+  summary: Basilisk's `/v1/querybatch` and `/v1/vulns` answer 401 with `www-authenticate: Bearer` (probed 2026-10-18). Story 36.1 wires both drivers to send a bearer token from `PYFORGE_ATLAS_BASILISK_TOKEN` only under `PYFORGE_ATLAS_CREDENTIALED=1`, so `vulnerability_basilisk_advisories`, `vulnerability_basilisk_details` and `vulnerability_basilisk_rollup` stay empty, with a marker naming the variable, until the operator sets one for an attended run. The querybatch's response shape is OSV's, assumed (no authorized call has been made); the first credentialed run confirms it or fails the batch and keeps last-good.
+  evidence: the 2026-10-18 probe (querybatch 401, packages 200); Story 36.1's live run without a token.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/basilisk.py (BasiliskBatchDataset.save, BasiliskDetailDataset.save); the operator's environment (PYFORGE_ATLAS_BASILISK_TOKEN)
+  origin: operator ruling 2026-10-18 on CAP-66 ("Public listing now")
+  severity: medium
+  promoted: 2026-10-18 -- atlas Story 36.1; operator-owned (a credential)
+  status: open
