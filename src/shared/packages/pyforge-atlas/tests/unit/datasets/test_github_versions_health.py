@@ -371,3 +371,29 @@ def test_a_refusal_stops_the_feedstock_batches_not_yet_sent(tmp_path):
 
     assert len(sent) <= GitHubRequestDataset.FEEDSTOCK_CONCURRENCY  # at most the batches already in flight
     assert set(frame["last_error"]) == {"HTTP 401"}
+
+
+def test_a_batch_halved_and_answered_leaves_no_marker(tmp_path):
+    def fetch(body: dict[str, Any]) -> dict[str, Any]:
+        if body["query"].count("repository(") > 2:
+            raise _timed_out(502)
+        return _answer_each(body)
+
+    ds = _dataset(tmp_path, max_retries=0)
+    ds.fetch_github(tuple((f"p{i}", "o", f"r{i}") for i in range(4)), [], fetcher=_upstream_only(fetch))
+
+    assert ds.staleness() is None
+
+
+def test_repositories_that_still_fail_are_counted_in_the_marker(tmp_path):
+    def fetch(body: dict[str, Any]) -> dict[str, Any]:
+        if 'name: "r0"' in body["query"]:
+            raise _timed_out(500)
+        return _answer_each(body)
+
+    ds = _dataset(tmp_path, max_retries=0)
+    ds.UPSTREAM_BATCH = 1  # one repository a batch: r0's fails, r1's is answered
+
+    ds.fetch_github((("p0", "o", "r0"), ("p1", "o", "r1")), [], fetcher=_upstream_only(fetch))
+
+    assert ds.staleness().reason == "repositories that failed: 1 (HTTP 500) -- they keep last-good"

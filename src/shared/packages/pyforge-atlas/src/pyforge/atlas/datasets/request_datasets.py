@@ -758,7 +758,8 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
         ``archived``. A 401, 403 or 429 that names no wait stops the run (Story 35.1); the rows
         fetched before it are kept and the store is marked stale. Never raises (AD-13)."""
         rows: list[dict[str, Any]] = []
-        state: dict[str, Any] = {"failure": "", "stopped": False}
+        state: dict[str, Any] = {"failure": "", "stopped": False, "failed": 0}
+        failed_lock = threading.Lock()
 
         def run(
             chunk: Sequence[Any], build: Callable[[Sequence[Any]], dict[str, Any]]
@@ -795,6 +796,9 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
             of its repositories the failure as its error."""
             got, failure, timed_out = run(chunk, build)
             if got is not None or len(chunk) < 2 or state["stopped"] or not timed_out:
+                if got is None:  # these repositories keep last-good; a batch halved and answered does not count
+                    with failed_lock:
+                        state["failed"] += len(chunk)
                 return got, failure
             half = len(chunk) // 2
             data: dict[str, Any] = {}
@@ -910,8 +914,10 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
             )
             return frame
         self._persist(frame)
-        if state["stopped"] or state["failure"]:
+        if state["stopped"]:
             self._mark_stale(f"stopped after {state['failure']} -- the remaining batches keep last-good")
+        elif state["failed"]:
+            self._mark_stale(f"repositories that failed: {state['failed']} ({state['failure']}) -- they keep last-good")
         return frame
 
     def _persist(self, frame: pd.DataFrame) -> None:

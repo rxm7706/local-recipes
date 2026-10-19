@@ -89,6 +89,7 @@ Type / Effort / Deps: feature / L / Story 35.1 (the switch, bearer auth), Story 
   rows before a stop are kept under `stale`. A batch answered 502 or 504 is halved down to one repository, its rows
   renumbered back; another failure is not halved; a POST waits 60 s at most.
 - **AC4b — Phase N side by side.** At most four batches at once, rows in order, each batch's own failure on its rows.
+- **AC4c — The marker is true.** A batch halved and answered leaves no marker; repositories that still fail are counted.
 - **AC5 — Consumers.** Each reads its own kind; a store without kinds reads as before; a pre-35.3 store's rows survive
   the first write.
 - **AC6 — Live.** See Verification. Tolerance against legacy the same day: Phase K versions for at least 95% of the
@@ -101,7 +102,20 @@ Type / Effort / Deps: feature / L / Story 35.1 (the switch, bearer auth), Story 
 
 - Unit, from the repo root: `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_github_versions_health.py`
   (and Story 35.1's `test_credentialed_switch.py`, whose flag-on cases now read Phase K's shape).
-- **Live, recorded 2026-10-18** — PENDING (a credentialed run with the `gh` CLI's token, operator ruling 2026-10-18).
+- **Live, recorded 2026-10-18/19,** on a scratch data root (dev, flag on), with `PYFORGE_ATLAS_CREDENTIALED=1` and the
+  `gh` CLI's token through a scratch `--env verify` (operator ruling); no token in the log:
+  - `--pipelines vcs_health --nodes refresh_vcs_github_store,detect_archived_feedstocks,track_upstream_versions,fetch_live_health`
+    exit 0 in 2 h 27 min, before Phase N ran side by side (Approach 9). Two batches answered 502 four times and were
+    halved and answered. The store: 57,280 rows (26,983 `upstream`, 29,395 `feedstock`, 902 `archived`).
+  - Against legacy `cf_atlas.db` (`upstream_versions` with `source='github'`, and `packages`), fetched the same day:
+    - **Phase K:** of legacy's 23,578 GitHub packages with a version, 23,551 asked (99.89%); of those both hold,
+      23,255 the same version (98.74%), above the 95% tolerance; the differences sampled are releases after legacy's
+      fetch (litellm 1.107.0-rc.1 against 1.103.5). Atlas rows without a version: 1,859 "no tags", 434 not found.
+    - **Phase N:** 29,393 of 29,395 feedstocks answered; open PRs equal to legacy's for 28,532 (97.07%); CI state equal
+      for 10,949 of the 10,959 both record (99.91%), the rest null in both.
+    - **Phase E.5:** 902 archived feedstocks (legacy marks 864 packages archived; a feedstock can carry several).
+  - The run's marker read "stopped after HTTP 502" though both halved batches were answered; fixed: the marker now
+    counts only the repositories that still failed.
 
 ## Boundaries & Constraints
 
