@@ -281,6 +281,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
+- update 2026-10-18 (atlas Story 34.7): the vdb and OSV refreshers are realized in-package, not injected — `VDBStoreDataset` runs the vuln-db env through `pyforge.core.process` and `OSVOfflineStoreDataset` fetches through `public_sources.fetch_bytes`, both behind `pyforge.atlas.live_public_sources` (`src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/refresh.py::VDBStoreDataset._build_from_vdb`). The Dagster schedule wiring this entry also names is unchanged.
+
 ## DW-B5-3 — DW-A2-P4 JFrog dynamic per-host credential attachment for enterprise-mirrored refresh stores — DEFERRED (no live surface)
 
 - source_spec: `b5-port-the-external-refresh-assets.md`

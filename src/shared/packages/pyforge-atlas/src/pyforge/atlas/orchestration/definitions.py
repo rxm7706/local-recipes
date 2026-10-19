@@ -276,7 +276,7 @@ NODE_TIMEOUTS: dict[str, int] = {
     "extract_estate_to_cache": 600,
     "run_dependency_hygiene": 300,
     # -- vulnerability ----------------------------------------------------- #
-    "refresh_vdb_store": 1200,  # vdb-refresh (~5-10m)
+    "refresh_vdb_store": 5400,  # vdb-refresh (~16m cold) + the per-version extract (Story 34.7)
     "refresh_osv_offline_store": 600,  # update-cve-db
     "ingest_cisa_kev": 300,
     "ingest_epss": 300,
