@@ -2595,7 +2595,7 @@ So that credentialed fetches run when I ask and never otherwise.
 **When** a credentialed dataset loads
 **Then** without the switch it keeps last-good under `stale` and sends nothing; with it, GitHub requests carry `Authorization: Bearer` to the GitHub host only
 **And** a transport fixture fails if any request carries a credential without the switch (mutation)
-**Status:** backlog
+**Status:** done
 
 ### Story 35.2: The VCS batches come from the whole universe
 

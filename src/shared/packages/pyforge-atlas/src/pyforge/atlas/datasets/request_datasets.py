@@ -47,6 +47,7 @@ from kedro_datasets.api import APIDataset
 from pyforge.core.atomic_write import atomic_write
 from pyforge.core.errors import PyforgeError
 
+from . import credentials as credential_switch
 from . import public_sources
 from .basilisk import chunk_queries
 from .rate_limit import DEFAULT_RPS, RateLimitedScheduler, parse_retry_after
@@ -88,6 +89,37 @@ _PYPI_JSON_FRAME_COLUMNS = [
     "rust",
     "wheel_tags",
 ]
+
+
+# Story 35.1: on the credentialed path these are sent once and stop the remaining chunks: a rejected
+# token (401), a refusal or secondary rate limit (403) and a rate limit (429) do not clear in
+# milliseconds, and GitHub can block a client that keeps sending through them
+_STOP_STATUSES = (401, 403, 429)
+
+
+def _http_status(exc: BaseException) -> int | None:
+    """The HTTP status inside kedro's ``DatasetError("Failed to send data", HTTPError)``, if any."""
+    for arg in (exc, *getattr(exc, "args", ())):
+        status = getattr(getattr(arg, "response", None), "status_code", None)
+        if isinstance(status, int):
+            return status
+    return None
+
+
+def _graphql_errors(payload: Any) -> dict[str | None, str]:
+    """GitHub GraphQL ``errors``: the first message per alias (``path[0]``), and the first message
+    of all under ``None`` (a body of errors and no data: rate limit, a bad query)."""
+    out: dict[str | None, str] = {}
+    errors = payload.get("errors") if isinstance(payload, dict) else None
+    for err in errors if isinstance(errors, list) else []:
+        if not isinstance(err, dict):
+            continue
+        message = str(err.get("type") or "") + (": " if err.get("type") else "") + str(err.get("message", ""))[:200]
+        path = err.get("path")
+        alias = path[0] if isinstance(path, list) and path and isinstance(path[0], (str, int)) else None
+        out.setdefault(str(alias) if alias is not None else None, message)
+        out.setdefault(None, message)
+    return out
 
 
 def _coerce_api_json(raw: Any) -> Any:
@@ -452,11 +484,27 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
         ]
         return self.with_query("query { " + " ".join(parts) + " }")
 
+    def _post(self, body: dict[str, Any], auth: credential_switch.BearerAuth) -> Any:
+        """Story 35.1: one GraphQL POST with ``auth``. ``APIDataset.load()`` sends only GET, so
+        the POST goes through ``save()``, and the response comes back through an in-memory
+        ``response_dataset`` (``save()``'s own return value does not survive kedro's wrapper)."""
+        inner = APIDataset(
+            url=self._base_url,
+            method="POST",
+            save_args={"timeout": self._timeout_seconds},
+            credentials=auth,  # type: ignore[arg-type, unused-ignore]  # a callable auth; requests accepts it
+            metadata=self.metadata,
+            response_dataset={"type": "kedro.io.MemoryDataset", "copy_mode": "assign"},
+        )
+        inner.save(body)
+        return _coerce_api_json(inner.get_last_response())
+
     def _fetch_batch_with_retry(
         self,
         chunk: Sequence[tuple[str, str]],
         *,
         fetcher: Callable[[dict[str, Any]], Any] | None = None,
+        auth: credential_switch.BearerAuth | None = None,
     ) -> tuple[Any, Exception | None]:
         """One chunk's batched POST, retried up to ``max_retries`` times. The
         rate-limit token is acquired on EVERY attempt (review fix #3/#4 — mirrors
@@ -472,6 +520,8 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
                 body = self.build_batch_query(chunk)
                 if fetcher is not None:
                     return fetcher(body), None
+                if auth is not None:
+                    return self._post(body, auth), None
                 inner = APIDataset(
                     url=self._base_url,
                     method="POST",
@@ -482,7 +532,9 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
                 return _coerce_api_json(inner.load()), None
             except Exception as exc:  # AD-13: an unreachable endpoint never fails the run.
                 attempt += 1
-                if attempt > self._max_retries:
+                # Story 35.1: a rejected token is never sent again (GitHub can block a client that
+                # keeps sending bad credentials)
+                if attempt > self._max_retries or (auth is not None and _http_status(exc) in _STOP_STATUSES):
                     return None, exc
                 self._sleep(retry_backoff_seconds(attempt))
 
@@ -491,6 +543,7 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
         repos: Sequence[tuple[str, str]],
         *,
         fetcher: Callable[[dict[str, Any]], Any] | None = None,
+        auth: credential_switch.BearerAuth | None = None,
     ) -> pd.DataFrame:
         """The real GraphQL fetch (Phase K/N): one batched POST per
         :data:`GITHUB_BATCH_QUERY_MAX`-sized chunk of ``repos`` (review fix #5,
@@ -509,10 +562,21 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
             self._persist(empty)
             return empty
         rows: list[dict[str, Any]] = []
+        last_failure = ""
+        stopped = False
         for chunk in chunk_queries(list(repos), GITHUB_BATCH_QUERY_MAX):
-            payload, exc = self._fetch_batch_with_retry(chunk, fetcher=fetcher)
+            if stopped:
+                break  # Story 35.1: the remaining chunks would meet the same refusal
+            payload, exc = self._fetch_batch_with_retry(chunk, fetcher=fetcher, auth=auth)
             if exc is not None:
-                logger.warning("GitHub batch fetch failed, keeping last-good: %s", exc)
+                status = _http_status(exc)
+                if auth is not None:
+                    # never the exception text on the credentialed path: it can quote a request header
+                    last_failure = f"HTTP {status}" if status else type(exc).__name__
+                    stopped = status in _STOP_STATUSES
+                else:
+                    last_failure = f"{type(exc).__name__}: {exc}"
+                logger.warning("GitHub batch fetch failed, keeping last-good: %s", last_failure)
                 for owner, name in chunk:
                     rows.append(
                         {
@@ -520,7 +584,7 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
                             "conda_name": pd.NA,
                             "archived": pd.NA,
                             "upstream_version": pd.NA,
-                            "last_error": f"batch fetch failed: {type(exc).__name__}: {exc}",
+                            "last_error": f"batch fetch failed: {last_failure}",
                             "stars": pd.NA,
                             "last_commit": pd.NA,
                             "open_issues": pd.NA,
@@ -528,6 +592,10 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
                     )
                 continue
             data = payload.get("data") if isinstance(payload, dict) else None
+            alias_errors = _graphql_errors(payload)
+            general = alias_errors.get(None) if not isinstance(data, dict) else None
+            if general:  # a body of errors and no data: a rate limit, a bad query
+                last_failure = f"GraphQL error: {general}"
             for i, (owner, name) in enumerate(chunk):
                 repo = data.get(f"r{i}") if isinstance(data, dict) else None
                 if not isinstance(repo, dict):
@@ -537,7 +605,7 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
                             "conda_name": pd.NA,
                             "archived": pd.NA,
                             "upstream_version": pd.NA,
-                            "last_error": "repository not found in response",
+                            "last_error": alias_errors.get(f"r{i}") or general or "repository not found in response",
                             "stars": pd.NA,
                             "last_commit": pd.NA,
                             "open_issues": pd.NA,
@@ -561,7 +629,15 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
         # AD-13 clobber-safety: a batch where every repo failed must not overwrite
         # last-good with an all-error result (mirrors the VcsHost/Registry fix).
         has_success = bool(rows) and frame["last_error"].isna().any()
+        if auth is not None and not has_success and last_failure:
+            # Story 35.1: say why (a rejected token reads HTTP 401; no exception text, which could
+            # quote a request header)
+            self._mark_stale(f"every GitHub batch failed ({last_failure}) -- keeping last-good")
+            return frame
         self._persist(frame if has_success else empty)
+        if stopped and has_success:
+            # the rows fetched before the refusal are kept, but the store is not current
+            self._mark_stale(f"stopped after {last_failure} -- the remaining batches keep last-good")
         return frame
 
     def load(self) -> pd.DataFrame:
@@ -582,6 +658,15 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
             )
         if not data.force and not self._refresh_due(data.cadence_seconds):
             self._clear_stale()
+            return
+        if credential_switch.live_vcs_universe():
+            # Story 35.1: GitHub's GraphQL API needs a token, so this fetch runs only when the
+            # operator set the switch for the run; otherwise nothing is sent (AD-11)
+            auth = credential_switch.github_auth(self._credentials, self._base_url)
+            if auth is None:
+                self._mark_stale(credential_switch.skip_reason(self._base_url))
+                return
+            self.fetch_repo_health(data.github_repos, auth=auth)
             return
         self.fetch_repo_health(data.github_repos)
 

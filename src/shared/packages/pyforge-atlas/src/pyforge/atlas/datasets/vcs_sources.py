@@ -42,6 +42,8 @@ import pandas as pd
 from kedro.io import AbstractDataset
 from kedro_datasets.api import APIDataset
 
+from . import credentials as credential_switch
+from . import public_sources
 from .rate_limit import DEFAULT_RPS, RateLimitedScheduler
 from .refresh import (
     DEFAULT_REFRESH_MAX_RETRIES,
@@ -94,6 +96,16 @@ def _coerce_json(raw: Any) -> Any:
 # Percent-encode every interpolated identifier (urllib.parse.quote) — a package name
 # or repo slug may legitimately contain '/', '@', or other path-special characters.
 # ---------------------------------------------------------------------------
+
+
+def _request_kwargs(timeout: int, credentials: Any) -> dict[str, Any]:
+    """Story 35.1: with ``pyforge.atlas.live_vcs_universe`` on, a host or registry request sends no
+    credential (legacy Phases K and L read these hosts unauthenticated; Story 35.4 decides which
+    may authenticate, and only under the switch), and a no-op auth keeps ``~/.netrc`` out. Off,
+    the request is the one this story found."""
+    if credential_switch.live_vcs_universe():
+        return {"load_args": public_sources.request_args(timeout)}
+    return {"load_args": {"timeout": timeout}, "credentials": credentials}
 
 
 @dataclass(frozen=True)
@@ -318,11 +330,7 @@ class VcsHostSeedDataset(_ParquetRefreshStore, AbstractDataset):
         def _do_fetch() -> Any:
             if fetcher is not None:
                 return fetcher(identifier)
-            inner = APIDataset(
-                url=url,
-                load_args={"timeout": self._timeout_seconds},
-                credentials=self._credentials,
-            )
+            inner = APIDataset(url=url, **_request_kwargs(self._timeout_seconds, self._credentials))
             return _coerce_json(inner.load())
 
         return fetch_one_with_retry(
@@ -442,11 +450,7 @@ class RegistryUpstreamDataset(_ParquetRefreshStore, AbstractDataset):
         def _do_fetch() -> Any:
             if fetcher is not None:
                 return fetcher(identifier)
-            inner = APIDataset(
-                url=url,
-                load_args={"timeout": self._timeout_seconds},
-                credentials=self._credentials,
-            )
+            inner = APIDataset(url=url, **_request_kwargs(self._timeout_seconds, self._credentials))
             return _coerce_json(inner.load())
 
         return fetch_one_with_retry(

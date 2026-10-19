@@ -612,6 +612,8 @@ vulnerability_basilisk_details:
 # the DEFAULT `load_args.json` (unused by the real fetch — build_batch_query()
 # builds its own body); Story 21.2 adds `filepath:` for the last-good store the
 # `refresh_vcs_github_store` trigger node (vcs_health/pipeline.py) writes to.
+# Story 35.1: with pyforge.atlas.live_vcs_universe on, the GraphQL POST runs only when the operator
+# sets PYFORGE_ATLAS_CREDENTIALED=1, with `Authorization: Bearer <github_token>` to api.github.com only.
 vcs_github_api_raw:
   type: pyforge.atlas.datasets.GitHubRequestDataset
   url: ${globals:endpoint_bases.GITHUB_API_BASE_URL}/graphql

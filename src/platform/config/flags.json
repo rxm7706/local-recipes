@@ -225,6 +225,21 @@
         "cleanup_by": ""
       }
     },
+    "pyforge.atlas.live_vcs_universe": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "atlas",
+        "story": "35-1-one-opt-in-switch-and-github-authenticates",
+        "created": "2026-10-18",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
     "pyforge.warden.fix_target_resolution": {
       "state": "ENABLED",
       "variants": {
