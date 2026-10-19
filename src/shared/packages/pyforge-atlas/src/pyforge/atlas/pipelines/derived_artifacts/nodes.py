@@ -1384,3 +1384,56 @@ def build_identity_complete_export(
         rows.append(row)
 
     return pd.DataFrame(rows, columns=list(_IDENTITY_COMPLETE_EXPORT_COLUMNS))
+
+
+#: Story 37.3: the distribution-breakdown board's columns (``dashboard/data.py``'s model reads them)
+DISTRIBUTION_BREAKDOWN_COLUMNS = (
+    "conda_name",
+    "facet",
+    "bucket",
+    "downloads_90d",
+    "declared_python_min",
+    "empirical_floor",
+)
+
+
+def compose_distribution_breakdown(
+    core_downloads_platform_breakdown: pd.DataFrame,
+    core_downloads_pyver_breakdown: pd.DataFrame,
+    core_downloads_channel_breakdown: pd.DataFrame,
+) -> pd.DataFrame:
+    """Story 37.3 (spec-pyforge-atlas CAP-69): the three download cuts ``compute_downloads`` writes
+    (platform, python version, channel) as one table behind a ``facet`` column, the shape the
+    distribution-breakdown board reads (legacy's platform-breakdown, pyver-breakdown and
+    channel-split tools). ``downloads_90d`` carries each cut's ``downloads``: the months Anaconda's
+    parquet holds, not a 90-day window (the board's name predates the store). The declared and
+    empirical Python floors are not migrated, so they are null (the bump classifier then reads
+    "unknown", never a fabricated answer). Pure; an absent or malformed cut contributes no rows."""
+    parts = []
+    for frame, facet, column in (
+        (core_downloads_platform_breakdown, "platform", "platform"),
+        (core_downloads_pyver_breakdown, "python-version", "pyver"),
+        (core_downloads_channel_breakdown, "channel", "channel"),
+    ):
+        if (
+            frame is None
+            or getattr(frame, "empty", True)
+            or not {"conda_name", column, "downloads"} <= set(frame.columns)
+        ):
+            continue
+        parts.append(
+            pd.DataFrame(
+                {
+                    "conda_name": frame["conda_name"].astype(str),
+                    "facet": facet,
+                    "bucket": frame[column].astype(str),
+                    "downloads_90d": pd.array(frame["downloads"], dtype="Int64"),
+                }
+            )
+        )
+    if not parts:
+        return pd.DataFrame(columns=list(DISTRIBUTION_BREAKDOWN_COLUMNS))
+    out = pd.concat(parts, ignore_index=True)
+    out["declared_python_min"] = pd.Series([None] * len(out), dtype="string")
+    out["empirical_floor"] = pd.Series([None] * len(out), dtype="string")
+    return out[list(DISTRIBUTION_BREAKDOWN_COLUMNS)]

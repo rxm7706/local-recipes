@@ -30,6 +30,13 @@ from boring_semantic_layer import Dimension, Measure, SemanticModel
 from . import metrics
 
 
+def _null(table: Any, dtype: str) -> Any:
+    """Story 37.3: a typed null COLUMN on ``table`` (a scalar cannot be grouped or aggregated) -- a
+    value its store does not hold yet, shown as missing, never fabricated."""
+    base = table[table.columns[0]].cast("string")
+    return base.nullif(base).cast(dtype)
+
+
 def duckdb_table_from_parquet(path: str, *, connection: Any | None = None) -> Any:
     """Read a Parquet file as an Ibis DuckDB table (AD-4, offline, query-time seam).
 
@@ -235,7 +242,9 @@ def build_version_downloads_model(table: Any) -> SemanticModel:
         dimensions={
             "conda_name": Dimension(expr=lambda t: t.conda_name),
             "version": Dimension(expr=lambda t: t.version),
-            "upload_date": Dimension(expr=lambda t: t.upload_date),
+            # Story 37.3: the board reads core_version_download_history, which holds no upload
+            # date; a store that has one (a fixture, or Story 37.6's) shows it, else it is null
+            "upload_date": Dimension(expr=lambda t: t.upload_date if "upload_date" in t.columns else _null(t, "date")),
         },
         measures={
             "downloads": Measure(expr=lambda t: t.downloads.sum()),
@@ -492,13 +501,14 @@ def build_lts_registry_gap_model(table: Any) -> SemanticModel:
     return SemanticModel(
         table=table,
         name="lts_registry_gap",
+        # Story 37.3: seed_gaps_lts_registry_report (slug, confidence, conda_name) under the board's names
         dimensions={
-            "product_name": Dimension(expr=lambda t: t.product_name),
-            "tier": Dimension(expr=lambda t: t.tier),
-            "matched_conda_name": Dimension(expr=lambda t: t.matched_conda_name),
+            "product_name": Dimension(expr=lambda t: t.slug),
+            "tier": Dimension(expr=lambda t: t.confidence),
+            "matched_conda_name": Dimension(expr=lambda t: t.conda_name),
         },
         measures={
-            "candidate_count": Measure(expr=lambda t: t.product_name.count()),
+            "candidate_count": Measure(expr=lambda t: t.slug.count()),
         },
     )
 
@@ -508,13 +518,15 @@ def build_cwe_seed_gap_model(table: Any) -> SemanticModel:
     return SemanticModel(
         table=table,
         name="cwe_seed_gap",
+        # Story 37.3: seed_gaps_cwe_report (cwe_id, category, confidence); the impact count is
+        # deferred (DW-B6-2), so it reads null rather than a fabricated 0
         dimensions={
             "cwe_id": Dimension(expr=lambda t: t.cwe_id),
-            "tier": Dimension(expr=lambda t: t.tier),
-            "suggested_category": Dimension(expr=lambda t: t.suggested_category),
+            "tier": Dimension(expr=lambda t: t.confidence),
+            "suggested_category": Dimension(expr=lambda t: t.category),
         },
         measures={
-            "package_impact_count": Measure(expr=lambda t: t.package_impact_count.sum()),
+            "package_impact_count": Measure(expr=lambda t: _null(t, "int64").max()),
         },
     )
 
@@ -524,12 +536,13 @@ def build_spdx_schema_gap_model(table: Any) -> SemanticModel:
     return SemanticModel(
         table=table,
         name="spdx_schema_gap",
+        # Story 37.3: seed_gaps_spdx_report (license, spdx_id, packages, tier)
         dimensions={
-            "license_id": Dimension(expr=lambda t: t.license_id),
+            "license_id": Dimension(expr=lambda t: t.spdx_id.fill_null(t.license)),
             "tier": Dimension(expr=lambda t: t.tier),
         },
         measures={
-            "package_usage_count": Measure(expr=lambda t: t.package_usage_count.sum()),
+            "package_usage_count": Measure(expr=lambda t: t.packages.sum()),
         },
     )
 
@@ -599,13 +612,14 @@ def build_license_map_gap_model(table: Any) -> SemanticModel:
     return SemanticModel(
         table=table,
         name="license_map_gap",
+        # Story 37.3: seed_gaps_license_map_report (license_raw, packages, confidence, suggested_spdx)
         dimensions={
             "license_raw": Dimension(expr=lambda t: t.license_raw),
-            "tier": Dimension(expr=lambda t: t.tier),
+            "tier": Dimension(expr=lambda t: t.confidence),
             "suggested_spdx": Dimension(expr=lambda t: t.suggested_spdx),
         },
         measures={
-            "package_count": Measure(expr=lambda t: t.package_count.sum()),
+            "package_count": Measure(expr=lambda t: t.packages.sum()),
         },
     )
 

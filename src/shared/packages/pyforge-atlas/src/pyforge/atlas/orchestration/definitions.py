@@ -304,6 +304,7 @@ NODE_TIMEOUTS: dict[str, int] = {
     "normalize_intake_to_cyclonedx": 300,
     "match_against_universe": 900,
     # -- derived_artifacts ------------------------------------------------- #
+    "compose_distribution_breakdown": 120,  # Story 37.3 -- pure concat of three download cuts
     "build_universe_sbom": 900,
     "build_inventory_universe": 300,  # Story 23.8 -- 9-way in-memory union, no network
     "build_inventory_verified_packages": 300,  # Story 23.4 -- full-inventory derive
