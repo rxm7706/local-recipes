@@ -144,6 +144,24 @@ def test_without_a_token_nothing_is_sent(tmp_path, fake_transport, population_on
     assert fake_transport.sent == [] and credential_switch.BASILISK_TOKEN_ENV in _marker(ds)
 
 
+def test_the_reason_nothing_was_sent_survives_the_next_load(tmp_path, fake_transport, population_on, monkeypatch):
+    monkeypatch.setenv(credential_switch.SWITCH, "1")
+    batch, detail = _batch(tmp_path), _detail(tmp_path)
+
+    batch.save(_population("numpy"))
+    detail.save(RefreshRequest(store="vulnerability_basilisk_detail_raw", force=True, basilisk_ids=("GHSA-1",)))
+
+    assert batch.load() == [] and detail.load() == []  # the next node reads the stores
+    assert credential_switch.BASILISK_TOKEN_ENV in _marker(batch)
+    assert credential_switch.BASILISK_TOKEN_ENV in _marker(detail)
+
+
+def test_a_store_no_refresh_has_reached_still_reads_as_stale(tmp_path, population_on):
+    ds = _batch(tmp_path)
+
+    assert ds.load() == [] and "not yet populated" in _marker(ds)
+
+
 def test_the_querybatch_carries_the_bearer_and_its_answers_land(tmp_path, fake_transport, population_on, credentialed):
     vuln = {"id": "GHSA-1", "modified": "2026-10-01T00:00:00Z", "affected": [{"package": {"ecosystem": "PyPI"}}]}
     fake_transport.answers[BATCH] = (200, {"results": [{"vulns": [vuln]}, {}]})

@@ -415,8 +415,13 @@ class BasiliskBatchDataset(_StaleAwareBasiliskSource):
         """OFFLINE-safe entry (consumer profile): with no fetcher wired, keep last-good + mark
         stale + return the last-good (or ``[]``). The credentialed population fan-out is
         attended/Dagster-driven via :meth:`query_population` (DW-B8-1, AD-11)."""
-        if population_live() and self._read_last_good():
-            return self._read_last_good()  # Story 36.1: a refreshed store reads as itself
+        if population_live():
+            # Story 36.1: the refresh trigger wrote its own marker (the reason nothing was sent) or
+            # cleared it; keep it. A store no refresh has reached yet still reads as stale.
+            last_good = self._read_last_good()
+            if not last_good and self.staleness() is None:
+                self._mark_stale("not yet populated: no Basilisk refresh has run")
+            return last_good
         if self._fetcher is None:
             self._mark_stale("offline: no Basilisk fetcher wired (consumer profile)")
             return self._read_last_good()
@@ -562,8 +567,13 @@ class BasiliskDetailDataset(_StaleAwareBasiliskSource):
         """OFFLINE-safe entry (consumer profile): keep last-good + mark stale + return the
         last-good (or ``[]``). The bounded detail fan-out is attended-driven via
         :meth:`fetch_details` (DW-B8-1, AD-11)."""
-        if population_live() and self._read_last_good():
-            return self._read_last_good()  # Story 36.1: a refreshed store reads as itself
+        if population_live():
+            # Story 36.1: the refresh trigger wrote its own marker (the reason nothing was sent) or
+            # cleared it; keep it. A store no refresh has reached yet still reads as stale.
+            last_good = self._read_last_good()
+            if not last_good and self.staleness() is None:
+                self._mark_stale("not yet populated: no Basilisk refresh has run")
+            return last_good
         if self._fetcher is None:
             self._mark_stale("offline: no Basilisk detail fetcher wired (consumer profile)")
             return self._read_last_good()

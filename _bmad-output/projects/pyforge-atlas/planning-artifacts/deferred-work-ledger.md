@@ -5022,7 +5022,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: review finding, atlas Story 34.6 independent review round 1
   severity: low
   promoted: 2026-10-18 -- implementer response to 34.6 review round 1; owned by Story 36.1 (operator ruling 2026-10-18)
-  status: open
+  verified: 2026-10-18 atlas Story 36.1 (branch atlas-36-1-basilisk; landing PR to follow) -- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/basilisk.py::BasiliskPackagesDataset._live_refresher` walks `/v1/packages` through `public_sources.fetch_text` with `pyforge.atlas.live_public_sources` on, and `tools/bootstrap.py` no longer lists the store as fetcher-less. Live on a 2026-10-18 root, `pyforge atlas run --pipelines upstream_discovery --nodes refresh_basilisk_packages` exit 0: 34,672 packages, no marker. Tests: `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_basilisk_population.py`.
+  status: closed
 
 ### DW-atlas-34-10-1: The Phase C mapping lacks legacy's name-coincidence and recipe-source-URL tiers, so Phase H covers about half of legacy's universe.
 

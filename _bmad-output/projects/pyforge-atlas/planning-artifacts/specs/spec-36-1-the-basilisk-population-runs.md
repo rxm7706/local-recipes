@@ -84,8 +84,17 @@ Type / Effort / Deps: feature / M / Story 35.1 (the switch, bearer auth, the POS
 ## Verification
 
 - Unit, from the repo root: `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_basilisk_population.py`.
-- **Live, recorded 2026-10-18** — PENDING: the public listing; the advisory drivers without a token (nothing sent,
-  the marker names the token variable).
+- **Live, recorded 2026-10-18,** on a scratch data root (dev, flags on, no switch, no token):
+  - **The listing** (`--pipelines upstream_discovery --nodes refresh_basilisk_packages`, 9 min): 34,672 packages
+    (Basilisk reported 34,105 on 2026-08-30). Status: 30,178 `no_match`, 2,673 `not_checked`, 1,821 `affected`.
+    Ecosystems: 21,050 PyPI, 6,382 GitHub, 3,811 CRAN, 2,697 conda-forge, the rest npm, gem, cpan, git, cargo,
+    bitbucket.
+  - **The advisory drivers** (`--pipelines vulnerability --nodes refresh_basilisk_population,ingest_basilisk_advisories,refresh_basilisk_details,fetch_basilisk_details`):
+    nothing sent; both stores keep last-good (none yet) under the marker "credentialed fetch not run:
+    PYFORGE_ATLAS_CREDENTIALED is not 1". The first run found the next node's `load()` replacing that marker with "no
+    Basilisk fetcher wired"; fixed (each store keeps the reason its refresh wrote) and re-run.
+  - No authorized Basilisk call was made: the advisory datasets stay empty until the operator supplies a token
+    (`DW-atlas-36-1-1`).
 
 ## Boundaries & Constraints
 
@@ -117,3 +126,6 @@ network.
 ## Spec Change Log
 
 - 2026-10-18: written with the implementation (branch `atlas-36-1-basilisk`, cut from `main` at `24581b35b8`).
+- 2026-10-18: the live run found the advisory and detail `load()` overwriting the refresh's marker; each store now
+  keeps it, and a store no refresh has reached reads "not yet populated". The suite pins
+  `pyforge.atlas.basilisk_population` off in `tests/conftest.py` (dev reads it on), like Story 35.1's flag.
