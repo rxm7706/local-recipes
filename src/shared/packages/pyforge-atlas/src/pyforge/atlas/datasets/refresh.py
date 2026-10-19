@@ -55,9 +55,12 @@ process client and no ``dagster`` / ``kedro_mcp``.
 
 from __future__ import annotations
 
+import io
 import json
 import logging
+import tempfile
 import time
+import zipfile
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -66,7 +69,9 @@ from typing import Any
 import pandas as pd
 from kedro.io import AbstractDataset
 from pyforge.core.atomic_write import atomic_write
+from pyforge.core.process import PosixProcess, ProcessPort
 
+from . import public_sources
 from .vdb_boundary import coerce_cvss_score
 
 logger = logging.getLogger(__name__)
@@ -147,6 +152,10 @@ class RefreshRequest:
     github_repos: tuple[tuple[str, str], ...] = ()
     pypi_pairs: tuple[tuple[str, str], ...] = ()
     pypi_serials: tuple[tuple[str, int], ...] = ()
+    # Story 34.7: (conda_name, pypi_name, version, npm_name, github_repo) per package the vdb scan covers
+    vdb_targets: tuple[tuple[str, ...], ...] = ()
+    # Story 34.7: (conda_name, version) per version with download history (legacy Phase G')
+    vdb_versions: tuple[tuple[str, str], ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -158,6 +167,8 @@ class RefreshRequest:
             "github_repos": list(self.github_repos),
             "pypi_pairs": list(self.pypi_pairs),
             "pypi_serials": list(self.pypi_serials),
+            "vdb_targets": list(self.vdb_targets),
+            "vdb_versions": list(self.vdb_versions),
         }
 
 
@@ -431,6 +442,12 @@ class VDBStoreDataset(ExternalRefreshDataset):
     STORE_FILENAME = "vdb_parsed.parquet"
     _CVSS_COLUMN = "cvss_score"
     _REQUIRED_COLUMNS = ("package_name", "cve_id")
+    #: Story 34.7: the standalone extractor the ``vuln-db`` env runs (no pyforge import)
+    EXTRACTOR = Path(__file__).with_name("vdb_extract.py")
+    VDB_ENV = "vuln-db"
+    VDB_REFRESH_TIMEOUT_SECONDS = 3600  # legacy: ~5-10 min cold, ~10 GB
+    VDB_REFRESH_CODE = "import truststore; truststore.inject_into_ssl(); from vdb.cli import main; main()"
+    EXTRACT_TIMEOUT_SECONDS = 7200
 
     def __init__(
         self,
@@ -441,6 +458,8 @@ class VDBStoreDataset(ExternalRefreshDataset):
         timeout_seconds: int = DEFAULT_REFRESH_TIMEOUT_SECONDS,
         max_retries: int = DEFAULT_REFRESH_MAX_RETRIES,
         metadata: dict[str, Any] | None = None,
+        process: ProcessPort | None = None,
+        pixi_project: str | None = None,
     ) -> None:
         super().__init__(
             filepath=filepath,
@@ -451,6 +470,80 @@ class VDBStoreDataset(ExternalRefreshDataset):
             max_retries=max_retries,
             metadata=metadata,
         )
+        self._process = process
+        self._pixi_project = Path(pixi_project) if pixi_project else None
+        self._targets: tuple[tuple[str, ...], ...] = ()
+        self._versions: tuple[tuple[str, str], ...] = ()
+
+    # -- Story 34.7: the live refresher, through the vuln-db env --------------------
+
+    def save(self, data: Any) -> None:
+        """The trigger carries the packages to scan (``RefreshRequest.vdb_targets``); the base
+        save decides whether a refresh is due and runs the refresher."""
+        self._targets = tuple(data.vdb_targets) if isinstance(data, RefreshRequest) else ()
+        self._versions = tuple(data.vdb_versions) if isinstance(data, RefreshRequest) else ()
+        super().save(data)
+
+    def _live_refresher(self) -> Callable[[], Any] | None:
+        return self._build_from_vdb if public_sources.live() else None
+
+    def _project(self) -> Path:
+        if self._pixi_project is not None:
+            return self._pixi_project
+        for parent in self.EXTRACTOR.resolve().parents:
+            if (parent / "pixi.toml").is_file():
+                return parent
+        raise FileNotFoundError("no pixi project above the atlas package; the vuln-db env is unreachable")
+
+    @property
+    def vdb_home(self) -> Path:
+        """The atlas's own vdb, beside its store: never the ``vuln-db`` env's default
+        ``$PIXI_PROJECT_ROOT/.claude/data/...``, which legacy rebuilds on its own schedule
+        (legacy Phase G scanned a vdb mid-rebuild on 2026-10-18) and which a worktree lacks."""
+        return Path(self._filepath) / "home"
+
+    def _in_env(self, argv: list[str], timeout_s: float) -> str:
+        """``pixi run --frozen -e vuln-db env VDB_HOME=... VDB_CACHE=... <argv>`` from the project
+        root; its stdout. The ``env`` prefix sets the vdb paths after pixi's activation, which
+        would otherwise point them at the shared copy. A non-zero exit raises, so save() keeps
+        last-good under the marker (AD-13)."""
+        process = self._process if self._process is not None else PosixProcess()
+        paths = [f"VDB_HOME={self.vdb_home}", f"VDB_CACHE={Path(self._filepath) / 'cache'}"]
+        full = ["pixi", "run", "--frozen", "-e", self.VDB_ENV, "env", *paths, *argv]
+        result = process.run(full, cwd=self._project(), timeout_s=timeout_s)
+        if result.returncode != 0:
+            tail = (result.stderr or result.stdout or "").strip().splitlines()[-1:] or [""]
+            raise RuntimeError(
+                f"`{' '.join(argv[:3])}` in the {self.VDB_ENV} env exited {result.returncode}: {tail[0][:200]}"
+            )
+        return result.stdout
+
+    def _build_from_vdb(self) -> pd.DataFrame:
+        """Rebuild the vdb when it is older than the store's cadence (``vdb-refresh``), then scan
+        every target's purls with the extractor and return its per-vulnerability frame."""
+        if not self._targets:
+            raise ValueError("the trigger carried no packages to scan")
+        extractor = str(self.EXTRACTOR)
+        age_lines = self._in_env(["python", "-I", extractor, "age"], 120).strip().splitlines()
+        age = int(age_lines[-1]) if age_lines and age_lines[-1].lstrip("-").isdigit() else -1
+        if age < 0 or age >= self._cadence_seconds:
+            logger.info("vdb is %s s old (cadence %s s): rebuilding it", age, self._cadence_seconds)
+            self.vdb_home.mkdir(parents=True, exist_ok=True)
+            # the env's `vdb-refresh` task, run with this store's paths (pixi.toml, vuln-db)
+            self._in_env(["python", "-c", self.VDB_REFRESH_CODE, "--cache"], self.VDB_REFRESH_TIMEOUT_SECONDS)
+        with tempfile.TemporaryDirectory(prefix="atlas-vdb-") as scratch:
+            targets = Path(scratch) / "targets.json"
+            versions = Path(scratch) / "versions.json"
+            out = Path(scratch) / "vdb_parsed.parquet"
+            targets.write_text(json.dumps([list(t) for t in self._targets]), encoding="utf-8")
+            by_package: dict[str, list[str]] = {}
+            for conda, version in self._versions:
+                by_package.setdefault(conda, []).append(version)
+            versions.write_text(json.dumps(by_package), encoding="utf-8")
+            argv = ["python", "-I", extractor, "extract", "--targets", str(targets), "--versions", str(versions)]
+            summary = self._in_env([*argv, "--out", str(out)], self.EXTRACT_TIMEOUT_SECONDS)
+            logger.info("vdb extract: %s", summary.strip().splitlines()[-1:] or "")
+            return pd.read_parquet(out)
 
     @property
     def _store_path(self) -> Path:
@@ -541,6 +634,24 @@ class OSVOfflineStoreDataset(ExternalRefreshDataset):
         # AD-2: the endpoint base is dataset-level config; NO host is hardcoded and no HTTP
         # client is imported — the injected fetcher uses this base when supplied.
         self._bucket_url = bucket_url
+
+    #: Story 34.7: legacy ``update-cve-db`` fetches these OSV ecosystems (``ECOSYSTEMS_TO_FETCH``)
+    ECOSYSTEMS = ("PyPI",)
+    ARCHIVE_TIMEOUT_SECONDS = 600  # PyPI's all.zip was 36 MB on 2026-10-18
+
+    def _live_refresher(self) -> Callable[[], Any] | None:
+        """Story 34.7: the public bucket's per-ecosystem ``all.zip``, while live public sources
+        are on and a bucket is configured."""
+        return self._fetch_public if public_sources.live() and self._bucket_url else None
+
+    def _fetch_public(self) -> list[dict[str, Any]]:
+        records: list[dict[str, Any]] = []
+        for ecosystem in self.ECOSYSTEMS:
+            url = f"{self._bucket_url.rstrip('/')}/{ecosystem}/all.zip"
+            records.extend(
+                osv_records(public_sources.fetch_bytes(url, timeout=self.ARCHIVE_TIMEOUT_SECONDS), ecosystem)
+            )
+        return records
 
     @property
     def _store_path(self) -> Path:
@@ -849,3 +960,40 @@ class _ParquetRefreshStore:
             self._mark_stale(f"write failed: {type(exc).__name__}: {exc}")
             return
         self._clear_stale()
+
+
+def osv_records(archive: bytes, ecosystem: str) -> list[dict[str, Any]]:
+    """Story 34.7: one record per (affected package, OSV entry) from an OSV ``all.zip``, the
+    fields legacy ``update-cve-db`` keeps (``process_vulnerabilities``): withdrawn entries are
+    skipped, and the package name is lower-cased with ``_`` as ``-``. A member that is not
+    JSON is skipped; a body that is not a zip raises (the refresh keeps last-good, AD-13)."""
+    records: list[dict[str, Any]] = []
+    with zipfile.ZipFile(io.BytesIO(archive)) as zf:
+        for member in zf.namelist():
+            if not member.endswith(".json"):
+                continue
+            try:
+                entry = json.loads(zf.read(member))
+            except ValueError:
+                logger.warning("OSV %s: %s is not JSON, skipped", ecosystem, member)
+                continue
+            if not isinstance(entry, dict) or entry.get("withdrawn"):
+                continue
+            for affected in entry.get("affected") or []:
+                name = ((affected or {}).get("package") or {}).get("name")
+                if not name:
+                    continue
+                records.append(
+                    {
+                        "ecosystem": ecosystem,
+                        "package_name": str(name).lower().replace("_", "-"),
+                        "id": entry.get("id"),
+                        "summary": entry.get("summary", "No summary available."),
+                        "details": entry.get("details", ""),
+                        "published": entry.get("published"),
+                        "modified": entry.get("modified"),
+                        "affected_versions": [e for r in affected.get("ranges") or [] for e in r.get("events") or []],
+                        "aliases": entry.get("aliases") or [],
+                    }
+                )
+    return records

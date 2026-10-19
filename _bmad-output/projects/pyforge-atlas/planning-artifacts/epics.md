@@ -2510,7 +2510,7 @@ So that `vulnerability_package_rollup` and `vulnerability_package_version_vulns`
 
 **Type:** feature • **Effort:** M • **Deps:** 34.4 (per-version rows need downloads) • **FR/AD:** spec-pyforge-atlas CAP-64 (FR-72) • AD-6 (amended), AD-13
 **Flag:** `pyforge.atlas.live_public_sources`
-**Surface:** `datasets/refresh.py` (`VDBStoreDataset`, `OSVOfflineStoreDataset`), `conf/base/catalog.yml`, tests
+**Surface:** `datasets/refresh.py` (`VDBStoreDataset`, `OSVOfflineStoreDataset`), `datasets/vdb_extract.py` (the extractor, run in the vuln-db env), `datasets/public_sources.py` (`fetch_bytes`), `datasets/core_sources.py` (the about URLs, `package_recipe_fields`), `pipelines/vulnerability/` (the trigger's purls and versions, Phase G's dedupe), `orchestration/definitions.py` (the budget), tests
 **Given** both stores are constructed with no `refresher`
 **When** a run reaches them with the flag on
 **Then** the vdb store builds through `pyforge.core.process` (the vuln-db env's `vdb-refresh`) and is normalized to the store format, the OSV store fetches the public bucket, and both rollups hold rows within the story's tolerance of legacy Phase G (33,841 scanned, 2026-10-18)

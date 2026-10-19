@@ -215,6 +215,58 @@ def _source_url(payload: dict[str, Any]) -> str | None:
     return url if isinstance(url, str) and url else None
 
 
+def _first_str(value: Any) -> str | None:
+    if isinstance(value, list):
+        value = next((v for v in value if isinstance(v, str) and v), None)
+    return value if isinstance(value, str) and value else None
+
+
+def _about_urls(payload: dict[str, Any]) -> dict[str, str | None]:
+    """Story 34.7: the recipe's about URLs as legacy Phase E stores them (CFA:2328-2332):
+    ``repo_url`` is ``about.repository``, else ``about.dev_url`` (legacy's ``conda_repo_url``);
+    ``dev_url``; ``home_url`` (``about.home``)."""
+    meta = payload.get("meta_yaml")
+    about = meta.get("about") if isinstance(meta, dict) else None
+    about = about if isinstance(about, dict) else {}
+    dev = _first_str(about.get("dev_url"))
+    return {
+        "repo_url": _first_str(about.get("repository")) or dev,
+        "dev_url": dev,
+        "home_url": _first_str(about.get("home")),
+    }
+
+
+RECIPE_FIELDS = ("source_url", "repo_url", "dev_url", "home_url")
+
+
+def package_recipe_fields(graph: pd.DataFrame | None, attribution: pd.DataFrame | None) -> pd.DataFrame:
+    """Story 34.7: one row per conda package with its feedstock's recipe fields
+    (:data:`RECIPE_FIELDS`). Legacy Phase E writes them to every output Phase B.5 attributes to
+    the feedstock (``feedstock_to_conda``, CFA:2283-2287); ``core_feedstock_attribution`` is that
+    attribution. A package attribution has no row for takes its first anchor row. Pure."""
+    cols = ["conda_name", *RECIPE_FIELDS]
+    if graph is None or graph.empty or "conda_name" not in graph.columns:
+        return pd.DataFrame(columns=cols)
+    frame = graph.reindex(columns=[*_CF_GRAPH_COLUMNS])
+    anchors = frame[frame["depends_on"].isna() & frame["conda_name"].notna()]
+    by_feedstock = anchors.drop_duplicates("feedstock_name").set_index("feedstock_name")[list(RECIPE_FIELDS)]
+    parts = []
+    attributed: set[str] = set()
+    if (
+        attribution is not None
+        and not attribution.empty
+        and {"conda_name", "feedstock_name"} <= set(attribution.columns)
+    ):
+        att = attribution[["conda_name", "feedstock_name"]].dropna().drop_duplicates("conda_name")
+        joined = att.join(by_feedstock, on="feedstock_name", how="inner")
+        parts.append(joined[cols])
+        attributed = set(att["conda_name"])
+    rest = anchors[~anchors["conda_name"].isin(attributed)].drop_duplicates("conda_name")
+    parts.append(rest[cols])
+    out = pd.concat(parts, ignore_index=True) if parts else pd.DataFrame(columns=cols)
+    return out.astype(object).where(out.notna(), None).reset_index(drop=True)
+
+
 def _outputs_names(payload: dict[str, Any]) -> list[str]:
     """``outputs_names``: a plain list, or cf-scripts' ``{"elements": [...]}`` set encoding."""
     outputs_raw = payload.get("outputs_names")
@@ -267,6 +319,9 @@ _CF_GRAPH_COLUMNS = [
     "feedstock_bad",
     "maintainers",
     "source_url",  # Story 34.11: on each output's anchor row only (Phase C.5's recipe source)
+    "repo_url",  # Story 34.7: about.repository, else about.dev_url (legacy conda_repo_url); anchors only
+    "dev_url",  # Story 34.7: about.dev_url; anchors only
+    "home_url",  # Story 34.7: about.home; anchors only
 ]
 
 
@@ -336,8 +391,11 @@ def _cf_graph_frame(
         # every output a feedstock names, with or without a requirements block (Phase E)
         anchors = list(dict.fromkeys([*(name for name, _ in pairs), *_outputs_names(payload)])) or [feedstock]
         url = _source_url(payload)
+        about = _about_urls(payload)
         for source_name in anchors:
-            rows.append({**base, "conda_name": source_name, "depends_on": pd.NA, "dep_type": pd.NA, "source_url": url})
+            rows.append(
+                {**base, "conda_name": source_name, "depends_on": pd.NA, "dep_type": pd.NA, "source_url": url, **about}
+            )
         for source_name, reqs in pairs:
             for req_type in ("build", "host", "run", "test"):
                 spec_list = reqs.get(req_type)
