@@ -444,9 +444,24 @@ class _HonestPagination:
 
     def save(self, data: Any) -> None:
         self._stopped = ""
+        prior = self.staleness()  # type: ignore[attr-defined]
+        prior_stop = (
+            prior.reason.split(" (since then: ", 1)[0]
+            if prior is not None and prior.stale and prior.reason.startswith(_STOP_MARKER_PREFIXES)
+            else ""
+        )
+        before = self._store_mtime() if self._store_exists() else None  # type: ignore[attr-defined]
         super().save(data)  # type: ignore[misc, unused-ignore]
         if self._stopped:
             self._mark_stale(self._stopped)  # type: ignore[attr-defined]
+            return
+        wrote = self._store_exists() and self._store_mtime() != before  # type: ignore[attr-defined]
+        if prior_stop and not wrote:
+            # Story 36.2: a run that could not fetch (no switch, the flag off) never clears a stop:
+            # the store is still the short one, so the stop stays first in the marker
+            now = self.staleness()  # type: ignore[attr-defined]
+            later = now.reason if now is not None and now.stale and now.reason != prior_stop else ""
+            self._mark_stale(f"{prior_stop} (since then: {later})" if later else prior_stop)  # type: ignore[attr-defined]
 
 
 def _as_json(payload: Any) -> dict | None:
@@ -811,9 +826,7 @@ class StagedRecipesPRDataset(_HonestPagination, ExternalRefreshDataset):
         refused = list_refused  # a refusal on the list stops the files requests too
         failures_in_a_row = files_failed = 0
         for number in open_numbers[:_STAGED_PR_OPEN_FILES_FANOUT_LIMIT]:
-            if refused or failures_in_a_row >= _FILES_FAILURES_IN_A_ROW_LIMIT:
-                if not refused:
-                    self._stop(f"PR files stopped at PR #{number}: {failures_in_a_row} failures in a row")
+            if refused:
                 break
             paths: list[str] = []
             read = True
@@ -840,12 +853,16 @@ class StagedRecipesPRDataset(_HonestPagination, ExternalRefreshDataset):
                 page += 1
             failures_in_a_row = 0 if read else failures_in_a_row + 1
             files_failed += 0 if read else 1
+            if failures_in_a_row >= _FILES_FAILURES_IN_A_ROW_LIMIT and not refused:
+                # the breaker fires at the failure that reaches the limit, the last PR's included
+                self._stop(f"PR files stopped after PR #{number}: {failures_in_a_row} failures in a row")
+                refused = True
             if paths:
                 file_paths = _join_list(paths)
                 for row in rows:
                     if row["number"] == number:
                         row["file_paths"] = file_paths
-        if files_failed and not refused and failures_in_a_row < _FILES_FAILURES_IN_A_ROW_LIMIT:
+        if files_failed and not refused:
             # a one-run notice (not a stop marker): the next refresh inside the cadence clears it
             noun = "PR" if files_failed == 1 else "PRs"
             self._stop(f"PR files failed for {files_failed} {noun} (each keeps its last-good paths, if any)")

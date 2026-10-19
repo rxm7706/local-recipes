@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'both stores keep the path before this story: no fetcher, last-good under a stale marker'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 4
+review_loop_iteration: 5
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -51,8 +51,9 @@ lack their rows. Both stores accept `credentials: github_token` and never use it
      out; on a PR's files, none after it. Ten PRs in a row whose files fail stop the files requests too.
    - A PR whose files are not read keeps its last-good file paths, so a refusal never empties the column.
    - A store whose last refresh stopped short (a board, list or files stop) is due again at once: inside its cadence
-     it would otherwise read as fresh and its marker be cleared. A count of files failures short of a stop is a
-     one-run notice: the next refresh inside the cadence clears it and reads nothing again.
+     it would otherwise read as fresh and its marker be cleared. A run that cannot fetch keeps the stop first in the
+     marker. A count of files failures short of a stop is a one-run notice: the next refresh inside the cadence
+     clears it and reads nothing again.
    - The first page's failure names its status or the GraphQL error.
 4. **The caps cover the whole history.** The PR list reads up to 500 pages (Story 21.x: 200, which stopped at PR
    #14,827) and the files of up to 2,000 open PRs (500, of 1,222 open); about 1,600 requests, inside GitHub's 5,000
@@ -133,6 +134,13 @@ identity sources).
 ## Spec Change Log
 
 - 2026-10-18: written with the implementation (branch `atlas-36-2-identity-sources`, cut from `main` at `24581b35b8`).
+- 2026-10-19, review round 5 (FAIL), fixed:
+  - B1: a run that cannot fetch (no switch, the flag off) wrote its own marker over a stop, and the next save inside
+    the cadence cleared it; a stop now stays first in the marker until a run writes the store ("<stop> (since then:
+    <reason>)").
+  - Should-fix: the breaker fires at the failure that reaches ten, so ten failures that end the run still stop; the
+    board's GraphQL-error and unparseable stops are tested as stop markers.
+  - Nits: the board budget pinned at 1,200 s; the caps pinned.
 - 2026-10-19, review round 4 (FAIL, tests only), fixed:
   - B1: each of the three stop markers (board, list, files) is tested to bring the next refresh forward.
   - Should-fix: the files-failures count is a one-run notice, said so in Approach 3 and tested.

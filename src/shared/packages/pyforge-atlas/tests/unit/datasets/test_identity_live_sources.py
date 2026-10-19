@@ -362,7 +362,7 @@ def test_the_files_requests_stop_after_ten_failures_in_a_row(tmp_path, in_turn, 
     _save(ds)
 
     assert sum("/files" in r.url for r in in_turn.sent) == 10
-    assert "PR files stopped at PR #11: 10 failures in a row" in _marker(ds)
+    assert "PR files stopped after PR #10: 10 failures in a row" in _marker(ds)
 
 
 def test_a_failure_is_logged_by_its_status_never_its_text(tmp_path, in_turn, identity_on, switch_on, caplog):
@@ -514,5 +514,49 @@ def test_a_list_stop_and_files_failures_are_both_named(tmp_path, in_turn, identi
 def test_the_identity_budgets_cover_the_measured_runs():
     from pyforge.atlas.orchestration.definitions import NODE_TIMEOUTS
 
-    assert NODE_TIMEOUTS["refresh_staged_recipes_prs"] >= 19 * 60 * 2  # 19 min live, 2026-10-18
-    assert NODE_TIMEOUTS["refresh_openteams_board"] >= 600
+    assert NODE_TIMEOUTS["refresh_staged_recipes_prs"] == 2400  # 19 min live, 2026-10-18
+    assert NODE_TIMEOUTS["refresh_openteams_board"] == 1200
+
+
+# -- review round 5 ------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("stopped", [_stopped_board, _stopped_list], ids=["board", "list"])
+def test_a_run_that_cannot_fetch_never_clears_a_stop(tmp_path, in_turn, identity_on, switch_on, monkeypatch, stopped):
+    ds = stopped(tmp_path, in_turn)
+    first = json.loads(_marker(ds))["reason"]
+    monkeypatch.delenv(credential_switch.SWITCH)  # the next runs cannot fetch
+    sent = len(in_turn.sent)
+
+    ds.save(RefreshRequest(store="x"))
+    ds.save(RefreshRequest(store="x"))
+
+    reason = json.loads(_marker(ds))["reason"]
+    assert len(in_turn.sent) == sent and reason.startswith(first) and credential_switch.SWITCH in reason
+
+
+def test_ten_files_failures_that_end_the_run_still_stop(tmp_path, in_turn, identity_on, switch_on):
+    in_turn.answers[_list_page(1)] = (200, [_pr(n) for n in range(1, 11)])  # every files URL: 404
+    ds = _prs(tmp_path)
+
+    _save(ds)
+
+    assert json.loads(_marker(ds))["reason"] == "PR files stopped after PR #10: 10 failures in a row"
+
+
+@pytest.mark.parametrize(
+    "answer",
+    [(200, {"errors": [{"message": "no org"}]}), (200, "not json at all")],
+    ids=["graphql-errors", "unparseable"],
+)
+def test_every_board_stop_is_a_stop_marker(tmp_path, in_turn, identity_on, switch_on, answer):
+    in_turn.answers[GRAPHQL] = [(200, _page([1], "C1")), answer]
+    ds = _board(tmp_path)
+
+    _save(ds)
+
+    assert json.loads(_marker(ds))["reason"].startswith("board stopped at page 2: ")
+
+
+def test_the_caps_read_the_whole_history():
+    assert I._STAGED_PR_MAX_PAGES == 500 and I._STAGED_PR_OPEN_FILES_FANOUT_LIMIT == 2000
