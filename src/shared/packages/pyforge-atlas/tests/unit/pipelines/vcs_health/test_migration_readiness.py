@@ -30,6 +30,7 @@ from pyforge.atlas.pipelines.vcs_health.nodes import (
 
 _COLS = [
     "migration",
+    "category",  # Story 34.8
     "conda_name",
     "readiness",
     "blocker",

@@ -111,7 +111,13 @@ NODE_REGISTRY: dict[str, tuple] = {
     #    credentialed legacy run, see PARITY_NOTES.md) --
     "map_pypi_conda": (
         pypi_nodes.map_pypi_conda,
-        ["pypi_parselmouth_mapping_raw", "core_packages_enumerated"],
+        [
+            "pypi_parselmouth_mapping_raw",
+            "core_packages_enumerated",
+            "core_cf_graph_raw",
+            "pypi_universe",
+            "core_feedstock_attribution",
+        ],
         ["pypi_conda_mapping_base"],
     ),
     "match_source_urls": (
@@ -136,7 +142,7 @@ NODE_REGISTRY: dict[str, tuple] = {
     ),
     "fetch_pypi_downloads": (
         pypi_nodes.fetch_pypi_downloads,
-        ["pypi_bigquery_downloads_raw"],
+        ["pypi_clickhouse_downloads_raw", "pypi_bigquery_downloads_raw"],
         ["pypi_downloads_monthly"],
     ),
     "flag_cross_channel": (

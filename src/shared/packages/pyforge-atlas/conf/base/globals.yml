@@ -25,9 +25,9 @@
 #
 # Total env-override surface of this file (P7 accounting, +1 by P9's
 # data_root, +2 by Story 21.4, +1 extra_override +1 path by Story 21.6,
-# +1 path by Story 25.1's repo_dependency_cache):
+# +1 path by Story 25.1's repo_dependency_cache, +1 extra_override by Story 34.9):
 # endpoint_bases 27 (19 live + 1 reserved + 2 Story 21.4 + 5 Story 23.1) +
-# extra_overrides 4 + fetcher_urls 3 + paths 8 = 42. Pinned
+# extra_overrides 5 + fetcher_urls 3 + paths 8 = 43. Pinned
 # by tests/catalog (EXPECTED_ENV_OVERRIDE_SURFACE).
 
 endpoint_bases:
@@ -91,11 +91,16 @@ endpoint_bases:
 #     purl_associator_mappings_raw (Story 21.6, CAP-3 identity join). A NEW
 #     host, not one of the 20 helper-backed endpoint_bases — mirrors how
 #     ANACONDA_API_BASE_URL/OSV_VULNS_BUCKET_URL were added above.
+#   CLICKHOUSE_PYPI_BASE_URL — the ClickHouse public PyPI mirror (clickpy) behind
+#     pypi_clickhouse_downloads_raw (Story 34.9, CAP-64): legacy Phase P's default
+#     source, whose own override is PHASE_P_CH_BASE_URL (with ?user=play; here the
+#     user is a dataset argument). A NEW host, added as PURL_ASSOCIATOR_BASE_URL was.
 extra_overrides:
   ANACONDA_API_BASE_URL: ${env_or:ANACONDA_API_BASE_URL,https://api.anaconda.org}
   OSV_VULNS_BUCKET_URL: ${env_or:OSV_VULNS_BUCKET_URL,https://osv-vulnerabilities.storage.googleapis.com}
   BIGQUERY_BASE_URL: ${env_or:BIGQUERY_BASE_URL,https://bigquery.googleapis.com/bigquery/v2}
   PURL_ASSOCIATOR_BASE_URL: ${env_or:PURL_ASSOCIATOR_BASE_URL,https://prefix-dev.github.io}
+  CLICKHOUSE_PYPI_BASE_URL: ${env_or:CLICKHOUSE_PYPI_BASE_URL,https://sql-clickhouse.clickhouse.com}
 
 # Full feed URLs for the three vulnerability side-catalogs (the inventory's
 # "fetcher URL setting" rows — full URLs, not host bases, so they live

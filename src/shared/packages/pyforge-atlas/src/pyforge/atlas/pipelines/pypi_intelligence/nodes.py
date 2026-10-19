@@ -20,6 +20,7 @@ from __future__ import annotations
 import logging
 import re
 import time
+from typing import Any, TypeGuard
 
 import pandas as pd
 
@@ -67,9 +68,58 @@ def _is_missing(v) -> bool:
 # ---------------------------------------------------------------------------
 
 
+# Story 34.11: legacy's PyPI source-URL name (``_PYPI_NAME_RE``, CFA:2050), lower-cased as
+# legacy stores it (CFA:2089). files.pythonhosted.org serves the same /packages/source/ path;
+# legacy counts that host as PyPI (``_SRC_REGEX_PATTERNS``) but its name pattern omits it, so
+# it is read here too (161 more rows on 2026-10-18).
+_RECIPE_SOURCE_PYPI = re.compile(r"(?:pypi\.io|pypi\.org|files\.pythonhosted\.org)/packages/source/[^/]/([^/]+)/")
+
+
+def recipe_source_pypi_name(url: object) -> str | None:
+    """The PyPI project a recipe's source URL downloads, or ``None``."""
+    m = _RECIPE_SOURCE_PYPI.search(url) if isinstance(url, str) else None
+    return m.group(1).lower() if m else None
+
+
+def _has(frame: pd.DataFrame | None, columns: set[str]) -> TypeGuard[pd.DataFrame]:
+    return frame is not None and not frame.empty and columns <= set(frame.columns)
+
+
+def _recipe_source_names(graph: pd.DataFrame | None, attribution: pd.DataFrame | None) -> dict[str, str]:
+    """``conda_name -> PyPI project`` its feedstock's recipe downloads.
+
+    Legacy Phase E maps every output Phase B.5 attributes to the feedstock (``feedstock_to_conda``,
+    CFA:2283-2287); ``core_feedstock_attribution`` is that attribution. A package attribution
+    has no row for falls back to the frame's anchor rows: the first whose URL names a PyPI project
+    (legacy has no fallback)."""
+    if not _has(graph, {"conda_name", "source_url"}):
+        if graph is not None and not graph.empty:  # a last-good frame from before Story 34.11
+            logger.warning("core_cf_graph_raw has no source_url column: the recipe-source tier is skipped")
+        return {}
+    anchors = graph.loc[graph["source_url"].notna()]
+    names: dict[str, str] = {}
+    attributed: set[str] = set()
+    if "feedstock_name" in anchors.columns and _has(attribution, {"conda_name", "feedstock_name"}):
+        by_feedstock: dict[str, str | None] = {}
+        for feedstock, url in zip(anchors["feedstock_name"], anchors["source_url"], strict=True):
+            by_feedstock.setdefault(feedstock, recipe_source_pypi_name(url))
+        for conda, feedstock in zip(attribution["conda_name"], attribution["feedstock_name"], strict=True):
+            if isinstance(conda, str) and (name := by_feedstock.get(feedstock)):
+                names.setdefault(conda, name)
+        attributed = set(attribution["conda_name"].dropna())
+    for conda, url in zip(anchors["conda_name"], anchors["source_url"], strict=True):
+        if isinstance(conda, str) and conda not in attributed and conda not in names:
+            if name := recipe_source_pypi_name(url):
+                names[conda] = name
+    return names
+
+
 def map_pypi_conda(
     pypi_parselmouth_mapping_raw: pd.DataFrame,
     core_packages_enumerated: pd.DataFrame,
+    core_cf_graph_raw: pd.DataFrame | None = None,
+    pypi_universe: pd.DataFrame | None = None,
+    core_feedstock_attribution: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     # legacy: Phase C  (phase_c_parselmouth_join CFA:1744)
     """Join the parselmouth ``pypi_name -> conda_name`` mapping against the conda
@@ -81,11 +131,26 @@ def map_pypi_conda(
     ``match_source`` (default ``parselmouth``). ``core_packages_enumerated`` restricts
     the mapping to REAL conda packages (``conda_name``). Output (intermediate, fed to
     Phase C.5): ``pypi_name``, ``conda_name``, ``match_source``.
+
+    Story 34.11: legacy fills two more tiers, in its own phase order:
+
+    1. ``name_coincidence`` -- Phase D (``_phase_d_update_working_set``, CFA:1837-1895): a PyPI
+       project whose lower-cased name equals the name of a conda package with no PyPI name yet
+       (``pypi_universe``). Legacy checks the PyPI side first: a project already mapped to
+       another conda package never matches by name (GNU ``flex`` is not PyPI ``flex``).
+    2. ``recipe_source_url`` -- Phase C.5, folded into Phase E (CFA:2434-2446): every output
+       attributed to a feedstock whose recipe downloads from PyPI
+       (``.../packages/source/<l>/<name>/``) maps to that project
+       (:func:`_recipe_source_names`). As legacy's ``COALESCE``, a name coincidence keeps its
+       name and takes this label; a parselmouth row is never touched.
+
+    These matches join the candidates Phase H fetches (Story 34.10) and the purls the vdb scan
+    queries (Story 34.7).
     """
     cols = ["pypi_name", "conda_name", "match_source"]
     m = pypi_parselmouth_mapping_raw
     if m is None or m.empty or not {"pypi_name", "conda_name"} <= set(m.columns):
-        return pd.DataFrame(columns=cols)
+        m = pd.DataFrame(columns=cols)
     out = m.copy()
     if "match_source" not in out.columns:
         out["match_source"] = "parselmouth"
@@ -93,6 +158,42 @@ def map_pypi_conda(
         # a missing per-row match_source defaults to parselmouth; a provided tier
         # (incl. g10_spelling) is preserved verbatim.
         out["match_source"] = out["match_source"].fillna("parselmouth")
+    enumerated = (
+        list(dict.fromkeys(c for c in core_packages_enumerated["conda_name"].dropna() if isinstance(c, str)))
+        if _has(core_packages_enumerated, {"conda_name"})
+        else []
+    )
+    recipe = _recipe_source_names(core_cf_graph_raw, core_feedstock_attribution)
+    mapped = set(out["conda_name"].dropna())
+    coincident: dict[str, str] = {}
+    if _has(pypi_universe, {"pypi_name"}):
+        projects = {str(p).lower() for p in pypi_universe["pypi_name"].dropna()}
+        taken = {_PEP503_RUN_RE.sub("-", str(p)).lower() for p in out["pypi_name"].dropna()}
+        for conda in enumerated:
+            name = conda.lower()
+            key = _PEP503_RUN_RE.sub("-", name)
+            if conda in mapped or name not in projects or key in taken:
+                continue
+            coincident[conda] = name
+            taken.add(key)
+    rows = [
+        {
+            "pypi_name": name,
+            "conda_name": conda,
+            "match_source": "recipe_source_url" if conda in recipe else "name_coincidence",
+        }
+        for conda, name in coincident.items()
+    ]
+    mapped |= set(coincident)
+    rows += [
+        {"pypi_name": recipe[conda], "conda_name": conda, "match_source": "recipe_source_url"}
+        for conda in enumerated
+        if conda in recipe and conda not in mapped
+    ]
+    if rows:
+        out = pd.concat([out, pd.DataFrame(rows, columns=cols)], ignore_index=True)
+    if out.empty:
+        return pd.DataFrame(columns=cols)
     # restrict to conda_names the core pipeline actually enumerated (real feedstocks)
     enum = core_packages_enumerated
     if enum is not None and not enum.empty and "conda_name" in enum.columns:
@@ -223,24 +324,16 @@ def _safety_recheck(fetched_at, now: int) -> bool:
     fetched_num = pd.to_numeric(fetched_at, errors="coerce")
     if pd.isna(fetched_num):
         return True
-    return (now - int(fetched_num)) >= _PHASE_H_SAFETY_RECHECK_SECONDS
-
-
-def _phase_h_eligibility(row_serial_at_fetch, row_last_serial, row_fetched_at, now: int) -> bool:
-    """The 3-condition Phase H serial gate (CFA:4177-4189): eligible iff never-fetched
-    OR serial-moved OR 30-day safety re-check. NULL-safe (CFA:4223-4231)."""
-    return bool(
-        _never_fetched(row_serial_at_fetch)
-        or _serial_moved(row_serial_at_fetch, row_last_serial)
-        or _safety_recheck(row_fetched_at, now)
-    )
+    # strictly older than 30 days, as legacy's `pypi_version_fetched_at < now - 30d` (CFA:4229)
+    return (now - int(fetched_num)) > _PHASE_H_SAFETY_RECHECK_SECONDS
 
 
 def phase_h_eligibility_stats(pypi_json_raw: pd.DataFrame, now: int | None = None) -> dict:
     """Split the eligible set into its three branches (legacy ``_phase_h_eligibility_stats``
     CFA:4135): ``eligible_never_fetched`` / ``eligible_serial_moved`` /
-    ``eligible_safety_recheck`` (+ ``total`` / ``eligible``). Uses the SAME predicates as
-    :func:`_phase_h_eligibility` (no drift). A row can satisfy more than one branch;
+    ``eligible_safety_recheck`` (+ ``total`` / ``eligible``): the 3-condition serial gate
+    (CFA:4177-4189, NULL-safe CFA:4223-4231) over a frame's rows. Story 34.10: not on the run
+    path; the fan-out's own ``_eligible`` chooses what it fetches. A row can satisfy more than one branch;
     branch counts use first-match precedence (never-fetched > serial-moved >
     safety-recheck) so they sum to ``eligible``."""
     if now is None:
@@ -281,9 +374,16 @@ def fetch_pypi_current_versions(
     now: int | None = None,
 ) -> pd.DataFrame:
     # legacy: Phase H  (phase_h_pypi_versions CFA:4517; _phase_h_eligible_pypi_names CFA:4174)
-    """Stamp the current version for the serial-gated eligible set.
+    """The current version of every fetched project (Phase H's output).
 
-    **AC-5 — the serial gate.** ``pypi_json_raw`` is the already-fetched, ACTIONABLE
+    Story 34.10: the serial gate decides what the fan-out FETCHES
+    (``PyPIJsonFanOutDataset._eligible``), as legacy's decides what Phase H fetches; legacy
+    then keeps every project's version. This node therefore emits every fetched row. It used
+    to re-apply the gate and emit the eligible rows only, which a run that stamps the serial at
+    fetch would shrink to the few projects whose serial moved; ``pypi_current_versions`` is
+    overwritten each run, never merged.
+
+    **AC-5 — the denominator.** ``pypi_json_raw`` is the already-fetched, ACTIONABLE
     slice (the fan-out is bounded at dataset level to ``v_actionable_packages WHERE
     pypi_name IS NOT NULL``); this node NEVER iterates ``pypi_universe`` (where the
     pypi-only rows live post-v20) — it only LEFT-JOINs it for the authoritative current
@@ -291,9 +391,8 @@ def fetch_pypi_current_versions(
     (CFA:4224-4225): pypi-only rows are never re-included (the pre-v7.9.0 6-hour cold-run
     bug the gate must not reintroduce).
 
-    Eligibility = never-fetched OR serial-moved OR 30-day safety re-check
-    (CFA:4177-4189, NULL-safe CFA:4223-4231). On fetch, ``pypi_version_serial_at_fetch``
-    is stamped to the current ``pypi_last_serial`` (CFA:4293/4321/4476). **RETAIN
+    ``pypi_version_serial_at_fetch`` is the serial the row was fetched at; a row fetched
+    before stamps existed takes the current ``pypi_last_serial`` (CFA:4293/4321/4476). **RETAIN
     ``upload_time_iso_8601``** per the current release — B9/FR-20 (``release_lag_hours``)
     consumes it downstream with NO new fetch (spec:680).
 
@@ -327,30 +426,44 @@ def fetch_pypi_current_versions(
     # widens the row set — validate=many_to_one keeps it a pure lookup).
     uni = pypi_universe
     if uni is not None and not uni.empty and {"pypi_name", "last_serial"} <= set(uni.columns):
-        serial_map = dict(zip(uni["pypi_name"], uni["last_serial"]))
-        work["pypi_last_serial"] = [serial_map.get(n, s) for n, s in zip(work["pypi_name"], work["pypi_last_serial"])]
+        # Story 34.10: matched under PEP 503, and never below the serial the row was fetched at
+        # (the weekly universe can lag the same run's snapshot the fan-out stamps)
+        serial_map = {
+            _normalize_pypi_name(n): s
+            for n, s in zip(uni["pypi_name"], uni["last_serial"], strict=True)
+            if isinstance(n, str)
+        }
 
-    eligible_rows = []
+        def _current(name: object, stored: object) -> object:
+            known = [
+                v
+                for v in (
+                    pd.to_numeric(serial_map.get(_normalize_pypi_name(str(name))), errors="coerce"),
+                    pd.to_numeric(stored, errors="coerce"),
+                )
+                if pd.notna(v)
+            ]
+            return int(max(known)) if known else pd.NA
+
+        work["pypi_last_serial"] = [
+            _current(n, s) for n, s in zip(work["pypi_name"], work["pypi_last_serial"], strict=True)
+        ]
+
+    rows = []
     for _, r in work.iterrows():
-        if not _phase_h_eligibility(
-            r.get("pypi_version_serial_at_fetch"),
-            r.get("pypi_last_serial"),
-            r.get("fetched_at"),
-            now,
-        ):
-            continue
-        eligible_rows.append(
+        stamped = r.get("pypi_version_serial_at_fetch")
+        rows.append(
             {
                 "pypi_name": r["pypi_name"],
                 "version": r.get("version"),
                 "pypi_last_serial": r.get("pypi_last_serial"),
-                # stamp serial_at_fetch to the current serial ON fetch (CFA:4293).
-                "pypi_version_serial_at_fetch": r.get("pypi_last_serial"),
+                # the serial it was fetched at; an unstamped row takes the current (CFA:4293)
+                "pypi_version_serial_at_fetch": r.get("pypi_last_serial") if pd.isna(stamped) else stamped,
                 # RETAIN upload_time_iso_8601 for B9 (do NOT discard after info.version).
                 "upload_time_iso_8601": r.get("upload_time_iso_8601"),
             }
         )
-    return pd.DataFrame(eligible_rows, columns=cols).reset_index(drop=True)
+    return pd.DataFrame(rows, columns=cols).reset_index(drop=True)
 
 
 # ---------------------------------------------------------------------------
@@ -403,34 +516,51 @@ def snapshot_pypi_serials(pypi_simple_index_raw: pd.DataFrame) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
-# Phase P — monthly download counts (BigQuery; the two-layer cost gate is
-#           DATASET-owned, this node stays PURE)  [AC-4]
+# Phase P — monthly download counts (ClickHouse by default, BigQuery when an
+#           attended run supplies it; every fetch is DATASET-owned, this node
+#           stays PURE)  [AC-4]
 # ---------------------------------------------------------------------------
 
+_PHASE_P_COLUMNS = ["pypi_name", "month", "downloads", "downloads_source"]
 
-def fetch_pypi_downloads(pypi_bigquery_downloads_raw: pd.DataFrame) -> pd.DataFrame:
-    # legacy: Phase P  (phase_p_pypi_downloads CFA:7352)
-    """Normalize the already-fetched monthly-download frame. **The node stays PURE**:
-    the two-layer BigQuery cost gate (dry-run preflight above cap + ``maximum_bytes_billed``
-    + ``PHASE_P_JOB_TIMEOUT_MS`` + literal-TIMESTAMP bounds, D1) lives in the request
-    DATASET (``BigQueryDownloadsDataset``, THE CRUX). If ``PHASE_P_ENABLED`` is unset OR
-    the dry-run aborts above cap, the dataset yields no rows and this node no-ops
-    (mode-machine ``_phase_p_skip`` CFA:7342). AD-6: never a default schedule.
+
+def _has_downloads(df: Any) -> bool:
+    return df is not None and not getattr(df, "empty", True) and "pypi_name" in getattr(df, "columns", [])
+
+
+def fetch_pypi_downloads(
+    pypi_clickhouse_downloads_raw: pd.DataFrame,
+    pypi_bigquery_downloads_raw: pd.DataFrame,
+) -> pd.DataFrame:
+    # legacy: Phase P  (phase_p_pypi_downloads CFA:7352; source dispatch CFA:7387)
+    """Select the Phase P source and normalize its monthly-download frame. **The node stays
+    PURE**: each source's fetch lives in its DATASET.
+
+    Story 34.9 (CAP-64): BigQuery rows win when present -- the attended, credentialed path
+    covers every project (its two-layer cost gate is ``BigQueryDownloadsDataset``'s, and the
+    default catalog load yields none, AD-6). Otherwise the ClickHouse public mirror's rows
+    stand: the top projects by 90-day downloads, legacy's default source. ``downloads_source``
+    names the source on every row, with legacy's labels: ``clickhouse-clickpy`` and
+    ``bigquery-incremental`` (CFA:7543, CFA:7803). Neither
+    source has rows: the node no-ops (mode-machine ``_phase_p_skip`` CFA:7342).
 
     ``INSERT OR IGNORE`` idempotency → drop duplicate ``(pypi_name, month)`` rows.
     Input: ``pypi_name``, ``month``, ``downloads``. Output ``pypi_downloads_monthly``:
-    same columns, deduped."""
-    cols = ["pypi_name", "month", "downloads"]
-    df = pypi_bigquery_downloads_raw
-    if df is None or getattr(df, "empty", True) or "pypi_name" not in getattr(df, "columns", []):
-        return pd.DataFrame(columns=cols)
+    those columns plus ``downloads_source``, deduped."""
+    if _has_downloads(pypi_bigquery_downloads_raw):
+        df, source = pypi_bigquery_downloads_raw, "bigquery-incremental"
+    elif _has_downloads(pypi_clickhouse_downloads_raw):
+        df, source = pypi_clickhouse_downloads_raw, "clickhouse-clickpy"
+    else:
+        return pd.DataFrame(columns=_PHASE_P_COLUMNS)
     out = df.copy()
     for c in ("month", "downloads"):
         if c not in out.columns:
             out[c] = pd.NA
+    out["downloads_source"] = source
     # INSERT OR IGNORE idempotency (CFA): first write per (pypi_name, month) wins.
     out = out.drop_duplicates(subset=["pypi_name", "month"], keep="first")
-    return out[cols].reset_index(drop=True)
+    return out[_PHASE_P_COLUMNS].reset_index(drop=True)
 
 
 # ---------------------------------------------------------------------------
@@ -776,7 +906,11 @@ def _ttl_cadence(ttls: dict, key: str) -> int:
     return clamp_ttl_cadence((ttls or {}).get(key), key=key, log=logger)
 
 
-def refresh_pypi_json_store(ttls: dict, pypi_conda_mapping_base: pd.DataFrame | None = None) -> RefreshRequest:
+def refresh_pypi_json_store(
+    ttls: dict,
+    pypi_conda_mapping_base: pd.DataFrame | None = None,
+    pypi_universe_serial_snapshots: pd.DataFrame | None = None,
+) -> RefreshRequest:
     # Story 21.2 review fix #6: single writer of pypi_json_raw (PyPIJsonFanOutDataset).
     # Story 34.2: the same run's Phase C pairs ride the request, so a fresh data root
     # (no flat pypi_conda_map_store yet) still has a candidate universe.
@@ -784,7 +918,11 @@ def refresh_pypi_json_store(ttls: dict, pypi_conda_mapping_base: pd.DataFrame | 
     emits the ``RefreshRequest`` ``PyPIJsonFanOutDataset.save()`` honors (cadence/
     force), which invokes the dataset-owned ``fetch_candidates()`` for the actual IO
     (KEEP that method as-is — do not duplicate fetch logic here). Cadence == the
-    Phase H TTL (``pypi_current_versions``, weekly)."""
+    Phase H TTL (``pypi_current_versions``, weekly).
+
+    Story 34.10: each candidate's current PyPI serial rides the request too, from the
+    same run's Phase D snapshot (matched under PEP 503), so the fan-out can re-fetch a
+    project whose serial moved -- legacy Phase H's serial gate (CFA:4174)."""
     pairs: tuple[tuple[str, str], ...] = ()
     m = pypi_conda_mapping_base
     if m is not None and not m.empty and {"pypi_name", "conda_name"} <= set(m.columns):
@@ -797,10 +935,22 @@ def refresh_pypi_json_store(ttls: dict, pypi_conda_mapping_base: pd.DataFrame | 
                 }
             )
         )
+    serials: tuple[tuple[str, int], ...] = ()
+    snap = pypi_universe_serial_snapshots
+    if pairs and snap is not None and not snap.empty and {"pypi_name", "last_serial"} <= set(snap.columns):
+        wanted = {_normalize_pypi_name(p): p for p, _ in pairs}
+        found: dict[str, int] = {}
+        for name, serial in zip(snap["pypi_name"], pd.to_numeric(snap["last_serial"], errors="coerce"), strict=True):
+            if isinstance(name, str) and pd.notna(serial):
+                original = wanted.get(_normalize_pypi_name(name))
+                if original is not None:
+                    found[_normalize_pypi_name(original)] = int(serial)  # the fan-out keys by PEP 503
+        serials = tuple(sorted(found.items()))
     return RefreshRequest(
         store="pypi_json_raw",
         cadence_seconds=_ttl_cadence(ttls, "pypi_current_versions"),
         pypi_pairs=pairs,
+        pypi_serials=serials,
     )
 
 

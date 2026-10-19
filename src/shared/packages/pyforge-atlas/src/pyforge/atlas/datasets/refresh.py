@@ -140,6 +140,8 @@ class RefreshRequest:
     Story 27.2: optional ``vcs_pairs`` / ``github_repos`` carry identifier batches from
     the identity join (never raw fetch payloads). Story 34.2: optional ``pypi_pairs``
     carries ``(pypi_name, conda_name)`` pairs from the same run's Phase C mapping.
+    Story 34.10: optional ``pypi_serials`` carries ``(pypi_name, last_serial)`` from the
+    same run's Phase D serial snapshot, for the candidates only -- the serial gate.
     """
 
     store: str
@@ -149,8 +151,9 @@ class RefreshRequest:
     vcs_pairs: tuple[tuple[str, str], ...] = ()
     github_repos: tuple[tuple[str, str], ...] = ()
     pypi_pairs: tuple[tuple[str, str], ...] = ()
-    # Story 34.7: (conda_name, pypi_name, version) per package the vdb scan covers
-    vdb_targets: tuple[tuple[str, str, str], ...] = ()
+    pypi_serials: tuple[tuple[str, int], ...] = ()
+    # Story 34.7: (conda_name, pypi_name, version, npm_name, github_repo) per package the vdb scan covers
+    vdb_targets: tuple[tuple[str, ...], ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -161,6 +164,7 @@ class RefreshRequest:
             "vcs_pairs": list(self.vcs_pairs),
             "github_repos": list(self.github_repos),
             "pypi_pairs": list(self.pypi_pairs),
+            "pypi_serials": list(self.pypi_serials),
             "vdb_targets": list(self.vdb_targets),
         }
 

@@ -24,6 +24,7 @@ from .basilisk import (
     chunk_queries,
     parse_basilisk_packages_response,
 )
+from .clickhouse_downloads import PyPIClickHouseDownloadsDataset
 from .core_sources import (
     CfGraphTarballDataset,
     CondaChanneldataDataset,
@@ -162,6 +163,7 @@ __all__ = [
     "PyPIJsonRequestDataset",
     "PyPIJsonFanOutDataset",
     "PyPIBigQueryDownloadsDataset",
+    "PyPIClickHouseDownloadsDataset",
     "BigQueryDownloadsDataset",
     "PhasePCostAbort",
     "coerce_cvss_score",
