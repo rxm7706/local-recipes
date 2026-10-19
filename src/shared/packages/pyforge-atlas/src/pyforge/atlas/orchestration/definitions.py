@@ -265,6 +265,12 @@ NODE_TIMEOUTS: dict[str, int] = {
     "score_pypi_readiness": 600,  # Phase R scoring
     "export_pypi_conda_map": 120,  # update-mapping-cache export shim
     "refresh_pypi_json_store": 1800,  # Story 27.2 — bounded live fan-out refresh
+    "refresh_discovery_homebrew_store": 600,  # Story 23.1 — one public index GET each (Story 34.5)
+    "refresh_discovery_nixpkgs_store": 600,  # Story 23.1 — 10 MB brotli, 403 MB byte scan (34.5)
+    "refresh_discovery_spack_store": 600,  # Story 23.1
+    "refresh_discovery_debian_store": 600,  # Story 23.1
+    "refresh_discovery_fedora_store": 600,  # Story 23.1
+    "flag_tier3_channels": 120,  # Story 23.1 (pure in-memory pivot, no network)
     "assemble_and_gate": 600,
     "compose_semantic_packages": 300,
     "extract_estate_to_cache": 600,
@@ -289,6 +295,7 @@ NODE_TIMEOUTS: dict[str, int] = {
     "track_registry_versions": 900,  # Phase L
     "fetch_live_health": 600,  # Phase N
     "derive_release_velocity": 300,  # FR-20
+    "drive_migration_status": 900,  # Story 34.8 — five category GETs, then one per migration
     "classify_migration_readiness": 300,  # FR-21
     "build_repo_dependency_history": 900,  # Story 25.1 / 25.2 sensor target (CAP-61)
     # -- universal_sbom ---------------------------------------------------- #
@@ -300,6 +307,8 @@ NODE_TIMEOUTS: dict[str, int] = {
     "build_inventory_verified_packages": 300,  # Story 23.4 -- full-inventory derive
     "build_inventory_aoss_free_queue": 120,  # Story 23.4 -- set-difference queue
     "build_identity_complete_export": 300,  # Story 23.5 -- four-way complete export join
+    "derive_basilisk_vuln_rollup": 300,  # in-memory rollup of the Basilisk advisories
+    "assign_inventory_priority": 120,  # in-memory ranking, no network
     # -- seed_gaps (read-only suggesters) ---------------------------------- #
     "report_lts_registry_gap": 120,
     "report_cwe_seed_gap": 120,
@@ -315,11 +324,18 @@ NODE_TIMEOUTS: dict[str, int] = {
     "refresh_aoss_premium_python": 300,  # Story 21.4 — one live doc page
     "refresh_about_maintainers": 300,  # Story 21.5 — one unauthenticated GitHub-raw GET
     "join_enterprise_conda_maintainers": 120,  # Story 21.5 (pure in-memory join, no network)
+    "refresh_purl_associator_mappings": 300,  # Story 21.6 — one public GET (Story 34.6)
+    "refresh_openteams_board": 600,  # Story 21.6 — credentialed, operator opt-in
+    "refresh_staged_recipes_prs": 600,  # Story 21.6 — credentialed, operator opt-in
+    "build_identity_packages_primary": 300,  # Story 21.6 (pure in-memory join, no network)
+    "build_identity_export_parquet": 120,  # Story 21.6 (pure in-memory shaping, no network)
     # -- artifactory_downloads --------------------------------------------- #
     "fetch_artifactory_downloads": 600,  # Story 15.3 CAP-4 (network-capable once configured; inert by default)
     "join_artifactory_identity": 120,  # Story 15.3 CAP-4 (pure in-memory join, no network)
     "format_artifactory_purl_export": 120,  # Story 15.3 CAP-4 (pure in-memory formatting, no network)
     "project_artifactory_names": 30,  # Story 21.5 (pure in-memory column projection, no network)
+    "fetch_artifactory_consumption": 600,  # network-capable once configured; inert by default
+    "build_enterprise_jfrog_consumption": 120,  # pure in-memory join, no network
 }
 
 # Fallback for kedro-dagster's synthetic pipeline-run hook ops (they are cheap

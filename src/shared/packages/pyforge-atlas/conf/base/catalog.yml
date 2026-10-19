@@ -777,13 +777,15 @@ vcs_release_velocity:
 # The data behind conda-forge.org/status/#migrations. AD-14 NEW-SIGNAL family:
 # NEVER parity-gated. All fetches route through the EXISTING GITHUB_RAW_BASE_URL
 # override point (no new resolve_*_urls helper; enterprise/JFrog mirror routing
-# inherited). IO is DATASET-owned via an INJECTED fetcher (default None == OFFLINE
-# -> keep last-good + mark stale, AD-13). DELIBERATELY EXCLUDED: version_status.v2.json
+# inherited). IO is DATASET-owned: an INJECTED fetcher, else (Story 34.8) a public GET
+# while pyforge.atlas.live_public_sources is on; neither -> keep last-good + mark stale
+# (AD-13). The drive_migration_status node feeds every name the category lists carry to
+# the detail dataset's save(), which sweeps one partition per name. DELIBERATELY EXCLUDED: version_status.v2.json
 # (the bot's version-update queue) — the atlas measures currency itself (Phases H/K).
 
-# Category-list sources — enumerate active/closed/paused migrations; regular +
-# longterm drive which per-migration detail partitions exist (so the surface
-# generalizes with zero code change: python314 today, python315 tomorrow).
+# Category-list sources — enumerate active/closed/paused migrations; every name any of
+# them carries gets a detail partition (Story 34.8), so the surface generalizes with zero
+# code change: python314 today, python315 tomorrow.
 vcs_migration_regular_status_raw:
   type: pyforge.atlas.datasets.MigrationCategoryDataset
   url: ${globals:endpoint_bases.GITHUB_RAW_BASE_URL}/conda-forge/conda-forge-bot-data/main/status/regular_status.json
@@ -820,10 +822,10 @@ vcs_migration_total_status_raw:
   metadata:
     layer: raw
 
-# Per-migration detail — PARTITIONED by active migration (mirrors the
+# Per-migration detail — PARTITIONED by migration (mirrors the
 # partitions.PartitionedDataset shape with the AD-13 offline-safety a stock
 # PartitionedDataset cannot provide). The fetch appends /<name>.json to the url;
-# one <name>.json partition per active migration the category lists surfaced.
+# one <name>.json partition per migration the category lists surfaced (Story 34.8: every list).
 # Consumed by the classify_migration_readiness node.
 vcs_migration_detail_raw:
   type: pyforge.atlas.datasets.MigrationDetailDataset
@@ -831,6 +833,17 @@ vcs_migration_detail_raw:
   filepath: ${globals:paths.data_root}/raw/vcs_migration_detail_raw
   metadata:
     layer: raw
+
+# Story 34.8 — each listed migration's category (regular / longterm / paused / closed; a name
+# only total carries is `unlisted`), written by drive_migration_status beside the detail sweep,
+# so readiness can tell FR-21's active set from paused and closed migrations. Degrading: a
+# readiness run on its own, on a root the driver never wrote, gets null categories (AD-13).
+vcs_migration_categories:
+  type: pyforge.atlas.datasets.DegradingParquetDataset
+  filepath: ${globals:paths.data_root}/intermediate/vcs_migration_categories/vcs_migration_categories.parquet
+  columns: [migration, category]
+  metadata:
+    layer: intermediate
 
 # Story B10 output — the FR-21 readiness classification (four-way split +
 # blocker buckets + inferred not-in-tracker label + top-unmigrated-by-volume

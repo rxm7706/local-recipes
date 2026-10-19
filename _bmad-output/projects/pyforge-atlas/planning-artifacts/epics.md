@@ -2529,7 +2529,7 @@ So that `vcs_migration_readiness` fills.
 **Given** `MigrationCategoryDataset.refresh` and `MigrationDetailDataset.fetch_partitions` are never called and the five category entries are consumed by no node
 **When** the pipeline runs with the flag on
 **Then** a driver node reads the bot's `status/migration_json` publicly, one partition per migration, and `vcs_migration_readiness` holds rows
-**Status:** backlog
+**Status:** done
 
 ### Story 34.9: Phase P fills from the public ClickHouse mirror
 

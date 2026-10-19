@@ -106,7 +106,7 @@ EXPECTED_PIPELINE_COUNTS = {
     "core": 19,  # Story 21.4: + core_anaconda_main_channeldata_raw + core_anaconda_main_packages; Story 34.4: + core_s3_version_downloads_raw
     "pypi_intelligence": 22,  # Story 23.1: +5 Tier-3 raw stores + pypi_tier3_channel_flags (+6 nodes); Story 34.9: + pypi_clickhouse_downloads_raw
     "vulnerability": 15,  # Story 23.3: + vulnerability_basilisk_rollup (rollup lives under vulnerability_* prefix)
-    "vcs_health": 27,  # Story 25.2: +warden_fleet_inventory +repo_dependency_history catalog entries
+    "vcs_health": 28,  # Story 25.2: +warden_fleet_inventory +repo_dependency_history catalog entries; Story 34.8: +vcs_migration_categories
     "universal_sbom": 6,  # F4: + sbom_hygiene_entry + sbom_compliance_report_entry (FR-16/FR-18, AD-12)
     "seed_gaps": 8,
     "derived_artifacts": 7,  # Story 23.8: + inventory_universe; Story 23.3: + inventory_priority_assignments; Story 23.4: + inventory_verified_packages + inventory_aoss_free_queue; Story 23.5: + identity_complete_export
@@ -115,7 +115,7 @@ EXPECTED_PIPELINE_COUNTS = {
     "query_plane_cache": 2,  # Story 34.2 (FR-47): query_plane_estate_source + query_plane_estate
     "semantic_packages": 1,  # Story 20.3 (CAP-6): semantic_packages
 }
-EXPECTED_TOTAL = 129  # Story 25.2: +warden_fleet_inventory +repo_dependency_history; Story 34.4: +core_s3_version_downloads_raw; Story 34.9: +pypi_clickhouse_downloads_raw
+EXPECTED_TOTAL = 130  # Story 25.2: +warden_fleet_inventory +repo_dependency_history; Story 34.4: +core_s3_version_downloads_raw; Story 34.8: +vcs_migration_categories; Story 34.9: +pypi_clickhouse_downloads_raw
 
 # The A3 IncrementalParquetDataset flip list (TTL-gated persisted outputs).
 FLIP_LIST = {
