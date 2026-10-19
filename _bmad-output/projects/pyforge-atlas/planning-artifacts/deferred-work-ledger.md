@@ -5016,12 +5016,12 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 ### DW-atlas-34-6-2: No story owns the Basilisk package listing, which answers unauthenticated.
 
 - source_spec: `planning-artifacts/specs/spec-34-6-the-public-discovery-stores-refresh-themselves.md`
-  summary: `discovery_basilisk_packages_raw` (`BasiliskPackagesDataset`, `GET {BASILISK_BASE_URL}/v1/packages`) answered 200 with no credential on 2026-10-18, but stays fetcher-less. Whether Basilisk runs unattended is the Spec's open question on CAP-66, and Story 36.1 covers only the three `vulnerability_basilisk_*` datasets. The operator's ruling on that question decides whether 36.1 also wires this store or a new story does.
+  summary: `discovery_basilisk_packages_raw` (`BasiliskPackagesDataset`, `GET {BASILISK_BASE_URL}/v1/packages`) answered 200 with no credential on 2026-10-18, but stays fetcher-less. Whether Basilisk runs unattended is the Spec's open question on CAP-66, and Story 36.1 covers only the three `vulnerability_basilisk_*` datasets. The operator's ruling on that question decides whether 36.1 also wires this store or a new story does. Ruled 2026-10-18: the listing refreshes unattended and Story 36.1 wires it; the advisory endpoints now need a bearer token.
   evidence: Story 34.6 review round 1, should-fix 2 (a `limit=1` probe answered 200 unauthenticated); `spec-pyforge-atlas` Open Questions; `epics.md` Story 36.1's Surface line.
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/basilisk.py (BasiliskPackagesDataset); src/shared/packages/pyforge-atlas/tools/bootstrap.py (_NO_PUBLIC_REFRESHER)
   origin: review finding, atlas Story 34.6 independent review round 1
   severity: low
-  promoted: 2026-10-18 -- implementer response to 34.6 review round 1
+  promoted: 2026-10-18 -- implementer response to 34.6 review round 1; owned by Story 36.1 (operator ruling 2026-10-18)
   status: open
 
 ### DW-atlas-34-10-1: The Phase C mapping lacks legacy's name-coincidence and recipe-source-URL tiers, so Phase H covers about half of legacy's universe.
@@ -5033,4 +5033,5 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: implementer finding, atlas Story 34.10 live parity; diagnosis corrected by its independent review round 1
   severity: high
   promoted: 2026-10-18 -- atlas Story 34.10 live parity against legacy Phase H; owned by Story 34.11
-  status: open
+  verified: 2026-10-18 atlas Story 34.11 after its review rounds 1 and 2 (branch atlas-34-11-recipe-source-pypi; landing PR to follow) -- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/nodes.py::map_pypi_conda` fills `name_coincidence` (legacy Phase D, PyPI side first) and `recipe_source_url` (Phase C.5 through Phase B.5's attribution). Live on a 2026-10-18 root: 22,328 rows naming 21,293 PyPI projects, 20,923 of legacy's 20,938 (99.93%); of 21,838 conda packages both map, 21,828 agree (99.95%). Tests: `src/shared/packages/pyforge-atlas/tests/unit/pipelines/pypi_intelligence/test_mapping_tiers.py`; `pixi run -e pyforge-atlas pyforge-atlas-test` exit 0.
+  status: closed
