@@ -2515,7 +2515,7 @@ So that `vulnerability_package_rollup` and `vulnerability_package_version_vulns`
 **When** a run reaches them with the flag on
 **Then** the vdb store builds through `pyforge.core.process` (the vuln-db env's `vdb-refresh`) and is normalized to the store format, the OSV store fetches the public bucket, and both rollups hold rows within the story's tolerance of legacy Phase G (33,841 scanned, 2026-10-18)
 **And** a failed build keeps last-good under `stale`
-**Status:** backlog
+**Status:** done
 
 ### Story 34.8: Migration status fills through a driver node
 

@@ -17,12 +17,12 @@ into scope as **scheduled external-refresh assets** in their domain pipelines:
 **Design invariants (the whole reason this module is shaped the way it is):**
 
 1. **Dataset-owned IO, node stays pure (AD-2/AD-6).** The fetch/refresh is a DATASET
-   concern; the pipeline node is a pure ``trigger -> store`` transform. The vuln-db-env
-   invocation is an **INJECTED** ``refresher`` (stubbed in fixtures, supplied by the
-   Dagster resource at C1 / attended runs — DW-B5-2) — the exact ``BigQueryDownloadsDataset``
-   injected-client precedent. **No** ``subprocess`` / HTTP client is imported here (the
-   whole ``datasets/`` subpackage is scanned by ``tests/catalog/test_no_inline_io.py``;
-   ``subprocess`` is on the denylist — a shell-out would be caught).
+   concern; the pipeline node is a pure ``trigger -> store`` transform. Story 34.7: with
+   ``pyforge.atlas.live_public_sources`` on, the vdb store runs the vuln-db env itself through
+   ``pyforge.core.process`` (a ``ProcessPort``), and the OSV store fetches through
+   ``public_sources``; an injected ``refresher`` (fixtures) still wins. **No** ``subprocess`` /
+   HTTP client is imported here (the whole ``datasets/`` subpackage is scanned by
+   ``tests/catalog/test_no_inline_io.py``; ``subprocess`` is on the denylist).
 
 2. **Declared resource requirement + retry/observability budget, not a shell-out (AD-6).**
    The vuln-db env is modeled as a :class:`RequiredResource` declaration; the per-asset
@@ -441,11 +441,10 @@ class VDBStoreDataset(ExternalRefreshDataset):
       Missing / unreadable store → empty frame + staleness surfaced (AD-13).
 
     The store's "vdb file format" is the normalized per-CVE parquet at
-    ``<filepath>/vdb_parsed.parquet``: the raw ~2.5 GB AppThreat vdb parse lives in the
-    injected refresher (attended/scheduled, DW-B5-2), so the lean gate + air-gapped read
+    ``<filepath>/vdb_parsed.parquet``: the raw AppThreat vdb (about 10 GB, ``<filepath>/home``)
+    is built and scanned by the live refresher (Story 34.7), so the lean gate + air-gapped read
     never touch the raw format. This dataset is NOT ``pickle`` (the honest-format fix from
-    A2's P2). A real operator's raw vdb is parsed into the normalized parquet by the
-    injected refresher on the first scheduled/attended refresh.
+    A2's P2).
     """
 
     STORE_FILENAME = "vdb_parsed.parquet"
@@ -454,9 +453,12 @@ class VDBStoreDataset(ExternalRefreshDataset):
     #: Story 34.7: the standalone extractor the ``vuln-db`` env runs (no pyforge import)
     EXTRACTOR = Path(__file__).with_name("vdb_extract.py")
     VDB_ENV = "vuln-db"
-    VDB_REFRESH_TIMEOUT_SECONDS = 3600  # legacy: ~5-10 min cold, ~10 GB
+    # Story 34.7, measured 2026-10-18: a cold build 16 min (10 GB), the full per-version scan
+    # 5 min 28 s; age + build + extract stay inside refresh_vdb_store's 5,400 s node budget
+    AGE_TIMEOUT_SECONDS = 120
+    VDB_REFRESH_TIMEOUT_SECONDS = 3600
     VDB_REFRESH_CODE = "import truststore; truststore.inject_into_ssl(); from vdb.cli import main; main()"
-    EXTRACT_TIMEOUT_SECONDS = 7200
+    EXTRACT_TIMEOUT_SECONDS = 1500
 
     def __init__(
         self,
@@ -464,7 +466,7 @@ class VDBStoreDataset(ExternalRefreshDataset):
         filepath: str,
         refresher: Callable[[], Any] | None = None,
         cadence_seconds: int | None = None,
-        timeout_seconds: int = DEFAULT_REFRESH_TIMEOUT_SECONDS,
+        timeout_seconds: int = 5400,  # Story 34.7: refresh_vdb_store's node budget (build + scan)
         max_retries: int = DEFAULT_REFRESH_MAX_RETRIES,
         metadata: dict[str, Any] | None = None,
         process: ProcessPort | None = None,
@@ -483,6 +485,7 @@ class VDBStoreDataset(ExternalRefreshDataset):
         self._pixi_project = Path(pixi_project) if pixi_project else None
         self._targets: tuple[tuple[str, ...], ...] = ()
         self._versions: tuple[tuple[str, str], ...] = ()
+        self._rebuild_after = self._cadence_seconds
 
     # -- Story 34.7: the live refresher, through the vuln-db env --------------------
 
@@ -491,6 +494,8 @@ class VDBStoreDataset(ExternalRefreshDataset):
         save decides whether a refresh is due and runs the refresher."""
         self._targets = tuple(data.vdb_targets) if isinstance(data, RefreshRequest) else ()
         self._versions = tuple(data.vdb_versions) if isinstance(data, RefreshRequest) else ()
+        # the vdb's own age is judged against the request's cadence (params:refresh_cadences)
+        self._rebuild_after = int(data.cadence_seconds) if isinstance(data, RefreshRequest) else self._cadence_seconds
         super().save(data)
 
     def _live_refresher(self) -> Callable[[], Any] | None:
@@ -533,10 +538,11 @@ class VDBStoreDataset(ExternalRefreshDataset):
         if not self._targets:
             raise ValueError("the trigger carried no packages to scan")
         extractor = str(self.EXTRACTOR)
-        age_lines = self._in_env(["python", "-I", extractor, "age"], 120).strip().splitlines()
+        age_lines = self._in_env(["python", "-I", extractor, "age"], self.AGE_TIMEOUT_SECONDS).strip().splitlines()
         age = int(age_lines[-1]) if age_lines and age_lines[-1].lstrip("-").isdigit() else -1
-        if age < 0 or age >= self._cadence_seconds:
-            logger.info("vdb is %s s old (cadence %s s): rebuilding it", age, self._cadence_seconds)
+        cadence = self._rebuild_after
+        if age < 0 or age >= cadence:
+            logger.info("vdb is %s s old (cadence %s s): rebuilding it", age, cadence)
             self.vdb_home.mkdir(parents=True, exist_ok=True)
             # the env's `vdb-refresh` task, run with this store's paths (pixi.toml, vuln-db)
             self._in_env(["python", "-c", self.VDB_REFRESH_CODE, "--cache"], self.VDB_REFRESH_TIMEOUT_SECONDS)
@@ -613,9 +619,10 @@ class OSVOfflineStoreDataset(ExternalRefreshDataset):
       non-list on disk → empty list + staleness surfaced (AD-13 — the offline scanner keeps
       working with the last-good CVE data).
 
-    The ``bucket_url`` is stored as endpoint config; the fetcher (which actually reaches it,
-    and which writes the operator-consumed store format at C1) is injected — no HTTP client
-    is imported here.
+    The ``bucket_url`` is stored as endpoint config. Story 34.7: with
+    ``pyforge.atlas.live_public_sources`` on, the store fetches each ecosystem's ``all.zip``
+    through ``public_sources.fetch_bytes`` (no HTTP client is imported here); an injected
+    fetcher (fixtures) still wins.
     """
 
     STORE_FILENAME = "osv_records.json"
