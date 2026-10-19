@@ -5034,3 +5034,26 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: high
   promoted: 2026-10-18 -- atlas Story 34.10 live parity against legacy Phase H; owned by Story 34.11
   status: open
+
+### DW-atlas-35-1-1: The credentialed GitHub fill is unproven live, because the local github_token is the bootstrap placeholder.
+
+- source_spec: `planning-artifacts/specs/spec-35-1-one-opt-in-switch-and-github-authenticates.md`
+  summary: With `PYFORGE_ATLAS_CREDENTIALED=1`, Story 35.1's live run sent all 8 bearer POSTs (727 identity-scoped repos) to `api.github.com/graphql`, and GitHub answered 401 to each. The operator's `src/shared/packages/pyforge-atlas/conf/local/credentials.yml` is the bootstrap's placeholder file ("Local placeholder credentials for dryrun orchestration testing"), so no run can show rows landing from an accepted token. Only the operator can close this: put a real token in `github_token` (for example `token: ${oc.env:GITHUB_TOKEN}`), then re-run `pyforge atlas run --pipelines vcs_health --nodes refresh_vcs_github_store` with the switch. Epic 35's other live verifications (35.3, 35.4) and Story 36.2's need the same token.
+  evidence: Story 35.1 live run, 2026-10-18 (marker "every GitHub batch failed (... 401 Client Error: Unauthorized ...) -- keeping last-good").
+  location: src/shared/packages/pyforge-atlas/conf/local/credentials.yml (operator-owned, gitignored)
+  origin: implementer finding, atlas Story 35.1 live verification
+  severity: medium
+  promoted: 2026-10-18 -- atlas Story 35.1; operator-owned (a credential)
+  status: open
+
+### DW-atlas-35-1-2: The query-plane face-parity test can fail under xdist load on an ephemeral-port race.
+
+- source_spec: `planning-artifacts/specs/spec-35-1-one-opt-in-switch-and-github-authenticates.md`
+  summary: In one full `pyforge-atlas-test` run on 2026-10-18, `tests/unit/query_plane/test_face_parity.py::test_seeded_divergence_in_each_typed_column_fails_and_names_it[null]` failed with `pyarrow.lib.ArrowInvalid: Tried reading schema message, was null or length 0` (an empty HTTP body). The module then passed three times alone. `_ephemeral_port()` binds port 0, releases it, and the server binds it later; under xdist another worker can take the port in that gap, and `_wait_until_ready` accepts any server answering `SELECT 1`. Not caused by Story 35.1 (the test uses urllib, not requests).
+  evidence: Story 35.1's full suite run, 2026-10-18 (1 failed, 2658 passed); three clean reruns of the module.
+  location: src/shared/packages/pyforge-atlas/tests/unit/query_plane/test_face_parity.py (_ephemeral_port, _launcher_on_port, _wait_until_ready)
+  fix: let the server bind port 0 itself and report the port it got (stdout or a port file), or hold the socket until the server takes it.
+  origin: implementer finding, atlas Story 35.1 gate run
+  severity: low
+  promoted: 2026-10-18 -- atlas Story 35.1
+  status: open
