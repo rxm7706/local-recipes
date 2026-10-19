@@ -148,6 +148,15 @@ def registry_names(source_url: Any, *about_urls: Any) -> list[tuple[str, str]]:
     return list(dict.fromkeys(found))
 
 
+def _archived_feedstocks(core_cf_graph_raw: pd.DataFrame | None) -> set[str]:
+    """Story 35.2: the feedstocks the cf-graph marks archived (legacy's ``feedstock_archived``)."""
+    g = core_cf_graph_raw
+    if g is None or g.empty or not {"feedstock_name", "feedstock_archived"} <= set(g.columns):
+        return set()
+    flagged = g[g["feedstock_archived"].fillna(False).astype(bool)]
+    return {fs for fs in flagged["feedstock_name"] if isinstance(fs, str) and fs}
+
+
 def batches_from_universe(
     core_packages_enumerated: pd.DataFrame | None,
     core_cf_graph_raw: pd.DataFrame | None,
@@ -161,8 +170,9 @@ def batches_from_universe(
     - ``registries``: ``(conda_name, name)`` pairs per registry (Phase L);
     - ``feedstocks``: every feedstock an enumerated package is attributed to (Phase N).
 
-    Deviation: legacy selects from ``v_actionable_packages`` (active, not archived); here every
-    enumerated package is a candidate, a superset."""
+    Legacy selects from ``v_actionable_packages``: active (here, enumerated from the current
+    repodata) and not archived. A package attributed to a feedstock the cf-graph marks archived is
+    left out, and so is that feedstock."""
     empty: dict[str, Any] = {
         "upstream_repos": (),
         "gitlab": (),
@@ -174,6 +184,14 @@ def batches_from_universe(
     if enum is None or enum.empty or "conda_name" not in enum.columns:
         return empty
     names = {c for c in enum["conda_name"].dropna() if isinstance(c, str) and c}
+    archived = _archived_feedstocks(core_cf_graph_raw)
+    att = core_feedstock_attribution
+    attributed = (
+        dict(zip(att["conda_name"], att["feedstock_name"], strict=True))
+        if att is not None and not att.empty and {"conda_name", "feedstock_name"} <= set(att.columns)
+        else {}
+    )
+    names = {c for c in names if attributed.get(c) not in archived}
     fields = package_recipe_fields(core_cf_graph_raw, core_feedstock_attribution)
     fields = fields[fields["conda_name"].isin(names)]
     upstream: set[tuple[str, str, str]] = set()
@@ -190,12 +208,11 @@ def batches_from_universe(
                 hosts[host].setdefault(conda, owner_or_path if host == "gitlab" else f"{owner_or_path}/{name}")
         for registry, name in registry_names(row.source_url, row.repo_url, row.dev_url, row.home_url):
             registries[registry].setdefault(conda, name)
-    feedstocks: set[str] = set()
-    att = core_feedstock_attribution
-    if att is not None and not att.empty and {"conda_name", "feedstock_name"} <= set(att.columns):
-        for conda, feedstock in zip(att["conda_name"], att["feedstock_name"], strict=True):
-            if conda in names and isinstance(feedstock, str) and feedstock:
-                feedstocks.add(feedstock)
+    feedstocks = {
+        feedstock
+        for conda, feedstock in attributed.items()
+        if conda in names and isinstance(feedstock, str) and feedstock and feedstock not in archived
+    }
 
     def _pairs(mapping: dict[str, str]) -> tuple[tuple[str, str], ...]:
         return tuple(sorted(mapping.items()))

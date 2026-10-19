@@ -83,6 +83,7 @@ IDENTITY = pd.DataFrame(
             (None, "https://gitlab.com/a/b", "https://github.com/c/d"),
             ("gitlab", "a/b", "b"),
         ),  # the first URL that names one
+        (("https://sqlite.org/src", "https://github.com/c/d"), ("github", "c", "d")),  # a non-VCS URL falls through
     ],
 )
 def test_vcs_repo_is_legacy_phase_ks_extraction(urls: tuple[Any, ...], repo: tuple[str, str, str] | None):
@@ -162,19 +163,55 @@ def test_a_host_store_reads_the_universe_only_with_the_flag_on(tmp_path, flag_pr
     assert ds.asked == ([("uni", "c/d")] if flag_on else [("ident", "a/b")])
 
 
-def test_a_registry_store_reads_the_universe_with_the_flag_on(tmp_path, monkeypatch):
-    monkeypatch.setattr(credential_switch, "live_vcs_universe", lambda: True)
+@flag_states("pyforge.atlas.live_vcs_universe")  # spelled out: the flag gate reads this file for the key
+def test_a_registry_store_reads_the_universe_only_with_the_flag_on(tmp_path, flag_provider, monkeypatch):
+    flag_on = flag_provider[credential_switch.FLAG_KEY]
+    monkeypatch.setattr(credential_switch, "live_vcs_universe", lambda: flag_on)
     asked: list[Any] = []
     ds = RegistryUpstreamDataset(url="https://registry.npmjs.org", registry="npm", filepath=str(tmp_path / "s"))
     monkeypatch.setattr(ds, "load_many", lambda pairs, **_k: asked.extend(pairs))
 
     ds.save(
         RefreshRequest(
-            store="vcs_registry_npm_raw", cadence_seconds=0, force=True, universe_pairs=(("jsx", "@scope/jsx"),)
+            store="vcs_registry_npm_raw",
+            cadence_seconds=0,
+            force=True,
+            vcs_pairs=(("left-pad", "left-pad"),),
+            universe_pairs=(("jsx", "@scope/jsx"),),
         )
     )
 
-    assert asked == [("jsx", "@scope/jsx")]
+    assert asked == ([("jsx", "@scope/jsx")] if flag_on else [("left-pad", "left-pad")])
+
+
+def test_an_archived_feedstock_and_its_packages_are_left_out():
+    graph = GRAPH.assign(feedstock_archived=[False, False, False, True, False, False, False])  # jsx archived
+
+    batches = batches_from_universe(ENUM, graph, ATTRIBUTION)
+
+    assert "jsx" not in batches["feedstocks"] and batches["registries"]["npm"] == ()
+    assert "airflow" in batches["feedstocks"]
+
+
+def test_a_feedstock_is_asked_only_for_an_enumerated_package():
+    attribution = pd.concat([ATTRIBUTION, pd.DataFrame({"conda_name": ["gone"], "feedstock_name": ["gone"]})])
+
+    assert "gone" not in batches_from_universe(ENUM, GRAPH, attribution)["feedstocks"]
+
+
+def test_registry_names_skip_a_missing_url_and_read_a_maven_about_url():
+    assert registry_names(float("nan"), None, "") == []
+    assert registry_names(None, "https://search.maven.org/artifact/org.x/y") == [("maven", "org.x:y")]
+
+
+def test_the_new_request_fields_serialize():
+    request = RefreshRequest(
+        store="s", upstream_repos=(("c", "o", "r"),), universe_pairs=(("c", "p"),), feedstocks=("f",)
+    )
+
+    out = request.to_dict()
+    assert out["upstream_repos"] == [("c", "o", "r")] and out["universe_pairs"] == [("c", "p")]
+    assert out["feedstocks"] == ["f"]
 
 
 def test_with_the_flag_on_the_identity_subset_no_longer_drives_the_github_batch(tmp_path, monkeypatch):
