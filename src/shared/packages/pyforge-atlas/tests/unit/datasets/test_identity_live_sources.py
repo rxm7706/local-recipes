@@ -271,3 +271,116 @@ def test_the_real_reader_defaults_off_when_the_tree_lacks_the_key(tmp_path, monk
     monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(flagd_tree(tmp_path, {"pyforge.atlas.some_other_flag": "on"})))
 
     assert _REAL_IDENTITY() is False
+
+
+# -- review round 2 ------------------------------------------------------------------------------
+
+
+def _pr(number: int, state: str = "open") -> dict:
+    return {"number": number, "state": state, "html_url": f"https://g/{number}", "title": f"Add p{number}"}
+
+
+def _list_page(page: int) -> str:
+    return f"{API}/repos/conda-forge/staged-recipes/pulls?state=all&per_page=100&page={page}"
+
+
+def _files(number: int) -> str:
+    return f"{API}/repos/conda-forge/staged-recipes/pulls/{number}/files?per_page=100&page=1"
+
+
+_FULL_CLOSED = [_pr(n, "closed") for n in range(1000, 1100)]  # a full page, so page 2 is asked
+
+
+def test_a_pr_list_stopped_part_way_keeps_a_fuller_last_good(tmp_path, in_turn, identity_on, switch_on):
+    in_turn.answers[_list_page(1)] = (200, _FULL_CLOSED + [])
+    in_turn.answers[_list_page(2)] = (200, [_pr(n, "closed") for n in range(1, 51)])
+    ds = _prs(tmp_path)
+    _save(ds)
+    assert len(ds.load()) == 150
+    in_turn.answers[_list_page(2)] = (502, {})
+
+    _save(ds)
+
+    assert len(ds.load()) == 150 and "PR list stopped at page 2: HTTP 502" in _marker(ds)
+
+
+def test_a_pr_list_stopped_part_way_with_no_store_writes_the_pages_read(tmp_path, in_turn, identity_on, switch_on):
+    in_turn.answers[_list_page(1)] = (200, _FULL_CLOSED)
+    in_turn.answers[_list_page(2)] = (502, {})
+    ds = _prs(tmp_path)
+
+    _save(ds)
+
+    assert len(ds.load()) == 100 and "PR list stopped at page 2: HTTP 502" in _marker(ds)
+
+
+def test_a_store_that_stopped_short_is_refreshed_again_inside_its_cadence(tmp_path, in_turn, identity_on, switch_on):
+    in_turn.answers[_list_page(1)] = (200, _FULL_CLOSED)
+    in_turn.answers[_list_page(2)] = (502, {})
+    ds = _prs(tmp_path)
+    _save(ds)
+    in_turn.answers[_list_page(2)] = (200, [_pr(1, "closed")])
+    sent_before = len(in_turn.sent)
+
+    ds.save(RefreshRequest(store="x"))  # not forced; the store is minutes old
+
+    assert len(in_turn.sent) > sent_before and len(ds.load()) == 101 and ds.staleness() is None
+
+
+@pytest.mark.parametrize("status", [401, 403, 429])
+def test_a_refusal_on_the_list_sends_no_files_request(tmp_path, in_turn, identity_on, switch_on, status):
+    in_turn.answers[_list_page(1)] = (200, [_pr(n) for n in range(1, 101)])
+    in_turn.answers[_list_page(2)] = (status, {})
+    ds = _prs(tmp_path)
+
+    _save(ds)
+
+    assert [r.url for r in in_turn.sent] == [_list_page(1), _list_page(2)]
+    assert f"PR list stopped at page 2: HTTP {status}" in _marker(ds)
+
+
+@pytest.mark.parametrize("status", [401, 403, 429])
+def test_a_files_refusal_keeps_each_prs_last_good_paths(tmp_path, in_turn, identity_on, switch_on, status):
+    in_turn.answers[_list_page(1)] = (200, [_pr(1), _pr(2)])
+    in_turn.answers[_files(1)] = (200, [{"filename": "recipes/a/meta.yaml"}])
+    in_turn.answers[_files(2)] = (200, [{"filename": "recipes/b/meta.yaml"}])
+    ds = _prs(tmp_path)
+    _save(ds)
+    in_turn.answers[_files(1)] = (status, {})
+
+    _save(ds)
+
+    assert ds.load().set_index("number")["file_paths"].to_dict() == {1: "recipes/a/meta.yaml", 2: "recipes/b/meta.yaml"}
+    assert f"PR files stopped at PR #1: HTTP {status}" in _marker(ds)
+    assert _files(2) not in [r.url for r in in_turn.sent[-2:]]  # nothing after the refusal
+
+
+def test_the_files_requests_stop_after_ten_failures_in_a_row(tmp_path, in_turn, identity_on, switch_on):
+    in_turn.answers[_list_page(1)] = (200, [_pr(n) for n in range(1, 21)])
+    ds = _prs(tmp_path)  # every files URL answers 404 (fake_transport's default)
+
+    _save(ds)
+
+    assert sum("/files" in r.url for r in in_turn.sent) == 10
+    assert "PR files stopped at PR #11: 10 failures in a row" in _marker(ds)
+
+
+def test_a_failure_is_logged_by_its_status_never_its_text(tmp_path, in_turn, identity_on, switch_on, caplog):
+    in_turn.answers[_list_page(1)] = (200, [_pr(1)])
+    in_turn.answers[_files(1)] = (500, {})
+    ds = _prs(tmp_path)
+
+    _save(ds)
+
+    assert "PR #1 files fetch failed: HTTP 500" in caplog.text and "/files" not in caplog.text
+
+
+def test_a_clean_save_after_a_stopped_one_reads_fresh(tmp_path, in_turn, identity_on, switch_on):
+    in_turn.answers[GRAPHQL] = [(200, _page([1], "C1")), (502, {})]
+    ds = _board(tmp_path)
+    _save(ds)
+    in_turn.answers[GRAPHQL] = (200, _page([1, 2], None))
+
+    _save(ds)
+
+    assert ds.staleness() is None and sorted(ds.load()["number"]) == [1, 2]

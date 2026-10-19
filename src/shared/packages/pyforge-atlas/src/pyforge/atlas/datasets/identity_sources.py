@@ -29,12 +29,10 @@ classes persist.
 - :class:`OpenTeamsBoardDataset` (``openteams_project_1_board_raw``) —
   cursor-paginated GraphQL fetch of ``organization(login: "OpenTeams-WFT-CDO")
   { projectV2(number: 1) { items } }`` (mirrors the legacy
-  ``fetch_project_issues``), credentialed (``github_token``); a
-  partial-pagination failure keeps whatever pages already succeeded (mirrors
-  :class:`~.upstream_discovery.TrendingSnapshotDataset`'s own per-period
-  degrade — a genuine, if incomplete, result is persisted rather than
-  discarded; only a fully-empty fetch triggers the inherited AD-13
-  keep-last-good path).
+  ``fetch_project_issues``), credentialed (``github_token``, Story 36.2). A
+  pagination a failure stops part-way never hides (:class:`_HonestPagination`):
+  with a store it keeps last-good; with none it writes the pages read; either
+  way the marker names the page and the status, and the next run tries again.
 - :class:`StagedRecipesPRDataset` (``discovery_staged_recipes_prs_raw``) — REST
   fetch of ``conda-forge/staged-recipes`` PRs (paginated, mirrors the legacy
   ``STAGED_PR_API``) plus a bounded per-open-PR ``files()`` fan-out (mirrors the
@@ -411,6 +409,18 @@ class _HonestPagination:
 
     _stopped = ""
 
+    def _stop(self, reason: str) -> None:
+        """Record why the refresh stopped short; a second reason is added, never replaces."""
+        self._stopped = f"{self._stopped}; {reason}" if self._stopped else reason
+
+    def _refresh_due(self, cadence_seconds: int, now: float | None = None) -> bool:
+        """A store whose last refresh stopped short (its marker still stands) is due now: inside
+        its cadence it would otherwise read as fresh and the marker be cleared."""
+        marker = self.staleness()  # type: ignore[attr-defined]
+        if marker is not None and marker.stale:
+            return True
+        return super()._refresh_due(cadence_seconds, now)  # type: ignore[misc, unused-ignore]
+
     def _fetch_page(self, fetch: Callable[..., Any], *args: Any) -> Any:
         for attempt in range(1, self._max_retries + 2):  # type: ignore[attr-defined]
             try:
@@ -422,7 +432,7 @@ class _HonestPagination:
         raise AssertionError("unreachable")  # pragma: no cover
 
     def _stopped_at(self, reason: str, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        self._stopped = reason
+        self._stop(reason)
         logger.warning("%s: %s", type(self).__name__, reason)
         if not rows or self._store_exists():  # type: ignore[attr-defined]
             raise RuntimeError(reason)
@@ -490,12 +500,9 @@ class OpenTeamsBoardDataset(_HonestPagination, ExternalRefreshDataset):
     package uses: a GraphQL POST needs a request body, and pagination needs
     multiple calls with a changing ``cursor`` variable.
 
-    A mid-pagination fetch/parse failure keeps whatever pages already succeeded
-    (mirrors :class:`~.upstream_discovery.TrendingSnapshotDataset`'s own
-    per-period degrade: a genuine, if incomplete, result is persisted rather
-    than discarded) — only a fully-empty combined result (zero pages ever
-    succeeded) triggers the inherited AD-13 keep-last-good + mark-stale path via
-    ``save()``'s existing empty-check.
+    A pagination a failure stops part-way is :class:`_HonestPagination`'s (Story 36.2): a
+    fuller last-good is kept, else the pages read are written; the marker names the page and
+    the status, and the next run tries again.
     """
 
     STORE_FILENAME = "openteams_project_1_board.parquet"
@@ -515,10 +522,8 @@ class OpenTeamsBoardDataset(_HonestPagination, ExternalRefreshDataset):
     ) -> None:
         self._url = str(url)
         self._fetcher = fetcher
-        # Accepted so Kedro's `credentials: github_token` catalog key resolves
-        # without raising; the real attended credentialed fetch is wired into
-        # `fetcher` externally (mirrors GitHubRequestDataset's construction-is-
-        # offline contract — no HTTP client is composed here).
+        # Kedro resolves the catalog's `credentials: github_token` into this; Story 36.2's live
+        # refresher sends it as a bearer, only under the switch. Construction stays offline.
         self._credentials = credentials
         super().__init__(
             filepath=filepath,
@@ -650,6 +655,9 @@ _STAGED_PR_MAX_PAGES = 500
 # on 2026-10-18, so the 500 cap of Story 21.x skipped 722; with the PR pages, about 1,600
 # authenticated requests, well inside GitHub's 5,000 an hour.
 _STAGED_PR_OPEN_FILES_FANOUT_LIMIT = 2000
+# Story 36.2: the files requests stop after this many PRs in a row fail (a lasting 5xx would
+# otherwise send up to four requests for each of 2,000 PRs)
+_FILES_FAILURES_IN_A_ROW_LIMIT = 10
 
 
 def parse_staged_pr_page(payload: Any) -> list[dict]:
@@ -713,9 +721,9 @@ class StagedRecipesPRDataset(_HonestPagination, ExternalRefreshDataset):
     ``GET /pulls/{number}/files`` fan-out (mirrors the legacy
     ``load_staged_prs``'s file-path ranking tier, restricted to open PRs only —
     the same scope the legacy script's own ``gh pr list --state open --json
-    ...,files`` call covered). A per-page or per-PR fetch/parse failure keeps
-    whatever was already accumulated for that call, never aborting the whole
-    refresh (AD-13).
+    ...,files`` call covered). A list stopped part-way is :class:`_HonestPagination`'s
+    (Story 36.2); a PR whose files are not read keeps its last-good file paths, and a refusal
+    stops every later request.
     """
 
     STORE_FILENAME = "discovery_staged_recipes_prs.parquet"
@@ -757,12 +765,14 @@ class StagedRecipesPRDataset(_HonestPagination, ExternalRefreshDataset):
         if fetch is None:
             raise RuntimeError("no staged-recipes fetcher")
         rows: list[dict[str, Any]] = []
+        list_refused = False
         base = self._url.rstrip("/")
         for page in range(1, _STAGED_PR_MAX_PAGES + 1):
             page_url = f"{base}/repos/conda-forge/staged-recipes/pulls?state=all&per_page=100&page={page}"
             try:
                 payload = self._fetch_page(fetch, page_url)
             except Exception as exc:  # AD-13: _HonestPagination keeps last-good or the pages read
+                list_refused = _status_of(exc) in _STOP_STATUSES
                 rows = self._stopped_at(f"PR list stopped at page {page}: {_why(exc)}", rows)
                 break
             page_rows = parse_staged_pr_page(payload)
@@ -792,21 +802,27 @@ class StagedRecipesPRDataset(_HonestPagination, ExternalRefreshDataset):
                 _STAGED_PR_OPEN_FILES_FANOUT_LIMIT,
                 len(open_numbers),
             )
-        refused = False
+        # Story 36.2: a PR whose files are not read keeps its last-good file paths
+        last_paths = self._last_good_file_paths()
+        refused = list_refused  # a refusal on the list stops the files requests too
+        failures_in_a_row = 0
         for number in open_numbers[:_STAGED_PR_OPEN_FILES_FANOUT_LIMIT]:
-            if refused:
+            if refused or failures_in_a_row >= _FILES_FAILURES_IN_A_ROW_LIMIT:
+                if not refused:
+                    self._stop(f"PR files stopped at PR #{number}: {failures_in_a_row} failures in a row")
                 break
             paths: list[str] = []
+            read = True
             page = 1
             while True:
                 files_url = f"{base}/repos/conda-forge/staged-recipes/pulls/{number}/files?per_page=100&page={page}"
                 try:
                     payload = self._fetch_page(fetch, files_url)
                 except Exception as exc:
+                    read = False
                     if _status_of(exc) in _STOP_STATUSES:
-                        # Story 36.2: a refusal stops every later request (Story 35.1); the PR
-                        # rows are written, their file paths partial, and the marker says so
-                        self._stopped = f"PR files stopped at PR #{number}: {_why(exc)}"
+                        # Story 36.2: a refusal stops every later request (Story 35.1); the marker says so
+                        self._stop(f"PR files stopped at PR #{number}: {_why(exc)}")
                         refused = True
                     else:
                         logger.warning("staged-recipes PR #%s files fetch failed: %s", number, _why(exc))
@@ -818,12 +834,26 @@ class StagedRecipesPRDataset(_HonestPagination, ExternalRefreshDataset):
                 if len(batch) < 100:
                     break
                 page += 1
+            failures_in_a_row = 0 if read else failures_in_a_row + 1
             if paths:
                 file_paths = _join_list(paths)
                 for row in rows:
                     if row["number"] == number:
                         row["file_paths"] = file_paths
+        for row in rows:  # every open PR whose files were not read: its last-good paths
+            if row.get("state") == "open" and not row.get("file_paths") and last_paths.get(row["number"]):
+                row["file_paths"] = last_paths[row["number"]]
         return pd.DataFrame(rows, columns=list(_STAGED_PR_COLUMNS))
+
+    def _last_good_file_paths(self) -> dict[Any, str]:
+        """The last-good store's non-empty ``file_paths`` by PR number (``{}`` with no store)."""
+        if not self._store_exists():
+            return {}
+        try:
+            frame = pd.read_parquet(self._store_path, columns=["number", "file_paths"])
+        except Exception:  # noqa: BLE001 -- an unreadable last-good carries nothing forward
+            return {}
+        return {n: p for n, p in zip(frame["number"], frame["file_paths"], strict=True) if isinstance(p, str) and p}
 
     @property
     def _store_path(self) -> Path:

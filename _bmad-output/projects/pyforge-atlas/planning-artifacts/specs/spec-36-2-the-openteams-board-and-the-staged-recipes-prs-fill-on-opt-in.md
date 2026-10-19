@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'both stores keep the path before this story: no fetcher, last-good under a stale marker'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -47,8 +47,11 @@ lack their rows. Both stores accept `credentials: github_token` and never use it
    - A page answered 502, 503 or 504 is asked again (`max_retries`).
    - A failure part-way, with a store already written, fails the refresh: last-good is kept. With none, the pages
      read are written. Either way the marker names the page and the status, never the exception's text.
-   - A 401, 403 or 429 on a PR's files stops every later files request (Story 35.1's stop statuses); the PR rows are
-     written and the marker says where it stopped.
+   - A 401, 403 or 429 stops every later request (Story 35.1's stop statuses): on the list, no files request goes
+     out; on a PR's files, none after it. Ten PRs in a row whose files fail stop the files requests too.
+   - A PR whose files are not read keeps its last-good file paths, so a refusal never empties the column.
+   - A store whose last refresh stopped short is due again at once: inside its cadence it would otherwise read as
+     fresh and its marker be cleared.
    - The first page's failure names its status or the GraphQL error.
 4. **The caps cover the whole history.** The PR list reads up to 500 pages (Story 21.x: 200, which stopped at PR
    #14,827) and the files of up to 2,000 open PRs (500, of 1,222 open); about 1,600 requests, inside GitHub's 5,000
@@ -106,6 +109,8 @@ identity sources).
 - **The operator's own runs** need a real `github_token` in `conf/local/credentials.yml` (Story 35.1's README row).
 - **The caps are a ceiling:** 50,000 PRs and 2,000 open PRs' files. Past them the run logs the cap; the feedstock URL
   and the conda PURL outrank a staged PR downstream (`identity_gist.py`, `derived_artifacts/nodes.py`).
+- **The rate budget is shared:** about 1,600 requests a run (2,500 at the caps) against 5,000 an hour, but the `gh`
+  token is the operator's, used by every other tool too; a refusal stops the run and keeps last-good.
 
 ## I/O & Edge-Case Matrix
 
@@ -127,6 +132,14 @@ identity sources).
 ## Spec Change Log
 
 - 2026-10-18: written with the implementation (branch `atlas-36-2-identity-sources`, cut from `main` at `24581b35b8`).
+- 2026-10-19, review round 2 (FAIL), fixed:
+  - B1: the PR list's part-way tests (a fuller last-good kept; with no store, the pages read written).
+  - B2: a store that stopped short is due again at once (`_HonestPagination._refresh_due`), so its marker never
+    clears inside the cadence.
+  - Should-fix: a refusal on the list sends no files request and the reasons add up in the marker; a PR whose files
+    are not read keeps its last-good paths; 401 and 403 tested as well as 429; a log test that fails if the text or
+    URL reaches it; the per-save reset tested; stale docstrings corrected.
+  - Nits: ten files failures in a row stop the files requests; the shared rate budget is a residual risk.
 - 2026-10-18, review round 1 (FAIL), fixed:
   - B1: `spec-pyforge-marshal` co-governs `pyforge-core/tests/unit/test_flags.py`; reconciled and stamped.
   - B2: a failure part-way replaced a fuller store and cleared the marker; `_HonestPagination` (Approach 3).
