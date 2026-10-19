@@ -69,6 +69,22 @@ def test_a_package_parselmouth_maps_never_takes_a_coincidence():
     assert _tiers(map_pypi_conda(parselmouth, enum, None, universe)) == {"pytorch": ("torch", "parselmouth")}
 
 
+def test_the_pypi_side_check_compares_pep_503_names():
+    parselmouth = pd.DataFrame({"pypi_name": ["foo_bar"], "conda_name": ["py-foo-bar"]})
+    enum = pd.DataFrame({"conda_name": ["foo-bar", "py-foo-bar"]})
+    universe = pd.DataFrame({"pypi_name": ["foo-bar"]})
+
+    assert "foo-bar" not in _tiers(map_pypi_conda(parselmouth, enum, None, universe))  # foo_bar is foo-bar
+
+
+def test_a_parselmouth_name_blocks_a_coincidence_even_for_an_unenumerated_package():
+    # stricter than legacy's packages-table read: a recorded deviation (spec 34.11)
+    parselmouth = pd.DataFrame({"pypi_name": ["flex"], "conda_name": ["flex-swagger"]})
+    enum = pd.DataFrame({"conda_name": ["flex"]})  # flex-swagger is not on the channel
+
+    assert _tiers(map_pypi_conda(parselmouth, enum, None, pd.DataFrame({"pypi_name": ["flex"]}))) == {}
+
+
 def test_one_coincidence_per_pypi_project():
     enum = pd.DataFrame({"conda_name": ["foo-bar", "foo_bar"]})
     universe = pd.DataFrame({"pypi_name": ["foo-bar", "foo_bar"]})
@@ -93,9 +109,28 @@ def test_every_output_attributed_to_the_feedstock_maps_to_its_recipe_project():
         }
     )
     attribution = pd.DataFrame(
-        {"conda_name": ["airflow", "airflow-with-amazon", "x"], "feedstock_name": ["airflow", "airflow", "new"]}
+        {
+            "conda_name": ["airflow", "airflow-with-amazon", "x", "z"],
+            "feedstock_name": ["airflow", "airflow", "new", "blank"],
+        }
     )
-    enum = pd.DataFrame({"conda_name": ["airflow", "airflow-with-amazon", "x", "y"]})
+    enum = pd.DataFrame({"conda_name": ["airflow", "airflow-with-amazon", "x", "y", "z"]})
+    graph = pd.concat(  # z is anchored in a PyPI-sourced feedstock but attributed to one with no PyPI URL
+        [
+            graph,
+            pd.DataFrame(
+                {
+                    "feedstock_name": ["blank", "zpypi"],
+                    "conda_name": ["z", "z"],
+                    "source_url": [
+                        "https://github.com/z/z/archive/1.tar.gz",
+                        "https://pypi.io/packages/source/z/z/z.tgz",
+                    ],
+                }
+            ),
+        ],
+        ignore_index=True,
+    )
 
     out = map_pypi_conda(pd.DataFrame(), enum, graph, None, attribution)
 
@@ -104,7 +139,7 @@ def test_every_output_attributed_to_the_feedstock_maps_to_its_recipe_project():
         "airflow-with-amazon": ("apache-airflow", "recipe_source_url"),  # attributed, not an anchor
         "x": ("new-name", "recipe_source_url"),  # attribution picks the feedstock, not the first anchor
         "y": ("y-py", "recipe_source_url"),  # no attribution row: the first anchor with a URL
-    }
+    }  # z: attribution names a GitHub-sourced feedstock, so its PyPI-sourced anchor never counts
 
 
 def test_a_frame_without_source_url_skips_the_recipe_tier_and_says_so(caplog):
@@ -256,4 +291,4 @@ def test_an_instance_kept_past_the_memo_window_fetches_again(monkeypatch):
     clock["t"] += 1
     ds.load()
 
-    assert calls["n"] == 2
+    assert calls["n"] == 2 and CS.CfGraphTarballDataset.MEMO_SECONDS == 3600.0

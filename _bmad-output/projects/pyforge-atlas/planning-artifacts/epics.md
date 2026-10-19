@@ -2653,7 +2653,7 @@ I want the public Basilisk package listing refreshed on every run, and driver no
 So that the listing fills unattended and the three Basilisk datasets fill once the operator supplies a token.
 
 **Type:** feature • **Effort:** M • **Deps:** 35.1 (the opt-in switch) • **FR/AD:** spec-pyforge-atlas CAP-66 (FR-74, amended 2026-10-18 by operator ruling) • AD-2, AD-13, AD-14
-**Flag:** `pyforge.atlas.basilisk_population`
+**Flag:** `pyforge.atlas.basilisk_population` (the drivers); the listing's refresher reads `pyforge.atlas.live_public_sources`, as the other public discovery stores do
 **Surface:** `datasets/basilisk.py`, `pipelines/vulnerability/` (driver nodes), `pipelines/derived_artifacts/` (the rollup input), `conf/base/catalog.yml`, `tools/bootstrap.py` (the listing's refresher), flag registration, tests
 **Given** `query_population` and `fetch_details` are never called, `load()` returns last-good even with a fetcher, the package listing has no refresher (`DW-atlas-34-6-2`), and the advisory endpoints answer 401 without a bearer token (probed 2026-10-18)
 **When** the pipeline runs with the flag on

@@ -16,7 +16,7 @@ context:
   - src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/core/nodes.py
 deferred: []
 declared_low_risk: false
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: true
 ---
 
@@ -55,14 +55,20 @@ PyPI name cover half of legacy's universe (`DW-atlas-34-10-1`).
    - then `name_coincidence`, from `pypi_universe` (Phase D's output; lower-cased on both sides, as legacy), for a
      package with no PyPI name yet and a project no row names yet (PEP 503, one package per project);
    - then `recipe_source_url`: every package `core_feedstock_attribution` puts in a feedstock whose recipe names a
-     PyPI sdist, or, for a package attribution has no row for, its first anchor with a URL. A coincidence keeps its
-     name and takes this label (legacy's `COALESCE`); a parselmouth row is untouched.
+     PyPI sdist, or, for a package attribution has no row for, its first anchor whose URL names a PyPI project. A
+     coincidence keeps its name and takes this label (legacy's `COALESCE`); a parselmouth row is untouched.
    It takes `core_cf_graph_raw`, `pypi_universe` and `core_feedstock_attribution` as inputs, so Kedro runs it
    after Phases B.5 and D.
    - Deviation: the recipe-source pattern also reads `files.pythonhosted.org/packages/source/<l>/<name>/`. Legacy
-     counts that host as PyPI (`_SRC_REGEX_PATTERNS`), but its name pattern omits it. In the shipped tier order the
-     host adds 161 rows (28 names; 1,027 vs 866 on the first measure, 2026-10-18).
-   - Deviation: the PyPI-side check compares PEP 503 names; legacy compares lower-cased ones.
+     counts that host as PyPI (`_SRC_REGEX_PATTERNS`), but its name pattern omits it. In the shipped code the host adds
+     194 rows (35 names) and relabels 518 coincidences `recipe_source_url`, which ranks them above a plain
+     coincidence in the flat export and protects them from `match_source_urls` (review round 2, 2026-10-18).
+   - Deviation: the anchor fallback. Legacy maps only the packages Phase B.5 attributes (CFA:2283); here a package
+     attribution has no row for takes its first anchor whose URL names a PyPI project. Live it adds 26 rows and
+     relabels 46 coincidences.
+   - Deviation: the PyPI-side check compares PEP 503 names, and counts every parselmouth name, an unenumerated
+     package's included; legacy compares lower-cased names of rows in its `packages` table. Both are stricter, and
+     neither changed a row live (10,027 coincidences either way).
 3. **One cf-graph fetch per session (healed tissue).** `CfGraphTarballDataset.load()` fetched all four bot
    tarballs on every load, and three nodes already loaded it per run; this story adds a fourth. The instance now
    keeps its frame for an hour and hands each node a shallow copy, so a node that assigns a column never reaches
@@ -86,8 +92,9 @@ Type / Effort / Deps: feature / M / Story 34.2 (parselmouth), Story 34.3 (node_a
 - **AC1 — Tier order.**
   - Parselmouth wins: its rows are never relabelled, and its packages and projects never take a coincidence.
   - Name coincidence fills next, lower-cased on both sides, one package per PyPI project (PEP 503).
-  - The recipe source URL fills last, for every output attributed to the feedstock (the first anchor with a URL
-    where attribution has no row); a coincidence keeps its name and takes the `recipe_source_url` label.
+  - The recipe source URL fills last, for every output attributed to the feedstock (the first anchor whose URL
+    names a PyPI project, where attribution has no row; a package attributed to a non-PyPI feedstock stays
+    unmapped by this tier); a coincidence keeps its name and takes the `recipe_source_url` label.
   - Only an enumerated conda package is mapped.
 - **AC2 — The source URL.**
   - It is the first source that has a URL, a list of URLs giving its first.
@@ -140,9 +147,11 @@ Type / Effort / Deps: feature / M / Story 34.2 (parselmouth), Story 34.3 (node_a
   its name with an unrelated PyPI project. Parselmouth always wins where it names one.
 - **The cf-graph frame is shared for an hour.** A consumer that mutates values in place, rather than assigning
   columns, could still reach the next node. None does today. A run longer than the hour fetches the graph again.
-- **292 packages have a coincidence and a recipe that name different projects** (aiida/aiida-core,
-  airflow/apache-airflow, bs4/beautifulsoup4 …). As legacy, the coincidence keeps its name under the
-  `recipe_source_url` label; legacy agrees on 239 of them.
+- **244 relabelled coincidences name a different project from their recipe** (PEP 503; 266 compared lower-cased;
+  aiida/aiida-core, airflow/apache-airflow, bs4/beautifulsoup4 …). As legacy, the coincidence keeps its name under
+  the `recipe_source_url` label.
+- **A degraded cf-graph load is reused for the hour** (stale last-good or empty), so a run sees one graph
+  throughout; a fetch that recovers mid-hour waits for the window.
 - **Dagster runs each op in its own process,** so the memo saves nothing there: each of the four ops fetches the
   graph, and `map_pypi_conda`'s budget is now 600 s.
 - **Legacy's 15 remaining names** are stale `pypi_name` values from earlier legacy runs that no current tier
@@ -192,3 +201,12 @@ Type / Effort / Deps: feature / M / Story 34.2 (parselmouth), Story 34.3 (node_a
     - A frame without `source_url` logs a warning.
     - The memo lasts an hour; the node's budget is 600 s.
     - `DW-atlas-34-10-1` closes here, after Story 34.10 lands.
+- 2026-10-18: independent review round 2 FAIL. 1 blocker (planning), 2 should-fix items, nits; 28 mutants, 7 survived
+  (3 targeted). The code findings of round 1 were confirmed fixed, and the live figures reproduced.
+  - **B1:** `DW-atlas-34-10-1`'s `verified:` line now cites the code, the tests and the command with its exit code.
+  - **S1:** a test pins a package attributed to a GitHub-sourced feedstock and anchored in a PyPI-sourced one: it
+    stays unmapped by the recipe tier.
+  - **S2:** the anchor fallback, the files.pythonhosted.org effect (194 rows, 35 names, 518 relabels) and the
+    PyPI-side check's breadth are recorded as deviations; the fallback's wording is corrected.
+  - **Nits:** tests pin the PEP 503 check, the unenumerated parselmouth name, and the one-hour window; the 292 is
+    restated as 244; a degraded load reused for the hour is a residual risk; Story 36.1's Flag line names both flags.

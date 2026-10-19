@@ -90,7 +90,8 @@ def _recipe_source_names(graph: pd.DataFrame | None, attribution: pd.DataFrame |
 
     Legacy Phase E maps every output Phase B.5 attributes to the feedstock (``feedstock_to_conda``,
     CFA:2283-2287); ``core_feedstock_attribution`` is that attribution. A package attribution
-    has no row for falls back to the frame's anchor rows, the first with a URL."""
+    has no row for falls back to the frame's anchor rows: the first whose URL names a PyPI project
+    (legacy has no fallback)."""
     if not _has(graph, {"conda_name", "source_url"}):
         if graph is not None and not graph.empty:  # a last-good frame from before Story 34.11
             logger.warning("core_cf_graph_raw has no source_url column: the recipe-source tier is skipped")
