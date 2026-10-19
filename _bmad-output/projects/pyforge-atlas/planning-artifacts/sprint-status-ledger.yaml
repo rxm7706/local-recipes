@@ -107,15 +107,15 @@ development_status:
   32-1-the-dag-export-builds-in-ci-and-a-failed-build-fails-its-task: done
   33-1-the-atlas-cli-reaches-the-verbs-its-contracts-name: done
   34-1-endoflife-date-and-the-spdx-list-arrive-as-records-the-seed-gap-reports-read: done
-  34-10-phase-h-covers-every-mapped-pypi-project-gated-by-its-serial: backlog
+  34-10-phase-h-covers-every-mapped-pypi-project-gated-by-its-serial: done
   34-2-the-phase-c-mapping-fills-from-the-conda-forge-bot-s-name-mapping: done
   34-3-dependencies-feedstock-health-and-maintainers-read-the-bot-s-split-graph-repos: done
   34-4-the-download-tables-fill-from-anaconda-s-monthly-parquet: done
   34-5-the-five-os-distro-indexes-refresh-themselves: done
   34-6-the-public-discovery-stores-refresh-themselves: done
   34-7-the-vulnerability-stores-refresh-themselves: backlog
-  34-8-migration-status-fills-through-a-driver-node: backlog
-  34-9-phase-p-fills-from-the-public-clickhouse-mirror: backlog
+  34-8-migration-status-fills-through-a-driver-node: done
+  34-9-phase-p-fills-from-the-public-clickhouse-mirror: done
   35-1-one-opt-in-switch-and-github-authenticates: backlog
   35-2-the-vcs-batches-come-from-the-whole-universe: backlog
   35-3-upstream-versions-and-feedstock-health-come-from-github: backlog

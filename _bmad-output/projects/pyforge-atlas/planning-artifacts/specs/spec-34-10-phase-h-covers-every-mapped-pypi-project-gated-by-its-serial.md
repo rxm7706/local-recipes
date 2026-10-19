@@ -2,7 +2,7 @@
 title: "34.10: Phase H covers every mapped PyPI project, gated by its serial"
 type: 'feature'
 created: '2026-10-18'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'bde97f7f80'
 flag:
   key: pyforge.atlas.live_public_sources          # shared with Stories 34.4 (registered it) to 34.9
@@ -11,8 +11,8 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'the fan-out keeps today''s bounded behaviour: PYPI_JSON_FANOUT_LIMIT names (default 200) per run from a rotating offset, behind the store''s weekly cadence'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 1
-followup_review_recommended: true
+review_loop_iteration: 2
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/live-sources.md
@@ -58,12 +58,16 @@ declared_low_risk: false
    - The store's weekly cadence no longer holds a moved serial back.
    - Each row stamps the serial it was fetched at: the snapshot's when known (legacy stamps Phase D's), else the
      payload's own `last_serial`.
-   - **A 404 is recorded as a miss** in `misses.json` beside the store, as legacy stamps one (CFA:4300). It is not
+   - **A 404 is recorded as a miss** in `misses.json` beside the store, as legacy stamps one (CFA:4313). It is not
      stored as a row, so Phase R never enriches it. A miss waits, like a stored row, for its serial to move or 30
      days, and then goes last, so permanent misses never crowd out a moved serial under a cap. Any other failure
      stays eligible next run.
    - **The batch is fetched and persisted in chunks of 500** (legacy commits every 500 rows), so a crash keeps what
      was fetched and the 30-day re-checks spread across the run.
+   - Candidates are keyed by their PEP 503 name, so two spellings of one project (`dagster_aws`,
+     `dagster-aws`) are one candidate and one row. The trigger keys serials the same way.
+   - A project stored once and later 404ing is a miss from then on, not a 30-day re-check every run. Misses are
+     written with each chunk.
    - Nothing eligible is a clean run, and so is a run of only known misses. An empty candidate set is stale, never
      clean. An outage (nothing answered and no 404) keeps last-good under the marker.
    - An unusable `PYPI_JSON_FANOUT_LIMIT` (not an int, negative) leaves the live run uncapped.
@@ -155,7 +159,8 @@ Type / Effort / Deps: feature / M / Story 34.2 (the Phase C candidates), Story 3
   - **Legacy's universe is 20,938 names, about twice the mapping's.**
     - Legacy fills two tiers the atlas mapping lacked: Phase D's name coincidence (pandas, requests, django …)
       and Phase C.5's recipe-source-URL match.
-    - Phase B resets their `match_source` to 'none' (10,846 rows, 9,949 names).
+    - Phase B resets their `match_source` to 'none': 10,846 rows, 10,019 PEP 503 names, of which 9,949 are
+      outside this story's candidates.
     - This story fetches what the mapping names. Story 34.11 adds both tiers (`DW-atlas-34-10-1`); on its branch
       the mapping names 21,292 projects, 20,923 of legacy's 20,938.
 
@@ -170,7 +175,7 @@ fetch of a PyPI-only project (the candidates are the mapping's, never `pypi_univ
   `fetch_pypi_current_versions` and `snapshot_pypi_serials`, so the serial gate fetches in the weekly
   `bootstrap_data` job. A plain `kedro run` fetches every run.
 - **A cold run takes about 20 minutes** at 10 requests a second, sequentially; warm runs take about a minute.
-- **The serial snapshot comes from the simple index**, about 2.8 GB of peak memory in the same run.
+- **The serial snapshot comes from the simple index**, about 0.8 GB of peak memory in the same run.
 - **netrc on a redirect:** a redirect to another host still consults `~/.netrc` for that host. pypi.org does not
   redirect the JSON API today.
 
@@ -219,3 +224,15 @@ fetch of a PyPI-only project (the candidates are the mapping's, never `pypi_univ
   - **S6:** the Dagster daily job is named in Residual risk.
   - **Nits:** the duplicate PEP 503 helper; the retry comment's deviation from legacy; the flag-off wording; an
     unusable limit.
+- 2026-10-18: re-review round 2 PASS: 59 of 67 mutants killed, all gates green. Its should-fix items were fixed
+  before landing:
+  - **Test time.** The cold-run test stubs the token bucket (the suite is back to about 40 s from 110 s).
+  - **The node's serial rule** is pinned: a PEP 503 universe match, never below the stamp.
+  - **A project once stored, then 404ing,** is a miss, not a re-check every run.
+  - **Candidates are keyed by PEP 503,** ready for Story 34.11's mixed spellings.
+  - **The spec's two memory lines agree.**
+  - **The 'none' counts are paired** (10,846 rows, 10,019 names, 9,949 outside the candidates).
+  - **A miss cleared on success** and the chunk size are pinned.
+  - **Nits:** misses are written per chunk, a malformed miss is due, the stats docstrings, and the legacy line
+    citations.
+  Promoted to `done`.

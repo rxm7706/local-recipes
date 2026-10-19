@@ -76,6 +76,7 @@ def test_a_cold_live_run_fetches_every_candidate_uncapped_and_persists_in_chunks
     monkeypatch.setattr(PyPIJsonFanOutDataset, "PERSIST_EVERY", 100)
     persisted: list[int] = []
     ds = _ds(tmp_path)
+    ds.scheduler.acquire = lambda n=1: 0.0  # type: ignore[method-assign]  # no real token-bucket waits
     real = ds._persist
     ds._persist = lambda frame: persisted.append(len(frame)) or real(frame)  # type: ignore[method-assign]
     pypi = _PyPI()
@@ -362,7 +363,7 @@ def test_the_trigger_carries_each_candidates_serial_matched_under_pep_503():
 
     request = refresh_pypi_json_store({}, mapping, snapshot)
 
-    assert request.pypi_serials == (("Flask_Login", 11), ("numpy", 22))
+    assert request.pypi_serials == (("flask-login", 11), ("numpy", 22))  # keyed by PEP 503, as the fan-out
     assert refresh_pypi_json_store({}, mapping, None).pypi_serials == ()
     assert refresh_pypi_json_store({}, None, snapshot).pypi_serials == ()
 
@@ -476,3 +477,86 @@ def test_the_catalog_runs_the_fan_out_at_10_requests_a_second():
 
     catalog = yaml.safe_load((Path(R.__file__).parents[4] / "conf" / "base" / "catalog.yml").read_text())
     assert catalog["pypi_json_raw"]["rps"] == 10
+
+
+# -- review round 2 ---------------------------------------------------------------------------
+
+
+def test_the_default_chunk_is_legacys_commit_interval():
+    assert PyPIJsonFanOutDataset.PERSIST_EVERY == 500
+
+
+def test_two_spellings_of_one_project_are_one_candidate_and_one_row(tmp_path, live):
+    pypi = _PyPI()
+    ds = _ds(tmp_path)
+
+    ds.fetch_candidates(fetcher=pypi, pairs=(("dagster_aws", "dagster-aws"), ("dagster-aws", "dagster-aws")))
+
+    assert pypi.requested == ["dagster-aws"] and list(ds.load()["pypi_name"]) == ["dagster-aws"]
+
+
+def test_a_project_stored_then_gone_waits_like_any_miss(tmp_path, live):
+    now = time.time()
+    _store(tmp_path, [{"pypi_name": "numpy", "fetched_at": now - 40 * DAY, "pypi_version_serial_at_fetch": 1}])
+    ds = _ds(tmp_path)
+
+    ds.fetch_candidates(fetcher=_PyPI(fail={"numpy": [404]}), pairs=PAIRS[:1], serials=(("numpy", 1),))
+
+    assert ds._eligible(["numpy"], {"numpy": 1}, time.time()) == []  # not a 30-day re-check every run
+    assert ds._eligible(["numpy"], {"numpy": 2}, time.time()) == ["numpy"]
+
+
+def test_a_later_success_clears_the_miss(tmp_path, live):
+    ds = _ds(tmp_path)
+    ds.fetch_candidates(fetcher=_PyPI(fail={"pandas": [404]}), pairs=PAIRS[1:2], serials=(("pandas", 1),))
+    assert "pandas" in ds._read_misses()
+
+    ds.fetch_candidates(fetcher=_PyPI(), pairs=PAIRS[1:2], serials=(("pandas", 2),))
+
+    assert "pandas" not in ds._read_misses() and list(ds.load()["pypi_name"]) == ["pandas"]
+
+
+def test_a_malformed_miss_is_simply_due(tmp_path, live):
+    ds = _ds(tmp_path)
+    ds._write_misses({"pandas": {"fetched_at": "soon", "serial": None}})
+
+    assert ds._eligible(["pandas"], {}, time.time()) == ["pandas"]
+
+
+def test_the_node_keeps_the_universe_serial_under_pep_503_never_below_the_stamp():
+    from pyforge.atlas.pipelines.pypi_intelligence.nodes import fetch_pypi_current_versions
+
+    store = pd.DataFrame(
+        {
+            "pypi_name": ["dagster-aws", "numpy", "scipy"],
+            "version": ["1", "2", "3"],
+            "pypi_last_serial": [10, 20, 30],
+            "pypi_version_serial_at_fetch": [10, 20, 30],
+            "fetched_at": [1, 1, 1],
+        }
+    )
+    universe = pd.DataFrame({"pypi_name": ["Dagster_AWS", "numpy", "unrelated"], "last_serial": [15, 18, 1]})
+
+    out = fetch_pypi_current_versions(store, universe).set_index("pypi_name")
+
+    assert out.loc["dagster-aws", "pypi_last_serial"] == 15  # the universe's, matched under PEP 503
+    assert out.loc["numpy", "pypi_last_serial"] == 20  # a lagging universe never lowers the stamp
+    assert out.loc["scipy", "pypi_last_serial"] == 30  # no universe row: its own
+
+
+def test_the_stats_30_day_boundary_is_strict():
+    from pyforge.atlas.pipelines.pypi_intelligence.nodes import (
+        _PHASE_H_SAFETY_RECHECK_SECONDS,
+        phase_h_eligibility_stats,
+    )
+
+    now = 1_800_000_000
+    frame = pd.DataFrame(
+        {
+            "pypi_name": ["edge", "older"],
+            "pypi_last_serial": [1, 1],
+            "pypi_version_serial_at_fetch": [1, 1],
+            "fetched_at": [now - _PHASE_H_SAFETY_RECHECK_SECONDS, now - _PHASE_H_SAFETY_RECHECK_SECONDS - 1],
+        }
+    )
+    assert phase_h_eligibility_stats(frame, now=now)["eligible_safety_recheck"] == 1

@@ -34,6 +34,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import time
 import urllib.parse
 from collections.abc import Callable, Sequence
@@ -107,6 +108,11 @@ _PYPI_JSON_TIMEOUT_SECONDS = 30
 _PYPI_JSON_ATTEMPTS = 3
 _PYPI_JSON_RETRY_STATUSES = (429, 503)
 _PHASE_H_RECHECK_SECONDS = 30 * 86400
+
+
+def _pep503(name: str) -> str:
+    """PEP 503 normal form: one PyPI project, one key (``dagster_aws`` is ``dagster-aws``)."""
+    return re.sub(r"[-_.]+", "-", name).lower()
 
 
 def _pypi_json_fanout_cap() -> int | None:
@@ -768,15 +774,21 @@ class PyPIJsonFanOutDataset(_ParquetRefreshStore, PyPIJsonRequestDataset):
             mapping = {}
         if not isinstance(mapping, dict):
             mapping = {}
-        mapping = dict(mapping)
+        # Story 34.10: keyed by the PEP 503 name, so two spellings of one project (the bot and
+        # a recipe tier may differ: `dagster_aws`, `dagster-aws`) are one candidate and one row.
+        # The flat cache from the previous run wins on conflict; this run's pairs only add.
+        merged: dict[str, str] = {}
+        for k, v in dict(mapping).items():
+            if isinstance(k, str) and k and isinstance(v, str):
+                merged.setdefault(_pep503(k), v)
         for pair in pairs:
             if len(pair) == 2 and isinstance(pair[0], str) and pair[0] and isinstance(pair[1], str) and pair[1]:
-                mapping.setdefault(pair[0], pair[1])
+                merged.setdefault(_pep503(pair[0]), pair[1])
         # review fix #12: filter BOTH key and value to real strings (matches
         # ParselmouthMappingDataset's filter) — a malformed entry must not crash the
         # fan-out or surface a non-string conda_name downstream.
-        names = sorted(k for k, v in mapping.items() if isinstance(k, str) and k and isinstance(v, str))
-        return names, mapping
+        names = sorted(merged)
+        return names, merged
 
     def _eligible(self, names: list[str], serials: dict[str, int], now: float) -> list[str]:
         """Story 34.10: legacy Phase H's eligible set (``_phase_h_eligible_pypi_names``,
@@ -789,6 +801,13 @@ class PyPIJsonFanOutDataset(_ParquetRefreshStore, PyPIJsonRequestDataset):
         then goes last, so permanent misses never crowd out a moved serial under a cap."""
         stored = self._read_store(("pypi_name", "fetched_at", "pypi_version_serial_at_fetch"))
         misses = self._read_misses()
+
+        def _miss_at(name: str) -> float:
+            try:
+                return float(misses.get(name, {}).get("fetched_at") or 0)
+            except TypeError, ValueError:  # a malformed miss is simply due
+                return 0.0
+
         fetched_at: dict[str, float] = {}
         stamped: dict[str, int | None] = {}
         for name, at, serial in zip(
@@ -802,12 +821,15 @@ class PyPIJsonFanOutDataset(_ParquetRefreshStore, PyPIJsonRequestDataset):
                 stamped[name] = int(serial) if pd.notna(serial) else None
         never, moved, recheck, missed = [], [], [], []
         for name in names:
+            miss = misses.get(name)
+            if name in fetched_at and miss is not None and _miss_at(name) > fetched_at[name]:
+                # a project once stored, then gone: its newer 404 is what it was last fetched at
+                del fetched_at[name]
             if name not in fetched_at:
-                miss = misses.get(name)
                 if miss is None:
                     never.append(name)
-                elif (name in serials and serials[name] != miss.get("serial")) or float(
-                    miss.get("fetched_at") or 0
+                elif (name in serials and serials[name] != miss.get("serial")) or _miss_at(
+                    name
                 ) < now - _PHASE_H_RECHECK_SECONDS:
                     missed.append(name)
             elif name in serials and serials[name] != stamped.get(name):
@@ -913,7 +935,7 @@ class PyPIJsonFanOutDataset(_ParquetRefreshStore, PyPIJsonRequestDataset):
         return frame
 
     #: Story 34.10: a cold run persists every this many projects, so a crash keeps what it
-    #: fetched (legacy commits every 500 rows, CFA:4265) and stamps spread across the run
+    #: fetched (legacy commits every 500 rows, CFA:4272) and stamps spread across the run
     PERSIST_EVERY = 500
 
     def _fetch_eligible(
@@ -972,7 +994,7 @@ class PyPIJsonFanOutDataset(_ParquetRefreshStore, PyPIJsonRequestDataset):
                 frame = pd.DataFrame(rows, columns=_PYPI_JSON_FRAME_COLUMNS).reset_index(drop=True)
                 self._persist(frame)
                 frames.append(frame)
-        self._write_misses(misses)
+            self._write_misses(misses)  # with each chunk, so a crash keeps the misses it found
         self.last_failures = failures
         if failures:
             logger.warning(

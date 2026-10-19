@@ -231,8 +231,8 @@ def phase_h_eligibility_stats(pypi_json_raw: pd.DataFrame, now: int | None = Non
     """Split the eligible set into its three branches (legacy ``_phase_h_eligibility_stats``
     CFA:4135): ``eligible_never_fetched`` / ``eligible_serial_moved`` /
     ``eligible_safety_recheck`` (+ ``total`` / ``eligible``): the 3-condition serial gate
-    (CFA:4177-4189, NULL-safe CFA:4223-4231) over the stored rows. Story 34.10: the fan-out
-    applies the same gate to choose what it fetches. A row can satisfy more than one branch;
+    (CFA:4177-4189, NULL-safe CFA:4223-4231) over a frame's rows. Story 34.10: not on the run
+    path; the fan-out's own ``_eligible`` chooses what it fetches. A row can satisfy more than one branch;
     branch counts use first-match precedence (never-fetched > serial-moved >
     safety-recheck) so they sum to ``eligible``."""
     if now is None:
@@ -280,8 +280,7 @@ def fetch_pypi_current_versions(
     then keeps every project's version. This node therefore emits every fetched row. It used
     to re-apply the gate and emit the eligible rows only, which a run that stamps the serial at
     fetch would shrink to the few projects whose serial moved; ``pypi_current_versions`` is
-    overwritten each run, never merged. :func:`phase_h_eligibility_stats` keeps the gate's
-    split for reporting.
+    overwritten each run, never merged.
 
     **AC-5 — the denominator.** ``pypi_json_raw`` is the already-fetched, ACTIONABLE
     slice (the fan-out is bounded at dataset level to ``v_actionable_packages WHERE
@@ -827,7 +826,7 @@ def refresh_pypi_json_store(
             if isinstance(name, str) and pd.notna(serial):
                 original = wanted.get(_normalize_pypi_name(name))
                 if original is not None:
-                    found[original] = int(serial)
+                    found[_normalize_pypi_name(original)] = int(serial)  # the fan-out keys by PEP 503
         serials = tuple(sorted(found.items()))
     return RefreshRequest(
         store="pypi_json_raw",
