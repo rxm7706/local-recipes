@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'every VCS and registry store reads the identity batch (identity_packages_primary), as before this story'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -50,8 +50,8 @@ Legacy selects from `v_actionable_packages` and the recipe's about URLs (Phase E
    - `registries`: `(conda_name, name)` pairs per registry;
    - `feedstocks`: the feedstock of every enumerated package (Phase N, for Story 35.3).
    The regexes are legacy's, so a GitHub repo name stops at a dot (`solo-py.git` reads `solo-py`).
-   - Deviation: legacy selects actionable packages (active, feedstock not archived); here every enumerated package is a
-     candidate, a superset (archived feedstocks still publish packages).
+   - As legacy's actionable set: the enumeration is the active packages (the current repodata), and a package
+     attributed to a feedstock the cf-graph marks archived is left out, with that feedstock (review round 1).
 2. **The triggers carry both batches.** `refresh_vcs_github_store`, `refresh_vcs_host_stores` and
    `refresh_vcs_registry_stores` take `core_packages_enumerated`, `core_cf_graph_raw` and `core_feedstock_attribution`
    beside `identity_packages_primary`; `RefreshRequest` gains `upstream_repos`, `universe_pairs` and `feedstocks`.
@@ -95,10 +95,12 @@ Type / Effort / Deps: feature / M / Story 34.3 (node_attrs), Story 34.7 (the abo
 - **Live, recorded 2026-10-18:** `batches_from_universe` over a 2026-10-18 data root (34,666 enumerated packages, the
   cf-graph frame of that day with Story 34.7's about URLs), against legacy `cf_atlas.db` (`v_actionable_packages`,
   33,841 packages):
-  - **Phase K:** 26,983 GitHub upstreams (22,445 distinct repos), 411 GitLab, 31 Codeberg. Legacy derives 26,272
-    packages (GitHub 25,846, GitLab 400, Codeberg 26): 26,247 are batched here (99.90%), and 26,193 of those name the
-    same repo (99.79%). 1,178 packages are batched here only.
-  - **Phase N:** 29,395 feedstocks; all 28,684 of legacy's are among them.
+  - *Recomputed 2026-10-19 with archived feedstocks left out (review round 1); the first figures, with them, were
+    26,983 GitHub upstreams and 29,395 feedstocks.*
+  - **Phase K:** 26,511 GitHub upstreams (22,102 distinct repos, ignoring case), 405 GitLab, 31 Codeberg. Of legacy's
+    26,306 `upstream_versions` rows for those hosts, 26,245 are batched here (99.77%), and 26,196 of those name the
+    same repo (99.81%).
+  - **Phase N:** 28,684 feedstocks, exactly legacy's actionable 28,684.
   - **Phase L:** npm 211 (legacy 198, all covered), rubygems 165 (165), crates 10 (10), Maven 3 (2); cran, cpan,
     luarocks and nuget 0, as legacy.
   - The 25 legacy-only packages have no repo URL in today's recipes (astroid, gidgethub and formulae now name only
@@ -112,7 +114,12 @@ Type / Effort / Deps: feature / M / Story 34.3 (node_attrs), Story 34.7 (the abo
 - **The GitHub store asks for 22,445 repos with the flag on.** It still sends only under the switch (Story 35.1), so
   an unattended run sends nothing; a credentialed run takes about 225 GraphQL batches until Story 35.3 reshapes the
   query.
-- **Archived feedstocks are batched** (the deviation in Approach 1): 711 feedstocks more than legacy's Phase N.
+- **Until Story 35.3 lands, the GitHub store merges on `feedstock_name`** (the repo name): 281 names are shared across
+  owners at universe scale. Story 35.3 keys the store on `(kind, key)`.
+- **With the flag on, identity-only targets drop:** 14 GitHub repos and the npm names `bmad-method`, `mailpit` and
+  `@cyclonedx/cdxgen` that the identity batch named and the universe does not (by design, AC6).
+- **The host stores' keys change** from identity's PEP 503 names to raw conda names, so after the flip old and new rows
+  sit side by side until the old ones age out.
 
 ## I/O & Edge-Case Matrix
 
@@ -134,5 +141,12 @@ Type / Effort / Deps: feature / M / Story 34.3 (node_attrs), Story 34.7 (the abo
 
 ## Spec Change Log
 
+- 2026-10-19, review round 1 (FAIL), fixed:
+  - B1: the registry store's flag-off path is tested in both states (`flag_states`).
+  - Should-fix: archived feedstocks and their packages are left out, as legacy's actionable view does (the batches
+    recomputed above); tests for a non-VCS URL falling through to the next, an archived feedstock, a feedstock asked
+    only for an enumerated package; the residual risks the reviewer named are stated.
+  - Nits: tests for a missing URL, a Maven about URL and the new request fields' serialization. Not changed: the
+    registry batch keeps one name per (registry, package), as legacy has no package with two.
 - 2026-10-18: written with the implementation (branch `atlas-35-2-universe-batches`, cut from `main` at `9b35deafc0`
   and stacked on Stories 35.1 and 34.7, which were in review).

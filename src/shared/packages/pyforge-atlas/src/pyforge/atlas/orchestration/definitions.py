@@ -286,7 +286,7 @@ NODE_TIMEOUTS: dict[str, int] = {
     "ingest_basilisk_advisories": 600,  # FR-19
     "fetch_basilisk_details": 600,  # FR-19
     # -- vcs_health -------------------------------------------------------- #
-    "refresh_vcs_github_store": 3600,  # Story 35.3 — Phases K, N and E.5 for the universe (~1,400 POSTs)
+    "refresh_vcs_github_store": 10800,  # Story 35.3 — Phases K, N, E.5 (~1,400 POSTs); live 2026-10-18: K 32 min, N 1 h 54 min one at a time (39 min of it Retry-After waits)
     "refresh_vcs_host_stores": 900,  # Story 21.2 — GitLab + Codeberg refresh
     "refresh_vcs_registry_stores": 900,  # Story 21.2 — 8-registry refresh
     "enrich_maintainers": 300,  # Phase E
