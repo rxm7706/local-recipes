@@ -40,8 +40,14 @@ def test_vdb_constructs_offline_no_refresher(tmp_path):
     ds = VDBStoreDataset(filepath=str(tmp_path / "vdb"))
     desc = ds._describe()
     assert desc["refresher_wired"] is False
-    # AC-1: retry/observability budget declared as per-asset metadata (AD-6).
-    assert desc["retry_budget"] == {"timeout_seconds": 900, "max_retries": 3}
+    # AC-1: retry/observability budget declared as per-asset metadata (AD-6); Story 34.7: the
+    # node's budget, which the three vuln-db steps fit inside
+    from pyforge.atlas.orchestration.definitions import NODE_TIMEOUTS
+
+    budget = NODE_TIMEOUTS["refresh_vdb_store"]
+    assert desc["retry_budget"] == {"timeout_seconds": budget, "max_retries": 3}
+    steps = VDBStoreDataset.AGE_TIMEOUT_SECONDS + VDBStoreDataset.VDB_REFRESH_TIMEOUT_SECONDS
+    assert steps + VDBStoreDataset.EXTRACT_TIMEOUT_SECONDS <= budget
 
 
 def test_osv_constructs_offline_no_refresher(tmp_path):

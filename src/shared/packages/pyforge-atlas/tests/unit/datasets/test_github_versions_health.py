@@ -208,3 +208,192 @@ def test_a_store_without_kinds_reads_as_before():
 
     assert set(detect_archived_feedstocks(store)["feedstock_name"]) == {"old", "repo"}
     assert list(fetch_live_health(store).columns) == ["feedstock_name", "stars", "last_commit", "open_issues"]
+
+
+def _timed_out(status: int = 502) -> Exception:
+    from types import SimpleNamespace
+
+    from kedro.io import DatasetError
+
+    return DatasetError(
+        "Failed to send data", SimpleNamespace(response=SimpleNamespace(status_code=status, headers={}))
+    )
+
+
+_NO_ARCHIVED = {"data": {"organization": {"repositories": {"nodes": [], "pageInfo": {"hasNextPage": False}}}}}
+
+
+def _upstream_only(fetch):  # noqa: ANN001, ANN202
+    """``fetch`` for the upstream batches; Phase E.5's archived listing answers empty."""
+
+    def answer(body: dict[str, Any]) -> dict[str, Any]:
+        return _NO_ARCHIVED if "organization" in body["query"] else fetch(body)
+
+    return answer
+
+
+def _answer_each(body: dict[str, Any]) -> dict[str, Any]:
+    """Every repository a body names, at version ``v1.<n>`` where n is its alias."""
+    n = body["query"].count("repository(")
+    return {
+        "data": {f"r{i}": {"releases": {"nodes": [{"tagName": f"v1.{i}"}]}, "refs": {"nodes": []}} for i in range(n)}
+    }
+
+
+@pytest.mark.parametrize("status", [502, 504])
+def test_a_batch_github_cannot_answer_in_time_is_halved(tmp_path, status):
+    sizes: list[int] = []
+
+    def fetch(body: dict[str, Any]) -> dict[str, Any]:
+        n = body["query"].count("repository(")
+        sizes.append(n)
+        if n > 2:
+            raise _timed_out(status)
+        return _answer_each(body)
+
+    upstream = tuple((f"p{i}", "o", f"r{i}") for i in range(5))
+    frame = _dataset(tmp_path, max_retries=0).fetch_github(upstream, [], fetcher=_upstream_only(fetch))
+
+    got = frame.set_index("key")["upstream_version"].to_dict()
+    # 5 -> 2 + 3 -> 2 + (1 + 2): each repository keeps its own row, renumbered back into the batch
+    assert got == {"p0": "1.0", "p1": "1.1", "p2": "1.0", "p3": "1.0", "p4": "1.1"}
+    assert sizes == [5, 2, 3, 1, 2]
+
+
+def test_a_half_that_still_fails_names_the_failure_on_its_rows(tmp_path):
+    def fetch(body: dict[str, Any]) -> dict[str, Any]:
+        if 'name: "r0"' in body["query"]:
+            raise _timed_out()
+        return _answer_each(body)
+
+    upstream = (("p0", "o", "r0"), ("p1", "o", "r1"))
+    frame = _dataset(tmp_path, max_retries=0).fetch_github(upstream, [], fetcher=_upstream_only(fetch)).set_index("key")
+
+    assert frame.loc["p0", "last_error"] == "HTTP 502" and frame.loc["p0", "upstream_version"] is None
+    assert frame.loc["p1", "upstream_version"] == "1.0"
+
+
+def test_a_batch_that_fails_otherwise_is_not_halved(tmp_path):
+    sizes: list[int] = []
+
+    def fetch(body: dict[str, Any]) -> dict[str, Any]:
+        sizes.append(body["query"].count("repository("))
+        raise _timed_out(500)
+
+    _dataset(tmp_path, max_retries=0).fetch_github(
+        tuple((f"p{i}", "o", f"r{i}") for i in range(4)), [], fetcher=_upstream_only(fetch)
+    )
+
+    assert sizes == [4]
+
+
+def test_the_graphql_post_stops_waiting_after_a_minute(tmp_path, monkeypatch):
+    from pyforge.atlas.datasets import request_datasets as R
+
+    seen: dict[str, Any] = {}
+
+    class _Recording:
+        def __init__(self, **kwargs: Any) -> None:
+            seen.update(kwargs)
+
+        def save(self, _body: Any) -> None:
+            pass
+
+        def get_last_response(self) -> dict[str, Any]:
+            return {"data": {}}
+
+    monkeypatch.setattr(R, "APIDataset", _Recording)
+    _dataset(tmp_path)._post({"query": "{}"}, auth=object())  # type: ignore[arg-type]
+
+    assert seen["save_args"] == {"timeout": GitHubRequestDataset.GRAPHQL_TIMEOUT_SECONDS} == {"timeout": 60}
+
+
+def _feedstock_answer(body: dict[str, Any]) -> dict[str, Any]:
+    n = body["query"].count("repository(")
+    node = {"pushedAt": "t", "isArchived": False, "issues": {"totalCount": 0}, "pullRequests": {"totalCount": 0}}
+    return {"data": {f"r{i}": node for i in range(n)}}
+
+
+def test_phase_n_runs_four_batches_side_by_side_and_keeps_their_order(tmp_path):
+    import threading
+    import time as _time
+
+    lock, live, peak = threading.Lock(), [0], [0]
+
+    def fetch(body: dict[str, Any]) -> dict[str, Any]:
+        if "organization" in body["query"]:
+            return _NO_ARCHIVED
+        with lock:
+            live[0] += 1
+            peak[0] = max(peak[0], live[0])
+        _time.sleep(0.02)
+        with lock:
+            live[0] -= 1
+        return _feedstock_answer(body)
+
+    feedstocks = [f"fs{i:03d}" for i in range(200)]  # 8 batches of 25
+    frame = _dataset(tmp_path).fetch_github((), feedstocks[::-1], fetcher=fetch)
+
+    assert frame["key"].tolist() == feedstocks and frame["last_error"].isna().all()
+    assert 2 <= peak[0] <= GitHubRequestDataset.FEEDSTOCK_CONCURRENCY == 4
+
+
+def test_each_failed_batch_names_its_own_failure(tmp_path):
+    def fetch(body: dict[str, Any]) -> dict[str, Any]:
+        query = body["query"]
+        if "organization" in query:
+            return _NO_ARCHIVED
+        if '"fs000-feedstock"' in query:
+            raise _timed_out(500)
+        if '"fs025-feedstock"' in query:
+            raise _timed_out(503)
+        return _feedstock_answer(body)
+
+    feedstocks = [f"fs{i:03d}" for i in range(75)]
+    frame = _dataset(tmp_path, max_retries=0).fetch_github((), feedstocks, fetcher=fetch).set_index("key")
+
+    assert frame.loc["fs000", "last_error"] == "HTTP 500" and frame.loc["fs024", "last_error"] == "HTTP 500"
+    assert frame.loc["fs025", "last_error"] == "HTTP 503" and frame.loc["fs050", "last_error"] is None
+
+
+def test_a_refusal_stops_the_feedstock_batches_not_yet_sent(tmp_path):
+    sent: list[str] = []
+
+    def fetch(body: dict[str, Any]) -> dict[str, Any]:
+        query = body["query"]
+        sent.append(query)
+        if "organization" in query:
+            return _NO_ARCHIVED
+        raise _timed_out(401)
+
+    feedstocks = [f"fs{i:03d}" for i in range(25 * 40)]
+    frame = _dataset(tmp_path, max_retries=0).fetch_github((), feedstocks, fetcher=fetch)
+
+    assert len(sent) <= GitHubRequestDataset.FEEDSTOCK_CONCURRENCY  # at most the batches already in flight
+    assert set(frame["last_error"]) == {"HTTP 401"}
+
+
+def test_a_batch_halved_and_answered_leaves_no_marker(tmp_path):
+    def fetch(body: dict[str, Any]) -> dict[str, Any]:
+        if body["query"].count("repository(") > 2:
+            raise _timed_out(502)
+        return _answer_each(body)
+
+    ds = _dataset(tmp_path, max_retries=0)
+    ds.fetch_github(tuple((f"p{i}", "o", f"r{i}") for i in range(4)), [], fetcher=_upstream_only(fetch))
+
+    assert ds.staleness() is None
+
+
+def test_repositories_that_still_fail_are_counted_in_the_marker(tmp_path):
+    def fetch(body: dict[str, Any]) -> dict[str, Any]:
+        if 'name: "r0"' in body["query"]:
+            raise _timed_out(500)
+        return _answer_each(body)
+
+    ds = _dataset(tmp_path, max_retries=0)
+    ds.UPSTREAM_BATCH = 1  # one repository a batch: r0's fails, r1's is answered
+
+    ds.fetch_github((("p0", "o", "r0"), ("p1", "o", "r1")), [], fetcher=_upstream_only(fetch))
+
+    assert ds.staleness().reason == "repositories that failed: 1 (HTTP 500) -- they keep last-good"

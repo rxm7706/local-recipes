@@ -99,7 +99,8 @@ def test_with_the_switch_github_gets_a_bearer_header_and_the_rows_land(fake_tran
 
     sent = fake_transport.sent[0]  # Phase K's batch; Phase E.5's listing follows (Story 35.3)
     assert all(r.method == "POST" and r.headers["Authorization"] == f"Bearer {TOKEN}" for r in fake_transport.sent)
-    assert set(fake_transport.timeouts) == {ds._timeout_seconds}
+    # Story 35.3: a GraphQL POST waits 60 s at most
+    assert set(fake_transport.timeouts) == {min(ds._timeout_seconds, ds.GRAPHQL_TIMEOUT_SECONDS)}
     assert 'repository(owner: "o", name: "r")' in json.loads(sent.body)["query"]
     row = ds.load().set_index("key").loc["conda-r"]
     assert (row["kind"], row["repo"], row["upstream_version"]) == ("upstream", "o/r", "1.2")

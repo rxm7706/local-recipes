@@ -60,6 +60,15 @@ Legacy makes three GitHub reads:
    `track_upstream_versions` the `upstream` rows (Phase K), `fetch_live_health` the `feedstock` rows (Phase N, with
    open PRs, CI state and the row's error). A store with none of a kind reads as before.
 6. **Budget.** `refresh_vcs_github_store`'s budget is 3,600 s (about 1,400 queries for the universe).
+7. **A batch GitHub cannot answer in time is halved.** GitHub ends a GraphQL query after about ten seconds with a 502
+   or 504. A batch that still fails that way after its retries is split in two and each half asked, down to one
+   repository; a half that still fails gives each of its repositories the failure as its error (legacy Phase K drops
+   the whole batch). Each POST stops waiting after 60 s (legacy: 45 s; the default here was 900 s).
+8. **The run says what it is doing:** a progress line every 25 batches and a line per retry, with the HTTP status
+   only, never the exception's text.
+9. **Phase N runs four batches side by side,** as legacy does (`PHASE_N_CONCURRENCY` 4, CFA:6585), its rows in batch
+   order; each failed batch names its own failure; a refusal stops every batch not yet sent. Run one at a time, the
+   1,176 batches took about two hours on 2026-10-19, past the node's 3,600 s budget.
 
 Ledger key: `35-3-upstream-versions-and-feedstock-health-come-from-github`.
 Type / Effort / Deps: feature / L / Story 35.1 (the switch, bearer auth), Story 35.2 (the batches).
@@ -76,8 +85,11 @@ Type / Effort / Deps: feature / L / Story 35.1 (the switch, bearer auth), Story 
   repository keeps its GraphQL error; 100 repos per query, each asked once.
 - **AC2 — Phase N.** Each feedstock's last push, CI state, open issues and PRs, 25 per query.
 - **AC3 — Phase E.5.** The organization's archived repositories, every page, `-feedstock` stripped, other repos ignored.
-- **AC4 — Refusals.** A refusal with no wait stops the run; one with `Retry-After` is waited and retried; rows before a
-  stop are kept under `stale`.
+- **AC4 — Refusals and timeouts.** A refusal with no wait stops the run; one with `Retry-After` is waited and retried;
+  rows before a stop are kept under `stale`. A batch answered 502 or 504 is halved down to one repository, its rows
+  renumbered back; another failure is not halved; a POST waits 60 s at most.
+- **AC4b — Phase N side by side.** At most four batches at once, rows in order, each batch's own failure on its rows.
+- **AC4c — The marker is true.** A batch halved and answered leaves no marker; repositories that still fail are counted.
 - **AC5 — Consumers.** Each reads its own kind; a store without kinds reads as before; a pre-35.3 store's rows survive
   the first write.
 - **AC6 — Live.** See Verification. Tolerance against legacy the same day: Phase K versions for at least 95% of the
@@ -90,7 +102,20 @@ Type / Effort / Deps: feature / L / Story 35.1 (the switch, bearer auth), Story 
 
 - Unit, from the repo root: `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_github_versions_health.py`
   (and Story 35.1's `test_credentialed_switch.py`, whose flag-on cases now read Phase K's shape).
-- **Live, recorded 2026-10-18** — PENDING (a credentialed run with the `gh` CLI's token, operator ruling 2026-10-18).
+- **Live, recorded 2026-10-18/19,** on a scratch data root (dev, flag on), with `PYFORGE_ATLAS_CREDENTIALED=1` and the
+  `gh` CLI's token through a scratch `--env verify` (operator ruling); no token in the log:
+  - `--pipelines vcs_health --nodes refresh_vcs_github_store,detect_archived_feedstocks,track_upstream_versions,fetch_live_health`
+    exit 0 in 2 h 27 min, before Phase N ran side by side (Approach 9). Two batches answered 502 four times and were
+    halved and answered. The store: 57,280 rows (26,983 `upstream`, 29,395 `feedstock`, 902 `archived`).
+  - Against legacy `cf_atlas.db` (`upstream_versions` with `source='github'`, and `packages`), fetched the same day:
+    - **Phase K:** of legacy's 23,578 GitHub packages with a version, 23,551 asked (99.89%); of those both hold,
+      23,255 the same version (98.74%), above the 95% tolerance; the differences sampled are releases after legacy's
+      fetch (litellm 1.107.0-rc.1 against 1.103.5). Atlas rows without a version: 1,859 "no tags", 434 not found.
+    - **Phase N:** 29,393 of 29,395 feedstocks answered; open PRs equal to legacy's for 28,532 (97.07%); CI state equal
+      for 10,949 of the 10,959 both record (99.91%), the rest null in both.
+    - **Phase E.5:** 902 archived feedstocks (legacy marks 864 packages archived; a feedstock can carry several).
+  - The run's marker read "stopped after HTTP 502" though both halved batches were answered; fixed: the marker now
+    counts only the repositories that still failed.
 
 ## Boundaries & Constraints
 
@@ -122,3 +147,7 @@ Type / Effort / Deps: feature / L / Story 35.1 (the switch, bearer auth), Story 
 ## Spec Change Log
 
 - 2026-10-18: written with the implementation (branch `atlas-35-3-github-versions-health`, stacked on Story 35.2).
+- 2026-10-18: the first credentialed live run sat 45 minutes in its retries with nothing logged (the POST timeout was
+  900 s; the first batch, alphabetically the tag-heavy repositories, answered 502 four times). A probe of the same
+  batch answered 200 in 5.5 s, so the 502s come and go. Approach 7 and 8 added; the re-run halved batch 1 and
+  continued.
