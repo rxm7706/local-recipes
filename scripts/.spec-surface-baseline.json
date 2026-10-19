@@ -146,7 +146,7 @@
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/upstream_discovery.py": "edfc4cd4fe2d6071711be0858605a4556a685adc",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/vcs_sources.py": "3466d932868a3022435453b57a87bf275479d020",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/vdb_boundary.py": "3fdd400d0d8986719139f7b85a19a11808256490",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/vdb_extract.py": "86917ba81f36d817c9dd5359dab4b1215aca3bc0",
+   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/vdb_extract.py": "abd743e8d4b87bd3b8ea37a99838825f1e7dea5b",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/vulnerability_feeds.py": "01deeebb2170f2aa7d0166998db92e6cad2f273a",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/duckdb_writer.py": "454a498f041d2eb8f3d2dc40a7d2cbb634957b94",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/factory/__init__.py": "215fc474fc9b8153f0f3e54c55ec5e917e70711b",
@@ -320,7 +320,7 @@
    "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_vcs_sources.py": "1c67d0f14f8cc192b636127f6d58b809adfa9e7a",
    "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_vdb_boundary.py": "5116c5a5dd79a3c54dc0acc9ff3588d38b43e587",
    "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_vulnerability_feeds.py": "08c8d6a57863512e60585a1f1d87d78f68584d3f",
-   "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_vulnerability_stores_live.py": "b639fcb3d6e2309aa351dcf48a3b170aaf05b006",
+   "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_vulnerability_stores_live.py": "575605939b28855f3d6b3959974786464a1cfabe",
    "src/shared/packages/pyforge-atlas/tests/unit/factory/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-atlas/tests/unit/factory/test_crews.py": "ab8182aaebd1c9d4dd5fc31c8a70b6f557beb82e",
    "src/shared/packages/pyforge-atlas/tests/unit/factory/test_lasuite.py": "dd63c6f15f5413b5d6346b9263c93e5058ebfa9a",
@@ -505,7 +505,7 @@
    "src/shared/packages/pyforge-atlas/wasm/index.html": "58d44155379ec640d36caf59b8c701ec8fcfce27",
    "src/shared/packages/pyforge-atlas/wasm/package.json": "e8ec7eef8dff664e2910f4fee67ada79e4105d93"
   },
-  "memlog": "a94b2effddd9748ca1afcad234085051088c889d"
+  "memlog": "8923a9859267c9007967a86f7dfbd52c0ab4de9c"
  },
  "pyforge-atlas/spec-pyforge-atlas-intelligence-platform": {
   "files": {},
@@ -3112,7 +3112,7 @@
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/upstream_discovery.py": "edfc4cd4fe2d6071711be0858605a4556a685adc",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/vcs_sources.py": "3466d932868a3022435453b57a87bf275479d020",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/vdb_boundary.py": "3fdd400d0d8986719139f7b85a19a11808256490",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/vdb_extract.py": "86917ba81f36d817c9dd5359dab4b1215aca3bc0",
+   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/vdb_extract.py": "abd743e8d4b87bd3b8ea37a99838825f1e7dea5b",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/vulnerability_feeds.py": "01deeebb2170f2aa7d0166998db92e6cad2f273a",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/duckdb_writer.py": "454a498f041d2eb8f3d2dc40a7d2cbb634957b94",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/factory/__init__.py": "215fc474fc9b8153f0f3e54c55ec5e917e70711b",
@@ -3747,7 +3747,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "a3dc5155b3791beab52d1275f3f4c7e28c34b2a9"
+  "memlog": "fa7a15d5ea95d69a609bf608e1f1ea8b535f4176"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -6817,7 +6817,7 @@
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/upstream_discovery.py": "edfc4cd4fe2d6071711be0858605a4556a685adc",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/vcs_sources.py": "3466d932868a3022435453b57a87bf275479d020",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/vdb_boundary.py": "3fdd400d0d8986719139f7b85a19a11808256490",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/vdb_extract.py": "86917ba81f36d817c9dd5359dab4b1215aca3bc0",
+   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/vdb_extract.py": "abd743e8d4b87bd3b8ea37a99838825f1e7dea5b",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/vulnerability_feeds.py": "01deeebb2170f2aa7d0166998db92e6cad2f273a",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/duckdb_writer.py": "454a498f041d2eb8f3d2dc40a7d2cbb634957b94",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/factory/__init__.py": "215fc474fc9b8153f0f3e54c55ec5e917e70711b",
@@ -6996,7 +6996,7 @@
    "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_vcs_sources.py": "1c67d0f14f8cc192b636127f6d58b809adfa9e7a",
    "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_vdb_boundary.py": "5116c5a5dd79a3c54dc0acc9ff3588d38b43e587",
    "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_vulnerability_feeds.py": "08c8d6a57863512e60585a1f1d87d78f68584d3f",
-   "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_vulnerability_stores_live.py": "b639fcb3d6e2309aa351dcf48a3b170aaf05b006",
+   "src/shared/packages/pyforge-atlas/tests/unit/datasets/test_vulnerability_stores_live.py": "575605939b28855f3d6b3959974786464a1cfabe",
    "src/shared/packages/pyforge-atlas/tests/unit/factory/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-atlas/tests/unit/factory/test_crews.py": "ab8182aaebd1c9d4dd5fc31c8a70b6f557beb82e",
    "src/shared/packages/pyforge-atlas/tests/unit/factory/test_lasuite.py": "dd63c6f15f5413b5d6346b9263c93e5058ebfa9a",
@@ -7287,7 +7287,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "dfe476d22be3e0666cb8d9a3e2111a4763f24968"
+  "memlog": "0637f04b344c6601ac69edc7da5893d3f34a1aed"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {},
