@@ -5023,3 +5023,15 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-10-18 -- implementer response to 34.6 review round 1; owned by Story 36.1 (operator ruling 2026-10-18)
   status: open
+
+### DW-atlas-34-10-1: The Phase C mapping lacks legacy's name-coincidence and recipe-source-URL tiers, so Phase H covers about half of legacy's universe.
+
+- source_spec: `planning-artifacts/specs/spec-34-10-phase-h-covers-every-mapped-pypi-project-gated-by-its-serial.md`
+  summary: Atlas's Phase H fetches every candidate its mapping names (10,875 of 10,955, 2026-10-18), and those candidates are legacy's parselmouth-mapped names less one (`fairchem-core`). Legacy's Phase H universe is 20,938 distinct names (`v_actionable_packages`), because legacy fills two more tiers, each only where a conda package has no PyPI name yet. (1) Phase D's name coincidence (`_phase_d_update_working_set`, CFA:1835-1890): a PyPI project whose lower-cased name is the conda name. pandas, pillow, tensorflow and cryptography come from this tier, because the bot's mapping omits them; requests, scipy, django and flask, which it also omits, have PyPI sources, so either tier could have set them. (2) Phase C.5, folded into Phase E (CFA:2434-2446): every output of a feedstock whose recipe downloads from PyPI. Phase B resets `match_source` to 'none' on every run without clearing `pypi_name` (CFA:1482), so 10,846 legacy rows (10,019 PEP 503 names) read 'none'; 3,779 of those rows have a non-PyPI source registry and come from tier 1. Atlas's `match_source_urls` reads `pypi_json_raw`, the projects already fetched, so it cannot add either tier. Story 34.11 adds both to `map_pypi_conda`; measured on its branch, the mapping names 21,292 PyPI projects, 20,923 of legacy's 20,938.
+  evidence: Story 34.10 live run and independent review round 1, 2026-10-18; Story 34.11 live run the same day.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/nodes.py (map_pypi_conda); src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/core_sources.py (node_attrs source URLs)
+  origin: implementer finding, atlas Story 34.10 live parity; diagnosis corrected by its independent review round 1
+  severity: high
+  promoted: 2026-10-18 -- atlas Story 34.10 live parity against legacy Phase H; owned by Story 34.11
+  verified: 2026-10-18 atlas Story 34.11 after its review round 1 (branch atlas-34-11-recipe-source-pypi; landing PR to follow) -- `map_pypi_conda` fills `name_coincidence` (legacy Phase D, PyPI side first) and `recipe_source_url` (Phase C.5 through Phase B.5's attribution). Live on a 2026-10-18 root: 22,328 rows naming 21,293 PyPI projects, 20,923 of legacy's 20,938 (99.93%); of 21,838 conda packages both map, 21,828 agree (99.95%).
+  status: closed

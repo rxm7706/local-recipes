@@ -36,14 +36,15 @@ def test_core_pipeline_has_eight_nodes():
     }
 
 
-def test_vcs_health_pipeline_has_eleven_nodes():
+def test_vcs_health_pipeline_has_twelve_nodes():
     # B9 added derive_release_velocity (FR-20); B10 added classify_migration_readiness
     # (FR-21) — both NEW-SIGNAL, not parity-gated (AD-14). Story 21.2 added the three
     # external-refresh trigger nodes (single writers of the GitHub/GitLab/Codeberg/
     # registry live-fetch stores — mirrors refresh_vdb_store/refresh_osv_offline_store).
     # Story 25.2 added build_repo_dependency_history (the sensor job's op; Story 25.1 filled it).
+    # Story 34.8 added drive_migration_status (the single writer of vcs_migration_detail_raw).
     vcs = vcs_create()
-    assert len(vcs.nodes) == 11
+    assert len(vcs.nodes) == 12
     assert {n.name for n in vcs.nodes} == {
         "refresh_vcs_github_store",
         "refresh_vcs_host_stores",
@@ -55,6 +56,7 @@ def test_vcs_health_pipeline_has_eleven_nodes():
         "fetch_live_health",
         "derive_release_velocity",
         "classify_migration_readiness",
+        "drive_migration_status",
         "build_repo_dependency_history",
     }
 
@@ -71,12 +73,12 @@ def test_combined_dag_resolves_topologically_with_no_procedural_order():
     # FREE inputs here (produced in the full 7-pipeline DAG) — Kedro allows free
     # inputs. Story 21.2 added 3 external-refresh trigger nodes to vcs_health (14 -> 17);
     # Story 21.4 added enumerate_anaconda_main_packages to core (17 -> 18);
-    # Story 25.2 added build_repo_dependency_history (18 -> 19).
+    # Story 25.2 added build_repo_dependency_history (18 -> 19); Story 34.8 drive_migration_status (19 -> 20).
     combined = core_create() + vcs_create()
-    assert len(combined.nodes) == 19
+    assert len(combined.nodes) == 20
     # grouped_nodes is the topological grouping the runner uses
     grouped = combined.grouped_nodes
-    assert sum(len(g) for g in grouped) == 19
+    assert sum(len(g) for g in grouped) == 20
 
 
 def test_phase_i_output_is_declared_by_name():
@@ -201,11 +203,11 @@ def test_combined_seven_pipeline_dag_resolves_topologically():
     combined = (
         core_create() + vcs_create() + pypi_create() + vuln_create() + seed_create() + sbom_create() + derived_create()
     )
-    # 8 core + 11 vcs + 17 pypi + 9 vuln + 4 seed_gaps + 4 universal_sbom
-    # + 7 derived_artifacts = 60 nodes (Story 25.2: vcs_health 10 -> 11).
-    assert len(combined.nodes) == 60
+    # 8 core + 12 vcs + 17 pypi + 9 vuln + 4 seed_gaps + 4 universal_sbom
+    # + 7 derived_artifacts = 61 nodes (Story 25.2: vcs_health 10 -> 11; Story 34.8: 11 -> 12).
+    assert len(combined.nodes) == 61  # Story 34.8: + drive_migration_status
     grouped = combined.grouped_nodes
-    assert sum(len(g) for g in grouped) == 60
+    assert sum(len(g) for g in grouped) == 61
 
 
 def test_no_dataset_is_written_by_two_pipelines_b7():
@@ -299,6 +301,8 @@ def test_tier_1_external_refresh_stores_have_exactly_one_writer_each():
         "discovery_staged_recipes_prs_raw": "refresh_staged_recipes_prs",
         "identity_packages_primary": "build_identity_packages_primary",
         "identity_export_parquet": "build_identity_export_parquet",
+        "vcs_migration_detail_raw": "drive_migration_status",  # Story 34.8
+        "vcs_migration_categories": "drive_migration_status",  # Story 34.8
     }
     for store, expected in writers.items():
         producers = [n.name for n in combined.nodes if store in n.outputs]

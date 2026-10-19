@@ -14,6 +14,7 @@ from .nodes import (
     classify_migration_readiness,
     derive_release_velocity,
     detect_archived_feedstocks,
+    drive_migration_status,
     enrich_maintainers,
     fetch_live_health,
     refresh_vcs_github_store,
@@ -118,6 +119,22 @@ def create_pipeline(**kwargs) -> Pipeline:
                 outputs="vcs_release_velocity",
                 name="derive_release_velocity",
             ),
+            # Story 34.8 (CAP-64) -- the migration-status driver: reads the five category lists
+            # (each refreshes from the bot's public status file while live public sources are
+            # on) and writes every name they carry to `vcs_migration_detail_raw`, whose save
+            # sweeps one detail partition per migration. The detail dataset's single writer (AD-10).
+            node(
+                func=drive_migration_status,
+                inputs=[
+                    "vcs_migration_regular_status_raw",
+                    "vcs_migration_longterm_status_raw",
+                    "vcs_migration_paused_status_raw",
+                    "vcs_migration_closed_status_raw",
+                    "vcs_migration_total_status_raw",
+                ],
+                outputs=["vcs_migration_detail_raw", "vcs_migration_categories"],
+                name="drive_migration_status",
+            ),
             # FR-21 (Story B10) — NEW-SIGNAL, NOT parity-gated (AD-14). Reads the
             # partitioned conda-forge-bot-data status detail (`vcs_migration_detail_raw`)
             # + the Phase B atlas feedstock set (`core_packages_enumerated`) + the Phase F
@@ -131,6 +148,7 @@ def create_pipeline(**kwargs) -> Pipeline:
                     "vcs_migration_detail_raw",
                     "core_packages_enumerated",
                     "core_downloads",
+                    "vcs_migration_categories",  # Story 34.8: each migration's list
                 ],
                 outputs="vcs_migration_readiness",
                 name="classify_migration_readiness",

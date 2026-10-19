@@ -2529,7 +2529,7 @@ So that `vcs_migration_readiness` fills.
 **Given** `MigrationCategoryDataset.refresh` and `MigrationDetailDataset.fetch_partitions` are never called and the five category entries are consumed by no node
 **When** the pipeline runs with the flag on
 **Then** a driver node reads the bot's `status/migration_json` publicly, one partition per migration, and `vcs_migration_readiness` holds rows
-**Status:** backlog
+**Status:** done
 
 ### Story 34.9: Phase P fills from the public ClickHouse mirror
 
@@ -2543,7 +2543,7 @@ So that PyPI download counts fill without BigQuery.
 **Given** only `PyPIBigQueryDownloadsDataset` exists and the operator ruled BigQuery off
 **When** the pipeline runs with the flag on
 **Then** `pypi_downloads_monthly` holds rows from the ClickHouse mirror within the story's tolerance of legacy Phase P (1,000 rows, top by 90-day downloads, 2026-10-18), and no BigQuery call is made
-**Status:** backlog
+**Status:** done
 
 ### Story 34.10: Phase H covers every mapped PyPI project, gated by its serial
 
@@ -2558,7 +2558,7 @@ So that `pypi_current_versions` and everything after it cover the mapped univers
 **When** the pipeline runs with the flag on
 **Then** the fan-out's batch is that eligible set (serials from `pypi_universe_serial_snapshots`, stored per row at fetch), rate-limited and uncapped by default (`PYPI_JSON_FANOUT_LIMIT` stays an explicit cap), a 429 or 503 is retried with `Retry-After` as legacy Phase H does (Story 34.2 counts every `DatasetError`, 429/503 and timeouts included, as a per-project miss), and `pypi_current_versions` holds rows within the story's tolerance of legacy Phase H's coverage measured the same day
 **And** a warm run with no serial movement fetches only the 30-day re-checks; with the flag off the fan-out keeps today's bounded behaviour
-**Status:** backlog
+**Status:** done
 
 ### Story 34.11: The Phase C mapping fills legacy's name-coincidence and recipe-source tiers
 

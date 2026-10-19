@@ -142,7 +142,7 @@ NODE_REGISTRY: dict[str, tuple] = {
     ),
     "fetch_pypi_downloads": (
         pypi_nodes.fetch_pypi_downloads,
-        ["pypi_bigquery_downloads_raw"],
+        ["pypi_clickhouse_downloads_raw", "pypi_bigquery_downloads_raw"],
         ["pypi_downloads_monthly"],
     ),
     "flag_cross_channel": (

@@ -45,7 +45,8 @@ def create_pipeline(**kwargs) -> Pipeline:
             # refresh -> consume automatically.
             node(
                 func=refresh_pypi_json_store,
-                inputs=["params:ttls", "pypi_conda_mapping_base"],  # Story 34.2: same-run candidates
+                # Story 34.2: same-run candidates; Story 34.10: the same run's serials
+                inputs=["params:ttls", "pypi_conda_mapping_base", "pypi_universe_serial_snapshots"],
                 outputs="pypi_json_raw",
                 name="refresh_pypi_json_store",
             ),
@@ -90,7 +91,7 @@ def create_pipeline(**kwargs) -> Pipeline:
             ),
             node(
                 func=fetch_pypi_downloads,
-                inputs="pypi_bigquery_downloads_raw",
+                inputs=["pypi_clickhouse_downloads_raw", "pypi_bigquery_downloads_raw"],
                 outputs="pypi_downloads_monthly",
                 name="fetch_pypi_downloads",
             ),

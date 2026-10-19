@@ -19,7 +19,9 @@ from pyforge.atlas.pipelines.pypi_intelligence.nodes import (
 _NOW = 1_800_000_000
 
 
-def test_serial_gate_three_conditions():
+def test_every_fetched_project_keeps_its_current_version_whatever_the_gate_says():
+    """Story 34.10: the gate picks what the fan-out fetches; the node keeps every fetched
+    project's version (it used to emit the eligible rows only, so a warm run shrank it)."""
     df = pd.DataFrame(
         {
             "pypi_name": ["never", "moved", "safety", "fresh"],
@@ -35,7 +37,9 @@ def test_serial_gate_three_conditions():
     )
     uni = pd.DataFrame({"pypi_name": ["never", "moved", "safety", "fresh"], "last_serial": [10, 20, 30, 40]})
     out = fetch_pypi_current_versions(df, uni, now=_NOW)
-    assert set(out["pypi_name"]) == {"never", "moved", "safety"}  # 'fresh' skipped
+    assert set(out["pypi_name"]) == {"never", "moved", "safety", "fresh"}
+    stamps = dict(zip(out["pypi_name"], out["pypi_version_serial_at_fetch"], strict=True))
+    assert stamps == {"never": 10, "moved": 15, "safety": 30, "fresh": 40}  # the serial each was fetched at
 
 
 def test_serial_gate_stamps_serial_at_fetch_and_retains_upload_time():
@@ -88,8 +92,8 @@ def test_serial_moved_is_null_safe():
     )
     uni = pd.DataFrame({"pypi_name": ["null-current"], "last_serial": [pd.NA]})
     out = fetch_pypi_current_versions(df, uni, now=_NOW)
-    # last_serial NULL, serial_at_fetch present, fetched recent -> NOT eligible
-    assert out.empty
+    # Story 34.10: a NULL current serial keeps the row and its own stamp
+    assert list(out["pypi_name"]) == ["null-current"] and out.iloc[0]["pypi_version_serial_at_fetch"] == 10
 
 
 def test_eligibility_stats_split_sums_to_eligible():

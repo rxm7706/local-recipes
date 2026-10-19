@@ -3,7 +3,7 @@
   "node": "fetch_pypi_downloads",
   "provenance": "shape-only-seed-B2-needs-B4-recapture",
   "inputs": {
-    "pypi_bigquery_downloads_raw": [
+    "pypi_clickhouse_downloads_raw": [
       {
         "pypi_name": "numpy",
         "month": "2026-01",
@@ -14,14 +14,16 @@
         "month": "2026-01",
         "downloads": 999
       }
-    ]
+    ],
+    "pypi_bigquery_downloads_raw": []
   },
   "expected": {
     "pypi_downloads_monthly": [
       {
         "pypi_name": "numpy",
         "month": "2026-01",
-        "downloads": 100
+        "downloads": 100,
+        "downloads_source": "clickhouse-clickpy"
       }
     ]
   }

@@ -753,3 +753,14 @@ def test_node_timeouts_covers_the_story_21_5_nodes():
         "project_artifactory_names",
     ):
         assert name in D.NODE_TIMEOUTS, f"{name} missing from NODE_TIMEOUTS"
+
+
+def test_every_node_of_the_default_pipeline_has_its_own_timeout():
+    """Story 34.8: the dict's stated invariant, pinned for every node rather than per story.
+    Fifteen nodes (Stories 21.6 and 23.1 and the derived/Artifactory joins) had fallen back
+    to DEFAULT_TIMEOUT by omission; Story 34.8's driver joined with its own entry."""
+    from pyforge.atlas.pipeline_registry import register_pipelines
+
+    names = {n.name for n in register_pipelines()["__default__"].nodes}
+    assert sorted(names - set(D.NODE_TIMEOUTS)) == []
+    assert sorted(set(D.NODE_TIMEOUTS) - names) == []

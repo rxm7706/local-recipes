@@ -10,10 +10,11 @@ own the fetch IO (THE A2 CRUX — the pure classification node never touches a c
   ``status/{regular,longterm,closed,paused,total}_status.json``. They enumerate the
   active/closed/paused migrations and **drive the partitioning** (:func:`migration_names`),
   so the surface generalizes with ZERO code change when a new migration appears upstream
-  (python314 today → python315 tomorrow). The active set = ``regular`` + ``longterm`` (the
-  open migrations the status page renders; :data:`ACTIVE_CATEGORIES`).
+  (python314 today → python315 tomorrow). The open set = ``regular`` + ``longterm``
+  (:data:`ACTIVE_CATEGORIES`); Story 34.8 partitions every migration any list names
+  (``drive_migration_status``), as the status page renders paused and closed ones too.
 - :class:`MigrationDetailDataset` — the per-migration ``status/migration_json/<name>.json``
-  detail, **partitioned by active migration** (one partition per migration name the category
+  detail, **partitioned by migration** (one partition per migration name the category
   lists surface — mirrors the catalog ``partitions.PartitionedDataset`` shape, with the AD-13
   offline-safety a stock ``PartitionedDataset`` has no way to provide). Each partition carries
   the per-feedstock buckets the status page renders: ``done``, ``in-pr``, ``awaiting-pr``,
@@ -42,6 +43,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -49,6 +51,7 @@ from typing import Any
 from kedro.io import AbstractDataset
 from pyforge.core.atomic_write import atomic_write_text
 
+from . import public_sources
 from .refresh import StalenessMarker, _safe_int
 
 logger = logging.getLogger(__name__)
@@ -76,8 +79,7 @@ BLOCKER_BUCKETS = (
 )
 
 # The category-list files (spec § FR-21). `regular` + `longterm` are the ACTIVE
-# (open) migrations that drive the partitioning; `closed`/`paused` are inactive;
-# `total` is the summary.
+# (open) migrations; `closed`/`paused` are inactive; `total` is the summary.
 CATEGORY_FILES = {
     "regular": "regular_status.json",
     "longterm": "longterm_status.json",
@@ -86,8 +88,11 @@ CATEGORY_FILES = {
     "total": "total_status.json",
 }
 
-# The categories whose migrations are ACTIVE (drive which detail partitions exist).
+# The categories whose migrations are ACTIVE (open).
 ACTIVE_CATEGORIES = ("regular", "longterm")
+
+# A migration name a partition file may carry: a bot migrator slug, never a path.
+_MIGRATION_NAME = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.+-]*")
 
 # The bot's version-update queue — DELIBERATELY EXCLUDED (spec § FR-21): the atlas
 # measures version currency itself (Phases H/K). A fetch never routes through it.
@@ -143,6 +148,13 @@ def migration_names(payload: Any) -> list[str]:
     return names
 
 
+def _public_json(url: str) -> Any:
+    """Story 34.8: one unauthenticated GET of a conda-forge-bot-data status file, parsed. A failed
+    request raises ``DatasetError``; a body that is not JSON raises ``ValueError``; both are the
+    caller's AD-13 degrade."""
+    return json.loads(public_sources.fetch_text(url))
+
+
 class _StaleAwareStatusSource(AbstractDataset):
     """Shared AD-13 base for the two migration-status source datasets.
 
@@ -171,6 +183,13 @@ class _StaleAwareStatusSource(AbstractDataset):
         # (subprocess/HTTP are on the A2 no-inline-IO denylist).
         self._fetcher = fetcher
         self.metadata = metadata
+
+    def _effective_fetcher(self) -> Callable[..., Any] | None:
+        """The injected fetcher, else (Story 34.8) the bot's public status file when live public
+        sources are on -- asked at each load or save, never at construction."""
+        if self._fetcher is not None:
+            return self._fetcher
+        return _public_json if public_sources.live() else None
 
     # -- AD-13 staleness sidecar (reused ExternalRefreshDataset shape) ------
 
@@ -259,7 +278,9 @@ class MigrationCategoryDataset(_StaleAwareStatusSource):
 
     def refresh(self, *, fetcher: Callable[[str], Any] | None = None) -> Any:
         """Fetch the category list via the injected ``fetcher`` (attended / Dagster-driven).
-        Offline / on failure / empty → keep last-good + mark stale + return last-good (AD-13).
+        Offline / on failure / empty → keep last-good + mark stale + return last-good (AD-13);
+        except that the bot's public file parsing to an empty object or list is a valid empty
+        category (Story 34.8).
         Never raises. This is the DATASET-owned fetch; the pure node consumes :meth:`load`."""
         fetcher = fetcher if fetcher is not None else self._fetcher
         last_good_exists = self._store_path.is_file()
@@ -278,7 +299,11 @@ class MigrationCategoryDataset(_StaleAwareStatusSource):
                 last_good_exists=last_good_exists,
             )
             return self._read_last_good()
-        if not payload:  # never write an empty/None payload over a good one (AD-13).
+        # never write an empty/None payload over a good one (AD-13) -- except the bot's own
+        # public file parsing to an empty object: that 200 says the category has no
+        # migrations (Story 34.8), and a truncated body would not have parsed
+        empty_category = fetcher is _public_json and isinstance(payload, (dict, list))
+        if not payload and not empty_category:
             self._mark_stale("category fetch returned no data", last_good_exists=last_good_exists)
             return self._read_last_good()
         try:
@@ -295,8 +320,11 @@ class MigrationCategoryDataset(_StaleAwareStatusSource):
 
     def load(self) -> Any:
         """OFFLINE-safe entry: with no fetcher wired, keep last-good + mark stale + return
-        the last-good (or ``None``). The credentialed refresh is attended-driven via
-        :meth:`refresh` (AD-11)."""
+        the last-good (or ``None``). Story 34.8: with live public sources on and no injected
+        fetcher, the load refreshes from the bot's public status file first (the category
+        files are small and public; the driver node reads them every run)."""
+        if self._fetcher is None and public_sources.live():
+            return self.refresh(fetcher=_public_json)
         if self._fetcher is None:
             self._mark_stale(
                 "offline: no GitHub-raw fetcher wired (consumer profile)",
@@ -323,10 +351,10 @@ class MigrationCategoryDataset(_StaleAwareStatusSource):
 
 class MigrationDetailDataset(_StaleAwareStatusSource):
     """The per-migration ``status/migration_json/<name>.json`` detail — PARTITIONED by
-    active migration (mirrors the catalog ``partitions.PartitionedDataset`` shape, with the
+    migration (mirrors the catalog ``partitions.PartitionedDataset`` shape, with the
     AD-13 offline-safety a stock ``PartitionedDataset`` cannot provide).
 
-    :meth:`fetch_partitions` takes the active migration names the CATEGORY LISTS surface and
+    :meth:`fetch_partitions` takes the migration names the CATEGORY LISTS surface and
     fetches one ``migration_json/<name>.json`` per name via the injected ``fetcher`` (GET of
     ``<url>/<name>.json``), writing one ``<name>.json`` partition each. ``load()`` returns
     ``{migration_name: detail_dict}`` — the resolved partitions the pure classification node
@@ -359,7 +387,7 @@ class MigrationDetailDataset(_StaleAwareStatusSource):
         *,
         fetcher: Callable[[str], Any] | None = None,
     ) -> dict[str, Any]:
-        """Fetch one detail partition per ACTIVE migration name (attended / Dagster-driven).
+        """Fetch one detail partition per migration name (attended / Dagster-driven).
 
         ``active_migrations`` is the list the category lists surface (via
         :func:`migration_names`); one ``GET migration_json/<name>.json`` per name, each
@@ -369,14 +397,18 @@ class MigrationDetailDataset(_StaleAwareStatusSource):
         (``fetcher=None``) → keep last-good + mark stale + return last-good. Never raises.
         Returns the resolved ``{name: detail}`` map. The pure node consumes :meth:`load`.
         """
-        fetcher = fetcher if fetcher is not None else self._fetcher
-        names = [n for n in _as_name_list(active_migrations) if n not in EXCLUDED_STATUS_FILES]
+        self._sweep(_partition_names(active_migrations), fetcher if fetcher is not None else self._fetcher)
+        return self._load_partitions()
+
+    def _sweep(self, names: list[str], fetcher: Callable[[str], Any] | None) -> bool:
+        """The sweep :meth:`fetch_partitions` and :meth:`save` share: whether every named
+        partition refreshed (``False`` offline, or after any failure, each under the marker)."""
         if fetcher is None:
             self._mark_stale(
                 "offline: no GitHub-raw fetcher wired (consumer profile)",
-                last_good_exists=self._partitions_dir.is_dir(),
+                last_good_exists=self._has_partitions(),
             )
-            return self._load_partitions()
+            return False
         any_failure = False
         for name in names:
             try:
@@ -396,23 +428,26 @@ class MigrationDetailDataset(_StaleAwareStatusSource):
         if any_failure:
             self._mark_stale(
                 "one or more migration detail partitions could not refresh",
-                last_good_exists=self._partitions_dir.is_dir(),
+                last_good_exists=self._has_partitions(),
             )
         else:
             self._clear_stale()
-        return self._load_partitions()
+        return not any_failure
+
+    def _partition_paths(self) -> list[Path]:
+        """Every persisted ``<name>.json`` partition; the hidden marker is never one."""
+        d = self._partitions_dir
+        return sorted(p for p in d.glob("*.json") if not p.name.startswith(".")) if d.is_dir() else []
+
+    def _has_partitions(self) -> bool:
+        return bool(self._partition_paths())
 
     def _load_partitions(self) -> dict[str, Any]:
         """Resolve every persisted ``<name>.json`` partition → ``{name: detail}``. Robust to a
         missing dir (returns ``{}``) and to a single unreadable partition (skipped, never
         crashes the whole load — AD-13)."""
         out: dict[str, Any] = {}
-        d = self._partitions_dir
-        if not d.is_dir():
-            return out
-        for path in sorted(d.glob("*.json")):
-            if path.name == self.STALENESS_FILENAME:  # defensive (marker is hidden)
-                continue
+        for path in self._partition_paths():
             try:
                 out[path.stem] = json.loads(path.read_text(encoding="utf-8"))
             except OSError, ValueError:  # a corrupt partition is skipped, not fatal (AD-13).
@@ -420,22 +455,54 @@ class MigrationDetailDataset(_StaleAwareStatusSource):
                 continue
         return out
 
+    def save(self, data: Any) -> None:
+        """Story 34.8: the driver node's sweep. ``data`` is the migration names the category
+        lists carry; one detail partition is fetched per name with the effective fetcher
+        (injected, else the public status file while live public sources are on). With
+        neither, keep last-good and mark stale, as :meth:`fetch_partitions` does offline.
+        Never raises (AD-13).
+
+        No names is never a clean sweep: last-good stays, under the marker. After a clean
+        sweep, a partition the names no longer list (a migration that left every list) is
+        removed, so the readiness node classifies only the migrations the bot still lists."""
+        fetcher = self._effective_fetcher()
+        names = _partition_names(data)
+        if fetcher is not None and not names:
+            self._mark_stale(
+                "no migration names to sweep (category lists empty or unreadable)",
+                last_good_exists=self._has_partitions(),
+            )
+            return
+        if not self._sweep(names, fetcher):
+            return
+        keep = {self._partition_filename(n) for n in names}
+        for path in self._partition_paths():
+            if path.name not in keep:
+                try:
+                    path.unlink()
+                except OSError as exc:  # a stale partition left behind is logged, never fatal
+                    logger.warning("migration detail partition not removed: %s: %s", path, exc)
+
     def load(self) -> dict[str, Any]:
         """OFFLINE-safe entry: return the resolved ``{name: detail}`` partitions (or ``{}``).
         With no fetcher wired AND no partitions yet, surface staleness (a never-populated
         store must not present 'no migrations' as healthy — the AD-13 false-negative guard).
-        The credentialed sweep is attended-driven via :meth:`fetch_partitions` (AD-11)."""
+        The sweep itself is the driver node's save (Story 34.8) or :meth:`fetch_partitions`;
+        the load never fetches, and never overwrites a marker the sweep left."""
         partitions = self._load_partitions()
-        if self._fetcher is None:
-            self._mark_stale(
-                "offline: no GitHub-raw fetcher wired (consumer profile)",
-                last_good_exists=bool(partitions),
-            )
-        elif not partitions:
-            self._mark_stale(
-                "wired fetcher but no detail partitions yet (attended sweep pending)",
-                last_good_exists=False,
-            )
+        if self._effective_fetcher() is not None:
+            marker = self.staleness()
+            # an offline marker from a run with no fetcher says nothing about this one
+            if not partitions and (marker is None or marker.reason.startswith("offline:")):
+                self._mark_stale(
+                    "no detail partitions yet (sweep pending)",
+                    last_good_exists=False,
+                )
+            return partitions
+        self._mark_stale(
+            "offline: no GitHub-raw fetcher wired (consumer profile)",
+            last_good_exists=bool(partitions),
+        )
         return partitions
 
     def _describe(self) -> dict[str, Any]:
@@ -443,10 +510,24 @@ class MigrationDetailDataset(_StaleAwareStatusSource):
             "url": self._url,
             "filepath": self._filepath,
             "fetcher_wired": self._fetcher is not None,
-            "partitioned_by": "active_migration",
+            "public_url": self._url,  # Story 34.8: read while live public sources are on
+            "partitioned_by": "migration",
             "excluded_status_files": sorted(EXCLUDED_STATUS_FILES),
             "source": type(self).__name__,
         }
+
+
+def _partition_names(value: Any) -> list[str]:
+    """The names a sweep may fetch and write: never the excluded queue, never a path."""
+    names = []
+    for name in _as_name_list(value):
+        if name in EXCLUDED_STATUS_FILES:
+            continue
+        if not _MIGRATION_NAME.fullmatch(name):
+            logger.warning("migration name %r is not a migrator slug; skipped", name)
+            continue
+        names.append(name)
+    return names
 
 
 def _as_name_list(value: Any) -> list[str]:
