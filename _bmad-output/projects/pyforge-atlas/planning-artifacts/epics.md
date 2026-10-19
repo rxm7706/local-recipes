@@ -2566,7 +2566,7 @@ As the PyPI-intelligence pipeline,
 I want the PyPI-to-conda mapping to fill the two tiers legacy fills after parselmouth,
 So that Phase H, the vdb scan and everything keyed on a PyPI name cover legacy's universe, not half of it.
 
-**Type:** feature • **Effort:** M • **Deps:** 34.2 (the parselmouth tier), 34.3 (node_attrs) • **FR/AD:** spec-pyforge-atlas CAP-64 (FR-72) • AD-3, AD-13
+**Type:** fix • **Effort:** M • **Deps:** 34.2 (the parselmouth tier), 34.3 (node_attrs) • **FR/AD:** spec-pyforge-atlas CAP-64 (FR-72) • AD-3, AD-13
 **Flag:** `pyforge.atlas.live_public_sources` (the node_attrs and simple-index fetches it reads; the mapping itself is pure)
 **Surface:** `datasets/core_sources.py` (each output's recipe `source_url` in the cf-graph frame), `pipelines/pypi_intelligence/` (`map_pypi_conda` and its inputs), `orchestration/definitions.py` (its budget), tests
 **Given** `map_pypi_conda` maps only the bot's parselmouth names (10,967 on 2026-10-18), while legacy's Phase H universe is 20,938 names, because legacy also maps a PyPI project whose lower-cased name is the conda name (Phase D, CFA:1837-1895) and every output attributed to a feedstock whose recipe downloads from PyPI (Phase C.5 in Phase E, CFA:2434-2446) (`DW-atlas-34-10-1`)
