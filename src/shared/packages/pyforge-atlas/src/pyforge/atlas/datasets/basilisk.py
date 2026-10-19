@@ -1,7 +1,7 @@
 """Basilisk conda-native vulnerability source datasets (Story B8, FR-19 / AD-2 / AD-13).
 
 The Vulnerability pipeline gains a second, conda-native identity axis: Basilisk
-(``api.basilisk.prefix.dev``) — a live, no-auth, OSV-compatible REST API matched against
+(``api.basilisk.prefix.dev``) — a live, OSV-compatible REST API matched against
 the conda-forge PURL (``pkg:conda/conda-forge/<name>@<version>``, the in-flight CEP-63 draft
 form; purl itself is ECMA-427). Two source datasets own the fetch IO (THE A2 CRUX — the pure
 node bodies never touch a client; ``tests/catalog/test_no_inline_io.py`` AST-scans the whole
@@ -151,6 +151,25 @@ def _status_and_wait(exc: BaseException) -> tuple[int | None, Any]:
     return None, None
 
 
+def _raise_waitable(exc: BaseException, what: str) -> None:
+    """Story 36.1: a 429 or 503 becomes a :class:`FetchError` carrying its ``Retry-After``, so the
+    caller waits and retries; any other failure is left to the caller."""
+    status, wait = _status_and_wait(exc)
+    if status in (429, 503):
+        error = FetchError(what, status)
+        error.retry_after = wait  # type: ignore[attr-defined]
+        raise error from exc
+
+
+def _why(exc: BaseException) -> str:
+    """A failure as its HTTP status, else its type: never its text (Story 35.1's rule for a
+    credentialed request)."""
+    status = getattr(exc, "status", None)
+    if not isinstance(status, int):
+        status, _wait = _status_and_wait(exc)
+    return f"HTTP {status}" if isinstance(status, int) else type(exc).__name__
+
+
 def build_conda_purl(conda_name: str, version: Any = None) -> str:
     """Build the conda PURL query key ``pkg:conda/conda-forge/<name>[@<version>]`` (CEP-63
     draft form). Pure; ``version`` optional (Basilisk matches name-first)."""
@@ -195,10 +214,10 @@ class _StaleAwareBasiliskSource(AbstractDataset):
     ) -> None:
         self._url = str(url)
         self._filepath = str(filepath)
-        # Injected IO. None == OFFLINE (consumer profile): a due fetch keeps last-good +
-        # marks stale, exactly like an unreachable endpoint (AD-13). The concrete Basilisk
-        # fetcher is supplied by the Dagster resource / an attended run (DW-B8-1) — NEVER
-        # imported here (subprocess/HTTP are on the A2 no-inline-IO denylist).
+        # Injected IO. None == no injected fetcher: Story 36.1's save() then composes an
+        # APIDataset with bearer auth, only under PYFORGE_ATLAS_CREDENTIALED=1 and the flag
+        # (Basilisk's advisory endpoints answer 401 without a token, 2026-10-18; its package
+        # listing answers unauthenticated). Never a raw HTTP client here (the A2 denylist).
         self._fetcher = fetcher
         if scheduler is not None:
             self.scheduler = scheduler
@@ -350,13 +369,24 @@ class BasiliskBatchDataset(_StaleAwareBasiliskSource):
         out: list[Any] = []
         try:
             for chunk in chunk_queries(purls):
-                self.scheduler.acquire()
-                got = fetcher(chunk)
+                attempt = 0
+                while True:
+                    self.scheduler.acquire()
+                    try:
+                        got = fetcher(chunk)
+                        break
+                    except FetchError as exc:  # Story 36.1: a 429 or 503 is waited out, as details are
+                        attempt += 1
+                        if attempt > DEFAULT_DETAIL_MAX_RETRIES:
+                            raise
+                        wait = parse_retry_after(getattr(exc, "retry_after", None))
+                        self._sleep(min(wait if wait > 0 else float(2**attempt), RETRY_AFTER_CAP_SECONDS))
                 if got:
                     out.extend(got)
         except Exception as exc:  # AD-13: an unreachable endpoint never fails the run.
-            logger.warning("Basilisk querybatch failed, keeping last-good: %s", exc)
-            self._mark_stale(f"querybatch failed: {type(exc).__name__}: {exc}")
+            # Story 36.1: the status or the type only -- the text can quote a credentialed request
+            logger.warning("Basilisk querybatch failed, keeping last-good: %s", _why(exc))
+            self._mark_stale(f"querybatch failed: {_why(exc)}")
             return self._read_last_good()
         self._persist(out)
         return out
@@ -368,8 +398,7 @@ class BasiliskBatchDataset(_StaleAwareBasiliskSource):
         with a token in ``PYFORGE_ATLAS_BASILISK_TOKEN`` (the endpoint answers 401 without one,
         2026-10-18); otherwise nothing is sent and last-good is kept under a marker."""
         if not isinstance(data, RefreshRequest):
-            super().save(data)
-            return
+            super().save(data)  # raises: the store takes only a RefreshRequest trigger
         if not population_live():
             return  # flag off: the attended path (DW-B8-1), as before this story
         fetcher = self._fetcher
@@ -395,7 +424,11 @@ class BasiliskBatchDataset(_StaleAwareBasiliskSource):
             credentials=auth,  # type: ignore[arg-type, unused-ignore]  # a callable auth; requests accepts it
             response_dataset={"type": "kedro.io.MemoryDataset", "copy_mode": "assign"},
         )
-        inner.save({"queries": [{"package": {"purl": str(p)}} for p in purls]})
+        try:
+            inner.save({"queries": [{"package": {"purl": str(p)}} for p in purls]})
+        except DatasetError as exc:
+            _raise_waitable(exc, "querybatch")
+            raise
         response = inner.get_last_response()
         payload = response.json() if hasattr(response, "json") else response
         results = payload.get("results") if isinstance(payload, dict) else None
@@ -522,8 +555,8 @@ class BasiliskDetailDataset(_StaleAwareBasiliskSource):
                         # push a Retry-After / backoff past the ceiling ("never hang").
                         self._sleep(min(_apply_jitter(wait, self._rng), RETRY_AFTER_CAP_SECONDS))
         except Exception as exc:  # AD-13: never fail the run on an unreachable endpoint.
-            logger.warning("Basilisk detail fetch failed, keeping last-good: %s", exc)
-            self._mark_stale(f"detail fetch failed: {type(exc).__name__}: {exc}")
+            logger.warning("Basilisk detail fetch failed, keeping last-good: %s", _why(exc))
+            self._mark_stale(f"detail fetch failed: {_why(exc)}")
             return self._read_last_good()
         self._persist(out)
         return out
@@ -532,8 +565,7 @@ class BasiliskDetailDataset(_StaleAwareBasiliskSource):
         """Story 36.1: the detail trigger (``refresh_basilisk_details``), gated as
         :meth:`BasiliskBatchDataset.save` is."""
         if not isinstance(data, RefreshRequest):
-            super().save(data)
-            return
+            super().save(data)  # raises: the store takes only a RefreshRequest trigger
         if not population_live():
             return
         fetcher = self._fetcher
@@ -555,11 +587,7 @@ class BasiliskDetailDataset(_StaleAwareBasiliskSource):
         try:
             response = APIDataset(url=url, load_args={"timeout": _REQUEST_TIMEOUT_SECONDS, "auth": auth}).load()
         except DatasetError as exc:
-            status, wait = _status_and_wait(exc)
-            if status in (429, 503):
-                error = FetchError(str(advisory_id), status)
-                error.retry_after = wait  # type: ignore[attr-defined]
-                raise error from exc
+            _raise_waitable(exc, str(advisory_id))
             raise
         return response.json() if hasattr(response, "json") else response
 

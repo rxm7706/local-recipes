@@ -206,8 +206,9 @@ def test_combined_seven_pipeline_dag_resolves_topologically():
     combined = (
         core_create() + vcs_create() + pypi_create() + vuln_create() + seed_create() + sbom_create() + derived_create()
     )
-    # 8 core + 12 vcs + 17 pypi + 9 vuln + 4 seed_gaps + 4 universal_sbom
-    # + 7 derived_artifacts = 61 nodes (Story 25.2: vcs_health 10 -> 11; Story 34.8: 11 -> 12).
+    # 8 core + 12 vcs + 17 pypi + 11 vuln + 4 seed_gaps + 4 universal_sbom
+    # + 7 derived_artifacts = 63 nodes (Story 25.2: vcs_health 10 -> 11; Story 34.8: 11 -> 12;
+    # Story 36.1: vulnerability 9 -> 11).
     assert len(combined.nodes) == 63  # Story 34.8: + drive_migration_status; Story 36.1: + 2 Basilisk triggers
     grouped = combined.grouped_nodes
     assert sum(len(g) for g in grouped) == 63

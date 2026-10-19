@@ -2658,7 +2658,7 @@ So that the listing fills unattended and the three Basilisk datasets fill once t
 **Given** `query_population` and `fetch_details` are never called, `load()` returns last-good even with a fetcher, the package listing has no refresher (`DW-atlas-34-6-2`), and the advisory endpoints answer 401 without a bearer token (probed 2026-10-18)
 **When** the pipeline runs with the flag on
 **Then** a plain run with network fills `discovery_basilisk_packages_raw`; against a recorded fixture the advisories, details and rollup fill; without `PYFORGE_ATLAS_CREDENTIALED=1` no request carries a credential and the three stores keep last-good under `stale`
-**And** with the opt-in and a `basilisk_token`, a live run's population equals `core_packages_enumerated`'s row count (operator-attended; no token exists today)
+**And** with the opt-in and a Basilisk token in `PYFORGE_ATLAS_BASILISK_TOKEN`, a live run's population equals `core_packages_enumerated`'s row count (operator-attended; no token exists today)
 **Status:** backlog
 
 ### Story 36.2: The OpenTeams board and the staged-recipes PRs fill on opt-in

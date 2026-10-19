@@ -254,3 +254,120 @@ def test_the_real_reader_reads_the_key_from_the_tree(tmp_path, monkeypatch, vari
     monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(flagd_tree(tmp_path, {B.POPULATION_FLAG_KEY: variant})))
 
     assert _REAL_POPULATION() is (variant == "on")
+
+
+# -- review round 1 ------------------------------------------------------------------------------
+
+
+def _answering(monkeypatch, answers: list[tuple[int, dict, dict]]) -> list:  # noqa: ANN001
+    """Answer each request with the next ``(status, json, headers)``; the last one repeats."""
+    import requests
+    import requests.adapters
+
+    sent: list = []
+
+    def send(self, request, *args, **kwargs):  # noqa: ANN001, ANN202
+        sent.append(request)
+        status, body, headers = answers.pop(0) if len(answers) > 1 else answers[0]
+        response = requests.models.Response()
+        response.status_code, response._content, response.url, response.request = (
+            status,
+            json.dumps(body).encode(),
+            request.url,
+            request,
+        )
+        response.headers.update({"Content-Type": "application/json", **headers})
+        return response
+
+    monkeypatch.setattr(requests.adapters.HTTPAdapter, "send", send)
+    return sent
+
+
+def test_with_the_flag_off_the_detail_store_sends_nothing_either(tmp_path, fake_transport, credentialed):
+    ds = _detail(tmp_path)
+
+    ds.save(RefreshRequest(store="vulnerability_basilisk_detail_raw", force=True, basilisk_ids=("GHSA-1",)))
+
+    assert fake_transport.sent == [] and not ds._staleness_path.exists()
+
+
+def test_a_detail_store_no_refresh_has_reached_still_reads_as_stale(tmp_path, population_on):
+    ds = _detail(tmp_path)
+
+    assert ds.load() == [] and "not yet populated" in _marker(ds)
+
+
+def test_the_details_wait_out_a_429s_retry_after_and_retry_a_503(tmp_path, population_on, credentialed, monkeypatch):
+    sent = _answering(
+        monkeypatch,
+        [(429, {}, {"Retry-After": "7"}), (503, {}, {}), (200, {"id": "GHSA-1"}, {})],
+    )
+    waits: list[float] = []
+    ds = B.BasiliskDetailDataset(url=VULNS, filepath=str(tmp_path / "d"), scheduler=_scheduler(), sleep=waits.append)
+
+    ds.save(RefreshRequest(store="vulnerability_basilisk_detail_raw", force=True, basilisk_ids=("GHSA-1",)))
+
+    assert len(sent) == 3 and ds.load() == [{"id": "GHSA-1"}]
+    assert 7 * 0.75 <= waits[0] <= 7 * 1.25 and len(waits) == 2  # Retry-After, jittered; then a backoff
+
+
+def test_the_querybatch_waits_out_a_429_too(tmp_path, population_on, credentialed, monkeypatch):
+    vuln = {"id": "GHSA-2", "modified": "m", "affected": []}
+    sent = _answering(monkeypatch, [(429, {}, {"Retry-After": "7"}), (200, {"results": [{"vulns": [vuln]}]}, {})])
+    waits: list[float] = []
+    ds = B.BasiliskBatchDataset(url=BATCH, filepath=str(tmp_path / "b"), scheduler=_scheduler(), sleep=waits.append)
+
+    ds.save(_population("numpy"))
+
+    assert len(sent) == 2 and waits == [7.0] and ds.load()[0]["advisories"] == [vuln]
+
+
+@pytest.mark.parametrize(
+    ("url", "named"),
+    [
+        ("https://basilisk.example/v1/querybatch", "https://basilisk.example"),
+        ("http://api.basilisk.prefix.dev/v1/querybatch", "http://api.basilisk.prefix.dev"),
+    ],
+    ids=["another-host", "plain-http"],
+)
+def test_another_host_or_http_is_sent_nothing_and_the_marker_names_it(
+    tmp_path, fake_transport, population_on, credentialed, url, named
+):
+    ds = B.BasiliskBatchDataset(url=url, filepath=str(tmp_path / "b"), scheduler=_scheduler())
+
+    ds.save(_population("numpy"))
+
+    assert fake_transport.sent == [] and f"{named} is not https://" in _marker(ds) and TOKEN not in _marker(ds)
+
+
+def test_an_advisory_id_is_quoted_into_its_path(tmp_path, population_on, credentialed, monkeypatch):
+    sent = _answering(monkeypatch, [(200, {"id": "a/b"}, {})])
+
+    _detail(tmp_path).save(RefreshRequest(store="vulnerability_basilisk_detail_raw", force=True, basilisk_ids=("a/b",)))
+
+    assert [r.url for r in sent] == [f"{VULNS}/a%2Fb"]
+
+
+def test_the_drivers_output_reaches_the_details_and_the_rollup(tmp_path, population_on, credentialed, monkeypatch):
+    from pyforge.atlas.pipelines.derived_artifacts.nodes import derive_basilisk_vuln_rollup
+    from pyforge.atlas.pipelines.vulnerability.nodes import fetch_basilisk_details
+
+    vuln = {"id": "GHSA-9", "modified": "m", "affected": [{"package": {"ecosystem": "conda-forge"}}]}
+    detail = {
+        "id": "GHSA-9",
+        "severity": [{"type": "CVSS_V3", "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"}],
+        "affected": [{"ranges": [{"type": "ECOSYSTEM", "events": [{"introduced": "0"}, {"fixed": "2.0"}]}]}],
+    }
+    _answering(monkeypatch, [(200, {"results": [{"vulns": [vuln]}]}, {})])
+    batch = _batch(tmp_path)
+    batch.save(_population("numpy"))
+    advisories = ingest_basilisk_advisories(batch.load(), pd.DataFrame({"conda_name": ["numpy"]}))
+    _answering(monkeypatch, [(200, detail, {})])
+    details_store = _detail(tmp_path)
+    details_store.save(refresh_basilisk_details(advisories))
+
+    details = fetch_basilisk_details(details_store.load(), advisories)
+    rollup = derive_basilisk_vuln_rollup(advisories, details)
+
+    assert details["advisory_id"].tolist() == ["GHSA-9"] and details["fix_available"].tolist() == ["true"]
+    assert rollup["conda_name"].tolist() == ["numpy"] and len(rollup) == 1
