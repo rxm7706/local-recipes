@@ -371,3 +371,59 @@ def test_the_drivers_output_reaches_the_details_and_the_rollup(tmp_path, populat
 
     assert details["advisory_id"].tolist() == ["GHSA-9"] and details["fix_available"].tolist() == ["true"]
     assert rollup["conda_name"].tolist() == ["numpy"] and len(rollup) == 1
+
+
+# -- review round 2 ------------------------------------------------------------------------------
+
+
+class _Counting(RateLimitedScheduler):
+    def __init__(self) -> None:
+        super().__init__(rps=1000.0, bucket_capacity=1000)
+        self.acquired = 0
+
+    def acquire(self) -> None:  # type: ignore[override]
+        self.acquired += 1
+        super().acquire()
+
+
+def test_a_querybatch_that_stays_rate_limited_gives_up_and_says_only_the_status(
+    tmp_path, population_on, credentialed, monkeypatch
+):
+    sent = _answering(monkeypatch, [(429, {"detail": "slow down"}, {"Retry-After": "1"})])
+    scheduler, waits = _Counting(), []
+    ds = B.BasiliskBatchDataset(url=BATCH, filepath=str(tmp_path / "b"), scheduler=scheduler, sleep=waits.append)
+
+    ds.save(_population("numpy"))
+
+    attempts = B.DEFAULT_DETAIL_MAX_RETRIES + 1
+    assert len(sent) == attempts and scheduler.acquired == attempts and len(waits) == attempts - 1
+    assert json.loads(_marker(ds))["reason"] == "querybatch failed: HTTP 429"  # never the text or the URL
+
+
+def test_one_failing_id_keeps_its_last_good_and_the_pass_goes_on(tmp_path, population_on, credentialed, monkeypatch):
+    ds = _detail(tmp_path)
+    _answering(monkeypatch, [(200, {"id": "GHSA-1", "v": 1}, {})])
+    ds.save(RefreshRequest(store="vulnerability_basilisk_detail_raw", force=True, basilisk_ids=("GHSA-1",)))
+    _answering(monkeypatch, [(404, {"detail": "gone"}, {}), (200, {"id": "GHSA-2"}, {})])
+
+    ds.save(RefreshRequest(store="vulnerability_basilisk_detail_raw", force=True, basilisk_ids=("GHSA-1", "GHSA-2")))
+
+    assert ds.load() == [{"id": "GHSA-1", "v": 1}, {"id": "GHSA-2"}]
+    assert json.loads(_marker(ds))["reason"] == "detail fetch failed for 1 of 2 ids (first: GHSA-1: HTTP 404)"
+
+
+def test_when_every_id_fails_the_last_good_is_kept(tmp_path, population_on, credentialed, monkeypatch):
+    ds = _detail(tmp_path)
+    _answering(monkeypatch, [(200, {"id": "GHSA-1"}, {})])
+    ds.save(RefreshRequest(store="vulnerability_basilisk_detail_raw", force=True, basilisk_ids=("GHSA-1",)))
+    _answering(monkeypatch, [(502, {}, {})])
+
+    ds.save(RefreshRequest(store="vulnerability_basilisk_detail_raw", force=True, basilisk_ids=("GHSA-1", "GHSA-3")))
+
+    assert ds.load() == [{"id": "GHSA-1"}] and "for all 2 ids (first: GHSA-1: HTTP 502)" in _marker(ds)
+
+
+def test_an_exported_token_never_reaches_a_test(monkeypatch):
+    import os
+
+    assert credential_switch.BASILISK_TOKEN_ENV not in os.environ

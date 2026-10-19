@@ -2659,7 +2659,7 @@ So that the listing fills unattended and the three Basilisk datasets fill once t
 **When** the pipeline runs with the flag on
 **Then** a plain run with network fills `discovery_basilisk_packages_raw`; against a recorded fixture the advisories, details and rollup fill; without `PYFORGE_ATLAS_CREDENTIALED=1` no request carries a credential and the three stores keep last-good under `stale`
 **And** with the opt-in and a Basilisk token in `PYFORGE_ATLAS_BASILISK_TOKEN`, a live run's population equals `core_packages_enumerated`'s row count (operator-attended; no token exists today)
-**Status:** backlog
+**Status:** done
 
 ### Story 36.2: The OpenTeams board and the staged-recipes PRs fill on opt-in
 

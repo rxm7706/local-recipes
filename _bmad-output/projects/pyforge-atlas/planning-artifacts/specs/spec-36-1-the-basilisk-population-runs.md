@@ -2,7 +2,7 @@
 title: "36.1: The Basilisk population runs"
 type: 'feature'
 created: '2026-10-18'
-status: 'in-review'
+status: 'done'
 baseline_revision: '24581b35b8'
 flag:
   key: pyforge.atlas.basilisk_population          # new; minted by this story (the advisory drivers)
@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'the advisory and detail stores keep the attended path (DW-B8-1): no trigger sends anything, load() serves last-good'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -73,7 +73,8 @@ Type / Effort / Deps: feature / M / Story 35.1 (the switch, bearer auth, the POS
 - **AC3 — The querybatch.** Under the flag, the switch and a token: a bearer POST of OSV queries; each result lands on
   its queried package, a PyPI-tagged advisory included; a misaligned answer keeps last-good.
 - **AC4 — The details.** A bearer GET per id, its id quoted into the path; a 429's `Retry-After` waited and a 503
-  retried, as for a querybatch chunk; the driver output reaches `fetch_basilisk_details` and the rollup.
+  retried, as for a querybatch chunk; an id that fails otherwise keeps its last-good record and the pass goes on;
+  the driver output reaches `fetch_basilisk_details` and the rollup.
 - **AC5 — Nothing sent otherwise.** Flag off: nothing, no marker. No switch, no token, another host or http: nothing,
   last-good under a marker that names why, never the token.
 - **AC6 — Flag.** Registered in the flag tree, its overlays, pyforge-core's and the platform's tables; tested in both
@@ -127,6 +128,11 @@ network.
 ## Spec Change Log
 
 - 2026-10-18: written with the implementation (branch `atlas-36-1-basilisk`, cut from `main` at `24581b35b8`).
+- 2026-10-18, review round 2 (PASS), its should-fix and nits taken: the suite unsets `PYFORGE_ATLAS_BASILISK_TOKEN`
+  (an operator who exports it, as `DW-atlas-36-1-1` asks, no longer reds the suite); tests pin the querybatch
+  retry's bound, one rate token per attempt and a marker that is the status alone; one advisory id that fails (a
+  404, a 502) keeps its last-good record and the pass goes on, the marker counting the failures (every id failing
+  keeps last-good); the querybatch backoff is jittered as the details' is.
 - 2026-10-18, review round 1 (FAIL), fixed:
   - B1, B2: the detail store's flag-off gate and its never-populated marker are tested.
   - Should-fix: the Retry-After wait and the 503 retry are proven (and the querybatch now waits them out too); the

@@ -31,6 +31,8 @@ def _vcs_universe_off_and_no_switch(monkeypatch: pytest.MonkeyPatch) -> None:
     ``PYFORGE_ATLAS_CREDENTIALED`` unset. A test of the credentialed path patches both."""
     monkeypatch.setattr(credential_switch, "live_vcs_universe", lambda: False)
     monkeypatch.delenv(credential_switch.SWITCH, raising=False)
+    # Story 36.1: an operator's exported Basilisk token never reaches a test
+    monkeypatch.delenv(credential_switch.BASILISK_TOKEN_ENV, raising=False)
 
 
 @pytest.fixture(autouse=True)

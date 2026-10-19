@@ -380,7 +380,8 @@ class BasiliskBatchDataset(_StaleAwareBasiliskSource):
                         if attempt > DEFAULT_DETAIL_MAX_RETRIES:
                             raise
                         wait = parse_retry_after(getattr(exc, "retry_after", None))
-                        self._sleep(min(wait if wait > 0 else float(2**attempt), RETRY_AFTER_CAP_SECONDS))
+                        backoff = _apply_jitter(float(2**attempt), random.Random()) if wait <= 0 else wait
+                        self._sleep(min(backoff, RETRY_AFTER_CAP_SECONDS))
                 if got:
                     out.extend(got)
         except Exception as exc:  # AD-13: an unreachable endpoint never fails the run.
@@ -534,6 +535,10 @@ class BasiliskDetailDataset(_StaleAwareBasiliskSource):
                 _seen.add(i)
                 ids.append(i)
         out: list[Any] = []
+        # Story 36.1: an id that fails for any reason but a rate limit (a 404, a 502) keeps its
+        # last-good record and the pass goes on; one bad id never holds every detail stale.
+        last_good = {str(r.get("id")): r for r in self._read_last_good() if isinstance(r, dict)}
+        failed: list[str] = []
         try:
             for aid in ids:
                 attempt = 0
@@ -554,11 +559,23 @@ class BasiliskDetailDataset(_StaleAwareBasiliskSource):
                         # Hard-cap the FINAL wait (post-jitter) at the cap — jitter must never
                         # push a Retry-After / backoff past the ceiling ("never hang").
                         self._sleep(min(_apply_jitter(wait, self._rng), RETRY_AFTER_CAP_SECONDS))
+                    except Exception as exc:  # noqa: BLE001 -- this id only (a rate limit stops the pass)
+                        failed.append(f"{aid}: {_why(exc)}")
+                        if str(aid) in last_good:
+                            out.append(last_good[str(aid)])
+                        break
         except Exception as exc:  # AD-13: never fail the run on an unreachable endpoint.
             logger.warning("Basilisk detail fetch failed, keeping last-good: %s", _why(exc))
             self._mark_stale(f"detail fetch failed: {_why(exc)}")
             return self._read_last_good()
+        if failed and len(failed) == len(ids):
+            logger.warning("Basilisk detail fetch failed for every id, keeping last-good: %s", failed[0])
+            self._mark_stale(f"detail fetch failed for all {len(ids)} ids (first: {failed[0]})")
+            return self._read_last_good()
         self._persist(out)
+        if failed:
+            logger.warning("Basilisk detail fetch failed for %d of %d ids", len(failed), len(ids))
+            self._mark_stale(f"detail fetch failed for {len(failed)} of {len(ids)} ids (first: {failed[0]})")
         return out
 
     def save(self, data: Any) -> None:
