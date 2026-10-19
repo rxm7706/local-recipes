@@ -84,15 +84,18 @@ identity sources).
 
 - Unit, from the repo root: `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_identity_live_sources.py`.
 - **Live, recorded 2026-10-18,** on a scratch data root (dev, flag on), with `PYFORGE_ATLAS_CREDENTIALED=1` and the
-  `gh` CLI's token through a scratch `--env verify` (operator ruling); no token in the log:
-  - `--pipelines upstream_discovery --nodes refresh_openteams_board,refresh_staged_recipes_prs,build_identity_packages_primary`
-    (12 min) exit 0, no marker.
-  - **The board:** 9,814 issues (5,337 open, 4,477 closed).
-  - **The PRs:** 20,000 PRs (1,222 open), numbers 14,827 to 35,250; the files of 500 open PRs.
+  `gh` CLI's token through a scratch `--env verify` (operator ruling); no token in any log:
+  - First run, at the caps of Story 21.x: `--pipelines upstream_discovery --nodes refresh_openteams_board,refresh_staged_recipes_prs,build_identity_packages_primary`
+    (12 min) exit 0, no marker. The board: 9,814 issues (5,337 open, 4,477 closed). The PRs: 20,000 (1,222 open),
+    numbers 14,827 to 35,250, files for 500 open PRs.
+  - After review round 1, with the caps lifted: `--nodes refresh_staged_recipes_prs,build_identity_packages_primary`
+    (19 min) exit 0, no marker. The PRs: 34,081, numbers 1 to 35,251 (the whole history), 1,223 open, files for
+    1,222.
   - **`identity_packages_primary`:** 9,075 rows (8,204 `openteams-board`, 868 `purl-associator`, 3 `inventory`);
-    9,057 carry an OpenTeams issue URL, 2,129 a staged-recipes PR URL.
-  - **Downstream,** `--pipelines derived_artifacts` with no switch exit 0: `identity_complete_export` 9,075 rows,
-    `inventory_priority_assignments` 9,075 rows. Every priority is P10: this root has no JFrog consumption.
+    9,057 carry an OpenTeams issue URL and 3,858 a staged-recipes PR URL (2,129 at the old caps).
+  - **Downstream,** `--pipelines derived_artifacts` with no switch exit 0: `identity_complete_export` 9,075 rows
+    (3,858 with a PR URL), `inventory_priority_assignments` 9,075 rows. Every priority is P10: this root has no JFrog
+    consumption.
   - The legacy identity script is retired, so there is no same-day oracle.
 
 ## Boundaries & Constraints
