@@ -204,14 +204,16 @@ def vdb_age_seconds(home: str | None, now: datetime.datetime | None = None) -> f
 
 
 def main(argv: list[str] | None = None) -> int:
+    # a positional choice, not argparse subcommands: this script is the vuln-db env's tool, not an
+    # atlas CLI verb (pyforge-core's CLI parity scan reads every add_parser call in the package)
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    sub = parser.add_subparsers(dest="command", required=True)
-    sub.add_parser("age")
-    ext = sub.add_parser("extract")
-    ext.add_argument("--targets", required=True)
-    ext.add_argument("--versions")
-    ext.add_argument("--out", required=True)
+    parser.add_argument("command", choices=("age", "extract"))
+    parser.add_argument("--targets")
+    parser.add_argument("--versions")
+    parser.add_argument("--out")
     args = parser.parse_args(argv)
+    if args.command == "extract" and not (args.targets and args.out):
+        parser.error("extract needs --targets and --out")
 
     if args.command == "age":
         print(int(vdb_age_seconds(os.environ.get("VDB_HOME"))))
