@@ -36,6 +36,16 @@ def request_args(timeout: int) -> dict[str, Any]:
     return {"timeout": timeout, "auth": _no_auth}
 
 
+def fetch_bytes(url: str, *, timeout: int = 300) -> bytes:
+    """Story 34.7: one unauthenticated public GET over a composed ``APIDataset`` (AD-2), as
+    bytes (an archive such as OSV's ``all.zip``). A failed request raises ``DatasetError``."""
+    payload = APIDataset(url=url, load_args=request_args(timeout)).load()
+    content = getattr(payload, "content", None)
+    if not isinstance(content, bytes):
+        raise DatasetError(f"{url}: expected a bytes body, got {type(content).__name__}")
+    return content
+
+
 def fetch_text(url: str, *, timeout: int = 300) -> str:
     """Story 34.6: one unauthenticated public GET over a composed ``APIDataset`` (AD-2), as
     text: the declared charset, else UTF-8 (requests would read a ``text/*`` body with no

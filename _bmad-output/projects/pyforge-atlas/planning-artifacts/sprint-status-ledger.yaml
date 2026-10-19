@@ -114,7 +114,7 @@ development_status:
   34-4-the-download-tables-fill-from-anaconda-s-monthly-parquet: done
   34-5-the-five-os-distro-indexes-refresh-themselves: done
   34-6-the-public-discovery-stores-refresh-themselves: done
-  34-7-the-vulnerability-stores-refresh-themselves: backlog
+  34-7-the-vulnerability-stores-refresh-themselves: done
   34-8-migration-status-fills-through-a-driver-node: done
   34-9-phase-p-fills-from-the-public-clickhouse-mirror: done
   35-1-one-opt-in-switch-and-github-authenticates: done
@@ -196,7 +196,7 @@ development_status:
   epic-32-retrospective: optional
   epic-33: done
   epic-33-retrospective: optional
-  epic-34: in-progress
+  epic-34: done
   epic-34-retrospective: optional
   epic-35: in-progress
   epic-35-retrospective: optional
