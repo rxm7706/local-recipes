@@ -2633,7 +2633,7 @@ So that `vcs_registry_versions` and the non-GitHub upstream versions fill.
 
 **Type:** feature • **Effort:** M • **Deps:** 35.2 • **FR/AD:** spec-pyforge-atlas CAP-65 (FR-73) • AD-2, AD-13
 **Flag:** `pyforge.atlas.live_vcs_universe`
-**Surface:** `datasets/vcs_sources.py`, `conf/base/catalog.yml`, tests
+**Surface:** `datasets/vcs_sources.py` (the hosts' release-then-tag path, the registries' version choices), `datasets/credentials.py` (`HeaderAuth`, `gitlab_auth`), `conf/base/catalog.yml` (crates and rubygems at one request a second), tests
 **Given** the stores are live-capable but their batches were empty
 **When** a run reaches them with the flag on
 **Then** `vcs_registry_versions` holds rows within the story's tolerance of legacy L (375, 2026-10-18), and GitLab and Codeberg upstream versions within legacy K's GitLab (400) and Codeberg (26) counts; public registries send no credential

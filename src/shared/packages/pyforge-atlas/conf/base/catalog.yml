@@ -689,6 +689,7 @@ vcs_registry_crates_raw:
   type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.CRATES_BASE_URL}
   registry: crates
+  rps: 1.0  # Story 35.4: legacy Phase L runs crates at concurrency 1 (about one request a second)
   credentials: crates_token
   filepath: ${globals:paths.data_root}/raw/vcs_registry_crates_raw
   metadata:
@@ -698,6 +699,7 @@ vcs_registry_rubygems_raw:
   type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.RUBYGEMS_BASE_URL}
   registry: rubygems
+  rps: 1.0  # Story 35.4: legacy Phase L runs rubygems at concurrency 1 (about one request a second)
   credentials: rubygems_token
   filepath: ${globals:paths.data_root}/raw/vcs_registry_rubygems_raw
   metadata:

@@ -52,6 +52,7 @@ from .refresh import (
     _ParquetRefreshStore,
     fetch_one_with_retry,
 )
+from .request_datasets import normalize_release_tag
 
 logger = logging.getLogger(__name__)
 
@@ -147,6 +148,25 @@ def _codeberg_path(base: str, identifier: str) -> str:
     return f"{base.rstrip('/')}/repos/{quote(owner, safe='')}/{quote(repo, safe='')}/tags?sort=updated&limit=1"
 
 
+def _live_host_paths(host: str, base: str, identifier: str) -> tuple[str, str]:
+    """Story 35.4: legacy Phase K's REST pair for a host (``_phase_k_fetch_one``, CFA:4922-5036):
+    the latest release, then the tags. GitLab keeps the project path whole (subgroups)."""
+    root = base.rstrip("/")
+    if host == "gitlab":
+        project = quote(_require_identifier("gitlab", identifier), safe="")
+        return f"{root}/projects/{project}/releases?per_page=1", f"{root}/projects/{project}/repository/tags?per_page=1"
+    _codeberg_path(base, identifier)  # validates the clean owner/repo
+    owner, repo = (quote(part, safe="") for part in identifier.strip("/").split("/"))
+    return f"{root}/repos/{owner}/{repo}/releases/latest", f"{root}/repos/{owner}/{repo}/tags?limit=10"
+
+
+def _release_tag(payload: Any) -> str | None:
+    """The tag of a release: GitLab lists releases, Codeberg (Gitea) returns the latest one."""
+    release = payload[0] if isinstance(payload, list) and payload else payload
+    tag = release.get("tag_name") if isinstance(release, dict) else None
+    return str(tag) if tag else None
+
+
 _HOST_SPECS: dict[str, _EndpointSpec] = {
     "gitlab": _EndpointSpec(_gitlab_path, lambda p: _first_list_item_field(p, "name")),
     "codeberg": _EndpointSpec(_codeberg_path, lambda p: _first_list_item_field(p, "name")),
@@ -219,7 +239,11 @@ def _crates_extract(payload: Any) -> str | None:
     if isinstance(payload, dict):
         crate = payload.get("crate")
         if isinstance(crate, dict):
-            v = crate.get("newest_version") or crate.get("max_stable_version")
+            if credential_switch.live_vcs_universe():
+                # Story 35.4: legacy _resolve_crates -- the newest stable version, else the newest
+                v = crate.get("max_stable_version") or crate.get("max_version")
+            else:
+                v = crate.get("newest_version") or crate.get("max_stable_version")
             return str(v) if v else None
     return None
 
@@ -238,6 +262,11 @@ def _rubygems_extract(payload: Any) -> str | None:
 
 def _maven_path(base: str, name: str) -> str:
     ident = _require_identifier("maven", name)
+    if credential_switch.live_vcs_universe():
+        # Story 35.4: legacy _resolve_maven -- a group:artifact coordinate asks for both
+        group, _, artifact = ident.partition(":")
+        query = f'g:"{group}" AND a:"{artifact}"' if artifact else f'a:"{ident}"'
+        return f"{base.rstrip('/')}/solrsearch/select?q={quote(query, safe='')}&rows=1&wt=json"
     return f"{base.rstrip('/')}/solrsearch/select?q=a:{quote(ident, safe='')}&rows=1&wt=json"
 
 
@@ -261,6 +290,10 @@ def _nuget_extract(payload: Any) -> str | None:
     if isinstance(payload, dict):
         versions = payload.get("versions")
         if isinstance(versions, list) and versions:
+            if credential_switch.live_vcs_universe():
+                # Story 35.4: legacy _resolve_nuget -- the last stable version (no "-" pre-release)
+                stable = [v for v in versions if "-" not in str(v)]
+                return str((stable or versions)[-1])
             return str(versions[-1])
     return None
 
@@ -340,6 +373,46 @@ class VcsHostSeedDataset(_ParquetRefreshStore, AbstractDataset):
             sleep=self._sleep,
         )
 
+    def _get(self, url: str, fetcher: Callable[[str], Any] | None) -> Any:
+        """Story 35.4: one bounded GET with legacy's auth: GitLab's ``PRIVATE-TOKEN`` only under the
+        switch, else nothing (a no-op auth keeps ``~/.netrc`` out). ``fetcher`` takes the URL."""
+
+        def _do_fetch() -> Any:
+            if fetcher is not None:
+                return fetcher(url)
+            args = public_sources.request_args(self._timeout_seconds)
+            auth = credential_switch.gitlab_auth(self._credentials, url) if self._host == "gitlab" else None
+            if auth is not None:
+                args["auth"] = auth
+            return _coerce_json(APIDataset(url=url, load_args=args).load())
+
+        return fetch_one_with_retry(
+            acquire=self.scheduler.acquire, fetch=_do_fetch, max_retries=self._max_retries, sleep=self._sleep
+        )
+
+    def _release_or_tag(
+        self, identifier: str, *, fetcher: Callable[[str], Any] | None
+    ) -> tuple[str | None, str | None]:
+        """Story 35.4: the latest release, else the first tag, normalized as legacy does
+        (``_fetch_release_or_tag``, CFA:4990); ``(None, reason)`` when there is neither."""
+        try:
+            release_url, tags_url = _live_host_paths(self._host, self._base_url, identifier)
+        except ValueError as exc:
+            return None, str(exc)
+        try:
+            tag = _release_tag(self._get(release_url, fetcher))
+        except Exception:  # noqa: BLE001 -- no release (often a 404): legacy falls back to the tags
+            tag = None
+        if not tag:
+            try:
+                tags = self._get(tags_url, fetcher)
+            except Exception as exc:  # noqa: BLE001 -- one project's failure is its row's error (AD-13)
+                return None, f"{type(exc).__name__}"
+            names = [t.get("name") for t in tags if isinstance(t, dict)] if isinstance(tags, list) else []
+            tag = next((str(n) for n in names if n), None)
+        version = normalize_release_tag(tag)
+        return version, None if version else "no tags"
+
     def load_many(
         self,
         identifiers: Sequence[tuple[str, str]],
@@ -351,7 +424,13 @@ class VcsHostSeedDataset(_ParquetRefreshStore, AbstractDataset):
         treated as EMPTY for persistence — never clobbers last-good with an all-null
         result)."""
         rows: list[dict[str, Any]] = []
+        live = credential_switch.live_vcs_universe()
         for conda_name, identifier in identifiers:
+            if live:
+                # Story 35.4: legacy's release-then-tag path (CFA:4990)
+                version, error = self._release_or_tag(identifier, fetcher=fetcher)
+                rows.append({"conda_name": conda_name, "upstream_version": version, "last_error": error})
+                continue
             try:
                 payload = self.fetch_one(identifier, fetcher=fetcher)
                 version = _HOST_SPECS[self._host].extract(payload)
