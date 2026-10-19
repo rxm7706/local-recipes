@@ -4,7 +4,7 @@ import pytest
 from pyforge.testing_kit import make_flag_provider_fixture
 
 from pyforge.atlas.datasets import credentials as credential_switch
-from pyforge.atlas.datasets import public_sources
+from pyforge.atlas.datasets import identity_sources, public_sources
 
 flag_provider = make_flag_provider_fixture()
 
@@ -30,6 +30,7 @@ def _vcs_universe_off_and_no_switch(monkeypatch: pytest.MonkeyPatch) -> None:
     """Story 35.1: every test starts with ``pyforge.atlas.live_vcs_universe`` OFF and
     ``PYFORGE_ATLAS_CREDENTIALED`` unset. A test of the credentialed path patches both."""
     monkeypatch.setattr(credential_switch, "live_vcs_universe", lambda: False)
+    monkeypatch.setattr(identity_sources, "identity_live", lambda: False)  # Story 36.2
     monkeypatch.delenv(credential_switch.SWITCH, raising=False)
 
 

@@ -659,6 +659,11 @@ _SHIPPED_BOOLEANS = {
         "staging": False,
         "production": False,
     },
+    "pyforge.atlas.identity_live_sources": {
+        "dev": True,
+        "staging": False,
+        "production": False,
+    },
     "pyforge.warden.fix_target_resolution": {
         "dev": True,
         "staging": True,

@@ -64,7 +64,10 @@ from typing import Any, Callable
 
 import pandas as pd
 from kedro.io import AbstractDataset
+from kedro_datasets.api import APIDataset
+from pyforge.core.flags import read_boolean
 
+from . import credentials as credential_switch
 from . import public_sources
 from .refresh import (
     DEFAULT_REFRESH_MAX_RETRIES,
@@ -327,6 +330,56 @@ query($cursor: String) {
 """
 
 
+#: Story 36.2: the flag that lets the board and the staged-recipes PRs fetch themselves
+IDENTITY_FLAG_KEY = "pyforge.atlas.identity_live_sources"
+_GITHUB_TIMEOUT_SECONDS = 60
+
+
+def identity_live() -> bool:
+    """Whether the OpenTeams board and the staged-recipes PRs fetch (read at the refresh)."""
+    return read_boolean(IDENTITY_FLAG_KEY, default=False)
+
+
+def _github_graphql(url: str, body: dict[str, Any], auth: credential_switch.BearerAuth) -> Any:
+    """Story 36.2: one GraphQL POST with bearer auth, through ``APIDataset.save`` (``load()`` sends
+    only GET) and an in-memory ``response_dataset`` (Story 35.1's route)."""
+    inner = APIDataset(
+        url=url,
+        method="POST",
+        save_args={"timeout": _GITHUB_TIMEOUT_SECONDS},
+        credentials=auth,  # type: ignore[arg-type, unused-ignore]  # a callable auth; requests accepts it
+        response_dataset={"type": "kedro.io.MemoryDataset", "copy_mode": "assign"},
+    )
+    inner.save(body)
+    response = inner.get_last_response()
+    return response.json() if hasattr(response, "json") else response
+
+
+def _github_get(url: str, auth: credential_switch.BearerAuth) -> Any:
+    """Story 36.2: one REST GET with bearer auth."""
+    response = APIDataset(url=url, load_args={"timeout": _GITHUB_TIMEOUT_SECONDS, "auth": auth}).load()
+    return response.json() if hasattr(response, "json") else response
+
+
+def _credentialed_refresher(
+    credentials: Any, url: str, refresh: Callable[[credential_switch.BearerAuth], pd.DataFrame]
+) -> Callable[[], pd.DataFrame] | None:
+    """Story 36.2: with ``pyforge.atlas.identity_live_sources`` on, a refresher that runs only
+    with Story 35.1's switch and a GitHub token (``github_auth``); without them it fails with the
+    reason, so the store keeps last-good under a marker that names it and nothing is sent."""
+    if not identity_live():
+        return None
+    auth = credential_switch.github_auth(credentials, url)
+    if auth is None:
+        reason = credential_switch.skip_reason(url)
+
+        def refuse() -> pd.DataFrame:
+            raise RuntimeError(reason)
+
+        return refuse
+    return lambda: refresh(auth)
+
+
 def _as_json(payload: Any) -> dict | None:
     if isinstance(payload, dict):
         return payload
@@ -422,14 +475,25 @@ class OpenTeamsBoardDataset(ExternalRefreshDataset):
             metadata=metadata,
         )
 
-    def _do_refresh(self) -> pd.DataFrame:
+    def _live_refresher(self) -> Callable[[], pd.DataFrame] | None:
+        # Story 36.2: the board needs a GitHub token (GraphQL is authenticated-only)
+        return _credentialed_refresher(
+            self._credentials,
+            self._url,
+            lambda auth: self._do_refresh(fetcher=lambda url, body: _github_graphql(url, body, auth)),
+        )
+
+    def _do_refresh(self, fetcher: Callable[[str, dict[str, Any]], Any] | None = None) -> pd.DataFrame:
+        fetch = fetcher if fetcher is not None else self._fetcher
+        if fetch is None:
+            raise RuntimeError("no OpenTeams board fetcher")
         rows: list[dict[str, Any]] = []
         cursor: str | None = None
         for _ in range(_OPENTEAMS_BOARD_MAX_PAGES):
             variables = {"cursor": cursor} if cursor else {}
             body = {"query": OPENTEAMS_BOARD_QUERY, "variables": variables}
             try:
-                payload = self._fetcher(self._url, body)
+                payload = fetch(self._url, body)
             except Exception as exc:  # AD-13: keep whatever pages already succeeded.
                 logger.warning(
                     "OpenTeams board GraphQL fetch failed (cursor=%r), keeping accumulated rows: %s",
@@ -625,13 +689,22 @@ class StagedRecipesPRDataset(ExternalRefreshDataset):
             metadata=metadata,
         )
 
-    def _do_refresh(self) -> pd.DataFrame:
+    def _live_refresher(self) -> Callable[[], pd.DataFrame] | None:
+        # Story 36.2: some 300 pages of PRs exceed GitHub's 60 unauthenticated requests an hour
+        return _credentialed_refresher(
+            self._credentials, self._url, lambda auth: self._do_refresh(fetcher=lambda url: _github_get(url, auth))
+        )
+
+    def _do_refresh(self, fetcher: Callable[[str], Any] | None = None) -> pd.DataFrame:
+        fetch = fetcher if fetcher is not None else self._fetcher
+        if fetch is None:
+            raise RuntimeError("no staged-recipes fetcher")
         rows: list[dict[str, Any]] = []
         base = self._url.rstrip("/")
         for page in range(1, _STAGED_PR_MAX_PAGES + 1):
             page_url = f"{base}/repos/conda-forge/staged-recipes/pulls?state=all&per_page=100&page={page}"
             try:
-                payload = self._fetcher(page_url)
+                payload = fetch(page_url)
             except Exception as exc:  # AD-13: keep whatever pages already succeeded.
                 logger.warning(
                     "staged-recipes PR list fetch failed at page=%s, keeping accumulated rows: %s",
@@ -672,7 +745,7 @@ class StagedRecipesPRDataset(ExternalRefreshDataset):
             while True:
                 files_url = f"{base}/repos/conda-forge/staged-recipes/pulls/{number}/files?per_page=100&page={page}"
                 try:
-                    payload = self._fetcher(files_url)
+                    payload = fetch(files_url)
                 except Exception as exc:
                     logger.warning("staged-recipes PR #%s files fetch failed: %s", number, exc)
                     break
