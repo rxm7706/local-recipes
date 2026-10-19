@@ -12,7 +12,7 @@ entries: 60
 real deferrals** (the run log's index of "54" double-counted two aliases; see § Provenance).
 Follow-up intake and verification campaigns added more `## DW-` headings without retiring
 that migration set — the frontmatter `entries` field tracks **`## DW-` headings only**, not
-the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**193** `### DW-` headings
+the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**206** `### DW-` headings
 today). Stale narrative prose here is exactly what Story 27.4's counting test guards against.
 
 ## Why this file exists
@@ -5072,4 +5072,70 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: operator ruling 2026-10-18 on CAP-66 ("Public listing now")
   severity: medium
   promoted: 2026-10-18 -- atlas Story 36.1; operator-owned (a credential)
+  status: open
+
+### DW-atlas-37-5-1: The cve-watcher has no vulnerability history to read.
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-atlas/SPEC.md`
+  summary: `VULN_HISTORY_PARQUET` (`primary/vuln_history/`) has no producer; `vulnerability_package_rollup` holds the current state only. Legacy keeps `vuln_history` and `cve_watcher.py` diffs two scans, so the board needs a snapshot-append node and at least two runs. The board stays honest-empty until the story lands (operator ruling 2026-10-19: "Data-first + 10 rewires", the six new-node boards to backlog).
+  evidence: the 2026-10-19 board audit (page 9); `docs/dreams/pyforge-atlas.md` § Realization log, 2026-10-19.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/data.py (VULN_HISTORY_PARQUET); pipelines/vulnerability
+  origin: operator ruling 2026-10-19 on CAP-69
+  severity: low
+  promoted: 2026-10-19 -- atlas Epic 37 chain; owned by Story 37.5
+  status: open
+
+### DW-atlas-37-6-1: The release-cadence has no per-version upload times.
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-atlas/SPEC.md`
+  summary: `RELEASE_CADENCE_PARQUET` has no producer: the board counts releases in 30, 90 and 365 days, and atlas reads only `current_repodata` (the latest version). Legacy reads `package_version_downloads.upload_unix`. The board stays honest-empty until the story lands (operator ruling 2026-10-19: "Data-first + 10 rewires", the six new-node boards to backlog).
+  evidence: the 2026-10-19 board audit (page 11); `docs/dreams/pyforge-atlas.md` § Realization log, 2026-10-19.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/data.py (RELEASE_CADENCE_PARQUET); pipelines/core
+  origin: operator ruling 2026-10-19 on CAP-69
+  severity: low
+  promoted: 2026-10-19 -- atlas Epic 37 chain; owned by Story 37.6
+  status: open
+
+### DW-atlas-37-7-1: The find-alternative has no candidate table.
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-atlas/SPEC.md`
+  summary: `ALTERNATIVE_CANDIDATES_PARQUET` has no producer; legacy `find_alternative.py` scores one archived package per query from summaries and keywords the store does not hold. The board stays honest-empty until the story lands (operator ruling 2026-10-19: "Data-first + 10 rewires", the six new-node boards to backlog).
+  evidence: the 2026-10-19 board audit (page 12); `docs/dreams/pyforge-atlas.md` § Realization log, 2026-10-19.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/data.py (ALTERNATIVE_CANDIDATES_PARQUET)
+  origin: operator ruling 2026-10-19 on CAP-69
+  severity: low
+  promoted: 2026-10-19 -- atlas Epic 37 chain; owned by Story 37.7
+  status: open
+
+### DW-atlas-37-8-1: The export-purls has no manifest of PURL artifacts.
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-atlas/SPEC.md`
+  summary: `PURL_EXPORT_MANIFEST_PARQUET` has no producer; `derived_purl_exports` writes only `artifactory_downloads.tsv`, and the six legacy `export_purls.py` artifacts are not ported. The board stays honest-empty until the story lands (operator ruling 2026-10-19: "Data-first + 10 rewires", the six new-node boards to backlog).
+  evidence: the 2026-10-19 board audit (page 17); `docs/dreams/pyforge-atlas.md` § Realization log, 2026-10-19.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/data.py (PURL_EXPORT_MANIFEST_PARQUET); pipelines/derived_artifacts
+  origin: operator ruling 2026-10-19 on CAP-69
+  severity: low
+  promoted: 2026-10-19 -- atlas Epic 37 chain; owned by Story 37.8
+  status: open
+
+### DW-atlas-37-9-1: The mapping-gap has no classification.
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-atlas/SPEC.md`
+  summary: `MAPPING_GAP_PARQUET` has no producer; `pypi_conda_mapping` carries `pypi_name`, `conda_name` and `match_source`, and legacy `mapping_gap.py`'s classification is not ported. The board stays honest-empty until the story lands (operator ruling 2026-10-19: "Data-first + 10 rewires", the six new-node boards to backlog).
+  evidence: the 2026-10-19 board audit (page 18); `docs/dreams/pyforge-atlas.md` § Realization log, 2026-10-19.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/data.py (MAPPING_GAP_PARQUET); pipelines/pypi_intelligence
+  origin: operator ruling 2026-10-19 on CAP-69
+  severity: low
+  promoted: 2026-10-19 -- atlas Epic 37 chain; owned by Story 37.9
+  status: open
+
+### DW-atlas-37-10-1: The bootstrap-index-health has no producer.
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-atlas/SPEC.md`
+  summary: `BOOTSTRAP_INDEX_HEALTH_PARQUET` has no producer; spec-20-9 left its path to be resolved at implementation. The board stays honest-empty until the story lands (operator ruling 2026-10-19: "Data-first + 10 rewires", the six new-node boards to backlog).
+  evidence: the 2026-10-19 board audit (page 31); `docs/dreams/pyforge-atlas.md` § Realization log, 2026-10-19.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/data.py (BOOTSTRAP_INDEX_HEALTH_PARQUET)
+  origin: operator ruling 2026-10-19 on CAP-69
+  severity: low
+  promoted: 2026-10-19 -- atlas Epic 37 chain; owned by Story 37.10
   status: open

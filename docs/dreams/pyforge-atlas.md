@@ -542,6 +542,37 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   **Kinships:** [[pyforge-mason]] (the legacy `conda_forge_atlas.py` port target, R1's second half),
   [[pyforge-steward]] (`query_plane_estate_source`, declared by steward Story 34.2 and produced by nothing),
   [[pyforge-herald]] (the boards and decks that read these stores). Owner `spec-pyforge-atlas`; → `bmad-spec`.
+- **2026-10-19 (the Vizro boards read what the pipelines write) — Found: with Epics 34-36 filling the stores, the
+  Vizro boards still render honest-empty, on Pages and locally.** Operator rulings 2026-10-18, on "all links are still
+  broken": "CI builds data first (Recommended)" and "Here, after Epic 34"; 2026-10-19 (AskUserQuestion, verbatim
+  choices): "Data-first + 10 rewires (Recommended)", "Public-only Pages (Recommended)", "Weekly + on push
+  (Recommended)".
+  **Evidence:** a read-only audit of the 34 pages `build_dashboard` builds, 2026-10-19:
+  - **The Pages export has no data.** `kedro-viz-publish.yml`'s `vizro` job checks out the repo and runs
+    `vizro-static-export`: no atlas run, no data artifact, no data root.
+  - **The dashboard reads another data root.** `dashboard.data.default_data_root()` walks up to `.git` and resolves
+    `<repo>/data`, which holds only `raw/`; Kedro, run from the member, writes `src/shared/packages/pyforge-atlas/data`.
+    A full local run is invisible to the boards unless `PYFORGE_ATLAS_DATA_ROOT` is set.
+  - **20 of the 27 board paths are no catalog entry's `filepath`.** 12 boards are wired right and need data only; 10
+    need their path or a projection changed (the four seed-gap boards read `primary/<x>_gap/` while `seed_gaps`
+    writes `derived/seed_gaps_<x>_report/`; version-downloads, distribution-breakdown, behind-upstream, whodepends,
+    live-catalog-coverage, universe-sbom); 6 need a node that does not exist (cve-watcher history, release cadence,
+    find-alternative, export-purls, mapping-gap, bootstrap-index-health); 6 show an on-demand result (scan-project,
+    env-inspect, inventory-match, add-handoff, library-futures, recommend-2027) and stay empty by design until a user
+    runs the tool.
+  - A path changed alone raises `AttributeError` in the loader (`_bsl_query_or_empty` catches only `TypeError`), so
+    each rewire changes the semantic model's expressions too.
+  **What it looks like when real:** locally, a `pyforge atlas run` followed by `dashboard-dryrun` shows the 12 wired
+  boards and the 10 rewired ones with rows; on Pages, a weekly (and on-push) job builds the public atlas data first,
+  then exports the boards, so the same 22 boards carry public data; the identity boards, whose rows come only from a
+  credentialed or internal run, show their honest-empty notice on Pages. The 6 new-node boards are backlog stories.
+  **Constraints:**
+  - The Pages job runs public sources only (AD-11): no secret, no `PYFORGE_ATLAS_CREDENTIALED`, BigQuery off.
+  - A board's dimension names stay (the dryrun and provenance tests pin them); only paths and expressions change.
+  - The export never publishes a board that declares an access column (`sld:AD-10`, CAP-63's refusal).
+  **Kinships:** [[pyforge-herald]] (the Pages mount at `/dashboard/vizro/`), [[pyforge-steward]] (the Pages consumer
+  of the artifact, steward 102.4). Owner `spec-pyforge-atlas` (CAP-63 amended; a new CAP for the board wiring);
+  → `bmad-spec`.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 
