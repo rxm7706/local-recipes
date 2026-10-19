@@ -200,6 +200,20 @@ def _maintainers(payload: dict[str, Any]) -> list[str]:
     return sorted({str(m) for m in maints if m}) if isinstance(maints, list) else []
 
 
+def _source_url(payload: dict[str, Any]) -> str | None:
+    """Story 34.11: the recipe's first source URL (``meta_yaml.source.url``), as legacy Phase E
+    reads it (CFA:2318-2327). With a list of sources it is the first source that has a URL --
+    legacy takes the first source, and a leading ``path:`` or ``git_url:`` source then hides it."""
+    meta = payload.get("meta_yaml")
+    source = meta.get("source") if isinstance(meta, dict) else None
+    if isinstance(source, list):
+        source = next((s for s in source if isinstance(s, dict) and s.get("url")), None)
+    url = source.get("url") if isinstance(source, dict) else None
+    if isinstance(url, list):
+        url = next((u for u in url if isinstance(u, str) and u), None)
+    return url if isinstance(url, str) and url else None
+
+
 def _outputs_names(payload: dict[str, Any]) -> list[str]:
     """``outputs_names``: a plain list, or cf-scripts' ``{"elements": [...]}`` set encoding."""
     outputs_raw = payload.get("outputs_names")
@@ -251,6 +265,7 @@ _CF_GRAPH_COLUMNS = [
     "bot_version_errors_count",
     "feedstock_bad",
     "maintainers",
+    "source_url",  # Story 34.11: on each output's anchor row only (Phase C.5's recipe source)
 ]
 
 
@@ -319,8 +334,9 @@ def _cf_graph_frame(
         pairs = _requirements_pairs(feedstock, payload)
         # every output a feedstock names, with or without a requirements block (Phase E)
         anchors = list(dict.fromkeys([*(name for name, _ in pairs), *_outputs_names(payload)])) or [feedstock]
+        url = _source_url(payload)
         for source_name in anchors:
-            rows.append({**base, "conda_name": source_name, "depends_on": pd.NA, "dep_type": pd.NA})
+            rows.append({**base, "conda_name": source_name, "depends_on": pd.NA, "dep_type": pd.NA, "source_url": url})
         for source_name, reqs in pairs:
             for req_type in ("build", "host", "run", "test"):
                 spec_list = reqs.get(req_type)
@@ -352,7 +368,9 @@ def _cf_graph_frame(
         )
     if not rows:
         return pd.DataFrame(columns=_CF_GRAPH_COLUMNS)
-    return pd.DataFrame(rows)[_CF_GRAPH_COLUMNS].sort_values("feedstock_name", kind="stable", ignore_index=True)
+    # reindex, not select: a frame of bot-data-only rows carries no anchor, so no source_url key
+    frame = pd.DataFrame(rows).reindex(columns=_CF_GRAPH_COLUMNS)
+    return frame.sort_values("feedstock_name", kind="stable", ignore_index=True)
 
 
 def _node_attrs_stream(tar_bytes: bytes) -> Iterator[tuple[str, dict[str, Any]]]:
@@ -580,6 +598,8 @@ class CfGraphTarballDataset(AbstractDataset):
         self._inners: dict[str, Any] = {kind: APIDataset(url=u) for kind, u in self._urls.items() if u}
         self._dir = Path(filepath) if filepath else None
         self.metadata = metadata
+        # Story 34.11: one fetch per session; every consuming node gets this frame
+        self._memo: pd.DataFrame | None = None
 
     @property
     def last_good_path(self) -> Path | None:
@@ -622,6 +642,13 @@ class CfGraphTarballDataset(AbstractDataset):
         )
 
     def load(self) -> pd.DataFrame:
+        """Story 34.11: four consuming nodes (Phases E, J, M and C's recipe source URLs) load
+        this in one run; the first load fetches and the rest reuse its frame."""
+        if self._memo is None:
+            self._memo = self._load_once()
+        return self._memo.copy(deep=False)  # a node that assigns a column never reaches the next
+
+    def _load_once(self) -> pd.DataFrame:
         if self._dir is None:
             return self._fetch()
         last_good = self._dir / self.LAST_GOOD_FILENAME

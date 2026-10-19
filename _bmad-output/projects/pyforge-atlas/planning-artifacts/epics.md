@@ -2560,6 +2560,20 @@ So that `pypi_current_versions` and everything after it cover the mapped univers
 **And** a warm run with no serial movement fetches only the 30-day re-checks; with the flag off the fan-out keeps today's bounded behaviour
 **Status:** backlog
 
+### Story 34.11: The Phase C mapping fills legacy's name-coincidence and recipe-source tiers
+
+As the PyPI-intelligence pipeline,
+I want the PyPI-to-conda mapping to fill the two tiers legacy fills after parselmouth,
+So that Phase H, the vdb scan and everything keyed on a PyPI name cover legacy's universe, not half of it.
+
+**Type:** feature • **Effort:** M • **Deps:** 34.2 (the parselmouth tier), 34.3 (node_attrs) • **FR/AD:** spec-pyforge-atlas CAP-64 (FR-72) • AD-3, AD-13
+**Flag:** `pyforge.atlas.live_public_sources` (the node_attrs and simple-index fetches it reads; the mapping itself is pure)
+**Surface:** `datasets/core_sources.py` (each output's recipe `source_url` in the cf-graph frame), `pipelines/pypi_intelligence/` (`map_pypi_conda` and its inputs), tests
+**Given** `map_pypi_conda` maps only the bot's parselmouth names (10,955 on 2026-10-18), while legacy's Phase H universe is 20,938 names, because legacy also maps a PyPI project whose lower-cased name is the conda name (Phase D, CFA:1835-1890) and every output of a feedstock whose recipe downloads from PyPI (Phase C.5 in Phase E, CFA:2434-2446) (`DW-atlas-34-10-1`)
+**When** the pipeline runs
+**Then** `pypi_conda_mapping` carries `name_coincidence` and `recipe_source_url` rows, each only for a package the tier before left unmapped, and its PyPI names cover legacy Phase H's universe within the story's tolerance, measured the same day
+**Status:** backlog
+
 ## Epic 35: VCS and registry fetches cover the full universe, credentialed on opt-in (spec-pyforge-atlas CAP-65, FR-73)
 
 Minted 2026-10-18 with Epic 34, from the same Dream entry and rulings ("Full universe (Recommended)"; the opt-in
