@@ -74,6 +74,7 @@ from .refresh import (
     DEFAULT_REFRESH_TIMEOUT_SECONDS,
     WEEKLY_SECONDS,
     ExternalRefreshDataset,
+    retry_backoff_seconds,
 )
 from .upstream_discovery import _as_text
 
@@ -380,6 +381,60 @@ def _credentialed_refresher(
     return lambda: refresh(auth)
 
 
+#: Story 36.2: GitHub's refusals (Story 35.1's stop statuses): the run stops sending at the first
+_STOP_STATUSES = (401, 403, 429)
+#: a page GitHub could not answer in time is asked again, ``max_retries`` times
+_RETRY_STATUSES = (502, 503, 504)
+
+
+def _status_of(exc: BaseException) -> int | None:
+    """The HTTP status inside kedro's ``DatasetError(..., HTTPError)``, if any."""
+    for arg in (exc, *getattr(exc, "args", ())):
+        status = getattr(getattr(arg, "response", None), "status_code", None)
+        if isinstance(status, int):
+            return status
+    return None
+
+
+def _why(exc: BaseException) -> str:
+    """A fetch failure as its status, else its type: never its text, which on the credentialed
+    path can quote the request (Story 35.1)."""
+    status = _status_of(exc)
+    return f"HTTP {status}" if status else type(exc).__name__
+
+
+class _HonestPagination:
+    """Story 36.2 (AD-13): a pagination a failure stops part-way. With a store already written,
+    the refresh fails and last-good is kept; with none, the pages read are written. Either way the
+    marker names where and why it stopped, and a page GitHub could not answer in time is asked
+    again first. A mixin ahead of :class:`ExternalRefreshDataset`."""
+
+    _stopped = ""
+
+    def _fetch_page(self, fetch: Callable[..., Any], *args: Any) -> Any:
+        for attempt in range(1, self._max_retries + 2):  # type: ignore[attr-defined]
+            try:
+                return fetch(*args)
+            except Exception as exc:
+                if attempt > self._max_retries or _status_of(exc) not in _RETRY_STATUSES:  # type: ignore[attr-defined]
+                    raise
+                time.sleep(retry_backoff_seconds(attempt))
+        raise AssertionError("unreachable")  # pragma: no cover
+
+    def _stopped_at(self, reason: str, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        self._stopped = reason
+        logger.warning("%s: %s", type(self).__name__, reason)
+        if not rows or self._store_exists():  # type: ignore[attr-defined]
+            raise RuntimeError(reason)
+        return rows
+
+    def save(self, data: Any) -> None:
+        self._stopped = ""
+        super().save(data)  # type: ignore[misc, unused-ignore]
+        if self._stopped:
+            self._mark_stale(self._stopped)  # type: ignore[attr-defined]
+
+
 def _as_json(payload: Any) -> dict | None:
     if isinstance(payload, dict):
         return payload
@@ -421,7 +476,7 @@ def parse_openteams_board_nodes(nodes: Any) -> list[dict]:
     return rows
 
 
-class OpenTeamsBoardDataset(ExternalRefreshDataset):
+class OpenTeamsBoardDataset(_HonestPagination, ExternalRefreshDataset):
     """The ``openteams_project_1_board_raw`` cursor-paginated GraphQL board fetch
     (identity-contract.md Source datasets; mirrors the legacy
     ``fetch_project_issues``). Credentialed: ``credentials: github_token`` (the
@@ -489,32 +544,33 @@ class OpenTeamsBoardDataset(ExternalRefreshDataset):
             raise RuntimeError("no OpenTeams board fetcher")
         rows: list[dict[str, Any]] = []
         cursor: str | None = None
-        for _ in range(_OPENTEAMS_BOARD_MAX_PAGES):
+        for page in range(1, _OPENTEAMS_BOARD_MAX_PAGES + 1):
             variables = {"cursor": cursor} if cursor else {}
             body = {"query": OPENTEAMS_BOARD_QUERY, "variables": variables}
             try:
-                payload = fetch(self._url, body)
-            except Exception as exc:  # AD-13: keep whatever pages already succeeded.
-                logger.warning(
-                    "OpenTeams board GraphQL fetch failed (cursor=%r), keeping accumulated rows: %s",
-                    cursor,
-                    exc,
+                payload = self._fetch_page(fetch, self._url, body)
+            except Exception as exc:  # AD-13: _HonestPagination keeps last-good or the pages read
+                return pd.DataFrame(
+                    self._stopped_at(f"board stopped at page {page}: {_why(exc)}", rows), columns=list(_BOARD_COLUMNS)
                 )
-                break
             parsed = _as_json(payload)
             if parsed is None:
-                logger.warning(
-                    "OpenTeams board GraphQL response unparseable (cursor=%r) — stopping pagination",
-                    cursor,
+                return pd.DataFrame(
+                    self._stopped_at(f"board stopped at page {page}: unparseable response", rows),
+                    columns=list(_BOARD_COLUMNS),
                 )
-                break
             conn = (((parsed.get("data") or {}).get("organization") or {}).get("projectV2") or {}).get("items")
             if not isinstance(conn, dict):
-                logger.warning(
-                    "OpenTeams board GraphQL response missing items connection (cursor=%r) — stopping pagination",
-                    cursor,
+                errors = parsed.get("errors")
+                first = (
+                    errors[0].get("message")
+                    if isinstance(errors, list) and errors and isinstance(errors[0], dict)
+                    else None
                 )
-                break
+                return pd.DataFrame(
+                    self._stopped_at(f"board stopped at page {page}: GraphQL error: {first or 'no items'}", rows),
+                    columns=list(_BOARD_COLUMNS),
+                )
             rows.extend(parse_openteams_board_nodes(conn.get("nodes")))
             page_info = conn.get("pageInfo") or {}
             if not page_info.get("hasNextPage"):
@@ -586,13 +642,14 @@ _STAGED_PR_COLUMNS: tuple[str, ...] = (
     "fetched_at",
 )
 
-# 200 pages * 100/page = 20,000 PRs — a realistic ceiling for staged-recipes'
-# full PR history (mirrors the OpenTeams board's own hard pagination cap).
-_STAGED_PR_MAX_PAGES = 200
+# 500 pages * 100/page = 50,000 PRs. Story 36.2: the 200-page cap of Story 21.x stopped at PR
+# #14,827 when staged-recipes held about 35,000 (2026-10-18); 500 pages read the whole history.
+_STAGED_PR_MAX_PAGES = 500
 # Bounded per-open-PR files() fan-out (mirrors PyPIJsonFanOutDataset's
-# PYPI_JSON_FANOUT_LIMIT bounded-fetch discipline) — staged-recipes rarely has
-# more than a few hundred open PRs at once.
-_STAGED_PR_OPEN_FILES_FANOUT_LIMIT = 500
+# PYPI_JSON_FANOUT_LIMIT bounded-fetch discipline). Story 36.2: staged-recipes had 1,222 open PRs
+# on 2026-10-18, so the 500 cap of Story 21.x skipped 722; with the PR pages, about 1,600
+# authenticated requests, well inside GitHub's 5,000 an hour.
+_STAGED_PR_OPEN_FILES_FANOUT_LIMIT = 2000
 
 
 def parse_staged_pr_page(payload: Any) -> list[dict]:
@@ -643,7 +700,7 @@ def parse_pr_files_response(payload: Any) -> list[str]:
     return [item["filename"] for item in data if isinstance(item, dict) and isinstance(item.get("filename"), str)]
 
 
-class StagedRecipesPRDataset(ExternalRefreshDataset):
+class StagedRecipesPRDataset(_HonestPagination, ExternalRefreshDataset):
     """The ``discovery_staged_recipes_prs_raw`` REST source (identity-contract.md
     Source datasets; mirrors the legacy ``load_staged_prs``). Credentialed:
     ``credentials: github_token`` (same host/key as ``vcs_github_api_raw`` /
@@ -704,13 +761,9 @@ class StagedRecipesPRDataset(ExternalRefreshDataset):
         for page in range(1, _STAGED_PR_MAX_PAGES + 1):
             page_url = f"{base}/repos/conda-forge/staged-recipes/pulls?state=all&per_page=100&page={page}"
             try:
-                payload = fetch(page_url)
-            except Exception as exc:  # AD-13: keep whatever pages already succeeded.
-                logger.warning(
-                    "staged-recipes PR list fetch failed at page=%s, keeping accumulated rows: %s",
-                    page,
-                    exc,
-                )
+                payload = self._fetch_page(fetch, page_url)
+            except Exception as exc:  # AD-13: _HonestPagination keeps last-good or the pages read
+                rows = self._stopped_at(f"PR list stopped at page {page}: {_why(exc)}", rows)
                 break
             page_rows = parse_staged_pr_page(payload)
             if not page_rows:
@@ -739,15 +792,24 @@ class StagedRecipesPRDataset(ExternalRefreshDataset):
                 _STAGED_PR_OPEN_FILES_FANOUT_LIMIT,
                 len(open_numbers),
             )
+        refused = False
         for number in open_numbers[:_STAGED_PR_OPEN_FILES_FANOUT_LIMIT]:
+            if refused:
+                break
             paths: list[str] = []
             page = 1
             while True:
                 files_url = f"{base}/repos/conda-forge/staged-recipes/pulls/{number}/files?per_page=100&page={page}"
                 try:
-                    payload = fetch(files_url)
+                    payload = self._fetch_page(fetch, files_url)
                 except Exception as exc:
-                    logger.warning("staged-recipes PR #%s files fetch failed: %s", number, exc)
+                    if _status_of(exc) in _STOP_STATUSES:
+                        # Story 36.2: a refusal stops every later request (Story 35.1); the PR
+                        # rows are written, their file paths partial, and the marker says so
+                        self._stopped = f"PR files stopped at PR #{number}: {_why(exc)}"
+                        refused = True
+                    else:
+                        logger.warning("staged-recipes PR #%s files fetch failed: %s", number, _why(exc))
                     break
                 batch = parse_pr_files_response(payload)
                 if not batch:

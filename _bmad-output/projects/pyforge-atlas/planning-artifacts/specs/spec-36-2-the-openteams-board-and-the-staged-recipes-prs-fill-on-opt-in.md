@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'both stores keep the path before this story: no fetcher, last-good under a stale marker'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -40,9 +40,20 @@ lack their rows. Both stores accept `credentials: github_token` and never use it
    store keeps last-good under a marker that names it, and nothing is sent.
    - The board is GraphQL, which GitHub serves only to an authenticated caller; the PR list is about 300 pages,
      beyond GitHub's 60 unauthenticated requests an hour.
-2. **The pagination is unchanged:** `_do_refresh` takes the fetcher as an argument, so the injected fetcher (tests)
-   and the live one share it.
-3. **Flag.** `pyforge.atlas.identity_live_sources` (dev on, staging and production off); the atlas suite pins it off.
+2. **One pagination for both fetchers:** `_do_refresh` takes the fetcher as an argument, so the injected fetcher
+   (tests) and the live one share it.
+3. **A pagination stopped part-way is honest** (`_HonestPagination`, AD-13). Story 21.x kept the pages read before a
+   failure and cleared the marker; with a live fetch that let one 502 replace 20,000 PRs with 100, silently.
+   - A page answered 502, 503 or 504 is asked again (`max_retries`).
+   - A failure part-way, with a store already written, fails the refresh: last-good is kept. With none, the pages
+     read are written. Either way the marker names the page and the status, never the exception's text.
+   - A 401, 403 or 429 on a PR's files stops every later files request (Story 35.1's stop statuses); the PR rows are
+     written and the marker says where it stopped.
+   - The first page's failure names its status or the GraphQL error.
+4. **The caps cover the whole history.** The PR list reads up to 500 pages (Story 21.x: 200, which stopped at PR
+   #14,827) and the files of up to 2,000 open PRs (500, of 1,222 open); about 1,600 requests, inside GitHub's 5,000
+   an hour.
+5. **Flag.** `pyforge.atlas.identity_live_sources` (dev on, staging and production off); the atlas suite pins it off.
 
 Ledger key: `36-2-the-openteams-board-and-the-staged-recipes-prs-fill-on-opt-in`.
 Type / Effort / Deps: feature / M / Story 35.1 (the switch, bearer auth, the POST route), Story 34.6 (the public
@@ -60,6 +71,8 @@ identity sources).
 - **AC2 — The PRs.** Under the same: a bearer GET per page and per open PR's files; the PRs land.
 - **AC3 — Nothing sent otherwise.** No switch, no token (a stub pair included), or another host: nothing sent, last-good
   under a marker that names why, never the token. Flag off: no live refresher.
+- **AC3b — A stopped pagination never hides.** A failure part-way keeps a fuller last-good; a refusal stops the files
+  requests; the marker names the page and the status; a 5xx page is asked again.
 - **AC4 — Flag.** Registered in the flag tree, its overlays, pyforge-core's and the platform's tables; tested in both
   states; the real reader tested against a tree.
 - **AC5 — Live.** See Verification: `identity_packages_primary` holds rows from each `identity_source` and carries the
@@ -88,9 +101,8 @@ identity sources).
 
 **Residual risk:**
 - **The operator's own runs** need a real `github_token` in `conf/local/credentials.yml` (Story 35.1's README row).
-- **Two caps that predate this story stay:** the PR list stops at 200 pages (20,000 PRs; staged-recipes has about 35,000, so
-  PRs before #14,827 are not read), and the file-path tier reads the first 500 open PRs (1,222 were open). The
-  feedstock URL outranks a staged PR for a merged package, so the oldest PRs matter least.
+- **The caps are a ceiling:** 50,000 PRs and 2,000 open PRs' files. Past them the run logs the cap; the feedstock URL
+  and the conda PURL outrank a staged PR downstream (`identity_gist.py`, `derived_artifacts/nodes.py`).
 
 ## I/O & Edge-Case Matrix
 
@@ -112,3 +124,11 @@ identity sources).
 ## Spec Change Log
 
 - 2026-10-18: written with the implementation (branch `atlas-36-2-identity-sources`, cut from `main` at `24581b35b8`).
+- 2026-10-18, review round 1 (FAIL), fixed:
+  - B1: `spec-pyforge-marshal` co-governs `pyforge-core/tests/unit/test_flags.py`; reconciled and stamped.
+  - B2: a failure part-way replaced a fuller store and cleared the marker; `_HonestPagination` (Approach 3).
+  - Should-fix: a refusal stops the files requests; the marker names the status; logs carry the status, never the
+    exception's text; tests for the cursor, an open PR's files, another host and plain http, the timeouts, a 5xx
+    asked again, the default; the caps lifted (Approach 4) rather than deferred.
+  - Nit: the epics Surface line drops `conf/base/catalog.yml`: the catalog already declares `credentials:
+    github_token` for both stores, so it did not change.
