@@ -346,6 +346,7 @@ def test_each_flag_state_reads_its_own_batch(switch_on, tmp_path, flag_provider,
     assert read == ([[("universe", "only")]] if flag_on else [[("identity", "only")]])
 
 
+@flag_states("pyforge.atlas.live_vcs_universe")  # spelled out: the flag gate reads this file for the key
 def test_the_flag_is_read_at_each_save(fake_transport, switch_on, tmp_path, flag_provider, monkeypatch):
     """On: the switch decides and the bearer POST runs. Off: the path before this story (no request)."""
     flag_on = flag_provider[credential_switch.FLAG_KEY]
