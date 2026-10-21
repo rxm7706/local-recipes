@@ -2709,7 +2709,7 @@ So that a local `pyforge atlas run` shows on the boards.
 **Given** `default_data_root()` walks up to `.git` and resolves `<repo>/data`, which holds only `raw/`, while Kedro writes `src/shared/packages/pyforge-atlas/data`
 **When** `dashboard-dryrun` runs after a local `pyforge atlas run` with no `PYFORGE_ATLAS_DATA_ROOT`
 **Then** each wired board reads that run's data, and `PYFORGE_ATLAS_DATA_ROOT` still wins when set
-**Status:** backlog
+**Status:** done
 
 ### Story 37.2: The Pages Vizro export builds the public atlas data first
 
