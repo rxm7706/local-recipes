@@ -5765,6 +5765,7 @@
    "docs/foundry/marketplace/skills/warden/scan/listing.yaml": "b37ceeace56a5f0ec717a5715122ea0d856fff2a",
    "docs/foundry/marketplace/skills/warden/scan/steps.md": "5289b8009b3c43a76eda25ec3b450c7ce53e5902",
    "docs/foundry/marketplace/templates/SKILL.md": "58d780498d3ffcaebe59d30d8660770f44d60e41",
+   "docs/foundry/marketplace/templates/steps.md": "b4bf7500065677e1036103385dc125ff62e9fb2a",
    "docs/foundry/sbom-gaps.md": "7077ffb487494817d24d82f2f9f9ecf015b39111",
    "docs/foundry/upstream-drafts/crm-parse-crash-on-valid-indentation.md": "4bd82f28e161063e31f583f3ed6f1ddac4c910dd",
    "docs/foundry/upstream-drafts/crm-sentinel-type-key-leak.md": "e42216016d14cf81613bb1f78f643c370dc40d6a",
@@ -6148,7 +6149,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "c0e34203e2be84512c357dfe4ada7f2e20284e71"
+  "memlog": "7e58482af5700f27c62a4d0030f9f1d3c9ea1e15"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
