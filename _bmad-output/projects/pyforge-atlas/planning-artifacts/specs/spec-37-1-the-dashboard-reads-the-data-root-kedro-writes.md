@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-19'
 status: 'in-review'
 baseline_revision: '85f5895f45'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -24,9 +24,11 @@ declared_low_risk: true
 project, the member `src/shared/packages/pyforge-atlas/`, where `pyforge atlas run` runs (Story 33.1). So a local run
 never shows on the boards unless `PYFORGE_ATLAS_DATA_ROOT` is set, and the static export reads the same wrong root.
 
-**Approach:** `default_data_root()` returns `PYFORGE_ATLAS_DATA_ROOT` when set; else the member's `data/` when the
-member's `conf/base/catalog.yml` is beside it; else `data/` under the working directory (an installed layout, as Kedro
-resolves a relative path). The fix restores the intended behaviour, so it carries no flag (Q1).
+**Approach:** `default_data_root()` returns the member's `data/` when the member's `conf/base/catalog.yml` is beside
+it. `PYFORGE_ATLAS_DATA_ROOT` overrides the `data` name: an absolute value is used as is, and a relative one is anchored
+at the member, as Kedro and `admission._data_root` anchor it. A blank override counts as unset, as in `admission`. An
+installed layout with no member resolves against the working directory, where Kedro starts looking for a project. The
+fix restores the intended behaviour, so it carries no flag (Q1).
 
 Ledger key: `37-1-the-dashboard-reads-the-data-root-kedro-writes`.
 Type / Effort / Deps: fix / S / — (the Epic 37 chain).
@@ -40,8 +42,10 @@ Type / Effort / Deps: fix / S / — (the Epic 37 chain).
 
 - **AC1 — The member's data.** With no `PYFORGE_ATLAS_DATA_ROOT`, the root is the member's `data/` (beside
   `conf/base/catalog.yml`), the directory `pyforge atlas run` writes.
-- **AC2 — The override.** `PYFORGE_ATLAS_DATA_ROOT` still wins.
-- **AC3 — An installed layout.** With no member beside the module, the root is `data/` under the working directory.
+- **AC2 — The override.** An absolute `PYFORGE_ATLAS_DATA_ROOT` still wins; a relative one resolves under the member,
+  the directory Kedro writes it to; a blank one counts as unset.
+- **AC3 — An installed layout.** With no member beside the module, the root (or a relative override) resolves under the
+  working directory.
 - **AC4 — Live.** See Verification.
 - **AC5 — Gates.** `pyforge-atlas-test`, `dashboard-dryrun`, the coverage gate, `lint-types`; governing Specs
   reconciled and stamped scoped.
@@ -67,5 +71,14 @@ Type / Effort / Deps: fix / S / — (the Epic 37 chain).
 
 ## Spec Change Log
 
+- 2026-10-21, review round 1 (PASS), should-fix applied:
+  - A relative `PYFORGE_ATLAS_DATA_ROOT` resolved against the working directory, so `dashboard-serve` run from the repo
+    root read `<repo>/data-ci` where the bootstrap wrote `<member>/data-ci`. It is now anchored at the member; a blank
+    value counts as unset.
+  - `views/cli_bridge.py`'s `default_scripts_dir` docstring no longer describes the retired repo-root walk.
+  - DW-10-5-7 records the changed premise (both surfaces now default to the member's `data/`); it stays open for the
+    hand-maintained path mirror.
+  - Tests pin `_MEMBER_ROOT / "data"` from another working directory, the anchored and blank overrides, and an installed
+    layout whose fake member sits outside the working directory.
 - 2026-10-19: written with the implementation (branch `atlas-37-1-dashboard-data-root`, stacked on the Epic 37 chain
   branch at `85f5895f45`).

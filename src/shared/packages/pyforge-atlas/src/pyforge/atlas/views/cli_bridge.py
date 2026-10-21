@@ -63,13 +63,11 @@ class CfAtlasDbUnavailableError(PyforgeError, RuntimeError):
 
 def default_scripts_dir() -> Path:
     """The conda-forge-expert skill scripts directory (env-overridable, ``.git``-anchored
-    default). Mirrors ``dashboard/data.py::default_data_root``'s walk-up-to-repo-root
-    pattern on the happy path — a DIFFERENT, unrelated resolution target (this locates the
-    skill CLI scripts, not the migrated Parquet catalog) — but the two DIVERGE on the
-    failure branch: ``default_data_root()`` falls back to a best-effort ``parents[8]``
-    guess when no ``.git``/``_bmad-output`` marker is found, while this function raises
-    ``FileNotFoundError`` instead. A wrong scripts dir here would silently import the wrong
-    CLI code, so raising (rather than guessing) is the safer choice for this target."""
+    default). Walks up to the repo root, where the skill lives, and raises
+    ``FileNotFoundError`` when no ``.git``/``_bmad-output`` marker is found: a wrong scripts dir
+    would silently import the wrong CLI code, so it never guesses. Unrelated to
+    ``dashboard/data.py::default_data_root``, which resolves the Kedro member's data root
+    (Story 37.1), not the repo root."""
     env = os.environ.get(_SCRIPTS_DIR_ENV_VAR)
     if env:
         return Path(env)

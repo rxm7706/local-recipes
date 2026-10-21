@@ -2122,6 +2122,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
+  verified: 2026-10-21 — still-open — premise changed by atlas Story 37.1: `default_data_root()` no longer walks up to `.git`; it returns the Kedro member's `data/` (a relative `PYFORGE_ATLAS_DATA_ROOT` anchored at the member), the root the catalog's `${globals:paths.data_root}/...` filepaths resolve to, so the dashboard and the MCP read surface now default to the same files. Still open: the dashboard's path constants remain a hand-maintained mirror of the catalog `filepath`s rather than one catalog-driven resolver.
+
 ### DW-10-5-8: Reusing `IncrementalParquetDataset._to_epoch_seconds` on the READ path makes its `logger.warning` ("normalizing N ms-mag
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
   summary: Reusing `IncrementalParquetDataset._to_epoch_seconds` on the READ path makes its `logger.warning` ("normalizing N ms-magnitude fetched_at value(s) …", written for the once-per-`save()` write boundary) fire on EVERY `read_dataset` of a ms-magnitude dataset — log noise proportional to read volume on datasets as large as `core_downloads`.

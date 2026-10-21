@@ -31,19 +31,39 @@ def test_default_data_root_honors_env_override(monkeypatch, tmp_path: Path):
     assert data.default_data_root() == tmp_path
 
 
-def test_default_data_root_is_the_data_root_kedro_writes(monkeypatch):
+def test_default_data_root_is_the_data_root_kedro_writes(monkeypatch, tmp_path: Path):
     # Story 37.1: globals.yml's paths.data_root is `data`, relative to the Kedro project (the member)
     monkeypatch.delenv("PYFORGE_ATLAS_DATA_ROOT", raising=False)
+    monkeypatch.chdir(tmp_path)  # the member wins wherever the process runs
     root = data.default_data_root()
-    assert root.name == "data" and (root.parent / "conf" / "base" / "catalog.yml").is_file()
-    assert root.parent.name == "pyforge-atlas"
+    assert root == data._MEMBER_ROOT / "data"
+    assert (data._MEMBER_ROOT / "conf" / "base" / "catalog.yml").is_file()
+    assert data._MEMBER_ROOT.name == "pyforge-atlas"
 
 
-def test_default_data_root_falls_back_to_the_working_directory(monkeypatch, tmp_path: Path):
-    monkeypatch.delenv("PYFORGE_ATLAS_DATA_ROOT", raising=False)
-    monkeypatch.setattr(data, "_MEMBER_ROOT", tmp_path / "site-packages")  # an installed layout
+def test_a_relative_override_is_anchored_at_the_member(monkeypatch, tmp_path: Path):
+    monkeypatch.setenv("PYFORGE_ATLAS_DATA_ROOT", "data-ci")
+    monkeypatch.chdir(tmp_path)  # Kedro writes <member>/data-ci, so the boards read it there
+    assert data.default_data_root() == data._MEMBER_ROOT / "data-ci"
+
+
+def test_a_blank_override_counts_as_unset(monkeypatch, tmp_path: Path):
+    monkeypatch.setenv("PYFORGE_ATLAS_DATA_ROOT", "  ")
     monkeypatch.chdir(tmp_path)
-    assert data.default_data_root() == tmp_path / "data"
+    assert data.default_data_root() == data._MEMBER_ROOT / "data"
+
+
+@pytest.mark.parametrize("override", [None, "data-ci"])
+def test_an_installed_layout_resolves_against_the_working_directory(monkeypatch, tmp_path: Path, override):
+    if override is None:
+        monkeypatch.delenv("PYFORGE_ATLAS_DATA_ROOT", raising=False)
+    else:
+        monkeypatch.setenv("PYFORGE_ATLAS_DATA_ROOT", override)
+    monkeypatch.setattr(data, "_MEMBER_ROOT", tmp_path / "lib" / "site-packages")  # no member, not under the cwd
+    cwd = tmp_path / "work"
+    cwd.mkdir()
+    monkeypatch.chdir(cwd)
+    assert data.default_data_root() == cwd / (override or "data")
 
 
 # --------------------------------------------------------------------------- #
