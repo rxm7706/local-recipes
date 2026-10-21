@@ -1,0 +1,85 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<title>@mason/environment — skill card (Prototype - sample data)</title>
+<style>
+*{box-sizing:border-box} body{margin:0;font:15px/1.5 -apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#1d2330;background:#f3f5f8}
+.proto{background:#fff3cd;color:#664d03;border-bottom:1px solid #e6d28a;padding:6px 24px;font-weight:600;font-size:13px}
+header.site{background:#0b3d91;color:#fff;padding:10px 24px;display:flex;justify-content:space-between;align-items:center}
+header.site a{color:#cfe0ff;text-decoration:none;margin-left:16px;font-size:14px}
+.wrap{max-width:1180px;margin:20px auto;padding:0 24px;display:grid;grid-template-columns:1fr 300px;gap:20px}
+.card,.side{background:#fff;border:1px solid #dde3ea;border-radius:8px;padding:20px 24px}
+h1{margin:0;font-size:26px} .slug{color:#5b6576;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px}
+.value{font-size:17px;margin:8px 0 12px}
+.badges span{display:inline-block;font-size:12px;padding:3px 9px;border-radius:12px;margin:0 6px 6px 0;border:1px solid}
+.b-tier{background:#e7f5ec;color:#146c2e;border-color:#9fd5b0} .b-ver{background:#eef2ff;color:#2b3a8f;border-color:#b8c3f5}
+.b-ok{background:#e7f5ec;color:#146c2e;border-color:#9fd5b0} .b-warn{background:#fff4e5;color:#8a4b00;border-color:#f3c78b} .b-lane{background:#f4f4f5;color:#3f3f46;border-color:#d4d4d8}
+h2{font-size:17px;margin:22px 0 8px;border-bottom:1px solid #eef1f4;padding-bottom:4px}
+ol.steps li{margin-bottom:8px} code,pre{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+code{background:#f1f3f6;padding:1px 5px;border-radius:4px}
+pre{background:#0f172a;color:#e2e8f0;padding:12px 14px;border-radius:6px;overflow-x:auto;margin:0;white-space:pre-wrap}
+.tabs input{display:none} .labels{display:flex;flex-wrap:wrap;border-bottom:1px solid #dde3ea}
+.labels label{padding:7px 12px;cursor:pointer;border:1px solid transparent;border-bottom:none;border-radius:6px 6px 0 0;margin-bottom:-1px;color:#3b4556;background:#f6f8fa;margin-right:4px;font-size:14px}
+.panels{border:1px solid #dde3ea;border-top:none;padding:12px;border-radius:0 0 6px 6px} .panel{display:none} .hint{margin:8px 0 0;color:#4b5565;font-size:14px}
+#t-claude:checked ~ .panels .p-claude{display:block} #t-claude:checked ~ .labels label[for=t-claude]{background:#fff;border-bottom-color:#fff;font-weight:600;color:#0b3d91}
+#t-cursor:checked ~ .panels .p-cursor{display:block} #t-cursor:checked ~ .labels label[for=t-cursor]{background:#fff;border-bottom-color:#fff;font-weight:600;color:#0b3d91}
+#t-copilot:checked ~ .panels .p-copilot{display:block} #t-copilot:checked ~ .labels label[for=t-copilot]{background:#fff;border-bottom-color:#fff;font-weight:600;color:#0b3d91}
+#t-devin:checked ~ .panels .p-devin{display:block} #t-devin:checked ~ .labels label[for=t-devin]{background:#fff;border-bottom-color:#fff;font-weight:600;color:#0b3d91}
+#t-gemini:checked ~ .panels .p-gemini{display:block} #t-gemini:checked ~ .labels label[for=t-gemini]{background:#fff;border-bottom-color:#fff;font-weight:600;color:#0b3d91}
+#t-codex:checked ~ .panels .p-codex{display:block} #t-codex:checked ~ .labels label[for=t-codex]{background:#fff;border-bottom-color:#fff;font-weight:600;color:#0b3d91}
+#t-noai:checked ~ .panels .p-noai{display:block} #t-noai:checked ~ .labels label[for=t-noai]{background:#fff;border-bottom-color:#fff;font-weight:600;color:#0b3d91}
+.srcs{display:grid;grid-template-columns:1fr;gap:10px} .srcname{font-weight:600;font-size:13px;margin-bottom:4px}
+.side h3{font-size:14px;text-transform:uppercase;letter-spacing:.04em;color:#5b6576;margin:16px 0 6px} .side h3:first-child{margin-top:0}
+.side ul{margin:0;padding-left:18px} .side a{color:#0b56c8} .owner{display:flex;align-items:center;gap:8px}
+.av{width:28px;height:28px;border-radius:50%;background:#0b3d91;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.req li{margin-bottom:4px} .btn{display:block;text-align:center;padding:8px;border-radius:6px;border:1px solid #0b56c8;color:#0b56c8;text-decoration:none;margin-top:8px;font-size:14px}
+.btn.primary{background:#0b56c8;color:#fff} .muted{color:#5b6576;font-size:13px}
+</style></head><body>
+<div class="proto">Prototype - sample data · paper prototype P3 · not a real listing · 2026-10-20</div>
+<header class="site"><strong>Team BMAD Marketplace</strong><nav><a href="#">Browse by task</a><a href="#">Bundles</a><a href="#">Agents</a><a href="#">Contribute</a></nav></header>
+<div class="wrap"><main class="card">
+<div class="slug">@mason/environment · skill</div>
+<h1>Mason — environment lock &amp; check</h1>
+<p class="value">Lock your project’s mixed conda + pip requirements into one lockfile, and catch it when the lockfile goes stale.</p>
+<div class="badges"><span class="b-tier">✔ estate-reviewed</span><span class="b-ok">verified 2026-10-19 · linux-64, osx-arm64</span><span class="b-warn">win-64 untested</span><span class="b-ver">v1.2.0</span><span class="b-lane">code-backed lane</span></div>
+<p class="muted">Tasks: lock-env · check-env-drift · reproduce-env</p>
+
+<h2>Steps (works without an AI tool)</h2>
+<ol class="steps">
+<li>Point conda and pip at Artifactory: check <code>~/.condarc</code> has <code>channel_alias: https://artifactory.example.com/api/conda</code> and <code>pip.conf</code> has the internal <code>index-url</code>.</li>
+<li>List your inputs: <code>environment.yml</code> (conda) and <code>requirements.txt</code> (pip) in the project root.</li>
+<li>Create the lock: <code>pyforge mason environment lock --conda environment.yml --pip requirements.txt</code> → writes <code>env.lock</code>.</li>
+<li>Commit <code>env.lock</code> with the change that needed it.</li>
+<li>Check before you merge or in CI: <code>pyforge mason environment check</code> — exits non-zero if the manifests changed since the lock.</li>
+<li>Recreate the env anywhere from <code>env.lock</code> (step shown in the skill’s <code>references/recreate.md</code>).</li>
+</ol>
+<p class="muted">Sample steps for the prototype; the real commands come from the published skill.</p>
+
+<h2>Install</h2>
+<div class="tabs"><input type="radio" name="t" id="t-claude" ><input type="radio" name="t" id="t-cursor" checked><input type="radio" name="t" id="t-copilot" ><input type="radio" name="t" id="t-devin" ><input type="radio" name="t" id="t-gemini" ><input type="radio" name="t" id="t-codex" ><input type="radio" name="t" id="t-noai" ><div class="labels"><label for="t-claude">Claude Code</label><label for="t-cursor">Cursor</label><label for="t-copilot">Copilot (VS Code)</label><label for="t-devin">Devin</label><label for="t-gemini">Gemini</label><label for="t-codex">Codex</label><label for="t-noai">No AI tool</label></div><div class="panels"><div class="panel p-claude"><pre>bmp install @mason/environment
+# or, from the generated plugin marketplace:
+claude plugin marketplace add https://github.example.com/team/bmad-marketplace.git
+claude plugin install mason-environment@team-bmad</pre><p class="hint">Lands in .claude/skills/mason-environment/. Run it: “lock this project’s environment” or /mason-environment.</p></div><div class="panel p-cursor"><pre>bmp install @mason/environment</pre><p class="hint">Cursor reads .agents/skills/ and .claude/skills/. Type / in Agent chat and pick mason-environment, or just ask.</p></div><div class="panel p-copilot"><pre>bmp install @mason/environment</pre><p class="hint">Copilot agent mode reads .agents/skills/ (and .github/skills/, .claude/skills/). Ask in agent mode.</p></div><div class="panel p-devin"><pre>bmp install @mason/environment
+git add .agents/skills/mason-environment skills.lock &amp;&amp; git commit -m &quot;add mason-environment skill&quot;</pre><p class="hint">Devin finds .agents/skills/ in connected repos, so commit the folder.</p></div><div class="panel p-gemini"><pre>bmp install @mason/environment</pre><p class="hint">Gemini CLI (and Code Assist agent mode) reads .agents/skills/. Approve the activation prompt when it appears.</p></div><div class="panel p-codex"><pre>bmp install @mason/environment</pre><p class="hint">Codex reads .agents/skills/. Mention the skill or describe the task.</p></div><div class="panel p-noai"><pre>bmp steps @mason/environment      # prints the steps below
+# or follow “Steps” on this page by hand</pre><p class="hint">Every step below is a plain command you can run yourself.</p></div></div></div>
+<p class="muted" style="margin-top:8px">Every tab installs the same SKILL.md into <code>.agents/skills/</code> and <code>.claude/skills/</code> and records it in <code>skills.lock</code>.</p>
+
+<h2>Install source</h2>
+<div class="srcs"><div class="src"><div class="srcname">Artifactory (conda)</div><pre>conda install -c https://artifactory.example.com/api/conda/conda-internal bmp-skill-mason-environment=1.2.0
+bmp link @mason/environment   # copy into .agents/skills + .claude/skills</pre></div><div class="src"><div class="srcname">Artifactory (pip)</div><pre>pip install bmp-skill-mason-environment==1.2.0 --index-url https://artifactory.example.com/api/pypi/pypi-internal/simple
+bmp link @mason/environment</pre></div><div class="src"><div class="srcname">GitHub release</div><pre>bmp install @mason/environment --source github
+# manual: download mason-environment-1.2.0.zip from
+# https://github.example.com/team/bmad-marketplace/releases/tag/mason-environment-v1.2.0
+# unzip into .agents/skills/ and .claude/skills/</pre></div></div>
+<p class="muted">Same build, same checksum: <code>sha256:3f1c…a9</code> (sample).</p>
+</main>
+<aside class="side">
+<h3>Owners</h3><div class="owner"><div class="av">RX</div><div>@rxm7706<br><span class="muted">mason area · CODEOWNER</span></div></div>
+<h3>Review</h3><p style="margin:0">Approved by @rxm7706 on 2026-10-18<br><a href="#">review record #14</a></p>
+<h3>Requires</h3><ul class="req"><li>Python ≥ 3.10</li><li><code>pyforge-mason</code> ≥ 0.2 <span class="muted">(installed with the skill)</span></li><li>Access to Artifactory conda + pip</li></ul>
+<h3>Related</h3><ul><li><a href="#">@mason/package</a> — build &amp; ship packages</li><li><a href="#">@warden/scan</a> — dependency &amp; vuln scan</li><li>Bundle: <a href="#">python-env-starter</a></li><li>Bundle: <a href="#">new-hire-pack</a></li></ul>
+<h3>Versions</h3><p style="margin:0" class="muted">1.2.0 (latest) · 1.1.0 · 1.0.0 — <a href="#">changelog</a></p>
+<h3>Contribute</h3>
+<a class="btn primary" href="#">Suggest an edit (opens PR)</a>
+<a class="btn" href="#">Report a problem</a>
+<a class="btn" href="#">Request a new skill</a>
+<p class="muted" style="margin-top:10px">Source: github.example.com/team/bmad-marketplace/skills/mason/environment</p>
+</aside></div></body></html>

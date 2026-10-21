@@ -32,6 +32,7 @@ import { ARTIFACT_DOSSIER, NOT_PAGES } from '../src/lib/artifact.ts';
 import { BUILT_FROM_OPEN } from '../src/lib/built-from.ts';
 import { envFlagOn } from '../src/lib/flags.ts';
 import { DASHBOARD_EXPORTS, holdsAFile } from '../src/lib/nav.ts';
+import { marketplacePagesEnabled } from './marketplace-pages.mts';
 
 const DOCS_SITE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.dirname(DOCS_SITE);
@@ -463,6 +464,29 @@ export function check(root: string, options: CheckOptions = {}): string[] {
   } else if (all.some((rel) => rel.startsWith('kedro-viz/'))) {
     out.push('kedro-viz/ exists in the artifact but no Kedro-Viz export is mounted at dashboard/kedro-viz/');
   }
+  // Story 109.3: /marketplace/ is the generated site, mounted only while
+  // pyforge.steward.marketplace_pages is on. Off, the prefix is absent.
+  const marketplaceOn = marketplacePagesEnabled(repoRoot, env.PYFORGE_ENVIRONMENT || 'dev');
+  const marketplaceFiles = all.filter((rel) => rel.startsWith('marketplace/'));
+  if (marketplaceOn) {
+    if (!has('marketplace/index.html') || !has('marketplace/marketplace.json')) {
+      out.push('pyforge.steward.marketplace_pages is on but marketplace/index.html or marketplace/marketplace.json is missing');
+    } else {
+      let manifest: { name?: string; plugins?: { source?: { source?: string; url?: string; path?: string } }[] } | null = null;
+      try {
+        manifest = JSON.parse(read('marketplace/marketplace.json'));
+      } catch {
+        manifest = null;
+      }
+      const plugin = manifest?.plugins?.[0]?.source;
+      if (manifest?.name !== 'pyforge-bmad-marketplace' || plugin?.source !== 'git-subdir' || !plugin.url || !plugin.path) {
+        out.push('marketplace/marketplace.json is not the URL form (name pyforge-bmad-marketplace, plugin source git-subdir with url and path)');
+      }
+    }
+  } else if (marketplaceFiles.length) {
+    out.push('marketplace/ exists in the artifact but pyforge.steward.marketplace_pages is off');
+  }
+
   if (mounted.includes('vizro')) {
     let manifest: unknown = null;
     try {

@@ -1,0 +1,71 @@
+# One listing. index.yaml is the committed concatenation of these files
+# until bmp index build. Sample P2 checksums and hosts are not in this row.
+id: warden/scan
+kind: skill
+scope: warden
+slug: scan
+name: '@warden/scan'
+display_name: Scan a project for dependency hygiene
+title: Scan a project for dependency hygiene
+summary: Run warden scan on the current project. Probes are not a verdict.
+description: Run the warden scan gate on the current project. Engine probes are not
+  a second verdict. No pixi environment name and no path inside local-recipes.
+version: 0.1.0
+tasks:
+- scan-dependencies
+keywords:
+- dependencies
+- scan
+category: development
+subcategory: hygiene
+owners:
+- '@rxm7706'
+author: rxm7706
+type: community
+tier: community
+trust_tier: unverified
+source: estate-listings
+jobs:
+- find
+- install
+lane: code-backed
+contribution_lane: code-backed
+path: skills/warden/scan
+adapters: {}
+requires:
+- kind: package
+  name: pyforge-warden
+  published: false
+  installed_by: folder-copy
+  note: PyPI, conda-forge, and SelfExplainML returned 404 on 2026-10-21
+- kind: package
+  name: pyforge-core
+  published: false
+  installed_by: folder-copy
+  note: Required by pyforge warden dispatch; same 404 check
+install:
+  targets:
+  - .agents/skills/warden-scan
+  - .claude/skills/warden-scan
+  entry: SKILL.md
+  origins:
+  - github
+  - artifactory
+sources:
+  github:
+    kind: release
+    published: false
+  artifactory:
+    conda:
+      published: false
+    pip:
+      published: false
+verified_at: null
+ci:
+  status: pending
+docs:
+  steps: steps.md
+  card: site/skills/warden/scan.html
+related:
+- '@mason/environment'
+- '@mason/package'

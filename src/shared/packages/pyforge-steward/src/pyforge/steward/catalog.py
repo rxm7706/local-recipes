@@ -23,10 +23,13 @@ are carried as ``tags: ["source:<name>", "trust:<tier>"]``.
 
 Backends here are declarations with the shared snapshot interface
 (``snapshot_target``); the conda publish itself is Story 60.3. Nothing here
-edits ``.claude/settings.json`` or mints a GitHub repository — both are
-operator-confirm moments; ``steward catalog pointers`` prints the forms that
-work today (``--custom-source`` / ``extraKnownMarketplaces`` ``directory``)
-and names the ``github`` forms as waiting on ``edit_store.dedicated_repo``.
+edits ``.claude/settings.json`` or mints a GitHub repository. This monorepo
+hosts the marketplace (decision 2026-10-21). ``steward catalog pointers``
+prints the ``directory`` form for a checkout, the Claude ``github`` source
+against ``edit_store.repo`` (``path`` and ``sparsePaths`` on
+``docs/foundry/marketplace/.claude-plugin/marketplace.json``), and one
+``git`` source with a full https URL for each ``edit_store.mirrors`` entry.
+``git-subdir`` is a plugin source, not a marketplace source.
 
 Verbs: ``steward catalog check|list|render [--check]|pointers|ship [--backend]
 [--output]|publish [--json]``. Story 60.2 adds ``publish``: append a module to
@@ -121,15 +124,40 @@ class SourceDecl:
     options: dict[str, Any] = field(default_factory=dict)
 
 
+# The reset marketplace lives in this monorepo. Claude Code's marketplace
+# source (verified 2026-10-21 against
+# https://code.claude.com/docs/en/plugins/marketplace-reference) uses
+# ``path`` for the marketplace file and ``sparsePaths`` for the sparse
+# checkout on both ``github`` and ``git``. ``git-subdir`` is a plugin
+# source only (``url``, ``path``, ``ref``, ``sha``), not a marketplace source.
+MARKETPLACE_NAME = "pyforge-bmad-marketplace"
+MARKETPLACE_ROOT_RELATIVE = "docs/foundry/marketplace"
+MARKETPLACE_JSON_RELATIVE = "docs/foundry/marketplace/.claude-plugin/marketplace.json"
+MARKETPLACE_SPARSE_PATHS = (
+    "docs/foundry/marketplace/.claude-plugin",
+    "docs/foundry/marketplace/skills",
+)
+PUBLIC_MARKETPLACE_GIT_URL = "https://github.com/rxm7706/local-recipes.git"
+
+
+@dataclass(frozen=True)
+class Mirror:
+    """One internal mirror of this repository. ``host`` is a hostname;
+    ``repo`` is ``owner/repo``."""
+
+    host: str
+    repo: str
+
+
 @dataclass(frozen=True)
 class EditStore:
-    """Where listings are edited. ``dedicated_repo`` is ``None`` until an
-    operator confirms minting a GitHub catalog repo."""
+    """Where listings are edited. This monorepo is the host.
+    ``mirrors`` names internal copies teammates use; it starts empty."""
 
     kind: str
     repo: str
     path: str
-    dedicated_repo: str | None = None
+    mirrors: tuple[Mirror, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -277,6 +305,70 @@ def _parse_decls(document_path: Path, section: object, section_name: str, factor
 
 
 _TOP_LEVEL_KEYS: frozenset[str] = frozenset({"catalog", "backends", "sources"})
+_MIRROR_KEYS: frozenset[str] = frozenset({"host", "repo"})
+
+
+def _load_mirrors(document_path: Path, raw: object) -> tuple[Mirror, ...]:
+    """``edit_store.mirrors``: a list of ``{host, repo}``. Empty is the default."""
+    if raw is None:
+        raw = []
+    if not isinstance(raw, list):
+        raise CatalogConfigError(
+            f"{document_path}: 'catalog.edit_store.mirrors' must be a list of "
+            f"{{host, repo}} mappings, got {type(raw).__name__}"
+        )
+    mirrors: list[Mirror] = []
+    for index, item in enumerate(raw):
+        where = f"catalog.edit_store.mirrors[{index}]"
+        if not isinstance(item, dict):
+            raise CatalogConfigError(f"{document_path}: '{where}' must be a mapping with host and repo")
+        unknown = sorted(str(key) for key in item if key not in _MIRROR_KEYS)
+        if unknown:
+            raise CatalogConfigError(
+                f"{document_path}: '{where}' has unknown key(s) {unknown!r}; only 'host' and 'repo'"
+            )
+        host = item.get("host")
+        repo = item.get("repo")
+        if not isinstance(host, str) or not host.strip() or "/" in host or "://" in host or " " in host:
+            raise CatalogConfigError(
+                f"{document_path}: '{where}.host' must be a hostname (no scheme, no path), got {host!r}"
+            )
+        if not isinstance(repo, str) or _github_owner_repo(repo) != repo.strip():
+            raise CatalogConfigError(f"{document_path}: '{where}.repo' must be an owner/repo string, got {repo!r}")
+        mirrors.append(Mirror(host=host.strip(), repo=repo.strip()))
+    return tuple(mirrors)
+
+
+def _known_marketplace(name: str, source: dict[str, object]) -> dict[str, object]:
+    return {"extraKnownMarketplaces": {name: {"source": source}}}
+
+
+def _github_marketplace_source(repo: str) -> dict[str, object]:
+    """Claude marketplace source ``github``. Fields verified 2026-10-21:
+    ``repo``, ``path``, ``sparsePaths`` (``ref`` omitted; it defaults to the
+    repository's default branch)."""
+    return {
+        "source": "github",
+        "repo": repo,
+        "path": MARKETPLACE_JSON_RELATIVE,
+        "sparsePaths": list(MARKETPLACE_SPARSE_PATHS),
+    }
+
+
+def _git_marketplace_source(url: str) -> dict[str, object]:
+    """Claude marketplace source ``git``. Fields verified 2026-10-21:
+    ``url``, ``path``, ``sparsePaths``. ``url`` is a full git URL."""
+    return {
+        "source": "git",
+        "url": url,
+        "path": MARKETPLACE_JSON_RELATIVE,
+        "sparsePaths": list(MARKETPLACE_SPARSE_PATHS),
+    }
+
+
+def mirror_git_url(mirror: Mirror) -> str:
+    """Full https git URL for one mirror. Claude's ``git`` source clones this."""
+    return f"https://{mirror.host}/{mirror.repo}.git"
 
 
 def load_config(path: str | Path) -> CatalogConfig:
@@ -304,17 +396,17 @@ def load_config(path: str | Path) -> CatalogConfig:
     kind = _require_str(document_path, store, "kind", "catalog.edit_store")
     if kind != "git":
         raise CatalogConfigError(f"{document_path}: 'catalog.edit_store.kind' = {kind!r}; git is the edit store")
-    dedicated = store.get("dedicated_repo")
-    if dedicated is not None and (not isinstance(dedicated, str) or _github_owner_repo(dedicated) != dedicated.strip()):
+    if "dedicated_repo" in store:
         raise CatalogConfigError(
-            f"{document_path}: 'catalog.edit_store.dedicated_repo' must be null or an "
-            f"owner/repo string, got {dedicated!r}"
+            f"{document_path}: 'catalog.edit_store.dedicated_repo' was replaced by "
+            "'mirrors' (a list of {host, repo}). This monorepo hosts the marketplace; "
+            "there is no dedicated catalog repository."
         )
     edit_store = EditStore(
         kind=kind,
         repo=_require_str(document_path, store, "repo", "catalog.edit_store"),
         path=_require_str(document_path, store, "path", "catalog.edit_store"),
-        dedicated_repo=dedicated.strip() if isinstance(dedicated, str) else None,
+        mirrors=_load_mirrors(document_path, store.get("mirrors", [])),
     )
 
     backends = _parse_decls(document_path, document.get("backends"), "backends", BackendDecl)
@@ -1590,7 +1682,7 @@ class CatalogEngine:
                     "kind": store.kind,
                     "repo": store.repo,
                     "path": store.path,
-                    "dedicated_repo": store.dedicated_repo,
+                    "mirrors": [{"host": mirror.host, "repo": mirror.repo} for mirror in store.mirrors],
                 },
             },
             backends=tuple(backends),
@@ -1604,23 +1696,37 @@ class CatalogEngine:
 
     def pointers(self) -> dict[str, object]:
         """How a consumer points at this catalog today, without editing
-        ``.claude/settings.json`` or minting a repo."""
+        ``.claude/settings.json`` or minting a repo.
+
+        The skill marketplace is this monorepo. The Claude ``github`` source
+        uses ``edit_store.repo`` with ``path`` and ``sparsePaths``. Each
+        ``edit_store.mirrors`` entry adds a ``git`` source whose ``url`` is
+        ``https://<host>/<repo>.git``.
+        """
         abs_dir = self.catalog_dir.resolve()
         try:
             rel_dir = abs_dir.relative_to(self.repo_root.resolve()).as_posix()
         except ValueError:
             rel_dir = abs_dir.as_posix()
         name = self.config.name
-        dedicated = self.config.edit_store.dedicated_repo
-        github_note = (
-            f"github forms available: extraKnownMarketplaces source github repo {dedicated}"
-            if dedicated
-            else (
-                "github forms (extraKnownMarketplaces `github`, `codex plugin marketplace add "
-                "<owner/repo>`) wait on edit_store.dedicated_repo — no catalog repo is minted "
-                "without operator confirm"
+        repo = self.config.edit_store.repo
+        github_source = _github_marketplace_source(repo)
+        mirror_forms = [
+            _known_marketplace(MARKETPLACE_NAME, _git_marketplace_source(mirror_git_url(mirror)))
+            for mirror in self.config.edit_store.mirrors
+        ]
+        if mirror_forms:
+            github_note = (
+                "this monorepo hosts the marketplace; the github source points at "
+                f"{repo}. Each edit_store.mirrors entry is a git source with a full https URL. "
+                "git-subdir is a plugin source, not a marketplace source."
             )
-        )
+        else:
+            github_note = (
+                "this monorepo hosts the marketplace; the github source points at "
+                f"{repo}. edit_store.mirrors is empty until an internal mirror is named. "
+                "git-subdir is a plugin source, not a marketplace source."
+            )
         quoted_dir = shlex.quote(str(abs_dir))  # a path with a space must paste intact
         return {
             "catalog_dir": str(abs_dir),
@@ -1628,13 +1734,11 @@ class CatalogEngine:
             "extra_known_marketplaces": {
                 "extraKnownMarketplaces": {name: {"source": {"source": "directory", "path": rel_dir}}}
             },
+            "github_marketplace": _known_marketplace(MARKETPLACE_NAME, github_source),
+            "mirror_git_marketplaces": mirror_forms,
+            "mirrors": [{"host": mirror.host, "repo": mirror.repo} for mirror in self.config.edit_store.mirrors],
             "claude_plugin_add": f"/plugin marketplace add {quoted_dir}",
-            "codex_plugin_add": (
-                f"codex plugin marketplace add {dedicated}"
-                if dedicated
-                else "codex plugin marketplace add <owner/repo>  (waits on edit_store.dedicated_repo)"
-            ),
-            "dedicated_repo": dedicated,
+            "codex_plugin_add": f"codex plugin marketplace add {repo}",
             "github_note": github_note,
             # Verified live 2026-09-19 (bmad-method 6.12.0): the installer resolves
             # this directory ("Local source resolved") but discovery mode installs
@@ -1694,6 +1798,12 @@ def format_pointers(pointers: dict[str, object]) -> str:
             "",
             "Claude Code — .claude/settings.json (directory form; repo-relative, worktree-safe):",
             json.dumps(pointers["extra_known_marketplaces"], indent=2),
+            "",
+            "Claude Code — this repository (github source; path and sparsePaths):",
+            json.dumps(pointers["github_marketplace"], indent=2),
+            "",
+            "Claude Code — one git source per edit_store.mirrors entry (full https URL):",
+            json.dumps(pointers["mirror_git_marketplaces"], indent=2),
             "",
             "Claude Code — one session:",
             f"  {pointers['claude_plugin_add']}",

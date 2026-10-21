@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 32dcd1a7d004eef9
-story_count: 388
-test_file_count: 140
+source_fingerprint: 53209a19cebada3b
+story_count: 393
+test_file_count: 142
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 388
-- **Epics parsed:** 108
-- **Test files inventoried:** 140 under `src/shared/packages/pyforge-steward/tests/`
+- **Stories parsed:** 393
+- **Epics parsed:** 109
+- **Test files inventoried:** 142 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `32dcd1a7d004eef9`
+- **Source fingerprint:** `53209a19cebada3b`
 
 ## Risk Assessment
 
@@ -134,6 +134,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 106: The two `mypy` lanes keep separate caches (fix under spec-pyforge-steward CAP-159; no CAP)
 - Epic 107: The preflight refuses a stranded lane, and its serial reference resolves under pixi (fix under spec-pyforge-steward CAP-159; no CAP)
 - Epic 108: `estate reconcile` and `ci status` report what happened (fixes under spec-pyforge-steward CAP-167 and CAP-166; no CAP)
+- Epic 109: The reset BMAD marketplace is a skill store on the catalog engine (spec-pyforge-steward CAP-169..CAP-173)
 
 ### Low-risk epics
 
@@ -222,6 +223,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_keys_rotate.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_lint_types_mypy_cache.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_lint_types_not_yet_clean.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_marketplace_pages.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_measures.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_pages.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_pages_duty.py` | unit | none observed |
@@ -232,6 +234,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_pages_release.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_pages_release_flag_states.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_passport_mint.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_pilot_skills.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_concurrency.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_env_sync.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_killed_holder.py` | unit | none observed |
@@ -682,6 +685,11 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 106.1 | The two `mypy` lanes keep separate caches | none observed |
 | 107.1 | A stranded preflight lane is refused, and pr-preflight-lanes resolves under pixi | none observed |
 | 108.1 | `estate reconcile` reds on a failed generator, and a retired CI row is never ... | none observed |
+| 109.1 | The reset marketplace has a product brief | none observed |
+| 109.2 | Three pilot skills run without the estate environment | none observed |
+| 109.3 | A marketplace tree renders a Pages index from listings | none observed |
+| 109.4 | The teammate CLI bmp shares the catalog engine | none observed |
+| 109.5 | Contribution lanes wait on a desk test and a Wizard-of-Oz pilot | none observed |
 
 ## Quality Gates
 

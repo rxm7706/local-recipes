@@ -66,7 +66,7 @@ catalog:
     kind: git
     repo: tester/repo
     path: catalog
-    dedicated_repo: null
+    mirrors: []
 """
 
 _WIELDED_MODULE_COUNT = sum(1 for p in SUITE_PACKAGES if p.install_class == INSTALL_CLASS_MODULE)
@@ -265,11 +265,28 @@ def test_load_config_requires_git_as_the_edit_store(tmp_path: Path) -> None:
         load_config(catalog_dir / "catalog.yaml")
 
 
-@pytest.mark.parametrize("value", ["https://github.com/x/y", "git@github.com:x/y", "x", "x/y/z", "x/y#readme"])
-def test_load_config_dedicated_repo_must_be_owner_repo(tmp_path: Path, value: str) -> None:
-    header = _HEADER.replace("dedicated_repo: null", f"dedicated_repo: {value!r}")
+def test_load_config_rejects_dedicated_repo(tmp_path: Path) -> None:
+    header = _HEADER.replace("mirrors: []", "dedicated_repo: tester/catalog")
     catalog_dir = _write_catalog(tmp_path, "", header=header)
-    with pytest.raises(CatalogConfigError, match="dedicated_repo' must be null or an owner/repo string"):
+    with pytest.raises(CatalogConfigError, match="dedicated_repo' was replaced by 'mirrors'"):
+        load_config(catalog_dir / "catalog.yaml")
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "mirrors: https://github.com/x/y\n",
+        "mirrors:\n  - host: https://git.example\n    repo: acme/local-recipes\n",
+        "mirrors:\n  - host: git.example/org\n    repo: acme/local-recipes\n",
+        "mirrors:\n  - host: git.example\n    repo: not-a-repo\n",
+        "mirrors:\n  - host: git.example\n    repo: acme/local-recipes\n    path: extra\n",
+        "mirrors:\n  - git.example\n",
+    ],
+)
+def test_load_config_mirrors_must_be_host_and_owner_repo(tmp_path: Path, value: str) -> None:
+    header = _HEADER.replace("mirrors: []\n", value)
+    catalog_dir = _write_catalog(tmp_path, "", header=header)
+    with pytest.raises(CatalogConfigError, match="mirrors"):
         load_config(catalog_dir / "catalog.yaml")
 
 
@@ -281,7 +298,7 @@ def test_load_config_dedicated_repo_must_be_owner_repo(tmp_path: Path, value: st
         ("catalog:\n  name: x\n  owner: o\n", "'catalog.edit_store' section missing"),
         (
             "catalog:\n  name: x\n  owner: o\n  edit_store: {kind: git, repo: r, path: p, dedicated_repo: 7}\n",
-            "dedicated_repo' must be null or an owner/repo string",
+            "dedicated_repo' was replaced by 'mirrors'",
         ),
         (_HEADER + "sources: [a]\n", "'sources' section must be a mapping"),
         (_HEADER + "sources:\n  s: plugin\n", "'sources.s' must be a mapping"),
@@ -308,7 +325,7 @@ def test_load_config_normalizes_bare_yaml_booleans_to_state_words(tmp_path: Path
     config = load_config(catalog_dir / "catalog.yaml")
     assert [b.state for b in config.backends] == list(STATES)
     assert config.backends[0].options == {"channel": "c"}
-    assert config.edit_store.dedicated_repo is None
+    assert config.edit_store.mirrors == ()
     assert config.display_name == "Test catalog"
 
 
@@ -1098,8 +1115,11 @@ def test_pointers_name_every_consumer_form_and_edit_nothing(tmp_path: Path, caps
     assert f"bmad-method install --custom-source {catalog_dir.resolve()}" in out
     assert '"extraKnownMarketplaces"' in out and '"source": "directory"' in out
     assert f"/plugin marketplace add {catalog_dir.resolve()}" in out
-    assert "codex plugin marketplace add <owner/repo>" in out
-    assert "wait on edit_store.dedicated_repo" in out
+    assert "codex plugin marketplace add tester/repo" in out
+    assert '"source": "github"' in out
+    assert "docs/foundry/marketplace/.claude-plugin/marketplace.json" in out
+    assert "sparsePaths" in out
+    assert "edit_store.mirrors is empty" in out
     assert ".claude/settings.json is not edited" in out
     # verified live 2026-09-19: bmad-method 6.12.0 resolves the dir but "Found 0 modules"
     assert "Found 0 modules" in out and "steward catalog ship" in out
@@ -1114,7 +1134,18 @@ def test_pointers_name_every_consumer_form_and_edit_nothing(tmp_path: Path, caps
             "test-catalog": {"source": {"source": "directory", "path": str(catalog_dir.resolve())}}
         }
     }
-    assert payload["dedicated_repo"] is None
+    assert payload["mirrors"] == []
+    assert payload["github_marketplace"]["extraKnownMarketplaces"]["pyforge-bmad-marketplace"]["source"] == {
+        "source": "github",
+        "repo": "tester/repo",
+        "path": "docs/foundry/marketplace/.claude-plugin/marketplace.json",
+        "sparsePaths": [
+            "docs/foundry/marketplace/.claude-plugin",
+            "docs/foundry/marketplace/skills",
+        ],
+    }
+    assert payload["mirror_git_marketplaces"] == []
+    assert "git-subdir" not in json.dumps(payload["github_marketplace"])
 
 
 def test_pointers_quote_a_catalog_path_with_a_space(tmp_path: Path) -> None:
@@ -1129,16 +1160,28 @@ def test_pointers_quote_a_catalog_path_with_a_space(tmp_path: Path) -> None:
     assert pointers["catalog_dir"] == str(spaced.resolve())  # the raw path stays raw
 
 
-def test_pointers_use_the_github_forms_once_a_dedicated_repo_is_confirmed(tmp_path: Path) -> None:
-    header = _HEADER.replace("dedicated_repo: null", "dedicated_repo: tester/catalog")
+def test_pointers_print_a_full_git_url_for_each_mirror(tmp_path: Path) -> None:
+    header = _HEADER.replace(
+        "mirrors: []",
+        "mirrors:\n    - {host: git.example, repo: acme/local-recipes}\n",
+    )
     catalog_dir = _write_catalog(tmp_path, "", header=header)
     engine = CatalogEngine(tmp_path, load_config(catalog_dir / "catalog.yaml"), catalog_dir=catalog_dir)
     pointers = engine.pointers()
-    assert pointers["codex_plugin_add"] == "codex plugin marketplace add tester/catalog"
-    assert pointers["extra_known_marketplaces"]["extraKnownMarketplaces"]["test-catalog"] == {
-        "source": {"source": "directory", "path": "catalog"}
+    assert pointers["mirrors"] == [{"host": "git.example", "repo": "acme/local-recipes"}]
+    assert pointers["codex_plugin_add"] == "codex plugin marketplace add tester/repo"
+    mirror = pointers["mirror_git_marketplaces"][0]["extraKnownMarketplaces"]["pyforge-bmad-marketplace"]
+    assert mirror["source"] == {
+        "source": "git",
+        "url": "https://git.example/acme/local-recipes.git",
+        "path": "docs/foundry/marketplace/.claude-plugin/marketplace.json",
+        "sparsePaths": [
+            "docs/foundry/marketplace/.claude-plugin",
+            "docs/foundry/marketplace/skills",
+        ],
     }
-    assert "github forms available" in pointers["github_note"]
+    assert "git-subdir" not in json.dumps(mirror)
+    assert "full https URL" in pointers["github_note"]
 
 
 def test_backends_read_declared_options_and_treat_null_as_absent() -> None:
@@ -1192,7 +1235,7 @@ def test_real_tree_check_is_ok_and_manifests_are_in_sync(capsys) -> None:
         "kind": "git",
         "repo": "rxm7706/local-recipes",
         "path": CATALOG_RELATIVE.as_posix(),
-        "dedicated_repo": None,
+        "mirrors": [],
     }
     assert main(["catalog", "render", "--check"]) == EXIT_OK
     assert main(["catalog"]) == EXIT_OK  # bare invocation defaults to check
@@ -1242,7 +1285,17 @@ def test_real_tree_pointers_use_the_repo_relative_directory_form(capsys) -> None
             }
         }
     }
-    assert payload["dedicated_repo"] is None
+    source = payload["github_marketplace"]["extraKnownMarketplaces"]["pyforge-bmad-marketplace"]["source"]
+    assert source["source"] == "github"
+    assert source["repo"] == "rxm7706/local-recipes"
+    assert source["path"] == "docs/foundry/marketplace/.claude-plugin/marketplace.json"
+    assert source["sparsePaths"] == [
+        "docs/foundry/marketplace/.claude-plugin",
+        "docs/foundry/marketplace/skills",
+    ]
+    assert payload["mirrors"] == []
+    assert payload["mirror_git_marketplaces"] == []
+    assert payload["codex_plugin_add"] == "codex plugin marketplace add rxm7706/local-recipes"
     assert payload["catalog_dir"] == str((repo_root() / CATALOG_RELATIVE).resolve())
 
 

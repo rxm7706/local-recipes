@@ -5307,6 +5307,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  carried: 2026-10-21 — Epic 109 does not touch recipe or frame CI triggers. Story 109.3 renders marketplace pages from index.yaml and does not close this row.
   verified: 2026-10-01 — STANDS — .github/workflows/pyforge-station-tests.yml's `paths:` blocks (lines 27-42 and 47-62) list only src/shared/packages/pyforge-*/**, pixi.toml, pixi.lock, Containerfile, .dockerignore, scripts/container-gates -- no recipes/** or docs/foundry/frames/**; grep across .github/workflows/*.yml for 'steward catalog render' / 'catalog check' finds nothing. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-60-1-2: The `test_track.py` `_SCHEMA` path fix (`_PKG.parents[1]` → `_PKG.parent`) is never executed in either CI lane: `test_schema_accepts_assembled_track` opens with `pytest.importorskip("jsonschema")` and `jsonschema` is not a `pyforge-steward` feature dependency, so the track-schema contract stays unpinned in CI exactly as before.
@@ -5343,6 +5344,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  carried: 2026-10-21 — Epic 109 copies skill folders into .agents/skills and .claude/skills. That is a different path from bmad-method install --custom-source. Story 109.4 must not claim this row closed.
   verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-steward/catalog/ contains only catalog.yaml, registry/estate.yaml, .claude-plugin/marketplace.json and .agents/plugins/marketplace.json -- no vendored per-module trees; catalog.py's pointers() (line 991) still returns the installer_note workaround message, not a fixed discovery path. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-62-1: The "First cut (all `on`, 2026-09-15)" section heading in measure-catalog.md duplicates the new per-row `State` values with nothing forcing the heading to update once Story 62.2's add/switch/archive config flips an individual row.
@@ -6158,6 +6160,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
   status: open
+  carried: 2026-10-21 — Epic 109 is a product reset, not the independent follow-up review of Story 60.1. The row stays open; implementation and review stay separate.
 
 ### DW-FRR-61-1: Follow-up review still recommended for story 61.1
 

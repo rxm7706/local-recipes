@@ -10,6 +10,9 @@
  *   AD-21 gives `/dashboard/`: steward's `deploy static` boards, and the two exports, `kedro-viz/` (Story 42.2) and
  *   `vizro/` (atlas Story 30.2), each mounted only when it holds a file, never failing the build when absent;
  *   dot-entries (staging leftovers) never mount;
+ * - the marketplace site at `marketplace/`, from `docs/foundry/marketplace/site/` plus the skill folders
+ *   under `docs/foundry/marketplace/skills/`, only while `pyforge.steward.marketplace_pages` is on
+ *   (dev on, staging and production off). Off, the mount is absent and the committed HTML stays in git;
  * - the SIL Open Font License text of each @fontsource package the site's faces come from, from the package's own
  *   `LICENSE`, at `fonts/<package>.LICENSE.txt` (Story 43.7: the faces ship in the artifact, so their licence does);
  * - `favicon.svg`, the site's one icon -- `site.yml`'s `favicon`, the glyph the herald pages already show -- where
@@ -27,6 +30,31 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { publishedTwin } from '../src/lib/herald-pages.ts';
 import { DASHBOARD_EXPORTS, holdsAFile } from '../src/lib/nav.ts';
 import { heraldPagesRoot, loadHeraldPages } from '../src/loaders/herald-pages-loader.ts';
+import { marketplacePagesEnabled } from './marketplace-pages.mts';
+
+const PUBLIC_GIT_URL = 'https://github.com/rxm7706/local-recipes.git';
+
+export { marketplacePagesEnabled };
+
+function copyFiles(sourceDir: string, destPrefix: string, put: (rel: string, data: string | Buffer) => void, rewriteGitUrl: boolean): void {
+  if (!fs.existsSync(sourceDir)) {
+    return;
+  }
+  const entries = fs.readdirSync(sourceDir, { recursive: true, encoding: 'utf8' }).sort();
+  for (const rel of entries) {
+    const abs = path.join(sourceDir, rel);
+    if (!fs.statSync(abs).isFile()) {
+      continue;
+    }
+    const posix = rel.split(path.sep).join('/');
+    let data: string | Buffer = fs.readFileSync(abs);
+    if (rewriteGitUrl && posix === 'marketplace.json' && process.env.GITHUB_SERVER_URL && process.env.GITHUB_REPOSITORY) {
+      const live = `${process.env.GITHUB_SERVER_URL.replace(/\/$/, '')}/${process.env.GITHUB_REPOSITORY}.git`;
+      data = data.toString('utf8').split(PUBLIC_GIT_URL).join(live);
+    }
+    put(`${destPrefix}${posix}`, data);
+  }
+}
 
 export { DASHBOARD_EXPORTS };
 
@@ -80,6 +108,11 @@ export function populatePublic(publicDir: string, repoRoot: string = heraldPages
     if (!skipped && fs.statSync(path.join(dashboard, rel)).isFile()) {
       put(`dashboard/${rel.split(path.sep).join('/')}`, fs.readFileSync(path.join(dashboard, rel)));
     }
+  }
+  if (marketplacePagesEnabled(repoRoot)) {
+    const marketplace = path.join(repoRoot, 'docs', 'foundry', 'marketplace');
+    copyFiles(path.join(marketplace, 'site'), 'marketplace/', put, true);
+    copyFiles(path.join(marketplace, 'skills'), 'marketplace/skills/', put, false);
   }
   const glyph = String(pages.site.favicon ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
   put('favicon.svg', `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">${glyph}</text></svg>\n`);

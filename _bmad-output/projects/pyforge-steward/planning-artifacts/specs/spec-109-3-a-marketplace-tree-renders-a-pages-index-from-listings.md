@@ -1,0 +1,66 @@
+---
+title: '109.3: A marketplace tree renders a Pages index from listings'
+type: 'feature'
+created: '2026-10-21'
+status: 'in-review'
+baseline_revision: '53aed16fe1957ab340c6146cb7bf0c3f810c1746'
+flag:
+  key: pyforge.steward.marketplace_pages
+  provider: openfeature-file
+  default: {production: off, staging: off, dev: on}
+  scope: global
+  fallback: 'pages are not regenerated; committed HTML stays'
+  cleanup: 90 days after ON in every environment (Q4)
+review_loop_iteration: 0
+followup_review_recommended: false
+context:
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py
+  - src/shared/packages/pyforge-steward/tests/unit/test_marketplace_pages.py
+  - docs/foundry/marketplace/index.yaml
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/prototypes/p2-index-schema.yaml
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/prototypes/p2-index-schema.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/prototypes/p1-cli-transcript.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/prototypes/p3-skill-card.html
+  - docs/foundry/marketplace/site/index.html
+  - src/platform/config/flags.json
+  - src/platform/config/flag-overlays.json
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/catalog.py
+declared_low_risk: false
+---
+
+<intent-contract>
+
+## Intent
+
+**Problem:** The reset needs a tree in this monorepo, with listings a static site can render, without changing the v1 catalog engine or the empty estate module list.
+
+**Approach:** `docs/foundry/marketplace/` holds `index.yaml` (`schema: pyforge.bmad-marketplace/v1`, `index_version: 1`, `compatible_with: registry/estate.yaml`) and one `listing.yaml` per skill folder, in the field set of `prototypes/p2-index-schema.yaml`. bmp `tier` maps onto v1 `trust_tier`. The pilots are `community` / `unverified` and `code-backed`. The skill folders, `templates/SKILL.md`, `.github/PULL_REQUEST_TEMPLATE.md`, `MANUAL-CHECKLIST.md`, and `site/` are the marketplace. `pyforge.steward.marketplace_pages.write_site` writes `site/`. A card follows `prototypes/p3-skill-card.html`: it renders `steps.md`, names both install directories, names unpublished packages, and names GitHub release and Artifactory as unpublished. It does not copy the paper card's sample commands, checksums, or review record. `write_site` reads `pyforge.steward.marketplace_pages` and writes nothing while it is off. `registry/estate.yaml` with `modules: []` loads as no listings. A module row maps with `listing_from_estate_module`. `CatalogEngine.render` is not called and is not edited. `edit_store.mirrors` replaces `dedicated_repo`. `prototypes/p1-cli-transcript.md` is the later `bmp` face; this story does not build it.
+
+## Acceptance criteria
+
+1. `load_listings` of the committed `registry/estate.yaml` returns `[]`.
+2. A skill whose `path` is not `skills/<scope>/<slug>` raises `MarketplaceIndexError` and creates no site directory.
+3. With the flag off, `write_site` raises `MarketplacePagesDisabled` and writes nothing. With the flag on, it writes `index.html`, `listings.json`, `marketplace.json`, and one card per listing. The card names `.agents/skills`, `.claude/skills`, Claude Code's documented path `.claude/skills/`, Devin's documented path `.agents/skills/`, and any package with `published: false`.
+4. The committed `site/` byte-matches `write_site_from_index` of the committed `index.yaml`.
+5. The index lists `mason/environment`, `mason/package`, and `warden/scan`.
+6. `catalog check` on the real tree still exits 0. `edit_store.mirrors` is a list and starts empty. There is no `dedicated_repo` and no separate marketplace repository. The open question is which internal GitHub or GHES mirror of local-recipes, and whether mirroring the full repository is allowed at work.
+7. Each committed pilot has `tier: community`, `trust_tier: unverified`, `lane: code-backed`, and `docs.steps: steps.md`. `skills/<scope>/<slug>/listing.yaml` matches that index row. The environment card contains the `conda-lock lock` command from `steps.md` and does not contain `env.lock`. A `tier` that does not map to its `trust_tier` is refused.
+
+## Boundaries
+
+- No new steward CLI duty. No edit to `catalog.py`'s render path. No edit to `registry/estate.yaml`. `catalog.yaml` replaces `dedicated_repo` with `mirrors`.
+- No separate marketplace repository is created.
+
+</intent-contract>
+
+## Verification
+
+**Commands:**
+
+- `pixi run --frozen -e pyforge-steward python -m pytest src/shared/packages/pyforge-steward/tests/unit/test_marketplace_pages.py src/shared/packages/pyforge-steward/tests/unit/test_catalog.py -q` — expected: exit 0. `test_marketplace_pages.py` is the two-state test: `test_write_site_refuses_when_the_flag_is_off_and_writes_when_it_is_on`.
+- `pixi run --frozen -e pyforge-core python -m pytest src/shared/packages/pyforge-core/tests/unit/test_flags.py -q` — expected: exit 0.
+- `pixi run --frozen -e pyforge-guild python -m pytest src/platform/tests/test_openfeature_file_flags.py -q` — expected: exit 0.
+
+**Manual checks:**
+
+- Open `site/index.html` in a browser and follow one card link. The card is the listing, not an install button.

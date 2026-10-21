@@ -1,0 +1,281 @@
+{
+  "listings": [
+    {
+      "adapters": {},
+      "author": "rxm7706",
+      "category": "development",
+      "ci": {
+        "status": "pending"
+      },
+      "contribution_lane": "code-backed",
+      "description": "Resolve a teammate project's conda and pip manifests into one lockfile, then check that lockfile. No pixi environment name and no path inside local-recipes.",
+      "display_name": "Lock and check one environment",
+      "docs": {
+        "card": "site/skills/mason/environment.html",
+        "steps": "steps.md"
+      },
+      "id": "mason/environment",
+      "install": {
+        "entry": "SKILL.md",
+        "origins": [
+          "github",
+          "artifactory"
+        ],
+        "targets": [
+          ".agents/skills/mason-environment",
+          ".claude/skills/mason-environment"
+        ]
+      },
+      "jobs": [
+        "find",
+        "install",
+        "create"
+      ],
+      "keywords": [
+        "conda",
+        "pip",
+        "lockfile"
+      ],
+      "kind": "skill",
+      "lane": "code-backed",
+      "name": "@mason/environment",
+      "owners": [
+        "@rxm7706"
+      ],
+      "path": "skills/mason/environment",
+      "related": [
+        "@mason/package",
+        "@warden/scan"
+      ],
+      "requires": [
+        {
+          "installed_by": "folder-copy",
+          "kind": "package",
+          "name": "pyforge-mason",
+          "note": "PyPI, conda-forge, and SelfExplainML returned 404 on 2026-10-21",
+          "published": false
+        },
+        {
+          "installed_by": "folder-copy",
+          "kind": "package",
+          "name": "pyforge-core",
+          "note": "Required by pyforge mason dispatch; same 404 check",
+          "published": false
+        }
+      ],
+      "scope": "mason",
+      "slug": "environment",
+      "source": "estate-listings",
+      "sources": {
+        "artifactory": {
+          "conda": {
+            "published": false
+          },
+          "pip": {
+            "published": false
+          }
+        },
+        "github": {
+          "kind": "release",
+          "published": false
+        }
+      },
+      "subcategory": "environments",
+      "summary": "Lock a project into one conda-lock file and check that lockfile.",
+      "tasks": [
+        "lock-environment",
+        "check-lockfile"
+      ],
+      "tier": "community",
+      "title": "Lock and check one environment",
+      "trust_tier": "unverified",
+      "type": "community",
+      "verified_at": null,
+      "version": "0.1.0"
+    },
+    {
+      "adapters": {},
+      "author": "rxm7706",
+      "category": "development",
+      "ci": {
+        "status": "pending"
+      },
+      "contribution_lane": "code-backed",
+      "description": "Build a wheel and sdist from the project directory. Upload stays behind an explicit confirm. No pixi environment name and no path inside local-recipes.",
+      "display_name": "Build a package locally",
+      "docs": {
+        "card": "site/skills/mason/package.html",
+        "steps": "steps.md"
+      },
+      "id": "mason/package",
+      "install": {
+        "entry": "SKILL.md",
+        "origins": [
+          "github",
+          "artifactory"
+        ],
+        "targets": [
+          ".agents/skills/mason-package",
+          ".claude/skills/mason-package"
+        ]
+      },
+      "jobs": [
+        "find",
+        "install",
+        "create"
+      ],
+      "keywords": [
+        "wheel",
+        "sdist",
+        "build"
+      ],
+      "kind": "skill",
+      "lane": "code-backed",
+      "name": "@mason/package",
+      "owners": [
+        "@rxm7706"
+      ],
+      "path": "skills/mason/package",
+      "related": [
+        "@mason/environment",
+        "@warden/scan"
+      ],
+      "requires": [
+        {
+          "installed_by": "folder-copy",
+          "kind": "package",
+          "name": "pyforge-mason",
+          "note": "PyPI, conda-forge, and SelfExplainML returned 404 on 2026-10-21",
+          "published": false
+        },
+        {
+          "installed_by": "folder-copy",
+          "kind": "package",
+          "name": "pyforge-core",
+          "note": "Required by pyforge mason dispatch; same 404 check",
+          "published": false
+        }
+      ],
+      "scope": "mason",
+      "slug": "package",
+      "source": "estate-listings",
+      "sources": {
+        "artifactory": {
+          "conda": {
+            "published": false
+          },
+          "pip": {
+            "published": false
+          }
+        },
+        "github": {
+          "kind": "release",
+          "published": false
+        }
+      },
+      "subcategory": "packaging",
+      "summary": "Build a wheel and sdist in the project directory. Do not upload.",
+      "tasks": [
+        "build-wheel",
+        "build-sdist"
+      ],
+      "tier": "community",
+      "title": "Build a package locally",
+      "trust_tier": "unverified",
+      "type": "community",
+      "verified_at": null,
+      "version": "0.1.0"
+    },
+    {
+      "adapters": {},
+      "author": "rxm7706",
+      "category": "development",
+      "ci": {
+        "status": "pending"
+      },
+      "contribution_lane": "code-backed",
+      "description": "Run the warden scan gate on the current project. Engine probes are not a second verdict. No pixi environment name and no path inside local-recipes.",
+      "display_name": "Scan a project for dependency hygiene",
+      "docs": {
+        "card": "site/skills/warden/scan.html",
+        "steps": "steps.md"
+      },
+      "id": "warden/scan",
+      "install": {
+        "entry": "SKILL.md",
+        "origins": [
+          "github",
+          "artifactory"
+        ],
+        "targets": [
+          ".agents/skills/warden-scan",
+          ".claude/skills/warden-scan"
+        ]
+      },
+      "jobs": [
+        "find",
+        "install"
+      ],
+      "keywords": [
+        "dependencies",
+        "scan"
+      ],
+      "kind": "skill",
+      "lane": "code-backed",
+      "name": "@warden/scan",
+      "owners": [
+        "@rxm7706"
+      ],
+      "path": "skills/warden/scan",
+      "related": [
+        "@mason/environment",
+        "@mason/package"
+      ],
+      "requires": [
+        {
+          "installed_by": "folder-copy",
+          "kind": "package",
+          "name": "pyforge-warden",
+          "note": "PyPI, conda-forge, and SelfExplainML returned 404 on 2026-10-21",
+          "published": false
+        },
+        {
+          "installed_by": "folder-copy",
+          "kind": "package",
+          "name": "pyforge-core",
+          "note": "Required by pyforge warden dispatch; same 404 check",
+          "published": false
+        }
+      ],
+      "scope": "warden",
+      "slug": "scan",
+      "source": "estate-listings",
+      "sources": {
+        "artifactory": {
+          "conda": {
+            "published": false
+          },
+          "pip": {
+            "published": false
+          }
+        },
+        "github": {
+          "kind": "release",
+          "published": false
+        }
+      },
+      "subcategory": "hygiene",
+      "summary": "Run warden scan on the current project. Probes are not a verdict.",
+      "tasks": [
+        "scan-dependencies"
+      ],
+      "tier": "community",
+      "title": "Scan a project for dependency hygiene",
+      "trust_tier": "unverified",
+      "type": "community",
+      "verified_at": null,
+      "version": "0.1.0"
+    }
+  ],
+  "schema": "pyforge.bmad-marketplace/v1"
+}

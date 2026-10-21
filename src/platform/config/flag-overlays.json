@@ -40,7 +40,8 @@
     "pyforge.steward.estate_refresh": "on",
     "pyforge.steward.ci_pause_control": "on",
     "pyforge.steward.pages_duty": "on",
-    "pyforge.steward.preflight_ci_arbitrates": "on"
+    "pyforge.steward.preflight_ci_arbitrates": "on",
+    "pyforge.steward.marketplace_pages": "on"
   },
   "staging": {
     "pyforge.cutover_root": "local-recipes",
@@ -83,7 +84,8 @@
     "pyforge.steward.estate_refresh": "off",
     "pyforge.steward.ci_pause_control": "off",
     "pyforge.steward.pages_duty": "off",
-    "pyforge.steward.preflight_ci_arbitrates": "off"
+    "pyforge.steward.preflight_ci_arbitrates": "off",
+    "pyforge.steward.marketplace_pages": "off"
   },
   "production": {
     "pyforge.cutover_root": "local-recipes",
@@ -126,6 +128,7 @@
     "pyforge.steward.estate_refresh": "off",
     "pyforge.steward.ci_pause_control": "off",
     "pyforge.steward.pages_duty": "off",
-    "pyforge.steward.preflight_ci_arbitrates": "off"
+    "pyforge.steward.preflight_ci_arbitrates": "off",
+    "pyforge.steward.marketplace_pages": "off"
   }
 }

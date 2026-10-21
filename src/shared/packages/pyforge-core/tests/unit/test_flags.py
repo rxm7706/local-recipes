@@ -1006,6 +1006,8 @@ _SHIPPED_CLOCKS = {
     "pyforge.steward.pages_duty": ("steward", "102-2-", "2026-10-14", "", ""),
     # Story 103.6 (CAP-159): the touched-scope preflight; default off, dev on.
     "pyforge.steward.preflight_ci_arbitrates": ("steward", "103-6-", "2026-10-15", "", ""),
+    # Story 109.3 (CAP-171): marketplace Pages regeneration; default off, dev on.
+    "pyforge.steward.marketplace_pages": ("steward", "109-3-", "2026-10-21", "", ""),
 }
 
 
@@ -1072,6 +1074,7 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.steward.ci_pause_control": {"dev": True, "staging": False, "production": False},
         "pyforge.steward.pages_duty": {"dev": True, "staging": False, "production": False},
         "pyforge.steward.preflight_ci_arbitrates": {"dev": True, "staging": False, "production": False},
+        "pyforge.steward.marketplace_pages": {"dev": True, "staging": False, "production": False},
         "pyforge.marshal.verify_fix_loop": {"dev": True, "staging": True, "production": False},
         "pyforge.marshal.landing_ci_pauses": {"dev": True, "staging": False, "production": False},
         "pyforge.atlas.dependency_history_sensor": {"dev": True, "staging": True, "production": False},
