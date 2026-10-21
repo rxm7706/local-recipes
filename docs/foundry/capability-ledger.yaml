@@ -4434,30 +4434,35 @@ capabilities:
     station: pyforge-steward
     heading: "the reset marketplace is a contract on this station"
     mode: rebuild
+    note: "Foundry rebuilds this at cutover. Nothing moves. Nothing changes at the cutover_root flip. Decision 2026-10-21: the marketplace stays in this monorepo at docs/foundry/marketplace/."
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - id: pyforge-steward:CAP-170
     spec: pyforge-steward
     station: pyforge-steward
     heading: "three pilot skills run without the estate environment"
     mode: rebuild
+    note: "Foundry rebuilds this at cutover. Nothing moves. Nothing changes at the cutover_root flip. Decision 2026-10-21: the marketplace stays in this monorepo at docs/foundry/marketplace/."
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - id: pyforge-steward:CAP-171
     spec: pyforge-steward
     station: pyforge-steward
     heading: "a marketplace tree renders a Pages index from listings"
     mode: rebuild
+    note: "Foundry rebuilds this at cutover. Nothing moves. Nothing changes at the cutover_root flip. Decision 2026-10-21: the marketplace stays in this monorepo at docs/foundry/marketplace/."
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - id: pyforge-steward:CAP-172
     spec: pyforge-steward
     station: pyforge-steward
     heading: "the teammate CLI bmp shares the catalog engine"
     mode: rebuild
+    note: "Foundry rebuilds this at cutover. Nothing moves. Nothing changes at the cutover_root flip. Decision 2026-10-21: the marketplace stays in this monorepo at docs/foundry/marketplace/."
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - id: pyforge-steward:CAP-173
     spec: pyforge-steward
     station: pyforge-steward
     heading: "contribution lanes wait on a desk test"
     mode: rebuild
+    note: "Foundry rebuilds this at cutover. Nothing moves. Nothing changes at the cutover_root flip. Decision 2026-10-21: the marketplace stays in this monorepo at docs/foundry/marketplace/."
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - id: pyforge-warden:CAP-1
     spec: pyforge-warden

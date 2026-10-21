@@ -20,12 +20,16 @@ from pyforge.steward.marketplace_pages import (
     listings_from_skill_folders,
     load_listings,
     pages_enabled,
+    render_relative_marketplace,
+    render_url_marketplace,
     validate_listing,
+    write_plugin_manifest,
     write_site,
     write_site_from_index,
 )
 
 _CATALOG = Path("src/shared/packages/pyforge-steward/catalog")
+_MARKETPLACE = Path("docs/foundry/marketplace")
 
 
 def _flags_tree(tmp_path: Path, *, dev: str) -> Path:
@@ -131,6 +135,7 @@ def test_write_site_refuses_when_the_flag_is_off_and_writes_when_it_is_on(tmp_pa
     assert names == {
         "index.html",
         "listings.json",
+        "marketplace.json",
         "skills/mason/environment.html",
     }
     card = (site / "skills/mason/environment.html").read_text(encoding="utf-8")
@@ -144,7 +149,7 @@ def test_write_site_refuses_when_the_flag_is_off_and_writes_when_it_is_on(tmp_pa
 
 
 def test_the_committed_index_renders_one_card_per_pilot_skill(tmp_path: Path) -> None:
-    index = repo_root() / _CATALOG / "marketplace" / "index.yaml"
+    index = repo_root() / _MARKETPLACE / "index.yaml"
     rows = load_listings(index)
     assert [row["id"] for row in rows] == [
         "mason/environment",
@@ -154,10 +159,11 @@ def test_the_committed_index_renders_one_card_per_pilot_skill(tmp_path: Path) ->
     on = _flags_tree(tmp_path / "flags", dev="on")
     site = tmp_path / "site"
     write_site_from_index(index, site, flags_path=on)
-    committed = repo_root() / _CATALOG / "marketplace" / "site"
+    committed = repo_root() / _MARKETPLACE / "site"
     for relative in (
         "index.html",
         "listings.json",
+        "marketplace.json",
         "skills/mason/environment.html",
         "skills/mason/package.html",
         "skills/warden/scan.html",
@@ -166,7 +172,7 @@ def test_the_committed_index_renders_one_card_per_pilot_skill(tmp_path: Path) ->
 
 
 def test_index_yaml_round_trips_through_the_schema() -> None:
-    index = repo_root() / _CATALOG / "marketplace" / "index.yaml"
+    index = repo_root() / _MARKETPLACE / "index.yaml"
     document = yaml.safe_load(index.read_text(encoding="utf-8"))
     assert document["schema"] == SCHEMA_ID
     assert document["index_version"] == INDEX_VERSION
@@ -174,12 +180,12 @@ def test_index_yaml_round_trips_through_the_schema() -> None:
 
 
 def test_index_rows_match_each_folder_listing_yaml() -> None:
-    root = repo_root() / _CATALOG / "marketplace"
+    root = repo_root() / _MARKETPLACE
     assert load_listings(root / "index.yaml") == listings_from_skill_folders(root)
 
 
 def test_committed_pilots_are_community_and_code_backed() -> None:
-    rows = load_listings(repo_root() / _CATALOG / "marketplace" / "index.yaml")
+    rows = load_listings(repo_root() / _MARKETPLACE / "index.yaml")
     for row in rows:
         assert row["tier"] == "community"
         assert row["trust_tier"] == "unverified"
@@ -198,7 +204,7 @@ def test_a_tier_that_does_not_match_trust_tier_is_refused() -> None:
 
 
 def test_committed_environment_card_renders_steps_md_not_the_paper_sample(tmp_path: Path) -> None:
-    index = repo_root() / _CATALOG / "marketplace" / "index.yaml"
+    index = repo_root() / _MARKETPLACE / "index.yaml"
     on = _flags_tree(tmp_path / "flags", dev="on")
     site = tmp_path / "site"
     write_site_from_index(index, site, flags_path=on)
@@ -213,3 +219,30 @@ def test_committed_environment_card_renders_steps_md_not_the_paper_sample(tmp_pa
     assert "bmp install" in card
     assert "Claude Code" in card
     assert "Devin" in card
+
+
+def test_committed_marketplace_json_uses_documented_source_fields(tmp_path: Path) -> None:
+    index = repo_root() / _MARKETPLACE / "index.yaml"
+    rows = load_listings(index)
+    relative = json.loads(render_relative_marketplace(rows))
+    assert relative["name"] == "pyforge-bmad-marketplace"
+    assert [plugin["source"] for plugin in relative["plugins"]] == [
+        "./skills/mason/environment",
+        "./skills/mason/package",
+        "./skills/warden/scan",
+    ]
+    committed = repo_root() / _MARKETPLACE / ".claude-plugin" / "marketplace.json"
+    assert committed.read_text(encoding="utf-8") == render_relative_marketplace(rows)
+    url_form = json.loads(render_url_marketplace(rows))
+    plugin = url_form["plugins"][0]
+    assert plugin["source"]["source"] == "git-subdir"
+    assert plugin["source"]["url"] == "https://github.com/rxm7706/local-recipes.git"
+    assert plugin["source"]["path"] == "docs/foundry/marketplace/skills/mason/environment"
+    assert "sparsePaths" not in plugin["source"]
+    on = _flags_tree(tmp_path / "flags", dev="on")
+    dest = tmp_path / "marketplace.json"
+    write_plugin_manifest(index, dest, flags_path=on)
+    assert dest.read_text(encoding="utf-8") == render_relative_marketplace(rows)
+    off = _flags_tree(tmp_path / "off", dev="off")
+    with pytest.raises(MarketplacePagesDisabled):
+        write_plugin_manifest(index, tmp_path / "no.json", flags_path=off)

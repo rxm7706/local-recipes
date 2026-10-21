@@ -8,8 +8,8 @@ flag-exempt: docs-only
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
-  - src/shared/packages/pyforge-steward/catalog/marketplace/MANUAL-CHECKLIST.md
-  - src/shared/packages/pyforge-steward/catalog/marketplace/.github/PULL_REQUEST_TEMPLATE.md
+  - docs/foundry/marketplace/MANUAL-CHECKLIST.md
+  - docs/foundry/marketplace/.github/PULL_REQUEST_TEMPLATE.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/prototypes/p4-wizard-of-oz-pilot.md
 declared_low_risk: false
 ---
@@ -33,7 +33,7 @@ declared_low_risk: false
 ## Boundaries
 
 - Do not mark the deferred rows resolved.
-- Do not create the internal GitHub repository.
+- Do not create a separate marketplace repository. The open question is which internal mirror of local-recipes, and whether mirroring the full repository is allowed at work.
 - Do not treat a green unit test as the desk test.
 
 </intent-contract>
@@ -42,7 +42,7 @@ declared_low_risk: false
 
 **Commands:**
 
-- `test -f src/shared/packages/pyforge-steward/catalog/marketplace/MANUAL-CHECKLIST.md` — expected: exit 0. This only proves the checklist is present. The desk test itself is the manual check.
+- `test -f docs/foundry/marketplace/MANUAL-CHECKLIST.md` — expected: exit 0. This only proves the checklist is present. The desk test itself is the manual check.
 
 **Manual checks:**
 

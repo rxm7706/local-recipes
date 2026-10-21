@@ -21,7 +21,7 @@ A teammate who wants a BMAD skill today has two unusable paths. The estate catal
 
 ## The Solution
 
-A marketplace tree in this repository, ready to push to an internal GitHub after the operator confirms that repository. Each skill folder carries `listing.yaml`. `index.yaml` (`pyforge.bmad-marketplace/v1`, `index_version: 1`) is the committed concatenation, compatible with `registry/estate.yaml`. bmp `tier` maps onto the v1 trust names. The three pilots are `community`, which maps to `unverified`, because they have no review record. They are `code-backed` because each requires a package. An instructions-only skill is one with no package. A static index and one card per listing are generated from those listings. The card renders `steps.md`. The paper prototype's sample lock command is not the runbook. Find and install, for the pilot, are a person reading the card and copying the folder. Create is the `SKILL.md` template, and later `bmp new skill --from-session` driven by `@bmp/skillify`. Publish is a pull request against the checklist, in one of two lanes, and it is not automated until the Wizard-of-Oz exit criteria in `prototypes/p4-wizard-of-oz-pilot.md` are met.
+A marketplace tree in this repository, at `docs/foundry/marketplace/`. Decision 2026-10-21: this monorepo hosts and publishes it. There is no separate marketplace repository. Teammates use an internal mirror of local-recipes. Each skill folder carries `listing.yaml`. `index.yaml` (`pyforge.bmad-marketplace/v1`, `index_version: 1`) is the committed concatenation, compatible with `registry/estate.yaml`. bmp `tier` maps onto the v1 trust names. The three pilots are `community`, which maps to `unverified`, because they have no review record. They are `code-backed` because each requires a package. An instructions-only skill is one with no package. A static index and one card per listing are generated from those listings. The card renders `steps.md`. The paper prototype's sample lock command is not the runbook. Find and install, for the pilot, are a person reading the card and copying the folder. Create is the `SKILL.md` template, and later `bmp new skill --from-session` driven by `@bmp/skillify`. Publish is a pull request against the checklist, in one of two lanes, and it is not automated until the Wizard-of-Oz exit criteria in `prototypes/p4-wizard-of-oz-pilot.md` are met.
 
 ## What Makes This Different
 
@@ -47,11 +47,11 @@ The primary user is a teammate of rxm7706 at work, not the operator. The pilot a
 
 **Ready, not built (Stories 109.4–109.5):** `bmp` sharing `CatalogEngine`, including `@bmp/skillify` as `bmp new skill --from-session`; automated contribution lanes. The manual checklist records the P4 gates those stories wait on.
 
-**Out:** a new GitHub repository (operator confirm); billing; Layer 3; a community import; per-tool adapter generation (no format confirmed); changing `CatalogEngine.render` or the committed marketplace manifests; replacing the estate skill procedures; vendoring BMAD module trees (that would be a closure of `DW-FU-60-1-4`, and it is not this scope).
+**Out:** a separate marketplace repository (decision 2026-10-21: this monorepo hosts it); billing; Layer 3; a community import; per-tool adapter generation (no format confirmed); changing `CatalogEngine.render` or the v1 catalog manifests; replacing the estate skill procedures; vendoring BMAD module trees (that would be a closure of `DW-FU-60-1-4`, and it is not this scope).
 
 ## Vision
 
-If the desk test holds, a teammate installs a skill by copying a folder, and `bmp` becomes a thin client of the catalog engine for find and install. Publish stays a reviewed pull request in a named lane. Agents appear as skill-first listings, with an adapter only after a tool's format is confirmed. The internal GitHub is a push of this tree, not a second product. Artifactory remains how a machine without GitHub gets a snapshot.
+If the desk test holds, a teammate installs a skill by copying a folder, and `bmp` becomes a thin client of the catalog engine for find and install. Publish stays a reviewed pull request in a named lane. Agents appear as skill-first listings, with an adapter only after a tool's format is confirmed. An internal GitHub is a mirror of this repository, not a second product. Artifactory remains how a machine without GitHub gets a snapshot.
 
 ## assumptions[]
 
@@ -63,7 +63,7 @@ If the desk test holds, a teammate installs a skill by copying a folder, and `bm
 
 ## open_questions[]
 
-- **OQ1.** The operator has not confirmed the internal GitHub repository. `dedicated_repo` stays null until they do.
+- **OQ1.** Which internal GitHub or GHES mirror of local-recipes, and is mirroring the full repository allowed at work? Decision 2026-10-21: this monorepo hosts and publishes the marketplace. There is no dedicated marketplace repository. `edit_store.mirrors` stays empty until that mirror is named.
 - **OQ2.** Should `bmp install` also vendor module trees, which is the closure named on `DW-FU-60-1-4`, or only copy skill folders?
 - **OQ3.** Which per-tool agent formats are confirmed, if any? None are generated until one is named.
 - **OQ4.** P2 leaves the licence as sample, and leaves open whether station persona agents stay `bmad-agent-<station>` or become `@station/agent`. This brief does not pick a licence or rename those agents. `bmp` still needs a check that the name does not collide with an internal tool.

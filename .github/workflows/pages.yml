@@ -7,7 +7,8 @@ name: Pages
 #
 # Publishes one GitHub Pages artifact assembled at docs-site/build/site/
 # (Starlight docs shelf at /, herald dossier at /herald/, Kedro-Viz at
-# /dashboard/kedro-viz/). Story 102.4: atlas's kedro-viz-publish.yml uploads the export as
+# /dashboard/kedro-viz/, the BMAD marketplace at /marketplace/ while
+# pyforge.steward.marketplace_pages is on). Story 102.4: atlas's kedro-viz-publish.yml uploads the export as
 # the workflow artifact kedro-viz-export (atlas Story 30.1); the build job downloads the
 # newest live one into docs/dashboard/kedro-viz/ (gitignored), which
 # the Astro build mounts (docs-site/scripts/populate-public.mts), and skips the mount when there
@@ -43,6 +44,9 @@ on:
       # exports under it are gitignored); the build's own scripts, steward's pages module and herald's
       # flag export (the build's PYFORGE_* lines, herald Story 43.7) too.
       - 'docs/dashboard/**'
+      # Story 109.3: the marketplace tree mounts at /marketplace/ in this artifact.
+      - 'docs/foundry/marketplace/**'
+      - 'src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py'
       - 'scripts/pages_*.py'
       - 'src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py'
       - 'src/shared/packages/pyforge-herald/src/pyforge/herald/pages_env.py'
@@ -259,3 +263,15 @@ jobs:
               --title "Pages site (rolling)" --notes "$notes"
           fi
           gh release upload pages-site "$RUNNER_TEMP/pages-site.zip" --clobber
+          # Story 109.3, the 102.5 release step: one zip per skill folder the mount
+          # copied under marketplace/skills/<scope>/<slug>/ while the marketplace
+          # flag is on. Absent when the flag is off.
+          if [ -d pages-site/marketplace/skills ]; then
+            find pages-site/marketplace/skills -mindepth 2 -maxdepth 2 -type d | sort | while read -r dir; do
+              scope=$(basename "$(dirname "$dir")")
+              slug=$(basename "$dir")
+              zip_path="$RUNNER_TEMP/${scope}-${slug}.zip"
+              (cd "$dir" && zip -qr "$zip_path" .)
+              gh release upload pages-site "$zip_path" --clobber
+            done
+          fi

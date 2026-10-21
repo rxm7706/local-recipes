@@ -11,9 +11,9 @@ context:
   - .claude/skills/mason-environment/SKILL.md
   - .claude/skills/mason-package/SKILL.md
   - .claude/skills/pyforge-warden/active/pyforge-warden/SKILL.md
-  - src/shared/packages/pyforge-steward/catalog/marketplace/skills/mason/environment/SKILL.md
-  - src/shared/packages/pyforge-steward/catalog/marketplace/skills/mason/package/SKILL.md
-  - src/shared/packages/pyforge-steward/catalog/marketplace/skills/warden/scan/SKILL.md
+  - docs/foundry/marketplace/skills/mason/environment/SKILL.md
+  - docs/foundry/marketplace/skills/mason/package/SKILL.md
+  - docs/foundry/marketplace/skills/warden/scan/SKILL.md
   - src/shared/packages/pyforge-steward/tests/unit/test_pilot_skills.py
 declared_low_risk: false
 ---
@@ -24,7 +24,7 @@ declared_low_risk: false
 
 **Problem:** `@mason/environment`, `@mason/package`, and `@warden/scan` as they live under `.claude/skills/` assume this repository's pixi environments. A teammate cannot follow them in their own project.
 
-**Approach:** Portable copies under `catalog/marketplace/skills/<scope>/<slug>/`, each with `SKILL.md` and `steps.md`. Commands are the ones the station engines assemble, verified 2026-10-21. Unpublished `pyforge-mason`, `pyforge-warden`, and `pyforge-core` are named, with the 404 check. The estate skill files are not edited.
+**Approach:** Portable copies under `docs/foundry/marketplace/skills/<scope>/<slug>/`, each with `SKILL.md` and `steps.md`. Commands are the ones the station engines assemble, verified 2026-10-21. Unpublished `pyforge-mason`, `pyforge-warden`, and `pyforge-core` are named, with the 404 check. The estate skill files are not edited.
 
 ## Acceptance criteria
 

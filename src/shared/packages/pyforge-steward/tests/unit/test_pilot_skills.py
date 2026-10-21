@@ -6,7 +6,7 @@ from pathlib import Path
 
 from pyforge.steward.bootstrap import repo_root
 
-_SKILLS = Path("src/shared/packages/pyforge-steward/catalog/marketplace/skills")
+_SKILLS = Path("docs/foundry/marketplace/skills")
 _PILOTS = ("mason/environment", "mason/package", "warden/scan")
 
 

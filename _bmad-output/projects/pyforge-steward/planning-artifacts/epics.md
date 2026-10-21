@@ -6939,12 +6939,12 @@ So that a green reconcile means every derived surface regenerated, and the pause
 
 Minted 2026-10-21 from the station Dream's realization-log entry of the same date. The 2026-10-20 design-thinking session re-decided the product the archived seed `docs/dreams/self-hosted-bmad-marketplace.md` started. That seed stays archived (`folded-into-station-dream`). Steward remains the owner because `CatalogEngine`, `registry/estate.yaml`, Epic 60, and the conda/Artifactory backend already live here. `bmp` is a face on that engine, not a new station. Mason and warden own the commands the seed skills describe. Scribe owns memory.
 The verbatim session is `planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/`. Concepts A–F were all selected. The pilot audience is a teammate on Claude Code, Cursor, GitHub Copilot in VS Code, Google Gemini, Devin (Cognition AI), or with no AI tool yet. Claude Code's documented skill path is `.claude/skills/`. Devin's is `.agents/skills/`. The success signal is a teammate other than rxm7706 contributing a skill that a different teammate installs and uses. The product brief is `briefs/brief-bmad-marketplace-reset-2026-10-21/brief.md`.
-Q1–Q7 of 2026-09-15 are reviewed there: the first artifact is a skill folder (Frames stay CAP-123); Pages adds cards to the thin browse; git stays the edit store and Artifactory stays a ship backend; our repo stays the start, `dedicated_repo` stays null until the operator confirms an internal GitHub; trust-tier names stay; no billing; no Layer 3.
+Q1–Q7 of 2026-09-15 are reviewed there: the first artifact is a skill folder (Frames stay CAP-123); Pages adds cards to the thin browse; git stays the edit store and Artifactory stays a ship backend; this monorepo hosts the marketplace (decision 2026-10-21; no separate repository; `edit_store.mirrors` names an internal mirror of local-recipes and starts empty); trust-tier names stay; no billing; no Layer 3.
 **HARD boundaries:**
-- Do not edit `CatalogEngine.render`, `catalog.yaml`, or `registry/estate.yaml`.
+- Do not edit `CatalogEngine.render` or `registry/estate.yaml`. `catalog.yaml` `edit_store.mirrors` replaces `dedicated_repo`.
 - Do not edit the estate procedures under `.claude/skills/mason-environment/`, `.claude/skills/mason-package/`, or `.claude/skills/pyforge-warden/`.
 - Do not add a steward CLI duty. Duty-count tests stay as they are.
-- Do not create a GitHub repository.
+- Do not create a separate marketplace repository.
 - `DW-FU-60-1`, `DW-FU-60-1-4`, and `DW-FRR-60-1` stay open. A `carried:` line points at this epic. Folder-copy is not a closure of `DW-FU-60-1-4`.
 
 ### Story 109.1: The reset marketplace has a product brief
@@ -6971,7 +6971,7 @@ So that a step either runs a real command or tells me which package is unpublish
 
 **Type:** docs • **Effort:** M • **Deps:** — • **FR/AD:** FR-43 ← CAP-170 • Dream 2026-10-21
 **Flag:** none — `type: docs`; `flag-exempt: docs-only`
-**Surface:** `src/shared/packages/pyforge-steward/catalog/marketplace/skills/mason/environment/`; `.../mason/package/`; `.../warden/scan/`; `tests/unit/test_pilot_skills.py`
+**Surface:** `docs/foundry/marketplace/skills/mason/environment/`; `.../mason/package/`; `.../warden/scan/`; `tests/unit/test_pilot_skills.py`
 **Spec:** `planning-artifacts/specs/spec-109-2-three-pilot-skills-run-without-the-estate-environment.md`
 **Given** the estate copies of those skills assume `pixi run -e` and local-recipes
 **When** a reader follows the marketplace `steps.md` from their project directory
@@ -6987,9 +6987,9 @@ So that find is a static page and the v1 catalog engine is untouched.
 
 **Type:** feature • **Effort:** M • **Deps:** 109.2 • **FR/AD:** FR-44 ← CAP-171 • Dream 2026-10-21
 **Flag:** `pyforge.steward.marketplace_pages` — dev on, staging off, production off; off means pages are not regenerated and the committed HTML stays
-**Surface:** `src/pyforge/steward/marketplace_pages.py`; `catalog/marketplace/` (`index.yaml`, `site/`, `templates/SKILL.md`, `.github/PULL_REQUEST_TEMPLATE.md`, `MANUAL-CHECKLIST.md`, `README.md`); `src/platform/config/flags.json`; `src/platform/config/flag-overlays.json`; `tests/unit/test_marketplace_pages.py`
+**Surface:** `src/pyforge/steward/marketplace_pages.py`; `docs/foundry/marketplace/` (`index.yaml`, `site/`, `.claude-plugin/marketplace.json`, `templates/SKILL.md`, `.github/PULL_REQUEST_TEMPLATE.md`, `MANUAL-CHECKLIST.md`, `README.md`); `catalog.yaml` `edit_store.mirrors`; `src/platform/config/flags.json`; `src/platform/config/flag-overlays.json`; `tests/unit/test_marketplace_pages.py`
 **Spec:** `planning-artifacts/specs/spec-109-3-a-marketplace-tree-renders-a-pages-index-from-listings.md`
-**Given** `registry/estate.yaml` has `modules: []` and `catalog.yaml` has `dedicated_repo: null`
+**Given** `registry/estate.yaml` has `modules: []` and `catalog.yaml` `edit_store.mirrors` is a list (empty until a mirror is named)
 **When** `write_site` runs
 **Then** with the flag off it writes nothing; with the flag on it writes `index.html`, `listings.json`, and one card per listing, and the card names `.agents/skills`, `.claude/skills`, unpublished packages, and the text of `steps.md`
 **And** `catalog check` on the real tree still exits 0, and a skill path other than `skills/<scope>/<slug>` is refused
@@ -7020,7 +7020,7 @@ So that a lane is automated only after a person has walked it.
 
 **Type:** docs • **Effort:** S • **Deps:** 109.3 • **FR/AD:** FR-46 ← CAP-173 • carries `DW-FU-60-1`, `DW-FU-60-1-4`, `DW-FRR-60-1` (does not close them)
 **Flag:** none — `type: docs`; `flag-exempt: docs-only`
-**Surface:** `catalog/marketplace/MANUAL-CHECKLIST.md`; the PR template beside it
+**Surface:** `docs/foundry/marketplace/MANUAL-CHECKLIST.md`; the PR template beside it
 **Spec:** `planning-artifacts/specs/spec-109-5-contribution-lanes-wait-on-a-desk-test-and-a-wizard-of-oz-pilot.md`
 **Given** the checklist names Round 0, the Wizard-of-Oz pilot in `prototypes/p4-wizard-of-oz-pilot.md`, and the three Epic 60 rows are open
 **When** this story is done

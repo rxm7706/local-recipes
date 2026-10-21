@@ -21,6 +21,12 @@ from typing import Any
 import yaml
 from pyforge.core.flags import read_boolean
 
+from pyforge.steward.catalog import (
+    MARKETPLACE_NAME,
+    MARKETPLACE_ROOT_RELATIVE,
+    PUBLIC_MARKETPLACE_GIT_URL,
+)
+
 SCHEMA_ID = "pyforge.bmad-marketplace/v1"
 INDEX_VERSION = 1
 FLAG_KEY = "pyforge.steward.marketplace_pages"
@@ -422,6 +428,74 @@ def render_listings_json(rows: list[dict[str, Any]]) -> str:
     return json.dumps(payload, indent=2, sort_keys=True) + "\n"
 
 
+def _skill_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    skills = []
+    for row in rows:
+        validate_listing(row)
+        if row.get("kind") == "skill" and row.get("scope") and row.get("slug"):
+            skills.append(row)
+    return skills
+
+
+def _marketplace_document(rows: list[dict[str, Any]], source_for: Any) -> str:
+    """Claude ``marketplace.json``. ``name`` matches the ``extraKnownMarketplaces`` key."""
+    plugins = []
+    for row in _skill_rows(rows):
+        plugins.append(
+            {
+                "name": f"{row['scope']}-{row['slug']}",
+                "description": str(row.get("description") or ""),
+                "version": str(row.get("version") or ""),
+                "source": source_for(row),
+            }
+        )
+    document = {
+        "name": MARKETPLACE_NAME,
+        "owner": {"name": "rxm7706"},
+        "metadata": {
+            "description": ("BMAD skills, modules, and agents hosted in this monorepo at docs/foundry/marketplace/.")
+        },
+        "plugins": plugins,
+    }
+    return json.dumps(document, indent=2) + "\n"
+
+
+def render_relative_marketplace(rows: list[dict[str, Any]]) -> str:
+    """Marketplace file for a ``github`` or ``git`` marketplace source.
+
+    Plugin entries are relative paths, which resolve from the marketplace
+    root (the directory that contains ``.claude-plugin/``).
+    """
+
+    def source_for(row: dict[str, Any]) -> str:
+        return f"./skills/{row['scope']}/{row['slug']}"
+
+    return _marketplace_document(rows, source_for)
+
+
+def render_url_marketplace(
+    rows: list[dict[str, Any]],
+    *,
+    git_url: str = PUBLIC_MARKETPLACE_GIT_URL,
+) -> str:
+    """Marketplace file served over HTTP.
+
+    A ``url`` marketplace source downloads only this file, so a relative
+    plugin path cannot resolve. Each plugin uses ``git-subdir`` (a plugin
+    source: ``url``, ``path``; ``ref`` omitted). ``git-subdir`` is not a
+    marketplace source.
+    """
+
+    def source_for(row: dict[str, Any]) -> dict[str, str]:
+        return {
+            "source": "git-subdir",
+            "url": git_url,
+            "path": f"{MARKETPLACE_ROOT_RELATIVE}/skills/{row['scope']}/{row['slug']}",
+        }
+
+    return _marketplace_document(rows, source_for)
+
+
 def listings_from_skill_folders(marketplace: Path) -> list[dict[str, Any]]:
     """Read each ``skills/<scope>/<slug>/listing.yaml`` and validate it.
 
@@ -462,6 +536,9 @@ def write_site(
     data_path = site_dir / "listings.json"
     data_path.write_text(render_listings_json(rows), encoding="utf-8")
     written.append(data_path)
+    manifest_path = site_dir / "marketplace.json"
+    manifest_path.write_text(render_url_marketplace(rows), encoding="utf-8")
+    written.append(manifest_path)
     for row in rows:
         card = site_dir / _card_href(row)
         card.parent.mkdir(parents=True, exist_ok=True)
@@ -479,10 +556,30 @@ def write_site_from_index(
     *,
     flags_path: Path | str | None = None,
 ) -> list[Path]:
-    """Load ``index_path`` and write the site next to it."""
+    """Load ``index_path`` and write the site next to it.
+
+    ``site/marketplace.json`` is the Pages URL form. The git marketplace
+    file (``.claude-plugin/marketplace.json``) is written by
+    ``write_plugin_manifest`` so a render into a temporary site does not
+    touch the index's directory.
+    """
     return write_site(
         load_listings(index_path),
         site_dir,
         flags_path=flags_path,
         steps_root=index_path.parent,
     )
+
+
+def write_plugin_manifest(
+    index_path: Path,
+    dest: Path,
+    *,
+    flags_path: Path | str | None = None,
+) -> Path:
+    """Write the relative-path ``marketplace.json`` a ``github`` or ``git`` source reads."""
+    if not pages_enabled(flags_path=flags_path):
+        raise MarketplacePagesDisabled(f"{FLAG_KEY} is off; the marketplace manifest was not written")
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(render_relative_marketplace(load_listings(index_path)), encoding="utf-8")
+    return dest

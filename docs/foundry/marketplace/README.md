@@ -1,9 +1,17 @@
 # BMAD marketplace skeleton
 
-This tree is the reset marketplace (steward Epic 109, CAP-171). It stays in
-this repository so it can be copied to an internal GitHub when the operator
-confirms that repository. `catalog.yaml`'s `dedicated_repo` stays null until
-that confirm. Nothing here creates a GitHub repository.
+This tree is the reset marketplace (steward Epic 109, CAP-171). It lives at
+`docs/foundry/marketplace/` because that directory is the foundry target for
+published indexes (`frames/` and `browse.yaml` are its neighbours). The
+portable skill folders are listings in that index, not station skills under
+`skills/{stations,personas,domain}/`. Decision 2026-10-21: this monorepo
+hosts and publishes the marketplace. There is no separate marketplace
+repository. Teammates use an internal mirror of local-recipes.
+`catalog.yaml`'s `edit_store.mirrors` is a list of `{host, repo}` and starts
+empty. The open question is which internal GitHub or GHES mirror of
+local-recipes, and whether mirroring the full repository is allowed at work.
+Foundry rebuilds this tree at cutover. Nothing moves, and nothing changes
+at the `cutover_root` flip.
 
 ## Layout
 
@@ -42,10 +50,15 @@ tool uses the card and `steps.md`. No other skill-directory format is written.
 GitHub release and Artifactory conda and pip are the sources once a
 listing is published. These three are not published, so the card has no
 URL and no checksum. `bmp install` is Story 109.4 and is not this tree.
-Per-tool marketplace
-manifests are not required. The v1 `.claude-plugin/marketplace.json` and
-`.agents/plugins/marketplace.json` beside this tree are the catalog engine's
-outputs. This skeleton does not rewrite them.
+Per-tool skill-directory formats are not generated. This tree's
+`.claude-plugin/marketplace.json` is the Claude marketplace file (`github`
+and `git` sources; plugin entries are relative paths). `site/marketplace.json`
+is the Pages URL form (plugin entries are `git-subdir`, because a `url`
+marketplace source downloads only that file). The v1 catalog manifests stay
+at `src/shared/packages/pyforge-steward/catalog/.claude-plugin/marketplace.json`
+and `.agents/plugins/marketplace.json`. `CatalogEngine.render` does not write
+this tree. Pages mounts `site/` at `/marketplace/` while
+`pyforge.steward.marketplace_pages` is on.
 
 `pyforge-mason`, `pyforge-warden`, and `pyforge-core` were not on PyPI,
 conda-forge, or SelfExplainML on 2026-10-21. Each pilot skill says so in
@@ -62,9 +75,10 @@ From the repository root, with `PYFORGE_ENVIRONMENT` unset or `dev`:
 ```bash
 pixi run --frozen -e pyforge-steward python -c "
 from pathlib import Path
-from pyforge.steward.marketplace_pages import write_site_from_index
-root = Path('src/shared/packages/pyforge-steward/catalog/marketplace')
+from pyforge.steward.marketplace_pages import write_plugin_manifest, write_site_from_index
+root = Path('docs/foundry/marketplace')
 write_site_from_index(root / 'index.yaml', root / 'site')
+write_plugin_manifest(root / 'index.yaml', root / '.claude-plugin' / 'marketplace.json')
 "
 ```
 

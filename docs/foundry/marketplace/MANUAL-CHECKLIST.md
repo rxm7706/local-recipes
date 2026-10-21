@@ -22,7 +22,7 @@ Do this in a repository that is not local-recipes.
 
 Who: two or three teammates, not rxm7706, drawn from this audience: Claude Code, Cursor, GitHub Copilot in VS Code, Google Gemini, Devin (Cognition AI), and a teammate with no AI tool yet. P4's examples are T1 Cursor and conda or pip, T2 Copilot or Gemini who publishes packages, and T3 no AI tool. Claude Code and Devin are the same audience. The full script is `planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/prototypes/p4-wizard-of-oz-pilot.md`. The path each tool reads is `tool-support-matrix.md` in that folder: Claude Code `.claude/skills/`, Devin `.agents/skills/`.
 
-Real: the three skill folders, an internal GitHub repo once the operator confirms it, the static cards, one Artifactory package when one exists, and a real pull request. Faked until the gates below: `bmp install`, search, lint and CI, review and promotion, `@bmp/skillify` (a person helps shape `templates/SKILL.md`), and outdated notices.
+Real: the three skill folders in this monorepo, the static cards at `/marketplace/` on the docs site, one Artifactory package when one exists, and a real pull request. The open question is which internal mirror of local-recipes, not a separate marketplace repository. Faked until the gates below: `bmp install`, search, lint and CI, review and promotion, `@bmp/skillify` (a person helps shape `templates/SKILL.md`), and outdated notices.
 
 - [ ] A teammate asks to find a skill. A person replies with the card URL or the folder path. No CLI is required for the reply
 - [ ] A teammate asks to install it. A person copies the folder into `.agents/skills/<scope>-<slug>/` and `.claude/skills/<scope>-<slug>/` and says which package is still unpublished
