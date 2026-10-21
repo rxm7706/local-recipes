@@ -30,43 +30,11 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { publishedTwin } from '../src/lib/herald-pages.ts';
 import { DASHBOARD_EXPORTS, holdsAFile } from '../src/lib/nav.ts';
 import { heraldPagesRoot, loadHeraldPages } from '../src/loaders/herald-pages-loader.ts';
+import { marketplacePagesEnabled } from './marketplace-pages.mts';
 
-/** `pyforge.steward.marketplace_pages`. Dev on, staging and production off, default off. */
-export const MARKETPLACE_FLAG = 'pyforge.steward.marketplace_pages';
 const PUBLIC_GIT_URL = 'https://github.com/rxm7706/local-recipes.git';
 
-/**
- * The same boolean `pyforge.core.flags.read_boolean` returns for this key:
- * `DISABLED` is off; an overlay variant wins; otherwise `defaultVariant`.
- * An unknown environment reads off (a bad environment never reads on).
- */
-export function marketplacePagesEnabled(
-  repoRoot: string,
-  envName: string = process.env.PYFORGE_ENVIRONMENT || 'dev',
-): boolean {
-  if (!['dev', 'staging', 'production'].includes(envName)) {
-    return false;
-  }
-  const flags = JSON.parse(fs.readFileSync(path.join(repoRoot, 'src/platform/config/flags.json'), 'utf8')) as {
-    flags?: Record<string, { state?: string; defaultVariant?: string }>;
-  };
-  const entry = flags.flags?.[MARKETPLACE_FLAG];
-  if (!entry || entry.state === 'DISABLED') {
-    return false;
-  }
-  const overlays = JSON.parse(fs.readFileSync(path.join(repoRoot, 'src/platform/config/flag-overlays.json'), 'utf8')) as Record<
-    string,
-    Record<string, string>
-  >;
-  const variant = overlays[envName]?.[MARKETPLACE_FLAG];
-  if (variant === 'on') {
-    return true;
-  }
-  if (variant === 'off') {
-    return false;
-  }
-  return entry.defaultVariant === 'on';
-}
+export { marketplacePagesEnabled };
 
 function copyFiles(sourceDir: string, destPrefix: string, put: (rel: string, data: string | Buffer) => void, rewriteGitUrl: boolean): void {
   if (!fs.existsSync(sourceDir)) {

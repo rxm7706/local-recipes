@@ -32,7 +32,7 @@ import { ARTIFACT_DOSSIER, NOT_PAGES } from '../src/lib/artifact.ts';
 import { BUILT_FROM_OPEN } from '../src/lib/built-from.ts';
 import { envFlagOn } from '../src/lib/flags.ts';
 import { DASHBOARD_EXPORTS, holdsAFile } from '../src/lib/nav.ts';
-import { marketplacePagesEnabled } from './populate-public.mts';
+import { marketplacePagesEnabled } from './marketplace-pages.mts';
 
 const DOCS_SITE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.dirname(DOCS_SITE);
