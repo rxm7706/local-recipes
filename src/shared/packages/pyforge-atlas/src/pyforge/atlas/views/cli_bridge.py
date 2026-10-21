@@ -34,8 +34,8 @@ from typing import Any
 
 from pyforge.core.errors import PyforgeError
 
-# Env override for the skill scripts directory (mirrors dashboard/data.py's
-# PYFORGE_ATLAS_DATA_ROOT override pattern).
+# Env override for the skill scripts directory, used exactly as given (an absolute path is expected;
+# unlike dashboard/data.py's PYFORGE_ATLAS_DATA_ROOT, nothing is stripped or anchored).
 _SCRIPTS_DIR_ENV_VAR = "PYFORGE_ATLAS_CFE_SCRIPTS_DIR"
 
 # Relative to the repo root, where the 6 zero-arg CLI scripts this story mirrors live.

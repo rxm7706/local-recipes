@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-19'
 status: 'in-review'
 baseline_revision: '85f5895f45'
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -71,6 +71,9 @@ Type / Effort / Deps: fix / S / — (the Epic 37 chain).
 
 ## Spec Change Log
 
+- 2026-10-21, review round 2 (FAIL, ledger only), fixed: the DW-10-5-7 verified line cited no code, so
+  `deferred-work-check` failed (`verified-line-uncited`); it now cites `data.py::default_data_root`. The
+  `cli_bridge` env-override comment no longer claims to mirror the data root's override.
 - 2026-10-21, review round 1 (PASS), should-fix applied:
   - A relative `PYFORGE_ATLAS_DATA_ROOT` resolved against the working directory, so `dashboard-serve` run from the repo
     root read `<repo>/data-ci` where the bootstrap wrote `<member>/data-ci`. It is now anchored at the member; a blank
