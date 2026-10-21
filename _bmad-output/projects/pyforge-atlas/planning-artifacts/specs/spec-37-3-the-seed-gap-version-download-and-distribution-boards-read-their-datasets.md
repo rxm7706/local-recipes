@@ -2,7 +2,7 @@
 title: "37.3: The seed-gap, version-download and distribution boards read their datasets"
 type: 'fix'
 created: '2026-10-19'
-status: 'in-review'
+status: 'done'
 baseline_revision: '94793a3910'
 review_loop_iteration: 2
 followup_review_recommended: false

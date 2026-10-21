@@ -2736,7 +2736,7 @@ So that they render rows instead of "backing file not found".
 **Given** the four seed-gap boards read `primary/<x>_gap/` while `seed_gaps` writes `derived/seed_gaps_<x>_report/`, and version-downloads and distribution-breakdown read paths nothing writes
 **When** a run has written `seed_gaps`' reports, `core_version_download_history` and the three `core_downloads_*_breakdown` tables
 **Then** the six boards render those rows with their dimension names unchanged
-**Status:** backlog
+**Status:** done
 
 ### Story 37.4: Behind-upstream, whodepends, live-catalog coverage and the universe SBOM boards fill
 
