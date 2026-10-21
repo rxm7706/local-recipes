@@ -450,18 +450,25 @@ class _HonestPagination:
             if prior is not None and prior.stale and prior.reason.startswith(_STOP_MARKER_PREFIXES)
             else ""
         )
-        before = self._store_mtime() if self._store_exists() else None  # type: ignore[attr-defined]
         super().save(data)  # type: ignore[misc, unused-ignore]
+        # The base clears its marker exactly when it writes the store. A prior stop makes the refresh
+        # due (`_refresh_due`), so the base never takes its not-due path, which also clears it.
+        now = self.staleness()  # type: ignore[attr-defined]
+        if prior_stop and now is not None:
+            # Story 36.2: a run that wrote nothing (no switch, the flag off, a failed write) never
+            # clears a stop: the store is still the short one, so the stop stays first in the
+            # marker. A new stop names where this run stopped; a notice or the base's reason
+            # follows the stop it did not lift.
+            later = self._stopped or (now.reason if now.stale else "")
+            if later.startswith(prior_stop):
+                later = ""
+            if later.startswith(_STOP_MARKER_PREFIXES):
+                self._mark_stale(later)  # type: ignore[attr-defined]
+            else:
+                self._mark_stale(f"{prior_stop} (since then: {later})" if later else prior_stop)  # type: ignore[attr-defined]
+            return
         if self._stopped:
             self._mark_stale(self._stopped)  # type: ignore[attr-defined]
-            return
-        wrote = self._store_exists() and self._store_mtime() != before  # type: ignore[attr-defined]
-        if prior_stop and not wrote:
-            # Story 36.2: a run that could not fetch (no switch, the flag off) never clears a stop:
-            # the store is still the short one, so the stop stays first in the marker
-            now = self.staleness()  # type: ignore[attr-defined]
-            later = now.reason if now is not None and now.stale and now.reason != prior_stop else ""
-            self._mark_stale(f"{prior_stop} (since then: {later})" if later else prior_stop)  # type: ignore[attr-defined]
 
 
 def _as_json(payload: Any) -> dict | None:

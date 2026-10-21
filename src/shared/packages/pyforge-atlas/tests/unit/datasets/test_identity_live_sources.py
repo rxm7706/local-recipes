@@ -521,18 +521,76 @@ def test_the_identity_budgets_cover_the_measured_runs():
 # -- review round 5 ------------------------------------------------------------------------------
 
 
+@pytest.mark.parametrize("why", ["no switch", "flag off"])
 @pytest.mark.parametrize("stopped", [_stopped_board, _stopped_list], ids=["board", "list"])
-def test_a_run_that_cannot_fetch_never_clears_a_stop(tmp_path, in_turn, identity_on, switch_on, monkeypatch, stopped):
+def test_a_run_that_cannot_fetch_never_clears_a_stop(
+    tmp_path, in_turn, identity_on, switch_on, monkeypatch, stopped, why
+):
     ds = stopped(tmp_path, in_turn)
     first = json.loads(_marker(ds))["reason"]
-    monkeypatch.delenv(credential_switch.SWITCH)  # the next runs cannot fetch
+    if why == "no switch":
+        monkeypatch.delenv(credential_switch.SWITCH)  # the next runs cannot fetch
+    else:
+        monkeypatch.setattr(I, "identity_live", lambda: False)
     sent = len(in_turn.sent)
 
     ds.save(RefreshRequest(store="x"))
+    once = json.loads(_marker(ds))["reason"]
     ds.save(RefreshRequest(store="x"))
 
     reason = json.loads(_marker(ds))["reason"]
-    assert len(in_turn.sent) == sent and reason.startswith(first) and credential_switch.SWITCH in reason
+    assert len(in_turn.sent) == sent and reason.startswith(f"{first} (since then: ")
+    assert reason == once and reason.count("(since then:") == 1  # the marker never grows
+    assert credential_switch.SWITCH in reason if why == "no switch" else "no refresher" in reason
+
+
+def test_a_failed_write_after_a_stop_keeps_the_stop_ahead_of_its_notice(
+    tmp_path, in_turn, identity_on, switch_on, monkeypatch
+):
+    ds = _stopped_list(tmp_path, in_turn)  # the list stopped at page 2; the pages read were written
+    first = json.loads(_marker(ds))["reason"]
+    in_turn.answers[_list_page(2)] = (200, [_pr(7)])  # the next run reads the whole list; PR 7's files: 404
+
+    def no_space(_frame):  # noqa: ANN001, ANN202
+        raise OSError("No space left on device")
+
+    monkeypatch.setattr(ds, "_write", no_space)
+    _save(ds)
+
+    notice = "PR files failed for 1 PR (each keeps its last-good paths, if any)"
+    assert json.loads(_marker(ds))["reason"] == f"{first} (since then: {notice})"
+    monkeypatch.delenv(credential_switch.SWITCH)
+    ds.save(RefreshRequest(store="x"))  # inside the cadence, and it cannot fetch: the short store never reads fresh
+    assert json.loads(_marker(ds))["reason"].startswith(f"{first} (since then: ")
+
+
+def test_a_failed_write_after_a_stop_names_the_write(tmp_path, in_turn, identity_on, switch_on, monkeypatch):
+    ds = _stopped_board(tmp_path, in_turn)
+    first = json.loads(_marker(ds))["reason"]
+    monkeypatch.setattr(ds, "_write", lambda _frame: (_ for _ in ()).throw(OSError("read-only")))
+
+    _save(ds)
+
+    assert json.loads(_marker(ds))["reason"] == f"{first} (since then: write failed: OSError: read-only)"
+
+
+def test_a_second_stop_with_nothing_written_names_where_this_run_stopped(tmp_path, in_turn, identity_on, switch_on):
+    ds = _stopped_board(tmp_path, in_turn)  # page 1 written, then a 502 at page 2
+    in_turn.answers[GRAPHQL] = [(200, _page([1], "C1")), (503, {})]
+
+    _save(ds)
+
+    assert json.loads(_marker(ds))["reason"] == "board stopped at page 2: HTTP 503"
+
+
+def test_a_refusal_on_the_tenth_failure_in_a_row_names_the_refusal(tmp_path, in_turn, identity_on, switch_on):
+    in_turn.answers[_list_page(1)] = (200, [_pr(n) for n in range(1, 11)])  # PRs 1-9: 404
+    in_turn.answers[_files(10)] = (429, {})
+    ds = _prs(tmp_path)
+
+    _save(ds)
+
+    assert json.loads(_marker(ds))["reason"] == "PR files stopped at PR #10: HTTP 429"
 
 
 def test_ten_files_failures_that_end_the_run_still_stop(tmp_path, in_turn, identity_on, switch_on):

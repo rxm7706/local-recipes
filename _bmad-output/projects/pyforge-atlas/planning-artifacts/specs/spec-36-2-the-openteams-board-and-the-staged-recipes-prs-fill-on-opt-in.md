@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'both stores keep the path before this story: no fetcher, last-good under a stale marker'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 5
+review_loop_iteration: 6
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -134,6 +134,15 @@ identity sources).
 ## Spec Change Log
 
 - 2026-10-18: written with the implementation (branch `atlas-36-2-identity-sources`, cut from `main` at `24581b35b8`).
+- 2026-10-21, review round 6 (FAIL), fixed:
+  - B1: a run that fetched, got a PR-files failure and then failed to write wrote its one-run notice over the stop
+    (and over the base's "write failed"), and the next save inside the cadence cleared it, so a short store read
+    fresh. `save` now decides from the base's own marker (cleared exactly when the store is written): a run that wrote
+    nothing keeps the stop first, followed by its notice or the base's reason, and a new stop replaces it.
+  - Should-fix: the stop no longer depends on the store's mtime changing (a coarse clock kept a false stop); a test
+    pins that the "(since then: ...)" text never grows.
+  - Nits: the flag-off case, a stop after a stop with nothing written, and a refusal on the tenth failure in a row
+    are each pinned.
 - 2026-10-19, review round 5 (FAIL), fixed:
   - B1: a run that cannot fetch (no switch, the flag off) wrote its own marker over a stop, and the next save inside
     the cadence cleared it; a stop now stays first in the marker until a run writes the store ("<stop> (since then:
