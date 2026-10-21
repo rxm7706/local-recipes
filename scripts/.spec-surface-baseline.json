@@ -1736,7 +1736,7 @@
    "docs-site/src/layouts/HeraldLayout.astro": "b23c00f6064c0b77769fe516d02bb24dede9eb54",
    "docs-site/src/lib/agent-data.ts": "e35c04b0fdce087e0d79c0683a315b61460c2fd2",
    "docs-site/src/lib/agent-surface.ts": "1f25b1271c1d33fca575912675202fbba57c584c",
-   "docs-site/src/lib/artifact.ts": "622078a7c75773fb42430ea3230b59d29df4fca5",
+   "docs-site/src/lib/artifact.ts": "840ece35182c354ef70383f9ebd8036910fc741a",
    "docs-site/src/lib/built-from.ts": "b4ced31b55d045781ed6debc527be82331e29c3b",
    "docs-site/src/lib/dossier-blocks.ts": "e69ae3510ec0216b355c9e6cdc773142745e6e35",
    "docs-site/src/lib/flags.ts": "3d4ac466f409ef9268ca500e44588adc10783777",
@@ -2851,7 +2851,7 @@
    "src/shared/packages/pyforge-herald/web/src/test/setup.js": "1d74541c291183bb6027ebb5bf6de480115262ea",
    "src/shared/packages/pyforge-herald/web/vite.config.js": "bcd53f517a2d51fe2992404dd852b2599b15d84f"
   },
-  "memlog": "a9c29f524ade774432712b31a329d867d6955e33"
+  "memlog": "11984da498bab33d87428650e010b4d43fed1159"
  },
  "pyforge-herald/spec-pyforge-pages": {
   "files": {
