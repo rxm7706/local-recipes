@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-19'
 status: 'in-review'
 baseline_revision: '94793a3910'
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -96,6 +96,9 @@ Type / Effort / Deps: fix / M / Story 37.1 (the data root).
 
 ## Spec Change Log
 
+- 2026-10-21, review round 2 (PASS), should-fix applied: the four seed-gap notes still said "renders empty until
+  the ... dataset materializes"; each now names its report and what it suggests, the CWE note says the impact count
+  stays empty (DW-B6-2), and the SPDX note says which rows stay empty (DW-B6-1).
 - 2026-10-21, review round 1 (FAIL), fixed:
   - B1: with every download cut empty the node wrote untyped columns; DuckDB read the Arrow `null` columns as INTEGER
     and the bump classifier's `re_extract` raised AttributeError, so the board crashed on 4 of 5 scratch roots. The

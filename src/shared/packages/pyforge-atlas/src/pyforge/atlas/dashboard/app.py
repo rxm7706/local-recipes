@@ -329,32 +329,37 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "LTS Registry Gap",
         "lts-registry-gap",
         "bsl-shell",
-        note="Wired to build_lts_registry_gap_model, READ-ONLY suggester; renders "
-        "empty until the endoflife.date diff dataset materializes.",
+        note="Wired to build_lts_registry_gap_model over seed_gaps_lts_registry_report "
+        "(Story 37.3), a READ-ONLY suggester: endoflife.date products that match an "
+        "actionable atlas package and are missing from lts-registry.yaml.",
     ),
     PageDef(
         "cwe-seed-gap",
         "CWE Seed Gap",
         "cwe-seed-gap",
         "bsl-shell",
-        note="Wired to build_cwe_seed_gap_model, READ-ONLY suggester; renders empty "
-        "until the Other-bucket CWE classification dataset materializes.",
+        note="Wired to build_cwe_seed_gap_model over seed_gaps_cwe_report (Story 37.3), "
+        "a READ-ONLY suggester: Other-bucket CWEs with a suggested category. The package "
+        "impact count stays empty until it is migrated (DW-B6-2).",
     ),
     PageDef(
         "spdx-schema-gap",
         "SPDX Schema Gap",
         "spdx-schema-gap",
         "bsl-shell",
-        note="Wired to build_spdx_schema_gap_model, READ-ONLY suggester; renders "
-        "empty until the vendored-vs-upstream SPDX diff dataset materializes.",
+        note="Wired to build_spdx_schema_gap_model over seed_gaps_spdx_report (Story "
+        "37.3), a READ-ONLY suggester: the vendored SPDX list against upstream. Usage counts "
+        "are empty on upstream-drift rows, and the add-to-schema and non-standard rows stay "
+        "empty until per-package licenses are migrated (DW-B6-1).",
     ),
     PageDef(
         "license-map-gap",
         "License Map Gap",
         "license-map-gap",
         "bsl-shell",
-        note="Wired to build_license_map_gap_model, READ-ONLY suggester; renders "
-        "empty until the unmapped-license dataset materializes.",
+        note="Wired to build_license_map_gap_model over seed_gaps_license_map_report "
+        "(Story 37.3), a READ-ONLY suggester: raw PyPI license strings that normalize to no "
+        "SPDX id, with a suggested one.",
     ),
     PageDef(
         "identity-catalog",
