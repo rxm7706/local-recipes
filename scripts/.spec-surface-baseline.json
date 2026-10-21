@@ -1699,7 +1699,7 @@
    "docs-site/package.json": "56a3dc5a68b773fc0a1414f6a2fe8906fe1f44ee",
    "docs-site/redirects.json": "42badc2579d061597f3fad7e240af0a1007fe5f3",
    "docs-site/scripts/fix-doc-links.js": "76dc4fd2f85b02493a83bb9b256aa6dfb591e039",
-   "docs-site/scripts/marketplace-pages.mts": "1a4123b41c669e0d0f5c676ec1ed11ae73cff413",
+   "docs-site/scripts/marketplace-pages.mts": "3ce70f8c4b5d93a7e64dbbc7d827b4afe43697bf",
    "docs-site/scripts/nav-check.mts": "7d473ba491c97ff770d861ef4d90c993a23e8de4",
    "docs-site/scripts/origin_check.py": "1cb2cf120948e973604118355da4d6d70893c326",
    "docs-site/scripts/package.json": "8c29caa078a4baf8cfb0af2b4033e581541ac8f7",
@@ -2852,7 +2852,7 @@
    "src/shared/packages/pyforge-herald/web/src/test/setup.js": "1d74541c291183bb6027ebb5bf6de480115262ea",
    "src/shared/packages/pyforge-herald/web/vite.config.js": "bcd53f517a2d51fe2992404dd852b2599b15d84f"
   },
-  "memlog": "f7b2df02c46965a48dffe697a0c35444560482dd"
+  "memlog": "03b4da5c36cd124d4dddd29684f18d84ef20514a"
  },
  "pyforge-herald/spec-pyforge-pages": {
   "files": {

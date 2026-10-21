@@ -1,7 +1,6 @@
 /**
  * `pyforge.steward.marketplace_pages` for the Pages build and check.
  *
- * The same boolean `pyforge.core.flags.read_boolean` returns for this key:
  * `DISABLED` is off; an overlay variant wins; otherwise `defaultVariant`.
  * An unknown environment reads off (a bad environment never reads on).
  * A missing or unreadable flag tree reads off, so a fixture repo with no
