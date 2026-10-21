@@ -157,6 +157,17 @@ def _archived_feedstocks(core_cf_graph_raw: pd.DataFrame | None) -> set[str]:
     return {fs for fs in flagged["feedstock_name"] if isinstance(fs, str) and fs}
 
 
+def _anchor_feedstocks(core_cf_graph_raw: pd.DataFrame | None) -> dict[str, str]:
+    """Each package's first anchor row's feedstock (the row ``package_recipe_fields`` falls back to)."""
+    g = core_cf_graph_raw
+    if g is None or g.empty or not {"conda_name", "feedstock_name", "depends_on"} <= set(g.columns):
+        return {}
+    anchors = g[g["depends_on"].isna() & g["conda_name"].notna()].drop_duplicates("conda_name")
+    return {
+        c: fs for c, fs in zip(anchors["conda_name"], anchors["feedstock_name"], strict=True) if isinstance(fs, str)
+    }
+
+
 def batches_from_universe(
     core_packages_enumerated: pd.DataFrame | None,
     core_cf_graph_raw: pd.DataFrame | None,
@@ -171,8 +182,9 @@ def batches_from_universe(
     - ``feedstocks``: every feedstock an enumerated package is attributed to (Phase N).
 
     Legacy selects from ``v_actionable_packages``: active (here, enumerated from the current
-    repodata) and not archived. A package attributed to a feedstock the cf-graph marks archived is
-    left out, and so is that feedstock."""
+    repodata) and not archived. A package whose feedstock the cf-graph marks archived is left out,
+    and so is that feedstock: its attributed feedstock, else the feedstock of its first anchor row,
+    the row ``package_recipe_fields`` reads it from."""
     empty: dict[str, Any] = {
         "upstream_repos": (),
         "gitlab": (),
@@ -186,12 +198,12 @@ def batches_from_universe(
     names = {c for c in enum["conda_name"].dropna() if isinstance(c, str) and c}
     archived = _archived_feedstocks(core_cf_graph_raw)
     att = core_feedstock_attribution
-    attributed = (
-        dict(zip(att["conda_name"], att["feedstock_name"], strict=True))
-        if att is not None and not att.empty and {"conda_name", "feedstock_name"} <= set(att.columns)
-        else {}
-    )
-    names = {c for c in names if attributed.get(c) not in archived}
+    attributed: dict[str, Any] = {}
+    if att is not None and not att.empty and {"conda_name", "feedstock_name"} <= set(att.columns):
+        first = att[["conda_name", "feedstock_name"]].dropna().drop_duplicates("conda_name")  # as package_recipe_fields
+        attributed = dict(zip(first["conda_name"], first["feedstock_name"], strict=True))
+    anchored = _anchor_feedstocks(core_cf_graph_raw)
+    names = {c for c in names if (attributed.get(c) or anchored.get(c)) not in archived}
     fields = package_recipe_fields(core_cf_graph_raw, core_feedstock_attribution)
     fields = fields[fields["conda_name"].isin(names)]
     upstream: set[tuple[str, str, str]] = set()
