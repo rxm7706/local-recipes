@@ -4429,6 +4429,36 @@ capabilities:
     heading: "the Pages deploy workflow is steward's duct"
     mode: rebuild
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-169
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the reset marketplace is a contract on this station"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-170
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "three pilot skills run without the estate environment"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-171
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "a marketplace tree renders a Pages index from listings"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-172
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the teammate CLI bmp shares the catalog engine"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-173
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "contribution lanes wait on a desk test"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - id: pyforge-warden:CAP-1
     spec: pyforge-warden
     station: pyforge-warden

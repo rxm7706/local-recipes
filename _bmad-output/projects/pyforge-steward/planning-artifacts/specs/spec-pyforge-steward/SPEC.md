@@ -2,7 +2,7 @@
 id: SPEC-steward
 spec: pyforge-steward
 status: ready
-updated: "2026-10-14"
+updated: "2026-10-21"
 owner-dream: docs/dreams/pyforge-steward.md
 covers-dreams:
   - docs/dreams/pyforge-steward.md
@@ -873,6 +873,23 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
   writes no repository variable: `gh variable set` stays CAP-166's one write path. The registry rows under
   `docs/governance/` are a governance act landed by the story with its PR. The pre-push lane selection is read from
   the workflows (CAP-159), never a second list.
+
+
+- **CAP-169 — the reset marketplace is a contract on this station** ← 2026-10-21; extends CAP-117..CAP-123; seed Dream stays archived
+  - **intent:** The 2026-10-20 session re-decides the marketplace as skills, modules, and agents with four jobs (find, install, create, publish) for a teammate on mixed tools, hosted on GitHub and GitHub Pages, with installs from GitHub/Pages or Artifactory, while the archived seed stays archived and this station's Dream carries the living aspiration.
+  - **success:** The seed's 2026-10-21 revisit stays `archived` / `folded-into-station-dream`; the station Dream records steward as owner; `briefs/brief-bmad-marketplace-reset-2026-10-21/brief.md` states the product; `design-thinking-bmad-marketplace-2026-10-20/` says the verbatim session files were not mounted and does not invent concepts A–F.
+- **CAP-170 — three pilot skills run without the estate environment** ← Story 109.2
+  - **intent:** `@mason/environment`, `@mason/package`, and `@warden/scan` ship as `SKILL.md` folders under `catalog/marketplace/skills/<scope>/<slug>/`, each with `steps.md`, using commands verified on 2026-10-21, with no `pixi run -e` and no instruction to enter local-recipes, and each unpublished `pyforge-*` package named.
+  - **success:** `tests/unit/test_pilot_skills.py` passes; the steps name `conda-lock lock`, `pyproject-build --no-isolation`, `pixi build --output-dir`, and `warden scan .`; the 2026-10-21 PyPI, conda-forge, and SelfExplainML 404s for `pyforge-mason`, `pyforge-warden`, and `pyforge-core` are written on the skills; the estate copies under `.claude/skills/` are unchanged.
+- **CAP-171 — a marketplace tree renders a Pages index from listings** ← Story 109.3
+  - **intent:** `catalog/marketplace/` is a skeleton that can be pushed to an internal GitHub after operator confirm: `skills/<scope>/<slug>/`, `index.yaml` at schema `pyforge.bmad-marketplace/v1` compatible with `registry/estate.yaml`, a static index and one card per listing, a `SKILL.md` template, a PR template, and a manual checklist, with regeneration behind `pyforge.steward.marketplace_pages`.
+  - **success:** `load_listings` of committed `registry/estate.yaml` returns `[]`; an estate module row maps to a module listing; `write_site` writes nothing while the flag is off and writes `index.html`, `listings.json`, and one card per listing while it is on; committed `site/` byte-matches that render; `CatalogEngine.render` and `dedicated_repo: null` are unchanged.
+- **CAP-172 — the teammate CLI bmp shares the catalog engine** ← Story 109.4 (ready-for-dev)
+  - **intent:** A teammate-facing `bmp` command finds and installs marketplace skills by sharing `CatalogEngine` with `steward catalog`, copying a skill folder into both `.agents/skills/` and `.claude/skills/`, without becoming a new station or a new steward duty.
+  - **success:** Story 109.4's acceptance criteria name the shared engine, the two install targets, the refusal while a required package is unpublished, and the refusal to call `bmad-method install --custom-source`; no `bmp` binary ships in the 2026-10-21 change; `DW-FU-60-1-4` stays open.
+- **CAP-173 — contribution lanes wait on a desk test** ← Story 109.5 (ready-for-dev)
+  - **intent:** The instructions-only lane and the code-backed lane, and any automation of publish, wait on a Round 0 desk test and a Wizard-of-Oz pilot whose manual form is `catalog/marketplace/MANUAL-CHECKLIST.md`.
+  - **success:** Story 109.5 does not automate install or publish in the 2026-10-21 change; the checklist names both tests; `DW-FU-60-1`, `DW-FU-60-1-4`, and `DW-FRR-60-1` stay open with a `carried:` line pointing at Epic 109.
 
 ## Non-goals
 
