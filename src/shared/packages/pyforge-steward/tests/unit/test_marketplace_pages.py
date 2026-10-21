@@ -211,3 +211,5 @@ def test_committed_environment_card_renders_steps_md_not_the_paper_sample(tmp_pa
     assert ".agents/skills/mason-environment" in card
     assert ".claude/skills/mason-environment" in card
     assert "bmp install" in card
+    assert "Claude Code" in card
+    assert "Devin" in card

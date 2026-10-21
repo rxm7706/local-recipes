@@ -36,7 +36,7 @@ The flag block reuses `pyforge.steward.marketplace_pages` so a second key is not
 
 1. `bmp` is a console script. `pyforge steward --help` does not gain a duty. Duty-count tests are unchanged.
 2. `bmp find` lists the same ids `load_listings` returns for `catalog/marketplace/index.yaml`, by calling the catalog engine or `marketplace_pages.load_listings`. It does not shell out to `pixi run -e`.
-3. `bmp install <id> --source github|artifactory` copies that skill's folder into `.agents/skills/<scope>-<slug>/` and `.claude/skills/<scope>-<slug>/`, records `skills.lock`, and prints both destinations. It refuses, without writing, when a `requires` package entry has `published: false`, and the message names the package. It accepts the P2 list shape and the `{packages: [...]}` shape.
+3. `bmp install <id> --source github|artifactory` copies that skill's folder into `.agents/skills/<scope>-<slug>/` and `.claude/skills/<scope>-<slug>/`, records `skills.lock`, and prints both destinations. `.claude/skills/` is Claude Code's documented project skill path. `.agents/skills/` is Devin's. The tool matrix marks Claude Code reading `.agents/skills/` as uncertain and does not list `.claude/skills/` for Devin, so the command writes both and no other skill-directory format. It refuses, without writing, when a `requires` package entry has `published: false`, and the message names the package. It accepts the P2 list shape and the `{packages: [...]}` shape.
 4. With the flag off, `bmp install` refuses with the station's usage exit and the flag key, and writes nothing. `bmp` stays listed in its own help.
 5. A test shows `bmad-method install --custom-source` is not invoked.
 6. `DW-FU-60-1-4` remains open. The story's dev notes say the folder copy did not close it.

@@ -6938,7 +6938,7 @@ So that a green reconcile means every derived surface regenerated, and the pause
 ## Epic 109: The reset BMAD marketplace is a skill store on the catalog engine (spec-pyforge-steward CAP-169..CAP-173)
 
 Minted 2026-10-21 from the station Dream's realization-log entry of the same date. The 2026-10-20 design-thinking session re-decided the product the archived seed `docs/dreams/self-hosted-bmad-marketplace.md` started. That seed stays archived (`folded-into-station-dream`). Steward remains the owner because `CatalogEngine`, `registry/estate.yaml`, Epic 60, and the conda/Artifactory backend already live here. `bmp` is a face on that engine, not a new station. Mason and warden own the commands the seed skills describe. Scribe owns memory.
-The verbatim session is `planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/`. Concepts A–F were all selected. The success signal is a teammate other than rxm7706 contributing a skill that a different teammate installs and uses. The product brief is `briefs/brief-bmad-marketplace-reset-2026-10-21/brief.md`.
+The verbatim session is `planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/`. Concepts A–F were all selected. The pilot audience is a teammate on Claude Code, Cursor, GitHub Copilot in VS Code, Google Gemini, Devin (Cognition AI), or with no AI tool yet. Claude Code's documented skill path is `.claude/skills/`. Devin's is `.agents/skills/`. The success signal is a teammate other than rxm7706 contributing a skill that a different teammate installs and uses. The product brief is `briefs/brief-bmad-marketplace-reset-2026-10-21/brief.md`.
 Q1–Q7 of 2026-09-15 are reviewed there: the first artifact is a skill folder (Frames stay CAP-123); Pages adds cards to the thin browse; git stays the edit store and Artifactory stays a ship backend; our repo stays the start, `dedicated_repo` stays null until the operator confirms an internal GitHub; trust-tier names stay; no billing; no Layer 3.
 **HARD boundaries:**
 - Do not edit `CatalogEngine.render`, `catalog.yaml`, or `registry/estate.yaml`.
@@ -6959,7 +6959,7 @@ So that the skeleton and the pilot skills are implementations of a stated produc
 **Spec:** `planning-artifacts/specs/spec-109-1-the-reset-marketplace-has-a-product-brief.md`
 **Given** the archived seed and Epic 60 describe a module-and-Frame catalog
 **When** a reader opens the 2026-10-21 brief
-**Then** it states the four jobs, the skill-folder install into `.agents/skills/` and `.claude/skills/`, steward as owner, concepts A–F as the selected direction, the success signal above, and Stories 109.4 and 109.5 as not built
+**Then** it states the four jobs, the skill-folder install into `.agents/skills/` and `.claude/skills/`, the pilot audience (Claude Code, Cursor, GitHub Copilot in VS Code, Google Gemini, Devin, and no AI tool yet), which documented path each of Claude Code and Devin reads, steward as owner, concepts A–F as the selected direction, the success signal above, and Stories 109.4 and 109.5 as not built
 **And** it points at the verbatim session folder, including `prototypes/`
 **Status:** in-progress
 

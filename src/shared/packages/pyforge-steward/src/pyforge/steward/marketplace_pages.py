@@ -338,6 +338,10 @@ def render_skill_card(row: dict[str, Any], *, steps_text: str | None = None) -> 
         bits.append("<h2>Install</h2>")
         bits.append(
             f"<p>Copy the folder <code>{html.escape(str(row['path']))}</code> into {targets}. "
+            "Claude Code's documented project skill path is <code>.claude/skills/</code>. "
+            "Devin's is <code>.agents/skills/</code>. "
+            "The tool matrix marks Claude Code reading <code>.agents/skills/</code> as uncertain "
+            "and does not list <code>.claude/skills/</code> for Devin. "
             "<code>bmp install</code> is not built; this page is not an install button.</p>"
         )
         bits.append(_sources_html(row))

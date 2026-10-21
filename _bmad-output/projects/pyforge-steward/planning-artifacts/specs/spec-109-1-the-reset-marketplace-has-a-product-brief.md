@@ -28,7 +28,7 @@ declared_low_risk: false
 ## Acceptance criteria
 
 1. The brief exists at the path above and contains each template section named in the approach.
-2. It states the four jobs, the skill-folder install into `.agents/skills/` and `.claude/skills/`, steward as owner, and Stories 109.4 and 109.5 as not built.
+2. It states the four jobs, the skill-folder install into `.agents/skills/` and `.claude/skills/`, the pilot audience (Claude Code, Cursor, GitHub Copilot in VS Code, Google Gemini, Devin (Cognition AI), and no AI tool yet), that Claude Code's documented skill path is `.claude/skills/` and Devin's is `.agents/skills/`, steward as owner, and Stories 109.4 and 109.5 as not built.
 3. It records the session success signal (a teammate other than rxm7706 contributes a skill, and a different teammate installs and uses it), states that concepts A–F were all selected, and points at the verbatim session folder. It does not add a Dream under `docs/dreams/`.
 4. The brief's memlog exists and was appended with `memlog.py`.
 

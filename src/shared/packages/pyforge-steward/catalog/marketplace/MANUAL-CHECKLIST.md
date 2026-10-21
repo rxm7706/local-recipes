@@ -8,7 +8,10 @@ The pages are a reading surface. They are not an install button.
 Do this in a repository that is not local-recipes.
 
 - [ ] Read `site/index.html` and open one skill card without a local server
-- [ ] Copy that skill's folder into `.agents/skills/<name>/` and `.claude/skills/<name>/`
+- [ ] Copy that skill's folder into `.agents/skills/<scope>-<slug>/` and `.claude/skills/<scope>-<slug>/`
+- [ ] Confirm Claude Code picks the folder up from `.claude/skills/` (its documented project skill path; the tool matrix marks `.agents/skills/` as uncertain for Claude Code)
+- [ ] Confirm Devin (Cognition AI) picks the folder up from `.agents/skills/` (the matrix does not list `.claude/skills/` for Devin)
+- [ ] Confirm Cursor, GitHub Copilot in VS Code, and Google Gemini pick the same folder up. Cursor and Copilot read both directories. Gemini CLI reads `.agents/skills/`
 - [ ] Follow `steps.md` from the top
 - [ ] Record which step ran, and which step stopped because a `pyforge-*` package is unpublished
 - [ ] Confirm no step asked for `pixi run -e` or a path inside local-recipes
@@ -17,7 +20,7 @@ Do this in a repository that is not local-recipes.
 
 ## Wizard-of-Oz pilot (P4)
 
-Who: two or three teammates, not rxm7706. T1 uses Cursor and conda or pip. T2 uses Copilot or Gemini and publishes packages. T3 has no AI tool. The full script is `planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/prototypes/p4-wizard-of-oz-pilot.md`.
+Who: two or three teammates, not rxm7706, drawn from this audience: Claude Code, Cursor, GitHub Copilot in VS Code, Google Gemini, Devin (Cognition AI), and a teammate with no AI tool yet. P4's examples are T1 Cursor and conda or pip, T2 Copilot or Gemini who publishes packages, and T3 no AI tool. Claude Code and Devin are the same audience. The full script is `planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/prototypes/p4-wizard-of-oz-pilot.md`. The path each tool reads is `tool-support-matrix.md` in that folder: Claude Code `.claude/skills/`, Devin `.agents/skills/`.
 
 Real: the three skill folders, an internal GitHub repo once the operator confirms it, the static cards, one Artifactory package when one exists, and a real pull request. Faked until the gates below: `bmp install`, search, lint and CI, review and promotion, `@bmp/skillify` (a person helps shape `templates/SKILL.md`), and outdated notices.
 

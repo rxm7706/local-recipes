@@ -12,6 +12,9 @@ description: >
 
 Marketplace id `mason/environment`. Install this folder into both
 `.agents/skills/mason-environment/` and `.claude/skills/mason-environment/`.
+Claude Code's documented project skill path is `.claude/skills/`. Devin's is
+`.agents/skills/`. The tool matrix does not confirm the other directory for
+either of those two tools.
 The human steps are [steps.md](steps.md).
 
 Run every command from the teammate's project directory (the directory that

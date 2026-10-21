@@ -40,7 +40,7 @@ declared_low_risk: false
 
 1. `load_listings` of the committed `registry/estate.yaml` returns `[]`.
 2. A skill whose `path` is not `skills/<scope>/<slug>` raises `MarketplaceIndexError` and creates no site directory.
-3. With the flag off, `write_site` raises `MarketplacePagesDisabled` and writes nothing. With the flag on, it writes `index.html`, `listings.json`, and one card per listing. The card names `.agents/skills`, `.claude/skills`, and any package with `published: false`.
+3. With the flag off, `write_site` raises `MarketplacePagesDisabled` and writes nothing. With the flag on, it writes `index.html`, `listings.json`, and one card per listing. The card names `.agents/skills`, `.claude/skills`, Claude Code's documented path `.claude/skills/`, Devin's documented path `.agents/skills/`, and any package with `published: false`.
 4. The committed `site/` byte-matches `write_site_from_index` of the committed `index.yaml`.
 5. The index lists `mason/environment`, `mason/package`, and `warden/scan`.
 6. `catalog check` on the real tree still exits 0. `dedicated_repo` stays null.

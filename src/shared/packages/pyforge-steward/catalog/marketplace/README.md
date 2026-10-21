@@ -33,6 +33,12 @@ instructions-only skill has no package. A card renders `steps.md`.
 
 A skill is the folder under `skills/<scope>/<slug>/`. Copy it into both
 `.agents/skills/<scope>-<slug>/` and `.claude/skills/<scope>-<slug>/`.
+The 2026-10-20 tool matrix documents Claude Code's project skill path as
+`.claude/skills/` and Devin's as `.agents/skills/<name>/SKILL.md`. It marks
+Claude Code reading `.agents/skills/` as uncertain and does not list
+`.claude/skills/` for Devin. Cursor and GitHub Copilot in VS Code read both.
+Google Gemini CLI and Codex read `.agents/skills/`. A teammate with no AI
+tool uses the card and `steps.md`. No other skill-directory format is written.
 GitHub release and Artifactory conda and pip are the sources once a
 listing is published. These three are not published, so the card has no
 URL and no checksum. `bmp install` is Story 109.4 and is not this tree.

@@ -12,6 +12,9 @@ description: >
 
 Marketplace id `warden/scan`. Install this folder into both
 `.agents/skills/warden-scan/` and `.claude/skills/warden-scan/`.
+Claude Code's documented project skill path is `.claude/skills/`. Devin's is
+`.agents/skills/`. The tool matrix does not confirm the other directory for
+either of those two tools.
 The human steps are [steps.md](steps.md).
 
 Run from the teammate's project directory. Do not `cd` into local-recipes.
