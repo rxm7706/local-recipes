@@ -101,19 +101,19 @@ _MEMBER_ROOT = Path(__file__).resolve().parents[4]
 def default_data_root() -> Path:
     """The data root Kedro writes, which the boards read.
 
-    ``PYFORGE_ATLAS_DATA_ROOT`` wins. Otherwise Story 37.1: the member's ``data/`` --
-    ``globals.yml``'s ``paths.data_root`` is ``data``, relative to the Kedro project, and
-    ``pyforge atlas run`` runs there (Story 33.1). Before this story the walk went up to the repo
+    Story 37.1: ``globals.yml``'s ``paths.data_root`` is ``data`` unless
+    ``PYFORGE_ATLAS_DATA_ROOT`` overrides it, relative to the Kedro project -- the member, where
+    ``pyforge atlas run`` runs (Story 33.1). So the root is the member's ``data/``, and a relative
+    override is anchored at the member as Kedro and ``admission._data_root`` anchor it. A blank
+    override counts as unset, as in ``admission``. Before this story the walk went up to the repo
     root's ``data/``, which holds only ``raw/``, so a local run never showed on the boards. An
-    installed layout with no member falls back to ``data/`` under the working directory, as Kedro
-    resolves it.
+    installed layout with no member resolves against the working directory, where Kedro starts
+    looking for a project.
     """
-    env = os.environ.get("PYFORGE_ATLAS_DATA_ROOT")
-    if env:
-        return Path(env)
-    if (_MEMBER_ROOT / "conf" / "base" / "catalog.yml").is_file():
-        return _MEMBER_ROOT / "data"
-    return Path.cwd() / "data"
+    member = (_MEMBER_ROOT / "conf" / "base" / "catalog.yml").is_file()
+    base = _MEMBER_ROOT if member else Path.cwd()
+    root = Path((os.environ.get("PYFORGE_ATLAS_DATA_ROOT") or "").strip() or "data")
+    return root if root.is_absolute() else base / root
 
 
 def _bsl_query_or_empty(
