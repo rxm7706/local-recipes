@@ -2,7 +2,7 @@
 title: "37.1: The dashboard reads the data root Kedro writes"
 type: 'fix'
 created: '2026-10-19'
-status: 'in-review'
+status: 'done'
 baseline_revision: '85f5895f45'
 review_loop_iteration: 2
 followup_review_recommended: false
