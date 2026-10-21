@@ -15,13 +15,28 @@ Do this in a repository that is not local-recipes.
 - [ ] Confirm `conda-lock`, `pyproject-build` or `python -m build`, `pixi build`, `deptry`, and `osv-scanner` are the only published commands the three pilot skills ask a teammate to run, and that `warden scan` / `pyforge mason` stay behind the unpublished packages
 - [ ] Confirm the card's unpublished-package list matches what the desk test hit
 
-## Wizard-of-Oz pilot (a second person asks, a person answers)
+## Wizard-of-Oz pilot (P4)
+
+Who: two or three teammates, not rxm7706. T1 uses Cursor and conda or pip. T2 uses Copilot or Gemini and publishes packages. T3 has no AI tool. The full script is `planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/prototypes/p4-wizard-of-oz-pilot.md`.
+
+Real: the three skill folders, an internal GitHub repo once the operator confirms it, the static cards, one Artifactory package when one exists, and a real pull request. Faked until the gates below: `bmp install`, search, lint and CI, review and promotion, `@bmp/skillify` (a person helps shape `templates/SKILL.md`), and outdated notices.
 
 - [ ] A teammate asks to find a skill. A person replies with the card URL or the folder path. No CLI is required for the reply
-- [ ] A teammate asks to install it. A person copies the folder into both skill directories and says which package is still unpublished
-- [ ] A teammate asks to add a skill. A person uses `templates/SKILL.md` and `.github/PULL_REQUEST_TEMPLATE.md` and does not publish
+- [ ] A teammate asks to install it. A person copies the folder into `.agents/skills/<scope>-<slug>/` and `.claude/skills/<scope>-<slug>/` and says which package is still unpublished
+- [ ] A teammate follows `steps.md` on a real task. T3 does that from the steps alone
+- [ ] A teammate asks to add a skill. A person uses `templates/SKILL.md` and `.github/PULL_REQUEST_TEMPLATE.md` and does not publish. That stand-in is `@bmp/skillify` until `bmp new` exists
+- [ ] Fill one feedback grid per teammate per task (likes, questions, ideas, changes), plus completed y/n, stuck point, tool, source, and operator interventions
 - [ ] Write down the questions the person had to answer that the card did not
-- [ ] Only after those notes exist does Story 109.4 (`bmp`) or a publish lane start
+
+### Exit criteria (do not automate before these)
+
+- [ ] Build `bmp install` only after two or more teammates installed a skill with the manual copy and used it in their own tool
+- [ ] Build lint and clean-machine CI only after the manual checks ran on three or more pull requests and caught at least one real problem
+- [ ] Build `bmp publish` / `bmp new`, including `@bmp/skillify`, only after one teammate other than rxm7706 has merged a skill
+- [ ] Build search or MCP only if people looked for a skill inside their tool first
+- [ ] Build generated manifests or adapters only if a pilot tool failed to pick up the plain folder
+- [ ] Stop or rethink if no teammate uses a seed skill on a real task, or nobody contributes after being asked
+- [ ] Success moment: a second teammate installs and uses a skill a first teammate contributed
 
 ## Still open from Epic 60
 

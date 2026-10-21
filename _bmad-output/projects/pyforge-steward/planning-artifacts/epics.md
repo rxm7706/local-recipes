@@ -6938,7 +6938,7 @@ So that a green reconcile means every derived surface regenerated, and the pause
 ## Epic 109: The reset BMAD marketplace is a skill store on the catalog engine (spec-pyforge-steward CAP-169..CAP-173)
 
 Minted 2026-10-21 from the station Dream's realization-log entry of the same date. The 2026-10-20 design-thinking session re-decided the product the archived seed `docs/dreams/self-hosted-bmad-marketplace.md` started. That seed stays archived (`folded-into-station-dream`). Steward remains the owner because `CatalogEngine`, `registry/estate.yaml`, Epic 60, and the conda/Artifactory backend already live here. `bmp` is a face on that engine, not a new station. Mason and warden own the commands the seed skills describe. Scribe owns memory.
-The session folder is `planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/`. The verbatim attachments named in the restart brief were not mounted; the folder says so and does not invent concepts A–F. The product brief is `briefs/brief-bmad-marketplace-reset-2026-10-21/brief.md`.
+The verbatim session is `planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/`. Concepts A–F were all selected. The success signal is a teammate other than rxm7706 contributing a skill that a different teammate installs and uses. The product brief is `briefs/brief-bmad-marketplace-reset-2026-10-21/brief.md`.
 Q1–Q7 of 2026-09-15 are reviewed there: the first artifact is a skill folder (Frames stay CAP-123); Pages adds cards to the thin browse; git stays the edit store and Artifactory stays a ship backend; our repo stays the start, `dedicated_repo` stays null until the operator confirms an internal GitHub; trust-tier names stay; no billing; no Layer 3.
 **HARD boundaries:**
 - Do not edit `CatalogEngine.render`, `catalog.yaml`, or `registry/estate.yaml`.
@@ -6959,8 +6959,8 @@ So that the skeleton and the pilot skills are implementations of a stated produc
 **Spec:** `planning-artifacts/specs/spec-109-1-the-reset-marketplace-has-a-product-brief.md`
 **Given** the archived seed and Epic 60 describe a module-and-Frame catalog
 **When** a reader opens the 2026-10-21 brief
-**Then** it states the four jobs, the skill-folder install into `.agents/skills/` and `.claude/skills/`, steward as owner, and Stories 109.4 and 109.5 as not built
-**And** it records that the verbatim session files were not mounted
+**Then** it states the four jobs, the skill-folder install into `.agents/skills/` and `.claude/skills/`, steward as owner, concepts A–F as the selected direction, the success signal above, and Stories 109.4 and 109.5 as not built
+**And** it points at the verbatim session folder, including `prototypes/`
 **Status:** in-progress
 
 ### Story 109.2: Three pilot skills run without the estate environment
@@ -6991,8 +6991,9 @@ So that find is a static page and the v1 catalog engine is untouched.
 **Spec:** `planning-artifacts/specs/spec-109-3-a-marketplace-tree-renders-a-pages-index-from-listings.md`
 **Given** `registry/estate.yaml` has `modules: []` and `catalog.yaml` has `dedicated_repo: null`
 **When** `write_site` runs
-**Then** with the flag off it writes nothing; with the flag on it writes `index.html`, `listings.json`, and one card per listing, and the card names `.agents/skills`, `.claude/skills`, and unpublished packages
+**Then** with the flag off it writes nothing; with the flag on it writes `index.html`, `listings.json`, and one card per listing, and the card names `.agents/skills`, `.claude/skills`, unpublished packages, and the text of `steps.md`
 **And** `catalog check` on the real tree still exits 0, and a skill path other than `skills/<scope>/<slug>` is refused
+**And** the index follows `prototypes/p2-index-schema.yaml` (bmp `tier` mapped onto `trust_tier`; pilots stay `community` / `unverified`; `listing.yaml` per folder) and the card follows `prototypes/p3-skill-card.html` without copying its sample commands
 **Status:** in-progress
 
 ### Story 109.4: The teammate CLI bmp shares the catalog engine
@@ -7005,10 +7006,10 @@ So that install is one command and still the same catalog the operator reviews.
 **Flag:** reuses `pyforge.steward.marketplace_pages` until the implementer confirms a separate key; off, install is the folder copy on the card
 **Surface:** a new `bmp` console script and `tests/unit/test_bmp.py` (not in the 2026-10-21 change); no edit to `cli.py` duty tuple
 **Spec:** `planning-artifacts/specs/spec-109-4-the-teammate-cli-bmp-shares-the-catalog-engine.md`
-**Given** the Pages card describes a folder copy and `bmad-method install --custom-source` still finds 0 modules
-**When** `bmp install <id>` runs
-**Then** it copies that skill into `.agents/skills/` and `.claude/skills/`, or refuses naming the flag when the flag is off, or refuses naming the package when `published` is false
-**And** it does not call `bmad-method install --custom-source`, and `steward` gains no duty
+**Given** the Pages card describes a folder copy, `prototypes/p1-cli-transcript.md` is the command set, `prototypes/p2-index-schema.yaml` is the index shape, and `bmad-method install --custom-source` still finds 0 modules
+**When** `bmp install <id>` runs, and only after two teammates have used the manual copy (P4)
+**Then** it copies that skill into `.agents/skills/` and `.claude/skills/` from a GitHub release or Artifactory, writes `skills.lock`, or refuses naming the flag when the flag is off, or refuses naming the package when `published` is false
+**And** it does not call `bmad-method install --custom-source`, `steward` gains no duty, adapters are generated only for a confirmed format, and `@bmp/skillify` is the driver of `bmp new skill --from-session`
 **Status:** backlog
 
 ### Story 109.5: Contribution lanes wait on a desk test and a Wizard-of-Oz pilot
@@ -7021,10 +7022,10 @@ So that a lane is automated only after a person has walked it.
 **Flag:** none — `type: docs`; `flag-exempt: docs-only`
 **Surface:** `catalog/marketplace/MANUAL-CHECKLIST.md`; the PR template beside it
 **Spec:** `planning-artifacts/specs/spec-109-5-contribution-lanes-wait-on-a-desk-test-and-a-wizard-of-oz-pilot.md`
-**Given** the checklist names Round 0 and the Wizard-of-Oz pilot and the three Epic 60 rows are open
+**Given** the checklist names Round 0, the Wizard-of-Oz pilot in `prototypes/p4-wizard-of-oz-pilot.md`, and the three Epic 60 rows are open
 **When** this story is done
-**Then** each of those two sections has a dated note of what a person did in a repository that is not local-recipes
-**And** the three deferred rows are still `status: open`, and no upload command was added
+**Then** each of those two sections has a dated note of what a person did in a repository that is not local-recipes, judged against P4's gates (install after two teammates, lint after three pull requests, publish after one non-operator merge)
+**And** the three deferred rows are still `status: open`, `@bmp/skillify` stays faked until that publish gate, and no upload command was added
 **Status:** backlog
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)

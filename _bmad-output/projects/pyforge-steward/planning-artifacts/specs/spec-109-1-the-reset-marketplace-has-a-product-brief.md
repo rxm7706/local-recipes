@@ -11,7 +11,8 @@ context:
   - docs/dreams/self-hosted-bmad-marketplace.md
   - docs/dreams/pyforge-steward.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/briefs/brief-bmad-marketplace-reset-2026-10-21/brief.md
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/decision-record.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/design-thinking-2026-10-20.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/bmad-marketplace-dream-reset.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
 declared_low_risk: false
 ---
@@ -28,7 +29,7 @@ declared_low_risk: false
 
 1. The brief exists at the path above and contains each template section named in the approach.
 2. It states the four jobs, the skill-folder install into `.agents/skills/` and `.claude/skills/`, steward as owner, and Stories 109.4 and 109.5 as not built.
-3. It records that the verbatim session attachments were not mounted, and it does not invent concepts A–F.
+3. It records the session success signal (a teammate other than rxm7706 contributes a skill, and a different teammate installs and uses it), states that concepts A–F were all selected, and points at the verbatim session folder. It does not add a Dream under `docs/dreams/`.
 4. The brief's memlog exists and was appended with `memlog.py`.
 
 ## Boundaries
@@ -47,4 +48,4 @@ declared_low_risk: false
 
 **Manual checks:**
 
-- Read the brief against the decision record. The open questions match the pull request.
+- Read the brief against `design-thinking-2026-10-20.md`. The success signal and the selected concepts match that record.

@@ -2829,7 +2829,7 @@ No FR is added, amended, renumbered or removed. **ONE kernel FR space stays FR-1
 
 ### FR-42 (← CAP-169)
 
-The reset marketplace is a product on this station: BMAD skills, modules, and agents; jobs find, install, create, and publish; first user a teammate on mixed tools; GitHub and GitHub Pages for browse; GitHub/Pages or Artifactory for install. The product brief at `briefs/brief-bmad-marketplace-reset-2026-10-21/brief.md` is the statement. The seed Dream stays archived.
+The reset marketplace is a product on this station: BMAD skills, modules, and agents; jobs find, install, create, and publish; first user a teammate on mixed tools, including none; GitHub and GitHub Pages for browse; a GitHub release or Artifactory (conda and pip) for install. Concepts A–F from the 2026-10-20 session are the selected direction. The success signal is a teammate other than rxm7706 contributing a skill that a different teammate installs and uses. The product brief at `briefs/brief-bmad-marketplace-reset-2026-10-21/brief.md` is the statement. The verbatim session is `design-thinking-bmad-marketplace-2026-10-20/`. The seed Dream stays archived.
 
 ### FR-43 (← CAP-170)
 
@@ -2837,15 +2837,15 @@ The reset marketplace is a product on this station: BMAD skills, modules, and ag
 
 ### FR-44 (← CAP-171)
 
-`catalog/marketplace/index.yaml` uses schema `pyforge.bmad-marketplace/v1` and stays compatible with `registry/estate.yaml`. `write_site` renders `site/` only while `pyforge.steward.marketplace_pages` is on (dev on, staging off, production off). Off, committed HTML stays and nothing is written. `CatalogEngine.render` is unchanged. `dedicated_repo` stays null.
+`catalog/marketplace/index.yaml` uses schema `pyforge.bmad-marketplace/v1` and `index_version: 1`, and stays compatible with `registry/estate.yaml`. Each skill folder has `listing.yaml`; the index is their concatenation. bmp `tier` maps onto v1 `trust_tier` (`community` → `unverified`, `estate-reviewed` → `community-reviewed`, `bmad-certified` → `bmad-certified`). The three pilots are `community` / `unverified` and `code-backed`. A card renders `steps.md` and does not copy the paper prototype's sample commands. `write_site` renders `site/` only while `pyforge.steward.marketplace_pages` is on (dev on, staging off, production off). Off, committed HTML stays and nothing is written. `CatalogEngine.render` is unchanged. `dedicated_repo` stays null. Prototypes: `p2-index-schema.yaml` and `p3-skill-card.html`.
 
 ### FR-45 (← CAP-172)
 
-`bmp` finds and installs by sharing the catalog engine, copying a skill into `.agents/skills/` and `.claude/skills/`, and is not a steward duty. It is Story 109.4, ready-for-dev, and it does not ship in the 2026-10-21 change. It does not close `DW-FU-60-1-4`.
+`bmp` finds and installs by sharing the catalog engine, copying a skill into `.agents/skills/` and `.claude/skills/`, and is not a steward duty. Its command set is `prototypes/p1-cli-transcript.md`: search, install from a GitHub release or Artifactory, `skills.lock`, a requires check, adapters only for a confirmed format, and `bmp new skill --from-session` driven by `@bmp/skillify`. It is Story 109.4, ready-for-dev. `bmp install` waits on the P4 gate of two teammates using the manual copy. It does not ship in the 2026-10-21 change. It does not close `DW-FU-60-1-4`. The index shape it reads is `prototypes/p2-index-schema.yaml`.
 
 ### FR-46 (← CAP-173)
 
-Contribution has two lanes, instructions-only and code-backed. Automation waits on a Round 0 desk test and a Wizard-of-Oz pilot. Story 109.5 is ready-for-dev. `DW-FU-60-1`, `DW-FU-60-1-4`, and `DW-FRR-60-1` stay open.
+Contribution has two lanes. Instructions-only is a skill with no package. Code-backed names a package; the three pilots are code-backed. Automation waits on the Round 0 desk test and the Wizard-of-Oz pilot in `prototypes/p4-wizard-of-oz-pilot.md`. Build `bmp install` after two teammates used the manual copy. Build lint and clean-machine CI after three pull requests caught a real problem. Build `bmp publish` / `new` after one merge by someone other than rxm7706. Stop if nobody uses a seed on a real task or nobody contributes. `@bmp/skillify` stays faked until that publish gate. Story 109.5 is ready-for-dev. `DW-FU-60-1`, `DW-FU-60-1-4`, and `DW-FRR-60-1` stay open.
 
 **ONE kernel FR space now FR-1..FR-46** (FR-47 = next free id).
 

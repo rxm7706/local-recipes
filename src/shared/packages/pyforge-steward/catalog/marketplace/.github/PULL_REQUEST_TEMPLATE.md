@@ -1,11 +1,13 @@
 ## Listing
 
-- [ ] `index.yaml` row: `id`, `kind`, `scope`, `slug`, `name`, `title`, `description`, `version`, `trust_tier`, `source`, `jobs`, `path`, `contribution_lane`
-- [ ] `kind` is `skill`, `module`, or `agent`
+- [ ] `skills/<scope>/<slug>/listing.yaml` matches the `index.yaml` row
+- [ ] Row fields: `id`, `kind`, `scope`, `slug`, `name`, `title`, `description`, `version`, `tier`, `trust_tier`, `source`, `jobs`, `path`, `lane`
+- [ ] `kind` is `skill`, `module`, `agent`, or `bundle`
+- [ ] `tier` maps onto `trust_tier`: `community` → `unverified`, `estate-reviewed` → `community-reviewed`, `bmad-certified` → `bmad-certified`
 - [ ] `trust_tier` is `unverified`, `community-reviewed`, or `bmad-certified`
 - [ ] `source` names the producer (`estate-listings` until a second source is reviewed)
 - [ ] For a skill, `path` is `skills/<scope>/<slug>` and that folder exists
-- [ ] `contribution_lane` is `instructions-only` or `code-backed`
+- [ ] `lane` is `instructions-only` (no package) or `code-backed` (names a package), and it matches `contribution_lane` when both are set
 
 ## Folder
 
@@ -17,7 +19,8 @@
 ## Generated site
 
 - [ ] `site/` was regenerated with `pyforge.steward.marketplace_pages` on (dev) and matches `index.yaml`
-- [ ] The card names every `requires.packages` entry whose `published` is false
+- [ ] The card renders `steps.md` and names every requires package whose `published` is false
+- [ ] No sample checksum, example host, or paper-card command was copied into the listing
 
 ## Lane
 

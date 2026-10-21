@@ -12,12 +12,15 @@ from pyforge.core.flags import read_boolean
 from pyforge.steward.bootstrap import repo_root
 from pyforge.steward.marketplace_pages import (
     FLAG_KEY,
+    INDEX_VERSION,
     SCHEMA_ID,
     MarketplaceIndexError,
     MarketplacePagesDisabled,
     listing_from_estate_module,
+    listings_from_skill_folders,
     load_listings,
     pages_enabled,
+    validate_listing,
     write_site,
     write_site_from_index,
 )
@@ -166,4 +169,45 @@ def test_index_yaml_round_trips_through_the_schema() -> None:
     index = repo_root() / _CATALOG / "marketplace" / "index.yaml"
     document = yaml.safe_load(index.read_text(encoding="utf-8"))
     assert document["schema"] == SCHEMA_ID
+    assert document["index_version"] == INDEX_VERSION
     assert document["compatible_with"] == "registry/estate.yaml"
+
+
+def test_index_rows_match_each_folder_listing_yaml() -> None:
+    root = repo_root() / _CATALOG / "marketplace"
+    assert load_listings(root / "index.yaml") == listings_from_skill_folders(root)
+
+
+def test_committed_pilots_are_community_and_code_backed() -> None:
+    rows = load_listings(repo_root() / _CATALOG / "marketplace" / "index.yaml")
+    for row in rows:
+        assert row["tier"] == "community"
+        assert row["trust_tier"] == "unverified"
+        assert row["lane"] == "code-backed"
+        assert row["docs"]["steps"] == "steps.md"
+        assert any(item.get("published") is False for item in row["requires"])
+        assert "example.com" not in yaml.safe_dump(row)
+
+
+def test_a_tier_that_does_not_match_trust_tier_is_refused() -> None:
+    row = _skill()
+    row["tier"] = "estate-reviewed"
+    row["trust_tier"] = "unverified"
+    with pytest.raises(MarketplaceIndexError, match="maps to"):
+        validate_listing(row)
+
+
+def test_committed_environment_card_renders_steps_md_not_the_paper_sample(tmp_path: Path) -> None:
+    index = repo_root() / _CATALOG / "marketplace" / "index.yaml"
+    on = _flags_tree(tmp_path / "flags", dev="on")
+    site = tmp_path / "site"
+    write_site_from_index(index, site, flags_path=on)
+    card = (site / "skills/mason/environment.html").read_text(encoding="utf-8")
+    assert "conda-lock lock -f pyproject.toml --lockfile conda-lock.yml" in card
+    assert "env.lock" not in card
+    assert "is not this runbook" in card
+    assert "GitHub release: not published" in card
+    assert "Artifactory conda: not published" in card
+    assert ".agents/skills/mason-environment" in card
+    assert ".claude/skills/mason-environment" in card
+    assert "bmp install" in card

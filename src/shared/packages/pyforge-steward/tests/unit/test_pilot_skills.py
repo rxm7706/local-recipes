@@ -42,6 +42,8 @@ def test_pilot_skills_name_the_commands_that_were_verified() -> None:
     by_path = dict(_texts())
     environment = by_path["mason/environment/steps.md"]
     assert "conda-lock lock -f pyproject.toml --lockfile conda-lock.yml" in environment
+    assert "env.lock" not in environment
+    assert "--conda environment.yml" not in environment
     assert "conda-lock, version 4.0.2" in environment or "conda-lock` 4.0.2" in environment
     package = by_path["mason/package/steps.md"]
     assert "pyproject-build --no-isolation" in package

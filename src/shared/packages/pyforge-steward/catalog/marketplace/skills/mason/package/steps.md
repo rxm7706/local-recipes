@@ -1,6 +1,7 @@
 # Steps — @mason/package
 
 Run these from the project you want to build. Verified 2026-10-21.
+The 2026-10-20 paper skill card is sample data and is not this runbook.
 
 ## 1. See the station command
 

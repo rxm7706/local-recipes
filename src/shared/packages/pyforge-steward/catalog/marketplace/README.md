@@ -8,9 +8,10 @@ that confirm. Nothing here creates a GitHub repository.
 ## Layout
 
 ```
-index.yaml                         listings, schema pyforge.bmad-marketplace/v1
+index.yaml                         concatenation of the listing rows, schema pyforge.bmad-marketplace/v1, index_version 1
+skills/<scope>/<slug>/listing.yaml one row, the P2 field set with no sample hosts
 skills/<scope>/<slug>/SKILL.md     the skill folder a teammate copies
-skills/<scope>/<slug>/steps.md     the human steps for that skill
+skills/<scope>/<slug>/steps.md     the human runbook; the paper card's sample commands are not this file
 site/index.html                    static index, generated
 site/listings.json                 the same listings, generated
 site/skills/<scope>/<slug>.html    one skill card, generated
@@ -21,14 +22,21 @@ MANUAL-CHECKLIST.md                Round 0 desk test and Wizard-of-Oz pilot
 
 `index.yaml` declares `compatible_with: registry/estate.yaml`. An empty
 `modules:` list is zero module listings. A module row maps through
-`listing_from_estate_module` in `pyforge.steward.marketplace_pages`. Trust
-tier names are the v1 names (`unverified`, `community-reviewed`,
-`bmad-certified`).
+`listing_from_estate_module` in `pyforge.steward.marketplace_pages`. bmp
+`tier` maps onto the v1 names: `community` → `unverified`,
+`estate-reviewed` → `community-reviewed`, `bmad-certified` →
+`bmad-certified`. The three pilots are `community` / `unverified` (no
+review record) and `code-backed` (each requires a package). An
+instructions-only skill has no package. A card renders `steps.md`.
 
 ## Install
 
 A skill is the folder under `skills/<scope>/<slug>/`. Copy it into both
-`.agents/skills/<name>/` and `.claude/skills/<name>/`. Per-tool marketplace
+`.agents/skills/<scope>-<slug>/` and `.claude/skills/<scope>-<slug>/`.
+GitHub release and Artifactory conda and pip are the sources once a
+listing is published. These three are not published, so the card has no
+URL and no checksum. `bmp install` is Story 109.4 and is not this tree.
+Per-tool marketplace
 manifests are not required. The v1 `.claude-plugin/marketplace.json` and
 `.agents/plugins/marketplace.json` beside this tree are the catalog engine's
 outputs. This skeleton does not rewrite them.

@@ -30,7 +30,7 @@ declared_low_risk: false
 
 1. Each of the three folders contains `SKILL.md` and `steps.md`.
 2. Neither file contains `pixi run -e` or `pixi run --frozen -e`.
-3. Environment steps include `conda-lock lock -f pyproject.toml --lockfile conda-lock.yml` and say the station check uses a temporary copy.
+3. Environment steps include `conda-lock lock -f pyproject.toml --lockfile conda-lock.yml` and say the station check uses a temporary copy. They do not include the paper prototype's `env.lock` sample command. `steps.md` is the runbook the Pages card renders.
 4. Package steps include `pyproject-build --no-isolation` and `pixi build --output-dir dist`, and tell the reader not to run `twine upload` or `pixi upload`.
 5. Warden steps include `warden scan .` and say `deptry` and `osv-scanner` are not a warden verdict.
 6. Each file records that the station package was unpublished on 2026-10-21.

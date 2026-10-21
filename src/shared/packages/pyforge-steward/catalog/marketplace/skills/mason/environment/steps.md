@@ -2,7 +2,8 @@
 
 Run these from the project you want to lock. Verified 2026-10-21 against
 the commands that exist in this repo. Versions below are what that check
-printed.
+printed. The 2026-10-20 paper skill card is sample data. Its lock command
+is not this runbook.
 
 ## 1. See the station command
 

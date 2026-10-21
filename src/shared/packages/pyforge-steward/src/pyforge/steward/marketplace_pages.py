@@ -22,9 +22,16 @@ import yaml
 from pyforge.core.flags import read_boolean
 
 SCHEMA_ID = "pyforge.bmad-marketplace/v1"
+INDEX_VERSION = 1
 FLAG_KEY = "pyforge.steward.marketplace_pages"
-KINDS = frozenset({"skill", "module", "agent"})
+KINDS = frozenset({"skill", "module", "agent", "bundle"})
 TRUST_TIERS = frozenset({"unverified", "community-reviewed", "bmad-certified"})
+# bmp tier -> upstream trust_tier (prototypes/p2-index-schema.md).
+TIER_TO_TRUST = {
+    "bmad-certified": "bmad-certified",
+    "estate-reviewed": "community-reviewed",
+    "community": "unverified",
+}
 JOBS = frozenset({"find", "install", "create", "publish"})
 LANES = frozenset({"instructions-only", "code-backed"})
 INSTALL_TARGETS = (".agents/skills", ".claude/skills")
@@ -75,6 +82,7 @@ def listing_from_estate_module(row: dict[str, Any]) -> dict[str, Any]:
         "path": None,
         "repository": row.get("repository"),
         "install_hint": row.get("install_hint"),
+        "lane": "code-backed",
         "contribution_lane": "code-backed",
         "requires": {"packages": []},
     }
@@ -98,6 +106,13 @@ def validate_listing(row: dict[str, Any]) -> None:
     trust = _require_str(row, "trust_tier", ident)
     if trust not in TRUST_TIERS:
         raise MarketplaceIndexError(f"{ident}: trust_tier {trust!r} is not a v1 tier name")
+    tier = row.get("tier")
+    if tier is not None:
+        if tier not in TIER_TO_TRUST:
+            raise MarketplaceIndexError(f"{ident}: tier {tier!r} is not a bmp tier")
+        expected_trust = TIER_TO_TRUST[str(tier)]
+        if trust != expected_trust:
+            raise MarketplaceIndexError(f"{ident}: tier {tier} maps to trust_tier {expected_trust}, got {trust}")
     _require_str(row, "name", ident)
     _require_str(row, "source", ident)
     jobs = row.get("jobs") or []
@@ -106,9 +121,15 @@ def validate_listing(row: dict[str, Any]) -> None:
     unknown = sorted(set(jobs) - JOBS)
     if unknown:
         raise MarketplaceIndexError(f"{ident}: unknown jobs {unknown}")
-    lane = row.get("contribution_lane")
-    if lane is not None and lane not in LANES:
-        raise MarketplaceIndexError(f"{ident}: contribution_lane {lane!r} is not a known lane")
+    lane = row.get("lane")
+    contribution = row.get("contribution_lane")
+    if lane is not None and contribution is not None and lane != contribution:
+        raise MarketplaceIndexError(f"{ident}: lane and contribution_lane differ")
+    chosen = lane if lane is not None else contribution
+    if chosen is not None and chosen not in LANES:
+        raise MarketplaceIndexError(f"{ident}: lane {chosen!r} is not a known lane")
+    _validate_requires(row, ident)
+    _validate_install_targets(row, ident)
     if kind == "skill":
         scope = _require_str(row, "scope", ident)
         slug = _require_str(row, "slug", ident)
@@ -116,6 +137,41 @@ def validate_listing(row: dict[str, Any]) -> None:
         expected = f"skills/{scope}/{slug}"
         if path != expected:
             raise MarketplaceIndexError(f"{ident}: path {path!r} must be {expected!r}")
+
+
+def _validate_requires(row: dict[str, Any], ident: str) -> None:
+    requires = row.get("requires")
+    if requires is None:
+        return
+    if isinstance(requires, dict):
+        packages = requires.get("packages", [])
+        if not isinstance(packages, list):
+            raise MarketplaceIndexError(f"{ident}: requires.packages must be a list")
+        return
+    if isinstance(requires, list):
+        for item in requires:
+            if not isinstance(item, dict) or not isinstance(item.get("kind"), str):
+                raise MarketplaceIndexError(f"{ident}: each requires entry needs a kind")
+        return
+    raise MarketplaceIndexError(f"{ident}: requires must be a list of kinds or a packages mapping")
+
+
+def _validate_install_targets(row: dict[str, Any], ident: str) -> None:
+    install = row.get("install")
+    if not isinstance(install, dict) or "targets" not in install:
+        return
+    targets = install.get("targets")
+    if not isinstance(targets, list) or not targets:
+        raise MarketplaceIndexError(f"{ident}: install.targets must be a non-empty list")
+    for target in targets:
+        if not isinstance(target, str) or not _allowed_install_target(target):
+            raise MarketplaceIndexError(
+                f"{ident}: install target {target!r} must sit under .agents/skills or .claude/skills"
+            )
+
+
+def _allowed_install_target(target: str) -> bool:
+    return target in INSTALL_TARGETS or target.startswith(".agents/skills/") or target.startswith(".claude/skills/")
 
 
 def listings_from_document(document: dict[str, Any]) -> list[dict[str, Any]]:
@@ -126,6 +182,9 @@ def listings_from_document(document: dict[str, Any]) -> list[dict[str, Any]]:
         schema = document.get("schema")
         if schema != SCHEMA_ID:
             raise MarketplaceIndexError(f"schema must be {SCHEMA_ID}, got {schema!r}")
+        version = document.get("index_version", INDEX_VERSION)
+        if version != INDEX_VERSION:
+            raise MarketplaceIndexError(f"index_version must be {INDEX_VERSION}, got {version!r}")
         rows = document.get("listings")
         if not isinstance(rows, list):
             raise MarketplaceIndexError("listings must be a list")
@@ -157,20 +216,58 @@ def _card_href(row: dict[str, Any]) -> str:
     return f"skills/{scope}/{slug}.html"
 
 
+def _package_entries(row: dict[str, Any]) -> list[dict[str, Any]]:
+    """Package requires, whether the row uses P2's list or ``{packages: [...]}``."""
+    requires = row.get("requires")
+    if isinstance(requires, dict):
+        packages = requires.get("packages") or []
+        return [item for item in packages if isinstance(item, dict)]
+    if isinstance(requires, list):
+        return [item for item in requires if isinstance(item, dict) and item.get("kind", "package") == "package"]
+    return []
+
+
 def _requires_notes(row: dict[str, Any]) -> list[str]:
-    requires = row.get("requires") or {}
-    packages = requires.get("packages") if isinstance(requires, dict) else None
     notes: list[str] = []
-    if not isinstance(packages, list):
-        return notes
-    for package in packages:
-        if not isinstance(package, dict):
-            continue
+    for package in _package_entries(row):
         name = str(package.get("name") or "")
         if package.get("published") is False and name:
             detail = str(package.get("note") or "not on PyPI or conda-forge")
             notes.append(f"{name}: {detail}")
     return notes
+
+
+def _listing_lane(row: dict[str, Any]) -> str | None:
+    lane = row.get("lane", row.get("contribution_lane"))
+    return None if lane is None else str(lane)
+
+
+def _install_targets(row: dict[str, Any]) -> tuple[str, ...]:
+    install = row.get("install")
+    if isinstance(install, dict) and isinstance(install.get("targets"), list) and install["targets"]:
+        return tuple(str(item) for item in install["targets"])
+    return INSTALL_TARGETS
+
+
+def _steps_text(row: dict[str, Any], steps_root: Path | None) -> str | None:
+    """Read ``docs.steps``. A bare filename is next to the skill folder (P2)."""
+    if steps_root is None:
+        return None
+    docs = row.get("docs")
+    if not isinstance(docs, dict):
+        return None
+    relative = docs.get("steps")
+    if not isinstance(relative, str) or not relative.strip():
+        return None
+    relative = relative.strip()
+    skill_path = row.get("path")
+    if "/" not in relative and isinstance(skill_path, str):
+        candidate = steps_root / skill_path / relative
+    else:
+        candidate = steps_root / relative
+    if not candidate.is_file():
+        return None
+    return candidate.read_text(encoding="utf-8")
 
 
 def _page(title: str, body: str) -> str:
@@ -197,26 +294,53 @@ def _page(title: str, body: str) -> str:
     )
 
 
-def render_skill_card(row: dict[str, Any]) -> str:
-    """One self-contained skill-card page."""
+def render_skill_card(row: dict[str, Any], *, steps_text: str | None = None) -> str:
+    """One self-contained skill card.
+
+    Sections follow the paper card (steps, install, sources, owners, requires,
+    related, contribute). The steps are ``steps.md``. The paper prototype's
+    sample commands are not rendered.
+    """
     validate_listing(row)
-    title = str(row.get("title") or row["name"])
+    title = str(row.get("title") or row.get("display_name") or row["name"])
+    tier = row.get("tier")
+    trust = str(row["trust_tier"])
+    tier_bit = f"tier {html.escape(str(tier))} · " if tier else ""
     bits = [
         '<p><a href="../../index.html">Marketplace</a></p>',
         f"<h1>{html.escape(title)}</h1>",
         f'<p class="meta">{html.escape(str(row["kind"]))} · '
-        f"{html.escape(str(row['id']))} · trust {html.escape(str(row['trust_tier']))} · "
-        f"source {html.escape(str(row['source']))}</p>",
+        f"{html.escape(str(row['name']))} · version {html.escape(str(row.get('version') or 'unversioned'))}</p>",
+        f'<p class="meta">{tier_bit}trust {html.escape(trust)} · source {html.escape(str(row["source"]))}</p>',
     ]
-    description = str(row.get("description") or "")
+    if tier == "community":
+        bits.append('<p class="meta">No review record. community maps to unverified until a CODEOWNER promotes it.</p>')
+    description = str(row.get("description") or row.get("summary") or "")
     if description:
         bits.append(f"<p>{html.escape(description)}</p>")
+    owners = row.get("owners") or []
+    if isinstance(owners, list) and owners:
+        bits.append("<p>Owners: " + ", ".join(html.escape(str(owner)) for owner in owners) + "</p>")
+    if steps_text:
+        bits.append("<h2>Steps</h2>")
+        bits.append(
+            "<p>Rendered from <code>steps.md</code>. "
+            "The 2026-10-20 paper card's lock command is sample data and is not this runbook.</p>"
+        )
+        bits.append(f"<pre>{html.escape(steps_text)}</pre>")
+    elif row.get("kind") == "skill":
+        bits.append("<h2>Steps</h2><p>This card has no <code>steps.md</code> to render.</p>")
     jobs = row.get("jobs") or []
     if jobs:
         bits.append("<p>Jobs: " + ", ".join(html.escape(str(job)) for job in jobs) + "</p>")
     if row.get("kind") == "skill":
-        targets = ", ".join(f"<code>{html.escape(target)}</code>" for target in INSTALL_TARGETS)
-        bits.append(f"<p>Install the folder <code>{html.escape(str(row['path']))}</code> into {targets}.</p>")
+        targets = ", ".join(f"<code>{html.escape(target)}</code>" for target in _install_targets(row))
+        bits.append("<h2>Install</h2>")
+        bits.append(
+            f"<p>Copy the folder <code>{html.escape(str(row['path']))}</code> into {targets}. "
+            "<code>bmp install</code> is not built; this page is not an install button.</p>"
+        )
+        bits.append(_sources_html(row))
     hint = row.get("install_hint")
     if hint:
         bits.append(f"<p>Install hint: {html.escape(str(hint))}</p>")
@@ -224,10 +348,38 @@ def render_skill_card(row: dict[str, Any]) -> str:
     if notes:
         items = "".join(f"<li>{html.escape(note)}</li>" for note in notes)
         bits.append(f"<h2>Unpublished packages</h2><ul>{items}</ul>")
-    lane = row.get("contribution_lane")
+    related = row.get("related") or []
+    if isinstance(related, list) and related:
+        items = "".join(f"<li>{html.escape(str(item))}</li>" for item in related)
+        bits.append(f"<h2>Related</h2><ul>{items}</ul>")
+    lane = _listing_lane(row)
     if lane:
-        bits.append(f"<p>Contribution lane: {html.escape(str(lane))}.</p>")
+        bits.append(f"<h2>Contribute</h2><p>Lane: {html.escape(lane)}. A pull request is the publish path.</p>")
+        if lane == "code-backed":
+            bits.append("<p>Code-backed: this listing requires a package. An instructions-only skill has none.</p>")
     return _page(title, "\n".join(bits))
+
+
+def _sources_html(row: dict[str, Any]) -> str:
+    """Name GitHub release and Artifactory conda/pip without inventing URLs."""
+    sources = row.get("sources")
+    if not isinstance(sources, dict):
+        return "<p>Sources: a GitHub release or Artifactory, when this listing is published.</p>"
+    lines: list[str] = []
+    github = sources.get("github")
+    if isinstance(github, dict):
+        state = "published" if github.get("published") is True else "not published"
+        lines.append(f"<li>GitHub release: {state}</li>")
+    artifactory = sources.get("artifactory")
+    if isinstance(artifactory, dict):
+        for channel in ("conda", "pip"):
+            entry = artifactory.get(channel)
+            if isinstance(entry, dict):
+                state = "published" if entry.get("published") is True else "not published"
+                lines.append(f"<li>Artifactory {channel}: {state}</li>")
+    if not lines:
+        return "<p>Sources: a GitHub release or Artifactory, when this listing is published.</p>"
+    return "<h2>Sources</h2><ul>" + "".join(lines) + "</ul>"
 
 
 def render_index(rows: list[dict[str, Any]]) -> str:
@@ -246,10 +398,12 @@ def render_index(rows: list[dict[str, Any]]) -> str:
         href = html.escape(_card_href(row))
         kind = html.escape(str(row["kind"]))
         trust = html.escape(str(row["trust_tier"]))
+        lane = _listing_lane(row)
+        lane_bit = f" · {html.escape(lane)}" if lane else ""
         parts.append(
             "<article>"
             f'<h2><a href="{href}">{title}</a></h2>'
-            f'<p class="meta">{kind} · {trust}</p>'
+            f'<p class="meta">{kind} · {trust}{lane_bit}</p>'
             f"<p>{html.escape(str(row.get('description') or ''))}</p>"
             "</article>"
         )
@@ -264,11 +418,28 @@ def render_listings_json(rows: list[dict[str, Any]]) -> str:
     return json.dumps(payload, indent=2, sort_keys=True) + "\n"
 
 
+def listings_from_skill_folders(marketplace: Path) -> list[dict[str, Any]]:
+    """Read each ``skills/<scope>/<slug>/listing.yaml`` and validate it.
+
+    ``index.yaml`` is the committed concatenation of these files until
+    ``bmp index build`` exists.
+    """
+    rows: list[dict[str, Any]] = []
+    for path in sorted((marketplace / "skills").glob("*/*/listing.yaml")):
+        row = yaml.safe_load(path.read_text(encoding="utf-8"))
+        if not isinstance(row, dict):
+            raise MarketplaceIndexError(f"{path}: listing must be a mapping")
+        validate_listing(row)
+        rows.append(row)
+    return sorted(rows, key=lambda row: str(row["id"]))
+
+
 def write_site(
     rows: list[dict[str, Any]],
     site_dir: Path,
     *,
     flags_path: Path | str | None = None,
+    steps_root: Path | None = None,
 ) -> list[Path]:
     """Write ``index.html``, ``listings.json``, and one card per listing.
 
@@ -290,7 +461,10 @@ def write_site(
     for row in rows:
         card = site_dir / _card_href(row)
         card.parent.mkdir(parents=True, exist_ok=True)
-        card.write_text(render_skill_card(row), encoding="utf-8")
+        card.write_text(
+            render_skill_card(row, steps_text=_steps_text(row, steps_root)),
+            encoding="utf-8",
+        )
         written.append(card)
     return written
 
@@ -302,4 +476,9 @@ def write_site_from_index(
     flags_path: Path | str | None = None,
 ) -> list[Path]:
     """Load ``index_path`` and write the site next to it."""
-    return write_site(load_listings(index_path), site_dir, flags_path=flags_path)
+    return write_site(
+        load_listings(index_path),
+        site_dir,
+        flags_path=flags_path,
+        steps_root=index_path.parent,
+    )
