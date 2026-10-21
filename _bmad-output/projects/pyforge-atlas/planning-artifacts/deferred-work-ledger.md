@@ -12,7 +12,7 @@ entries: 60
 real deferrals** (the run log's index of "54" double-counted two aliases; see § Provenance).
 Follow-up intake and verification campaigns added more `## DW-` headings without retiring
 that migration set — the frontmatter `entries` field tracks **`## DW-` headings only**, not
-the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**206** `### DW-` headings
+the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**207** `### DW-` headings
 today). Stale narrative prose here is exactly what Story 27.4's counting test guards against.
 
 ## Why this file exists
@@ -5129,6 +5129,17 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: operator ruling 2026-10-19 on CAP-69
   severity: low
   promoted: 2026-10-19 -- atlas Epic 37 chain; owned by Story 37.9
+  status: open
+
+### DW-atlas-37-3-1: Two boards' static pages are too heavy to publish as they stand.
+
+- source_spec: `planning-artifacts/specs/spec-37-3-the-seed-gap-version-download-and-distribution-boards-read-their-datasets.md`
+  summary: Once Story 37.3 wires them, the static export writes every row: `version-downloads/index.html` is 37.2 MB (448,301 rows plus the chart) and `distribution-breakdown/index.html` is 23.1 MB (210,170 rows) over a full data root. The live AgGrid ships the same frames. Pages must not publish them uncapped.
+  evidence: Story 37.3 review round 1 (2026-10-19), static export over the 2026-10-18 data root.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/static_export.py (_render_table, _render_chart)
+  origin: Story 37.3 review round 1
+  severity: medium
+  promoted: 2026-10-21 -- atlas Story 37.3; owned by Story 37.2, which publishes the export
   status: open
 
 ### DW-atlas-37-10-1: The bootstrap-index-health has no producer.

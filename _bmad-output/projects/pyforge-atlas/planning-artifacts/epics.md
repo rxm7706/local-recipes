@@ -2732,7 +2732,7 @@ I want the six boards whose content a pipeline already writes to read it,
 So that they render rows instead of "backing file not found".
 
 **Type:** fix • **Effort:** M • **Deps:** 37.1 • **FR/AD:** spec-pyforge-atlas CAP-69 (FR-77) • AD-8
-**Surface:** `dashboard/data.py` (paths), `semantic/models.py` (expressions), `tests/fixtures/data` and `build_fixture_data.py`, tests
+**Surface:** `dashboard/data.py` (paths), `semantic/models.py` (expressions), `pipelines/derived_artifacts` (the distribution table's compose node), `conf/base/catalog.yml`, `definitions.py`, `dashboard/app.py` (the two boards' notes), `tests/fixtures/data` and `build_fixture_data.py`, tests
 **Given** the four seed-gap boards read `primary/<x>_gap/` while `seed_gaps` writes `derived/seed_gaps_<x>_report/`, and version-downloads and distribution-breakdown read paths nothing writes
 **When** a run has written `seed_gaps`' reports, `core_version_download_history` and the three `core_downloads_*_breakdown` tables
 **Then** the six boards render those rows with their dimension names unchanged

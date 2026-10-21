@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-19'
 status: 'in-review'
 baseline_revision: '94793a3910'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -40,8 +40,11 @@ declared_low_risk: false
    `facet` (`platform`, `python-version`, `channel`) to `derived_distribution_breakdown`, which the board reads.
    `downloads_90d` carries each cut's `downloads`: the months Anaconda's parquet holds, not a 90-day window (the name
    predates the store). The Python floors are not migrated, so they are null and the bump classifier reads "unknown".
-4. A board's dimension and measure names stay; only its path, its expressions and the fixture paths move. The boards
-   were meant to show these datasets, so this is a fix (no flag, Q1).
+   The table keeps its column types when every cut is empty (a run with no download store), so the board reads it
+   empty instead of failing on an Arrow `null` column.
+4. A board's dimension and measure names stay; only its path, its expressions and the fixture paths move. The
+   version-downloads and distribution notes say what the store holds (no upload date; lifetime totals; facets of
+   different populations). The boards were meant to show these datasets, so this is a fix (no flag, Q1).
 
 Ledger key: `37-3-the-seed-gap-version-download-and-distribution-boards-read-their-datasets`.
 Type / Effort / Deps: fix / M / Story 37.1 (the data root).
@@ -57,14 +60,16 @@ Type / Effort / Deps: fix / M / Story 37.1 (the data root).
 - **AC2 — Seed gaps.** Each seed-gap loader returns the report's rows under the board's names; the CWE impact is null.
 - **AC3 — Version downloads.** The loader returns the history's rows; `upload_date` null when the store has none.
 - **AC4 — Distribution.** The compose node joins the three cuts behind a `facet`; an absent or malformed cut adds no
-  rows; the board reads its table.
+  rows; the board reads its table, including the typed empty table a run with no download store writes.
 - **AC5 — Live.** See Verification.
 - **AC6 — Gates.** `pyforge-atlas-test`, the dashboard integration suite, `kedro-catalog-check`, the coverage gate,
   `lint-types`; governing Specs reconciled and stamped scoped.
 
 ## Verification
 
-- Unit, from the repo root: `src/shared/packages/pyforge-atlas/tests/unit/test_board_wiring.py`.
+- Unit, from the repo root: `src/shared/packages/pyforge-atlas/tests/unit/test_board_wiring.py` and
+  `src/shared/packages/pyforge-atlas/tests/unit/semantic/test_board_models.py` (every board model's declared query
+  over a two-row store; `semantic.models` is first measured by the unit coverage gate in this story).
 - **Live, 2026-10-19,** each loader over a real produced dataset from this effort's scratch roots:
   - distribution-breakdown: the three cuts of a 2026-10-18 root (Story 34.4) composed to 210,170 rows (84,631
     platform, 41,833 python-version, 83,706 channel); the board read all 210,170.
@@ -76,7 +81,9 @@ Type / Effort / Deps: fix / M / Story 37.1 (the data root).
 **Never:** a board's dimension or measure renamed; a value invented for a column the store lacks.
 
 **Residual risk:**
-- **`downloads_90d` is not a 90-day figure;** the board says what the store holds until a windowed cut exists.
+- **`downloads_90d` is not a 90-day figure;** the board's note says what the store holds until a windowed cut exists.
+- **Page weight:** over a full data root the static version-downloads page is 37.2 MB and distribution 23.1 MB.
+  DW-atlas-37-3-1: Story 37.2 caps them before Pages publishes them.
 - **The upload date stays null** on Pages and locally until Story 37.6 brings per-version upload times.
 
 </intent-contract>
@@ -89,5 +96,15 @@ Type / Effort / Deps: fix / M / Story 37.1 (the data root).
 
 ## Spec Change Log
 
+- 2026-10-21, review round 1 (FAIL), fixed:
+  - B1: with every download cut empty the node wrote untyped columns; DuckDB read the Arrow `null` columns as INTEGER
+    and the bump classifier's `re_extract` raised AttributeError, so the board crashed on 4 of 5 scratch roots. The
+    table is typed (string, `Int64`) even when empty; a test reads the empty composed table through the loader.
+  - B2: the unit coverage gate measured `semantic.models` for the first time (78.9% < 80%): 18 builders had no unit
+    test. `test_board_models.py` runs each model's declared query over a two-row store.
+  - Should-fix: the version-downloads and distribution notes say what the store holds; page weight recorded as
+    DW-atlas-37-3-1 for Story 37.2; the chart's mixed facets named in the note.
+  - Nits: the CycloneDX catalog comment back above its dataset; `astype("string")`; the DAG test's name; the
+    fixture's `upload_date` typed as a date; the epics Surface line names every touched area.
 - 2026-10-19: written with the implementation (branch `atlas-37-3-boards-read-their-datasets`, stacked on Story
   37.1 at `94793a3910`).

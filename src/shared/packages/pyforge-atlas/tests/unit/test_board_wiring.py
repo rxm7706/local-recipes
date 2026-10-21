@@ -127,6 +127,16 @@ def test_the_distribution_table_is_empty_when_no_cut_is(tmp_path):
     out = compose_distribution_breakdown(empty, None, pd.DataFrame({"x": [1]}))
 
     assert out.empty and list(out.columns) == list(DISTRIBUTION_BREAKDOWN_COLUMNS)
+    assert out["downloads_90d"].dtype == "Int64" and out["bucket"].dtype == "string"  # typed, never Arrow null
+
+
+def test_the_distribution_board_reads_an_empty_composed_table(tmp_path):
+    # a run with no download store composes an empty table; the board shows it empty, never a crash
+    frame = compose_distribution_breakdown(None, None, None)
+
+    out = data.load_distribution_breakdown(_write(tmp_path, frame))
+
+    assert out.empty and {"facet", "bucket", "python_min_bump_status", "downloads_90d"} <= set(out.columns)
 
 
 def test_the_distribution_board_reads_the_composed_table(tmp_path):

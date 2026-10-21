@@ -1395,6 +1395,16 @@ DISTRIBUTION_BREAKDOWN_COLUMNS = (
     "declared_python_min",
     "empirical_floor",
 )
+#: Typed even when empty: an untyped empty column is written as Arrow ``null``, which DuckDB reads
+#: as INTEGER, and the bump classifier's string functions then fail on the board.
+_DISTRIBUTION_BREAKDOWN_DTYPES = {
+    "conda_name": "string",
+    "facet": "string",
+    "bucket": "string",
+    "downloads_90d": "Int64",
+    "declared_python_min": "string",
+    "empirical_floor": "string",
+}
 
 
 def compose_distribution_breakdown(
@@ -1408,7 +1418,8 @@ def compose_distribution_breakdown(
     channel-split tools). ``downloads_90d`` carries each cut's ``downloads``: the months Anaconda's
     parquet holds, not a 90-day window (the board's name predates the store). The declared and
     empirical Python floors are not migrated, so they are null (the bump classifier then reads
-    "unknown", never a fabricated answer). Pure; an absent or malformed cut contributes no rows."""
+    "unknown", never a fabricated answer). Pure; an absent or malformed cut contributes no rows, and
+    the table keeps its column types when no cut has any."""
     parts = []
     for frame, facet, column in (
         (core_downloads_platform_breakdown, "platform", "platform"),
@@ -1424,16 +1435,16 @@ def compose_distribution_breakdown(
         parts.append(
             pd.DataFrame(
                 {
-                    "conda_name": frame["conda_name"].astype(str),
+                    "conda_name": frame["conda_name"].astype("string"),
                     "facet": facet,
-                    "bucket": frame[column].astype(str),
+                    "bucket": frame[column].astype("string"),
                     "downloads_90d": pd.array(frame["downloads"], dtype="Int64"),
                 }
             )
         )
     if not parts:
-        return pd.DataFrame(columns=list(DISTRIBUTION_BREAKDOWN_COLUMNS))
+        return pd.DataFrame({name: pd.Series(dtype=dtype) for name, dtype in _DISTRIBUTION_BREAKDOWN_DTYPES.items()})
     out = pd.concat(parts, ignore_index=True)
-    out["declared_python_min"] = pd.Series([None] * len(out), dtype="string")
-    out["empirical_floor"] = pd.Series([None] * len(out), dtype="string")
-    return out[list(DISTRIBUTION_BREAKDOWN_COLUMNS)]
+    out["declared_python_min"] = pd.NA
+    out["empirical_floor"] = pd.NA
+    return out[list(DISTRIBUTION_BREAKDOWN_COLUMNS)].astype(_DISTRIBUTION_BREAKDOWN_DTYPES)

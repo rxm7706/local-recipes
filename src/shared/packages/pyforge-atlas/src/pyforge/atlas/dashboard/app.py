@@ -188,8 +188,10 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "Version Downloads",
         "version-downloads",
         "bsl-shell",
-        note="Wired to build_version_downloads_model; renders empty until the "
-        "per-version download-history dataset materializes.",
+        note="Wired to build_version_downloads_model over core_version_download_history "
+        "(Story 37.3): downloads per package and version over the months the download store "
+        "covers. The store holds no upload date, so that column stays empty until per-version "
+        "upload times land (Story 37.6). The chart sums each version label across packages.",
         chart=ChartDef("bar", x="version", y="downloads"),
     ),
     PageDef(
@@ -248,10 +250,14 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "distribution-breakdown",
         "bsl-shell",
         note="Merges platform-breakdown / pyver-breakdown / channel-split behind one "
-        "`facet` dimension (build_distribution_breakdown_model); the python-version "
-        "facet's --policy-check bump-safety classifier (pyver_breakdown.py's own "
-        "policy_check_status, ported verbatim) rides along. Renders empty until the "
-        "per-facet download-breakdown dataset materializes.",
+        "`facet` dimension (build_distribution_breakdown_model) over "
+        "derived_distribution_breakdown (Story 37.3). `downloads_90d` holds each cut's total "
+        "over the months the download store covers (legacy's downloads_total), not a 90-day "
+        "window. Platform and python-version count conda-forge only, channel counts every "
+        "channel: pick one facet before reading the chart. The python-version facet's "
+        "--policy-check bump-safety classifier (pyver_breakdown.py's own policy_check_status, "
+        "ported verbatim) reads unknown until the declared and empirical Python floors are "
+        "migrated.",
         filters=("facet",),
         chart=ChartDef("bar", x="bucket", y="downloads_90d"),
     ),

@@ -65,12 +65,13 @@ FIXTURES: dict[str, pd.DataFrame] = {
         }
     ),
     # version-downloads declares a chart (DESIGN.md § 3.2). Story 37.3: the board reads
-    # core_version_download_history; this fixture keeps an upload_date so the chart renders.
+    # core_version_download_history; this fixture keeps an upload_date so the chart renders, typed
+    # as a date like the null the model projects when the store has none.
     "primary/core_version_download_history/core_version_download_history.parquet": pd.DataFrame(
         {
             "conda_name": ["a", "a", "b"],
             "version": ["1.0.0", "1.1.0", "2.0.0"],
-            "upload_date": ["2026-01-02", "2026-03-04", "2026-02-02"],
+            "upload_date": pd.to_datetime(["2026-01-02", "2026-03-04", "2026-02-02"]).date,
             "downloads": pd.array([10, 25, 40], dtype="Int64"),
             "fetched_at": pd.array([1, 1, 1], dtype="Int64"),
         }

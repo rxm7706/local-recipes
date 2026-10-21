@@ -183,7 +183,7 @@ def test_universal_sbom_pipeline_has_four_nodes():
     }
 
 
-def test_derived_artifacts_pipeline_has_seven_nodes():
+def test_derived_artifacts_pipeline_has_eight_nodes():
     # B7: the full-universe CycloneDX BOM producer (AD-15 14-day freshness).
     # Story 23.8 added build_inventory_universe (the workbook-free metrics universe).
     # Story 23.3 added derive_basilisk_vuln_rollup + assign_inventory_priority.
