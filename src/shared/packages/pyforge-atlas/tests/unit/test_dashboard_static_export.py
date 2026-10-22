@@ -782,3 +782,18 @@ def test_a_failed_first_swap_leaves_no_tree_and_no_staging(tmp_path: Path, monke
         _write(out, "new")
     monkeypatch.undo()
     assert sorted(p.name for p in tmp_path.iterdir()) == []
+
+
+def test_an_odd_measure_never_stops_the_export() -> None:
+    lists = pd.DataFrame({"name": ["b", "a"], "tags": [["x"], ["y"]]})
+    assert static_export._capped(lists, "tags")["name"].tolist() == ["b", "a"]  # unhashable: as loaded, no raise
+    twice = pd.DataFrame([[1, 2], [3, 4]], columns=["v", "v"])
+    assert len(static_export._capped(twice, "v")) == 2
+
+
+def test_only_a_bar_chart_of_a_number_is_summed() -> None:
+    frame = pd.DataFrame({"k": ["a", "a"], "v": [1, 2], "s": ["1", "2"]})
+    assert static_export._chart_frame(frame, _app.ChartDef("line", x="k", y="v")) == (frame, "")
+    assert static_export._chart_frame(frame, _app.ChartDef("bar", x="k", y="s")) == (frame, "")
+    bars, _ = static_export._chart_frame(frame, _app.ChartDef("bar", x="k", y="v"))
+    assert bars.to_dict("records") == [{"k": "a", "v": 3}]

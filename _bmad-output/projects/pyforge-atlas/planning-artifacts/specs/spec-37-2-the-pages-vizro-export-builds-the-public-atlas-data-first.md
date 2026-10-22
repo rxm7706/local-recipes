@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'the vizro job neither builds data nor exports; no vizro-static-export artifact is produced and Pages keeps the last one'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -103,17 +103,7 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root), stacked on Story
     4789.0 sec" (wall 1:19:58), 81 nodes, peak RSS 4.35 GB. The data root came to 9.7 GB, 9.6 GB of it the vulnerability
     database store. PyPI's fan-out took 21,326 candidates (157 answered 404). The vdb refresh failed with `apsw.IOError:
     disk I/O error` on the workstation's RAM-backed `/tmp`; the run kept going and marked the store stale (AD-13).
-  - **A plain run** (no `--pipelines`) on another fresh root exit 1 after 12 of 86 nodes (DW-atlas-37-2-1).
-- **Live, 2026-10-22 (UTC), the workflow's three commands as written,** in a clean worktree at review round 1's fixes:
-  no `PYFORGE_ATLAS_DATA_ROOT` (the member's `data/`), no conf/local credentials file (the bootstrap wrote its empty
-  stub), no token in the environment. `pixi run --frozen -e pyforge-atlas pyforge-atlas-bootstrap` (installing the
-  env, then the eight pipelines; the vdb refresh installed the `vuln-db` env itself and built its store, on disk this
-  time, with no stale marker) took 1:16:50; `pyforge atlas run --pipelines semantic_packages` 3 s; `vizro-static-export
-  --clock now` 6 s; exit 0 throughout, no token pattern in the log. The data root came to 11 GB, the envs to 3.8 GB.
-  The export: `exported_at` the build's own time, 17 of 34 boards stamped, the largest page 488 KB; version-downloads
-  says "The chart sums downloads per version over all 448,301 rows and shows the 5,000 largest of 57,075 bars", and
-  adoption-stage's caption no longer names its constant measure as the order.
-  - **The export** over that root: exit 0 in 4.3 s, 8.0 MB in all; the largest page is 571 KB (distribution-breakdown,
+  - **The export** over that root (before review round 1's fixes): exit 0 in 4.3 s, 8.0 MB in all; the largest page is 571 KB (distribution-breakdown,
     "5,000 of 210,170 rows, the largest downloads_90d first"); version-downloads 421 KB (5,000 of 448,301). 17 of the
     34 boards carry data and a data-build stamp: feedstock-health (28,966 rows), my-feedstocks (60,380),
     staleness-report, query-atlas, detail-cf-atlas and adoption-stage (34,720 packages), version-downloads,
@@ -123,6 +113,18 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root), stacked on Story
     release-cadence, find-alternative, export-purls, mapping-gap and bootstrap-index-health (Stories 37.5-37.10),
     scan-project and env-inspect (per-invocation scans), and inventory-match, add-handoff, library-futures and
     recommend-2027 (per-invocation reports).
+  - **A plain run** (no `--pipelines`) on another fresh root exit 1 after 12 of 86 nodes (DW-atlas-37-2-1).
+- **Live, 2026-10-22 (UTC), the workflow's three commands as written,** in a clean worktree at review round 1's fixes:
+  no `PYFORGE_ATLAS_DATA_ROOT` (the member's `data/`), no conf/local credentials file (the bootstrap wrote its empty
+  stub), no token in the environment. `pixi run --frozen -e pyforge-atlas pyforge-atlas-bootstrap` (installing the
+  env, then the eight pipelines; the vdb refresh installed the `vuln-db` env itself and built its store, on disk this
+  time, with no stale marker) took 1:16:50; `pyforge atlas run --pipelines semantic_packages` 3 s; `vizro-static-export
+  --clock now` 6 s; exit 0 throughout, no token pattern in the log. The data root came to 11 GB, the envs to 3.8 GB.
+  The export: `exported_at` the build's own time, 17 of 34 boards stamped, the largest page 488 KB; version-downloads
+  says "The chart sums downloads per version over all 448,301 rows and shows the 5,000 largest of 57,075 bars", and
+  adoption-stage's caption no longer names its constant measure as the order. This run predates the merge of Story
+  36.2 into this branch; review round 2 ran 36.2's two identity refresh nodes the CI way (the flag tree's dev values,
+  no switch, no token): both refused with "PYFORGE_ATLAS_CREDENTIALED is not 1" and made no non-loopback connection.
 
 ## Boundaries & Constraints
 
@@ -155,6 +157,10 @@ board's dimension renamed; the live dashboard's frames capped.
 
 ## Spec Change Log
 
+- 2026-10-22, review round 2 (PASS), should-fix applied: a list-valued measure or a column name held twice no longer
+  stops the whole export (the sort falls back to the loader's order); only a bar chart of a numeric measure is summed
+  per bar; the Verification entries each describe their own run. Not changed: `ci-surfaces.yaml` keeps the job at
+  `cost: low` (`cost: high` asks for a canary and a local twin the registry does not have for this job).
 - 2026-10-22, review round 1 (FAIL), fixed:
   - B1: Story 30.1's workflow-shape test pinned the trigger to push and dispatch; it now names the weekly schedule.
   - B2: the PRD's FR-71 still said the identity boards carry no rows on Pages; FR-71 is amended in place and the PRD,

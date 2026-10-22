@@ -376,7 +376,10 @@ def _ordered(frame: pd.DataFrame, sort_by: str | None) -> tuple[pd.DataFrame, st
     """``frame`` sorted by ``sort_by`` (largest first) when it has that column and it varies, then by
     every other column; a column whose values do not compare leaves the measure alone, else the frame
     as loaded. Returns the sorted frame and the measure it led with, if any."""
-    measure = sort_by if sort_by in frame.columns and frame[sort_by].nunique(dropna=True) > 1 else None
+    try:
+        measure = sort_by if sort_by in frame.columns and frame[sort_by].nunique(dropna=True) > 1 else None
+    except TypeError, ValueError:  # a list-valued measure, or a column name the frame holds twice
+        measure = None
     keys = [measure, *(c for c in frame.columns if c != measure)] if measure else list(frame.columns)
     for attempt in (keys, [measure] if measure else []):
         if not attempt:
@@ -408,7 +411,12 @@ def _capped(frame: Any, sort_by: str | None) -> Any:
 def _chart_frame(frame: pd.DataFrame, chart: _app.ChartDef | None) -> tuple[pd.DataFrame, str]:
     """A chart's data: its measure summed per bar over the whole frame, the largest
     :data:`STATIC_ROW_CAP` bars kept; and the note the page shows when bars were left out."""
-    if chart is None or not {chart.x, chart.y} <= set(frame.columns):
+    if (
+        chart is None
+        or chart.kind != "bar"  # a bar adds up its rows; another kind is drawn from the frame as it is
+        or not {chart.x, chart.y} <= set(frame.columns)
+        or not pd.api.types.is_numeric_dtype(frame[chart.y])
+    ):
         return frame, ""
     try:
         bars = frame.groupby(chart.x, dropna=False, sort=True)[chart.y].sum().reset_index()
