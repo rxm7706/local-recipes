@@ -889,6 +889,7 @@ def test_each_phase_logs_its_progress(tmp_path, caplog):
 
 def test_a_batch_that_times_out_after_a_stop_is_not_halved(tmp_path):
     import threading
+    import time as _time
 
     refused, started = threading.Event(), threading.Event()
     sizes: list[int] = []
@@ -904,9 +905,122 @@ def test_a_batch_that_times_out_after_a_stop_is_not_halved(tmp_path):
             raise _timed_out(401)
         started.set()
         refused.wait(1)
+        _time.sleep(0.05)  # the refusal is recorded before this batch answers
         raise _timed_out(502)  # timed out, but the run has stopped: never split
 
     ds = _dataset(tmp_path, max_retries=0, halve_min=1)
     ds.fetch_github((), [f"fs{i:03d}" for i in range(50)], fetcher=fetch)
 
     assert sorted(sizes) == [25, 25]
+
+
+# -- review round 3 ------------------------------------------------------------------------------
+
+
+def test_the_first_refusal_names_the_run_whatever_a_caught_batch_met(tmp_path, monkeypatch):
+    import threading
+    import time as _time
+
+    started, refused = threading.Event(), threading.Event()
+    calls: dict[str, int] = {}
+
+    def sleep(seconds: float) -> None:
+        if round(seconds) == 30:  # the 403's wait: the other thread's 401 lands meanwhile
+            refused.wait(2)
+            _time.sleep(0.05)
+
+    def post(body: dict[str, Any], _auth: object) -> dict[str, Any]:
+        query = body["query"]
+        if "organization" in query:
+            return _NO_ARCHIVED
+        first = query.split('name: "', 1)[1].split('"', 1)[0]
+        calls[first] = calls.get(first, 0) + 1
+        if first == "fs000-feedstock":
+            started.wait(2)
+            raise _rate_limited(403, "30")
+        started.set()
+        refused.set()
+        raise _timed_out(401)
+
+    ds = _dataset(tmp_path, sleep=sleep, max_retries=2, halve_min=100)
+    monkeypatch.setattr(ds, "_post", post)
+    ds.fetch_github((), [f"fs{i:03d}" for i in range(50)], auth=object())
+
+    assert ds.staleness().reason == "every GitHub batch failed (HTTP 401) -- keeping last-good"
+    assert calls["fs000-feedstock"] == 1  # the 403's retry is never sent after the refusal
+
+
+def test_an_error_on_one_alias_alone_names_itself_in_the_marker(tmp_path):
+    def fetch(body: dict[str, Any]) -> dict[str, Any]:
+        if "organization" in body["query"]:
+            return _NO_ARCHIVED
+        answer = _feedstock_answer(body)
+        answer["data"]["r0"] = None
+        answer["errors"] = [{"type": "SERVICE_UNAVAILABLE", "path": ["r0"], "message": "x"}]
+        return answer
+
+    ds = _dataset(tmp_path, max_retries=0)
+    ds.fetch_github((), ["fs000", "fs001"], fetcher=fetch)
+
+    assert "repositories that failed: 1 (SERVICE_UNAVAILABLE: x)" in ds.staleness().reason
+
+
+def test_with_nothing_asked_a_failed_archived_listing_is_named(tmp_path):
+    def fetch(_body: dict[str, Any]) -> dict[str, Any]:
+        raise _timed_out(500)
+
+    ds = _dataset(tmp_path, max_retries=0)
+    ds.fetch_github((), [], fetcher=fetch)
+
+    reason = ds.staleness().reason
+    assert "no Phase K or N repository was asked" in reason and "archived listing stopped at page 1: HTTP 500" in reason
+
+
+def test_an_answer_with_no_data_is_its_rows_error_and_keeps_last_good(tmp_path):
+    ds = _dataset(tmp_path, max_retries=0)
+    _seed(ds, [{**_GOOD_FS, "key": "fs000"}])
+
+    def fetch(body: dict[str, Any]) -> dict[str, Any]:
+        query = body["query"]
+        if "organization" in query:
+            return _NO_ARCHIVED
+        if "releases" in query:
+            return _answer_each(body)
+        return {"errors": [{"message": "Something went wrong"}]}  # GitHub's answer when a query times out inside
+
+    ds.fetch_github((("p", "o", "r"),), ["fs000"], fetcher=fetch)
+
+    row = _stored(ds).loc[("feedstock", "fs000")]
+    assert row["open_prs"] == 7.0 and str(row["last_error"]).startswith("GraphQL error:")
+
+
+def test_a_stop_while_a_retry_waits_for_its_token_keeps_the_failure_met(tmp_path):
+    from pyforge.atlas.datasets import request_datasets as R
+
+    answers = iter([True, True, True, False])  # first try sent and failed; the stop lands during the retry's token
+
+    def fetch(_body: dict[str, Any]) -> dict[str, Any]:
+        raise _timed_out(502)
+
+    _payload, exc = _dataset(tmp_path, max_retries=3)._fetch_batch_with_retry(
+        [("o", "r")], fetcher=fetch, before_attempt=lambda: next(answers)
+    )
+
+    assert not isinstance(exc, R._Stopped) and R._http_status(exc) == 502
+
+
+def test_a_repository_missing_from_the_answer_clears_its_values(tmp_path):
+    ds = _dataset(tmp_path, max_retries=0)
+    _seed(ds, [{**_GOOD_FS, "key": "fs000"}])
+
+    def fetch(body: dict[str, Any]) -> dict[str, Any]:
+        if "organization" in body["query"]:
+            return _NO_ARCHIVED
+        answer = _feedstock_answer(body)
+        del answer["data"]["r0"]  # no node, no error: GitHub no longer knows it
+        return answer
+
+    ds.fetch_github((), ["fs000", "fs001"], fetcher=fetch)
+
+    row = _stored(ds).loc[("feedstock", "fs000")]
+    assert row["last_error"] == "repository not found in response" and pd.isna(row["open_prs"])
