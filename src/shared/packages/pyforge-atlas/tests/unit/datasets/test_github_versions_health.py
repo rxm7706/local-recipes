@@ -690,3 +690,223 @@ def test_a_repo_named_in_two_cases_is_asked_once(tmp_path):
     )
 
     assert asked == [1] and frame.set_index("key").loc[["a", "b"], "upstream_version"].tolist() == ["1.0", "1.0"]
+
+
+# -- review round 2 ------------------------------------------------------------------------------
+
+
+def _rate_limited(status: int, retry_after: str) -> Exception:
+    from types import SimpleNamespace
+
+    from kedro.io import DatasetError
+
+    response = SimpleNamespace(status_code=status, headers={"Retry-After": retry_after})
+    return DatasetError("Failed to send data", SimpleNamespace(response=response))
+
+
+def test_with_nothing_asked_the_archived_listing_writes_nothing(tmp_path):
+    ds = _dataset(tmp_path)
+    _seed(ds, [{**_GOOD_FS, "key": "fs000"}])
+
+    frame = ds.fetch_github((), [], fetcher=_GitHub())
+
+    assert frame["kind"].tolist() == ["archived"] and len(_stored(ds)) == 1  # read, never written
+    assert ds.staleness().reason.startswith("nothing fetched (no Phase K or N repository was asked)")
+
+
+@pytest.mark.parametrize(("error", "kept"), [("SERVICE_UNAVAILABLE", True), ("NOT_FOUND", False)])
+def test_an_error_on_one_feedstocks_alias_keeps_its_last_good_unless_it_is_gone(tmp_path, error, kept):
+    ds = _dataset(tmp_path, max_retries=0)
+    _seed(ds, [{**_GOOD_FS, "key": "fs000"}])
+
+    def fetch(body: dict[str, Any]) -> dict[str, Any]:
+        if "organization" in body["query"]:
+            return _NO_ARCHIVED
+        answer = _feedstock_answer(body)
+        answer["data"]["r0"] = None
+        answer["errors"] = [{"type": error, "path": ["r0"], "message": "x"}]
+        return answer
+
+    ds.fetch_github((), ["fs000", "fs001"], fetcher=fetch)
+
+    row = _stored(ds).loc[("feedstock", "fs000")]
+    assert str(row["last_error"]).startswith(error) and bool(row["open_prs"] == 7.0) is kept
+
+
+def test_a_batch_sent_and_then_stopped_keeps_the_failure_it_met(tmp_path):
+    from pyforge.atlas.datasets import request_datasets as R
+
+    answers = iter([True, True, False])  # before and after the token, then a stop before the retry
+
+    def fetch(_body: dict[str, Any]) -> dict[str, Any]:
+        raise _timed_out(502)
+
+    _payload, exc = _dataset(tmp_path, max_retries=3)._fetch_batch_with_retry(
+        [("o", "r")], fetcher=fetch, before_attempt=lambda: next(answers)
+    )
+
+    assert not isinstance(exc, R._Stopped) and R._http_status(exc) == 502
+
+
+def test_a_stop_while_waiting_for_a_token_sends_nothing(tmp_path):
+    from pyforge.atlas.datasets import request_datasets as R
+
+    sent: list[dict[str, Any]] = []
+    answers = iter([True, False])  # the stop lands while this thread holds the token
+
+    _payload, exc = _dataset(tmp_path)._fetch_batch_with_retry(
+        [("o", "r")], fetcher=sent.append, before_attempt=lambda: next(answers)
+    )
+
+    assert sent == [] and isinstance(exc, R._Stopped)
+
+
+def test_a_half_the_stop_left_unsent_carries_the_failure_of_its_batch(tmp_path):
+    sizes: list[int] = []
+
+    def fetch(body: dict[str, Any]) -> dict[str, Any]:
+        query = body["query"]
+        if "organization" in query:
+            return _NO_ARCHIVED
+        if "releases" in query:
+            return _answer_each(body)
+        sizes.append(query.count("repository("))
+        raise _timed_out(502 if sizes[-1] == 4 else 401)  # the batch times out; its first half is refused
+
+    ds = _dataset(tmp_path, max_retries=0, halve_min=1)
+    _seed(ds, [{**_GOOD_FS, "key": f"fs00{i}", "feedstock_name": f"fs00{i}"} for i in range(4)])
+    ds.fetch_github((("p", "o", "r"),), [f"fs00{i}" for i in range(4)], fetcher=fetch)
+
+    stored = _stored(ds)
+    assert sizes == [4, 2]  # the second half is never sent
+    assert stored.loc[("feedstock", "fs000"), "last_error"] == "HTTP 401"
+    assert stored.loc[("feedstock", "fs002"), "last_error"] == "HTTP 502"  # asked, in the batch that failed
+    assert stored.loc[("feedstock", "fs002"), "open_prs"] == 7.0
+
+
+def test_a_wait_one_batch_is_told_pauses_every_other(tmp_path, monkeypatch):
+    import threading
+
+    told, started = threading.Event(), threading.Event()
+    waited: set[str] = set()  # the worker threads that waited out the 30 s
+    calls: dict[str, int] = {}
+
+    def sleep(seconds: float) -> None:
+        if round(seconds) == 30:
+            if threading.current_thread() is not threading.main_thread():
+                waited.add(threading.current_thread().name)
+            told.set()
+
+    def post(body: dict[str, Any], _auth: object) -> dict[str, Any]:
+        query = body["query"]
+        if "organization" in query:
+            return _NO_ARCHIVED
+        first = query.split('name: "', 1)[1].split('"', 1)[0]
+        calls[first] = calls.get(first, 0) + 1
+        if first == "fs000-feedstock" and calls[first] == 1:
+            started.wait(2)  # the other batch is in flight in its own thread
+            raise _rate_limited(429, "30")
+        if first == "fs025-feedstock" and calls[first] == 1:
+            started.set()
+            told.wait(2)  # the first batch has been told to wait 30 s
+            raise _timed_out(502)  # so this one's retry waits the rest of those 30 s too
+        return _feedstock_answer(body)
+
+    ds = _dataset(tmp_path, sleep=sleep, max_retries=2, halve_min=100)
+    monkeypatch.setattr(ds, "_post", post)
+    ds.fetch_github((), [f"fs{i:03d}" for i in range(50)], auth=object())
+
+    # the batch told to wait, and the other batch before its retry (the main thread waits too, before Phase E.5)
+    assert len(waited) == 2
+
+
+def test_a_batch_answered_between_failures_resets_the_breaker(tmp_path):
+    sent: list[str] = []
+
+    def fetch(body: dict[str, Any]) -> dict[str, Any]:
+        sent.append(body["query"])
+        if len(sent) == 9:
+            return _answer_each(body)
+        raise _timed_out(500)
+
+    ds = _dataset(tmp_path, max_retries=0)
+    ds.UPSTREAM_BATCH = 1
+    ds.fetch_github(tuple((f"p{i}", "o", f"r{i}") for i in range(15)), [], fetcher=_upstream_only(fetch))
+
+    assert len(sent) == 15 and "in a row" not in ds.staleness().reason
+
+
+def test_with_the_flag_off_a_store_from_before_this_story_reads_whole(tmp_path):
+    ds = _dataset(tmp_path)
+    _seed(ds, [{"feedstock_name": "a", "stars": 1.0}, {"feedstock_name": "b", "stars": 2.0}])  # no kind column
+
+    assert ds.load()["feedstock_name"].tolist() == ["a", "b"]
+
+
+def test_a_retry_after_is_honoured_only_on_403_and_429(tmp_path, monkeypatch):
+    waits: list[float] = []
+    calls = {"n": 0}
+
+    def post(_body: dict[str, Any], _auth: object) -> dict[str, Any]:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise _rate_limited(502, "7")
+        return {"data": {"r0": {"releases": {"nodes": [{"tagName": "v1"}]}, "refs": {"nodes": []}}}}
+
+    ds = _dataset(tmp_path, sleep=waits.append, max_retries=2)
+    monkeypatch.setattr(ds, "_post", post)
+    ds.fetch_github((("p", "o", "r"),), [], auth=object())
+
+    assert 7.0 not in waits and len(waits) == 1  # the backoff, not the header
+
+
+def test_the_marker_names_the_first_failure(tmp_path):
+    statuses = iter([500, 503])
+
+    def fetch(body: dict[str, Any]) -> dict[str, Any]:
+        status = next(statuses, None)
+        if status is None:
+            return _answer_each(body)
+        raise _timed_out(status)
+
+    ds = _dataset(tmp_path, max_retries=0)
+    ds.UPSTREAM_BATCH = 1
+    ds.fetch_github(tuple((f"p{i}", "o", f"r{i}") for i in range(3)), [], fetcher=_upstream_only(fetch))
+
+    assert "repositories that failed: 2 (HTTP 500)" in ds.staleness().reason
+
+
+def test_each_phase_logs_its_progress(tmp_path, caplog):
+    import logging
+
+    caplog.set_level(logging.INFO, logger="pyforge.atlas.datasets.request_datasets")
+
+    _dataset(tmp_path).fetch_github(UPSTREAM, ["feedy"], fetcher=_GitHub())
+
+    assert "GitHub upstream versions: batch 1 of 1" in caplog.text
+    assert "GitHub feedstock health: batch 1 of 1" in caplog.text
+
+
+def test_a_batch_that_times_out_after_a_stop_is_not_halved(tmp_path):
+    import threading
+
+    refused, started = threading.Event(), threading.Event()
+    sizes: list[int] = []
+
+    def fetch(body: dict[str, Any]) -> dict[str, Any]:
+        query = body["query"]
+        if "organization" in query:
+            return _NO_ARCHIVED
+        sizes.append(query.count("repository("))
+        if '"fs000-feedstock"' in query:
+            started.wait(1)
+            refused.set()
+            raise _timed_out(401)
+        started.set()
+        refused.wait(1)
+        raise _timed_out(502)  # timed out, but the run has stopped: never split
+
+    ds = _dataset(tmp_path, max_retries=0, halve_min=1)
+    ds.fetch_github((), [f"fs{i:03d}" for i in range(50)], fetcher=fetch)
+
+    assert sorted(sizes) == [25, 25]

@@ -108,6 +108,7 @@ class _Stopped(PyforgeError, RuntimeError):
 
 #: Story 35.3: the failure of a batch never sent because the run had stopped; it writes no row
 _UNSENT = "not sent: the run stopped"
+_NOT_IN_RESPONSE = "repository not found in response"
 
 
 def _renumbered(by_alias: dict[Any, Any], offset: int) -> dict[str, Any]:
@@ -442,10 +443,6 @@ class AnacondaDownloadsDataset(_RequestParameterizedAPIDataset):
 
 
 class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset):
-    # Story 35.3: one row per (kind, key): "upstream" (Phase K, keyed by conda_name), "feedstock"
-    # (Phase N) and "archived" (Phase E.5), keyed by feedstock name; "health" is the path before 35.3
-    merge_on = ("kind", "key")
-
     """Per-query GitHub GraphQL request-body source (Phases E.5 / K / N).
 
     Gap G-2: authored in B1 (E.5/K/N are ``vcs_health`` B1 phases), not B2. One
@@ -460,6 +457,10 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
     ``save(RefreshRequest(...))``, the pipeline's refresh-trigger node being the
     single writer (Story 21.2).
     """
+
+    # Story 35.3: one row per (kind, key): "upstream" (Phase K, keyed by conda_name), "feedstock"
+    # (Phase N) and "archived" (Phase E.5), keyed by feedstock name; "health" is the path before 35.3
+    merge_on = ("kind", "key")
 
     _COLUMNS = (
         "feedstock_name",
@@ -584,13 +585,17 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
         ``(payload, None)`` on success or ``(None, exc)`` after exhausting retries —
         never raises (AD-13)."""
         attempt = 0
+        last: Exception | None = None
         while True:
-            # Story 35.3: a pause another batch set is waited out, and nothing is sent after a stop
+            # Story 35.3: a pause another batch set is waited out, and nothing is sent after a stop;
+            # a batch already sent keeps the failure it met, not "never sent"
             if before_attempt is not None and not before_attempt():
-                return None, _Stopped("stopped")
+                return None, last or _Stopped("stopped")
             try:
                 with _SCHEDULER_LOCK:
                     self.scheduler.acquire()
+                if before_attempt is not None and not before_attempt():  # a stop while this thread waited for a token
+                    return None, last or _Stopped("stopped")
                 body = (build or self.build_batch_query)(chunk)
                 if fetcher is not None:
                     return fetcher(body), None
@@ -606,6 +611,7 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
                 return _coerce_api_json(inner.load()), None
             except Exception as exc:  # AD-13: an unreachable endpoint never fails the run.
                 attempt += 1
+                last = exc
                 # Story 35.1: a rejected token is never sent again (GitHub can block a client that
                 # keeps sending bad credentials)
                 status = _http_status(exc) if auth is not None else None
@@ -870,7 +876,8 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
                 sub_data, sub_errors, sub_failed = run_split(part, build)
                 data.update(_renumbered(sub_data, offset))
                 errors.update(_renumbered(sub_errors, offset))
-                failed.update({i + offset: f for i, f in sub_failed.items()})
+                # a half the stop left unsent was still asked, inside the batch that failed
+                failed.update({i + offset: failure if f == _UNSENT else f for i, f in sub_failed.items()})
             return data, errors, failed
 
         def answered(chunk: Sequence[Any], failed: dict[int, str]) -> None:
@@ -921,7 +928,7 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
                         version = normalize_release_tag(tag)
                         error = None if version else "no tags"
                     else:
-                        error = errors.get(f"r{i}") or "repository not found in response"
+                        error = errors.get(f"r{i}") or _NOT_IN_RESPONSE
                 for conda in packages[(owner, name)]:
                     if i in failed:
                         failed_rows.add(("upstream", conda))
@@ -971,7 +978,12 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
                         row["last_error"] = failed[i]
                         failed_rows.add(("feedstock", fs))
                     else:
-                        row["last_error"] = errors.get(f"r{i}") or "repository not found in response"
+                        error = errors.get(f"r{i}") or _NOT_IN_RESPONSE
+                        row["last_error"] = error
+                        if not error.startswith("NOT_FOUND") and error != _NOT_IN_RESPONSE:
+                            # an error GitHub gave this repository alone: legacy Phase N sets only
+                            # gh_status_last_error and keeps the rest (CFA:6725-6733); a gone one clears
+                            failed_rows.add(("feedstock", fs))
                     rows.append(row)
         # Phase E.5: the organization's archived repositories, page by page
         cursor: str | None = None
@@ -1007,13 +1019,14 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
             if not frame.empty
             else False
         )
-        if asked.any() and not read_any:
-            self._mark_stale(
-                f"every GitHub batch failed ({state['failure'] or state['first_failure']}) -- keeping last-good"
-            )
-            return frame
-        if not rows:
-            self._mark_stale(f"nothing fetched ({state['failure'] or state['archived_failed'] or 'nothing asked'})")
+        if not read_any:
+            # AC4d: an archived listing alone is never a refresh: it would clear the marker and make the
+            # store read fresh for its whole cadence
+            if asked.any():
+                why = state["failure"] or state["first_failure"]
+                self._mark_stale(f"every GitHub batch failed ({why}) -- keeping last-good")
+            else:
+                self._mark_stale("nothing fetched (no Phase K or N repository was asked) -- keeping last-good")
             return frame
         self._persist(self._carried_forward(frame, failed_rows))
         reasons = []
