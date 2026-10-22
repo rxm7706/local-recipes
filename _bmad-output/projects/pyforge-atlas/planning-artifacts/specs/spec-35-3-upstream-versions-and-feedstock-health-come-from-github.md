@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'vcs_github_api_raw asks the identity repos for their health, as before Story 35.1; the three consumers read those rows'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -59,10 +59,10 @@ Legacy makes three GitHub reads:
 5. **The consumers pick their kind:** `detect_archived_feedstocks` the `archived` rows (Phase E.5),
    `track_upstream_versions` the `upstream` rows (Phase K), `fetch_live_health` the `feedstock` rows (Phase N, with
    open PRs, CI state and the row's error). A store with none of a kind reads as before.
-6. **Budget.** `refresh_vcs_github_store`'s budget is 3,600 s (about 1,400 queries for the universe).
+6. **Budget.** See Approach 14 (10,800 s; it replaced the first 3,600 s).
 7. **A batch GitHub cannot answer in time is halved.** GitHub ends a GraphQL query after about ten seconds with a 502
-   or 504. A batch that still fails that way after its retries is split in two and each half asked, down to one
-   repository; a half that still fails gives each of its repositories the failure as its error (legacy Phase K drops
+   or 504. A batch that still fails that way after its retries is split in two and each half asked, down to
+   `HALVE_MIN` (12) repositories (Approach 11); a half that still fails gives each of its repositories the failure as its error (legacy Phase K drops
    the whole batch). Each POST stops waiting after 60 s (legacy: 45 s; the default here was 900 s).
 8. **The run says what it is doing:** a progress line every 25 batches and a line per retry, with the HTTP status
    only, never the exception's text.
@@ -98,8 +98,8 @@ Type / Effort / Deps: feature / L / Story 35.1 (the switch, bearer auth), Story 
 - **AC2 — Phase N.** Each feedstock's last push, CI state, open issues and PRs, 25 per query.
 - **AC3 — Phase E.5.** The organization's archived repositories, every page, `-feedstock` stripped, other repos ignored.
 - **AC4 — Refusals and timeouts.** A refusal with no wait stops the run; one with `Retry-After` is waited and retried;
-  rows before a stop are kept under `stale`. A batch answered 502 or 504 is halved down to one repository, its rows
-  renumbered back; another failure is not halved; a POST waits 60 s at most.
+  rows before a stop are kept under `stale`. A batch answered 502 or 504 is halved while it holds more than
+  `HALVE_MIN` (12) repositories, its rows renumbered back; another failure is not halved; a POST waits 60 s at most.
 - **AC4b — Phase N side by side.** At most four batches at once, rows in order, each batch's own failure on its rows.
 - **AC4c — The marker is true.** A batch halved and answered leaves no marker; repositories that still fail are counted.
 - **AC4d — Last-good is never clobbered.** A repository not read keeps its last-good values; one never asked writes no
@@ -131,6 +131,12 @@ Type / Effort / Deps: feature / L / Story 35.1 (the switch, bearer auth), Story 
     - **Phase E.5:** 902 archived feedstocks, among them all 726 that legacy marks archived.
   - The run's marker read "stopped after HTTP 502" though both halved batches were answered; fixed: the marker now
     counts only the repositories that still failed.
+- **Live, recorded 2026-10-19, Phase N side by side** (the same scratch root and switch, after review round 1): exit 0,
+  Kedro "completed successfully in 7225.8 sec", wall 2:00:28, 67% of the 10,800 s budget (the serial run took 8,803 s),
+  peak RSS 1.29 GB. Phase K's 222 batches took 41 min, Phase N's 1,148 batches 78 min. The store: 57,280 rows (26,983
+  `upstream`, 29,395 `feedstock`, 902 `archived`); `last_error` on 2,507 rows (1,855 "no tags", 431 not found, 221
+  "GraphQL error: no data" from 2 batches that stayed 502 after their retries, among 37 retries in all). Marker:
+  "repositories that failed: 221 (GraphQL error: no data) -- they keep last-good". No token pattern in the log.
 
 ## Boundaries & Constraints
 
@@ -162,6 +168,18 @@ Type / Effort / Deps: feature / L / Story 35.1 (the switch, bearer auth), Story 
 ## Spec Change Log
 
 - 2026-10-18: written with the implementation (branch `atlas-35-3-github-versions-health`, stacked on Story 35.2).
+- 2026-10-21, review round 2 (PASS), should-fix applied:
+  - With no Phase K or N repository asked, the archived listing alone wrote the store and cleared a marker (AC4d);
+    now nothing is written and the marker says nothing was asked.
+  - An error GitHub gives one feedstock's own alias (null data with, say, `SERVICE_UNAVAILABLE`) overwrote last-good;
+    it now keeps the values and sets `last_error`, as legacy Phase N does. `NOT_FOUND` still clears them.
+  - A batch sent, failed and then cancelled by another thread's stop, and a half a stop left unsent, now carry their
+    batch's failure on their rows (they were asked); the stop is re-checked after the rate-token wait, so nothing is
+    sent once a refusal lands.
+  - Tests pin the cross-thread `Retry-After` pause, the breaker's reset, a pre-35.3 store read whole with the flag off,
+    `Retry-After` only on 403/429, the marker's first failure, the progress lines and that nothing is sent after a stop
+    (the "no halving after a stop" mutant is now equivalent: halves after a stop are never sent).
+  - The spec's budget and halving floor agree (Approaches 6, 7, AC4); the side-by-side live run is recorded.
 - 2026-10-19, review round 1 (FAIL), fixed:
   - B1: rows the run could not read overwrote last-good, and the archived listing counted as success (Approach 10).
   - B2: a store written under the flag fed the consumers with the flag off (Approach 12).

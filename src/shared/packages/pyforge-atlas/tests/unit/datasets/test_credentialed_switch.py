@@ -333,6 +333,31 @@ def test_the_real_reader_reads_the_key_from_the_tree(tmp_path, monkeypatch, vari
 
 
 @flag_states("pyforge.atlas.live_vcs_universe")  # spelled out: the flag gate reads this file for the key
+def test_each_flag_state_reads_its_own_batch(switch_on, tmp_path, flag_provider, monkeypatch):
+    """Story 35.2 (AC5): on, the universe's GitHub upstreams; off, the identity batch, as before."""
+    flag_on = flag_provider[credential_switch.FLAG_KEY]
+    ds = _dataset(tmp_path)
+    monkeypatch.setattr(credential_switch, "live_vcs_universe", lambda: flag_on)
+    read: list[list[tuple[str, str]]] = []
+    monkeypatch.setattr(ds, "fetch_repo_health", lambda repos, **_kw: read.append(sorted(repos)))
+    # Story 35.3: with the flag on the store reads the universe through fetch_github (upstreams, feedstocks)
+    monkeypatch.setattr(
+        ds, "fetch_github", lambda upstream, _feedstocks, **_kw: read.append(sorted({(o, r) for _c, o, r in upstream}))
+    )
+    request = RefreshRequest(
+        store="vcs_github_api_raw",
+        cadence_seconds=0,
+        force=True,
+        github_repos=(("identity", "only"),),
+        upstream_repos=(("pkg", "universe", "only"), ("pkg2", "universe", "only")),
+    )
+
+    ds.save(request)
+
+    assert read == ([[("universe", "only")]] if flag_on else [[("identity", "only")]])
+
+
+@flag_states("pyforge.atlas.live_vcs_universe")  # spelled out: the flag gate reads this file for the key
 def test_the_flag_is_read_at_each_save(fake_transport, switch_on, tmp_path, flag_provider, monkeypatch):
     """On: the switch decides and the bearer POST runs. Off: the path before this story (no request)."""
     flag_on = flag_provider[credential_switch.FLAG_KEY]
