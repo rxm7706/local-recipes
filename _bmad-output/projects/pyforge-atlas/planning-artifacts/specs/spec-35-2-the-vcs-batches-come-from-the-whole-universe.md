@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'every VCS and registry store reads the identity batch (identity_packages_primary), as before this story'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 2
+review_loop_iteration: 3
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -96,7 +96,8 @@ Type / Effort / Deps: feature / M / Story 34.3 (node_attrs), Story 34.7 (the abo
   cf-graph frame of that day with Story 34.7's about URLs), against legacy `cf_atlas.db` (`v_actionable_packages`,
   33,841 packages):
   - *Recomputed 2026-10-19 with archived feedstocks left out (review round 1); the first figures, with them, were
-    26,983 GitHub upstreams and 29,395 feedstocks.*
+    26,983 GitHub upstreams and 29,395 feedstocks. These figures predate round 2's archived-anchor filter; legacy
+    batched none of the packages that filter drops, so the legacy comparison holds.*
   - **Phase K:** 26,511 GitHub upstreams (22,102 distinct repos, ignoring case), 405 GitLab, 31 Codeberg. Of legacy's
     26,306 `upstream_versions` rows for those hosts, 26,245 are batched here (99.77%), and 26,196 of those name the
     same repo (99.81%).
@@ -116,14 +117,15 @@ Type / Effort / Deps: feature / M / Story 34.3 (node_attrs), Story 34.7 (the abo
 **Never:** a network call in the batch builder or a trigger node; the identity batch dropped with the flag off.
 
 **Residual risk:**
-- **The GitHub store asks for 22,093 repos with the flag on** (2026-10-21). It still sends only under the switch
-  (Story 35.1), so an unattended run sends nothing; a credentialed run takes 221 GraphQL batches until Story 35.3
-  reshapes the query.
+- **The GitHub store asks for 22,100 repos with the flag on** (2026-10-21; 22,093 ignoring case, which Story 35.3's
+  dedupe applies). It still sends only under the switch (Story 35.1), so an unattended run sends nothing; a
+  credentialed run takes 221 GraphQL batches until Story 35.3 reshapes the query.
 - **The host and registry stores fetch the universe unattended with the flag on.** The flag is on in dev and they need
   no switch (public hosts and registries answer anonymously), so a plain dev run asks GitLab for 404 projects (0
   before), Codeberg for 31 (0), npm for 211 names (8) and rubygems for 165 (0).
 - **Until Story 35.3 lands, the GitHub store merges on `feedstock_name`** (the repo name): 262 names are shared across
-  owners at universe scale (2026-10-21). Story 35.3 keys the store on `(kind, key)`.
+  owners at universe scale (2026-10-21: repo names as written, owners compared ignoring case). Story 35.3 keys the
+  store on `(kind, key)`.
 - **With the flag on, identity-only targets drop:** 14 GitHub repos and the npm names `bmad-method`, `mailpit` and
   `@cyclonedx/cdxgen` that the identity batch named and the universe does not (by design, AC6).
 - **The host stores' keys change** from identity's PEP 503 names to raw conda names, so after the flip old and new rows
@@ -149,6 +151,14 @@ Type / Effort / Deps: feature / M / Story 34.3 (node_attrs), Story 34.7 (the abo
 
 ## Spec Change Log
 
+- 2026-10-21, review round 3 (FAIL), fixed:
+  - B3: the new batch test had taken `test_the_flag_is_read_at_each_save`'s `@flag_states` decorator, so that test
+    failed; each has its own again.
+  - Should-fix: a test pins that a live attribution outranks an archived first anchor (the order swap changed 297
+    packages on 2026-10-21's data), and the first-attribution test now asserts on the npm batch, which keep="last"
+    changes.
+  - Nits: tests for the first anchor row being the one read (a dependency row never is) and for a CRAN page among the
+    about URLs; the spec says which count ignores case and that the earlier figures predate the anchor filter.
 - 2026-10-21, review round 2 (FAIL), fixed:
   - B2: a `flag_states` test gives the GitHub store distinct identity and universe repos and pins which batch each
     state reads (the "flag off reads the universe" mutant now fails it).
