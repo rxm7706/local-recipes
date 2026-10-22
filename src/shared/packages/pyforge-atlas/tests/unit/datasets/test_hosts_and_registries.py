@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from pyforge.testing_kit import flag_states
 
 from pyforge.atlas.datasets import credentials as credential_switch
 from pyforge.atlas.datasets import vcs_sources as V
@@ -151,19 +152,21 @@ def test_maven_is_unchanged_with_the_flag_off():
     assert "q=a:org.acme%3Athing" in V._maven_path("https://search.maven.org", "org.acme:thing")
 
 
-@pytest.mark.parametrize(("flag", "version"), [(True, "2.0.0"), (False, "3.0.0-beta")])
-def test_nuget_takes_the_last_stable_version_with_the_flag_on(monkeypatch, flag, version):
+@flag_states("pyforge.atlas.live_vcs_universe")  # spelled out: the flag gate reads this file for the key
+def test_nuget_takes_the_last_stable_version_with_the_flag_on(monkeypatch, flag_provider):
+    flag = flag_provider[credential_switch.FLAG_KEY]
     monkeypatch.setattr(credential_switch, "live_vcs_universe", lambda: flag)
 
-    assert V._nuget_extract({"versions": ["1.0.0", "2.0.0", "3.0.0-beta"]}) == version
+    assert V._nuget_extract({"versions": ["1.0.0", "2.0.0", "3.0.0-beta"]}) == ("2.0.0" if flag else "3.0.0-beta")
 
 
-@pytest.mark.parametrize(("flag", "version"), [(True, "1.2.0"), (False, "1.3.0-rc1")])
-def test_crates_prefers_the_stable_version_with_the_flag_on(monkeypatch, flag, version):
+@flag_states("pyforge.atlas.live_vcs_universe")  # spelled out: the flag gate reads this file for the key
+def test_crates_prefers_the_stable_version_with_the_flag_on(monkeypatch, flag_provider):
+    flag = flag_provider[credential_switch.FLAG_KEY]
     monkeypatch.setattr(credential_switch, "live_vcs_universe", lambda: flag)
     payload = {"crate": {"max_stable_version": "1.2.0", "max_version": "1.3.0-rc1", "newest_version": "1.3.0-rc1"}}
 
-    assert V._crates_extract(payload) == version
+    assert V._crates_extract(payload) == ("1.2.0" if flag else "1.3.0-rc1")
 
 
 def test_a_registry_request_names_atlas_as_its_agent_with_the_flag_on(tmp_path, flag_on, fake_transport):
