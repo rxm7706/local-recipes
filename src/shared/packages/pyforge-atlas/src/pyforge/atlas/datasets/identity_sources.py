@@ -405,6 +405,10 @@ def _why(exc: BaseException) -> str:
 _STOP_MARKER_PREFIXES = ("board stopped", "PR list stopped", "PR files stopped")
 
 
+#: How the base marks a refresh whose refresher raised; `_stopped_at` raises with the stop's own text.
+_WRAPPED_STOP = "refresh failed: RuntimeError: "
+
+
 class _HonestPagination:
     """Story 36.2 (AD-13): a pagination a failure stops part-way. With a store already written,
     the refresh fails and last-good is kept; with none, the pages read are written. Either way the
@@ -454,21 +458,22 @@ class _HonestPagination:
         # The base clears its marker exactly when it writes the store. A prior stop makes the refresh
         # due (`_refresh_due`), so the base never takes its not-due path, which also clears it.
         now = self.staleness()  # type: ignore[attr-defined]
+        base = now.reason if now is not None and now.stale else ""
+        if self._stopped and base.startswith(_WRAPPED_STOP) and base[len(_WRAPPED_STOP) :] in self._stopped:
+            base = ""  # the base only reports the stop `_stopped_at` raised
+        this_run = "; ".join(reason for reason in (self._stopped, base) if reason)
         if prior_stop and now is not None:
             # Story 36.2: a run that wrote nothing (no switch, the flag off, a failed write) never
             # clears a stop: the store is still the short one, so the stop stays first in the
-            # marker. A new stop names where this run stopped; a notice or the base's reason
-            # follows the stop it did not lift.
-            later = self._stopped or (now.reason if now.stale else "")
-            if later.startswith(prior_stop):
-                later = ""
-            if later.startswith(_STOP_MARKER_PREFIXES):
-                self._mark_stale(later)  # type: ignore[attr-defined]
+            # marker. A new stop names where this run stopped; anything else this run says (a
+            # notice, a failed write) follows the stop it did not lift.
+            if this_run.startswith(_STOP_MARKER_PREFIXES):
+                self._mark_stale(this_run)  # type: ignore[attr-defined]
             else:
-                self._mark_stale(f"{prior_stop} (since then: {later})" if later else prior_stop)  # type: ignore[attr-defined]
+                self._mark_stale(f"{prior_stop} (since then: {this_run})" if this_run else prior_stop)  # type: ignore[attr-defined]
             return
         if self._stopped:
-            self._mark_stale(self._stopped)  # type: ignore[attr-defined]
+            self._mark_stale(this_run)  # type: ignore[attr-defined]
 
 
 def _as_json(payload: Any) -> dict | None:

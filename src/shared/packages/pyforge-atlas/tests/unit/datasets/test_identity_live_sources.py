@@ -6,6 +6,7 @@ Both fetch with Story 35.1's bearer auth, only under the switch. No network: ``f
 from __future__ import annotations
 
 import json
+import socket
 from pathlib import Path
 
 import pytest
@@ -558,10 +559,49 @@ def test_a_failed_write_after_a_stop_keeps_the_stop_ahead_of_its_notice(
     _save(ds)
 
     notice = "PR files failed for 1 PR (each keeps its last-good paths, if any)"
-    assert json.loads(_marker(ds))["reason"] == f"{first} (since then: {notice})"
+    write = "write failed: OSError: No space left on device"
+    assert json.loads(_marker(ds))["reason"] == f"{first} (since then: {notice}; {write})"
     monkeypatch.delenv(credential_switch.SWITCH)
     ds.save(RefreshRequest(store="x"))  # inside the cadence, and it cannot fetch: the short store never reads fresh
     assert json.loads(_marker(ds))["reason"].startswith(f"{first} (since then: ")
+
+
+def test_a_failed_write_is_named_beside_a_notice_with_no_stop_before_it(
+    tmp_path, in_turn, identity_on, switch_on, monkeypatch
+):
+    in_turn.answers[_list_page(1)] = (200, [_pr(1), _pr(2)])
+    in_turn.answers[_files(2)] = (200, [{"filename": "recipes/b/meta.yaml"}])  # PR 1's files: 404
+    ds = _prs(tmp_path)
+    monkeypatch.setattr(ds, "_write", lambda _frame: (_ for _ in ()).throw(OSError("read-only")))
+
+    _save(ds)
+
+    notice = "PR files failed for 1 PR (each keeps its last-good paths, if any)"
+    assert json.loads(_marker(ds))["reason"] == f"{notice}; write failed: OSError: read-only"
+
+
+def test_the_same_stop_twice_with_nothing_written_reads_once(tmp_path, in_turn, identity_on, switch_on):
+    ds = _stopped_board(tmp_path, in_turn)
+    first = json.loads(_marker(ds))["reason"]
+    in_turn.answers[GRAPHQL] = [(200, _page([1], "C1")), (502, {})]
+
+    _save(ds)
+
+    assert json.loads(_marker(ds))["reason"] == first == "board stopped at page 2: HTTP 502"
+
+
+def test_a_marker_that_is_not_a_stop_never_gains_a_since_then(tmp_path, in_turn, identity_on, switch_on, monkeypatch):
+    in_turn.answers[GRAPHQL] = (200, _page([1], None))
+    ds = _board(tmp_path)
+    _save(ds)  # a clean store
+    monkeypatch.delenv(credential_switch.SWITCH)
+    _save(ds)  # its marker: the switch is off, not a stop
+    monkeypatch.setattr(I, "identity_live", lambda: False)
+
+    _save(ds)
+
+    reason = json.loads(_marker(ds))["reason"]
+    assert "since then" not in reason and "no refresher" in reason
 
 
 def test_a_failed_write_after_a_stop_names_the_write(tmp_path, in_turn, identity_on, switch_on, monkeypatch):
@@ -618,3 +658,16 @@ def test_every_board_stop_is_a_stop_marker(tmp_path, in_turn, identity_on, switc
 
 def test_the_caps_read_the_whole_history():
     assert I._STAGED_PR_MAX_PAGES == 500 and I._STAGED_PR_OPEN_FILES_FANOUT_LIMIT == 2000
+
+
+def test_no_test_reaches_the_network_even_after_undoing_its_patches(monkeypatch):
+    monkeypatch.undo()  # what lifted the fake transport in review round 7
+
+    with pytest.raises(OSError, match="never reach the network"):
+        socket.create_connection(("192.0.2.1", 443), timeout=1)  # TEST-NET-1: never routed
+
+    probe = socket.socket()
+    try:
+        assert isinstance(probe.connect_ex(("127.0.0.1", 9)), int)  # loopback reaches the OS (refused or not)
+    finally:
+        probe.close()

@@ -1,5 +1,8 @@
 """Shared fixtures for pyforge-atlas tests."""
 
+import ipaddress
+import socket
+
 import pytest
 from pyforge.testing_kit import make_flag_provider_fixture
 
@@ -7,6 +10,49 @@ from pyforge.atlas.datasets import credentials as credential_switch
 from pyforge.atlas.datasets import identity_sources, public_sources
 
 flag_provider = make_flag_provider_fixture()
+
+_REAL_CONNECT = socket.socket.connect
+_REAL_CONNECT_EX = socket.socket.connect_ex
+
+
+def _loopback(address: object) -> bool:
+    """A Unix socket path, ``localhost`` or a loopback IP: the only places a test may connect to."""
+    if not isinstance(address, tuple):
+        return True  # AF_UNIX: a path on this host
+    host = str(address[0])
+    if host == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host.split("%", 1)[0]).is_loopback
+    except ValueError:
+        return False
+
+
+def _guarded_connect(self: socket.socket, address: object) -> None:
+    if not _loopback(address):
+        raise OSError(f"pyforge-atlas tests never reach the network (connect to {address!r} refused)")
+    return _REAL_CONNECT(self, address)
+
+
+def _guarded_connect_ex(self: socket.socket, address: object) -> int:
+    if not _loopback(address):
+        raise OSError(f"pyforge-atlas tests never reach the network (connect to {address!r} refused)")
+    return _REAL_CONNECT_EX(self, address)
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Story 36.2 review round 7: no test reaches the network, whatever it patches or undoes. The
+    guard is installed for the whole session, outside any ``monkeypatch``, so a test's
+    ``monkeypatch.undo()`` cannot lift it with its fake transport; loopback stays open for the
+    servers the integration suites start."""
+    socket.socket.connect = _guarded_connect  # type: ignore[method-assign]
+    socket.socket.connect_ex = _guarded_connect_ex  # type: ignore[method-assign]
+
+
+def pytest_unconfigure(config: pytest.Config) -> None:
+    socket.socket.connect = _REAL_CONNECT  # type: ignore[method-assign]
+    socket.socket.connect_ex = _REAL_CONNECT_EX  # type: ignore[method-assign]
+
 
 _REAL_LIVE = public_sources.live  # captured before any pin
 

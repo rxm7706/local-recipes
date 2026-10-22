@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'both stores keep the path before this story: no fetcher, last-good under a stale marker'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 6
+review_loop_iteration: 7
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -134,6 +134,15 @@ identity sources).
 ## Spec Change Log
 
 - 2026-10-18: written with the implementation (branch `atlas-36-2-identity-sources`, cut from `main` at `24581b35b8`).
+- 2026-10-21, review round 7 (PASS), should-fix applied:
+  - A run that wrote nothing and also carried a notice dropped the base's "write failed": the marker now names both
+    (`<notice>; write failed: ...`), behind any stop it did not lift. The base's "refresh failed: RuntimeError: <stop>"
+    is not repeated beside the stop it wraps.
+  - The redundant same-stop check is gone; the same stop twice, and a marker that is not a stop, are each pinned.
+  - The reviewer's probe reached the network once: a `monkeypatch.undo()` lifted the fake transport while the switch
+    was on, and one GET with the test file's fake token went to `api.github.com` (401). `tests/conftest.py` now refuses
+    every non-loopback connect for the whole session, installed outside any `monkeypatch`, so undoing a test's patches
+    cannot lift it; a test pins it. The atlas suite (2,774 tests, unit and integration) passes under it.
 - 2026-10-21, review round 6 (FAIL), fixed:
   - B1: a run that fetched, got a PR-files failure and then failed to write wrote its one-run notice over the stop
     (and over the base's "write failed"), and the next save inside the cadence cleared it, so a short store read
