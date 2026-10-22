@@ -2637,7 +2637,7 @@ So that `vcs_registry_versions` and the non-GitHub upstream versions fill.
 **Given** the stores are live-capable but their batches were empty
 **When** a run reaches them with the flag on
 **Then** `vcs_registry_versions` holds rows within the story's tolerance of legacy L (375, 2026-10-18), and GitLab and Codeberg upstream versions within legacy K's GitLab (400) and Codeberg (26) counts; public registries send no credential
-**Status:** backlog
+**Status:** done
 
 ## Epic 36: Basilisk, the OpenTeams identity sources and the estate source (spec-pyforge-atlas CAP-66..CAP-68, FR-74..FR-76)
 

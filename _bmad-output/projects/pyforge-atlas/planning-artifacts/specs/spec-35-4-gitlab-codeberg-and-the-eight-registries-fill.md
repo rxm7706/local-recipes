@@ -2,7 +2,7 @@
 title: "35.4: GitLab, Codeberg and the eight registries fill"
 type: 'feature'
 created: '2026-10-18'
-status: 'in-review'
+status: 'done'
 baseline_revision: '24581b35b8'
 flag:
   key: pyforge.atlas.live_vcs_universe            # minted by Story 35.1, shared by Epic 35's feature stories
