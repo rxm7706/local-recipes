@@ -19,7 +19,10 @@ to `main()` and left out here is not stubbed, so it reads the faked
 doctor Story 45.1 added `ci_pause_drift_findings` that way, and the three
 tests went red until mason Story 31.1 listed it; doctor Story 48.2 did the same
 with `pages_liveness_findings`, listed by herald Story 45.1.
+`test_probes_tuple_names_every_probe_main_calls` (doctor Story 45.3) reads
+`main()`'s calls with `ast`, so the next probe fails that test by name instead.
 """
+import ast
 import importlib.util
 import sys
 from pathlib import Path
@@ -63,6 +66,36 @@ _PROBES = (
     "capability_effect_findings",
     "status_body_consistency_findings",
 )
+
+
+def _probes_main_calls() -> set[str]:
+    """Every module-level `*_findings` / `*_staleness` function `main()` calls by name."""
+    tree = ast.parse(FLEET_PICTURE.read_text(encoding="utf-8"))
+    defined = {
+        node.name
+        for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+    main = next(
+        node for node in tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == "main"
+    )
+    called = {
+        node.func.id
+        for node in ast.walk(main)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    }
+    return {name for name in called & defined if name.endswith(("_findings", "_staleness"))}
+
+
+def test_probes_tuple_names_every_probe_main_calls():
+    found = _probes_main_calls()
+    missing = sorted(found - set(_PROBES))
+    extra = sorted(set(_PROBES) - found)
+    assert not missing and not extra, (
+        "_PROBES is out of step with fleet_picture.main(): "
+        f"missing {missing} (stub them here), extra {extra} (main() no longer calls them)"
+    )
 
 
 @pytest.fixture
