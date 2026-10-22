@@ -183,10 +183,11 @@ def test_the_flag_is_in_the_tree_off_by_default_and_on_only_in_dev() -> None:
     assert vizro_static_boards.FLAG_KEY == FLAG
 
 
-@pytest.mark.parametrize(("variant", "expected"), [("on", True), ("off", False)])
-def test_boards_enabled_reads_the_tree(tmp_path: Path, variant: str, expected: bool) -> None:
-    tree = flagd_tree(tmp_path, {FLAG: variant})
-    assert vizro_static_boards.boards_enabled(flags_path=str(tree)) is expected
+def test_boards_enabled_reads_the_tree(tmp_path: Path) -> None:
+    on = flagd_tree(tmp_path, {FLAG: "on"}, name="on.json")
+    off = flagd_tree(tmp_path, {FLAG: "off"}, name="off.json")
+    assert vizro_static_boards.boards_enabled(flags_path=str(on)) is True
+    assert vizro_static_boards.boards_enabled(flags_path=str(off)) is False
 
 
 def test_the_task_flag_off_refuses_before_importing_the_dashboard(tmp_path: Path, capsys) -> None:
