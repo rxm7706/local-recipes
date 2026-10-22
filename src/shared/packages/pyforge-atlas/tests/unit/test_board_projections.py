@@ -432,3 +432,30 @@ def test_the_static_export_reads_the_flag_from_the_tree_it_is_given(
     for page_id in ("behind-upstream", "whodepends"):
         html = (tmp_path / "vizro" / page_id / "index.html").read_text(encoding="utf-8")
         assert ("<table" in html) is table, (page_id, variant)
+
+
+@pytest.mark.parametrize(("variant", "table"), [("on", True), ("off", False)])
+def test_the_export_task_passes_its_flags_path_through(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    real_board_projections,
+    variant: str,
+    table: bool,
+) -> None:
+    tools = Path(__file__).resolve().parents[2] / "tools"
+    monkeypatch.syspath_prepend(str(tools))
+    import vizro_static_export as cli  # the vizro-static-export task's entry point
+
+    monkeypatch.setattr(data, "board_projections", real_board_projections)
+    tree = flagd_tree(tmp_path, {"pyforge.atlas.vizro_static_boards": "on", FLAG: variant}, name=f"{variant}.json")
+    out = tmp_path / "vizro"
+
+    code = cli.main(
+        ["--out", str(out), "--data-root", str(_data_root(tmp_path)), "--flags-path", str(tree)]
+        + ["--export-commit", "b" * 40, "--clock", "now"]  # a fake commit has no committer time
+    )
+
+    assert code == 0, capsys.readouterr().err
+    html = (out / "whodepends" / "index.html").read_text(encoding="utf-8")
+    assert ("<table" in html) is table

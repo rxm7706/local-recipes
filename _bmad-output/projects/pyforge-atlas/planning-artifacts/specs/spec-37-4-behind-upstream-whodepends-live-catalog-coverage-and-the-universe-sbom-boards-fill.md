@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'the four boards read as before: behind-upstream and whodepends are shells, the two coverage boards read the paths nothing writes'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -49,15 +49,19 @@ The data exists. `vcs_upstream_versions` (Story 35.3/35.4) and `core_packages_en
      (`PyPI_Verified` and `CondaForge_Verified`, "Yes" counting true, and the 15 `in_*` booleans):
      `field_name`, `true_count`, `total_count`.
    - `project_universe_sbom_summary`: one row per BOM component: `component_purl`; `slice`, `mapped` when the
-     component names its PyPI project (`cfe:pypi_name`), else `conda-only`; `with_vulns_count` null, since the BOM
-     carries no vulnerability data (legacy adds it only under `--with-vulns`).
+     component names its PyPI project (`cfe:pypi_name`), else `unmapped` (not legacy's `--conda-only`, which is the
+     BOM without its PyPI side); `with_vulns_count` null, since the BOM carries no vulnerability data (legacy adds
+     it only under `--with-vulns`).
 2. **Two models** (`semantic/models.py`): `build_behind_upstream_model` over the projection, and
    `build_whodepends_model` over `core_dependencies`: per `depends_on` and `dep_type`, the count of distinct
    packages that depend on it (legacy `whodepends --reverse`, for every package at once). The two coverage models
    keep their dimensions and measures.
 3. **The flag** decides each board at build time: `dashboard.data.board_projections()` reads it, and
    `app.page_inventory()` returns `PAGE_INVENTORY` with the four boards' projected definitions when it is on.
-   `build_dashboard` and the static export use the same inventory.
+   `build_dashboard` and the static export use the same inventory and one read of the flag; `vizro-static-export
+   --flags-path` reads this flag from the same tree as `pyforge.atlas.vizro_static_boards`.
+4. **Charts.** Behind-upstream counts packages per lag label; whodepends sums each package's dependents over its
+   dependency types, so the static export's table lists the most depended-on packages first (Story 37.2's cap).
 
 Ledger key: `37-4-behind-upstream-whodepends-live-catalog-coverage-and-the-universe-sbom-boards-fill`.
 Type / Effort / Deps: feature / M / Story 37.1 (the data root).
@@ -74,9 +78,11 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root).
   per package in host order, skips rows with no version or with an error; the board reads its rows.
 - **AC3 — Whodepends.** The board reads `core_dependencies`: per depended-on package and type, its dependents' count.
 - **AC4 — Coverage.** The node counts each flag's true values over the export's rows; the board reads them.
-- **AC5 — SBOM.** The node writes one row per component, its slice from the PyPI property, `with_vulns_count` null.
-- **AC6 — Flag.** On, the four boards read the above; off, behind-upstream and whodepends are shells and the two
-  coverage boards read their earlier paths. Tested in both states.
+- **AC5 — SBOM.** The node writes one row per component, its slice (`mapped` / `unmapped`) from the PyPI property,
+  `with_vulns_count` null.
+- **AC6 — Flag.** On, the four boards read the above and each is stamped from the file it reads; off, behind-upstream
+  and whodepends are shells and the two coverage boards read their earlier paths. The dashboard, the static export
+  and the export task each follow the flag. Tested in both states.
 - **AC7 — Empty.** Each node writes a typed empty table for an empty or malformed input, and each board reads it.
 - **AC8 — Gates.** `pyforge-atlas-test`, the dashboard integration suite, `kedro-catalog-check`, the coverage gate,
   `lint-types`, `flag-gate-check`; governing Specs reconciled and stamped scoped.
@@ -85,8 +91,20 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root).
 
 - Unit, from the repo root: `src/shared/packages/pyforge-atlas/tests/unit/test_board_projections.py` (the flag's tree
   entry and both states, the three nodes, the two models, the loaders on frames shaped like the produced datasets,
-  and the inventory each state builds) and `src/shared/packages/pyforge-atlas/tests/unit/test_board_wiring.py` (the
-  new paths against the catalog).
+  and the inventory, stamps and static export each state builds) and
+  `src/shared/packages/pyforge-atlas/tests/unit/test_board_wiring.py` (the new paths against the catalog).
+- **Live, 2026-10-22,** over a scratch copy of the inputs Story 37.2's public run wrote (no credentials, no switch,
+  no token): `pyforge atlas run --pipelines derived_artifacts --nodes project_behind_upstream,
+  project_live_catalog_coverage,project_universe_sbom_summary` exit 0.
+  - live-catalog-coverage: 17 flags over the export's 871 rows, e.g. `PyPI_Verified` 854, `CondaForge_Verified` 868,
+    `in_basilisk` 868, `in_nixpkgs` 285; `in_bioconda`, `in_pytorch`, `in_nvidia`, `in_robostack` 0.
+  - universe-sbom: 34,720 components, 22,358 mapped and 12,362 unmapped; the board reads all 34,720.
+  - whodepends: 314,317 edges of `core_dependencies` give 21,406 rows; `python` (run) has 21,269 dependents.
+  - behind-upstream: that root's `vcs_upstream_versions` was empty (the run predates Story 35.4), so the board read
+    no rows. A public GitLab/Codeberg fetch over the same root (`--nodes refresh_vcs_host_stores,
+    track_upstream_versions,project_behind_upstream`, 243 s, no token pattern in the log) wrote 435 upstream rows
+    (404 GitLab, 31 Codeberg; 389 with a version), and the node found 95 packages behind: 15 major, 23 minor, 16
+    patch, 41 unknown (tags such as `bzip2-1.0.8` that are not PEP 440, which legacy also keeps as `unknown`).
 
 ## Boundaries & Constraints
 
@@ -97,7 +115,13 @@ read (the nodes are pure).
 - **Behind-upstream reads VCS hosts only.** Legacy also compares PyPI's version for a package whose source is PyPI;
   atlas holds that in `pypi_current_versions`, which this story does not read.
 - **Whodepends has no `pin_spec`:** `core_dependencies` does not carry the pin.
-- **Universe-sbom's `with_vulns_count` stays null** until a story joins the vulnerability store to the BOM.
+- **Universe-sbom's `with_vulns_count` stays null** until a story joins the vulnerability store to the BOM, and
+  DESIGN.md § 4.3's summary cards are not built: the board is one row per component, and its static page shows the
+  first 5,000 in column order.
+- **Behind-upstream without the credentialed run** shows GitLab and Codeberg only; GitHub's versions need Story
+  35.3's opt-in. Its `package_count` is 1 per row (the chart's count), so its static table is in column order.
+- **Archived packages:** legacy's query drops inactive and archived packages; this node relies on the enumeration
+  (active packages) and Story 35.2's batches, which leave archived feedstocks out.
 
 ## I/O & Edge-Case Matrix
 
@@ -112,6 +136,8 @@ read (the nodes are pure).
 | a package not enumerated | left out |
 | `PyPI_Verified` "Yes"/"No", null | "Yes" counts true; null counts in the total, not as true |
 | BOM with no `components` | typed empty table |
+| a zero-row export with its columns | typed empty table |
+| component with `cfe:pypi_name` | `mapped`; otherwise `unmapped` |
 
 </intent-contract>
 
@@ -123,5 +149,15 @@ read (the nodes are pure).
 
 ## Spec Change Log
 
+- 2026-10-22, review round 1 (FAIL), fixed:
+  - B1: `board_projections`' `flags_path` was typed `str | os.PathLike[str]`, which `read_boolean` does not take;
+    mypy failed `lint-types`. It is `Path | str | None`.
+  - Should-fix: tests for each board's flag-on stamp, the dashboard reading the flag when not told, the static
+    export following the tree it is given, and the export task passing `--flags-path` through (it did not:
+    `export_boards` now takes `flags_path`); an unparseable upstream kept as `unknown`; a zero-row export with its
+    columns. Whodepends declares a chart, so its static table sorts by its dependents.
+  - Nits: the SBOM slice reads `unmapped`, not `conda-only` (legacy's `--conda-only` means something else); the
+    universe-sbom note no longer calls the board a summary; residual risks for the archived filter, the constant
+    `package_count` and the 5,000-row SBOM page.
 - 2026-10-22: written with the implementation (branch `atlas-37-4-board-projections`, cut from `main` at
   `a81732d0a3`).
