@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'both stores keep the path before this story: no fetcher, last-good under a stale marker'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 7
+review_loop_iteration: 8
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -134,6 +134,13 @@ identity sources).
 ## Spec Change Log
 
 - 2026-10-18: written with the implementation (branch `atlas-36-2-identity-sources`, cut from `main` at `24581b35b8`).
+- 2026-10-21, review round 8 (PASS), should-fix applied: Kedro telemetry still looked up `heapanalytics.com` from
+  two tests (`_copy_kedro_project` copied the project without its `.telemetry`, so Kedro assumed consent; before round
+  7's guard the event could be sent). The copy now keeps `.telemetry`, the session sets `KEDRO_DISABLE_TELEMETRY` and
+  `DO_NOT_TRACK`, and the guard also refuses name lookups of anything but `localhost` or a loopback address. The guard
+  test now checks the guard is in place before it tries anything (a broken guard sends nothing), and pins `connect_ex`
+  and a host name. Not covered, as the conftest says: subprocesses, C-level sockets, UDP without a connect, and the
+  task's second pytest run (`tests/packaging`, `scripts/tests`), which does not load the atlas conftest.
 - 2026-10-21, review round 7 (PASS), should-fix applied:
   - A run that wrote nothing and also carried a notice dropped the base's "write failed": the marker now names both
     (`<notice>; write failed: ...`), behind any stop it did not lift. The base's "refresh failed: RuntimeError: <stop>"

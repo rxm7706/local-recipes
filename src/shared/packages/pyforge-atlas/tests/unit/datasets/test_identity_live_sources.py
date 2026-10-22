@@ -663,11 +663,33 @@ def test_the_caps_read_the_whole_history():
 def test_no_test_reaches_the_network_even_after_undoing_its_patches(monkeypatch):
     monkeypatch.undo()  # what lifted the fake transport in review round 7
 
+    # tests/conftest.py's guard is checked before anything is attempted, so a broken guard sends nothing
+    assert socket.socket.connect.__name__ == "_guarded_connect"
+    assert socket.socket.connect_ex.__name__ == "_guarded_connect_ex"
+    assert socket.getaddrinfo.__name__ == "_guarded_getaddrinfo"
+    refusals = (
+        lambda s: s.connect(("192.0.2.1", 443)),
+        lambda s: s.connect_ex(("192.0.2.1", 443)),
+        lambda s: s.connect(("api.github.com", 443)),  # a name is refused before any lookup
+    )
+    for refused in refusals:
+        probe = socket.socket()
+        try:
+            with pytest.raises(OSError, match="never reach the network"):
+                refused(probe)
+        finally:
+            probe.close()
     with pytest.raises(OSError, match="never reach the network"):
-        socket.create_connection(("192.0.2.1", 443), timeout=1)  # TEST-NET-1: never routed
-
+        socket.getaddrinfo("heapanalytics.com", 443)
+    assert socket.getaddrinfo("localhost", 0) and socket.getaddrinfo("127.0.0.1", 0)
     probe = socket.socket()
     try:
         assert isinstance(probe.connect_ex(("127.0.0.1", 9)), int)  # loopback reaches the OS (refused or not)
     finally:
         probe.close()
+
+
+def test_kedro_telemetry_is_off_for_the_session():
+    import os
+
+    assert os.environ["KEDRO_DISABLE_TELEMETRY"] == "1" and os.environ["DO_NOT_TRACK"] == "1"
