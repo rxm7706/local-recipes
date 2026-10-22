@@ -86,6 +86,21 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-10-22 (the fleet-picture probe guard)** — **Found: twice a new `fleet-picture` ATTENTION probe reached `main`
+  without a stub in the CFE meta-test, and each time the test failed without naming the probe.**
+  `.claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_main_attention.py` runs `fleet_picture.main()` with
+  every probe in its `_PROBES` tuple stubbed. A probe `main()` calls that is not listed reads the faked
+  `subprocess.run`, degrades to its own "could not check" line, and turns the file's three tests red. Story 45.1's
+  `ci_pause_drift_findings` did that (fixed by mason Story 31.1, CFE v8.100.4), and so did Story 48.2's
+  `pages_liveness_findings` (fixed by herald Story 45.1, CFE v8.101.1). The guard that would have named both was
+  written on the 2026-10-14 branch `doctor-45-2-fleet-picture-probe-list`, which never landed; its stub fix landed
+  separately, so only the guard remained (team memory, 2026-10-18 addendum). **What it looks like when fixed:** a test
+  in the same file reads `scripts/fleet_picture.py` with `ast` and requires `_PROBES` to equal the module-level
+  `*_findings` / `*_staleness` functions `main()` calls, naming each missing or extra probe, so the next probe fails by
+  name in the CFE lane. Epic 45's policy surface declares the meta-test and the CFE version carriers. **Constraints:**
+  a test-only fix under CAP-89 (Story 45.1, the probe this file first missed), no CAP and no flag;
+  `scripts/fleet_picture.py` does not change; the conda-forge-expert retro (Rule 2) lands with it. Owner
+  `spec-pyforge-doctor`. → Epic 45 / Story 45.3, specced 2026-10-22 (45.2 was the unlanded branch's number).
 - **2026-10-17 (the detector registry finds a detector's task by its path)** — **Found: `scripts/detectors.py` gives a
   detector the first pixi task whose `cmd` contains the detector's file name, so a task that names the detector's test
   file takes the detector.** `discover()` tests `path.name in c` (`scripts/detectors.py:166`-`:167` at `ab38be642f`),
