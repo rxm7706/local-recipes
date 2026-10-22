@@ -2603,13 +2603,13 @@ As the VCS-health pipeline,
 I want the GitHub, GitLab, Codeberg and registry batches built from the actionable conda-forge universe,
 So that the fetches cover what legacy Phases K, L and N cover.
 
-**Type:** feature • **Effort:** M • **Deps:** 34.3 (repo URLs and registry names from node_attrs) • **FR/AD:** spec-pyforge-atlas CAP-65 (FR-73)
+**Type:** feature • **Effort:** M • **Deps:** 34.3 (node_attrs), 34.7 (the about URLs on the frame), 35.1 (the flag) • **FR/AD:** spec-pyforge-atlas CAP-65 (FR-73)
 **Flag:** `pyforge.atlas.live_vcs_universe`
-**Surface:** `pipelines/vcs_health/vcs_refresh_identifiers.py`, `pipelines/vcs_health/nodes.py` (the refresh trigger inputs), tests
+**Surface:** `pipelines/vcs_health/vcs_refresh_identifiers.py`, `pipelines/vcs_health/nodes.py` and `pipeline.py` (the refresh trigger inputs), `datasets/refresh.py` (`RefreshRequest`), `datasets/request_datasets.py` and `datasets/vcs_sources.py` (the stores read the flag), tests
 **Given** `batches_from_identity` builds every batch from `identity_packages_primary`, the OpenTeams subset
 **When** the refresh triggers run with the flag on
 **Then** the batches come from package enumeration joined with node_attrs' repo, dev and homepage URLs and registry names, upstream (K) separate from feedstock (E.5, N), and a population test proves identity no longer drives them
-**Status:** backlog
+**Status:** done
 
 ### Story 35.3: Upstream versions and feedstock health come from GitHub
 

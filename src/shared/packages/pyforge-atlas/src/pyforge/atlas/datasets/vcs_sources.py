@@ -390,7 +390,8 @@ class VcsHostSeedDataset(_ParquetRefreshStore, AbstractDataset):
         if not data.force and not self._refresh_due(data.cadence_seconds):
             self._clear_stale()
             return
-        self.load_many(data.vcs_pairs)
+        # Story 35.2: with the flag on, the universe's pairs, not the identity subset
+        self.load_many(data.universe_pairs if credential_switch.live_vcs_universe() else data.vcs_pairs)
 
     def _describe(self) -> dict[str, Any]:
         return {
@@ -504,7 +505,8 @@ class RegistryUpstreamDataset(_ParquetRefreshStore, AbstractDataset):
         if not data.force and not self._refresh_due(data.cadence_seconds):
             self._clear_stale()
             return
-        self.load_many(data.vcs_pairs)
+        # Story 35.2: with the flag on, the universe's pairs, not the identity subset
+        self.load_many(data.universe_pairs if credential_switch.live_vcs_universe() else data.vcs_pairs)
 
     def _describe(self) -> dict[str, Any]:
         return {
