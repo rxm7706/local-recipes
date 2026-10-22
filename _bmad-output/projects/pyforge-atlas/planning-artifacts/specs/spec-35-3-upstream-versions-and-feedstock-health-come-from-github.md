@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'vcs_github_api_raw asks the identity repos for their health, as before Story 35.1; the three consumers read those rows'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 2
+review_loop_iteration: 3
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -168,6 +168,13 @@ Type / Effort / Deps: feature / L / Story 35.1 (the switch, bearer auth), Story 
 ## Spec Change Log
 
 - 2026-10-18: written with the implementation (branch `atlas-35-3-github-versions-health`, stacked on Story 35.2).
+- 2026-10-21, review round 3 (PASS), should-fix applied:
+  - The first stop names the run: a batch a stop caught reported its own 403 and replaced the 401 already recorded,
+    so the marker read a rate limit for a rejected token.
+  - The not-halved-after-a-stop test waits for the refusal to land (it failed 11 in 1,000 under forced switching).
+  - Nits: an error on one alias alone names itself in the marker (it read "()"); with nothing asked, a failed archived
+    listing is named; tests for an answer with no data, a stop while a retry waits for its token and a repository
+    missing from the answer; the batch test keeps the two flag states' reads apart.
 - 2026-10-21, review round 2 (PASS), should-fix applied:
   - With no Phase K or N repository asked, the archived listing alone wrote the store and cleared a marker (AC4d);
     now nothing is written and the marker says nothing was asked.

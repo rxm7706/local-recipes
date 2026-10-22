@@ -822,9 +822,11 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
             mine.waited_until = until
 
         def stop(failure: str) -> None:
+            """The first stop names the run's failure: a batch a stop caught still reports what it met."""
             with lock:
-                state["stopped"] = True
-                state["failure"] = failure
+                if not state["stopped"]:
+                    state["stopped"] = True
+                    state["failure"] = failure
 
         def run(
             chunk: Sequence[Any], build: Callable[[Sequence[Any]], dict[str, Any]]
@@ -984,6 +986,8 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
                             # an error GitHub gave this repository alone: legacy Phase N sets only
                             # gh_status_last_error and keeps the rest (CFA:6725-6733); a gone one clears
                             failed_rows.add(("feedstock", fs))
+                            with lock:
+                                state["first_failure"] = state["first_failure"] or error
                     rows.append(row)
         # Phase E.5: the organization's archived repositories, page by page
         cursor: str | None = None
@@ -1026,7 +1030,10 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
                 why = state["failure"] or state["first_failure"]
                 self._mark_stale(f"every GitHub batch failed ({why}) -- keeping last-good")
             else:
-                self._mark_stale("nothing fetched (no Phase K or N repository was asked) -- keeping last-good")
+                listing = f"; {state['archived_failed']}" if state["archived_failed"] else ""
+                self._mark_stale(
+                    f"nothing fetched (no Phase K or N repository was asked{listing}) -- keeping last-good"
+                )
             return frame
         self._persist(self._carried_forward(frame, failed_rows))
         reasons = []
