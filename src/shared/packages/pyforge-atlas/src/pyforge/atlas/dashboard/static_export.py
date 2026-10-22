@@ -15,10 +15,13 @@ chart -- with every frame read through the loader ``build_dashboard`` registered
   submit work through the live dashboard) and every filter: a static page has no server and
   no viewer, so it renders the frame its loader returns, unfiltered, and the live-scan pages
   carry one line saying they show the latest cached result.
-* **At most** :data:`STATIC_ROW_CAP` **rows a frame** (Story 37.2, DW-atlas-37-3-1). Over a full
-  data root two loaders return 448,301 and 210,170 rows, which wrote 37.2 MB and 23.1 MB pages. A
-  larger frame keeps its largest rows by the page's chart measure (else its first rows in a
-  deterministic order), and the table's caption says how many it holds of how many.
+* **Tables: sorted, at most** :data:`STATIC_ROW_CAP` **rows** (Story 37.2, DW-atlas-37-3-1). Over a
+  full data root two loaders return 448,301 and 210,170 rows, which wrote 37.2 MB and 23.1 MB pages.
+  Every table is sorted -- by the page's chart measure, largest first, when it varies, then by every
+  column -- so one commit's export is byte-identical whatever order a loader returns. A larger
+  frame keeps its first rows in that order, and the caption says how many it holds of how many.
+* **Charts: the whole frame.** A chart sums its measure per bar over every row, never the capped
+  table, and keeps at most :data:`STATIC_ROW_CAP` bars, the largest, saying so beside the chart.
 * **The refusal.** A board that declares an access column (``PageDef.access_column``)
   refuses the whole export before anything is written -- ``sld:AD-10``: static export and
   role isolation are mutually exclusive, refused rather than warned. The rule is applied
@@ -297,7 +300,8 @@ def _render_board(
     if not _PAGE_ID_RE.fullmatch(page.id):
         raise StaticExportError(f"board id {page.id!r} is not a path-safe slug; nothing written")
     live_scan = declared is not None and declared.kind == _LIVE_SCAN_KIND
-    sort_by = declared.chart.y if declared is not None and declared.chart is not None else None
+    chart = declared.chart if declared is not None else None
+    sort_by = chart.y if chart is not None else None
     frames: dict[str, Any] = {}
     parts: list[str] = []
     stamp: str | None = None
@@ -313,7 +317,7 @@ def _render_board(
         elif isinstance(component, (vm.AgGrid, vm.Table)):
             parts.append(_render_table(component, frames, sort_by=sort_by))
         elif isinstance(component, vm.Graph):
-            parts.append(_render_chart(component, frames, board=page.id, sort_by=sort_by))
+            parts.append(_render_chart(component, frames, board=page.id, chart=chart))
         elif live_scan and isinstance(component, _SUBMISSION_COMPONENTS):
             continue  # the path field, Run button and its status line submit work: not exported
         else:
@@ -327,7 +331,7 @@ def _render_board(
         f'<p class="export-note">Static export of board <code>{_esc(page.id)}</code>, built {_esc(exported_text)} '
         f"from commit <code>{_esc(export_commit[:12])}</code>. Data build stamp (AD-17): {_esc(stamp)}. "
         f"Filters are not part of a static page; every table shows its loader's frame, up to {STATIC_ROW_CAP:,} "
-        "rows.</p>",
+        "rows, and every chart sums its measure over all of them.</p>",
     ]
     if live_scan:
         header.append(f'<p class="export-note" role="note">{_esc(STATIC_SCAN_NOTICE)}</p>')
@@ -357,36 +361,68 @@ def _stamp_from_card(text: str) -> str | None:
     return None
 
 
-def _frame_for(component: Any, frames: dict[str, Any], *, sort_by: str | None = None) -> Any:
-    """The component's frame through the loader ``build_dashboard`` registered (read once per key),
-    capped at :data:`STATIC_ROW_CAP` rows."""
+def _frame_for(component: Any, frames: dict[str, Any]) -> Any:
+    """The component's whole frame through the loader ``build_dashboard`` registered (read once per key)."""
     key = component.figure["data_frame"]
     if key not in frames:
         try:
-            frames[key] = _capped(data_manager[key].load(), sort_by)
+            frames[key] = data_manager[key].load()
         except Exception as exc:  # noqa: BLE001 -- the page reports its own read failure, as live
             frames[key] = exc
     return frames[key]
 
 
+def _ordered(frame: pd.DataFrame, sort_by: str | None) -> tuple[pd.DataFrame, str | None]:
+    """``frame`` sorted by ``sort_by`` (largest first) when it has that column and it varies, then by
+    every other column; a column whose values do not compare leaves the measure alone, else the frame
+    as loaded. Returns the sorted frame and the measure it led with, if any."""
+    measure = sort_by if sort_by in frame.columns and frame[sort_by].nunique(dropna=True) > 1 else None
+    keys = [measure, *(c for c in frame.columns if c != measure)] if measure else list(frame.columns)
+    for attempt in (keys, [measure] if measure else []):
+        if not attempt:
+            break
+        try:
+            ordered = frame.sort_values(
+                attempt, ascending=[key != measure for key in attempt], kind="stable", na_position="last"
+            )
+            return ordered.reset_index(drop=True), measure
+        except TypeError, ValueError:  # a column whose values do not compare
+            continue
+    return frame.reset_index(drop=True), measure
+
+
 def _capped(frame: Any, sort_by: str | None) -> Any:
-    """At most :data:`STATIC_ROW_CAP` rows: the largest by ``sort_by`` when the frame has that column,
-    else the first in an order of every column, so one commit's export stays byte-identical. The
-    frame's ``attrs`` keep the whole count and the sort column for the table's caption."""
-    if not isinstance(frame, pd.DataFrame) or len(frame) <= STATIC_ROW_CAP:
+    """A table's rows: the whole frame sorted (:func:`_ordered`), at most :data:`STATIC_ROW_CAP` of them.
+    A frame over the cap keeps the whole count and the measure it was sorted by in ``attrs``, for the
+    table's caption."""
+    if not isinstance(frame, pd.DataFrame):
         return frame
-    total = len(frame)
-    others = [column for column in frame.columns if column != sort_by]
-    keys = [sort_by, *others] if sort_by in frame.columns else others
-    try:
-        ordered = frame.sort_values(
-            keys, ascending=[sort_by not in frame.columns or key != sort_by for key in keys], kind="stable"
-        )
-    except TypeError, ValueError:  # a column whose values do not compare: the measure alone, else as loaded
-        ordered = frame.sort_values(sort_by, ascending=False, kind="stable") if sort_by in frame.columns else frame
-    out = ordered.head(STATIC_ROW_CAP).reset_index(drop=True)
-    out.attrs = {"static_total_rows": total, "static_sorted_by": sort_by if sort_by in frame.columns else None}
+    ordered, measure = _ordered(frame, sort_by)
+    if len(ordered) <= STATIC_ROW_CAP:
+        return ordered
+    out = ordered.head(STATIC_ROW_CAP)
+    out.attrs = {"static_total_rows": len(ordered), "static_sorted_by": measure}
     return out
+
+
+def _chart_frame(frame: pd.DataFrame, chart: _app.ChartDef | None) -> tuple[pd.DataFrame, str]:
+    """A chart's data: its measure summed per bar over the whole frame, the largest
+    :data:`STATIC_ROW_CAP` bars kept; and the note the page shows when bars were left out."""
+    if chart is None or not {chart.x, chart.y} <= set(frame.columns):
+        return frame, ""
+    try:
+        bars = frame.groupby(chart.x, dropna=False, sort=True)[chart.y].sum().reset_index()
+    except TypeError, ValueError:  # a measure that does not add up: the frame as it is
+        return frame, ""
+    if len(bars) <= STATIC_ROW_CAP:
+        return bars, ""
+    total = len(bars)
+    bars = bars.sort_values([chart.y, chart.x], ascending=[False, True], kind="stable").head(STATIC_ROW_CAP)
+    note = (
+        f"The chart sums {chart.y} per {chart.x} over all {len(frame):,} rows and shows the "
+        f"{STATIC_ROW_CAP:,} largest of {total:,} bars."
+    )
+    return bars.reset_index(drop=True), note
 
 
 def _read_error(component: Any, exc: BaseException) -> str:
@@ -397,9 +433,10 @@ def _read_error(component: Any, exc: BaseException) -> str:
 
 
 def _render_table(component: Any, frames: dict[str, Any], *, sort_by: str | None = None) -> str:
-    frame = _frame_for(component, frames, sort_by=sort_by)
+    frame = _frame_for(component, frames)
     if isinstance(frame, BaseException):
         return _read_error(component, frame)
+    frame = _capped(frame, sort_by)
     columns = [str(column) for column in frame.columns]
     rows = len(frame)
     caption = f"{rows} row{'' if rows == 1 else 's'}"
@@ -430,10 +467,16 @@ def _cell(value: Any) -> str:
     return str(value)
 
 
-def _render_chart(component: Any, frames: dict[str, Any], *, board: str = "", sort_by: str | None = None) -> str:
-    frame = _frame_for(component, frames, sort_by=sort_by)
+def _render_chart(
+    component: Any, frames: dict[str, Any], *, board: str = "", chart: _app.ChartDef | None = None
+) -> str:
+    frame = _frame_for(component, frames)
     if isinstance(frame, BaseException):
         return _read_error(component, frame)
+    if isinstance(frame, pd.DataFrame):
+        frame, note = _chart_frame(frame, chart)
+    else:
+        note = ""
     try:
         figure = component.figure(data_frame=frame)
     except Exception as exc:  # noqa: BLE001 -- an undrawable chart is reported on its page
@@ -447,7 +490,7 @@ def _render_chart(component: Any, frames: dict[str, Any], *, board: str = "", so
             f"board {board or component.id!r}: chart {component.id!r} draws {', '.join(third_party)}, which loads "
             "from a third-party origin at runtime; nothing written"
         )
-    return str(
+    drawn = str(
         figure.to_html(
             full_html=False,
             include_plotlyjs=PLOTLY_SRC_FROM_PAGE,
@@ -457,6 +500,7 @@ def _render_chart(component: Any, frames: dict[str, Any], *, board: str = "", so
             config=dict(PLOTLY_CONFIG),
         )
     )
+    return f'<p class="export-note">{_esc(note)}</p>\n{drawn}' if note else drawn
 
 
 def _render_index(boards: Sequence[_RenderedBoard], *, exported_text: str, export_commit: str) -> str:

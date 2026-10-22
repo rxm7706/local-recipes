@@ -69,7 +69,9 @@ def test_ac8_the_vizro_job_uploads_the_export_and_never_commits() -> None:
     flag_step = next(step for step in steps if step.get("id") == "vizro_flag")
     assert "vizro_static_export.py --print-flag" in flag_step["run"].replace("\\\n", " ").replace("  ", " ")
     export = next(step for step in steps if "vizro-static-export" in step.get("run", ""))
-    assert export["run"].strip() == "pixi run --frozen -e pyforge-atlas vizro-static-export"
+    assert export["run"].strip() == "pixi run --frozen -e pyforge-atlas vizro-static-export --clock now"
+    checkout = next(step for step in steps if str(step.get("uses", "")).startswith("actions/checkout"))
+    assert checkout["with"]["persist-credentials"] is False  # Story 37.2: the token never stays in .git/config
     assert export["if"] == upload["if"]
 
 

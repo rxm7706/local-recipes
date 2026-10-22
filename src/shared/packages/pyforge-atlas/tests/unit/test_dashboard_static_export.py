@@ -226,15 +226,45 @@ def test_a_frame_over_the_cap_keeps_its_largest_rows_by_the_chart_measure(monkey
     table = static_export._render_table(
         vm.AgGrid(id="big--grid", figure=dash_ag_grid("data::big")), frames, sort_by="count"
     )
-    chart = static_export._render_chart(
-        vm.Graph(id="big--chart", figure=px.bar("data::big", x="name", y="count")), frames, sort_by="count"
-    )
     assert "<caption>3 of 4 rows, the largest count first; the live dashboard holds every row</caption>" in table
     # ties break on the other columns, so the same data always keeps the same rows
     assert (
         table.index("<td>b</td>") < table.index("<td>d</td>") < table.index("<td>c</td>") and "<td>a</td>" not in table
     )
-    assert '"x":["b","d","c"]' in chart.replace(" ", "")  # the chart draws the same capped frame
+
+
+def test_a_chart_sums_its_measure_over_the_whole_frame_not_the_capped_table(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(static_export, "STATIC_ROW_CAP", 2)
+    data_manager["data::stage"] = lambda: pd.DataFrame({"stage": ["a", "a", "a", "b", "b", "c"], "n": [1] * 6})
+    chart = static_export._render_chart(
+        vm.Graph(id="stage--chart", figure=px.bar("data::stage", x="stage", y="n")),
+        {},
+        chart=_app.ChartDef("bar", x="stage", y="n"),
+    )
+    bars, _note = static_export._chart_frame(data_manager["data::stage"].load(), _app.ChartDef("bar", x="stage", y="n"))
+    assert bars.to_dict("records") == [{"stage": "a", "n": 3}, {"stage": "b", "n": 2}]  # the whole frame, summed
+    assert "sums n per stage over all 6 rows and shows the 2 largest of 3 bars" in chart
+
+
+def test_a_chart_under_the_cap_draws_every_bar_without_a_note(monkeypatch: pytest.MonkeyPatch) -> None:
+    data_manager["data::stage"] = lambda: pd.DataFrame({"stage": ["a", "b", "a"], "n": [1, 1, 1]})
+    frame, note = static_export._chart_frame(data_manager["data::stage"].load(), _app.ChartDef("bar", x="stage", y="n"))
+    assert frame.to_dict("records") == [{"stage": "a", "n": 2}, {"stage": "b", "n": 1}] and note == ""
+    whole = pd.DataFrame({"x": [1]})
+    assert static_export._chart_frame(whole, None) == (whole, "")  # no declared chart: the frame as it is
+
+
+def test_a_measure_equal_on_every_row_is_not_claimed_as_the_order(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(static_export, "STATIC_ROW_CAP", 2)
+    frame = pd.DataFrame({"name": ["c", "a", "b"], "package_count": [1, 1, 1]})
+    capped = static_export._capped(frame, "package_count")
+    assert capped["name"].tolist() == ["a", "b"] and capped.attrs["static_sorted_by"] is None
+
+
+def test_every_table_is_sorted_so_the_export_is_reproducible() -> None:
+    one = static_export._capped(pd.DataFrame({"k": ["b", "a"], "v": [1, 2]}), None)
+    two = static_export._capped(pd.DataFrame({"k": ["a", "b"], "v": [2, 1]}), None)
+    assert one.equals(two) and one["k"].tolist() == ["a", "b"] and one.attrs == {}  # under the cap: no caption change
 
 
 def test_without_a_chart_measure_the_cap_keeps_the_first_rows_in_column_order(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -258,9 +288,11 @@ def test_a_column_that_does_not_compare_falls_back_to_the_measure_alone(monkeypa
     assert static_export._capped(frame, None)["count"].tolist() == [1, 3]  # nothing to sort on: as loaded
 
 
-def test_a_frame_at_the_cap_is_untouched(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_a_frame_at_the_cap_keeps_every_row_in_order(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(static_export, "STATIC_ROW_CAP", 4)
-    assert static_export._capped(BIG, "count") is BIG and static_export._capped(OSError("x"), "count").args == ("x",)
+    capped = static_export._capped(BIG, "count")
+    assert len(capped) == 4 and capped.attrs == {} and capped["name"].tolist() == ["b", "d", "c", "a"]
+    assert static_export._capped(OSError("x"), "count").args == ("x",)
     assert static_export.STATIC_ROW_CAP == 4 and "STATIC_ROW_CAP" in static_export.__all__
 
 
@@ -539,6 +571,27 @@ def test_the_task_reads_exported_at_from_the_export_commits_committer_time(
 
     monkeypatch.setattr(cli.viz_manifest, "_committer_date_iso_utc", no_commit)
     assert cli._resolve_exported_at(SHA) is None
+
+
+@pytest.mark.parametrize(("clock", "committer_reads"), [("commit", 1), ("now", 0)])
+def test_the_clock_option_picks_the_commit_time_or_the_build_time(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: str, committer_reads: int
+) -> None:
+    """Story 37.2: the weekly build stamps its own time (``--clock now``), not the last merge's."""
+    reads: list[str] = []
+    calls: list[dict] = []
+    monkeypatch.setattr(
+        cli.viz_manifest, "_committer_date_iso_utc", lambda c: reads.append(c) or "2026-10-15T09:30:00Z"
+    )
+    monkeypatch.setattr(cli, "_resolve_export_commit", lambda _explicit: SHA)
+    monkeypatch.setattr(static_export, "export_boards", lambda out, **kw: calls.append(kw) or {"boards": []})
+    monkeypatch.setattr("pyforge.atlas.vizro_static_boards.boards_enabled", lambda **_kw: True)
+
+    args = cli._build_parser().parse_args(["--out", str(tmp_path / "v"), "--clock", clock])
+    cli._run(args)
+
+    assert len(reads) == committer_reads
+    assert (calls[0]["exported_at"] is None) is (clock == "now")  # None: the export reads the clock once
 
 
 def test_without_exported_at_the_export_reads_the_clock_once(tmp_path: Path, tiny: list[dict]) -> None:

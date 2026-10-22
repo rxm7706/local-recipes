@@ -163,6 +163,9 @@ jobs:
     timeout-minutes: 240
     steps:
       - uses: actions/checkout@v7
+        # Story 37.2: nothing in the build needs the job's token, so it is not left in .git/config
+        with:
+          persist-credentials: false
 
       # pyforge-atlas carries vizro and plotly (the same env as the publish job); local-recipes
       # (over 10 GB) is the recipe factory's env, never a station job's (orchestrator ruling 2026-10-15).
@@ -210,7 +213,9 @@ jobs:
       # vendored assets/plotly.min.js; never a commit (the export is gitignored).
       - name: Export the Vizro boards as static pages
         if: ${{ steps.vizro_flag.outputs.enabled == 'true' }}
-        run: pixi run --frozen -e pyforge-atlas vizro-static-export
+        # Story 37.2: the pages are stamped with the build's own time (`--clock now`): a weekly run of an
+        # unchanged main would otherwise date this week's data by the last merge
+        run: pixi run --frozen -e pyforge-atlas vizro-static-export --clock now
 
       - name: Upload Vizro static export artifact
         if: ${{ steps.vizro_flag.outputs.enabled == 'true' }}

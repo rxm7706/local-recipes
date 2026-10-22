@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'the vizro job neither builds data nor exports; no vizro-static-export artifact is produced and Pages keeps the last one'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -52,13 +52,19 @@ board's `data_build_timestamp` in `manifest.json` is `unavailable`.
    it published. A step before the build frees the runner's disk of toolchains the job never uses (.NET, Android, GHC,
    CodeQL, Boost): the vulnerability database store alone reached 9.6 GB.
 3. **A row cap on static pages** (DW-atlas-37-3-1). Over a full data root two loaders return 448,301 and 210,170
-   rows, which wrote 37.2 MB and 23.1 MB pages. `static_export.STATIC_ROW_CAP = 5_000`: a larger frame keeps its
-   largest rows by the page's declared chart measure (ties broken by the other columns), else its first rows in an
-   order of every column, so one commit's export stays byte-identical. Table and chart draw the same capped frame; the
-   caption says "N of M rows, the largest <measure> first; the live dashboard holds every row", and the page header
-   says tables show "up to 5,000 rows". The live dashboard is unchanged.
+   rows, which wrote 37.2 MB and 23.1 MB pages. Every table is sorted -- by the page's declared chart measure, largest
+   first, when that measure varies, then by every column -- so one commit's export is byte-identical whatever order a
+   loader returns; a table over `static_export.STATIC_ROW_CAP = 5_000` rows keeps its first 5,000 in that order, and
+   its caption says "N of M rows, the largest <measure> first" (or "the first in column order") "; the live dashboard
+   holds every row". A chart never draws the capped table: it sums its measure per bar over the whole frame and keeps
+   at most 5,000 bars, the largest, with a line beside it saying so. The page header says tables show "up to 5,000
+   rows" and charts sum over all of them. The live dashboard is unchanged.
 4. **The job's time budget** is 240 minutes: three times the measured public build (1 h 20 min on a workstation, 40
    min of it PyPI's fan-out at its 10 requests a second).
+5. **The job's own hygiene.** Its checkout keeps no token (`persist-credentials: false`); nothing in the build needs
+   one. The export runs with `--clock now` (a new option of `tools/vizro_static_export.py`, default `commit`): the
+   pages are stamped with the build's own time, since a weekly run of an unchanged main would otherwise date this
+   week's data by the last merge; a local export keeps the commit's time and stays byte-identical.
 
 Ledger key: `37-2-the-pages-vizro-export-builds-the-public-atlas-data-first`.
 Type / Effort / Deps: feature / M / Story 37.1 (the data root), stacked on Story 37.3 (the boards that read the data).
@@ -78,9 +84,10 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root), stacked on Story
 - **AC3 — Public only.** The `vizro` job names no `secrets.`, no `PYFORGE_ATLAS_CREDENTIALED`, no GitHub token and no
   `PHASE_P` variable; the bootstrap task's pipelines are the eight fetch pipelines and never `query_plane_cache`; the
   disk step removes only named toolchain directories under `/usr` and `/opt`; the job's budget is 240 minutes.
-- **AC4 — The cap.** A frame over the cap keeps its largest rows by the chart measure, ties broken deterministically;
-  without a measure, its first rows in column order; a column that does not compare falls back to the measure alone;
-  a frame at the cap is untouched; the caption names both counts.
+- **AC4 — Tables and charts.** Every table is sorted (by a varying chart measure, largest first, then every column;
+  a column that does not compare falls back to the measure alone); a table over the cap keeps its first 5,000 rows and
+  its caption names both counts; a measure equal on every row is not named as the order. A chart sums its measure per
+  bar over the whole frame and keeps at most 5,000 bars, saying so beside it. `--clock now` stamps the build's time.
 - **AC5 — Live.** See Verification.
 - **AC6 — Gates.** `pyforge-atlas-test`, the dashboard integration suite, the coverage gate, `lint-types`,
   `flag-gate-check`, `ci-surface` detectors; governing Specs reconciled and stamped scoped.
@@ -117,6 +124,11 @@ board's dimension renamed; the live dashboard's frames capped.
 - **A plain `pyforge atlas run` fails on a fresh data root.** The default pipeline set includes `query_plane_cache`,
   whose input `query_plane_estate_source` has no producer until Story 36.3 (blocked); the job names its pipelines.
   DW-atlas-37-2-1.
+- **The `vizro` job shares `kedro-viz-publish.yml` with the Kedro-Viz producer** (CAP-63 leaves a separate workflow
+  to the operator). Pages mounts an artifact only from a successful run, so a failed or timed-out data build (up to 4
+  hours) also keeps that run's `kedro-viz-export` off Pages, which then keeps the previous one; and while the build
+  runs, the workflow's one concurrency group holds back the next run, so a pending push run can be replaced by a newer
+  one. Splitting the producer into its own workflow is the fix if this bites.
 - **A public source that is down** marks its store stale and the run goes on (AD-13); a node that raises fails the
   weekly build, and Pages keeps the previous export until the next run.
 - **The vulnerability database may not build on the runner** (it failed on the workstation's `/tmp`); the run goes on
@@ -134,5 +146,15 @@ board's dimension renamed; the live dashboard's frames capped.
 
 ## Spec Change Log
 
+- 2026-10-22, review round 1 (FAIL), fixed:
+  - B1: Story 30.1's workflow-shape test pinned the trigger to push and dispatch; it now names the weekly schedule.
+  - B2: the PRD's FR-71 still said the identity boards carry no rows on Pages; FR-71 is amended in place and the PRD,
+    the spine and epics.md re-stamped (chain currency current again).
+  - B3: the charts drew the capped table, so a bar showed the sum of the rows kept, not of the data (adoption-stage
+    "unknown" read 5,000 of 34,720); a chart now sums over the whole frame and caps bars, not rows.
+  - Should-fix: every table is sorted, so the export is byte-identical on real data (six uncapped boards varied); a
+    measure equal on every row is not claimed as the order; the checkout keeps no token; `--clock now` stamps the
+    weekly build's time; the shared workflow's cost is a residual risk; the workflow's three commands were run as
+    written (Verification).
 - 2026-10-21: written with the implementation (branch `atlas-37-2-pages-vizro-data`, stacked on Story 37.3 at
   `5faf32c4ca`).
