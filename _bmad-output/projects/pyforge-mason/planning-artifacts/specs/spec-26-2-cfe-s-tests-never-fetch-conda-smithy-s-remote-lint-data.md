@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-22'
 status: 'done'
 baseline_revision: '3a642c7bc498cd38403867aec037f8aceaf67607'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
@@ -47,7 +47,8 @@ With the network blocked (`unshare -rn`), four tests fail, among them Story 26.1
    `AttributeError` for any recipe with requirements.
 3. `CONDA_SMITHY_BOT_SCHEMA_URI`, conda-smithy's own override for the `bot` `$ref`, points at a vendored copy of
    `cf_tick_schema.json` (`tests/fixtures/conda_smithy/`, BSD-3-Clause, regro/cf-scripts commit `4cec2cf621`, its last
-   change on `main`). Validation runs against the real schema, so a malformed `bot` block still fails.
+   change on `main`). Validation runs against the real schema, so a malformed `bot` block still fails. The URI is
+   `"file://" + path`, not `Path.as_uri()`: conda-smithy reads it back as `uri[7:]` without unquoting.
 4. The trap matches `githubusercontent.com` too, and a `network`-marked test compares the vendored schema with upstream.
 
 Ledger key: `26-2-cfe-s-tests-never-fetch-conda-smithy-s-remote-lint-data`.
@@ -72,7 +73,8 @@ Type / Effort / Deps: fix / S / —.
 - **AC5 — Mutation.** Each of these fails a named test; restore each:
   - drop the hints stub from the fixture;
   - drop it from `sitecustomize_source()`;
-  - drop the `CONDA_SMITHY_BOT_SCHEMA_URI` env var.
+  - drop the `CONDA_SMITHY_BOT_SCHEMA_URI` env var;
+  - build the URI with `Path.as_uri()`.
 - **AC6 — Retro.** One `retro(cfe):` commit lands the code, the tests, a CFE `CHANGELOG.md` PATCH entry (v8.101.4) and
   the version carriers.
 
@@ -119,8 +121,8 @@ that govern it, then stamp scoped (AGENTS.md pre-PR item 5). Read every verdict 
 
 **Commands:**
 - `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (the station's `verify_commands`).
-- `unshare -rn pixi run --frozen -e local-recipes python -m pytest .claude/skills/conda-forge-expert/tests/integration/test_workflow_npm.py .claude/skills/conda-forge-expert/tests/unit/test_stub_smithy_maintainer_lookups.py -m 'not network' -q` — expected: 9 passed (AC1).
-- `pixi run --frozen -e local-recipes python -m pytest .claude/skills/conda-forge-expert/tests/unit/test_stub_smithy_maintainer_lookups.py -q` — expected: 7 passed, the two `network` tests included (AC2–AC4).
+- `unshare -rn pixi run --frozen -e local-recipes python -m pytest .claude/skills/conda-forge-expert/tests/integration/test_workflow_npm.py .claude/skills/conda-forge-expert/tests/unit/test_stub_smithy_maintainer_lookups.py -m 'not network' -q` — expected: 10 passed (AC1).
+- `pixi run --frozen -e local-recipes python -m pytest .claude/skills/conda-forge-expert/tests/unit/test_stub_smithy_maintainer_lookups.py -q` — expected: 8 passed, the two `network` tests included (AC2–AC4).
 
 **Run before the push (not dispatch gates):**
 - `unshare -rn` over the whole non-network CFE suite — expected: no failure that reaches the network.
@@ -133,8 +135,8 @@ Run 2026-10-22 in the landing worktree on `3a642c7bc4`, every verdict read from 
 primary checkout's `local-recipes` interpreter (conda-smithy 3.62.0).
 
 - **Before the fix, network blocked** (`unshare -rn`): `test_workflow_npm.py` plus the stub test file gave 4 failed,
-  2 passed (exit 1). The log names `raw.githubusercontent.com` 15 times: `linter_hints/hints.toml` 4 times and
-  `cf_tick_schema.json` twice. The four failures: `test_canonical_chain_with_deps`, `test_zero_dep_chain`,
+  2 passed (exit 1). Every failure traces to `raw.githubusercontent.com`, for `linter_hints/hints.toml` or
+  `cf_tick_schema.json`. The four failures: `test_canonical_chain_with_deps`, `test_zero_dep_chain`,
   `test_pip_check_still_suggested_for_python` and Story 26.1's
   `test_validate_recipe_lint_of_a_named_maintainer_makes_no_request`.
 - **First attempt, `None` from the hints stub:** both `validate_recipe` tests failed online with conda-smithy's
@@ -159,8 +161,22 @@ primary checkout's `local-recipes` interpreter (conda-smithy 3.62.0).
 
 ## Spec Change Log
 
+- 2026-10-22, independent review (PASS, no blocker), fixed on the same branch:
+  - S1: the spec-pyforge-mason memlog's 2026-10-22 decision said the hints stub returns `None`; a correcting decision
+    entry records `{"hints": {}}`.
+  - S2: `bot_schema_uri()` used `Path.as_uri()`, which percent-encodes; conda-smithy reads `uri[7:]` without unquoting,
+    so a checkout path with a space would not resolve. It now builds `"file://" + path`, and a test validates through a
+    copy under a directory whose name has a space (the `as_uri()` mutation fails it).
+  - Nits: the unused module-level `apply_smithy_maintainer_stubs()` removed; two trap docstrings name
+    `githubusercontent.com`; the `network` test checks the hints function's `__module__`; the log-format-dependent
+    occurrence count is dropped from Run results, and the final offline runs are recorded.
+
 - 2026-10-22: minted `done`, implemented and verified in the same change.
 
 ## Review Triage Log
 
-- 2026-10-22: the independent review runs as a separate pass and records its findings here.
+- 2026-10-22, review 1 (independent subagent, read the diff against this spec): PASS, 0 blockers, 2 should-fix, 5
+  nits. It reproduced AC1–AC6, the before-fix failures, every gate, and the whole non-network CFE suite offline
+  (9,394 passed). All fixed on the branch (Spec Change Log) except one nit: the `26-2` key is in the tracked ledger but
+  not yet the shared Tier-3 feed. That is deliberate, so the key cannot reach main before the merge; it is added to the
+  feed at landing.
