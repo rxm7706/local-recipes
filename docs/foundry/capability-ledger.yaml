@@ -5006,6 +5006,13 @@ capabilities:
     heading: "the query-plane estate source has a producer"
     mode: rebuild
     path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  # 2026-10-19 the Vizro boards read what the pipelines write (Epic 37)
+  - id: pyforge-atlas:CAP-69
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "the Vizro boards read the datasets the pipelines write"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
   - id: pyforge-mason:CAP-1
     spec: pyforge-mason
     station: pyforge-mason

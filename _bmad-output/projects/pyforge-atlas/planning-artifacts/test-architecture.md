@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: abc303585b5627b5
-story_count: 128
-test_file_count: 165
+source_fingerprint: 89be63e18aaadbd1
+story_count: 138
+test_file_count: 168
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 128
-- **Epics parsed:** 36
-- **Test files inventoried:** 165 under `src/shared/packages/pyforge-atlas/tests/`
+- **Stories parsed:** 138
+- **Epics parsed:** 37
+- **Test files inventoried:** 168 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `abc303585b5627b5`
+- **Source fingerprint:** `89be63e18aaadbd1`
 
 ## Risk Assessment
 
@@ -68,6 +68,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 33: The atlas CLI reaches the verbs its contracts name, from any directory (fix under spec-pyforge-atlas CAP-9)
 - Epic 34: A plain run fills every dataset a public source serves (spec-pyforge-atlas CAP-64, FR-72)
 - Epic 36: Basilisk, the OpenTeams identity sources and the estate source (spec-pyforge-atlas CAP-66..CAP-68, FR-74..FR-76)
+- Epic 37: The Vizro boards read what the pipelines write, on Pages too (spec-pyforge-atlas CAP-63 amended, CAP-69, FR-71, FR-77)
 
 ### Low-risk epics
 
@@ -110,10 +111,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/catalog/test_tracked_seeds.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/catalog/test_yaml_hygiene.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_basilisk.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_basilisk_population.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_bigquery_cost_gate.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_cf_graph_split.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_clickhouse_downloads.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_core_sources.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_credentialed_switch.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_dependency_history.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_identity_sources.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_incremental_parquet.py` | unit | none observed |
@@ -134,6 +137,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_vcs_sources.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_vdb_boundary.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_vulnerability_feeds.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_vulnerability_stores_live.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/factory/test_crews.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/factory/test_lasuite.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/factory/test_lasuite_live_rehearsal.py` | unit | none observed |
@@ -375,6 +379,16 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 36.1 | The Basilisk population runs | none observed |
 | 36.2 | The OpenTeams board and the staged-recipes PRs fill on opt-in | none observed |
 | 36.3 | The query-plane estate source has a producer | none observed |
+| 37.1 | The dashboard reads the data root Kedro writes | none observed |
+| 37.2 | The Pages Vizro export builds the public atlas data first | none observed |
+| 37.3 | The seed-gap, version-download and distribution boards read their datasets | none observed |
+| 37.4 | Behind-upstream, whodepends, live-catalog coverage and the universe SBOM boar... | none observed |
+| 37.5 | The cve-watcher reads a vulnerability history | none observed |
+| 37.6 | The release-cadence reads per-version upload times | none observed |
+| 37.7 | The find-alternative scores candidates for archived packages | none observed |
+| 37.8 | The export-purls lists the PURL artifacts | none observed |
+| 37.9 | The mapping-gap classifies the unmapped packages | none observed |
+| 37.10 | The bootstrap-index-health reports each catalog entry's freshness | none observed |
 
 ## Quality Gates
 

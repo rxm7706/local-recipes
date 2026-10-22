@@ -7,7 +7,7 @@ paradigm: 'declarative dataflow (pipes-and-filters over a declared Data Catalog)
 scope: 'Migration of the cf_atlas orchestrator to Kedro pipelines + Dagster orchestration + DuckDB compute, with BSL/Vizro read surface and MCP/A2A agent interfaces (FR-1..FR-22, Waves 0 + A–H)'
 status: final
 created: '2026-07-17'
-updated: "2026-10-18"   # RE-STAMPED 2026-10-18 (later): AD-6 amended for CAP-64..CAP-68 (public sources own their refreshers in-package; credentialed refreshers on the PYFORGE_ATLAS_CREDENTIALED=1 opt-in). Earlier the same day: chain-currency cascade (PRD -> arch) for atlas Story 33.1 (fix under spec-pyforge-atlas CAP-9): AD-23 checked and now holds for the CLI entry point; no AD added, removed or amended. See § Currency reconciliation — 2026-10-18. Prior: RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD -> arch) for FR-70 / CAP-62 and FR-71 / CAP-63 (Epic 30: the DAG export reaches Pages as a workflow artifact; Vizro boards publish as static exports). AD-21 amended (every static surface atlas publishes reaches Pages as a workflow artifact); no AD added or removed. See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD -> arch) for Stories 28.1 and 29.1, two test-only fixes (CAP-6, CAP-16); no AD added, amended or removed. See § Currency reconciliation — 2026-10-13. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD -> arch) for Story 25.1's gate clearing (key blocked -> backlog by operator ruling); no AD amended. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD -> arch) for marshal Story 66.2's deferred-work backfill; no AD amended. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch) for FR-69 / CAP-61 (Epic 25); lands on AD-1, AD-2, AD-3, AD-4, AD-5, AD-6 and AD-13 as written, no AD amended. Prior 2026-09-20 (fleet consistency pass).
+updated: "2026-10-22"   # RE-STAMPED 2026-10-22: prd→arch for FR-71 amended in place (CAP-63, operator ruling 2026-10-21: on Pages the identity boards show what public inputs give them); no AD added, removed or amended. See § Currency reconciliation — 2026-10-22. Prior: RE-STAMPED 2026-10-19: prd→arch for FR-77 (CAP-69, the Vizro boards read the datasets the pipelines write) and FR-71 amended (CAP-63, the producer builds public data first); no AD added, removed or amended. See § Currency reconciliation — 2026-10-19. Prior: RE-STAMPED 2026-10-18 (later): AD-6 amended for CAP-64..CAP-68 (public sources own their refreshers in-package; credentialed refreshers on the PYFORGE_ATLAS_CREDENTIALED=1 opt-in). Earlier the same day: chain-currency cascade (PRD -> arch) for atlas Story 33.1 (fix under spec-pyforge-atlas CAP-9): AD-23 checked and now holds for the CLI entry point; no AD added, removed or amended. See § Currency reconciliation — 2026-10-18. Prior: RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD -> arch) for FR-70 / CAP-62 and FR-71 / CAP-63 (Epic 30: the DAG export reaches Pages as a workflow artifact; Vizro boards publish as static exports). AD-21 amended (every static surface atlas publishes reaches Pages as a workflow artifact); no AD added or removed. See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD -> arch) for Stories 28.1 and 29.1, two test-only fixes (CAP-6, CAP-16); no AD added, amended or removed. See § Currency reconciliation — 2026-10-13. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD -> arch) for Story 25.1's gate clearing (key blocked -> backlog by operator ruling); no AD amended. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD -> arch) for marshal Story 66.2's deferred-work backfill; no AD amended. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch) for FR-69 / CAP-61 (Epic 25); lands on AD-1, AD-2, AD-3, AD-4, AD-5, AD-6 and AD-13 as written, no AD amended. Prior 2026-09-20 (fleet consistency pass).
 currency_review: "Reviewed 2026-08-02 — the FR-9 Capability Map row still stated the pre-correction '28-CLI port' claim after the PRD's 2026-08-01 CAP-8 fix (AUD-ATLAS-041). Row corrected to match: 8 dashboard pages + factory-status ship in v1, full 28-CLI inventory deferred (DW-D2-1). No other capability-map row referenced the overclaim. Reviewed again 2026-08-26 — AD-3 amended for the three governed pipeline additions; post-08-02 as-built deltas (CAP-19 query plane, host MCP face, CAP-18 hooks, vizro-ai deprecation, canopy AD-numbering disambiguation) reconciled in the appended section 'Currency reconciliation — 2026-08-26'. Reviewed again 2026-09-18 (fleet chain-currency sweep) — the 2026-09-17 PRD fold/rekey and 2026-09-10 code motion (Story 24.4 live Artifactory transport) reconciled in the appended section 'Currency reconciliation — 2026-09-18'; AD-3's Epic 13/15 citations corrected to post-rekey Epic 12/14."
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22]
 sources:
@@ -1575,3 +1575,32 @@ added, removed or amended.
 - **AD-2 (reads as written).** The GitHub bearer header CAP-65 adds attaches to the GitHub host only.
 - **AD-1 and the no-inline-IO scan (read as written).** Live fetches compose `APIDataset` or run through
   `pyforge.core.process`; no banned import enters the package.
+
+## Currency reconciliation — 2026-10-19
+
+*Trigger: the PRD's re-stamp of the same date (`prd→arch`): FR-77 registered from `spec-pyforge-atlas` CAP-69 (the
+Vizro boards read the datasets the pipelines write; Epic 37) and FR-71 amended with CAP-63 (the Pages producer builds
+the public atlas data before it exports, weekly and on push).* Checked against every AD; none is added, removed or
+amended.
+
+- **AD-8 and AD-17 (the read surface; snapshots advisory).** The boards still read Parquet through BSL over DuckDB;
+  CAP-69 changes which dataset a board reads and the expressions its model takes, never the read path. Each page keeps
+  its AD-17 stamp, now from the dataset that holds its content.
+- **AD-11 (gates are fixtures; credentialed runs attended-only).** The Pages producer runs public sources only, with no
+  secret and no `PYFORGE_ATLAS_CREDENTIALED`; the new loader tests read fixtures.
+- **AD-21 (every static surface reaches Pages as a workflow artifact).** Unchanged: the producer builds its data on the
+  runner and uploads only the export; no data root is committed.
+- **AD-13 (last-good under a marker).** A public source unreachable on the runner keeps the board honest-empty with its
+  stamp, as before.
+
+## Currency reconciliation — 2026-10-22
+
+*Trigger: the PRD's re-stamp of the same date (`prd→arch`): FR-71 amended in place with CAP-63's 2026-10-21 operator
+ruling. On Pages the identity boards show what public inputs give them (the purl associator, the tracked inventory);
+credentialed and enterprise sources stay empty.* Checked against every AD; none is added, removed or amended.
+
+- **AD-11 (credentialed runs attended-only).** Unchanged: the Pages producer still runs public sources only, with no
+  secret and no `PYFORGE_ATLAS_CREDENTIALED`; the identity rows it publishes come from public inputs.
+- **AD-21 (static surfaces reach Pages as workflow artifacts).** Unchanged; the export now caps each table at 5,000
+  rows and sums each chart over the whole frame, a rendering detail inside the artifact.
+

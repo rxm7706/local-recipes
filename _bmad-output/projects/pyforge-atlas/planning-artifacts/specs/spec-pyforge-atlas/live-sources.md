@@ -22,7 +22,7 @@ substitute oracle). **Credential:** `—` public, unauthenticated; `opt-in` runs
 | GitHub GraphQL (releases, tags; feedstock health) | `vcs_upstream_versions`, `vcs_live_health`, `vcs_archived_feedstocks` | K, E.5, N | legacy K fetched 23,896; N 28,682 feedstocks; E.5 marked 864 archived | opt-in | 35.1–35.3 |
 | GitLab, Codeberg, npm, CRAN, CPAN, LuaRocks, crates, RubyGems, NuGet, Maven | `vcs_registry_versions`, GitLab/Codeberg upstream versions | K, L | legacy L fetched 375; K GitLab 400, Codeberg 26 | — (registries); opt-in where a host needs a token | 35.4 |
 | api.basilisk.prefix.dev `/v1/packages` | `discovery_basilisk_packages_raw` | — | rows > 0 | — | 36.1 |
-| api.basilisk.prefix.dev `/v1/querybatch`, `/v1/vulns` | `vulnerability_basilisk_advisories`, `…_details`, `…_rollup` | — | population ≈ `core_packages_enumerated` | opt-in (`basilisk_token`, bearer) | 36.1 |
+| api.basilisk.prefix.dev `/v1/querybatch`, `/v1/vulns` | `vulnerability_basilisk_advisories`, `…_details`, `…_rollup` | — | population ≈ `core_packages_enumerated` | opt-in (`PYFORGE_ATLAS_BASILISK_TOKEN`, bearer) | 36.1 |
 | OpenTeams project board (GraphQL), staged-recipes PRs (REST) | identity sources → `identity_packages_primary`, identity exports, inventory priorities | — | rows per `identity_source` > 0 | opt-in | 36.2 |
 | platform OLTP extract (canopy FR-47 Mode B), through a steward export on `pyforge.core.station_port` | `query_plane_estate_source` → `query_plane_estate` | — | decided with the steward export | — | 36.3 (blocked: deferred 2026-10-18) |
 

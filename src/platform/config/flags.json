@@ -225,6 +225,36 @@
         "cleanup_by": ""
       }
     },
+    "pyforge.atlas.basilisk_population": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "atlas",
+        "story": "36-1-the-basilisk-population-runs",
+        "created": "2026-10-18",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
+    "pyforge.atlas.identity_live_sources": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "atlas",
+        "story": "36-2-the-openteams-board-and-the-staged-recipes-prs-fill-on-opt-in",
+        "created": "2026-10-18",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
     "pyforge.atlas.live_vcs_universe": {
       "state": "ENABLED",
       "variants": {

@@ -423,6 +423,31 @@ harness_preference = ["cursor"]
   "_bmad-output/projects/*/planning-artifacts/briefs/**",
   "_bmad-output/projects/*/planning-artifacts/epics.md",
 ]
+"37" = [  # the Vizro boards read what the pipelines write, on Pages too (CAP-63 amended, CAP-69; Stories 37.1-37.10), added 2026-10-19.
+  # The default surface restated, plus flag registration (feature stories) and the memlog / chain-currency globs.
+  "src/shared/packages/pyforge-atlas/**",
+  # Story 37.2: the Pages producer job and the CI surface registry
+  ".github/workflows/kedro-viz-publish.yml",
+  "docs/governance/ci-surfaces.yaml",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/test-architecture.md",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md",
+  "scripts/.spec-surface-baseline.json",
+  # flag registration (feature stories; docs/reference/story-spec-flag-block.md)
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
+  "src/platform/tests/test_openfeature_file_flags.py",
+  # co-governor reconciles
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+  # chain-currency re-stamps only
+  "_bmad-output/projects/*/planning-artifacts/prds/**",
+  "_bmad-output/projects/*/planning-artifacts/architecture/**",
+  "_bmad-output/projects/*/planning-artifacts/briefs/**",
+  "_bmad-output/projects/*/planning-artifacts/epics.md",
+]
 
 # dispatch (Story 102.1 / spec-pyforge-marshal CAP-161), added 2026-10-15: a re-landing reuses this station's own
 # verified verdict when only merges of main and planning-only commits moved the branch since the head it judged,

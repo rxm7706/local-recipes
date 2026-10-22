@@ -331,6 +331,16 @@ def test_the_anchor_feedstock_is_the_first_anchor_row():
 
 
 def test_a_cran_page_among_the_about_urls_stays_unbatched():
-    graph = GRAPH.assign(home_url=["https://cran.r-project.org/package=airflow", None, None, None, None, None, None])
+    graph = GRAPH.assign(
+        home_url=[
+            "https://cran.r-project.org/package=airflow",
+            "https://cran.r-project.org/web/packages/glab/index.html",  # the other form a CRAN page takes
+            None,
+            None,
+            None,
+            None,
+            None,
+        ]
+    )
 
     assert batches_from_universe(ENUM, graph, ATTRIBUTION)["registries"]["cran"] == ()
