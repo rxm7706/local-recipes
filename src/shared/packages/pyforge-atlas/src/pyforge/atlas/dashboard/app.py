@@ -21,7 +21,9 @@ Page set (the full 34-page inventory, Story 20.5 / CAP-7 closing DW-D2-1):
     ``semantic_packages`` pipeline (Story 20.3); a checkout that has not run it yet gets
     the honest-empty result ``_bsl_query_or_empty`` returns, never a fabricated row.
   * NO-BSL-MODEL SHELL pages — behind-upstream, whodepends (no D1 BSL model exists yet; a
-    Card states the gap — no data function, no fabrication).
+    Card states the gap — no data function, no fabrication). With ``pyforge.atlas.board_projections``
+    on (Story 37.4), ``page_inventory`` swaps in ``PROJECTED_PAGES``: these two read their models,
+    and universe-sbom and live-catalog-coverage read the projections ``derived_artifacts`` writes.
   * BSL-WIRED pages over their own per-page model (Story 20.5) — the remaining atlas-CLI /
     cyclonedx-suite / seed-gap-suggester pages, each routed through a model in
     ``semantic/models.py``. Each page's ``note`` names the pipeline that has still to
@@ -49,7 +51,7 @@ from __future__ import annotations
 
 import time
 import warnings
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Callable
 
@@ -416,6 +418,76 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
     ),
     PageDef("factory-status", "Factory Status", "factory-status", "factory"),
 )
+
+#: Story 37.4 (CAP-69): the four boards' definitions with ``pyforge.atlas.board_projections`` on.
+#: Off, ``PAGE_INVENTORY``'s entries stand: the two shells, and the coverage boards' earlier paths.
+PROJECTED_PAGES: dict[str, PageDef] = {
+    page.id: page
+    for page in (
+        PageDef(
+            "behind-upstream",
+            "Behind Upstream",
+            "behind-upstream",
+            "bsl-shell",
+            note="Wired to build_behind_upstream_model over derived_behind_upstream, which "
+            "derived_artifacts' project_behind_upstream writes: each enumerated package whose upstream "
+            "release (vcs_upstream_versions; GitHub, then GitLab, then Codeberg) is newer than its latest "
+            "conda version, labelled major, minor, patch or unknown as legacy behind-upstream labels it "
+            "(unknown: a version that is not PEP 440, often a tag such as bzip2-1.0.8). PyPI's version is "
+            "not compared yet. The chart counts packages per label.",
+            chart=ChartDef("bar", x="lag_label", y="package_count"),
+        ),
+        PageDef(
+            "whodepends",
+            "Who Depends",
+            "whodepends",
+            "bsl-shell",
+            note="Wired to build_whodepends_model over core_dependencies: per depended-on package and "
+            "dependency type, how many packages depend on it (legacy whodepends --reverse, for every "
+            "package at once). The dependency graph carries no pin spec. The chart sums each package's "
+            "dependents over its dependency types.",
+            chart=ChartDef("bar", x="depends_on", y="dependent_count"),
+        ),
+        PageDef(
+            "universe-sbom",
+            "Universe SBOM",
+            "universe-sbom",
+            "bsl-shell",
+            note="The universe BOM (build_universe_sbom_summary_model), one row per component from "
+            "derived_universe_sbom_summary, which derived_artifacts' project_universe_sbom_summary writes: "
+            "slice is mapped when the component names its PyPI project, else unmapped. with_vulns_count "
+            "stays empty: the BOM carries no vulnerability data. DESIGN.md's summary cards are not built.",
+            filters=("slice",),
+        ),
+        PageDef(
+            "live-catalog-coverage",
+            "Live Catalog Coverage",
+            "live-catalog-coverage",
+            "bsl-shell",
+            note="Wired to build_live_catalog_coverage_model over derived_live_catalog_coverage, which "
+            "derived_artifacts' project_live_catalog_coverage writes: per inventory flag of the identity "
+            "export (PyPI_Verified, CondaForge_Verified and the in_* channel flags), how many rows hold "
+            "it, out of how many.",
+        ),
+    )
+}
+
+
+def page_inventory(*, projected: bool | None = None) -> tuple[PageDef, ...]:
+    """The page set ``build_dashboard`` builds: ``PAGE_INVENTORY``, with ``PROJECTED_PAGES`` swapped in
+    when ``pyforge.atlas.board_projections`` is on (``projected`` overrides the flag).
+
+    A swapped-in page keeps the base page's ``access_column``, so both states refuse the same static export
+    (sld:AD-10), and ``static_export.access_column_boards``' default over ``PAGE_INVENTORY`` holds in both."""
+    if projected is None:
+        projected = _data.board_projections()
+    if not projected:
+        return PAGE_INVENTORY
+    return tuple(
+        replace(PROJECTED_PAGES[page.id], access_column=page.access_column) if page.id in PROJECTED_PAGES else page
+        for page in PAGE_INVENTORY
+    )
+
 
 DASHBOARD_ID = "cf-atlas"
 DASHBOARD_TITLE = "cf_atlas Factory"
@@ -805,12 +877,14 @@ def build_dashboard(
     sprint_status_path: str | Path | None = None,
     epics_path: str | Path | None = None,
     reset: bool = True,
+    board_projections: bool | None = None,
 ) -> vm.Dashboard:
     """Assemble the BSL-driven Vizro Dashboard object (OFFLINE — no server, no live data).
 
     ``build_stamp`` (AD-17) and ``now`` are injectable for determinism; both default to wall
     clock resolved ONCE here (never at import). ``reset`` clears Vizro's global managers so
-    repeated builds in one process (the gate) are independent.
+    repeated builds in one process (the gate) are independent. ``board_projections`` overrides
+    ``pyforge.atlas.board_projections`` (Story 37.4), read once here when it is None.
     """
     if reset:
         Vizro._reset()
@@ -819,6 +893,14 @@ def build_dashboard(
     if now is None:
         now = int(time.time())
     root = Path(data_root) if data_root is not None else _data.default_data_root()
+    projected = _data.board_projections() if board_projections is None else board_projections
+    # Story 37.4: the two coverage boards' paths with the flag on, their earlier paths off
+    universe_sbom_path = root / (
+        _data.DERIVED_UNIVERSE_SBOM_SUMMARY_PARQUET if projected else _data.UNIVERSE_SBOM_SUMMARY_PARQUET
+    )
+    live_catalog_coverage_path = root / (
+        _data.DERIVED_LIVE_CATALOG_COVERAGE_PARQUET if projected else _data.LIVE_CATALOG_COVERAGE_PARQUET
+    )
 
     # AD-17 (Story I4): each grounded/bsl-shell page's provenance is THAT page's own
     # backing Parquet file's mtime (resolve_for_file degrades to "unavailable" + a
@@ -849,7 +931,7 @@ def build_dashboard(
     distribution_breakdown_provenance = _provenance.resolve_for_file(root / _data.DISTRIBUTION_BREAKDOWN_PARQUET)
     export_purls_provenance = _provenance.resolve_for_file(root / _data.PURL_EXPORT_MANIFEST_PARQUET)
     mapping_gap_provenance = _provenance.resolve_for_file(root / _data.MAPPING_GAP_PARQUET)
-    universe_sbom_provenance = _provenance.resolve_for_file(root / _data.UNIVERSE_SBOM_SUMMARY_PARQUET)
+    universe_sbom_provenance = _provenance.resolve_for_file(universe_sbom_path)
     inventory_match_provenance = _provenance.resolve_for_file(root / _data.INVENTORY_MATCH_LATEST_PARQUET)
     add_handoff_provenance = _provenance.resolve_for_file(root / _data.ADD_HANDOFF_LATEST_PARQUET)
     library_futures_provenance = _provenance.resolve_for_file(root / _data.LIBRARY_FUTURES_LATEST_PARQUET)
@@ -871,9 +953,11 @@ def build_dashboard(
     )
     bootstrap_index_health_provenance = _provenance.resolve_for_file(root / _data.BOOTSTRAP_INDEX_HEALTH_PARQUET)
     identity_export_snapshot_provenance = _provenance.resolve_for_file(root / _data.IDENTITY_EXPORT_PARQUET)
-    live_catalog_coverage_provenance = _provenance.resolve_for_file(root / _data.LIVE_CATALOG_COVERAGE_PARQUET)
+    live_catalog_coverage_provenance = _provenance.resolve_for_file(live_catalog_coverage_path)
+    behind_upstream_provenance = _provenance.resolve_for_file(root / _data.BEHIND_UPSTREAM_PARQUET)
+    whodepends_provenance = _provenance.resolve_for_file(root / _data.CORE_DEPENDENCIES_PARQUET)
 
-    by_id = {p.id: p for p in PAGE_INVENTORY}
+    by_id = {p.id: p for p in page_inventory(projected=projected)}
     pages: list[vm.Page] = [
         _data_page(
             by_id["feedstock-health"],
@@ -911,8 +995,22 @@ def build_dashboard(
             grounded=False,
             provenance=packages_provenance,
         ),
-        _shell_page(by_id["behind-upstream"], provenance=no_bsl_model_provenance),
-        _shell_page(by_id["whodepends"], provenance=no_bsl_model_provenance),
+        _data_page(
+            by_id["behind-upstream"],
+            lambda: _data.load_behind_upstream(root / _data.BEHIND_UPSTREAM_PARQUET),
+            grounded=False,
+            provenance=behind_upstream_provenance,
+        )
+        if projected
+        else _shell_page(by_id["behind-upstream"], provenance=no_bsl_model_provenance),
+        _data_page(
+            by_id["whodepends"],
+            lambda: _data.load_whodepends(root / _data.CORE_DEPENDENCIES_PARQUET),
+            grounded=False,
+            provenance=whodepends_provenance,
+        )
+        if projected
+        else _shell_page(by_id["whodepends"], provenance=no_bsl_model_provenance),
         # -- Story 20.5 (CAP-7) — the remaining 19 pages --
         _data_page(
             by_id["cve-watcher"],
@@ -976,7 +1074,7 @@ def build_dashboard(
         ),
         _data_page(
             by_id["universe-sbom"],
-            lambda: _data.load_universe_sbom(root / _data.UNIVERSE_SBOM_SUMMARY_PARQUET),
+            lambda: _data.load_universe_sbom(universe_sbom_path),
             grounded=False,
             provenance=universe_sbom_provenance,
         ),
@@ -1060,7 +1158,7 @@ def build_dashboard(
         ),
         _data_page(
             by_id["live-catalog-coverage"],
-            lambda: _data.load_live_catalog_coverage(root / _data.LIVE_CATALOG_COVERAGE_PARQUET),
+            lambda: _data.load_live_catalog_coverage(live_catalog_coverage_path),
             grounded=False,
             provenance=live_catalog_coverage_provenance,
         ),

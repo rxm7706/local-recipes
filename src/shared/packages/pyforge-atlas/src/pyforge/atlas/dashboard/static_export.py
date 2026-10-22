@@ -205,14 +205,20 @@ def export_boards(
     sprint_status_path: str | Path | None = None,
     epics_path: str | Path | None = None,
     inventory: Iterable[_app.PageDef] | None = None,
+    flags_path: str | Path | None = None,
 ) -> dict[str, Any]:
     """Write the static boards to ``out_dir`` and return the manifest written beside them.
+
+    ``flags_path`` is the flag tree ``pyforge.atlas.board_projections`` is read from (Story 37.4),
+    the same tree the export task read ``pyforge.atlas.vizro_static_boards`` from.
 
     Order: the access-column refusal, plotly's bundle and ``export_commit`` are checked, then
     every page is rendered in memory, and only then is anything written. ``out_dir`` is
     replaced wholesale. Raises :class:`StaticExportError` (nothing written) on any refusal.
     """
-    pages_declared = _app.PAGE_INVENTORY if inventory is None else tuple(inventory)
+    # Story 37.4: one read of `pyforge.atlas.board_projections` decides both the declared pages and the build
+    projected = _data.board_projections(flags_path=flags_path)
+    pages_declared = _app.page_inventory(projected=projected) if inventory is None else tuple(inventory)
     refuse_access_columns(pages_declared)
     bundle = plotly_bundle()
     if not _SHA_RE.fullmatch(export_commit or ""):
@@ -231,6 +237,7 @@ def export_boards(
         now=now,
         sprint_status_path=sprint_status_path,
         epics_path=epics_path,
+        board_projections=projected,
     )
     declared_by_id = {page.id: page for page in pages_declared}
     scrub = _data_root_scrubber(root)

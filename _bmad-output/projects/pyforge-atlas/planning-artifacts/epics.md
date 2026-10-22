@@ -2746,11 +2746,11 @@ So that four more boards render rows from a public run.
 
 **Type:** feature • **Effort:** M • **Deps:** 37.1 • **FR/AD:** spec-pyforge-atlas CAP-69 (FR-77) • AD-8, AD-14
 **Flag:** `pyforge.atlas.board_projections`
-**Surface:** `semantic/models.py` (two models), `dashboard/data.py`, `dashboard/app.py`, a projection node for live-catalog coverage and one for the SBOM summary (`derived_artifacts`), their catalog entries, tests
+**Surface:** `semantic/models.py` (two models), `dashboard/data.py`, `dashboard/app.py`, `dashboard/static_export.py`, three projection nodes in `derived_artifacts` (behind-upstream, whose PEP 440 lag labels SQL cannot express; live-catalog coverage; the SBOM summary) with their catalog entries and node timeouts, the flag in `src/platform/config/`, tests
 **Given** behind-upstream and whodepends have no model and live-catalog-coverage and universe-sbom read paths nothing writes
 **When** a run has written `vcs_upstream_versions`, `core_dependencies`, the inventory flags and the universal SBOM
 **Then** the four boards render rows; with the flag off they read as before
-**Status:** backlog
+**Status:** done
 
 ### Story 37.5: The cve-watcher reads a vulnerability history
 
