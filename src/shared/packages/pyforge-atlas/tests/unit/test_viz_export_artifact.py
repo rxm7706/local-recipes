@@ -86,6 +86,8 @@ def test_ac4_kedro_viz_publish_workflow_shape() -> None:
             "paths": [*BASELINE_ON_BLOCK["push"]["paths"], *VIZRO_TRIGGER_PATHS],
         },
         "workflow_dispatch": None,
+        # Story 37.2: the weekly public data build (operator ruling 2026-10-19, "Weekly + on push")
+        "schedule": [{"cron": "17 5 * * 1"}],
     }
     assert on_block == widened
     assert "workflow_dispatch" in on_block
