@@ -2623,7 +2623,7 @@ So that `vcs_upstream_versions`, `vcs_live_health` and `vcs_archived_feedstocks`
 **Given** `fetch_repo_health` asks only for archived status, stars, last push and open issues, so `upstream_version` is always NA
 **When** a credentialed run reaches the GitHub stores
 **Then** the three datasets hold rows within the story's tolerance of legacy K (23,896 fetched), N (28,682 feedstocks) and E.5 (864 archived), all measured 2026-10-18
-**Status:** backlog
+**Status:** done
 
 ### Story 35.4: GitLab, Codeberg and the eight registries fill
 
