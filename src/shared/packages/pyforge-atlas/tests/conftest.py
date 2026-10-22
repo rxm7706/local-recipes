@@ -7,8 +7,8 @@ import socket
 import pytest
 from pyforge.testing_kit import make_flag_provider_fixture
 
+from pyforge.atlas.datasets import basilisk, identity_sources, public_sources
 from pyforge.atlas.datasets import credentials as credential_switch
-from pyforge.atlas.datasets import identity_sources, public_sources
 
 flag_provider = make_flag_provider_fixture()
 
@@ -107,6 +107,15 @@ def _vcs_universe_off_and_no_switch(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(credential_switch, "live_vcs_universe", lambda: False)
     monkeypatch.setattr(identity_sources, "identity_live", lambda: False)  # Story 36.2
     monkeypatch.delenv(credential_switch.SWITCH, raising=False)
+    # Story 36.1: an operator's exported Basilisk token never reaches a test
+    monkeypatch.delenv(credential_switch.BASILISK_TOKEN_ENV, raising=False)
+
+
+@pytest.fixture(autouse=True)
+def _basilisk_population_off(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Story 36.1: every test starts with ``pyforge.atlas.basilisk_population`` OFF (dev reads it
+    ON). A test of the advisory drivers patches ``basilisk.population_live`` ON."""
+    monkeypatch.setattr(basilisk, "population_live", lambda: False)
 
 
 @pytest.fixture(autouse=True)

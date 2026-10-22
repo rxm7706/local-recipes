@@ -659,6 +659,11 @@ _SHIPPED_BOOLEANS = {
         "staging": False,
         "production": False,
     },
+    "pyforge.atlas.basilisk_population": {
+        "dev": True,
+        "staging": False,
+        "production": False,
+    },
     "pyforge.atlas.identity_live_sources": {
         "dev": True,
         "staging": False,

@@ -188,8 +188,10 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "Version Downloads",
         "version-downloads",
         "bsl-shell",
-        note="Wired to build_version_downloads_model; renders empty until the "
-        "per-version download-history dataset materializes.",
+        note="Wired to build_version_downloads_model over core_version_download_history "
+        "(Story 37.3): downloads per package and version over the months the download store "
+        "covers. The store holds no upload date, so that column stays empty until per-version "
+        "upload times land (Story 37.6). The chart sums each version label across packages.",
         chart=ChartDef("bar", x="version", y="downloads"),
     ),
     PageDef(
@@ -248,10 +250,14 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "distribution-breakdown",
         "bsl-shell",
         note="Merges platform-breakdown / pyver-breakdown / channel-split behind one "
-        "`facet` dimension (build_distribution_breakdown_model); the python-version "
-        "facet's --policy-check bump-safety classifier (pyver_breakdown.py's own "
-        "policy_check_status, ported verbatim) rides along. Renders empty until the "
-        "per-facet download-breakdown dataset materializes.",
+        "`facet` dimension (build_distribution_breakdown_model) over "
+        "derived_distribution_breakdown (Story 37.3). `downloads_90d` holds each cut's total "
+        "over the months the download store covers (legacy's downloads_total), not a 90-day "
+        "window. Platform and python-version count conda-forge only, channel counts every "
+        "channel: pick one facet before reading the chart. The python-version facet's "
+        "--policy-check bump-safety classifier (pyver_breakdown.py's own policy_check_status, "
+        "ported verbatim) reads unknown until the declared and empirical Python floors are "
+        "migrated.",
         filters=("facet",),
         chart=ChartDef("bar", x="bucket", y="downloads_90d"),
     ),
@@ -323,32 +329,37 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "LTS Registry Gap",
         "lts-registry-gap",
         "bsl-shell",
-        note="Wired to build_lts_registry_gap_model, READ-ONLY suggester; renders "
-        "empty until the endoflife.date diff dataset materializes.",
+        note="Wired to build_lts_registry_gap_model over seed_gaps_lts_registry_report "
+        "(Story 37.3), a READ-ONLY suggester: endoflife.date products that match an "
+        "actionable atlas package and are missing from lts-registry.yaml.",
     ),
     PageDef(
         "cwe-seed-gap",
         "CWE Seed Gap",
         "cwe-seed-gap",
         "bsl-shell",
-        note="Wired to build_cwe_seed_gap_model, READ-ONLY suggester; renders empty "
-        "until the Other-bucket CWE classification dataset materializes.",
+        note="Wired to build_cwe_seed_gap_model over seed_gaps_cwe_report (Story 37.3), "
+        "a READ-ONLY suggester: Other-bucket CWEs with a suggested category. The package "
+        "impact count stays empty until it is migrated (DW-B6-2).",
     ),
     PageDef(
         "spdx-schema-gap",
         "SPDX Schema Gap",
         "spdx-schema-gap",
         "bsl-shell",
-        note="Wired to build_spdx_schema_gap_model, READ-ONLY suggester; renders "
-        "empty until the vendored-vs-upstream SPDX diff dataset materializes.",
+        note="Wired to build_spdx_schema_gap_model over seed_gaps_spdx_report (Story "
+        "37.3), a READ-ONLY suggester: the vendored SPDX list against upstream. Usage counts "
+        "are empty on upstream-drift rows, and the add-to-schema and non-standard rows stay "
+        "empty until per-package licenses are migrated (DW-B6-1).",
     ),
     PageDef(
         "license-map-gap",
         "License Map Gap",
         "license-map-gap",
         "bsl-shell",
-        note="Wired to build_license_map_gap_model, READ-ONLY suggester; renders "
-        "empty until the unmapped-license dataset materializes.",
+        note="Wired to build_license_map_gap_model over seed_gaps_license_map_report "
+        "(Story 37.3), a READ-ONLY suggester: raw PyPI license strings that normalize to no "
+        "SPDX id, with a suggested one.",
     ),
     PageDef(
         "identity-catalog",

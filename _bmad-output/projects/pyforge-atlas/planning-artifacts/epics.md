@@ -8,7 +8,7 @@ inputDocuments:
 project: pyforge-atlas
 status: final
 created: 2026-07-17
-updated: "2026-10-18"   # RE-STAMPED 2026-10-18 (later): Epics 34-36 / Stories 34.1-34.9 (+34.10, minted with Story 34.2), 35.1-35.4, 36.1-36.3 minted (spec-pyforge-atlas CAP-64..CAP-68, FR-72..FR-76; atlas fills its own data, Dream entry 2026-10-18): 16 story keys (backlog), epic-34..36 (backlog) and their retrospective keys (optional) added; no other key moved. Earlier: RE-STAMPED 2026-10-18: Epic 33 / Story 33.1 minted (fix under spec-pyforge-atlas CAP-9, no CAP, no flag; the atlas CLI reaches the verbs its contracts name, from any directory; Dream entry 2026-10-18): keys epic-33, epic-33-retrospective and 33-1 added; no other key moved. Prior: RE-STAMPED 2026-10-15: Story 30.2's text amended in place to CAP-63 as amended 2026-10-15 (the task under [feature.pyforge-atlas.tasks], run in -e pyforge-atlas; the exact-file VENDORED_ROOTS entry for the vendored plotly.min.js); no story added, renumbered or removed, no ledger key moved. Prior: RE-STAMPED 2026-10-14: Epic 31 / Story 31.1 minted (fix under spec-pyforge-atlas CAP-20, no CAP, no flag; closes DW-atlas-steward-100-7-1: atlas passes mypy in pyforge-foundry-full, and the existing mypy task runs there in the lint-types CI job and in pr-preflight; Dream entry 2026-10-14; renumbered from 30.1 after the Pages chain took Epic 30). Prior: RE-STAMPED 2026-10-14: Epic 30 / Stories 30.1-30.2 minted (features under spec-pyforge-atlas CAP-62 and CAP-63, FR-70 and FR-71, AD-21 amended; flags pyforge.atlas.viz_export_artifact and pyforge.atlas.vizro_static_boards) from the operator ruling of 2026-10-13 (the DAG export reaches Pages as an artifact; Dream entry of that date): keys 30-1 and 30-2 (backlog), epic-30 (backlog) and epic-30-retrospective (optional) added; no other key moved. See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-13: Epic 29 / Story 29.1 minted (fix under spec-pyforge-atlas CAP-16, no CAP, no flag; the range-test recorder race, Dream entry 2026-10-13). Prior: RE-STAMPED 2026-10-11: Epic 28 / Story 28.1 minted (fix under spec-pyforge-atlas CAP-6, no CAP, no flag; the live-attach fixture socket path, Dream entry 2026-10-11). Prior: RE-STAMPED 2026-10-10: arch->epics cascade after the spine's 2026-10-10 re-stamp (Story 25.1's gate cleared, its key flipped blocked -> backlog by operator ruling); no epic or story added or changed; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-04: Story 27.5 added to done Epic 27 (fix, no CAP, no flag; DW-atlas-27-3-1); epic-27 reopens to in-progress (operator ruling 2026-10-04; doctor Story 41.5). Prior 2026-10-03   # RE-STAMPED 2026-10-03 (Phase 4+5): Epic 27 / Stories 27.1-27.4 minted from the operator's Phase 4+5 ruling (fix, no CAP, no flag; 96 open medium and low deferrals). Prior: RE-STAMPED 2026-10-03: arch->epics cascade for marshal Story 66.2's deferred-work backfill; no epic or story minted. Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 26 / Story 26.1 minted (spec-one-chain-per-station CAP-11 relay; no atlas CAP or FR). Prior 2026-09-28   # RE-STAMPED 2026-09-28: Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-atlas CAP-61, FR-69); Story 24.4's stale pre-rekey "Story 25.2" citations corrected to 24.2; § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-20 (fleet consistency pass).
+updated: "2026-10-19"   # RE-STAMPED 2026-10-19: Epic 37 / Stories 37.1-37.10 minted (spec-pyforge-atlas CAP-63 amended, CAP-69; FR-71, FR-77); see § Currency reconciliation — 2026-10-19. Prior: RE-STAMPED 2026-10-18 (later): Epics 34-36 / Stories 34.1-34.9 (+34.10, minted with Story 34.2), 35.1-35.4, 36.1-36.3 minted (spec-pyforge-atlas CAP-64..CAP-68, FR-72..FR-76; atlas fills its own data, Dream entry 2026-10-18): 16 story keys (backlog), epic-34..36 (backlog) and their retrospective keys (optional) added; no other key moved. Earlier: RE-STAMPED 2026-10-18: Epic 33 / Story 33.1 minted (fix under spec-pyforge-atlas CAP-9, no CAP, no flag; the atlas CLI reaches the verbs its contracts name, from any directory; Dream entry 2026-10-18): keys epic-33, epic-33-retrospective and 33-1 added; no other key moved. Prior: RE-STAMPED 2026-10-15: Story 30.2's text amended in place to CAP-63 as amended 2026-10-15 (the task under [feature.pyforge-atlas.tasks], run in -e pyforge-atlas; the exact-file VENDORED_ROOTS entry for the vendored plotly.min.js); no story added, renumbered or removed, no ledger key moved. Prior: RE-STAMPED 2026-10-14: Epic 31 / Story 31.1 minted (fix under spec-pyforge-atlas CAP-20, no CAP, no flag; closes DW-atlas-steward-100-7-1: atlas passes mypy in pyforge-foundry-full, and the existing mypy task runs there in the lint-types CI job and in pr-preflight; Dream entry 2026-10-14; renumbered from 30.1 after the Pages chain took Epic 30). Prior: RE-STAMPED 2026-10-14: Epic 30 / Stories 30.1-30.2 minted (features under spec-pyforge-atlas CAP-62 and CAP-63, FR-70 and FR-71, AD-21 amended; flags pyforge.atlas.viz_export_artifact and pyforge.atlas.vizro_static_boards) from the operator ruling of 2026-10-13 (the DAG export reaches Pages as an artifact; Dream entry of that date): keys 30-1 and 30-2 (backlog), epic-30 (backlog) and epic-30-retrospective (optional) added; no other key moved. See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-13: Epic 29 / Story 29.1 minted (fix under spec-pyforge-atlas CAP-16, no CAP, no flag; the range-test recorder race, Dream entry 2026-10-13). Prior: RE-STAMPED 2026-10-11: Epic 28 / Story 28.1 minted (fix under spec-pyforge-atlas CAP-6, no CAP, no flag; the live-attach fixture socket path, Dream entry 2026-10-11). Prior: RE-STAMPED 2026-10-10: arch->epics cascade after the spine's 2026-10-10 re-stamp (Story 25.1's gate cleared, its key flipped blocked -> backlog by operator ruling); no epic or story added or changed; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-04: Story 27.5 added to done Epic 27 (fix, no CAP, no flag; DW-atlas-27-3-1); epic-27 reopens to in-progress (operator ruling 2026-10-04; doctor Story 41.5). Prior 2026-10-03   # RE-STAMPED 2026-10-03 (Phase 4+5): Epic 27 / Stories 27.1-27.4 minted from the operator's Phase 4+5 ruling (fix, no CAP, no flag; 96 open medium and low deferrals). Prior: RE-STAMPED 2026-10-03: arch->epics cascade for marshal Story 66.2's deferred-work backfill; no epic or story minted. Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 26 / Story 26.1 minted (spec-one-chain-per-station CAP-11 relay; no atlas CAP or FR). Prior 2026-09-28   # RE-STAMPED 2026-09-28: Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-atlas CAP-61, FR-69); Story 24.4's stale pre-rekey "Story 25.2" citations corrected to 24.2; § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-20 (fleet consistency pass).
 currency_review: "Reviewed 2026-09-06 (Epic 24 added: spec-bmad-suite-lifecycle atlas relay — mcp-builder for the MCP face, Story 24.1). Reviewed 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02. Validated 2026-08-26 against the re-cut architecture spine — no heading or status changed; see the dated validation note at end of file. 2026-08-27: Epic 20 appended (spec-atlas-query-dashboards CAP-5..7 reconcile against the 2026-08-26 query-plane rulings); no existing heading or status changed."
 generatedBy: bmad-create-epics-and-stories (unattended Tier-2 stage 3)
 # The single canonical story source for this station: every `### Story` heading
@@ -2510,12 +2510,12 @@ So that `vulnerability_package_rollup` and `vulnerability_package_version_vulns`
 
 **Type:** feature • **Effort:** M • **Deps:** 34.4 (per-version rows need downloads) • **FR/AD:** spec-pyforge-atlas CAP-64 (FR-72) • AD-6 (amended), AD-13
 **Flag:** `pyforge.atlas.live_public_sources`
-**Surface:** `datasets/refresh.py` (`VDBStoreDataset`, `OSVOfflineStoreDataset`), `conf/base/catalog.yml`, tests
+**Surface:** `datasets/refresh.py` (`VDBStoreDataset`, `OSVOfflineStoreDataset`), `datasets/vdb_extract.py` (the extractor, run in the vuln-db env), `datasets/public_sources.py` (`fetch_bytes`), `datasets/core_sources.py` (the about URLs, `package_recipe_fields`), `pipelines/vulnerability/` (the trigger's purls and versions, Phase G's dedupe), `orchestration/definitions.py` (the budget), tests
 **Given** both stores are constructed with no `refresher`
 **When** a run reaches them with the flag on
 **Then** the vdb store builds through `pyforge.core.process` (the vuln-db env's `vdb-refresh`) and is normalized to the store format, the OSV store fetches the public bucket, and both rollups hold rows within the story's tolerance of legacy Phase G (33,841 scanned, 2026-10-18)
 **And** a failed build keeps last-good under `stale`
-**Status:** backlog
+**Status:** done
 
 ### Story 34.8: Migration status fills through a driver node
 
@@ -2654,12 +2654,12 @@ So that the listing fills unattended and the three Basilisk datasets fill once t
 
 **Type:** feature • **Effort:** M • **Deps:** 35.1 (the opt-in switch) • **FR/AD:** spec-pyforge-atlas CAP-66 (FR-74, amended 2026-10-18 by operator ruling) • AD-2, AD-13, AD-14
 **Flag:** `pyforge.atlas.basilisk_population` (the drivers); the listing's refresher reads `pyforge.atlas.live_public_sources`, as the other public discovery stores do
-**Surface:** `datasets/basilisk.py`, `pipelines/vulnerability/` (driver nodes), `pipelines/derived_artifacts/` (the rollup input), `conf/base/catalog.yml`, `tools/bootstrap.py` (the listing's refresher), flag registration, tests
+**Surface:** `datasets/basilisk.py` (the listing's refresher, the two drivers), `datasets/credentials.py` (`basilisk_auth`), `datasets/refresh.py` (`RefreshRequest`), `pipelines/vulnerability/` (the two trigger nodes), `orchestration/definitions.py` (their budgets), `tools/bootstrap.py`, flag registration, README, tests
 **Given** `query_population` and `fetch_details` are never called, `load()` returns last-good even with a fetcher, the package listing has no refresher (`DW-atlas-34-6-2`), and the advisory endpoints answer 401 without a bearer token (probed 2026-10-18)
 **When** the pipeline runs with the flag on
 **Then** a plain run with network fills `discovery_basilisk_packages_raw`; against a recorded fixture the advisories, details and rollup fill; without `PYFORGE_ATLAS_CREDENTIALED=1` no request carries a credential and the three stores keep last-good under `stale`
-**And** with the opt-in and a `basilisk_token`, a live run's population equals `core_packages_enumerated`'s row count (operator-attended; no token exists today)
-**Status:** backlog
+**And** with the opt-in and a Basilisk token in `PYFORGE_ATLAS_BASILISK_TOKEN`, a live run's population equals `core_packages_enumerated`'s row count (operator-attended; no token exists today)
+**Status:** done
 
 ### Story 36.2: The OpenTeams board and the staged-recipes PRs fill on opt-in
 
@@ -2688,6 +2688,147 @@ So that `query_plane_cache` builds the estate cache from data.
 **When** `pyforge atlas run --pipelines query_plane_cache` runs on a fresh data root with the flag on
 **Then** it exits 0, writes `query_plane_estate`, and the estate model answers its measures
 **Status:** blocked
+
+## Epic 37: The Vizro boards read what the pipelines write, on Pages too (spec-pyforge-atlas CAP-63 amended, CAP-69, FR-71, FR-77)
+
+Minted 2026-10-19 from the Dream entry of that date and the operator's rulings ("Data-first + 10 rewires",
+"Public-only Pages", "Weekly + on push"). With Epics 34-36 filling the stores, 31 of the 34 boards still rendered
+honest-empty: the Pages job had no data, the dashboard read another data root than Kedro writes, and 20 of the 27
+board paths were no catalog entry's `filepath`. **HARD boundaries:** the Pages job runs public sources only (no secret,
+no `PYFORGE_ATLAS_CREDENTIALED`, BigQuery off; AD-11); a board's dimension names stay; the export never publishes a board
+that declares an access column (`sld:AD-10`). Stories 37.5-37.10 are the boards no pipeline feeds, at backlog by ruling.
+
+### Story 37.1: The dashboard reads the data root Kedro writes
+
+As the operator,
+I want the dashboard and its static export to read the data root Kedro writes,
+So that a local `pyforge atlas run` shows on the boards.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-atlas CAP-69 (FR-77) • AD-8, AD-17
+**Surface:** `dashboard/data.py` (`default_data_root`), tests
+**Given** `default_data_root()` walks up to `.git` and resolves `<repo>/data`, which holds only `raw/`, while Kedro writes `src/shared/packages/pyforge-atlas/data`
+**When** `dashboard-dryrun` runs after a local `pyforge atlas run` with no `PYFORGE_ATLAS_DATA_ROOT`
+**Then** each wired board reads that run's data, and `PYFORGE_ATLAS_DATA_ROOT` still wins when set
+**Status:** done
+
+### Story 37.2: The Pages Vizro export builds the public atlas data first
+
+As a Pages reader,
+I want the published boards built from a fresh public atlas run,
+So that the boards on `/dashboard/vizro/` carry data rather than honest-empty notices.
+
+**Type:** feature • **Effort:** M • **Deps:** 37.1 • **FR/AD:** spec-pyforge-atlas CAP-63 amended 2026-10-19 (FR-71) • AD-11, AD-21, sld:AD-10
+**Flag:** `pyforge.atlas.vizro_static_boards` (Story 30.2's)
+**Surface:** `.github/workflows/kedro-viz-publish.yml` (the `vizro` job: a weekly schedule, the data build, its timeout), `tools/vizro_static_export.py`, the CI surface registry if the schedule is declared there, tests
+**Given** the `vizro` job exports on a runner with no atlas data
+**When** it runs weekly, on push or by dispatch
+**Then** it writes the credentials stub, runs `pyforge atlas run` over the public pipelines with no `PYFORGE_ATLAS_CREDENTIALED`, exports against that data root and uploads the artifact; the identity boards carry no rows
+**Status:** backlog
+
+### Story 37.3: The seed-gap, version-download and distribution boards read their datasets
+
+As the operator,
+I want the six boards whose content a pipeline already writes to read it,
+So that they render rows instead of "backing file not found".
+
+**Type:** fix • **Effort:** M • **Deps:** 37.1 • **FR/AD:** spec-pyforge-atlas CAP-69 (FR-77) • AD-8
+**Surface:** `dashboard/data.py` (paths), `semantic/models.py` (expressions), `pipelines/derived_artifacts` (the distribution table's compose node), `conf/base/catalog.yml`, `definitions.py`, `dashboard/app.py` (the two boards' notes), `tests/fixtures/data` and `build_fixture_data.py`, tests
+**Given** the four seed-gap boards read `primary/<x>_gap/` while `seed_gaps` writes `derived/seed_gaps_<x>_report/`, and version-downloads and distribution-breakdown read paths nothing writes
+**When** a run has written `seed_gaps`' reports, `core_version_download_history` and the three `core_downloads_*_breakdown` tables
+**Then** the six boards render those rows with their dimension names unchanged
+**Status:** done
+
+### Story 37.4: Behind-upstream, whodepends, live-catalog coverage and the universe SBOM boards fill
+
+As the operator,
+I want the two shell boards to get their models and the two coverage boards their projections,
+So that four more boards render rows from a public run.
+
+**Type:** feature • **Effort:** M • **Deps:** 37.1 • **FR/AD:** spec-pyforge-atlas CAP-69 (FR-77) • AD-8, AD-14
+**Flag:** `pyforge.atlas.board_projections`
+**Surface:** `semantic/models.py` (two models), `dashboard/data.py`, `dashboard/app.py`, a projection node for live-catalog coverage and one for the SBOM summary (`derived_artifacts`), their catalog entries, tests
+**Given** behind-upstream and whodepends have no model and live-catalog-coverage and universe-sbom read paths nothing writes
+**When** a run has written `vcs_upstream_versions`, `core_dependencies`, the inventory flags and the universal SBOM
+**Then** the four boards render rows; with the flag off they read as before
+**Status:** backlog
+
+### Story 37.5: The cve-watcher reads a vulnerability history
+
+As the operator,
+I want a node to append each run's vulnerability rollup as a dated snapshot and diff the two latest,
+So that the cve-watcher board shows what changed since the last scan (legacy `vuln_history`, `cve_watcher.py`).
+
+**Type:** feature • **Effort:** M • **Deps:** 37.1 • **FR/AD:** spec-pyforge-atlas CAP-69 (FR-77, the boards no pipeline feeds; operator ruling 2026-10-19: backlog) • AD-8, AD-14
+**Surface:** a node and catalog entry under the pipeline that owns its inputs, `dashboard/data.py`, `semantic/models.py`, tests
+**Given** no pipeline writes the board's dataset
+**When** a run has written two runs' `vulnerability_package_rollup`
+**Then** cve-watcher renders the packages whose counts moved, with `since_days` and the KEV flag
+**Status:** backlog
+
+### Story 37.6: The release-cadence reads per-version upload times
+
+As the operator,
+I want the per-version upload time legacy reads from `package_version_downloads.upload_unix`,
+So that the release-cadence board counts releases in 30, 90 and 365 days.
+
+**Type:** feature • **Effort:** M • **Deps:** 37.1 • **FR/AD:** spec-pyforge-atlas CAP-69 (FR-77, the boards no pipeline feeds; operator ruling 2026-10-19: backlog) • AD-8, AD-14
+**Surface:** a node and catalog entry under the pipeline that owns its inputs, `dashboard/data.py`, `semantic/models.py`, tests
+**Given** no pipeline writes the board's dataset
+**When** a run has written a source of per-version upload times (the anaconda.org files API or the full repodata)
+**Then** release-cadence renders `releases_30d`, `releases_90d` and `releases_365d` per package
+**Status:** backlog
+
+### Story 37.7: The find-alternative scores candidates for archived packages
+
+As the operator,
+I want a node that scores alternatives for each archived package as legacy `find_alternative.py` does per query,
+So that the find-alternative board lists candidates without a live query.
+
+**Type:** feature • **Effort:** M • **Deps:** 37.1 • **FR/AD:** spec-pyforge-atlas CAP-69 (FR-77, the boards no pipeline feeds; operator ruling 2026-10-19: backlog) • AD-8, AD-14
+**Surface:** a node and catalog entry under the pipeline that owns its inputs, `dashboard/data.py`, `semantic/models.py`, tests
+**Given** no pipeline writes the board's dataset
+**When** a run has written `vcs_archived_feedstocks`, `semantic_packages` and the package summaries
+**Then** find-alternative renders candidates with `similarity_score` and `adoption_stage`
+**Status:** backlog
+
+### Story 37.8: The export-purls lists the PURL artifacts
+
+As the operator,
+I want the six legacy `export_purls.py` artifacts and a manifest of them,
+So that the export-purls board shows each artifact, when it was built and its rows.
+
+**Type:** feature • **Effort:** M • **Deps:** 37.1 • **FR/AD:** spec-pyforge-atlas CAP-69 (FR-77, the boards no pipeline feeds; operator ruling 2026-10-19: backlog) • AD-8, AD-14
+**Surface:** a node and catalog entry under the pipeline that owns its inputs, `dashboard/data.py`, `semantic/models.py`, tests
+**Given** no pipeline writes the board's dataset
+**When** a run has written `core_packages_enumerated`, `pypi_conda_mapping` and the vulnerability rollup
+**Then** export-purls renders one row per artifact with `regenerated_at` and `row_count`
+**Status:** backlog
+
+### Story 37.9: The mapping-gap classifies the unmapped packages
+
+As the operator,
+I want legacy `mapping_gap.py`'s classification over `pypi_conda_mapping`,
+So that the mapping-gap board says why a package has no PyPI name.
+
+**Type:** feature • **Effort:** M • **Deps:** 37.1 • **FR/AD:** spec-pyforge-atlas CAP-69 (FR-77, the boards no pipeline feeds; operator ruling 2026-10-19: backlog) • AD-8, AD-14
+**Surface:** a node and catalog entry under the pipeline that owns its inputs, `dashboard/data.py`, `semantic/models.py`, tests
+**Given** no pipeline writes the board's dataset
+**When** a run has written `pypi_conda_mapping`, `core_packages_enumerated` and the cf-graph source URLs
+**Then** mapping-gap renders `classification`, `match_source` and `match_confidence` per package
+**Status:** backlog
+
+### Story 37.10: The bootstrap-index-health reports each catalog entry's freshness
+
+As the operator,
+I want a node that reads every catalog entry's last write and row count,
+So that the bootstrap-index-health board shows which datasets are stale or empty.
+
+**Type:** feature • **Effort:** M • **Deps:** 37.1 • **FR/AD:** spec-pyforge-atlas CAP-69 (FR-77, the boards no pipeline feeds; operator ruling 2026-10-19: backlog) • AD-8, AD-14
+**Surface:** a node and catalog entry under the pipeline that owns its inputs, `dashboard/data.py`, `semantic/models.py`, tests
+**Given** no pipeline writes the board's dataset
+**When** a run has written the catalog and each dataset's staleness marker
+**Then** bootstrap-index-health renders `catalog_entry`, `tier`, `regenerated_at` and `row_count`
+**Status:** backlog
 
 ## Validation note — 2026-08-26 (chain-currency sweep)
 
@@ -2829,3 +2970,13 @@ their `sprint-status-ledger.yaml` keys (`30-1-the-dag-export-reaches-pages-as-a-
 `sprint-ledger-sync --project atlas`. Measured with `fleet_scan.parse_sprint_status` after the sync: 107 story keys
 (104 done) and 30 epic keys, from 105 (104 done) and 29 before this mint. `marshal-policy.toml` `[epic_surfaces]."30"`
 lands with it. No existing key changed; no blocked key flipped. `updated:` bumped.
+
+## Currency reconciliation — 2026-10-19 (the Vizro boards read what the pipelines write)
+
+`arch→epics` edge after the spine's 2026-10-19 re-stamp (FR-77 / CAP-69 registered, FR-71 / CAP-63 amended; no AD
+added, removed or amended). Epic 37 decomposes them: Stories 37.1-37.4 now (operator ruling "Data-first + 10 rewires")
+and Stories 37.5-37.10, the six boards no pipeline feeds, at `backlog` by the same ruling, each with a deferred-work
+row. Every new heading maps 1:1 to a `sprint-status-ledger.yaml` key (`37-1-…` to `37-10-…` and `epic-37` at
+`backlog`, `epic-37-retrospective` at `optional`), written through the Tier-3 feed and `sprint-ledger-sync --project
+atlas`. `marshal-policy.toml` `[epic_surfaces]."37"` lands with it. No existing key changed; no blocked key flipped.
+`updated:` bumped.

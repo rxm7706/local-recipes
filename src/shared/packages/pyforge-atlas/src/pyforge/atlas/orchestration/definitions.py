@@ -276,14 +276,16 @@ NODE_TIMEOUTS: dict[str, int] = {
     "extract_estate_to_cache": 600,
     "run_dependency_hygiene": 300,
     # -- vulnerability ----------------------------------------------------- #
-    "refresh_vdb_store": 1200,  # vdb-refresh (~5-10m)
+    "refresh_vdb_store": 5400,  # vdb-refresh (~16m cold) + the per-version extract (Story 34.7)
     "refresh_osv_offline_store": 600,  # update-cve-db
     "ingest_cisa_kev": 300,
     "ingest_epss": 300,
     "ingest_cwe_catalog": 300,
     "summarize_vdb_vulns": 300,  # Phase G
     "per_version_vulns": 900,  # Phase G'
+    "refresh_basilisk_population": 900,  # Story 36.1 — ~35 querybatch POSTs (credentialed)
     "ingest_basilisk_advisories": 600,  # FR-19
+    "refresh_basilisk_details": 1800,  # Story 36.1 — one GET per matched advisory
     "fetch_basilisk_details": 600,  # FR-19
     # -- vcs_health -------------------------------------------------------- #
     "refresh_vcs_github_store": 900,  # Story 21.2 — GitHub batched-GraphQL refresh
@@ -302,6 +304,7 @@ NODE_TIMEOUTS: dict[str, int] = {
     "normalize_intake_to_cyclonedx": 300,
     "match_against_universe": 900,
     # -- derived_artifacts ------------------------------------------------- #
+    "compose_distribution_breakdown": 120,  # Story 37.3 -- pure concat of three download cuts
     "build_universe_sbom": 900,
     "build_inventory_universe": 300,  # Story 23.8 -- 9-way in-memory union, no network
     "build_inventory_verified_packages": 300,  # Story 23.4 -- full-inventory derive
