@@ -156,6 +156,10 @@ primary checkout's `local-recipes` interpreter (conda-smithy 3.62.0).
     `test_validate_recipe_lint_of_a_bot_block_makes_no_request`.
 - **AC6:** CFE v8.101.4, a PATCH entry in `CHANGELOG.md`; the version moves in `SKILL.md`, `MANIFEST.yaml` and
   `config/skill-config.yaml`.
+- **After the review fixes** (committed tree `483b809ab6`): network blocked, the two files give 10 passed,
+  2 deselected (exit 0), and the whole non-network CFE suite gives 9,395 passed, 30 skipped, 1 xpassed (exit 0).
+  Online, the stub file gives 8 passed (exit 0). Building the URI with `Path.as_uri()` fails
+  `test_bot_schema_uri_resolves_under_a_path_with_a_space`.
 - **Planning:** `chain-currency-sweep-check -- --project pyforge-mason` went stale on the memlog append; the PRD and
   the spine each gained a "Currency reconciliation — 2026-10-22" section, and it then reported current.
 
