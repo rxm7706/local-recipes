@@ -16,7 +16,9 @@ _EXPECTED_NODE_COUNTS = {
     "core": 8,  # Story 21.4 +enumerate_anaconda_main_packages (Tier-1 materializer, new-signal — AD-14, not parity-gated)
     "vcs_health": 12,  # Story 25.2 +build_repo_dependency_history (filled by Story 25.1; new-signal, AD-14); Story 34.8 +drive_migration_status
     "pypi_intelligence": 17,  # Story 23.1: +5 Tier-3 refresh triggers + flag_tier3_channels
-    "vulnerability": 9,  # B5 +refresh_vdb_store/+refresh_osv_offline_store; B8 +2 Basilisk (FR-19)
+    # B5 +refresh_vdb_store/+refresh_osv_offline_store; B8 +2 Basilisk (FR-19);
+    # Story 36.1 +refresh_basilisk_population/+refresh_basilisk_details
+    "vulnerability": 11,
 }
 
 # Story B5 external-refresh assets (§ 3.4) — these write the separately-built
@@ -39,6 +41,9 @@ _REFRESH_ASSETS = {
     "refresh_discovery_spack_store",
     "refresh_discovery_debian_store",
     "refresh_discovery_fedora_store",
+    # Story 36.1: the Basilisk population and detail triggers, the same boundary.
+    "refresh_basilisk_population",
+    "refresh_basilisk_details",
 }
 
 # Story B8 Basilisk ingestion nodes (FR-19) — ADDITIVE new-signal riders, NEVER

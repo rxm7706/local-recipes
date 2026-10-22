@@ -115,6 +115,34 @@ def github_auth(credentials: Any, url: str) -> BearerAuth | None:
     return BearerAuth(token, GITHUB_API_HOST)
 
 
+BASILISK_HOST = "api.basilisk.prefix.dev"
+#: Story 36.1: the Basilisk token comes from the run's environment, read at the fetch. A catalog
+#: ``credentials:`` key would make Kedro's eager resolution fail every run whose local
+#: credentials file lacks it (the operator's file predates the key).
+BASILISK_TOKEN_ENV = "PYFORGE_ATLAS_BASILISK_TOKEN"
+
+
+def basilisk_auth(url: str) -> BearerAuth | None:
+    """Story 36.1: bearer auth for an https ``api.basilisk.prefix.dev`` URL, only with the switch
+    on and a usable token in :data:`BASILISK_TOKEN_ENV`; ``None`` otherwise."""
+    if not credentialed():
+        return None
+    token = token_of(os.environ.get(BASILISK_TOKEN_ENV))
+    if token is None or not _https_on(url, BASILISK_HOST):
+        return None
+    return BearerAuth(token, BASILISK_HOST)
+
+
+def basilisk_skip_reason(url: str) -> str:
+    """The staleness reason a Basilisk advisory store records when it sends nothing (no secret)."""
+    if not credentialed():
+        return f"credentialed fetch not run: {SWITCH} is not 1 -- keeping last-good"
+    if not _https_on(url, BASILISK_HOST):
+        parts = urlsplit(url)
+        return f"credentialed fetch not run: {parts.scheme}://{parts.hostname} is not https://{BASILISK_HOST} -- keeping last-good"
+    return f"credentialed fetch not run: no {BASILISK_TOKEN_ENV} -- keeping last-good"
+
+
 def skip_reason(url: str) -> str:
     """The staleness reason a credentialed store records when it sends nothing (no secret)."""
     if not credentialed():

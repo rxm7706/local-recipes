@@ -283,7 +283,9 @@ NODE_TIMEOUTS: dict[str, int] = {
     "ingest_cwe_catalog": 300,
     "summarize_vdb_vulns": 300,  # Phase G
     "per_version_vulns": 900,  # Phase G'
+    "refresh_basilisk_population": 900,  # Story 36.1 — ~35 querybatch POSTs (credentialed)
     "ingest_basilisk_advisories": 600,  # FR-19
+    "refresh_basilisk_details": 1800,  # Story 36.1 — one GET per matched advisory
     "fetch_basilisk_details": 600,  # FR-19
     # -- vcs_health -------------------------------------------------------- #
     "refresh_vcs_github_store": 10800,  # Story 35.3 — Phases K, N, E.5 (~1,400 POSTs); live 2026-10-18: K 32 min, N 1 h 54 min one at a time (39 min of it Retry-After waits)
@@ -302,6 +304,7 @@ NODE_TIMEOUTS: dict[str, int] = {
     "normalize_intake_to_cyclonedx": 300,
     "match_against_universe": 900,
     # -- derived_artifacts ------------------------------------------------- #
+    "compose_distribution_breakdown": 120,  # Story 37.3 -- pure concat of three download cuts
     "build_universe_sbom": 900,
     "build_inventory_universe": 300,  # Story 23.8 -- 9-way in-memory union, no network
     "build_inventory_verified_packages": 300,  # Story 23.4 -- full-inventory derive
@@ -325,8 +328,8 @@ NODE_TIMEOUTS: dict[str, int] = {
     "refresh_about_maintainers": 300,  # Story 21.5 — one unauthenticated GitHub-raw GET
     "join_enterprise_conda_maintainers": 120,  # Story 21.5 (pure in-memory join, no network)
     "refresh_purl_associator_mappings": 300,  # Story 21.6 — one public GET (Story 34.6)
-    "refresh_openteams_board": 600,  # Story 21.6 — credentialed, operator opt-in
-    "refresh_staged_recipes_prs": 600,  # Story 21.6 — credentialed, operator opt-in
+    "refresh_openteams_board": 1200,  # Story 21.6/36.2 — ~100 GraphQL pages, credentialed opt-in (one of 12 min, 2026-10-18)
+    "refresh_staged_recipes_prs": 2400,  # Story 36.2 — ~350 pages + ~1,200 files GETs; 19 min live 2026-10-18
     "build_identity_packages_primary": 300,  # Story 21.6 (pure in-memory join, no network)
     "build_identity_export_parquet": 120,  # Story 21.6 (pure in-memory shaping, no network)
     # -- artifactory_downloads --------------------------------------------- #

@@ -134,9 +134,9 @@ already degrade to an offline no-op by default, so the stub only matters
 for getting PAST catalog construction, never for a real fetch. A real
 operator's own `credentials.yml` (with real tokens) is left untouched.
 
-**Fetcher-less discovery stores (Story 27.2; Story 34.6):** `discovery_basilisk_packages_raw`
-has no live refresher on an unattended bootstrap, and neither do `discovery_aoss_premium_python_raw`
-and `discovery_anaconda_dist_2026x_raw` when live public sources are off
+**Fetcher-less discovery stores (Story 27.2; Stories 34.6, 36.1):** `discovery_basilisk_packages_raw`,
+`discovery_aoss_premium_python_raw` and `discovery_anaconda_dist_2026x_raw` have no live refresher
+when live public sources are off
 (`pyforge.atlas.live_public_sources`; on, the default in dev and staging, they fetch their own
 public pages). A store with no refresher still has its refresh-trigger node fire, but degrades to
 last-good/empty plus a stale marker (AD-13). `tools/bootstrap.py` prints the stores that apply in
@@ -152,6 +152,7 @@ every variable touched by the full bootstrap + `--live-catalog` chain,
 | `PYFORGE_ATLAS_SEED_ROOT` | No (defaults to the repo-root-relative `.claude/skills/conda-forge-expert/data`, resolved as a member-dir-relative escape — DW-FU-21-2, fixed by Story 21.8) | Overrides where the `seed_gaps` pipeline reads its three git-tracked seeds (`lts-registry.yaml`, `cwe_categories_seed.json`, `spdx.schema.json`); only needed if you relocate that shared skill-data directory |
 | `PYFORGE_ATLAS_LOCAL_RECIPES_DIR` | No (defaults to `../../../../recipes`, Story 27.2 / DW-FU-21-8) | Overrides the live `recipes/` tree `discovery_local_recipes_raw` scans for the identity join's `Local_Recipes_URL` / `Local_Build_Status` overlay. The default is member-dir-relative (same Kedro `project_path` anchor as `seed_root`) so a default `pyforge-atlas-bootstrap` run scans the real repo `recipes/` tree. |
 | `PYFORGE_ATLAS_LOCAL_RECIPES_REPO_SLUG` | No (defaults to `rxm7706/local-recipes`, Story 27.2 / DW-FU-21-6-3) | GitHub tree URL slug for `Local_Recipes_URL` when the scanned directory name is used in the link template. |
+| `PYFORGE_ATLAS_BASILISK_TOKEN` | No (unset: the Basilisk advisory stores send nothing) | Story 36.1 (CAP-66): the Basilisk token, read at the fetch (not a catalog credential: Kedro resolves those eagerly). With `pyforge.atlas.basilisk_population` on and `PYFORGE_ATLAS_CREDENTIALED=1`, `vulnerability_basilisk_raw` and `vulnerability_basilisk_detail_raw` send `Authorization: Bearer <token>` over https to `api.basilisk.prefix.dev` only. The package listing (`discovery_basilisk_packages_raw`) needs no token. |
 | `PYFORGE_ATLAS_CREDENTIALED` | No (unset: no credentialed request is sent) | Story 35.1 (CAP-65): the one opt-in for a credentialed run. Only the exact value `1` turns it on; it is read when a dataset would fetch, never at import. With `pyforge.atlas.live_vcs_universe` on (dev), `vcs_github_api_raw` sends its GraphQL POST with `Authorization: Bearer <github_token>` to `api.github.com` only when this is `1`; otherwise it sends nothing and keeps last-good under a `stale` marker that names the switch. The bootstrap's `conf/local/credentials.yml` is a placeholder: for a credentialed run put a real token there, for example `github_token: {token: ${oc.env:GITHUB_TOKEN}}`. Unit tests and CI never set it. |
 | `GITHUB_TOKEN` / `GH_TOKEN` (via `credentials.yml`'s `github_token`) | No | Reused by every GitHub-authenticated entry (Story 21.6 CAP-3): the default `vcs_health` run's refresh-trigger node hands `GitHubRequestDataset` an empty repo-identifier batch, so `save()` makes zero network calls without it (Story 21.2); `openteams_project_1_board_raw` and `discovery_staged_recipes_prs_raw` (the identity join's board + staged-PR overlays) share the same credential and likewise degrade to empty/last-good rather than raising |
 | `GOOGLE_APPLICATION_CREDENTIALS` (via `credentials.yml`'s `bigquery_adc`) | No | Only consulted when `PHASE_P_ENABLED=1`; the default `pypi_intelligence` run returns an empty BigQuery-downloads frame without it |

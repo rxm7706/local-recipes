@@ -2,7 +2,7 @@
 title: "35.2: The VCS batches come from the whole universe"
 type: 'feature'
 created: '2026-10-18'
-status: 'in-review'
+status: 'done'
 baseline_revision: '9b35deafc0'
 flag:
   key: pyforge.atlas.live_vcs_universe            # minted by Story 35.1, shared by Epic 35's feature stories

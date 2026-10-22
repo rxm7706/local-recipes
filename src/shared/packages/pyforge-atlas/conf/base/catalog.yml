@@ -1021,6 +1021,13 @@ derived_purl_exports:
   metadata:
     layer: derived
 
+# Story 37.3 (CAP-69): the distribution-breakdown board's one table (the three download cuts)
+derived_distribution_breakdown:
+  type: pandas.ParquetDataset
+  filepath: ${globals:paths.data_root}/derived/derived_distribution_breakdown/derived_distribution_breakdown.parquet
+  metadata:
+    layer: derived
+
 # Full-universe CycloneDX BOM (~856k components).
 derived_universe_sbom:
   type: json.JSONDataset

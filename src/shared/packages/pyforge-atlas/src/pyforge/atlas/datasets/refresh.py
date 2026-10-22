@@ -162,6 +162,9 @@ class RefreshRequest:
     upstream_repos: tuple[tuple[str, str, str], ...] = ()
     universe_pairs: tuple[tuple[str, str], ...] = ()
     feedstocks: tuple[str, ...] = ()
+    # Story 36.1: the conda PURLs Basilisk's querybatch asks about, and the advisory ids to detail
+    basilisk_purls: tuple[str, ...] = ()
+    basilisk_ids: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -178,6 +181,8 @@ class RefreshRequest:
             "upstream_repos": list(self.upstream_repos),
             "universe_pairs": list(self.universe_pairs),
             "feedstocks": list(self.feedstocks),
+            "basilisk_purls": list(self.basilisk_purls),
+            "basilisk_ids": list(self.basilisk_ids),
         }
 
 

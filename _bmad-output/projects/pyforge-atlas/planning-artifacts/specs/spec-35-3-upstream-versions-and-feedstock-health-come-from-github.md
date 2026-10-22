@@ -2,7 +2,7 @@
 title: "35.3: Upstream versions and feedstock health come from GitHub"
 type: 'feature'
 created: '2026-10-18'
-status: 'in-review'
+status: 'done'
 baseline_revision: '9b35deafc0'
 flag:
   key: pyforge.atlas.live_vcs_universe            # minted by Story 35.1, shared by Epic 35's feature stories
@@ -115,7 +115,8 @@ Type / Effort / Deps: feature / L / Story 35.1 (the switch, bearer auth), Story 
 ## Verification
 
 - Unit, from the repo root: `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_github_versions_health.py`
-  (and Story 35.1's `test_credentialed_switch.py`, whose flag-on cases now read Phase K's shape).
+  (and Story 35.1's `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_credentialed_switch.py`, whose
+  flag-on cases now read Phase K's shape; it runs `pyforge.atlas.live_vcs_universe` in both states).
 - **Live, recorded 2026-10-18/19,** on a scratch data root (dev, flag on), with `PYFORGE_ATLAS_CREDENTIALED=1` and the
   `gh` CLI's token through a scratch `--env verify` (operator ruling); no token in the log:
   - `--pipelines vcs_health --nodes refresh_vcs_github_store,detect_archived_feedstocks,track_upstream_versions,fetch_live_health`

@@ -53,12 +53,13 @@ ESTATE_CACHE_PARQUET = "primary/query_plane_estate/query_plane_estate.parquet"
 # produces them) — the loader below degrades honestly to an empty typed frame via
 # the SAME `_bsl_query_or_empty` seam until a future pipeline lands each one.
 VULN_HISTORY_PARQUET = "primary/vuln_history/vuln_history.parquet"
-VERSION_DOWNLOADS_PARQUET = "primary/version_downloads/version_downloads.parquet"
+# Story 37.3: the boards read the datasets the pipelines write (CAP-69)
+VERSION_DOWNLOADS_PARQUET = "primary/core_version_download_history/core_version_download_history.parquet"
 RELEASE_CADENCE_PARQUET = "primary/release_cadence/release_cadence.parquet"
 ALTERNATIVE_CANDIDATES_PARQUET = "primary/alternative_candidates/alternative_candidates.parquet"
 SCAN_RESULT_LATEST_PARQUET = "primary/scan_project_latest/scan_project_latest.parquet"
 ENV_INSPECT_LATEST_PARQUET = "primary/env_inspect_latest/env_inspect_latest.parquet"
-DISTRIBUTION_BREAKDOWN_PARQUET = "primary/distribution_breakdown/distribution_breakdown.parquet"
+DISTRIBUTION_BREAKDOWN_PARQUET = "derived/derived_distribution_breakdown/derived_distribution_breakdown.parquet"
 PURL_EXPORT_MANIFEST_PARQUET = "primary/purl_export_manifest/purl_export_manifest.parquet"
 MAPPING_GAP_PARQUET = "primary/mapping_gap/mapping_gap.parquet"
 UNIVERSE_SBOM_SUMMARY_PARQUET = "primary/universe_sbom_summary/universe_sbom_summary.parquet"
@@ -66,10 +67,10 @@ INVENTORY_MATCH_LATEST_PARQUET = "primary/inventory_match_latest/inventory_match
 ADD_HANDOFF_LATEST_PARQUET = "primary/add_handoff_latest/add_handoff_latest.parquet"
 LIBRARY_FUTURES_LATEST_PARQUET = "primary/library_futures_latest/library_futures_latest.parquet"
 RECOMMEND_2027_PARQUET = "primary/recommend_2027/recommend_2027.parquet"
-LTS_REGISTRY_GAP_PARQUET = "primary/lts_registry_gap/lts_registry_gap.parquet"
-CWE_SEED_GAP_PARQUET = "primary/cwe_seed_gap/cwe_seed_gap.parquet"
-SPDX_SCHEMA_GAP_PARQUET = "primary/spdx_schema_gap/spdx_schema_gap.parquet"
-LICENSE_MAP_GAP_PARQUET = "primary/license_map_gap/license_map_gap.parquet"
+LTS_REGISTRY_GAP_PARQUET = "derived/seed_gaps_lts_registry_report/seed_gaps_lts_registry_report.parquet"
+CWE_SEED_GAP_PARQUET = "derived/seed_gaps_cwe_report/seed_gaps_cwe_report.parquet"
+SPDX_SCHEMA_GAP_PARQUET = "derived/seed_gaps_spdx_report/seed_gaps_spdx_report.parquet"
+LICENSE_MAP_GAP_PARQUET = "derived/seed_gaps_license_map_report/seed_gaps_license_map_report.parquet"
 IDENTITY_COMPLETE_EXPORT_PARQUET = "derived/identity_complete_export/identity_complete_export.parquet"
 ENTERPRISE_JFROG_CONSUMPTION_PARQUET = "derived/enterprise_jfrog_consumption/enterprise_jfrog_consumption.parquet"
 # Story 21.9 (CAP-5) — Epic 21 bootstrap verification operator pages
@@ -93,23 +94,26 @@ _IDENTITY_WORKBOOK_DIMENSIONS = ["match_bucket"]
 _IDENTITY_WORKBOOK_MEASURES = ["package_count", "artifactory_downloads_total"]
 
 
-def default_data_root() -> Path:
-    """The catalog ``data_root`` (env-overridable, mirrors globals.yml `paths.data_root`).
+#: Story 37.1: the Kedro project this module ships in (``src/shared/packages/pyforge-atlas``)
+_MEMBER_ROOT = Path(__file__).resolve().parents[4]
 
-    Defaults to ``<repo>/data`` — the repo-root-relative default the catalog resolves
-    against the process CWD (review-pass P9). ``PYFORGE_ATLAS_DATA_ROOT`` overrides it.
+
+def default_data_root() -> Path:
+    """The data root Kedro writes, which the boards read.
+
+    Story 37.1: ``globals.yml``'s ``paths.data_root`` is ``data`` unless
+    ``PYFORGE_ATLAS_DATA_ROOT`` overrides it, relative to the Kedro project -- the member, where
+    ``pyforge atlas run`` runs (Story 33.1). So the root is the member's ``data/``, and a relative
+    override is anchored at the member as Kedro and ``admission._data_root`` anchor it. A blank
+    override counts as unset, as in ``admission``. Before this story the walk went up to the repo
+    root's ``data/``, which holds only ``raw/``, so a local run never showed on the boards. An
+    installed layout with no member resolves against the working directory, where Kedro starts
+    looking for a project.
     """
-    env = os.environ.get("PYFORGE_ATLAS_DATA_ROOT")
-    if env:
-        return Path(env)
-    # Walk up to the repo root so this resolves whether run from the source tree or an installed
-    # layout. Anchor on ``.git`` (a UNIQUE repo-root marker) — NOT ``pixi.toml``, which the
-    # pyforge-atlas member also ships, so a pixi.toml walk would stop at the member dir.
-    current = Path(__file__).resolve()
-    for parent in current.parents:
-        if (parent / ".git").exists() or (parent / "_bmad-output").is_dir():
-            return parent / "data"
-    return (current.parents[8] if len(current.parents) > 8 else current.parent) / "data"
+    member = (_MEMBER_ROOT / "conf" / "base" / "catalog.yml").is_file()
+    base = _MEMBER_ROOT if member else Path.cwd()
+    root = Path((os.environ.get("PYFORGE_ATLAS_DATA_ROOT") or "").strip() or "data")
+    return root if root.is_absolute() else base / root
 
 
 def _bsl_query_or_empty(

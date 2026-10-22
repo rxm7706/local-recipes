@@ -16,7 +16,6 @@ import sys
 import tomllib
 from pathlib import Path
 
-import pytest
 import yaml
 from pyforge.testing_kit.flags import flagd_tree
 
@@ -69,7 +68,9 @@ def test_ac8_the_vizro_job_uploads_the_export_and_never_commits() -> None:
     flag_step = next(step for step in steps if step.get("id") == "vizro_flag")
     assert "vizro_static_export.py --print-flag" in flag_step["run"].replace("\\\n", " ").replace("  ", " ")
     export = next(step for step in steps if "vizro-static-export" in step.get("run", ""))
-    assert export["run"].strip() == "pixi run --frozen -e pyforge-atlas vizro-static-export"
+    assert export["run"].strip() == "pixi run --frozen -e pyforge-atlas vizro-static-export --clock now"
+    checkout = next(step for step in steps if str(step.get("uses", "")).startswith("actions/checkout"))
+    assert checkout["with"]["persist-credentials"] is False  # Story 37.2: the token never stays in .git/config
     assert export["if"] == upload["if"]
 
 
@@ -101,6 +102,71 @@ def test_ac8_the_vizro_job_runs_on_its_own_paths() -> None:
         assert spec in trigger or f"{spec}/**" in trigger, spec
 
 
+# --- Story 37.2 (CAP-63 amended 2026-10-19): the public data build, weekly -----------------------------
+
+
+def test_the_vizro_job_builds_the_public_data_before_it_exports() -> None:
+    steps = _steps(_workflow()["jobs"]["vizro"])
+    names = [step.get("name", "") for step in steps]
+    build = next(step for step in steps if step.get("name") == "Build the public atlas data")
+    export = next(step for step in steps if "vizro-static-export" in step.get("run", ""))
+    flag = next(step for step in steps if step.get("id") == "vizro_flag")
+
+    room = next(step for step in steps if step.get("name") == "Free disk space for the data build")
+    assert (
+        names.index(flag["name"]) < names.index(room["name"]) < names.index(build["name"]) < names.index(export["name"])
+    )
+    assert build["if"] == export["if"] == room["if"]  # flag off: no build and no export
+    (removal,) = [line for line in room["run"].splitlines() if "rm -rf" in line]
+    targets = removal.split("rm -rf", 1)[1].split()
+    assert "/usr/share/dotnet" in targets
+    assert all(
+        t.startswith(("/usr/", "/opt/")) and len(t.rstrip("/").split("/")) >= 3 for t in targets
+    )  # never /usr or /opt
+    assert _workflow()["jobs"]["vizro"]["timeout-minutes"] == 240  # three times the measured build
+    assert build["run"].split("\n")[:2] == [
+        "pixi run --frozen -e pyforge-atlas pyforge-atlas-bootstrap",
+        "pixi run --frozen -e pyforge-atlas pyforge atlas run --pipelines semantic_packages",
+    ]
+    assert "continue-on-error" not in build  # a failed build fails the job; Pages keeps its last export
+
+
+def test_the_vizro_job_runs_public_sources_only() -> None:
+    job = _workflow()["jobs"]["vizro"]
+    text = yaml.safe_dump(job)  # the parsed job: comments are not in it
+    assert "secrets." not in text and "PYFORGE_ATLAS_CREDENTIALED" not in text
+    assert "GITHUB_TOKEN" not in text and "GH_TOKEN" not in text and "PHASE_P" not in text
+    assert all("env" not in step for step in _steps(job) if step.get("name") == "Build the public atlas data")
+
+
+def test_the_bootstrap_task_runs_the_eight_fetch_pipelines_and_never_the_estate_cache() -> None:
+    task = tomllib.loads(PIXI.read_text(encoding="utf-8"))["feature"]["pyforge-atlas"]["tasks"][
+        "pyforge-atlas-bootstrap"
+    ]
+    pipelines = task["cmd"].split("--pipelines ", 1)[1].split()[0].split(",")
+    assert pipelines == [
+        "core",
+        "pypi_intelligence",
+        "vulnerability",
+        "vcs_health",
+        "upstream_discovery",
+        "derived_artifacts",
+        "seed_gaps",
+        "artifactory_downloads",
+    ]
+    assert task["cwd"] == "src/shared/packages/pyforge-atlas"
+
+
+def test_the_workflow_rebuilds_weekly_and_still_on_push_and_dispatch() -> None:
+    document = _workflow()
+    on_block = document.get("on", document.get(True))
+    assert set(on_block) == {"push", "schedule", "workflow_dispatch"}
+    (entry,) = on_block["schedule"]
+    minute, hour, day_of_month, month, day_of_week = entry["cron"].split()
+    assert (day_of_month, month) == ("*", "*") and day_of_week.isdigit()  # once a week
+    assert minute.isdigit() and hour.isdigit()
+
+
 def test_the_flag_is_in_the_tree_off_by_default_and_on_only_in_dev() -> None:
     entry = json.loads(FLAGS.read_text(encoding="utf-8"))["flags"][FLAG]
     assert entry["defaultVariant"] == "off"
@@ -116,10 +182,11 @@ def test_the_flag_is_in_the_tree_off_by_default_and_on_only_in_dev() -> None:
     assert vizro_static_boards.FLAG_KEY == FLAG
 
 
-@pytest.mark.parametrize(("variant", "expected"), [("on", True), ("off", False)])
-def test_boards_enabled_reads_the_tree(tmp_path: Path, variant: str, expected: bool) -> None:
-    tree = flagd_tree(tmp_path, {FLAG: variant})
-    assert vizro_static_boards.boards_enabled(flags_path=str(tree)) is expected
+def test_boards_enabled_reads_the_tree(tmp_path: Path) -> None:
+    on = flagd_tree(tmp_path, {FLAG: "on"}, name="on.json")
+    off = flagd_tree(tmp_path, {FLAG: "off"}, name="off.json")
+    assert vizro_static_boards.boards_enabled(flags_path=str(on)) is True
+    assert vizro_static_boards.boards_enabled(flags_path=str(off)) is False
 
 
 def test_the_task_flag_off_refuses_before_importing_the_dashboard(tmp_path: Path, capsys) -> None:
