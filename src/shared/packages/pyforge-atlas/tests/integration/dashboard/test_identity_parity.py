@@ -100,7 +100,7 @@ _RANKED_EXPORT_COLUMNS = [
 
 
 def _resolve_repo_root() -> Path:
-    """Anchor-based repo-root walk-up (mirrors dashboard/data.py::default_data_root)."""
+    """Anchor-based repo-root walk-up (the repo root's ``scripts/``; not the data root, Story 37.1)."""
     current = Path(__file__).resolve()
     for parent in current.parents:
         if (parent / ".git").exists() or (parent / "_bmad-output").is_dir():
