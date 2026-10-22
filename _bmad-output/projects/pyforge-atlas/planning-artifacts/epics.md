@@ -2723,7 +2723,7 @@ So that the boards on `/dashboard/vizro/` carry data rather than honest-empty no
 **Given** the `vizro` job exports on a runner with no atlas data
 **When** it runs weekly, on push or by dispatch
 **Then** it writes the credentials stub, runs `pyforge atlas run` over the public pipelines with no `PYFORGE_ATLAS_CREDENTIALED`, exports against that data root and uploads the artifact; credentialed and enterprise sources stay empty, and the identity boards show what public inputs give them (operator ruling 2026-10-21)
-**Status:** backlog
+**Status:** done
 
 ### Story 37.3: The seed-gap, version-download and distribution boards read their datasets
 

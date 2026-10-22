@@ -2,7 +2,7 @@
 title: "37.2: The Pages Vizro export builds the public atlas data first"
 type: 'feature'
 created: '2026-10-21'
-status: 'in-review'
+status: 'done'
 baseline_revision: '5faf32c4ca'
 flag:
   key: pyforge.atlas.vizro_static_boards          # Story 30.2's; this story adds no flag
