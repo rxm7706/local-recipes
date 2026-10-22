@@ -120,7 +120,7 @@ development_status:
   35-1-one-opt-in-switch-and-github-authenticates: done
   35-2-the-vcs-batches-come-from-the-whole-universe: done
   35-3-upstream-versions-and-feedstock-health-come-from-github: done
-  35-4-gitlab-codeberg-and-the-eight-registries-fill: backlog
+  35-4-gitlab-codeberg-and-the-eight-registries-fill: done
   36-1-the-basilisk-population-runs: done
   36-2-the-openteams-board-and-the-staged-recipes-prs-fill-on-opt-in: done
   36-3-the-query-plane-estate-source-has-a-producer: blocked
@@ -208,7 +208,7 @@ development_status:
   epic-33-retrospective: optional
   epic-34: done
   epic-34-retrospective: optional
-  epic-35: in-progress
+  epic-35: done
   epic-35-retrospective: optional
   epic-36: in-progress
   epic-36-retrospective: optional

@@ -71,6 +71,38 @@ class BearerAuth:
         return f"BearerAuth(host={self.host!r})"
 
 
+class HeaderAuth:
+    """Story 35.4: a requests ``auth`` callable that sets one header (GitLab's ``PRIVATE-TOKEN``)
+    on an https request to ``host`` only. The token never appears in ``repr``."""
+
+    def __init__(self, header: str, token: str, host: str) -> None:
+        self.header = header
+        self._token = token
+        self.host = host
+
+    def __call__(self, request: Any) -> Any:
+        if _https_on(request.url, self.host):
+            request.headers[self.header] = self._token
+        return request
+
+    def __repr__(self) -> str:
+        return f"HeaderAuth(header={self.header!r}, host={self.host!r})"
+
+
+GITLAB_HOST = "gitlab.com"
+
+
+def gitlab_auth(credentials: Any, url: str) -> HeaderAuth | None:
+    """Story 35.4: legacy Phase K's ``PRIVATE-TOKEN`` for an https ``gitlab.com`` URL, only with the
+    switch on and a usable token; ``None`` otherwise (GitLab answers unauthenticated, rate-limited)."""
+    if not credentialed():
+        return None
+    token = token_of(credentials)
+    if token is None or not _https_on(url, GITLAB_HOST):
+        return None
+    return HeaderAuth("PRIVATE-TOKEN", token, GITLAB_HOST)
+
+
 def github_auth(credentials: Any, url: str) -> BearerAuth | None:
     """Bearer auth for a GitHub API ``url``, or ``None``: the switch is off, there is no token, or
     ``url`` is not https on ``api.github.com`` (an override to another host never receives the
