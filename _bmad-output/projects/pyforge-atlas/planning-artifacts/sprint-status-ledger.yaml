@@ -122,7 +122,7 @@ development_status:
   35-3-upstream-versions-and-feedstock-health-come-from-github: backlog
   35-4-gitlab-codeberg-and-the-eight-registries-fill: backlog
   36-1-the-basilisk-population-runs: done
-  36-2-the-openteams-board-and-the-staged-recipes-prs-fill-on-opt-in: backlog
+  36-2-the-openteams-board-and-the-staged-recipes-prs-fill-on-opt-in: done
   36-3-the-query-plane-estate-source-has-a-producer: blocked
   37-1-the-dashboard-reads-the-data-root-kedro-writes: done
   37-10-the-bootstrap-index-health-reports-each-catalog-entry-s-freshness: backlog
