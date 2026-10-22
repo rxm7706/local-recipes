@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: 42656373bd47c897
-story_count: 158
+source_fingerprint: c13e4e51601ac227
+story_count: 159
 test_file_count: 98
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 158
+- **Stories parsed:** 159
 - **Epics parsed:** 49
 - **Test files inventoried:** 98 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `42656373bd47c897`
+- **Source fingerprint:** `c13e4e51601ac227`
 
 ## Risk Assessment
 
@@ -346,6 +346,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 43.1 | bmad-drift knows every file marshal dispatch writes into Tier-3 | none observed |
 | 44.1 | The doctor check speed budget is judged on the CPU the check spends | none observed |
 | 45.1 | Doctor names every CI surface that drifted, stuck or outlived its review date | none observed |
+| 45.3 | The fleet-picture meta-test names every probe `main()` calls | none observed |
 | 46.1 | The env-hygiene scan walks each tree once and skips test code | none observed |
 | 47.1 | The aggregate scripts test checks scope filtering without gathering | none observed |
 | 48.1 | One registry orders every section of the Pages site | none observed |

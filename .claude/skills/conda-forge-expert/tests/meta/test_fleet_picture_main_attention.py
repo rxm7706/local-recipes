@@ -19,7 +19,13 @@ to `main()` and left out here is not stubbed, so it reads the faked
 doctor Story 45.1 added `ci_pause_drift_findings` that way, and the three
 tests went red until mason Story 31.1 listed it; doctor Story 48.2 did the same
 with `pages_liveness_findings`, listed by herald Story 45.1.
+`test_probes_tuple_names_every_probe_main_calls` (doctor Story 45.3) reads
+`main()`'s calls with `ast`, so the next probe fails that test by name instead.
+It sees only module-level `def`s named `*_findings` / `*_staleness` that
+`main()` calls by bare name; a probe named otherwise, reached through a helper,
+`functools.partial` or an attribute, or bound with `lambda`, escapes it.
 """
+import ast
 import importlib.util
 import sys
 from pathlib import Path
@@ -65,6 +71,41 @@ _PROBES = (
 )
 
 
+def _probes_main_calls() -> list[str]:
+    """Every module-level `*_findings` / `*_staleness` function `main()` calls by name, in call order."""
+    tree = ast.parse(FLEET_PICTURE.read_text(encoding="utf-8"))
+    functions = (ast.FunctionDef, ast.AsyncFunctionDef)
+    defined = {node.name for node in tree.body if isinstance(node, functions)}
+    main = next(
+        (node for node in tree.body if isinstance(node, functions) and node.name == "main"),
+        None,
+    )
+    assert main is not None, f"{FLEET_PICTURE} defines no module-level main()"
+    calls = sorted(
+        (node.lineno, node.col_offset, node.func.id)
+        for node in ast.walk(main)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    )
+    found: list[str] = []
+    for _, _, name in calls:
+        if name in defined and name.endswith(("_findings", "_staleness")) and name not in found:
+            found.append(name)
+    return found
+
+
+def test_probes_tuple_names_every_probe_main_calls():
+    found = _probes_main_calls()
+    missing = sorted(set(found) - set(_PROBES))
+    extra = sorted(set(_PROBES) - set(found))
+    assert not missing and not extra, (
+        "_PROBES is out of step with fleet_picture.main(): "
+        f"missing {missing} (stub them here), extra {extra} (main() no longer calls them)"
+    )
+    repeated = sorted({name for name in _PROBES if _PROBES.count(name) > 1})
+    assert not repeated, f"_PROBES lists {repeated} more than once"
+    assert list(_PROBES) == found, f"_PROBES is not in main()'s call order: {found}"
+
+
 @pytest.fixture
 def mod(monkeypatch, tmp_path):
     mod = _load_fleet_picture()
@@ -72,7 +113,7 @@ def mod(monkeypatch, tmp_path):
     # fleet-wide probes below can write to ATTENTION.
     monkeypatch.setattr(mod, "REPO", tmp_path)
     monkeypatch.setattr(mod, "running_stations", lambda: (set(), {}))
-    monkeypatch.setattr(mod, "load_drain_queue_overrides", lambda: {})
+    monkeypatch.setattr(mod, "load_drain_queue_overrides", dict)
     monkeypatch.setattr(mod, "_open_prs_by_head_ref", lambda *a, **k: {})
     return mod
 
@@ -154,7 +195,7 @@ def test_bmad_core_fail_finding_reaches_watch(mod, monkeypatch, capsys):
     monkeypatch.setattr(mod.subprocess, "run", lambda cmd, **kwargs: _Completed(""))
     for probe in _PROBES:
         if probe != "bmad_core_drift_findings":
-            monkeypatch.setattr(mod, probe, lambda: [])
+            monkeypatch.setattr(mod, probe, list)
     monkeypatch.setattr(
         mod,
         "bmad_core_drift_findings",

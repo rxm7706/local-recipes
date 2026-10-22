@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: doctor
-# stories: 256
+# stories: 257
 development_status:
   1-1-package-scaffold-frozen-finding-doctorreport-contract-exit-code-module: done
   1-2-wrap-warden-s-engine-availability-self-check-fr-1: done
@@ -137,6 +137,7 @@ development_status:
   43-1-bmad-drift-knows-every-file-marshal-dispatch-writes-into-tier-3: done
   44-1-the-doctor-check-speed-budget-is-judged-on-the-cpu-the-check-spends: done
   45-1-doctor-names-every-ci-surface-that-drifted-stuck-or-outlived-its-review-date: done
+  45-3-the-fleet-picture-meta-test-names-every-probe-main-calls: done
   46-1-the-env-hygiene-scan-walks-each-tree-once-and-skips-test-code: done
   47-1-the-aggregate-scripts-test-checks-scope-filtering-without-gathering: done
   48-1-one-registry-orders-every-section-of-the-pages-site: done
