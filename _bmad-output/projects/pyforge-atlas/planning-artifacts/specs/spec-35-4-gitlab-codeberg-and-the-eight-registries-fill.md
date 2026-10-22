@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'the hosts read their latest tag only and the registries keep the version choices they had before this story'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 2
+review_loop_iteration: 3
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -121,9 +121,12 @@ Type / Effort / Deps: feature / M / Story 35.2 (the batches), Story 35.3 (`norma
 **Deviation:** crates and rubygems run at one request a second with the flag off too (the catalog's `rps`); a stricter
 rate never sends more, and it is those registries' documented limit.
 
-**Retries.** A 429, a 5xx or a failure with no HTTP status (a dropped connection, a timeout) is retried, a
-`Retry-After` waited (capped at 60 s), as legacy retries them (CFA:5009-5014); a row's error is `HTTP <status>`, else
-the type of the failure underneath (`ConnectionError`), never its text.
+**Retries.** A 429, a 5xx or a network failure with no HTTP status (a dropped connection, a timeout: an `OSError`
+underneath) is retried, a `Retry-After` waited (capped at 60 s); a programming error is not. Each GitLab and Codeberg
+request waits 20 s at most, legacy's timeout. Legacy (CFA:5009-5014) differs in three ways: it retries a 403, returns a
+5xx at once without the tags, and never retries the tags request; atlas never resends a 403 and asks the tags after
+either failure. A row's error is `HTTP <status>`, else the type of the failure underneath (`ConnectionError`), never
+its text.
 
 **Residual risk:**
 - **GitLab unauthenticated** is rate-limited per IP; a large batch may meet 429s until the operator adds a token.
@@ -150,6 +153,10 @@ the type of the failure underneath (`ConnectionError`), never its text.
 ## Spec Change Log
 
 - 2026-10-18: written with the implementation (branch `atlas-35-4-hosts-and-registries`, stacked on Story 35.3).
+- 2026-10-21, review round 3 (PASS), nits applied: a cause chain that loops stops where it repeats; only a network
+  failure with no status is retried (a `TypeError` is not); the host stores ask with legacy's 20 s timeout (the 900 s
+  default times four attempts held a node for an hour); a test pins one rate token per attempt; the Retries paragraph
+  says how legacy differs.
 - 2026-10-21, review round 2 (PASS), should-fix applied:
   - Maven's `v` fallback read with the flag off too, which AC3 ("flag off unchanged") does not allow; it is now read
     with the flag on only, and a test pins the flag-off result.

@@ -635,6 +635,7 @@ vcs_gitlab_api_raw:
   url: ${globals:endpoint_bases.GITLAB_API_BASE_URL}
   host: gitlab
   credentials: gitlab_token
+  timeout_seconds: 20  # Story 35.4: legacy Phase K's per-request timeout (the default is 900 s)
   filepath: ${globals:paths.data_root}/raw/vcs_gitlab_api_raw
   metadata:
     layer: raw
@@ -644,6 +645,7 @@ vcs_codeberg_api_raw:
   url: ${globals:endpoint_bases.CODEBERG_API_BASE_URL}
   host: codeberg
   credentials: codeberg_token
+  timeout_seconds: 20  # Story 35.4: legacy Phase K's per-request timeout (the default is 900 s)
   filepath: ${globals:paths.data_root}/raw/vcs_codeberg_api_raw
   metadata:
     layer: raw

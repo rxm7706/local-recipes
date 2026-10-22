@@ -165,10 +165,16 @@ def _why(exc: BaseException) -> str:
     status = _status_of(exc)
     if status:
         return f"HTTP {status}"
-    cause: BaseException = exc
-    while cause.__cause__ is not None:
-        cause = cause.__cause__
-    return type(cause).__name__
+    return type(_root_cause(exc)).__name__
+
+
+def _root_cause(exc: BaseException) -> BaseException:
+    """The innermost ``__cause__`` of ``exc``; a chain that loops back on itself stops where it repeats."""
+    seen = {id(exc)}
+    while exc.__cause__ is not None and id(exc.__cause__) not in seen:
+        exc = exc.__cause__
+        seen.add(id(exc))
+    return exc
 
 
 def _live_host_paths(host: str, base: str, identifier: str) -> tuple[str, str]:
@@ -432,7 +438,10 @@ class VcsHostSeedDataset(_ParquetRefreshStore, AbstractDataset):
             except Exception as exc:
                 attempt += 1
                 status = _status_of(exc)
-                if attempt > self._max_retries or not (status is None or status == 429 or status >= 500):
+                # a failure with no status is retried only when the network caused it (a dropped
+                # connection, a timeout: OSError underneath); a programming error is not
+                transient = status is None and isinstance(_root_cause(exc), OSError)
+                if attempt > self._max_retries or not (transient or status == 429 or (status or 0) >= 500):
                     raise
                 self._sleep(_retry_after(exc) or retry_backoff_seconds(attempt))
 

@@ -392,3 +392,42 @@ def test_a_tag_without_a_name_reads_its_tag_name(tmp_path, flag_on):
     fetch, _asked = _answers({release_url: {}, tags_url: [{"tag_name": "v4"}]})
 
     assert _host(tmp_path, "codeberg")._release_or_tag("o/r", fetcher=fetch) == ("4", None)
+
+
+# -- review round 3 ------------------------------------------------------------------------------
+
+
+def test_a_programming_error_is_never_retried(tmp_path, flag_on):
+    waits: list[float] = []
+
+    with pytest.raises(TypeError):
+        _retrying(tmp_path, waits)._get("u", _flaky(TypeError("bad call"), {"ok": 1}))
+    assert waits == []
+
+
+def test_each_attempt_takes_its_own_rate_token(tmp_path, flag_on, monkeypatch):
+    ds = _retrying(tmp_path, [])
+    tokens: list[int] = []
+    monkeypatch.setattr(ds.scheduler, "acquire", lambda *a, **k: tokens.append(1))
+
+    ds._get("u", _flaky(_http_error(503), {"ok": 1}))
+
+    assert len(tokens) == 2  # the failed try and the retry
+
+
+def test_a_cause_chain_that_loops_is_named_without_hanging():
+    first, second = OSError("a"), ValueError("b")
+    first.__cause__, second.__cause__ = second, first  # each names the other
+
+    assert V._why(first) == "ValueError"
+    looped = RuntimeError("c")
+    looped.__cause__ = looped
+    assert V._why(looped) == "RuntimeError"
+
+
+def test_the_host_stores_ask_with_legacys_timeout():
+    import yaml
+
+    catalog = yaml.safe_load((Path(__file__).resolve().parents[3] / "conf" / "base" / "catalog.yml").read_text())
+
+    assert catalog["vcs_gitlab_api_raw"]["timeout_seconds"] == catalog["vcs_codeberg_api_raw"]["timeout_seconds"] == 20
