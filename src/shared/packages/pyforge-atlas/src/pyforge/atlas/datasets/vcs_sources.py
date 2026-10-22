@@ -159,10 +159,16 @@ def _status_of(exc: BaseException) -> int | None:
 
 
 def _why(exc: BaseException) -> str:
-    """Story 35.4: a row's error as legacy records it (``HTTP 404``), else the failure's type --
-    never its text, which can quote the request."""
+    """Story 35.4: a row's error as legacy records it (``HTTP 404``), else the type of the failure
+    underneath (kedro's ``DatasetError`` wraps a ``ConnectionError`` or a timeout) -- never its text,
+    which can quote the request."""
     status = _status_of(exc)
-    return f"HTTP {status}" if status else type(exc).__name__
+    if status:
+        return f"HTTP {status}"
+    cause: BaseException = exc
+    while cause.__cause__ is not None:
+        cause = cause.__cause__
+    return type(cause).__name__
 
 
 def _live_host_paths(host: str, base: str, identifier: str) -> tuple[str, str]:
@@ -297,7 +303,9 @@ def _maven_extract(payload: Any) -> str | None:
         if isinstance(resp, dict):
             docs = resp.get("docs")
             if isinstance(docs, list) and docs and isinstance(docs[0], dict):
-                v = docs[0].get("latestVersion") or docs[0].get("v")  # legacy's fallback (CFA:5697)
+                v = docs[0].get("latestVersion")
+                if not v and credential_switch.live_vcs_universe():
+                    v = docs[0].get("v")  # Story 35.4: legacy's fallback (CFA:5697), with the flag on only
                 return str(v) if v else None
     return None
 
@@ -396,9 +404,10 @@ class VcsHostSeedDataset(_ParquetRefreshStore, AbstractDataset):
 
     def _get(self, url: str, fetcher: Callable[[str], Any] | None) -> Any:
         """Story 35.4: one bounded GET with legacy's auth: GitLab's ``PRIVATE-TOKEN`` only under the
-        switch, else nothing (a no-op auth keeps ``~/.netrc`` out). ``fetcher`` takes the URL. A 429 or
-        5xx is retried (a ``Retry-After`` waited); any other refusal (a 404 release) is not, so the tags
-        are asked at once, as legacy does."""
+        switch, else nothing (a no-op auth keeps ``~/.netrc`` out). ``fetcher`` takes the URL. A 429, a
+        5xx or a failure with no status (a dropped connection, a timeout) is retried, a ``Retry-After``
+        waited, as legacy retries them (CFA:5009-5014); any other refusal (a 404 release) is not, so the
+        tags are asked at once, as legacy does."""
 
         def _do_fetch() -> Any:
             if fetcher is not None:
@@ -423,7 +432,7 @@ class VcsHostSeedDataset(_ParquetRefreshStore, AbstractDataset):
             except Exception as exc:
                 attempt += 1
                 status = _status_of(exc)
-                if attempt > self._max_retries or not (status == 429 or (status or 0) >= 500):
+                if attempt > self._max_retries or not (status is None or status == 429 or status >= 500):
                     raise
                 self._sleep(_retry_after(exc) or retry_backoff_seconds(attempt))
 
@@ -445,7 +454,12 @@ class VcsHostSeedDataset(_ParquetRefreshStore, AbstractDataset):
                 tags = self._get(tags_url, fetcher)
             except Exception as exc:  # noqa: BLE001 -- one project's failure is its row's error (AD-13)
                 return None, _why(exc)
-            names = [t.get("name") for t in tags if isinstance(t, dict)] if isinstance(tags, list) else []
+            # legacy reads a tag's ``name``, else its ``tag_name``
+            names = (
+                [t.get("name") or t.get("tag_name") for t in tags if isinstance(t, dict)]
+                if isinstance(tags, list)
+                else []
+            )
             tag = next((str(n) for n in names if n), None)
         version = normalize_release_tag(tag)
         return version, None if version else "no tags"

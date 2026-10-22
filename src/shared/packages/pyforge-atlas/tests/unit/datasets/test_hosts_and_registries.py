@@ -194,8 +194,9 @@ def test_the_slow_registries_run_at_one_request_a_second():
 # -- review round 1 ------------------------------------------------------------------------------
 
 
-def _redirecting(monkeypatch, location: str) -> list:  # noqa: ANN001
-    """Answer every request with a 302 to ``location``; record what is sent."""
+def _redirecting(monkeypatch, location: str, status: int = 302, only: str | None = None) -> list:  # noqa: ANN001
+    """Answer every request (or only those whose URL contains ``only``; the rest 404) with a ``status``
+    redirect to ``location``; record what is sent."""
     import requests
     import requests.adapters
 
@@ -204,7 +205,8 @@ def _redirecting(monkeypatch, location: str) -> list:  # noqa: ANN001
     def send(self, request, *args, **kwargs):  # noqa: ANN001, ANN202
         sent.append(request)
         response = requests.models.Response()
-        response.status_code, response._content, response.url, response.request = 302, b"", request.url, request
+        code = status if only is None or only in request.url else 404
+        response.status_code, response._content, response.url, response.request = code, b"", request.url, request
         response.headers["Location"] = location
         return response
 
@@ -269,12 +271,124 @@ def test_a_tags_failure_is_recorded_as_its_status(tmp_path, flag_on, fake_transp
     assert frame["last_error"].tolist() == ["HTTP 404"]
 
 
-def test_a_gitlab_release_without_a_tag_name_reads_its_name_and_maven_its_v():
+def test_a_gitlab_release_without_a_tag_name_reads_its_name_and_maven_its_v(flag_on):
     assert V._release_tag([{"name": "v1.4"}]) == "v1.4" and V._release_tag({"name": "x"}) is None
     assert V._maven_extract({"response": {"docs": [{"v": "2.0"}]}}) == "2.0"
+
+
+def test_with_the_flag_off_maven_never_falls_back_to_v():
+    assert V._maven_extract({"response": {"docs": [{"v": "2.0"}]}}) is None  # as before Story 35.4
+    assert V._maven_extract({"response": {"docs": [{"latestVersion": "3.1", "v": "2.0"}]}}) == "3.1"
 
 
 def test_a_hosts_request_names_atlas_as_its_agent(tmp_path, flag_on, fake_transport):
     _host(tmp_path, "codeberg").load_many([("pkg", "o/r")])
 
     assert {r.headers["User-Agent"] for r in fake_transport.sent} == {V.USER_AGENT}
+
+
+# -- review round 2 ------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("status", [301, 302, 307, 308])
+def test_no_redirect_status_carries_gitlabs_token_away(tmp_path, flag_on, monkeypatch, status):
+    monkeypatch.setenv(credential_switch.SWITCH, "1")
+    sent = _redirecting(monkeypatch, "https://evil.example/x", status)
+
+    frame = _host(tmp_path, "gitlab", credentials="glpat-real").load_many([("pkg", "g/p")])
+
+    assert all(r.url.startswith(GITLAB) for r in sent) and frame["last_error"].tolist() == [f"HTTP {status}"]
+
+
+def test_a_redirect_on_the_tags_alone_is_never_followed(tmp_path, flag_on, monkeypatch):
+    monkeypatch.setenv(credential_switch.SWITCH, "1")
+    sent = _redirecting(monkeypatch, "https://evil.example/x", 307, only="/repository/tags")
+
+    frame = _host(tmp_path, "gitlab", credentials="glpat-real").load_many([("pkg", "g/p")])
+
+    assert [r.url.split("/projects/", 1)[1].split("?", 1)[0] for r in sent] == [
+        "g%2Fp/releases",
+        "g%2Fp/repository/tags",
+    ]
+    assert frame["last_error"].tolist() == ["HTTP 307"]
+
+
+def _http_error(status: int, retry_after: str | None = None) -> Exception:
+    from types import SimpleNamespace
+
+    from kedro.io import DatasetError
+
+    headers = {"Retry-After": retry_after} if retry_after else {}
+    return DatasetError(
+        "Failed to fetch data", SimpleNamespace(response=SimpleNamespace(status_code=status, headers=headers))
+    )
+
+
+def _flaky(first: Exception, answer: Any):  # noqa: ANN202
+    calls = {"n": 0}
+
+    def fetch(_url: str) -> Any:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise first
+        return answer
+
+    return fetch
+
+
+def _retrying(tmp_path: Path, waits: list[float]) -> VcsHostSeedDataset:
+    return VcsHostSeedDataset(
+        url=CODEBERG, host="codeberg", filepath=str(tmp_path / "c"), max_retries=2, sleep=waits.append
+    )
+
+
+def test_a_429_waits_its_retry_after_and_retries(tmp_path, flag_on):
+    waits: list[float] = []
+
+    release = _retrying(tmp_path, waits)._get("u", _flaky(_http_error(429, "7"), {"tag_name": "v1"}))
+
+    assert release == {"tag_name": "v1"} and waits == [7.0]
+
+
+def test_a_5xx_is_retried_after_a_backoff(tmp_path, flag_on):
+    waits: list[float] = []
+
+    assert _retrying(tmp_path, waits)._get("u", _flaky(_http_error(503), {"ok": 1})) == {"ok": 1}
+    assert len(waits) == 1 and waits[0] < 7.0
+
+
+def test_a_failure_with_no_status_is_retried_and_named_by_its_cause(tmp_path, flag_on):
+    from kedro.io import DatasetError
+
+    def dropped() -> Exception:
+        try:
+            raise ConnectionError("connection reset by peer")
+        except ConnectionError as exc:
+            try:
+                raise DatasetError("Failed to fetch data") from exc
+            except DatasetError as wrapped:
+                return wrapped
+
+    waits: list[float] = []
+    ds = _retrying(tmp_path, waits)
+    assert ds._get("u", _flaky(dropped(), {"ok": 1})) == {"ok": 1} and len(waits) == 1
+
+    def always(_url: str) -> Any:
+        raise dropped()
+
+    assert ds._release_or_tag("o/r", fetcher=always) == (None, "ConnectionError")  # its cause, never its text
+
+
+def test_a_404_is_never_retried(tmp_path, flag_on):
+    waits: list[float] = []
+
+    with pytest.raises(Exception, match="Failed to fetch"):
+        _retrying(tmp_path, waits)._get("u", _flaky(_http_error(404), {"ok": 1}))
+    assert waits == []
+
+
+def test_a_tag_without_a_name_reads_its_tag_name(tmp_path, flag_on):
+    release_url, tags_url = V._live_host_paths("codeberg", CODEBERG, "o/r")
+    fetch, _asked = _answers({release_url: {}, tags_url: [{"tag_name": "v4"}]})
+
+    assert _host(tmp_path, "codeberg")._release_or_tag("o/r", fetcher=fetch) == ("4", None)

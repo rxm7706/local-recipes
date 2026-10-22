@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'the hosts read their latest tag only and the registries keep the version choices they had before this story'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -52,6 +52,9 @@ Legacy reads:
    to `gitlab.com` (`credentials.HeaderAuth`, `gitlab_auth`). Unset, GitLab is asked unauthenticated, as it answers.
    Codeberg never sends a credential. A no-op auth keeps `~/.netrc` out. A request that carries the token never
    follows a redirect: requests strips only `Authorization` on a host change, so a custom header would follow it.
+   **Operator note:** `gitlab_token` in `conf/local/credentials.yml` is the token as a bare string (`gitlab_token:
+   glpat-...`) or `{token: glpat-...}`. A `[PRIVATE-TOKEN, glpat-...]` pair, the shape of the catalog test stub, is no
+   token: nothing is sent and GitLab is asked unauthenticated.
    - The token is `{token: ...}` or a bare string; a `[user, password]` pair is no token and sends nothing.
 3a. **Retries and errors as legacy.** A 429 or 5xx is retried (its `Retry-After` waited); a 404 release goes to the
    tags at once. A row's error is the status (`HTTP 404`), never the exception's text. A GitLab release without a
@@ -118,6 +121,10 @@ Type / Effort / Deps: feature / M / Story 35.2 (the batches), Story 35.3 (`norma
 **Deviation:** crates and rubygems run at one request a second with the flag off too (the catalog's `rps`); a stricter
 rate never sends more, and it is those registries' documented limit.
 
+**Retries.** A 429, a 5xx or a failure with no HTTP status (a dropped connection, a timeout) is retried, a
+`Retry-After` waited (capped at 60 s), as legacy retries them (CFA:5009-5014); a row's error is `HTTP <status>`, else
+the type of the failure underneath (`ConnectionError`), never its text.
+
 **Residual risk:**
 - **GitLab unauthenticated** is rate-limited per IP; a large batch may meet 429s until the operator adds a token.
 - **cran, cpan and luarocks** stay empty: legacy never writes their names (Story 35.2).
@@ -143,6 +150,14 @@ rate never sends more, and it is those registries' documented limit.
 ## Spec Change Log
 
 - 2026-10-18: written with the implementation (branch `atlas-35-4-hosts-and-registries`, stacked on Story 35.3).
+- 2026-10-21, review round 2 (PASS), should-fix applied:
+  - Maven's `v` fallback read with the flag off too, which AC3 ("flag off unchanged") does not allow; it is now read
+    with the flag on only, and a test pins the flag-off result.
+  - Tests for the retry loop: a 429 waits its `Retry-After`, a 5xx is retried after a backoff, a 404 is never retried.
+  - A failure with no status is retried, as legacy and the flag-off path do, and its row error names the cause's type
+    (`_why` walks `__cause__`).
+  - Nits: redirect tests for 301, 307 and 308 and for a redirect on the tags alone; a tag's `tag_name` read when it
+    has no `name`; the operator note on `gitlab_token`'s shape.
 - 2026-10-19, review round 1 (FAIL), fixed:
   - B1: GitLab's `PRIVATE-TOKEN` followed a redirect to another host or to http; a request carrying it never follows
     one now (Approach 2), tested with a redirecting transport.
