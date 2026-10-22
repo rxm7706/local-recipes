@@ -15,6 +15,10 @@ chart -- with every frame read through the loader ``build_dashboard`` registered
   submit work through the live dashboard) and every filter: a static page has no server and
   no viewer, so it renders the frame its loader returns, unfiltered, and the live-scan pages
   carry one line saying they show the latest cached result.
+* **At most** :data:`STATIC_ROW_CAP` **rows a frame** (Story 37.2, DW-atlas-37-3-1). Over a full
+  data root two loaders return 448,301 and 210,170 rows, which wrote 37.2 MB and 23.1 MB pages. A
+  larger frame keeps its largest rows by the page's chart measure (else its first rows in a
+  deterministic order), and the table's caption says how many it holds of how many.
 * **The refusal.** A board that declares an access column (``PageDef.access_column``)
   refuses the whole export before anything is written -- ``sld:AD-10``: static export and
   role isolation are mutually exclusive, refused rather than warned. The rule is applied
@@ -54,6 +58,7 @@ __all__ = (
     "MANIFEST_NAME",
     "PLOTLY_ASSET",
     "PLOTLY_CONFIG",
+    "STATIC_ROW_CAP",
     "STATIC_SCAN_NOTICE",
     "THIRD_PARTY_TRACE_TYPES",
     "UNAVAILABLE",
@@ -69,6 +74,8 @@ ASSET_DIR = "assets"
 PLOTLY_ASSET = "plotly.min.js"
 MANIFEST_NAME = "manifest.json"
 INDEX_NAME = "index.html"
+#: A static page renders at most this many rows of a frame (Story 37.2, DW-atlas-37-3-1).
+STATIC_ROW_CAP = 5_000
 UNAVAILABLE = "unavailable"
 #: What a page shows in place of the data root's absolute path (no build host's path is published).
 DATA_ROOT_TOKEN = "<data-root>"
@@ -290,6 +297,7 @@ def _render_board(
     if not _PAGE_ID_RE.fullmatch(page.id):
         raise StaticExportError(f"board id {page.id!r} is not a path-safe slug; nothing written")
     live_scan = declared is not None and declared.kind == _LIVE_SCAN_KIND
+    sort_by = declared.chart.y if declared is not None and declared.chart is not None else None
     frames: dict[str, Any] = {}
     parts: list[str] = []
     stamp: str | None = None
@@ -303,9 +311,9 @@ def _render_board(
                 text = text.replace(f"**Data gap:** {declared.note}", "")
             parts.append(f'<section class="card" id="{_esc(component.id)}">\n{_markdown(text)}\n</section>')
         elif isinstance(component, (vm.AgGrid, vm.Table)):
-            parts.append(_render_table(component, frames))
+            parts.append(_render_table(component, frames, sort_by=sort_by))
         elif isinstance(component, vm.Graph):
-            parts.append(_render_chart(component, frames, board=page.id))
+            parts.append(_render_chart(component, frames, board=page.id, sort_by=sort_by))
         elif live_scan and isinstance(component, _SUBMISSION_COMPONENTS):
             continue  # the path field, Run button and its status line submit work: not exported
         else:
@@ -318,7 +326,8 @@ def _render_board(
     header = [
         f'<p class="export-note">Static export of board <code>{_esc(page.id)}</code>, built {_esc(exported_text)} '
         f"from commit <code>{_esc(export_commit[:12])}</code>. Data build stamp (AD-17): {_esc(stamp)}. "
-        "Filters are not part of a static page; every table shows its loader's whole frame.</p>",
+        f"Filters are not part of a static page; every table shows its loader's frame, up to {STATIC_ROW_CAP:,} "
+        "rows.</p>",
     ]
     if live_scan:
         header.append(f'<p class="export-note" role="note">{_esc(STATIC_SCAN_NOTICE)}</p>')
@@ -348,15 +357,36 @@ def _stamp_from_card(text: str) -> str | None:
     return None
 
 
-def _frame_for(component: Any, frames: dict[str, Any]) -> Any:
-    """The component's frame through the loader ``build_dashboard`` registered (read once per key)."""
+def _frame_for(component: Any, frames: dict[str, Any], *, sort_by: str | None = None) -> Any:
+    """The component's frame through the loader ``build_dashboard`` registered (read once per key),
+    capped at :data:`STATIC_ROW_CAP` rows."""
     key = component.figure["data_frame"]
     if key not in frames:
         try:
-            frames[key] = data_manager[key].load()
+            frames[key] = _capped(data_manager[key].load(), sort_by)
         except Exception as exc:  # noqa: BLE001 -- the page reports its own read failure, as live
             frames[key] = exc
     return frames[key]
+
+
+def _capped(frame: Any, sort_by: str | None) -> Any:
+    """At most :data:`STATIC_ROW_CAP` rows: the largest by ``sort_by`` when the frame has that column,
+    else the first in an order of every column, so one commit's export stays byte-identical. The
+    frame's ``attrs`` keep the whole count and the sort column for the table's caption."""
+    if not isinstance(frame, pd.DataFrame) or len(frame) <= STATIC_ROW_CAP:
+        return frame
+    total = len(frame)
+    others = [column for column in frame.columns if column != sort_by]
+    keys = [sort_by, *others] if sort_by in frame.columns else others
+    try:
+        ordered = frame.sort_values(
+            keys, ascending=[sort_by not in frame.columns or key != sort_by for key in keys], kind="stable"
+        )
+    except TypeError, ValueError:  # a column whose values do not compare: the measure alone, else as loaded
+        ordered = frame.sort_values(sort_by, ascending=False, kind="stable") if sort_by in frame.columns else frame
+    out = ordered.head(STATIC_ROW_CAP).reset_index(drop=True)
+    out.attrs = {"static_total_rows": total, "static_sorted_by": sort_by if sort_by in frame.columns else None}
+    return out
 
 
 def _read_error(component: Any, exc: BaseException) -> str:
@@ -366,8 +396,8 @@ def _read_error(component: Any, exc: BaseException) -> str:
     )
 
 
-def _render_table(component: Any, frames: dict[str, Any]) -> str:
-    frame = _frame_for(component, frames)
+def _render_table(component: Any, frames: dict[str, Any], *, sort_by: str | None = None) -> str:
+    frame = _frame_for(component, frames, sort_by=sort_by)
     if isinstance(frame, BaseException):
         return _read_error(component, frame)
     columns = [str(column) for column in frame.columns]
@@ -375,6 +405,11 @@ def _render_table(component: Any, frames: dict[str, Any]) -> str:
     caption = f"{rows} row{'' if rows == 1 else 's'}"
     if rows == 0:
         caption += ": the backing dataset holds no rows yet (honest-empty)"
+    total = frame.attrs.get("static_total_rows")
+    if total is not None:
+        sorted_by = frame.attrs.get("static_sorted_by")
+        order = f"the largest {sorted_by} first" if sorted_by else "the first in column order"
+        caption = f"{rows:,} of {total:,} rows, {order}; the live dashboard holds every row"
     head = "".join(f'<th scope="col">{_esc(column)}</th>' for column in columns)
     body = "\n".join(
         "<tr>" + "".join(f"<td>{_esc(_cell(value))}</td>" for value in row) + "</tr>"
@@ -395,8 +430,8 @@ def _cell(value: Any) -> str:
     return str(value)
 
 
-def _render_chart(component: Any, frames: dict[str, Any], *, board: str = "") -> str:
-    frame = _frame_for(component, frames)
+def _render_chart(component: Any, frames: dict[str, Any], *, board: str = "", sort_by: str | None = None) -> str:
+    frame = _frame_for(component, frames, sort_by=sort_by)
     if isinstance(frame, BaseException):
         return _read_error(component, frame)
     try:

@@ -101,6 +101,61 @@ def test_ac8_the_vizro_job_runs_on_its_own_paths() -> None:
         assert spec in trigger or f"{spec}/**" in trigger, spec
 
 
+# --- Story 37.2 (CAP-63 amended 2026-10-19): the public data build, weekly -----------------------------
+
+
+def test_the_vizro_job_builds_the_public_data_before_it_exports() -> None:
+    steps = _steps(_workflow()["jobs"]["vizro"])
+    names = [step.get("name", "") for step in steps]
+    build = next(step for step in steps if step.get("name") == "Build the public atlas data")
+    export = next(step for step in steps if "vizro-static-export" in step.get("run", ""))
+    flag = next(step for step in steps if step.get("id") == "vizro_flag")
+
+    assert names.index(flag["name"]) < names.index(build["name"]) < names.index(export["name"])
+    assert build["if"] == export["if"]  # flag off: no build and no export
+    assert build["run"].split("\n")[:2] == [
+        "pixi run --frozen -e pyforge-atlas pyforge-atlas-bootstrap",
+        "pixi run --frozen -e pyforge-atlas pyforge atlas run --pipelines semantic_packages",
+    ]
+    assert "continue-on-error" not in build  # a failed build fails the job; Pages keeps its last export
+
+
+def test_the_vizro_job_runs_public_sources_only() -> None:
+    job = _workflow()["jobs"]["vizro"]
+    text = yaml.safe_dump(job)  # the parsed job: comments are not in it
+    assert "secrets." not in text and "PYFORGE_ATLAS_CREDENTIALED" not in text
+    assert "GITHUB_TOKEN" not in text and "GH_TOKEN" not in text and "PHASE_P" not in text
+    assert all("env" not in step for step in _steps(job) if step.get("name") == "Build the public atlas data")
+
+
+def test_the_bootstrap_task_runs_the_eight_fetch_pipelines_and_never_the_estate_cache() -> None:
+    task = tomllib.loads(PIXI.read_text(encoding="utf-8"))["feature"]["pyforge-atlas"]["tasks"][
+        "pyforge-atlas-bootstrap"
+    ]
+    pipelines = task["cmd"].split("--pipelines ", 1)[1].split()[0].split(",")
+    assert pipelines == [
+        "core",
+        "pypi_intelligence",
+        "vulnerability",
+        "vcs_health",
+        "upstream_discovery",
+        "derived_artifacts",
+        "seed_gaps",
+        "artifactory_downloads",
+    ]
+    assert task["cwd"] == "src/shared/packages/pyforge-atlas"
+
+
+def test_the_workflow_rebuilds_weekly_and_still_on_push_and_dispatch() -> None:
+    document = _workflow()
+    on_block = document.get("on", document.get(True))
+    assert set(on_block) == {"push", "schedule", "workflow_dispatch"}
+    (entry,) = on_block["schedule"]
+    minute, hour, day_of_month, month, day_of_week = entry["cron"].split()
+    assert (day_of_month, month) == ("*", "*") and day_of_week.isdigit()  # once a week
+    assert minute.isdigit() and hour.isdigit()
+
+
 def test_the_flag_is_in_the_tree_off_by_default_and_on_only_in_dev() -> None:
     entry = json.loads(FLAGS.read_text(encoding="utf-8"))["flags"][FLAG]
     assert entry["defaultVariant"] == "off"

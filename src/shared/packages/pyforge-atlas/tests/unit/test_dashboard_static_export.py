@@ -214,6 +214,76 @@ def test_captions_count_rows_and_name_an_honest_empty_frame() -> None:
     assert "<tbody>\n\n</tbody>" in none
 
 
+# --- the row cap (Story 37.2, DW-atlas-37-3-1) ----------------------------------------------------------
+
+BIG = pd.DataFrame({"name": ["a", "b", "c", "d"], "count": [3, 9, 5, 9]})
+
+
+def test_a_frame_over_the_cap_keeps_its_largest_rows_by_the_chart_measure(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(static_export, "STATIC_ROW_CAP", 3)
+    data_manager["data::big"] = lambda: BIG
+    frames: dict = {}
+    table = static_export._render_table(
+        vm.AgGrid(id="big--grid", figure=dash_ag_grid("data::big")), frames, sort_by="count"
+    )
+    chart = static_export._render_chart(
+        vm.Graph(id="big--chart", figure=px.bar("data::big", x="name", y="count")), frames, sort_by="count"
+    )
+    assert "<caption>3 of 4 rows, the largest count first; the live dashboard holds every row</caption>" in table
+    # ties break on the other columns, so the same data always keeps the same rows
+    assert (
+        table.index("<td>b</td>") < table.index("<td>d</td>") < table.index("<td>c</td>") and "<td>a</td>" not in table
+    )
+    assert '"x":["b","d","c"]' in chart.replace(" ", "")  # the chart draws the same capped frame
+
+
+def test_without_a_chart_measure_the_cap_keeps_the_first_rows_in_column_order(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(static_export, "STATIC_ROW_CAP", 2)
+    data_manager["data::big"] = lambda: BIG.iloc[::-1]
+    table = static_export._render_table(vm.AgGrid(id="big--grid", figure=dash_ag_grid("data::big")), {})
+    assert "<caption>2 of 4 rows, the first in column order; the live dashboard holds every row</caption>" in table
+    assert "<td>a</td>" in table and "<td>b</td>" in table and "<td>c</td>" not in table
+
+
+def test_a_measure_the_frame_lacks_sorts_as_if_none_were_named(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(static_export, "STATIC_ROW_CAP", 2)
+    capped = static_export._capped(BIG, "downloads")
+    assert capped["name"].tolist() == ["a", "b"] and capped.attrs == {"static_total_rows": 4, "static_sorted_by": None}
+
+
+def test_a_column_that_does_not_compare_falls_back_to_the_measure_alone(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(static_export, "STATIC_ROW_CAP", 2)
+    frame = pd.DataFrame({"tags": [["x"], [1], ["y"]], "count": [1, 3, 2]})
+    assert static_export._capped(frame, "count")["count"].tolist() == [3, 2]
+    assert static_export._capped(frame, None)["count"].tolist() == [1, 3]  # nothing to sort on: as loaded
+
+
+def test_a_frame_at_the_cap_is_untouched(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(static_export, "STATIC_ROW_CAP", 4)
+    assert static_export._capped(BIG, "count") is BIG and static_export._capped(OSError("x"), "count").args == ("x",)
+    assert static_export.STATIC_ROW_CAP == 4 and "STATIC_ROW_CAP" in static_export.__all__
+
+
+def test_the_shipped_cap_is_five_thousand_rows() -> None:
+    assert static_export.STATIC_ROW_CAP == 5_000
+
+
+def test_a_board_caps_its_frame_by_its_declared_chart_measure(
+    tmp_path: Path, tiny: list[dict], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(static_export, "STATIC_ROW_CAP", 1)
+    inventory = (
+        _app.PageDef(BOARD, "Tiny", "tiny", "grounded-data", chart=_app.ChartDef("bar", x="name", y="count")),
+        INVENTORY[1],
+    )
+    out = tmp_path / "vizro"
+    _export(out, tmp_path / "data", inventory=inventory)
+    page = (out / BOARD / "index.html").read_text(encoding="utf-8")
+    assert "<caption>1 of 2 rows, the largest count first; the live dashboard holds every row</caption>" in page
+    assert "<tr><td>beta</td><td>5</td></tr>" in page and "<td>alpha</td>" not in page
+    assert "every table shows its loader's frame, up to 1 rows" in page
+
+
 def test_a_loader_that_raises_is_reported_on_its_page_and_read_once() -> None:
     reads: list[int] = []
 

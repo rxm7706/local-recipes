@@ -11,6 +11,10 @@ name: Kedro-Viz publish (real atlas DAG)
 # 102.4's consumer step, herald CAP-61). GitHub filters paths per workflow, not per job, so
 # `on.push.paths` is the union of both producers' paths and the `changes` job tells each
 # producer whether the push touched its own (workflow_dispatch runs both).
+#
+# Story 37.2 (CAP-63 amended 2026-10-19): the `vizro` job builds the public atlas data on the
+# runner before it exports, and a weekly schedule rebuilds it (operator ruling "Weekly + on
+# push"); a scheduled run is not a push, so the `changes` job runs both producers.
 
 on:
   push:
@@ -22,6 +26,8 @@ on:
       - 'src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/**'
       - 'src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/**'
       - 'src/shared/packages/pyforge-atlas/src/pyforge/atlas/semantic/**'
+  schedule:
+    - cron: '17 5 * * 1'  # Mondays 05:17 UTC (Story 37.2); Pages takes the newest artifact on its next build
   workflow_dispatch:
 
 permissions:
@@ -171,6 +177,22 @@ jobs:
         run: |
           pixi run --frozen -e pyforge-atlas python \
             src/shared/packages/pyforge-atlas/tools/vizro_static_export.py --print-flag >> "$GITHUB_OUTPUT"
+
+      # Story 37.2 (CAP-63 amended 2026-10-19, operator ruling "Public-only Pages"): the boards are
+      # built from a fresh public atlas run on this runner, never from anyone's local data.
+      # `pyforge-atlas-bootstrap` writes the empty credentials stub (tools/bootstrap.py's
+      # CREDENTIAL_KEYS) and the store directories, then runs the eight fetch pipelines;
+      # `semantic_packages` composes the package boards' table. The data root is the member's
+      # `data/`, which the export reads (Story 37.1). No secret reaches this job and
+      # PYFORGE_ATLAS_CREDENTIALED is never set (AD-11), so every credentialed or enterprise source
+      # stays empty and the identity boards carry no rows on Pages. Not run: `query_plane_cache`
+      # (its input is steward's export, Story 36.3) and `universal_sbom` (entry-scoped). A failed
+      # build fails the job, and Pages keeps the last export it published.
+      - name: Build the public atlas data
+        if: ${{ steps.vizro_flag.outputs.enabled == 'true' }}
+        run: |
+          pixi run --frozen -e pyforge-atlas pyforge-atlas-bootstrap
+          pixi run --frozen -e pyforge-atlas pyforge atlas run --pipelines semantic_packages
 
       # The same Dashboard object dashboard-dryrun builds, one static page per board, ONE
       # vendored assets/plotly.min.js; never a commit (the export is gitignored).

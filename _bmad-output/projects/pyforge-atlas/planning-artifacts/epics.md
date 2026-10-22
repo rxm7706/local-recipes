@@ -2719,7 +2719,7 @@ So that the boards on `/dashboard/vizro/` carry data rather than honest-empty no
 
 **Type:** feature • **Effort:** M • **Deps:** 37.1 • **FR/AD:** spec-pyforge-atlas CAP-63 amended 2026-10-19 (FR-71) • AD-11, AD-21, sld:AD-10
 **Flag:** `pyforge.atlas.vizro_static_boards` (Story 30.2's)
-**Surface:** `.github/workflows/kedro-viz-publish.yml` (the `vizro` job: a weekly schedule, the data build, its timeout), `tools/vizro_static_export.py`, the CI surface registry if the schedule is declared there, tests
+**Surface:** `.github/workflows/kedro-viz-publish.yml` (the `vizro` job: a weekly schedule, the data build, its timeout), `tools/vizro_static_export.py`, `dashboard/static_export.py` (the static row cap, DW-atlas-37-3-1), the CI surface registry if the schedule is declared there, tests
 **Given** the `vizro` job exports on a runner with no atlas data
 **When** it runs weekly, on push or by dispatch
 **Then** it writes the credentials stub, runs `pyforge atlas run` over the public pipelines with no `PYFORGE_ATLAS_CREDENTIALED`, exports against that data root and uploads the artifact; the identity boards carry no rows

@@ -12,7 +12,7 @@ entries: 60
 real deferrals** (the run log's index of "54" double-counted two aliases; see § Provenance).
 Follow-up intake and verification campaigns added more `## DW-` headings without retiring
 that migration set — the frontmatter `entries` field tracks **`## DW-` headings only**, not
-the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**207** `### DW-` headings
+the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**208** `### DW-` headings
 today). Stale narrative prose here is exactly what Story 27.4's counting test guards against.
 
 ## Why this file exists
@@ -5131,6 +5131,17 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-10-19 -- atlas Epic 37 chain; owned by Story 37.9
   status: open
 
+### DW-atlas-37-2-1: A plain `pyforge atlas run` fails on a fresh data root.
+
+- source_spec: `planning-artifacts/specs/spec-37-2-the-pages-vizro-export-builds-the-public-atlas-data-first.md`
+  summary: With no `--pipelines`, `pyforge atlas run` runs `__default__`, the sum of every registered pipeline. It includes `query_plane_cache`, whose input `query_plane_estate_source` (`raw/query_plane_estate_source/`) has no producer until Story 36.3, so on a fresh data root the run stops with `DatasetError: query_plane_estate_source: Failed while loading data` after 12 of 86 nodes. CAP-64 promises that a plain run fills every public dataset; the Pages job names its pipelines instead.
+  evidence: Story 37.2 live run, 2026-10-21, fresh scratch data root, no credentials: exit 1 at 5:25.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipeline_registry.py (register_pipelines); conf/base/catalog.yml (query_plane_estate_source)
+  origin: implementer finding, atlas Story 37.2 live verification
+  severity: medium
+  promoted: 2026-10-21 -- atlas Story 37.2; blocked on Story 36.3 (the estate source's producer)
+  status: open
+
 ### DW-atlas-37-3-1: Two boards' static pages are too heavy to publish as they stand.
 
 - source_spec: `planning-artifacts/specs/spec-37-3-the-seed-gap-version-download-and-distribution-boards-read-their-datasets.md`
@@ -5140,7 +5151,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: Story 37.3 review round 1
   severity: medium
   promoted: 2026-10-21 -- atlas Story 37.3; owned by Story 37.2, which publishes the export
-  status: open
+  verified: 2026-10-21 by atlas Story 37.2: a static page renders at most 5,000 rows of a frame, the largest by the page's chart measure (`src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/static_export.py::_capped`, `STATIC_ROW_CAP`); the caption names both counts. The live dashboard is unchanged.
+  status: closed
 
 ### DW-atlas-37-10-1: The bootstrap-index-health has no producer.
 
