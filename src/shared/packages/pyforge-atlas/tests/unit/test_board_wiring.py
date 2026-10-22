@@ -1,4 +1,5 @@
-"""Story 37.3 (spec-pyforge-atlas CAP-69): six boards read the datasets the pipelines write.
+"""Story 37.3 (spec-pyforge-atlas CAP-69): six boards read the datasets the pipelines write; Story 37.4
+adds four more paths, read with ``pyforge.atlas.board_projections`` on.
 
 Each loader runs on a frame shaped like its produced dataset (the columns the pipeline node
 writes), and the board path is that dataset's catalog ``filepath``. No network.
@@ -36,6 +37,11 @@ def _write(tmp_path: Path, frame: pd.DataFrame) -> Path:
         ("CWE_SEED_GAP_PARQUET", "seed_gaps_cwe_report"),
         ("SPDX_SCHEMA_GAP_PARQUET", "seed_gaps_spdx_report"),
         ("LICENSE_MAP_GAP_PARQUET", "seed_gaps_license_map_report"),
+        # Story 37.4 (with pyforge.atlas.board_projections on)
+        ("BEHIND_UPSTREAM_PARQUET", "derived_behind_upstream"),
+        ("CORE_DEPENDENCIES_PARQUET", "core_dependencies"),
+        ("DERIVED_LIVE_CATALOG_COVERAGE_PARQUET", "derived_live_catalog_coverage"),
+        ("DERIVED_UNIVERSE_SBOM_SUMMARY_PARQUET", "derived_universe_sbom_summary"),
     ],
 )
 def test_each_board_reads_the_path_its_dataset_is_written_to(constant, dataset):

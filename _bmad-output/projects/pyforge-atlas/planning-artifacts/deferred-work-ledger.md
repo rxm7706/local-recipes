@@ -12,7 +12,7 @@ entries: 60
 real deferrals** (the run log's index of "54" double-counted two aliases; see § Provenance).
 Follow-up intake and verification campaigns added more `## DW-` headings without retiring
 that migration set — the frontmatter `entries` field tracks **`## DW-` headings only**, not
-the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**208** `### DW-` headings
+the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**209** `### DW-` headings
 today). Stale narrative prose here is exactly what Story 27.4's counting test guards against.
 
 ## Why this file exists
@@ -5140,6 +5140,17 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: implementer finding, atlas Story 37.2 live verification
   severity: medium
   promoted: 2026-10-21 -- atlas Story 37.2; blocked on Story 36.3 (the estate source's producer)
+  status: open
+
+### DW-atlas-37-4-1: `core_dependencies.depends_on` keeps unparsed requirement specs.
+
+- source_spec: `planning-artifacts/specs/spec-37-4-behind-upstream-whodepends-live-catalog-coverage-and-the-universe-sbom-boards-fill.md`
+  summary: `build_dependency_graph` copies the cf-graph's `depends_on` as it comes, and 76 of its distinct values are requirement specs, not package names (`boost>=1.67`, `moab[build="nompi_*"]`, `PyJWT[crypto]`). Since Story 37.4 the whodepends board shows them, and each splits its package's dependent count from the bare-name row. The node is parity-gated against legacy Phase J (AD-14), so normalizing the names needs its own legacy comparison, not a board story.
+  evidence: Story 37.4 review round 2, 2026-10-22, over the public scratch root: 76 of 16,004 distinct `depends_on` values carry a version, build or extras spec.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/core/nodes.py (build_dependency_graph)
+  origin: reviewer finding, atlas Story 37.4 review round 2 (N3)
+  severity: low
+  promoted: 2026-10-22 -- atlas Story 37.4
   status: open
 
 ### DW-atlas-37-3-1: Two boards' static pages are too heavy to publish as they stand.

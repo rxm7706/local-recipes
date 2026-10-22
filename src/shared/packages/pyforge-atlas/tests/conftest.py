@@ -7,6 +7,7 @@ import socket
 import pytest
 from pyforge.testing_kit import make_flag_provider_fixture
 
+from pyforge.atlas.dashboard import data as dashboard_data
 from pyforge.atlas.datasets import basilisk, identity_sources, public_sources
 from pyforge.atlas.datasets import credentials as credential_switch
 
@@ -90,6 +91,23 @@ _REAL_LIVE = public_sources.live  # captured before any pin
 def real_live():
     """The unpinned ``public_sources.live``, for the tests that resolve the real flag key."""
     return _REAL_LIVE
+
+
+_REAL_BOARD_PROJECTIONS = dashboard_data.board_projections  # captured before any pin
+
+
+@pytest.fixture()
+def real_board_projections():
+    """The unpinned ``dashboard.data.board_projections``, for the tests that resolve the real flag key."""
+    return _REAL_BOARD_PROJECTIONS
+
+
+@pytest.fixture(autouse=True)
+def _board_projections_off(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Story 37.4: ``pyforge.atlas.board_projections`` reads ON in dev, so every test starts with it OFF
+    and the dashboard builds as before. A test of the projected boards passes ``board_projections=True``
+    or patches ``dashboard.data.board_projections`` ON."""
+    monkeypatch.setattr(dashboard_data, "board_projections", lambda **_: False)
 
 
 @pytest.fixture(autouse=True)

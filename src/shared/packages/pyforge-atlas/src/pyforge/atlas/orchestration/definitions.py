@@ -310,6 +310,9 @@ NODE_TIMEOUTS: dict[str, int] = {
     "build_inventory_verified_packages": 300,  # Story 23.4 -- full-inventory derive
     "build_inventory_aoss_free_queue": 120,  # Story 23.4 -- set-difference queue
     "build_identity_complete_export": 300,  # Story 23.5 -- four-way complete export join
+    "project_behind_upstream": 300,  # Story 37.4 -- one PEP 440 comparison per enumerated package
+    "project_live_catalog_coverage": 120,  # Story 37.4 -- 17 column counts over the export
+    "project_universe_sbom_summary": 300,  # Story 37.4 -- one row per BOM component
     "derive_basilisk_vuln_rollup": 300,  # in-memory rollup of the Basilisk advisories
     "assign_inventory_priority": 120,  # in-memory ranking, no network
     # -- seed_gaps (read-only suggesters) ---------------------------------- #

@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 import pandas as pd
+from pyforge.core.flags import read_boolean
 
 from ..semantic import models
 
@@ -78,6 +79,14 @@ BOOTSTRAP_INDEX_HEALTH_PARQUET = "derived/bootstrap_index_health/bootstrap_index
 IDENTITY_EXPORT_PARQUET = "derived/identity_export_parquet/identity_export_parquet.parquet"
 LIVE_CATALOG_COVERAGE_PARQUET = "derived/live_catalog_coverage/live_catalog_coverage.parquet"
 
+# Story 37.4 (CAP-69): with ``pyforge.atlas.board_projections`` on, four boards read these instead.
+# Off, behind-upstream and whodepends stay shells and the two coverage boards read the paths above.
+BOARD_PROJECTIONS_FLAG = "pyforge.atlas.board_projections"
+BEHIND_UPSTREAM_PARQUET = "derived/derived_behind_upstream/derived_behind_upstream.parquet"
+CORE_DEPENDENCIES_PARQUET = "primary/core_dependencies/core_dependencies.parquet"
+DERIVED_LIVE_CATALOG_COVERAGE_PARQUET = "derived/derived_live_catalog_coverage/derived_live_catalog_coverage.parquet"
+DERIVED_UNIVERSE_SBOM_SUMMARY_PARQUET = "derived/derived_universe_sbom_summary/derived_universe_sbom_summary.parquet"
+
 # Mirrors ``scripts/openteams_identity_dashboards.py::EXTERNAL_LIVE`` — static reference rows.
 IDENTITY_WORKBOOK_EXTERNAL_COUNTS: tuple[tuple[str, str, str, str], ...] = (
     ("Anaconda Dist 2026.x", "639", "HTML 2026.x table", "639 (Anaaconda-Dist)"),
@@ -114,6 +123,12 @@ def default_data_root() -> Path:
     base = _MEMBER_ROOT if member else Path.cwd()
     root = Path((os.environ.get("PYFORGE_ATLAS_DATA_ROOT") or "").strip() or "data")
     return root if root.is_absolute() else base / root
+
+
+def board_projections(*, flags_path: Path | str | None = None) -> bool:
+    """Story 37.4: whether behind-upstream, whodepends and the two coverage boards read the datasets the
+    pipelines write (``pyforge.atlas.board_projections``; off when the tree is missing or unreadable)."""
+    return read_boolean(BOARD_PROJECTIONS_FLAG, default=False, flags_path=flags_path)
 
 
 def _bsl_query_or_empty(
@@ -469,6 +484,26 @@ def load_identity_export_snapshot(parquet: str | os.PathLike[str] | None = None)
         models.build_identity_export_snapshot_model,
         ["identity_source"],
         ["package_count", "primary_purl_coverage_count", "openteams_issue_url_coverage_count"],
+    )
+
+
+def load_behind_upstream(parquet: str | os.PathLike[str] | None = None) -> pd.DataFrame:
+    """`behind-upstream` — Story 37.4: build_behind_upstream_model over ``derived_behind_upstream``."""
+    return _bsl_query_or_empty(
+        parquet,
+        models.build_behind_upstream_model,
+        ["conda_name", "latest_conda_version", "upstream_source", "upstream_version", "lag_label"],
+        ["package_count"],
+    )
+
+
+def load_whodepends(parquet: str | os.PathLike[str] | None = None) -> pd.DataFrame:
+    """`whodepends` — Story 37.4: build_whodepends_model over ``core_dependencies``."""
+    return _bsl_query_or_empty(
+        parquet,
+        models.build_whodepends_model,
+        ["depends_on", "dep_type"],
+        ["dependent_count"],
     )
 
 
