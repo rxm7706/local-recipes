@@ -124,10 +124,10 @@ development_status:
   36-1-the-basilisk-population-runs: done
   36-2-the-openteams-board-and-the-staged-recipes-prs-fill-on-opt-in: backlog
   36-3-the-query-plane-estate-source-has-a-producer: blocked
-  37-1-the-dashboard-reads-the-data-root-kedro-writes: backlog
+  37-1-the-dashboard-reads-the-data-root-kedro-writes: done
   37-10-the-bootstrap-index-health-reports-each-catalog-entry-s-freshness: backlog
   37-2-the-pages-vizro-export-builds-the-public-atlas-data-first: backlog
-  37-3-the-seed-gap-version-download-and-distribution-boards-read-their-datasets: backlog
+  37-3-the-seed-gap-version-download-and-distribution-boards-read-their-datasets: done
   37-4-behind-upstream-whodepends-live-catalog-coverage-and-the-universe-sbom-boards-fill: backlog
   37-5-the-cve-watcher-reads-a-vulnerability-history: backlog
   37-6-the-release-cadence-reads-per-version-upload-times: backlog
@@ -212,7 +212,7 @@ development_status:
   epic-35-retrospective: optional
   epic-36: in-progress
   epic-36-retrospective: optional
-  epic-37: backlog
+  epic-37: in-progress
   epic-37-retrospective: optional
   epic-4: done
   epic-4-retrospective: done

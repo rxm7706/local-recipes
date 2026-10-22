@@ -118,7 +118,7 @@
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/artifactory/aql_adapter.py": "8ebc1fb6565ab690a870d0b3f98896dd0a203ef8",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/artifactory/identity_join.py": "a7f9838442326174526446f412d2ef3dee00c595",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/cap18.py": "73d001987c12e1ae182df497c743258778522b41",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py": "336044e68b6597ea90e6b902d1497a081388ce03",
+   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py": "a29a4a3722818f793f1f6df1f9df3c74366ddb64",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/data.py": "6ef705f704abeb88d3ffc17f2b38fedc0f80d724",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/factory_status.py": "cb42ce78717602c898f5fa0cbea950fc8ae6e9f3",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/identity_gist.py": "ab2469a2e117525d2dc5970e0e8da6eac0e35016",
@@ -508,7 +508,7 @@
    "src/shared/packages/pyforge-atlas/wasm/index.html": "58d44155379ec640d36caf59b8c701ec8fcfce27",
    "src/shared/packages/pyforge-atlas/wasm/package.json": "e8ec7eef8dff664e2910f4fee67ada79e4105d93"
   },
-  "memlog": "aebb1546e40007db49a5671d5643cb890e8173c5"
+  "memlog": "4657b1fbd2b1c72523b21729578c8af1379cfb02"
  },
  "pyforge-atlas/spec-pyforge-atlas-intelligence-platform": {
   "files": {},
@@ -3087,7 +3087,7 @@
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/artifactory/identity_join.py": "a7f9838442326174526446f412d2ef3dee00c595",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/cap18.py": "73d001987c12e1ae182df497c743258778522b41",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/__init__.py": "b820fed5271a78dc512e6a201d87955cc9c8f572",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py": "336044e68b6597ea90e6b902d1497a081388ce03",
+   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py": "a29a4a3722818f793f1f6df1f9df3c74366ddb64",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/data.py": "6ef705f704abeb88d3ffc17f2b38fedc0f80d724",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/factory_status.py": "cb42ce78717602c898f5fa0cbea950fc8ae6e9f3",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/identity_gist.py": "ab2469a2e117525d2dc5970e0e8da6eac0e35016",
@@ -3750,7 +3750,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "f74e0c852afc1f3d11896183cbf03d8e794bd099"
+  "memlog": "f82162fe34d673faa1f5bfea5ddb68a98510442b"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -6792,7 +6792,7 @@
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/artifactory/identity_join.py": "a7f9838442326174526446f412d2ef3dee00c595",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/cap18.py": "73d001987c12e1ae182df497c743258778522b41",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/__init__.py": "b820fed5271a78dc512e6a201d87955cc9c8f572",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py": "336044e68b6597ea90e6b902d1497a081388ce03",
+   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py": "a29a4a3722818f793f1f6df1f9df3c74366ddb64",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/data.py": "6ef705f704abeb88d3ffc17f2b38fedc0f80d724",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/factory_status.py": "cb42ce78717602c898f5fa0cbea950fc8ae6e9f3",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/identity_gist.py": "ab2469a2e117525d2dc5970e0e8da6eac0e35016",
@@ -7293,7 +7293,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "a7a57aeb0ad1a31a5c389ae6943a28940de01dad"
+  "memlog": "5578f6aa237fc8e7a2c714ae4c887f1dc912c4f6"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {},
