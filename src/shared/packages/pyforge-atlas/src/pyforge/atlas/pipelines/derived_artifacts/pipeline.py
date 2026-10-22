@@ -19,6 +19,7 @@ from .nodes import (
     build_inventory_universe,
     build_inventory_verified_packages,
     build_universe_sbom,
+    compose_distribution_breakdown,
     derive_basilisk_vuln_rollup,
 )
 
@@ -26,6 +27,17 @@ from .nodes import (
 def create_pipeline(**kwargs) -> Pipeline:
     return Pipeline(
         [
+            node(
+                # Story 37.3: the distribution-breakdown board's one table
+                func=compose_distribution_breakdown,
+                inputs=[
+                    "core_downloads_platform_breakdown",
+                    "core_downloads_pyver_breakdown",
+                    "core_downloads_channel_breakdown",
+                ],
+                outputs="derived_distribution_breakdown",
+                name="compose_distribution_breakdown",
+            ),
             node(
                 func=build_universe_sbom,
                 inputs=["core_packages_enumerated", "pypi_conda_mapping", "parameters"],

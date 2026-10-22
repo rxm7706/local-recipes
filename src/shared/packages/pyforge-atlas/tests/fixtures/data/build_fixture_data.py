@@ -64,17 +64,21 @@ FIXTURES: dict[str, pd.DataFrame] = {
             "total_versions": pd.array([2, 5, 1], dtype="Int64"),
         }
     ),
-    # version-downloads declares a chart (DESIGN.md § 3.2).
-    "primary/version_downloads/version_downloads.parquet": pd.DataFrame(
+    # version-downloads declares a chart (DESIGN.md § 3.2). Story 37.3: the board reads
+    # core_version_download_history; this fixture keeps an upload_date so the chart renders, typed
+    # as a date like the null the model projects when the store has none.
+    "primary/core_version_download_history/core_version_download_history.parquet": pd.DataFrame(
         {
             "conda_name": ["a", "a", "b"],
             "version": ["1.0.0", "1.1.0", "2.0.0"],
-            "upload_date": ["2026-01-02", "2026-03-04", "2026-02-02"],
+            "upload_date": pd.to_datetime(["2026-01-02", "2026-03-04", "2026-02-02"]).date,
             "downloads": pd.array([10, 25, 40], dtype="Int64"),
+            "fetched_at": pd.array([1, 1, 1], dtype="Int64"),
         }
     ),
     # distribution-breakdown declares BOTH a filter and a chart (DESIGN.md § 3.8).
-    "primary/distribution_breakdown/distribution_breakdown.parquet": pd.DataFrame(
+    # Story 37.3: compose_distribution_breakdown writes it (derived_artifacts)
+    "derived/derived_distribution_breakdown/derived_distribution_breakdown.parquet": pd.DataFrame(
         {
             "conda_name": ["a", "a", "b", "b"],
             "facet": ["platform", "python-version", "platform", "python-version"],
