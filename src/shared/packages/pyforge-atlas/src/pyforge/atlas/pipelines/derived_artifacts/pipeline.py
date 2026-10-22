@@ -4,7 +4,9 @@ PURE nodes: ``build_universe_sbom`` (CycloneDX BOM), ``build_inventory_universe`
 (workbook-free metrics universe), ``derive_basilisk_vuln_rollup`` + ``assign_inventory_priority``
 (Story 23.3 priority hierarchy), ``build_inventory_verified_packages`` +
 ``build_inventory_aoss_free_queue`` (Story 23.4 deliverable A + AOSS queue),
-``build_identity_complete_export`` (Story 23.5 complete export join).
+``build_identity_complete_export`` (Story 23.5 complete export join); the three board projections
+``project_behind_upstream``, ``project_live_catalog_coverage`` and ``project_universe_sbom_summary``
+(Story 37.4).
 ``inputs=`` bind to catalog NAMES (AD-3 cross-pipeline edges). Node names FROZEN.
 """
 
@@ -21,6 +23,9 @@ from .nodes import (
     build_universe_sbom,
     compose_distribution_breakdown,
     derive_basilisk_vuln_rollup,
+    project_behind_upstream,
+    project_live_catalog_coverage,
+    project_universe_sbom_summary,
 )
 
 
@@ -124,6 +129,26 @@ def create_pipeline(**kwargs) -> Pipeline:
                 ],
                 outputs="identity_complete_export",
                 name="build_identity_complete_export",
+            ),
+            # Story 37.4: the projections the behind-upstream, live-catalog-coverage and universe-sbom
+            # boards read
+            node(
+                func=project_behind_upstream,
+                inputs=["vcs_upstream_versions", "core_packages_enumerated"],
+                outputs="derived_behind_upstream",
+                name="project_behind_upstream",
+            ),
+            node(
+                func=project_live_catalog_coverage,
+                inputs="identity_complete_export",
+                outputs="derived_live_catalog_coverage",
+                name="project_live_catalog_coverage",
+            ),
+            node(
+                func=project_universe_sbom_summary,
+                inputs="derived_universe_sbom",
+                outputs="derived_universe_sbom_summary",
+                name="project_universe_sbom_summary",
             ),
         ]
     )

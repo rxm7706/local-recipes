@@ -1035,6 +1035,26 @@ derived_universe_sbom:
   metadata:
     layer: derived
 
+# Story 37.4 (CAP-69): the projections the behind-upstream, live-catalog-coverage and universe-sbom
+# boards read (derived_artifacts' three project_* nodes)
+derived_behind_upstream:
+  type: pandas.ParquetDataset
+  filepath: ${globals:paths.data_root}/derived/derived_behind_upstream/derived_behind_upstream.parquet
+  metadata:
+    layer: derived
+
+derived_live_catalog_coverage:
+  type: pandas.ParquetDataset
+  filepath: ${globals:paths.data_root}/derived/derived_live_catalog_coverage/derived_live_catalog_coverage.parquet
+  metadata:
+    layer: derived
+
+derived_universe_sbom_summary:
+  type: pandas.ParquetDataset
+  filepath: ${globals:paths.data_root}/derived/derived_universe_sbom_summary/derived_universe_sbom_summary.parquet
+  metadata:
+    layer: derived
+
 # Story 23.8 (spec-23-8-workbook-free-metrics-universe.md) -- the ~38k-row
 # full-inventory package universe that replaces
 # docs/Analysis_Dataset-2026-08-12.xlsx as the source of the legacy inventory

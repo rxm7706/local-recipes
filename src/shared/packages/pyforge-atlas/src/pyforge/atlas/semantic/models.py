@@ -407,6 +407,47 @@ def build_mapping_gap_model(table: Any) -> SemanticModel:
     )
 
 
+def build_behind_upstream_model(table: Any) -> SemanticModel:
+    """`behind-upstream` — each package whose upstream release is newer than its latest conda version.
+
+    Story 37.4 (CAP-69): reads ``derived_behind_upstream``, which ``project_behind_upstream`` writes
+    with legacy's lag labels (``major`` / ``minor`` / ``patch`` / ``unknown``).
+    """
+    return SemanticModel(
+        table=table,
+        name="behind_upstream",
+        dimensions={
+            "conda_name": Dimension(expr=lambda t: t.conda_name),
+            "latest_conda_version": Dimension(expr=lambda t: t.latest_conda_version),
+            "upstream_source": Dimension(expr=lambda t: t.upstream_source),
+            "upstream_version": Dimension(expr=lambda t: t.upstream_version),
+            "lag_label": Dimension(expr=lambda t: t.lag_label),
+        },
+        measures={
+            "package_count": Measure(expr=lambda t: t.conda_name.count()),
+        },
+    )
+
+
+def build_whodepends_model(table: Any) -> SemanticModel:
+    """`whodepends` — per depended-on package and dependency type, how many packages depend on it.
+
+    Story 37.4 (CAP-69): reads ``core_dependencies`` (``conda_name`` depends on ``depends_on``), legacy
+    ``whodepends --reverse`` for every package at once.
+    """
+    return SemanticModel(
+        table=table,
+        name="whodepends",
+        dimensions={
+            "depends_on": Dimension(expr=lambda t: t.depends_on),
+            "dep_type": Dimension(expr=lambda t: t.dep_type),
+        },
+        measures={
+            "dependent_count": Measure(expr=lambda t: t.conda_name.nunique()),
+        },
+    )
+
+
 def build_universe_sbom_summary_model(table: Any) -> SemanticModel:
     """`universe-sbom` — universe-scale BOM SUMMARY (never a full ~856k-row browse)."""
     return SemanticModel(
