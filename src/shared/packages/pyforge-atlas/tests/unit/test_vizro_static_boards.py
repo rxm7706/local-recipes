@@ -111,8 +111,18 @@ def test_the_vizro_job_builds_the_public_data_before_it_exports() -> None:
     export = next(step for step in steps if "vizro-static-export" in step.get("run", ""))
     flag = next(step for step in steps if step.get("id") == "vizro_flag")
 
-    assert names.index(flag["name"]) < names.index(build["name"]) < names.index(export["name"])
-    assert build["if"] == export["if"]  # flag off: no build and no export
+    room = next(step for step in steps if step.get("name") == "Free disk space for the data build")
+    assert (
+        names.index(flag["name"]) < names.index(room["name"]) < names.index(build["name"]) < names.index(export["name"])
+    )
+    assert build["if"] == export["if"] == room["if"]  # flag off: no build and no export
+    (removal,) = [line for line in room["run"].splitlines() if "rm -rf" in line]
+    targets = removal.split("rm -rf", 1)[1].split()
+    assert "/usr/share/dotnet" in targets
+    assert all(
+        t.startswith(("/usr/", "/opt/")) and len(t.rstrip("/").split("/")) >= 3 for t in targets
+    )  # never /usr or /opt
+    assert _workflow()["jobs"]["vizro"]["timeout-minutes"] == 240  # three times the measured build
     assert build["run"].split("\n")[:2] == [
         "pixi run --frozen -e pyforge-atlas pyforge-atlas-bootstrap",
         "pixi run --frozen -e pyforge-atlas pyforge atlas run --pipelines semantic_packages",

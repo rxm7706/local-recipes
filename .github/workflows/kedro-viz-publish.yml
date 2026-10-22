@@ -158,7 +158,9 @@ jobs:
     needs: changes
     if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_KEDRO_VIZ_PUBLISH != 'true' && (needs.changes.outputs.vizro == 'true')) }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Story 37.2: the public data build took 1 h 20 min on a workstation (2026-10-21; PyPI's fan-out,
+    # rate-limited at 10 requests a second, is 40 min of it); a hosted runner gets three times that
+    timeout-minutes: 240
     steps:
       - uses: actions/checkout@v7
 
@@ -185,9 +187,19 @@ jobs:
       # `semantic_packages` composes the package boards' table. The data root is the member's
       # `data/`, which the export reads (Story 37.1). No secret reaches this job and
       # PYFORGE_ATLAS_CREDENTIALED is never set (AD-11), so every credentialed or enterprise source
-      # stays empty and the identity boards carry no rows on Pages. Not run: `query_plane_cache`
+      # stays empty; the identity boards show what public inputs give them (the purl associator and the
+      # tracked inventory; operator ruling 2026-10-21). Not run: `query_plane_cache`
       # (its input is steward's export, Story 36.3) and `universal_sbom` (entry-scoped). A failed
       # build fails the job, and Pages keeps the last export it published.
+      # The vulnerability database store alone is 9.6 GB (2026-10-21), more than a hosted runner has
+      # free beside the environment; the preinstalled toolchains this job never uses make room.
+      - name: Free disk space for the data build
+        if: ${{ steps.vizro_flag.outputs.enabled == 'true' }}
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          df -h /
+
       - name: Build the public atlas data
         if: ${{ steps.vizro_flag.outputs.enabled == 'true' }}
         run: |

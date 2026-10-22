@@ -44,17 +44,21 @@ board's `data_build_timestamp` in `manifest.json` is `unavailable`.
    `tools/bootstrap.py`'s `CREDENTIAL_KEYS`, the store directories, then the eight fetch pipelines) and
    `pixi run --frozen -e pyforge-atlas pyforge atlas run --pipelines semantic_packages` (the package boards' table).
    The data root is the member's `data/`, which the export reads (Story 37.1). No secret reaches the job and
-   `PYFORGE_ATLAS_CREDENTIALED` is never set (AD-11, operator ruling "Public-only Pages"); BigQuery stays off. So the
-   credentialed and enterprise boards (identity, JFrog) carry no rows on Pages. `query_plane_cache` (its input is
-   steward's export, Story 36.3) and `universal_sbom` (entry-scoped) are not run. A failed build fails the job and no
-   artifact is uploaded, so Pages keeps the last export it published.
+   `PYFORGE_ATLAS_CREDENTIALED` is never set (AD-11, operator ruling "Public-only Pages"); BigQuery stays off. So every
+   credentialed or enterprise source (the OpenTeams board, the staged-recipes PRs, JFrog) stays empty. The identity
+   boards show what public inputs give them, the purl associator and the tracked inventory (operator ruling
+   2026-10-21, "Publish them"). `query_plane_cache` (its input is steward's export, Story 36.3) and `universal_sbom`
+   (entry-scoped) are not run. A failed build fails the job and no artifact is uploaded, so Pages keeps the last export
+   it published. A step before the build frees the runner's disk of toolchains the job never uses (.NET, Android, GHC,
+   CodeQL, Boost): the vulnerability database store alone reached 9.6 GB.
 3. **A row cap on static pages** (DW-atlas-37-3-1). Over a full data root two loaders return 448,301 and 210,170
    rows, which wrote 37.2 MB and 23.1 MB pages. `static_export.STATIC_ROW_CAP = 5_000`: a larger frame keeps its
    largest rows by the page's declared chart measure (ties broken by the other columns), else its first rows in an
    order of every column, so one commit's export stays byte-identical. Table and chart draw the same capped frame; the
    caption says "N of M rows, the largest <measure> first; the live dashboard holds every row", and the page header
    says tables show "up to 5,000 rows". The live dashboard is unchanged.
-4. **The job's time budget** follows the measured public build (Verification).
+4. **The job's time budget** is 240 minutes: three times the measured public build (1 h 20 min on a workstation, 40
+   min of it PyPI's fan-out at its 10 requests a second).
 
 Ledger key: `37-2-the-pages-vizro-export-builds-the-public-atlas-data-first`.
 Type / Effort / Deps: feature / M / Story 37.1 (the data root), stacked on Story 37.3 (the boards that read the data).
@@ -72,7 +76,8 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root), stacked on Story
   `pyforge atlas run --pipelines semantic_packages`), then the export and the upload; the build and the export share
   the flag's `if`; the build has no `continue-on-error`.
 - **AC3 — Public only.** The `vizro` job names no `secrets.`, no `PYFORGE_ATLAS_CREDENTIALED`, no GitHub token and no
-  `PHASE_P` variable; the bootstrap task's pipelines are the eight fetch pipelines and never `query_plane_cache`.
+  `PHASE_P` variable; the bootstrap task's pipelines are the eight fetch pipelines and never `query_plane_cache`; the
+  disk step removes only named toolchain directories under `/usr` and `/opt`; the job's budget is 240 minutes.
 - **AC4 — The cap.** A frame over the cap keeps its largest rows by the chart measure, ties broken deterministically;
   without a measure, its first rows in column order; a column that does not compare falls back to the measure alone;
   a frame at the cap is untouched; the caption names both counts.
@@ -84,7 +89,24 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root), stacked on Story
 
 - Unit, from the repo root: `src/shared/packages/pyforge-atlas/tests/unit/test_vizro_static_boards.py` and
   `src/shared/packages/pyforge-atlas/tests/unit/test_dashboard_static_export.py`.
-- **Live, 2026-10-21** (LIVE_PLACEHOLDER)
+- **Live, 2026-10-21,** on a workstation, a fresh scratch data root, no credentials, no switch, no GitHub token in the
+  environment, a scratch conf with the bootstrap's empty credential stub:
+  - **The build:** `pyforge atlas run --pipelines core,pypi_intelligence,vulnerability,vcs_health,upstream_discovery,
+    derived_artifacts,seed_gaps,artifactory_downloads,semantic_packages` exit 0, Kedro "completed successfully in
+    4789.0 sec" (wall 1:19:58), 81 nodes, peak RSS 4.35 GB. The data root came to 9.7 GB, 9.6 GB of it the vulnerability
+    database store. PyPI's fan-out took 21,326 candidates (157 answered 404). The vdb refresh failed with `apsw.IOError:
+    disk I/O error` on the workstation's RAM-backed `/tmp`; the run kept going and marked the store stale (AD-13).
+  - **A plain run** (no `--pipelines`) on another fresh root exit 1 after 12 of 86 nodes (DW-atlas-37-2-1).
+  - **The export** over that root: exit 0 in 4.3 s, 8.0 MB in all; the largest page is 571 KB (distribution-breakdown,
+    "5,000 of 210,170 rows, the largest downloads_90d first"); version-downloads 421 KB (5,000 of 448,301). 17 of the
+    34 boards carry data and a data-build stamp: feedstock-health (28,966 rows), my-feedstocks (60,380),
+    staleness-report, query-atlas, detail-cf-atlas and adoption-stage (34,720 packages), version-downloads,
+    distribution-breakdown, the four seed-gap boards (220, 40, 13, 462), identity-catalog (871), identity-ops,
+    identity-workbook, identity-export-snapshot and factory-status. The other 17 are honest-empty: estate-cache (Story
+    36.3), behind-upstream, whodepends, universe-sbom and live-catalog-coverage (Story 37.4), cve-watcher,
+    release-cadence, find-alternative, export-purls, mapping-gap and bootstrap-index-health (Stories 37.5-37.10),
+    scan-project and env-inspect (per-invocation scans), and inventory-match, add-handoff, library-futures and
+    recommend-2027 (per-invocation reports).
 
 ## Boundaries & Constraints
 
@@ -95,7 +117,12 @@ board's dimension renamed; the live dashboard's frames capped.
 - **A plain `pyforge atlas run` fails on a fresh data root.** The default pipeline set includes `query_plane_cache`,
   whose input `query_plane_estate_source` has no producer until Story 36.3 (blocked); the job names its pipelines.
   DW-atlas-37-2-1.
-- **A public source that is down fails the weekly build;** Pages keeps the previous export until the next run.
+- **A public source that is down** marks its store stale and the run goes on (AD-13); a node that raises fails the
+  weekly build, and Pages keeps the previous export until the next run.
+- **The vulnerability database may not build on the runner** (it failed on the workstation's `/tmp`); the run goes on
+  and the boards' vulnerability columns stay empty until a build succeeds.
+- **Every push that touches the boards' paths runs the whole build** (operator ruling "Weekly + on push"): about an
+  hour or more of CI per push.
 
 </intent-contract>
 

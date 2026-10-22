@@ -2722,7 +2722,7 @@ So that the boards on `/dashboard/vizro/` carry data rather than honest-empty no
 **Surface:** `.github/workflows/kedro-viz-publish.yml` (the `vizro` job: a weekly schedule, the data build, its timeout), `tools/vizro_static_export.py`, `dashboard/static_export.py` (the static row cap, DW-atlas-37-3-1), the CI surface registry if the schedule is declared there, tests
 **Given** the `vizro` job exports on a runner with no atlas data
 **When** it runs weekly, on push or by dispatch
-**Then** it writes the credentials stub, runs `pyforge atlas run` over the public pipelines with no `PYFORGE_ATLAS_CREDENTIALED`, exports against that data root and uploads the artifact; the identity boards carry no rows
+**Then** it writes the credentials stub, runs `pyforge atlas run` over the public pipelines with no `PYFORGE_ATLAS_CREDENTIALED`, exports against that data root and uploads the artifact; credentialed and enterprise sources stay empty, and the identity boards show what public inputs give them (operator ruling 2026-10-21)
 **Status:** backlog
 
 ### Story 37.3: The seed-gap, version-download and distribution boards read their datasets
