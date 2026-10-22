@@ -2,7 +2,7 @@
 title: "36.2: The OpenTeams board and the staged-recipes PRs fill on opt-in"
 type: 'feature'
 created: '2026-10-18'
-status: 'in-review'
+status: 'done'
 baseline_revision: '24581b35b8'
 flag:
   key: pyforge.atlas.identity_live_sources        # new; minted by this story

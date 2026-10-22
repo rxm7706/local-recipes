@@ -2673,7 +2673,7 @@ So that `identity_packages_primary`, the identity exports and the inventory prio
 **Given** both datasets are constructed with no `fetcher`
 **When** a credentialed run reaches them with the flag on
 **Then** `identity_packages_primary` holds rows from each `identity_source`, and `identity_complete_export` and `inventory_priority_assignments` hold rows; without the opt-in no request carries a credential
-**Status:** backlog
+**Status:** done
 
 ### Story 36.3: The query-plane estate source has a producer
 
