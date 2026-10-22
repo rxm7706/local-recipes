@@ -21,6 +21,7 @@ from pyforge.atlas.pipelines.vcs_health.nodes import (
     refresh_vcs_registry_stores,
 )
 from pyforge.atlas.pipelines.vcs_health.vcs_refresh_identifiers import (
+    _anchor_feedstocks,
     batches_from_universe,
     registry_names,
     vcs_repo,
@@ -275,10 +276,12 @@ def test_the_first_attribution_of_a_package_decides_like_its_recipe_fields():
     )
     graph = GRAPH.assign(feedstock_archived=[False, False, False, True, False, False, False])  # jsx archived
 
-    upstream = batches_from_universe(ENUM, graph, attribution)["upstream_repos"]
+    batches = batches_from_universe(ENUM, graph, attribution)
 
-    assert all(conda != "airflow" for conda, _owner, _repo in upstream)  # its first feedstock (jsx) is archived
-    assert ("airflow-with-amazon", "apache", "airflow") in upstream
+    # airflow's first attribution is jsx (archived), so it is left out; the last one (airflow) would keep it,
+    # and it would then batch jsx's npm name, the recipe fields package_recipe_fields gives it
+    assert batches["registries"]["npm"] == ()
+    assert ("airflow-with-amazon", "apache", "airflow") in batches["upstream_repos"]
 
 
 def test_the_three_triggers_read_the_universe_inputs():
@@ -294,3 +297,40 @@ def test_the_three_triggers_read_the_universe_inputs():
             "core_cf_graph_raw",
             "core_feedstock_attribution",
         ], name
+
+
+def test_a_live_attribution_outranks_an_archived_first_anchor():
+    old_anchor = pd.DataFrame(
+        {
+            "feedstock_name": ["old-glab"],
+            "conda_name": ["glab"],
+            "depends_on": [None],
+            "source_url": [None],
+            "repo_url": [None],
+            "dev_url": ["https://gitlab.com/group/sub/glab.git"],
+            "home_url": [None],
+            "feedstock_archived": [True],
+        }
+    )
+    graph = pd.concat([old_anchor, GRAPH.assign(feedstock_archived=False)], ignore_index=True)  # glab's first anchor
+
+    assert ("glab", "group/sub/glab") in batches_from_universe(ENUM, graph, ATTRIBUTION)["gitlab"]
+
+
+def test_the_anchor_feedstock_is_the_first_anchor_row():
+    graph = pd.DataFrame(
+        {
+            "feedstock_name": ["needs-x", "first", "second"],
+            "conda_name": ["x", "x", "x"],
+            "depends_on": ["y", None, None],  # a dependency row is never an anchor
+        }
+    )
+
+    assert _anchor_feedstocks(graph) == {"x": "first"}
+    assert _anchor_feedstocks(None) == {} and _anchor_feedstocks(graph.drop(columns="depends_on")) == {}
+
+
+def test_a_cran_page_among_the_about_urls_stays_unbatched():
+    graph = GRAPH.assign(home_url=["https://cran.r-project.org/package=airflow", None, None, None, None, None, None])
+
+    assert batches_from_universe(ENUM, graph, ATTRIBUTION)["registries"]["cran"] == ()
