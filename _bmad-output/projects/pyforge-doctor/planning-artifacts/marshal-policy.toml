@@ -384,7 +384,8 @@ verify_commands = [
   "tests/scripts/**",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
   # Story 45.3 (2026-10-22) adds the conda-forge-expert meta-test that stubs every fleet-picture probe, and the CFE
-  # version carriers its Rule-2 retro edits: 45.1 did not declare the meta-test, so its dispatch never ran the CFE lane.
+  # version carriers its Rule-2 retro edits, so a later Epic-45 dispatch that stubs a new probe there is in scope
+  # (MRS-GATE-007). The surface widens the scope check only; it does not add the CFE lane to a dispatch's verify.
   ".claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_main_attention.py",
   ".claude/skills/conda-forge-expert/CHANGELOG.md",
   ".claude/skills/conda-forge-expert/SKILL.md",

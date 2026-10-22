@@ -3267,14 +3267,14 @@ As the operator whose CFE regression lane went red twice on a new ATTENTION prob
 I want that meta-test to fail by name whenever `main()` calls a probe `_PROBES` does not list,
 So that the next probe is stubbed in the change that adds it, not found later as three unexplained red tests.
 
-**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-doctor CAP-89 (Story 45.1, whose `ci_pause_drift_findings` the meta-test first missed; Story 48.2's `pages_liveness_findings` was the second) • conda-forge-expert Rule 2 (the retro lands in the same change) • Dream 2026-10-22 (the fleet-picture probe guard)
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-doctor CAP-89 (Story 45.1, whose `ci_pause_drift_findings` the meta-test first missed; Story 48.2's `pages_liveness_findings`, under CAP-91, was the second) • conda-forge-expert Rule 2 (the retro lands in the same change) • Dream 2026-10-22 (the fleet-picture probe guard)
 **Flag:** none (`type: fix`, `spec-feature-flag-governance` Q1)
 **Surface:** `.claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_main_attention.py`; the conda-forge-expert retro carriers (`CHANGELOG.md`, `SKILL.md`, `MANIFEST.yaml`, `config/skill-config.yaml`); `marshal-policy.toml` `[epic_surfaces]."45"`
 **Spec:** `planning-artifacts/specs/spec-45-3-the-fleet-picture-meta-test-names-every-probe-main-calls.md`
 **Given** `a81732d0a3`, where `main()` calls eleven probes and the meta-test's `_PROBES` lists the same eleven, but nothing compares the two, so a twelfth probe left unstubbed would read the faked `subprocess.run` and turn the file's three tests red without naming it (as Stories 45.1 and 48.2 did)
 **When** the meta-test file runs, alone or in `pixi run -e local-recipes test-ci`
-**Then** a new test reads `scripts/fleet_picture.py` with `ast` and asserts that the module-level `*_findings` and `*_staleness` functions `main()` calls equal `set(_PROBES)`, naming each missing probe ("stub them here") and each extra one
-**And** the file's four tests and `tests/scripts/test_fleet_picture_ci_pauses.py` pass; `scripts/fleet_picture.py` does not change; each of these fails the new test by name (mutation): a probe removed from `_PROBES`, a name `main()` does not call added to it, an unstubbed probe call added to `main()`
+**Then** a new test reads `scripts/fleet_picture.py` with `ast` and asserts that `_PROBES` lists the module-level `*_findings` and `*_staleness` functions `main()` calls, each once and in `main()`'s call order, naming each missing probe ("stub them here") and each extra one
+**And** the file's four tests and `tests/scripts/test_fleet_picture_ci_pauses.py` pass; `scripts/fleet_picture.py` does not change; each of these fails the new test by name (mutation): a probe removed from `_PROBES`, a name `main()` does not call added to it, an unstubbed probe call added to `main()`, two entries swapped, an entry listed twice, `main()` renamed
 **Status:** done
 
 ## Epic 46: The env-hygiene scan stops growing with the test suite (spec-pyforge-doctor CAP-1, NFR-4)

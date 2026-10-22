@@ -3785,7 +3785,7 @@
    ".claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_dispatch_phase.py": "38136a4c5a419f6a2f7c50bbed813c113a3a16f1",
    ".claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_dream_chain_gap.py": "8121f20e1181410235dd3e919dfa1199e9cf2c1f",
    ".claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_loop_home_staleness.py": "0c7290f42a030f7fa6768383509edc9c39dc94fb",
-   ".claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_main_attention.py": "7532d0e40d69818d37ec49d564b6428258af990c",
+   ".claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_main_attention.py": "f8e65cdc4874f1b19b5a46a96275d65b24010f40",
    ".claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_sibling_dreams_drift.py": "4651fde418f0e45b74c84923c5b4cc3e5c2444c5",
    ".claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_verification_staleness.py": "de1cafd3a8e1983adafde2031e175e8a4c5a6a72",
    ".claude/skills/conda-forge-expert/tests/meta/test_forward_dependency_check.py": "89a0dae562b448c251ba36e7281c0f8f1f9ce1ac",
@@ -4369,7 +4369,7 @@
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e",
    "tests/scripts/test_tea_playwright_check.py": "be266df25acac99bc9a8a317e4e3f4f68374844b"
   },
-  "memlog": "f6dbedaf05f43ee3c53faabc09cd007113daf79c"
+  "memlog": "859637fa9083c791a46543482b63cb513ff59688"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
@@ -4512,16 +4512,16 @@
    ".claude/scripts/conda-forge-expert/version_downloads.py": "9f43097f135c2e1d5e3de22c25caa7f9e71b2db0",
    ".claude/scripts/conda-forge-expert/vulnerability_scanner.py": "07fe4cbc13a3546b873e3a7358d8651728ff62fd",
    ".claude/scripts/conda-forge-expert/whodepends.py": "7a9bc588b5cb5f69bd3660f303721583f99a5e6d",
-   ".claude/skills/conda-forge-expert/CHANGELOG.md": "0fb69e16b2ecf222fdaa5ca59e629bc23456dc4c",
+   ".claude/skills/conda-forge-expert/CHANGELOG.md": "1b746ac912224003793adb5e211537bd081d5b26",
    ".claude/skills/conda-forge-expert/INDEX.md": "a1333e8de9215c7bc92557f4c1ea55a698d744f8",
-   ".claude/skills/conda-forge-expert/MANIFEST.yaml": "05b675552147ebe882433b02701c039688769f4e",
-   ".claude/skills/conda-forge-expert/SKILL.md": "0a12c1b5a2f92703ddab90a0e9c789b2a262364a",
+   ".claude/skills/conda-forge-expert/MANIFEST.yaml": "6791d136dc2183e21c6350d9fe351b9d40b590be",
+   ".claude/skills/conda-forge-expert/SKILL.md": "9bab584bdd8cedfc0ca977a134ffd6964e6f143e",
    ".claude/skills/conda-forge-expert/automation/README.md": "f7e16917a03d32b6c675f0ea263caaeb756bd336",
    ".claude/skills/conda-forge-expert/automation/quarterly-audit.prompt.md": "04895c94e0cf55c8478e00a83bcc7ccfba0d25fc",
    ".claude/skills/conda-forge-expert/automation/run-audit-local.sh": "36f61c4161b975c02c1887bcfa195428661305f1",
    ".claude/skills/conda-forge-expert/config/enterprise-config.yaml.template": "225c86735a71fe113215e48e95fe567471d232a8",
    ".claude/skills/conda-forge-expert/config/failure-catalog.yaml": "4ef21fec3fb13528d68f1c0157c7039dec3d93b5",
-   ".claude/skills/conda-forge-expert/config/skill-config.yaml": "891e97ce5e0038331b7442ad8965bcf073ad9915",
+   ".claude/skills/conda-forge-expert/config/skill-config.yaml": "b7465c8533b46954bf759245509af9539850522d",
    ".claude/skills/conda-forge-expert/data/cwe_categories_seed.json": "06fe1a29ebfffeb2b73c0a310984d2485bdda931",
    ".claude/skills/conda-forge-expert/data/lts-registry.yaml": "34596b425dc6b860f3b8ec80d7ba832137f1780b",
    ".claude/skills/conda-forge-expert/data/spdx.schema.json": "c6d952e956a9f81678ff4bf8001780560e6c5c00",
@@ -4761,7 +4761,7 @@
    ".claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_dispatch_phase.py": "38136a4c5a419f6a2f7c50bbed813c113a3a16f1",
    ".claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_dream_chain_gap.py": "8121f20e1181410235dd3e919dfa1199e9cf2c1f",
    ".claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_loop_home_staleness.py": "0c7290f42a030f7fa6768383509edc9c39dc94fb",
-   ".claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_main_attention.py": "700940859a273f3c52e3961f953f6aeb2d72cdea",
+   ".claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_main_attention.py": "f8e65cdc4874f1b19b5a46a96275d65b24010f40",
    ".claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_sibling_dreams_drift.py": "4651fde418f0e45b74c84923c5b4cc3e5c2444c5",
    ".claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_verification_staleness.py": "de1cafd3a8e1983adafde2031e175e8a4c5a6a72",
    ".claude/skills/conda-forge-expert/tests/meta/test_forward_dependency_check.py": "89a0dae562b448c251ba36e7281c0f8f1f9ce1ac",
@@ -4890,7 +4890,7 @@
    ".claude/skills/conda-forge-expert/tests/unit/test_vulnerability_scanner.py": "21a28190ed9c76464c5e9a12975bdcac81a1c0ed",
    ".claude/tools/conda_forge_server.py": "346074895a81868f9b63aef055cc6fc6b2274889"
   },
-  "memlog": "5147bbb3118207727bceac110c239df7cdabe661"
+  "memlog": "99f3e5510c0001203009f88f687a8f452f4c532d"
  },
  "pyforge-mason/spec-copilot-cli-packaging": {
   "files": {},
@@ -4986,16 +4986,16 @@
    ".claude/scripts/conda-forge-expert/version_downloads.py": "9f43097f135c2e1d5e3de22c25caa7f9e71b2db0",
    ".claude/scripts/conda-forge-expert/vulnerability_scanner.py": "07fe4cbc13a3546b873e3a7358d8651728ff62fd",
    ".claude/scripts/conda-forge-expert/whodepends.py": "7a9bc588b5cb5f69bd3660f303721583f99a5e6d",
-   ".claude/skills/conda-forge-expert/CHANGELOG.md": "0fb69e16b2ecf222fdaa5ca59e629bc23456dc4c",
+   ".claude/skills/conda-forge-expert/CHANGELOG.md": "1b746ac912224003793adb5e211537bd081d5b26",
    ".claude/skills/conda-forge-expert/INDEX.md": "a1333e8de9215c7bc92557f4c1ea55a698d744f8",
-   ".claude/skills/conda-forge-expert/MANIFEST.yaml": "05b675552147ebe882433b02701c039688769f4e",
-   ".claude/skills/conda-forge-expert/SKILL.md": "0a12c1b5a2f92703ddab90a0e9c789b2a262364a",
+   ".claude/skills/conda-forge-expert/MANIFEST.yaml": "6791d136dc2183e21c6350d9fe351b9d40b590be",
+   ".claude/skills/conda-forge-expert/SKILL.md": "9bab584bdd8cedfc0ca977a134ffd6964e6f143e",
    ".claude/skills/conda-forge-expert/automation/README.md": "f7e16917a03d32b6c675f0ea263caaeb756bd336",
    ".claude/skills/conda-forge-expert/automation/quarterly-audit.prompt.md": "04895c94e0cf55c8478e00a83bcc7ccfba0d25fc",
    ".claude/skills/conda-forge-expert/automation/run-audit-local.sh": "36f61c4161b975c02c1887bcfa195428661305f1",
    ".claude/skills/conda-forge-expert/config/enterprise-config.yaml.template": "225c86735a71fe113215e48e95fe567471d232a8",
    ".claude/skills/conda-forge-expert/config/failure-catalog.yaml": "4ef21fec3fb13528d68f1c0157c7039dec3d93b5",
-   ".claude/skills/conda-forge-expert/config/skill-config.yaml": "891e97ce5e0038331b7442ad8965bcf073ad9915",
+   ".claude/skills/conda-forge-expert/config/skill-config.yaml": "b7465c8533b46954bf759245509af9539850522d",
    ".claude/skills/conda-forge-expert/data/cwe_categories_seed.json": "06fe1a29ebfffeb2b73c0a310984d2485bdda931",
    ".claude/skills/conda-forge-expert/data/lts-registry.yaml": "34596b425dc6b860f3b8ec80d7ba832137f1780b",
    ".claude/skills/conda-forge-expert/data/spdx.schema.json": "c6d952e956a9f81678ff4bf8001780560e6c5c00",
@@ -5239,7 +5239,7 @@
    ".claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_dispatch_phase.py": "38136a4c5a419f6a2f7c50bbed813c113a3a16f1",
    ".claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_dream_chain_gap.py": "8121f20e1181410235dd3e919dfa1199e9cf2c1f",
    ".claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_loop_home_staleness.py": "0c7290f42a030f7fa6768383509edc9c39dc94fb",
-   ".claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_main_attention.py": "700940859a273f3c52e3961f953f6aeb2d72cdea",
+   ".claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_main_attention.py": "f8e65cdc4874f1b19b5a46a96275d65b24010f40",
    ".claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_sibling_dreams_drift.py": "4651fde418f0e45b74c84923c5b4cc3e5c2444c5",
    ".claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_verification_staleness.py": "de1cafd3a8e1983adafde2031e175e8a4c5a6a72",
    ".claude/skills/conda-forge-expert/tests/meta/test_forward_dependency_check.py": "89a0dae562b448c251ba36e7281c0f8f1f9ce1ac",
@@ -5368,7 +5368,7 @@
    ".claude/skills/conda-forge-expert/tests/unit/test_vulnerability_scanner.py": "21a28190ed9c76464c5e9a12975bdcac81a1c0ed",
    ".claude/tools/conda_forge_server.py": "346074895a81868f9b63aef055cc6fc6b2274889"
   },
-  "memlog": "0de31d5dfd1c261124e9dae228598f1f541e9bca+0fb69e16b2ecf222fdaa5ca59e629bc23456dc4c"
+  "memlog": "0294a92fb8fa2dedbb9c361fa4379d1d68d2ea78+1b746ac912224003793adb5e211537bd081d5b26"
  },
  "pyforge-mason/spec-pixi-container-image": {
   "files": {},
