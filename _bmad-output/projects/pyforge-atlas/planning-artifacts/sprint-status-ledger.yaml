@@ -118,7 +118,7 @@ development_status:
   34-8-migration-status-fills-through-a-driver-node: done
   34-9-phase-p-fills-from-the-public-clickhouse-mirror: done
   35-1-one-opt-in-switch-and-github-authenticates: done
-  35-2-the-vcs-batches-come-from-the-whole-universe: backlog
+  35-2-the-vcs-batches-come-from-the-whole-universe: done
   35-3-upstream-versions-and-feedstock-health-come-from-github: backlog
   35-4-gitlab-codeberg-and-the-eight-registries-fill: backlog
   36-1-the-basilisk-population-runs: done

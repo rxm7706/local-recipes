@@ -2609,7 +2609,7 @@ So that the fetches cover what legacy Phases K, L and N cover.
 **Given** `batches_from_identity` builds every batch from `identity_packages_primary`, the OpenTeams subset
 **When** the refresh triggers run with the flag on
 **Then** the batches come from package enumeration joined with node_attrs' repo, dev and homepage URLs and registry names, upstream (K) separate from feedstock (E.5, N), and a population test proves identity no longer drives them
-**Status:** backlog
+**Status:** done
 
 ### Story 35.3: Upstream versions and feedstock health come from GitHub
 
