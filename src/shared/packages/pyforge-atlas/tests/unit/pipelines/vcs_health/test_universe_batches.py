@@ -231,3 +231,66 @@ def test_with_the_flag_on_the_identity_subset_no_longer_drives_the_github_batch(
     ds.save(refresh_vcs_github_store({}, IDENTITY, ENUM, GRAPH, ATTRIBUTION))
 
     assert ("psf", "requests") not in asked and ("apache", "airflow") in asked and ("solo", "solo-py") in asked
+
+
+def test_an_unattributed_package_from_an_archived_anchor_is_left_out():
+    # solo has no attribution row: package_recipe_fields reads its first anchor (solo-fs)
+    graph = GRAPH.assign(feedstock_archived=[False, False, False, False, False, True, False])
+
+    batches = batches_from_universe(ENUM, graph, ATTRIBUTION)
+
+    assert all(conda != "solo" for conda, _owner, _repo in batches["upstream_repos"])
+    assert ("airflow", "apache", "airflow") in batches["upstream_repos"]
+
+
+def test_a_missing_archived_flag_counts_as_live():
+    flags = pd.Series([None, None, None, True, None, None, None], dtype=object)  # jsx archived, the rest unknown
+
+    batches = batches_from_universe(ENUM, GRAPH.assign(feedstock_archived=flags), ATTRIBUTION)
+
+    assert "airflow" in batches["feedstocks"] and "jsx" not in batches["feedstocks"]
+
+
+def test_cran_cpan_and_luarocks_stay_empty_even_when_a_url_names_them():
+    graph = GRAPH.assign(
+        source_url=[
+            "https://cran.r-project.org/src/contrib/airflow_1.0.tar.gz",
+            "https://cpan.metacpan.org/authors/id/A/AB/glab-1.0.tar.gz",
+            "https://luarocks.org/manifests/x/cb-1.0.src.rock",
+            None,
+            None,
+            None,
+            None,
+        ]
+    )
+
+    registries = batches_from_universe(ENUM, graph, ATTRIBUTION)["registries"]
+
+    assert registries["cran"] == registries["cpan"] == registries["luarocks"] == ()
+
+
+def test_the_first_attribution_of_a_package_decides_like_its_recipe_fields():
+    attribution = pd.concat(
+        [pd.DataFrame({"conda_name": ["airflow"], "feedstock_name": ["jsx"]}), ATTRIBUTION], ignore_index=True
+    )
+    graph = GRAPH.assign(feedstock_archived=[False, False, False, True, False, False, False])  # jsx archived
+
+    upstream = batches_from_universe(ENUM, graph, attribution)["upstream_repos"]
+
+    assert all(conda != "airflow" for conda, _owner, _repo in upstream)  # its first feedstock (jsx) is archived
+    assert ("airflow-with-amazon", "apache", "airflow") in upstream
+
+
+def test_the_three_triggers_read_the_universe_inputs():
+    from pyforge.atlas.pipelines.vcs_health.pipeline import create_pipeline
+
+    nodes = {n.name: n for n in create_pipeline().nodes}
+
+    for name in ("refresh_vcs_github_store", "refresh_vcs_host_stores", "refresh_vcs_registry_stores"):
+        assert nodes[name].inputs == [
+            "params:ttls",
+            "identity_packages_primary",
+            "core_packages_enumerated",
+            "core_cf_graph_raw",
+            "core_feedstock_attribution",
+        ], name
