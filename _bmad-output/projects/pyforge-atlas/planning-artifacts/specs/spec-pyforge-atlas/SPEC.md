@@ -419,8 +419,8 @@ One-chain rebase 2026-09-17. Each reminted CAP keeps provenance `← spec-<old> 
     *(Amended 2026-10-19.)* The producer builds the public atlas data before it exports: the credentials stub, then
     `pyforge atlas run` over the public pipelines with no `PYFORGE_ATLAS_CREDENTIALED` and BigQuery off (AD-11), then
     the export against that data root; it runs weekly on a schedule as well as on its push trigger and
-    `workflow_dispatch`. The identity and enterprise boards carry no rows on Pages: their sources are credentialed or
-    internal.
+    `workflow_dispatch`. Credentialed and enterprise sources stay empty on Pages; the identity boards show what public
+    inputs give them, the purl associator and the tracked inventory *(amended 2026-10-21 by operator ruling)*.
   - **success:** `pixi run -e pyforge-atlas vizro-static-export` with the flag on and the fixture data root exits 0 and
     writes `docs/dashboard/vizro/index.html`, one `<page-id>/index.html` per exported page, exactly one
     `assets/plotly.min.js`, and `manifest.json` whose `boards[]` holds one entry per exported page with the four keys and

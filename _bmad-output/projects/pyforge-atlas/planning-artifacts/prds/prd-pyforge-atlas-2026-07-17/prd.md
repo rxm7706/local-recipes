@@ -3,7 +3,7 @@ fr-derivation-from: "2026-09-17"
 title: cf_atlas Kedro/Dagster/DuckDB Migration
 status: final
 created: 2026-07-17
-updated: "2026-10-19"   # RE-STAMPED 2026-10-19: FR-77 registered from spec-pyforge-atlas CAP-69 (the Vizro boards read the datasets the pipelines write; Epic 37) and FR-71 amended with CAP-63 (the producer builds the public data first, weekly and on push). See § Currency reconciliation — 2026-10-19. Prior: RE-STAMPED 2026-10-18 (later): FR-72..FR-76 registered from spec-pyforge-atlas CAP-64..CAP-68 (atlas fills its own data; Epics 34-36). Earlier the same day: chain-currency cascade (spec -> PRD) for atlas Story 33.1, a fix under spec-pyforge-atlas CAP-9 (the atlas CLI reaches the verbs its contracts name, from any directory); no FR added, renumbered or amended, no AD moved. See § Currency reconciliation — 2026-10-18. Prior: RE-STAMPED 2026-10-15: CAP-63 amended (the vizro-static-export task and job run in -e pyforge-atlas; the vendored plotly.min.js is the one exact-file VENDORED_ROOTS entry); FR-71 follows in place, no FR added or removed, no AD moved. See § Currency reconciliation — 2026-10-15. Prior: RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for CAP-62 and CAP-63 (Epic 30): FR-70 and FR-71 registered (the Kedro-Viz DAG export reaches Pages as a workflow artifact, amending CAP-41 / FR-62's producer; Vizro boards publish as static exports under /dashboard/vizro/). See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-13 entries (Story 28.1 landed; Epic 29 / Story 29.1 minted and implemented, a fix under CAP-16 -- the range test server records each response before writing it); no CAP added or amended, no FR moved. See § Currency reconciliation — 2026-10-13. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Story 25.1's gate cleared, its key flipped blocked -> backlog by operator ruling); no FR registered. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for marshal Story 66.2's backfill of atlas's deferred-work ledger (co-governor surface reconcile); no FR registered. See § Currency reconciliation — 2026-10-03. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-61 (Epic 25); FR-69 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-20 (fleet consistency pass).
+updated: "2026-10-22"   # RE-STAMPED 2026-10-22 (UTC; 2026-10-21 local): FR-71 amended in place with CAP-63's 2026-10-21 operator ruling (on Pages the identity boards show what public inputs give them; credentialed and enterprise sources stay empty). See § Currency reconciliation — 2026-10-22. Prior: RE-STAMPED 2026-10-19: FR-77 registered from spec-pyforge-atlas CAP-69 (the Vizro boards read the datasets the pipelines write; Epic 37) and FR-71 amended with CAP-63 (the producer builds the public data first, weekly and on push). See § Currency reconciliation — 2026-10-19. Prior: RE-STAMPED 2026-10-18 (later): FR-72..FR-76 registered from spec-pyforge-atlas CAP-64..CAP-68 (atlas fills its own data; Epics 34-36). Earlier the same day: chain-currency cascade (spec -> PRD) for atlas Story 33.1, a fix under spec-pyforge-atlas CAP-9 (the atlas CLI reaches the verbs its contracts name, from any directory); no FR added, renumbered or amended, no AD moved. See § Currency reconciliation — 2026-10-18. Prior: RE-STAMPED 2026-10-15: CAP-63 amended (the vizro-static-export task and job run in -e pyforge-atlas; the vendored plotly.min.js is the one exact-file VENDORED_ROOTS entry); FR-71 follows in place, no FR added or removed, no AD moved. See § Currency reconciliation — 2026-10-15. Prior: RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for CAP-62 and CAP-63 (Epic 30): FR-70 and FR-71 registered (the Kedro-Viz DAG export reaches Pages as a workflow artifact, amending CAP-41 / FR-62's producer; Vizro boards publish as static exports under /dashboard/vizro/). See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-13 entries (Story 28.1 landed; Epic 29 / Story 29.1 minted and implemented, a fix under CAP-16 -- the range test server records each response before writing it); no CAP added or amended, no FR moved. See § Currency reconciliation — 2026-10-13. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Story 25.1's gate cleared, its key flipped blocked -> backlog by operator ruling); no FR registered. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for marshal Story 66.2's backfill of atlas's deferred-work ledger (co-governor surface reconcile); no FR registered. See § Currency reconciliation — 2026-10-03. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-61 (Epic 25); FR-69 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-20 (fleet consistency pass).
 project: pyforge-atlas
 intent_source: docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.6, ANALYSIS COMPLETE)
 currency_review: Reviewed 2026-08-01 — spec corrections applied to PRD. CAP-8 "28-CLI inventory is answerable" false claim corrected to "8 pages + factory-status; full 28-CLI deferred (DW-D2-1)". FR-4 run-admission retirement (silent-drop cap) already correctly stated (line 248-249). AD-23 lock-store placement details remain architectural (not PRD-level). Reviewed again 2026-08-26 — post-08-08 spec-estate and code motion reconciled in the appended section "Currency reconciliation — 2026-08-26" (Epics 12-19 delivery, four post-migration capability specs, CAP-19 query-plane ownership, spec archivals/parking).
@@ -3354,8 +3354,9 @@ honest-empty: the Pages job ran with no data, the dashboard read another data ro
 
 - **FR-71 (amended in place).** The producer job builds the public atlas data before it exports (the credentials
   stub, then `pyforge atlas run` over the public pipelines with no `PYFORGE_ATLAS_CREDENTIALED`, BigQuery off), and
-  runs weekly on a schedule as well as on push and `workflow_dispatch`. The identity and enterprise boards carry no
-  rows on Pages. Decomposes into **Epic 37**, Story 37.2.
+  runs weekly on a schedule as well as on push and `workflow_dispatch`. Credentialed and enterprise sources stay
+  empty on Pages; the identity boards show what public inputs give them *(amended 2026-10-22; it read "the identity
+  and enterprise boards carry no rows on Pages")*. Decomposes into **Epic 37**, Story 37.2.
 
 #### FR-77: The Vizro boards read the datasets the pipelines write ← CAP-69
 
@@ -3374,3 +3375,18 @@ dataset; a board's dimension names stay, its path and expressions move.
 **ONE FR space now FR-1..FR-77** (FR-78 = next free id). **Content changed:** this section and `updated:`; FR-71
 amended in place, FR-77 registered; no FR renumbered or removed; no AD moves (the spine's reconciliation of the same
 date records why).
+
+## Currency reconciliation — 2026-10-22
+
+*Trigger: `spec-pyforge-atlas`'s memlog of 2026-10-21 (local; 2026-10-22 UTC): the operator's ruling on Story 37.2
+("Publish them") and CAP-63 amended with it.* A public-only build fills the identity boards anyway: identity-catalog
+held 871 rows on 2026-10-21's build, from the public purl associator and the tracked inventory, with no credentialed or
+enterprise input.
+
+- **FR-71 (amended in place, marked).** Credentialed and enterprise sources (the OpenTeams board, the staged-recipes
+  PRs, JFrog) stay empty on Pages; the identity boards show what public inputs give them. Decomposes into **Epic 37**,
+  Story 37.2.
+
+**Content changed:** FR-71's identity sentence and `updated:`; this section. No FR added, renumbered or removed; no AD
+moves.
+
