@@ -104,6 +104,15 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root), stacked on Story
     database store. PyPI's fan-out took 21,326 candidates (157 answered 404). The vdb refresh failed with `apsw.IOError:
     disk I/O error` on the workstation's RAM-backed `/tmp`; the run kept going and marked the store stale (AD-13).
   - **A plain run** (no `--pipelines`) on another fresh root exit 1 after 12 of 86 nodes (DW-atlas-37-2-1).
+- **Live, 2026-10-22 (UTC), the workflow's three commands as written,** in a clean worktree at review round 1's fixes:
+  no `PYFORGE_ATLAS_DATA_ROOT` (the member's `data/`), no conf/local credentials file (the bootstrap wrote its empty
+  stub), no token in the environment. `pixi run --frozen -e pyforge-atlas pyforge-atlas-bootstrap` (installing the
+  env, then the eight pipelines; the vdb refresh installed the `vuln-db` env itself and built its store, on disk this
+  time, with no stale marker) took 1:16:50; `pyforge atlas run --pipelines semantic_packages` 3 s; `vizro-static-export
+  --clock now` 6 s; exit 0 throughout, no token pattern in the log. The data root came to 11 GB, the envs to 3.8 GB.
+  The export: `exported_at` the build's own time, 17 of 34 boards stamped, the largest page 488 KB; version-downloads
+  says "The chart sums downloads per version over all 448,301 rows and shows the 5,000 largest of 57,075 bars", and
+  adoption-stage's caption no longer names its constant measure as the order.
   - **The export** over that root: exit 0 in 4.3 s, 8.0 MB in all; the largest page is 571 KB (distribution-breakdown,
     "5,000 of 210,170 rows, the largest downloads_90d first"); version-downloads 421 KB (5,000 of 448,301). 17 of the
     34 boards carry data and a data-build stamp: feedstock-health (28,966 rows), my-feedstocks (60,380),
