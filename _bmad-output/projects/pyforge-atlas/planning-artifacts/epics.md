@@ -2669,11 +2669,11 @@ So that `identity_packages_primary`, the identity exports and the inventory prio
 
 **Type:** feature • **Effort:** M • **Deps:** 35.1, 34.6 • **FR/AD:** spec-pyforge-atlas CAP-67 (FR-75) • AD-2, AD-11
 **Flag:** `pyforge.atlas.identity_live_sources`
-**Surface:** `datasets/identity_sources.py` (`OpenTeamsBoardDataset`, `StagedRecipesPRDataset`), `conf/base/catalog.yml`, flag registration, tests
+**Surface:** `datasets/identity_sources.py` (`OpenTeamsBoardDataset`, `StagedRecipesPRDataset`: their credentialed refreshers), flag registration, tests
 **Given** both datasets are constructed with no `fetcher`
 **When** a credentialed run reaches them with the flag on
 **Then** `identity_packages_primary` holds rows from each `identity_source`, and `identity_complete_export` and `inventory_priority_assignments` hold rows; without the opt-in no request carries a credential
-**Status:** backlog
+**Status:** done
 
 ### Story 36.3: The query-plane estate source has a producer
 

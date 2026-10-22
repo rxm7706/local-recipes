@@ -185,6 +185,7 @@ def _copy_kedro_project(tmp_path: Path) -> Path:
     dest = tmp_path / "pyforge-atlas"
     dest.mkdir()
     shutil.copy2(_MEMBER_DIR / "pyproject.toml", dest / "pyproject.toml")
+    shutil.copy2(_MEMBER_DIR / ".telemetry", dest / ".telemetry")  # consent: false, or kedro-telemetry calls out
     shutil.copytree(_MEMBER_DIR / "conf" / "base", dest / "conf" / "base")
     shutil.copytree(
         _MEMBER_DIR / "src",
