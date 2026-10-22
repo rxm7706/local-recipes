@@ -432,8 +432,10 @@ PROJECTED_PAGES: dict[str, PageDef] = {
             note="Wired to build_behind_upstream_model over derived_behind_upstream, which "
             "derived_artifacts' project_behind_upstream writes: each enumerated package whose upstream "
             "release (vcs_upstream_versions; GitHub, then GitLab, then Codeberg) is newer than its latest "
-            "conda version, labelled major, minor, patch or unknown as legacy behind-upstream labels it. "
-            "PyPI's version is not compared yet.",
+            "conda version, labelled major, minor, patch or unknown as legacy behind-upstream labels it "
+            "(unknown: a version that is not PEP 440, often a tag such as bzip2-1.0.8). PyPI's version is "
+            "not compared yet. The chart counts packages per label.",
+            chart=ChartDef("bar", x="lag_label", y="package_count"),
         ),
         PageDef(
             "whodepends",
@@ -442,17 +444,19 @@ PROJECTED_PAGES: dict[str, PageDef] = {
             "bsl-shell",
             note="Wired to build_whodepends_model over core_dependencies: per depended-on package and "
             "dependency type, how many packages depend on it (legacy whodepends --reverse, for every "
-            "package at once). The dependency graph carries no pin spec.",
+            "package at once). The dependency graph carries no pin spec. The chart sums each package's "
+            "dependents over its dependency types.",
+            chart=ChartDef("bar", x="depends_on", y="dependent_count"),
         ),
         PageDef(
             "universe-sbom",
             "Universe SBOM",
             "universe-sbom",
             "bsl-shell",
-            note="A SUMMARY over the universe BOM (build_universe_sbom_summary_model), one row per "
-            "component from derived_universe_sbom_summary, which derived_artifacts' "
-            "project_universe_sbom_summary writes: slice is mapped when the component names its PyPI "
-            "project, else conda-only. with_vulns_count stays empty: the BOM carries no vulnerability data.",
+            note="The universe BOM (build_universe_sbom_summary_model), one row per component from "
+            "derived_universe_sbom_summary, which derived_artifacts' project_universe_sbom_summary writes: "
+            "slice is mapped when the component names its PyPI project, else unmapped. with_vulns_count "
+            "stays empty: the BOM carries no vulnerability data. DESIGN.md's summary cards are not built.",
             filters=("slice",),
         ),
         PageDef(

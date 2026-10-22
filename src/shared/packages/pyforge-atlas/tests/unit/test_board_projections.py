@@ -8,6 +8,8 @@ produced datasets, and the page set each flag state builds. Pure; no network.
 from __future__ import annotations
 
 import json
+import os
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
@@ -15,7 +17,8 @@ import pytest
 from pyforge.testing_kit.flags import flagd_tree
 from vizro.managers import data_manager
 
-from pyforge.atlas.dashboard import app, data
+from pyforge.atlas import provenance
+from pyforge.atlas.dashboard import app, data, static_export
 from pyforge.atlas.pipelines.derived_artifacts.nodes import (
     BEHIND_UPSTREAM_COLUMNS,
     LIVE_CATALOG_COVERAGE_FIELDS,
@@ -147,6 +150,14 @@ def test_behind_upstream_keeps_the_newer_upstream_in_host_order() -> None:
     ]
 
 
+def test_behind_upstream_keeps_an_upstream_that_does_not_parse_as_unknown() -> None:
+    # legacy keeps these rows (priority 1); a tag such as bzip2-1.0.8 is not PEP 440
+    out = project_behind_upstream(
+        _upstream([("bzip2", "gitlab", "bzip2-1.0.8", None)]), _enumerated([("bzip2", "1.0.8")])
+    )
+    assert out.values.tolist() == [["bzip2", "1.0.8", "gitlab", "bzip2-1.0.8", "unknown"]]
+
+
 def test_behind_upstream_leaves_out_a_package_with_no_latest_version() -> None:
     out = project_behind_upstream(_upstream([("a", "github", "2.0", None)]), _enumerated([("a", None)]))
     assert out.empty
@@ -207,7 +218,16 @@ def test_coverage_names_the_two_verified_flags_and_the_fifteen_channel_flags() -
     assert all(name.startswith("in_") for name in LIVE_CATALOG_COVERAGE_FIELDS[2:])
 
 
-@pytest.mark.parametrize("export", [None, pd.DataFrame(), pd.DataFrame({"Package": ["a"]}), "not a frame"])
+@pytest.mark.parametrize(
+    "export",
+    [
+        None,
+        pd.DataFrame(),
+        pd.DataFrame({"Package": ["a"]}),
+        "not a frame",
+        pd.DataFrame(columns=["Package", *LIVE_CATALOG_COVERAGE_FIELDS]),  # a run's real empty export
+    ],
+)
 def test_coverage_is_a_typed_empty_table_otherwise(export) -> None:
     out = project_live_catalog_coverage(export)
     assert out.empty and list(out.columns) == ["field_name", "true_count", "total_count"]
@@ -219,7 +239,7 @@ def test_coverage_is_a_typed_empty_table_otherwise(export) -> None:
 # --------------------------------------------------------------------------- #
 
 
-def test_the_sbom_summary_slices_mapped_and_conda_only_components() -> None:
+def test_the_sbom_summary_slices_mapped_and_unmapped_components() -> None:
     bom = {
         "components": [
             {"purl": "pkg:conda/conda-forge/a@1.0", "properties": [{"name": "cfe:pypi_name", "value": "a"}]},
@@ -235,9 +255,9 @@ def test_the_sbom_summary_slices_mapped_and_conda_only_components() -> None:
 
     assert out[["component_purl", "slice"]].values.tolist() == [
         ["pkg:conda/conda-forge/a@1.0", "mapped"],
-        ["pkg:conda/conda-forge/b@2.0", "conda-only"],
-        ["pkg:conda/conda-forge/c@3.0", "conda-only"],
-        ["pkg:conda/conda-forge/d@4.0", "conda-only"],
+        ["pkg:conda/conda-forge/b@2.0", "unmapped"],
+        ["pkg:conda/conda-forge/c@3.0", "unmapped"],
+        ["pkg:conda/conda-forge/d@4.0", "unmapped"],
     ]
     assert out["with_vulns_count"].isna().all() and str(out["with_vulns_count"].dtype) == "Int64"
 
@@ -293,7 +313,7 @@ def test_the_sbom_board_reads_the_projection(tmp_path: Path) -> None:
 
     out = data.load_universe_sbom(_write(tmp_path / "s.parquet", frame))
 
-    assert out[["component_purl", "slice"]].values.tolist() == [["pkg:conda/conda-forge/a@1.0", "conda-only"]]
+    assert out[["component_purl", "slice"]].values.tolist() == [["pkg:conda/conda-forge/a@1.0", "unmapped"]]
 
 
 @pytest.mark.parametrize(
@@ -359,3 +379,56 @@ def test_with_the_flag_off_the_four_boards_read_as_before(tmp_path: Path) -> Non
     for page_id in ("universe-sbom", "live-catalog-coverage"):
         frame = _frame(page_id)
         assert frame is not None and frame.empty, page_id  # the earlier paths, which nothing writes
+
+
+def _card_text(dashboard, page_id: str) -> str:
+    page = next(p for p in dashboard.pages if p.id == page_id)
+    return next(c.text for c in page.components if hasattr(c, "text"))
+
+
+def test_with_the_flag_on_each_board_is_stamped_from_the_file_it_reads(tmp_path: Path) -> None:
+    root = _data_root(tmp_path)
+    reads = {
+        "behind-upstream": data.BEHIND_UPSTREAM_PARQUET,
+        "whodepends": data.CORE_DEPENDENCIES_PARQUET,
+        "universe-sbom": data.DERIVED_UNIVERSE_SBOM_SUMMARY_PARQUET,
+        "live-catalog-coverage": data.DERIVED_LIVE_CATALOG_COVERAGE_PARQUET,
+    }
+    for offset, path in enumerate(reads.values()):  # a distinct mtime per file, so a swapped stamp shows
+        stamp = 1_600_000_000 + offset * 86_400
+        os.utime(root / path, (stamp, stamp))
+
+    dashboard = app.build_dashboard(build_stamp=STAMP, data_root=root, now=NOW, board_projections=True)
+
+    for page_id, path in reads.items():
+        expected = provenance.resolve_for_file(root / path).build_stamp
+        assert expected and expected in _card_text(dashboard, page_id), page_id
+
+
+def test_the_dashboard_reads_the_flag_when_not_told(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(data, "board_projections", lambda **_: True)
+
+    app.build_dashboard(build_stamp=STAMP, data_root=_data_root(tmp_path), now=NOW)
+
+    assert _frame("behind-upstream") is not None and _frame("whodepends") is not None
+
+
+@pytest.mark.parametrize(("variant", "table"), [("on", True), ("off", False)])
+def test_the_static_export_reads_the_flag_from_the_tree_it_is_given(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, real_board_projections, variant: str, table: bool
+) -> None:
+    monkeypatch.setattr(data, "board_projections", real_board_projections)
+    tree = flagd_tree(tmp_path, {FLAG: variant}, name=f"{variant}.json")
+
+    static_export.export_boards(
+        tmp_path / "vizro",
+        export_commit="a" * 40,
+        exported_at=datetime(2026, 10, 22, tzinfo=UTC),
+        data_root=_data_root(tmp_path),
+        now=NOW,
+        flags_path=tree,
+    )
+
+    for page_id in ("behind-upstream", "whodepends"):
+        html = (tmp_path / "vizro" / page_id / "index.html").read_text(encoding="utf-8")
+        assert ("<table" in html) is table, (page_id, variant)

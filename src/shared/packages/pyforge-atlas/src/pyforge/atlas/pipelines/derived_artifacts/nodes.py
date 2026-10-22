@@ -1601,7 +1601,7 @@ def project_universe_sbom_summary(derived_universe_sbom: dict[str, Any] | None) 
     """Story 37.4: one row per component of the universe BOM, for the universe-sbom board.
 
     ``slice`` is ``mapped`` when the component names its PyPI project (``cfe:pypi_name``), else
-    ``conda-only``. ``with_vulns_count`` is null: the BOM carries no vulnerability data. A component with
+    ``unmapped`` (legacy's ``--conda-only`` is a different thing: the BOM without its PyPI side). ``with_vulns_count`` is null: the BOM carries no vulnerability data. A component with
     no purl gives no row. Pure; an absent or malformed BOM gives the typed empty table.
     """
     empty = pd.DataFrame({name: pd.Series(dtype=dtype) for name, dtype in _UNIVERSE_SBOM_SUMMARY_DTYPES.items()})
@@ -1619,7 +1619,7 @@ def project_universe_sbom_summary(derived_universe_sbom: dict[str, Any] | None) 
         mapped = isinstance(properties, list) and any(
             isinstance(p, dict) and p.get("name") == "cfe:pypi_name" and _text(p.get("value")) for p in properties
         )
-        rows.append((purl, "mapped" if mapped else "conda-only", pd.NA))
+        rows.append((purl, "mapped" if mapped else "unmapped", pd.NA))
     if not rows:
         return empty
     return pd.DataFrame(rows, columns=list(_UNIVERSE_SBOM_SUMMARY_DTYPES)).astype(_UNIVERSE_SBOM_SUMMARY_DTYPES)

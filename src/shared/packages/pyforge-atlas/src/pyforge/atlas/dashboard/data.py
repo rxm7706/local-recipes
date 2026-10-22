@@ -125,7 +125,7 @@ def default_data_root() -> Path:
     return root if root.is_absolute() else base / root
 
 
-def board_projections(*, flags_path: str | os.PathLike[str] | None = None) -> bool:
+def board_projections(*, flags_path: Path | str | None = None) -> bool:
     """Story 37.4: whether behind-upstream, whodepends and the two coverage boards read the datasets the
     pipelines write (``pyforge.atlas.board_projections``; off when the tree is missing or unreadable)."""
     return read_boolean(BOARD_PROJECTIONS_FLAG, default=False, flags_path=flags_path)

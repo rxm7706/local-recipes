@@ -112,7 +112,11 @@ def _run(args: argparse.Namespace) -> int:
     out_dir = args.out if args.out is not None else viz_manifest.repo_root() / STAGED_RELATIVE
     try:
         manifest = static_export.export_boards(
-            out_dir, export_commit=export_commit, exported_at=exported_at, data_root=args.data_root
+            out_dir,
+            export_commit=export_commit,
+            exported_at=exported_at,
+            data_root=args.data_root,
+            flags_path=args.flags_path,
         )
     except static_export.StaticExportError as exc:
         print(f"{_PREFIX}: {exc}", file=sys.stderr)
