@@ -16,7 +16,6 @@ import sys
 import tomllib
 from pathlib import Path
 
-import pytest
 import yaml
 from pyforge.testing_kit.flags import flagd_tree
 
