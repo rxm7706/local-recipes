@@ -19,7 +19,7 @@ remote lint files (mason Story 26.2: a DNS failure for
   ``tests/fixtures/conda_smithy/``, so a malformed ``bot`` block still fails.
 
 ``tests/conftest.py`` installs these in-process and, via a ``PYTHONPATH``
-sitecustomize, in the conda-smithy child that
+sitecustomize (``sitecustomize_source()``), in the conda-smithy child that
 ``validate_recipe.run_external_lint`` starts.
 """
 from __future__ import annotations
@@ -48,21 +48,14 @@ def stub_linter_hints(time_salt: int) -> dict:
     return {"hints": {}}
 
 
-def bot_schema_uri() -> str:
-    """The ``file://`` URI of the vendored ``cf_tick_schema.json``."""
-    return VENDORED_BOT_SCHEMA.as_uri()
+def bot_schema_uri(schema: Path = VENDORED_BOT_SCHEMA) -> str:
+    """A ``file://`` URI for ``schema`` (default: the vendored ``cf_tick_schema.json``).
 
-
-def apply_smithy_maintainer_stubs() -> None:
-    """Replace conda-smithy's network reads. No-op if smithy is absent."""
-    try:
-        import conda_smithy.lint_recipe as lint_recipe
-        import conda_smithy.linter.utils as linter_utils
-    except ImportError:
-        return
-    lint_recipe._maintainer_exists = stub_maintainer_exists
-    lint_recipe._team_exists = stub_team_exists
-    linter_utils.load_linter_toml_metdata_internal = stub_linter_hints
+    Not ``Path.as_uri()``: conda-smithy reads the path back as ``uri[7:]``
+    without unquoting, so a percent-encoded space or non-ASCII character in
+    the checkout path would not resolve.
+    """
+    return "file://" + str(schema)
 
 
 def sitecustomize_source() -> str:

@@ -46,7 +46,7 @@ _UPSTREAM_BOT_SCHEMA = (
 )
 
 _TRAP_THEN_STUB_SITECUSTOMIZE = '''\
-"""Trap github.com requests after chaining to the fixture sitecustomize."""
+"""Trap GitHub requests after chaining to the fixture sitecustomize."""
 from __future__ import annotations
 
 import os
@@ -88,7 +88,9 @@ requests.get = lambda url, *a, **k: _trap(_orig_get, url, *a, **k)
 
 @pytest.fixture
 def github_request_trap(monkeypatch, tmp_path):
-    """Fail if a github.com request leaves this process or a script_runner child.
+    """Fail if a GitHub request leaves this process or a script_runner child.
+
+    GitHub here is github.com or githubusercontent.com (``_GITHUB_HOSTS``).
 
     The child trap is a sitecustomize prepended on ``PYTHONPATH``. It execs
     the fixture's production sitecustomize already on PYTHONPATH, then wraps
@@ -167,6 +169,23 @@ def test_linter_hints_make_no_request(github_request_trap):
     assert github_request_trap == []
 
 
+def test_bot_schema_uri_resolves_under_a_path_with_a_space(
+    github_request_trap, monkeypatch, tmp_path,
+):
+    """conda-smithy reads ``uri[7:]`` as a path without unquoting."""
+    from conda_smithy.validate_schema import validate_json_schema
+
+    schema = tmp_path / "with space" / "cf_tick_schema.json"
+    schema.parent.mkdir()
+    schema.write_bytes(VENDORED_BOT_SCHEMA.read_bytes())
+    monkeypatch.setenv(BOT_SCHEMA_URI_ENV, bot_schema_uri(schema))
+    errors, _hints = validate_json_schema({"bot": {"automerge": True}})
+    assert errors == [], [e.message for e in errors]
+    errors, _hints = validate_json_schema({"bot": {"automerge": "sometimes"}})
+    assert errors
+    assert github_request_trap == []
+
+
 def test_bot_schema_resolves_from_the_vendored_copy(github_request_trap):
     from conda_smithy.validate_schema import validate_json_schema
 
@@ -213,6 +232,10 @@ def test_network_marked_helper_sees_real_smithy_lookups():
     assert lint_recipe._maintainer_exists.__module__ == "conda_smithy.lint_recipe"
     assert lint_recipe._team_exists.__module__ == "conda_smithy.lint_recipe"
     assert linter_utils.load_linter_toml_metdata_internal is not stub_linter_hints
+    assert (
+        linter_utils.load_linter_toml_metdata_internal.__module__
+        == "conda_smithy.linter.utils"
+    )
     assert CFE_STUB_SMITHY_LOOKUPS_ENV not in os.environ
     assert BOT_SCHEMA_URI_ENV not in os.environ
 
