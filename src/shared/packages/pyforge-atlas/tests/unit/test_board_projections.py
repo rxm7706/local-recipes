@@ -7,6 +7,7 @@ produced datasets, and the page set each flag state builds. Pure; no network.
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import os
 from datetime import UTC, datetime
@@ -459,3 +460,73 @@ def test_the_export_task_passes_its_flags_path_through(
     assert code == 0, capsys.readouterr().err
     html = (out / "whodepends" / "index.html").read_text(encoding="utf-8")
     assert ("<table" in html) is table
+
+
+# --------------------------------------------------------------------------- #
+# Review round 2: the projected definitions, their charts and the access column
+# --------------------------------------------------------------------------- #
+
+
+def test_the_projected_pages_declare_their_charts() -> None:
+    on = {page.id: page for page in app.page_inventory(projected=True)}
+    off = {page.id: page for page in app.page_inventory(projected=False)}
+
+    assert on["behind-upstream"].chart == app.ChartDef("bar", x="lag_label", y="package_count")
+    assert on["whodepends"].chart == app.ChartDef("bar", x="depends_on", y="dependent_count")
+    assert off["behind-upstream"].chart is None and off["whodepends"].chart is None
+
+
+def test_with_the_flag_on_the_two_boards_draw_their_charts_under_their_own_notes(tmp_path: Path) -> None:
+    dashboard = app.build_dashboard(build_stamp=STAMP, data_root=_data_root(tmp_path), now=NOW, board_projections=True)
+
+    for page_id, model in (
+        ("behind-upstream", "build_behind_upstream_model"),
+        ("whodepends", "build_whodepends_model"),
+    ):
+        page = next(p for p in dashboard.pages if p.id == page_id)
+        assert any(getattr(c, "id", "") == f"{page_id}--chart" for c in page.components), page_id
+        assert model in _card_text(dashboard, page_id)
+
+
+def test_the_static_whodepends_table_lists_the_most_depended_on_first(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(data, "board_projections", lambda **_: True)
+    root = _data_root(tmp_path)
+    _write(
+        root / data.CORE_DEPENDENCIES_PARQUET,
+        pd.DataFrame(
+            {
+                "conda_name": ["a", "b", "c", "a", "b", "c"],
+                "depends_on": ["numpy", "numpy", "numpy", "aaa", "aaa", "pandas"],
+                "dep_type": ["run"] * 6,
+            }
+        ),
+    )
+
+    static_export.export_boards(
+        tmp_path / "vizro",
+        export_commit="c" * 40,
+        exported_at=datetime(2026, 10, 22, tzinfo=UTC),
+        data_root=root,
+        now=NOW,
+    )
+
+    html = (tmp_path / "vizro" / "whodepends" / "index.html").read_text(encoding="utf-8")
+    table = html[html.index('id="whodepends--grid"') :]
+    positions = [table.index(f"<td>{name}</td>") for name in ("numpy", "aaa", "pandas")]
+    assert positions == sorted(positions)  # 3, 2, 1 dependents: the measure's order, not the alphabet
+
+
+@pytest.mark.parametrize("projected", [True, False])
+def test_the_page_swap_keeps_a_pages_access_column(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, projected) -> None:
+    pages = tuple(
+        dataclasses.replace(page, access_column="org") if page.id == "whodepends" else page
+        for page in app.PAGE_INVENTORY
+    )
+    monkeypatch.setattr(app, "PAGE_INVENTORY", pages)
+    monkeypatch.setattr(data, "board_projections", lambda **_: projected)
+
+    assert {p.id: p for p in app.page_inventory()}["whodepends"].access_column == "org"
+    with pytest.raises(static_export.AccessColumnRefusedError):
+        static_export.export_boards(tmp_path / "vizro", export_commit="d" * 40, data_root=_data_root(tmp_path), now=NOW)

@@ -2,7 +2,7 @@
 title: "37.4: Behind-upstream, whodepends, live-catalog coverage and the universe SBOM boards fill"
 type: 'feature'
 created: '2026-10-22'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'a81732d0a3'
 flag:
   key: pyforge.atlas.board_projections            # new; minted by this story
@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'the four boards read as before: behind-upstream and whodepends are shells, the two coverage boards read the paths nothing writes'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -122,6 +122,11 @@ read (the nodes are pure).
   35.3's opt-in. Its `package_count` is 1 per row (the chart's count), so its static table is in column order.
 - **Archived packages:** legacy's query drops inactive and archived packages; this node relies on the enumeration
   (active packages) and Story 35.2's batches, which leave archived feedstocks out.
+- **The live whodepends chart draws every bar** (16,004 packages on a public root, in query order); the static page
+  keeps the 5,000 largest, sorted. Its sum over dependency types can exceed the package count (python: 42,899), as
+  Approach 4 says.
+- **Unparsed dependency names:** 76 `depends_on` values are requirement specs (`boost>=1.67`), which split counts on
+  whodepends; the core node is parity-gated, so the fix is deferred (DW-atlas-37-4-1).
 
 ## I/O & Edge-Case Matrix
 
@@ -149,6 +154,15 @@ read (the nodes are pure).
 
 ## Spec Change Log
 
+- 2026-10-22, review round 2 (PASS), should-fix applied:
+  - S1: with the flag on, nothing tested the projected definitions or their charts, so swapping in `PAGE_INVENTORY`,
+    dropping the whodepends chart (and with it the static table's sort) or pointing a chart at another column
+    survived. Tests now pin both charts, the built pages' Graph and note, and the static whodepends order.
+  - S2: the page swap replaced a page's whole definition and dropped its `access_column`, so the static export would
+    not refuse a projected board that declared one (latent; no page declares one). `page_inventory` now keeps the
+    base page's `access_column`; a test checks the refusal in both states.
+  - Nits: a long docstring line wrapped; the SBOM model's docstring says what the board reads; residual risks for the
+    live whodepends chart and the unparsed dependency names (DW-atlas-37-4-1).
 - 2026-10-22, review round 1 (FAIL), fixed:
   - B1: `board_projections`' `flags_path` was typed `str | os.PathLike[str]`, which `read_boolean` does not take;
     mypy failed `lint-types`. It is `Path | str | None`.

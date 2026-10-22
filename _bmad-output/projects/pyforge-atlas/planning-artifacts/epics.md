@@ -2750,7 +2750,7 @@ So that four more boards render rows from a public run.
 **Given** behind-upstream and whodepends have no model and live-catalog-coverage and universe-sbom read paths nothing writes
 **When** a run has written `vcs_upstream_versions`, `core_dependencies`, the inventory flags and the universal SBOM
 **Then** the four boards render rows; with the flag off they read as before
-**Status:** backlog
+**Status:** done
 
 ### Story 37.5: The cve-watcher reads a vulnerability history
 

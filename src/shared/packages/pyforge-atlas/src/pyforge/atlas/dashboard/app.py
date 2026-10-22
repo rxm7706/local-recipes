@@ -51,7 +51,7 @@ from __future__ import annotations
 
 import time
 import warnings
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Callable
 
@@ -475,12 +475,18 @@ PROJECTED_PAGES: dict[str, PageDef] = {
 
 def page_inventory(*, projected: bool | None = None) -> tuple[PageDef, ...]:
     """The page set ``build_dashboard`` builds: ``PAGE_INVENTORY``, with ``PROJECTED_PAGES`` swapped in
-    when ``pyforge.atlas.board_projections`` is on (``projected`` overrides the flag)."""
+    when ``pyforge.atlas.board_projections`` is on (``projected`` overrides the flag).
+
+    A swapped-in page keeps the base page's ``access_column``, so both states refuse the same static export
+    (sld:AD-10), and ``static_export.access_column_boards``' default over ``PAGE_INVENTORY`` holds in both."""
     if projected is None:
         projected = _data.board_projections()
     if not projected:
         return PAGE_INVENTORY
-    return tuple(PROJECTED_PAGES.get(page.id, page) for page in PAGE_INVENTORY)
+    return tuple(
+        replace(PROJECTED_PAGES[page.id], access_column=page.access_column) if page.id in PROJECTED_PAGES else page
+        for page in PAGE_INVENTORY
+    )
 
 
 DASHBOARD_ID = "cf-atlas"

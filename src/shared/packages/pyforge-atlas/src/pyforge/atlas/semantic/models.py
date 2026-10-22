@@ -449,7 +449,11 @@ def build_whodepends_model(table: Any) -> SemanticModel:
 
 
 def build_universe_sbom_summary_model(table: Any) -> SemanticModel:
-    """`universe-sbom` — universe-scale BOM SUMMARY (never a full ~856k-row browse)."""
+    """`universe-sbom` — the universe BOM, one row per component (never the full ~856k-row CycloneDX document).
+
+    Story 37.4: with ``pyforge.atlas.board_projections`` on it reads ``derived_universe_sbom_summary``
+    (``project_universe_sbom_summary``), one row per conda component of the BOM.
+    """
     return SemanticModel(
         table=table,
         name="universe_sbom_summary",
