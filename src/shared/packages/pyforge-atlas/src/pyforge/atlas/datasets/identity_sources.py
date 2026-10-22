@@ -29,12 +29,10 @@ classes persist.
 - :class:`OpenTeamsBoardDataset` (``openteams_project_1_board_raw``) —
   cursor-paginated GraphQL fetch of ``organization(login: "OpenTeams-WFT-CDO")
   { projectV2(number: 1) { items } }`` (mirrors the legacy
-  ``fetch_project_issues``), credentialed (``github_token``); a
-  partial-pagination failure keeps whatever pages already succeeded (mirrors
-  :class:`~.upstream_discovery.TrendingSnapshotDataset`'s own per-period
-  degrade — a genuine, if incomplete, result is persisted rather than
-  discarded; only a fully-empty fetch triggers the inherited AD-13
-  keep-last-good path).
+  ``fetch_project_issues``), credentialed (``github_token``, Story 36.2). A
+  pagination a failure stops part-way never hides (:class:`_HonestPagination`):
+  with a store it keeps last-good; with none it writes the pages read; either
+  way the marker names the page and the status, and the next run tries again.
 - :class:`StagedRecipesPRDataset` (``discovery_staged_recipes_prs_raw``) — REST
   fetch of ``conda-forge/staged-recipes`` PRs (paginated, mirrors the legacy
   ``STAGED_PR_API``) plus a bounded per-open-PR ``files()`` fan-out (mirrors the
@@ -64,13 +62,17 @@ from typing import Any, Callable
 
 import pandas as pd
 from kedro.io import AbstractDataset
+from kedro_datasets.api import APIDataset
+from pyforge.core.flags import read_boolean
 
+from . import credentials as credential_switch
 from . import public_sources
 from .refresh import (
     DEFAULT_REFRESH_MAX_RETRIES,
     DEFAULT_REFRESH_TIMEOUT_SECONDS,
     WEEKLY_SECONDS,
     ExternalRefreshDataset,
+    retry_backoff_seconds,
 )
 from .upstream_discovery import _as_text
 
@@ -327,6 +329,153 @@ query($cursor: String) {
 """
 
 
+#: Story 36.2: the flag that lets the board and the staged-recipes PRs fetch themselves
+IDENTITY_FLAG_KEY = "pyforge.atlas.identity_live_sources"
+_GITHUB_TIMEOUT_SECONDS = 60
+
+
+def identity_live() -> bool:
+    """Whether the OpenTeams board and the staged-recipes PRs fetch (read at the refresh)."""
+    return read_boolean(IDENTITY_FLAG_KEY, default=False)
+
+
+def _github_graphql(url: str, body: dict[str, Any], auth: credential_switch.BearerAuth) -> Any:
+    """Story 36.2: one GraphQL POST with bearer auth, through ``APIDataset.save`` (``load()`` sends
+    only GET) and an in-memory ``response_dataset`` (Story 35.1's route)."""
+    inner = APIDataset(
+        url=url,
+        method="POST",
+        save_args={"timeout": _GITHUB_TIMEOUT_SECONDS},
+        credentials=auth,  # type: ignore[arg-type, unused-ignore]  # a callable auth; requests accepts it
+        response_dataset={"type": "kedro.io.MemoryDataset", "copy_mode": "assign"},
+    )
+    inner.save(body)
+    response = inner.get_last_response()
+    return response.json() if hasattr(response, "json") else response
+
+
+def _github_get(url: str, auth: credential_switch.BearerAuth) -> Any:
+    """Story 36.2: one REST GET with bearer auth."""
+    response = APIDataset(url=url, load_args={"timeout": _GITHUB_TIMEOUT_SECONDS, "auth": auth}).load()
+    return response.json() if hasattr(response, "json") else response
+
+
+def _credentialed_refresher(
+    credentials: Any, url: str, refresh: Callable[[credential_switch.BearerAuth], pd.DataFrame]
+) -> Callable[[], pd.DataFrame] | None:
+    """Story 36.2: with ``pyforge.atlas.identity_live_sources`` on, a refresher that runs only
+    with Story 35.1's switch and a GitHub token (``github_auth``); without them it fails with the
+    reason, so the store keeps last-good under a marker that names it and nothing is sent."""
+    if not identity_live():
+        return None
+    auth = credential_switch.github_auth(credentials, url)
+    if auth is None:
+        reason = credential_switch.skip_reason(url)
+
+        def refuse() -> pd.DataFrame:
+            raise RuntimeError(reason)
+
+        return refuse
+    return lambda: refresh(auth)
+
+
+#: Story 36.2: GitHub's refusals (Story 35.1's stop statuses): the run stops sending at the first
+_STOP_STATUSES = (401, 403, 429)
+#: a page GitHub could not answer in time is asked again, ``max_retries`` times
+_RETRY_STATUSES = (502, 503, 504)
+
+
+def _status_of(exc: BaseException) -> int | None:
+    """The HTTP status inside kedro's ``DatasetError(..., HTTPError)``, if any."""
+    for arg in (exc, *getattr(exc, "args", ())):
+        status = getattr(getattr(arg, "response", None), "status_code", None)
+        if isinstance(status, int):
+            return status
+    return None
+
+
+def _why(exc: BaseException) -> str:
+    """A fetch failure as its status, else its type: never its text, which on the credentialed
+    path can quote the request (Story 35.1)."""
+    status = _status_of(exc)
+    return f"HTTP {status}" if status else type(exc).__name__
+
+
+#: the reasons :class:`_HonestPagination` writes when a refresh stops short
+_STOP_MARKER_PREFIXES = ("board stopped", "PR list stopped", "PR files stopped")
+
+
+#: How the base marks a refresh whose refresher raised; `_stopped_at` raises with the stop's own text.
+_WRAPPED_STOP = "refresh failed: RuntimeError: "
+
+
+class _HonestPagination:
+    """Story 36.2 (AD-13): a pagination a failure stops part-way. With a store already written,
+    the refresh fails and last-good is kept; with none, the pages read are written. Either way the
+    marker names where and why it stopped, and a page GitHub could not answer in time is asked
+    again first. A mixin ahead of :class:`ExternalRefreshDataset`."""
+
+    _stopped = ""
+
+    def _stop(self, reason: str) -> None:
+        """Record why the refresh stopped short; a second reason is added, never replaces."""
+        self._stopped = f"{self._stopped}; {reason}" if self._stopped else reason
+
+    def _refresh_due(self, cadence_seconds: int, now: float | None = None) -> bool:
+        """A store whose last refresh stopped short (its marker still stands) is due now: inside
+        its cadence it would otherwise read as fresh and the marker be cleared."""
+        marker = self.staleness()  # type: ignore[attr-defined]
+        if marker is not None and marker.stale and marker.reason.startswith(_STOP_MARKER_PREFIXES):
+            return True  # only this mixin's own stop markers: a flag-off or offline marker behaves as before
+        return super()._refresh_due(cadence_seconds, now)  # type: ignore[misc, unused-ignore]
+
+    def _fetch_page(self, fetch: Callable[..., Any], *args: Any) -> Any:
+        for attempt in range(1, self._max_retries + 2):  # type: ignore[attr-defined]
+            try:
+                return fetch(*args)
+            except Exception as exc:
+                if attempt > self._max_retries or _status_of(exc) not in _RETRY_STATUSES:  # type: ignore[attr-defined]
+                    raise
+                time.sleep(retry_backoff_seconds(attempt))
+        raise AssertionError("unreachable")  # pragma: no cover
+
+    def _stopped_at(self, reason: str, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        self._stop(reason)
+        logger.warning("%s: %s", type(self).__name__, reason)
+        if not rows or self._store_exists():  # type: ignore[attr-defined]
+            raise RuntimeError(reason)
+        return rows
+
+    def save(self, data: Any) -> None:
+        self._stopped = ""
+        prior = self.staleness()  # type: ignore[attr-defined]
+        prior_stop = (
+            prior.reason.split(" (since then: ", 1)[0]
+            if prior is not None and prior.stale and prior.reason.startswith(_STOP_MARKER_PREFIXES)
+            else ""
+        )
+        super().save(data)  # type: ignore[misc, unused-ignore]
+        # The base clears its marker exactly when it writes the store. A prior stop makes the refresh
+        # due (`_refresh_due`), so the base never takes its not-due path, which also clears it.
+        now = self.staleness()  # type: ignore[attr-defined]
+        base = now.reason if now is not None and now.stale else ""
+        if self._stopped and base.startswith(_WRAPPED_STOP) and base[len(_WRAPPED_STOP) :] in self._stopped:
+            base = ""  # the base only reports the stop `_stopped_at` raised
+        this_run = "; ".join(reason for reason in (self._stopped, base) if reason)
+        if prior_stop and now is not None:
+            # Story 36.2: a run that wrote nothing (no switch, the flag off, a failed write) never
+            # clears a stop: the store is still the short one, so the stop stays first in the
+            # marker. A new stop names where this run stopped; anything else this run says (a
+            # notice, a failed write) follows the stop it did not lift.
+            if this_run.startswith(_STOP_MARKER_PREFIXES):
+                self._mark_stale(this_run)  # type: ignore[attr-defined]
+            else:
+                self._mark_stale(f"{prior_stop} (since then: {this_run})" if this_run else prior_stop)  # type: ignore[attr-defined]
+            return
+        if self._stopped:
+            self._mark_stale(this_run)  # type: ignore[attr-defined]
+
+
 def _as_json(payload: Any) -> dict | None:
     if isinstance(payload, dict):
         return payload
@@ -368,7 +517,7 @@ def parse_openteams_board_nodes(nodes: Any) -> list[dict]:
     return rows
 
 
-class OpenTeamsBoardDataset(ExternalRefreshDataset):
+class OpenTeamsBoardDataset(_HonestPagination, ExternalRefreshDataset):
     """The ``openteams_project_1_board_raw`` cursor-paginated GraphQL board fetch
     (identity-contract.md Source datasets; mirrors the legacy
     ``fetch_project_issues``). Credentialed: ``credentials: github_token`` (the
@@ -382,12 +531,9 @@ class OpenTeamsBoardDataset(ExternalRefreshDataset):
     package uses: a GraphQL POST needs a request body, and pagination needs
     multiple calls with a changing ``cursor`` variable.
 
-    A mid-pagination fetch/parse failure keeps whatever pages already succeeded
-    (mirrors :class:`~.upstream_discovery.TrendingSnapshotDataset`'s own
-    per-period degrade: a genuine, if incomplete, result is persisted rather
-    than discarded) — only a fully-empty combined result (zero pages ever
-    succeeded) triggers the inherited AD-13 keep-last-good + mark-stale path via
-    ``save()``'s existing empty-check.
+    A pagination a failure stops part-way is :class:`_HonestPagination`'s (Story 36.2): a
+    fuller last-good is kept, else the pages read are written; the marker names the page and
+    the status, and the next run tries again.
     """
 
     STORE_FILENAME = "openteams_project_1_board.parquet"
@@ -407,10 +553,8 @@ class OpenTeamsBoardDataset(ExternalRefreshDataset):
     ) -> None:
         self._url = str(url)
         self._fetcher = fetcher
-        # Accepted so Kedro's `credentials: github_token` catalog key resolves
-        # without raising; the real attended credentialed fetch is wired into
-        # `fetcher` externally (mirrors GitHubRequestDataset's construction-is-
-        # offline contract — no HTTP client is composed here).
+        # Kedro resolves the catalog's `credentials: github_token` into this; Story 36.2's live
+        # refresher sends it as a bearer, only under the switch. Construction stays offline.
         self._credentials = credentials
         super().__init__(
             filepath=filepath,
@@ -422,35 +566,47 @@ class OpenTeamsBoardDataset(ExternalRefreshDataset):
             metadata=metadata,
         )
 
-    def _do_refresh(self) -> pd.DataFrame:
+    def _live_refresher(self) -> Callable[[], pd.DataFrame] | None:
+        # Story 36.2: the board needs a GitHub token (GraphQL is authenticated-only)
+        return _credentialed_refresher(
+            self._credentials,
+            self._url,
+            lambda auth: self._do_refresh(fetcher=lambda url, body: _github_graphql(url, body, auth)),
+        )
+
+    def _do_refresh(self, fetcher: Callable[[str, dict[str, Any]], Any] | None = None) -> pd.DataFrame:
+        fetch = fetcher if fetcher is not None else self._fetcher
+        if fetch is None:
+            raise RuntimeError("no OpenTeams board fetcher")
         rows: list[dict[str, Any]] = []
         cursor: str | None = None
-        for _ in range(_OPENTEAMS_BOARD_MAX_PAGES):
+        for page in range(1, _OPENTEAMS_BOARD_MAX_PAGES + 1):
             variables = {"cursor": cursor} if cursor else {}
             body = {"query": OPENTEAMS_BOARD_QUERY, "variables": variables}
             try:
-                payload = self._fetcher(self._url, body)
-            except Exception as exc:  # AD-13: keep whatever pages already succeeded.
-                logger.warning(
-                    "OpenTeams board GraphQL fetch failed (cursor=%r), keeping accumulated rows: %s",
-                    cursor,
-                    exc,
+                payload = self._fetch_page(fetch, self._url, body)
+            except Exception as exc:  # AD-13: _HonestPagination keeps last-good or the pages read
+                return pd.DataFrame(
+                    self._stopped_at(f"board stopped at page {page}: {_why(exc)}", rows), columns=list(_BOARD_COLUMNS)
                 )
-                break
             parsed = _as_json(payload)
             if parsed is None:
-                logger.warning(
-                    "OpenTeams board GraphQL response unparseable (cursor=%r) — stopping pagination",
-                    cursor,
+                return pd.DataFrame(
+                    self._stopped_at(f"board stopped at page {page}: unparseable response", rows),
+                    columns=list(_BOARD_COLUMNS),
                 )
-                break
             conn = (((parsed.get("data") or {}).get("organization") or {}).get("projectV2") or {}).get("items")
             if not isinstance(conn, dict):
-                logger.warning(
-                    "OpenTeams board GraphQL response missing items connection (cursor=%r) — stopping pagination",
-                    cursor,
+                errors = parsed.get("errors")
+                first = (
+                    errors[0].get("message")
+                    if isinstance(errors, list) and errors and isinstance(errors[0], dict)
+                    else None
                 )
-                break
+                return pd.DataFrame(
+                    self._stopped_at(f"board stopped at page {page}: GraphQL error: {first or 'no items'}", rows),
+                    columns=list(_BOARD_COLUMNS),
+                )
             rows.extend(parse_openteams_board_nodes(conn.get("nodes")))
             page_info = conn.get("pageInfo") or {}
             if not page_info.get("hasNextPage"):
@@ -522,13 +678,17 @@ _STAGED_PR_COLUMNS: tuple[str, ...] = (
     "fetched_at",
 )
 
-# 200 pages * 100/page = 20,000 PRs — a realistic ceiling for staged-recipes'
-# full PR history (mirrors the OpenTeams board's own hard pagination cap).
-_STAGED_PR_MAX_PAGES = 200
+# 500 pages * 100/page = 50,000 PRs. Story 36.2: the 200-page cap of Story 21.x stopped at PR
+# #14,827 when staged-recipes held about 35,000 (2026-10-18); 500 pages read the whole history.
+_STAGED_PR_MAX_PAGES = 500
 # Bounded per-open-PR files() fan-out (mirrors PyPIJsonFanOutDataset's
-# PYPI_JSON_FANOUT_LIMIT bounded-fetch discipline) — staged-recipes rarely has
-# more than a few hundred open PRs at once.
-_STAGED_PR_OPEN_FILES_FANOUT_LIMIT = 500
+# PYPI_JSON_FANOUT_LIMIT bounded-fetch discipline). Story 36.2: staged-recipes had 1,222 open PRs
+# on 2026-10-18, so the 500 cap of Story 21.x skipped 722; with the PR pages, about 1,600
+# authenticated requests, well inside GitHub's 5,000 an hour.
+_STAGED_PR_OPEN_FILES_FANOUT_LIMIT = 2000
+# Story 36.2: the files requests stop after this many PRs in a row fail (a lasting 5xx would
+# otherwise send up to four requests for each of 2,000 PRs)
+_FILES_FAILURES_IN_A_ROW_LIMIT = 10
 
 
 def parse_staged_pr_page(payload: Any) -> list[dict]:
@@ -579,7 +739,7 @@ def parse_pr_files_response(payload: Any) -> list[str]:
     return [item["filename"] for item in data if isinstance(item, dict) and isinstance(item.get("filename"), str)]
 
 
-class StagedRecipesPRDataset(ExternalRefreshDataset):
+class StagedRecipesPRDataset(_HonestPagination, ExternalRefreshDataset):
     """The ``discovery_staged_recipes_prs_raw`` REST source (identity-contract.md
     Source datasets; mirrors the legacy ``load_staged_prs``). Credentialed:
     ``credentials: github_token`` (same host/key as ``vcs_github_api_raw`` /
@@ -592,9 +752,9 @@ class StagedRecipesPRDataset(ExternalRefreshDataset):
     ``GET /pulls/{number}/files`` fan-out (mirrors the legacy
     ``load_staged_prs``'s file-path ranking tier, restricted to open PRs only —
     the same scope the legacy script's own ``gh pr list --state open --json
-    ...,files`` call covered). A per-page or per-PR fetch/parse failure keeps
-    whatever was already accumulated for that call, never aborting the whole
-    refresh (AD-13).
+    ...,files`` call covered). A list stopped part-way is :class:`_HonestPagination`'s
+    (Story 36.2); a PR whose files are not read keeps its last-good file paths, and a refusal
+    stops every later request.
     """
 
     STORE_FILENAME = "discovery_staged_recipes_prs.parquet"
@@ -625,19 +785,26 @@ class StagedRecipesPRDataset(ExternalRefreshDataset):
             metadata=metadata,
         )
 
-    def _do_refresh(self) -> pd.DataFrame:
+    def _live_refresher(self) -> Callable[[], pd.DataFrame] | None:
+        # Story 36.2: some 300 pages of PRs exceed GitHub's 60 unauthenticated requests an hour
+        return _credentialed_refresher(
+            self._credentials, self._url, lambda auth: self._do_refresh(fetcher=lambda url: _github_get(url, auth))
+        )
+
+    def _do_refresh(self, fetcher: Callable[[str], Any] | None = None) -> pd.DataFrame:
+        fetch = fetcher if fetcher is not None else self._fetcher
+        if fetch is None:
+            raise RuntimeError("no staged-recipes fetcher")
         rows: list[dict[str, Any]] = []
+        list_refused = False
         base = self._url.rstrip("/")
         for page in range(1, _STAGED_PR_MAX_PAGES + 1):
             page_url = f"{base}/repos/conda-forge/staged-recipes/pulls?state=all&per_page=100&page={page}"
             try:
-                payload = self._fetcher(page_url)
-            except Exception as exc:  # AD-13: keep whatever pages already succeeded.
-                logger.warning(
-                    "staged-recipes PR list fetch failed at page=%s, keeping accumulated rows: %s",
-                    page,
-                    exc,
-                )
+                payload = self._fetch_page(fetch, page_url)
+            except Exception as exc:  # AD-13: _HonestPagination keeps last-good or the pages read
+                list_refused = _status_of(exc) in _STOP_STATUSES
+                rows = self._stopped_at(f"PR list stopped at page {page}: {_why(exc)}", rows)
                 break
             page_rows = parse_staged_pr_page(payload)
             if not page_rows:
@@ -656,8 +823,8 @@ class StagedRecipesPRDataset(ExternalRefreshDataset):
                 _STAGED_PR_MAX_PAGES,
             )
 
-        # Bounded per-open-PR files() fan-out — never raises: a per-PR failure
-        # degrades that PR's file_paths to empty, never drops the PR row.
+        # Bounded per-open-PR files() fan-out — never raises: a PR whose files are not read keeps
+        # its last-good file paths (Story 36.2), and its row is never dropped.
         open_numbers = [r["number"] for r in rows if r.get("state") == "open"]
         if len(open_numbers) > _STAGED_PR_OPEN_FILES_FANOUT_LIMIT:
             logger.warning(
@@ -666,15 +833,28 @@ class StagedRecipesPRDataset(ExternalRefreshDataset):
                 _STAGED_PR_OPEN_FILES_FANOUT_LIMIT,
                 len(open_numbers),
             )
+        # Story 36.2: a PR whose files are not read keeps its last-good file paths
+        last_paths = self._last_good_file_paths()
+        refused = list_refused  # a refusal on the list stops the files requests too
+        failures_in_a_row = files_failed = 0
         for number in open_numbers[:_STAGED_PR_OPEN_FILES_FANOUT_LIMIT]:
+            if refused:
+                break
             paths: list[str] = []
+            read = True
             page = 1
             while True:
                 files_url = f"{base}/repos/conda-forge/staged-recipes/pulls/{number}/files?per_page=100&page={page}"
                 try:
-                    payload = self._fetcher(files_url)
+                    payload = self._fetch_page(fetch, files_url)
                 except Exception as exc:
-                    logger.warning("staged-recipes PR #%s files fetch failed: %s", number, exc)
+                    read = False
+                    if _status_of(exc) in _STOP_STATUSES:
+                        # Story 36.2: a refusal stops every later request (Story 35.1); the marker says so
+                        self._stop(f"PR files stopped at PR #{number}: {_why(exc)}")
+                        refused = True
+                    else:
+                        logger.warning("staged-recipes PR #%s files fetch failed: %s", number, _why(exc))
                     break
                 batch = parse_pr_files_response(payload)
                 if not batch:
@@ -683,12 +863,35 @@ class StagedRecipesPRDataset(ExternalRefreshDataset):
                 if len(batch) < 100:
                     break
                 page += 1
+            failures_in_a_row = 0 if read else failures_in_a_row + 1
+            files_failed += 0 if read else 1
+            if failures_in_a_row >= _FILES_FAILURES_IN_A_ROW_LIMIT and not refused:
+                # the breaker fires at the failure that reaches the limit, the last PR's included
+                self._stop(f"PR files stopped after PR #{number}: {failures_in_a_row} failures in a row")
+                refused = True
             if paths:
                 file_paths = _join_list(paths)
                 for row in rows:
                     if row["number"] == number:
                         row["file_paths"] = file_paths
+        if files_failed and not refused:
+            # a one-run notice (not a stop marker): the next refresh inside the cadence clears it
+            noun = "PR" if files_failed == 1 else "PRs"
+            self._stop(f"PR files failed for {files_failed} {noun} (each keeps its last-good paths, if any)")
+        for row in rows:  # every open PR whose files were not read: its last-good paths
+            if row.get("state") == "open" and not row.get("file_paths") and last_paths.get(row["number"]):
+                row["file_paths"] = last_paths[row["number"]]
         return pd.DataFrame(rows, columns=list(_STAGED_PR_COLUMNS))
+
+    def _last_good_file_paths(self) -> dict[Any, str]:
+        """The last-good store's non-empty ``file_paths`` by PR number (``{}`` with no store)."""
+        if not self._store_exists():
+            return {}
+        try:
+            frame = pd.read_parquet(self._store_path, columns=["number", "file_paths"])
+        except Exception:  # noqa: BLE001 -- an unreadable last-good carries nothing forward
+            return {}
+        return {n: p for n, p in zip(frame["number"], frame["file_paths"], strict=True) if isinstance(p, str) and p}
 
     @property
     def _store_path(self) -> Path:
