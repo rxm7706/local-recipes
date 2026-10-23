@@ -564,7 +564,10 @@ def test_a_garbage_head_file_is_not_an_unborn_head(repo: Path, tmp_path: Path) -
 def test_a_worktree_listing_git_cannot_give_is_not_a_landing(
     repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Review 4 (mutant mR5): when ``worktree list --porcelain -z`` fails, HEAD is not known to be landed."""
+    """Review 4: when ``worktree list --porcelain -z`` fails, a present worktree's HEAD is not known to be landed.
+
+    (The fallback for a directory git does not list, mutant mR5, is not pinned: archiving it loses nothing.)
+    """
     bookkeeping = repo / ".steward" / "workspaces.yaml"
     wt = tmp_path / "listing-wt"
     start_workspace("listing", root=repo, bookkeeping=bookkeeping, path=wt, from_ref="origin/main")
@@ -628,7 +631,7 @@ def _deleted_by_hand_with_an_unmerged_branch(repo: Path, tmp_path: Path, bookkee
 
 
 def test_delete_names_the_unmerged_branch_of_a_deleted_directory_as_before(repo: Path, tmp_path: Path) -> None:
-    """Review 5: the branch decides first, so the refusal text and exit are Story 13.5's."""
+    """Review 5: a deleted directory whose branch is not landed is refused with Story 13.5's text and exit."""
     bookkeeping = repo / ".steward" / "workspaces.yaml"
     _deleted_by_hand_with_an_unmerged_branch(repo, tmp_path, bookkeeping)
     result = clean_workspaces(delete=True, slug="g", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a")
@@ -638,7 +641,8 @@ def test_delete_names_the_unmerged_branch_of_a_deleted_directory_as_before(repo:
 def test_the_default_clean_drops_a_deleted_directory_whose_head_its_kept_branch_holds(
     repo: Path, tmp_path: Path
 ) -> None:
-    """Review 5: a HEAD at an unmerged branch's tip is safe -- the branch is kept -- so the record is cleaned as before."""
+    """Review 5: a deleted directory whose HEAD is at its unmerged branch's tip is cleaned as at the baseline
+    (``.missing.txt``, the branch kept)."""
     bookkeeping = repo / ".steward" / "workspaces.yaml"
     _deleted_by_hand_with_an_unmerged_branch(repo, tmp_path, bookkeeping)
     result = clean_workspaces(
@@ -692,3 +696,63 @@ def test_a_local_source_that_merely_starts_like_a_remote_is_local(repo: Path, tm
     (row,) = status_workspaces("from-originals", root=repo, bookkeeping=bookkeeping)
     assert row.error is None
     assert row.merged is False
+
+
+def _stacked_landed_then_detached_and_deleted(repo: Path, tmp_path: Path, bookkeeping: Path) -> str:
+    """Review 7: ``stacked`` landed on main (not on its local source ``base``), its worktree detached at one more
+    commit, then its directory deleted by hand. Returns that commit."""
+    stacked = _stacked(repo, tmp_path, bookkeeping, land=True)
+    detached = _detach_with_a_commit(stacked)
+    shutil.rmtree(stacked)
+    return detached
+
+
+def test_the_trunk_never_lands_a_deleted_stacked_directory_whose_recorded_head_is_past_it(
+    repo: Path, tmp_path: Path
+) -> None:
+    """Review 7 (T1): the baseline kept this record (the branch is not on ``base``); landing it through the trunk
+    alone would prune the commit git still records."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    detached = _stacked_landed_then_detached_and_deleted(repo, tmp_path, bookkeeping)
+    merged_only = clean_workspaces(
+        merged_only=True, slug="stacked", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+    )
+    assert merged_only["skipped"][0]["reason"] == "not-merged"
+    deleted = clean_workspaces(
+        delete=True, slug="stacked", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+    )
+    assert deleted["skipped"][0]["reason"] == "branch stacked not on base or origin/main"
+    assert f"HEAD {detached}" in _git("worktree", "list", "--porcelain", cwd=repo).stdout
+    assert _branch_exists(repo, "stacked")
+
+
+def test_the_trunk_never_turns_a_gone_sources_error_into_a_landing_past_a_recorded_head(
+    repo: Path, tmp_path: Path
+) -> None:
+    """Review 7 (T5): with ``base`` deleted too, ``--delete`` reports the source's error as the baseline did."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    _stacked_landed_then_detached_and_deleted(repo, tmp_path, bookkeeping)
+    _git("worktree", "remove", str(tmp_path / "base-wt"), cwd=repo)
+    _git("branch", "-D", "base", cwd=repo)
+    result = clean_workspaces(
+        delete=True, slug="stacked", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+    )
+    assert result["skipped"][0]["reason"].startswith("error: git merge-base --is-ancestor stacked base failed")
+    assert _branch_exists(repo, "stacked")
+
+
+def test_a_revision_source_never_reads_a_local_ref_named_like_the_remote(repo: Path, tmp_path: Path) -> None:
+    """Review 7 (V1): ``origin/main~0`` is read as ``refs/remotes/origin/main~0``, as at the baseline, so a local
+    branch ``origin/main`` at the unlanded tip proves nothing (Story 70.1)."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    wt = tmp_path / "rev-shadow-wt"
+    start_workspace("rev-shadow", root=repo, bookkeeping=bookkeeping, path=wt, from_ref="origin/main~0")
+    _commit(wt, "rev-shadow.txt")
+    _git("update-ref", "refs/heads/origin/main", "refs/heads/rev-shadow", cwd=repo)
+    (row,) = status_workspaces("rev-shadow", root=repo, bookkeeping=bookkeeping)
+    assert row.merged is False
+    result = clean_workspaces(
+        merged_only=True, slug="rev-shadow", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+    )
+    assert result["archived"] == []
+    assert _branch_exists(repo, "rev-shadow")

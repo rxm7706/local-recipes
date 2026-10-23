@@ -728,9 +728,10 @@ def _rev_merged_into(root: Path, rev: str, into: str, *, label: str) -> bool:
     compared by the commit that exact ref names (``_source_commit``), never by the name: when the ref is missing, git
     would read the name as a local branch or tag (Story 13.6 reviews: ``refs/heads/refs/remotes/origin/main`` proved
     an unlanded branch merged, and a workspace slugged like its source compared against itself). Any other target (a
-    local branch, a sha, a revision like ``origin/main~2``) is passed as recorded (Story 70.1).
+    local branch, a sha) is passed as recorded, and a revision like ``origin/main~2`` through ``_source_ref`` as
+    ``refs/remotes/origin/main~2``, so a local ref named ``origin/main`` never stands in (Story 70.1, review 7).
     """
-    target = into
+    target = _source_ref(into)  # an ``origin/<b>~N`` revision stays under refs/remotes/, as before (Story 70.1)
     if _remote_tracking_name(into, root=root) is not None:
         resolved = _source_commit(into, root=root)
         if resolved is None:
@@ -853,6 +854,49 @@ def _worktree_head_landed(record: WorkspaceRecord, *, root: Path) -> bool:
         return _rev_landed(root, head, record.source, label="HEAD")
     except WorkspaceError:
         return False
+
+
+def _recorded_head_landed_or_absent(record: WorkspaceRecord, *, root: Path) -> bool:
+    """For a missing directory: True when git records no HEAD for it, an unborn one, or one that is landed."""
+    try:
+        registered = _registered_head(root, Path(record.path))
+    except WorkspaceError:
+        return False
+    if registered is None:
+        return True
+    head, on_branch = registered
+    if head == _UNBORN_HEAD:
+        return on_branch
+    try:
+        return _rev_landed(root, head, record.source, label="HEAD")
+    except WorkspaceError:
+        return False
+
+
+def _gone_branch_landed(record: WorkspaceRecord, *, root: Path) -> bool:
+    """Whether a workspace whose directory is gone has landed: on its source as before this story, or on the trunk
+    only when the HEAD git still records for it is landed too (Story 13.6 review 7).
+
+    A directory deleted by hand is out of this story's scope (operator ruling, 2026-10-23), so its verdict never
+    loses what the baseline kept: a stacked branch landed through the trunk with a recorded HEAD detached past it
+    gets the baseline's answer (not merged, or the source's error), and its record stays.
+    """
+    try:
+        if _branch_merged_into(root, record.branch, record.source):
+            return True
+        source_error: WorkspaceError | None = None
+    except WorkspaceError as exc:
+        source_error = exc
+    for trunk in _landing_refs(record.source)[1:]:
+        try:
+            on_trunk = _branch_merged_into(root, record.branch, trunk)
+        except WorkspaceError:
+            on_trunk = False
+        if on_trunk and _recorded_head_landed_or_absent(record, root=root):
+            return True
+    if source_error is not None:
+        raise source_error
+    return False
 
 
 def _branch_merged_into_or_unlanded(root: Path, branch: str, into: str) -> bool:
@@ -1335,7 +1379,7 @@ def _delete_eligibility(record: WorkspaceRecord, *, root: Path) -> str | None:
         return None
 
     if not wt_is_dir and branch_exists:
-        if _branch_landed(root, record.branch, record.source):
+        if _gone_branch_landed(record, root=root):
             return None
         return f"branch {record.branch} not on {' or '.join(_landing_refs(record.source))}"
 
@@ -1356,7 +1400,13 @@ def _delete_eligibility(record: WorkspaceRecord, *, root: Path) -> str | None:
 def _execute_delete(record: WorkspaceRecord, *, root: Path) -> None:
     """Remove a deletable worktree and its branch; never writes an archive artifact."""
     wt = Path(record.path)
-    if wt.is_dir():
+    present = wt.is_dir()
+    branch_exists = _git_ok("rev-parse", "--verify", "--quiet", _branch_ref(record.branch), cwd=root).returncode == 0
+    # Decided before the worktree goes: a gone directory's verdict reads the HEAD git still records (review 7).
+    landed = branch_exists and (
+        _branch_landed(root, record.branch, record.source) if present else _gone_branch_landed(record, root=root)
+    )
+    if present:
         result = _git_ok("worktree", "remove", "--force", str(wt), cwd=root)
         if result.returncode != 0:
             detail = (result.stderr or result.stdout or "").strip()
@@ -1364,9 +1414,8 @@ def _execute_delete(record: WorkspaceRecord, *, root: Path) -> None:
     else:
         _git_ok("worktree", "prune", cwd=root)
 
-    if _git_ok("rev-parse", "--verify", "--quiet", _branch_ref(record.branch), cwd=root).returncode == 0:
-        if _branch_landed(root, record.branch, record.source):
-            _git_ok("branch", "-D", record.branch, cwd=root)
+    if landed:
+        _git_ok("branch", "-D", record.branch, cwd=root)
 
 
 def clean_workspaces(
@@ -1432,6 +1481,8 @@ def clean_workspaces(
                     continue
                 if merged_only and not (
                     _branch_landed(root, record.branch, record.source) and _worktree_head_landed(record, root=root)
+                    if Path(record.path).is_dir()
+                    else _gone_branch_landed(record, root=root)
                 ):
                     skipped.append({**record.to_dict(), "reason": "not-merged"})
                     remaining.append(record)
