@@ -589,7 +589,8 @@ class _RunCoordinator:
     # tuple, so a reader never sees a trigger without its environment; set only through
     # set_stop_cause, which checks and sets under stop_lock, so the first cause wins.
     stop_cause: tuple[str, str | None] | None = None
-    # Reentrant: the SIGINT handler sets the cause on the main thread and may re-enter itself.
+    # Reentrant, as it always was. Since Story 71.13 a nested SIGINT returns at the handler's guard before it reaches
+    # set_stop_cause, and the other callers run on pool threads, so no thread re-enters it today.
     stop_lock: threading.RLock = field(default_factory=threading.RLock)
     terminated_lanes: set[LaneKey] = field(default_factory=set)
     proc_lane: dict[int, LaneKey] = field(default_factory=dict)

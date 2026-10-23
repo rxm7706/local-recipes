@@ -4961,7 +4961,7 @@ pyforge-steward-test` green
 
 As the operator who pressed Ctrl-C twice to stop a preflight,
 I want the second Ctrl-C never to hang the run,
-So that an interrupted preflight always ends without a SIGKILL.
+So that one more Ctrl-C never leaves an interrupted preflight hung.
 
 **Type:** fix • **Effort:** S • **Deps:** S-71.12 • **FR/AD:** spec-pyforge-steward CAP-159 (FR-32; Stories 71.10-71.12) • reopens Epic 71 (doctor Story 41.5) • Dream 2026-10-23 (a second SIGINT deadlocks the handler)
 **Flag:** none (a fix, spec-feature-flag-governance Q1)
@@ -4977,7 +4977,7 @@ lane terminated); a SIGINT after the handler has returned runs it again; no lock
 **And** two tests call a finished run's handler with `cancel` or `proc_lock` replaced by a stand-in that, holding its lock, calls the handler
 once more: each returns within its join, the cause is `interrupt` and the sleeper lane is terminated, and both stay blocked on `884d7f1106`;
 the 71.10-71.12 preflight tests pass unchanged; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 72: Mason's skill cell is two skills, and the Guild answers `pyforge mason` (spec-pyforge-steward CAP-160..161)
 

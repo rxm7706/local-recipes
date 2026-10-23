@@ -2,10 +2,10 @@
 title: "71.13: A second SIGINT never deadlocks the preflight's interrupt handler"
 type: 'fix'
 created: '2026-10-23'
-status: 'in-review'
+status: 'done'
 baseline_revision: '884d7f1106'
 flag-exempt: detector-or-gate   # a fix needs no flag (spec-feature-flag-governance Q1), and pr-preflight is a gate, as 105.1, 106.1, 107.1 and 71.12 recorded
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -37,7 +37,8 @@ it in a function 71.12 touched, outside 71.12's ACs. Read at `884d7f1106` (71.12
 
 Python may run the handler again, on the same thread, while the first call holds either lock. The nested call
 reaches the same lock and waits forever on the frame it interrupted. The handler swallows Ctrl-C, so a further Ctrl-C
-does nothing; only another signal (SIGTERM, SIGQUIT, SIGHUP or SIGKILL) ends the run. The window is a few bytecodes per lock: it takes a double Ctrl-C at the wrong instant.
+does nothing; only another signal (e.g. SIGTERM, SIGHUP or SIGKILL) ends the run. The window is a few bytecodes per
+lock: it takes a double Ctrl-C at the wrong instant.
 
 **Measured at `884d7f1106`** with no real signal. Two tests run one green lane, keep the handler the run installed
 (it closes over the run's coordinator), and call it on a daemon thread. Each replaces one lock with a stand-in that,
@@ -158,6 +159,18 @@ names, then one scoped stamp each (AGENTS.md § Pre-PR item 5). Promote the stor
    `threading.Event`'s own `Lock`.
 4. **nit, fixed.** The matrix row's "(no lock held)" for the 5 s wait.
 
-The reviewer confirmed the guard closes every reentry point (each lock the outer call holds is inside the `try`),
+### 2026-10-23 — Review pass 2 (PASS: three nits; every round-1 finding resolved)
+
+The reviewer re-ran the never-clear mutant (now red at the later call's assertion), the no-guard handler (both tests
+red at their joins) and a third mutant that clears the guard before `terminate_children` (red at the `proc_lock`
+test); `-k preflight` 387 passed.
+
+1. **nit, fixed.** Story 71.13's "So that" in `epics.md` still promised an end "without a SIGKILL"; it now says one
+   more Ctrl-C never leaves the run hung.
+2. **nit, fixed.** `stop_lock`'s comment said the handler "may re-enter itself"; since the guard, no thread re-enters
+   it. The lock stays an `RLock` (the Never clause), and the comment says why it is still reentrant.
+3. **nit, fixed.** The reworded Problem line and Dream line were rewrapped, and their list of signals says "e.g.".
+
+The round-1 reviewer confirmed the guard closes every reentry point (each lock the outer call holds is inside the `try`),
 that the main thread never holds `proc_lock` or `cancel`'s lock outside the handler while it is installed, and that
 both tests fail on `884d7f1106` at their joins.
