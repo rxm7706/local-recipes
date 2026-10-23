@@ -5119,7 +5119,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: operator ruling 2026-10-19 on CAP-69
   severity: low
   promoted: 2026-10-19 -- atlas Epic 37 chain; owned by Story 37.8
-  status: open
+  resolved: 2026-10-23 (Story 37.8: derived_artifacts' export_purl_artifacts writes legacy export-purls' six artifacts to derived_purl_artifacts and their manifest to derived_purl_export_manifest; the board reads it with pyforge.atlas.board_projections on)
+  status: closed
 
 ### DW-atlas-37-9-1: The mapping-gap has no classification.
 

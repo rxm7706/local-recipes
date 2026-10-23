@@ -92,6 +92,8 @@ DERIVED_VULN_HISTORY_PARQUET = "derived/derived_vuln_history/derived_vuln_histor
 DERIVED_MAPPING_GAP_PARQUET = "derived/derived_mapping_gap/derived_mapping_gap.parquet"
 # Story 37.10: every catalog entry's last write and row count
 CATALOG_INDEX_HEALTH_PARQUET = "derived/catalog_index_health/catalog_index_health.parquet"
+# Story 37.8: the six export-purls artifacts' manifest
+DERIVED_PURL_EXPORT_MANIFEST_PARQUET = "derived/derived_purl_export_manifest/derived_purl_export_manifest.parquet"
 
 # Mirrors ``scripts/openteams_identity_dashboards.py::EXTERNAL_LIVE`` — static reference rows.
 IDENTITY_WORKBOOK_EXTERNAL_COUNTS: tuple[tuple[str, str, str, str], ...] = (

@@ -30,6 +30,7 @@ from pyforge.atlas.pipelines.derived_artifacts.nodes import (
     project_live_catalog_coverage,
     project_universe_sbom_summary,
 )
+from pyforge.atlas.pipelines.derived_artifacts.purl_exports import export_purl_artifacts
 from pyforge.atlas.pipelines.pypi_intelligence.nodes import classify_mapping_gap
 from pyforge.atlas.pipelines.vulnerability.nodes import diff_vulnerability_snapshots, snapshot_vulnerability_rollup
 
@@ -45,6 +46,7 @@ PROJECTED = (
     "cve-watcher",
     "mapping-gap",
     "bootstrap-index-health",
+    "export-purls",
 )
 NOW = 1_700_000_000
 STAMP = "2026-10-22T00:00:00Z"
@@ -102,7 +104,9 @@ def test_the_page_set_swaps_the_four_boards_only_with_the_flag_on() -> None:
     assert app.page_inventory(projected=False) == app.PAGE_INVENTORY
     assert [page.id for page in app.page_inventory(projected=True)] == [page.id for page in app.PAGE_INVENTORY]
     assert {off[pid].kind for pid in ("behind-upstream", "whodepends")} == {"no-bsl-shell"}
-    assert {on[pid].kind for pid in PROJECTED} == {"bsl-shell"}
+    # Story 37.8: export-purls keeps its report-artifact kind; every other projected board is a BSL shell
+    assert {on[pid].kind for pid in PROJECTED if pid != "export-purls"} == {"bsl-shell"}
+    assert on["export-purls"].kind == off["export-purls"].kind == "report-artifact"
     assert on["universe-sbom"].filters == off["universe-sbom"].filters == ("slice",)
     assert {pid for pid in on if on[pid] != off[pid]} == set(PROJECTED)
 
@@ -399,6 +403,11 @@ def _data_root(tmp_path: Path) -> Path:
             {"tiers": {"core_packages_enumerated": "Tier 0"}},
         ),
     )
+    # Story 37.8: one active package's artifacts and their manifest
+    _write(
+        root / data.DERIVED_PURL_EXPORT_MANIFEST_PARQUET,
+        export_purl_artifacts(_enumerated([("a", "1.0")]), None, None, None, None, None, None, now=NOW)[1],
+    )
     return root
 
 
@@ -414,16 +423,24 @@ def test_with_the_flag_on_the_four_boards_read_their_datasets(tmp_path: Path) ->
     dashboard = app.build_dashboard(build_stamp=STAMP, data_root=_data_root(tmp_path), now=NOW, board_projections=True)
 
     assert {page.id for page in dashboard.pages} >= set(PROJECTED)
+    rows = {"export-purls": 6}  # Story 37.8: one manifest row per artifact
     for page_id in PROJECTED:
         frame = _frame(page_id)
-        assert frame is not None and len(frame) == 1, page_id
+        assert frame is not None and len(frame) == rows.get(page_id, 1), page_id
 
 
 def test_with_the_flag_off_the_four_boards_read_as_before(tmp_path: Path) -> None:
     app.build_dashboard(build_stamp=STAMP, data_root=_data_root(tmp_path), now=NOW, board_projections=False)
 
     assert _frame("behind-upstream") is None and _frame("whodepends") is None  # shells: no data function
-    for page_id in ("universe-sbom", "live-catalog-coverage", "cve-watcher", "mapping-gap", "bootstrap-index-health"):
+    for page_id in (
+        "universe-sbom",
+        "live-catalog-coverage",
+        "cve-watcher",
+        "mapping-gap",
+        "bootstrap-index-health",
+        "export-purls",
+    ):
         frame = _frame(page_id)
         assert frame is not None and frame.empty, page_id  # the earlier paths, which nothing writes
 
@@ -443,6 +460,7 @@ def test_with_the_flag_on_each_board_is_stamped_from_the_file_it_reads(tmp_path:
         "cve-watcher": data.DERIVED_VULN_HISTORY_PARQUET,
         "mapping-gap": data.DERIVED_MAPPING_GAP_PARQUET,
         "bootstrap-index-health": data.CATALOG_INDEX_HEALTH_PARQUET,
+        "export-purls": data.DERIVED_PURL_EXPORT_MANIFEST_PARQUET,
     }
     for offset, path in enumerate(reads.values()):  # a distinct mtime per file, so a swapped stamp shows
         stamp = 1_600_000_000 + offset * 86_400

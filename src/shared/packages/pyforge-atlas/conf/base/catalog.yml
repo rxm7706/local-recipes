@@ -1045,6 +1045,30 @@ derived_purl_exports:
   metadata:
     layer: derived
 
+# Story 37.8 (CAP-69): legacy export-purls' six artifacts, one text partition each (derived_purl_exports
+# above is Artifactory's TSV, written by artifactory_downloads), and the manifest the export-purls board reads.
+derived_purl_artifacts:
+  type: partitions.PartitionedDataset
+  path: ${globals:paths.data_root}/derived/derived_purl_artifacts
+  dataset: text.TextDataset
+  overwrite: true  # a run replaces every partition; none survives from an earlier run
+  metadata:
+    layer: derived
+
+derived_purl_export_manifest:
+  type: pandas.ParquetDataset
+  filepath: ${globals:paths.data_root}/derived/derived_purl_export_manifest/derived_purl_export_manifest.parquet
+  metadata:
+    layer: derived
+
+# Story 37.8 (CAP-69): each local recipe's conda-forge-expert stamps (status, conda name, upstream registry and
+# name), which export-purls' recipe exceptions read. Read-only; no credential.
+discovery_recipe_extras_raw:
+  type: pyforge.atlas.datasets.RecipeExtrasDataset
+  filepath: ${globals:paths.local_recipes_dir}
+  metadata:
+    layer: raw
+
 # Story 37.3 (CAP-69): the distribution-breakdown board's one table (the three download cuts)
 derived_distribution_breakdown:
   type: pandas.ParquetDataset
