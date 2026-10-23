@@ -36,6 +36,8 @@ ARTIFACTS = (
 #: the two TSVs open with a header line, which is not a row
 TSV_ARTIFACTS = frozenset({"purls_conda-pypi_mapped.tsv", "purls_conda-upstream_mapped.tsv"})
 MANIFEST_COLUMNS = ["artifact_name", "regenerated_at", "row_count"]
+#: Phase C's tiers, strongest first: when two spellings of one PyPI name map a package, the stronger one's line stays
+MATCH_SOURCE_RANK = {"parselmouth": 0, "recipe_source_url": 1, "name_coincidence": 2}
 
 _GITHUB_RE = re.compile(r"github\.com/([^/]+)/([^/#?]+)", re.IGNORECASE)
 _NPM_RE = re.compile(r"registry\.npmjs\.(?:org|com)/((?:@[^/]+/)?[^/#?]+)", re.IGNORECASE)
@@ -110,7 +112,30 @@ def _url_source(url: str) -> str | None:
 
 _URL_SPLIT = re.compile(r"[\s,]+")
 #: a GitLab or Codeberg path segment where the project path ends (an archive, a tree or blob view, a release)
-_PROJECT_PATH_END = frozenset({"-", "archive", "tree", "blob", "raw", "releases", "tags", "commits", "uploads"})
+_PROJECT_PATH_END = frozenset(
+    {
+        "-",
+        "archive",
+        "tree",
+        "blob",
+        "raw",
+        "releases",
+        "tags",
+        "commits",
+        "uploads",
+        "repository",  # GitLab's older archive path: /<ns>/<project>/repository/<ref>/archive.tar.gz
+        "src",  # Codeberg's source view: /<owner>/<repo>/src/branch/<ref>
+        "media",
+        "wiki",
+        "wikis",
+        "issues",
+        "merge_requests",
+        "pulls",
+    }
+)
+#: a path segment a project name can hold: a repository name never carries a quote, bracket, colon or ``;``
+_SEGMENT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+_GITHUB_HOSTS = frozenset({"github.com", "www.github.com"})
 
 
 def recipe_urls(cell: str) -> list[str]:
@@ -119,21 +144,30 @@ def recipe_urls(cell: str) -> list[str]:
 
 
 def project_url(source: str, url: str) -> str | None:
-    """The upstream project a recipe URL points into, as legacy's Phase K builds it before ``upstream_purl``: a
-    GitLab or Codeberg URL cut to ``https://<host>/<namespace>/<project>`` (an archive, tree or release path is not
-    the project); any other URL unchanged. ``None`` when no namespace and project remain."""
-    if source not in ("gitlab", "codeberg"):
+    """The upstream project a recipe URL points into, as legacy's Phase K builds it before ``upstream_purl``:
+    ``https://github.com/<owner>/<repo>`` for a GitHub URL, ``https://<host>/<namespace>/<project>`` for a GitLab or
+    Codeberg one (an archive, tree, wiki, issue or release path is not the project; an ``api`` path is none). Every
+    segment kept must look like a repository name. ``None`` when no project remains; any other source's URL is
+    returned unchanged, for ``upstream_purl`` to parse."""
+    if source not in ("github", "gitlab", "codeberg"):
         return url
     parsed = urllib.parse.urlsplit(url)
+    host = parsed.netloc.lower()
     segments: list[str] = []
     for segment in (s for s in parsed.path.split("/") if s):
         if segment in _PROJECT_PATH_END:
             break
         segments.append(segment)
-    if not parsed.netloc or len(segments) < 2:
+    if source == "github":
+        if host not in _GITHUB_HOSTS:
+            return None  # api.github.com, gist.github.com and the like name no repository
+        segments = segments[:2]
+    if not host or len(segments) < 2 or segments[0] == "api":
         return None
     segments[-1] = re.sub(r"\.git$", "", segments[-1])
-    return f"https://{parsed.netloc}/{'/'.join(segments)}"
+    if not all(_SEGMENT_RE.match(segment) for segment in segments):
+        return None
+    return f"https://{'github.com' if source == 'github' else host}/{'/'.join(segments)}"
 
 
 def _active_packages(enumerated: pd.DataFrame | None, latest_status: pd.DataFrame | None) -> pd.DataFrame:
@@ -161,9 +195,11 @@ def _mapping_rows(mapping: pd.DataFrame | None) -> pd.DataFrame:
             rows[column] = None
     rows["conda_name"] = rows["conda_name"].astype(str)
     rows["pypi_name"] = rows["pypi_name"].astype(str)
-    # two spellings that G98-normalize alike are one purl, so one line
+    # two spellings that G98-normalize alike are one purl, so one line: the strongest provenance's
     rows["_purl_name"] = rows["pypi_name"].map(g98_pypi_name)
-    return rows.drop_duplicates(["conda_name", "_purl_name"]).drop(columns="_purl_name")
+    rows["_rank"] = rows["match_source"].map(lambda v: MATCH_SOURCE_RANK.get(_cell(v), len(MATCH_SOURCE_RANK)))
+    rows = rows.sort_values(["conda_name", "_purl_name", "_rank"], kind="stable")
+    return rows.drop_duplicates(["conda_name", "_purl_name"]).drop(columns=["_purl_name", "_rank"])
 
 
 def _cell(value: Any) -> str:

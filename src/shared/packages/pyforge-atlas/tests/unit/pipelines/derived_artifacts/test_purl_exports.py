@@ -186,19 +186,39 @@ def test_recipe_urls_are_split_and_cut_to_their_project():
         ("gitlab", "https://gitlab.com/group/sub/proj.git", "https://gitlab.com/group/sub/proj"),
         ("codeberg", "https://codeberg.org/o/p/releases/tag/v1", "https://codeberg.org/o/p"),
         ("gitlab", "https://gitlab.com/onlyone", None),
-        ("github", "https://github.com/o/r/archive/v1.tar.gz", "https://github.com/o/r/archive/v1.tar.gz"),
+        ("github", "https://github.com/o/r/archive/v1.tar.gz", "https://github.com/o/r"),
+        # the live shapes review 2 found
+        (
+            "gitlab",
+            "https://gitlab.com/h3/django-emailhub/repository/master/archive.tar.gz",
+            "https://gitlab.com/h3/django-emailhub",
+        ),
+        ("github", 'https://github.com/pp-mo/ncdata"', None),
+        ("github", "https://github.com/flavio/qjsonhttp://qjson.sourceforge.net/", None),
+        ("github", "https://github.com/o/&lt;repo&gt;", None),
+        ("github", "https://github.com/o/r;", None),
+        ("github", "https://api.github.com/repos/o/r", None),
+        ("github", "https://www.github.com/O/R.git", "https://github.com/O/R"),
+        ("codeberg", "https://codeberg.org/o/r/src/branch/main", "https://codeberg.org/o/r"),
+        ("codeberg", "https://codeberg.org/o/r/media/branch/main/x.tar.gz", "https://codeberg.org/o/r"),
+        ("gitlab", "https://gitlab.com/o/r/wikis/home", "https://gitlab.com/o/r"),
+        ("gitlab", "https://gitlab.com/o/r/issues", "https://gitlab.com/o/r"),
+        ("gitlab", "https://gitlab.com/api/v4/projects/1", None),
+        ("npm", "https://registry.npmjs.org/x/-/x-1.tgz", "https://registry.npmjs.org/x/-/x-1.tgz"),
     ],
 )
 def test_project_url(source, url, project):
     assert px.project_url(source, url) == project
 
 
-def test_two_spellings_that_normalize_alike_are_one_mapping_line():
+def test_two_spellings_that_normalize_alike_are_one_mapping_line_the_strongest_provenance_kept():
     got, _ = _export(
         core_packages_enumerated=_enumerated([("a", "1")]),
-        pypi_conda_mapping=_mapping([("a", "a_b", "parselmouth"), ("a", "a-b", "recipe_source_url")]),
+        pypi_conda_mapping=_mapping([("a", "a_b", "name_coincidence"), ("a", "a-b", "recipe_source_url")]),
     )
-    assert got["purls_conda-pypi_mapped.tsv"][1:] == ["pkg:conda/a?channel=conda-forge\tpkg:pypi/a-b\tparselmouth\t"]
+    assert got["purls_conda-pypi_mapped.tsv"][1:] == [
+        "pkg:conda/a?channel=conda-forge\tpkg:pypi/a-b\trecipe_source_url\t"
+    ]
 
 
 def test_the_manifest_counts_each_artifact_a_tsv_header_not_counted():

@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'the export-purls reads primary/purl_export_manifest as before, which nothing writes, and renders empty'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -59,13 +59,17 @@ are not ported:
 **Deviations from legacy:**
 - Artifact 6 reads each package's recipe URLs (`repo_url`, `source_url`, `dev_url`, `home_url`), classified by host
   (github, gitlab, codeberg, npm, crates, rubygems, maven). Legacy reads `upstream_versions`' (source, url) rows, which
-  atlas's VCS stores do not keep. A field can list several URLs (split on commas and spaces), and a GitLab or
-  Codeberg URL is cut to its `<namespace>/<project>` (an archive, tree or release path is not the project), as
-  legacy's Phase K builds its URLs before `upstream_purl`. It emits one row per package and source, from the first
-  URL that parses.
+  atlas's VCS stores do not keep. A field can list several URLs (split on commas and spaces). A GitHub URL is cut to
+  `github.com/<owner>/<repo>` (another GitHub host, such as `api.github.com`, names no repository), and a GitLab or
+  Codeberg URL to its `<namespace>/<project>`: an archive, `repository`, tree, `src`, wiki, issue or release path is
+  not the project, and an `api` path is none. Every segment kept must look like a repository name. This is what
+  legacy's Phase K does before `upstream_purl`. It emits one row per package and source, from the first URL that
+  parses. Legacy's markers hold: a self-hosted GitLab (gitlab.gnome.org and 52 more hosts in the graph) is not
+  `gitlab`, and a `git+https://`, bracketed, quoted or SSH URL is dropped.
 - Artifact 4 lists every mapping row of an active package (`pypi_conda_mapping` can hold several PyPI names for one
-  package), one line per G98-normalized name; legacy's `packages` table holds one. `match_confidence` is empty: the
-  mapping has no such column.
+  package), one line per G98-normalized name. When two spellings collapse, the stronger provenance's line stays
+  (`parselmouth`, then `recipe_source_url`, then `name_coincidence`). Legacy's `packages` table holds one name.
+  `match_confidence` is empty: the mapping has no such column.
 - `derived_purl_exports` keeps Artifactory's TSV, and its one writer. The six artifacts go to a dataset of their own.
 
 Ledger key: `37-8-the-export-purls-lists-the-purl-artifacts`.
@@ -133,32 +137,47 @@ dataset already fetches.
 ## Run results
 
 Run 2026-10-23 in the landing worktree on `de4b8cd080`, every verdict read from its exit code; the numbers are those
-after the review fixes.
+after review 2's fixes.
 
-- **AC1–AC6, tests:** `test_purl_exports.py` (23), `test_recipe_extras.py` (4) and `test_board_projections.py` pass;
-  `pyforge-atlas-test` gives 3,221 passed and 20 skipped, then 103 passed (exit 0).
+- **AC1–AC6, tests:** `test_purl_exports.py` (36), `test_recipe_extras.py` (4) and `test_board_projections.py` pass;
+  `pyforge-atlas-test` gives 3,234 passed and 20 skipped, then 103 passed (exit 0).
 - **Pins moved:** `derived_artifacts` has 12 nodes (11), the combined DAG 71 (70), the catalog 142 entries (139); the
   node has a timeout (600 s).
-- **Mutations**, each restored, each failing a named test (17 of 17):
+- **Mutations**, each restored, each failing a named test (21 of 21):
   - conda purls: a full-line conda sort; inactive packages kept;
   - PyPI purls: no G98 normalization; PyPI purls not deduplicated;
   - mapping TSV: an empty PyPI name mapped; inactive mapping rows kept; the mapping deduplicated on the raw name;
+    provenance not ranked;
   - exceptions: non-pending recipes excepted; the PyPI side not folded;
   - upstream TSV: mapped packages in it; one source per package only; recipe URLs not split; a project path not cut;
+    the segment charset not checked; the GitHub host not checked; an `api` path kept;
   - manifest and inputs: a TSV header counted; `cfe-conda-name` ignored; `meta.yaml` scanned;
   - board: the board path not switched.
 - **Real data:** over Story 37.2's live data root (its cf-graph `last_good.parquet`, 359,049 rows) and this checkout's
   7,561 `recipe.yaml` files (0 parse errors):
-  - the recipes load in 13.0 s (31 s under a concurrent preflight, the review measured) and the node runs in 2.2 s;
+  - the recipes load in 12.9 s (31 s to 52 s under a concurrent preflight, as the reviews measured) and the node runs
+    in 2.3 s;
   - 34,720 conda purls (and as many versioned) and 919,975 PyPI purls;
-  - 22,454 mapping rows, 0 of them duplicates;
+  - 22,454 mapping rows, 0 duplicates;
   - 2,498 recipe exceptions, mostly `pending-submission-to-conda-forge` recipes not yet on conda-forge;
-  - 8,030 upstream purls: 7,558 GitHub, 163 rubygems, 143 npm, 140 GitLab, 17 Codeberg, 9 crates. None is malformed
-    (no comma, space or archive file in a purl).
+  - 8,018 upstream purls: 7,548 GitHub, 163 rubygems, 143 npm, 138 GitLab, 17 Codeberg, 9 crates. A strict per-type
+    charset scan finds none malformed.
   - `load_export_purls` reads the manifest's 6 rows.
 
 ## Spec Change Log
 
+- 2026-10-23, review 2 (PASS, 0 blockers, 1 should-fix), fixed on the same branch:
+  - S1: real-world URL shapes still leaked past round 1's fix:
+    - GitLab's older `/repository/<ref>/archive.tar.gz` path (django-emailhub, batman), hidden today only because
+      their repo URL is read first;
+    - GitHub names with a quote, a joined URL or an escaped bracket (ncdata, qjson, de-bundeshaushalt);
+    - `api.github.com` paths;
+    - Codeberg `/src/` and `/media/` paths, and GitLab wiki, issue and `api/v4` paths.
+
+    `project_url` now handles GitHub too: it checks the host, cuts every source at the end set, refuses `api`, and
+    requires each kept segment to look like a repository name. The live shapes are tests.
+  - Nits: when two spellings collapse, the stronger provenance's line stays (it was input order); the self-hosted GitLab
+    exclusion and the dropped URL forms are declared (Deviations).
 - 2026-10-23, independent review (FAIL, 1 blocker), fixed on the same branch:
   - B1: raw recipe URLs went straight into `upstream_purl`, which legacy only ever fed URLs its Phase K had built.
     150 of 8,032 upstream rows were malformed: 130 GitHub purls from comma-joined URL fields
@@ -181,3 +200,6 @@ after the review fixes.
   - It confirmed that the cf-graph is fetched once per session, and that Kedro makes the recipes path absolute.
   - The reviewer left a scratch directory, `tmp_6wpmxjz/`, inside that data root and could not remove it; it is the
     operator's to delete. Nothing reads it.
+- 2026-10-23, review 2 (independent subagent): PASS. 0 blockers, 1 should-fix, 2 nits, all addressed (Spec Change Log).
+  It reproduced every count read-only, confirmed the round-1 nits closed (`overwrite: true` is honoured: kedro_datasets
+  9.6.0 deletes the folder before a save), and wrote nothing outside its own scratch directory.
