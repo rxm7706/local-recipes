@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: d41fb40c836a9e15
-story_count: 456
-test_file_count: 268
+source_fingerprint: a63f7f6253960ac2
+story_count: 458
+test_file_count: 269
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 456
+- **Stories parsed:** 458
 - **Epics parsed:** 100
-- **Test files inventoried:** 268 under `src/shared/packages/pyforge-marshal/tests/`
+- **Test files inventoried:** 269 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `d41fb40c836a9e15`
+- **Source fingerprint:** `a63f7f6253960ac2`
 
 ## Risk Assessment
 
@@ -252,6 +252,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_recall.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_retry.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_retry_83_10.py` | unit | 83.10 |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_reverify.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_ruff_format.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_ruff_format_trees.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_session_alive.py` | unit | none observed |
@@ -853,6 +854,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 87.14 | The sweeper reports stale-locked agent worktrees and orphan directories | none observed |
 | 87.15 | A preserve reaches origin only through the content gate | none observed |
 | 87.16 | The orphaned tips are re-preserved as local archive tags | none observed |
+| 87.17 | The legacy promoter reads every commit's bytes | none observed |
+| 87.18 | The legacy promoter lists every legacy ref | none observed |
 | 88.1 | Marshal commits a tracked file under an ignored directory | none observed |
 | 89.1 | A re-dispatch never lands a story whose review failed | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_only_spec_gate_89_1.py` |
 | 90.1 | The dispatch supervisor records completion only after the harness session has... | none observed |
