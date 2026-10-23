@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-23'
 status: 'in-review'
 baseline_revision: 'bdb49ec39f'
-review_loop_iteration: 12
+review_loop_iteration: 13
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -486,4 +486,19 @@ turned up in paths that now run where the baseline answered:
 
 The class is now closed at its root: the module's `_git_ok` decodes with `errors="surrogateescape"`, so no git output
 raises, for any caller. `_worktree_head_landed` also guards `ValueError`. Both cases are pinned.
+
+### 2026-10-23 — Review pass 13, verification of the round-12 fixes (FAIL: one must-fix)
+
+The round-12 cases are fixed. Switching to surrogateescape changes no answer for UTF-8 input, and the harness (53
+reproducers) shows no new loss.
+
+**must-fix, fixed.** `_worktree_head_landed` caught `ValueError` but not `OSError`. A present, unregistered workspace
+the user cannot enter therefore stopped `--merged-only`, where the baseline gave an error row and went on (CAP-155).
+
+The fix has two parts:
+- the guard catches both `ValueError` and `OSError`;
+- the sweep loop now reports any `OSError` or `ValueError` from a record as an error row and keeps the record, as
+  CAP-155 states.
+
+Both are pinned by a two-record sweep.
 

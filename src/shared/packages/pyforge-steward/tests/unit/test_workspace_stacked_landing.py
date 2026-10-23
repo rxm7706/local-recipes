@@ -1052,3 +1052,24 @@ def test_a_pruned_present_workspace_in_a_non_utf8_repository_never_crashes(tmp_p
         slug="d1", root=work, bookkeeping=bookkeeping, archive_dir=base_dir / "a", confirm=lambda _slug: True
     )
     assert len(result["archived"]) + len(result["skipped"]) == 1
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root can enter a mode-000 directory")
+def test_a_workspace_the_user_cannot_enter_is_an_error_row_and_the_sweep_goes_on(repo: Path, tmp_path: Path) -> None:
+    """Review 13 (CAP-155): a present, unregistered workspace the user cannot enter is reported and kept, and the
+    sweep still decides the next record."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    locked_out = tmp_path / "w-wt"
+    start_workspace("w", root=repo, bookkeeping=bookkeeping, path=locked_out, from_ref="origin/main")
+    admin = Path(_git("rev-parse", "--absolute-git-dir", cwd=locked_out).stdout.strip())
+    shutil.rmtree(admin)  # git no longer lists it
+    other = tmp_path / "z-wt"
+    start_workspace("z", root=repo, bookkeeping=bookkeeping, path=other, from_ref="origin/main")
+    locked_out.chmod(0)
+    try:
+        result = clean_workspaces(merged_only=True, root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a")
+    finally:
+        locked_out.chmod(0o755)
+    assert [row["slug"] for row in result["archived"]] == ["z"]
+    assert [row["slug"] for row in result["skipped"]] == ["w"]
+    assert [r.slug for r in load_bookkeeping(bookkeeping)] == ["w"]

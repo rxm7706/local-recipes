@@ -855,7 +855,7 @@ def _worktree_head_landed(record: WorkspaceRecord, *, root: Path) -> bool:
     if registered is None:
         try:
             head = _commit_of("HEAD", cwd=wt)
-        except ValueError:  # a path git cannot be run in (review 12)
+        except ValueError, OSError:  # a path git cannot be run in, or cannot enter (reviews 12 and 13)
             return False
         if head is None:
             return False
@@ -1572,7 +1572,9 @@ def clean_workspaces(
                     in_flight = None
                     continue
                 outcome = _archive_worktree(record, root=root, archive_dir=archive_dir)
-            except WorkspaceError as exc:
+            except (WorkspaceError, OSError, ValueError) as exc:
+                # CAP-155: a record this sweep cannot decide is reported and kept, and the sweep goes on -- also when
+                # the OS refuses a path or a name holds a NUL (Story 13.6 review 13).
                 skipped.append({**record.to_dict(), "reason": f"error: {exc}"})
                 remaining.append(record)
                 in_flight = None
