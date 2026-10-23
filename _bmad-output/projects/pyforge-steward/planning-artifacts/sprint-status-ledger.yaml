@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 605
+# stories: 606
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -324,6 +324,7 @@ development_status:
   71-10-a-stopped-lane-is-journaled-cancelled-and-the-lane-that-stopped-the-run-red: done
   71-11-no-lane-process-outlives-a-stop-and-a-reduced-lane-cut-short-is-never-ok: done
   71-12-every-cancelled-lane-names-what-stopped-the-run: done
+  71-13-a-second-sigint-never-deadlocks-the-preflight-s-interrupt-handler: done
   71-2-the-preflight-runs-the-lanes-ci-would-run-for-the-diff-read-from-the-workflow-files: done
   71-3-selected-lanes-run-concurrently-and-share-no-mutable-state: done
   71-4-a-station-s-coverage-gate-reuses-its-own-suite-s-run: done

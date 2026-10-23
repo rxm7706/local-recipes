@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 71a4f589665f8e5c
-story_count: 389
+source_fingerprint: 23aba208bec08264
+story_count: 390
 test_file_count: 140
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 389
+- **Stories parsed:** 390
 - **Epics parsed:** 108
 - **Test files inventoried:** 140 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `71a4f589665f8e5c`
+- **Source fingerprint:** `23aba208bec08264`
 
 ## Risk Assessment
 
@@ -601,6 +601,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 71.10 | A stopped lane is journaled cancelled, and the lane that stopped the run red | none observed |
 | 71.11 | No lane process outlives a stop, and a reduced lane cut short is never ok | none observed |
 | 71.12 | Every cancelled lane names what stopped the run | none observed |
+| 71.13 | A second SIGINT never deadlocks the preflight's interrupt handler | none observed |
 | 72.1 | The Guild environment answers pyforge mason | none observed |
 | 72.2 | Mason's five-tier skill cell requires its station skill and conda-forge-expert | none observed |
 | 73.1 | `steward session check` reads `marshal seed check`'s envelope, whatever its e... | none observed |

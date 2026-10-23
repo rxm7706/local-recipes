@@ -2009,6 +2009,30 @@ Drift — orphaned between stations.
   `cancelled_by` and `cancelled_by_environment` on cancelled lanes, and `blocked_by` and `blocked_by_environment` on
   a `--keep-going` dependent of a lane turned away on an interrupt. Orchestrating session's brief, 2026-10-23. Owner
   `spec-pyforge-steward`. → Epic 71 / Story 71.12, specced 2026-10-23; it reopens Epic 71.
+- **2026-10-23 (a second SIGINT deadlocks the handler) — Found: a second Ctrl-C that lands while the preflight's
+  SIGINT handler holds one of its locks hangs the run for good.** Story 71.12's third independent review found it, in
+  a function 71.12 touched but outside its ACs. Read at `884d7f1106` (71.12 merged) in
+  `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py`.
+  - **The handler takes two non-reentrant locks.** `run_preflight` installs `_on_sigint` (`:1316`-`:1323`), which
+    Python runs on the main thread between bytecodes. It records the cause under `stop_lock`, an `RLock` (`:593`),
+    then calls `coord.cancel.set()` (`:1320`); `threading.Event.set` holds the event's own `Lock` while it sets the
+    flag. Then `coord.terminate_children()` (`:1321`) takes `proc_lock`, a plain `Lock` (`:586`), to copy the
+    process list (`:646`) and again to mark each lane it signals (`:651`).
+  - **A second SIGINT inside either lock waits on itself.** Python can run the handler again, on the same thread,
+    while the first call still holds one of those locks. The nested call reaches the same `cancel.set()` or
+    `proc_lock` and blocks forever: the lock's holder is the frame it interrupted. Nothing times out, and the handler
+    swallows Ctrl-C, so only another signal (e.g. SIGTERM, SIGHUP or SIGKILL) ends the run. The window is a few
+    bytecodes per lock, so it takes a double Ctrl-C at the wrong instant.
+  - **Measured at `884d7f1106`** with no real signal: a test keeps the handler a one-lane run installed and calls it
+    with `cancel` (or `proc_lock`) replaced by a stand-in that, holding its lock, runs the handler once more. Both
+    calls were still blocked when their 10 s and 20 s joins expired.
+  **What it looks like when fixed:** a SIGINT that arrives while the handler is running returns at once, and the first
+  call finishes: the cause is recorded, `cancel` is set and every running lane is terminated, as for one SIGINT. A
+  SIGINT after the handler has returned runs it again, as today. The same two tests return within their joins, and
+  fail on the old code. **Constraints:** a fix under CAP-159, with no CAP, no flag and no `SPEC.md` change. What one
+  SIGINT does (Story 71.10, 71.11 and 71.12's journal, exit 130) does not change, and no lock becomes reentrant.
+  The operator's ask in chat, 2026-10-23, after 71.12's review. Owner `spec-pyforge-steward`. → Epic 71 /
+  Story 71.13, specced 2026-10-23; it reopens Epic 71.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
