@@ -159,10 +159,21 @@ def test_identity_workbook_page_falls_back_to_page_note_when_both_files_present(
     page = next(p for p in d.pages if p.id == "identity-workbook")
     about_card = next(c for c in page.components if isinstance(c, vm.Card) and c.id.endswith("--about"))
     by_id = {p.id: p for p in app.PAGE_INVENTORY}
-    assert by_id["identity-workbook"].note in about_card.text
+    assert f"**{app.NOTE_LABEL}:** {by_id['identity-workbook'].note}" in about_card.text
+    assert f"**{app.GAP_LABEL}:**" not in about_card.text
     external_card = next(c for c in page.components if isinstance(c, vm.Card) and c.id.endswith("--external"))
     assert "External source counts" in external_card.text
     assert _dm_get("data::identity-workbook") is not None
+
+
+def test_identity_workbook_gap_message_reads_data_gap(tmp_path: Path):
+    """Story 37.11: the gap message for a missing input file keeps the gap label."""
+    d = app.build_dashboard(build_stamp=STAMP, data_root=tmp_path, now=NOW)
+    page = next(p for p in d.pages if p.id == "identity-workbook")
+    about_card = next(c for c in page.components if isinstance(c, vm.Card) and c.id.endswith("--about"))
+    assert f"**{app.GAP_LABEL}:**" in about_card.text
+    assert _data.ENTERPRISE_JFROG_CONSUMPTION_PARQUET in about_card.text
+    assert f"**{app.NOTE_LABEL}:**" not in about_card.text
 
 
 # --------------------------------------------------------------------------- #

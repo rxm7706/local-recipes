@@ -57,7 +57,7 @@ def _fresh_vizro_managers():
 
 
 def _tiny_dashboard(
-    data_root: Path, *, chart: str = "bar", board_extra: tuple = (), scan_label: str = "Data gap"
+    data_root: Path, *, chart: str = "bar", board_extra: tuple = (), scan_label: str = _app.GAP_LABEL
 ) -> vm.Dashboard:
     """A two-board dashboard shaped like ``build_dashboard``'s: a grounded board (Card, grid,
     chart) and a live-scan board (Card, its submit controls, grid)."""
