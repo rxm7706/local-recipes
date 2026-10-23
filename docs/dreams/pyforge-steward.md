@@ -2057,8 +2057,9 @@ Drift — orphaned between stations.
   it. A workspace on neither its source nor the trunk is refused exactly as today, and a repository with no
   `origin/main` (a repo-set member) gets today's verdict. *(Added at review:)* the trunk and any `origin/<b>` source
   are compared by the commit their remote-tracking ref names, so a local ref named like them proves nothing, and a
-  detached HEAD with commits past a landed branch, read as the repository records it, keeps every `clean` mode from
-  removing the worktree or pruning its record. **Constraints:** a fix under CAP-157 (amended in place:
+  detached HEAD with commits past a landed branch, read as the repository records it, keeps `--merged-only` from
+  removing the worktree, the preserve check from skipping its tag, and every `clean` mode from pruning the record of
+  a directory deleted by hand. **Constraints:** a fix under CAP-157 (amended in place:
   the trunk joins the source as a landing ref), with no new CAP and no flag. `ahead`/`behind` still read the
   recorded source; the proof's other conditions (clean tree, no hidden index entry, no gitlink, no per-worktree
   ref, no Tier-3 work) do not change. The operator's ask in chat, 2026-10-23. Owner `spec-pyforge-steward`. →

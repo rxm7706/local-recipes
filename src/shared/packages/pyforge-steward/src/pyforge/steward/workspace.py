@@ -854,6 +854,27 @@ def _worktree_head_landed(record: WorkspaceRecord, *, root: Path) -> bool:
         return False
 
 
+def _recorded_head_at_risk(record: WorkspaceRecord, *, root: Path) -> bool:
+    """For a deleted directory: whether pruning its worktree record would leave the recorded HEAD on no ref.
+
+    True when the HEAD is not landed and is not on the workspace's own branch, which clean keeps whenever that branch
+    is unmerged (Story 13.6 review 5: a HEAD at or behind an unmerged branch's tip is safe, and its record is cleaned
+    as before). A HEAD git cannot read or place is at risk.
+    """
+    if _worktree_head_landed(record, root=root):
+        return False
+    try:
+        registered = _registered_head(root, Path(record.path))
+    except WorkspaceError:
+        return True
+    if registered is None:
+        return False
+    head, _on_branch = registered
+    if _git_ok("rev-parse", "--verify", "--quiet", _branch_ref(record.branch), cwd=root).returncode != 0:
+        return True
+    return _git_ok("merge-base", "--is-ancestor", head, _branch_ref(record.branch), cwd=root).returncode != 0
+
+
 def _branch_merged_into_or_unlanded(root: Path, branch: str, into: str) -> bool:
     """Like ``_branch_landed``, but an unprovable source counts as not merged (Story 85.5)."""
     try:
@@ -941,9 +962,10 @@ def _remote_tracking_name(source: str, *, root: Path) -> str | None:
     """The full remote-tracking refname ``source`` means, or None when it names no remote-tracking ref.
 
     ``refs/remotes/...`` as written, ``remotes/...`` under ``refs/``, or ``<remote>/<b>`` for ``origin`` (always, as
-    ``_source_ref`` and CAP-158 read it) or any configured remote, the longest that prefixes the source (Story 13.6
-    reviews 3 and 4: ``upstream/main`` and ``team/fork/main`` proved landings before this story and must still). A
-    name that is not a valid refname -- a revision such as ``origin/main~2`` -- is None, so it is read as recorded.
+    ``_source_ref`` and CAP-158 read it) or any configured remote that prefixes the source up to a ``/`` (Story 13.6
+    reviews 3 and 4: ``upstream/main`` and ``team/fork/main`` proved landings before this story and must still; the
+    refname is ``refs/remotes/<source>`` whichever remote matches). A name that is not a valid refname -- a revision
+    such as ``origin/main~2`` -- is None, so it is read as recorded.
     """
     if source.startswith("refs/remotes/"):
         full = source
@@ -951,8 +973,7 @@ def _remote_tracking_name(source: str, *, root: Path) -> str | None:
         full = f"refs/{source}"
     else:
         remotes = _remote_names(root) | {"origin"}
-        matches = [r for r in remotes if source.startswith(f"{r}/") and len(source) > len(r) + 1]
-        if not matches:
+        if not any(source.startswith(f"{r}/") and len(source) > len(r) + 1 for r in remotes):
             return None
         full = f"refs/remotes/{source}"
     if _git_ok("check-ref-format", full, cwd=root).returncode != 0:
@@ -1225,9 +1246,9 @@ def _archive_worktree(
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         safe = record.slug.replace("/", "-")
         wt = Path(record.path)
-        if not wt.is_dir() and not _worktree_head_landed(record, root=root):
-            # Story 13.6 review 4: the directory is gone but git still records a HEAD that is not landed; pruning
-            # would leave its commits on no ref, so the record is kept.
+        if not wt.is_dir() and _recorded_head_at_risk(record, root=root):
+            # Story 13.6 review 4: the directory is gone but git still records a HEAD that is not landed and that no
+            # kept branch holds; pruning would leave its commits on no ref, so the record is kept.
             return ArchiveWorktreeResult(
                 archive_path=archive_dir / f"{safe}-{stamp}.missing.txt",
                 branch_kept=True,
@@ -1339,15 +1360,14 @@ def _delete_eligibility(record: WorkspaceRecord, *, root: Path) -> str | None:
 
     branch_exists = _git_ok("rev-parse", "--verify", "--quiet", _branch_ref(record.branch), cwd=root).returncode == 0
 
-    if not wt_is_dir and not _worktree_head_landed(record, root=root):
-        return "not-merged"  # Story 13.6 review 4: git still records a HEAD that is not landed
-
     if not wt_is_dir and not branch_exists:
-        return None
+        # Story 13.6 review 4: git may still record a HEAD that is not landed; dropping the record would prune it.
+        return "not-merged" if _recorded_head_at_risk(record, root=root) else None
 
     if not wt_is_dir and branch_exists:
         if _branch_landed(root, record.branch, record.source):
-            return None
+            # The branch is deleted with the record, so a recorded HEAD past it must be landed too (review 4).
+            return "not-merged" if not _worktree_head_landed(record, root=root) else None
         return f"branch {record.branch} not on {' or '.join(_landing_refs(record.source))}"
 
     if _worktree_dirty(wt):

@@ -657,3 +657,79 @@ def test_a_remotes_spelling_names_the_remote_tracking_ref(repo: Path, tmp_path: 
         delete=True, slug="spelled", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
     )
     assert [r["slug"] for r in result["deleted"]] == ["spelled"]
+
+
+def _deleted_by_hand_with_an_unmerged_branch(repo: Path, tmp_path: Path, bookkeeping: Path) -> Path:
+    """An ``origin/main`` workspace with its own commit (HEAD at its branch tip), its directory deleted by hand."""
+    wt = tmp_path / "g-wt"
+    start_workspace("g", root=repo, bookkeeping=bookkeeping, path=wt, from_ref="origin/main")
+    _commit(wt, "g.txt")
+    shutil.rmtree(wt)
+    return wt
+
+
+def test_delete_names_the_unmerged_branch_of_a_deleted_directory_as_before(repo: Path, tmp_path: Path) -> None:
+    """Review 5: the branch decides first, so the refusal text and exit are Story 13.5's."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    _deleted_by_hand_with_an_unmerged_branch(repo, tmp_path, bookkeeping)
+    result = clean_workspaces(delete=True, slug="g", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a")
+    assert result["skipped"][0]["reason"] == "branch g not on origin/main"
+
+
+def test_the_default_clean_drops_a_deleted_directory_whose_head_its_kept_branch_holds(
+    repo: Path, tmp_path: Path
+) -> None:
+    """Review 5: a HEAD at an unmerged branch's tip is safe -- the branch is kept -- so the record is cleaned as before."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    _deleted_by_hand_with_an_unmerged_branch(repo, tmp_path, bookkeeping)
+    result = clean_workspaces(
+        slug="g", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a", confirm=lambda _slug: True
+    )
+    (row,) = result["archived"]
+    assert row["archive"].endswith(".missing.txt")
+    assert row["branch_kept"] == "g"
+    assert load_bookkeeping(bookkeeping) == ()
+
+
+def test_delete_reports_a_source_git_cannot_resolve_as_an_error_as_before(repo: Path, tmp_path: Path) -> None:
+    """Review 5: a git failure on a deleted directory's branch stays an error row, so a fleet run exits 1."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    _deleted_by_hand_with_an_unmerged_branch(repo, tmp_path, bookkeeping)
+    save_bookkeeping(
+        bookkeeping,
+        tuple(
+            WorkspaceRecord(r.slug, r.path, r.branch, "origin/gone", r.created_at)
+            for r in load_bookkeeping(bookkeeping)
+        ),
+    )
+    result = clean_workspaces(delete=True, slug="g", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a")
+    assert result["skipped"][0]["reason"].startswith("error: git merge-base --is-ancestor g origin/gone failed")
+
+
+def test_a_workspace_named_like_its_remotes_spelled_source_is_never_compared_with_itself(
+    repo: Path, tmp_path: Path
+) -> None:
+    """Review 5 (mutant mT2): slug and branch ``remotes/origin/main`` started from it; once the remote ref is pruned,
+    read by name the source would be the branch itself."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    wt = tmp_path / "remotes-self-wt"
+    start_workspace("remotes/origin/main", root=repo, bookkeeping=bookkeeping, path=wt, from_ref="remotes/origin/main")
+    _commit(wt, "remotes-self.txt")
+    _git("update-ref", "-d", "refs/remotes/origin/main", cwd=repo)
+    result = clean_workspaces(
+        merged_only=True, slug="remotes/origin/main", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+    )
+    assert result["archived"] == []
+    assert _branch_exists(repo, "remotes/origin/main")
+
+
+def test_a_local_source_that_merely_starts_like_a_remote_is_local(repo: Path, tmp_path: Path) -> None:
+    """Review 5 (mutant mT11): ``originals`` is a local branch, not ``origin`` + ``als``."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    _git("branch", "originals", "main", cwd=repo)
+    wt = tmp_path / "originals-wt"
+    start_workspace("from-originals", root=repo, bookkeeping=bookkeeping, path=wt, from_ref="originals")
+    _commit(wt, "o.txt")
+    (row,) = status_workspaces("from-originals", root=repo, bookkeeping=bookkeeping)
+    assert row.error is None
+    assert row.merged is False
