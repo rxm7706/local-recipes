@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-23'
 status: 'in-review'
 baseline_revision: 'bdb49ec39f'
-review_loop_iteration: 5
+review_loop_iteration: 6
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -63,12 +63,14 @@ Read at `bdb49ec39f` in `src/shared/packages/pyforge-steward/src/pyforge/steward
   reported ambiguity, so a real landing read as unresolvable.
 - **HEAD too** *(review 1)*. `--merged-only` and the preserve-tag check also require the worktree's HEAD to be
   landed, so commits on a detached HEAD past a landed branch are skipped or parked, never left on no ref. HEAD is
-  read as the repository records it (`worktree list --porcelain`), so a broken `.git` link or a directory deleted by
-  hand still names its commit; an unborn HEAD (forty zeros with a branch line) names none; any other HEAD git cannot
-  read, and a listing git cannot give, count as not landed (reviews 3 and 4). A directory deleted by hand whose
-  recorded HEAD is neither landed nor on the workspace's own branch keeps its record in every `clean` mode, never
-  pruned (reviews 4 and 5). `--delete` still asks the branch first, so its refusal text and error rows are Story
-  13.5's.
+  read as the repository records it (`worktree list --porcelain`), so a broken `.git` link still names its commit; an
+  unborn HEAD (forty zeros with a branch line) names none; any other HEAD git cannot read, and a listing git cannot
+  give, count as not landed (reviews 3 and 4).
+- **Out of scope: a directory deleted by hand** *(operator ruling, 2026-10-23, after review 6)*. Rounds 3-5 added
+  protection for it, and each review found it still leaking. A bare `worktree prune` from any other clean dropped
+  its record, and a HEAD another ref held was kept forever. The baseline already loses those commits. A gone
+  directory is therefore judged by its branch alone, as before this story, and `--delete`'s gone-directory paths are
+  Story 13.5's. The loss is proposed as its own fix story.
 - **`ahead`/`behind`** still read the recorded source.
 
 ### Living CAP citations
@@ -132,7 +134,7 @@ workspace `--from base` with another.
     - `--merged-only` cleans a landed branch whose worktree is gone;
     - an unborn HEAD leaves the branch verdict as before.
   - **Review 3.** These cases are pinned:
-    - a broken `.git` link and a directory deleted by hand still name a detached HEAD, so `--merged-only` skips;
+    - a broken `.git` link still names a detached HEAD, so `--merged-only` skips;
     - a detached HEAD past a landed branch whose source is gone is kept;
     - a local full-ref source (`refs/heads/base`) proves nothing;
     - an `upstream/main` landing still proves it;
@@ -159,10 +161,10 @@ workspace `--from base` with another.
 **Never:**
 - Never let the trunk check raise where the source check would not have raised.
 - Never judge a branch landed on a local ref named like the trunk, or like an `origin/<b>` source.
-- Never prune the record of a deleted directory in any `clean` mode, and never remove a worktree under
-  `--merged-only` or skip its preserve tag when the flag is on, while its recorded HEAD holds commits no ref keeps.
-  The default `clean` with the preserve flag off still tars and removes a present worktree, as CAP-155 always did;
-  that is out of this story's scope.
+- Never remove a present worktree under `--merged-only`, or skip its preserve tag when the flag is on, while its HEAD
+  holds commits no ref keeps. Two cases are out of this story's scope, both as at the baseline:
+  - the default `clean` with the preserve flag off still tars and removes a present worktree (CAP-155);
+  - a directory deleted by hand is judged by its branch alone.
 - Never change `ahead`/`behind`, the bookkeeping format, the exit codes or the CLI flags.
 - Never hand-edit `sprint-status-ledger.yaml`, and never edit `SPEC.md` except by the approved render script.
 
@@ -179,14 +181,14 @@ before the merge.
 | source git cannot resolve, no trunk either | tarball (no proof) | unchanged |
 | local `refs/heads/refs/remotes/origin/main` shadows a missing trunk | `origin/main`-sourced: read as landed | never a landing (an error row for an `origin/main` source) |
 | unborn HEAD, branch landed | `--merged-only` cleans it | unchanged |
-| broken `.git` link or directory deleted by hand, detached HEAD past a landed branch | `--merged-only` removes it; the commit is left on no ref | skipped `not-merged` (HEAD read from the root) |
+| broken `.git` link, detached HEAD past a landed branch | `--merged-only` removes it; the commit is left on no ref | skipped `not-merged` (HEAD read from the root) |
 | source on another remote (`upstream/main`), landed | landed | unchanged |
 | slug and branch `upstream/main` started from `upstream/main`, unlanded | read as merged (compared with itself); `--merged-only` deletes the branch | not merged |
 | revision source (`origin/main~0`) | read by name | unchanged |
 | repository without an `origin` remote, a local branch `origin/main` at an unlanded tip | read as landed (by name) | never a landing (`origin/<b>` is always remote-tracking) |
-| a remote named with a slash (`team/fork/main`), landed | landed | unchanged (longest remote prefix) |
+| a remote named with a slash (`team/fork/main`), landed | landed | unchanged (a configured remote prefixes it) |
 | a local branch `upstream/feat` where `upstream` is a remote with no such remote-tracking ref | a verdict (read by name) | an error row: indistinguishable from a pruned remote ref behind a local shadow, so it fails safe |
-| directory deleted by hand, recorded HEAD detached past a landed branch, default `clean` or `--delete` | pruned or dropped; the commit is left on no ref | kept, with the reason |
+| directory deleted by hand, recorded HEAD detached past a landed branch | pruned or dropped; the commit is left on no ref | unchanged (out of scope; a separate fix story) |
 | directory deleted by hand, HEAD at its own unmerged branch's tip | `.missing.txt`, branch kept, record dropped; `--delete` refuses `branch <b> not on <source>` | unchanged |
 | directory deleted by hand, source git cannot resolve | `--delete`: an error row | unchanged |
 | local source `originals` (starts like the remote `origin`) | local | unchanged |
@@ -327,4 +329,22 @@ before the merge.
 6. **nit, fixed.** The `/` in the remote-prefix match is pinned by a local source named `originals`, so mT11 now
    fails.
 7. **nit, fixed.** "Longest configured remote" was the wrong wording: any matching remote gives the same refname.
+
+### 2026-10-23 — Review pass 6 (FAIL: no must-fix, three should-fix, two nits) and the operator's scope ruling
+
+Every should-fix sat in the protection rounds 3-5 added for a directory deleted by hand:
+- a bare `worktree prune` from any other clean dropped a kept record;
+- a HEAD another branch or a tag held was kept forever;
+- five legs were unpinned.
+
+The baseline loses those commits in every case, so the protection was not converging. The operator ruled in chat to
+scope back:
+- The deleted-directory paths return to the baseline. `_recorded_head_at_risk` is removed, and so are the archive's
+  early return and `--delete`'s recorded-HEAD checks for a missing directory.
+- The two tests for that protection are dropped; the baseline-shape tests stay.
+- The Never clause, the Approach and the matrix now scope it out.
+- The loss is proposed as its own steward fix story.
+
+Kept: the trunk as a landing ref, the exact remote-tracking lookup, and the HEAD check for a present worktree.
+Nit 4 (matrix "longest remote prefix") is fixed. Nit 5 (the deleted-directory error row) no longer applies.
 

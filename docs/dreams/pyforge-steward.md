@@ -2058,8 +2058,8 @@ Drift — orphaned between stations.
   `origin/main` (a repo-set member) gets today's verdict. *(Added at review:)* the trunk and any `origin/<b>` source
   are compared by the commit their remote-tracking ref names, so a local ref named like them proves nothing, and a
   detached HEAD with commits past a landed branch, read as the repository records it, keeps `--merged-only` from
-  removing the worktree, the preserve check from skipping its tag, and every `clean` mode from pruning the record of
-  a directory deleted by hand. **Constraints:** a fix under CAP-157 (amended in place:
+  removing a present worktree and the preserve check from skipping its tag. A directory deleted by hand stays as at
+  the baseline (operator ruling, 2026-10-23); its loss is a separate fix. **Constraints:** a fix under CAP-157 (amended in place:
   the trunk joins the source as a landing ref), with no new CAP and no flag. `ahead`/`behind` still read the
   recorded source; the proof's other conditions (clean tree, no hidden index entry, no gitlink, no per-worktree
   ref, no Tier-3 work) do not change. The operator's ask in chat, 2026-10-23. Owner `spec-pyforge-steward`. →

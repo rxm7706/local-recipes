@@ -796,8 +796,8 @@ _UNBORN_HEAD = "0" * 40
 def _registered_head(root: Path, wt: Path) -> tuple[str, bool] | None:
     """The HEAD the repository records for worktree ``wt`` and whether it names a branch, or None when it lists none.
 
-    Read from the root (``worktree list --porcelain -z``), it survives a worktree whose ``.git`` link is broken or
-    whose directory was deleted by hand, where ``rev-parse HEAD`` inside the worktree fails (Story 13.6 review 3). An
+    Read from the root (``worktree list --porcelain -z``), it survives a worktree whose ``.git`` link is broken, where
+    ``rev-parse HEAD`` inside the worktree fails (Story 13.6 review 3). An
     unborn HEAD reads as forty zeros with a ``branch`` line; zeros without one is a HEAD file git could not read
     (review 4). A listing git cannot give raises, so no caller mistakes it for "not listed".
     """
@@ -825,22 +825,23 @@ def _registered_head(root: Path, wt: Path) -> tuple[str, bool] | None:
 
 
 def _worktree_head_landed(record: WorkspaceRecord, *, root: Path) -> bool:
-    """True when the worktree is gone, or its HEAD is landed like its branch (Story 13.6 reviews).
+    """True when the worktree directory is gone, or its HEAD is landed like its branch (Story 13.6 reviews).
 
     A detached HEAD can carry commits its branch does not. Removing such a worktree because the branch landed
     would leave them on no ref, so ``--merged-only`` and the preserve-tag check ask about HEAD too. HEAD is read as
-    the repository records it, so a broken ``.git`` link or a directory deleted by hand still names its commit; an
-    unborn HEAD names none. A worktree the repository no longer lists and that is gone from disk holds nothing. Any
-    HEAD git cannot read or cannot place, and a listing git cannot give, count as not landed.
+    the repository records it (``worktree list --porcelain``), so a broken ``.git`` link still names its commit; an
+    unborn HEAD (zeros with a branch line) names none. Any HEAD git cannot read or place, and a listing git cannot
+    give, count as not landed. A directory that is gone is judged by its branch alone, as before this story: a
+    directory deleted by hand is outside its scope (operator ruling 2026-10-23, after review 6).
     """
     wt = Path(record.path)
+    if not wt.is_dir():
+        return True
     try:
         registered = _registered_head(root, wt)
     except WorkspaceError:
         return False
     if registered is None:
-        if not wt.is_dir():
-            return True
         head = _commit_of("HEAD", cwd=wt)
         if head is None:
             return False
@@ -852,27 +853,6 @@ def _worktree_head_landed(record: WorkspaceRecord, *, root: Path) -> bool:
         return _rev_landed(root, head, record.source, label="HEAD")
     except WorkspaceError:
         return False
-
-
-def _recorded_head_at_risk(record: WorkspaceRecord, *, root: Path) -> bool:
-    """For a deleted directory: whether pruning its worktree record would leave the recorded HEAD on no ref.
-
-    True when the HEAD is not landed and is not on the workspace's own branch, which clean keeps whenever that branch
-    is unmerged (Story 13.6 review 5: a HEAD at or behind an unmerged branch's tip is safe, and its record is cleaned
-    as before). A HEAD git cannot read or place is at risk.
-    """
-    if _worktree_head_landed(record, root=root):
-        return False
-    try:
-        registered = _registered_head(root, Path(record.path))
-    except WorkspaceError:
-        return True
-    if registered is None:
-        return False
-    head, _on_branch = registered
-    if _git_ok("rev-parse", "--verify", "--quiet", _branch_ref(record.branch), cwd=root).returncode != 0:
-        return True
-    return _git_ok("merge-base", "--is-ancestor", head, _branch_ref(record.branch), cwd=root).returncode != 0
 
 
 def _branch_merged_into_or_unlanded(root: Path, branch: str, into: str) -> bool:
@@ -1246,15 +1226,6 @@ def _archive_worktree(
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         safe = record.slug.replace("/", "-")
         wt = Path(record.path)
-        if not wt.is_dir() and _recorded_head_at_risk(record, root=root):
-            # Story 13.6 review 4: the directory is gone but git still records a HEAD that is not landed and that no
-            # kept branch holds; pruning would leave its commits on no ref, so the record is kept.
-            return ArchiveWorktreeResult(
-                archive_path=archive_dir / f"{safe}-{stamp}.missing.txt",
-                branch_kept=True,
-                failed=True,
-                failure_reason="worktree directory missing and its recorded HEAD is not landed",
-            )
         note = _landed_note_text(record, root=root, stamp=stamp) if wt.is_dir() else None
         preserve_on = False
         unlanded_branch = False
@@ -1361,13 +1332,11 @@ def _delete_eligibility(record: WorkspaceRecord, *, root: Path) -> str | None:
     branch_exists = _git_ok("rev-parse", "--verify", "--quiet", _branch_ref(record.branch), cwd=root).returncode == 0
 
     if not wt_is_dir and not branch_exists:
-        # Story 13.6 review 4: git may still record a HEAD that is not landed; dropping the record would prune it.
-        return "not-merged" if _recorded_head_at_risk(record, root=root) else None
+        return None
 
     if not wt_is_dir and branch_exists:
         if _branch_landed(root, record.branch, record.source):
-            # The branch is deleted with the record, so a recorded HEAD past it must be landed too (review 4).
-            return "not-merged" if not _worktree_head_landed(record, root=root) else None
+            return None
         return f"branch {record.branch} not on {' or '.join(_landing_refs(record.source))}"
 
     if _worktree_dirty(wt):

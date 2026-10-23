@@ -436,21 +436,6 @@ def test_a_broken_git_link_still_names_the_detached_head(repo: Path, tmp_path: P
     assert wt.is_dir()
 
 
-def test_a_worktree_deleted_by_hand_still_names_the_detached_head(repo: Path, tmp_path: Path) -> None:
-    """Review 3 (before this story too): the repository still lists the worktree and its HEAD; nothing is pruned."""
-    bookkeeping = repo / ".steward" / "workspaces.yaml"
-    wt = _landed_origin_main_workspace_with_a_detached_commit(repo, tmp_path, bookkeeping)
-    detached = _git("-C", str(wt), "rev-parse", "HEAD", cwd=repo).stdout.strip()
-    shutil.rmtree(wt)
-    result = clean_workspaces(
-        merged_only=True, slug="detached", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
-    )
-    assert result["archived"] == []
-    assert result["skipped"][0]["reason"] == "not-merged"
-    listed = _git("worktree", "list", "--porcelain", cwd=repo).stdout
-    assert f"HEAD {detached}" in listed
-
-
 def test_a_detached_head_past_a_landed_branch_whose_source_is_gone_is_kept(repo: Path, tmp_path: Path) -> None:
     """Review 3: HEAD the source cannot place and the trunk does not hold is not landed (mutant mE)."""
     bookkeeping = repo / ".steward" / "workspaces.yaml"
@@ -560,32 +545,6 @@ def test_with_the_origin_remote_unconfigured_its_refs_still_decide(repo: Path, t
     )
     assert result["archived"] == []
     assert stacked.is_dir()
-
-
-@pytest.mark.parametrize("how", ["delete", "default", "default-preserve"])
-def test_a_deleted_directory_whose_recorded_head_is_not_landed_is_kept(
-    repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, how: str
-) -> None:
-    """Review 4 (N4): outside ``--merged-only`` too, a directory deleted by hand whose recorded HEAD is not landed
-    keeps its record, so ``worktree prune`` never drops the commit."""
-    if how == "default-preserve":
-        monkeypatch.setattr(ws_module, "workspace_preserve_tag_enabled", lambda **_kwargs: True)
-    bookkeeping = repo / ".steward" / "workspaces.yaml"
-    wt = _landed_origin_main_workspace_with_a_detached_commit(repo, tmp_path, bookkeeping)
-    detached = _git("-C", str(wt), "rev-parse", "HEAD", cwd=repo).stdout.strip()
-    shutil.rmtree(wt)
-    if how == "delete":
-        result = clean_workspaces(
-            delete=True, slug="detached", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
-        )
-        assert result["deleted"] == []
-    else:
-        result = clean_workspaces(
-            slug="detached", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a", confirm=lambda _s: True
-        )
-        assert result["archived"] == []
-    assert [r.slug for r in load_bookkeeping(bookkeeping)] == ["detached"]
-    assert f"HEAD {detached}" in _git("worktree", "list", "--porcelain", cwd=repo).stdout
 
 
 def test_a_garbage_head_file_is_not_an_unborn_head(repo: Path, tmp_path: Path) -> None:
