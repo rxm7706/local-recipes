@@ -92,10 +92,12 @@ class ManifestRow:
 
 
 def _git(repo: Path, *args: str) -> tuple[int, str, str]:
+    # A commit's subject or diff need not be UTF-8 (Story 87.17): replace, never raise.
     proc = subprocess.run(
         ["git", "-C", str(repo), *args],
         capture_output=True,
-        text=True,
+        encoding="utf-8",
+        errors="replace",
     )
     return proc.returncode, proc.stdout, proc.stderr
 
@@ -193,18 +195,18 @@ def _create_archive_tag(repo: Path, *, refname: str, commit: str, archive_from: 
 
 
 def _patch_id(repo: Path, commit: str) -> str | None:
-    rc, out, _ = _git(repo, "show", "--format=email", "--no-prefix", "--binary", commit)
-    if rc != 0 or not out:
-        return None
-    proc = subprocess.run(
-        ["git", "patch-id"],
-        input=out,
+    # Bytes end to end (Story 87.17): a decoded and re-encoded diff would hash differently.
+    show = subprocess.run(
+        ["git", "-C", str(repo), "show", "--format=email", "--no-prefix", "--binary", commit],
         capture_output=True,
-        text=True,
     )
-    if proc.returncode != 0 or not proc.stdout.strip():
+    if show.returncode != 0 or not show.stdout:
         return None
-    return proc.stdout.split()[0].strip()
+    proc = subprocess.run(["git", "patch-id"], input=show.stdout, capture_output=True)
+    out = proc.stdout.decode("ascii", errors="replace").strip()
+    if proc.returncode != 0 or not out:
+        return None
+    return out.split()[0]
 
 
 def _origin_main_patch_ids_since(repo: Path, since: str) -> set[str]:

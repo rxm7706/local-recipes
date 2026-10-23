@@ -155,3 +155,47 @@ def test_classify_synthetic_subject(clone: Path) -> None:
     sha = _git(clone, "rev-parse", "HEAD")
     kind, _ = lpp.classify_rescue_dangling(clone, sha, origin_patch_ids=set())
     assert kind == "synthetic"
+
+
+def _non_utf8_commit(repo: Path) -> str:
+    """A commit whose diff and subject both carry a byte that is not UTF-8."""
+    (repo / "latin1.txt").write_bytes(b"caf\xe9\n")
+    _git(repo, "add", "latin1.txt")
+    message = repo / "msg.bin"
+    message.write_bytes(b"tip caf\xe9\n")
+    _git(repo, "commit", "-q", "-F", str(message))
+    message.unlink()
+    return _git(repo, "rev-parse", "HEAD")
+
+
+def test_patch_id_reads_a_non_utf8_diff(clone: Path) -> None:
+    """Story 87.17: `origin/main` carries a commit whose diff is not UTF-8 (e09f50352d)."""
+    sha = _non_utf8_commit(clone)
+    pid = lpp._patch_id(clone, sha)
+    assert pid is not None and len(pid) == 40
+    show = subprocess.run(
+        ["git", "-C", str(clone), "show", "--format=email", "--no-prefix", "--binary", sha],
+        check=True,
+        capture_output=True,
+    ).stdout
+    expected = subprocess.run(
+        ["git", "patch-id"], input=show, check=True, capture_output=True
+    ).stdout.split()[0].decode("ascii")
+    assert pid == expected
+
+
+def test_dry_run_survives_a_non_utf8_commit_on_origin_main(clone: Path, tmp_path: Path) -> None:
+    """Story 87.17: one non-UTF-8 commit on `origin/main` used to stop the run before the manifest."""
+    _non_utf8_commit(clone)
+    _git(clone, "push", "-q", "origin", "main")
+    _git(clone, "fetch", "-q", "origin")
+    rescue_sha = _commit_on(clone, "rescue")
+    _git(clone, "tag", "-a", "-m", "rescue tip", f"rescue/dangling-20260801-{rescue_sha[:8]}", rescue_sha)
+    dirty = "refs/attempt-preserve-dirty/run2-feedface"
+    _git(clone, "update-ref", dirty, rescue_sha)
+
+    manifest_dir = tmp_path / "manifests"
+    assert lpp.run(clone, manifest_dir=manifest_dir, manifest_date="2026-10-23", execute=False, push_reviewed=False) == 0
+    manifest = json.loads((manifest_dir / "legacy-preserve-promote-2026-10-23.json").read_text())
+    assert [r for r in manifest["rows"] if r["source_ref"] == dirty]
+    assert [r for r in manifest["rows"] if r["kind"] == "classify"]
