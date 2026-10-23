@@ -1569,6 +1569,18 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   chain and implement it - we need the speed to market before we move to wave 2", and "make sure we include this -
   Optional, marshal: a landing re-verification setting - that saves time too". Owner `spec-pyforge-marshal`.
   → Epic 102 / Story 102.1, specced 2026-10-15.
+- **2026-10-23 (the legacy promoter dies on one commit's bytes)** — **Found: `scripts/legacy_preserve_promote.py` has
+  never written a manifest.** The operator ruled on 2026-10-23 to promote the 17 `refs/attempt-preserve-dirty/*` refs
+  ("go ahead"). Its first run, dry, crashed before writing anything: `UnicodeDecodeError: 'utf-8' codec can't decode
+  bytes`. To classify the `rescue/dangling-*` tags, `_origin_main_patch_ids_since` runs `git show --binary | git
+  patch-id` over every `origin/main` commit since 2026-06-01 (13,145), and `_git` decodes each output as UTF-8 text.
+  One commit's diff is not UTF-8: `e09f50352d`, a 2026-09-10 merge of `origin/main` into `dispatch/pyforge-doctor/21.13`.
+  Story 87.12's tests never fed it a non-UTF-8 byte. **What it looks like when fixed:** `_patch_id` hands `git show`'s
+  bytes to `git patch-id` undecoded, and `_git` reads git's text output with `errors="replace"`, so no commit's bytes
+  stop the run. The dry run writes the manifest, and `--execute` writes the local twins. **Constraints:** a fix under
+  CAP-287 (FR-234), with no CAP and no flag: the promoter is Story 87.12's one-off, dry-run-default script and is not
+  flag-gated. Nothing is pushed: every push stays operator-gated behind the Story 87.15 content gate. Owner
+  `spec-pyforge-marshal`. → Epic 87 / Story 87.17, specced 2026-10-23.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint
