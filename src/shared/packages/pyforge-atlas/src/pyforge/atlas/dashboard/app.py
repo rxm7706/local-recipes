@@ -478,7 +478,7 @@ PROJECTED_PAGES: dict[str, PageDef] = {
             "bsl-shell",
             note="Wired to build_vuln_history_model over derived_vuln_history. Each vulnerability run appends "
             "its rollup to vulnerability_rollup_snapshots, and diff_vulnerability_snapshots compares the latest "
-            "snapshot with the most recent one at least since_days older (else the one before it), as legacy "
+            "snapshot with the most recent one more than since_days older (else the one before it), as legacy "
             "cve-watcher does: one row per package and severity whose count moved. The severities are total, "
             "critical_high and kev, since the rollup counts critical and high together. Empty until two runs "
             "have written snapshots. DESIGN.md § 3.1's maintainer filter is not declared.",

@@ -128,8 +128,9 @@ def default_data_root() -> Path:
 
 
 def board_projections(*, flags_path: Path | str | None = None) -> bool:
-    """Story 37.4: whether behind-upstream, whodepends and the two coverage boards read the datasets the
-    pipelines write (``pyforge.atlas.board_projections``; off when the tree is missing or unreadable)."""
+    """Story 37.4: whether behind-upstream, whodepends and the two coverage boards (Story 37.5: and the
+    cve-watcher) read the datasets the pipelines write (``pyforge.atlas.board_projections``; off when the tree
+    is missing or unreadable)."""
     return read_boolean(BOARD_PROJECTIONS_FLAG, default=False, flags_path=flags_path)
 
 
