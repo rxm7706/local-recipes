@@ -2445,7 +2445,7 @@ No port, adapter or package boundary moves. No AD is added, amended or removed.
   exit code. `cancelled_by` is journal evidence, not a verdict input.
 - **Also the same day:** Story 71.13 (a reentrancy guard in the preflight's SIGINT handler) and Story 13.6 (the
   workspace duty also reads `refs/remotes/origin/main` as a landing ref, through `git merge-base`, `rev-parse`,
-  `show-ref --verify`, `git remote` and `git worktree list` subprocesses, AD-1; `workspace clean`'s exit codes are unchanged, AD-8). Neither adds a port, an
+  `show-ref --verify`, `check-ref-format`, `git remote` and `git worktree list` subprocesses, AD-1; `workspace clean`'s exit codes are unchanged, AD-8). Neither adds a port, an
   adapter or a duty.
 
 No port, adapter or package boundary moves. No AD is added, amended or removed.

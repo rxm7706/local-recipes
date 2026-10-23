@@ -527,3 +527,133 @@ def test_a_revision_source_is_read_as_recorded(repo: Path, tmp_path: Path) -> No
     (row,) = status_workspaces("rev", root=repo, bookkeeping=bookkeeping)
     assert row.error is None
     assert row.merged is False
+
+
+def test_without_an_origin_remote_a_branch_named_like_the_trunk_proves_nothing(repo: Path, tmp_path: Path) -> None:
+    """Review 4 (N1): in an ``upstream``-only repository, the trunk ``origin/main`` is still a remote-tracking name;
+    the workspace's own branch ``origin/main`` is never read as it."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    _git("remote", "rename", "origin", "upstream", cwd=repo)
+    wt = tmp_path / "named-wt"
+    start_workspace("origin/main", root=repo, bookkeeping=bookkeeping, path=wt, from_ref="upstream/main")
+    _commit(wt, "named.txt")
+    (row,) = status_workspaces("origin/main", root=repo, bookkeeping=bookkeeping)
+    assert row.merged is False
+    result = clean_workspaces(
+        merged_only=True, slug="origin/main", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+    )
+    assert result["archived"] == []
+    assert _branch_exists(repo, "origin/main")
+
+
+def test_with_the_origin_remote_unconfigured_its_refs_still_decide(repo: Path, tmp_path: Path) -> None:
+    """Review 4 (N3): ``remote.origin`` removed from config, its refs kept, and a local ``origin/main`` at the unlanded
+    tip: the remote-tracking ref decides."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    stacked = _stacked(repo, tmp_path, bookkeeping, land=False)
+    _git("config", "--remove-section", "remote.origin", cwd=repo)
+    _git("update-ref", "refs/heads/origin/main", "refs/heads/stacked", cwd=repo)
+    (row,) = status_workspaces("stacked", root=repo, bookkeeping=bookkeeping)
+    assert row.merged is False
+    result = clean_workspaces(
+        merged_only=True, slug="stacked", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+    )
+    assert result["archived"] == []
+    assert stacked.is_dir()
+
+
+@pytest.mark.parametrize("how", ["delete", "default", "default-preserve"])
+def test_a_deleted_directory_whose_recorded_head_is_not_landed_is_kept(
+    repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, how: str
+) -> None:
+    """Review 4 (N4): outside ``--merged-only`` too, a directory deleted by hand whose recorded HEAD is not landed
+    keeps its record, so ``worktree prune`` never drops the commit."""
+    if how == "default-preserve":
+        monkeypatch.setattr(ws_module, "workspace_preserve_tag_enabled", lambda **_kwargs: True)
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    wt = _landed_origin_main_workspace_with_a_detached_commit(repo, tmp_path, bookkeeping)
+    detached = _git("-C", str(wt), "rev-parse", "HEAD", cwd=repo).stdout.strip()
+    shutil.rmtree(wt)
+    if how == "delete":
+        result = clean_workspaces(
+            delete=True, slug="detached", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+        )
+        assert result["deleted"] == []
+    else:
+        result = clean_workspaces(
+            slug="detached", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a", confirm=lambda _s: True
+        )
+        assert result["archived"] == []
+    assert [r.slug for r in load_bookkeeping(bookkeeping)] == ["detached"]
+    assert f"HEAD {detached}" in _git("worktree", "list", "--porcelain", cwd=repo).stdout
+
+
+def test_a_garbage_head_file_is_not_an_unborn_head(repo: Path, tmp_path: Path) -> None:
+    """Review 4: git lists an unreadable HEAD file as forty zeros with no branch line; that is not unborn."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    wt = tmp_path / "garbage-wt"
+    start_workspace("garbage", root=repo, bookkeeping=bookkeeping, path=wt, from_ref="origin/main")
+    gitdir = Path(_git("rev-parse", "--absolute-git-dir", cwd=wt).stdout.strip())
+    (gitdir / "HEAD").write_text("garbage\n", encoding="utf-8")
+    result = clean_workspaces(
+        merged_only=True, slug="garbage", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+    )
+    assert result["archived"] == []
+    assert wt.is_dir()
+
+
+def test_a_worktree_listing_git_cannot_give_is_not_a_landing(
+    repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review 4 (mutant mR5): when ``worktree list --porcelain -z`` fails, HEAD is not known to be landed."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    wt = tmp_path / "listing-wt"
+    start_workspace("listing", root=repo, bookkeeping=bookkeeping, path=wt, from_ref="origin/main")
+    real = ws_module._git_bytes  # noqa: SLF001
+
+    def failing_listing(*args: str, cwd: Path) -> subprocess.CompletedProcess[bytes]:
+        if args[:2] == ("worktree", "list"):
+            return subprocess.CompletedProcess(["git", *args], 129, b"", b"unknown option: -z")
+        return real(*args, cwd=cwd)
+
+    monkeypatch.setattr(ws_module, "_git_bytes", failing_listing)
+    result = clean_workspaces(
+        merged_only=True, slug="listing", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+    )
+    assert result["archived"] == []
+    assert wt.is_dir()
+
+
+def test_a_remote_whose_name_has_a_slash_still_proves_a_landing(repo: Path, tmp_path: Path) -> None:
+    """Review 4 (N6b, N6): the longest configured remote that prefixes the source names its remote-tracking ref."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    fork = tmp_path / "fork.git"
+    subprocess.run(["git", "init", "--bare", str(fork)], check=True, capture_output=True)
+    _git("remote", "add", "team/fork", str(fork), cwd=repo)
+    _git("push", "team/fork", "main", cwd=repo)
+    landed = tmp_path / "landed-wt"
+    start_workspace("landed", root=repo, bookkeeping=bookkeeping, path=landed, from_ref="team/fork/main")
+    _commit(landed, "landed.txt")
+    _git("merge", "--no-ff", "-m", "Merge landed", "landed", cwd=repo)
+    _git("push", "team/fork", "main", cwd=repo)
+    selfnamed = tmp_path / "self-wt"
+    start_workspace("team/fork/main", root=repo, bookkeeping=bookkeeping, path=selfnamed, from_ref="team/fork/main")
+    _commit(selfnamed, "self.txt")
+    rows = {row.slug: row for row in status_workspaces(root=repo, bookkeeping=bookkeeping)}
+    assert rows["landed"].merged is True
+    assert rows["team/fork/main"].merged is False
+    result = clean_workspaces(
+        delete=True, slug="landed", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+    )
+    assert [r["slug"] for r in result["deleted"]] == ["landed"]
+
+
+def test_a_remotes_spelling_names_the_remote_tracking_ref(repo: Path, tmp_path: Path) -> None:
+    """Review 4: ``remotes/origin/main`` is ``refs/remotes/origin/main``, as git's name lookup reads it."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    wt = tmp_path / "remotes-wt"
+    start_workspace("spelled", root=repo, bookkeeping=bookkeeping, path=wt, from_ref="remotes/origin/main")
+    result = clean_workspaces(
+        delete=True, slug="spelled", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+    )
+    assert [r["slug"] for r in result["deleted"]] == ["spelled"]

@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-23'
 status: 'in-review'
 baseline_revision: 'bdb49ec39f'
-review_loop_iteration: 3
+review_loop_iteration: 4
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -57,14 +57,16 @@ Read at `bdb49ec39f` in `src/shared/packages/pyforge-steward/src/pyforge/steward
   branch. The note names that ref and its sha, and adds the recorded source when the two differ.
 - **By commit, never by name** *(reviews 1 and 2)*. An `origin/<b>` or `refs/remotes/<r>/<b>` source and the trunk
   are compared by the commit their remote-tracking ref names. `_source_commit` looks the full refname up exactly with
-  `show-ref --verify`, for any configured remote (review 3). Passed by name, a missing `refs/remotes/origin/main` let git read a local
+  `show-ref --verify`: `origin/<b>` always, any configured remote by its longest prefix, and `remotes/...`
+  (reviews 3 and 4). Passed by name, a missing `refs/remotes/origin/main` let git read a local
   `refs/heads/refs/remotes/origin/main` and prove an unlanded branch merged. When both refs exist, `rev-parse` only
   reported ambiguity, so a real landing read as unresolvable.
 - **HEAD too** *(review 1)*. `--merged-only` and the preserve-tag check also require the worktree's HEAD to be
   landed, so commits on a detached HEAD past a landed branch are skipped or parked, never left on no ref. HEAD is
   read as the repository records it (`worktree list --porcelain`), so a broken `.git` link or a directory deleted by
-  hand still names its commit; an unborn HEAD names none; any other HEAD git cannot read counts as not landed
-  (review 3).
+  hand still names its commit; an unborn HEAD (forty zeros with a branch line) names none; any other HEAD git cannot
+  read, and a listing git cannot give, count as not landed (reviews 3 and 4). A directory deleted by hand whose
+  recorded HEAD is not landed is kept by every `clean` mode, never pruned (review 4).
 - **`ahead`/`behind`** still read the recorded source.
 
 ### Living CAP citations
@@ -155,7 +157,7 @@ workspace `--from base` with another.
 **Never:**
 - Never let the trunk check raise where the source check would not have raised.
 - Never judge a branch landed on a local ref named like the trunk, or like an `origin/<b>` source.
-- Never remove a worktree under `--merged-only`, or skip its preserve tag, while its HEAD holds commits on neither
+- Never remove a worktree, prune its record or skip its preserve tag while its recorded HEAD holds commits on neither
   landing ref.
 - Never change `ahead`/`behind`, the bookkeeping format, the exit codes or the CLI flags.
 - Never hand-edit `sprint-status-ledger.yaml`, and never edit `SPEC.md` except by the approved render script.
@@ -177,6 +179,11 @@ before the merge.
 | source on another remote (`upstream/main`), landed | landed | unchanged |
 | slug and branch `upstream/main` started from `upstream/main`, unlanded | read as merged (compared with itself); `--merged-only` deletes the branch | not merged |
 | revision source (`origin/main~0`) | read by name | unchanged |
+| repository without an `origin` remote, a local branch `origin/main` at an unlanded tip | read as landed (by name) | never a landing (`origin/<b>` is always remote-tracking) |
+| a remote named with a slash (`team/fork/main`), landed | landed | unchanged (longest remote prefix) |
+| a local branch `upstream/feat` where `upstream` is a remote with no such remote-tracking ref | a verdict (read by name) | an error row: indistinguishable from a pruned remote ref behind a local shadow, so it fails safe |
+| directory deleted by hand, recorded HEAD not landed, default `clean` or `--delete` | pruned or dropped; the commit is left on no ref | kept, with the reason |
+| HEAD file git cannot read (zeros with no branch line), or no worktree listing | read as unborn or not checked | not landed |
 | both `refs/remotes/origin/main` and a local `refs/heads/refs/remotes/origin/main` | landed by the remote ref | unchanged (looked up exactly) |
 | source recorded as `refs/remotes/origin/main`, remote ref gone, local ref of that full name | read as landed | never a landing |
 | detached HEAD with commits past a landed branch | trunk-sourced: `--merged-only` removed it, no preserve tag | skipped `not-merged`; parked as a preserve tag when the flag is on |
@@ -278,4 +285,19 @@ before the merge.
    with no error row.
 5. **nit, fixed.** The `refs/remotes/` guard is pinned, by mN.
 6. **nit, fixed.** CAP-157's `--symbolic-full-name` clause and the spine bullet.
+
+### 2026-10-23 — Review pass 4 (FAIL: one must-fix, two should-fix, three nits; round 3 resolved)
+
+1. **must-fix, fixed.** This was a regression of round 3. `origin/<b>` counted as remote-tracking only when
+   `git remote` listed `origin`. In a repository without that remote, a local branch `origin/main` proved an unlanded
+   commit landed. `origin/<b>` is now always remote-tracking.
+2. **should-fix, fixed.** The default `clean` pruned, and `--delete` dropped, a directory deleted by hand whose
+   recorded HEAD was not landed. This was pre-existing. Both modes now keep the record and name the reason.
+3. **should-fix, fixed.** Remote names containing `/` (`team/fork`) now resolve to the longest configured remote that
+   prefixes the source. `remotes/...` maps under `refs/`.
+4. **nit, recorded.** A local branch whose first segment equals a remote name, with no remote-tracking ref of that
+   name, now gives an error row where the baseline gave a verdict. That fails safe, and the matrix row says so.
+5. **nit, fixed.** A HEAD file git cannot read lists as forty zeros with no branch line. That no longer counts as
+   unborn.
+6. **nit, fixed.** A failed worktree listing counts as not landed. Mutant mR5 now fails.
 

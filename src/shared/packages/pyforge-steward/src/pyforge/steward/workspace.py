@@ -793,25 +793,34 @@ def _branch_landed(root: Path, branch: str, source: str) -> bool:
 _UNBORN_HEAD = "0" * 40
 
 
-def _registered_head(root: Path, wt: Path) -> str | None:
-    """The HEAD the repository records for worktree ``wt`` (``worktree list --porcelain``), or None when it lists none.
+def _registered_head(root: Path, wt: Path) -> tuple[str, bool] | None:
+    """The HEAD the repository records for worktree ``wt`` and whether it names a branch, or None when it lists none.
 
-    Read from the root, it survives a worktree whose ``.git`` link is broken or whose directory was deleted by hand,
-    where ``rev-parse HEAD`` inside the worktree fails (Story 13.6 review 3). An unborn HEAD reads as forty zeros.
+    Read from the root (``worktree list --porcelain -z``), it survives a worktree whose ``.git`` link is broken or
+    whose directory was deleted by hand, where ``rev-parse HEAD`` inside the worktree fails (Story 13.6 review 3). An
+    unborn HEAD reads as forty zeros with a ``branch`` line; zeros without one is a HEAD file git could not read
+    (review 4). A listing git cannot give raises, so no caller mistakes it for "not listed".
     """
     listed = _git_bytes("worktree", "list", "--porcelain", "-z", cwd=root)
     if listed.returncode != 0:
-        return None
+        detail = os.fsdecode(listed.stderr or b"").strip()
+        raise WorkspaceError(f"git worktree list --porcelain -z failed (exit {listed.returncode}): {detail}")
     want = os.path.realpath(wt)
     current: str | None = None
-    for field in listed.stdout.split(b"\0"):
+    head: str | None = None
+    on_branch = False
+    for field in [*listed.stdout.split(b"\0"), b""]:
         line = os.fsdecode(field)
         if line.startswith("worktree "):
-            current = os.path.realpath(line[len("worktree ") :])
-        elif line.startswith("HEAD ") and current == want:
-            return line[len("HEAD ") :].strip()
+            current, head, on_branch = os.path.realpath(line[len("worktree ") :]), None, False
+        elif line.startswith("HEAD "):
+            head = line[len("HEAD ") :].strip()
+        elif line.startswith("branch "):
+            on_branch = True
         elif not line:
-            current = None
+            if current == want and head is not None:
+                return head, on_branch
+            current, head, on_branch = None, None, False
     return None
 
 
@@ -822,18 +831,23 @@ def _worktree_head_landed(record: WorkspaceRecord, *, root: Path) -> bool:
     would leave them on no ref, so ``--merged-only`` and the preserve-tag check ask about HEAD too. HEAD is read as
     the repository records it, so a broken ``.git`` link or a directory deleted by hand still names its commit; an
     unborn HEAD names none. A worktree the repository no longer lists and that is gone from disk holds nothing. Any
-    HEAD git cannot read or cannot place counts as not landed.
+    HEAD git cannot read or cannot place, and a listing git cannot give, count as not landed.
     """
     wt = Path(record.path)
-    head = _registered_head(root, wt)
-    if head is None:
+    try:
+        registered = _registered_head(root, wt)
+    except WorkspaceError:
+        return False
+    if registered is None:
         if not wt.is_dir():
             return True
         head = _commit_of("HEAD", cwd=wt)
         if head is None:
             return False
-    if head == _UNBORN_HEAD:
-        return True
+    else:
+        head, on_branch = registered
+        if head == _UNBORN_HEAD:
+            return on_branch
     try:
         return _rev_landed(root, head, record.source, label="HEAD")
     except WorkspaceError:
@@ -926,15 +940,19 @@ def _remote_names(root: Path) -> frozenset[str]:
 def _remote_tracking_name(source: str, *, root: Path) -> str | None:
     """The full remote-tracking refname ``source`` means, or None when it names no remote-tracking ref.
 
-    ``refs/remotes/...`` as written, or ``<remote>/<b>`` for a configured remote (Story 13.6 review 3: ``upstream/main``
-    proved landings before this story and must still). A name that is not a valid refname -- a revision such as
-    ``origin/main~2`` -- is None, so it is read as recorded, as before.
+    ``refs/remotes/...`` as written, ``remotes/...`` under ``refs/``, or ``<remote>/<b>`` for ``origin`` (always, as
+    ``_source_ref`` and CAP-158 read it) or any configured remote, the longest that prefixes the source (Story 13.6
+    reviews 3 and 4: ``upstream/main`` and ``team/fork/main`` proved landings before this story and must still). A
+    name that is not a valid refname -- a revision such as ``origin/main~2`` -- is None, so it is read as recorded.
     """
     if source.startswith("refs/remotes/"):
         full = source
+    elif source.startswith("remotes/"):
+        full = f"refs/{source}"
     else:
-        remote, sep, rest = source.partition("/")
-        if not sep or not rest or remote not in _remote_names(root):
+        remotes = _remote_names(root) | {"origin"}
+        matches = [r for r in remotes if source.startswith(f"{r}/") and len(source) > len(r) + 1]
+        if not matches:
             return None
         full = f"refs/remotes/{source}"
     if _git_ok("check-ref-format", full, cwd=root).returncode != 0:
@@ -1207,6 +1225,15 @@ def _archive_worktree(
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         safe = record.slug.replace("/", "-")
         wt = Path(record.path)
+        if not wt.is_dir() and not _worktree_head_landed(record, root=root):
+            # Story 13.6 review 4: the directory is gone but git still records a HEAD that is not landed; pruning
+            # would leave its commits on no ref, so the record is kept.
+            return ArchiveWorktreeResult(
+                archive_path=archive_dir / f"{safe}-{stamp}.missing.txt",
+                branch_kept=True,
+                failed=True,
+                failure_reason="worktree directory missing and its recorded HEAD is not landed",
+            )
         note = _landed_note_text(record, root=root, stamp=stamp) if wt.is_dir() else None
         preserve_on = False
         unlanded_branch = False
@@ -1311,6 +1338,9 @@ def _delete_eligibility(record: WorkspaceRecord, *, root: Path) -> str | None:
         raise WorkspaceError(f"could not read {record.path}: {exc}") from exc
 
     branch_exists = _git_ok("rev-parse", "--verify", "--quiet", _branch_ref(record.branch), cwd=root).returncode == 0
+
+    if not wt_is_dir and not _worktree_head_landed(record, root=root):
+        return "not-merged"  # Story 13.6 review 4: git still records a HEAD that is not landed
 
     if not wt_is_dir and not branch_exists:
         return None
