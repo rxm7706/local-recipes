@@ -2,7 +2,7 @@
 title: "37.9: The mapping-gap classifies the unmapped packages"
 type: 'feature'
 created: '2026-10-23'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '884d7f1106439c1a3090d1921ea83c2b4afe346f'
 flag:
   key: pyforge.atlas.board_projections            # existing; minted by Story 37.4, extended to this board
@@ -143,6 +143,8 @@ Run 2026-10-23 in the landing worktree on `884d7f1106`, every verdict read from 
   919,975 names) the node writes 12,362 rows in 6.9 s: 10,962 `non_python_no_identity`, 1,395 `python_track` and 5
   `non_python_with_identity` (that root's `vcs_upstream_versions` is empty). Of the python-track rows, 112 are
   `likely`, 62 `collision`, 37 `uncorroborated` and 1,184 `unrecovered`. `load_mapping_gap` reads all 12,362.
+- **After merging main** (`2c0b2ac79f`, Story 37.5): `pyforge-atlas-test` gives 3,151 passed and 20 skipped, then
+  103 passed (exit 0); the combined DAG has 70 nodes and the catalog 137 entries.
 
 ## Spec Change Log
 
