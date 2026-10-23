@@ -502,9 +502,25 @@ def _provenance_line(provenance: ProvenanceInfo) -> str:
     return f"**Data build stamp (AD-17):** `{provenance.build_stamp}` ({provenance.kind})"
 
 
-def _legibility_card(page: PageDef, *, grounded: bool, provenance: ProvenanceInfo) -> vm.Card:
-    """A semantic markdown Card carrying the page's provenance + any data-gap note
-    (NFR-8 agent-legibility — a deterministic, agent-readable header)."""
+# A page's note describes its data unless the data is missing (Story 37.11): a shell page with no
+# data function, the identity workbook's gap message, or a page whose own dataset is unavailable.
+NOTE_LABEL = "About this board"
+GAP_LABEL = "Data gap"
+
+
+def _note_label(*, has_data: bool, provenance: ProvenanceInfo) -> str:
+    """``GAP_LABEL`` where the page's data is missing, else ``NOTE_LABEL``."""
+    if not has_data or provenance.kind == "unavailable":
+        return GAP_LABEL
+    return NOTE_LABEL
+
+
+def _legibility_card(
+    page: PageDef, *, grounded: bool, provenance: ProvenanceInfo, has_data: bool = True
+) -> vm.Card:
+    """A semantic markdown Card carrying the page's provenance + its note
+    (NFR-8 agent-legibility — a deterministic, agent-readable header). The note is
+    labelled a data gap only where the page's data is missing (``_note_label``)."""
     lines = [
         f"### {page.title}",
         "",
@@ -515,7 +531,7 @@ def _legibility_card(page: PageDef, *, grounded: bool, provenance: ProvenanceInf
         lines.append("**Data:** live — BSL query over the migrated catalog dataset.")
     if page.note:
         lines.append("")
-        lines.append(f"**Data gap:** {page.note}")
+        lines.append(f"**{_note_label(has_data=has_data, provenance=provenance)}:** {page.note}")
     lines.append("")
     lines.append(_provenance_line(provenance))
     return vm.Card(id=f"{page.id}--about", text="\n".join(lines))
@@ -686,7 +702,7 @@ def _shell_page(page: PageDef, *, provenance: ProvenanceInfo) -> vm.Page:
     return vm.Page(
         id=page.id,
         title=page.title,
-        components=[_legibility_card(page, grounded=False, provenance=provenance)],
+        components=[_legibility_card(page, grounded=False, provenance=provenance, has_data=False)],
     )
 
 
@@ -724,10 +740,10 @@ def _identity_workbook_page(
     ]
     if gap_message:
         lines.append("")
-        lines.append(f"**Data gap:** {gap_message}")
+        lines.append(f"**{GAP_LABEL}:** {gap_message}")
     elif page.note:
         lines.append("")
-        lines.append(f"**Data gap:** {page.note}")
+        lines.append(f"**{_note_label(has_data=True, provenance=provenance)}:** {page.note}")
     lines.append("")
     lines.append(_provenance_line(provenance))
     external_rows = "\n".join(

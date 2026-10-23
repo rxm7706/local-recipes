@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: 89be63e18aaadbd1
-story_count: 138
-test_file_count: 168
+source_fingerprint: 19205967dce2d640
+story_count: 139
+test_file_count: 175
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 138
+- **Stories parsed:** 139
 - **Epics parsed:** 37
-- **Test files inventoried:** 168 under `src/shared/packages/pyforge-atlas/tests/`
+- **Test files inventoried:** 175 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `89be63e18aaadbd1`
+- **Source fingerprint:** `19205967dce2d640`
 
 ## Risk Assessment
 
@@ -118,6 +118,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_core_sources.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_credentialed_switch.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_dependency_history.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_github_versions_health.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_hosts_and_registries.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_identity_live_sources.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_identity_sources.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_incremental_parquet.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_json_sources.py` | unit | none observed |
@@ -196,6 +199,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vcs_health/test_nodes.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vcs_health/test_rate_limit_contract.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vcs_health/test_release_velocity.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vcs_health/test_universe_batches.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vulnerability/test_basilisk_nodes.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vulnerability/test_contracts.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vulnerability/test_nodes.py` | unit | none observed |
@@ -203,6 +207,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/query_plane/test_face_parity.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/rag/test_store_vss_free.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/rag/test_vss_similarity_search.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/semantic/test_board_models.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/semantic/test_bsl_metric_parity.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/semantic/test_composite_scores.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/semantic/test_maintainer_dimension.py` | unit | none observed |
@@ -211,6 +216,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/singularity/test_duckdb_sole_engine.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/singularity/test_one_duckdb_server_launch_site.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_admission.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_board_projections.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_board_wiring.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_cap18_kedro_hook_map.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_dashboard_app.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_dashboard_data.py` | unit | none observed |
@@ -389,6 +396,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 37.8 | The export-purls lists the PURL artifacts | none observed |
 | 37.9 | The mapping-gap classifies the unmapped packages | none observed |
 | 37.10 | The bootstrap-index-health reports each catalog entry's freshness | none observed |
+| 37.11 | A board's note reads "Data gap" only where data is missing | none observed |
 
 ## Quality Gates
 

@@ -228,6 +228,27 @@ def test_provenance_line_known_kind_states_the_stamp():
     assert "file-mtime" in line
 
 
+def test_note_on_a_page_with_available_data_is_not_a_gap():
+    """Story 37.11: a note on a page whose own dataset is available describes it."""
+    page = app.PageDef("note-page-3711", "Note Page", "some-cli", "bsl-shell", note="wired to x")
+    info = ProvenanceInfo(kind="file-mtime", build_stamp="2026-01-01T00:00:00+00:00")
+    card = app._legibility_card(page, grounded=False, provenance=info)
+    assert f"**{app.NOTE_LABEL}:** wired to x" in card.text
+    assert app.GAP_LABEL not in card.text
+
+
+def test_note_on_a_page_with_no_data_function_is_a_gap():
+    """Story 37.11: a shell page has no data, whatever its provenance says."""
+    page = app.PageDef("gap-card-3711", "Gap Page", "some-cli", "bsl-shell", note="no model yet")
+    info = ProvenanceInfo(kind="file-mtime", build_stamp="2026-01-01T00:00:00+00:00")
+    card = app._legibility_card(page, grounded=False, provenance=info, has_data=False)
+    assert f"**{app.GAP_LABEL}:** no model yet" in card.text
+    assert app.NOTE_LABEL not in card.text
+    shell_def = app.PageDef("gap-shell-3711", "Gap Shell", "some-cli", "bsl-shell", note="no model yet")
+    shell = app._shell_page(shell_def, provenance=info)
+    assert f"**{app.GAP_LABEL}:** no model yet" in shell.components[0].text
+
+
 def test_legibility_card_includes_note_when_present():
     page = app.PageDef("some-page", "Some Page", "some-cli", "bsl-shell", note="a data gap note")
     info = ProvenanceInfo(kind="unavailable", build_stamp=None, reason="nope")
