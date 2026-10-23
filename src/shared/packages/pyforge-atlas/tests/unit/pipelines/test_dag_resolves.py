@@ -126,12 +126,12 @@ def test_pypi_intelligence_pipeline_has_seventeen_nodes():
     }
 
 
-def test_vulnerability_pipeline_has_eleven_nodes():
+def test_vulnerability_pipeline_has_thirteen_nodes():
     # B5 added refresh_vdb_store + refresh_osv_offline_store (§ 3.4 refresh assets).
     # B8 added the two Basilisk ingestion nodes (FR-19; ADDITIVE, not parity-gated AD-14).
-    # Story 36.1 added the two Basilisk triggers.
+    # Story 36.1 added the two Basilisk triggers; Story 37.5 the rollup's snapshot and its diff.
     vuln = vuln_create()
-    assert len(vuln.nodes) == 11
+    assert len(vuln.nodes) == 13
     assert {n.name for n in vuln.nodes} == {
         "refresh_vdb_store",
         "refresh_osv_offline_store",
@@ -144,6 +144,8 @@ def test_vulnerability_pipeline_has_eleven_nodes():
         "refresh_basilisk_details",
         "ingest_basilisk_advisories",
         "fetch_basilisk_details",
+        "snapshot_vulnerability_rollup",
+        "diff_vulnerability_snapshots",
     }
 
 
@@ -212,14 +214,15 @@ def test_combined_seven_pipeline_dag_resolves_topologically():
     combined = (
         core_create() + vcs_create() + pypi_create() + vuln_create() + seed_create() + sbom_create() + derived_create()
     )
-    # 8 core + 12 vcs + 17 pypi + 11 vuln + 4 seed_gaps + 4 universal_sbom
-    # + 11 derived_artifacts = 67 nodes (Story 25.2: vcs_health 10 -> 11; Story 34.8: 11 -> 12;
-    # Story 36.1: vulnerability 9 -> 11; Story 37.3: derived_artifacts 7 -> 8; Story 37.4: 8 -> 11).
+    # 8 core + 12 vcs + 17 pypi + 13 vuln + 4 seed_gaps + 4 universal_sbom
+    # + 11 derived_artifacts = 69 nodes (Story 25.2: vcs_health 10 -> 11; Story 34.8: 11 -> 12;
+    # Story 36.1: vulnerability 9 -> 11; Story 37.3: derived_artifacts 7 -> 8; Story 37.4: 8 -> 11;
+    # Story 37.5: vulnerability 11 -> 13).
     assert (
-        len(combined.nodes) == 67
+        len(combined.nodes) == 69
     )  # 34.8: drive_migration_status; 36.1: 2 Basilisk triggers; 37.3: compose_distribution_breakdown; 37.4: 3 projections
     grouped = combined.grouped_nodes
-    assert sum(len(g) for g in grouped) == 67
+    assert sum(len(g) for g in grouped) == 69
 
 
 def test_no_dataset_is_written_by_two_pipelines_b7():
