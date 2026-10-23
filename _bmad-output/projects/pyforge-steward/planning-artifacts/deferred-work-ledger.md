@@ -6616,3 +6616,14 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-10-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-steward-13-6-3: clean --delete of a present, locked worktree whose branch is landed reports an error row (git refuses to remove a locked worktree) rather than a named locked refusal, so a fleet --delete exits non-zero; the baseline does the same for a source-landed one, and the trunk now makes stacked workspaces reach it.
+
+- source_spec: `planning-artifacts/specs/spec-13-6-a-workspace-started-from-another-branch-is-landed-once-its-branch-is-on-main.md`
+  summary: clean --delete of a present, locked worktree whose branch is landed reports an error row (git refuses to remove a locked worktree) rather than a named locked refusal, so a fleet --delete exits non-zero; the baseline does the same for a source-landed one, and the trunk now makes stacked workspaces reach it.
+  evidence: Found at Story 13.6's final review (round 10). Not a loss: the worktree, its branch and its record stay. Deferred by the operator's ruling of 2026-10-23 (land 13.6 once no must-fix regression remains).
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
+  origin: spec-deferred 5684d6677539 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

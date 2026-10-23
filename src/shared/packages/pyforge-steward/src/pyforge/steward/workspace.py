@@ -874,7 +874,11 @@ def _admin_dir(root: Path, wt: Path) -> Path | None:
         except OSError:
             continue
         # A relative pointer (worktree.useRelativePaths) is relative to the admin directory itself (review 9).
-        if os.path.realpath(os.path.join(entry, pointer)) == want:
+        try:
+            resolved = os.path.realpath(os.path.join(entry, pointer))
+        except ValueError:  # a NUL in a damaged pointer file: no match, never a crash of the sweep (review 10)
+            continue
+        if resolved == want:
             return entry
     return None
 
@@ -989,7 +993,9 @@ def _unregister_worktree(root: Path, path: str | Path) -> None:
     ``remove --force`` touches this path alone; a path git does not list is a no-op, and a locked registration stays,
     as ``prune`` always left it (review 9: a second ``--force`` overrode the lock).
     """
-    _git_ok("worktree", "remove", "--force", str(path), cwd=root)
+    _git_bytes(
+        "worktree", "remove", "--force", os.fspath(path), cwd=root
+    )  # output unread: it may echo a non-UTF-8 path
 
 
 def _git_bytes(*args: str, cwd: Path) -> subprocess.CompletedProcess[bytes]:
@@ -1019,8 +1025,8 @@ def _source_commit(source: str, *, root: Path) -> str | None:
     name = _remote_tracking_name(source, root=root)
     if name is None:
         return None
-    found = _git_ok("show-ref", "--verify", "--hash", name, cwd=root)
-    sha = (found.stdout or "").strip()
+    found = _git_bytes("show-ref", "--verify", "--hash", name, cwd=root)  # bytes: its error echoes the name
+    sha = os.fsdecode(found.stdout.strip())
     if found.returncode != 0 or not sha or "\n" in sha:
         return None
     return _commit_of(sha, cwd=root)
@@ -1028,10 +1034,10 @@ def _source_commit(source: str, *, root: Path) -> str | None:
 
 def _remote_names(root: Path) -> frozenset[str]:
     """The repository's configured remotes; ``origin`` alone when git cannot list them."""
-    listed = _git_ok("remote", cwd=root)
+    listed = _git_bytes("remote", cwd=root)  # bytes: a remote named in non-UTF-8 never crashes a check (review 10)
     if listed.returncode != 0:
         return frozenset({"origin"})
-    return frozenset(line.strip() for line in (listed.stdout or "").splitlines() if line.strip())
+    return frozenset(os.fsdecode(line.strip()) for line in listed.stdout.splitlines() if line.strip())
 
 
 def _remote_tracking_name(source: str, *, root: Path) -> str | None:

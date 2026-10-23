@@ -903,3 +903,41 @@ def test_a_name_that_is_not_utf8_never_crashes_the_sweep(repo: Path, tmp_path: P
     result = clean_workspaces(merged_only=True, root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a")
     assert sorted(row["slug"] for row in result["archived"]) == ["base", "odd", "stacked"]
     assert result["skipped"] == []
+
+
+def test_a_remote_named_in_non_utf8_never_crashes_a_landing_check(repo: Path, tmp_path: Path) -> None:
+    """Review 10: ``git remote`` is read as bytes."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    wt = tmp_path / "plain-wt"
+    start_workspace("plain", root=repo, bookkeeping=bookkeeping, path=wt, from_ref="origin/main")
+    subprocess.run(["git", "remote", "add", b"up\xff", str(tmp_path / "origin.git")], cwd=repo, check=True)
+    (row,) = status_workspaces("plain", root=repo, bookkeeping=bookkeeping)
+    assert row.merged is True
+    result = clean_workspaces(delete=True, slug="plain", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a")
+    assert [r["slug"] for r in result["deleted"]] == ["plain"]
+
+
+def test_delete_of_a_pruned_non_utf8_workspace_never_crashes(repo: Path, tmp_path: Path) -> None:
+    """Review 10: ``worktree remove`` echoes a path git no longer lists; its output is never decoded."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    odd = tmp_path / os.fsdecode(b"gone\xff-wt")
+    start_workspace("gone", root=repo, bookkeeping=bookkeeping, path=odd, from_ref="origin/main")
+    shutil.rmtree(odd)
+    _git("worktree", "prune", cwd=repo)
+    result = clean_workspaces(delete=True, slug="gone", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a")
+    assert [r["slug"] for r in result["deleted"]] == ["gone"]
+
+
+def test_a_damaged_sibling_pointer_never_crashes_a_trunk_landing(repo: Path, tmp_path: Path) -> None:
+    """Review 10: a sibling's ``gitdir`` file of NUL bytes (as a power loss can leave) is skipped, never a crash."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    sibling = tmp_path / "sibling-wt"
+    _git("worktree", "add", "-b", "sibling", str(sibling), "origin/main", cwd=repo)
+    sibling_admin = Path(_git("rev-parse", "--absolute-git-dir", cwd=sibling).stdout.strip())
+    stacked = _stacked(repo, tmp_path, bookkeeping, land=True)
+    shutil.rmtree(stacked)
+    (sibling_admin / "gitdir").write_bytes(b"\0" * 64)
+    result = clean_workspaces(
+        merged_only=True, slug="stacked", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+    )
+    assert [r["slug"] for r in result["archived"]] == ["stacked"]

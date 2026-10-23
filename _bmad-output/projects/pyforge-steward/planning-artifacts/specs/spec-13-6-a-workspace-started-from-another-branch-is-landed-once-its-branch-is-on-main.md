@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-23'
 status: 'in-review'
 baseline_revision: 'bdb49ec39f'
-review_loop_iteration: 9
+review_loop_iteration: 10
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -33,6 +33,16 @@ deferred:
     evidence: |-
       Found at Story 13.6's eighth review (pre-existing: the baseline does the same to a source-landed worktree); out
       of 13.6's scope by the operator's ruling of 2026-10-23, beside DW-steward-13-6.
+    location: >-
+      src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
+    severity: low
+  - summary: >-
+      clean --delete of a present, locked worktree whose branch is landed reports an error row (git refuses to
+      remove a locked worktree) rather than a named locked refusal, so a fleet --delete exits non-zero; the baseline
+      does the same for a source-landed one, and the trunk now makes stacked workspaces reach it.
+    evidence: |-
+      Found at Story 13.6's final review (round 10). Not a loss: the worktree, its branch and its record stay.
+      Deferred by the operator's ruling of 2026-10-23 (land 13.6 once no must-fix regression remains).
     location: >-
       src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
     severity: low
@@ -434,4 +444,22 @@ Nit 4 (matrix "longest remote prefix") is fixed. Nit 5 (the deleted-directory er
    - the test name is fixed;
    - the deferral is captured in team memory.
 9. **nit, pre-existing.** `exp31` Q1 is `DW-steward-13-6-2`.
+
+### 2026-10-23 — Review pass 10, the final regression-only review (FAIL: three must-fix)
+
+The bar was a must-fix regression against `bdb49ec39f`. The reviewer compared 43 reproducers at HEAD and at the
+baseline and found three crashes, all in code new in this story. Each is fixed and pinned:
+
+1. **`_remote_names` read `git remote` strictly,** so a remote with a non-UTF-8 name crashed `status` and every clean
+   mode. It now reads bytes.
+2. **`_unregister_worktree` decoded `worktree remove` output,** which echoes a path git no longer lists. A non-UTF-8
+   one crashed `--delete`. The output is no longer read.
+3. **`_admin_dir` passed a damaged `gitdir` pointer containing a NUL to `realpath`,** which raised `ValueError`. Such
+   a pointer is now skipped.
+
+`show-ref`'s output is read as bytes as well, since its error message echoes the name.
+
+Two items were deferred:
+- the locked present worktree's `--delete` error row (third `deferred:` entry);
+- the non-UTF-8 default-clean loss, which falls under `DW-steward-13-6`.
 
