@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-22'
 status: 'done'
 baseline_revision: 'ab50b079a8c8d68d364570b96e01cdd788885ac6'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
@@ -23,7 +23,7 @@ declared_low_risk: false
 ## Intent
 
 **Problem:** Story 87.12's AC says the tracked manifest names every legacy ref it lists. Once Story 87.17 let the
-promoter run, the independent review found 8 of those refs missing from the 2026-10-22 manifest:
+promoter run, the independent review found 8 of those refs missing from the first manifest (680 rows, named for UTC's 2026-10-23):
 - `collect_promotion_rows` asked `git for-each-ref` for `refs/heads/*` and `refs/tags/*`. Those globs match one level
   only, so `backup/bmad-suite-updates-2026-09-26`, `archive/crewai-toolkit-wip-2026` and the nested legacy tags were never
   seen.
@@ -125,4 +125,9 @@ Run 2026-10-22 in the landing worktree, every verdict read from its exit code.
 
 ## Review Triage Log
 
-- 2026-10-22: the independent review runs as a separate pass and records its findings here.
+- 2026-10-22, review (independent subagent; round 2 of Story 87.17's review, which raised this story as its blocker):
+  PASS, 0 blockers. It reverted each part of the inventory fix in turn, and the fixture test failed every time; it ran
+  the date fallback through `execute_twins` in a fixture repo (dated name to a hand twin, `Preserve-Source` kept, a
+  rerun a no-op, a kept branch present locally and on `origin` listed once). Should-fix applied: the Problem said the 8
+  refs were missing from the 2026-10-22 manifest; it was the first one. Nit left: a kept branch present locally and on
+  `origin` at different commits takes the local head; no such branch exists here.

@@ -94,13 +94,13 @@ operator-gated rows stay rows). Turn on `pyforge.marshal.preserve_refs` here.
 ## Verification
 
 **Commands:**
-- `pixi run -e pyforge-guild python -m pytest tests/scripts/test_legacy_preserve_promote.py -q` — expected: 6 passed
+- `pixi run -e pyforge-guild python -m pytest tests/scripts/test_legacy_preserve_promote.py -q` — expected: 8 passed, Story 87.18's test included
   (AC1, AC2).
 - `pixi run -e pyforge-guild python scripts/legacy_preserve_promote.py --manifest-date 2026-10-22` — expected: exit 0,
   the manifest written (AC4).
 
 **Run before the push (not dispatch gates):**
-- Both new tests against the old script — expected: both fail (AC3).
+- The three tests of this story against the old script — expected: all three fail (AC3).
 - `pixi run -e pyforge-marshal pyforge-marshal-test` — expected: pass.
 
 ## Run results
@@ -127,6 +127,8 @@ Run 2026-10-22 (local date; the first run's manifest was named for UTC's 2026-10
 
 ## Spec Change Log
 
+- 2026-10-22, review round 2 (PASS): the Verification commands name 8 tests and three failing ones; removing an extra
+  twin is worded as the operator's action, since `refs/tags/preserve/` is protected.
 - 2026-10-22, independent review (FAIL, 1 blocker), fixed on the same branch:
   - B1: the committed manifest left out 8 legacy refs Story 87.12 names. That is Story 87.18, minted in this change; the
     manifest is re-run as `legacy-preserve-promote-2026-10-22.json`.
@@ -146,5 +148,5 @@ Run 2026-10-22 (local date; the first run's manifest was named for UTC's 2026-10
   missed 8 legacy refs), 2 should-fix, 6 nits. All fixed on the branch (Spec Change Log; B1 as Story 87.18). On N5,
   the operator's ruling named the 17 dirty refs; `--execute` has no row filter and also wrote two local twins,
   `preserve/unbound/hand-26b32591` (`refs/backup/pre-split-1787762347`) and `preserve/unbound/hand-5b6a5404`
-  (`refs/bundle/pyforge-pages`). Both are local only and are deleted with `git tag -d` if the operator does not want
+  (`refs/bundle/pyforge-pages`). Both are local only. `refs/tags/preserve/` is a protected namespace (`guild-roster.json`), so removing them is an operator-only `git tag -d` if the operator does not want
   them.
