@@ -4951,8 +4951,10 @@ dependent that `_mark_dependency_blocked` reaches keeps its dependency's cause (
 `cancelled_by`" for a never-started lane
 **And** a `--jobs 1` test of the 88.1 fixture, where the stop comes before `c` and `a` can be submitted, journals `b`, `c`, `a` and `e`
 `cancelled_by: d` with `d`'s environment and fails on `9fc4cb1c2b`; direct `_run_lane_in_pool` calls with `cancel` set name `interrupt`;
-`test_red_dependency_cancels_dependents` asserts the cause of every cancelled lane; the two tests that pinned 71.10 AC (4) assert the cause;
-the scheduler, the exit codes, the verdicts and `red_lanes` do not change; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+`test_red_dependency_cancels_dependents` asserts the cause of every cancelled lane; the three tests that pinned 71.10 AC (4) (one of them
+Story 105.1's) assert the cause; a dependent of a lane turned away on an interrupt names `interrupt`, in `cancelled_by` or, under
+`--keep-going`, `blocked_by`; the scheduler, the exit codes, the verdicts and `red_lanes` do not change; `pixi run --frozen -e pyforge-steward
+pyforge-steward-test` green
 **Status:** backlog
 
 ## Epic 72: Mason's skill cell is two skills, and the Guild answers `pyforge mason` (spec-pyforge-steward CAP-160..161)

@@ -5,7 +5,7 @@ created: '2026-10-23'
 status: 'in-review'
 baseline_revision: '9fc4cb1c2b04c5746b92b7c0931eea8d82e6b729'
 flag-exempt: detector-or-gate   # a fix needs no flag (spec-feature-flag-governance Q1), and pr-preflight is a gate, as 105.1, 106.1 and 107.1 recorded
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -19,6 +19,8 @@ context:
   - src/shared/packages/pyforge-steward/tests/unit/test_preflight.py
   - src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py
   - src/shared/packages/pyforge-steward/tests/unit/test_preflight_lane_identity.py
+  - src/shared/packages/pyforge-steward/tests/unit/test_preflight_docs_site_mutex.py
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-105-1-the-preflight-never-runs-two-docs-site-lanes-at-once.md
 deferred: []
 declared_low_risk: false
 ---
@@ -46,10 +48,10 @@ Story 71.10 AC (4) pinned the last shape: "the two that never started are journa
 
 **Why it is timing.** In the 88.1 fixture lane `a` depends on `b` and `c`, `b` depends on `d`, and `d` goes red.
 `_mark_dependency_blocked` (`:1338`) journals a dependent only once every dependency has a result. The scheduler
-offers a lane only while no stop is set (`:1364`). Under load the pool thread can run `d` to its end while the main
+offers a lane only while no red stop is set (`:1364`). Under load the pool thread can run `d` to its end while the main
 thread is still filling slots, so `c` is never submitted. Then `a` keeps a dependency with no result, and `c` and `a`
-reach `:1456` with no cause. The same lane carries a cause when the scheduler submitted it before the stop (the pool
-names `d`) and none when it did not.
+reach `:1456` with no cause. A lane carries a cause when the scheduler submitted it before the stop (the pool names
+`d`) and none when it did not; `a`, never submitted itself, carries one only when `c` was.
 
 **Measured at `9fc4cb1c2b`** with the test's fixture and an injected runner (scratchpad `probe.py`):
 
@@ -60,7 +62,9 @@ names `d`) and none when it did not.
 **Approach:** the four uncaused sites take the stop's cause from `_stop_cause`, as the red-stop checks and the
 terminated-lane path already do. After a red stop the default is `red`; after an interrupt it is `interrupt`. The
 first recorded cause wins, so after a red stop followed by SIGINT a never-started lane names the red lane, as the
-lanes the interrupt terminated already do. A never-started lane is still told apart by exit 0 and 0 s.
+lanes the interrupt terminated already do. A never-started lane is still told apart by exit 0 and 0 s. The SIGINT
+handler records its cause before it sets `cancel`, as a red lane records its cause before `stop_on_red` (review
+finding 4), so a pool thread that sees a stop flag always finds its cause.
 
 ### Living CAP citations
 
@@ -71,10 +75,17 @@ lanes the interrupt terminated already do. A never-started lane is still told ap
   - Story 103.5: `cancelled_by_environment`, the red lane's environment; an interrupt names none.
 
   This fix mints no CAP and changes no `SPEC.md` text.
-- **Replaces Story 71.10 AC (4).** A never-started lane now names the stop's cause. AC (4) held only for a lane the
-  scheduler never submitted: the pool already named the cause for a lane it turned away. So one lane's journal
-  differed by scheduling. `cancelled_by` stays additive (71.10's own constraint), and `preflight.py` is its only
-  reader in `src/` and `scripts/`.
+- **Replaces Story 71.10 AC (4), and Story 105.1's matching clause.** A never-started lane now names the stop's
+  cause. AC (4) held only for a lane the scheduler never submitted: the pool already named the cause for a lane it
+  turned away. So one lane's journal differed by scheduling. Story 105.1 restated it for a deferred docs-site lane
+  (`spec-105-1-…md:108`: "a lane that never started: … no `cancelled_by`, as Story 71.10 states"). `cancelled_by`
+  stays additive (71.10's own constraint). `preflight.py` is its only reader in `src/` and `scripts/`; three tests
+  pinned its absence and now pin the cause.
+- **A dependent of a lane turned away on an interrupt now names `interrupt`** (review finding 2). After SIGINT the
+  scheduler still submits ready lanes (`:1364` filters only a red stop), and the pool turns them away. Before, such a
+  lane carried no cause, so `_dependency_blocker` (`:906`, `:910`-`:911`) fell through to the dependency's own task and
+  environment; now it names `interrupt`, with no environment, in `cancelled_by` (and in `blocked_by` under
+  `--keep-going`). The new value names the root cause, as a dependent of a lane cut off by a red stop already does.
 - **No flag.** Under `spec-feature-flag-governance` Q1 a `fix` needs no flag.
 - **Deps.** S-71.11, which is `done`.
 - **Epic.** Epic 71 is `done`. This backlog story reopens it (`epic-71` moves to `in-progress`), which
@@ -99,13 +110,19 @@ lanes the interrupt terminated already do. A never-started lane is still told ap
   nothing. So does a call that sets `cancel` while the lane waits for its service lock (the second check).
 - **(4) An interrupted run names `interrupt` for a never-started lane.** `--jobs 1`, two lanes, SIGINT while the first
   runs: `second` is `cancelled`, exit 0, 0 s, `cancelled_by: "interrupt"`, no `cancelled_by_environment`.
-- **(5) The two tests that pinned 71.10 AC (4) assert the cause instead.**
+- **(5) The three tests that pinned 71.10 AC (4) assert the cause instead.**
   `test_jobs_one_never_started_lanes_have_no_cancelled_by` and
-  `test_sigint_leaves_a_never_started_lane_cancelled_without_cancelled_by` are renamed for what they now pin and
-  keep their exit-0, 0-s assertions.
-- **(6) Nothing else moves.** The scheduler, which lanes run, the exit codes, the verdicts, `red_lanes`, `--keep-going`
-  (`not-run` with `blocked_by`) and the journal of lanes that ran are unchanged. The other preflight tests pass
-  unchanged; `pixi run --frozen -e pyforge-steward pyforge-steward-test` is green.
+  `test_sigint_leaves_a_never_started_lane_cancelled_without_cancelled_by` are renamed for what they now pin;
+  `test_after_a_red_stop_no_lane_starts_even_one_pending_lanes_depend_on` (Story 105.1) keeps its name. Each keeps
+  its exit-0, 0-s assertions.
+- **(6) A dependent of a lane turned away on an interrupt names `interrupt`.** Given lanes `x` and `w` running at
+  `--jobs 2`, `w` sending SIGINT, `y` submitted afterwards and turned away, and `z` depending on `y`, every step
+  ordered by events. Then `y` is `cancelled` with `cancelled_by: "interrupt"`; `z` is `cancelled` with
+  `cancelled_by: "interrupt"` (`not-run` with `blocked_by: "interrupt"` under `--keep-going`); neither carries an
+  environment key.
+- **(7) Nothing else moves.** The scheduler, which lanes run and in what order, the exit codes, the verdicts,
+  `red_lanes`, `--keep-going`'s `not-run` status and the journal of lanes that ran are unchanged. The other preflight
+  tests pass unchanged; `pixi run --frozen -e pyforge-steward pyforge-steward-test` is green.
 
 ## Boundaries & Constraints
 
@@ -118,8 +135,9 @@ lanes the interrupt terminated already do. A never-started lane is still told ap
 
 **Never:**
 - Never change which lanes run, the order they start in, or stop-on-red without `--keep-going`.
-- Never add a journal key or remove one; only `cancelled_by` and `cancelled_by_environment` appear on lanes that
-  lacked them.
+- Never add a journal key to the record or to a lane's schema. Only the cause fields of a cancelled lane or a
+  blocked dependent change: `cancelled_by` and `cancelled_by_environment` appear on lanes that lacked them, and a
+  dependent of a lane turned away on an interrupt names `interrupt` with no environment (AC (6)).
 - Never restructure the scheduler loop or `_mark_dependency_blocked`.
 - Never hand-edit `sprint-status-ledger.yaml` or `SPEC.md`.
 
@@ -135,10 +153,12 @@ each (AGENTS.md § Pre-PR item 5).
 | terminated by SIGINT | `cancelled_by: interrupt` (71.10) | unchanged |
 | submitted, turned away by a red stop | `cancelled_by` the red lane (103.5 review) | unchanged |
 | submitted, turned away by an interrupt | `cancelled`, no cause | `cancelled_by` the first stop cause (`interrupt`) |
-| dependent `_mark_dependency_blocked` reached | `cancelled_by` its dependency's cause (88.1) | unchanged |
+| dependent `_mark_dependency_blocked` reached, dependency red or cut off by a red stop | `cancelled_by` its dependency's cause (88.1) | unchanged |
+| dependent of a lane turned away on an interrupt | `cancelled_by` the dependency itself, with its environment | `cancelled_by: interrupt`, no environment |
 | never submitted, red stop | `cancelled`, no cause | `cancelled_by` the red lane, with its environment |
 | never submitted, interrupt | `cancelled`, no cause | `cancelled_by` the first stop cause (`interrupt`, or the red lane before it) |
 | `--keep-going`, dependent of a red lane | `not-run`, `blocked_by` (88.1) | unchanged |
+| `--keep-going`, dependent of a lane turned away on an interrupt | `not-run`, `blocked_by` the dependency, with its environment | `not-run`, `blocked_by: interrupt`, no environment |
 
 </intent-contract>
 
@@ -166,4 +186,28 @@ each (AGENTS.md § Pre-PR item 5).
 
 ## Spec Change Log
 
-- No change yet.
+- 2026-10-23, after the independent review (FAIL; scratchpad `r7112/review.md`, read against this spec at
+  `26ebdea86f`): AC (5) names three tests, not two (Story 105.1's docs-site test pinned the same shape); AC (6) is
+  new (a dependent of a lane turned away on an interrupt); the old AC (6) is AC (7); the Never clause, the I/O
+  matrix and the Approach say what the review found; the Problem's two imprecise sentences are corrected.
+
+## Review Triage Log
+
+### 2026-10-23 — Review pass 1 (FAIL: one must-fix, two should-fix, three nits)
+
+1. **must-fix, fixed.** `test_preflight_docs_site_mutex.py::test_after_a_red_stop_no_lane_starts_even_one_pending_lanes_depend_on`
+   asserted `"cancelled_by" not in install` and failed on every run (the full station suite: 1 failed, 2905 passed).
+   It now asserts the red lane and its environment; Story 105.1's clause is recorded as superseded.
+2. **should-fix, fixed.** A dependent of a lane the pool turned away on an interrupt changed from the dependency's
+   name to `interrupt`, which this spec said could not happen. Kept (it names the root cause), recorded in AC (6),
+   the matrix and the Never clause, and pinned by
+   `test_a_dependent_of_a_lane_turned_away_on_an_interrupt_names_interrupt` (both `--keep-going` states, ordered by
+   events), red on `9fc4cb1c2b`.
+3. **should-fix, fixed.** The mint memlog entry said "No SPEC.md, PRD or spine change" and listed neither the PRD
+   and spine re-stamps nor the TEA matrix; a later memlog entry corrects it (the memlog is append-only).
+4. **nit, fixed.** `_on_sigint` set `cancel` before it recorded the cause; it now records the cause first, as the red
+   path does.
+5. **nit, fixed.** The second interrupt check's default is pinned: the test is parametrized like the first check's,
+   with no cause recorded, `interrupt`, and a red lane recorded first.
+6. **nit, fixed.** "offers a lane only while no stop is set" now says a red stop; "the cause on `a`, `c` and `e`"
+   now says `a` depends on whether `c` was submitted. Same in the Dream entry.

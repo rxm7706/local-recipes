@@ -1314,8 +1314,10 @@ def run_preflight(
     prior_sigint = signal.getsignal(signal.SIGINT)
 
     def _on_sigint(_signum: int, _frame: object | None) -> None:
-        coord.cancel.set()
+        # The cause before the flag, as a red lane records it (Story 71.12): a pool thread that sees ``cancel`` set
+        # always finds the cause that set it.
         coord.set_stop_cause(("interrupt", None))
+        coord.cancel.set()
         coord.terminate_children()
 
     signal.signal(signal.SIGINT, _on_sigint)
