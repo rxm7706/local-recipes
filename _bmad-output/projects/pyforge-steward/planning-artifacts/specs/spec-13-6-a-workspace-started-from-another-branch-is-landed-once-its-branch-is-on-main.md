@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-23'
 status: 'in-review'
 baseline_revision: 'bdb49ec39f'
-review_loop_iteration: 7
+review_loop_iteration: 8
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -16,10 +16,16 @@ context:
   - src/shared/packages/pyforge-steward/tests/unit/test_workspace_full_refs.py
 deferred:
   - summary: >-
-      A workspace directory deleted by hand whose recorded HEAD is detached at commits no ref holds loses them, as at
-      the baseline: every clean path runs a bare `git worktree prune`, so even a record one clean keeps is pruned by
-      the next clean of any other workspace. Out of Story 13.6's scope by the operator's ruling of 2026-10-23; a fix
-      story (targeted `worktree remove --force`, a ref-contains check) is proposed.
+      A workspace directory deleted by hand whose recorded HEAD is detached at commits no ref holds loses them when
+      its own record is cleaned (the default clean writes .missing.txt and unregisters it), as at the baseline.
+    evidence: |-
+      Out of Story 13.6's scope by the operator's ruling of 2026-10-23, after six review rounds found the protection
+      for this case leaking. Since review 8 every clean unregisters only its own worktree, so a kept sibling is no
+      longer pruned by another clean; the record's own clean still drops its commits. A fix story (ref-contains
+      check, keep or preserve-tag the recorded HEAD) is proposed.
+    location: >-
+      src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
+    severity: medium
 declared_low_risk: false
 ---
 
@@ -146,7 +152,7 @@ workspace `--from base` with another.
     - an `upstream/main` landing still proves it;
     - a workspace named like its remote source is never compared with itself;
     - a short-name `origin/base` shadow is never a landing;
-    - a revision source is read as recorded.
+    - a revision source is read as `refs/remotes/<b>~N`, as at the baseline.
 - **(7) The fix is what makes them pass.** (1)-(3) and (5)'s deleted-source case fail on `bdb49ec39f`; (4) and (5)'s
   missing-trunk case pass there.
 - **(8) Nothing else moves.** The 13.1-13.5, 68.1, 69.1, 70.1 and 85.5 workspace tests pass, and
@@ -170,7 +176,9 @@ workspace `--from base` with another.
 - Never remove a present worktree under `--merged-only`, or skip its preserve tag when the flag is on, while its HEAD
   holds commits no ref keeps. Two cases are out of this story's scope, both as at the baseline:
   - the default `clean` with the preserve flag off still tars and removes a present worktree (CAP-155);
-  - a directory deleted by hand is judged by its branch alone.
+  - a directory deleted by hand lands through the trunk only when the HEAD git records for it is landed and it holds no
+    per-worktree ref; otherwise it gets the baseline's verdict. Its own clean still loses a detached commit, as at
+    the baseline (`DW-steward-13-6`). Every clean unregisters only its own worktree, never a sibling (review 8).
 - Never change `ahead`/`behind`, the bookkeeping format, the exit codes or the CLI flags.
 - Never hand-edit `sprint-status-ledger.yaml`, and never edit `SPEC.md` except by the approved render script.
 
@@ -368,4 +376,24 @@ Nit 4 (matrix "longest remote prefix") is fixed. Nit 5 (the deleted-directory er
 3. **nit, fixed.** The matrix rows for a deleted directory now say the refusal names both refs.
 4. **nit, fixed.** The deferred loss is now recorded in this spec's `deferred:` list.
 5. **nit, fixed.** Three test docstrings were stale.
+
+### 2026-10-23 — Review pass 8 (FAIL: three must-fix, two should-fix, three nits)
+
+1. **must-fix, fixed.** Every clean path ran a bare `git worktree prune`, which drops every registration whose
+   directory is missing. So the clean of a newly trunk-landed workspace could prune a sibling deleted by hand, and its
+   detached commit with it, where the baseline never cleaned that workspace. `_unregister_worktree` (`worktree remove
+   --force --force <path>`) now drops this record's registration only, at all three sites. Pinned for
+   `--merged-only` and `--delete`.
+2. **must-fix, fixed.** Unregistering also deletes the worktree's `refs/worktree/*` and `refs/bisect/*`. A gone
+   directory with such a ref no longer lands through the trunk (`_holds_per_worktree_refs`), the same rule CAP-157's
+   proof applies to a present worktree.
+3. **must-fix, fixed.** The `deferred:` entry had no location, so the deferred-work gate went red. It now names
+   `workspace.py` and was ingested as `DW-steward-13-6`.
+4. **should-fix, fixed.** Two gone-directory legs are pinned: a failed listing (mW6) and a garbage HEAD (mW4).
+5. **should-fix, fixed.** A gone, unmerged directory with no trunk is refused, not reported as an error row (mW7).
+6. **nit, recorded.** A present trunk-landed worktree with a per-worktree ref loses that commit under `--merged-only`.
+   This is pre-existing: the baseline does the same to a source-landed one. It joins the deferred story's scope.
+7. **nit, fixed.** Stale wording in the Never clause, the `_worktree_head_landed` docstring and the revision-source
+   descriptions. CAP-157 and the Dream now name per-worktree refs.
+8. **nit, accepted.** A landed T4 case is unpinned; a refusal there keeps the baseline's verdict.
 

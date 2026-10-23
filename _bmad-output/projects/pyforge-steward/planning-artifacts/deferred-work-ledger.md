@@ -6594,3 +6594,14 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-10-17 — recorded with doctor Story 49.1's review fixes
   status: open
+
+### DW-steward-13-6: A workspace directory deleted by hand whose recorded HEAD is detached at commits no ref holds loses them when its own record is cleaned (the default clean writes .missing.txt and unregisters it), as at the baseline.
+
+- source_spec: `planning-artifacts/specs/spec-13-6-a-workspace-started-from-another-branch-is-landed-once-its-branch-is-on-main.md`
+  summary: A workspace directory deleted by hand whose recorded HEAD is detached at commits no ref holds loses them when its own record is cleaned (the default clean writes .missing.txt and unregisters it), as at the baseline.
+  evidence: Out of Story 13.6's scope by the operator's ruling of 2026-10-23, after six review rounds found the protection for this case leaking. Since review 8 every clean unregisters only its own worktree, so a kept sibling is no longer pruned by another clean; the record's own clean still drops its commits. A fix story (ref-contains check, keep or preserve-tag the recorded HEAD) is proposed.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
+  origin: spec-deferred 26ec7ebe7d77 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

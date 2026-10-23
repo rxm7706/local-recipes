@@ -832,8 +832,8 @@ def _worktree_head_landed(record: WorkspaceRecord, *, root: Path) -> bool:
     would leave them on no ref, so ``--merged-only`` and the preserve-tag check ask about HEAD too. HEAD is read as
     the repository records it (``worktree list --porcelain``), so a broken ``.git`` link still names its commit; an
     unborn HEAD (zeros with a branch line) names none. Any HEAD git cannot read or place, and a listing git cannot
-    give, count as not landed. A directory that is gone is judged by its branch alone, as before this story: a
-    directory deleted by hand is outside its scope (operator ruling 2026-10-23, after review 6).
+    give, count as not landed. A directory that is gone answers True here; its callers judge it with
+    ``_gone_branch_landed`` instead (reviews 7 and 8).
     """
     wt = Path(record.path)
     if not wt.is_dir():
@@ -856,14 +856,54 @@ def _worktree_head_landed(record: WorkspaceRecord, *, root: Path) -> bool:
         return False
 
 
+def _admin_dir(root: Path, wt: Path) -> Path | None:
+    """The ``.git/worktrees/<id>`` directory git keeps for worktree ``wt``, found by its ``gitdir`` back-pointer."""
+    common = _git_ok("rev-parse", "--git-common-dir", cwd=root)
+    if common.returncode != 0:
+        return None
+    base = Path((common.stdout or "").strip())
+    base = base if base.is_absolute() else root / base
+    want = os.path.realpath(wt / ".git")
+    try:
+        entries = sorted((base / "worktrees").iterdir())
+    except OSError:
+        return None
+    for entry in entries:
+        try:
+            pointer = (entry / "gitdir").read_text(encoding="utf-8").strip()
+        except OSError:
+            continue
+        if os.path.realpath(pointer) == want:
+            return entry
+    return None
+
+
+def _holds_per_worktree_refs(root: Path, wt: Path) -> bool:
+    """Whether git keeps ``refs/worktree/*`` or ``refs/bisect/*`` for worktree ``wt``; unknown counts as yes.
+
+    Removing the registration deletes them with it, so a commit only they hold would be lost (Story 13.6 review 8;
+    CAP-157's proof refuses a present worktree with them for the same reason).
+    """
+    admin = _admin_dir(root, wt)
+    if admin is None:
+        return True
+    listed = _git_ok(
+        f"--git-dir={admin}", "for-each-ref", "--format=%(refname)", "refs/worktree/", "refs/bisect/", cwd=root
+    )
+    return listed.returncode != 0 or bool((listed.stdout or "").strip())
+
+
 def _recorded_head_landed_or_absent(record: WorkspaceRecord, *, root: Path) -> bool:
-    """For a missing directory: True when git records no HEAD for it, an unborn one, or one that is landed."""
+    """For a missing directory: True when git records no HEAD for it, an unborn one, or one that is landed, and no
+    per-worktree ref."""
     try:
         registered = _registered_head(root, Path(record.path))
     except WorkspaceError:
         return False
     if registered is None:
         return True
+    if _holds_per_worktree_refs(root, Path(record.path)):
+        return False
     head, on_branch = registered
     if head == _UNBORN_HEAD:
         return on_branch
@@ -940,6 +980,16 @@ _NOTE_IGNORED_LIMIT = 200
 _SKIP_JOURNAL = Path(".steward/preflight-skips.log")
 
 
+def _unregister_worktree(root: Path, path: str | Path) -> None:
+    """Drop git's registration of the one worktree at ``path`` (its directory gone or moved aside).
+
+    Story 13.6 review 8: a bare ``git worktree prune`` drops every registration whose directory is missing, so cleaning
+    one workspace pruned another's, and with it the commits only that registration's HEAD or per-worktree refs held.
+    ``remove --force --force`` touches this path alone (a locked one too); a path git does not list is a no-op.
+    """
+    _git_ok("worktree", "remove", "--force", "--force", str(path), cwd=root)
+
+
 def _git_bytes(*args: str, cwd: Path) -> subprocess.CompletedProcess[bytes]:
     """``_git_ok`` without text decoding, for NUL-separated (``-z``) output whose paths need
     not be valid UTF-8 -- one such name crashed the whole sweep (Story 69.1 review 2)."""
@@ -989,7 +1039,7 @@ def _remote_tracking_name(source: str, *, root: Path) -> str | None:
     ``_source_ref`` and CAP-158 read it) or any configured remote that prefixes the source up to a ``/`` (Story 13.6
     reviews 3 and 4: ``upstream/main`` and ``team/fork/main`` proved landings before this story and must still; the
     refname is ``refs/remotes/<source>`` whichever remote matches). A name that is not a valid refname -- a revision
-    such as ``origin/main~2`` -- is None, so it is read as recorded.
+    such as ``origin/main~2`` -- is None, so it is read through ``_source_ref``, as at the baseline.
     """
     if source.startswith("refs/remotes/"):
         full = source
@@ -1334,9 +1384,9 @@ def _archive_worktree(
                         f"could not archive {record.path}: git remove failed "
                         f"({(result.stderr or '').strip()}) and move failed ({exc})"
                     ) from exc
-                _git_ok("worktree", "prune", cwd=root)
+                _unregister_worktree(root, wt)
         else:
-            _git_ok("worktree", "prune", cwd=root)
+            _unregister_worktree(root, wt)
 
         branch_kept = False
         if _git_ok("rev-parse", "--verify", "--quiet", f"refs/heads/{record.branch}", cwd=root).returncode == 0:
@@ -1412,7 +1462,7 @@ def _execute_delete(record: WorkspaceRecord, *, root: Path) -> None:
             detail = (result.stderr or result.stdout or "").strip()
             raise WorkspaceError(f"could not remove worktree {record.path}: {detail}")
     else:
-        _git_ok("worktree", "prune", cwd=root)
+        _unregister_worktree(root, wt)
 
     if landed:
         _git_ok("branch", "-D", record.branch, cwd=root)

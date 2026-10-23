@@ -504,7 +504,8 @@ def test_a_workspace_named_like_its_remote_source_is_never_compared_with_itself(
 
 
 def test_a_revision_source_is_read_as_recorded(repo: Path, tmp_path: Path) -> None:
-    """Review 3: ``origin/main~0`` is no refname, so it is read by git's name lookup as before: no error row."""
+    """Review 3: ``origin/main~0`` is no refname, so it is read through ``_source_ref`` as at the baseline: no error
+    row."""
     bookkeeping = repo / ".steward" / "workspaces.yaml"
     wt = tmp_path / "rev-wt"
     start_workspace("rev", root=repo, bookkeeping=bookkeeping, path=wt, from_ref="origin/main~0")
@@ -756,3 +757,90 @@ def test_a_revision_source_never_reads_a_local_ref_named_like_the_remote(repo: P
     )
     assert result["archived"] == []
     assert _branch_exists(repo, "rev-shadow")
+
+
+@pytest.mark.parametrize("mode", ["merged-only", "delete"])
+def test_cleaning_one_workspace_never_unregisters_another_deleted_by_hand(
+    repo: Path, tmp_path: Path, mode: str
+) -> None:
+    """Review 8: a trunk-landed ``stacked`` is cleaned; a sibling deleted by hand keeps its registration (and so the
+    commit only its detached HEAD holds), because the clean unregisters its own worktree alone."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    sibling = _landed_origin_main_workspace_with_a_detached_commit(repo, tmp_path, bookkeeping)
+    detached = _git("-C", str(sibling), "rev-parse", "HEAD", cwd=repo).stdout.strip()
+    shutil.rmtree(sibling)
+    stacked = _stacked(repo, tmp_path, bookkeeping, land=True)
+    _git("worktree", "remove", str(stacked), cwd=repo)  # gone, as AC (2) and (5) leave it
+    if mode == "delete":
+        result = clean_workspaces(
+            delete=True, slug="stacked", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+        )
+        assert [r["slug"] for r in result["deleted"]] == ["stacked"]
+    else:
+        result = clean_workspaces(
+            merged_only=True, slug="stacked", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+        )
+        assert [r["slug"] for r in result["archived"]] == ["stacked"]
+    assert f"HEAD {detached}" in _git("worktree", "list", "--porcelain", cwd=repo).stdout
+
+
+def test_a_gone_directorys_per_worktree_ref_keeps_it_from_landing_through_the_trunk(repo: Path, tmp_path: Path) -> None:
+    """Review 8: unregistering deletes ``refs/worktree/*``; a commit only such a ref holds keeps the record."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    stacked = _stacked(repo, tmp_path, bookkeeping, land=True)
+    _git("checkout", "--detach", cwd=stacked)
+    _commit(stacked, "kept-by-worktree-ref.txt")
+    _git("update-ref", "refs/worktree/keep", "HEAD", cwd=stacked)
+    _git("checkout", "stacked", cwd=stacked)
+    shutil.rmtree(stacked)
+    result = clean_workspaces(
+        merged_only=True, slug="stacked", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+    )
+    assert result["skipped"][0]["reason"] == "not-merged"
+    assert _branch_exists(repo, "stacked")
+
+
+def test_a_gone_directory_with_a_failed_listing_is_not_landed_through_the_trunk(
+    repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review 8 (mutant mW6)."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    _stacked_landed_then_detached_and_deleted(repo, tmp_path, bookkeeping)
+    real = ws_module._git_bytes  # noqa: SLF001
+
+    def failing_listing(*args: str, cwd: Path) -> subprocess.CompletedProcess[bytes]:
+        if args[:2] == ("worktree", "list"):
+            return subprocess.CompletedProcess(["git", *args], 129, b"", b"unknown option: -z")
+        return real(*args, cwd=cwd)
+
+    monkeypatch.setattr(ws_module, "_git_bytes", failing_listing)
+    result = clean_workspaces(
+        merged_only=True, slug="stacked", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+    )
+    assert result["skipped"][0]["reason"] == "not-merged"
+    assert _branch_exists(repo, "stacked")
+
+
+def test_a_gone_directory_with_a_garbage_head_is_not_landed_through_the_trunk(repo: Path, tmp_path: Path) -> None:
+    """Review 8 (mutant mW4): zeros with no branch line in a gone directory's registration are no unborn HEAD."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    stacked = _stacked(repo, tmp_path, bookkeeping, land=True)
+    admin = Path(_git("rev-parse", "--absolute-git-dir", cwd=stacked).stdout.strip())
+    shutil.rmtree(stacked)
+    (admin / "HEAD").write_text("garbage\n", encoding="utf-8")
+    result = clean_workspaces(
+        merged_only=True, slug="stacked", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+    )
+    assert result["skipped"][0]["reason"] == "not-merged"
+
+
+def test_a_gone_unmerged_directory_without_the_trunk_is_refused_not_an_error(repo: Path, tmp_path: Path) -> None:
+    """Review 8 (mutant mW7): a trunk git cannot resolve never turns a gone directory's refusal into an error row."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    stacked = _stacked(repo, tmp_path, bookkeeping, land=False)
+    shutil.rmtree(stacked)
+    _git("update-ref", "-d", "refs/remotes/origin/main", cwd=repo)
+    result = clean_workspaces(
+        delete=True, slug="stacked", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+    )
+    assert result["skipped"][0]["reason"] == "branch stacked not on base or origin/main"
