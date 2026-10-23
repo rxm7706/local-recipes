@@ -45,6 +45,9 @@ def _packages(names: list[str], **columns: list) -> pd.DataFrame:
 
 
 def _score(graph, packages, dependencies=None, maintainers=None, attribution=None) -> pd.DataFrame:
+    """Each graph package attributed to its own feedstock, unless ``attribution`` is given."""
+    if attribution is None:
+        attribution = graph[["conda_name", "feedstock_name"]]
     return score_alternative_candidates(graph, attribution, packages, dependencies, maintainers, now=NOW)
 
 
@@ -195,6 +198,106 @@ def test_the_summary_and_keywords_reach_each_attributed_output() -> None:
     assert _pairs(out) == {("old", "new"): pytest.approx(1.0)}
 
 
+def test_an_unattributed_package_gets_no_text_and_no_flag() -> None:
+    """Legacy's Phase E and E.5 reach a package only through its feedstock attribution (Phase B.5); a package
+    attribution does not list gets neither, so it is never scored and never a candidate."""
+    graph = _graph(
+        [
+            ("old", "parse yaml", True),
+            ("new", "parse yaml", False),
+            ("stray", "parse yaml", True),
+            ("loose", "parse yaml", False),
+        ]
+    )
+    attribution = pd.DataFrame({"conda_name": ["old", "new"], "feedstock_name": ["old", "new"]})
+
+    out = _score(graph, _packages(["old", "new", "stray", "loose"]), attribution=attribution)
+
+    assert _pairs(out) == {("old", "new"): pytest.approx(1.0)}
+
+
+def test_a_keyword_overlap_alone_makes_a_candidate() -> None:
+    graph = _graph(
+        [("old", "parse yaml", True), ("kw", "render html", False)], keywords={"old": ["markup"], "kw": ["markup"]}
+    )
+
+    (row,) = _score(graph, _packages(["old", "kw"], downloads_total=[1, 1])).to_dict("records")
+
+    assert (row["candidate_name"], row["kw_score"], row["term_score"], row["similarity_score"]) == ("kw", 1.0, 0.0, 3.0)
+
+
+def test_the_floor_reads_the_score_not_the_composite() -> None:
+    words = " ".join(f"word{i:02d}" for i in range(40))
+    # term Jaccard 3/40: score 0.15, composite 0.075 with no downloads, kept; 2/40: score exactly 0.10, kept
+    graph = _graph([("old", words, True), ("thin", "word00 word01 word02", False), ("edge", "word00 word01", False)])
+
+    pairs = _pairs(_score(graph, _packages(["old", "thin", "edge"], downloads_total=[1, 0, 1])))
+
+    assert pairs[("old", "thin")] == pytest.approx(0.075)
+    assert pairs[("old", "edge")] == pytest.approx(0.1)
+
+
+@pytest.mark.parametrize(
+    ("upload", "factor"),
+    [
+        (0, 1.0),  # legacy reads 0 as no upload time
+        (NOW - 6 * 365 * DAY, 0.5),  # past five years: recency 0, not negative
+        (NOW + 10 * DAY, 1.0 + 0.5 * 10 / 1825),  # a future upload is not clamped above 1, as in legacy
+    ],
+    ids=["zero", "older-than-five-years", "future"],
+)
+def test_recency_follows_legacys_edges(upload, factor) -> None:
+    graph = _graph([("old", "parse yaml", True), ("new", "parse yaml", False)])
+
+    pairs = _pairs(_score(graph, _packages(["old", "new"], latest_conda_upload=[None, upload], downloads_total=[1, 1])))
+
+    assert pairs[("old", "new")] == pytest.approx(round(2 * factor, 3))
+
+
+def test_recency_reads_fractional_days_over_a_1825_day_span() -> None:
+    graph = _graph(
+        [("old", "parse yaml files", True), ("new", "parse yaml quickly", False)],
+        keywords={"old": ["yaml", "config"], "new": ["yaml"]},
+    )
+    deps = pd.DataFrame({"conda_name": ["app", "app", "tool"], "depends_on": ["old", "new", "old"]})
+    maints = pd.DataFrame({"conda_name": ["old", "new"], "maintainer": ["ann", "ann"]})
+    upload = NOW - int(1000.5 * DAY)
+
+    out = _score(
+        graph, _packages(["old", "new"], latest_conda_upload=[None, upload], downloads_total=[1, 1]), deps, maints
+    )
+
+    # score 5.5; 1000.5 days: 3.992 (whole days would give 3.993, a 1826.25-day span 3.994)
+    assert out["similarity_score"].tolist() == [round(5.5 * (0.5 + 0.5 * (1 - 1000.5 / 1825)), 3)] == [3.992]
+
+
+def test_a_missing_status_is_not_active() -> None:
+    graph = _graph([("old", "parse yaml", True), ("none", "parse yaml", False), ("new", "parse yaml", False)])
+    packages = pd.DataFrame({"conda_name": ["old", "none", "new"], "latest_status": ["active", None, "active"]})
+
+    assert set(_score(graph, packages)["candidate_name"]) == {"new"}
+
+
+def test_ranking_reads_the_rounded_composite() -> None:
+    graph = _graph([("old", "parse yaml", True), ("b-cand", "parse yaml", False), ("a-cand", "parse yaml", False)])
+    # a-cand is half a day old: composite 1.99973, which rounds to b-cand's 2.0, so the tie falls to the name
+    packages = _packages(
+        ["old", "b-cand", "a-cand"], latest_conda_upload=[None, None, NOW - DAY // 2], downloads_total=[1, 1, 1]
+    )
+
+    out = _score(graph, packages)
+
+    assert out["candidate_name"].tolist() == ["a-cand", "b-cand"] and out["similarity_score"].tolist() == [2.0, 2.0]
+
+
+def test_the_component_scores_are_rounded() -> None:
+    graph = _graph([("old", "parse yaml files", True), ("new", "parse yaml", False)])
+
+    (row,) = _score(graph, _packages(["old", "new"], downloads_total=[1, 1])).to_dict("records")
+
+    assert row["term_score"] == 0.667 and row["similarity_score"] == 1.333
+
+
 def test_a_kept_graph_without_about_text_gives_no_rows() -> None:
     graph = _graph([("old", "parse yaml", True), ("new", "parse yaml", False)]).drop(columns=["summary", "keywords"])
 
@@ -233,9 +336,10 @@ def test_the_stage_inputs_pass_through() -> None:
     [
         ({"summary": "Parse YAML", "keywords": ["yaml", "", "parser"]}, "Parse YAML", ["yaml", "parser"]),
         ({"summary": ["one", "", "two"], "keywords": "yaml"}, "one, two", []),
+        ({"summary": 3.14}, "3.14", []),  # legacy's _str stringifies any other value
         ({}, None, []),
     ],
-    ids=["text", "list-summary-string-keywords", "none"],
+    ids=["text", "list-summary-string-keywords", "number-summary", "none"],
 )
 def test_the_frame_reads_legacy_phase_es_about_text(about, summary, keywords) -> None:
     payload = {

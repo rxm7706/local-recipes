@@ -238,8 +238,8 @@ def _about_urls(payload: dict[str, Any]) -> dict[str, str | None]:
 
 def _about_text(payload: dict[str, Any]) -> dict[str, Any]:
     """Story 37.7: the recipe's ``about.summary`` and ``about.keywords`` (legacy Phase E, CFA:2327-2334).
-    A list-valued summary is joined with ``, `` as legacy's ``_str`` stores it; keywords are kept only as
-    a list, since legacy's scorer reads nothing else."""
+    The summary is stored as legacy's ``_str`` stores it (a list joined with ``, ``, any other value as its
+    string); keywords are kept only as a list, since legacy's scorer reads nothing else."""
     meta = payload.get("meta_yaml")
     about = meta.get("about") if isinstance(meta, dict) else None
     about = about if isinstance(about, dict) else {}
@@ -248,7 +248,7 @@ def _about_text(payload: dict[str, Any]) -> dict[str, Any]:
         summary = ", ".join(str(s) for s in summary if s)
     keywords = about.get("keywords")
     return {
-        "summary": summary if isinstance(summary, str) else None,
+        "summary": None if summary is None else str(summary),
         "keywords": [str(k) for k in keywords if k] if isinstance(keywords, list) else [],
     }
 
@@ -262,12 +262,15 @@ def package_recipe_fields(
     graph: pd.DataFrame | None,
     attribution: pd.DataFrame | None,
     fields: tuple[str, ...] = RECIPE_FIELDS,
+    *,
+    unattributed: bool = True,
 ) -> pd.DataFrame:
     """Story 34.7: one row per conda package with its feedstock's recipe fields
     (:data:`RECIPE_FIELDS`, or any other anchor-row columns ``fields`` names). Legacy Phase E writes
     them to every output Phase B.5 attributes to the feedstock (``feedstock_to_conda``,
     CFA:2283-2287); ``core_feedstock_attribution`` is that attribution. A package attribution has no
-    row for takes its first anchor row. Pure."""
+    row for takes its first anchor row, unless ``unattributed`` is false (Story 37.7: legacy's own
+    rule, where such a package gets nothing). Pure."""
     cols = ["conda_name", *fields]
     if graph is None or graph.empty or "conda_name" not in graph.columns:
         return pd.DataFrame(columns=cols)
@@ -285,8 +288,9 @@ def package_recipe_fields(
         joined = att.join(by_feedstock, on="feedstock_name", how="inner")
         parts.append(joined[cols])
         attributed = set(att["conda_name"])
-    rest = anchors[~anchors["conda_name"].isin(attributed)].drop_duplicates("conda_name")
-    parts.append(rest[cols])
+    if unattributed:
+        rest = anchors[~anchors["conda_name"].isin(attributed)].drop_duplicates("conda_name")
+        parts.append(rest[cols])
     out = pd.concat(parts, ignore_index=True) if parts else pd.DataFrame(columns=cols)
     return out.astype(object).where(out.notna(), None).reset_index(drop=True)
 

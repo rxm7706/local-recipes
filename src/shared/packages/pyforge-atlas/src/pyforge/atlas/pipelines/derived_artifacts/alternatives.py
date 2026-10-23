@@ -5,8 +5,8 @@ instead of one package per query. PURE: every input arrives as a frame.
 
 Legacy's score, kept: keyword Jaccard x3 + summary-term Jaccard x2 + shared-dependent Jaccard x4 + shared-maintainer
 Jaccard x1, over candidates with a keyword or summary-term overlap, dropped under 0.10; the composite multiplies by
-``0.5 + 0.5 * recency`` (1.0 within 30 days, falling linearly to 0 over five years, 1.0 with no upload time) and by
-0.5 for a candidate with no downloads; the top ``limit`` by composite.
+``0.5 + 0.5 * recency`` (falling linearly from 1.0 at upload to 0 at five years; 1.0 with no upload time) and by
+0.5 for a candidate with no downloads; the top ``LIMIT`` by the composite rounded to three places, ties by name.
 """
 
 from __future__ import annotations
@@ -110,15 +110,19 @@ def score_alternative_candidates(
 
     The packages are ``semantic_packages`` rows. One is archived when ``semantic_packages.feedstock_archived`` (from
     ``vcs_archived_feedstocks``) or the cf-graph's ``archived`` flag says so; a candidate is active, unarchived and
-    not the package itself. Summary and keywords come from the cf-graph anchor rows by feedstock attribution;
-    dependents from ``core_dependencies`` (who depends on a package); maintainers from ``vcs_package_maintainers``.
+    not the package itself. Summary, keywords and the cf-graph flag reach a package only through its feedstock
+    attribution, as legacy's Phase E and E.5 do (no first-anchor fallback for an unattributed package);
+    dependents come from ``core_dependencies`` (who depends on a package), maintainers from
+    ``vcs_package_maintainers``.
     """
     if semantic_packages is None or semantic_packages.empty or "conda_name" not in semantic_packages.columns:
         return _typed(pd.DataFrame(columns=COLUMNS))
     now_ts = int(time.time()) if now is None else now
     pkgs = semantic_packages.dropna(subset=["conda_name"]).drop_duplicates("conda_name")
     pkgs = pkgs.assign(conda_name=pkgs["conda_name"].astype(str)).set_index("conda_name")
-    about = package_recipe_fields(core_cf_graph_raw, core_feedstock_attribution, (*ABOUT_FIELDS, "feedstock_archived"))
+    about = package_recipe_fields(
+        core_cf_graph_raw, core_feedstock_attribution, (*ABOUT_FIELDS, "feedstock_archived"), unattributed=False
+    )
     about = about.drop_duplicates("conda_name").set_index("conda_name")
     summaries, graph_archived = _column(about, "summary"), _column(about, "feedstock_archived")
     row_archived, status = _column(pkgs, "feedstock_archived"), _column(pkgs, "latest_status")

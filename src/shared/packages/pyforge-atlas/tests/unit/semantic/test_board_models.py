@@ -266,6 +266,22 @@ def test_a_candidates_stage_is_the_adoption_stage_boards(tmp_path):
     )
 
 
+def test_a_candidates_store_in_the_earlier_shape_reads_its_own_stage(tmp_path):
+    """With the flag off the board reads primary/alternative_candidates, whose shape carries adoption_stage."""
+    columns = {
+        "archived_name": ["old"],
+        "candidate_name": ["new"],
+        "adoption_stage": ["stable"],
+        "similarity_score": [1.0],
+        "downloads_total": [1],
+    }
+    model = _model(tmp_path, models.build_alternative_candidates_model, columns)
+
+    out = bsl_query(model, dimensions=["candidate_name", "adoption_stage"], measures=["similarity_score"])
+
+    assert out["adoption_stage"].tolist() == ["stable"]
+
+
 def test_the_identity_export_counts_each_gist_column_it_is_given(tmp_path):
     columns = {
         **_IDENTITY,

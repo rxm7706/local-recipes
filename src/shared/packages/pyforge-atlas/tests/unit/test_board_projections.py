@@ -419,7 +419,7 @@ def _data_root(tmp_path: Path) -> Path:
                     "keywords": [[], []],
                 }
             ),
-            None,
+            pd.DataFrame({"conda_name": ["old", "new"], "feedstock_name": ["old", "new"]}),
             pd.DataFrame({"conda_name": ["old", "new"], "latest_status": ["active", "active"]}),
             None,
             None,
