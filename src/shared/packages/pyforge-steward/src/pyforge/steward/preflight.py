@@ -1312,13 +1312,24 @@ def run_preflight(
             return _default_run_lane_ctx(coord, ctx)
 
     prior_sigint = signal.getsignal(signal.SIGINT)
+    # Story 71.13: Python runs the handler on the main thread between bytecodes, so a second SIGINT can land while the
+    # first call holds ``cancel``'s own Lock or ``proc_lock``; re-entering would wait forever on its own frame. A call
+    # that finds the handler running returns at once; once the handler has returned, a SIGINT runs it again.
+    sigint_running = False
 
     def _on_sigint(_signum: int, _frame: object | None) -> None:
-        # The cause before the flag, as a red lane records it (Story 71.12): a pool thread that sees ``cancel`` set
-        # always finds the cause that set it.
-        coord.set_stop_cause(("interrupt", None))
-        coord.cancel.set()
-        coord.terminate_children()
+        nonlocal sigint_running
+        if sigint_running:
+            return
+        sigint_running = True
+        try:
+            # The cause before the flag, as a red lane records it (Story 71.12): a pool thread that sees ``cancel``
+            # set always finds the cause that set it.
+            coord.set_stop_cause(("interrupt", None))
+            coord.cancel.set()
+            coord.terminate_children()
+        finally:
+            sigint_running = False
 
     signal.signal(signal.SIGINT, _on_sigint)
 

@@ -2,7 +2,7 @@
 title: "71.13: A second SIGINT never deadlocks the preflight's interrupt handler"
 type: 'fix'
 created: '2026-10-23'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '884d7f1106'
 flag-exempt: detector-or-gate   # a fix needs no flag (spec-feature-flag-governance Q1), and pr-preflight is a gate, as 105.1, 106.1, 107.1 and 71.12 recorded
 review_loop_iteration: 0

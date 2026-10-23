@@ -1140,3 +1140,118 @@ def test_keep_going_reduced_lane_runs_every_segment(tmp_path: Path) -> None:
     rows = {row["label"]: row for row in reduced["suite_reduction_segments"]}
     assert rows["seg-one"]["outcome"] == "passed"
     assert rows["seg-two"]["outcome"] == "passed"
+
+
+def _sigint_handler_after_a_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> tuple[Callable[[int, Any], None], preflight._RunCoordinator]:  # noqa: SLF001
+    """Story 71.13: run one green lane and keep the SIGINT handler the run installed, with its coordinator.
+
+    The handler closes over the coordinator, so a test can call it after the run, with a lock swapped in that lets a
+    nested call land while the outer one holds it -- a second SIGINT, delivered by no real signal and no timing.
+    """
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _write(repo / "pixi.toml", _mini_pixi("only"))
+    coords = _capture_coordinators(monkeypatch)
+    installed: list[Callable[[int, Any], None]] = []
+    real_signal = signal.signal
+
+    def record(signum: int, handler: Any) -> Any:
+        if signum == signal.SIGINT and callable(handler) and handler.__qualname__.endswith("_on_sigint"):
+            installed.append(handler)
+        return real_signal(signum, handler)
+
+    monkeypatch.setattr(preflight.signal, "signal", record)
+    code = preflight.run_preflight(
+        repo,
+        jobs=1,
+        install_environment=_NOOP_INSTALL,
+        run_lane_ctx=lambda _ctx: 0,
+        scratch_parent=tmp_path / "scratch",
+    )
+    assert code == preflight.EXIT_OK
+    (handler,) = installed
+    (coord,) = coords
+    return handler, coord
+
+
+def _returns_within(target: Callable[[], None], seconds: float) -> bool:
+    """Run ``target`` on a daemon thread; whether it returned in time. A deadlocked call leaves only that thread."""
+    worker = threading.Thread(target=target, daemon=True)
+    worker.start()
+    worker.join(timeout=seconds)
+    return not worker.is_alive()
+
+
+class _NestedSigintEvent(threading.Event):
+    """``cancel`` whose ``set()`` takes its own lock and, holding it, takes a second SIGINT: the window of the defect."""
+
+    def __init__(self, nested: Callable[[], None]) -> None:
+        super().__init__()
+        self.nested = nested
+        self.fired = False
+
+    def set(self) -> None:
+        with self._cond:  # the non-reentrant Lock threading.Event.set holds
+            if not self.fired:
+                self.fired = True
+                self.nested()
+            self._flag = True
+            self._cond.notify_all()
+
+
+class _NestedSigintLock:
+    """``proc_lock`` that, once armed, takes a second SIGINT while held."""
+
+    def __init__(self) -> None:
+        self.lock = threading.Lock()
+        self.nested: Callable[[], None] | None = None
+
+    def __enter__(self) -> _NestedSigintLock:
+        self.lock.acquire()
+        nested, self.nested = self.nested, None
+        if nested is not None:
+            nested()
+        return self
+
+    def __exit__(self, *_exc: object) -> None:
+        self.lock.release()
+
+
+@pytest.mark.skipif(not hasattr(signal, "SIGINT"), reason="SIGINT required")
+def test_a_second_sigint_inside_cancel_set_returns_and_the_first_completes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 71.13 AC (1): a SIGINT that lands while the handler holds `cancel`'s lock does not deadlock it."""
+    handler, coord = _sigint_handler_after_a_run(tmp_path, monkeypatch)
+    coord.cancel = _NestedSigintEvent(lambda: handler(signal.SIGINT, None))
+    assert _returns_within(lambda: handler(signal.SIGINT, None), 10)
+    assert coord.cancel.is_set()
+    assert coord.stop_cause == ("interrupt", None)
+    # A later SIGINT, once the first has returned, runs the handler again as before.
+    assert _returns_within(lambda: handler(signal.SIGINT, None), 10)
+    assert coord.stop_cause == ("interrupt", None)
+
+
+@pytest.mark.skipif(not hasattr(signal, "SIGINT"), reason="SIGINT required")
+def test_a_second_sigint_while_proc_lock_is_held_returns_and_the_first_terminates_the_lane(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 71.13 AC (2): a SIGINT that lands while `terminate_children` holds `proc_lock` does not deadlock it."""
+    handler, coord = _sigint_handler_after_a_run(tmp_path, monkeypatch)
+    proc_lock = _NestedSigintLock()
+    coord.proc_lock = proc_lock  # type: ignore[assignment]
+    running = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"], start_new_session=True)
+    try:
+        coord.register_proc(running, ("sleeper", "env"))
+        proc_lock.nested = lambda: handler(signal.SIGINT, None)
+        assert _returns_within(lambda: handler(signal.SIGINT, None), 20)
+        assert proc_lock.nested is None  # the nested SIGINT did land inside the lock
+        assert running.wait(timeout=10) < 0
+        assert coord.terminated_lanes == {("sleeper", "env")}
+        assert coord.stop_cause == ("interrupt", None)
+    finally:
+        if running.poll() is None:
+            running.kill()
+            running.wait(timeout=5)
