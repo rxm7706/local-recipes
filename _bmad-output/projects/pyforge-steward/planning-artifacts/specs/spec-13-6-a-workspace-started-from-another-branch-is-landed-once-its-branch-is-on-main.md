@@ -2,7 +2,7 @@
 title: '13.6: A workspace started from another branch is landed once its branch is on main'
 type: 'fix'
 created: '2026-10-23'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'bdb49ec39f'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -90,9 +90,17 @@ workspace `--from base` with another.
 - **(4) An unlanded stacked workspace is still refused.** Given `stacked` not merged anywhere:
   - `status` reports `merged: false`;
   - `clean stacked --delete` skips it `not-merged` and keeps its worktree and branch.
-- **(5) The fix is what makes them pass.** (1)-(3) fail on `bdb49ec39f`, and (4) passes there.
-- **(6) Nothing else moves.** The 13.1-13.5, 68.1, 69.1, 70.1 and 85.5 workspace tests pass unchanged, and
-  `pixi run --frozen -e pyforge-steward pyforge-steward-test` is green.
+- **(5) A deleted source and a missing trunk.** Given `stacked` landed and `base`'s worktree and branch then
+  removed, `clean stacked --delete` drops it, while `status` still reports the row unreachable. Given `stacked` not
+  landed and `refs/remotes/origin/main` removed, `status` reports `merged: false` with no error, and `--delete`
+  skips it `not-merged`.
+- **(6) The fix is what makes them pass.** (1)-(3) and (5)'s deleted-source case fail on `bdb49ec39f`; (4) and (5)'s
+  missing-trunk case pass there.
+- **(7) Nothing else moves.** The 13.1-13.5, 68.1, 69.1, 70.1 and 85.5 workspace tests pass, and
+  `pixi run --frozen -e pyforge-steward pyforge-steward-test` is green. One of them changes its setup and keeps its
+  meaning: `test_a_worktree_whose_source_git_cannot_resolve_still_archives` also removes `refs/remotes/origin/main`.
+  Its worktree sits on the trunk, so with the trunk in place git can prove it landed, and the note is the right answer
+  (CAP-157's success clause now says "unless the trunk proves the worktree landed").
 
 ## Boundaries & Constraints
 
@@ -118,11 +126,13 @@ before the merge.
 | Workspace | Today (`bdb49ec39f`) | After |
 |---|---|---|
 | started from `origin/main`, branch on main | landed | unchanged |
+| source git cannot resolve, worktree on main | tarball (no proof) | note (the trunk proves it) |
+| source git cannot resolve, no trunk either | tarball (no proof) | unchanged |
 | started `--from` a local branch, branch on main | `unmerged`; `--delete` and `--merged-only` skip; the default `clean` tars it and keeps the branch | landed: note, branch deleted, `--delete` drops it |
 | started `--from` a local branch, branch only on that source | merged; `--delete` refuses (no remote proof); the default `clean` tars it | unchanged |
 | started `--from` a local branch, branch on neither | `not-merged` | unchanged |
 | repository with no `origin/main` (repo-set member) | verdict from its source | unchanged (the trunk answers "not landed there") |
-| source branch since deleted, branch on main | error row (source unresolvable) | landed (the trunk proves it) |
+| source branch since deleted, branch on main | `status` and `clean` report an error row (source unresolvable) | `clean` judges it landed (the trunk proves it); `status` still reports the row unreachable, since `ahead`/`behind` need the source |
 
 </intent-contract>
 
@@ -150,4 +160,6 @@ before the merge.
 
 ## Spec Change Log
 
-- No change yet.
+- 2026-10-23, during implementation: an unresolvable source no longer forces a tarball when the trunk proves the
+  worktree landed (AC (7), the matrix, CAP-157's success clause); the deleted-source case is AC (5). `status` of a
+  record whose source is gone still reports the row unreachable.
