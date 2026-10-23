@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'the bootstrap-index-health reads derived/bootstrap_index_health as before, which nothing writes, and renders empty'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -39,12 +39,13 @@ Today nothing reports whether a run left an index missing, empty or stale.
    `conf/base/catalog.yml` and its `path` the data root; Kedro makes both absolute against the project, so it reads the
    same files from any working directory. It returns one row per entry whose `filepath`, `path` or `filename` lies
    under the data root, the path globals expanded through the sibling `globals.yml` (`${globals:paths.vdb_store}`,
-   `pypi_conda_map`, `warden_fleet_inventory`, and a literal `data/...`). Each row has:
+   `pypi_conda_map`, `warden_fleet_inventory`), or that a literal `data/...` names (Kedro anchors that at the
+   project, not at `PYFORGE_ATLAS_DATA_ROOT`, and so does the index). Each row has:
    - its layer;
    - its last write: the file's mtime, or for a store directory its newest data file at any depth (JSON or Parquet;
      not a staleness marker, not a dotfile);
    - its row count: the Parquet footer's, or for a store directory the sum of its Parquet footers; none when it holds
-     no Parquet;
+     no Parquet, and none with `unreadable` set when a footer cannot be read (a truncated write);
    - its staleness marker: a sibling `<file>.staleness.json`, or the directory's `.staleness.json`.
 
    Entries that fetch live and persist nothing (an `url` only, or a path outside the data root) have no row. A file
@@ -54,7 +55,8 @@ Today nothing reports whether a run left an index missing, empty or stale.
    - `tier`: the catalog-sources matrix, Tier 0 to 3, each source named by the dataset that persists it
      (`params:catalog_index_health.tiers`); `untiered` otherwise;
    - `floor`: the scale sanity gate's minimum (`floors`);
-   - `status`: `missing` (never written), `stale` (its marker), `empty`, `below_floor` or `ok`;
+   - `status`: `missing` (never written), `stale` (its marker), `unreadable` (a Parquet footer that cannot be read),
+     `empty`, `below_floor` or `ok`;
    - `stale_reason`.
 3. **Its own pipeline, run after the build.** A node with no upstream edge would land in Kedro's first toposort
    group and read the data root before the run writes it. So the node lives in a new `catalog_index` pipeline, which:
@@ -82,8 +84,9 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root).
   its write, footer count and marker; live-only entries and paths outside the data root are not; a store directory
   reads its newest data file and sums its Parquet footers; an unreadable catalog gives an empty frame. The index leaves
   out its own output.
-- **AC2 — Status.** `missing` before `stale` before `empty` before `below_floor`; a write with no count (not Parquet) is
-  `ok`; tiers and floors come from the params; tiered entries sort first.
+- **AC2 — Status.** `missing` before `stale` before `unreadable` before `empty` before `below_floor`; a write with no
+  count (not Parquet) is `ok`, an unreadable Parquet never is; tiers and floors come from the params; tiered entries
+  sort first.
 - **AC3 — Order.** `catalog_index` is registered, absent from `__default__`, and run after the build by the Pages job;
   the README tells an operator to run it after a build.
 - **AC4 — Board.** With the flag on, bootstrap-index-health reads `catalog_index_health` and its AD-17 stamp names that
@@ -98,6 +101,8 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root).
 **Residual risk:**
 - A store that persists JSON rather than Parquet shows its write and no count, so `empty` and `below_floor` cannot fire
   for it.
+- Two catalog entries that share one store directory (`core_s3_download_stats_raw` and `core_s3_version_downloads_raw`,
+  two views of `stores/core_s3_downloads`) each report the directory's summed count, which is neither view's own.
 - `docs/how-to/pixi-tasks.md` is generated from `pixi.toml`, which this story leaves alone, so its bootstrap row does
   not name `catalog_index`; the README does.
 - A run that does not end with `catalog_index` (the bootstrap task, or a hand-run subset of pipelines) leaves the board at
@@ -116,6 +121,7 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root).
 | Parquet, rows ≥ floor or no floor | none | ok |
 | written, not Parquet (a JSON file, or a store of JSON files) | none | ok (no count) |
 | a store holding only a marker | stale | missing |
+| Parquet whose footer cannot be read (a store with one such partition too) | none | unreadable |
 | `url` only, or outside the data root | — | not listed |
 
 </intent-contract>
@@ -140,8 +146,8 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root).
 Run 2026-10-23 in the landing worktree (Story 37.9's branch, then main `771288616d` merged in), every verdict read
 from its exit code. The numbers are those after the review rework.
 
-- **AC1–AC4, tests:** `test_catalog_index.py` (21), `catalog_index/test_nodes.py` (14) and `test_board_projections.py`
-  pass; `pyforge-atlas-test` gives 3,188 passed and 20 skipped, then 103 passed (exit 0).
+- **AC1–AC4, tests:** `test_catalog_index.py` (25), `catalog_index/test_nodes.py` (16) and `test_board_projections.py`
+  pass; `pyforge-atlas-test` gives 3,194 passed and 20 skipped, then 103 passed (exit 0).
 - **Pins moved:**
   - 12 pipelines registered (the README's inventory);
   - the catalog has 139 entries (`catalog_index_raw`, `catalog_index_health`);
@@ -150,17 +156,25 @@ from its exit code. The numbers are those after the review rework.
 - **Found by the suite:**
   - `NODE_TIMEOUTS` must name exactly `__default__`'s nodes, so the node has no timeout (a residual above);
   - the MCP mirror test needed `catalog_index` in `NO_MCP_TRIGGER_PIPELINES`.
-- **Mutations**, each restored, each failing a named test (16 of 16):
-  - which entries are listed: any path listed; the path globals not expanded; a literal `data/` ignored;
-  - store directories: the oldest write taken; the footers not summed; a file marker counted as a write;
-  - markers and counts: a store's marker ignored; a sibling marker ignored; no footer count;
-  - status: stale before missing; `empty` never; the floor ignored; the index's own output listed; no tier sort;
+- **Mutations**, each restored, each failing a named test (20 of 20):
+  - which entries are listed: any path listed; the path globals not expanded; a literal `data/` read under the data
+    root;
+  - store directories: the oldest write taken; the footers not summed; hidden folders counted; a file marker counted
+    as a write;
+  - markers and counts: `unreadable` never flagged; a store's marker ignored; a sibling marker ignored; no footer
+    count;
+  - status: stale before missing; unreadable read as ok; unreadable before stale; `empty` never; the floor ignored;
+    the index's own output listed; no tier sort;
   - wiring: `catalog_index` inside `__default__`; the board path not switched.
 - **Real data:** over Story 37.2's live data root with the shipped catalog, the index lists 115 entries in 0.08 s, and
   the board's table holds 114 (its own output left out).
-  - Status: 79 `ok`, 24 `missing`, 11 `empty`.
-  - Every `missing` entry is unwritten there: marker-only stores (credentialed or unfetched), outputs that root
-    predates, and `repo_dependency_history` (no repo configured).
+  - Status: 78 `ok`, 25 `missing`, 11 `empty`.
+  - Every `missing` entry is unwritten:
+    - marker-only stores (credentialed or unfetched);
+    - outputs that root predates;
+    - `repo_dependency_history` (no repo configured);
+    - `derived_purl_exports`, whose literal `data/...` the index reads under the project (this worktree), as Kedro
+      does.
   - Tier 0 to 3 is all `ok`, except `openteams_project_1_board_raw` (`missing`: credentialed) and
     `enterprise_jfrog_names` (`empty`: no JFrog on a public run).
   - Each floor is met: 34,720 conda-forge packages, 5,549 Anaconda main, 919,975 PyPI names, 34,722 Basilisk.
@@ -168,6 +182,13 @@ from its exit code. The numbers are those after the review rework.
 
 ## Spec Change Log
 
+- 2026-10-23, review 2 (PASS, 0 blockers, 2 should-fix), fixed on the same branch:
+  - SF1: a truncated Parquet file read `ok` (no count), skipping its floor. A footer that cannot be read now sets
+    `unreadable`, and the status is `unreadable`, after `stale`.
+  - SF2: a literal `data/...` path was read under an overridden data root, where Kedro does not write it. It is read
+    under the project now.
+  - Nits: nothing under a dot-name in a store counts as data (hidden folders too); the shared-store sum is a residual
+    above.
 - 2026-10-23, independent review (FAIL, 2 blockers), fixed on the same branch:
   - B1: a store directory's write came from its top-level `*.parquet` only, so 11 written stores (JSON, or Parquet in
     a subfolder: the parselmouth, endoflife and SPDX `last_good.json`, the six migration stores, the two S3 month
@@ -196,3 +217,10 @@ from its exit code. The numbers are those after the review rework.
   - ran `kedro run --pipelines catalog_index` against scratch copies of the member `conf/` and the data root (exit 0);
   - showed that a `KedroSession` opened from another directory read 0 rows before the `filepath`/`path` change;
   - checked the types through Parquet, DuckDB and BSL, for the empty table and the filled one.
+- 2026-10-23, review 2 (independent subagent): PASS. 0 blockers, 2 should-fix and 2 nits, all addressed (Spec Change
+  Log), each closing one of round 1's findings. The reviewer also did these:
+  - confirmed Kedro makes `filepath` and `path` absolute for this dataset;
+  - confirmed `docs/how-to/pixi-tasks.md` is generated, by `scripts/docs_pixi_tasks.py`;
+  - probed cycles and unknown keys in the path globals;
+  - timed the vdb and S3 store scans;
+  - reproduced the real-data counts exactly.

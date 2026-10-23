@@ -25,13 +25,25 @@ _ROOT = "\x00data_root"
 #: entries spell literally
 DEFAULT_ROOT = "data"
 STALENESS_SUFFIX = ".staleness.json"
-COLUMNS = ["catalog_entry", "layer", "relpath", "regenerated_at", "row_count", "stale", "stale_reason"]
+COLUMNS = [
+    "catalog_entry",
+    "layer",
+    "relpath",
+    "regenerated_at",
+    "row_count",
+    "unreadable",
+    "stale",
+    "stale_reason",
+]
+#: where a catalog path is anchored: the data root, or (a literal ``data/...``) the Kedro project
+DATA_ROOT, PROJECT = "data_root", "project"
 
 
-def data_root_relpath(value: str, paths: dict[str, Any]) -> str | None:
-    """The data-root-relative path a catalog path names, or ``None`` when it lies elsewhere. Path globals are
-    expanded through globals.yml (``${globals:paths.vdb_store}`` is ``${paths.data_root}/stores/vdb``), and a
-    literal ``data/...`` is the shipped data root."""
+def resolve_catalog_path(value: str, paths: dict[str, Any]) -> tuple[str, str] | None:
+    """Where a catalog path lies: ``("data_root", <relative path>)`` for a path under the data root, path globals
+    expanded through globals.yml (``${globals:paths.vdb_store}`` is ``${paths.data_root}/stores/vdb``);
+    ``("project", "data/...")`` for a literal ``data/...``, which Kedro anchors at the project, not at
+    ``PYFORGE_ATLAS_DATA_ROOT``; ``None`` for anything else."""
     for _ in range(16):
         match = _PATH_REF.search(value)
         if match is None:
@@ -41,9 +53,10 @@ def data_root_relpath(value: str, paths: dict[str, Any]) -> str | None:
         if not isinstance(replacement, str):
             return None
         value = value[: match.start()] + replacement + value[match.end() :]
-    for prefix in (_ROOT + "/", DEFAULT_ROOT + "/"):
-        if value.startswith(prefix):
-            return value[len(prefix) :]
+    if value.startswith(_ROOT + "/"):
+        return DATA_ROOT, value[len(_ROOT) + 1 :]
+    if value.startswith(DEFAULT_ROOT + "/"):
+        return PROJECT, value
     return None
 
 
@@ -75,43 +88,49 @@ def _mtime(path: Path) -> float | None:
 
 
 def _data_files(directory: Path) -> list[Path]:
-    """A store directory's data files, at any depth: not staleness markers, not dotfiles (temp writes)."""
+    """A store directory's data files, at any depth: not staleness markers, and nothing under a dot-name (temp
+    writes, state files, hidden folders)."""
     try:
         return [
             p
             for p in directory.rglob("*")
-            if p.is_file() and not p.name.startswith(".") and not p.name.endswith(STALENESS_SUFFIX)
+            if p.is_file()
+            and not any(part.startswith(".") for part in p.relative_to(directory).parts)
+            and not p.name.endswith(STALENESS_SUFFIX)
         ]
     except OSError:
         return []
 
 
-def entry_stats(data_root: Path, relpath: str) -> dict[str, Any]:
-    """The persisted state of one catalog entry.
+def entry_stats(target: Path) -> dict[str, Any]:
+    """The persisted state of one catalog entry at ``target``.
 
     A file gives its own mtime, and its Parquet footer's row count. A store directory gives its newest data file's
     mtime (JSON, Parquet, any depth), and the sum of its Parquet footers' row counts, or no count when it holds no
-    Parquet or a footer cannot be read. The staleness marker is a sibling ``<file>.staleness.json`` or the
-    directory's ``.staleness.json``. Anything absent or vanishing mid-scan reads as not written (AD-13)."""
-    target = data_root / relpath
+    Parquet. ``unreadable`` is true when a Parquet file's footer cannot be read (a truncated write), and the count is
+    then unknown. The staleness marker is a sibling ``<file>.staleness.json`` or the directory's ``.staleness.json``.
+    Anything absent or vanishing mid-scan reads as not written (AD-13)."""
     stamps: list[float] = []
-    row_count: int | None = None
+    counts: list[int | None] = []
     if target.is_dir():
         files = _data_files(target)
         stamps = [m for m in map(_mtime, files) if m is not None]
         counts = [_parquet_rows(p) for p in files if p.suffix == ".parquet"]
-        row_count = sum(counts) if counts and None not in counts else None  # type: ignore[arg-type]
         stale, reason = _marker(target / STALENESS_SUFFIX)
     else:
         stamp = _mtime(target) if target.is_file() else None
         stamps = [stamp] if stamp is not None else []
         if stamps and target.suffix == ".parquet":
-            row_count = _parquet_rows(target)
+            counts = [_parquet_rows(target)]
         stale, reason = _marker(target.with_name(target.name + STALENESS_SUFFIX))
+    unreadable = None in counts
+    known = [c for c in counts if c is not None]
+    row_count = sum(known) if stamps and known and not unreadable else None
     regenerated_at = datetime.fromtimestamp(max(stamps), tz=UTC).replace(microsecond=0) if stamps else None
     return {
         "regenerated_at": regenerated_at,
-        "row_count": row_count if stamps else None,
+        "row_count": row_count,
+        "unreadable": bool(stamps) and unreadable,
         "stale": stale,
         "stale_reason": reason,
     }
@@ -138,34 +157,38 @@ class CatalogIndexDataset(AbstractDataset):
             logger.warning("catalog index: %s unreadable: %s", path, exc)
             return None
 
-    def _entries(self) -> list[tuple[str, str, str]]:
+    def _entries(self) -> list[tuple[str, str, str, Path]]:
         catalog = self._load_yaml(Path(self._filepath))
         if not isinstance(catalog, dict):
             return []
         globals_ = self._load_yaml(Path(self._filepath).with_name("globals.yml"))
         paths = globals_.get("paths") if isinstance(globals_, dict) else None
         paths = paths if isinstance(paths, dict) else {}
+        data_root = Path(self._data_root)
+        project = Path(self._filepath).parent.parent.parent  # <project>/conf/base/catalog.yml
         entries = []
         for name, spec in catalog.items():
             if not isinstance(name, str) or name.startswith("_") or not isinstance(spec, dict):
                 continue
             value = next((spec[k] for k in PATH_KEYS if isinstance(spec.get(k), str)), None)
-            relpath = data_root_relpath(value, paths) if value is not None else None
-            if relpath is None:
+            located = resolve_catalog_path(value, paths) if value is not None else None
+            if located is None:
                 continue
+            anchor, relpath = located
+            target = (data_root if anchor == DATA_ROOT else project) / relpath
             metadata = spec.get("metadata")
             layer = metadata.get("layer") if isinstance(metadata, dict) else None
-            entries.append((name, str(layer or ""), relpath))
+            entries.append((name, str(layer or ""), relpath, target))
         return entries
 
     def load(self) -> pd.DataFrame:
-        root = Path(self._data_root)
         rows = [
-            {"catalog_entry": name, "layer": layer, "relpath": relpath, **entry_stats(root, relpath)}
-            for name, layer, relpath in self._entries()
+            {"catalog_entry": name, "layer": layer, "relpath": relpath, **entry_stats(target)}
+            for name, layer, relpath, target in self._entries()
         ]
         frame = pd.DataFrame(rows, columns=COLUMNS)
         frame["row_count"] = frame["row_count"].astype("Int64")
+        frame["unreadable"] = frame["unreadable"].astype("bool")
         frame["stale"] = frame["stale"].astype("bool")
         return frame
 

@@ -23,11 +23,13 @@ UNTIERED = "untiered"
 SELF = "catalog_index_health"
 
 
-def _status(written: Any, stale: bool, rows: Any, floor: Any) -> str:
+def _status(written: Any, stale: bool, unreadable: bool, rows: Any, floor: Any) -> str:
     if written is None or pd.isna(written):
         return "missing"
     if stale:
         return "stale"
+    if unreadable:
+        return "unreadable"  # a Parquet footer that cannot be read: a truncated write, never ok
     if rows is None or pd.isna(rows):
         return "ok"  # a store that is not Parquet: its write is known, its count is not
     if int(rows) == 0:
@@ -43,8 +45,9 @@ def report_catalog_index_health(catalog_index_raw: pd.DataFrame | None, params: 
 
     ``params`` (``catalog_index_health``) carries ``tiers`` (entry to "Tier 0".."Tier 3", the catalog-sources tier
     matrix, each source by the dataset that persists it) and ``floors`` (entry to the scale sanity gate's minimum
-    row count). ``status`` is ``missing`` (never written), ``stale`` (its staleness marker says so), ``empty``,
-    ``below_floor`` or ``ok``. Tiered entries sort first, by tier."""
+    row count). ``status`` is ``missing`` (never written), ``stale`` (its staleness marker says so), ``unreadable``
+    (a Parquet footer that cannot be read), ``empty``, ``below_floor`` or ``ok``. Tiered entries sort first, by tier.
+    The index leaves out its own output, whose row would only report the previous run."""
     index = catalog_index_raw
     if index is None or index.empty or "catalog_entry" not in index.columns:
         return _empty_health()
@@ -67,7 +70,7 @@ def report_catalog_index_health(catalog_index_raw: pd.DataFrame | None, params: 
                 "regenerated_at": written,
                 "row_count": rows,
                 "floor": floor,
-                "status": _status(written, bool(row.get("stale")), rows, floor),
+                "status": _status(written, bool(row.get("stale")), bool(row.get("unreadable")), rows, floor),
                 "stale_reason": row.get("stale_reason") or None,
             }
         )

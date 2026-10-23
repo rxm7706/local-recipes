@@ -17,7 +17,7 @@ PARAMS = {
 
 
 def _index(rows: list[tuple]) -> pd.DataFrame:
-    """``(entry, written, rows, stale, reason)`` as the catalog index."""
+    """``(entry, written, rows, stale, reason[, unreadable])`` as the catalog index."""
     return pd.DataFrame(
         [
             {
@@ -26,10 +26,11 @@ def _index(rows: list[tuple]) -> pd.DataFrame:
                 "relpath": f"primary/{entry}",
                 "regenerated_at": written,
                 "row_count": count,
+                "unreadable": bool(rest[0]) if rest else False,
                 "stale": stale,
                 "stale_reason": reason,
             }
-            for entry, written, count, stale, reason in rows
+            for entry, written, count, stale, reason, *rest in rows
         ]
     )
 
@@ -56,6 +57,15 @@ def test_the_status(written, count, stale, status):
         "core_packages_enumerated"
     ]
     assert row["status"] == status
+
+
+def test_an_unreadable_footer_is_never_ok():
+    row = _health([("core_packages_enumerated", WRITTEN, None, False, None, True)])["core_packages_enumerated"]
+    assert row["status"] == "unreadable"
+
+
+def test_a_stale_marker_wins_over_an_unreadable_footer():
+    assert _health([("x", WRITTEN, None, True, "r", True)])["x"]["status"] == "stale"
 
 
 def test_missing_wins_over_a_stale_marker():

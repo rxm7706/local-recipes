@@ -10,7 +10,7 @@ import pandas as pd
 import pytest
 
 from pyforge.atlas.datasets import CatalogIndexDataset
-from pyforge.atlas.datasets.catalog_index import COLUMNS, data_root_relpath
+from pyforge.atlas.datasets.catalog_index import COLUMNS, resolve_catalog_path
 
 CATALOG = """
 core_packages_enumerated:
@@ -65,12 +65,15 @@ def _write(path: Path, rows: int) -> Path:
     return path
 
 
-def _index(tmp_path: Path, catalog: str = CATALOG) -> dict[str, dict]:
-    conf = tmp_path / "conf"
-    conf.mkdir(exist_ok=True)
+def _index(tmp_path: Path, catalog: str = CATALOG, data_root: Path | None = None) -> dict[str, dict]:
+    """The index over a project laid out as Kedro's: ``<tmp_path>/conf/base/catalog.yml``, data root
+    ``<tmp_path>/data`` unless another is given."""
+    conf = tmp_path / "conf" / "base"
+    conf.mkdir(parents=True, exist_ok=True)
     (conf / "catalog.yml").write_text(catalog, encoding="utf-8")
     (conf / "globals.yml").write_text(GLOBALS, encoding="utf-8")
-    frame = CatalogIndexDataset(filepath=str(conf / "catalog.yml"), path=str(tmp_path / "data")).load()
+    root = data_root if data_root is not None else tmp_path / "data"
+    frame = CatalogIndexDataset(filepath=str(conf / "catalog.yml"), path=str(root)).load()
     assert list(frame.columns) == COLUMNS
     return {row["catalog_entry"]: row for row in frame.to_dict("records")}
 
@@ -87,15 +90,15 @@ def test_every_entry_under_the_data_root_is_listed_by_any_path_key_or_global(tmp
         "literal_root",
     }
     assert got["pypi_conda_map_store"]["relpath"] == "stores/pypi_conda_map.json"
-    assert got["literal_root"]["relpath"] == "derived/literal_root"
+    assert got["literal_root"]["relpath"] == "data/derived/literal_root"
 
 
 @pytest.mark.parametrize(
     ("value", "expected"),
     [
-        ("${globals:paths.data_root}/primary/x.parquet", "primary/x.parquet"),
-        ("${globals:paths.pypi_conda_map}", "stores/pypi_conda_map.json"),
-        ("data/derived/y", "derived/y"),
+        ("${globals:paths.data_root}/primary/x.parquet", ("data_root", "primary/x.parquet")),
+        ("${globals:paths.pypi_conda_map}", ("data_root", "stores/pypi_conda_map.json")),
+        ("data/derived/y", ("project", "data/derived/y")),
         ("${globals:paths.repo_cache}/clones", None),
         ("${globals:paths.unknown}/z", None),
         ("conf/base/seeds/s.json", None),
@@ -103,7 +106,13 @@ def test_every_entry_under_the_data_root_is_listed_by_any_path_key_or_global(tmp
 )
 def test_a_catalog_path_resolves_through_the_path_globals(value, expected):
     paths = {"pypi_conda_map": "${paths.data_root}/stores/pypi_conda_map.json", "repo_cache": "/elsewhere/cache"}
-    assert data_root_relpath(value, paths) == expected
+    assert resolve_catalog_path(value, paths) == expected
+
+
+def test_a_literal_data_path_is_read_under_the_project_not_an_overridden_root(tmp_path):
+    # the project is tmp_path; the data root is elsewhere, as an overridden PYFORGE_ATLAS_DATA_ROOT is
+    _write(tmp_path / "data" / "derived" / "literal_root" / "part.parquet", 4)
+    assert _index(tmp_path, data_root=tmp_path / "override")["literal_root"]["row_count"] == 4
 
 
 def test_a_parquet_file_gives_its_write_and_footer_count(tmp_path):
@@ -153,6 +162,30 @@ def test_a_file_marker_inside_a_store_is_not_a_write(tmp_path):
     assert pd.isna(_index(tmp_path)["json_store"]["regenerated_at"])
 
 
+def test_a_truncated_parquet_is_unreadable_not_ok(tmp_path):
+    path = _write(tmp_path / "data/primary/degraded/degraded.parquet", 3)
+    path.write_bytes(path.read_bytes()[:20])
+    row = _index(tmp_path)["degraded"]
+    assert not pd.isna(row["regenerated_at"])
+    assert bool(row["unreadable"]) is True
+    assert pd.isna(row["row_count"])
+
+
+def test_one_unreadable_partition_makes_the_store_unreadable(tmp_path):
+    store = tmp_path / "data/stores/discovery_homebrew_packages_raw"
+    _write(store / "a.parquet", 2)
+    bad = _write(store / "b.parquet", 2)
+    bad.write_bytes(b"PAR1 truncated")
+    row = _index(tmp_path)["discovery_homebrew_packages_raw"]
+    assert bool(row["unreadable"]) is True and pd.isna(row["row_count"])
+
+
+def test_files_under_a_hidden_folder_are_not_data(tmp_path):
+    store = tmp_path / "data/stores/discovery_homebrew_packages_raw"
+    _write(store / ".cache" / "x.parquet", 9)
+    assert pd.isna(_index(tmp_path)["discovery_homebrew_packages_raw"]["regenerated_at"])
+
+
 def test_a_sibling_marker_marks_a_file_stale(tmp_path):
     path = _write(tmp_path / "data/primary/degraded/degraded.parquet", 3)
     path.with_name(path.name + ".staleness.json").write_text(json.dumps({"stale": True, "reason": "x"}), "utf-8")
@@ -166,12 +199,13 @@ def test_an_absent_file_has_no_write_and_no_count(tmp_path):
 
 
 def test_a_file_that_is_not_parquet_has_a_write_and_no_count(tmp_path):
-    path = tmp_path / "data/primary/degraded/degraded.parquet"
+    path = tmp_path / "data/primary/degraded/degraded.json"
     path.parent.mkdir(parents=True)
-    path.write_text("not parquet", encoding="utf-8")
-    row = _index(tmp_path)["degraded"]
+    path.write_text("{}", encoding="utf-8")
+    row = _index(tmp_path, CATALOG.replace("degraded/degraded.parquet", "degraded/degraded.json"))["degraded"]
     assert not pd.isna(row["regenerated_at"])
     assert pd.isna(row["row_count"])
+    assert bool(row["unreadable"]) is False
 
 
 @pytest.mark.parametrize("catalog", ["", "[1, 2]", "{bad: ["])
