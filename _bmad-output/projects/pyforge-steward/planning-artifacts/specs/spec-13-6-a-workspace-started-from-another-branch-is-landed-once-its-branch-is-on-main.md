@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-23'
 status: 'in-review'
 baseline_revision: 'bdb49ec39f'
-review_loop_iteration: 11
+review_loop_iteration: 12
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -476,4 +476,14 @@ from round 10 apart from them. Two more members of the same class turned up, and
 The new-code family (`_registered_head`, `_admin_dir`, `_holds_per_worktree_refs`, `_unregister_worktree`,
 `_remote_names`, `_source_commit`) now reads git output as bytes, and handles the `ValueError` a path can raise,
 everywhere.
+
+### 2026-10-23 — Review pass 12, verification of the round-11 fixes (FAIL: two must-fix of the same class)
+
+The reachability harness (51 reproducers) is unchanged apart from the round-11 cases. Two more strict-decode crashes
+turned up in paths that now run where the baseline answered:
+- `merge-base` echoing a non-UTF-8 source deleted after landing;
+- `rev-parse HEAD` inside an unregistered worktree of a repository at a non-UTF-8 path.
+
+The class is now closed at its root: the module's `_git_ok` decodes with `errors="surrogateescape"`, so no git output
+raises, for any caller. `_worktree_head_landed` also guards `ValueError`. Both cases are pinned.
 

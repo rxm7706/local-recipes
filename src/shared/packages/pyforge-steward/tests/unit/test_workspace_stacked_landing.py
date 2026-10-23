@@ -27,7 +27,8 @@ from pyforge.steward.workspace import (
 
 
 def _git(*args: str, cwd: Path) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True)
+    # surrogateescape: some tests build repositories at non-UTF-8 paths, which git echoes (review 12).
+    return subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True, errors="surrogateescape")
 
 
 def _branch_exists(repo: Path, branch: str) -> bool:
@@ -994,3 +995,60 @@ def test_a_nul_in_a_recorded_path_never_crashes_the_sweep(repo: Path, tmp_path: 
     else:
         result = clean_workspaces(confirm=lambda _slug: True, **kwargs)
     assert len(result["archived"]) + len(result["deleted"]) + len(result["skipped"]) == 1
+
+
+@pytest.mark.parametrize("mode", ["status", "merged-only", "delete", "default"])
+def test_a_non_utf8_source_deleted_after_landing_never_crashes(repo: Path, tmp_path: Path, mode: str) -> None:
+    """Review 12: git's "Not a valid object name" echoes a non-UTF-8 source; git output is never decoded strictly."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    base_name = os.fsdecode(b"base\xff")
+    subprocess.run(["git", "branch", os.fsencode(base_name), "main"], cwd=repo, check=True)
+    wt = tmp_path / "e1-wt"
+    start_workspace("e1", root=repo, bookkeeping=bookkeeping, path=wt, from_ref=base_name)
+    _commit(wt, "e1.txt")
+    _git("merge", "--no-ff", "-m", "Merge e1", "e1", cwd=repo)
+    _git("push", "origin", "main", cwd=repo)
+    subprocess.run(["git", "branch", "-D", os.fsencode(base_name)], cwd=repo, check=True, capture_output=True)
+    shutil.rmtree(wt)
+    if mode == "status":
+        (row,) = status_workspaces("e1", root=repo, bookkeeping=bookkeeping)
+        assert row.slug == "e1"
+        return
+    kwargs = {"slug": "e1", "root": repo, "bookkeeping": bookkeeping, "archive_dir": tmp_path / "a"}
+    if mode == "merged-only":
+        result = clean_workspaces(merged_only=True, **kwargs)
+    elif mode == "delete":
+        result = clean_workspaces(delete=True, **kwargs)
+    else:
+        result = clean_workspaces(confirm=lambda _slug: True, **kwargs)
+    assert len(result["archived"]) + len(result["deleted"]) + len(result["skipped"]) == 1
+
+
+def test_a_pruned_present_workspace_in_a_non_utf8_repository_never_crashes(tmp_path: Path) -> None:
+    """Review 12: with the registration pruned, HEAD is read inside the worktree, whose git error names a non-UTF-8
+    path; the default clean answers."""
+    base_dir = tmp_path / os.fsdecode(b"r\xff")
+    base_dir.mkdir()
+    origin = base_dir / "origin.git"
+    subprocess.run(["git", "init", "--bare", str(origin)], check=True, capture_output=True)
+    work = base_dir / "local-recipes"
+    work.mkdir()
+    _git("init", "-b", "main", cwd=work)
+    _git("config", "user.email", "test@example.com", cwd=work)
+    _git("config", "user.name", "Test", cwd=work)
+    (work / "scripts").mkdir()
+    (work / "scripts" / "bmad-loop-worktree").write_text("#!/usr/bin/env true\n", encoding="utf-8")
+    (work / "README.md").write_text("scratch\n", encoding="utf-8")
+    _git("add", "-A", cwd=work)
+    _git("commit", "-m", "init", cwd=work)
+    _git("remote", "add", "origin", str(origin), cwd=work)
+    _git("push", "-u", "origin", "main", cwd=work)
+    bookkeeping = work / ".steward" / "workspaces.yaml"
+    wt = base_dir / "d1-wt"
+    start_workspace("d1", root=work, bookkeeping=bookkeeping, path=wt, from_ref="origin/main")
+    admin = Path(_git("rev-parse", "--absolute-git-dir", cwd=wt).stdout.strip())
+    shutil.rmtree(admin)  # git no longer lists it; the directory stays, its .git link now dangles
+    result = clean_workspaces(
+        slug="d1", root=work, bookkeeping=bookkeeping, archive_dir=base_dir / "a", confirm=lambda _slug: True
+    )
+    assert len(result["archived"]) + len(result["skipped"]) == 1

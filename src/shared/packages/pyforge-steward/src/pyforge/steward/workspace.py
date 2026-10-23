@@ -538,12 +538,15 @@ def _git(*args: str, cwd: Path) -> subprocess.CompletedProcess[str]:
 
 
 def _git_ok(*args: str, cwd: Path) -> subprocess.CompletedProcess[str]:
+    # Story 13.6 reviews 10-12: git echoes paths, ref and remote names that need not be UTF-8; a strict decode raised
+    # UnicodeDecodeError, which no sweep catches. surrogateescape keeps those bytes and never raises.
     return subprocess.run(
         ["git", *args],
         cwd=cwd,
         check=False,
         capture_output=True,
         text=True,
+        errors="surrogateescape",
     )
 
 
@@ -850,7 +853,10 @@ def _worktree_head_landed(record: WorkspaceRecord, *, root: Path) -> bool:
     except WorkspaceError:
         return False
     if registered is None:
-        head = _commit_of("HEAD", cwd=wt)
+        try:
+            head = _commit_of("HEAD", cwd=wt)
+        except ValueError:  # a path git cannot be run in (review 12)
+            return False
         if head is None:
             return False
     else:
