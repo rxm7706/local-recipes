@@ -6605,3 +6605,14 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-10-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-steward-13-6-2: A present worktree whose branch is landed loses a commit only its refs/worktree/* or refs/bisect/* ref holds when clean --merged-only removes it, as at the baseline (CAP-157's proof refuses the note, but the tarball keeps files, not history).
+
+- source_spec: `planning-artifacts/specs/spec-13-6-a-workspace-started-from-another-branch-is-landed-once-its-branch-is-on-main.md`
+  summary: A present worktree whose branch is landed loses a commit only its refs/worktree/* or refs/bisect/* ref holds when clean --merged-only removes it, as at the baseline (CAP-157's proof refuses the note, but the tarball keeps files, not history).
+  evidence: Found at Story 13.6's eighth review (pre-existing: the baseline does the same to a source-landed worktree); out of 13.6's scope by the operator's ruling of 2026-10-23, beside DW-steward-13-6.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
+  origin: spec-deferred 87d41f4969f0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

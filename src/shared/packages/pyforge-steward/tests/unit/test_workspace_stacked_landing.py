@@ -8,6 +8,7 @@ never moves again, so judging only against it left a landed workspace ``unmerged
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -503,7 +504,7 @@ def test_a_workspace_named_like_its_remote_source_is_never_compared_with_itself(
     assert _branch_exists(repo, "upstream/main")
 
 
-def test_a_revision_source_is_read_as_recorded(repo: Path, tmp_path: Path) -> None:
+def test_a_revision_source_is_read_under_refs_remotes(repo: Path, tmp_path: Path) -> None:
     """Review 3: ``origin/main~0`` is no refname, so it is read through ``_source_ref`` as at the baseline: no error
     row."""
     bookkeeping = repo / ".steward" / "workspaces.yaml"
@@ -784,13 +785,22 @@ def test_cleaning_one_workspace_never_unregisters_another_deleted_by_hand(
     assert f"HEAD {detached}" in _git("worktree", "list", "--porcelain", cwd=repo).stdout
 
 
-def test_a_gone_directorys_per_worktree_ref_keeps_it_from_landing_through_the_trunk(repo: Path, tmp_path: Path) -> None:
-    """Review 8: unregistering deletes ``refs/worktree/*``; a commit only such a ref holds keeps the record."""
+@pytest.mark.parametrize(
+    ("ref", "relative"),
+    [("refs/worktree/keep", False), ("refs/bisect/bad", False), ("refs/worktree/keep", True)],
+)
+def test_a_gone_directorys_per_worktree_ref_keeps_it_from_landing_through_the_trunk(
+    repo: Path, tmp_path: Path, ref: str, relative: bool
+) -> None:
+    """Reviews 8 and 9: unregistering deletes ``refs/worktree/*`` and ``refs/bisect/*``; a commit only such a ref
+    holds keeps the record, also when git writes relative worktree pointers."""
     bookkeeping = repo / ".steward" / "workspaces.yaml"
+    if relative:
+        _git("config", "worktree.useRelativePaths", "true", cwd=repo)
     stacked = _stacked(repo, tmp_path, bookkeeping, land=True)
     _git("checkout", "--detach", cwd=stacked)
     _commit(stacked, "kept-by-worktree-ref.txt")
-    _git("update-ref", "refs/worktree/keep", "HEAD", cwd=stacked)
+    _git("update-ref", ref, "HEAD", cwd=stacked)
     _git("checkout", "stacked", cwd=stacked)
     shutil.rmtree(stacked)
     result = clean_workspaces(
@@ -827,7 +837,8 @@ def test_a_gone_directory_with_a_garbage_head_is_not_landed_through_the_trunk(re
     stacked = _stacked(repo, tmp_path, bookkeeping, land=True)
     admin = Path(_git("rev-parse", "--absolute-git-dir", cwd=stacked).stdout.strip())
     shutil.rmtree(stacked)
-    (admin / "HEAD").write_text("garbage\n", encoding="utf-8")
+    # Review 9: an invalid symbolic ref lists as forty zeros with no branch line; plain garbage stopped earlier.
+    (admin / "HEAD").write_text("ref: refs/heads/a..b\n", encoding="utf-8")
     result = clean_workspaces(
         merged_only=True, slug="stacked", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
     )
@@ -844,3 +855,51 @@ def test_a_gone_unmerged_directory_without_the_trunk_is_refused_not_an_error(rep
         delete=True, slug="stacked", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
     )
     assert result["skipped"][0]["reason"] == "branch stacked not on base or origin/main"
+
+
+@pytest.mark.parametrize("mode", ["merged-only", "delete", "default"])
+def test_a_locked_registration_is_never_unregistered(repo: Path, tmp_path: Path, mode: str) -> None:
+    """Review 9: ``git worktree prune`` never pruned a locked registration, so the commit its detached HEAD holds
+    stayed; the targeted removal keeps the lock too (one ``--force``, never two)."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    wt = _landed_origin_main_workspace_with_a_detached_commit(repo, tmp_path, bookkeeping)
+    detached = _git("-C", str(wt), "rev-parse", "HEAD", cwd=repo).stdout.strip()
+    _git("worktree", "lock", str(wt), cwd=repo)
+    shutil.rmtree(wt)
+    kwargs = {"slug": "detached", "root": repo, "bookkeeping": bookkeeping, "archive_dir": tmp_path / "a"}
+    if mode == "merged-only":
+        clean_workspaces(merged_only=True, **kwargs)
+    elif mode == "delete":
+        clean_workspaces(delete=True, **kwargs)
+    else:
+        clean_workspaces(confirm=lambda _slug: True, **kwargs)
+    assert f"HEAD {detached}" in _git("worktree", "list", "--porcelain", cwd=repo).stdout
+
+
+def test_moving_a_locked_worktree_aside_never_unregisters_a_sibling(repo: Path, tmp_path: Path) -> None:
+    """Review 9: the archive's fallback (``worktree remove`` refused, the directory moved aside) unregisters only its
+    own worktree, so a sibling deleted by hand keeps the commit its detached HEAD holds."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    sibling = _landed_origin_main_workspace_with_a_detached_commit(repo, tmp_path, bookkeeping)
+    detached = _git("-C", str(sibling), "rev-parse", "HEAD", cwd=repo).stdout.strip()
+    shutil.rmtree(sibling)
+    stacked = _stacked(repo, tmp_path, bookkeeping, land=True)
+    _git("worktree", "lock", str(stacked), cwd=repo)
+    clean_workspaces(
+        slug="stacked", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a", confirm=lambda _slug: True
+    )
+    assert f"HEAD {detached}" in _git("worktree", "list", "--porcelain", cwd=repo).stdout
+
+
+def test_a_name_that_is_not_utf8_never_crashes_the_sweep(repo: Path, tmp_path: Path) -> None:
+    """Review 9: a worktree pointer or per-worktree ref git stores as non-UTF-8 bytes is read, never a crash."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    odd = tmp_path / os.fsdecode(b"odd\xff-wt")
+    start_workspace("odd", root=repo, bookkeeping=bookkeeping, path=odd, from_ref="origin/main")
+    subprocess.run(["git", "update-ref", b"refs/worktree/k\xff", "HEAD"], cwd=odd, check=True, capture_output=True)
+    shutil.rmtree(odd)
+    stacked = _stacked(repo, tmp_path, bookkeeping, land=True)
+    _git("worktree", "remove", str(stacked), cwd=repo)
+    result = clean_workspaces(merged_only=True, root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a")
+    assert sorted(row["slug"] for row in result["archived"]) == ["base", "odd", "stacked"]
+    assert result["skipped"] == []

@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-23'
 status: 'in-review'
 baseline_revision: 'bdb49ec39f'
-review_loop_iteration: 8
+review_loop_iteration: 9
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -26,6 +26,16 @@ deferred:
     location: >-
       src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
     severity: medium
+  - summary: >-
+      A present worktree whose branch is landed loses a commit only its refs/worktree/* or refs/bisect/* ref holds
+      when clean --merged-only removes it, as at the baseline (CAP-157's proof refuses the note, but the tarball keeps
+      files, not history).
+    evidence: |-
+      Found at Story 13.6's eighth review (pre-existing: the baseline does the same to a source-landed worktree); out
+      of 13.6's scope by the operator's ruling of 2026-10-23, beside DW-steward-13-6.
+    location: >-
+      src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
+    severity: low
 declared_low_risk: false
 ---
 
@@ -82,7 +92,10 @@ Read at `bdb49ec39f` in `src/shared/packages/pyforge-steward/src/pyforge/steward
   from any other clean dropped its record, and a HEAD another ref held was kept forever. That protection is gone.
   The trunk still must never lose what the baseline kept, so a gone directory lands on its source as before, and
   lands on the trunk only when the HEAD git still records for it is landed too (`_gone_branch_landed`). Otherwise it
-  gets the baseline's answer, including the source's error. The rest of the loss is the deferred item above.
+  gets the baseline's answer, including the source's error. It also must hold no `refs/worktree/*` or
+  `refs/bisect/*` ref, which unregistering would delete (review 8). Every clean unregisters only its own worktree
+  (`worktree remove --force`), and a locked registration stays (review 9). The rest of the loss is the deferred
+  items above.
 - **`ahead`/`behind`** still read the recorded source.
 
 ### Living CAP citations
@@ -396,4 +409,29 @@ Nit 4 (matrix "longest remote prefix") is fixed. Nit 5 (the deleted-directory er
 7. **nit, fixed.** Stale wording in the Never clause, the `_worktree_head_landed` docstring and the revision-source
    descriptions. CAP-157 and the Dream now name per-worktree refs.
 8. **nit, accepted.** A landed T4 case is unpinned; a refusal there keeps the baseline's verdict.
+
+### 2026-10-23 — Review pass 9 (FAIL: two must-fix, three should-fix, four nits); the operator chose "fix, final review, land"
+
+1. **must-fix, fixed.** `worktree remove --force --force` overrode `git worktree lock`, so a locked registration
+   whose detached HEAD or per-worktree ref held a commit was unregistered, where `prune` always left it. The removal
+   now uses one `--force`. Pinned for a hand-deleted locked registration under all three modes, and for the
+   archive's move-aside fallback.
+2. **must-fix, fixed.** The admin lookup and the per-worktree-ref listing decoded strictly, so a non-UTF-8 pointer
+   or ref name crashed the sweep. Both now read bytes. The `.missing.txt`, landed-note and host-local writes, which
+   crashed the same way before this story, now write those bytes back (`errors="surrogateescape"`).
+3. **should-fix, fixed.** The garbage-HEAD test now writes an invalid symbolic ref, which lists as zeros with no
+   branch line (mutant mW4).
+4. **should-fix, fixed.** `refs/bisect/bad` and relative worktree pointers are pinned (mX5, mX7). A relative pointer
+   now resolves against its admin directory.
+5. **should-fix, fixed.** The move-aside site is pinned (mX11a).
+6. **nit, accepted.** These mutants keep more than needed or are equivalent: mX9, mX10, mX12, mX3, mX8, mW4b, mW5b,
+   mH, mV1, mW10 and mW14.
+7. **nit, fixed.** Relative `gitdir` pointers are covered by item 4.
+8. **nit, fixed.** Wording fixes:
+   - the Approach now names per-worktree refs and the lock;
+   - the present-worktree loss is a second deferral (`DW-steward-13-6-2`);
+   - Story 13.6 in `epics.md` is qualified;
+   - the test name is fixed;
+   - the deferral is captured in team memory.
+9. **nit, pre-existing.** `exp31` Q1 is `DW-steward-13-6-2`.
 

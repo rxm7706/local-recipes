@@ -870,10 +870,11 @@ def _admin_dir(root: Path, wt: Path) -> Path | None:
         return None
     for entry in entries:
         try:
-            pointer = (entry / "gitdir").read_text(encoding="utf-8").strip()
+            pointer = os.fsdecode((entry / "gitdir").read_bytes()).strip()
         except OSError:
             continue
-        if os.path.realpath(pointer) == want:
+        # A relative pointer (worktree.useRelativePaths) is relative to the admin directory itself (review 9).
+        if os.path.realpath(os.path.join(entry, pointer)) == want:
             return entry
     return None
 
@@ -887,10 +888,10 @@ def _holds_per_worktree_refs(root: Path, wt: Path) -> bool:
     admin = _admin_dir(root, wt)
     if admin is None:
         return True
-    listed = _git_ok(
+    listed = _git_bytes(
         f"--git-dir={admin}", "for-each-ref", "--format=%(refname)", "refs/worktree/", "refs/bisect/", cwd=root
-    )
-    return listed.returncode != 0 or bool((listed.stdout or "").strip())
+    )  # bytes: a ref name git prints that is not UTF-8 is a ref, never a crash of the sweep (review 9)
+    return listed.returncode != 0 or bool(listed.stdout.strip())
 
 
 def _recorded_head_landed_or_absent(record: WorkspaceRecord, *, root: Path) -> bool:
@@ -985,9 +986,10 @@ def _unregister_worktree(root: Path, path: str | Path) -> None:
 
     Story 13.6 review 8: a bare ``git worktree prune`` drops every registration whose directory is missing, so cleaning
     one workspace pruned another's, and with it the commits only that registration's HEAD or per-worktree refs held.
-    ``remove --force --force`` touches this path alone (a locked one too); a path git does not list is a no-op.
+    ``remove --force`` touches this path alone; a path git does not list is a no-op, and a locked registration stays,
+    as ``prune`` always left it (review 9: a second ``--force`` overrode the lock).
     """
-    _git_ok("worktree", "remove", "--force", "--force", str(path), cwd=root)
+    _git_ok("worktree", "remove", "--force", str(path), cwd=root)
 
 
 def _git_bytes(*args: str, cwd: Path) -> subprocess.CompletedProcess[bytes]:
@@ -1191,6 +1193,7 @@ def _write_host_local_ignored_tarball(wt: Path, archive_path: Path, *, arcname: 
         archive_path.write_text(
             f"workspace host-local archive: no git-ignored paths under {wt}\n",
             encoding="utf-8",
+            errors="surrogateescape",
         )
         return
     with tarfile.open(archive_path, "w:gz") as tar:
@@ -1344,7 +1347,8 @@ def _archive_worktree(
         host_local = False
         if note is not None:
             archive_path = archive_dir / f"{safe}-{stamp}.landed.txt"
-            archive_path.write_text(note, encoding="utf-8")
+            # A path or name git stored as non-UTF-8 bytes is written back as those bytes, never a crash (review 9).
+            archive_path.write_text(note, encoding="utf-8", errors="surrogateescape")
         elif wt.is_dir():
             if preserve_on and unlanded_branch:
                 archive_path = archive_dir / f"{safe}-{stamp}.host-local.tar.gz"
@@ -1371,6 +1375,7 @@ def _archive_worktree(
             archive_path.write_text(
                 f"workspace {record.slug!r} path missing at clean: {record.path}\n",
                 encoding="utf-8",
+                errors="surrogateescape",
             )
 
         if wt.exists():
