@@ -515,9 +515,7 @@ def _note_label(*, has_data: bool, provenance: ProvenanceInfo) -> str:
     return NOTE_LABEL
 
 
-def _legibility_card(
-    page: PageDef, *, grounded: bool, provenance: ProvenanceInfo, has_data: bool = True
-) -> vm.Card:
+def _legibility_card(page: PageDef, *, grounded: bool, provenance: ProvenanceInfo, has_data: bool = True) -> vm.Card:
     """A semantic markdown Card carrying the page's provenance + its note
     (NFR-8 agent-legibility — a deterministic, agent-readable header). The note is
     labelled a data gap only where the page's data is missing (``_note_label``)."""
