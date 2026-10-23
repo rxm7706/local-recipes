@@ -24,6 +24,7 @@ from .basilisk import (
     chunk_queries,
     parse_basilisk_packages_response,
 )
+from .catalog_index import CatalogIndexDataset
 from .clickhouse_downloads import PyPIClickHouseDownloadsDataset
 from .core_sources import (
     CfGraphTarballDataset,
@@ -258,6 +259,8 @@ __all__ = [
     "S3DownloadStatsDataset",
     # Story 37.5: the append-only store the cve-watcher's history lives in
     "SnapshotHistoryDataset",
+    # Story 37.10: every catalog entry's last write and row count on the data root
+    "CatalogIndexDataset",
     "parse_feedstock_outputs_zip",
     "repodata_json_to_rows",
     "channeldata_json_to_rows",

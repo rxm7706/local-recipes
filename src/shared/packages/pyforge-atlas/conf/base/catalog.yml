@@ -1487,3 +1487,19 @@ semantic_packages:
   filepath: ${globals:paths.data_root}/primary/semantic_packages/semantic_packages.parquet
   metadata:
     layer: primary
+
+# Story 37.10 (CAP-69): every catalog entry under the data root, its last write, Parquet row count
+# and staleness marker. Read-only; catalog_path is member-dir-relative (Kedro runs from the member).
+catalog_index_raw:
+  type: pyforge.atlas.datasets.CatalogIndexDataset
+  catalog_path: conf/base/catalog.yml
+  data_root: ${globals:paths.data_root}
+  metadata:
+    layer: raw
+
+# Story 37.10 (CAP-69): the bootstrap-index-health board's table.
+catalog_index_health:
+  type: pandas.ParquetDataset
+  filepath: ${globals:paths.data_root}/derived/catalog_index_health/catalog_index_health.parquet
+  metadata:
+    layer: derived

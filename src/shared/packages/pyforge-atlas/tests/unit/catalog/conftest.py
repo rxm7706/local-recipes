@@ -96,6 +96,7 @@ PREFIX_TO_PIPELINE = {
     "artifactory": "artifactory_downloads",
     "query_plane": "query_plane_cache",
     "semantic": "semantic_packages",
+    "catalog_index": "catalog_index",  # Story 37.10: the catalog index and its health
 }
 
 # Final implemented counts (drafting target was ~77: 35 sources + ~42
@@ -114,8 +115,9 @@ EXPECTED_PIPELINE_COUNTS = {
     "artifactory_downloads": 4,  # Story 15.3: artifactory_downloads_raw + artifactory_downloads_joined; Story 23.2: + artifactory_consumption_raw + enterprise_jfrog_consumption
     "query_plane_cache": 2,  # Story 34.2 (FR-47): query_plane_estate_source + query_plane_estate
     "semantic_packages": 1,  # Story 20.3 (CAP-6): semantic_packages
+    "catalog_index": 2,  # Story 37.10 (CAP-69): catalog_index_raw + catalog_index_health
 }
-EXPECTED_TOTAL = 137  # Story 25.2: +warden_fleet_inventory +repo_dependency_history; Story 34.4: +core_s3_version_downloads_raw; Story 34.8: +vcs_migration_categories; Story 34.9: +pypi_clickhouse_downloads_raw; Story 37.3: +derived_distribution_breakdown; Story 37.4: +3 board projections; Story 37.5: +vulnerability_rollup_snapshots +derived_vuln_history; Story 37.9: +derived_mapping_gap
+EXPECTED_TOTAL = 139  # Story 25.2: +warden_fleet_inventory +repo_dependency_history; Story 34.4: +core_s3_version_downloads_raw; Story 34.8: +vcs_migration_categories; Story 34.9: +pypi_clickhouse_downloads_raw; Story 37.3: +derived_distribution_breakdown; Story 37.4: +3 board projections; Story 37.5: +vulnerability_rollup_snapshots +derived_vuln_history; Story 37.9: +derived_mapping_gap; Story 37.10: +catalog_index_raw +catalog_index_health
 
 # The A3 IncrementalParquetDataset flip list (TTL-gated persisted outputs).
 FLIP_LIST = {

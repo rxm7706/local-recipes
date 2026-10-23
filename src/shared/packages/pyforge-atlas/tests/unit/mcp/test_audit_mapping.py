@@ -68,7 +68,9 @@ VALID_VERDICT_PREFIXES = ("read_dataset:", "pipeline-trigger", "deferred-to-BSL(
 # Story 20.3 (CAP-6, `query-plane-catalog` ruling): `semantic_packages` is the SAME shape --
 # a named, downstream-only, opt-in derivation pipeline invoked via `pyforge atlas run --pipelines
 # semantic_packages` (see the story spec's AC), not through the MCP pipeline-trigger surface.
-NO_MCP_TRIGGER_PIPELINES = {"artifactory_downloads", "query_plane_cache", "semantic_packages"}
+# Story 37.10: catalog_index reports on what the other pipelines wrote; it runs after a build, as the two
+# downstream composition pipelines do, never as an MCP trigger of its own
+NO_MCP_TRIGGER_PIPELINES = {"artifactory_downloads", "query_plane_cache", "semantic_packages", "catalog_index"}
 
 
 def _declared_catalog_names() -> set[str]:

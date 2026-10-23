@@ -500,6 +500,20 @@ PROJECTED_PAGES: dict[str, PageDef] = {
             "after dropping a -py, -python or python- affix) or unrecovered. Legacy's grayskull and "
             "purl-associator corroborators are not in atlas, so no row is verified.",
         ),
+        # Story 37.10 (CAP-69)
+        PageDef(
+            "bootstrap-index-health",
+            "Bootstrap Index Health",
+            "bootstrap-index-health",
+            "bsl-shell",
+            note="Wired to build_bootstrap_index_health_model over catalog_index_health, which the catalog_index "
+            "pipeline writes after a build: every catalog entry the data root holds, its last write, the row count "
+            "its Parquet footer gives, and its tier in the catalog-sources matrix (Tier 0 to 3; untiered "
+            "otherwise). status is missing (never written), stale (its staleness marker), empty, below_floor (under "
+            "the scale sanity gate: 30,000 conda-forge packages, 5,000 Anaconda main, a non-empty PyPI index and "
+            "Basilisk catalog) or ok. Entries that fetch live and persist nothing are not listed.",
+            filters=("tier", "status"),
+        ),
     )
 }
 
@@ -950,6 +964,10 @@ def build_dashboard(
     vuln_history_path = root / (_data.DERIVED_VULN_HISTORY_PARQUET if projected else _data.VULN_HISTORY_PARQUET)
     # Story 37.9: the mapping-gap classification with the flag on, the path nothing writes off
     mapping_gap_path = root / (_data.DERIVED_MAPPING_GAP_PARQUET if projected else _data.MAPPING_GAP_PARQUET)
+    # Story 37.10: the catalog index's health with the flag on, the path nothing writes off
+    index_health_path = root / (
+        _data.CATALOG_INDEX_HEALTH_PARQUET if projected else _data.BOOTSTRAP_INDEX_HEALTH_PARQUET
+    )
 
     # AD-17 (Story I4): each grounded/bsl-shell page's provenance is THAT page's own
     # backing Parquet file's mtime (resolve_for_file degrades to "unavailable" + a
@@ -1000,7 +1018,7 @@ def build_dashboard(
         identity_workbook_complete,
         identity_workbook_enterprise,
     )
-    bootstrap_index_health_provenance = _provenance.resolve_for_file(root / _data.BOOTSTRAP_INDEX_HEALTH_PARQUET)
+    bootstrap_index_health_provenance = _provenance.resolve_for_file(index_health_path)
     identity_export_snapshot_provenance = _provenance.resolve_for_file(root / _data.IDENTITY_EXPORT_PARQUET)
     live_catalog_coverage_provenance = _provenance.resolve_for_file(live_catalog_coverage_path)
     behind_upstream_provenance = _provenance.resolve_for_file(root / _data.BEHIND_UPSTREAM_PARQUET)
@@ -1195,7 +1213,7 @@ def build_dashboard(
         ),
         _data_page(
             by_id["bootstrap-index-health"],
-            lambda: _data.load_bootstrap_index_health(root / _data.BOOTSTRAP_INDEX_HEALTH_PARQUET),
+            lambda: _data.load_bootstrap_index_health(index_health_path),
             grounded=False,
             provenance=bootstrap_index_health_provenance,
         ),

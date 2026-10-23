@@ -125,7 +125,7 @@ development_status:
   36-2-the-openteams-board-and-the-staged-recipes-prs-fill-on-opt-in: done
   36-3-the-query-plane-estate-source-has-a-producer: blocked
   37-1-the-dashboard-reads-the-data-root-kedro-writes: done
-  37-10-the-bootstrap-index-health-reports-each-catalog-entry-s-freshness: backlog
+  37-10-the-bootstrap-index-health-reports-each-catalog-entry-s-freshness: done
   37-11-a-board-s-note-reads-data-gap-only-where-data-is-missing: done
   37-2-the-pages-vizro-export-builds-the-public-atlas-data-first: done
   37-3-the-seed-gap-version-download-and-distribution-boards-read-their-datasets: done

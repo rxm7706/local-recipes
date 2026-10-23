@@ -773,6 +773,8 @@ def build_bootstrap_index_health_model(table: Any) -> SemanticModel:
             "catalog_entry": Dimension(expr=lambda t: t.catalog_entry),
             "tier": Dimension(expr=lambda t: t.tier),
             "regenerated_at": Dimension(expr=lambda t: t.regenerated_at),
+            # Story 37.10: missing / stale / empty / below_floor / ok; a store without it shows it as missing
+            "status": Dimension(expr=lambda t: t.status if "status" in t.columns else _null(t, "string")),
         },
         measures={
             "row_count": Measure(expr=lambda t: t.row_count.sum()),

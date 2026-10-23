@@ -552,7 +552,7 @@ _NEW_PAGE_LOADERS_NO_ARGS: dict[str, tuple] = {
     ),
     "bootstrap-index-health": (
         dash_data.load_bootstrap_index_health,
-        ["catalog_entry", "tier", "regenerated_at", "row_count"],
+        ["catalog_entry", "tier", "regenerated_at", "status", "row_count"],
     ),
     "identity-export-snapshot": (
         dash_data.load_identity_export_snapshot,
@@ -711,7 +711,7 @@ _NEW_MODEL_SCHEMAS: dict[str, tuple] = {
     ),
     "bootstrap-index-health": (
         models.build_bootstrap_index_health_model,
-        ["catalog_entry", "tier", "regenerated_at"],
+        ["catalog_entry", "tier", "regenerated_at", "status"],
         ["row_count"],
     ),
     "identity-export-snapshot": (
@@ -894,7 +894,7 @@ def test_bootstrap_index_health_is_bsl_wired_and_light_up_with_data(write_parque
     expected = (
         models.build_bootstrap_index_health_model(table)
         .query(
-            dimensions=["catalog_entry", "tier", "regenerated_at"],
+            dimensions=["catalog_entry", "tier", "regenerated_at", "status"],
             measures=["row_count"],
         )
         .execute()

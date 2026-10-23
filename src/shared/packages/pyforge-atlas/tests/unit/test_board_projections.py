@@ -21,6 +21,7 @@ from vizro.managers import data_manager
 
 from pyforge.atlas import provenance
 from pyforge.atlas.dashboard import app, data, static_export
+from pyforge.atlas.pipelines.catalog_index.nodes import report_catalog_index_health
 from pyforge.atlas.pipelines.derived_artifacts.nodes import (
     BEHIND_UPSTREAM_COLUMNS,
     LIVE_CATALOG_COVERAGE_FIELDS,
@@ -43,6 +44,7 @@ PROJECTED = (
     "live-catalog-coverage",
     "cve-watcher",
     "mapping-gap",
+    "bootstrap-index-health",
 )
 NOW = 1_700_000_000
 STAMP = "2026-10-22T00:00:00Z"
@@ -379,6 +381,24 @@ def _data_root(tmp_path: Path) -> Path:
         root / data.DERIVED_MAPPING_GAP_PARQUET,
         classify_mapping_gap(_enumerated([("a", "1.0")]), None, None, None, None, None),
     )
+    # Story 37.10: one catalog entry's health
+    _write(
+        root / data.CATALOG_INDEX_HEALTH_PARQUET,
+        report_catalog_index_health(
+            pd.DataFrame(
+                {
+                    "catalog_entry": ["core_packages_enumerated"],
+                    "layer": ["intermediate"],
+                    "relpath": ["intermediate/x.parquet"],
+                    "regenerated_at": [pd.Timestamp("2026-10-23T00:00:00Z")],
+                    "row_count": [40000],
+                    "stale": [False],
+                    "stale_reason": [None],
+                }
+            ),
+            {"tiers": {"core_packages_enumerated": "Tier 0"}},
+        ),
+    )
     return root
 
 
@@ -403,7 +423,7 @@ def test_with_the_flag_off_the_four_boards_read_as_before(tmp_path: Path) -> Non
     app.build_dashboard(build_stamp=STAMP, data_root=_data_root(tmp_path), now=NOW, board_projections=False)
 
     assert _frame("behind-upstream") is None and _frame("whodepends") is None  # shells: no data function
-    for page_id in ("universe-sbom", "live-catalog-coverage", "cve-watcher", "mapping-gap"):
+    for page_id in ("universe-sbom", "live-catalog-coverage", "cve-watcher", "mapping-gap", "bootstrap-index-health"):
         frame = _frame(page_id)
         assert frame is not None and frame.empty, page_id  # the earlier paths, which nothing writes
 
@@ -422,6 +442,7 @@ def test_with_the_flag_on_each_board_is_stamped_from_the_file_it_reads(tmp_path:
         "live-catalog-coverage": data.DERIVED_LIVE_CATALOG_COVERAGE_PARQUET,
         "cve-watcher": data.DERIVED_VULN_HISTORY_PARQUET,
         "mapping-gap": data.DERIVED_MAPPING_GAP_PARQUET,
+        "bootstrap-index-health": data.CATALOG_INDEX_HEALTH_PARQUET,
     }
     for offset, path in enumerate(reads.values()):  # a distinct mtime per file, so a swapped stamp shows
         stamp = 1_600_000_000 + offset * 86_400

@@ -208,6 +208,9 @@ jobs:
         run: |
           pixi run --frozen -e pyforge-atlas pyforge-atlas-bootstrap
           pixi run --frozen -e pyforge-atlas pyforge atlas run --pipelines semantic_packages
+          # Story 37.10: catalog_index reports what the build wrote (the bootstrap-index-health
+          # board), so it runs alone, last
+          pixi run --frozen -e pyforge-atlas pyforge atlas run --pipelines catalog_index
 
       # The same Dashboard object dashboard-dryrun builds, one static page per board, ONE
       # vendored assets/plotly.min.js; never a commit (the export is gitignored).
