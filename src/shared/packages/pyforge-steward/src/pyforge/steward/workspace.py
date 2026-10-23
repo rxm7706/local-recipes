@@ -724,13 +724,13 @@ def status_workspaces(
 def _rev_merged_into(root: Path, rev: str, into: str, *, label: str) -> bool:
     """True when ``rev`` (a full ref or a sha; ``label`` names it in errors) is an ancestor of ``into``.
 
-    An ``origin/<b>`` target is compared by the commit its remote-tracking ref names (``_source_commit``), never by
-    the name: when that ref is missing, git would read ``refs/remotes/<b>`` as a local branch or tag of that name
-    (Story 13.6 review: ``refs/heads/refs/remotes/origin/main`` proved an unlanded branch merged). Any other target (a
-    local branch, a sha, a full ref) is passed as recorded (Story 70.1).
+    An ``origin/<b>`` or ``refs/remotes/<r>/<b>`` target is compared by the commit its remote-tracking ref names
+    (``_source_commit``), never by the name: when that ref is missing, git would read ``refs/remotes/<b>`` as a local
+    branch or tag of that name (Story 13.6 reviews: ``refs/heads/refs/remotes/origin/main`` proved an unlanded branch
+    merged). Any other target (a local branch, a sha, another full ref) is passed as recorded (Story 70.1).
     """
     target = into
-    if into.startswith("origin/"):
+    if into.startswith(("origin/", "refs/remotes/")):
         resolved = _source_commit(into, root=root)
         if resolved is None:
             raise WorkspaceError(
@@ -793,15 +793,16 @@ def _worktree_head_landed(record: WorkspaceRecord, *, root: Path) -> bool:
     """True when the worktree is gone, or its HEAD is landed like its branch (Story 13.6 review).
 
     A detached HEAD can carry commits its branch does not. Removing such a worktree because the branch landed
-    would leave them on no ref, so ``--merged-only`` and the preserve-tag check ask about HEAD too. A HEAD git
-    cannot read, or cannot place, counts as not landed.
+    would leave them on no ref, so ``--merged-only`` and the preserve-tag check ask about HEAD too. A HEAD git cannot
+    read (unborn, or a broken gitdir) names no commit to lose, so the branch's verdict stands, as before this story; a
+    HEAD git reads but cannot place counts as not landed.
     """
     wt = Path(record.path)
     if not wt.is_dir():
         return True
     head = _commit_of("HEAD", cwd=wt)
     if head is None:
-        return False
+        return True
     try:
         return _rev_landed(root, head, record.source, label="HEAD")
     except WorkspaceError:
@@ -867,12 +868,19 @@ def _source_commit(source: str, *, root: Path) -> str | None:
     with a warning that config can switch off and a locale can reword; so the proof asks git
     which ref won (``--symbolic-full-name``) -- only one under ``refs/remotes/`` is a landing
     (Story 69.1 reviews 1 and 2). ``origin/<b>`` is asked for by its full refname, so a shadow
-    no longer turns a provable landing into a tarball (Story 70.1)."""
-    full = _git_ok("rev-parse", "--verify", "--symbolic-full-name", "--end-of-options", _source_ref(source), cwd=root)
-    name = (full.stdout or "").strip()
-    if full.returncode != 0 or not name.startswith("refs/remotes/") or "\n" in name:
+    no longer turns a provable landing into a tarball (Story 70.1).
+
+    Story 13.6 review 2: the full refname is looked up exactly (``show-ref --verify``), never through git's name
+    lookup. ``rev-parse`` falls through to ``refs/heads/refs/remotes/<b>`` when the remote-tracking ref is missing,
+    and when both exist it prints only "ambiguous" with exit 0, so a real landing read as unresolvable."""
+    name = _source_ref(source)
+    if not name.startswith("refs/remotes/"):
         return None
-    return _commit_of(name, cwd=root)
+    found = _git_ok("show-ref", "--verify", "--hash", name, cwd=root)
+    sha = (found.stdout or "").strip()
+    if found.returncode != 0 or not sha or "\n" in sha:
+        return None
+    return _commit_of(sha, cwd=root)
 
 
 def default_flags_path() -> Path:
