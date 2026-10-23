@@ -23,7 +23,9 @@ Page set (the full 34-page inventory, Story 20.5 / CAP-7 closing DW-D2-1):
   * NO-BSL-MODEL SHELL pages — behind-upstream, whodepends (no D1 BSL model exists yet; a
     Card states the gap — no data function, no fabrication). With ``pyforge.atlas.board_projections``
     on (Story 37.4), ``page_inventory`` swaps in ``PROJECTED_PAGES``: these two read their models,
-    and universe-sbom and live-catalog-coverage read the projections ``derived_artifacts`` writes.
+    and universe-sbom and live-catalog-coverage read the projections ``derived_artifacts`` writes; the
+    cve-watcher reads the vulnerability pipeline's diff of two snapshots (Story 37.5), and the mapping-gap
+    the classification pypi_intelligence writes (Story 37.9).
   * BSL-WIRED pages over their own per-page model (Story 20.5) — the remaining atlas-CLI /
     cyclonedx-suite / seed-gap-suggester pages, each routed through a model in
     ``semantic/models.py``. Each page's ``note`` names the pipeline that has still to
@@ -419,7 +421,7 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
     PageDef("factory-status", "Factory Status", "factory-status", "factory"),
 )
 
-#: Story 37.4 (CAP-69): the four boards' definitions with ``pyforge.atlas.board_projections`` on.
+#: Story 37.4 (CAP-69): the four boards' definitions, Story 37.5's cve-watcher and Story 37.9's mapping-gap, with ``pyforge.atlas.board_projections`` on.
 #: Off, ``PAGE_INVENTORY``'s entries stand: the two shells, and the coverage boards' earlier paths.
 PROJECTED_PAGES: dict[str, PageDef] = {
     page.id: page
@@ -468,6 +470,20 @@ PROJECTED_PAGES: dict[str, PageDef] = {
             "derived_artifacts' project_live_catalog_coverage writes: per inventory flag of the identity "
             "export (PyPI_Verified, CondaForge_Verified and the in_* channel flags), how many rows hold "
             "it, out of how many.",
+        ),
+        # Story 37.5 (CAP-69)
+        PageDef(
+            "cve-watcher",
+            "CVE Watch",
+            "cve-watcher",
+            "bsl-shell",
+            note="Wired to build_vuln_history_model over derived_vuln_history. Each vulnerability run appends "
+            "its rollup to vulnerability_rollup_snapshots, and diff_vulnerability_snapshots compares the latest "
+            "snapshot with the most recent one more than since_days older (else the one before it), as legacy "
+            "cve-watcher does: one row per package and severity whose count moved. The severities are total, "
+            "critical_high and kev, since the rollup counts critical and high together. Empty until two runs "
+            "have written snapshots. DESIGN.md § 3.1's maintainer filter is not declared.",
+            filters=("severity", "since_days"),
         ),
         # Story 37.9 (CAP-69)
         PageDef(
@@ -930,6 +946,8 @@ def build_dashboard(
     live_catalog_coverage_path = root / (
         _data.DERIVED_LIVE_CATALOG_COVERAGE_PARQUET if projected else _data.LIVE_CATALOG_COVERAGE_PARQUET
     )
+    # Story 37.5: the cve-watcher's diff with the flag on, the path nothing writes off
+    vuln_history_path = root / (_data.DERIVED_VULN_HISTORY_PARQUET if projected else _data.VULN_HISTORY_PARQUET)
     # Story 37.9: the mapping-gap classification with the flag on, the path nothing writes off
     mapping_gap_path = root / (_data.DERIVED_MAPPING_GAP_PARQUET if projected else _data.MAPPING_GAP_PARQUET)
 
@@ -953,7 +971,7 @@ def build_dashboard(
     # Story 20.5 (CAP-7) — the 19 remaining pages' own backing Parquet provenance
     # (same AD-17 discipline as above: each page's OWN file mtime, "unavailable" +
     # a reason when absent — never a fabricated stamp).
-    cve_watcher_provenance = _provenance.resolve_for_file(root / _data.VULN_HISTORY_PARQUET)
+    cve_watcher_provenance = _provenance.resolve_for_file(vuln_history_path)
     version_downloads_provenance = _provenance.resolve_for_file(root / _data.VERSION_DOWNLOADS_PARQUET)
     release_cadence_provenance = _provenance.resolve_for_file(root / _data.RELEASE_CADENCE_PARQUET)
     find_alternative_provenance = _provenance.resolve_for_file(root / _data.ALTERNATIVE_CANDIDATES_PARQUET)
@@ -1045,7 +1063,7 @@ def build_dashboard(
         # -- Story 20.5 (CAP-7) — the remaining 19 pages --
         _data_page(
             by_id["cve-watcher"],
-            lambda: _data.load_cve_watcher(root / _data.VULN_HISTORY_PARQUET),
+            lambda: _data.load_cve_watcher(vuln_history_path),
             grounded=False,
             provenance=cve_watcher_provenance,
         ),

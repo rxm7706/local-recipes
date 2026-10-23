@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: 0f15bc586d06ca88
+source_fingerprint: b25c1e6536dddb51
 story_count: 139
-test_file_count: 176
+test_file_count: 178
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -21,10 +21,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Station:** `pyforge-atlas`
 - **Stories parsed:** 139
 - **Epics parsed:** 37
-- **Test files inventoried:** 176 under `src/shared/packages/pyforge-atlas/tests/`
+- **Test files inventoried:** 178 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `0f15bc586d06ca88`
+- **Source fingerprint:** `b25c1e6536dddb51`
 
 ## Risk Assessment
 
@@ -134,6 +134,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_request_datasets.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_s3_downloads.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_sbom_intake.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_snapshot_history.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_story_27_2_degraded_datasets.py` | unit | 27.2 |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_tier3_sources.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_upstream_discovery.py` | unit | none observed |
@@ -204,6 +205,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vulnerability/test_basilisk_nodes.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vulnerability/test_contracts.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vulnerability/test_nodes.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vulnerability/test_vuln_history.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/policy_gate/test_policy_gate.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/query_plane/test_face_parity.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/rag/test_store_vss_free.py` | unit | none observed |

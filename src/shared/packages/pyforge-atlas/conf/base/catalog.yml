@@ -572,6 +572,23 @@ vulnerability_package_rollup:
   metadata:
     layer: primary
 
+# Story 37.5 (CAP-69): every run's rollup as a dated snapshot (legacy vuln_history). Each save
+# appends; a load of an absent store is empty (AD-13).
+vulnerability_rollup_snapshots:
+  type: pyforge.atlas.datasets.SnapshotHistoryDataset
+  filepath: ${globals:paths.data_root}/primary/vulnerability_rollup_snapshots/vulnerability_rollup_snapshots.parquet
+  key_columns: [snapshot_at, conda_name]
+  columns: [snapshot_at, conda_name, vuln_total, vuln_critical_high, vuln_kev_affecting_current]
+  metadata:
+    layer: primary
+
+# Story 37.5 (CAP-69): the cve-watcher's table, what moved between two snapshots (legacy cve-watcher).
+derived_vuln_history:
+  type: pandas.ParquetDataset
+  filepath: ${globals:paths.data_root}/derived/derived_vuln_history/derived_vuln_history.parquet
+  metadata:
+    layer: derived
+
 # Phase G' (row-absence TTL).
 # A3: IncrementalParquetDataset
 vulnerability_package_version_vulns:

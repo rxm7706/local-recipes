@@ -105,17 +105,17 @@ PREFIX_TO_PIPELINE = {
 EXPECTED_PIPELINE_COUNTS = {
     "core": 19,  # Story 21.4: + core_anaconda_main_channeldata_raw + core_anaconda_main_packages; Story 34.4: + core_s3_version_downloads_raw
     "pypi_intelligence": 22,  # Story 23.1: +5 Tier-3 raw stores + pypi_tier3_channel_flags (+6 nodes); Story 34.9: + pypi_clickhouse_downloads_raw
-    "vulnerability": 15,  # Story 23.3: + vulnerability_basilisk_rollup (rollup lives under vulnerability_* prefix)
+    "vulnerability": 16,  # Story 23.3: + vulnerability_basilisk_rollup (rollup lives under vulnerability_* prefix); Story 37.5: + vulnerability_rollup_snapshots
     "vcs_health": 28,  # Story 25.2: +warden_fleet_inventory +repo_dependency_history catalog entries; Story 34.8: +vcs_migration_categories
     "universal_sbom": 6,  # F4: + sbom_hygiene_entry + sbom_compliance_report_entry (FR-16/FR-18, AD-12)
     "seed_gaps": 8,
-    "derived_artifacts": 12,  # Story 23.8: + inventory_universe; Story 23.3: + inventory_priority_assignments; Story 23.4: + inventory_verified_packages + inventory_aoss_free_queue; Story 23.5: + identity_complete_export; Story 37.3: + derived_distribution_breakdown; Story 37.4: + derived_behind_upstream + derived_live_catalog_coverage + derived_universe_sbom_summary; Story 37.9: + derived_mapping_gap
+    "derived_artifacts": 13,  # Story 23.8: + inventory_universe; Story 23.3: + inventory_priority_assignments; Story 23.4: + inventory_verified_packages + inventory_aoss_free_queue; Story 23.5: + identity_complete_export; Story 37.3: + derived_distribution_breakdown; Story 37.4: + derived_behind_upstream + derived_live_catalog_coverage + derived_universe_sbom_summary; Story 37.5: + derived_vuln_history; Story 37.9: + derived_mapping_gap
     "upstream_discovery": 18,  # Story 13.1: trending_candidates (CAP-1); Story 13.2: + trending_candidates_classified (CAP-2, FR-65); Story 13.4: + org_audit_candidates + org_audit_candidates_classified (CAP-4, FR-67); Story 21.4: + discovery_anaconda_dist_2026x_raw + discovery_basilisk_packages_raw + discovery_aoss_free_python_raw + discovery_aoss_premium_python_raw (Tier 1); Story 21.5: + discovery_about_maintainers_raw + discovery_curated_groups_seed + enterprise_conda_maintainers + enterprise_jfrog_names (Tier 2 — enterprise_jfrog_names buckets HERE via the `enterprise` prefix even though its producer node lives in artifactory_downloads); Story 21.6: + purl_associator_mappings_raw + openteams_project_1_board_raw + discovery_staged_recipes_prs_raw + discovery_local_recipes_raw + identity_packages_primary + identity_export_parquet (CAP-3 identity join, Phase D)
     "artifactory_downloads": 4,  # Story 15.3: artifactory_downloads_raw + artifactory_downloads_joined; Story 23.2: + artifactory_consumption_raw + enterprise_jfrog_consumption
     "query_plane_cache": 2,  # Story 34.2 (FR-47): query_plane_estate_source + query_plane_estate
     "semantic_packages": 1,  # Story 20.3 (CAP-6): semantic_packages
 }
-EXPECTED_TOTAL = 135  # Story 25.2: +warden_fleet_inventory +repo_dependency_history; Story 34.4: +core_s3_version_downloads_raw; Story 34.8: +vcs_migration_categories; Story 34.9: +pypi_clickhouse_downloads_raw; Story 37.3: +derived_distribution_breakdown; Story 37.4: +3 board projections; Story 37.9: +derived_mapping_gap
+EXPECTED_TOTAL = 137  # Story 25.2: +warden_fleet_inventory +repo_dependency_history; Story 34.4: +core_s3_version_downloads_raw; Story 34.8: +vcs_migration_categories; Story 34.9: +pypi_clickhouse_downloads_raw; Story 37.3: +derived_distribution_breakdown; Story 37.4: +3 board projections; Story 37.5: +vulnerability_rollup_snapshots +derived_vuln_history; Story 37.9: +derived_mapping_gap
 
 # The A3 IncrementalParquetDataset flip list (TTL-gated persisted outputs).
 FLIP_LIST = {
