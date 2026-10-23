@@ -1973,6 +1973,42 @@ Drift — orphaned between stations.
   change, and no consumer of `ci status --json` changes. `pixi_env_matrix.py` changes only in its usage docstring. No
   test runs a bare `estate reconcile`, which rewrites the latest journal (`DW-steward-103-3-1`). Orchestrating
   session's brief, 2026-10-17. Owner `spec-pyforge-steward`. → Epic 108 / Story 108.1, specced 2026-10-17.
+- **2026-10-23 (a cancelled lane names no cause) — Found: the preflight journals a lane the stop kept from being
+  submitted `cancelled` with no `cancelled_by`, so one steward test fails under load.** Atlas Story 37.11's full
+  `pr-preflight` (branch HEAD `63cb853a8a`, 2026-10-22) went red on
+  `test_red_dependency_cancels_dependents` alone: `KeyError: 'cancelled_by'` at
+  `assert by_task["a"]["cancelled_by"] == "d"`, 1 failed and 2901 passed. In isolation the test passed 10 runs of 10.
+  Read at `9fc4cb1c2b` in `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py`.
+  - **Where the cause is dropped.** Four places journal a lane the stop keeps from running. `_run_lane_in_pool`'s
+    red-stop checks (`:1001`, `:1024`) name the stop's cause through `_stop_cause`. Its interrupt checks (`:999`,
+    `:1022`) name none. `run_preflight`'s result assembly journals every lane with no result `cancelled`, exit 0,
+    0 s, with no cause: after a red stop at `:1456`, after an interrupt at `:1427`. Story 71.10 AC (4) pinned that
+    last shape ("a lane that never started stays as today ... no `cancelled_by`").
+  - **Why it is timing.** The fixture's lane `a` depends on `b` and `c`; `b` depends on `d`, which goes red.
+    `_mark_dependency_blocked` (`:1338`) journals a dependent only once every dependency has a result, and the
+    scheduler offers a lane only while no red stop is set (`:1364`). When `d` fails before `c` is submitted (under load,
+    the pool thread runs `d` to its end while the main thread is still filling slots), `c` never runs. Then `a`
+    keeps a dependency with no result, and both reach `:1456` with no cause. So the cause on `c` and `e` depends on
+    whether the scheduler submitted them before the stop (submitted, the pool names `d`; not submitted, nothing
+    does), and the cause on `a` on whether `c` was.
+  - **Measured at `9fc4cb1c2b`** with the test's fixture and an injected runner. At `--jobs 1`, every run: only `d`
+    starts; `b` reads `cancelled_by: d`; `c`, `a` and `e` read `cancelled` with no `cancelled_by`. At `--jobs 4` on
+    an idle machine: `d` and `c` start, `a` reads `d`, and `e`, never submitted, has no cause.
+  **What it looks like when fixed:** every lane journaled `cancelled` names what stopped the run: the red lane's task
+  and environment, or `interrupt`, whichever cause was recorded first (`_stop_cause`). That holds whether the lane
+  was terminated, submitted and skipped, or never submitted. A never-started lane is still told apart by exit 0 and
+  0 s. This replaces Story 71.10 AC (4)'s "no `cancelled_by`" for a never-started lane, and Story 105.1's restatement
+  of it for a deferred docs-site lane. The field stays additive; `preflight.py` is its only reader outside the
+  tests, and the three tests that pinned its absence pin the cause. A dependent that `_mark_dependency_blocked`
+  reaches keeps its dependency's cause (Story 88.1); a dependent of a lane turned away on an interrupt therefore
+  names `interrupt` where it used to name that lane (found at the story's review). The SIGINT handler records its
+  cause before it sets the flag, as a red lane does. A `--jobs 1` test, in which the stop comes before `c` and `a`
+  can be submitted, fails on the old code and has no timing in it. The flaky test asserts the cause of every
+  cancelled lane. **Constraints:** a fix under CAP-159, with no CAP, no flag and no `SPEC.md` change. The scheduler,
+  the exit codes, the verdicts, `red_lanes` and the set of lanes that run do not change; only the cause fields do:
+  `cancelled_by` and `cancelled_by_environment` on cancelled lanes, and `blocked_by` and `blocked_by_environment` on
+  a `--keep-going` dependent of a lane turned away on an interrupt. Orchestrating session's brief, 2026-10-23. Owner
+  `spec-pyforge-steward`. → Epic 71 / Story 71.12, specced 2026-10-23; it reopens Epic 71.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
