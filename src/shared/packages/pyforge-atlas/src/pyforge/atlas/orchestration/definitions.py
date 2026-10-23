@@ -135,7 +135,8 @@ SCHEDULED_JOBS: tuple[tuple[str, list[str], str, str, str], ...] = (
     ),
     (
         "phase_g_vdb_summary",
-        ["summarize_vdb_vulns"],
+        # Story 37.5: each summary appends its snapshot, and the cve-watcher's diff follows it
+        ["summarize_vdb_vulns", "snapshot_vulnerability_rollup", "diff_vulnerability_snapshots"],
         "0 4 * * *",
         "daily",
         "Phase G (vdb risk summary — runs after vdb-refresh)",
@@ -282,6 +283,8 @@ NODE_TIMEOUTS: dict[str, int] = {
     "ingest_epss": 300,
     "ingest_cwe_catalog": 300,
     "summarize_vdb_vulns": 300,  # Phase G
+    "snapshot_vulnerability_rollup": 120,  # Story 37.5 — stamp the rollup, append it to the store
+    "diff_vulnerability_snapshots": 300,  # Story 37.5 — the cve-watcher's diff of two snapshots
     "per_version_vulns": 900,  # Phase G'
     "refresh_basilisk_population": 900,  # Story 36.1 — ~35 querybatch POSTs (credentialed)
     "ingest_basilisk_advisories": 600,  # FR-19

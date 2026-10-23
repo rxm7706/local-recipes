@@ -130,7 +130,7 @@ development_status:
   37-2-the-pages-vizro-export-builds-the-public-atlas-data-first: done
   37-3-the-seed-gap-version-download-and-distribution-boards-read-their-datasets: done
   37-4-behind-upstream-whodepends-live-catalog-coverage-and-the-universe-sbom-boards-fill: done
-  37-5-the-cve-watcher-reads-a-vulnerability-history: backlog
+  37-5-the-cve-watcher-reads-a-vulnerability-history: done
   37-6-the-release-cadence-reads-per-version-upload-times: backlog
   37-7-the-find-alternative-scores-candidates-for-archived-packages: backlog
   37-8-the-export-purls-lists-the-purl-artifacts: backlog

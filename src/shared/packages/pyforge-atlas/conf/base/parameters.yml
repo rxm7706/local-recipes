@@ -145,3 +145,8 @@ artifactory:
 # offline default.
 dependency_history:
   repos: []
+
+# Story 37.5 (CAP-69) — the cve-watcher compares the latest vulnerability snapshot with the most
+# recent one older than since_days (legacy cve-watcher's --since-days default), else the one before it.
+cve_watcher:
+  since_days: 7

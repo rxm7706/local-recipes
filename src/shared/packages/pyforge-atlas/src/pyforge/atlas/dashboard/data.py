@@ -79,13 +79,15 @@ BOOTSTRAP_INDEX_HEALTH_PARQUET = "derived/bootstrap_index_health/bootstrap_index
 IDENTITY_EXPORT_PARQUET = "derived/identity_export_parquet/identity_export_parquet.parquet"
 LIVE_CATALOG_COVERAGE_PARQUET = "derived/live_catalog_coverage/live_catalog_coverage.parquet"
 
-# Story 37.4 (CAP-69): with ``pyforge.atlas.board_projections`` on, four boards read these instead.
+# Story 37.4 (CAP-69): with ``pyforge.atlas.board_projections`` on, four boards (Story 37.5: and the cve-watcher) read these instead.
 # Off, behind-upstream and whodepends stay shells and the two coverage boards read the paths above.
 BOARD_PROJECTIONS_FLAG = "pyforge.atlas.board_projections"
 BEHIND_UPSTREAM_PARQUET = "derived/derived_behind_upstream/derived_behind_upstream.parquet"
 CORE_DEPENDENCIES_PARQUET = "primary/core_dependencies/core_dependencies.parquet"
 DERIVED_LIVE_CATALOG_COVERAGE_PARQUET = "derived/derived_live_catalog_coverage/derived_live_catalog_coverage.parquet"
 DERIVED_UNIVERSE_SBOM_SUMMARY_PARQUET = "derived/derived_universe_sbom_summary/derived_universe_sbom_summary.parquet"
+# Story 37.5: the cve-watcher's diff of two vulnerability snapshots
+DERIVED_VULN_HISTORY_PARQUET = "derived/derived_vuln_history/derived_vuln_history.parquet"
 
 # Mirrors ``scripts/openteams_identity_dashboards.py::EXTERNAL_LIVE`` — static reference rows.
 IDENTITY_WORKBOOK_EXTERNAL_COUNTS: tuple[tuple[str, str, str, str], ...] = (
