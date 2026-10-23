@@ -108,6 +108,34 @@ def _url_source(url: str) -> str | None:
     return next((source for marker, source in _HOST_SOURCES if marker in lowered), None)
 
 
+_URL_SPLIT = re.compile(r"[\s,]+")
+#: a GitLab or Codeberg path segment where the project path ends (an archive, a tree or blob view, a release)
+_PROJECT_PATH_END = frozenset({"-", "archive", "tree", "blob", "raw", "releases", "tags", "commits", "uploads"})
+
+
+def recipe_urls(cell: str) -> list[str]:
+    """The URLs one recipe field holds: a field can list several, separated by commas or spaces."""
+    return [part for part in _URL_SPLIT.split(cell) if part.startswith(("http://", "https://"))]
+
+
+def project_url(source: str, url: str) -> str | None:
+    """The upstream project a recipe URL points into, as legacy's Phase K builds it before ``upstream_purl``: a
+    GitLab or Codeberg URL cut to ``https://<host>/<namespace>/<project>`` (an archive, tree or release path is not
+    the project); any other URL unchanged. ``None`` when no namespace and project remain."""
+    if source not in ("gitlab", "codeberg"):
+        return url
+    parsed = urllib.parse.urlsplit(url)
+    segments: list[str] = []
+    for segment in (s for s in parsed.path.split("/") if s):
+        if segment in _PROJECT_PATH_END:
+            break
+        segments.append(segment)
+    if not parsed.netloc or len(segments) < 2:
+        return None
+    segments[-1] = re.sub(r"\.git$", "", segments[-1])
+    return f"https://{parsed.netloc}/{'/'.join(segments)}"
+
+
 def _active_packages(enumerated: pd.DataFrame | None, latest_status: pd.DataFrame | None) -> pd.DataFrame:
     """Every enumerated package whose latest status is ``active`` (legacy includes archived-but-active ones),
     sorted by name in C-locale."""
@@ -133,7 +161,9 @@ def _mapping_rows(mapping: pd.DataFrame | None) -> pd.DataFrame:
             rows[column] = None
     rows["conda_name"] = rows["conda_name"].astype(str)
     rows["pypi_name"] = rows["pypi_name"].astype(str)
-    return rows.drop_duplicates(["conda_name", "pypi_name"])
+    # two spellings that G98-normalize alike are one purl, so one line
+    rows["_purl_name"] = rows["pypi_name"].map(g98_pypi_name)
+    return rows.drop_duplicates(["conda_name", "_purl_name"]).drop(columns="_purl_name")
 
 
 def _cell(value: Any) -> str:
@@ -165,8 +195,9 @@ def _exception_lines(recipe_extras: pd.DataFrame | None, conda_names: set[str], 
 
 def _upstream_lines(pkgs: pd.DataFrame, mapped: set[str], recipe_fields: pd.DataFrame) -> list[str]:
     """legacy ``upstream_tsv_lines`` over the recipes' own URLs: each active, PyPI-unmapped package's
-    ``repo_url``, ``source_url``, ``dev_url`` and ``home_url``, classified by host as legacy's upstream sources
-    are; one row per (package, source), from the first of those URLs that parses."""
+    ``repo_url``, ``source_url``, ``dev_url`` and ``home_url`` (a field can list several URLs), classified by host as
+    legacy's upstream sources are, a GitLab or Codeberg URL cut to its project (``project_url``); one row per
+    (package, source), from the first URL that parses."""
     lines = [UPSTREAM_TSV_HEADER]
     if recipe_fields is None or recipe_fields.empty or "conda_name" not in recipe_fields.columns:
         return lines
@@ -177,13 +208,14 @@ def _upstream_lines(pkgs: pd.DataFrame, mapped: set[str], recipe_fields: pd.Data
             continue
         found: dict[str, str] = {}
         for column in url_columns:
-            url = _cell(by_name.at[name, column])
-            source = _url_source(url) if url else None
-            if source is None or source in found:
-                continue
-            purl = upstream_purl(source, url)
-            if purl is not None:
-                found[source] = purl
+            for url in recipe_urls(_cell(by_name.at[name, column])):
+                source = _url_source(url)
+                if source is None or source in found:
+                    continue
+                project = project_url(source, url)
+                purl = upstream_purl(source, project) if project else None
+                if purl is not None:
+                    found[source] = purl
         for source in sorted(found):
             lines.append(f"pkg:conda/{name}{CHANNEL_QUALIFIER}\t{found[source]}\t{source}")
     return lines

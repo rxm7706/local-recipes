@@ -1051,6 +1051,7 @@ derived_purl_artifacts:
   type: partitions.PartitionedDataset
   path: ${globals:paths.data_root}/derived/derived_purl_artifacts
   dataset: text.TextDataset
+  overwrite: true  # a run replaces every partition; none survives from an earlier run
   metadata:
     layer: derived
 

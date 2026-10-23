@@ -99,7 +99,7 @@
    "src/shared/packages/pyforge-atlas/AGENTS.md": "b4b057dd3738aeab02ee9623057b2826aa4ca6f8",
    "src/shared/packages/pyforge-atlas/README.md": "8614b3c7ff23aed9d59ecca40f9942bec8f0028d",
    "src/shared/packages/pyforge-atlas/conf/README.md": "a994ee8ba4c4464ceb3bc96fa26d92595a71e0b0",
-   "src/shared/packages/pyforge-atlas/conf/base/catalog.yml": "769b9cd05e2707272210986ec4e53d41df615e9e",
+   "src/shared/packages/pyforge-atlas/conf/base/catalog.yml": "c84f05adbb39d9dbd4f6df67fdb9fc49b2d8e810",
    "src/shared/packages/pyforge-atlas/conf/base/curated_groups.json": "4edccaacc36b24c7e503ca8801547d640972e06a",
    "src/shared/packages/pyforge-atlas/conf/base/dagster.yml": "0411c867ce6d61441fc8955155534b5ba7b43003",
    "src/shared/packages/pyforge-atlas/conf/base/globals.yml": "8178fd9e5406d74db32ac0bbbe51db8d5199dd18",
@@ -170,7 +170,7 @@
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/nl/query.py": "aed88cff475bd0c61601a23a172d59b9b6719809",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/observability.py": "368c7dd29af8c3acedb2a091f3d31477fb3e0451",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/__init__.py": "5ddf8493cb71e9df8ce1a97c61e9bf17ae0682fb",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/definitions.py": "5a6317ac44e81441e583ef61ec75c39785fc26a1",
+   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/definitions.py": "2248289c84cb349249af306eb5f0a4edcefcaa04",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/event_source.py": "d61a848192805635496fd12d72fd9b30a2aed0ef",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/fleet_inventory_sensor.py": "3c8417163f683b77892dad68d176db22d839ee3d",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/wiki_events.py": "e7739ca0eb9bc1f914c582d6c3dd8b6d4e820c5f",
@@ -194,7 +194,7 @@
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/inventory_verification.py": "bf512dcbfa968a41c483573c8b7092b8fc10711f",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/nodes.py": "317a72d1b9ff14d1a50477e3cb232dfaeec415b8",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/pipeline.py": "53012742272e897d568016c5593b215b7f5c05c6",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/purl_exports.py": "6869f5a0db88b357385c671976eafbe9d6cb2570",
+   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/purl_exports.py": "eaeb84b3a8d3f4ae04d023403f7bddf5f1cf9cfd",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/__init__.py": "bc4f3d40c9f730d22f66023040b029b74616904f",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/nodes.py": "3e0d4e6bd10a19855b51947f0a42da38b6e1b8f6",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/pipeline.py": "2480e221e05b6f4ef0d693dc04db1d2988868074",
@@ -417,7 +417,7 @@
    "src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_inventory_universe.py": "b784d038aa65c347b9d78878a974d12cc3845e40",
    "src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_inventory_verification.py": "5dade5d4796bcb5413cf5d798d51866b031ce543",
    "src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_inventory_verified_packages.py": "477e0a5bdc9c79d4ebb92f4abcff14a8ee5b9cad",
-   "src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_purl_exports.py": "ccfb186e539d616240d4b4d5b9884891f00fc223",
+   "src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_purl_exports.py": "84b80caa2a6ca98b1982363eea45865c0c748fa2",
    "src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_universe_sbom.py": "31a619c2c620d69b2aff116e13eed6b722e7498d",
    "src/shared/packages/pyforge-atlas/tests/unit/pipelines/pypi_intelligence/__init__.py": "62426f708477848fd82f3bceff535d401cca2815",
    "src/shared/packages/pyforge-atlas/tests/unit/pipelines/pypi_intelligence/test_mapping_export.py": "1a2ac5cbe1a0518fb0337f93d7e03e828eae4368",
@@ -528,7 +528,7 @@
    "src/shared/packages/pyforge-atlas/wasm/index.html": "58d44155379ec640d36caf59b8c701ec8fcfce27",
    "src/shared/packages/pyforge-atlas/wasm/package.json": "e8ec7eef8dff664e2910f4fee67ada79e4105d93"
   },
-  "memlog": "169bc6591b6cd4381f224a850414f3dd5c896328"
+  "memlog": "fe0fcdcbf095c46c0f50c38956551cf4b6a5f7d7"
  },
  "pyforge-atlas/spec-pyforge-atlas-intelligence-platform": {
   "files": {},
@@ -3160,7 +3160,7 @@
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/nl/query.py": "aed88cff475bd0c61601a23a172d59b9b6719809",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/observability.py": "368c7dd29af8c3acedb2a091f3d31477fb3e0451",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/__init__.py": "5ddf8493cb71e9df8ce1a97c61e9bf17ae0682fb",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/definitions.py": "5a6317ac44e81441e583ef61ec75c39785fc26a1",
+   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/definitions.py": "2248289c84cb349249af306eb5f0a4edcefcaa04",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/event_source.py": "d61a848192805635496fd12d72fd9b30a2aed0ef",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/fleet_inventory_sensor.py": "3c8417163f683b77892dad68d176db22d839ee3d",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/wiki_events.py": "e7739ca0eb9bc1f914c582d6c3dd8b6d4e820c5f",
@@ -3184,7 +3184,7 @@
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/inventory_verification.py": "bf512dcbfa968a41c483573c8b7092b8fc10711f",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/nodes.py": "317a72d1b9ff14d1a50477e3cb232dfaeec415b8",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/pipeline.py": "53012742272e897d568016c5593b215b7f5c05c6",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/purl_exports.py": "6869f5a0db88b357385c671976eafbe9d6cb2570",
+   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/purl_exports.py": "eaeb84b3a8d3f4ae04d023403f7bddf5f1cf9cfd",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/__init__.py": "bc4f3d40c9f730d22f66023040b029b74616904f",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/nodes.py": "3e0d4e6bd10a19855b51947f0a42da38b6e1b8f6",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/pipeline.py": "2480e221e05b6f4ef0d693dc04db1d2988868074",
@@ -3777,7 +3777,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "4447454c07631f0b1a495acc100ed301124a3cf0"
+  "memlog": "d15116b9b13d77162117fa24aecad65a4882202e"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -6802,7 +6802,7 @@
    "src/shared/packages/pyforge-atlas/AGENTS.md": "b4b057dd3738aeab02ee9623057b2826aa4ca6f8",
    "src/shared/packages/pyforge-atlas/README.md": "8614b3c7ff23aed9d59ecca40f9942bec8f0028d",
    "src/shared/packages/pyforge-atlas/conf/README.md": "a994ee8ba4c4464ceb3bc96fa26d92595a71e0b0",
-   "src/shared/packages/pyforge-atlas/conf/base/catalog.yml": "769b9cd05e2707272210986ec4e53d41df615e9e",
+   "src/shared/packages/pyforge-atlas/conf/base/catalog.yml": "c84f05adbb39d9dbd4f6df67fdb9fc49b2d8e810",
    "src/shared/packages/pyforge-atlas/conf/base/curated_groups.json": "4edccaacc36b24c7e503ca8801547d640972e06a",
    "src/shared/packages/pyforge-atlas/conf/base/dagster.yml": "0411c867ce6d61441fc8955155534b5ba7b43003",
    "src/shared/packages/pyforge-atlas/conf/base/globals.yml": "8178fd9e5406d74db32ac0bbbe51db8d5199dd18",
@@ -6877,7 +6877,7 @@
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/nl/query.py": "aed88cff475bd0c61601a23a172d59b9b6719809",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/observability.py": "368c7dd29af8c3acedb2a091f3d31477fb3e0451",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/__init__.py": "5ddf8493cb71e9df8ce1a97c61e9bf17ae0682fb",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/definitions.py": "5a6317ac44e81441e583ef61ec75c39785fc26a1",
+   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/definitions.py": "2248289c84cb349249af306eb5f0a4edcefcaa04",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/event_source.py": "d61a848192805635496fd12d72fd9b30a2aed0ef",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/fleet_inventory_sensor.py": "3c8417163f683b77892dad68d176db22d839ee3d",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/wiki_events.py": "e7739ca0eb9bc1f914c582d6c3dd8b6d4e820c5f",
@@ -6901,7 +6901,7 @@
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/inventory_verification.py": "bf512dcbfa968a41c483573c8b7092b8fc10711f",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/nodes.py": "317a72d1b9ff14d1a50477e3cb232dfaeec415b8",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/pipeline.py": "53012742272e897d568016c5593b215b7f5c05c6",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/purl_exports.py": "6869f5a0db88b357385c671976eafbe9d6cb2570",
+   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/purl_exports.py": "eaeb84b3a8d3f4ae04d023403f7bddf5f1cf9cfd",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/__init__.py": "bc4f3d40c9f730d22f66023040b029b74616904f",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/nodes.py": "3e0d4e6bd10a19855b51947f0a42da38b6e1b8f6",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/pipeline.py": "2480e221e05b6f4ef0d693dc04db1d2988868074",
@@ -7128,7 +7128,7 @@
    "src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_inventory_universe.py": "b784d038aa65c347b9d78878a974d12cc3845e40",
    "src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_inventory_verification.py": "5dade5d4796bcb5413cf5d798d51866b031ce543",
    "src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_inventory_verified_packages.py": "477e0a5bdc9c79d4ebb92f4abcff14a8ee5b9cad",
-   "src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_purl_exports.py": "ccfb186e539d616240d4b4d5b9884891f00fc223",
+   "src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_purl_exports.py": "84b80caa2a6ca98b1982363eea45865c0c748fa2",
    "src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_universe_sbom.py": "31a619c2c620d69b2aff116e13eed6b722e7498d",
    "src/shared/packages/pyforge-atlas/tests/unit/pipelines/pypi_intelligence/__init__.py": "62426f708477848fd82f3bceff535d401cca2815",
    "src/shared/packages/pyforge-atlas/tests/unit/pipelines/pypi_intelligence/test_mapping_export.py": "1a2ac5cbe1a0518fb0337f93d7e03e828eae4368",
@@ -7345,7 +7345,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "4012516f06c58992afcecba7c48a9afd5531462c"
+  "memlog": "4c665314c2c705679c274665ad1f6464e7147b67"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {},

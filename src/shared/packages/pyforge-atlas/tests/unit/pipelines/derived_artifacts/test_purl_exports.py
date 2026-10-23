@@ -158,6 +158,49 @@ def test_upstream_tsv_lists_unmapped_active_packages_by_their_recipe_urls():
     ]
 
 
+def test_recipe_urls_are_split_and_cut_to_their_project():
+    got, _ = _export(
+        core_packages_enumerated=_enumerated([("r-bindr", "1"), ("eigen", "5"), ("gnutls", "3"), ("bare", "1")]),
+        core_cf_graph_raw=_graph(
+            [
+                ("r-bindr", "https://github.com/krlmlr/bindr, https://krlmlr.github.io/bindr", None),
+                ("eigen", None, "https://gitlab.com/libeigen/eigen/-/archive/5.0.1/eigen-5.0.1.tar.gz"),
+                ("gnutls", "https://gitlab.com/gnutls/gnutls/tree/master", None),
+                ("bare", "https://gitlab.com/onlyone", None),
+            ]
+        ),
+    )
+    lines = got["purls_conda-upstream_mapped.tsv"][1:]
+    assert lines == [
+        "pkg:conda/eigen?channel=conda-forge\tpkg:generic/eigen?vcs_url=git%2Bhttps%3A%2F%2Fgitlab.com%2Flibeigen%2Feigen"
+        "\tgitlab",
+        "pkg:conda/gnutls?channel=conda-forge\tpkg:generic/gnutls?vcs_url=git%2Bhttps%3A%2F%2Fgitlab.com%2Fgnutls%2Fgnutls"
+        "\tgitlab",
+        "pkg:conda/r-bindr?channel=conda-forge\tpkg:github/krlmlr/bindr\tgithub",
+    ]
+
+
+@pytest.mark.parametrize(
+    ("source", "url", "project"),
+    [
+        ("gitlab", "https://gitlab.com/group/sub/proj.git", "https://gitlab.com/group/sub/proj"),
+        ("codeberg", "https://codeberg.org/o/p/releases/tag/v1", "https://codeberg.org/o/p"),
+        ("gitlab", "https://gitlab.com/onlyone", None),
+        ("github", "https://github.com/o/r/archive/v1.tar.gz", "https://github.com/o/r/archive/v1.tar.gz"),
+    ],
+)
+def test_project_url(source, url, project):
+    assert px.project_url(source, url) == project
+
+
+def test_two_spellings_that_normalize_alike_are_one_mapping_line():
+    got, _ = _export(
+        core_packages_enumerated=_enumerated([("a", "1")]),
+        pypi_conda_mapping=_mapping([("a", "a_b", "parselmouth"), ("a", "a-b", "recipe_source_url")]),
+    )
+    assert got["purls_conda-pypi_mapped.tsv"][1:] == ["pkg:conda/a?channel=conda-forge\tpkg:pypi/a-b\tparselmouth\t"]
+
+
 def test_the_manifest_counts_each_artifact_a_tsv_header_not_counted():
     _, manifest = _export(
         core_packages_enumerated=_enumerated([("a", "1"), ("b", "2")]),

@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'the export-purls reads primary/purl_export_manifest as before, which nothing writes, and renders empty'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -59,9 +59,13 @@ are not ported:
 **Deviations from legacy:**
 - Artifact 6 reads each package's recipe URLs (`repo_url`, `source_url`, `dev_url`, `home_url`), classified by host
   (github, gitlab, codeberg, npm, crates, rubygems, maven). Legacy reads `upstream_versions`' (source, url) rows, which
-  atlas's VCS stores do not keep. It emits one row per package and source, from the first URL that parses.
+  atlas's VCS stores do not keep. A field can list several URLs (split on commas and spaces), and a GitLab or
+  Codeberg URL is cut to its `<namespace>/<project>` (an archive, tree or release path is not the project), as
+  legacy's Phase K builds its URLs before `upstream_purl`. It emits one row per package and source, from the first
+  URL that parses.
 - Artifact 4 lists every mapping row of an active package (`pypi_conda_mapping` can hold several PyPI names for one
-  package); legacy's `packages` table holds one. `match_confidence` is empty: the mapping has no such column.
+  package), one line per G98-normalized name; legacy's `packages` table holds one. `match_confidence` is empty: the
+  mapping has no such column.
 - `derived_purl_exports` keeps Artifactory's TSV, and its one writer. The six artifacts go to a dataset of their own.
 
 Ledger key: `37-8-the-export-purls-lists-the-purl-artifacts`.
@@ -128,24 +132,52 @@ dataset already fetches.
 
 ## Run results
 
-Run 2026-10-23 in the landing worktree on `de4b8cd080`, every verdict read from its exit code.
+Run 2026-10-23 in the landing worktree on `de4b8cd080`, every verdict read from its exit code; the numbers are those
+after the review fixes.
 
-- **AC1–AC6, tests:** `test_purl_exports.py` (17), `test_recipe_extras.py` (4) and `test_board_projections.py` pass;
-  `pyforge-atlas-test` gives 3,215 passed and 20 skipped, then 103 passed (exit 0).
+- **AC1–AC6, tests:** `test_purl_exports.py` (23), `test_recipe_extras.py` (4) and `test_board_projections.py` pass;
+  `pyforge-atlas-test` gives 3,221 passed and 20 skipped, then 103 passed (exit 0).
 - **Pins moved:** `derived_artifacts` has 12 nodes (11), the combined DAG 71 (70), the catalog 142 entries (139); the
   node has a timeout (600 s).
-- **Mutations**, each restored, each failing a named test (14 of 14): a full-line conda sort, inactive packages kept,
-  no G98 normalization, PyPI purls not deduplicated, an empty PyPI name mapped, inactive mapping rows kept, non-pending
-  recipes excepted, the PyPI side not folded, mapped packages in the upstream TSV, one source per package only, a TSV
-  header counted, `cfe-conda-name` ignored, `meta.yaml` scanned, and the board path not switched.
+- **Mutations**, each restored, each failing a named test (17 of 17):
+  - conda purls: a full-line conda sort; inactive packages kept;
+  - PyPI purls: no G98 normalization; PyPI purls not deduplicated;
+  - mapping TSV: an empty PyPI name mapped; inactive mapping rows kept; the mapping deduplicated on the raw name;
+  - exceptions: non-pending recipes excepted; the PyPI side not folded;
+  - upstream TSV: mapped packages in it; one source per package only; recipe URLs not split; a project path not cut;
+  - manifest and inputs: a TSV header counted; `cfe-conda-name` ignored; `meta.yaml` scanned;
+  - board: the board path not switched.
 - **Real data:** over Story 37.2's live data root (its cf-graph `last_good.parquet`, 359,049 rows) and this checkout's
-  7,561 `recipe.yaml` files (0 parse errors), the node runs in 15.5 s: 34,720 conda purls (and as many versioned),
-  919,975 PyPI purls, 22,640 mapping rows, 2,498 recipe exceptions (mostly `pending-submission-to-conda-forge` recipes
-  not yet on conda-forge) and 8,032 upstream purls (7,560 GitHub, 163 rubygems, 143 npm, 140 GitLab, 17 Codeberg, 9
-  crates). `load_export_purls` reads the manifest's 6 rows.
+  7,561 `recipe.yaml` files (0 parse errors):
+  - the recipes load in 13.0 s (31 s under a concurrent preflight, the review measured) and the node runs in 2.2 s;
+  - 34,720 conda purls (and as many versioned) and 919,975 PyPI purls;
+  - 22,454 mapping rows, 0 of them duplicates;
+  - 2,498 recipe exceptions, mostly `pending-submission-to-conda-forge` recipes not yet on conda-forge;
+  - 8,030 upstream purls: 7,558 GitHub, 163 rubygems, 143 npm, 140 GitLab, 17 Codeberg, 9 crates. None is malformed
+    (no comma, space or archive file in a purl).
+  - `load_export_purls` reads the manifest's 6 rows.
 
 ## Spec Change Log
 
+- 2026-10-23, independent review (FAIL, 1 blocker), fixed on the same branch:
+  - B1: raw recipe URLs went straight into `upstream_purl`, which legacy only ever fed URLs its Phase K had built.
+    150 of 8,032 upstream rows were malformed: 130 GitHub purls from comma-joined URL fields
+    (`pkg:github/krlmlr/bindr, https:`) and 20 GitLab purls named by a tarball or a tree path. A field is now split
+    into its URLs, and a GitLab or Codeberg URL is cut to its project before `upstream_purl`.
+  - Should-fix: the mapping TSV deduplicated before G98 normalization, so 186 lines repeated
+    (`alibabacloud_credentials_api` and `alibabacloud-credentials-api`). It now deduplicates on the normalized name.
+  - Nits: the node's timeout sits in the derived_artifacts block; `derived_purl_artifacts` has `overwrite: true`, so
+    no partition from an earlier run survives; the run times are re-measured above.
 - 2026-10-23: drafted from Story 37.8 and DW-atlas-37-8-1.
 
 ## Review Triage Log
+
+- 2026-10-23, review 1 (independent subagent, read the diff against this spec): FAIL, with 1 blocker, 1 should-fix and
+  3 nits, all addressed (Spec Change Log).
+  - Its in-memory reproduction against Story 37.2's live root matched these, byte for byte, in content and order:
+    - `purls_pypi.txt` and legacy `pypi_purl_lines`;
+    - the exceptions and legacy `recipe_exception_lines`;
+    - the conda order and SQLite's BINARY collation.
+  - It confirmed that the cf-graph is fetched once per session, and that Kedro makes the recipes path absolute.
+  - The reviewer left a scratch directory, `tmp_6wpmxjz/`, inside that data root and could not remove it; it is the
+    operator's to delete. Nothing reads it.
