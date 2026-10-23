@@ -821,7 +821,8 @@ def test_a_dependent_of_a_lane_turned_away_on_an_interrupt_names_interrupt(
             assert z_journaled.wait(timeout=10)
         elif ctx.lane.task == "w":
             handler = signal.getsignal(signal.SIGINT)
-            assert callable(handler)
+            # run_preflight's own handler, never Python's default, whose KeyboardInterrupt would end the session.
+            assert callable(handler) and handler.__qualname__.endswith("_on_sigint")
             handler(signal.SIGINT, None)
         return 0
 

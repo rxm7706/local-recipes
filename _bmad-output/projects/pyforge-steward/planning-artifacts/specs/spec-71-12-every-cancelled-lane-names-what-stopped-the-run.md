@@ -5,7 +5,7 @@ created: '2026-10-23'
 status: 'in-review'
 baseline_revision: '9fc4cb1c2b04c5746b92b7c0931eea8d82e6b729'
 flag-exempt: detector-or-gate   # a fix needs no flag (spec-feature-flag-governance Q1), and pr-preflight is a gate, as 105.1, 106.1 and 107.1 recorded
-review_loop_iteration: 2
+review_loop_iteration: 3
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -230,3 +230,17 @@ each (AGENTS.md § Pre-PR item 5).
    names the blocked dependent's `blocked_by` under `--keep-going`, as the Never clause does.
 4. **nit, fixed here.** This spec cited session scratch files; it now says they are not kept. The memlog keeps its
    one such citation (append-only), as Story 107.1's entries do.
+
+### 2026-10-23 — Review pass 3 (PASS: two nits; every round-2 finding resolved)
+
+Evidence from the reviewer, every exit code read from a file: `-k preflight` 385 passed; AC (6)'s test red on
+`9fc4cb1c2b` (`KeyError: 'cancelled_by'` on `y`) and red under two mutants (`_dependency_blocker` skipping an
+`interrupt` cause; `z` never journaled); 64 of 64, 144 of 144 and 72 of 72 runs green under three loads (up to 32 CPU
+burners and three concurrent preflight suites on 16 cores), slowest AC (6) call 0.73 s.
+
+1. **nit, fixed.** AC (6)'s test checked only that the SIGINT handler was callable; with Python's default handler
+   the `KeyboardInterrupt` would end the pytest session. It now asserts the handler is `run_preflight`'s
+   `_on_sigint`.
+2. **nit, not this story's.** A second SIGINT handled while `_on_sigint` holds `cancel`'s internal lock or
+   `proc_lock` re-enters the handler and waits on a lock its own thread holds. It exists at `9fc4cb1c2b`, 71.12 does
+   not widen it, and it lies outside this story's ACs; it is proposed as its own fix story.
