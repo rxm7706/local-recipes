@@ -6,7 +6,7 @@ PURE nodes: ``build_universe_sbom`` (CycloneDX BOM), ``build_inventory_universe`
 ``build_inventory_aoss_free_queue`` (Story 23.4 deliverable A + AOSS queue),
 ``build_identity_complete_export`` (Story 23.5 complete export join); the three board projections
 ``project_behind_upstream``, ``project_live_catalog_coverage`` and ``project_universe_sbom_summary``
-(Story 37.4).
+(Story 37.4); ``export_purl_artifacts`` (Story 37.8); ``score_alternative_candidates`` (Story 37.7).
 ``inputs=`` bind to catalog NAMES (AD-3 cross-pipeline edges). Node names FROZEN.
 """
 
@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from kedro.pipeline import Pipeline, node
 
+from .alternatives import score_alternative_candidates
 from .nodes import (
     assign_inventory_priority,
     build_identity_complete_export,
@@ -165,6 +166,19 @@ def create_pipeline(**kwargs) -> Pipeline:
                 ],
                 outputs=["derived_purl_artifacts", "derived_purl_export_manifest"],
                 name="export_purl_artifacts",
+            ),
+            # Story 37.7: legacy find-alternative's candidates for every archived package
+            node(
+                func=score_alternative_candidates,
+                inputs=[
+                    "core_cf_graph_raw",
+                    "core_feedstock_attribution",
+                    "semantic_packages",
+                    "core_dependencies",
+                    "vcs_package_maintainers",
+                ],
+                outputs="derived_alternative_candidates",
+                name="score_alternative_candidates",
             ),
         ]
     )

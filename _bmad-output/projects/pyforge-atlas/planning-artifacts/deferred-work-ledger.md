@@ -5108,6 +5108,18 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: operator ruling 2026-10-19 on CAP-69
   severity: low
   promoted: 2026-10-19 -- atlas Epic 37 chain; owned by Story 37.7
+  resolved: 2026-10-23 (Story 37.7: derived_artifacts' score_alternative_candidates writes legacy find-alternative's top 10 candidates for every archived package on the channel to derived_alternative_candidates, from the summary and keywords the cf-graph anchor rows now carry; the board reads it with pyforge.atlas.board_projections on)
+  status: closed
+
+### DW-atlas-37-7-2: semantic_packages marks no feedstock archived on a public run.
+
+- source_spec: `planning-artifacts/specs/spec-37-7-the-find-alternative-scores-candidates-for-archived-packages.md`
+  summary: `semantic_packages.feedstock_archived` joins only `vcs_archived_feedstocks`, which legacy's Phase E.5 GitHub query fills and a public run leaves empty. So every package reads unarchived: 0 of 34,720 on Story 37.2's live root, where the cf-graph flags 1,490 conda names (1,024 of them on the channel). The actionable and adoption views count archived feedstocks as live. Story 37.7's scorer reads the cf-graph flag as well, and so does core's Phase J skip-set; the views that read `semantic_packages` do not.
+  evidence: Story 37.7's real-data check (2026-10-23, the spec's Run results).
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/semantic_packages/nodes.py (feedstock_archived)
+  origin: Story 37.7 (CAP-69)
+  severity: low
+  promoted: 2026-10-23 -- atlas Story 37.7; no owning story yet
   status: open
 
 ### DW-atlas-37-8-1: The export-purls has no manifest of PURL artifacts.

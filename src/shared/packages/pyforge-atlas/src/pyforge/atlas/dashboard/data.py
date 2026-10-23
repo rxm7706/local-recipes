@@ -94,6 +94,8 @@ DERIVED_MAPPING_GAP_PARQUET = "derived/derived_mapping_gap/derived_mapping_gap.p
 CATALOG_INDEX_HEALTH_PARQUET = "derived/catalog_index_health/catalog_index_health.parquet"
 # Story 37.8: the six export-purls artifacts' manifest
 DERIVED_PURL_EXPORT_MANIFEST_PARQUET = "derived/derived_purl_export_manifest/derived_purl_export_manifest.parquet"
+# Story 37.7: the find-alternative candidates for every archived package
+DERIVED_ALTERNATIVE_CANDIDATES_PARQUET = "derived/derived_alternative_candidates/derived_alternative_candidates.parquet"
 
 # Mirrors ``scripts/openteams_identity_dashboards.py::EXTERNAL_LIVE`` — static reference rows.
 IDENTITY_WORKBOOK_EXTERNAL_COUNTS: tuple[tuple[str, str, str, str], ...] = (

@@ -187,16 +187,17 @@ def test_universal_sbom_pipeline_has_four_nodes():
     }
 
 
-def test_derived_artifacts_pipeline_has_twelve_nodes():
+def test_derived_artifacts_pipeline_has_thirteen_nodes():
     # B7: the full-universe CycloneDX BOM producer (AD-15 14-day freshness).
     # Story 23.8 added build_inventory_universe (the workbook-free metrics universe).
     # Story 23.3 added derive_basilisk_vuln_rollup + assign_inventory_priority.
     # Story 23.4 added build_inventory_verified_packages + build_inventory_aoss_free_queue.
     # Story 23.5 added build_identity_complete_export.
     # Story 37.3 added compose_distribution_breakdown (the distribution-breakdown board's table).
-    # Story 37.4 added the three board projections; Story 37.8 export_purl_artifacts.
+    # Story 37.4 added the three board projections; Story 37.8 export_purl_artifacts; Story 37.7
+    # score_alternative_candidates.
     derived = derived_create()
-    assert len(derived.nodes) == 12
+    assert len(derived.nodes) == 13
     assert {n.name for n in derived.nodes} == {
         "compose_distribution_breakdown",
         "build_universe_sbom",
@@ -210,6 +211,7 @@ def test_derived_artifacts_pipeline_has_twelve_nodes():
         "project_live_catalog_coverage",
         "project_universe_sbom_summary",
         "export_purl_artifacts",
+        "score_alternative_candidates",
     }
 
 
@@ -218,14 +220,15 @@ def test_combined_seven_pipeline_dag_resolves_topologically():
         core_create() + vcs_create() + pypi_create() + vuln_create() + seed_create() + sbom_create() + derived_create()
     )
     # 8 core + 12 vcs + 18 pypi + 13 vuln + 4 seed_gaps + 4 universal_sbom
-    # + 12 derived_artifacts = 71 nodes (Story 25.2: vcs_health 10 -> 11; Story 34.8: 11 -> 12;
+    # + 13 derived_artifacts = 72 nodes (Story 25.2: vcs_health 10 -> 11; Story 34.8: 11 -> 12;
     # Story 36.1: vulnerability 9 -> 11; Story 37.3: derived_artifacts 7 -> 8; Story 37.4: 8 -> 11;
-    # Story 37.5: vulnerability 11 -> 13; Story 37.9: pypi_intelligence 17 -> 18; Story 37.8: derived_artifacts 11 -> 12).
+    # Story 37.5: vulnerability 11 -> 13; Story 37.9: pypi_intelligence 17 -> 18; Story 37.8: derived_artifacts 11 -> 12;
+    # Story 37.7: 12 -> 13).
     assert (
-        len(combined.nodes) == 71
+        len(combined.nodes) == 72
     )  # 34.8: drive_migration_status; 36.1: 2 Basilisk triggers; 37.3: compose_distribution_breakdown; 37.4: 3 projections
     grouped = combined.grouped_nodes
-    assert sum(len(g) for g in grouped) == 71
+    assert sum(len(g) for g in grouped) == 72
 
 
 def test_no_dataset_is_written_by_two_pipelines_b7():

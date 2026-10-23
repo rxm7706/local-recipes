@@ -421,7 +421,7 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
     PageDef("factory-status", "Factory Status", "factory-status", "factory"),
 )
 
-#: Story 37.4 (CAP-69): the four boards' definitions, Story 37.5's cve-watcher and Story 37.9's mapping-gap, with ``pyforge.atlas.board_projections`` on.
+#: Story 37.4 (CAP-69): the four boards' definitions, and Stories 37.5 and 37.7-37.10's boards, with ``pyforge.atlas.board_projections`` on.
 #: Off, ``PAGE_INVENTORY``'s entries stand: the two shells, and the coverage boards' earlier paths.
 PROJECTED_PAGES: dict[str, PageDef] = {
     page.id: page
@@ -513,6 +513,20 @@ PROJECTED_PAGES: dict[str, PageDef] = {
             "the scale sanity gate: 30,000 conda-forge packages, 5,000 Anaconda main, a non-empty PyPI index and "
             "Basilisk catalog) or ok. Entries that fetch live and persist nothing are not listed.",
             filters=("tier", "status"),
+        ),
+        # Story 37.7 (CAP-69)
+        PageDef(
+            "find-alternative",
+            "Find Alternative",
+            "find-alternative",
+            "bsl-shell",
+            note="Wired to build_alternative_candidates_model over derived_alternative_candidates, which "
+            "derived_artifacts' score_alternative_candidates writes as legacy find-alternative scores one query: for "
+            "each archived package on the channel, the top 10 active candidates by keyword, summary-term, "
+            "shared-dependent and shared-maintainer overlap, weighted by recency and downloads. Archived is the "
+            "cf-graph's flag or the GitHub archive query. adoption_stage is the adoption-stage board's classifier; "
+            "until per-version upload times land it reads unknown, and recency counts every candidate as fresh.",
+            filters=("archived_name",),
         ),
         # Story 37.8 (CAP-69)
         PageDef(
@@ -981,6 +995,10 @@ def build_dashboard(
     index_health_path = root / (
         _data.CATALOG_INDEX_HEALTH_PARQUET if projected else _data.BOOTSTRAP_INDEX_HEALTH_PARQUET
     )
+    # Story 37.7: the find-alternative candidates with the flag on, the path nothing writes off
+    alternatives_path = root / (
+        _data.DERIVED_ALTERNATIVE_CANDIDATES_PARQUET if projected else _data.ALTERNATIVE_CANDIDATES_PARQUET
+    )
     # Story 37.8: the export-purls manifest with the flag on, the path nothing writes off
     purl_manifest_path = root / (
         _data.DERIVED_PURL_EXPORT_MANIFEST_PARQUET if projected else _data.PURL_EXPORT_MANIFEST_PARQUET
@@ -1009,7 +1027,7 @@ def build_dashboard(
     cve_watcher_provenance = _provenance.resolve_for_file(vuln_history_path)
     version_downloads_provenance = _provenance.resolve_for_file(root / _data.VERSION_DOWNLOADS_PARQUET)
     release_cadence_provenance = _provenance.resolve_for_file(root / _data.RELEASE_CADENCE_PARQUET)
-    find_alternative_provenance = _provenance.resolve_for_file(root / _data.ALTERNATIVE_CANDIDATES_PARQUET)
+    find_alternative_provenance = _provenance.resolve_for_file(alternatives_path)
     scan_project_provenance = _provenance.resolve_for_file(root / _data.SCAN_RESULT_LATEST_PARQUET)
     env_inspect_provenance = _provenance.resolve_for_file(root / _data.ENV_INSPECT_LATEST_PARQUET)
     distribution_breakdown_provenance = _provenance.resolve_for_file(root / _data.DISTRIBUTION_BREAKDOWN_PARQUET)
@@ -1116,7 +1134,7 @@ def build_dashboard(
         ),
         _data_page(
             by_id["find-alternative"],
-            lambda: _data.load_find_alternative(root / _data.ALTERNATIVE_CANDIDATES_PARQUET),
+            lambda: _data.load_find_alternative(alternatives_path),
             grounded=False,
             provenance=find_alternative_provenance,
         ),

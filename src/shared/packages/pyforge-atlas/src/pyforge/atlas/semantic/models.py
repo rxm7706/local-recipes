@@ -287,6 +287,8 @@ def build_alternative_candidates_model(table: Any) -> SemanticModel:
     maintainer-overlap Jaccard x recency x downloads — ``find_alternative.py``'s own
     in-memory scorer) — a Phase-E/J pipeline output column, not a BSL-derived formula
     (mirrors ``downloads_total`` being a pre-aggregated measure, not re-summed logic).
+    ``adoption_stage`` is the candidate's lifecycle stage by ``metrics.adoption_stage``, the
+    classifier ``build_packages_model`` declares, over the candidate's own inputs (Story 37.7).
     """
     return SemanticModel(
         table=table,
@@ -294,7 +296,7 @@ def build_alternative_candidates_model(table: Any) -> SemanticModel:
         dimensions={
             "archived_name": Dimension(expr=lambda t: t.archived_name),
             "candidate_name": Dimension(expr=lambda t: t.candidate_name),
-            "adoption_stage": Dimension(expr=lambda t: t.adoption_stage),
+            "adoption_stage": Dimension(expr=metrics.adoption_stage),
         },
         measures={
             "similarity_score": Measure(expr=lambda t: t.similarity_score.mean()),

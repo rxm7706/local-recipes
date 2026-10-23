@@ -1061,6 +1061,14 @@ derived_purl_export_manifest:
   metadata:
     layer: derived
 
+# Story 37.7 (CAP-69): legacy find-alternative's top 10 candidates for every archived package on the channel,
+# which the find-alternative board reads.
+derived_alternative_candidates:
+  type: pandas.ParquetDataset
+  filepath: ${globals:paths.data_root}/derived/derived_alternative_candidates/derived_alternative_candidates.parquet
+  metadata:
+    layer: derived
+
 # Story 37.8 (CAP-69): each local recipe's conda-forge-expert stamps (status, conda name, upstream registry and
 # name), which export-purls' recipe exceptions read. Read-only; no credential.
 discovery_recipe_extras_raw:

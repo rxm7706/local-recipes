@@ -318,6 +318,7 @@ NODE_TIMEOUTS: dict[str, int] = {
     "project_live_catalog_coverage": 120,  # Story 37.4 -- 17 column counts over the export
     "project_universe_sbom_summary": 300,  # Story 37.4 -- one row per BOM component
     "export_purl_artifacts": 600,  # Story 37.8 — six purl artifacts; reads the cf-graph for recipe URLs
+    "score_alternative_candidates": 900,  # Story 37.7 — an inverted-index Jaccard pass per archived package
     "derive_basilisk_vuln_rollup": 300,  # in-memory rollup of the Basilisk advisories
     "assign_inventory_priority": 120,  # in-memory ranking, no network
     # -- seed_gaps (read-only suggesters) ---------------------------------- #
