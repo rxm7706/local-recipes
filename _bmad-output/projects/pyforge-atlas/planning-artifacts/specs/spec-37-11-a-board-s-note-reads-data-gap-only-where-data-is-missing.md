@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-22'
 status: 'done'
 baseline_revision: 'ab50b079a8c8d68d364570b96e01cdd788885ac6'
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -107,7 +107,7 @@ Run 2026-10-22 in the landing worktree on `ab50b079a8`, every verdict read from 
     `test_identity_workbook_gap_message_reads_data_gap`;
   - after the review, its note hardcoded back to "Data gap":
     `test_identity_workbook_page_falls_back_to_page_note_when_both_files_present`.
-- **After the review fixes:** the three files and `tests/integration/dashboard/` give 288 passed (exit 0);
+- **After the review fixes** (`63cb853a8a`, main `9fc4cb1c2b` merged in): the three files and `tests/integration/dashboard/` give 288 passed (exit 0);
   `pixi run -e pyforge-atlas pyforge-atlas-test` gives 3,113 passed and 20 skipped, then 103 passed (exit 0).
 - **A real build:** `build_dashboard(board_projections=True)` over Story 37.2's public-run data root (it predates Story
   37.4's projections). 15 boards read "About this board", each with a stamped dataset; 15 read "Data gap", each with
@@ -134,3 +134,7 @@ Run 2026-10-22 in the landing worktree on `ab50b079a8`, every verdict read from 
 - 2026-10-22, review 1 (independent subagent, read the diff against this spec): FAIL. 1 blocker (B1, the identity
   workbook's label rows unpinned), 0 should-fix, 3 nits. The reviewer ran its mutations in a scratch plugin, so no
   repo file changed. B1 and two nits fixed on the branch (Spec Change Log); the feed-row nit is closed at landing.
+- 2026-10-22, review 2 (independent subagent): PASS, 0 blockers, 0 should-fix. Both B1 mutations, two more variants
+  and every round-1 mutation fail a named test; the counts above re-run as stated; both memlog lines cite
+  `pyforge-atlas:AD-17`. Nit applied: the after-review bullet names its commit. Nit left: the core memlog's
+  `updated:` stays at its last append, since the line fix was an edit, not an append; spec-surface passes.
