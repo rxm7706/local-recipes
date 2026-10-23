@@ -6627,3 +6627,14 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-10-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-steward-13-6-4: Story 13.6's final verification left four non-must-fix items: clean --merged-only refuses (not-merged) a present workspace git no longer lists when its HEAD cannot be read (non-UTF-8 repository path, or a directory the user cannot enter) where the baseline archived it or gave an error row, so one CLI case exits 0 instead of 1; the broadened per-record catch and the OSError guard in _worktree_head_landed have no pin of their own (a --delete sweep over a workspace the user cannot enter would pin t... [truncated, 656 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-13-6-a-workspace-started-from-another-branch-is-landed-once-its-branch-is-on-main.md`
+  summary: Story 13.6's final verification left four non-must-fix items: clean --merged-only refuses (not-merged) a present workspace git no longer lists when its HEAD cannot be read (non-UTF-8 repository path, or a directory the user cannot enter) where the baseline archived it or gave an error row, so one CLI case exits 0 instead of 1; the broadened per-record catch and the OSError guard in _worktree_head_landed have no pin of their own (a --delete sweep over a workspace the user cannot enter would pin t... [truncated, 656 chars total]
+  evidence: Round 14 verification (PASS, no must-fix against bdb49ec39f): a refusal keeps the record and loses nothing. Fault injection over 3,628 sweeps found no lost commit, branch or record.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
+  origin: spec-deferred 2f4bb4a396c7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

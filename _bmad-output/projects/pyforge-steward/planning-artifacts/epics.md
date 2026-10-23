@@ -1102,7 +1102,7 @@ cases fail on `bdb49ec39f`; a local ref named like the trunk never proves a land
 detached HEAD with commits past a landed branch is skipped by `--merged-only` or parked as a preserve tag; a directory deleted by hand never loses more than at
 the baseline (every clean unregisters only its own, unlocked worktree; DW-steward-13-6 and DW-steward-13-6-2 carry the rest); the 13.1-13.5, 68.1, 69.1, 70.1 and 85.5 workspace tests pass, one
 (an unresolvable source) also removing the trunk to keep its meaning; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 14: The BMAD core upgrades repeatably
 

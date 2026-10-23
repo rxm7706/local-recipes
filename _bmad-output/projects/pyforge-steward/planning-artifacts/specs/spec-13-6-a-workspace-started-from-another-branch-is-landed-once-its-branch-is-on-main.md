@@ -2,9 +2,9 @@
 title: '13.6: A workspace started from another branch is landed once its branch is on main'
 type: 'fix'
 created: '2026-10-23'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'bdb49ec39f'
-review_loop_iteration: 13
+review_loop_iteration: 14
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -43,6 +43,19 @@ deferred:
     evidence: |-
       Found at Story 13.6's final review (round 10). Not a loss: the worktree, its branch and its record stay.
       Deferred by the operator's ruling of 2026-10-23 (land 13.6 once no must-fix regression remains).
+    location: >-
+      src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
+    severity: low
+  - summary: >-
+      Story 13.6's final verification left four non-must-fix items: clean --merged-only refuses (not-merged) a
+      present workspace git no longer lists when its HEAD cannot be read (non-UTF-8 repository path, or a directory
+      the user cannot enter) where the baseline archived it or gave an error row, so one CLI case exits 0 instead of 1;
+      the broadened per-record catch and the OSError guard in _worktree_head_landed have no pin of their own (a
+      --delete sweep over a workspace the user cannot enter would pin the catch); status still raises PermissionError
+      for such a directory, as at the baseline; and DW-steward-13-6 does not name the non-UTF-8 default-clean case.
+    evidence: |-
+      Round 14 verification (PASS, no must-fix against bdb49ec39f): a refusal keeps the record and loses nothing.
+      Fault injection over 3,628 sweeps found no lost commit, branch or record.
     location: >-
       src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
     severity: low
@@ -501,4 +514,16 @@ The fix has two parts:
   CAP-155 states.
 
 Both are pinned by a two-record sweep.
+
+### 2026-10-23 — Review pass 14, verification of the round-13 fix (PASS)
+
+There is no must-fix regression against `bdb49ec39f`.
+- The reachability harness (55 reproducers, HEAD and baseline) is unchanged apart from the round-13 cases.
+- The loss scan shows only the accepted deferrals.
+- Fault injection replaced every git call with an `OSError` or `ValueError`, across 3,628 sweeps. It lost no commit,
+  branch or record, and the broadened catch changed no answer the narrow catch gave.
+
+The verifier's "to defer" items are the fourth `deferred:` entry: the `--merged-only` refusal for an unreadable,
+unregistered worktree, the pin strength, `status`'s `PermissionError`, and the `DW-steward-13-6` wording. By the
+operator's ruling, Story 13.6 lands.
 
