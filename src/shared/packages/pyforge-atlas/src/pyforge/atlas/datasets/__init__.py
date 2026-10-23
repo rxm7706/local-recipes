@@ -110,6 +110,7 @@ from .sbom_intake import (
     parse_pip_list_text,
     parse_requirements_txt,
 )
+from .snapshot_history import SnapshotHistoryDataset
 from .tier3_sources import (
     DebianPackagesDataset,
     FedoraPackagesDataset,
@@ -255,6 +256,8 @@ __all__ = [
     "CondaChanneldataDataset",
     "CfGraphTarballDataset",
     "S3DownloadStatsDataset",
+    # Story 37.5: the append-only store the cve-watcher's history lives in
+    "SnapshotHistoryDataset",
     "parse_feedstock_outputs_zip",
     "repodata_json_to_rows",
     "channeldata_json_to_rows",

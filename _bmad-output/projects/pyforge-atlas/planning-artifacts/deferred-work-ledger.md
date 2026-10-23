@@ -5085,7 +5085,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: operator ruling 2026-10-19 on CAP-69
   severity: low
   promoted: 2026-10-19 -- atlas Epic 37 chain; owned by Story 37.5
-  status: open
+  resolved: 2026-10-23 (Story 37.5: snapshot_vulnerability_rollup appends each run's rollup to vulnerability_rollup_snapshots, and diff_vulnerability_snapshots writes derived_vuln_history, which the cve-watcher reads with pyforge.atlas.board_projections on)
+  status: closed
 
 ### DW-atlas-37-6-1: The release-cadence has no per-version upload times.
 
