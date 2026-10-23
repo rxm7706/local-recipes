@@ -729,6 +729,29 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   or weakened. The change lands in one `retro(cfe):` commit with a CHANGELOG PATCH bump (AD-15). It is a fix: no flag
   and no new CAP. It binds CAP-23 (the skill's own meta-test suite is green), as Stories 29.1 and 30.1 do. Owner:
   mason. → Epic 31 / Story 31.1, specced 2026-10-14.
+- **2026-10-22 — Fixed: CFE's tests never fetch conda-smithy's remote lint data.** On 2026-10-22 a local `pr-preflight`
+  failed 1 of 9,391 `test-ci` tests: `tests/integration/test_workflow_npm.py::test_canonical_chain_with_deps`, where
+  conda-smithy's lint could not resolve `raw.githubusercontent.com`. The same test passed minutes later. Story 26.1
+  stubbed the two GitHub lookups conda-smithy's linter makes, but its lint (3.62.0) reads two more files from GitHub:
+  - `validate_schema.validate_json_schema` resolves the `bot` property of a recipe's `conda-forge.yml` through a
+    `$ref` to `regro/cf-scripts`' `cf_tick_schema.json`, with `requests.get` and no timeout. Every generated recipe
+    carries a `bot:` block (CFE v8.61.0).
+  - `linter.utils.load_linter_toml_metdata_internal` fetches conda-forge-pinning's `linter_hints/hints.toml` for every
+    recipe it lints. It catches only `Timeout`, so a DNS failure raises out of the lint.
+
+  With the network blocked (`unshare -rn`), four tests fail, including Story 26.1's own regression test. That test's
+  trap matches `github.com` only, so it missed `raw.githubusercontent.com`.
+  **What it looks like when real:** every CFE test not marked `network` answers both reads locally, in the pytest
+  process and in the conda-smithy child `validate_recipe` starts. The `bot` schema comes from a vendored copy of
+  `cf_tick_schema.json`, through conda-smithy's own `CONDA_SMITHY_BOT_SCHEMA_URI` override. The hints lookup returns
+  an empty hints table. It cannot return `None`, conda-smithy's own answer when the fetch fails: 3.62.0 then reads
+  `{}.get("hints", [])` and raises `AttributeError` for any recipe with requirements. The suite passes with the network
+  blocked. The trap matches `githubusercontent.com` too, and a `network`-marked test compares the vendored schema with
+  upstream.
+  **Constraints:** tests only: CFE's validator keeps calling conda-smithy's real lint at runtime, against the live
+  schema. Validation against the vendored copy still rejects a malformed `bot` block. The change lands in one
+  `retro(cfe):` commit with a CHANGELOG PATCH bump (AD-15). It is a fix: no flag and no new CAP. Same class as Story
+  26.1, under CAP-34. Owner: mason. → Epic 26 / Story 26.2, specced 2026-10-22.
 
 ## One-chain fold — 2026-09-17
 

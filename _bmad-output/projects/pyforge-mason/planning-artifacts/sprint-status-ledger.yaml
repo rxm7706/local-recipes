@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: mason
-# stories: 175
+# stories: 176
 development_status:
   1-1-workspace-member-scaffold-and-dual-artifact-build: done
   1-10-configuration-surface-logging-and-child-output-streaming: done
@@ -94,6 +94,7 @@ development_status:
   25-8-track-b-batch-4-refreshes-ocrmypdf-through-pysqlite3: done
   25-9-track-b-batch-5-refreshes-redshift-connector-through-zxing-cpp: done
   26-1-cfe-s-tests-never-ask-github-whether-a-recipe-maintainer-exists: done
+  26-2-cfe-s-tests-never-fetch-conda-smithy-s-remote-lint-data: done
   27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals: done
   27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals: done
   28-1-the-rebuild-guard-reads-a-sha-field-whatever-type-yaml-gives-it: done

@@ -169,7 +169,7 @@ def _extra_mirror_env_vars() -> tuple[str, ...]:
 
 @pytest.fixture(scope="session")
 def _smithy_stub_sitecustomize_dir(tmp_path_factory):
-    """A sitecustomize that stubs conda-smithy maintainer lookups in children."""
+    """A sitecustomize that stubs conda-smithy's network reads in children."""
     from _smithy_maintainer_stub import sitecustomize_source
 
     site = tmp_path_factory.mktemp("cfe_smithy_stub_site")
@@ -181,12 +181,17 @@ def _smithy_stub_sitecustomize_dir(tmp_path_factory):
 def stub_smithy_maintainer_lookups(
     request, monkeypatch, _smithy_stub_sitecustomize_dir,
 ):
-    """Replace conda-smithy maintainer lookups unless the test is marked network.
+    """Replace conda-smithy's network reads unless the test is marked network.
 
     ``_maintainer_exists`` (and ``_team_exists`` for ``org/team``) ask
     github.com when ``GH_TOKEN`` is unset. The ``cfe-regression-net`` lane
     has no token, so an unauthenticated HEAD from a CI runner flaked
     (2026-10-02) with ``Recipe maintainer "rxm7706" does not exist``.
+    The lint also fetches conda-forge-pinning's ``hints.toml`` and resolves
+    the ``conda-forge.yml`` ``bot`` schema from raw.githubusercontent.com; a
+    DNS failure there failed a local ``pr-preflight`` (2026-10-22, mason
+    Story 26.2). The hints lookup answers an empty table and
+    ``CONDA_SMITHY_BOT_SCHEMA_URI`` points at the vendored schema.
 
     Autouse for every test that is not marked ``network`` — the opposite of
     ``clean_mirror_env``, which is opt-in so network tests keep real mirrors.
@@ -198,19 +203,27 @@ def stub_smithy_maintainer_lookups(
     if request.node.get_closest_marker("network"):
         return
     from _smithy_maintainer_stub import (
+        BOT_SCHEMA_URI_ENV,
         CFE_STUB_SMITHY_LOOKUPS_ENV,
+        bot_schema_uri,
+        stub_linter_hints,
         stub_maintainer_exists,
         stub_team_exists,
     )
 
     try:
         import conda_smithy.lint_recipe as lint_recipe
+        import conda_smithy.linter.utils as linter_utils
     except ImportError:
         pass
     else:
         monkeypatch.setattr(lint_recipe, "_maintainer_exists", stub_maintainer_exists)
         monkeypatch.setattr(lint_recipe, "_team_exists", stub_team_exists)
+        monkeypatch.setattr(
+            linter_utils, "load_linter_toml_metdata_internal", stub_linter_hints
+        )
     monkeypatch.setenv(CFE_STUB_SMITHY_LOOKUPS_ENV, "1")
+    monkeypatch.setenv(BOT_SCHEMA_URI_ENV, bot_schema_uri())
     existing = os.environ.get("PYTHONPATH", "")
     prefix = str(_smithy_stub_sitecustomize_dir)
     monkeypatch.setenv(

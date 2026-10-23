@@ -249,7 +249,8 @@ verify_commands = [
 "26" = [  # CFE's tests never ask GitHub whether a recipe maintainer exists (fix under spec-pyforge-mason CAP-34), added 2026-10-02
   # Station default, plus the CFE surface Story 26.1's one retro(cfe) commit writes (tests/conftest.py, a new
   # regression test, CHANGELOG.md and the version carriers), every Spec memlog (spec-packaging-factory governs the
-  # CFE surface), and the station ledger each story writes its own status to.
+  # CFE surface), and the station ledger each story writes its own status to. Story 26.2 (2026-10-22) writes inside
+  # the same surface: the stub module, a vendored schema under tests/fixtures/, and the regression test.
   "src/shared/packages/pyforge-mason/**",
   "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
   "_bmad-output/projects/pyforge-mason/implementation-artifacts/**",

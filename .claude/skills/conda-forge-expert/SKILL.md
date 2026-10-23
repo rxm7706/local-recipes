@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.101.3
+version: 8.101.4
 allowed-tools: [conda_forge_server]
 ---
 
@@ -381,6 +381,21 @@ lookups with a local answer for every test that is not marked `network`,
 including the conda-smithy child that `validate_recipe` starts (a
 `PYTHONPATH` sitecustomize, because an in-process-only patch misses that
 child). Runtime lint is unchanged.
+
+**…nor fetch conda-smithy's remote lint data.** conda-smithy's lint (3.62.0)
+also reads two files from raw.githubusercontent.com: conda-forge-pinning's
+`linter_hints/hints.toml` (every recipe) and regro/cf-scripts'
+`cf_tick_schema.json` (any `conda-forge.yml` with a `bot:` block, which every
+generated recipe carries). A DNS failure there failed a local `pr-preflight`
+on 2026-10-22. The same fixture answers the hints lookup with an empty table
+and sets `CONDA_SMITHY_BOT_SCHEMA_URI` (conda-smithy's own override) to the
+vendored `tests/fixtures/conda_smithy/cf_tick_schema.json`, so a malformed
+`bot` block still fails. Do not stub the hints lookup with `None`: that is
+conda-smithy's own failed-fetch answer, and 3.62.0 then raises
+`AttributeError` for any recipe with requirements. A trap must match
+`githubusercontent.com` as well as `github.com`; the first trap matched only
+`github.com` and missed both reads. Prove a fix like this with the network
+blocked (`unshare -rn` around pytest), not by re-running the test online.
 
 **This gate HAD TWO independent copies elsewhere in this skill** —
 `dependency-checker.py`'s `_auth_headers` (its own implementation, broader alias
@@ -4555,6 +4570,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.101.4** (Oct 22, 2026) — **mason Story 26.2 Rule-2 retro: CFE's tests never fetch conda-smithy's remote lint data (PATCH; tests only).** See `CHANGELOG.md`.
 - **v8.101.3** (Oct 22, 2026) — **doctor Story 45.3 Rule-2 retro: the fleet-picture ATTENTION test names any probe `main()` calls that it does not stub (PATCH; tests only).** See `CHANGELOG.md`.
 - **v8.101.2** (Oct 16, 2026) — **herald Story 45.1 retro correction: v8.101.1 named the wrong cause; the lane was paused, not missing a trigger (PATCH; CHANGELOG only).** See `CHANGELOG.md`.
 - **v8.101.1** (Oct 16, 2026) — **herald Story 45.1 Rule-2 retro: the fleet-picture ATTENTION test stubs the Pages-liveness probe doctor Story 48.2 added (PATCH; tests only).** See `CHANGELOG.md`.
