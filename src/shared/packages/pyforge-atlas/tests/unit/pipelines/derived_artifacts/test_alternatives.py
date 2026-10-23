@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -77,6 +78,7 @@ def test_keywords_are_a_list_or_nothing() -> None:
     assert keyword_set(["YAML", "", "Parser"]) == {"yaml", "parser"}
     assert keyword_set("yaml") == keyword_set(None) == keyword_set(float("nan")) == frozenset()
     assert keyword_set({"Yaml": 1}) == frozenset()  # legacy reads a JSON object as no keywords
+    assert keyword_set(np.array(["Yaml", ""])) == {"yaml"}  # Parquet hands a list back as an array
 
 
 def test_jaccard_is_zero_when_either_side_is_empty() -> None:

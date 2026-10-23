@@ -2,7 +2,7 @@
 title: "37.7: The find-alternative scores candidates for archived packages"
 type: 'feature'
 created: '2026-10-23'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'e5810642d17ebee7159c3e020235d98918386e55'
 flag:
   key: pyforge.atlas.board_projections            # existing; minted by Story 37.4, extended to this board
@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'the find-alternative reads primary/alternative_candidates as before, which nothing writes, and renders empty'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 2
+review_loop_iteration: 3
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -81,6 +81,14 @@ keywords, and atlas stores neither.
   - recency is 1.0 for every candidate, as legacy gives a package with no upload time;
   - `adoption_stage` reads `unknown`, as the adoption-stage board does today.
 - Ties in the composite fall to the candidate name; legacy's order among ties is SQLite's row order.
+- A malformed `extra.recipe-maintainers` is read as the cf-graph parse already reads it (Story 34.7's
+  `_maintainers`), not as legacy's Phase E does:
+  - a string is one handle (legacy splits it into characters);
+  - a non-string entry becomes its string (legacy skips it);
+  - an empty entry is dropped (legacy keeps it);
+  - a mapping gives none (legacy takes its keys).
+
+  On the live data this changes no list.
 
 Ledger key: `37-7-the-find-alternative-scores-candidates-for-archived-packages`.
 Type / Effort / Deps: feature / M / Story 37.1 (the data root).
@@ -99,7 +107,9 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root).
 
 - **AC1 — About text.** An anchor row carries its recipe's `about.summary` and `about.keywords`; an edge row carries
   neither. `package_recipe_fields(..., unattributed=False)`, as the node calls it, gives them to every attributed
-  output and to no unattributed one; its default callers keep the first-anchor fallback.
+  output whose feedstock the cf-graph carries, and to no unattributed one. An output attributed to a feedstock the
+  cf-graph lacks, such as `staged-recipes`, gets nothing, as in legacy. Its default callers keep the first-anchor
+  fallback.
 - **AC2 — Archived set.** A package is scored when it is on the channel and its attributed feedstock is archived by
   either source. A package archived nowhere, or not attributed, is never an `archived_name`.
 - **AC3 — Candidates.** Only an active, unarchived package other than the archived one is a candidate. It needs a
@@ -213,7 +223,8 @@ after review 2's fixes.
 
 - 2026-10-23, review 2 (FAIL, 1 blocker), fixed on the same branch:
   - R2-B1: maintainers still reached a package outside its attribution. `vcs_package_maintainers` merges every
-    feedstock that lists an output, so 137 of 828 lists differed from legacy's Phase E. The parity script hid it by
+    feedstock that lists an output, so 135 to 137 of 828 lists differed from legacy's Phase E (by round 3's and
+    round 2's harnesses). The parity script hid it by
     filling legacy's `package_maintainers` from that same table. Now:
     - the node reads the attributed feedstock's recipe maintainers through the same attribution-only call, and its
       `vcs_package_maintainers` input is gone;
@@ -252,6 +263,19 @@ after review 2's fixes.
 
 ## Review Triage Log
 
+- 2026-10-23, review 3 (independent subagent, focused on round 2's fixes): PASS, with 0 blockers, 0 should-fixes and
+  4 nits, all addressed.
+  - Its own legacy store, written independently, matches the port on 828 of 828 archived packages.
+  - The same harness catches each of these bugs: merged maintainers (135 lists differ), lowercased handles (7) and
+    the first-anchor fallback (150).
+  - 2,500 randomized universes, with legacy built from raw payloads, give 0 differences.
+  - Every Run-results number reproduces, and the merge-gate checks exit 0.
+  - The nits:
+    - the malformed-maintainers deviation is declared;
+    - AC1 names outputs whose feedstock the cf-graph lacks;
+    - the array branch of the list parse has a test;
+    - the round-2 count is restated as a range.
+  - It removed its scratch directory and wrote nothing tracked.
 - 2026-10-23, review 2 (independent subagent): FAIL, with 1 blocker, 1 should-fix and 6 nits, all addressed or
   answered (Spec Change Log). It confirmed round 1's fixes:
   - spec-surface exits 0;
