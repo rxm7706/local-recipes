@@ -724,13 +724,14 @@ def status_workspaces(
 def _rev_merged_into(root: Path, rev: str, into: str, *, label: str) -> bool:
     """True when ``rev`` (a full ref or a sha; ``label`` names it in errors) is an ancestor of ``into``.
 
-    An ``origin/<b>`` or ``refs/remotes/<r>/<b>`` target is compared by the commit its remote-tracking ref names
-    (``_source_commit``), never by the name: when that ref is missing, git would read ``refs/remotes/<b>`` as a local
-    branch or tag of that name (Story 13.6 reviews: ``refs/heads/refs/remotes/origin/main`` proved an unlanded branch
-    merged). Any other target (a local branch, a sha, another full ref) is passed as recorded (Story 70.1).
+    A target naming a remote-tracking ref (``<remote>/<b>`` for a configured remote, or ``refs/remotes/...``) is
+    compared by the commit that exact ref names (``_source_commit``), never by the name: when the ref is missing, git
+    would read the name as a local branch or tag (Story 13.6 reviews: ``refs/heads/refs/remotes/origin/main`` proved
+    an unlanded branch merged, and a workspace slugged like its source compared against itself). Any other target (a
+    local branch, a sha, a revision like ``origin/main~2``) is passed as recorded (Story 70.1).
     """
     target = into
-    if into.startswith(("origin/", "refs/remotes/")):
+    if _remote_tracking_name(into, root=root) is not None:
         resolved = _source_commit(into, root=root)
         if resolved is None:
             raise WorkspaceError(
@@ -789,19 +790,49 @@ def _branch_landed(root: Path, branch: str, source: str) -> bool:
     return _rev_landed(root, _branch_ref(branch), source, label=branch)
 
 
+_UNBORN_HEAD = "0" * 40
+
+
+def _registered_head(root: Path, wt: Path) -> str | None:
+    """The HEAD the repository records for worktree ``wt`` (``worktree list --porcelain``), or None when it lists none.
+
+    Read from the root, it survives a worktree whose ``.git`` link is broken or whose directory was deleted by hand,
+    where ``rev-parse HEAD`` inside the worktree fails (Story 13.6 review 3). An unborn HEAD reads as forty zeros.
+    """
+    listed = _git_bytes("worktree", "list", "--porcelain", "-z", cwd=root)
+    if listed.returncode != 0:
+        return None
+    want = os.path.realpath(wt)
+    current: str | None = None
+    for field in listed.stdout.split(b"\0"):
+        line = os.fsdecode(field)
+        if line.startswith("worktree "):
+            current = os.path.realpath(line[len("worktree ") :])
+        elif line.startswith("HEAD ") and current == want:
+            return line[len("HEAD ") :].strip()
+        elif not line:
+            current = None
+    return None
+
+
 def _worktree_head_landed(record: WorkspaceRecord, *, root: Path) -> bool:
-    """True when the worktree is gone, or its HEAD is landed like its branch (Story 13.6 review).
+    """True when the worktree is gone, or its HEAD is landed like its branch (Story 13.6 reviews).
 
     A detached HEAD can carry commits its branch does not. Removing such a worktree because the branch landed
-    would leave them on no ref, so ``--merged-only`` and the preserve-tag check ask about HEAD too. A HEAD git cannot
-    read (unborn, or a broken gitdir) names no commit to lose, so the branch's verdict stands, as before this story; a
-    HEAD git reads but cannot place counts as not landed.
+    would leave them on no ref, so ``--merged-only`` and the preserve-tag check ask about HEAD too. HEAD is read as
+    the repository records it, so a broken ``.git`` link or a directory deleted by hand still names its commit; an
+    unborn HEAD names none. A worktree the repository no longer lists and that is gone from disk holds nothing. Any
+    HEAD git cannot read or cannot place counts as not landed.
     """
     wt = Path(record.path)
-    if not wt.is_dir():
-        return True
-    head = _commit_of("HEAD", cwd=wt)
+    head = _registered_head(root, wt)
     if head is None:
+        if not wt.is_dir():
+            return True
+        head = _commit_of("HEAD", cwd=wt)
+        if head is None:
+            return False
+    if head == _UNBORN_HEAD:
         return True
     try:
         return _rev_landed(root, head, record.source, label="HEAD")
@@ -872,15 +903,43 @@ def _source_commit(source: str, *, root: Path) -> str | None:
 
     Story 13.6 review 2: the full refname is looked up exactly (``show-ref --verify``), never through git's name
     lookup. ``rev-parse`` falls through to ``refs/heads/refs/remotes/<b>`` when the remote-tracking ref is missing,
-    and when both exist it prints only "ambiguous" with exit 0, so a real landing read as unresolvable."""
-    name = _source_ref(source)
-    if not name.startswith("refs/remotes/"):
+    and when both exist it prints only "ambiguous" with exit 0, so a real landing read as unresolvable. Review 3: any
+    configured remote counts, not only ``origin`` (``_remote_tracking_name``)."""
+    name = _remote_tracking_name(source, root=root)
+    if name is None:
         return None
     found = _git_ok("show-ref", "--verify", "--hash", name, cwd=root)
     sha = (found.stdout or "").strip()
     if found.returncode != 0 or not sha or "\n" in sha:
         return None
     return _commit_of(sha, cwd=root)
+
+
+def _remote_names(root: Path) -> frozenset[str]:
+    """The repository's configured remotes; ``origin`` alone when git cannot list them."""
+    listed = _git_ok("remote", cwd=root)
+    if listed.returncode != 0:
+        return frozenset({"origin"})
+    return frozenset(line.strip() for line in (listed.stdout or "").splitlines() if line.strip())
+
+
+def _remote_tracking_name(source: str, *, root: Path) -> str | None:
+    """The full remote-tracking refname ``source`` means, or None when it names no remote-tracking ref.
+
+    ``refs/remotes/...`` as written, or ``<remote>/<b>`` for a configured remote (Story 13.6 review 3: ``upstream/main``
+    proved landings before this story and must still). A name that is not a valid refname -- a revision such as
+    ``origin/main~2`` -- is None, so it is read as recorded, as before.
+    """
+    if source.startswith("refs/remotes/"):
+        full = source
+    else:
+        remote, sep, rest = source.partition("/")
+        if not sep or not rest or remote not in _remote_names(root):
+            return None
+        full = f"refs/remotes/{source}"
+    if _git_ok("check-ref-format", full, cwd=root).returncode != 0:
+        return None
+    return full
 
 
 def default_flags_path() -> Path:

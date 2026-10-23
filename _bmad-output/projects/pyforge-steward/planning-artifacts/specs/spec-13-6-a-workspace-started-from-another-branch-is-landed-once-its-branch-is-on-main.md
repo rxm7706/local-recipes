@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-23'
 status: 'in-review'
 baseline_revision: 'bdb49ec39f'
-review_loop_iteration: 2
+review_loop_iteration: 3
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -57,12 +57,14 @@ Read at `bdb49ec39f` in `src/shared/packages/pyforge-steward/src/pyforge/steward
   branch. The note names that ref and its sha, and adds the recorded source when the two differ.
 - **By commit, never by name** *(reviews 1 and 2)*. An `origin/<b>` or `refs/remotes/<r>/<b>` source and the trunk
   are compared by the commit their remote-tracking ref names. `_source_commit` looks the full refname up exactly with
-  `show-ref --verify`. Passed by name, a missing `refs/remotes/origin/main` let git read a local
+  `show-ref --verify`, for any configured remote (review 3). Passed by name, a missing `refs/remotes/origin/main` let git read a local
   `refs/heads/refs/remotes/origin/main` and prove an unlanded branch merged. When both refs exist, `rev-parse` only
   reported ambiguity, so a real landing read as unresolvable.
 - **HEAD too** *(review 1)*. `--merged-only` and the preserve-tag check also require the worktree's HEAD to be
-  landed, so commits on a detached HEAD past a landed branch are skipped or parked, never left on no ref. A HEAD
-  git cannot read (unborn, a broken gitdir) names no commit to lose, so the branch's verdict stands, as before.
+  landed, so commits on a detached HEAD past a landed branch are skipped or parked, never left on no ref. HEAD is
+  read as the repository records it (`worktree list --porcelain`), so a broken `.git` link or a directory deleted by
+  hand still names its commit; an unborn HEAD names none; any other HEAD git cannot read counts as not landed
+  (review 3).
 - **`ahead`/`behind`** still read the recorded source.
 
 ### Living CAP citations
@@ -125,6 +127,14 @@ workspace `--from base` with another.
     - a trunk shadowed while present still proves a landing;
     - `--merged-only` cleans a landed branch whose worktree is gone;
     - an unborn HEAD leaves the branch verdict as before.
+  - **Review 3.** These cases are pinned:
+    - a broken `.git` link and a directory deleted by hand still name a detached HEAD, so `--merged-only` skips;
+    - a detached HEAD past a landed branch whose source is gone is kept;
+    - a local full-ref source (`refs/heads/base`) proves nothing;
+    - an `upstream/main` landing still proves it;
+    - a workspace named like its remote source is never compared with itself;
+    - a short-name `origin/base` shadow is never a landing;
+    - a revision source is read as recorded.
 - **(7) The fix is what makes them pass.** (1)-(3) and (5)'s deleted-source case fail on `bdb49ec39f`; (4) and (5)'s
   missing-trunk case pass there.
 - **(8) Nothing else moves.** The 13.1-13.5, 68.1, 69.1, 70.1 and 85.5 workspace tests pass, and
@@ -162,7 +172,11 @@ before the merge.
 | source git cannot resolve, worktree on main | tarball (no proof) | note (the trunk proves it) |
 | source git cannot resolve, no trunk either | tarball (no proof) | unchanged |
 | local `refs/heads/refs/remotes/origin/main` shadows a missing trunk | `origin/main`-sourced: read as landed | never a landing (an error row for an `origin/main` source) |
-| HEAD git cannot read (unborn, broken gitdir), branch landed | `--merged-only` cleans it | unchanged |
+| unborn HEAD, branch landed | `--merged-only` cleans it | unchanged |
+| broken `.git` link or directory deleted by hand, detached HEAD past a landed branch | `--merged-only` removes it; the commit is left on no ref | skipped `not-merged` (HEAD read from the root) |
+| source on another remote (`upstream/main`), landed | landed | unchanged |
+| slug and branch `upstream/main` started from `upstream/main`, unlanded | read as merged (compared with itself); `--merged-only` deletes the branch | not merged |
+| revision source (`origin/main~0`) | read by name | unchanged |
 | both `refs/remotes/origin/main` and a local `refs/heads/refs/remotes/origin/main` | landed by the remote ref | unchanged (looked up exactly) |
 | source recorded as `refs/remotes/origin/main`, remote ref gone, local ref of that full name | read as landed | never a landing |
 | detached HEAD with commits past a landed branch | trunk-sourced: `--merged-only` removed it, no preserve tag | skipped `not-merged`; parked as a preserve tag when the flag is on |
@@ -249,4 +263,19 @@ before the merge.
    landed are pinned. The mutants m3 and mH now fail, as do mG and a proof that reads the trunk by name.
 6. **nit, fixed.** The source-only preserve check is worded as "parks more than it needs", not "only writes an
    extra tag".
+
+### 2026-10-23 — Review pass 3 (FAIL: three should-fix, three nits; round 2 resolved)
+
+1. **should-fix, fixed.** Round 2's "an unreadable HEAD defers to the branch" lost a detached HEAD's commit when the
+   worktree's `.git` link was broken. That was the baseline's behaviour, so round 2 had reopened it. HEAD is now read
+   from the root (`worktree list --porcelain -z`); forty zeros means unborn, and anything else unreadable is not
+   landed. The same read covers a directory deleted by hand, which was pre-existing.
+2. **should-fix, fixed.** The round-2 exact lookup accepted only `origin/` and `refs/remotes/`, so `upstream/main`
+   stopped proving landings. `_remote_tracking_name` now maps `<remote>/<b>` for every configured remote. This also
+   closes a pre-existing loss: a workspace slugged like its remote source was compared with itself.
+3. **should-fix, fixed.** Mutants mE, mG4 and mN now fail, each against its own test.
+4. **nit, fixed.** A revision source (`origin/main~N`) is no refname, so it is read as recorded, as at the baseline,
+   with no error row.
+5. **nit, fixed.** The `refs/remotes/` guard is pinned, by mN.
+6. **nit, fixed.** CAP-157's `--symbolic-full-name` clause and the spine bullet.
 

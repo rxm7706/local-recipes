@@ -2444,8 +2444,8 @@ No port, adapter or package boundary moves. No AD is added, amended or removed.
 - **AD-8 (exit-code sole ownership).** `run_preflight` still returns 0 / 1 / 2 / 130 and a lane's verdict is still its
   exit code. `cancelled_by` is journal evidence, not a verdict input.
 - **Also the same day:** Story 71.13 (a reentrancy guard in the preflight's SIGINT handler) and Story 13.6 (the
-  workspace duty also reads `refs/remotes/origin/main` as a landing ref, through the same `git merge-base` and
-  `rev-parse` subprocesses, AD-1; `workspace clean`'s exit codes are unchanged, AD-8). Neither adds a port, an
+  workspace duty also reads `refs/remotes/origin/main` as a landing ref, through `git merge-base`, `rev-parse`,
+  `show-ref --verify`, `git remote` and `git worktree list` subprocesses, AD-1; `workspace clean`'s exit codes are unchanged, AD-8). Neither adds a port, an
   adapter or a duty.
 
 No port, adapter or package boundary moves. No AD is added, amended or removed.

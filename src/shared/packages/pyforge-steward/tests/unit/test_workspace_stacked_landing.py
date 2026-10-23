@@ -8,6 +8,7 @@ never moves again, so judging only against it left a landed workspace ``unmerged
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -329,9 +330,10 @@ def test_an_unresolvable_source_with_an_unlanded_commit_still_archives(repo: Pat
     assert row["branch_kept"] == "unproven"
 
 
-def test_a_local_ref_named_like_an_origin_source_never_lands_it(repo: Path, tmp_path: Path) -> None:
-    """Review 2: the non-trunk half of "by commit, never by name" -- a pruned ``origin/base`` and a local
-    ``refs/heads/refs/remotes/origin/base`` at the unlanded tip."""
+@pytest.mark.parametrize("shadow", ["refs/heads/refs/remotes/origin/base", "refs/heads/origin/base"])
+def test_a_local_ref_named_like_an_origin_source_never_lands_it(repo: Path, tmp_path: Path, shadow: str) -> None:
+    """Reviews 2 and 3: the non-trunk half of "by commit, never by name" -- a pruned ``origin/base`` and a local ref
+    named like it (by full or short name) at the unlanded tip."""
     bookkeeping = repo / ".steward" / "workspaces.yaml"
     base = tmp_path / "base-wt"
     start_workspace("base", root=repo, bookkeeping=bookkeeping, path=base, from_ref="origin/main")
@@ -342,7 +344,7 @@ def test_a_local_ref_named_like_an_origin_source_never_lands_it(repo: Path, tmp_
     _commit(stacked, "stacked.txt")
     tip = _git("rev-parse", "refs/heads/stacked", cwd=repo).stdout.strip()
     _git("update-ref", "-d", "refs/remotes/origin/base", cwd=repo)
-    _git("update-ref", "refs/heads/refs/remotes/origin/base", tip, cwd=repo)
+    _git("update-ref", shadow, tip, cwd=repo)
     (row,) = status_workspaces("stacked", root=repo, bookkeeping=bookkeeping)
     assert row.merged is not True
     result = clean_workspaces(
@@ -410,3 +412,118 @@ def test_an_unborn_head_leaves_the_branch_verdict_as_before(repo: Path, tmp_path
     )
     assert [r["slug"] for r in result["archived"]] == ["unborn"]
     assert not wt.exists()
+
+
+def _landed_origin_main_workspace_with_a_detached_commit(repo: Path, tmp_path: Path, bookkeeping: Path) -> Path:
+    """An ``origin/main`` workspace whose branch is on main (it has no commit of its own), detached at one more."""
+    wt = tmp_path / "detached-wt"
+    start_workspace("detached", root=repo, bookkeeping=bookkeeping, path=wt, from_ref="origin/main")
+    _git("checkout", "--detach", cwd=wt)
+    _commit(wt, "detached.txt")
+    return wt
+
+
+def test_a_broken_git_link_still_names_the_detached_head(repo: Path, tmp_path: Path) -> None:
+    """Review 3: with the worktree's ``.git`` link broken, HEAD is read as the repository records it."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    wt = _landed_origin_main_workspace_with_a_detached_commit(repo, tmp_path, bookkeeping)
+    (wt / ".git").write_text(f"gitdir: {tmp_path / 'nowhere'}\n", encoding="utf-8")
+    result = clean_workspaces(
+        merged_only=True, slug="detached", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+    )
+    assert result["archived"] == []
+    assert result["skipped"][0]["reason"] == "not-merged"
+    assert wt.is_dir()
+
+
+def test_a_worktree_deleted_by_hand_still_names_the_detached_head(repo: Path, tmp_path: Path) -> None:
+    """Review 3 (before this story too): the repository still lists the worktree and its HEAD; nothing is pruned."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    wt = _landed_origin_main_workspace_with_a_detached_commit(repo, tmp_path, bookkeeping)
+    detached = _git("-C", str(wt), "rev-parse", "HEAD", cwd=repo).stdout.strip()
+    shutil.rmtree(wt)
+    result = clean_workspaces(
+        merged_only=True, slug="detached", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+    )
+    assert result["archived"] == []
+    assert result["skipped"][0]["reason"] == "not-merged"
+    listed = _git("worktree", "list", "--porcelain", cwd=repo).stdout
+    assert f"HEAD {detached}" in listed
+
+
+def test_a_detached_head_past_a_landed_branch_whose_source_is_gone_is_kept(repo: Path, tmp_path: Path) -> None:
+    """Review 3: HEAD the source cannot place and the trunk does not hold is not landed (mutant mE)."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    stacked = _stacked(repo, tmp_path, bookkeeping, land=True)
+    _git("worktree", "remove", str(tmp_path / "base-wt"), cwd=repo)
+    _git("branch", "-D", "base", cwd=repo)
+    _detach_with_a_commit(stacked)
+    result = clean_workspaces(
+        merged_only=True, slug="stacked", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+    )
+    assert result["archived"] == []
+    assert stacked.is_dir()
+
+
+def test_a_local_full_ref_source_proves_nothing(repo: Path, tmp_path: Path) -> None:
+    """Review 3 (mutant mN): only a remote-tracking ref is a landing; ``refs/heads/base`` holding the worktree is not."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    base = tmp_path / "base-wt"
+    start_workspace("base", root=repo, bookkeeping=bookkeeping, path=base, from_ref="origin/main")
+    _commit(base, "base.txt")
+    wt = tmp_path / "on-base-wt"
+    start_workspace("on-base", root=repo, bookkeeping=bookkeeping, path=wt, from_ref="refs/heads/base")
+    result = clean_workspaces(
+        slug="on-base", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a", confirm=lambda _slug: True
+    )
+    (row,) = result["archived"]
+    assert row["archive"].endswith(".tar.gz")
+
+
+def _add_upstream(repo: Path, tmp_path: Path) -> None:
+    upstream = tmp_path / "upstream.git"
+    subprocess.run(["git", "init", "--bare", str(upstream)], check=True, capture_output=True)
+    _git("remote", "add", "upstream", str(upstream), cwd=repo)
+    _git("push", "upstream", "main", cwd=repo)
+
+
+def test_a_landing_on_another_remote_still_proves_it(repo: Path, tmp_path: Path) -> None:
+    """Review 3: ``upstream/main`` proved landings before this story and still does."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    _add_upstream(repo, tmp_path)
+    wt = tmp_path / "up-wt"
+    start_workspace("up", root=repo, bookkeeping=bookkeeping, path=wt, from_ref="upstream/main")
+    _commit(wt, "up.txt")
+    _git("merge", "--no-ff", "-m", "Merge up", "up", cwd=repo)
+    _git("push", "upstream", "main", cwd=repo)
+    result = clean_workspaces(delete=True, slug="up", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a")
+    assert [r["slug"] for r in result["deleted"]] == ["up"]
+    assert not wt.exists()
+
+
+def test_a_workspace_named_like_its_remote_source_is_never_compared_with_itself(repo: Path, tmp_path: Path) -> None:
+    """Review 3 (before this story too): slug and branch ``upstream/main`` started from ``upstream/main``; read by
+    name, the source was the branch itself and ``--merged-only`` deleted it with an unlanded commit."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    _add_upstream(repo, tmp_path)
+    wt = tmp_path / "self-wt"
+    start_workspace("upstream/main", root=repo, bookkeeping=bookkeeping, path=wt, from_ref="upstream/main")
+    _commit(wt, "self.txt")
+    (row,) = status_workspaces("upstream/main", root=repo, bookkeeping=bookkeeping)
+    assert row.merged is False
+    result = clean_workspaces(
+        merged_only=True, slug="upstream/main", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+    )
+    assert result["archived"] == []
+    assert _branch_exists(repo, "upstream/main")
+
+
+def test_a_revision_source_is_read_as_recorded(repo: Path, tmp_path: Path) -> None:
+    """Review 3: ``origin/main~0`` is no refname, so it is read by git's name lookup as before: no error row."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    wt = tmp_path / "rev-wt"
+    start_workspace("rev", root=repo, bookkeeping=bookkeeping, path=wt, from_ref="origin/main~0")
+    _commit(wt, "rev.txt")
+    (row,) = status_workspaces("rev", root=repo, bookkeeping=bookkeeping)
+    assert row.error is None
+    assert row.merged is False
