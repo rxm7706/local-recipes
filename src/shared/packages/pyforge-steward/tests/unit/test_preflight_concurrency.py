@@ -608,9 +608,10 @@ def test_sigint_cancels_real_subprocess_lanes(tmp_path: Path, monkeypatch: pytes
 
 
 @pytest.mark.skipif(not hasattr(signal, "SIGINT"), reason="SIGINT required")
-def test_sigint_leaves_a_never_started_lane_cancelled_without_cancelled_by(tmp_path: Path) -> None:
+def test_sigint_names_interrupt_on_a_never_started_lane(tmp_path: Path) -> None:
     """An interrupted run journals the lane it terminated `cancelled_by: interrupt`, and a lane that
-    never started `cancelled`, exit 0, 0 s and no `cancelled_by`."""
+    never started `cancelled`, exit 0, 0 s, also `cancelled_by: interrupt` (Story 71.12, replacing
+    Story 71.10 AC (4)'s no `cancelled_by`)."""
     repo = tmp_path / "repo"
     repo.mkdir()
     _write(repo / "pixi.toml", _mini_pixi("first", "second"))
@@ -633,7 +634,8 @@ def test_sigint_leaves_a_never_started_lane_cancelled_without_cancelled_by(tmp_p
     assert by_task["second"]["status"] == "cancelled"
     assert by_task["second"]["exit_code"] == 0
     assert by_task["second"]["seconds"] == 0.0
-    assert "cancelled_by" not in by_task["second"]
+    assert by_task["second"]["cancelled_by"] == "interrupt"
+    assert "cancelled_by_environment" not in by_task["second"]  # an interrupt is no lane (Story 103.5 AC4)
     _assert_group_gone(_scratch_root(tmp_path), "first")
 
 
@@ -671,8 +673,9 @@ def test_terminate_children_marks_only_a_process_it_signals(tmp_path: Path) -> N
     assert exited.returncode == 2
 
 
-def test_jobs_one_never_started_lanes_have_no_cancelled_by(tmp_path: Path) -> None:
-    """AC (4): with one worker, the lanes the stop kept from starting stay `cancelled`, exit 0, 0 s."""
+def test_jobs_one_never_started_lanes_name_the_red_lane(tmp_path: Path) -> None:
+    """AC (4): with one worker, the lanes the stop kept from starting stay `cancelled`, exit 0, 0 s, and
+    name the red lane (Story 71.12 replaced 71.10's no `cancelled_by`)."""
     repo = tmp_path / "repo"
     repo.mkdir()
     _write(repo / "pixi.toml", _mini_pixi("fail", "b", "c"))
@@ -692,7 +695,74 @@ def test_jobs_one_never_started_lanes_have_no_cancelled_by(tmp_path: Path) -> No
         assert by_task[name]["status"] == "cancelled"
         assert by_task[name]["exit_code"] == 0
         assert by_task[name]["seconds"] == 0.0
-        assert "cancelled_by" not in by_task[name]
+        assert by_task[name]["cancelled_by"] == "fail"
+        assert by_task[name]["cancelled_by_environment"] == by_task["fail"]["environment"]
+
+
+def _bare_coordinator(repo: Path) -> preflight._RunCoordinator:  # noqa: SLF001
+    return preflight._RunCoordinator(  # noqa: SLF001
+        repo_root=repo,
+        run_id="t",
+        run_start=0.0,
+        jobs=1,
+        keep_going=False,
+    )
+
+
+@pytest.mark.parametrize(
+    ("recorded", "expected"),
+    [(None, ("interrupt", None)), (("interrupt", None), ("interrupt", None)), (("fail", "env"), ("fail", "env"))],
+)
+def test_a_lane_the_pool_turns_away_on_an_interrupt_names_the_cause(
+    tmp_path: Path, recorded: tuple[str, str | None] | None, expected: tuple[str, str | None]
+) -> None:
+    """Story 71.12 AC (3): the pool's first interrupt check names the first recorded cause, `interrupt` before one."""
+    coord = _bare_coordinator(tmp_path)
+    if recorded is not None:
+        coord.set_stop_cause(recorded)
+    coord.cancel.set()
+    ran: list[preflight.LaneRunContext] = []
+    result = preflight._run_lane_in_pool(  # noqa: SLF001
+        coord, preflight.Lane("late", "env"), tmp_path / "scratch", (), lambda ctx: ran.append(ctx) or 0, False
+    )
+    assert ran == []
+    assert (result.status, result.exit_code, result.seconds) == ("cancelled", 0, 0.0)
+    assert (result.cancelled_by, result.cancelled_by_environment) == expected
+
+
+class _InterruptOnAcquire:
+    """A service lock whose acquisition is where SIGINT lands: the lane passed the first check, then waited."""
+
+    def __init__(self, coord: preflight._RunCoordinator) -> None:  # noqa: SLF001
+        self.coord = coord
+
+    def acquire(self) -> bool:
+        self.coord.cancel.set()
+        self.coord.set_stop_cause(("interrupt", None))
+        return True
+
+    def release(self) -> None:
+        pass
+
+
+def test_a_lane_interrupted_while_it_waits_for_its_service_names_interrupt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 71.12 AC (3): the pool's second interrupt check, after the service lock, names `interrupt`."""
+    coord = _bare_coordinator(tmp_path)
+    monkeypatch.setattr(coord, "mutex_lock", lambda _key: _InterruptOnAcquire(coord))
+    ran: list[preflight.LaneRunContext] = []
+    result = preflight._run_lane_in_pool(  # noqa: SLF001
+        coord,
+        preflight.Lane("late", "env"),
+        tmp_path / "scratch",
+        ("services:postgres",),
+        lambda ctx: ran.append(ctx) or 0,
+        False,
+    )
+    assert ran == []
+    assert (result.status, result.exit_code, result.seconds) == ("cancelled", 0, 0.0)
+    assert (result.cancelled_by, result.cancelled_by_environment) == ("interrupt", None)
 
 
 def test_reduced_lane_cancelled_mid_segment(tmp_path: Path) -> None:

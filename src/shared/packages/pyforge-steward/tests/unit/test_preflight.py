@@ -222,25 +222,35 @@ def test_dependency_graph_runs_each_task_once_in_order(tmp_path: Path) -> None:
     assert len(record["lanes"]) == 5
 
 
+# Story 88.1's fixture: ``a`` depends on ``b`` and ``c``, ``b`` on ``d``; ``e`` stands alone; ``d`` goes red.
+RED_DEPENDENCY_TOML = (
+    "[feature.guild-tasks.tasks.pr-preflight-lanes]\n"
+    'depends-on = ["a", "e"]\n'
+    "[feature.guild-tasks.tasks.a]\n"
+    'depends-on = ["b", "c"]\n'
+    'cmd = "true"\n'
+    "[feature.guild-tasks.tasks.b]\n"
+    'depends-on = ["d"]\n'
+    'cmd = "true"\n'
+    "[feature.guild-tasks.tasks.c]\n"
+    'cmd = "true"\n'
+    "[feature.guild-tasks.tasks.d]\n"
+    'cmd = "true"\n'
+    "[feature.guild-tasks.tasks.e]\n"
+    'cmd = "true"\n'
+)
+
+
+def _assert_cancelled_by_d(by_task: dict[str, dict], task: str) -> None:
+    entry = by_task[task]
+    assert entry["status"] == "cancelled", task
+    assert entry["cancelled_by"] == "d", task
+    assert entry["cancelled_by_environment"] == by_task["d"]["environment"], task
+
+
 def test_red_dependency_cancels_dependents(tmp_path: Path) -> None:
     pixi_path = tmp_path / "pixi.toml"
-    pixi_path.write_text(
-        "[feature.guild-tasks.tasks.pr-preflight-lanes]\n"
-        'depends-on = ["a", "e"]\n'
-        "[feature.guild-tasks.tasks.a]\n"
-        'depends-on = ["b", "c"]\n'
-        'cmd = "true"\n'
-        "[feature.guild-tasks.tasks.b]\n"
-        'depends-on = ["d"]\n'
-        'cmd = "true"\n'
-        "[feature.guild-tasks.tasks.c]\n"
-        'cmd = "true"\n'
-        "[feature.guild-tasks.tasks.d]\n"
-        'cmd = "true"\n'
-        "[feature.guild-tasks.tasks.e]\n"
-        'cmd = "true"\n',
-        encoding="utf-8",
-    )
+    pixi_path.write_text(RED_DEPENDENCY_TOML, encoding="utf-8")
     started: set[str] = set()
 
     def run_ctx(ctx: preflight.LaneRunContext) -> int:
@@ -262,13 +272,42 @@ def test_red_dependency_cancels_dependents(tmp_path: Path) -> None:
     record = _run_journal_record(tmp_path)
     by_task = {entry["task"]: entry for entry in record["lanes"]}
     assert by_task["d"]["status"] == "red"
-    assert by_task["b"]["status"] == "cancelled"
-    assert by_task["b"]["cancelled_by"] == "d"
-    assert by_task["a"]["status"] == "cancelled"
-    assert by_task["a"]["cancelled_by"] == "d"
+    assert "cancelled_by" not in by_task["d"]
+    _assert_cancelled_by_d(by_task, "b")
+    _assert_cancelled_by_d(by_task, "a")
     for independent in ("c", "e"):
-        expected = "ok" if independent in started else "cancelled"
-        assert by_task[independent]["status"] == expected
+        if independent in started:
+            assert by_task[independent]["status"] == "ok"
+        else:
+            # Story 71.12: cancelled whether the pool turned it away or the scheduler never submitted it.
+            _assert_cancelled_by_d(by_task, independent)
+
+
+def test_a_lane_the_stop_kept_from_being_submitted_names_the_red_lane(tmp_path: Path) -> None:
+    """Story 71.12 AC (1): with one worker the stop always comes before ``c``, ``a`` and ``e`` are submitted.
+
+    ``d`` runs first and goes red; ``c`` is never offered, so ``a`` keeps a dependency with no result and only the
+    result assembly journals it. Each of them still names ``d``. On ``9fc4cb1c2b`` they carried no ``cancelled_by``.
+    """
+    pixi_path = tmp_path / "pixi.toml"
+    pixi_path.write_text(RED_DEPENDENCY_TOML, encoding="utf-8")
+    started: list[str] = []
+
+    def run_ctx(ctx: preflight.LaneRunContext) -> int:
+        started.append(ctx.lane.task)
+        return 1 if ctx.lane.task == "d" else 0
+
+    code = preflight.run_preflight(tmp_path, pixi_path=pixi_path, run_lane_ctx=run_ctx, **_SERIAL)
+    assert code == preflight.EXIT_LANE_RED
+    assert started == ["d"]
+    by_task = {entry["task"]: entry for entry in _run_journal_record(tmp_path)["lanes"]}
+    assert set(by_task) == {"a", "b", "c", "d", "e"}
+    assert by_task["d"]["status"] == "red"
+    assert "cancelled_by" not in by_task["d"]
+    for task in ("b", "c", "a", "e"):
+        _assert_cancelled_by_d(by_task, task)
+        assert by_task[task]["exit_code"] == 0
+        assert by_task[task]["seconds"] == 0.0
 
 
 def test_red_dependency_keep_going_blocks_dependents_only(tmp_path: Path) -> None:
