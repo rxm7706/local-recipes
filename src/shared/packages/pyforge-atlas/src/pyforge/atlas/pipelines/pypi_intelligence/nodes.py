@@ -977,3 +977,139 @@ def refresh_discovery_debian_store(ttls: dict) -> RefreshRequest:
 
 def refresh_discovery_fedora_store(ttls: dict) -> RefreshRequest:
     return _tier3_refresh_request(ttls, "discovery_fedora_packages_raw")
+
+
+# ---------------------------------------------------------------------------
+# Mapping gap — why an enumerated package has no PyPI name (Story 37.9)
+# ---------------------------------------------------------------------------
+
+MAPPING_GAP_COLUMNS = [
+    "conda_name",
+    "classification",
+    "match_source",
+    "match_confidence",
+    "candidate",
+    "transform",
+]
+#: legacy mapping_gap's three buckets (the S2 contract)
+MAPPING_GAP_CLASSES = ("python_track", "non_python_with_identity", "non_python_no_identity")
+#: the source legacy writes a recovered name with (``mapping_gap.py`` RECOVER_SQL)
+MAPPING_GAP_SOURCE = "g10_spelling"
+
+
+def _fold(name: str) -> str:
+    """legacy ``mapping_gap.fold_name``: PEP 503's fold, for membership only."""
+    return _PEP503_RUN_RE.sub("-", name.lower())
+
+
+def _spelling_candidates(conda_name: str) -> dict[str, str]:
+    """legacy ``spelling_candidates``: up to four inverse-G10 transforms, transform name to candidate."""
+    candidates = {"bare": conda_name}
+    if conda_name.endswith("-py"):
+        candidates["strip-py"] = conda_name[: -len("-py")]
+    if conda_name.endswith("-python"):
+        candidates["strip-python"] = conda_name[: -len("-python")]
+    if conda_name.startswith("python-"):
+        candidates["strip-python-prefix"] = conda_name[len("python-") :]
+    return candidates
+
+
+def _empty_mapping_gap() -> pd.DataFrame:
+    return pd.DataFrame({column: pd.Series(dtype="string") for column in MAPPING_GAP_COLUMNS})
+
+
+def classify_mapping_gap(
+    core_packages_enumerated: pd.DataFrame | None,
+    pypi_conda_mapping: pd.DataFrame | None,
+    core_dependencies: pd.DataFrame | None,
+    vcs_upstream_versions: pd.DataFrame | None,
+    vcs_registry_versions: pd.DataFrame | None,
+    pypi_universe: pd.DataFrame | None,
+) -> pd.DataFrame:
+    # legacy: mapping_gap.py classify + recover  (read-only; --write stays CLI-only)
+    """The mapping-gap board's table: one row per enumerated package with no PyPI name, and why.
+
+    ``classification`` is legacy's: ``python_track`` when the package has a ``run`` dependency on python or a
+    PyPI upstream, ``non_python_with_identity`` when it has any other upstream (a VCS host or a registry), else
+    ``non_python_no_identity``. For a python-track package the offline recovery looks its name up in the PyPI
+    universe under legacy's four spellings (bare, and without a ``-py``, ``-python`` or ``python-`` affix), PEP 503
+    folded:
+
+    - one hit under the bare spelling that no mapped package claims: ``match_source`` ``g10_spelling``,
+      ``match_confidence`` ``likely`` and the ``candidate``;
+    - several hits: ``ambiguous``; a hit another package's PyPI name already folds to: ``collision``; a hit only
+      under an affix transform: ``uncorroborated`` (legacy's tvm-py trap: a transform can land on another
+      project); no hit: ``unrecovered``.
+
+    Legacy also corroborates with the grayskull cache and the purl-associator bundle and then writes ``verified``;
+    atlas holds neither keyed by conda name, so nothing here is ``verified``, and nothing is written back. A
+    non-python package has no ``match_*`` value."""
+    enumerated = core_packages_enumerated
+    if enumerated is None or enumerated.empty or "conda_name" not in enumerated.columns:
+        return _empty_mapping_gap()
+    mapping = pypi_conda_mapping if pypi_conda_mapping is not None else pd.DataFrame()
+    mapped: set[str] = set()
+    claimed: dict[str, str] = {}
+    if {"conda_name", "pypi_name"} <= set(mapping.columns):
+        rows = mapping.dropna(subset=["conda_name", "pypi_name"])
+        rows = rows[rows["pypi_name"].astype(str) != ""].sort_values("conda_name", kind="stable")
+        mapped = set(rows["conda_name"].astype(str))
+        for pypi_name, conda_name in zip(rows["pypi_name"].astype(str), rows["conda_name"].astype(str), strict=True):
+            claimed.setdefault(_fold(pypi_name), conda_name)
+    working = sorted(set(enumerated["conda_name"].dropna().astype(str)) - mapped)
+    if not working:
+        return _empty_mapping_gap()
+
+    python_dep: set[str] = set()
+    deps = core_dependencies
+    if deps is not None and {"conda_name", "depends_on", "dep_type"} <= set(deps.columns):
+        run_python = deps[(deps["depends_on"] == "python") & (deps["dep_type"] == "run")]
+        python_dep = set(run_python["conda_name"].dropna().astype(str))
+    sources: dict[str, set[str]] = {}
+    for frame, column in ((vcs_upstream_versions, "host"), (vcs_registry_versions, "registry")):
+        if frame is not None and {"conda_name", column} <= set(frame.columns):
+            for name, source in zip(frame["conda_name"].astype(str), frame[column].astype(str), strict=True):
+                sources.setdefault(name, set()).add(source.lower())
+
+    universe: dict[str, set[str]] = {}
+    if pypi_universe is not None and "pypi_name" in pypi_universe.columns:
+        for name in pypi_universe["pypi_name"].dropna().astype(str):
+            universe.setdefault(_fold(name), set()).add(name)
+
+    records = []
+    for conda_name in working:
+        upstream = sources.get(conda_name, set())
+        if conda_name in python_dep or "pypi" in upstream:
+            classification = "python_track"
+        elif upstream:
+            records.append({"conda_name": conda_name, "classification": "non_python_with_identity"})
+            continue
+        else:
+            records.append({"conda_name": conda_name, "classification": "non_python_no_identity"})
+            continue
+        hits: dict[str, str] = {}
+        for transform, candidate in _spelling_candidates(conda_name).items():
+            for stored in sorted(universe.get(_fold(candidate), ())):
+                hits.setdefault(stored, transform)
+        row: dict[str, Any] = {"conda_name": conda_name, "classification": classification}
+        if not hits:
+            row["match_confidence"] = "unrecovered"
+        elif len(hits) > 1:
+            row["match_confidence"] = "ambiguous"
+        else:
+            chosen, transform = next(iter(hits.items()))
+            row.update({"candidate": chosen, "transform": transform})
+            claimant = claimed.get(_fold(chosen))
+            if claimant and claimant != conda_name:
+                row["match_confidence"] = "collision"
+            elif transform != "bare":
+                row["match_confidence"] = "uncorroborated"
+            else:
+                claimed[_fold(chosen)] = conda_name  # legacy's intra-run claim
+                row.update({"match_source": MAPPING_GAP_SOURCE, "match_confidence": "likely"})
+        records.append(row)
+    out = pd.DataFrame.from_records(records)
+    for column in MAPPING_GAP_COLUMNS:
+        if column not in out.columns:
+            out[column] = pd.NA
+    return out[MAPPING_GAP_COLUMNS].astype("string").reset_index(drop=True)

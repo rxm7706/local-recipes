@@ -98,13 +98,14 @@ def test_cross_pipeline_cf_graph_edge_resolves_by_name():
 # -- B2: pypi_intelligence (9 nodes) + vulnerability (5 nodes) ----------------
 
 
-def test_pypi_intelligence_pipeline_has_seventeen_nodes():
+def test_pypi_intelligence_pipeline_has_eighteen_nodes():
     # B5 added export_pypi_conda_map (the § 3.4 update-mapping-cache Q6 export shim).
     # Story 21.2 review fix #6 added refresh_pypi_json_store (the pypi_json_raw
     # external-refresh trigger — same § 3.4 boundary as export_pypi_conda_map).
     # Story 23.1 added five Tier-3 external-refresh triggers + flag_tier3_channels (+6).
+    # Story 37.9 added classify_mapping_gap.
     pypi = pypi_create()
-    assert len(pypi.nodes) == 17
+    assert len(pypi.nodes) == 18
     assert {n.name for n in pypi.nodes} == {
         "refresh_pypi_json_store",
         "map_pypi_conda",
@@ -123,6 +124,7 @@ def test_pypi_intelligence_pipeline_has_seventeen_nodes():
         "enrich_pypi_intelligence",
         "score_pypi_readiness",
         "export_pypi_conda_map",
+        "classify_mapping_gap",
     }
 
 
@@ -212,14 +214,15 @@ def test_combined_seven_pipeline_dag_resolves_topologically():
     combined = (
         core_create() + vcs_create() + pypi_create() + vuln_create() + seed_create() + sbom_create() + derived_create()
     )
-    # 8 core + 12 vcs + 17 pypi + 11 vuln + 4 seed_gaps + 4 universal_sbom
-    # + 11 derived_artifacts = 67 nodes (Story 25.2: vcs_health 10 -> 11; Story 34.8: 11 -> 12;
-    # Story 36.1: vulnerability 9 -> 11; Story 37.3: derived_artifacts 7 -> 8; Story 37.4: 8 -> 11).
+    # 8 core + 12 vcs + 18 pypi + 11 vuln + 4 seed_gaps + 4 universal_sbom
+    # + 11 derived_artifacts = 68 nodes (Story 25.2: vcs_health 10 -> 11; Story 34.8: 11 -> 12;
+    # Story 36.1: vulnerability 9 -> 11; Story 37.3: derived_artifacts 7 -> 8; Story 37.4: 8 -> 11;
+    # Story 37.9: pypi_intelligence 17 -> 18).
     assert (
-        len(combined.nodes) == 67
+        len(combined.nodes) == 68
     )  # 34.8: drive_migration_status; 36.1: 2 Basilisk triggers; 37.3: compose_distribution_breakdown; 37.4: 3 projections
     grouped = combined.grouped_nodes
-    assert sum(len(g) for g in grouped) == 67
+    assert sum(len(g) for g in grouped) == 68
 
 
 def test_no_dataset_is_written_by_two_pipelines_b7():

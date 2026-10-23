@@ -86,6 +86,8 @@ BEHIND_UPSTREAM_PARQUET = "derived/derived_behind_upstream/derived_behind_upstre
 CORE_DEPENDENCIES_PARQUET = "primary/core_dependencies/core_dependencies.parquet"
 DERIVED_LIVE_CATALOG_COVERAGE_PARQUET = "derived/derived_live_catalog_coverage/derived_live_catalog_coverage.parquet"
 DERIVED_UNIVERSE_SBOM_SUMMARY_PARQUET = "derived/derived_universe_sbom_summary/derived_universe_sbom_summary.parquet"
+# Story 37.9: the mapping-gap classification
+DERIVED_MAPPING_GAP_PARQUET = "derived/derived_mapping_gap/derived_mapping_gap.parquet"
 
 # Mirrors ``scripts/openteams_identity_dashboards.py::EXTERNAL_LIVE`` — static reference rows.
 IDENTITY_WORKBOOK_EXTERNAL_COUNTS: tuple[tuple[str, str, str, str], ...] = (

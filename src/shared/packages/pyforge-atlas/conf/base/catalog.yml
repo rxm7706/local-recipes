@@ -412,6 +412,13 @@ pypi_conda_mapping:
   metadata:
     layer: primary
 
+# Story 37.9 (CAP-69): why each enumerated package has no PyPI name (legacy mapping_gap, read-only).
+derived_mapping_gap:
+  type: pandas.ParquetDataset
+  filepath: ${globals:paths.data_root}/derived/derived_mapping_gap/derived_mapping_gap.parquet
+  metadata:
+    layer: derived
+
 # Phase H (serial-gated). Legacy SQLite gate column was `pypi_version_fetched_at`
 # (historical provenance only); the Parquet TTL stamp is the generic `fetched_at`
 # (A3 P2 — standardized across all flipped datasets; ttl from ttls.pypi_current_versions).

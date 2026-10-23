@@ -134,7 +134,7 @@ development_status:
   37-6-the-release-cadence-reads-per-version-upload-times: backlog
   37-7-the-find-alternative-scores-candidates-for-archived-packages: backlog
   37-8-the-export-purls-lists-the-purl-artifacts: backlog
-  37-9-the-mapping-gap-classifies-the-unmapped-packages: backlog
+  37-9-the-mapping-gap-classifies-the-unmapped-packages: done
   4-1-integrate-kedro-dagster-for-scheduling-execution: done
   4-2-integrate-kedro-viz-expose-a-pixi-task: done
   5-1-define-the-boring-semantic-layer-bsl-models: done

@@ -15,7 +15,7 @@ _PIPELINES = ("core", "vcs_health", "pypi_intelligence", "vulnerability")
 _EXPECTED_NODE_COUNTS = {
     "core": 8,  # Story 21.4 +enumerate_anaconda_main_packages (Tier-1 materializer, new-signal — AD-14, not parity-gated)
     "vcs_health": 12,  # Story 25.2 +build_repo_dependency_history (filled by Story 25.1; new-signal, AD-14); Story 34.8 +drive_migration_status
-    "pypi_intelligence": 17,  # Story 23.1: +5 Tier-3 refresh triggers + flag_tier3_channels
+    "pypi_intelligence": 18,  # Story 23.1: +5 Tier-3 refresh triggers + flag_tier3_channels; Story 37.9: +classify_mapping_gap
     # B5 +refresh_vdb_store/+refresh_osv_offline_store; B8 +2 Basilisk (FR-19);
     # Story 36.1 +refresh_basilisk_population/+refresh_basilisk_details
     "vulnerability": 11,
@@ -64,6 +64,9 @@ _NEW_SIGNAL_NODES = {
     "enumerate_anaconda_main_packages",
     # Story 25.1/25.2 dependency-history builder — no legacy parity surface (CAP-61).
     "build_repo_dependency_history",
+    # Story 37.9 the mapping-gap classification (CAP-69) — legacy mapping_gap is a CLI report, not a
+    # cf_atlas.db surface the B4 harness diffs; same AD-14 boundary.
+    "classify_mapping_gap",
 }
 
 
