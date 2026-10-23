@@ -16,6 +16,7 @@ import time
 from collections import defaultdict
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from ...datasets.core_sources import ABOUT_FIELDS, package_recipe_fields
@@ -58,11 +59,19 @@ def tokenize(text: Any) -> frozenset[str]:
     return frozenset(t.lower() for t in _TOKEN_RE.findall(text) if len(t) > 2 and t.lower() not in _STOPWORDS)
 
 
+def _listed(value: Any) -> list[Any]:
+    """A list cell's entries (Parquet hands a list back as a numpy array); anything else is none."""
+    return list(value) if isinstance(value, (list, tuple, np.ndarray)) else []
+
+
 def keyword_set(value: Any) -> frozenset[str]:
     """Legacy's keyword parse: a list's non-empty entries, lowercased; anything else is none."""
-    if isinstance(value, str) or not hasattr(value, "__iter__"):
-        return frozenset()
-    return frozenset(str(k).lower() for k in value if k)
+    return frozenset(str(k).lower() for k in _listed(value) if k)
+
+
+def handle_set(value: Any) -> frozenset[str]:
+    """A feedstock's recipe maintainers, as legacy's ``maintainers.handle`` holds them (case kept)."""
+    return frozenset(str(m) for m in _listed(value) if m)
 
 
 def jaccard(a: frozenset[str], b: frozenset[str]) -> float:
@@ -102,7 +111,6 @@ def score_alternative_candidates(
     core_feedstock_attribution: pd.DataFrame,
     semantic_packages: pd.DataFrame,
     core_dependencies: pd.DataFrame,
-    vcs_package_maintainers: pd.DataFrame,
     now: int | None = None,
 ) -> pd.DataFrame:
     # legacy: find_alternative.py::find_alternatives (one query per archived package)
@@ -110,10 +118,10 @@ def score_alternative_candidates(
 
     The packages are ``semantic_packages`` rows. One is archived when ``semantic_packages.feedstock_archived`` (from
     ``vcs_archived_feedstocks``) or the cf-graph's ``archived`` flag says so; a candidate is active, unarchived and
-    not the package itself. Summary, keywords and the cf-graph flag reach a package only through its feedstock
-    attribution, as legacy's Phase E and E.5 do (no first-anchor fallback for an unattributed package);
-    dependents come from ``core_dependencies`` (who depends on a package), maintainers from
-    ``vcs_package_maintainers``.
+    not the package itself. Summary, keywords, recipe maintainers and the cf-graph flag reach a package only
+    through its feedstock attribution, as legacy's Phase E and E.5 do (no first-anchor fallback for an
+    unattributed package, and no maintainers from another feedstock that lists the same output); dependents come
+    from ``core_dependencies`` (who depends on a package).
     """
     if semantic_packages is None or semantic_packages.empty or "conda_name" not in semantic_packages.columns:
         return _typed(pd.DataFrame(columns=COLUMNS))
@@ -121,7 +129,10 @@ def score_alternative_candidates(
     pkgs = semantic_packages.dropna(subset=["conda_name"]).drop_duplicates("conda_name")
     pkgs = pkgs.assign(conda_name=pkgs["conda_name"].astype(str)).set_index("conda_name")
     about = package_recipe_fields(
-        core_cf_graph_raw, core_feedstock_attribution, (*ABOUT_FIELDS, "feedstock_archived"), unattributed=False
+        core_cf_graph_raw,
+        core_feedstock_attribution,
+        (*ABOUT_FIELDS, "feedstock_archived", "maintainers"),
+        unattributed=False,
     )
     about = about.drop_duplicates("conda_name").set_index("conda_name")
     summaries, graph_archived = _column(about, "summary"), _column(about, "feedstock_archived")
@@ -141,7 +152,8 @@ def score_alternative_candidates(
         "conda_name",
         "dependent",
     )
-    maintainers = _grouped(vcs_package_maintainers, "conda_name", "maintainer")
+    about_maintainers = _column(about, "maintainers")
+    maintainers = {n: handle_set(about_maintainers.get(n)) for n in names}
 
     candidates = [n for n in names if status.get(n) == "active" and not is_archived[n]]
     factor = {n: _factor(_num(uploads.get(n)), _num(downloads.get(n)), now_ts) for n in candidates}

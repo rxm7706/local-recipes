@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'the find-alternative reads primary/alternative_candidates as before, which nothing writes, and renders empty'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -47,13 +47,15 @@ keywords, and atlas stores neither.
    - the archived packages are those in `semantic_packages` whose feedstock is archived. That is either
      `semantic_packages.feedstock_archived` (from `vcs_archived_feedstocks`) or the cf-graph's own `archived` flag,
      which core's Phase J skip-set already reads;
-   - the summary, the keywords and the cf-graph flag reach a package only through `core_feedstock_attribution`,
-     as legacy's Phase E and E.5 reach it through Phase B.5. `package_recipe_fields(..., unattributed=False)`
-     drops its first-anchor fallback here, so a package attribution does not list gets nothing;
+   - the summary, the keywords, the recipe maintainers and the cf-graph flag reach a package only through
+     `core_feedstock_attribution`, as legacy's Phase E and E.5 reach it through Phase B.5.
+     `package_recipe_fields(..., unattributed=False)` drops its first-anchor fallback here, so a package
+     attribution does not list gets nothing, and another feedstock that lists the same output adds nothing;
    - each candidate is a package in `semantic_packages` that is `active`, not archived, and not the package itself;
    - the score is keyword Jaccard ×3 + summary-term Jaccard ×2 + shared-dependent Jaccard ×4 + shared-maintainer
-     Jaccard ×1. Dependents come from `core_dependencies` and maintainers from `vcs_package_maintainers`. A candidate
-     with no keyword or summary-term overlap is skipped, and so is one that scores under 0.10;
+     Jaccard ×1. Dependents come from `core_dependencies`; maintainers are the attributed feedstock's
+     `extra.recipe-maintainers` from the cf-graph, case kept. A candidate with no keyword or summary-term overlap is
+     skipped, and so is one that scores under 0.10;
    - the composite is score × (0.5 + 0.5 × recency) × (1.0 with downloads, else 0.5). Recency falls linearly from 1.0
      to 0 over five years from `latest_conda_upload`, and is 1.0 without one;
    - it keeps the top 10 candidates per archived package, by composite (rounded to three places, as legacy reports
@@ -96,7 +98,8 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root).
 ## Acceptance Criteria
 
 - **AC1 — About text.** An anchor row carries its recipe's `about.summary` and `about.keywords`; an edge row carries
-  neither. `package_recipe_fields` gives them to every attributed output, and to no unattributed one.
+  neither. `package_recipe_fields(..., unattributed=False)`, as the node calls it, gives them to every attributed
+  output and to no unattributed one; its default callers keep the first-anchor fallback.
 - **AC2 — Archived set.** A package is scored when it is on the channel and its attributed feedstock is archived by
   either source. A package archived nowhere, or not attributed, is never an `archived_name`.
 - **AC3 — Candidates.** Only an active, unarchived package other than the archived one is a candidate. It needs a
@@ -121,10 +124,14 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root).
 - `semantic_packages.feedstock_archived` reads only `vcs_archived_feedstocks`, so on a public run the actionable and
   adoption views count archived feedstocks as live. This node reads the cf-graph flag too; the other views are
   DW-atlas-37-7-2's.
-- A live package can be scored as archived. Phase B.5 attributes a package to its dedicated feedstock even when that
-  feedstock is archived and a live one builds it now. On the live data, 60 scored packages are outputs of a live
-  feedstock as well, among them duckdb, grpcio and apache-airflow-core. Legacy's attribution does the same, and
-  the fix belongs in core's attribution, so it is DW-atlas-37-7-3's.
+- A live package can be scored as archived when Phase B.5 attributes it to an archived feedstock and a live one also
+  lists it. On the live data, 60 scored packages are outputs of a live feedstock as well:
+  - 44 are attributed to an archived feedstock named after them (duckdb, grpcio);
+  - 16 are attributed to an archived feedstock that is not named after them, through the first-entry fallback or a
+    registry that never lists the live feedstock. libgcc and libstdcxx go to m2w64-gcc-libs, and the
+    apache-airflow-core family to apache-airflow-core-split.
+
+  Legacy's attribution does the same, and the fix belongs in core's attribution, so it is DW-atlas-37-7-3's.
 - Until Story 37.6 lands upload times, recency does not separate a stale candidate from a fresh one.
 
 ## I/O & Edge-Case Matrix
@@ -136,6 +143,7 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root).
 | candidate with no downloads | composite halved |
 | candidate archived by the cf-graph only | never a candidate |
 | package no attribution row lists | no text, no flag: never scored, never a candidate |
+| an output a second, live feedstock also lists | maintainers from the attributed feedstock only |
 | `latest_status` missing | not active, never a candidate |
 | an upload time of 0, or none | recency 1.0 |
 | a score of exactly 0.10 | kept |
@@ -165,49 +173,68 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root).
 ## Run results
 
 Run 2026-10-23 in the landing worktree on `e5810642d1`, every verdict read from its exit code; the numbers are those
-after review 1's fixes.
+after review 2's fixes.
 
-- **AC1–AC6, tests:** `test_alternatives.py` (32), `test_board_models.py` and `test_board_projections.py` pass;
-  `pyforge-atlas-test` gives 3,268 passed and 20 skipped, then 103 passed (exit 0).
+- **AC1–AC6, tests:** `test_alternatives.py` (34), `test_board_models.py` and `test_board_projections.py` pass;
+  `pyforge-atlas-test` gives 3,270 passed and 20 skipped, then 103 passed (exit 0).
 - **Pins moved:** `derived_artifacts` has 13 nodes (12), the combined DAG 72 (71), the catalog 143 entries (142); the
   node has a timeout (900 s).
-- **Mutations**, each restored, each failing a named test (37 of 37):
+- **Mutations**, each restored, each failing a named test (40 of 40):
   - score: a keyword weight changed; the 0.10 floor removed, made inclusive, or applied to the composite; recency
     ignored, unclamped, over a 365.25-day year or in whole days; an upload of 0 read as a time; the download factor
     ignored; the composite not rounded before ranking; the component scores unrounded;
-  - tokenizer and keywords: stopwords kept; short words kept; keywords not lowercased; a string keyword accepted;
+  - tokenizer and keywords: stopwords kept; short words kept; keywords not lowercased; a string or any other
+    iterable read as keywords;
   - archived set and candidates: the cf-graph flag ignored; `semantic_packages`' flag ignored; the first-anchor
     fallback kept; inactive, archived or status-less candidates kept; candidates without an overlap scored; a
-    keyword-only overlap dropped; a package's dependencies read as its dependents; maintainers ignored;
+    keyword-only overlap dropped; a package's dependencies read as its dependents;
+  - maintainers: ignored; read from every feedstock that lists the output; their handles lowercased;
   - rank and output: the limit ignored; ties not broken by name; the stage inputs dropped; the empty frame untyped;
   - about text: the summary not read, not joined from a list, or not stringified; a kept copy's keywords not read
     back as lists;
   - board: the board path not switched; the stage not the shared classifier; a store in the earlier shape not read.
 - **Real data:** a fresh public parse of the cf-graph (359,499 rows, 33,527 anchor rows, in 31 s), with Story 37.2's
-  live data root for `semantic_packages`, `core_dependencies`, `vcs_package_maintainers` and the attribution:
+  live data root for `semantic_packages`, `core_dependencies` and the attribution:
   - 32,791 anchor rows carry a summary and 1 carries keywords. Conda-forge recipes almost never set
     `about.keywords`, so the summary terms carry the text score, as they do for legacy;
   - 828 packages on the channel are attributed to an archived feedstock (`semantic_packages` flags none,
     DW-atlas-37-7-2). 824 get candidates;
-  - the node runs in 3.9 s and writes 8,199 rows (a median of 10 per package) over 4,623 distinct candidates,
-    342 KB of Parquet;
+  - the node runs in 3.8 s and writes 8,199 rows (a median of 10 per package) over 4,580 distinct
+    candidates, 339 KB of Parquet;
   - **legacy parity:** the comparison builds legacy's store on its own, from the attribution, the cf-graph anchors and
-    the same frames (Phase B.5, E and E.5 semantics), not from the port's mapping. Legacy `find_alternatives` then
-    runs for every archived package with no limit, re-ranked by score and then name, top 10. All 828 lists match the
-    port exactly: names, composite, the four components and downloads;
+    `semantic_packages`: Phase B.5, then E and E.5 for text, flag and `package_maintainers`. It does not reuse the
+    port's mapping or a maintainer table. Legacy `find_alternatives` then runs for every archived package with no
+    limit, re-ranked by score and then name, top 10. All 828 lists match the port exactly: names,
+    composite, the four components and downloads;
   - 60 scored packages are also outputs of a live feedstock (DW-atlas-37-7-3); none scored is off the channel or
     unarchived.
 
 ## Spec Change Log
 
+- 2026-10-23, review 2 (FAIL, 1 blocker), fixed on the same branch:
+  - R2-B1: maintainers still reached a package outside its attribution. `vcs_package_maintainers` merges every
+    feedstock that lists an output, so 137 of 828 lists differed from legacy's Phase E. The parity script hid it by
+    filling legacy's `package_maintainers` from that same table. Now:
+    - the node reads the attributed feedstock's recipe maintainers through the same attribution-only call, and its
+      `vcs_package_maintainers` input is gone;
+    - the parity store builds `package_maintainers` from the attribution;
+    - a test pins an output that a second, live feedstock also lists.
+  - R2-S1: DW-atlas-37-7-3 and the residual risk named one attribution path; 16 of the 60 packages come through the
+    other one (libgcc and libstdcxx go to m2w64-gcc-libs). Both paths are now named.
+  - Nits:
+    - the keyword parse reads only a list, a tuple or an array (legacy reads a JSON object as no keywords), and
+      maintainer handles get the same parse;
+    - AC1 names the `unattributed=False` flag;
+    - round 1's row count is restated as the net change.
+  - Not changed: `_typed` and `_num` assume the epoch-second Int64 inputs `semantic_packages` declares (the atlas
+    naming rule). Story 37.6 owns those columns' types. `_as_bool` reads only bool and Int64 flags.
 - 2026-10-23, independent review (FAIL, 2 blockers), fixed on the same branch:
   - B1: no spec-surface reconcile or stamp; the merge gate's spec-surface check exited 2. The three governing Specs
     are reconciled and stamped.
   - B2: `package_recipe_fields`' first-anchor fallback gave text and the archived flag to packages attribution does
-    not list, which legacy never does. 114 of 938 scored packages and 1,124 of 9,323 rows came only through it, and
-    one archived flag depended on sort order (nose-parameterized). The node now reads attribution only
-    (`unattributed=False`). The parity check builds legacy's store independently, and it now matches all 828
-    archived packages.
+    not list, which legacy never does. 114 of 938 scored packages came only through it; the output fell from 9,323
+    rows to 8,199. One archived flag depended on sort order (nose-parameterized). The node now reads text and flag
+    through attribution only (`unattributed=False`).
   - S1: nine legacy-divergent ports passed the tests. The edge cases are now tests: an upload of 0, one older than
     five years, a future one, fractional days, a keyword-only overlap, a floor read on the score, an exact 0.10, a
     missing status, a rounded tie, and rounded components.
@@ -225,6 +252,15 @@ after review 1's fixes.
 
 ## Review Triage Log
 
+- 2026-10-23, review 2 (independent subagent): FAIL, with 1 blocker, 1 should-fix and 6 nits, all addressed or
+  answered (Spec Change Log). It confirmed round 1's fixes:
+  - spec-surface exits 0;
+  - the default `package_recipe_fields` output equals `origin/main`'s on the real data;
+  - 17 of its own mutations were killed;
+  - the planning detectors and the full suite are green.
+
+  With maintainers taken through attribution, it measured 828 of 828 lists matching legacy before the fix landed.
+  It removed its scratch directory and the `.pyc` files its runs wrote.
 - 2026-10-23, review 1 (independent subagent, read the diff against this spec): FAIL, with 2 blockers, 3 should-fixes
   and 5 nits, all addressed (Spec Change Log).
   - Under the port's own mapping, it found the scorer faithful: legacy `find_alternatives` matched 1,024 of 1,024

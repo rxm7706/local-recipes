@@ -175,7 +175,6 @@ def create_pipeline(**kwargs) -> Pipeline:
                     "core_feedstock_attribution",
                     "semantic_packages",
                     "core_dependencies",
-                    "vcs_package_maintainers",
                 ],
                 outputs="derived_alternative_candidates",
                 name="score_alternative_candidates",

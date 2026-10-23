@@ -25,15 +25,21 @@ NOW = 1_800_000_000
 DAY = 86_400
 
 
-def _graph(rows: list[tuple[str, str, bool]], *, keywords: dict[str, list[str]] | None = None) -> pd.DataFrame:
+def _graph(
+    rows: list[tuple[str, str, bool]],
+    *,
+    keywords: dict[str, list[str]] | None = None,
+    maintainers: dict[str, list[str]] | None = None,
+) -> pd.DataFrame:
     """One anchor row per (name, summary, archived); the feedstock is the name."""
-    keywords = keywords or {}
+    keywords, maintainers = keywords or {}, maintainers or {}
     return pd.DataFrame(
         {
             "feedstock_name": [n for n, _, _ in rows],
             "conda_name": [n for n, _, _ in rows],
             "depends_on": [None] * len(rows),
             "feedstock_archived": [a for _, _, a in rows],
+            "maintainers": [maintainers.get(n, []) for n, _, _ in rows],
             "summary": [s for _, s, _ in rows],
             "keywords": [keywords.get(n, []) for n, _, _ in rows],
         }
@@ -44,11 +50,11 @@ def _packages(names: list[str], **columns: list) -> pd.DataFrame:
     return pd.DataFrame({"conda_name": names, "latest_status": ["active"] * len(names), **columns})
 
 
-def _score(graph, packages, dependencies=None, maintainers=None, attribution=None) -> pd.DataFrame:
+def _score(graph, packages, dependencies=None, attribution=None) -> pd.DataFrame:
     """Each graph package attributed to its own feedstock, unless ``attribution`` is given."""
     if attribution is None:
         attribution = graph[["conda_name", "feedstock_name"]]
-    return score_alternative_candidates(graph, attribution, packages, dependencies, maintainers, now=NOW)
+    return score_alternative_candidates(graph, attribution, packages, dependencies, now=NOW)
 
 
 def _pairs(out: pd.DataFrame) -> dict[tuple[str, str], float]:
@@ -70,6 +76,7 @@ def test_tokenize_lowercases_and_drops_stopwords_and_short_words() -> None:
 def test_keywords_are_a_list_or_nothing() -> None:
     assert keyword_set(["YAML", "", "Parser"]) == {"yaml", "parser"}
     assert keyword_set("yaml") == keyword_set(None) == keyword_set(float("nan")) == frozenset()
+    assert keyword_set({"Yaml": 1}) == frozenset()  # legacy reads a JSON object as no keywords
 
 
 def test_jaccard_is_zero_when_either_side_is_empty() -> None:
@@ -86,11 +93,11 @@ def test_the_composite_follows_legacys_weights() -> None:
     graph = _graph(
         [("old", "parse yaml files", True), ("new", "parse yaml quickly", False)],
         keywords={"old": ["yaml", "config"], "new": ["yaml"]},
+        maintainers={"old": ["ann"], "new": ["ann"]},
     )
     deps = pd.DataFrame({"conda_name": ["app", "app", "tool"], "depends_on": ["old", "new", "old"]})
-    maints = pd.DataFrame({"conda_name": ["old", "new"], "maintainer": ["ann", "ann"]})
 
-    out = _score(graph, _packages(["old", "new"], downloads_total=[1, 5]), deps, maints)
+    out = _score(graph, _packages(["old", "new"], downloads_total=[1, 5]), deps)
 
     # kw 1/2, terms {parse, yaml, files} vs {parse, yaml, quickly} 2/4, dependents {app, tool} vs {app} 1/2, maint 1
     expected = 3 * 0.5 + 2 * 0.5 + 4 * 0.5 + 1 * 1.0
@@ -216,6 +223,47 @@ def test_an_unattributed_package_gets_no_text_and_no_flag() -> None:
     assert _pairs(out) == {("old", "new"): pytest.approx(1.0)}
 
 
+def test_maintainers_come_from_the_attributed_feedstock_only() -> None:
+    """Legacy Phase E writes a package's maintainers from its attributed feedstock; a second, live feedstock that also
+    lists the output adds none."""
+    graph = pd.concat(
+        [
+            _graph(
+                [("old", "parse yaml", True), ("new", "parse yaml", False)],
+                maintainers={"old": ["ann"], "new": ["ann"]},
+            ),
+            pd.DataFrame(
+                {
+                    "feedstock_name": ["live"],
+                    "conda_name": ["old"],
+                    "depends_on": [None],
+                    "feedstock_archived": [False],
+                    "maintainers": [["bob"]],
+                }
+            ),
+        ],
+        ignore_index=True,
+    )
+    attribution = pd.DataFrame({"conda_name": ["old", "new"], "feedstock_name": ["old", "new"]})
+
+    (row,) = _score(graph, _packages(["old", "new"], downloads_total=[1, 1]), attribution=attribution).to_dict(
+        "records"
+    )
+
+    # term 1 -> 2, maintainers {ann} vs {ann} -> 1; bob's feedstock is not old's
+    assert (row["maint_score"], row["similarity_score"]) == (1.0, 3.0)
+
+
+def test_maintainer_handles_keep_their_case() -> None:
+    graph = _graph(
+        [("old", "parse yaml", True), ("new", "parse yaml", False)], maintainers={"old": ["Ann"], "new": ["ann"]}
+    )
+
+    (row,) = _score(graph, _packages(["old", "new"], downloads_total=[1, 1])).to_dict("records")
+
+    assert row["maint_score"] == 0.0
+
+
 def test_a_keyword_overlap_alone_makes_a_candidate() -> None:
     graph = _graph(
         [("old", "parse yaml", True), ("kw", "render html", False)], keywords={"old": ["markup"], "kw": ["markup"]}
@@ -258,14 +306,12 @@ def test_recency_reads_fractional_days_over_a_1825_day_span() -> None:
     graph = _graph(
         [("old", "parse yaml files", True), ("new", "parse yaml quickly", False)],
         keywords={"old": ["yaml", "config"], "new": ["yaml"]},
+        maintainers={"old": ["ann"], "new": ["ann"]},
     )
     deps = pd.DataFrame({"conda_name": ["app", "app", "tool"], "depends_on": ["old", "new", "old"]})
-    maints = pd.DataFrame({"conda_name": ["old", "new"], "maintainer": ["ann", "ann"]})
     upload = NOW - int(1000.5 * DAY)
 
-    out = _score(
-        graph, _packages(["old", "new"], latest_conda_upload=[None, upload], downloads_total=[1, 1]), deps, maints
-    )
+    out = _score(graph, _packages(["old", "new"], latest_conda_upload=[None, upload], downloads_total=[1, 1]), deps)
 
     # score 5.5; 1000.5 days: 3.992 (whole days would give 3.993, a 1826.25-day span 3.994)
     assert out["similarity_score"].tolist() == [round(5.5 * (0.5 + 0.5 * (1 - 1000.5 / 1825)), 3)] == [3.992]
@@ -307,7 +353,7 @@ def test_a_kept_graph_without_about_text_gives_no_rows() -> None:
 
 
 def test_nothing_in_gives_a_typed_empty_frame(tmp_path: Path) -> None:
-    out = score_alternative_candidates(None, None, None, None, None, now=NOW)
+    out = score_alternative_candidates(None, None, None, None, now=NOW)
 
     assert out.empty and list(out.columns) == COLUMNS
     out.to_parquet(tmp_path / "e.parquet", index=False)
