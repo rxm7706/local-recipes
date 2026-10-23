@@ -2837,7 +2837,8 @@ re-stamp; neither mints a CAP or registers an FR.*
   preflight's interrupt handler. Story 13.6 (Epic 13), a fix under CAP-157, which it amends in place: a workspace's
   landing refs are its recorded source and the trunk `origin/main`, so a workspace started `--from` another branch
   is landed once its branch is on `main` (`status`, `clean --merged-only`, `clean --delete`). No FR names CAP-157's
-  landed proof, so no FR text changes.
+  landed proof, so no FR text changes. FR-38's rule that `clean` parks an unlanded worktree's commits as a preserve
+  tag holds as written and is tightened in practice: the check now reads the worktree's HEAD as well as its branch.
 - **FR-32 (← CAP-159), as written.** "every run's per-lane wall time and exit code journaled" and "verdicts stay each
   lane's exit code" hold: no lane's exit code, seconds, status or verdict changes, and the exit codes do not move. FR-32
   names no `cancelled_by` rule, so its text does not change.

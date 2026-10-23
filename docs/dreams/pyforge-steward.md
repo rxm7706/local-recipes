@@ -2055,7 +2055,9 @@ Drift — orphaned between stations.
   `refs/remotes/origin/main`, counts as landed whatever it was started from: `status` reads it merged, `--merged-only`
   and the default `clean` leave a `.landed.txt` note naming `origin/main` and delete its branch, and `--delete` drops
   it. A workspace on neither its source nor the trunk is refused exactly as today, and a repository with no
-  `origin/main` (a repo-set member) gets today's verdict. **Constraints:** a fix under CAP-157 (amended in place:
+  `origin/main` (a repo-set member) gets today's verdict. *(Added at review:)* the trunk and any `origin/<b>` source
+  are compared by the commit their remote-tracking ref names, so a local ref named like them proves nothing, and a
+  detached HEAD with commits past a landed branch keeps `--merged-only` from removing the worktree. **Constraints:** a fix under CAP-157 (amended in place:
   the trunk joins the source as a landing ref), with no new CAP and no flag. `ahead`/`behind` still read the
   recorded source; the proof's other conditions (clean tree, no hidden index entry, no gitlink, no per-worktree
   ref, no Tier-3 work) do not change. The operator's ask in chat, 2026-10-23. Owner `spec-pyforge-steward`. →

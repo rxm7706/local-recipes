@@ -7,14 +7,18 @@ never moves again, so judging only against it left a landed workspace ``unmerged
 
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 
 import pytest
 
+from pyforge.steward import workspace as ws_module
 from pyforge.steward.workspace import (
+    WorkspaceRecord,
     clean_workspaces,
     load_bookkeeping,
+    save_bookkeeping,
     start_workspace,
     status_workspaces,
 )
@@ -49,6 +53,11 @@ def repo(tmp_path: Path) -> Path:
     _git("commit", "-m", "init", cwd=work)
     _git("remote", "add", "origin", str(origin), cwd=work)
     _git("push", "-u", "origin", "main", cwd=work)
+    purge_dir = work / "docs" / "governance"
+    purge_dir.mkdir(parents=True)
+    (purge_dir / "preserve-purge-list.json").write_text(
+        json.dumps({"schema_version": 1, "commit_shas": [], "paths": []}), encoding="utf-8"
+    )
     return work
 
 
@@ -109,6 +118,7 @@ def test_merged_only_leaves_a_note_for_a_landed_stacked_workspace(repo: Path, tm
     assert "branch_kept" not in row
     note = Path(row["archive"]).read_text(encoding="utf-8")
     assert "on source: origin/main at " in note
+    assert "recorded source: base\n" in note
     assert not stacked.exists()
     assert not _branch_exists(repo, "stacked")
 
@@ -159,3 +169,157 @@ def test_a_repository_without_the_trunk_keeps_the_source_verdict(repo: Path, tmp
     )
     assert result["skipped"][0]["reason"] == "not-merged"
     assert stacked.is_dir()
+
+
+def _shadow_the_trunk(repo: Path, sha: str) -> None:
+    """No remote-tracking ``origin/main``, and a local branch named ``refs/remotes/origin/main`` at ``sha``.
+
+    Git's lookup of the bare name ``refs/remotes/origin/main`` then falls through to
+    ``refs/heads/refs/remotes/origin/main`` (Story 13.6 review: it proved an unlanded branch merged).
+    """
+    _git("update-ref", "-d", "refs/remotes/origin/main", cwd=repo)
+    _git("update-ref", "refs/heads/refs/remotes/origin/main", sha, cwd=repo)
+
+
+def test_a_local_ref_named_like_the_trunk_never_lands_a_stacked_workspace(repo: Path, tmp_path: Path) -> None:
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    stacked = _stacked(repo, tmp_path, bookkeeping, land=False)
+    _shadow_the_trunk(repo, _git("rev-parse", "refs/heads/stacked", cwd=repo).stdout.strip())
+    (row,) = status_workspaces("stacked", root=repo, bookkeeping=bookkeeping)
+    assert row.error is None
+    assert row.merged is False
+    merged_only = clean_workspaces(
+        merged_only=True, slug="stacked", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+    )
+    assert merged_only["skipped"][0]["reason"] == "not-merged"
+    deleted = clean_workspaces(
+        delete=True, slug="stacked", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+    )
+    assert deleted["skipped"][0]["reason"] == "not-merged"
+    assert stacked.is_dir()
+    assert _branch_exists(repo, "stacked")
+    # The landed proof must not read the shadow either: the default clean archives a tarball and keeps the branch.
+    archived = clean_workspaces(
+        slug="stacked", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a", confirm=lambda _slug: True
+    )
+    (row,) = archived["archived"]
+    assert row["archive"].endswith(".tar.gz")
+    assert row["branch_kept"] == "stacked"
+
+
+def test_a_local_ref_named_like_origin_main_never_lands_an_origin_main_workspace(repo: Path, tmp_path: Path) -> None:
+    """The same shadow for a workspace started from ``origin/main``: the source cannot be read, so it is an error."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    wt = tmp_path / "plain-wt"
+    start_workspace("plain", root=repo, bookkeeping=bookkeeping, path=wt, from_ref="origin/main")
+    _commit(wt, "plain.txt")
+    _shadow_the_trunk(repo, _git("rev-parse", "refs/heads/plain", cwd=repo).stdout.strip())
+    result = clean_workspaces(
+        merged_only=True, slug="plain", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+    )
+    assert result["archived"] == []
+    assert result["skipped"][0]["reason"].startswith("error: git merge-base --is-ancestor plain origin/main failed")
+    assert wt.is_dir()
+    assert _branch_exists(repo, "plain")
+
+
+def _detach_with_a_commit(stacked: Path) -> str:
+    _git("checkout", "--detach", cwd=stacked)
+    _commit(stacked, "detached.txt")
+    return _git("rev-parse", "HEAD", cwd=stacked).stdout.strip()
+
+
+def test_merged_only_keeps_a_landed_stacked_workspace_whose_detached_head_is_not_landed(
+    repo: Path, tmp_path: Path
+) -> None:
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    stacked = _stacked(repo, tmp_path, bookkeeping, land=True)
+    _detach_with_a_commit(stacked)
+    result = clean_workspaces(
+        merged_only=True, slug="stacked", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+    )
+    assert result["skipped"][0]["reason"] == "not-merged"
+    assert stacked.is_dir()
+    assert _branch_exists(repo, "stacked")
+
+
+def test_clean_parks_a_detached_head_past_a_landed_branch_as_a_preserve_tag(
+    repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(ws_module, "workspace_preserve_tag_enabled", lambda **_kwargs: True)
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    stacked = _stacked(repo, tmp_path, bookkeeping, land=True)
+    detached = _detach_with_a_commit(stacked)
+    result = clean_workspaces(
+        slug="stacked", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a", confirm=lambda _slug: True
+    )
+    (row,) = result["archived"]
+    tag = row["preserve_tag"]
+    assert _git("rev-parse", f"{tag}^{{commit}}", cwd=repo).stdout.strip() == detached
+    assert not stacked.exists()
+
+
+def test_delete_drops_a_landed_stacked_branch_whose_worktree_is_gone(repo: Path, tmp_path: Path) -> None:
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    stacked = _stacked(repo, tmp_path, bookkeeping, land=True)
+    _git("worktree", "remove", str(stacked), cwd=repo)
+    assert _branch_exists(repo, "stacked")
+    result = clean_workspaces(
+        delete=True, slug="stacked", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+    )
+    assert [r["slug"] for r in result["deleted"]] == ["stacked"]
+    assert not _branch_exists(repo, "stacked")
+
+
+def test_a_gone_worktree_whose_branch_is_on_neither_ref_names_both(repo: Path, tmp_path: Path) -> None:
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    stacked = _stacked(repo, tmp_path, bookkeeping, land=False)
+    _git("worktree", "remove", str(stacked), cwd=repo)
+    result = clean_workspaces(
+        delete=True, slug="stacked", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+    )
+    assert result["skipped"][0]["reason"] == "branch stacked not on base or origin/main"
+    assert _branch_exists(repo, "stacked")
+
+
+def test_the_proof_takes_the_landing_ref_that_holds_the_worktree_not_the_first_that_resolves(
+    repo: Path, tmp_path: Path
+) -> None:
+    """A remote source that resolves but does not hold the worktree gives way to the trunk."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    base = tmp_path / "base-wt"
+    start_workspace("base", root=repo, bookkeeping=bookkeeping, path=base, from_ref="origin/main")
+    _commit(base, "base.txt")
+    _git("push", "origin", "base", cwd=repo)
+    stacked = tmp_path / "stacked-wt"
+    start_workspace("stacked", root=repo, bookkeeping=bookkeeping, path=stacked, from_ref="origin/base")
+    _commit(stacked, "stacked.txt")
+    _git("merge", "--no-ff", "-m", "Merge stacked", "stacked", cwd=repo)
+    _git("push", "origin", "main", cwd=repo)
+    result = clean_workspaces(
+        merged_only=True, slug="stacked", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
+    )
+    (row,) = result["archived"]
+    note = Path(row["archive"]).read_text(encoding="utf-8")
+    assert "on source: origin/main at " in note
+    assert "recorded source: origin/base\n" in note
+    assert not _branch_exists(repo, "stacked")
+
+
+def test_an_unresolvable_source_with_an_unlanded_commit_still_archives(repo: Path, tmp_path: Path) -> None:
+    """The trunk is present but does not hold the worktree: no proof, so a tarball, and the branch is kept."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    wt = tmp_path / "unproven-wt"
+    start_workspace("unproven", root=repo, bookkeeping=bookkeeping, path=wt, from_ref="origin/main")
+    _commit(wt, "unlanded.txt")
+    records = tuple(
+        r if r.slug != "unproven" else WorkspaceRecord(r.slug, r.path, r.branch, "origin/gone", r.created_at)
+        for r in load_bookkeeping(bookkeeping)
+    )
+    save_bookkeeping(bookkeeping, records)
+    result = clean_workspaces(
+        slug="unproven", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a", confirm=lambda _slug: True
+    )
+    (row,) = result["archived"]
+    assert row["archive"].endswith(".tar.gz")
+    assert row["branch_kept"] == "unproven"

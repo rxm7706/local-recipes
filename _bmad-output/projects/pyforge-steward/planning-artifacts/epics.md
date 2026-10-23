@@ -1097,8 +1097,10 @@ under `refs/remotes/` (`_source_commit` `:788`, `:797`), so a workspace started 
 naming `origin/main` and its sha and the recorded source, and delete the branch; a workspace on neither its source nor `origin/main` is refused as today; a
 repository with no `origin/main` gets today's verdict; `ahead`/`behind` still read the recorded source
 **And** tests in a scratch repository with a bare origin (a `base` workspace off `origin/main`, a `stacked` one `--from base`, `stacked` merged into `main`
-and pushed) prove status, `--delete` and `--merged-only`, and an unlanded `stacked` is still refused; the landed three fail on `bdb49ec39f`; the 13.1-13.5,
-68.1, 69.1, 70.1 and 85.5 workspace tests pass unchanged; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+and pushed) prove status, `--delete` and `--merged-only`, a deleted source and a missing trunk, and an unlanded `stacked` is still refused; the four landed
+cases fail on `bdb49ec39f`; a local ref named like the trunk never proves a landing (status, `--merged-only`, `--delete`, the proof), and a detached HEAD with
+commits past a landed branch is skipped by `--merged-only` or parked as a preserve tag; the 13.1-13.5, 68.1, 69.1, 70.1 and 85.5 workspace tests pass, one
+(an unresolvable source) also removing the trunk to keep its meaning; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
 **Status:** backlog
 
 ## Epic 14: The BMAD core upgrades repeatably

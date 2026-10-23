@@ -721,15 +721,34 @@ def status_workspaces(
     return tuple(status_of(r, root=root) for r in records)
 
 
-def _branch_merged_into(root: Path, branch: str, into: str) -> bool:
-    """True when ``branch`` is an ancestor of ``into`` (already merged). Both by full refname (Story 70.1)."""
-    result = _git_ok("merge-base", "--is-ancestor", _branch_ref(branch), _source_ref(into), cwd=root)
+def _rev_merged_into(root: Path, rev: str, into: str, *, label: str) -> bool:
+    """True when ``rev`` (a full ref or a sha; ``label`` names it in errors) is an ancestor of ``into``.
+
+    An ``origin/<b>`` target is compared by the commit its remote-tracking ref names (``_source_commit``), never by
+    the name: when that ref is missing, git would read ``refs/remotes/<b>`` as a local branch or tag of that name
+    (Story 13.6 review: ``refs/heads/refs/remotes/origin/main`` proved an unlanded branch merged). Any other target (a
+    local branch, a sha, a full ref) is passed as recorded (Story 70.1).
+    """
+    target = into
+    if into.startswith("origin/"):
+        resolved = _source_commit(into, root=root)
+        if resolved is None:
+            raise WorkspaceError(
+                f"git merge-base --is-ancestor {label} {into} failed: {into} does not resolve to a remote-tracking ref"
+            )
+        target = resolved
+    result = _git_ok("merge-base", "--is-ancestor", rev, target, cwd=root)
     if result.returncode == 0:
         return True
     if result.returncode == 1:
         return False
     detail = (result.stderr or result.stdout or "").strip()
-    raise WorkspaceError(f"git merge-base --is-ancestor {branch} {into} failed (exit {result.returncode}): {detail}")
+    raise WorkspaceError(f"git merge-base --is-ancestor {label} {into} failed (exit {result.returncode}): {detail}")
+
+
+def _branch_merged_into(root: Path, branch: str, into: str) -> bool:
+    """True when ``branch`` is an ancestor of ``into`` (already merged). Both by full refname (Story 70.1)."""
+    return _rev_merged_into(root, _branch_ref(branch), into, label=branch)
 
 
 def _landing_refs(source: str) -> tuple[str, ...]:
@@ -737,32 +756,56 @@ def _landing_refs(source: str) -> tuple[str, ...]:
 
     Story 13.6 (CAP-157 amended): ``start --from <branch>`` records that branch, which stops moving once the work
     lands on ``main``; judged against it alone, a landed stacked workspace read ``unmerged`` and ``clean`` refused it.
-    The trunk is read by its full ref like any ``origin/<b>`` source (``_source_ref``, CAP-158).
+    The trunk is read like any ``origin/<b>`` source: by the commit its remote-tracking ref names (CAP-158).
     """
     return (source,) if source == _DEFAULT_FROM else (source, _DEFAULT_FROM)
 
 
-def _branch_landed(root: Path, branch: str, source: str) -> bool:
-    """True when ``branch`` is an ancestor of the recorded source or of the trunk (Story 13.6).
+def _rev_landed(root: Path, rev: str, source: str, *, label: str) -> bool:
+    """True when ``rev`` is an ancestor of the recorded source or of the trunk (Story 13.6).
 
     The source is asked first and keeps its errors. The trunk only ever adds a landing: one git cannot resolve (a
     repo-set member with no ``origin/main``) answers "not landed there", never an error the source did not raise.
     """
     try:
-        if _branch_merged_into(root, branch, source):
+        if _rev_merged_into(root, rev, source, label=label):
             return True
         source_error: WorkspaceError | None = None
     except WorkspaceError as exc:
         source_error = exc
     for trunk in _landing_refs(source)[1:]:
         try:
-            if _branch_merged_into(root, branch, trunk):
+            if _rev_merged_into(root, rev, trunk, label=label):
                 return True
         except WorkspaceError:
             pass
     if source_error is not None:
         raise source_error
     return False
+
+
+def _branch_landed(root: Path, branch: str, source: str) -> bool:
+    """True when ``branch`` is an ancestor of the recorded source or of the trunk (Story 13.6)."""
+    return _rev_landed(root, _branch_ref(branch), source, label=branch)
+
+
+def _worktree_head_landed(record: WorkspaceRecord, *, root: Path) -> bool:
+    """True when the worktree is gone, or its HEAD is landed like its branch (Story 13.6 review).
+
+    A detached HEAD can carry commits its branch does not. Removing such a worktree because the branch landed
+    would leave them on no ref, so ``--merged-only`` and the preserve-tag check ask about HEAD too. A HEAD git
+    cannot read, or cannot place, counts as not landed.
+    """
+    wt = Path(record.path)
+    if not wt.is_dir():
+        return True
+    head = _commit_of("HEAD", cwd=wt)
+    if head is None:
+        return False
+    try:
+        return _rev_landed(root, head, record.source, label="HEAD")
+    except WorkspaceError:
+        return False
 
 
 def _branch_merged_into_or_unlanded(root: Path, branch: str, into: str) -> bool:
@@ -986,9 +1029,10 @@ def _landed_note_text(record: WorkspaceRecord, *, root: Path, stamp: str) -> str
     - ``status --porcelain`` is empty, pinned against config (``_worktree_dirty``);
     - no index entry is marked skip-worktree or assume-unchanged (``ls-files -v``) -- both hide
       an edited file from ``status``;
-    - HEAD and the recorded branch (when it exists) are both ancestors of the source, and the
-      source resolves to a remote-tracking ref: cleanup deletes the branch, not HEAD, so a
-      detached HEAD proves nothing about the branch;
+    - HEAD and the recorded branch (when it exists) are both ancestors of one landing ref -- the
+      source or, for a workspace started from another branch, the trunk (Story 13.6) -- that
+      resolves to a remote-tracking ref: cleanup deletes the branch, not HEAD, so a detached HEAD
+      proves nothing about the branch;
     - no gitlink (a submodule's own ignored files would go unnamed) and no per-worktree ref
       (``refs/worktree/``, ``refs/bisect/``) that could hold a commit nothing else does;
     - the git-ignored listing succeeds, and none of it is Tier-3 work under ``_bmad-output/``
@@ -1102,7 +1146,10 @@ def _archive_worktree(
         preserve_meta: _PreserveParkOutcome | None = None
         if note is None and wt.is_dir():
             preserve_on = workspace_preserve_tag_enabled() if preserve_tag_enabled is None else preserve_tag_enabled
-            unlanded_branch = not _branch_merged_into_or_unlanded(root, record.branch, record.source)
+            unlanded_branch = not (
+                _branch_merged_into_or_unlanded(root, record.branch, record.source)
+                and _worktree_head_landed(record, root=root)
+            )
             if preserve_on and unlanded_branch:
                 try:
                     preserve_meta = _park_unlanded_preserve(record, wt=wt, root=root)
@@ -1204,7 +1251,7 @@ def _delete_eligibility(record: WorkspaceRecord, *, root: Path) -> str | None:
     if not wt_is_dir and branch_exists:
         if _branch_landed(root, record.branch, record.source):
             return None
-        return f"branch {record.branch} not on {record.source}"
+        return f"branch {record.branch} not on {' or '.join(_landing_refs(record.source))}"
 
     if _worktree_dirty(wt):
         return "dirty"
@@ -1297,7 +1344,9 @@ def clean_workspaces(
                     in_flight = None
                     deleted.append(record.to_dict())
                     continue
-                if merged_only and not _branch_landed(root, record.branch, record.source):
+                if merged_only and not (
+                    _branch_landed(root, record.branch, record.source) and _worktree_head_landed(record, root=root)
+                ):
                     skipped.append({**record.to_dict(), "reason": "not-merged"})
                     remaining.append(record)
                     in_flight = None
