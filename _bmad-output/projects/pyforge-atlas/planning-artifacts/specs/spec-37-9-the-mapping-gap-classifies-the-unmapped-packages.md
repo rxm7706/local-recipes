@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'the mapping-gap reads primary/mapping_gap as before, which nothing writes, and renders empty'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -50,7 +50,8 @@ Legacy `mapping_gap.py` (read-only without `--write`) answers it in two steps:
    - `pypi_universe`.
 
    It writes `derived_mapping_gap`, with `conda_name`, `classification`, `match_source`, `match_confidence`,
-   `candidate` and `transform`. For a python-track package, `match_confidence` is one of:
+   `candidate` and `transform`. The board model gains `candidate` as a dimension, so the page shows the name a
+   recovery points to. For a python-track package, `match_confidence` is one of:
    - `likely`, with `match_source` `g10_spelling`;
    - `ambiguous`, `collision`, `uncorroborated` or `unrecovered`.
 
@@ -66,6 +67,14 @@ Legacy `mapping_gap.py` (read-only without `--write`) answers it in two steps:
 - The working set is every enumerated package with no mapping row. Legacy's is `v_actionable_packages`, which also
   leaves out archived feedstocks.
 - Nothing is written back to the mapping (legacy's `--write`).
+- Legacy's `pypi` upstream source comes from Phase H's mirror rows. No atlas producer emits one: `host` is github,
+  gitlab or codeberg, and `registry` is one of the eight VCS registries. The rule is kept, but in practice
+  python-track rests on the `run` dependency on python. The results match legacy's, whose `pypi` rows exist only
+  for packages that already have a PyPI name.
+- Legacy's claim index holds one PyPI name per conda name (its `packages` table). `pypi_conda_mapping` can hold
+  several (282 conda names on Story 37.2's live root), and each is claimed. No row changes on that root.
+- The epic's **When** names "the cf-graph source URLs". They reach this node through `pypi_conda_mapping`'s
+  `recipe_source_url` tier (`match_source_urls`), not as a direct input.
 
 Ledger key: `37-9-the-mapping-gap-classifies-the-unmapped-packages`.
 Type / Effort / Deps: feature / M / Story 37.1 (the data root).
@@ -78,7 +87,8 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root).
 
 ## Acceptance Criteria
 
-- **AC1 — Working set.** Every enumerated package with no mapping row, and only those, gets a row.
+- **AC1 — Working set.** Every enumerated package with no mapping row that names a PyPI project, and only those,
+  gets a row (a mapping row with an empty `pypi_name` leaves the package in the gap, as legacy's `pypi_name = ''` does).
 - **AC2 — Classes.** The three buckets are legacy's: a `run` dependency on python or a PyPI upstream is python-track; any
   other upstream is `non_python_with_identity`; none is `non_python_no_identity`.
 - **AC3 — Recovery.** Legacy's four spellings and outcomes, with its claim index: a name a mapped package already folds
@@ -145,9 +155,25 @@ Run 2026-10-23 in the landing worktree on `884d7f1106`, every verdict read from 
   `likely`, 62 `collision`, 37 `uncorroborated` and 1,184 `unrecovered`. `load_mapping_gap` reads all 12,362.
 - **After merging main** (`2c0b2ac79f`, Story 37.5): `pyforge-atlas-test` gives 3,151 passed and 20 skipped, then
   103 passed (exit 0); the combined DAG has 70 nodes and the catalog 137 entries.
+- **After the review fixes:** `test_mapping_gap.py` has 19 tests; the dashboard dry-run pins the loader's and the
+  model's `candidate` column; `pyforge-atlas-test` gives 3,153 passed and 20 skipped, then 103 passed (exit 0).
 
 ## Spec Change Log
 
+- 2026-10-23, independent review (PASS, 0 blockers, 2 should-fix), fixed on the same branch:
+  - SF1: the PyPI-upstream rule can never fire on atlas's producers; a Deviation says so, the node and the test
+    note it.
+  - SF2: no test pinned that only a recovery claims a name (a mutant claiming on an uncorroborated hit survived).
+    `test_only_a_recovery_claims_a_name` pins it with `python-zed` and `zed`.
+  - Nits: AC1 names the empty-`pypi_name` case and a test pins it; the claim index's several names per conda name
+    and the epic's cf-graph wording are Deviations; the upstream loop drops null names; the catalog pin's comment
+    says the dataset buckets by prefix; the board model shows `candidate`.
 - 2026-10-23: drafted from Story 37.9 and DW-atlas-37-9-1.
 
 ## Review Triage Log
+
+- 2026-10-23, review 1 (independent subagent, read the diff against this spec): PASS. 0 blockers, 2 should-fix, 5
+  nits, all applied. The reviewer wrote its own port of legacy `classify` and `recover` and ran it beside the node
+  over Story 37.2's live root: 0 differences in 12,362 rows, and every count above reproduced (the node took 2.1 s
+  there). It checked the merge with Story 37.5 (DAG 70, catalog 137, both projected pages, three memlogs pure
+  appends on main with one `updated:` each).

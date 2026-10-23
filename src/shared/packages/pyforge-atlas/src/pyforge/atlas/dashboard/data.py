@@ -373,7 +373,7 @@ def load_mapping_gap(parquet: str | os.PathLike[str] | None = None) -> pd.DataFr
     return _bsl_query_or_empty(
         parquet,
         models.build_mapping_gap_model,
-        ["conda_name", "classification", "match_source", "match_confidence"],
+        ["conda_name", "classification", "match_source", "match_confidence", "candidate"],
         ["gap_count"],
     )
 

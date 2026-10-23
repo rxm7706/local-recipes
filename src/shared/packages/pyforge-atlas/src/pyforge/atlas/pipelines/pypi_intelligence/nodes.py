@@ -1065,10 +1065,14 @@ def classify_mapping_gap(
     if deps is not None and {"conda_name", "depends_on", "dep_type"} <= set(deps.columns):
         run_python = deps[(deps["depends_on"] == "python") & (deps["dep_type"] == "run")]
         python_dep = set(run_python["conda_name"].dropna().astype(str))
+    # Legacy's sources include 'pypi' (Phase H's mirror rows); atlas's hosts are github/gitlab/codeberg and its
+    # registries npm/cran/cpan/luarocks/crates/rubygems/maven/nuget, so the 'pypi' test below is dormant until a
+    # producer emits one -- python-track then rests on the run dependency on python (as it does in practice)
     sources: dict[str, set[str]] = {}
     for frame, column in ((vcs_upstream_versions, "host"), (vcs_registry_versions, "registry")):
         if frame is not None and {"conda_name", column} <= set(frame.columns):
-            for name, source in zip(frame["conda_name"].astype(str), frame[column].astype(str), strict=True):
+            known = frame.dropna(subset=["conda_name", column])
+            for name, source in zip(known["conda_name"].astype(str), known[column].astype(str), strict=True):
                 sources.setdefault(name, set()).add(source.lower())
 
     universe: dict[str, set[str]] = {}

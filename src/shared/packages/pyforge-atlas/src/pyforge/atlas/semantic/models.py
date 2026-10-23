@@ -400,6 +400,8 @@ def build_mapping_gap_model(table: Any) -> SemanticModel:
             "classification": Dimension(expr=lambda t: t.classification),
             "match_source": Dimension(expr=lambda t: t.match_source),
             "match_confidence": Dimension(expr=lambda t: t.match_confidence),
+            # Story 37.9: the PyPI name a recovery points to; a store without it shows it as missing
+            "candidate": Dimension(expr=lambda t: t.candidate if "candidate" in t.columns else _null(t, "string")),
         },
         measures={
             "gap_count": Measure(expr=lambda t: t.conda_name.count()),

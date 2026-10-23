@@ -498,7 +498,7 @@ _NEW_PAGE_LOADERS_NO_ARGS: dict[str, tuple] = {
     "export-purls": (dash_data.load_export_purls, ["artifact_name", "regenerated_at", "row_count"]),
     "mapping-gap": (
         dash_data.load_mapping_gap,
-        ["conda_name", "classification", "match_source", "match_confidence", "gap_count"],
+        ["conda_name", "classification", "match_source", "match_confidence", "candidate", "gap_count"],
     ),
     "universe-sbom": (dash_data.load_universe_sbom, ["component_purl", "slice", "with_vulns_count"]),
     "inventory-match": (
@@ -619,7 +619,7 @@ _NEW_MODEL_SCHEMAS: dict[str, tuple] = {
     ),
     "mapping-gap": (
         models.build_mapping_gap_model,
-        ["conda_name", "classification", "match_source", "match_confidence"],
+        ["conda_name", "classification", "match_source", "match_confidence", "candidate"],
         ["gap_count"],
     ),
     "universe-sbom": (

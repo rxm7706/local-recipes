@@ -42,12 +42,26 @@ def test_a_mapped_package_is_not_in_the_gap():
     assert set(got) == {"zlib"}
 
 
+def test_a_mapping_row_with_an_empty_pypi_name_leaves_the_package_in_the_gap():
+    got = _gap(_enumerated("numpy", "zlib"), mapping=_mapping([("numpy", ""), ("zlib", "zlib")]))
+    assert set(got) == {"numpy"}
+
+
+def test_only_a_recovery_claims_a_name():
+    # python-zed sorts first and hits zed only after dropping its prefix: uncorroborated, so it claims nothing,
+    # and zed's own bare hit is still likely (legacy claims on recovery only)
+    got = _gap(_enumerated("python-zed", "zed"), deps=_python_deps("python-zed", "zed"), universe=_universe("zed"))
+    assert got["python-zed"]["match_confidence"] == "uncorroborated"
+    assert got["zed"]["match_confidence"] == "likely"
+
+
 def test_the_three_classes_are_legacys():
     got = _gap(
         _enumerated("py-thing", "pypi-up", "gh-up", "reg-up", "bare-c"),
         deps=_python_deps("py-thing"),
         upstream=pd.DataFrame({"conda_name": ["gh-up"], "host": ["github"]}),
-        registry=pd.DataFrame({"conda_name": ["pypi-up", "reg-up"], "registry": ["PyPI", "cran"]}),
+        # no atlas producer emits a "pypi" registry today (legacy's come from Phase H); the rule is kept for one
+        registry=pd.DataFrame({"conda_name": ["pypi-up", "reg-up", None], "registry": ["PyPI", "cran", "npm"]}),
     )
     assert {name: row["classification"] for name, row in got.items()} == {
         "py-thing": "python_track",
@@ -134,4 +148,5 @@ def test_the_board_reads_the_table(tmp_path):
     out.to_parquet(path, index=False)
     board = dash_data.load_mapping_gap(path)
     assert set(board["classification"]) == {"python_track", "non_python_no_identity"}
+    assert "thing" in set(board["candidate"].dropna())
     assert int(board["gap_count"].sum()) == 2
