@@ -159,10 +159,21 @@ def test_identity_workbook_page_falls_back_to_page_note_when_both_files_present(
     page = next(p for p in d.pages if p.id == "identity-workbook")
     about_card = next(c for c in page.components if isinstance(c, vm.Card) and c.id.endswith("--about"))
     by_id = {p.id: p for p in app.PAGE_INVENTORY}
-    assert by_id["identity-workbook"].note in about_card.text
+    assert f"**{app.NOTE_LABEL}:** {by_id['identity-workbook'].note}" in about_card.text
+    assert f"**{app.GAP_LABEL}:**" not in about_card.text
     external_card = next(c for c in page.components if isinstance(c, vm.Card) and c.id.endswith("--external"))
     assert "External source counts" in external_card.text
     assert _dm_get("data::identity-workbook") is not None
+
+
+def test_identity_workbook_gap_message_reads_data_gap(tmp_path: Path):
+    """Story 37.11: the gap message for a missing input file keeps the gap label."""
+    d = app.build_dashboard(build_stamp=STAMP, data_root=tmp_path, now=NOW)
+    page = next(p for p in d.pages if p.id == "identity-workbook")
+    about_card = next(c for c in page.components if isinstance(c, vm.Card) and c.id.endswith("--about"))
+    assert f"**{app.GAP_LABEL}:**" in about_card.text
+    assert _data.ENTERPRISE_JFROG_CONSUMPTION_PARQUET in about_card.text
+    assert f"**{app.NOTE_LABEL}:**" not in about_card.text
 
 
 # --------------------------------------------------------------------------- #
@@ -226,6 +237,27 @@ def test_provenance_line_known_kind_states_the_stamp():
     line = app._provenance_line(info)
     assert "2026-01-01T00:00:00+00:00" in line
     assert "file-mtime" in line
+
+
+def test_note_on_a_page_with_available_data_is_not_a_gap():
+    """Story 37.11: a note on a page whose own dataset is available describes it."""
+    page = app.PageDef("note-page-3711", "Note Page", "some-cli", "bsl-shell", note="wired to x")
+    info = ProvenanceInfo(kind="file-mtime", build_stamp="2026-01-01T00:00:00+00:00")
+    card = app._legibility_card(page, grounded=False, provenance=info)
+    assert f"**{app.NOTE_LABEL}:** wired to x" in card.text
+    assert app.GAP_LABEL not in card.text
+
+
+def test_note_on_a_page_with_no_data_function_is_a_gap():
+    """Story 37.11: a shell page has no data, whatever its provenance says."""
+    page = app.PageDef("gap-card-3711", "Gap Page", "some-cli", "bsl-shell", note="no model yet")
+    info = ProvenanceInfo(kind="file-mtime", build_stamp="2026-01-01T00:00:00+00:00")
+    card = app._legibility_card(page, grounded=False, provenance=info, has_data=False)
+    assert f"**{app.GAP_LABEL}:** no model yet" in card.text
+    assert app.NOTE_LABEL not in card.text
+    shell_def = app.PageDef("gap-shell-3711", "Gap Shell", "some-cli", "bsl-shell", note="no model yet")
+    shell = app._shell_page(shell_def, provenance=info)
+    assert f"**{app.GAP_LABEL}:** no model yet" in shell.components[0].text
 
 
 def test_legibility_card_includes_note_when_present():

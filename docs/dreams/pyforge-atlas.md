@@ -573,6 +573,16 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   **Kinships:** [[pyforge-herald]] (the Pages mount at `/dashboard/vizro/`), [[pyforge-steward]] (the Pages consumer
   of the artifact, steward 102.4). Owner `spec-pyforge-atlas` (CAP-63 amended; a new CAP for the board wiring);
   → `bmad-spec`.
+- **2026-10-22 (filled boards still read "Data gap")** — **Found: every board note says "Data gap", including on boards
+  that now hold data.** After Story 37.4, the Pages export shows 21 of 34 boards with data. Behind-upstream lists 95
+  rows under a note that opens "**Data gap:** Wired to `build_behind_upstream_model`…". `dashboard/app.py` labels every
+  `PageDef.note` that way in `_legibility_card` and in the identity-workbook page. Most notes now describe how a
+  board's data is wired, not what is missing. Only three cases are gaps: a shell page with no data function, the
+  identity workbook's `gap_message`, and a page whose own dataset is unavailable (its AD-17 stamp says so). **What it
+  looks like when fixed:** a note on a page with a data function and an available dataset reads "**About this board:**";
+  "**Data gap:**" stays for those three cases. The static export still drops the live-scan note whichever label it
+  carries. **Constraints:** a fix under CAP-63 / CAP-69, with no CAP and no flag; the label only, no board's data or
+  note text changes. Owner `spec-pyforge-atlas`. → Epic 37 / Story 37.11, specced 2026-10-22.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 

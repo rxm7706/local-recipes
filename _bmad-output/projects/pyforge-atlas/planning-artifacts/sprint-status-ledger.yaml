@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: atlas
-# stories: 212
+# stories: 213
 development_status:
   1-1-generate-legacy-contextual-skill: done
   10-1-restore-atlas-dependency-completeness-so-the-suite-can-collect: done
@@ -126,6 +126,7 @@ development_status:
   36-3-the-query-plane-estate-source-has-a-producer: blocked
   37-1-the-dashboard-reads-the-data-root-kedro-writes: done
   37-10-the-bootstrap-index-health-reports-each-catalog-entry-s-freshness: backlog
+  37-11-a-board-s-note-reads-data-gap-only-where-data-is-missing: done
   37-2-the-pages-vizro-export-builds-the-public-atlas-data-first: done
   37-3-the-seed-gap-version-download-and-distribution-boards-read-their-datasets: done
   37-4-behind-upstream-whodepends-live-catalog-coverage-and-the-universe-sbom-boards-fill: done
