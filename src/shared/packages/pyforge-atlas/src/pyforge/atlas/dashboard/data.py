@@ -90,6 +90,8 @@ DERIVED_UNIVERSE_SBOM_SUMMARY_PARQUET = "derived/derived_universe_sbom_summary/d
 DERIVED_VULN_HISTORY_PARQUET = "derived/derived_vuln_history/derived_vuln_history.parquet"
 # Story 37.9: the mapping-gap classification
 DERIVED_MAPPING_GAP_PARQUET = "derived/derived_mapping_gap/derived_mapping_gap.parquet"
+# Story 37.10: every catalog entry's last write and row count
+CATALOG_INDEX_HEALTH_PARQUET = "derived/catalog_index_health/catalog_index_health.parquet"
 
 # Mirrors ``scripts/openteams_identity_dashboards.py::EXTERNAL_LIVE`` — static reference rows.
 IDENTITY_WORKBOOK_EXTERNAL_COUNTS: tuple[tuple[str, str, str, str], ...] = (
@@ -477,7 +479,7 @@ def load_bootstrap_index_health(parquet: str | os.PathLike[str] | None = None) -
     return _bsl_query_or_empty(
         parquet,
         models.build_bootstrap_index_health_model,
-        ["catalog_entry", "tier", "regenerated_at"],
+        ["catalog_entry", "tier", "regenerated_at", "status"],
         ["row_count"],
     )
 

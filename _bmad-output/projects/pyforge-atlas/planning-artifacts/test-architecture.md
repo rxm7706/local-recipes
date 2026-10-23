@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: b25c1e6536dddb51
+source_fingerprint: 75bdd24330edcba0
 story_count: 139
-test_file_count: 178
+test_file_count: 180
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -21,10 +21,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Station:** `pyforge-atlas`
 - **Stories parsed:** 139
 - **Epics parsed:** 37
-- **Test files inventoried:** 178 under `src/shared/packages/pyforge-atlas/tests/`
+- **Test files inventoried:** 180 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `b25c1e6536dddb51`
+- **Source fingerprint:** `75bdd24330edcba0`
 
 ## Risk Assessment
 
@@ -113,6 +113,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_basilisk.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_basilisk_population.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_bigquery_cost_gate.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_catalog_index.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_cf_graph_split.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_clickhouse_downloads.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_core_sources.py` | unit | none observed |
@@ -170,6 +171,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/parity/test_parity_vcs_health.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/parity/test_parity_vulnerability.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/artifactory_downloads/test_nodes.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/catalog_index/test_nodes.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/core/test_nodes.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_derived_artifacts_e2e.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_identity_complete_export.py` | unit | none observed |

@@ -150,3 +150,36 @@ dependency_history:
 # recent one older than since_days (legacy cve-watcher's --since-days default), else the one before it.
 cve_watcher:
   since_days: 7
+
+# Story 37.10 (CAP-69) — the bootstrap-index-health board. tiers: the catalog-sources tier matrix
+# (spec-atlas-kedro-catalog-expansion/catalog-sources.md), each source by the dataset that persists it;
+# floors: its scale sanity gates (a row count below the floor reads below_floor).
+catalog_index_health:
+  tiers:
+    core_packages_enumerated: Tier 0
+    pypi_universe: Tier 0
+    pypi_conda_mapping: Tier 0
+    pypi_conda_map_store: Tier 0
+    pypi_json_raw: Tier 0
+    core_feedstock_attribution: Tier 0
+    purl_associator_mappings_raw: Tier 0
+    openteams_project_1_board_raw: Tier 0
+    core_anaconda_main_packages: Tier 1
+    discovery_anaconda_dist_2026x_raw: Tier 1
+    discovery_basilisk_packages_raw: Tier 1
+    discovery_aoss_premium_python_raw: Tier 1
+    pypi_cross_channel_flags: Tier 1
+    discovery_about_maintainers_raw: Tier 2
+    org_audit_candidates: Tier 2
+    enterprise_jfrog_names: Tier 2
+    discovery_homebrew_packages_raw: Tier 3
+    discovery_nixpkgs_packages_raw: Tier 3
+    discovery_spack_packages_raw: Tier 3
+    discovery_debian_packages_raw: Tier 3
+    discovery_fedora_packages_raw: Tier 3
+    pypi_tier3_channel_flags: Tier 3
+  floors:
+    core_packages_enumerated: 30000
+    core_anaconda_main_packages: 5000
+    pypi_universe: 1
+    discovery_basilisk_packages_raw: 1

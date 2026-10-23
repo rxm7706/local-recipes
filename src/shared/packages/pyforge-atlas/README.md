@@ -13,7 +13,7 @@ edge between them points the other way: atlas optionally imports warden's
 (consumed at the Wave-F F4 gate node). No `warden -> atlas` import exists; both
 tools stay independently installable.
 
-**Status:** 11 Kedro pipelines live (`artifactory_downloads`, `core`,
+**Status:** 12 Kedro pipelines live (`artifactory_downloads`, `catalog_index`, `core`,
 `derived_artifacts`, `pypi_intelligence`, `query_plane_cache`, `seed_gaps`,
 `semantic_packages`, `universal_sbom`, `upstream_discovery`, `vcs_health`,
 `vulnerability`), plus the MCP read surface, the Vizro dashboard and the
@@ -133,6 +133,12 @@ file would `KeyError` before a single node runs; both referencing datasets
 already degrade to an offline no-op by default, so the stub only matters
 for getting PAST catalog construction, never for a real fetch. A real
 operator's own `credentials.yml` (with real tokens) is left untouched.
+
+After a build, `pyforge atlas run --pipelines catalog_index` writes the
+bootstrap-index-health board's table (Story 37.10): every catalog entry's last
+write, row count, tier and status. It reads what the build wrote, so it runs on
+its own, last; `pipeline_registry` keeps it out of `__default__` for the same
+reason, and the Pages job runs it after `semantic_packages`.
 
 **Fetcher-less discovery stores (Story 27.2; Stories 34.6, 36.1):** `discovery_basilisk_packages_raw`,
 `discovery_aoss_premium_python_raw` and `discovery_anaconda_dist_2026x_raw` have no live refresher
