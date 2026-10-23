@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'the bootstrap-index-health reads derived/bootstrap_index_health as before, which nothing writes, and renders empty'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -35,14 +35,20 @@ row per catalog entry: name, tier, row count, staleness (`catalog-sources.md`'s 
 Today nothing reports whether a run left an index missing, empty or stale.
 
 **Approach:**
-1. **A read-only dataset,** `CatalogIndexDataset` (new, `datasets/catalog_index.py`). It reads `conf/base/catalog.yml`
-   and returns one row per entry whose `filepath` lies under the data root. Each row has:
+1. **A read-only dataset,** `CatalogIndexDataset` (new, `datasets/catalog_index.py`). Its `filepath` is
+   `conf/base/catalog.yml` and its `path` the data root; Kedro makes both absolute against the project, so it reads the
+   same files from any working directory. It returns one row per entry whose `filepath`, `path` or `filename` lies
+   under the data root, the path globals expanded through the sibling `globals.yml` (`${globals:paths.vdb_store}`,
+   `pypi_conda_map`, `warden_fleet_inventory`, and a literal `data/...`). Each row has:
    - its layer;
-   - its last write: the file's mtime, or for a store directory its newest `*.parquet`;
-   - the row count its Parquet footer gives;
+   - its last write: the file's mtime, or for a store directory its newest data file at any depth (JSON or Parquet;
+     not a staleness marker, not a dotfile);
+   - its row count: the Parquet footer's, or for a store directory the sum of its Parquet footers; none when it holds
+     no Parquet;
    - its staleness marker: a sibling `<file>.staleness.json`, or the directory's `.staleness.json`.
 
-   Entries that fetch live and persist nothing (an `url` only, or a path outside the data root) have no row.
+   Entries that fetch live and persist nothing (an `url` only, or a path outside the data root) have no row. A file
+   that vanishes mid-scan reads as not written (AD-13).
 2. **A pure node,** `report_catalog_index_health`, writes `catalog_index_health` with these columns:
    - `catalog_entry`, `layer`, `regenerated_at`, `row_count`;
    - `tier`: the catalog-sources matrix, Tier 0 to 3, each source named by the dataset that persists it
@@ -72,9 +78,10 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root).
 
 ## Acceptance Criteria
 
-- **AC1 — Index.** Every catalog entry under the data root is listed, with its write, footer count and marker; live-only
-  entries and paths outside the data root are not; a store directory reads its newest Parquet; an unreadable catalog
-  gives an empty frame.
+- **AC1 — Index.** Every catalog entry under the data root is listed, by any path key and through the path globals, with
+  its write, footer count and marker; live-only entries and paths outside the data root are not; a store directory
+  reads its newest data file and sums its Parquet footers; an unreadable catalog gives an empty frame. The index leaves
+  out its own output.
 - **AC2 — Status.** `missing` before `stale` before `empty` before `below_floor`; a write with no count (not Parquet) is
   `ok`; tiers and floors come from the params; tiered entries sort first.
 - **AC3 — Order.** `catalog_index` is registered, absent from `__default__`, and run after the build by the Pages job;
@@ -91,6 +98,8 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root).
 **Residual risk:**
 - A store that persists JSON rather than Parquet shows its write and no count, so `empty` and `below_floor` cannot fire
   for it.
+- `docs/how-to/pixi-tasks.md` is generated from `pixi.toml`, which this story leaves alone, so its bootstrap row does
+  not name `catalog_index`; the README does.
 - A run that does not end with `catalog_index` (the bootstrap task, or a hand-run subset of pipelines) leaves the board at
   the last index.
 - Dagster: `NODE_TIMEOUTS` covers exactly `__default__`'s nodes, so `report_catalog_index_health` has no timeout and no
@@ -105,7 +114,8 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root).
 | Parquet, 0 rows | none | empty |
 | Parquet, rows < floor | none | below_floor |
 | Parquet, rows ≥ floor or no floor | none | ok |
-| written, not Parquet | none | ok (no count) |
+| written, not Parquet (a JSON file, or a store of JSON files) | none | ok (no count) |
+| a store holding only a marker | stale | missing |
 | `url` only, or outside the data root | — | not listed |
 
 </intent-contract>
@@ -127,27 +137,62 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root).
 
 ## Run results
 
-Run 2026-10-23 in the landing worktree, stacked on Story 37.9's branch (`88a313d7e7`), every verdict read from
-its exit code.
+Run 2026-10-23 in the landing worktree (Story 37.9's branch, then main `771288616d` merged in), every verdict read
+from its exit code. The numbers are those after the review rework.
 
-- **AC1–AC4, tests:** `test_catalog_index.py` (12), `catalog_index/test_nodes.py` (13) and `test_board_projections.py`
-  pass; `pyforge-atlas-test` gives 3,178 passed and 20 skipped, then 103 passed (exit 0).
-- **Pins moved:** 12 pipelines registered (the README's inventory), the catalog 139 entries (`catalog_index_raw`,
-  `catalog_index_health`), `catalog_index` outside `__default__` and outside the MCP trigger surface; the loader and the
-  model gain `status`.
-- **Found by the suite:** `NODE_TIMEOUTS` must name exactly `__default__`'s nodes, so the node has no timeout (a
-  residual above); the MCP mirror test needed `catalog_index` in `NO_MCP_TRIGGER_PIPELINES`.
-- **Mutations**, each restored, each failing a named test (11 of 11): every filepath listed, the oldest Parquet in a
-  store, a store's marker ignored, a sibling marker ignored, no footer count, stale before missing, `empty` never,
-  the floor ignored, no tier sort, `catalog_index` inside `__default__`, and the board path not switched.
-- **Real data:** over Story 37.2's live data root with the shipped catalog, the index lists 110 entries in 0.10 s:
-  64 `ok`, 35 `missing` and 11 `empty`. Every Tier 0–3 entry is `ok` except `openteams_project_1_board_raw`
-  (`missing`: credentialed, so a public run leaves only its marker) and `enterprise_jfrog_names` (`empty`: no JFrog on
-  a public run). Each floor is met (34,720 conda-forge packages, 5,549 Anaconda main, 919,975 PyPI names, 34,722
-  Basilisk packages). `load_bootstrap_index_health` reads all 110 rows.
+- **AC1–AC4, tests:** `test_catalog_index.py` (21), `catalog_index/test_nodes.py` (14) and `test_board_projections.py`
+  pass; `pyforge-atlas-test` gives 3,188 passed and 20 skipped, then 103 passed (exit 0).
+- **Pins moved:**
+  - 12 pipelines registered (the README's inventory);
+  - the catalog has 139 entries (`catalog_index_raw`, `catalog_index_health`);
+  - `catalog_index` sits outside `__default__` and outside the MCP trigger surface;
+  - the loader and the model gain `status`.
+- **Found by the suite:**
+  - `NODE_TIMEOUTS` must name exactly `__default__`'s nodes, so the node has no timeout (a residual above);
+  - the MCP mirror test needed `catalog_index` in `NO_MCP_TRIGGER_PIPELINES`.
+- **Mutations**, each restored, each failing a named test (16 of 16):
+  - which entries are listed: any path listed; the path globals not expanded; a literal `data/` ignored;
+  - store directories: the oldest write taken; the footers not summed; a file marker counted as a write;
+  - markers and counts: a store's marker ignored; a sibling marker ignored; no footer count;
+  - status: stale before missing; `empty` never; the floor ignored; the index's own output listed; no tier sort;
+  - wiring: `catalog_index` inside `__default__`; the board path not switched.
+- **Real data:** over Story 37.2's live data root with the shipped catalog, the index lists 115 entries in 0.08 s, and
+  the board's table holds 114 (its own output left out).
+  - Status: 79 `ok`, 24 `missing`, 11 `empty`.
+  - Every `missing` entry is unwritten there: marker-only stores (credentialed or unfetched), outputs that root
+    predates, and `repo_dependency_history` (no repo configured).
+  - Tier 0 to 3 is all `ok`, except `openteams_project_1_board_raw` (`missing`: credentialed) and
+    `enterprise_jfrog_names` (`empty`: no JFrog on a public run).
+  - Each floor is met: 34,720 conda-forge packages, 5,549 Anaconda main, 919,975 PyPI names, 34,722 Basilisk.
+  - `load_bootstrap_index_health` reads all 114 rows.
 
 ## Spec Change Log
 
+- 2026-10-23, independent review (FAIL, 2 blockers), fixed on the same branch:
+  - B1: a store directory's write came from its top-level `*.parquet` only, so 11 written stores (JSON, or Parquet in
+    a subfolder: the parselmouth, endoflife and SPDX `last_good.json`, the six migration stores, the two S3 month
+    caches) read `missing`. A store now takes its newest data file at any depth and sums its Parquet footers.
+  - B2: only the literal `${globals:paths.data_root}/` prefix was matched, so `vulnerability_vdb_store`,
+    `vulnerability_osv_offline_store`, `pypi_conda_map_store` (Tier 0), `warden_fleet_inventory` and
+    `derived_purl_exports` (`path: data/...`) were dropped, and a test pinned the gap. The path globals expand through
+    `globals.yml`, every Kedro path key is read, and a literal `data/` is the shipped root.
+  - Should-fix:
+    - a store's several partitions are summed, not its newest;
+    - the dataset's catalog and data root are `filepath` and `path`, which Kedro makes absolute, so an MCP or
+      notebook session from another directory reads the same files;
+    - the index leaves out its own output;
+    - `pypi_json_raw` and `pypi_conda_map_store` are Tier 0.
+  - Nits:
+    - the model's docstring and its `status` comment are corrected;
+    - every `stat` sits behind an `OSError` guard;
+    - `docs/how-to/pixi-tasks.md` stays as generated (a residual above).
 - 2026-10-23: drafted from Story 37.10, DW-atlas-37-10-1 and Story 20.9's open path.
 
 ## Review Triage Log
+
+- 2026-10-23, review 1 (independent subagent, read the diff against this spec): FAIL, with 2 blockers, 4 should-fix and
+  4 nits, all addressed (Spec Change Log). The reviewer also did these:
+  - reproduced the first real-data run and found the 11 written stores it called `missing`;
+  - ran `kedro run --pipelines catalog_index` against scratch copies of the member `conf/` and the data root (exit 0);
+  - showed that a `KedroSession` opened from another directory read 0 rows before the `filepath`/`path` change;
+  - checked the types through Parquet, DuckDB and BSL, for the empty table and the filled one.

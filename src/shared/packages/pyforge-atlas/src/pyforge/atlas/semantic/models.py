@@ -765,7 +765,8 @@ def build_identity_complete_export_model(table: Any, *, gist_columns: tuple[str,
 
 
 def build_bootstrap_index_health_model(table: Any) -> SemanticModel:
-    """`bootstrap-index-health` — Tier 0/1 catalog index row counts (Story 21.9)."""
+    """`bootstrap-index-health` — each catalog entry's last write, row count, tier and status (Story 21.9; Story
+    37.10 writes ``catalog_index_health``)."""
     return SemanticModel(
         table=table,
         name="bootstrap_index_health",
@@ -773,7 +774,7 @@ def build_bootstrap_index_health_model(table: Any) -> SemanticModel:
             "catalog_entry": Dimension(expr=lambda t: t.catalog_entry),
             "tier": Dimension(expr=lambda t: t.tier),
             "regenerated_at": Dimension(expr=lambda t: t.regenerated_at),
-            # Story 37.10: missing / stale / empty / below_floor / ok; a store without it shows it as missing
+            # Story 37.10: missing / stale / empty / below_floor / ok; a store without the column reads null
             "status": Dimension(expr=lambda t: t.status if "status" in t.columns else _null(t, "string")),
         },
         measures={

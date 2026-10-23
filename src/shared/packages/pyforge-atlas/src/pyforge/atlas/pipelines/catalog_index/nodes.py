@@ -19,6 +19,8 @@ CATALOG_INDEX_HEALTH_COLUMNS = [
 ]
 #: an entry the catalog-sources tier matrix does not name
 UNTIERED = "untiered"
+#: this pipeline's own output: its row would only report the previous run's write
+SELF = "catalog_index_health"
 
 
 def _status(written: Any, stale: bool, rows: Any, floor: Any) -> str:
@@ -52,6 +54,8 @@ def report_catalog_index_health(catalog_index_raw: pd.DataFrame | None, params: 
     records = []
     for row in index.to_dict("records"):
         name = str(row["catalog_entry"])
+        if name == SELF:
+            continue
         rows = row.get("row_count")
         written = row.get("regenerated_at")
         floor = floors.get(name)

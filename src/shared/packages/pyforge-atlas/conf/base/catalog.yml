@@ -1489,11 +1489,12 @@ semantic_packages:
     layer: primary
 
 # Story 37.10 (CAP-69): every catalog entry under the data root, its last write, Parquet row count
-# and staleness marker. Read-only; catalog_path is member-dir-relative (Kedro runs from the member).
+# and staleness marker. Read-only. filepath is this catalog (its sibling globals.yml expands the path
+# globals) and path the data root: Kedro makes both absolute against the project.
 catalog_index_raw:
   type: pyforge.atlas.datasets.CatalogIndexDataset
-  catalog_path: conf/base/catalog.yml
-  data_root: ${globals:paths.data_root}
+  filepath: conf/base/catalog.yml
+  path: ${globals:paths.data_root}
   metadata:
     layer: raw
 

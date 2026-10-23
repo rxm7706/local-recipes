@@ -70,6 +70,11 @@ def test_tiers_and_floors_come_from_the_params():
     assert pd.isna(got["other"]["floor"])
 
 
+def test_the_index_leaves_out_its_own_output():
+    got = _health([("catalog_index_health", WRITTEN, 3, False, None), ("x", WRITTEN, 1, False, None)])
+    assert set(got) == {"x"}
+
+
 def test_tiered_entries_sort_first_by_tier():
     out = report_catalog_index_health(
         _index(

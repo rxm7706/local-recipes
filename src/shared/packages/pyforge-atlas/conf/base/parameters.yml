@@ -159,6 +159,8 @@ catalog_index_health:
     core_packages_enumerated: Tier 0
     pypi_universe: Tier 0
     pypi_conda_mapping: Tier 0
+    pypi_conda_map_store: Tier 0
+    pypi_json_raw: Tier 0
     core_feedstock_attribution: Tier 0
     purl_associator_mappings_raw: Tier 0
     openteams_project_1_board_raw: Tier 0
