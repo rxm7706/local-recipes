@@ -27,6 +27,7 @@ from pyforge.core.preserve_refs import (
     ATTEMPT_PRESERVE_BRANCH_PREFIX,
     ATTEMPT_PRESERVE_DIRTY_PREFIX,
     PRESERVE_REF_PREFIX,
+    PreserveRefNameError,
     PreserveTrailers,
     parse_preserve_ref,
     push_preserve_ref,
@@ -92,10 +93,13 @@ class ManifestRow:
 
 
 def _git(repo: Path, *args: str) -> tuple[int, str, str]:
+    # A commit's subject or diff need not be UTF-8 (Story 87.17): replace, never raise.
     proc = subprocess.run(
         ["git", "-C", str(repo), *args],
         capture_output=True,
-        text=True,
+        check=False,
+        encoding="utf-8",
+        errors="replace",
     )
     return proc.returncode, proc.stdout, proc.stderr
 
@@ -122,7 +126,7 @@ def _for_each_ref(repo: Path, pattern: str) -> list[str]:
 
 
 def _short_ref(ref: str) -> str:
-    for prefix in ("refs/heads/", "refs/tags/"):
+    for prefix in ("refs/heads/", "refs/tags/", "refs/remotes/origin/"):
         if ref.startswith(prefix):
             return ref[len(prefix) :]
     return ref
@@ -193,18 +197,21 @@ def _create_archive_tag(repo: Path, *, refname: str, commit: str, archive_from: 
 
 
 def _patch_id(repo: Path, commit: str) -> str | None:
-    rc, out, _ = _git(repo, "show", "--format=email", "--no-prefix", "--binary", commit)
-    if rc != 0 or not out:
+    # Bytes end to end (Story 87.17): a decoded and re-encoded diff would hash differently.
+    show = subprocess.run(
+        ["git", "-C", str(repo), "show", "--format=email", "--no-prefix", "--binary", commit],
+        capture_output=True,
+        check=False,
+    )
+    if show.returncode != 0 or not show.stdout:
         return None
     proc = subprocess.run(
-        ["git", "patch-id"],
-        input=out,
-        capture_output=True,
-        text=True,
+        ["git", "-C", str(repo), "patch-id"], input=show.stdout, capture_output=True, check=False
     )
-    if proc.returncode != 0 or not proc.stdout.strip():
+    out = proc.stdout.decode("ascii", errors="replace").strip()
+    if proc.returncode != 0 or not out:
         return None
-    return proc.stdout.split()[0].strip()
+    return out.split()[0]
 
 
 def _origin_main_patch_ids_since(repo: Path, since: str) -> set[str]:
@@ -282,10 +289,17 @@ def collect_promotion_rows(repo: Path) -> list[ManifestRow]:
             )
         )
 
-    for ref in _for_each_ref(repo, f"refs/heads/{ATTEMPT_PRESERVE_BRANCH_PREFIX}*"):
+    # Prefixes, never one-level globs: `for-each-ref 'refs/heads/*'` skips nested names
+    # (Story 87.18). The kept branches live on origin, so read both namespaces.
+    kept_seen: set[str] = set()
+    kept_refs = _for_each_ref(repo, f"refs/heads/{ATTEMPT_PRESERVE_BRANCH_PREFIX}") + _for_each_ref(
+        repo, f"refs/remotes/origin/{ATTEMPT_PRESERVE_BRANCH_PREFIX}"
+    )
+    for ref in kept_refs:
         short = _short_ref(ref)
-        if short not in KEPT_ATTEMPT_PRESERVE:
+        if short not in KEPT_ATTEMPT_PRESERVE or short in kept_seen:
             continue
+        kept_seen.add(short)
         commit = _peeled_commit(repo, ref)
         slug, story = KEPT_ATTEMPT_PRESERVE[short]
         twin = _render_preserve_twin(repo, commit=commit, slug=slug, story=story, producer="hand")
@@ -298,12 +312,9 @@ def collect_promotion_rows(repo: Path) -> list[ManifestRow]:
             )
         )
 
-    for ref in _for_each_ref(repo, "refs/tags/*"):
+    for ref in _for_each_ref(repo, "refs/tags/"):
         short = _short_ref(ref)
-        if ref.startswith(PRESERVE_REF_PREFIX) or ref.startswith(ARCHIVE_REF_PREFIX):
-            continue
-        if short.startswith("rescue/dangling-"):
-            continue
+        # The legacy table names two archive/ tags, so look it up before any skip (Story 87.18).
         if short not in LEGACY_TAG_TWINS:
             continue
         commit = _peeled_commit(repo, ref)
@@ -324,24 +335,32 @@ def collect_promotion_rows(repo: Path) -> list[ManifestRow]:
             )
         )
 
-    for ref in _for_each_ref(repo, "refs/heads/*"):
+    for ref in _for_each_ref(repo, "refs/heads/"):
         short = _short_ref(ref)
         if short.startswith(ATTEMPT_PRESERVE_BRANCH_PREFIX):
             continue
         if any(short.startswith(p) for p in BACKUP_BRANCH_PREFIXES) or short in ARCHIVE_BRANCH_NAMES:
             commit = _peeled_commit(repo, ref)
-            twin = render_archive_heads_ref(short)
+            try:
+                twin = render_archive_heads_ref(short)
+                evidence = "legacy branch → archive/heads twin"
+            except PreserveRefNameError:
+                # AD-81 bars a date from the name (Story 87.18); Preserve-Source keeps it.
+                twin = _render_preserve_twin(
+                    repo, commit=commit, slug=None, story=None, producer="hand"
+                )
+                evidence = "legacy branch name carries a date the grammar bars → preserve/unbound/hand-*"
             rows.append(
                 _promotion_row(
                     source_ref=ref,
                     commit=commit,
                     twin_ref=twin,
-                    evidence=f"legacy branch → archive/heads twin",
+                    evidence=evidence,
                 )
             )
 
     for prefix in CUSTOM_REF_PREFIXES:
-        for ref in _for_each_ref(repo, f"{prefix}*"):
+        for ref in _for_each_ref(repo, prefix):
             commit = _peeled_commit(repo, ref)
             twin = _render_preserve_twin(
                 repo, commit=commit, slug=None, story=None, producer="hand"
@@ -389,7 +408,9 @@ def collect_promotion_rows(repo: Path) -> list[ManifestRow]:
 def collect_rescue_classifications(repo: Path) -> list[ManifestRow]:
     origin_ids = _origin_main_patch_ids_since(repo, _PATCH_EQUIV_SINCE)
     rows: list[ManifestRow] = []
-    for ref in _for_each_ref(repo, f"{RESCUE_DANGLING_PREFIX}*"):
+    for ref in _for_each_ref(repo, "refs/tags/rescue/"):
+        if not ref.startswith(RESCUE_DANGLING_PREFIX):
+            continue
         commit = _peeled_commit(repo, ref)
         classification, evidence = classify_rescue_dangling(repo, commit, origin_patch_ids=origin_ids)
         rows.append(
