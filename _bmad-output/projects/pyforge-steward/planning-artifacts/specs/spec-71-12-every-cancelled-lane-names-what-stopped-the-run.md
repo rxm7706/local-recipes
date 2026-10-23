@@ -2,7 +2,7 @@
 title: '71.12: Every cancelled lane names what stopped the run'
 type: 'fix'
 created: '2026-10-23'
-status: 'in-review'
+status: 'done'
 baseline_revision: '9fc4cb1c2b04c5746b92b7c0931eea8d82e6b729'
 flag-exempt: detector-or-gate   # a fix needs no flag (spec-feature-flag-governance Q1), and pr-preflight is a gate, as 105.1, 106.1 and 107.1 recorded
 review_loop_iteration: 3

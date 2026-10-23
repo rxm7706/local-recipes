@@ -4955,7 +4955,7 @@ dependent that `_mark_dependency_blocked` reaches keeps its dependency's cause (
 Story 105.1's) assert the cause; a dependent of a lane turned away on an interrupt names `interrupt`, in `cancelled_by` or, under
 `--keep-going`, `blocked_by`; the scheduler, the exit codes, the verdicts and `red_lanes` do not change; `pixi run --frozen -e pyforge-steward
 pyforge-steward-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 72: Mason's skill cell is two skills, and the Guild answers `pyforge mason` (spec-pyforge-steward CAP-160..161)
 
