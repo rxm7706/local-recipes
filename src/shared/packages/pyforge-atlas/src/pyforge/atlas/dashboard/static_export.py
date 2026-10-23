@@ -319,7 +319,8 @@ def _render_board(
                 stamp = _stamp_from_card(text)
             if live_scan and declared is not None and declared.note:
                 # The note describes the live page's submit path; the static page has none.
-                text = text.replace(f"**Data gap:** {declared.note}", "")
+                for label in (_app.NOTE_LABEL, _app.GAP_LABEL):
+                    text = text.replace(f"**{label}:** {declared.note}", "")
             parts.append(f'<section class="card" id="{_esc(component.id)}">\n{_markdown(text)}\n</section>')
         elif isinstance(component, (vm.AgGrid, vm.Table)):
             parts.append(_render_table(component, frames, sort_by=sort_by))

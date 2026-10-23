@@ -56,7 +56,9 @@ def _fresh_vizro_managers():
     Vizro._reset()
 
 
-def _tiny_dashboard(data_root: Path, *, chart: str = "bar", board_extra: tuple = ()) -> vm.Dashboard:
+def _tiny_dashboard(
+    data_root: Path, *, chart: str = "bar", board_extra: tuple = (), scan_label: str = _app.GAP_LABEL
+) -> vm.Dashboard:
     """A two-board dashboard shaped like ``build_dashboard``'s: a grounded board (Card, grid,
     chart) and a live-scan board (Card, its submit controls, grid)."""
     Vizro._reset()
@@ -91,7 +93,7 @@ def _tiny_dashboard(data_root: Path, *, chart: str = "bar", board_extra: tuple =
         components=[
             vm.Card(
                 id=f"{SCAN}--about",
-                text=f"**Data build stamp (AD-17):** unavailable (no scan cached yet)\n\n**Data gap:** {SCAN_NOTE}",
+                text=f"**Data build stamp (AD-17):** unavailable (no scan cached yet)\n\n**{scan_label}:** {SCAN_NOTE}",
             ),
             vm.UserInput(id=f"{SCAN}--path", title="Project path"),
             vm.Button(id=f"{SCAN}--submit", text="Run scan"),
@@ -797,3 +799,16 @@ def test_only_a_bar_chart_of_a_number_is_summed() -> None:
     assert static_export._chart_frame(frame, _app.ChartDef("bar", x="k", y="s")) == (frame, "")
     bars, _ = static_export._chart_frame(frame, _app.ChartDef("bar", x="k", y="v"))
     assert bars.to_dict("records") == [{"k": "a", "v": 3}]
+
+
+def test_a_live_scan_note_is_dropped_under_either_label(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Story 37.11: the live page labels its note by data presence; the export drops it either way."""
+    monkeypatch.setattr(
+        static_export._app,
+        "build_dashboard",
+        lambda **kwargs: _tiny_dashboard(kwargs["data_root"], scan_label=_app.NOTE_LABEL),
+    )
+    out = tmp_path / "vizro"
+    _export(out, tmp_path / "data")
+    page = (out / SCAN / "index.html").read_text(encoding="utf-8")
+    assert SCAN_NOTE not in page and _app.NOTE_LABEL not in page
