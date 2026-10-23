@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-23'
 status: 'in-review'
 baseline_revision: 'bdb49ec39f'
-review_loop_iteration: 10
+review_loop_iteration: 11
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -462,4 +462,18 @@ baseline and found three crashes, all in code new in this story. Each is fixed a
 Two items were deferred:
 - the locked present worktree's `--delete` error row (third `deferred:` entry);
 - the non-UTF-8 default-clean loss, which falls under `DW-steward-13-6`.
+
+### 2026-10-23 — Review pass 11, verification of the round-10 fixes (FAIL: two must-fix)
+
+The round-10 crashes are fixed. The reachability harness (48 reproducers at HEAD and at the baseline) is unchanged
+from round 10 apart from them. Two more members of the same class turned up, and both are fixed and pinned:
+
+1. **A non-UTF-8 common git directory crashed `_admin_dir`,** which ran `rev-parse --git-common-dir` through a strict
+   decode. That path is absolute from a linked worktree or with a separated git dir. It is now read as bytes.
+2. **A NUL in a hand-edited bookkeeping path raised `ValueError`** in `_unregister_worktree` and in `realpath`. Both
+   now treat it as unregistered or unresolvable, which is fail-safe.
+
+The new-code family (`_registered_head`, `_admin_dir`, `_holds_per_worktree_refs`, `_unregister_worktree`,
+`_remote_names`, `_source_commit`) now reads git output as bytes, and handles the `ValueError` a path can raise,
+everywhere.
 

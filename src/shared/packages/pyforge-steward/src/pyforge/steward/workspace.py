@@ -806,14 +806,21 @@ def _registered_head(root: Path, wt: Path) -> tuple[str, bool] | None:
     if listed.returncode != 0:
         detail = os.fsdecode(listed.stderr or b"").strip()
         raise WorkspaceError(f"git worktree list --porcelain -z failed (exit {listed.returncode}): {detail}")
-    want = os.path.realpath(wt)
+    try:
+        want = os.path.realpath(wt)
+    except ValueError as exc:  # a NUL in a hand-edited record's path (review 11)
+        raise WorkspaceError(f"cannot resolve worktree path {wt!r}: {exc}") from exc
     current: str | None = None
     head: str | None = None
     on_branch = False
     for field in [*listed.stdout.split(b"\0"), b""]:
         line = os.fsdecode(field)
         if line.startswith("worktree "):
-            current, head, on_branch = os.path.realpath(line[len("worktree ") :]), None, False
+            try:
+                current = os.path.realpath(line[len("worktree ") :])
+            except ValueError:
+                current = None
+            head, on_branch = None, False
         elif line.startswith("HEAD "):
             head = line[len("HEAD ") :].strip()
         elif line.startswith("branch "):
@@ -858,12 +865,15 @@ def _worktree_head_landed(record: WorkspaceRecord, *, root: Path) -> bool:
 
 def _admin_dir(root: Path, wt: Path) -> Path | None:
     """The ``.git/worktrees/<id>`` directory git keeps for worktree ``wt``, found by its ``gitdir`` back-pointer."""
-    common = _git_ok("rev-parse", "--git-common-dir", cwd=root)
+    common = _git_bytes("rev-parse", "--git-common-dir", cwd=root)  # bytes: the path may not be UTF-8 (review 11)
     if common.returncode != 0:
         return None
-    base = Path((common.stdout or "").strip())
+    base = Path(os.fsdecode(common.stdout.strip()))
     base = base if base.is_absolute() else root / base
-    want = os.path.realpath(wt / ".git")
+    try:
+        want = os.path.realpath(wt / ".git")
+    except ValueError:  # a NUL in a hand-edited record's path: no admin directory can match it
+        return None
     try:
         entries = sorted((base / "worktrees").iterdir())
     except OSError:
@@ -993,9 +1003,10 @@ def _unregister_worktree(root: Path, path: str | Path) -> None:
     ``remove --force`` touches this path alone; a path git does not list is a no-op, and a locked registration stays,
     as ``prune`` always left it (review 9: a second ``--force`` overrode the lock).
     """
-    _git_bytes(
-        "worktree", "remove", "--force", os.fspath(path), cwd=root
-    )  # output unread: it may echo a non-UTF-8 path
+    try:  # output unread: it may echo a non-UTF-8 path (review 10)
+        _git_bytes("worktree", "remove", "--force", os.fspath(path), cwd=root)
+    except ValueError:  # a NUL in a hand-edited record's path: git never registered it (review 11)
+        return
 
 
 def _git_bytes(*args: str, cwd: Path) -> subprocess.CompletedProcess[bytes]:

@@ -941,3 +941,56 @@ def test_a_damaged_sibling_pointer_never_crashes_a_trunk_landing(repo: Path, tmp
         merged_only=True, slug="stacked", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "a"
     )
     assert [r["slug"] for r in result["archived"]] == ["stacked"]
+
+
+@pytest.mark.parametrize("mode", ["merged-only", "delete"])
+def test_a_non_utf8_git_directory_never_crashes_a_trunk_landing(tmp_path: Path, mode: str) -> None:
+    """Review 11: ``rev-parse --git-common-dir`` prints an absolute path for a separated git dir; it is read as bytes."""
+    base_dir = tmp_path / "sep"
+    base_dir.mkdir()
+    origin = base_dir / "origin.git"
+    subprocess.run(["git", "init", "--bare", str(origin)], check=True, capture_output=True)
+    work = base_dir / "local-recipes"
+    gitdir = os.fsencode(base_dir) + b"/gd\xff"
+    subprocess.run(
+        ["git", "init", "--separate-git-dir", gitdir, "-b", "main", str(work)], check=True, capture_output=True
+    )
+    _git("config", "user.email", "test@example.com", cwd=work)
+    _git("config", "user.name", "Test", cwd=work)
+    (work / "scripts").mkdir()
+    (work / "scripts" / "bmad-loop-worktree").write_text("#!/usr/bin/env true\n", encoding="utf-8")
+    (work / "README.md").write_text("scratch\n", encoding="utf-8")
+    _git("add", "-A", cwd=work)
+    _git("commit", "-m", "init", cwd=work)
+    _git("remote", "add", "origin", str(origin), cwd=work)
+    _git("push", "-u", "origin", "main", cwd=work)
+    bookkeeping = work / ".steward" / "workspaces.yaml"
+    stacked = _stacked(work, base_dir, bookkeeping, land=True)
+    shutil.rmtree(stacked)
+    kwargs = {"slug": "stacked", "root": work, "bookkeeping": bookkeeping, "archive_dir": base_dir / "a"}
+    result = (
+        clean_workspaces(merged_only=True, **kwargs)
+        if mode == "merged-only"
+        else clean_workspaces(delete=True, **kwargs)
+    )
+    assert len(result["archived"]) + len(result["deleted"]) + len(result["skipped"]) == 1
+    assert not any(str(row.get("reason", "")).startswith("error:") for row in result["skipped"])
+
+
+@pytest.mark.parametrize("mode", ["merged-only", "delete", "default"])
+def test_a_nul_in_a_recorded_path_never_crashes_the_sweep(repo: Path, tmp_path: Path, mode: str) -> None:
+    """Review 11: a hand-edited bookkeeping row whose path holds a NUL is answered, never a crash."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    _git("branch", "nulb", "main", cwd=repo)
+    save_bookkeeping(
+        bookkeeping,
+        (WorkspaceRecord("nul", f"{tmp_path}/a\0b", "nulb", "origin/main", "2026-10-23T00:00:00+00:00"),),
+    )
+    kwargs = {"slug": "nul", "root": repo, "bookkeeping": bookkeeping, "archive_dir": tmp_path / "a"}
+    if mode == "merged-only":
+        result = clean_workspaces(merged_only=True, **kwargs)
+    elif mode == "delete":
+        result = clean_workspaces(delete=True, **kwargs)
+    else:
+        result = clean_workspaces(confirm=lambda _slug: True, **kwargs)
+    assert len(result["archived"]) + len(result["deleted"]) + len(result["skipped"]) == 1
