@@ -1229,8 +1229,10 @@ def test_a_second_sigint_inside_cancel_set_returns_and_the_first_completes(
     assert _returns_within(lambda: handler(signal.SIGINT, None), 10)
     assert coord.cancel.is_set()
     assert coord.stop_cause == ("interrupt", None)
-    # A later SIGINT, once the first has returned, runs the handler again as before.
+    # A later SIGINT, once the first has returned, runs the handler's body again as before: a fresh `cancel` is set.
+    coord.cancel = threading.Event()
     assert _returns_within(lambda: handler(signal.SIGINT, None), 10)
+    assert coord.cancel.is_set()
     assert coord.stop_cause == ("interrupt", None)
 
 

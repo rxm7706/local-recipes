@@ -5,7 +5,7 @@ created: '2026-10-23'
 status: 'in-review'
 baseline_revision: '884d7f1106'
 flag-exempt: detector-or-gate   # a fix needs no flag (spec-feature-flag-governance Q1), and pr-preflight is a gate, as 105.1, 106.1, 107.1 and 71.12 recorded
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -36,8 +36,8 @@ it in a function 71.12 touched, outside 71.12's ACs. Read at `884d7f1106` (71.12
   process list (`:646`) and again to mark each lane it signals (`:651`).
 
 Python may run the handler again, on the same thread, while the first call holds either lock. The nested call
-reaches the same lock and waits forever on the frame it interrupted. The handler swallows Ctrl-C, so only SIGKILL
-ends the run. The window is a few bytecodes per lock: it takes a double Ctrl-C at the wrong instant.
+reaches the same lock and waits forever on the frame it interrupted. The handler swallows Ctrl-C, so a further Ctrl-C
+does nothing; only another signal (SIGTERM, SIGQUIT, SIGHUP or SIGKILL) ends the run. The window is a few bytecodes per lock: it takes a double Ctrl-C at the wrong instant.
 
 **Measured at `884d7f1106`** with no real signal. Two tests run one green lane, keep the handler the run installed
 (it closes over the run's coordinator), and call it on a daemon thread. Each replaces one lock with a stand-in that,
@@ -71,7 +71,8 @@ process.
     calls the handler once more.
   - When the handler is called on a daemon thread.
   - Then it returns within 10 s, `cancel` is set and the cause is `("interrupt", None)`.
-  - And a further call after it returned also returns, with the cause unchanged.
+  - And a further call after it returned runs the handler's body again: with `cancel` replaced by a fresh event,
+    that event is set, and the cause is unchanged.
 - **(2) A second SIGINT while `proc_lock` is held returns.**
   - Given the same handler, one sleeping process registered for lane `("sleeper", "env")`, and `proc_lock` replaced
     by a lock that, once armed, calls the handler from inside the lock.
@@ -107,7 +108,7 @@ names, then one scoped stamp each (AGENTS.md § Pre-PR item 5). Promote the stor
 |---|---|---|
 | while the first holds `cancel`'s lock | deadlock | returns at once; the first completes |
 | while the first holds `proc_lock` | deadlock | returns at once; the first completes |
-| during `_terminate_proc_group`'s 5 s wait (no lock held) | runs the whole handler again | returns at once |
+| during `_terminate_proc_group`'s 5 s wait | runs the whole handler again (another wait) | returns at once |
 | before the guard is set, or after it clears | runs the whole handler again | unchanged (no lock held; idempotent) |
 | after the handler returned | runs the handler again | unchanged |
 | one SIGINT only | cause, `cancel`, terminate, exit 130 | unchanged |
@@ -138,4 +139,25 @@ names, then one scoped stamp each (AGENTS.md § Pre-PR item 5). Promote the stor
 
 ## Spec Change Log
 
-- No change yet.
+- 2026-10-23, after the independent review (FAIL): AC (1)'s last bullet says the later call runs the handler's body
+  (a fresh `cancel` is set), not only that it returns; the Problem names the signals that still end a hung run; the
+  matrix row for the 5 s wait drops "(no lock held)" (`Popen.wait` holds `_waitpid_lock` around each `waitpid`).
+
+## Review Triage Log
+
+### 2026-10-23 — Review pass 1 (FAIL: one must-fix, three nits)
+
+1. **must-fix, fixed.** Nothing tested that a SIGINT after the handler returned runs it again: the test's last call
+   asserted only what the first call had already made true, so a mutant that never clears the guard passed 386 of
+   387 preflight tests (the one failure was unrelated to the mutant). The test now replaces `cancel` with a fresh
+   event before the later call and asserts it is set; that fails on the mutant.
+2. **nit, fixed.** "only SIGKILL ends the run" was false: the preflight handles SIGINT alone, so SIGTERM, SIGQUIT and
+   SIGHUP still end it. Spec and Dream corrected; the memlog corrects its decision entry by a later entry.
+3. **nit, fixed (memlog).** The decision's reason for rejecting an `RLock` `proc_lock` was wrong: `terminate_children`
+   iterates a local copy, and its marks are idempotent `.add` calls. The decision stands: an `RLock` would not cover
+   `threading.Event`'s own `Lock`.
+4. **nit, fixed.** The matrix row's "(no lock held)" for the 5 s wait.
+
+The reviewer confirmed the guard closes every reentry point (each lock the outer call holds is inside the `try`),
+that the main thread never holds `proc_lock` or `cancel`'s lock outside the handler while it is installed, and that
+both tests fail on `884d7f1106` at their joins.

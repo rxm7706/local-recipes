@@ -2021,7 +2021,7 @@ Drift — orphaned between stations.
   - **A second SIGINT inside either lock waits on itself.** Python can run the handler again, on the same thread,
     while the first call still holds one of those locks. The nested call reaches the same `cancel.set()` or
     `proc_lock` and blocks forever: the lock's holder is the frame it interrupted. Nothing times out, and the handler
-    swallows Ctrl-C, so only SIGKILL ends the run. The window is a few bytecodes per lock, so it takes a double
+    swallows Ctrl-C, so only another signal (SIGTERM, SIGQUIT, SIGHUP or SIGKILL) ends the run. The window is a few bytecodes per lock, so it takes a double
     Ctrl-C at the wrong instant.
   - **Measured at `884d7f1106`** with no real signal: a test keeps the handler a one-lane run installed and calls it
     with `cancel` (or `proc_lock`) replaced by a stand-in that, holding its lock, runs the handler once more. Both
