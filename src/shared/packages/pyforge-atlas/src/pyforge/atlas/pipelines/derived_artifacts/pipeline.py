@@ -27,6 +27,7 @@ from .nodes import (
     project_live_catalog_coverage,
     project_universe_sbom_summary,
 )
+from .purl_exports import export_purl_artifacts
 
 
 def create_pipeline(**kwargs) -> Pipeline:
@@ -149,6 +150,21 @@ def create_pipeline(**kwargs) -> Pipeline:
                 inputs="derived_universe_sbom",
                 outputs="derived_universe_sbom_summary",
                 name="project_universe_sbom_summary",
+            ),
+            # Story 37.8: legacy export-purls' six artifacts and their manifest
+            node(
+                func=export_purl_artifacts,
+                inputs=[
+                    "core_packages_enumerated",
+                    "core_latest_status",
+                    "pypi_conda_mapping",
+                    "pypi_universe",
+                    "discovery_recipe_extras_raw",
+                    "core_cf_graph_raw",
+                    "core_feedstock_attribution",
+                ],
+                outputs=["derived_purl_artifacts", "derived_purl_export_manifest"],
+                name="export_purl_artifacts",
             ),
         ]
     )

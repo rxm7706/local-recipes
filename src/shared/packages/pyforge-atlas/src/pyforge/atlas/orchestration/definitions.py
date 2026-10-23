@@ -266,6 +266,7 @@ NODE_TIMEOUTS: dict[str, int] = {
     "score_pypi_readiness": 600,  # Phase R scoring
     "export_pypi_conda_map": 120,  # update-mapping-cache export shim
     "classify_mapping_gap": 300,  # Story 37.9 — the mapping gap over ~920k PyPI names, in memory
+    "export_purl_artifacts": 600,  # Story 37.8 — six purl artifacts; reads the cf-graph for recipe URLs
     "refresh_pypi_json_store": 1800,  # Story 27.2 — bounded live fan-out refresh
     "refresh_discovery_homebrew_store": 600,  # Story 23.1 — one public index GET each (Story 34.5)
     "refresh_discovery_nixpkgs_store": 600,  # Story 23.1 — 10 MB brotli, 403 MB byte scan (34.5)

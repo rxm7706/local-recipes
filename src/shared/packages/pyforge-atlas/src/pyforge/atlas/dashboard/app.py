@@ -514,6 +514,19 @@ PROJECTED_PAGES: dict[str, PageDef] = {
             "Basilisk catalog) or ok. Entries that fetch live and persist nothing are not listed.",
             filters=("tier", "status"),
         ),
+        # Story 37.8 (CAP-69)
+        PageDef(
+            "export-purls",
+            "Export Purls",
+            "export-purls",
+            "report-artifact",
+            note="An artifact-freshness index (build_purl_export_model) over derived_purl_export_manifest: one row "
+            "per artifact derived_artifacts' export_purl_artifacts writes to derived_purl_artifacts, as legacy "
+            "export-purls does: the active conda-forge purls, the same versioned, the PyPI universe's purls, the "
+            "conda-to-PyPI mapping TSV, the local recipes' pending or blocked exceptions, and the PyPI-unmapped "
+            "packages' upstream purls (from each recipe's own URLs). row_count is the artifact's lines, a TSV's "
+            "header not counted.",
+        ),
     )
 }
 
@@ -968,6 +981,10 @@ def build_dashboard(
     index_health_path = root / (
         _data.CATALOG_INDEX_HEALTH_PARQUET if projected else _data.BOOTSTRAP_INDEX_HEALTH_PARQUET
     )
+    # Story 37.8: the export-purls manifest with the flag on, the path nothing writes off
+    purl_manifest_path = root / (
+        _data.DERIVED_PURL_EXPORT_MANIFEST_PARQUET if projected else _data.PURL_EXPORT_MANIFEST_PARQUET
+    )
 
     # AD-17 (Story I4): each grounded/bsl-shell page's provenance is THAT page's own
     # backing Parquet file's mtime (resolve_for_file degrades to "unavailable" + a
@@ -996,7 +1013,7 @@ def build_dashboard(
     scan_project_provenance = _provenance.resolve_for_file(root / _data.SCAN_RESULT_LATEST_PARQUET)
     env_inspect_provenance = _provenance.resolve_for_file(root / _data.ENV_INSPECT_LATEST_PARQUET)
     distribution_breakdown_provenance = _provenance.resolve_for_file(root / _data.DISTRIBUTION_BREAKDOWN_PARQUET)
-    export_purls_provenance = _provenance.resolve_for_file(root / _data.PURL_EXPORT_MANIFEST_PARQUET)
+    export_purls_provenance = _provenance.resolve_for_file(purl_manifest_path)
     mapping_gap_provenance = _provenance.resolve_for_file(mapping_gap_path)
     universe_sbom_provenance = _provenance.resolve_for_file(universe_sbom_path)
     inventory_match_provenance = _provenance.resolve_for_file(root / _data.INVENTORY_MATCH_LATEST_PARQUET)
@@ -1129,7 +1146,7 @@ def build_dashboard(
         ),
         _data_page(
             by_id["export-purls"],
-            lambda: _data.load_export_purls(root / _data.PURL_EXPORT_MANIFEST_PARQUET),
+            lambda: _data.load_export_purls(purl_manifest_path),
             grounded=False,
             provenance=export_purls_provenance,
         ),

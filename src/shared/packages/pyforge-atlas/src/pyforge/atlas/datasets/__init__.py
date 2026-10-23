@@ -79,6 +79,7 @@ from .rate_limit import (
     parse_retry_after,
     resolve_worker_count,
 )
+from .recipe_extras import RecipeExtrasDataset
 from .refresh import (
     LEGACY_REFRESH_TTLS,
     VULN_DB_ENV_RESOURCE,
@@ -261,6 +262,8 @@ __all__ = [
     "SnapshotHistoryDataset",
     # Story 37.10: every catalog entry's last write and row count on the data root
     "CatalogIndexDataset",
+    # Story 37.8: the local recipes' conda-forge-expert stamps
+    "RecipeExtrasDataset",
     "parse_feedstock_outputs_zip",
     "repodata_json_to_rows",
     "channeldata_json_to_rows",
