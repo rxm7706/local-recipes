@@ -5,7 +5,7 @@ created: '2026-10-23'
 status: 'in-review'
 baseline_revision: '9fc4cb1c2b04c5746b92b7c0931eea8d82e6b729'
 flag-exempt: detector-or-gate   # a fix needs no flag (spec-feature-flag-governance Q1), and pr-preflight is a gate, as 105.1, 106.1 and 107.1 recorded
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -53,7 +53,7 @@ thread is still filling slots, so `c` is never submitted. Then `a` keeps a depen
 reach `:1456` with no cause. A lane carries a cause when the scheduler submitted it before the stop (the pool names
 `d`) and none when it did not; `a`, never submitted itself, carries one only when `c` was.
 
-**Measured at `9fc4cb1c2b`** with the test's fixture and an injected runner (scratchpad `probe.py`):
+**Measured at `9fc4cb1c2b`** with the test's fixture and an injected runner (a session probe through the real `run_preflight`, not kept):
 
 - `--jobs 1`, every run: only `d` starts; `b` reads `cancelled_by: d`; `c`, `a` and `e` read `cancelled` with no
   `cancelled_by`.
@@ -116,7 +116,7 @@ finding 4), so a pool thread that sees a stop flag always finds its cause.
   `test_after_a_red_stop_no_lane_starts_even_one_pending_lanes_depend_on` (Story 105.1) keeps its name. Each keeps
   its exit-0, 0-s assertions.
 - **(6) A dependent of a lane turned away on an interrupt names `interrupt`.** Given lanes `x` and `w` running at
-  `--jobs 2`, `w` sending SIGINT, `y` submitted afterwards and turned away, and `z` depending on `y`, every step
+  `--jobs 2`, `w` running the installed SIGINT handler, `y` submitted afterwards and turned away, and `z` depending on `y`, every step
   ordered by events. Then `y` is `cancelled` with `cancelled_by: "interrupt"`; `z` is `cancelled` with
   `cancelled_by: "interrupt"` (`not-run` with `blocked_by: "interrupt"` under `--keep-going`); neither carries an
   environment key.
@@ -130,8 +130,9 @@ finding 4), so a pool thread that sees a stop flag always finds its cause.
 - Change only `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py` and its unit tests under
   `src/shared/packages/pyforge-steward/tests/unit/`.
 - Read the cause through `_stop_cause`, so a reader never sees a task without its environment.
-- Every new test is deterministic: it orders lanes with `--jobs 1` or calls `_run_lane_in_pool` directly, and never
-  sleeps to win a race.
+- Every new test is deterministic: it orders lanes with `--jobs 1`, calls `_run_lane_in_pool` directly, or (AC (6))
+  orders `--jobs 2` lanes by events and runs the installed SIGINT handler from a lane rather than sending a signal,
+  and never sleeps to win a race.
 
 **Never:**
 - Never change which lanes run, the order they start in, or stop-on-red without `--keep-going`.
@@ -186,10 +187,13 @@ each (AGENTS.md § Pre-PR item 5).
 
 ## Spec Change Log
 
-- 2026-10-23, after the independent review (FAIL; scratchpad `r7112/review.md`, read against this spec at
-  `26ebdea86f`): AC (5) names three tests, not two (Story 105.1's docs-site test pinned the same shape); AC (6) is
+- 2026-10-23, after the independent review (FAIL; its session report is not kept, and its findings are listed under
+  Review Triage Log; read against this spec at `26ebdea86f`): AC (5) names three tests, not two (Story 105.1's docs-site test pinned the same shape); AC (6) is
   new (a dependent of a lane turned away on an interrupt); the old AC (6) is AC (7); the Never clause, the I/O
   matrix and the Approach say what the review found; the Problem's two imprecise sentences are corrected.
+
+- 2026-10-23, after the re-review (FAIL): the Always clause admits AC (6)'s `--jobs 2`, event-ordered test, which
+  now runs the installed SIGINT handler from a lane.
 
 ## Review Triage Log
 
@@ -211,3 +215,18 @@ each (AGENTS.md § Pre-PR item 5).
    with no cause recorded, `interrupt`, and a red lane recorded first.
 6. **nit, fixed.** "offers a lane only while no stop is set" now says a red stop; "the cause on `a`, `c` and `e`"
    now says `a` depends on whether `c` was submitted. Same in the Dream entry.
+
+### 2026-10-23 — Review pass 2 (FAIL: one must-fix, two should-fix, one nit; every round-1 finding resolved)
+
+1. **must-fix, fixed.** AC (6)'s test sent a real SIGINT from lane `w`. Python runs the handler on the main thread at
+   its next bytecode check; a signal that landed as the main thread entered `wait()` stayed pending until a lane's
+   10 s timeout, so under 16 CPU burners and 8 parallel runs 2 of 32 failed (`keep_going=True`: `KeyError:
+   'blocked_by'`), and `keep_going=False` passed by the assembly's path. `w` now calls the installed handler
+   (`signal.getsignal(signal.SIGINT)`) itself, so the cause is recorded before `w` returns; the test asserts `x` and
+   `w` are `ok` and that `z` was journaled, so a timeout inside a runner fails the test. Under the same load: 40 of
+   40 runs green, slowest call 0.25 s; red on `9fc4cb1c2b` (`KeyError: 'cancelled_by'` on `y`).
+2. **should-fix, fixed.** The Always clause excluded the `--jobs 2` `run_preflight` test AC (6) requires; amended.
+3. **should-fix, fixed.** The Dream entry's Constraints still said only the cancelled lanes' two fields change; it now
+   names the blocked dependent's `blocked_by` under `--keep-going`, as the Never clause does.
+4. **nit, fixed here.** This spec cited session scratch files; it now says they are not kept. The memlog keeps its
+   one such citation (append-only), as Story 107.1's entries do.

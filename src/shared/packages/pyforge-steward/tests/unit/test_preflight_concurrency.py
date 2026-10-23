@@ -787,8 +787,10 @@ def test_a_dependent_of_a_lane_turned_away_on_an_interrupt_names_interrupt(
     them away naming `interrupt`, so a dependent `_mark_dependency_blocked` reaches names `interrupt` too, with no
     environment, where it used to name the dependency itself.
 
-    `x` holds its worker until `z` is journaled; `w` sends SIGINT and returns once the cause is recorded; `y` is
-    then submitted and turned away; `z` depends on `y`. Every step waits on an event, never on time.
+    `x` holds its worker until `z` is journaled; `w` runs the installed SIGINT handler itself, so the interrupt is
+    recorded before `w` returns (a real signal waits for the main thread's next bytecode check, which a loaded host
+    can hold off past any timeout: the round-2 review); `y` is then submitted and turned away; `z` depends on `y`.
+    Every step waits on an event, never on time.
     """
     repo = tmp_path / "repo"
     repo.mkdir()
@@ -801,14 +803,8 @@ def test_a_dependent_of_a_lane_turned_away_on_an_interrupt_names_interrupt(
         '[feature.guild-tasks.tasks.y]\ncmd = "true"\n'
         '[feature.guild-tasks.tasks.z]\ndepends-on = ["y"]\ncmd = "true"\n',
     )
-    cause_set = threading.Event()
     z_journaled = threading.Event()
-    real_set_stop_cause = preflight._RunCoordinator.set_stop_cause  # noqa: SLF001
     real_blocked = preflight._blocked_lane_result  # noqa: SLF001
-
-    def set_stop_cause(self: Any, cause: tuple[str, str | None]) -> None:
-        real_set_stop_cause(self, cause)
-        cause_set.set()
 
     def blocked_lane_result(lane: preflight.Lane, *args: Any, **kwargs: Any) -> preflight.LaneResult:
         result = real_blocked(lane, *args, **kwargs)
@@ -816,7 +812,6 @@ def test_a_dependent_of_a_lane_turned_away_on_an_interrupt_names_interrupt(
             z_journaled.set()
         return result
 
-    monkeypatch.setattr(preflight._RunCoordinator, "set_stop_cause", set_stop_cause)  # noqa: SLF001
     monkeypatch.setattr(preflight, "_blocked_lane_result", blocked_lane_result)
     ran: list[str] = []
 
@@ -825,8 +820,9 @@ def test_a_dependent_of_a_lane_turned_away_on_an_interrupt_names_interrupt(
         if ctx.lane.task == "x":
             assert z_journaled.wait(timeout=10)
         elif ctx.lane.task == "w":
-            os.kill(os.getpid(), signal.SIGINT)
-            assert cause_set.wait(timeout=10)
+            handler = signal.getsignal(signal.SIGINT)
+            assert callable(handler)
+            handler(signal.SIGINT, None)
         return 0
 
     code = preflight.run_preflight(
@@ -838,8 +834,11 @@ def test_a_dependent_of_a_lane_turned_away_on_an_interrupt_names_interrupt(
         scratch_parent=tmp_path / "scratch",
     )
     assert code == preflight.EXIT_INTERRUPT
+    assert z_journaled.is_set()
     assert sorted(ran) == ["w", "x"]
     by_task = {entry["task"]: entry for entry in _run_record(repo)["lanes"]}
+    # A failed wait inside a runner becomes a red lane, not a failed test; these keep a timeout from passing.
+    assert (by_task["x"]["status"], by_task["w"]["status"]) == ("ok", "ok")
     assert (by_task["y"]["status"], by_task["y"]["cancelled_by"]) == ("cancelled", "interrupt")
     assert "cancelled_by_environment" not in by_task["y"]
     assert (by_task["z"]["status"], by_task["z"][field]) == (status, "interrupt")

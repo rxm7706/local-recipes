@@ -2005,8 +2005,9 @@ Drift — orphaned between stations.
   cause before it sets the flag, as a red lane does. A `--jobs 1` test, in which the stop comes before `c` and `a`
   can be submitted, fails on the old code and has no timing in it. The flaky test asserts the cause of every
   cancelled lane. **Constraints:** a fix under CAP-159, with no CAP, no flag and no `SPEC.md` change. The scheduler,
-  the exit codes, the verdicts, `red_lanes` and the set of lanes that run do not change; only `cancelled_by` and
-  `cancelled_by_environment` on cancelled lanes do. Orchestrating session's brief, 2026-10-23. Owner
+  the exit codes, the verdicts, `red_lanes` and the set of lanes that run do not change; only the cause fields do:
+  `cancelled_by` and `cancelled_by_environment` on cancelled lanes, and `blocked_by` and `blocked_by_environment` on
+  a `--keep-going` dependent of a lane turned away on an interrupt. Orchestrating session's brief, 2026-10-23. Owner
   `spec-pyforge-steward`. → Epic 71 / Story 71.12, specced 2026-10-23; it reopens Epic 71.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
