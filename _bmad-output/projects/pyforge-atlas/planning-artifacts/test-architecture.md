@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: 195324b1cb4522d4
+source_fingerprint: b25c1e6536dddb51
 story_count: 139
-test_file_count: 177
+test_file_count: 178
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -21,10 +21,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Station:** `pyforge-atlas`
 - **Stories parsed:** 139
 - **Epics parsed:** 37
-- **Test files inventoried:** 177 under `src/shared/packages/pyforge-atlas/tests/`
+- **Test files inventoried:** 178 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `195324b1cb4522d4`
+- **Source fingerprint:** `b25c1e6536dddb51`
 
 ## Risk Assessment
 
@@ -180,6 +180,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_inventory_verified_packages.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_universe_sbom.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/pypi_intelligence/test_mapping_export.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/pypi_intelligence/test_mapping_gap.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/pypi_intelligence/test_mapping_tiers.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/pypi_intelligence/test_nodes.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/pypi_intelligence/test_review_hardening.py` | unit | none observed |
