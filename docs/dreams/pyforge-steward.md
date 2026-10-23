@@ -2009,6 +2009,63 @@ Drift — orphaned between stations.
   `cancelled_by` and `cancelled_by_environment` on cancelled lanes, and `blocked_by` and `blocked_by_environment` on
   a `--keep-going` dependent of a lane turned away on an interrupt. Orchestrating session's brief, 2026-10-23. Owner
   `spec-pyforge-steward`. → Epic 71 / Story 71.12, specced 2026-10-23; it reopens Epic 71.
+- **2026-10-23 (a second SIGINT deadlocks the handler) — Found: a second Ctrl-C that lands while the preflight's
+  SIGINT handler holds one of its locks hangs the run for good.** Story 71.12's third independent review found it, in
+  a function 71.12 touched but outside its ACs. Read at `884d7f1106` (71.12 merged) in
+  `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py`.
+  - **The handler takes two non-reentrant locks.** `run_preflight` installs `_on_sigint` (`:1316`-`:1323`), which
+    Python runs on the main thread between bytecodes. It records the cause under `stop_lock`, an `RLock` (`:593`),
+    then calls `coord.cancel.set()` (`:1320`); `threading.Event.set` holds the event's own `Lock` while it sets the
+    flag. Then `coord.terminate_children()` (`:1321`) takes `proc_lock`, a plain `Lock` (`:586`), to copy the
+    process list (`:646`) and again to mark each lane it signals (`:651`).
+  - **A second SIGINT inside either lock waits on itself.** Python can run the handler again, on the same thread,
+    while the first call still holds one of those locks. The nested call reaches the same `cancel.set()` or
+    `proc_lock` and blocks forever: the lock's holder is the frame it interrupted. Nothing times out, and the handler
+    swallows Ctrl-C, so only another signal (e.g. SIGTERM, SIGHUP or SIGKILL) ends the run. The window is a few
+    bytecodes per lock, so it takes a double Ctrl-C at the wrong instant.
+  - **Measured at `884d7f1106`** with no real signal: a test keeps the handler a one-lane run installed and calls it
+    with `cancel` (or `proc_lock`) replaced by a stand-in that, holding its lock, runs the handler once more. Both
+    calls were still blocked when their 10 s and 20 s joins expired.
+  **What it looks like when fixed:** a SIGINT that arrives while the handler is running returns at once, and the first
+  call finishes: the cause is recorded, `cancel` is set and every running lane is terminated, as for one SIGINT. A
+  SIGINT after the handler has returned runs it again, as today. The same two tests return within their joins, and
+  fail on the old code. **Constraints:** a fix under CAP-159, with no CAP, no flag and no `SPEC.md` change. What one
+  SIGINT does (Story 71.10, 71.11 and 71.12's journal, exit 130) does not change, and no lock becomes reentrant.
+  The operator's ask in chat, 2026-10-23, after 71.12's review. Owner `spec-pyforge-steward`. → Epic 71 /
+  Story 71.13, specced 2026-10-23; it reopens Epic 71.
+- **2026-10-23 (a stacked workspace never reads landed) — Found: a workspace started `--from` another branch is
+  never judged landed, so `clean` refuses it after its work is on `main`.** Found while cleaning up Story 71.13's
+  workspace, `steward workspace start chain-preflight-sigint-reentry-2026-10-23 --from claude/zealous-booth-19783d`. Its
+  branch merged to `main` as `bdb49ec39f`, yet `status` read it `unmerged ahead=18` and `clean <slug> --delete` skipped
+  it `not-merged`; the operator removed it by hand with `git worktree remove`. Read at `bdb49ec39f` in
+  `src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py`.
+  - **Every landing check reads only the recorded source.** `status_of`'s merged flag (`:687`), `clean --merged-only`
+    (`:1263`), `--delete`'s eligibility (`:1168`, `:1179`) and branch removal (`:1198`), the preserve-tag check
+    (`:1063`) and the archive's branch removal (`:1123`-`:1132`) all ask `merge-base --is-ancestor <branch>
+    <source>`. A stacked workspace's source is a local branch that stops moving once the work lands, so its branch
+    is never an ancestor of it.
+  - **The landed proof needs a remote source.** CAP-157's proof (`_landed_note_body`, `:989`-`:1000`) asks
+    `_source_commit` (`:788`) for the source's commit, and that answers only for a source under `refs/remotes/`
+    (`:797`). A local source proves nothing, so `--delete` refuses even a workspace whose branch is on it, and the
+    default `clean` writes a tarball where a note would do.
+  - **Measured** in a scratch repository with a bare origin: a `base` workspace off `origin/main` with one commit, a
+    `stacked` one `--from base` with another, then `stacked` merged into `main` and pushed. `status` read
+    `merged=False`, `clean --delete` skipped `stacked` as `not-merged`, and `clean --merged-only` skipped it too.
+  **What it looks like when fixed:** a workspace whose branch is an ancestor of the trunk, `origin/main` read as
+  `refs/remotes/origin/main`, counts as landed whatever it was started from: `status` reads it merged, `--merged-only`
+  and the default `clean` leave a `.landed.txt` note naming `origin/main` and delete its branch, and `--delete` drops
+  it. A workspace on neither its source nor the trunk is refused exactly as today, and a repository with no
+  `origin/main` (a repo-set member) gets today's verdict. *(Added at review:)* the trunk and any `origin/<b>` source
+  are compared by the commit their remote-tracking ref names, so a local ref named like them proves nothing, and a
+  detached HEAD with commits past a landed branch, read as the repository records it, keeps `--merged-only` from
+  removing a present worktree and the preserve check from skipping its tag. A directory deleted by hand never loses
+  more than at the baseline: the trunk lands it only when the HEAD git still records for it (or none) is landed and
+  it holds no per-worktree ref, and every clean unregisters only its own worktree (operator ruling, 2026-10-23); the
+  loss the baseline already had is `DW-steward-13-6`, a separate fix. **Constraints:** a fix under CAP-157 (amended in place:
+  the trunk joins the source as a landing ref), with no new CAP and no flag. `ahead`/`behind` still read the
+  recorded source; the proof's other conditions (clean tree, no hidden index entry, no gitlink, no per-worktree
+  ref, no Tier-3 work) do not change. The operator's ask in chat, 2026-10-23. Owner `spec-pyforge-steward`. →
+  Epic 13 / Story 13.6, specced 2026-10-23; it reopens Epic 13.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

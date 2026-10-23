@@ -589,7 +589,8 @@ class _RunCoordinator:
     # tuple, so a reader never sees a trigger without its environment; set only through
     # set_stop_cause, which checks and sets under stop_lock, so the first cause wins.
     stop_cause: tuple[str, str | None] | None = None
-    # Reentrant: the SIGINT handler sets the cause on the main thread and may re-enter itself.
+    # Reentrant, as it always was. Since Story 71.13 a nested SIGINT returns at the handler's guard before it reaches
+    # set_stop_cause, and the other callers run on pool threads, so no thread re-enters it today.
     stop_lock: threading.RLock = field(default_factory=threading.RLock)
     terminated_lanes: set[LaneKey] = field(default_factory=set)
     proc_lane: dict[int, LaneKey] = field(default_factory=dict)
@@ -1312,13 +1313,24 @@ def run_preflight(
             return _default_run_lane_ctx(coord, ctx)
 
     prior_sigint = signal.getsignal(signal.SIGINT)
+    # Story 71.13: Python runs the handler on the main thread between bytecodes, so a second SIGINT can land while the
+    # first call holds ``cancel``'s own Lock or ``proc_lock``; re-entering would wait forever on its own frame. A call
+    # that finds the handler running returns at once; once the handler has returned, a SIGINT runs it again.
+    sigint_running = False
 
     def _on_sigint(_signum: int, _frame: object | None) -> None:
-        # The cause before the flag, as a red lane records it (Story 71.12): a pool thread that sees ``cancel`` set
-        # always finds the cause that set it.
-        coord.set_stop_cause(("interrupt", None))
-        coord.cancel.set()
-        coord.terminate_children()
+        nonlocal sigint_running
+        if sigint_running:
+            return
+        sigint_running = True
+        try:
+            # The cause before the flag, as a red lane records it (Story 71.12): a pool thread that sees ``cancel``
+            # set always finds the cause that set it.
+            coord.set_stop_cause(("interrupt", None))
+            coord.cancel.set()
+            coord.terminate_children()
+        finally:
+            sigint_running = False
 
     signal.signal(signal.SIGINT, _on_sigint)
 
