@@ -14,6 +14,7 @@ from __future__ import annotations
 from kedro.pipeline import Pipeline, node
 
 from .nodes import (
+    classify_mapping_gap,
     enrich_pypi_intelligence,
     enumerate_pypi_universe,
     export_pypi_conda_map,
@@ -165,6 +166,20 @@ def create_pipeline(**kwargs) -> Pipeline:
                 inputs="pypi_conda_mapping",
                 outputs="pypi_conda_map_store",
                 name="export_pypi_conda_map",
+            ),
+            # Story 37.9: why each enumerated package has no PyPI name (legacy mapping_gap, read-only)
+            node(
+                func=classify_mapping_gap,
+                inputs=[
+                    "core_packages_enumerated",
+                    "pypi_conda_mapping",
+                    "core_dependencies",
+                    "vcs_upstream_versions",
+                    "vcs_registry_versions",
+                    "pypi_universe",
+                ],
+                outputs="derived_mapping_gap",
+                name="classify_mapping_gap",
             ),
         ]
     )

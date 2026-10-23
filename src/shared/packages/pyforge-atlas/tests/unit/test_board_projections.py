@@ -29,13 +29,21 @@ from pyforge.atlas.pipelines.derived_artifacts.nodes import (
     project_live_catalog_coverage,
     project_universe_sbom_summary,
 )
+from pyforge.atlas.pipelines.pypi_intelligence.nodes import classify_mapping_gap
 from pyforge.atlas.pipelines.vulnerability.nodes import diff_vulnerability_snapshots, snapshot_vulnerability_rollup
 
 FLAG = "pyforge.atlas.board_projections"
 REPO_ROOT = Path(__file__).resolve().parents[6]
 FLAGS = REPO_ROOT / "src" / "platform" / "config" / "flags.json"
 OVERLAYS = REPO_ROOT / "src" / "platform" / "config" / "flag-overlays.json"
-PROJECTED = ("behind-upstream", "whodepends", "universe-sbom", "live-catalog-coverage", "cve-watcher")
+PROJECTED = (
+    "behind-upstream",
+    "whodepends",
+    "universe-sbom",
+    "live-catalog-coverage",
+    "cve-watcher",
+    "mapping-gap",
+)
 NOW = 1_700_000_000
 STAMP = "2026-10-22T00:00:00Z"
 
@@ -366,6 +374,11 @@ def _data_root(tmp_path: Path) -> Path:
         ignore_index=True,
     )
     _write(root / data.DERIVED_VULN_HISTORY_PARQUET, diff_vulnerability_snapshots(snapshots, 7))
+    # Story 37.9: one enumerated package with no PyPI name
+    _write(
+        root / data.DERIVED_MAPPING_GAP_PARQUET,
+        classify_mapping_gap(_enumerated([("a", "1.0")]), None, None, None, None, None),
+    )
     return root
 
 
@@ -390,7 +403,7 @@ def test_with_the_flag_off_the_four_boards_read_as_before(tmp_path: Path) -> Non
     app.build_dashboard(build_stamp=STAMP, data_root=_data_root(tmp_path), now=NOW, board_projections=False)
 
     assert _frame("behind-upstream") is None and _frame("whodepends") is None  # shells: no data function
-    for page_id in ("universe-sbom", "live-catalog-coverage", "cve-watcher"):
+    for page_id in ("universe-sbom", "live-catalog-coverage", "cve-watcher", "mapping-gap"):
         frame = _frame(page_id)
         assert frame is not None and frame.empty, page_id  # the earlier paths, which nothing writes
 
@@ -408,6 +421,7 @@ def test_with_the_flag_on_each_board_is_stamped_from_the_file_it_reads(tmp_path:
         "universe-sbom": data.DERIVED_UNIVERSE_SBOM_SUMMARY_PARQUET,
         "live-catalog-coverage": data.DERIVED_LIVE_CATALOG_COVERAGE_PARQUET,
         "cve-watcher": data.DERIVED_VULN_HISTORY_PARQUET,
+        "mapping-gap": data.DERIVED_MAPPING_GAP_PARQUET,
     }
     for offset, path in enumerate(reads.values()):  # a distinct mtime per file, so a swapped stamp shows
         stamp = 1_600_000_000 + offset * 86_400

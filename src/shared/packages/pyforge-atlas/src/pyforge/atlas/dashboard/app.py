@@ -24,7 +24,8 @@ Page set (the full 34-page inventory, Story 20.5 / CAP-7 closing DW-D2-1):
     Card states the gap — no data function, no fabrication). With ``pyforge.atlas.board_projections``
     on (Story 37.4), ``page_inventory`` swaps in ``PROJECTED_PAGES``: these two read their models,
     and universe-sbom and live-catalog-coverage read the projections ``derived_artifacts`` writes; the
-    cve-watcher reads the vulnerability pipeline's diff of two snapshots (Story 37.5).
+    cve-watcher reads the vulnerability pipeline's diff of two snapshots (Story 37.5), and the mapping-gap
+    the classification pypi_intelligence writes (Story 37.9).
   * BSL-WIRED pages over their own per-page model (Story 20.5) — the remaining atlas-CLI /
     cyclonedx-suite / seed-gap-suggester pages, each routed through a model in
     ``semantic/models.py``. Each page's ``note`` names the pipeline that has still to
@@ -420,7 +421,7 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
     PageDef("factory-status", "Factory Status", "factory-status", "factory"),
 )
 
-#: Story 37.4 (CAP-69): the four boards' definitions, and Story 37.5's cve-watcher, with ``pyforge.atlas.board_projections`` on.
+#: Story 37.4 (CAP-69): the four boards' definitions, Story 37.5's cve-watcher and Story 37.9's mapping-gap, with ``pyforge.atlas.board_projections`` on.
 #: Off, ``PAGE_INVENTORY``'s entries stand: the two shells, and the coverage boards' earlier paths.
 PROJECTED_PAGES: dict[str, PageDef] = {
     page.id: page
@@ -483,6 +484,21 @@ PROJECTED_PAGES: dict[str, PageDef] = {
             "critical_high and kev, since the rollup counts critical and high together. Empty until two runs "
             "have written snapshots. DESIGN.md § 3.1's maintainer filter is not declared.",
             filters=("severity", "since_days"),
+        ),
+        # Story 37.9 (CAP-69)
+        PageDef(
+            "mapping-gap",
+            "Mapping Gap",
+            "mapping-gap",
+            "bsl-shell",
+            note="Wired to build_mapping_gap_model over derived_mapping_gap, which pypi_intelligence's "
+            "classify_mapping_gap writes, read-only as legacy mapping-gap is without --write: each enumerated "
+            "package with no PyPI name, classified python_track (a run dependency on python or a PyPI upstream), "
+            "non_python_with_identity (another upstream) or non_python_no_identity. A python-track package's name "
+            "is looked up in the PyPI universe under legacy's four spellings: match_confidence is likely (one "
+            "bare-spelling hit, match_source g10_spelling), ambiguous, collision, uncorroborated (a hit only "
+            "after dropping a -py, -python or python- affix) or unrecovered. Legacy's grayskull and "
+            "purl-associator corroborators are not in atlas, so no row is verified.",
         ),
     )
 }
@@ -932,6 +948,8 @@ def build_dashboard(
     )
     # Story 37.5: the cve-watcher's diff with the flag on, the path nothing writes off
     vuln_history_path = root / (_data.DERIVED_VULN_HISTORY_PARQUET if projected else _data.VULN_HISTORY_PARQUET)
+    # Story 37.9: the mapping-gap classification with the flag on, the path nothing writes off
+    mapping_gap_path = root / (_data.DERIVED_MAPPING_GAP_PARQUET if projected else _data.MAPPING_GAP_PARQUET)
 
     # AD-17 (Story I4): each grounded/bsl-shell page's provenance is THAT page's own
     # backing Parquet file's mtime (resolve_for_file degrades to "unavailable" + a
@@ -961,7 +979,7 @@ def build_dashboard(
     env_inspect_provenance = _provenance.resolve_for_file(root / _data.ENV_INSPECT_LATEST_PARQUET)
     distribution_breakdown_provenance = _provenance.resolve_for_file(root / _data.DISTRIBUTION_BREAKDOWN_PARQUET)
     export_purls_provenance = _provenance.resolve_for_file(root / _data.PURL_EXPORT_MANIFEST_PARQUET)
-    mapping_gap_provenance = _provenance.resolve_for_file(root / _data.MAPPING_GAP_PARQUET)
+    mapping_gap_provenance = _provenance.resolve_for_file(mapping_gap_path)
     universe_sbom_provenance = _provenance.resolve_for_file(universe_sbom_path)
     inventory_match_provenance = _provenance.resolve_for_file(root / _data.INVENTORY_MATCH_LATEST_PARQUET)
     add_handoff_provenance = _provenance.resolve_for_file(root / _data.ADD_HANDOFF_LATEST_PARQUET)
@@ -1099,7 +1117,7 @@ def build_dashboard(
         ),
         _data_page(
             by_id["mapping-gap"],
-            lambda: _data.load_mapping_gap(root / _data.MAPPING_GAP_PARQUET),
+            lambda: _data.load_mapping_gap(mapping_gap_path),
             grounded=False,
             provenance=mapping_gap_provenance,
         ),

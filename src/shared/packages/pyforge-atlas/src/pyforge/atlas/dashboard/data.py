@@ -79,7 +79,7 @@ BOOTSTRAP_INDEX_HEALTH_PARQUET = "derived/bootstrap_index_health/bootstrap_index
 IDENTITY_EXPORT_PARQUET = "derived/identity_export_parquet/identity_export_parquet.parquet"
 LIVE_CATALOG_COVERAGE_PARQUET = "derived/live_catalog_coverage/live_catalog_coverage.parquet"
 
-# Story 37.4 (CAP-69): with ``pyforge.atlas.board_projections`` on, four boards (Story 37.5: and the cve-watcher) read these instead.
+# Story 37.4 (CAP-69): with ``pyforge.atlas.board_projections`` on, four boards (Story 37.5: and the cve-watcher; Story 37.9: and the mapping-gap) read these instead.
 # Off, behind-upstream and whodepends stay shells and the two coverage boards read the paths above.
 BOARD_PROJECTIONS_FLAG = "pyforge.atlas.board_projections"
 BEHIND_UPSTREAM_PARQUET = "derived/derived_behind_upstream/derived_behind_upstream.parquet"
@@ -88,6 +88,8 @@ DERIVED_LIVE_CATALOG_COVERAGE_PARQUET = "derived/derived_live_catalog_coverage/d
 DERIVED_UNIVERSE_SBOM_SUMMARY_PARQUET = "derived/derived_universe_sbom_summary/derived_universe_sbom_summary.parquet"
 # Story 37.5: the cve-watcher's diff of two vulnerability snapshots
 DERIVED_VULN_HISTORY_PARQUET = "derived/derived_vuln_history/derived_vuln_history.parquet"
+# Story 37.9: the mapping-gap classification
+DERIVED_MAPPING_GAP_PARQUET = "derived/derived_mapping_gap/derived_mapping_gap.parquet"
 
 # Mirrors ``scripts/openteams_identity_dashboards.py::EXTERNAL_LIVE`` — static reference rows.
 IDENTITY_WORKBOOK_EXTERNAL_COUNTS: tuple[tuple[str, str, str, str], ...] = (
@@ -129,7 +131,7 @@ def default_data_root() -> Path:
 
 def board_projections(*, flags_path: Path | str | None = None) -> bool:
     """Story 37.4: whether behind-upstream, whodepends and the two coverage boards (Story 37.5: and the
-    cve-watcher) read the datasets the pipelines write (``pyforge.atlas.board_projections``; off when the tree
+    cve-watcher; Story 37.9: and the mapping-gap) read the datasets the pipelines write (``pyforge.atlas.board_projections``; off when the tree
     is missing or unreadable)."""
     return read_boolean(BOARD_PROJECTIONS_FLAG, default=False, flags_path=flags_path)
 
@@ -371,7 +373,7 @@ def load_mapping_gap(parquet: str | os.PathLike[str] | None = None) -> pd.DataFr
     return _bsl_query_or_empty(
         parquet,
         models.build_mapping_gap_model,
-        ["conda_name", "classification", "match_source", "match_confidence"],
+        ["conda_name", "classification", "match_source", "match_confidence", "candidate"],
         ["gap_count"],
     )
 
