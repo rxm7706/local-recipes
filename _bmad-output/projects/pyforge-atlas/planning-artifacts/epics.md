@@ -2188,6 +2188,17 @@ Minted 2026-10-03 from the operator's Phase 4+5 ruling: every open medium and lo
 **Then** `#distribution-breakdown--filter-facet` holds its selector on every build and page load, never an empty 0×0 container, and a test that needs no browser pins the root cause
 **And** the non-strict `xfail` that #1842 put on `test_declared_controls_render_against_real_rows` is removed and the test passes ten runs in a row; `DW-atlas-27-3-1` (medium) is closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed; `pixi run -e pyforge-atlas kedro-test` and `pixi run -e pyforge-atlas kedro-catalog-check` green
 
+### Story 27.6: The distribution-breakdown e2e test waits for its grid to mount
+**Type:** fix • **Effort:** S • **Deps:** S-27.5 • **FR/AD:** — (a `fix`, so no new CAP and no FR; `spec-feature-flag-governance` Q1: a `fix` needs no flag) • spec-pyforge-atlas CAP-8 (the read surface) • AD-11 (gates are never weakened)
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix)
+**Surface:** `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_e2e.py` (`test_declared_controls_render_against_real_rows` only), the atlas deferred-work ledger, the `spec-pyforge-atlas` memlog and any co-governor's (the surface reconcile), `scripts/.spec-surface-baseline.json` (the scoped stamps)
+**Spec:** `planning-artifacts/specs/spec-27-6-the-distribution-breakdown-e2e-test-waits-for-its-grid-to-mount.md`
+**Given** `9ab7ef1cf1`, where the test waits 15 s for the facet filter, its dropdown and the chart's container, all rendered from the page layout, then asserts `#distribution-breakdown--grid` contains `linux-64` with Playwright's 5 s default, though Vizro fills that grid only from the page's `on_page_load` callback and the browser then loads AG Grid's own script; 32 copies of the test on 16 xdist workers beside 48 busy loops fail 4 of 24 with `Locator expected to contain text 'linux-64'`, as the 2026-10-24 full-scope `pr-preflight` did
+**When** the test runs under that load
+**Then** it waits up to 15 s for the AG Grid to mount inside `#distribution-breakdown--grid` (`.ag-root-wrapper` attached), then asserts the `linux-64` row, and every copy passes
+**And** against a fixture root without the `linux-64` row the test still fails on that assertion with the grid's actual text; the diff adds no skip, `xfail`, retry or rerun and keeps every assertion; only the test file changes under `src/`; `DW-atlas-retro-2026-10-15-1` (medium) is closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed; `pixi run -e pyforge-atlas pyforge-atlas-test`, `kedro-test` and `kedro-catalog-check` green
+**Status:** backlog
+
 ## Epic 28: The live-attach fixture Postgres starts under any basetemp (fix under spec-pyforge-atlas CAP-6)
 
 Minted 2026-10-11 from the station Dream's entry of that date (live-attach fixture socket path) and the operator's ask

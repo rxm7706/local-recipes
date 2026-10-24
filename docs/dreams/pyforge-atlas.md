@@ -671,6 +671,32 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   - no other board's stamp changes.
 
   Owner `spec-pyforge-atlas` (CAP-69, CAP-64, no new CAP). → Epic 37 / Story 37.13, specced 2026-10-24.
+- **2026-10-24 (the distribution-breakdown grid wait under load)** — **Found: the declared-controls e2e test fails
+  under parallel load while the page is healthy.** `test_declared_controls_render_against_real_rows` red the
+  `pyforge-atlas-test` lane of a full-scope `pr-preflight` on 2026-10-24 (Story 37.13, PR #2300) with
+  `Locator expected to contain text 'linux-64'` on `#distribution-breakdown--grid`: the grid was still
+  `data-dash-is-loading="true"`, then empty, when Playwright's 5 s default ran out. The suite took 3:57 there against
+  about 44 s alone; the test passed the run before and three times alone. It failed the same way in Story 31.1's
+  preflight on 2026-10-15 (`DW-atlas-retro-2026-10-15-1`).
+  **Evidence:**
+  - Vizro builds every AgGrid as an empty placeholder and fills it from the page's `on_page_load` callback. The
+    facet filter (static since Story 27.5) and the chart's container render from the layout, so the test's three
+    15 s waits pass before that callback runs, and the grid assertion alone carries the callback and the render.
+  - An in-page timeline under Chromium CPU throttling (1x to 24x) puts the time in the browser, not the server: the
+    callback answers within 130 ms at every rate, then the browser applies its output and fetches and parses AG
+    Grid's own script (`async-community.js`) before the grid mounts; at 24x the answer came 7.1 s after the page
+    opened and the grid mounted at 32.4 s.
+  - Reproduced under load: 32 copies of the real test body on 16 xdist workers beside 48 busy-loop processes ran
+    3:52 and failed 4 of 24 with the same message and the same `data-dash-is-loading`-then-empty call log.
+  **What it looks like when fixed:** the test waits for the AG Grid to mount inside `#distribution-breakdown--grid`
+  with the 15 s its other waits use, then reads the row; under the same load it passes every copy, and a fixture
+  root without the `linux-64` row still fails it with the grid's actual text.
+  **Constraints:**
+  - A `fix` story: no CAP, no FR, no flag (`spec-feature-flag-governance` Q1). Test-only: one test changes, and no
+    skip, `xfail`, retry or rerun is added (AD-11: gates are never weakened); the assertion keeps its row.
+  - It goes into Epic 27, which owns this test (Stories 27.3 and 27.5), and reopens it until it lands.
+  **Kinships:** [[pyforge-steward]] (the pre-push preflight lane that surfaced it). Owner `spec-pyforge-atlas` (CAP-8,
+  the read surface). → Epic 27 / Story 27.6, specced 2026-10-24.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 
