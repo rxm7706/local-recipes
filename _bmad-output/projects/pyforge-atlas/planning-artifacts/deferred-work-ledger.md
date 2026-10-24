@@ -12,7 +12,7 @@ entries: 60
 real deferrals** (the run log's index of "54" double-counted two aliases; see § Provenance).
 Follow-up intake and verification campaigns added more `## DW-` headings without retiring
 that migration set — the frontmatter `entries` field tracks **`## DW-` headings only**, not
-the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**209** `### DW-` headings
+the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**216** `### DW-` headings
 today). Stale narrative prose here is exactly what Story 27.4's counting test guards against.
 
 ## Why this file exists
@@ -5228,3 +5228,37 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-10-24 -- atlas Story 38.1; owned by Story 34.12
   resolved: 2026-10-24 (Story 34.12: CisaKevDataset, EpssFeedDataset and CweCatalogDataset share VulnerabilityFeedDataset, which keeps the last frame that parsed to rows as raw/<entry>/last_good.parquet; a fetch failure, an HTTP error or a body that does not parse serves that copy, or on a fresh root the empty frame, under the AD-13 marker and never raises, so the run goes on)
   status: closed
+
+### DW-atlas-37-12-1: The Pages last-good cache survives between runs only once the repository's Actions cache limit is raised.
+
+- source_spec: `planning-artifacts/specs/spec-37-12-the-pages-data-build-keeps-its-last-good-copies-between-runs.md`
+  summary: Story 37.12's `vizro` job saves the public stores' last-good copies with `actions/cache/save@v6` and restores the newest with `actions/cache/restore@v6`, so an outage on Pages serves the previous copy under its AD-13 marker. The repository's Actions cache is over its 10 GB limit (10,450,545,115 bytes in 29 entries on 2026-10-24, about 9.9 GB of them pixi environments), and GitHub evicts the least recently used entries, so how long an unread entry survives depends on how much the other workflows write: at 15:18Z the oldest entry had last been read at 11:42Z, and at 15:54Z it was still there (about 4 hours unread). Until the limit is raised, the copies survive only between runs a few hours apart, never to the weekly run; a miss is the fresh root of before. Operator ruling 2026-10-24 (option C, "Cache + raise limit"): keep actions/cache, and the operator raises the limit. Only the operator can close this: raise the repository's Actions cache size limit (repository Settings, Actions, cache storage), then confirm on a weekly `vizro` run that the restore step logs `Cache restored from key: pyforge-atlas-last-good-<run_id>-<run_attempt>`.
+  evidence: Story 37.12 review 1, read-only `gh api repos/rxm7706/local-recipes/actions/caches?sort=last_accessed_at&direction=asc` and `gh api repos/rxm7706/local-recipes/actions/cache/usage`, 2026-10-24 15:13Z and 15:18Z.
+  location: the GitHub repository setting for the Actions cache size limit (rxm7706/local-recipes; operator-owned, never changed from a session); `.github/workflows/kedro-viz-publish.yml` (the `vizro` job's restore and save steps)
+  origin: Story 37.12 review 1 (blocker), operator ruling 2026-10-24
+  severity: medium
+  promoted: 2026-10-24 -- atlas Story 37.12; operator-owned (a repository setting)
+  status: open
+
+### DW-atlas-37-12-2: On Pages, the cve-watcher's snapshot history and the TTL row caches still start empty every run.
+
+- source_spec: `planning-artifacts/specs/spec-37-12-the-pages-data-build-keeps-its-last-good-copies-between-runs.md`
+  summary: Story 37.12 persists `data/raw` and `data/stores/*` (the last-good stores) between Pages runs and deliberately no output layer. Two kinds of output-layer dataset also read their own previous copy: `vulnerability_rollup_snapshots` (`primary/`, a `SnapshotHistoryDataset` each run appends to, which the cve-watcher diffs; Story 37.5's residual risk says the board stays empty on Pages "until a store persists across runs") and the `IncrementalParquetDataset` TTL row caches (`intermediate/`, `primary/`). On Pages they still start empty every run, so the cve-watcher board stays empty there. Persisting the snapshot store only helps once cached copies survive a week (two snapshots at least `params:cve_watcher.since_days`, 7, apart), so it waits on DW-atlas-37-12-1; then decide whether a history store joins the cache, and how a stale history is marked.
+  evidence: Story 37.12 review 2 (2026-10-24); `conf/base/catalog.yml` (`vulnerability_rollup_snapshots`, the `# A3: IncrementalParquetDataset` entries); Story 37.5's spec, Residual risk.
+  location: .github/workflows/kedro-viz-publish.yml (the vizro job's cache paths); src/shared/packages/pyforge-atlas/conf/base/catalog.yml (vulnerability_rollup_snapshots)
+  origin: Story 37.12 review 2
+  severity: low
+  promoted: 2026-10-24 -- atlas Story 37.12 review 2
+  resolved: 2026-10-24 (Story 37.12 review 3: the blocking reason was wrong -- `diff_vulnerability_snapshots` falls back to the second-latest snapshot when none is `since_days` old (`pipelines/vulnerability/nodes.py`, `older_ts = older[0] if older else int(stamps[1])`), so two cached snapshots hours apart already give the cve-watcher a pair to diff. The vizro job now caches `data/primary/vulnerability_rollup_snapshots` beside `raw/` and `stores/*` (operator ruling 2026-10-24: "Approve"), so on Pages the cve-watcher has a pair from the second run whose cache survives; a pair with no moved count still renders empty. The IncrementalParquetDataset TTL row caches stay uncached by design: an optimisation, each Pages build recomputes them as before)
+  status: closed
+
+### DW-atlas-37-12-3: On Pages, a run whose vulnerability database build fails republishes the previous cve-watcher diff as current.
+
+- source_spec: `planning-artifacts/specs/spec-37-12-the-pages-data-build-keeps-its-last-good-copies-between-runs.md`
+  summary: Story 37.12 caches the vulnerability snapshot history between Pages runs but never `stores/vdb`, which every run rebuilds. When that build fails, the store is absent, `vulnerability_package_rollup` is empty, and `SnapshotHistoryDataset.save` appends nothing for an empty frame, so `diff_vulnerability_snapshots` diffs the same two snapshots as the run before and writes the same `derived_vuln_history`. The cve-watcher board (`dashboard/data.py::load_cve_watcher`) shows no snapshot date, and its AD-17 stamp is the derived file's fresh mtime, so the old diff reads as current with no marker. On a workstation the vdb store keeps its last-good copy, so the rollup is not empty there. Fix in Story 37.5's nodes (out of Story 37.12's workflow-only boundary): mark the diff stale, or write it empty, when the latest snapshot is not this run's, or carry the latest snapshot's age to the board.
+  evidence: Story 37.12 review 4 (2026-10-24), a probe over the real `SnapshotHistoryDataset` and `diff_vulnerability_snapshots`: with the third run's rollup empty, its diff equalled the second run's and the latest snapshot was 27 hours old.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/vulnerability/nodes.py (snapshot_vulnerability_rollup, diff_vulnerability_snapshots); src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/snapshot_history.py (save skips an empty frame); src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/data.py (load_cve_watcher)
+  origin: Story 37.12 review 4
+  severity: low
+  promoted: 2026-10-24 -- atlas Story 37.12; owner atlas (a fix to Story 37.5's nodes)
+  status: open
