@@ -550,8 +550,8 @@ PROJECTED_PAGES: dict[str, PageDef] = {
             "each archived package on the channel, the top 10 active candidates by keyword, summary-term, "
             "shared-dependent and shared-maintainer overlap, weighted by recency and downloads. Archived is the "
             "cf-graph's flag or the GitHub archive query. adoption_stage is the adoption-stage board's classifier; "
-            "both read semantic_packages' upload times (Story 38.1), so a package with none reads unknown and counts "
-            "as fresh.",
+            "both read semantic_packages' upload times (Story 38.1). A package with no known newest build reads "
+            "unknown; one whose newest build is untimed reads silent, as legacy reads it; either counts as fresh.",
             filters=("archived_name",),
         ),
         # Story 37.8 (CAP-69)

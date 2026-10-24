@@ -166,6 +166,21 @@ def test_the_latest_upload_tolerates_a_version_listed_twice() -> None:
     assert out["a"]["latest_conda_upload"] == NOW - 4 * DAY
 
 
+def test_a_version_listed_twice_keeps_its_newest_build_not_two_maxima() -> None:
+    """Review 3: the time comes from the highest build number's row, and a v1 row (null build) is not masked."""
+    uploads = _uploads([("a", "2.0", NOW - 9 * DAY, NOW - 9 * DAY), ("a", "2.0", NOW - DAY, NOW - DAY)])
+    uploads["last_build_number"] = pd.array([1, 0], dtype="Int64")
+    mixed = _uploads([("b", "1.0", NOW - 9 * DAY, NOW - 9 * DAY), ("b", "1.0", NOW - DAY, None)])
+    mixed["last_build_number"] = pd.array([0, None], dtype="Int64")
+
+    out = _rows(
+        project_release_cadence(pd.concat([uploads, mixed]), _enumerated([("a", "2.0"), ("b", "1.0")]), now=NOW)
+    )
+
+    assert (out["a"]["latest_conda_upload"], bool(out["a"]["latest_build_known"])) == (NOW - 9 * DAY, True)
+    assert pd.isna(out["b"]["latest_conda_upload"]) and not bool(out["b"]["latest_build_known"])
+
+
 def test_the_latest_upload_needs_the_latest_version_and_the_last_file_time() -> None:
     uploads = _uploads([("a", "1.0", NOW - DAY, NOW - DAY)])
 

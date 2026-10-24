@@ -41,9 +41,9 @@ PACKAGE_MAINTAINERS_PARQUET = "intermediate/vcs_package_maintainers/vcs_package_
 # (Story 38.1) ``derived_artifacts``' release cadence and cf-graph archived set. The two
 # pipelines read each other's outputs, and ``derived_artifacts`` reads several more, so
 # build them in one DAG with the fetch pipelines: ``pixi run -e pyforge-atlas
-# pyforge-atlas-bootstrap``, or the default pipeline. A package the cadence lacks keeps
-# its upload columns NULL,
-# never fabricated. In a checkout where the pipeline has not yet run, the loader still
+# pyforge-atlas-bootstrap``, or the default pipeline. A package the cadence lacks, or
+# whose newest build it does not know, keeps its upload columns NULL, never fabricated.
+# In a checkout where the pipeline has not yet run, the loader still
 # degrades honestly to an empty result via the same ``_bsl_query_or_empty`` seam
 # every page uses. Closes DW-D2-2.
 PACKAGES_PARQUET = "primary/semantic_packages/semantic_packages.parquet"

@@ -21,8 +21,8 @@ find-alternative's scorer reads `semantic_packages`), and `derived_artifacts` re
 most fetch pipelines, so neither runs alone on a fresh data root. The bootstrap task sums them into
 one DAG with every fetch pipeline (Story 38.1); the default pipeline works too.
 
-Running `core` alone is also what makes `core_feedstock_health` stop being absent in a fresh
-checkout (the gap the 2026-08-26 first `dashboard-serve` visual pass found) — `core` already
-produces that Parquet directly; this pipeline does not touch it. Until these runs happen, the
-dashboard pages that bind to `semantic_packages` degrade honestly to empty (never fabricated),
-via `dashboard/data.py`'s existing `_bsl_query_or_empty` seam.
+The same run's `core` is what makes `core_feedstock_health` stop being absent in a fresh
+checkout (the gap the 2026-08-26 first `dashboard-serve` visual pass found) — `core` produces
+that Parquet directly; this pipeline does not touch it. Until the bootstrap runs, the dashboard
+pages that bind to `semantic_packages` degrade honestly to empty (never fabricated), via
+`dashboard/data.py`'s existing `_bsl_query_or_empty` seam.

@@ -103,12 +103,18 @@ def _newest_build(uploads: pd.DataFrame, enumerated: pd.DataFrame) -> pd.DataFra
             {"latest_conda_upload": pd.Series(dtype="Int64"), "latest_build_known": pd.Series(dtype=bool)}
         )
     latest = enumerated[["conda_name", "latest_version"]].dropna().drop_duplicates("conda_name")
+    keys = ["conda_name", "latest_version"]
     times = (
         uploads[["conda_name", "version", *sorted(needed)]]
         .rename(columns={"version": "latest_version"})
-        # the store is one row per version; a frame with two is still one row per package here
-        .groupby(["conda_name", "latest_version"], as_index=False)
-        .agg(last_upload_unix=("last_upload_unix", "max"), last_build_number=("last_build_number", "max"))
+        # the store is one row per version; a frame with two keeps its newest build, ranked as combine_subdirs ranks
+        # it (the highest build number, then the latest time; a null build, from a v1 copy, last and kept)
+        .assign(
+            _build=lambda f: f["last_build_number"].astype("Int64"),
+            _time=lambda f: f["last_upload_unix"].astype("Int64").fillna(0),
+        )
+        .sort_values([*keys, "_build", "_time"], kind="stable", na_position="last")
+        .drop_duplicates(keys, keep="last")
     )
     joined = latest.merge(times, on=["conda_name", "latest_version"], how="left").set_index("conda_name")
     return pd.DataFrame(

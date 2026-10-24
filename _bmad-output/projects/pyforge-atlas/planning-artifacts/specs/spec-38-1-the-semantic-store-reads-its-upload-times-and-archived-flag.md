@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'version-downloads reads core_version_download_history as before, with a null upload_date'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 2
+review_loop_iteration: 3
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -162,14 +162,16 @@ Type / Effort / Deps: feature / M / Story 37.6.
 ## Run results
 
 2026-10-24, after review 2's fixes:
-- `pixi run -e pyforge-atlas pyforge-atlas-test`: 3,361 passed, 20 skipped; the second run, 103 passed.
+- `pixi run -e pyforge-atlas pyforge-atlas-test`: 3,362 passed, 20 skipped; the second run, 103 passed (after
+  review 3).
 - `pixi run -e pyforge-guild lint-types`: exit 0.
-- Mutation check, 62 mutations in three passes. Every one fails a named test, except one equivalent mutant that a
+- Mutation check, 65 mutations in four passes. Every one fails a named test, except one equivalent mutant that a
   later edit removed: a second pass that nulled a v1-mixed version's newest build, which the sort already does.
   - After review 1, 43: the newest-build ranking within and across subdirs, the build-number bound, the v1 serve, the
     version bump, the cadence, the model clock, the semantic node and pipeline, the two lifecycle nodes, the board path.
   - After review 2, 19: the known newest build, the shape-checked ETag, the combine's sort, find-alternative's clock,
     the bootstrap's one DAG and the workflow step.
+  - After review 3, 3: the cadence's newest-build ranking for a version listed twice.
 
 Real data, 2026-10-24: the v2 upload store fetched live into scratch (446,669 versions, 436,932 with a newest build
 time) over Story 37.2's data root (34,720 enumerated packages) and the cf-graph of Story 37.7's run.
@@ -199,6 +201,9 @@ time) over Story 37.2's data root (34,720 enumerated packages) and the cf-graph 
 - 2026-10-24: review 2 — a newest build of unknown provenance reads unknown, not silent; `semantic_packages` builds in
   the bootstrap's one DAG (the Pages Vizro build was red since Story 37.7); find-alternative's stage on the board's
   clock; a copy of another shape refetched; a v1-mixed version's newest build null.
+- 2026-10-24: review 3 — the package README and the provenance notes follow the bootstrap and the metrics; the
+  cadence ranks a version listed twice as `combine_subdirs` does; the memlogs name `pixi.toml` and the regenerated
+  docs.
 
 ## Review Triage Log
 
@@ -237,3 +242,18 @@ time) over Story 37.2's data root (34,720 enumerated packages) and the cf-graph 
 - Nits: a v1-mixed version's newest build is null (N-a); `_readable` checks the columns, so a copy of another shape is
   refetched rather than kept by a 304 (N-b); `_build_number`'s docstring (N-c); stale "newest file" wording (N-d);
   `build_packages_model`'s expected columns (N-e); the Binding line (N-f).
+
+**Review 3 (independent, 2026-10-24): PASS** — review 2's findings verified fixed; 0 must-fix, 3 should-fix, 6 nits;
+all fixed before landing.
+- S1: the package README still said the bootstrap runs eight pipelines and excludes `semantic_packages`. Fixed: nine,
+  with the reason; the Pages job runs `catalog_index` after the bootstrap. `test_pipeline_inventory.py` pins nine.
+- S2: `tests/unit/semantic/PROVENANCE_NOTES.md` still listed the two metrics' data wiring as deferred. Fixed.
+- S3: the scoped stamps of `spec-pyforge-core` and `spec-pyforge-unifying-strategy` passed for `pixi.toml` only because
+  older memlog entries name it. Fixed: an event on each names the bootstrap task change, and one on
+  `spec-pyforge-doctor` names `docs/how-to/pixi-tasks.md` and `docs/map.yaml`.
+- Nits: find-alternative's note names the unknown and untimed cases, and the catalog and `data.py` comments name the
+  unknown newest build (N1); the cadence keeps a version-listed-twice's newest build by the same sort as
+  `combine_subdirs`, not two maxima (N2); `vizro-static-export --clock` says a local export of data newer than the
+  commit needs `now`, or ages read negative (N3); the epic's Surface line (N4); stale run-order text in a test
+  docstring and the pipeline README (N5); the station suites run in the full preflight, since `pixi.toml` changed
+  (N6).

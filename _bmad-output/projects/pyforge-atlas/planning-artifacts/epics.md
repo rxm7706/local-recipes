@@ -2862,7 +2862,7 @@ So that the adoption-stage, staleness, find-alternative and version-downloads bo
 
 **Type:** feature • **Effort:** M • **Deps:** 37.6 • **FR/AD:** spec-pyforge-atlas CAP-69 (FR-77) • pyforge-atlas:AD-8, AD-13, AD-14
 **Flag:** `pyforge.atlas.board_projections` (the version-downloads path)
-**Surface:** `datasets/repodata_uploads.py` (each version's newest build and its file time), `pipelines/semantic_packages/{nodes,pipeline}.py`, a version-downloads projection in `derived_artifacts`, `semantic/metrics.py` (provenance), `dashboard/{app,data}.py`, the catalog and node timeouts, tests
+**Surface:** `datasets/repodata_uploads.py` (each version's newest build and its file time), `pipelines/derived_artifacts/{release_cadence,alternatives,lifecycle,pipeline}.py`, `pipelines/semantic_packages/{nodes,pipeline}.py`, `semantic/{metrics,models}.py`, `dashboard/{app,data}.py`, the catalog and node timeouts, the `pyforge-atlas-bootstrap` task in `pixi.toml` and the Pages job in `.github/workflows/kedro-viz-publish.yml` (one DAG with `semantic_packages`), docs, tests
 **Spec:** `planning-artifacts/specs/spec-38-1-the-semantic-store-reads-its-upload-times-and-archived-flag.md`
 **Given** `semantic_packages` declares its four upload inputs NULL and marks no feedstock archived on a public run, and version-downloads' `upload_date` is null
 **When** a run has written `core_repodata_uploads_raw`, `core_packages_enumerated`, the cf-graph and the attribution

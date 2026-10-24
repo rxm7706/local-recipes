@@ -381,10 +381,11 @@ def test_upstream_discovery_free_inputs_are_all_produced_by_the_bootstrap_pipeli
     ``pypi_universe`` / ``pypi_conda_mapping`` / ``pypi_intelligence_enriched``
     (pypi_intelligence). Each is a plain ``pandas.ParquetDataset`` with NO AD-13
     missing-file degrade, so a fresh-clone run needs every one of them actually
-    produced by SOME node in the same combined DAG — the exact
-    ``pyforge-atlas-bootstrap`` pixi task's pipeline list (core, pypi_intelligence,
-    vulnerability, vcs_health, upstream_discovery, derived_artifacts, seed_gaps,
-    artifactory_downloads). This pins that completeness so a future edit reverting
+    produced by SOME node in the same combined DAG — the ``pyforge-atlas-bootstrap``
+    pixi task's fetch pipelines (core, pypi_intelligence, vulnerability, vcs_health,
+    upstream_discovery, derived_artifacts, seed_gaps, artifactory_downloads; the task also
+    builds semantic_packages since Story 38.1, which the test below pins). This pins
+    that completeness so a future edit reverting
     the pixi.toml artifactory_downloads addition (or dropping any other producer)
     fails loudly here instead of only at a live, credentialed `kedro run`.
 
