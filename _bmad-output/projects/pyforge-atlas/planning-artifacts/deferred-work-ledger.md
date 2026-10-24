@@ -5223,5 +5223,5 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/vulnerability_feeds.py (CweCatalogDataset, EpssFeedDataset, CisaKevDataset); conf/base/catalog.yml (vulnerability_cwe_catalog_raw)
   origin: Story 38.1 review 2
   severity: medium
-  promoted: 2026-10-24 -- atlas Story 38.1; no owning story yet
+  promoted: 2026-10-24 -- atlas Story 38.1; owned by Story 34.12
   status: open
