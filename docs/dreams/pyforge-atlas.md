@@ -649,6 +649,27 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
     still fails the job.
 
   Owner `spec-pyforge-atlas` (CAP-63, CAP-64, no new CAP). → Epic 37 / Story 37.12, specced 2026-10-24.
+- **2026-10-24 (an earlier run's cve-watcher diff reads as current)** — **Found: on Pages, a run whose vulnerability
+  database build fails publishes the previous run's cve-watcher diff under a fresh stamp.** Story 37.12 keeps the
+  vulnerability snapshot history between Pages runs, but never `stores/vdb`, which every run rebuilds. When that build
+  fails, `vulnerability_package_rollup` is empty, `SnapshotHistoryDataset.save` appends nothing, and
+  `diff_vulnerability_snapshots` diffs the same two snapshots as the run before. The board shows no snapshot date, and
+  its AD-17 stamp is the diff file's mtime, so the old diff reads as current with no marker (DW-atlas-37-12-3, Story
+  37.12 review 4). **What it looks like when fixed:**
+  - a save that appends no snapshot (an empty frame, or a store that cannot be read) leaves the AD-13 staleness marker
+    beside the snapshot store, and the next save that appends one removes it;
+  - the cve-watcher's AD-17 stamp is its latest snapshot's time, not the time the diff file was written; while the
+    store carries the marker, the stamp line says the diff is stale and why;
+  - with no snapshot store, the board reads as a data gap, not as an empty table stamped now;
+  - the bootstrap-index-health board reads the snapshot store's marker as `stale`, as it reads every other store's.
+
+  **Constraints:**
+  - a fix under CAP-69 (the boards no pipeline feeds) and CAP-64 (AD-13 markers), with no new CAP and no flag; the
+    board change stays behind `pyforge.atlas.board_projections`, as Story 37.5's board does;
+  - the diff's rows and columns do not change: an earlier diff keeps its rows, now dated by its own snapshot;
+  - no other board's stamp changes.
+
+  Owner `spec-pyforge-atlas` (CAP-69, CAP-64, no new CAP). → Epic 37 / Story 37.13, specced 2026-10-24.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 
