@@ -37,12 +37,13 @@ PACKAGE_MAINTAINERS_PARQUET = "intermediate/vcs_package_maintainers/vcs_package_
 # (conda_name + latest_status + feedstock_archived + latest_conda_upload +
 # downloads_* + per-version fields) is derived by the named, downstream-only
 # ``semantic_packages`` Kedro pipeline (Story 20.3, CAP-6 / ``query-plane-catalog``
-# ruling) from the sealed ``core`` + ``vcs_health`` pipelines' own catalog outputs —
-# run it (after ``core`` + ``vcs_health``) with ``pyforge atlas run --pipelines
-# semantic_packages`` to materialize this Parquet. ``latest_conda_upload`` / the
-# per-version inputs are themselves ``deferred-input-not-in-migrated-store`` (D1
-# ``metrics.METRIC_PROVENANCE``) — the pipeline node declares them NULL, never
-# fabricated. In a checkout where the pipeline has not yet run, the loader still
+# ruling) from the sealed ``core`` + ``vcs_health`` pipelines' own catalog outputs and
+# (Story 38.1) ``derived_artifacts``' release cadence and cf-graph archived set. The two
+# pipelines read each other's outputs, and ``derived_artifacts`` reads several more, so
+# build them in one DAG with the fetch pipelines: ``pixi run -e pyforge-atlas
+# pyforge-atlas-bootstrap``, or the default pipeline. A package the cadence lacks, or
+# whose newest build it does not know, keeps its upload columns NULL, never fabricated.
+# In a checkout where the pipeline has not yet run, the loader still
 # degrades honestly to an empty result via the same ``_bsl_query_or_empty`` seam
 # every page uses. Closes DW-D2-2.
 PACKAGES_PARQUET = "primary/semantic_packages/semantic_packages.parquet"
@@ -94,6 +95,8 @@ DERIVED_MAPPING_GAP_PARQUET = "derived/derived_mapping_gap/derived_mapping_gap.p
 CATALOG_INDEX_HEALTH_PARQUET = "derived/catalog_index_health/catalog_index_health.parquet"
 # Story 37.8: the six export-purls artifacts' manifest
 DERIVED_PURL_EXPORT_MANIFEST_PARQUET = "derived/derived_purl_export_manifest/derived_purl_export_manifest.parquet"
+# Story 38.1: version-downloads with each version's upload date
+DERIVED_VERSION_DOWNLOADS_PARQUET = "derived/derived_version_downloads/derived_version_downloads.parquet"
 # Story 37.6: the release-cadence counts per package
 DERIVED_RELEASE_CADENCE_PARQUET = "derived/derived_release_cadence/derived_release_cadence.parquet"
 # Story 37.7: the find-alternative candidates for every archived package
@@ -297,13 +300,14 @@ def load_release_cadence(parquet: str | os.PathLike[str] | None = None) -> pd.Da
     )
 
 
-def load_find_alternative(parquet: str | os.PathLike[str] | None = None) -> pd.DataFrame:
-    """`find-alternative` — build_alternative_candidates_model."""
+def load_find_alternative(parquet: str | os.PathLike[str] | None = None, *, now: int | None = None) -> pd.DataFrame:
+    """`find-alternative` — build_alternative_candidates_model, its stage on the board's clock (Story 38.1)."""
     return _bsl_query_or_empty(
         parquet,
         models.build_alternative_candidates_model,
         ["archived_name", "candidate_name", "adoption_stage"],
         ["similarity_score", "downloads_total"],
+        model_kwargs={"now_unix": now},
     )
 
 

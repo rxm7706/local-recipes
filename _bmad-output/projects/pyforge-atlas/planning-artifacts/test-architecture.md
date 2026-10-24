@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: 9537bc3318bf4e8f
-story_count: 139
-test_file_count: 185
+source_fingerprint: 88afc767503d1e00
+story_count: 140
+test_file_count: 186
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 139
-- **Epics parsed:** 37
-- **Test files inventoried:** 185 under `src/shared/packages/pyforge-atlas/tests/`
+- **Stories parsed:** 140
+- **Epics parsed:** 38
+- **Test files inventoried:** 186 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `9537bc3318bf4e8f`
+- **Source fingerprint:** `88afc767503d1e00`
 
 ## Risk Assessment
 
@@ -69,6 +69,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 34: A plain run fills every dataset a public source serves (spec-pyforge-atlas CAP-64, FR-72)
 - Epic 36: Basilisk, the OpenTeams identity sources and the estate source (spec-pyforge-atlas CAP-66..CAP-68, FR-74..FR-76)
 - Epic 37: The Vizro boards read what the pipelines write, on Pages too (spec-pyforge-atlas CAP-63 amended, CAP-69, FR-71, FR-77)
+- Epic 38: The semantic store has its upload times and archived flag (spec-pyforge-atlas CAP-69, FR-77)
 
 ### Low-risk epics
 
@@ -196,6 +197,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/seed_gaps/test_nodes.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/seed_gaps/test_pipeline_shape.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/semantic_packages/test_nodes.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/semantic_packages/test_upload_inputs.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/test_dag_resolves.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/test_refresh_schedule_fixtures.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/test_refresh_single_writer.py` | unit | none observed |
@@ -407,6 +409,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 37.9 | The mapping-gap classifies the unmapped packages | none observed |
 | 37.10 | The bootstrap-index-health reports each catalog entry's freshness | none observed |
 | 37.11 | A board's note reads "Data gap" only where data is missing | none observed |
+| 38.1 | The semantic store reads its upload times and archived flag | none observed |
 
 ## Quality Gates
 

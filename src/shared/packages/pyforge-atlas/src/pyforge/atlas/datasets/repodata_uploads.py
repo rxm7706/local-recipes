@@ -5,7 +5,11 @@ version's files". Operator ruling 2026-10-23: atlas takes it from each subdir's 
 file record carries a ``timestamp``. The bodies are large (linux-64 is 59 MB compressed, about 800,000 files), so each
 is streamed: stdlib ``compression.zstd``, then an incremental JSON decode of one ``packages`` / ``packages.conda``
 record at a time. A subdir is kept as one small aggregate, (``conda_name``, ``version``, ``upload_unix``,
-``file_count``), so no run ever holds a whole repodata document.
+``file_count``, ``last_upload_unix``, ``last_build_number``), so no run ever holds a whole repodata document.
+
+Story 38.1 adds the last two: the build number and file time of a version's newest build, the record legacy Phase B
+picks for ``latest_conda_upload`` (the highest ``build_number``, then the latest ``timestamp``; CFA:1293-1319). A copy
+cached before them (aggregate version 1) is still served, with both null, until a live load fetches it again (AD-13).
 
 As Story 34.4's ``S3DownloadStatsDataset`` does, a subdir is fetched again only when its ETag changes (a conditional
 GET; a 304 keeps the cache), only behind ``pyforge.atlas.live_public_sources``, and a failure keeps the cached copy
@@ -38,7 +42,9 @@ from .refresh import StalenessMarker, _safe_int
 
 logger = logging.getLogger(__name__)
 
-COLUMNS = ["conda_name", "version", "upload_unix", "file_count"]
+COLUMNS = ["conda_name", "version", "upload_unix", "file_count", "last_upload_unix", "last_build_number"]
+#: a subdir copy cached at aggregate version 1, before Story 38.1's two columns
+V1_COLUMNS = COLUMNS[:4]
 #: the two record maps of a repodata document; ``removed`` and ``info`` carry no files
 RECORD_SECTIONS = frozenset({"packages", "packages.conda"})
 #: conda reads a timestamp above this (the last second of year 9999) as milliseconds
@@ -55,7 +61,9 @@ _EXPECTED_ERRORS = (DatasetError, zstd.ZstdError, ValueError, EOFError, OSError,
 # requests' timeout, per connect attempt and per silent gap between reads -- not a total (APIDataset sets none)
 _REQUEST_TIMEOUT = 90
 # bump when aggregate_records' output changes: a manifest of another version re-fetches every subdir
-AGGREGATE_VERSION = 1
+AGGREGATE_VERSION = 2  # 2: Story 38.1's last_upload_unix and last_build_number
+# a build number outside int64 cannot be stored; legacy's `build_number or 0` default stands for it
+_INT64_MIN, _INT64_MAX = -(1 << 63), (1 << 63) - 1
 _WHITESPACE = " \t\r\n"
 _WHITESPACE_RUN = re.compile(r"[ \t\r\n]*")
 
@@ -185,6 +193,14 @@ def _seconds(timestamp: Any) -> int | None:
     return value if value <= _MS_THRESHOLD else None
 
 
+def _build_number(value: Any) -> int:
+    """A record's ``build_number``: 0 when it has none, as legacy's ``build_number or 0`` reads it, and 0 for one that
+    is not an int64 integer (legacy would compare a float as it is; Parquet's Int64 column holds only an integer)."""
+    if isinstance(value, bool) or not isinstance(value, int) or not _INT64_MIN <= value <= _INT64_MAX:
+        return 0
+    return value
+
+
 def _text(value: Any) -> TypeGuard[str]:
     """A non-empty string Parquet can hold: JSON's ``\\ud800`` escape decodes to a lone surrogate, which UTF-8 cannot
     encode, so such a record is skipped rather than failing its subdir's write."""
@@ -198,7 +214,9 @@ def _text(value: Any) -> TypeGuard[str]:
 
 
 def aggregate_records(records: Iterator[tuple[str, Any]]) -> pd.DataFrame:
-    """One row per (``conda_name``, ``version``): the earliest file timestamp in seconds, and the file count."""
+    """One row per (``conda_name``, ``version``): the earliest file timestamp in seconds, the file count, and the
+    newest build's build number and file timestamp (the highest build number, then the latest time; an untimed file
+    ranks below a timed one, and a newest build with no timed file has no time, as legacy Phase B reads it)."""
     seen: dict[tuple[str, str], list[Any]] = {}
     for _, record in records:
         if not isinstance(record, dict):
@@ -208,13 +226,16 @@ def aggregate_records(records: Iterator[tuple[str, Any]]) -> pd.DataFrame:
             continue
         entry = seen.get((name, version))
         if entry is None:
-            entry = seen[(name, version)] = [None, 0]
+            entry = seen[(name, version)] = [None, 0, None, None]
         entry[1] += 1
         ts = _seconds(record.get("timestamp"))
         if ts is not None and (entry[0] is None or ts < entry[0]):
             entry[0] = ts
+        build = _build_number(record.get("build_number"))
+        if entry[3] is None or (build, ts or 0) > (entry[3], entry[2] or 0):
+            entry[2], entry[3] = ts, build
     frame = pd.DataFrame(
-        [(name, version, ts, count) for (name, version), (ts, count) in seen.items()],
+        [(name, version, first, count, last, build) for (name, version), (first, count, last, build) in seen.items()],
         columns=COLUMNS,
     )
     return _typed(frame)
@@ -227,7 +248,16 @@ def aggregate_subdir(body: bytes, *, chunk: int = _CHUNK) -> pd.DataFrame:
 
 
 def _typed(frame: pd.DataFrame) -> pd.DataFrame:
-    return frame.astype({"conda_name": object, "version": object, "upload_unix": "Int64", "file_count": "int64"})
+    return frame.astype(
+        {
+            "conda_name": object,
+            "version": object,
+            "upload_unix": "Int64",
+            "file_count": "int64",
+            "last_upload_unix": "Int64",
+            "last_build_number": "Int64",
+        }
+    )
 
 
 def _parquet_writer(frame: pd.DataFrame) -> Callable[[Path], None]:
@@ -246,28 +276,40 @@ def _reason(exc: BaseException) -> str:
 
 
 def _readable(path: Path) -> bool:
-    """Whether a cached subdir copy exists and its Parquet footer reads."""
+    """Whether a cached subdir copy exists, its Parquet footer reads, and it has this aggregate version's columns.
+    Only then is its ETag sent: a copy of another shape is fetched again, never kept by a 304 and skipped on read."""
     try:
-        pq.read_metadata(path)
+        names = pq.read_schema(path).names
     except Exception:  # noqa: BLE001 -- absent, truncated or not Parquet
         return False
-    return True
+    return names == COLUMNS
 
 
 def combine_subdirs(frames: list[pd.DataFrame]) -> pd.DataFrame:
-    """The subdirs' aggregates as one: a version's earliest upload across subdirs, and all its files."""
+    """The subdirs' aggregates as one: a version's earliest upload across subdirs, all its files, and its newest
+    build across subdirs (the highest build number, then the latest time). A version any served v1 copy holds has no
+    known newest build, so both of its newest-build columns are null."""
     frames = [f for f in frames if not f.empty]
     if not frames:
         return _typed(pd.DataFrame(columns=COLUMNS))
+    keys = ["conda_name", "version"]
     joined = pd.concat(frames, ignore_index=True)
-    out = joined.groupby(["conda_name", "version"], sort=True, as_index=False).agg(
-        upload_unix=("upload_unix", "min"), file_count=("file_count", "sum")
+    out = joined.groupby(keys, sort=True, as_index=False).agg(
+        upload_unix=("upload_unix", "min"),
+        file_count=("file_count", "sum"),
     )
-    return _typed(out[COLUMNS])
+    ranked = joined.assign(
+        _build=joined["last_build_number"].astype("Int64"),
+        _time=joined["last_upload_unix"].astype("Int64").fillna(0),  # an untimed newest file ranks below a timed one
+        # a v1 copy's null build sorts last, so it is kept: its newest build could be any, so the version's is unknown
+    ).sort_values([*keys, "_build", "_time"], kind="stable", na_position="last")
+    newest = ranked.drop_duplicates(keys, keep="last")[[*keys, "last_upload_unix", "last_build_number"]]
+    return _typed(out.merge(newest, on=keys, how="left")[COLUMNS])
 
 
 class RepodataUploadsDataset(AbstractDataset):
-    """conda-forge's full repodata, as one row per package version: its earliest upload and its file count.
+    """conda-forge's full repodata, as one row per package version: its earliest upload, its file count, and its newest
+    build's build number and file time.
 
     ``url`` is the channel base (``CONDA_FORGE_BASE_URL``). With ``filepath``, each subdir's aggregate is cached as
     ``<filepath>/subdirs/<subdir>.parquet`` and ``manifest.json`` holds each cached subdir's ETag under the aggregate
@@ -445,6 +487,8 @@ class RepodataUploadsDataset(AbstractDataset):
                 continue
             try:
                 frame = pd.read_parquet(path)
+                if list(frame.columns) == V1_COLUMNS:  # AD-13: last-good holds across the version bump
+                    frame = frame.assign(last_upload_unix=pd.NA, last_build_number=pd.NA)
                 if list(frame.columns) != COLUMNS:
                     raise ValueError(f"columns {list(frame.columns)}, not {COLUMNS}")
                 frames.append(_typed(frame))

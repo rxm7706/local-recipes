@@ -1087,6 +1087,22 @@ derived_release_cadence:
   metadata:
     layer: derived
 
+# Story 38.1 (CAP-69): every feedstock the cf-graph flags archived, which semantic_packages joins beside
+# vcs_archived_feedstocks (a public run leaves that GitHub query empty).
+derived_graph_archived_feedstocks:
+  type: pandas.ParquetDataset
+  filepath: ${globals:paths.data_root}/derived/derived_graph_archived_feedstocks/derived_graph_archived_feedstocks.parquet
+  metadata:
+    layer: derived
+
+# Story 38.1 (CAP-69): core_version_download_history with each version's upload date, which the
+# version-downloads board reads with pyforge.atlas.board_projections on.
+derived_version_downloads:
+  type: pandas.ParquetDataset
+  filepath: ${globals:paths.data_root}/derived/derived_version_downloads/derived_version_downloads.parquet
+  metadata:
+    layer: derived
+
 # Story 37.8 (CAP-69): each local recipe's conda-forge-expert stamps (status, conda name, upstream registry and
 # name), which export-purls' recipe exceptions read. Read-only; no credential.
 discovery_recipe_extras_raw:
@@ -1523,13 +1539,15 @@ query_plane_estate:
 
 # =============================================================================
 # semantic_packages — composed dashboard-store derivation (Story 20.3, CAP-6;
-# `query-plane-catalog` ruling, 2026-08-26). DOWNSTREAM ONLY of the sealed `core` +
-# `vcs_health` pipelines' own catalog outputs — the opt-in optimization layer: the
-# sealed seven stay sealed (zero diff inside them) and a consumer may still read their
-# canonical datasets directly. `build_packages_model` (semantic/models.py) binds to
-# this Parquet; the 4 metrics.METRIC_PROVENANCE deferred-input columns
-# (latest_conda_upload / latest_upload_age_days / releases_30d / total_versions) are
-# declared NULL by the pipeline node, never fabricated. Closes DW-D2-2.
+# `query-plane-catalog` ruling, 2026-08-26). DOWNSTREAM ONLY of produced catalog
+# outputs: the sealed `core` + `vcs_health` pipelines' own, and (Story 38.1)
+# derived_artifacts' derived_release_cadence and derived_graph_archived_feedstocks — the
+# opt-in optimization layer: the sealed seven stay sealed (zero diff inside them) and a
+# consumer may still read their canonical datasets directly. `build_packages_model`
+# (semantic/models.py) binds to this Parquet; the upload columns (latest_conda_upload /
+# latest_upload_age_days / releases_30d / total_versions) are NULL for a package the
+# release cadence lacks or whose newest build it does not know, never fabricated.
+# Closes DW-D2-2.
 # =============================================================================
 
 semantic_packages:

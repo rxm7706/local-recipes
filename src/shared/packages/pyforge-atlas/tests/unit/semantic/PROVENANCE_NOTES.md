@@ -20,8 +20,8 @@ the two fails the gate.
 
 | Metric | Legacy source | Provenance | Data wiring |
 |---|---|---|---|
-| `staleness_age_days` | `staleness_report.py` age_days | legacy-formula | deferred (latest_conda_upload not yet migrated) |
-| `adoption_stage` | `adoption_stage.py::_classify` | legacy-formula (verbatim) | deferred (per-version upload times not migrated) |
+| `staleness_age_days` | `staleness_report.py` age_days | legacy-formula | migrated-column (`semantic_packages.latest_conda_upload`, Story 38.1) |
+| `adoption_stage` | `adoption_stage.py::_classify` | legacy-formula (verbatim) | migrated-column (`semantic_packages`' upload columns, Story 38.1) |
 | `is_actionable` | `v_actionable_packages` view DDL | legacy-formula | migrated-column |
 | `downloads_total` | `compute_downloads` | legacy-formula | migrated-column (`core_downloads`) |
 | `downloads_30d` | `compute_downloads` (latest month) | legacy-formula | migrated-column (`core_downloads`) |
@@ -54,9 +54,6 @@ the two fails the gate.
   (`feedstock_bad = 1`) — their Phase M columns reach `core_feedstock_health` since Story 34.3;
   the filters stay undeclared until D2's recapture. Documented in
   `metrics.DEFERRED_FEEDSTOCK_HEALTH_FILTERS`.
-- **Data wiring** for `staleness_age_days` / `adoption_stage` — the FORMULA + its legacy
-  anchor land in D1; the live catalog column (`latest_conda_upload`, per-version upload
-  times) is wired when D2 ports the pages.
 - **The full 28-CLI metric surface** — D1 lands the CORE set the AC names + the framework
   + the gate. D2 ports each page and completes the remaining metrics through this same
   interface.

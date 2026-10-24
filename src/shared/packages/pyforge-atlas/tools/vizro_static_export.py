@@ -52,7 +52,8 @@ def _build_parser() -> argparse.ArgumentParser:
         choices=("commit", "now"),
         default="commit",
         help="what exported_at is: the export commit's committer time (default; one commit's export is "
-        "byte-identical) or now (Story 37.2: the weekly build, whose data is newer than its commit)",
+        "byte-identical) or now (Story 37.2: the weekly build, whose data is newer than its commit; a local export "
+        "of data built after the commit needs it too, or the upload ages read negative)",
     )
     return parser
 

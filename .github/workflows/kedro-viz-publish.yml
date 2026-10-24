@@ -186,8 +186,10 @@ jobs:
       # Story 37.2 (CAP-63 amended 2026-10-19, operator ruling "Public-only Pages"): the boards are
       # built from a fresh public atlas run on this runner, never from anyone's local data.
       # `pyforge-atlas-bootstrap` writes the empty credentials stub (tools/bootstrap.py's
-      # CREDENTIAL_KEYS) and the store directories, then runs the eight fetch pipelines;
-      # `semantic_packages` composes the package boards' table. The data root is the member's
+      # CREDENTIAL_KEYS) and the store directories, then runs the eight fetch pipelines and
+      # `semantic_packages`, which composes the package boards' table, in one DAG (Story 38.1: it and
+      # derived_artifacts read each other's outputs, so a separate step left find-alternative's scorer
+      # with nothing to read on this fresh runner). The data root is the member's
       # `data/`, which the export reads (Story 37.1). No secret reaches this job and
       # PYFORGE_ATLAS_CREDENTIALED is never set (AD-11), so every credentialed or enterprise source
       # stays empty; the identity boards show what public inputs give them (the purl associator and the
@@ -207,7 +209,6 @@ jobs:
         if: ${{ steps.vizro_flag.outputs.enabled == 'true' }}
         run: |
           pixi run --frozen -e pyforge-atlas pyforge-atlas-bootstrap
-          pixi run --frozen -e pyforge-atlas pyforge atlas run --pipelines semantic_packages
           # Story 37.10: catalog_index reports what the build wrote (the bootstrap-index-health
           # board), so it runs alone, last
           pixi run --frozen -e pyforge-atlas pyforge atlas run --pipelines catalog_index

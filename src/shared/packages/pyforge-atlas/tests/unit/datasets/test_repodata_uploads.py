@@ -75,6 +75,14 @@ def _rows(frame: pd.DataFrame) -> dict[tuple[str, str], tuple[Any, int]]:
     }
 
 
+def _last(frame: pd.DataFrame) -> dict[tuple[str, str], Any]:
+    """Story 38.1: each version's newest build's file time."""
+    return {
+        (n, v): None if pd.isna(t) else int(t)
+        for n, v, t in frame[["conda_name", "version", "last_upload_unix"]].itertuples(index=False)
+    }
+
+
 # --------------------------------------------------------------------------- #
 # the stream parse
 # --------------------------------------------------------------------------- #
@@ -89,6 +97,65 @@ def test_every_record_of_both_sections_is_read_and_aggregated() -> None:
         ("b", "2.0"): (None, 1),  # counted, untimed
     }
     assert list(out.columns) == RU.COLUMNS and str(out["upload_unix"].dtype) == "Int64"
+
+
+def test_each_version_keeps_its_newest_builds_time() -> None:
+    """Story 38.1: legacy Phase B's latest_conda_upload is a version's newest build's time, not its first file's (one
+    build number here, so the latest file)."""
+    out = RU.aggregate_subdir(NOARCH)
+
+    assert _last(out) == {("a", "1.0"): T0 + 5 * DAY, ("a", "2.0"): T0 + 9 * DAY, ("b", "2.0"): None}
+    assert str(out["last_upload_unix"].dtype) == "Int64"
+
+
+def test_the_newest_build_is_the_highest_build_number_then_the_latest_time() -> None:
+    """Story 38.1 review: legacy Phase B picks the record with the highest (build_number, timestamp), not the newest
+    file -- a late rebuild of build 0 on another subdir is not the newest build."""
+    records = [
+        ("p-2.0-1.conda", _record("p", "2.0", T0 + DAY, build_number=1)),
+        ("p-2.0-0.conda", _record("p", "2.0", T0 + 3 * DAY, build_number=0)),
+        ("q-1-2.conda", _record("q", "1", None, build_number=2)),  # the newest build, untimed
+        ("q-1-1.conda", _record("q", "1", T0, build_number=1)),
+        ("r-1-a.conda", _record("r", "1", T0 + DAY, build_number="9")),  # not an int: 0
+        ("r-1-b.conda", _record("r", "1", T0, build_number=True)),  # a bool: 0
+        ("r-1-c.conda", _record("r", "1", T0 + 2 * DAY, build_number=10**30)),  # past int64: 0
+        ("s-1-0.conda", _record("s", "1", T0 + DAY, build_number=0)),
+        ("s-1-u.conda", _record("s", "1", None, build_number=0)),  # untimed ranks below timed
+    ]
+
+    out = RU.aggregate_records(iter(records))
+
+    assert _last(out) == {("p", "2.0"): T0 + DAY, ("q", "1"): None, ("r", "1"): T0 + 2 * DAY, ("s", "1"): T0 + DAY}
+    builds = dict(zip(zip(out["conda_name"], out["version"], strict=True), out["last_build_number"], strict=True))
+    assert builds == {("p", "2.0"): 1, ("q", "1"): 2, ("r", "1"): 0, ("s", "1"): 0}
+
+
+def test_the_subdirs_combine_to_the_newest_build() -> None:
+    linux = RU.aggregate_records(iter([("p-2.0-1.conda", _record("p", "2.0", T0 + DAY, build_number=1))]))
+    osx = RU.aggregate_records(iter([("p-2.0-0.conda", _record("p", "2.0", T0 + 3 * DAY, build_number=0))]))
+    v1 = pd.DataFrame({"conda_name": ["p"], "version": ["2.0"], "upload_unix": [T0 + 5 * DAY], "file_count": [1]})
+    v1 = v1.assign(last_upload_unix=pd.NA, last_build_number=pd.NA)  # a served v1 copy
+
+    for frames in ([linux, osx], [osx, linux]):
+        out = RU.combine_subdirs(frames)
+        assert _last(out) == {("p", "2.0"): T0 + DAY}
+        assert int(out["last_build_number"].iloc[0]) == 1 and int(out["file_count"].iloc[0]) == 2
+    # one build number in two subdirs, untimed in one: the timed file is the newest, as legacy ranks `timestamp or 0`
+    untimed = RU.aggregate_records(iter([("p-2.0-1.tar.bz2", _record("p", "2.0", None, build_number=1))]))
+    for frames in ([untimed, linux], [linux, untimed]):
+        assert _last(RU.combine_subdirs(frames)) == {("p", "2.0"): T0 + DAY}
+    # review 2: the v1 copy's newest build is unknown, and it could be the newest, so the version's is unknown
+    for frames in ([v1, osx, linux], [linux, v1]):
+        out = RU.combine_subdirs(frames)
+        assert _last(out) == {("p", "2.0"): None} and pd.isna(out["last_build_number"].iloc[0])
+        assert (int(out["upload_unix"].iloc[0]), int(out["file_count"].iloc[0])) == (T0 + DAY, len(frames))
+
+
+def test_an_unholdable_timestamp_is_never_the_newest() -> None:
+    records = [("x-0.conda", _record("x", "1", T0)), ("x-1.conda", _record("x", "1", float("inf")))]
+    records += [("x-2.conda", _record("x", "1", 10**22)), ("x-3.conda", _record("x", "1", T0 + DAY))]
+
+    assert _last(RU.aggregate_records(iter(records))) == {("x", "1"): T0 + DAY}
 
 
 @pytest.mark.parametrize("chunk", [1, 2, 3, 5, 7, 64, 1 << 20])
@@ -205,6 +272,13 @@ def test_the_subdirs_combine_to_the_earliest_upload_and_every_file() -> None:
         ("a", "2.0"): (T0 + 9 * DAY, 1),
         ("b", "2.0"): (None, 2),
         ("c", "0.1"): (None, 1),
+    }
+    # Story 38.1: the newest build across subdirs (one build number: noarch's a-1.0 at +5 days beats linux-64's +1)
+    assert _last(out) == {
+        ("a", "1.0"): T0 + 5 * DAY,
+        ("a", "2.0"): T0 + 9 * DAY,
+        ("b", "2.0"): None,
+        ("c", "0.1"): None,
     }
 
 
@@ -522,6 +596,23 @@ def test_a_body_that_decompresses_past_the_cap_stops(monkeypatch: pytest.MonkeyP
 
 
 @pytest.mark.usefixtures("live")
+def test_a_copy_of_another_shape_is_fetched_without_its_etag(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Review 2: a copy whose columns are not this version's (here one written before last_build_number) never sends
+    its ETag, so a 304 cannot keep a copy every read then skips."""
+    server = _Server({"noarch": NOARCH, "linux-64": LINUX}, {"noarch": '"n1"', "linux-64": '"l1"'})
+    ds = _dataset(tmp_path, server, monkeypatch)
+    ds.load()
+    copy = tmp_path / "store" / "subdirs" / "noarch.parquet"
+    pd.read_parquet(copy).drop(columns="last_build_number").to_parquet(copy, index=False)
+    server.calls.clear()
+
+    out = ds.load()
+
+    assert server.calls == [("noarch", None), ("linux-64", '"l1"')]
+    assert _last(out)[("a", "2.0")] == T0 + 9 * DAY
+
+
+@pytest.mark.usefixtures("live")
 def test_a_lost_subdir_copy_is_fetched_without_its_etag(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """An ETag with no copy behind it would 304 forever and drop the subdir silently."""
     server = _Server({"noarch": NOARCH, "linux-64": LINUX}, {"noarch": '"n1"', "linux-64": '"l1"'})
@@ -537,12 +628,17 @@ def test_a_lost_subdir_copy_is_fetched_without_its_etag(tmp_path: Path, monkeypa
 
 
 @pytest.mark.usefixtures("live")
-def test_a_manifest_of_another_aggregate_version_fetches_again(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize("version", [1, "next"], ids=["before-last-upload", "a-later-one"])
+def test_a_manifest_of_another_aggregate_version_fetches_again(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, version: Any
+) -> None:
+    """Version 1 is the store before Story 38.1's last_upload_unix; its ETags never stand for a version-2 copy."""
     server = _Server({"noarch": NOARCH, "linux-64": LINUX}, {"noarch": '"n1"', "linux-64": '"l1"'})
     ds = _dataset(tmp_path, server, monkeypatch)
     ds.load()
     manifest = tmp_path / "store" / "manifest.json"
-    manifest.write_text(json.dumps({"aggregate_version": RU.AGGREGATE_VERSION + 1, "subdirs": {"noarch": '"n1"'}}))
+    stale = RU.AGGREGATE_VERSION + 1 if version == "next" else version
+    manifest.write_text(json.dumps({"aggregate_version": stale, "subdirs": {"noarch": '"n1"'}}))
     server.calls.clear()
 
     ds.load()
@@ -563,6 +659,23 @@ def test_with_the_flag_off_the_cache_is_served_and_nothing_fetched(
     out = ds.load()
 
     assert server.calls == [] and not ds.refreshed and _rows(out)[("a", "1.0")] == (T0 + DAY, 3)
+
+
+def test_a_copy_cached_before_the_version_bump_is_still_served(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """AD-13: a subdir copy written at aggregate version 1 (Story 37.6's four columns) is served with no newest-build
+    time until a live load fetches it again."""
+    server = _Server({"noarch": NOARCH, "linux-64": LINUX}, {"noarch": '"n1"', "linux-64": '"l1"'})
+    ds = _dataset(tmp_path, server, monkeypatch)
+    monkeypatch.setattr(public_sources, "live", lambda: True)
+    ds.load()
+    v1 = pd.DataFrame({"conda_name": ["z"], "version": ["9"], "upload_unix": pd.array([T0], dtype="Int64")})
+    v1.assign(file_count=1).to_parquet(tmp_path / "store" / "subdirs" / "noarch.parquet", index=False)
+    monkeypatch.setattr(public_sources, "live", lambda: False)
+
+    out = ds.load()
+
+    assert _rows(out)[("z", "9")] == (T0, 1) and _last(out)[("z", "9")] is None
+    assert list(out.columns) == RU.COLUMNS and str(out["last_build_number"].dtype) == "Int64"
 
 
 # --------------------------------------------------------------------------- #

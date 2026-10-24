@@ -23,6 +23,7 @@ from pyforge.atlas import provenance
 from pyforge.atlas.dashboard import app, data, static_export
 from pyforge.atlas.pipelines.catalog_index.nodes import report_catalog_index_health
 from pyforge.atlas.pipelines.derived_artifacts.alternatives import score_alternative_candidates
+from pyforge.atlas.pipelines.derived_artifacts.lifecycle import project_version_downloads
 from pyforge.atlas.pipelines.derived_artifacts.nodes import (
     BEHIND_UPSTREAM_COLUMNS,
     LIVE_CATALOG_COVERAGE_FIELDS,
@@ -51,6 +52,7 @@ PROJECTED = (
     "export-purls",
     "find-alternative",
     "release-cadence",
+    "version-downloads",
 )
 NOW = 1_700_000_000
 STAMP = "2026-10-22T00:00:00Z"
@@ -427,6 +429,14 @@ def _data_root(tmp_path: Path) -> Path:
             now=NOW,
         ),
     )
+    # Story 38.1: one version's downloads with its upload date
+    _write(
+        root / data.DERIVED_VERSION_DOWNLOADS_PARQUET,
+        project_version_downloads(
+            pd.DataFrame({"conda_name": ["a"], "version": ["1.0"], "downloads": [5]}),
+            pd.DataFrame({"conda_name": ["a"], "version": ["1.0"], "upload_unix": [NOW - 86_400]}),
+        ),
+    )
     # Story 37.6: one package with a version uploaded ten days before NOW
     _write(
         root / data.DERIVED_RELEASE_CADENCE_PARQUET,
@@ -477,9 +487,23 @@ def test_with_the_flag_off_the_four_boards_read_as_before(tmp_path: Path) -> Non
         "export-purls",
         "find-alternative",
         "release-cadence",
+        "version-downloads",
     ):
         frame = _frame(page_id)
-        assert frame is not None and frame.empty, page_id  # the earlier paths, which nothing writes
+        assert frame is not None and frame.empty, page_id  # the earlier paths, absent from this fixture
+
+
+def test_with_the_flag_off_version_downloads_reads_the_history_with_no_date(tmp_path: Path) -> None:
+    root = _data_root(tmp_path)
+    _write(
+        root / data.VERSION_DOWNLOADS_PARQUET, pd.DataFrame({"conda_name": ["a"], "version": ["1.0"], "downloads": [7]})
+    )
+
+    app.build_dashboard(build_stamp=STAMP, data_root=root, now=NOW, board_projections=False)
+
+    frame = _frame("version-downloads")
+    assert frame is not None and len(frame) == 1 and int(frame["downloads"].iloc[0]) == 7
+    assert frame["upload_date"].isna().all()
 
 
 def _card_text(dashboard, page_id: str) -> str:
@@ -500,6 +524,7 @@ def test_with_the_flag_on_each_board_is_stamped_from_the_file_it_reads(tmp_path:
         "export-purls": data.DERIVED_PURL_EXPORT_MANIFEST_PARQUET,
         "find-alternative": data.DERIVED_ALTERNATIVE_CANDIDATES_PARQUET,
         "release-cadence": data.DERIVED_RELEASE_CADENCE_PARQUET,
+        "version-downloads": data.DERIVED_VERSION_DOWNLOADS_PARQUET,
     }
     for offset, path in enumerate(reads.values()):  # a distinct mtime per file, so a swapped stamp shows
         stamp = 1_600_000_000 + offset * 86_400
@@ -510,6 +535,24 @@ def test_with_the_flag_on_each_board_is_stamped_from_the_file_it_reads(tmp_path:
     for page_id, path in reads.items():
         expected = provenance.resolve_for_file(root / path).build_stamp
         assert expected and expected in _card_text(dashboard, page_id), page_id
+
+
+def test_find_alternative_classifies_its_candidates_on_the_boards_clock(tmp_path: Path) -> None:
+    """Story 38.1 review 2: a candidate scored at 360 days old reads declining on a board built a week later, as the
+    adoption-stage board reads the same package."""
+    root = _data_root(tmp_path)
+    candidates = pd.read_parquet(root / data.DERIVED_ALTERNATIVE_CANDIDATES_PARQUET).iloc[:1]
+    candidates = candidates.assign(
+        latest_conda_upload=pd.array([NOW - 360 * 86_400], dtype="Int64"),
+        latest_upload_age_days=pd.array([360], dtype="Int64"),
+        releases_30d=pd.array([0], dtype="Int64"),
+        total_versions=pd.array([2], dtype="Int64"),
+    )
+    _write(root / data.DERIVED_ALTERNATIVE_CANDIDATES_PARQUET, candidates)
+
+    app.build_dashboard(build_stamp=STAMP, data_root=root, now=NOW + 7 * 86_400, board_projections=True)
+
+    assert _frame("find-alternative")["adoption_stage"].tolist() == ["declining"]
 
 
 def test_the_dashboard_reads_the_flag_when_not_told(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

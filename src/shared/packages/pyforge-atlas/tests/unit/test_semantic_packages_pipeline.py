@@ -2,9 +2,10 @@
 
 Mirrors the ``test_query_plane_parquet_cache.py`` precedent (Story 34.2, FR-47): proves
 the new pipeline auto-registers, its ``kedro run`` writes the declared catalog Parquet,
-and -- the story-specific honesty proof -- that the composed store lets the BSL metrics
-whose inputs are ``deferred-input-not-in-migrated-store`` (``metrics.METRIC_PROVENANCE``)
-degrade to NULL / "unknown" through the REAL query seam, never crash and never fabricate.
+and -- the story-specific honesty proof -- that a store composed with no upload inputs lets
+the BSL metrics that read them degrade to NULL / "unknown" through the REAL query seam, never
+crash and never fabricate (Story 38.1 wires those inputs; a package the cadence lacks still
+reads this way).
 """
 
 from __future__ import annotations
@@ -47,6 +48,17 @@ def _core_shaped_frames() -> dict[str, pd.DataFrame]:
                 "downloads_30d": pd.array([1, 2, 3], dtype="Int64"),
             }
         ),
+        # Story 38.1: the two produced inputs (derived_artifacts' release cadence and cf-graph archived set)
+        "derived_release_cadence": pd.DataFrame(
+            {
+                "conda_name": ["a"],
+                "latest_conda_upload": pd.array([1_699_000_000], dtype="Int64"),
+                "releases_30d": [1],
+                "total_versions": [4],
+                "latest_build_known": [True],
+            }
+        ),
+        "derived_graph_archived_feedstocks": pd.DataFrame({"feedstock_name": ["alpha"], "archived": [True]}),
     }
 
 
@@ -75,6 +87,15 @@ def test_kedro_run_composes_and_writes_the_parquet(tmp_path: Path) -> None:
     assert out_path.is_file()
     composed = pd.read_parquet(out_path)
     assert sorted(composed["conda_name"]) == ["a", "b", "c"]
+    # Story 38.1: each produced input reaches its own parameter (a swap would empty both)
+    rows = {r["conda_name"]: r for r in composed.to_dict("records")}
+    assert (rows["a"]["latest_conda_upload"], rows["a"]["total_versions"], rows["a"]["releases_30d"]) == (
+        1_699_000_000,
+        4,
+        1,
+    )
+    assert [rows[n]["feedstock_archived"] for n in ("a", "b", "c")] == [1, 1, 1]  # alpha by the graph, beta by GitHub
+    assert pd.isna(rows["b"]["latest_conda_upload"])  # not in the cadence
 
 
 def test_missing_required_upstream_fails_loud_naming_the_dataset(tmp_path: Path) -> None:
@@ -93,9 +114,10 @@ def test_missing_required_upstream_fails_loud_naming_the_dataset(tmp_path: Path)
     assert not (tmp_path / "semantic_packages.parquet").exists()
 
 
-def test_pipeline_reads_only_sealed_seven_output_names_never_a_raw_source() -> None:
-    """DOWNSTREAM ONLY: every declared input is an existing `core`/`vcs_health` catalog
-    OUTPUT name (never a `_raw` source this pipeline would have to fetch itself)."""
+def test_pipeline_reads_only_produced_output_names_never_a_raw_source() -> None:
+    """DOWNSTREAM ONLY: every declared input is an existing produced catalog OUTPUT name --
+    `core`/`vcs_health`'s, and (Story 38.1) `derived_artifacts`' release cadence and cf-graph
+    archived set -- never a `_raw` source this pipeline would have to fetch itself."""
     pipeline = create_pipeline()
     assert pipeline.inputs() == {
         "core_packages_enumerated",
@@ -103,17 +125,19 @@ def test_pipeline_reads_only_sealed_seven_output_names_never_a_raw_source() -> N
         "core_feedstock_attribution",
         "vcs_archived_feedstocks",
         "core_downloads",
+        "derived_release_cadence",
+        "derived_graph_archived_feedstocks",
     }
     assert pipeline.outputs() == {"semantic_packages"}
     assert not any(name.endswith("_raw") for name in pipeline.inputs())
 
 
-def test_composed_store_lets_the_deferred_bsl_metrics_degrade_honestly_not_crash(
+def test_a_store_with_no_upload_inputs_lets_the_bsl_metrics_degrade_honestly_not_crash(
     tmp_path: Path,
 ) -> None:
     """The spec's Block-If honesty constraint, proven END TO END through the real BSL
-    seam: a query over the composed store's ``staleness_age_days`` / ``adoption_stage``
-    (the two metrics whose inputs are ALL `deferred-input-not-in-migrated-store`) must
+    seam: composed with no release cadence, a query over the store's ``staleness_age_days`` /
+    ``adoption_stage`` (the two metrics that read the upload columns) must
     not crash and must degrade to NULL / "unknown" -- while ``is_actionable`` /
     ``downloads_total`` (fed by real joined columns) render the actual data. If the
     node ever dropped a deferred column instead of declaring it NULL, this query would
@@ -139,7 +163,7 @@ def test_composed_store_lets_the_deferred_bsl_metrics_degrade_honestly_not_crash
     ).execute()
 
     assert set(result["conda_name"]) == {"a", "b", "c"}
-    # deferred inputs -> honest NULL / "unknown", never a fabricated value.
+    # no upload inputs -> honest NULL / "unknown", never a fabricated value.
     assert result["staleness_age_days"].isna().all()
     assert (result["adoption_stage"] == "unknown").all()
 

@@ -61,11 +61,11 @@ def build_packages_model(table: Any, *, now_unix: int | None = None) -> Semantic
     clock for live use; the gate pins it).
 
     Expected input columns: ``conda_name``, ``latest_status``, ``feedstock_archived``,
-    ``latest_conda_upload``, ``downloads_total``, ``downloads_30d``,
-    ``latest_upload_age_days``, ``releases_30d``, ``total_versions``. Columns whose
-    legacy source is not yet in the migrated store (``latest_conda_upload`` and the
-    per-version fields) are ``deferred-input-not-in-migrated-store`` in
-    ``metrics.METRIC_PROVENANCE`` — the FORMULA lands in D1, the live column in D2.
+    ``latest_conda_upload``, ``downloads_total``, ``downloads_30d``, ``releases_30d``,
+    ``total_versions``. Story 38.1 fills the upload columns from Story 37.6's per-version
+    upload times; ``adoption_stage`` and ``staleness_age_days`` both read
+    ``latest_conda_upload`` against ``now_unix`` (the store's ``latest_upload_age_days``
+    is the compose-time age, which this model does not read).
     """
     now = int(time.time()) if now_unix is None else now_unix
     return SemanticModel(
@@ -75,7 +75,7 @@ def build_packages_model(table: Any, *, now_unix: int | None = None) -> Semantic
             "conda_name": Dimension(expr=lambda t: t.conda_name),
             "is_actionable": Dimension(expr=metrics.is_actionable),
             "staleness_age_days": Dimension(expr=lambda t: metrics.staleness_age_days(t, now)),
-            "adoption_stage": Dimension(expr=metrics.adoption_stage),
+            "adoption_stage": Dimension(expr=lambda t: metrics.adoption_stage(t, now)),
         },
         measures={
             "package_count": Measure(expr=lambda t: t.conda_name.count()),
@@ -242,8 +242,8 @@ def build_version_downloads_model(table: Any) -> SemanticModel:
         dimensions={
             "conda_name": Dimension(expr=lambda t: t.conda_name),
             "version": Dimension(expr=lambda t: t.version),
-            # Story 37.3: the board reads core_version_download_history, which holds no upload
-            # date; a store that has one (a fixture; DW-atlas-37-6-2 wires Story 37.6's times in) shows it, else null
+            # Story 37.3: core_version_download_history holds no upload date, so it reads null; Story 38.1's
+            # derived_version_downloads, which the board reads with board projections on, carries one
             "upload_date": Dimension(expr=lambda t: t.upload_date if "upload_date" in t.columns else _null(t, "date")),
         },
         measures={
@@ -280,15 +280,16 @@ def build_release_cadence_model(table: Any) -> SemanticModel:
 # ---------------------------------------------------------------------------
 
 
-def _candidate_stage(t: Any) -> Any:
-    """A candidate's stage by ``metrics.adoption_stage`` over its own inputs (Story 37.7); a store in the
-    earlier shape, which carries an ``adoption_stage`` column and no inputs, is read as it was."""
+def _candidate_stage(t: Any, now_unix: int | None = None) -> Any:
+    """A candidate's stage by ``metrics.adoption_stage`` over its own inputs (Story 37.7); with ``now_unix`` and the
+    candidate's ``latest_conda_upload`` (Story 38.1), on the board's clock, as the packages boards read it. A store in
+    the earlier shape, which carries an ``adoption_stage`` column and no inputs, is read as it was."""
     if "latest_upload_age_days" in t.columns:
-        return metrics.adoption_stage(t)
+        return metrics.adoption_stage(t, now_unix if "latest_conda_upload" in t.columns else None)
     return t.adoption_stage
 
 
-def build_alternative_candidates_model(table: Any) -> SemanticModel:
+def build_alternative_candidates_model(table: Any, *, now_unix: int | None = None) -> SemanticModel:
     """`find-alternative` — ranked replacement candidates for an archived package.
 
     ``similarity_score`` is a pre-computed composite (keyword/summary/dependent/
@@ -296,7 +297,8 @@ def build_alternative_candidates_model(table: Any) -> SemanticModel:
     in-memory scorer) — a Phase-E/J pipeline output column, not a BSL-derived formula
     (mirrors ``downloads_total`` being a pre-aggregated measure, not re-summed logic).
     ``adoption_stage`` is the candidate's lifecycle stage by ``metrics.adoption_stage``, the
-    classifier ``build_packages_model`` declares, over the candidate's own inputs (Story 37.7).
+    classifier ``build_packages_model`` declares, over the candidate's own inputs (Story 37.7), against
+    ``now_unix`` when given (Story 38.1), else the age stored at scoring time.
     """
     return SemanticModel(
         table=table,
@@ -304,7 +306,7 @@ def build_alternative_candidates_model(table: Any) -> SemanticModel:
         dimensions={
             "archived_name": Dimension(expr=lambda t: t.archived_name),
             "candidate_name": Dimension(expr=lambda t: t.candidate_name),
-            "adoption_stage": Dimension(expr=_candidate_stage),
+            "adoption_stage": Dimension(expr=lambda t: _candidate_stage(t, now_unix)),
         },
         measures={
             "similarity_score": Measure(expr=lambda t: t.similarity_score.mean()),

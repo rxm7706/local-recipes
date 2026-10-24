@@ -320,6 +320,8 @@ NODE_TIMEOUTS: dict[str, int] = {
     "export_purl_artifacts": 600,  # Story 37.8 — six purl artifacts; reads the cf-graph for recipe URLs
     "score_alternative_candidates": 900,  # Story 37.7 — an inverted-index Jaccard pass per archived package
     "project_release_cadence": 900,  # Story 37.6 — loads seven full repodata.json.zst (~250 MB), streamed
+    "project_graph_archived_feedstocks": 300,  # Story 38.1 — one pass over the cf-graph frame
+    "project_version_downloads": 600,  # Story 38.1 — a join over ~450k version rows and the upload store
     "derive_basilisk_vuln_rollup": 300,  # in-memory rollup of the Basilisk advisories
     "assign_inventory_priority": 120,  # in-memory ranking, no network
     # -- seed_gaps (read-only suggesters) ---------------------------------- #

@@ -1,7 +1,7 @@
 """``semantic_packages`` pipeline node unit tests (Story 20.3, CAP-6).
 
 Pure-pandas join correctness + the honesty constraint the spec's Block-If clause
-names: the 4 ``metrics.METRIC_PROVENANCE`` deferred-input columns must be NULL,
+names: the 4 upload-time input columns must be NULL when no release cadence feeds them,
 never fabricated, in every branch (real data, empty inputs, partial inputs).
 """
 
@@ -10,8 +10,8 @@ from __future__ import annotations
 import pandas as pd
 
 from pyforge.atlas.pipelines.semantic_packages.nodes import (
-    _DEFERRED_INPUT_COLUMNS,
     _OUTPUT_COLUMNS,
+    _UPLOAD_COLUMNS,
     compose_semantic_packages,
 )
 
@@ -68,13 +68,13 @@ def test_composes_the_declared_shape_with_real_joins():
 
     # the 4 deferred-input columns are NULL for every row, regardless of the rest of
     # the frame being populated -- the Block-If honesty constraint.
-    for col in _DEFERRED_INPUT_COLUMNS:
+    for col in _UPLOAD_COLUMNS:
         assert out[col].isna().all(), col
 
 
 def test_never_fabricates_deferred_inputs_even_with_full_upstream_data():
-    """Even when every OTHER upstream input is fully populated, the 4 deferred-input
-    columns stay NULL -- no sealed-seven output carries them, so there is nothing to
+    """Even when every OTHER upstream input is fully populated, the 4 upload-time input
+    columns stay NULL without a release cadence (Story 38.1) -- there is nothing to
     join them from, and the node must not invent a value."""
     core_packages_enumerated = pd.DataFrame({"conda_name": ["a"]})
     core_latest_status = pd.DataFrame({"conda_name": ["a"], "latest_status": ["active"]})
@@ -94,7 +94,7 @@ def test_never_fabricates_deferred_inputs_even_with_full_upstream_data():
         vcs_archived_feedstocks,
         core_downloads,
     )
-    for col in _DEFERRED_INPUT_COLUMNS:
+    for col in _UPLOAD_COLUMNS:
         assert out[col].isna().all(), col
         assert out[col].dtype == "Int64", col
 
@@ -200,5 +200,5 @@ def test_missing_optional_upstream_frames_degrade_not_crash():
     assert (out["feedstock_archived"] == 0).all()
     assert out["downloads_total"].isna().all()
     assert out["downloads_30d"].isna().all()
-    for col in _DEFERRED_INPUT_COLUMNS:
+    for col in _UPLOAD_COLUMNS:
         assert out[col].isna().all(), col

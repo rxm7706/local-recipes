@@ -229,6 +229,30 @@ def test_the_release_cadence_trend_follows_the_legacy_classifier(tmp_path):
     assert dict(zip(out["conda_name"], out["trend_label"], strict=True)) == {"p": "silent", "q": "accelerating"}
 
 
+def test_a_candidates_stage_reads_the_boards_clock(tmp_path):
+    """Review 2: scored when the candidate was 360 days old and read a week later, it reads declining, as the
+    adoption-stage board reads it; without a clock, the age stored at scoring time stands."""
+    now = 1_700_000_000
+    columns = {
+        "archived_name": ["old"],
+        "candidate_name": ["c"],
+        "similarity_score": [1.0],
+        "downloads_total": [1],
+        "latest_conda_upload": [now - 360 * 86_400],
+        "latest_upload_age_days": [360],
+        "releases_30d": [0],
+        "total_versions": [2],
+    }
+    (tmp_path / "later").mkdir()
+    (tmp_path / "stored").mkdir()
+    later = _model(tmp_path / "later", models.build_alternative_candidates_model, columns, now_unix=now + 7 * 86_400)
+    stored = _model(tmp_path / "stored", models.build_alternative_candidates_model, columns)
+
+    query = {"dimensions": ["candidate_name", "adoption_stage"], "measures": ["similarity_score"]}
+    assert bsl_query(later, **query)["adoption_stage"].tolist() == ["declining"]
+    assert bsl_query(stored, **query)["adoption_stage"].tolist() == ["mature"]
+
+
 def test_a_candidates_stage_is_the_adoption_stage_boards(tmp_path):
     """Story 37.7: find-alternative classifies a candidate with build_packages_model's classifier."""
     stage = {
@@ -250,10 +274,19 @@ def test_a_candidates_stage_is_the_adoption_stage_boards(tmp_path):
             **stage,
         },
     )
+    now = 1_700_000_000
+    uploads = [None if age is None else now - age * 86_400 for age in stage["latest_upload_age_days"]]
     packages = _model(
         tmp_path / "p",
         models.build_packages_model,
-        {"conda_name": names, "latest_status": ["active"] * 4, "feedstock_archived": [0] * 4, **stage},
+        {
+            "conda_name": names,
+            "latest_status": ["active"] * 4,
+            "feedstock_archived": [0] * 4,
+            "latest_conda_upload": uploads,  # Story 38.1: the packages model reads the age off this, with its now
+            **stage,
+        },
+        now_unix=now,
     )
 
     out = bsl_query(candidates, dimensions=["candidate_name", "adoption_stage"], measures=["similarity_score"])

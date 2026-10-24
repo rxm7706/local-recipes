@@ -24,6 +24,8 @@ def create_pipeline(**kwargs) -> Pipeline:
                     "core_feedstock_attribution",
                     "vcs_archived_feedstocks",
                     "core_downloads",
+                    "derived_release_cadence",  # Story 38.1: the upload-time inputs
+                    "derived_graph_archived_feedstocks",  # Story 38.1: the cf-graph's archived set
                 ],
                 outputs="semantic_packages",
                 name="compose_semantic_packages",

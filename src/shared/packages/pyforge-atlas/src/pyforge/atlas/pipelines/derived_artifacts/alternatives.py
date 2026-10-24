@@ -27,7 +27,8 @@ MIN_SCORE = 0.10
 WEIGHTS = {"kw": 3, "term": 2, "dep": 4, "maint": 1}
 RECENCY_SPAN_DAYS = 5 * 365
 #: the candidate's adoption-stage inputs, passed through so the board classifies them as build_packages_model does
-STAGE_COLUMNS = ["latest_upload_age_days", "releases_30d", "total_versions"]
+# Story 38.1: latest_conda_upload too, so the board classifies a candidate on its own clock
+STAGE_COLUMNS = ["latest_conda_upload", "latest_upload_age_days", "releases_30d", "total_versions"]
 COLUMNS = [
     "archived_name",
     "candidate_name",
@@ -117,7 +118,7 @@ def score_alternative_candidates(
     """Rank up to ``LIMIT`` alternatives for each archived package on the channel.
 
     The packages are ``semantic_packages`` rows. One is archived when ``semantic_packages.feedstock_archived`` (from
-    ``vcs_archived_feedstocks``) or the cf-graph's ``archived`` flag says so; a candidate is active, unarchived and
+    ``vcs_archived_feedstocks`` or, since Story 38.1, the cf-graph's flag) or the cf-graph's ``archived`` flag says so; a candidate is active, unarchived and
     not the package itself. Summary, keywords, recipe maintainers and the cf-graph flag reach a package only
     through its feedstock attribution, as legacy's Phase E and E.5 do (no first-anchor fallback for an
     unattributed package, and no maintainers from another feedstock that lists the same output); dependents come
