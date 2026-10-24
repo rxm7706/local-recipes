@@ -82,6 +82,14 @@ def test_the_latest_upload_is_the_newest_file_of_the_enumerated_latest_version()
     assert pd.isna(out["c"]["latest_conda_upload"])  # the latest version has no timed file
 
 
+def test_the_latest_upload_tolerates_a_version_listed_twice() -> None:
+    uploads = _uploads([("a", "2.0", NOW - 9 * DAY, NOW - 9 * DAY), ("a", "2.0", NOW - 9 * DAY, NOW - 4 * DAY)])
+
+    out = _rows(project_release_cadence(uploads, _enumerated([("a", "2.0")]), now=NOW))
+
+    assert out["a"]["latest_conda_upload"] == NOW - 4 * DAY
+
+
 def test_the_latest_upload_needs_the_latest_version_and_the_last_file_time() -> None:
     uploads = _uploads([("a", "1.0", NOW - DAY, NOW - DAY)])
 
@@ -164,6 +172,29 @@ def test_the_pipeline_reads_the_two_produced_inputs_and_no_raw_source() -> None:
     assert not any(name.endswith("_raw") for name in inputs)
 
 
+def test_the_stage_and_the_age_read_the_models_clock(tmp_path: Path) -> None:
+    """Story 38.1 review: composed on one day and read a week later, a package 360 days old at compose is 367 days
+    old on the board, so it reads declining there, as legacy computes both from one now."""
+    cadence = pd.DataFrame(
+        {
+            "conda_name": ["a"],
+            "latest_conda_upload": pd.array([NOW - 360 * DAY], dtype="Int64"),
+            "releases_30d": [0],
+            "total_versions": [2],
+        }
+    )
+    composed = _compose(["a"], cadence=cadence)
+    assert int(composed["latest_upload_age_days"].iloc[0]) == 360
+    path = tmp_path / "semantic_packages.parquet"
+    composed.to_parquet(path, index=False)
+
+    model = models.build_packages_model(models.duckdb_table_from_parquet(str(path)), now_unix=NOW + 7 * DAY)
+    row = model.query(dimensions=["conda_name", "adoption_stage", "staleness_age_days"], measures=["package_count"])
+    out = row.execute().iloc[0]
+
+    assert (out["staleness_age_days"], out["adoption_stage"]) == (367, "declining")
+
+
 def test_the_adoption_stage_classifies_the_composed_store(tmp_path: Path) -> None:
     cadence = pd.DataFrame(
         {
@@ -204,27 +235,32 @@ def test_the_adoption_stage_classifies_the_composed_store(tmp_path: Path) -> Non
 def test_the_graph_archived_set_is_every_flagged_feedstock() -> None:
     graph = pd.DataFrame(
         {
-            "feedstock_name": ["old", "old", "live", "none-flag", "nan-flag", "na-flag", None],
-            "conda_name": ["old", "old-dev", "live", "x", "w", "v", "y"],
-            "feedstock_archived": [True, True, False, None, float("nan"), pd.NA, True],
+            "feedstock_name": ["old", "old", "live", "none-flag", "nan-flag", "na-flag", None, "s-false", "s-true"],
+            "conda_name": ["old", "old-dev", "live", "x", "w", "v", "y", "u", "t"],
+            # a string flag reads as core's Phase J reads it: "false" is not archived
+            "feedstock_archived": [True, True, False, None, float("nan"), pd.NA, True, "false", " True "],
         }
     )
 
     out = project_graph_archived_feedstocks(graph)
 
-    assert out.to_dict("records") == [{"feedstock_name": "old", "archived": True}]
+    assert out.to_dict("records") == [
+        {"feedstock_name": "old", "archived": True},
+        {"feedstock_name": "s-true", "archived": True},
+    ]
     assert project_graph_archived_feedstocks(None).empty and project_graph_archived_feedstocks(graph.iloc[:0]).empty
     assert project_graph_archived_feedstocks(graph.drop(columns="feedstock_archived")).empty
 
 
 def test_version_downloads_carry_the_utc_upload_date(tmp_path: Path) -> None:
     history = pd.DataFrame({"conda_name": ["a", "a", "b"], "version": ["1", "2", "1"], "downloads": [10, 20, 5]})
-    uploads = _uploads([("a", "1", 1_700_000_000, 1_700_000_000), ("a", "2", None, None)])  # 2023-11-14 22:13 UTC
+    # 2023-11-15 00:01 UTC: still the 14th west of Greenwich, so a local-date reading fails here
+    uploads = _uploads([("a", "1", 1_700_006_460, 1_700_006_460), ("a", "2", None, None)])
 
     out = project_version_downloads(history, uploads)
 
     dates = {(r["conda_name"], r["version"]): r["upload_date"] for r in out.to_dict("records")}
-    assert dates == {("a", "1"): date(2023, 11, 14), ("a", "2"): None, ("b", "1"): None}
+    assert dates == {("a", "1"): date(2023, 11, 15), ("a", "2"): None, ("b", "1"): None}
     assert out["downloads"].tolist() == [10, 20, 5]
     out.to_parquet(tmp_path / "v.parquet", index=False)  # the date column writes
     model = models.build_version_downloads_model(models.duckdb_table_from_parquet(str(tmp_path / "v.parquet")))
@@ -245,3 +281,11 @@ def test_version_downloads_with_no_upload_store_keep_a_null_date() -> None:
     ]
     assert project_version_downloads(None, None).empty and project_version_downloads(history.iloc[:0], None).empty
     assert project_version_downloads(history.drop(columns="downloads"), None).empty
+
+
+def test_version_downloads_keep_a_null_download_count() -> None:
+    history = pd.DataFrame({"conda_name": ["a", "a"], "version": ["1", "2"], "downloads": pd.array([4, None], "Int64")})
+
+    out = project_version_downloads(history, None)
+
+    assert str(out["downloads"].dtype) == "Int64" and out["downloads"].isna().tolist() == [False, True]

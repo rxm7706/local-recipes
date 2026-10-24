@@ -107,6 +107,40 @@ def test_each_version_keeps_its_newest_file_time() -> None:
     assert str(out["last_upload_unix"].dtype) == "Int64"
 
 
+def test_the_newest_build_is_the_highest_build_number_then_the_latest_time() -> None:
+    """Story 38.1 review: legacy Phase B picks the record with the highest (build_number, timestamp), not the newest
+    file -- a late rebuild of build 0 on another subdir is not the newest build."""
+    records = [
+        ("p-2.0-1.conda", _record("p", "2.0", T0 + DAY, build_number=1)),
+        ("p-2.0-0.conda", _record("p", "2.0", T0 + 3 * DAY, build_number=0)),
+        ("q-1-2.conda", _record("q", "1", None, build_number=2)),  # the newest build, untimed
+        ("q-1-1.conda", _record("q", "1", T0, build_number=1)),
+        ("r-1-a.conda", _record("r", "1", T0 + DAY, build_number="9")),  # not an int: 0
+        ("r-1-b.conda", _record("r", "1", T0, build_number=True)),  # a bool: 0
+        ("r-1-c.conda", _record("r", "1", T0 + 2 * DAY, build_number=10**30)),  # past int64: 0
+        ("s-1-0.conda", _record("s", "1", T0 + DAY, build_number=0)),
+        ("s-1-u.conda", _record("s", "1", None, build_number=0)),  # untimed ranks below timed
+    ]
+
+    out = RU.aggregate_records(iter(records))
+
+    assert _last(out) == {("p", "2.0"): T0 + DAY, ("q", "1"): None, ("r", "1"): T0 + 2 * DAY, ("s", "1"): T0 + DAY}
+    builds = dict(zip(zip(out["conda_name"], out["version"], strict=True), out["last_build_number"], strict=True))
+    assert builds == {("p", "2.0"): 1, ("q", "1"): 2, ("r", "1"): 0, ("s", "1"): 0}
+
+
+def test_the_subdirs_combine_to_the_newest_build() -> None:
+    linux = RU.aggregate_records(iter([("p-2.0-1.conda", _record("p", "2.0", T0 + DAY, build_number=1))]))
+    osx = RU.aggregate_records(iter([("p-2.0-0.conda", _record("p", "2.0", T0 + 3 * DAY, build_number=0))]))
+    v1 = pd.DataFrame({"conda_name": ["p"], "version": ["2.0"], "upload_unix": [T0 + 5 * DAY], "file_count": [1]})
+    v1 = v1.assign(last_upload_unix=pd.NA, last_build_number=pd.NA)  # a served v1 copy ranks lowest
+
+    for frames in ([linux, osx], [osx, linux], [v1, osx, linux]):
+        out = RU.combine_subdirs(frames)
+        assert _last(out) == {("p", "2.0"): T0 + DAY}
+        assert int(out["last_build_number"].iloc[0]) == 1 and int(out["file_count"].iloc[0]) == len(frames)
+
+
 def test_an_unholdable_timestamp_is_never_the_newest() -> None:
     records = [("x-0.conda", _record("x", "1", T0)), ("x-1.conda", _record("x", "1", float("inf")))]
     records += [("x-2.conda", _record("x", "1", 10**22)), ("x-3.conda", _record("x", "1", T0 + DAY))]
@@ -507,12 +541,8 @@ def test_a_marker_that_cannot_be_removed_never_fails_a_load(tmp_path: Path, monk
         pd.DataFrame({"conda_name": ["a"], "version": ["1"]}),  # columns missing
         pd.DataFrame({"conda_name": ["a"], "version": ["1"], "upload_unix": ["soon"], "file_count": [1]}),
         pd.DataFrame({"conda_name": ["a"], "version": ["1"], "upload_unix": [1.5], "file_count": [1]}),
-        # Story 38.1: an aggregate-version-1 copy, written before last_upload_unix
-        pd.DataFrame(
-            {"conda_name": ["a"], "version": ["9"], "upload_unix": pd.array([1], dtype="Int64"), "file_count": [1]}
-        ),
     ],
-    ids=["other-columns", "string-times", "fractional-times", "aggregate-version-1"],
+    ids=["other-columns", "string-times", "fractional-times"],
 )
 def test_a_cached_copy_of_another_shape_is_skipped(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, frame) -> None:
     server = _Server({"noarch": NOARCH, "linux-64": LINUX}, {"noarch": '"n1"', "linux-64": '"l1"'})
@@ -602,6 +632,23 @@ def test_with_the_flag_off_the_cache_is_served_and_nothing_fetched(
     out = ds.load()
 
     assert server.calls == [] and not ds.refreshed and _rows(out)[("a", "1.0")] == (T0 + DAY, 3)
+
+
+def test_a_copy_cached_before_the_version_bump_is_still_served(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """AD-13: a subdir copy written at aggregate version 1 (Story 37.6's four columns) is served with no newest-build
+    time until a live load fetches it again."""
+    server = _Server({"noarch": NOARCH, "linux-64": LINUX}, {"noarch": '"n1"', "linux-64": '"l1"'})
+    ds = _dataset(tmp_path, server, monkeypatch)
+    monkeypatch.setattr(public_sources, "live", lambda: True)
+    ds.load()
+    v1 = pd.DataFrame({"conda_name": ["z"], "version": ["9"], "upload_unix": pd.array([T0], dtype="Int64")})
+    v1.assign(file_count=1).to_parquet(tmp_path / "store" / "subdirs" / "noarch.parquet", index=False)
+    monkeypatch.setattr(public_sources, "live", lambda: False)
+
+    out = ds.load()
+
+    assert _rows(out)[("z", "9")] == (T0, 1) and _last(out)[("z", "9")] is None
+    assert list(out.columns) == RU.COLUMNS and str(out["last_build_number"].dtype) == "Int64"
 
 
 # --------------------------------------------------------------------------- #

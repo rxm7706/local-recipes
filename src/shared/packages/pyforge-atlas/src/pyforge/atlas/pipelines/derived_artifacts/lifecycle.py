@@ -18,7 +18,13 @@ VERSION_DOWNLOADS_COLUMNS = ["conda_name", "version", "downloads", "upload_date"
 
 
 def _flag(value: object) -> bool:
-    return False if value is None or value is pd.NA or (isinstance(value, float) and value != value) else bool(value)
+    """The cf-graph's archived flag as core's Phase J reads it (``_as_bool_series``): the string ``"false"`` is not
+    archived, and a null is not; kept local so the pipelines stay import-independent."""
+    if isinstance(value, bool):
+        return value
+    if value is None or (not isinstance(value, str) and pd.isna(value)):
+        return False
+    return str(value).strip().lower() in ("true", "1", "t", "yes")
 
 
 def project_graph_archived_feedstocks(core_cf_graph_raw: pd.DataFrame) -> pd.DataFrame:
@@ -55,4 +61,4 @@ def project_version_downloads(
 
 
 def _typed_downloads(frame: pd.DataFrame) -> pd.DataFrame:
-    return frame.astype({"conda_name": object, "version": object, "downloads": "int64", "upload_date": object})
+    return frame.astype({"conda_name": object, "version": object, "downloads": "Int64", "upload_date": object})

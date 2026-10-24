@@ -66,7 +66,7 @@ def staleness_age_days(t: Any, now_unix: int) -> Any:
 # ---------------------------------------------------------------------------
 
 
-def adoption_stage(t: Any) -> Any:
+def adoption_stage(t: Any, now_unix: int | None = None) -> Any:
     """Lifecycle stage classifier — faithful port of ``adoption_stage.py::_classify``.
 
     Legacy branch order (preserved EXACTLY, including the ``age = age_days or 99999``
@@ -86,8 +86,12 @@ def adoption_stage(t: Any) -> Any:
     total_versions or 0)``), so a brand-new package with NULL ``total_versions`` reaches
     the ``unknown`` first branch, not ``silent``. ``total_versions``/``releases_30d`` are
     therefore ``fill_null(0)``-coalesced here to keep that fidelity.
+
+    Legacy computes ``age_days`` from ``latest_conda_upload`` with the run's ``now`` (``adoption_stage.py:103``). With
+    ``now_unix`` (Story 38.1) the age is derived the same way, so the stage and ``staleness_age_days`` on one row read
+    one clock; without it, the stored ``latest_upload_age_days`` is read.
     """
-    raw = t.latest_upload_age_days
+    raw = t.latest_upload_age_days if now_unix is None else staleness_age_days(t, now_unix)
     tv = t.total_versions.fill_null(0)  # call-site `total_versions or 0`
     rel = t.releases_30d.fill_null(0)  # call-site `releases_30d or 0`
     # `age_days or 99999`: falsy (NULL or 0) → 99999.
@@ -290,18 +294,19 @@ METRIC_PROVENANCE: dict[str, dict[str, str]] = {
         "legacy_source": "staleness_report.py (query loop age_days)",
         "provenance": "legacy-formula",
         "data_wiring": "migrated-column",
-        "note": "latest_conda_upload is semantic_packages' column (Story 38.1: the newest file of "
-        "the latest version, from the full repodata via derived_release_cadence); the "
-        "(now-ts)//86400 formula is legacy's.",
+        "note": "latest_conda_upload is semantic_packages' column (Story 38.1: the newest build's "
+        "file time of the latest version, from the full repodata via derived_release_cadence); "
+        "the (now-ts)//86400 formula is legacy's.",
     },
     "adoption_stage": {
         "kind": "dimension",
         "legacy_source": "adoption_stage.py::_classify",
         "provenance": "legacy-formula",
         "data_wiring": "migrated-column",
-        "note": "latest_upload_age_days/releases_30d/total_versions are semantic_packages' "
+        "note": "latest_conda_upload/releases_30d/total_versions are semantic_packages' "
         "columns (Story 38.1: per-version upload times from the full repodata via "
-        "derived_release_cadence). Formula ported verbatim + anchored.",
+        "derived_release_cadence); the packages model derives the age from latest_conda_upload "
+        "with its own now, as legacy does. Formula ported verbatim + anchored.",
     },
     "is_actionable": {
         "kind": "dimension",
@@ -309,7 +314,8 @@ METRIC_PROVENANCE: dict[str, dict[str, str]] = {
         "provenance": "legacy-formula",
         "data_wiring": "migrated-column",
         "note": "latest_status from core_latest_status; feedstock_archived joinable "
-        "from vcs_archived_feedstocks. Predicate ported verbatim from the view DDL.",
+        "from vcs_archived_feedstocks or (Story 38.1) the cf-graph's own flag. Predicate "
+        "ported verbatim from the view DDL.",
     },
     "downloads_total": {
         "kind": "measure",

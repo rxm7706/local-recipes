@@ -114,6 +114,11 @@ def test_adoption_stage_matches_legacy_classify(parquet_table):
             "total_versions": pd.array([1, 1, 5, 3, 4, 0, 2, 2, 1, 3, None, 5], dtype="Int64"),
         }
     )
+    # Story 38.1: the model derives the age from latest_conda_upload with its own now, as legacy's call site does
+    # (adoption_stage.py:103); an hour into each day, so the floor is exercised
+    df["latest_conda_upload"] = pd.array(
+        [None if pd.isna(a) else NOW - int(a) * 86400 - 3600 for a in df["latest_upload_age_days"]], dtype="Int64"
+    )
     t = parquet_table(df, "adoption")
     model = models.build_packages_model(t, now_unix=NOW)
     got = _by_key(
@@ -122,8 +127,8 @@ def test_adoption_stage_matches_legacy_classify(parquet_table):
         "adoption_stage",
     )
     for _, r in df.iterrows():
-        age = r["latest_upload_age_days"]
-        age = None if pd.isna(age) else int(age)
+        ts = r["latest_conda_upload"]
+        age = (NOW - int(ts)) // 86400 if not pd.isna(ts) and ts else None  # legacy adoption_stage.py:103
         # mirror the legacy CALL SITE exactly (adoption_stage.py:106): the count args
         # are coalesced `... or 0` BEFORE _classify — so the anchor is faithful, not a
         # copy of the port's own coalescing.

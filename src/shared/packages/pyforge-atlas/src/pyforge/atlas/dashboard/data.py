@@ -37,12 +37,12 @@ PACKAGE_MAINTAINERS_PARQUET = "intermediate/vcs_package_maintainers/vcs_package_
 # (conda_name + latest_status + feedstock_archived + latest_conda_upload +
 # downloads_* + per-version fields) is derived by the named, downstream-only
 # ``semantic_packages`` Kedro pipeline (Story 20.3, CAP-6 / ``query-plane-catalog``
-# ruling) from the sealed ``core`` + ``vcs_health`` pipelines' own catalog outputs —
-# run it (after ``core`` + ``vcs_health``) with ``pyforge atlas run --pipelines
-# semantic_packages`` to materialize this Parquet. ``latest_conda_upload`` / the
-# per-version inputs are themselves ``deferred-input-not-in-migrated-store`` (D1
-# ``metrics.METRIC_PROVENANCE``) — the pipeline node declares them NULL, never
-# fabricated. In a checkout where the pipeline has not yet run, the loader still
+# ruling) from the sealed ``core`` + ``vcs_health`` pipelines' own catalog outputs and
+# (Story 38.1) ``derived_artifacts``' release cadence and cf-graph archived set. The two
+# pipelines read each other's outputs, so run them together (after ``core`` +
+# ``vcs_health``): ``pyforge atlas run --pipelines derived_artifacts,semantic_packages``,
+# or the default pipeline. A package the cadence lacks keeps its upload columns NULL,
+# never fabricated. In a checkout where the pipeline has not yet run, the loader still
 # degrades honestly to an empty result via the same ``_bsl_query_or_empty`` seam
 # every page uses. Closes DW-D2-2.
 PACKAGES_PARQUET = "primary/semantic_packages/semantic_packages.parquet"

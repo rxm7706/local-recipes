@@ -62,10 +62,9 @@ def build_packages_model(table: Any, *, now_unix: int | None = None) -> Semantic
 
     Expected input columns: ``conda_name``, ``latest_status``, ``feedstock_archived``,
     ``latest_conda_upload``, ``downloads_total``, ``downloads_30d``,
-    ``latest_upload_age_days``, ``releases_30d``, ``total_versions``. Columns whose
-    legacy source is not yet in the migrated store (``latest_conda_upload`` and the
-    per-version fields) are ``deferred-input-not-in-migrated-store`` in
-    ``metrics.METRIC_PROVENANCE`` — the FORMULA lands in D1, the live column in D2.
+    ``latest_upload_age_days``, ``releases_30d``, ``total_versions``. Story 38.1 fills
+    the upload columns from Story 37.6's per-version upload times; ``adoption_stage``
+    and ``staleness_age_days`` both read ``latest_conda_upload`` against ``now_unix``.
     """
     now = int(time.time()) if now_unix is None else now_unix
     return SemanticModel(
@@ -75,7 +74,7 @@ def build_packages_model(table: Any, *, now_unix: int | None = None) -> Semantic
             "conda_name": Dimension(expr=lambda t: t.conda_name),
             "is_actionable": Dimension(expr=metrics.is_actionable),
             "staleness_age_days": Dimension(expr=lambda t: metrics.staleness_age_days(t, now)),
-            "adoption_stage": Dimension(expr=metrics.adoption_stage),
+            "adoption_stage": Dimension(expr=lambda t: metrics.adoption_stage(t, now)),
         },
         measures={
             "package_count": Measure(expr=lambda t: t.conda_name.count()),
@@ -242,8 +241,8 @@ def build_version_downloads_model(table: Any) -> SemanticModel:
         dimensions={
             "conda_name": Dimension(expr=lambda t: t.conda_name),
             "version": Dimension(expr=lambda t: t.version),
-            # Story 37.3: the board reads core_version_download_history, which holds no upload
-            # date; a store that has one (a fixture; DW-atlas-37-6-2 wires Story 37.6's times in) shows it, else null
+            # Story 37.3: core_version_download_history holds no upload date, so it reads null; Story 38.1's
+            # derived_version_downloads, which the board reads with board projections on, carries one
             "upload_date": Dimension(expr=lambda t: t.upload_date if "upload_date" in t.columns else _null(t, "date")),
         },
         measures={

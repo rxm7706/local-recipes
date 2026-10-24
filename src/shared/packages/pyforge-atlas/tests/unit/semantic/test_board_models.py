@@ -250,10 +250,19 @@ def test_a_candidates_stage_is_the_adoption_stage_boards(tmp_path):
             **stage,
         },
     )
+    now = 1_700_000_000
+    uploads = [None if age is None else now - age * 86_400 for age in stage["latest_upload_age_days"]]
     packages = _model(
         tmp_path / "p",
         models.build_packages_model,
-        {"conda_name": names, "latest_status": ["active"] * 4, "feedstock_archived": [0] * 4, **stage},
+        {
+            "conda_name": names,
+            "latest_status": ["active"] * 4,
+            "feedstock_archived": [0] * 4,
+            "latest_conda_upload": uploads,  # Story 38.1: the packages model reads the age off this, with its now
+            **stage,
+        },
+        now_unix=now,
     )
 
     out = bsl_query(candidates, dimensions=["candidate_name", "adoption_stage"], measures=["similarity_score"])

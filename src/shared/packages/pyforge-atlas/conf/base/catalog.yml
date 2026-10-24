@@ -1539,13 +1539,14 @@ query_plane_estate:
 
 # =============================================================================
 # semantic_packages — composed dashboard-store derivation (Story 20.3, CAP-6;
-# `query-plane-catalog` ruling, 2026-08-26). DOWNSTREAM ONLY of the sealed `core` +
-# `vcs_health` pipelines' own catalog outputs — the opt-in optimization layer: the
-# sealed seven stay sealed (zero diff inside them) and a consumer may still read their
-# canonical datasets directly. `build_packages_model` (semantic/models.py) binds to
-# this Parquet; the 4 metrics.METRIC_PROVENANCE deferred-input columns
-# (latest_conda_upload / latest_upload_age_days / releases_30d / total_versions) are
-# declared NULL by the pipeline node, never fabricated. Closes DW-D2-2.
+# `query-plane-catalog` ruling, 2026-08-26). DOWNSTREAM ONLY of produced catalog
+# outputs: the sealed `core` + `vcs_health` pipelines' own, and (Story 38.1)
+# derived_artifacts' derived_release_cadence and derived_graph_archived_feedstocks — the
+# opt-in optimization layer: the sealed seven stay sealed (zero diff inside them) and a
+# consumer may still read their canonical datasets directly. `build_packages_model`
+# (semantic/models.py) binds to this Parquet; the upload columns (latest_conda_upload /
+# latest_upload_age_days / releases_30d / total_versions) are NULL for a package the
+# release cadence lacks, never fabricated. Closes DW-D2-2.
 # =============================================================================
 
 semantic_packages:

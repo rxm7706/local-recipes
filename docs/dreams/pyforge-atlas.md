@@ -591,8 +591,8 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   none of the 828 packages attributed to an archived feedstock (DW-atlas-37-7-2). Version-downloads' `upload_date` is
   null too. Story 37.6 now streams every version's upload times out of the full repodata, and the cf-graph carries the
   archived flag. **What it looks like when fixed:**
-  - `semantic_packages` fills the four columns as legacy does: the latest version's newest file, its age, the
-    versions released in 30 days, and the version count;
+  - `semantic_packages` fills the four columns as legacy does: the upload time of the latest version's newest build,
+    its age, the versions released in 30 days, and the version count;
   - `feedstock_archived` adds the cf-graph flag through attribution;
   - version-downloads shows each version's upload date.
 

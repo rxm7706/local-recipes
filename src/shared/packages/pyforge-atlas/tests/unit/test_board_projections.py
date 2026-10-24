@@ -490,7 +490,20 @@ def test_with_the_flag_off_the_four_boards_read_as_before(tmp_path: Path) -> Non
         "version-downloads",
     ):
         frame = _frame(page_id)
-        assert frame is not None and frame.empty, page_id  # the earlier paths, which nothing writes
+        assert frame is not None and frame.empty, page_id  # the earlier paths, absent from this fixture
+
+
+def test_with_the_flag_off_version_downloads_reads_the_history_with_no_date(tmp_path: Path) -> None:
+    root = _data_root(tmp_path)
+    _write(
+        root / data.VERSION_DOWNLOADS_PARQUET, pd.DataFrame({"conda_name": ["a"], "version": ["1.0"], "downloads": [7]})
+    )
+
+    app.build_dashboard(build_stamp=STAMP, data_root=root, now=NOW, board_projections=False)
+
+    frame = _frame("version-downloads")
+    assert frame is not None and len(frame) == 1 and int(frame["downloads"].iloc[0]) == 7
+    assert frame["upload_date"].isna().all()
 
 
 def _card_text(dashboard, page_id: str) -> str:

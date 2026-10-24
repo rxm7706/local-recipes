@@ -117,7 +117,7 @@ def score_alternative_candidates(
     """Rank up to ``LIMIT`` alternatives for each archived package on the channel.
 
     The packages are ``semantic_packages`` rows. One is archived when ``semantic_packages.feedstock_archived`` (from
-    ``vcs_archived_feedstocks``) or the cf-graph's ``archived`` flag says so; a candidate is active, unarchived and
+    ``vcs_archived_feedstocks`` or, since Story 38.1, the cf-graph's flag) or the cf-graph's ``archived`` flag says so; a candidate is active, unarchived and
     not the package itself. Summary, keywords, recipe maintainers and the cf-graph flag reach a package only
     through its feedstock attribution, as legacy's Phase E and E.5 do (no first-anchor fallback for an
     unattributed package, and no maintainers from another feedstock that lists the same output); dependents come

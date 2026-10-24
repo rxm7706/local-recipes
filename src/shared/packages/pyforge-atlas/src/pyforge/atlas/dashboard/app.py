@@ -136,9 +136,9 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "staleness-report",
         "bsl-shell",
         note="Wired to build_packages_model.staleness_age_days over the composed "
-        "semantic_packages store (`pyforge atlas run --pipelines semantic_packages`). "
-        "latest_conda_upload is declared NULL by that pipeline's node — it has no "
-        "migrated input — so the staleness age is null wherever that is the only source.",
+        "semantic_packages store (`pyforge atlas run --pipelines derived_artifacts,semantic_packages`, after core and vcs_health). "
+        "latest_conda_upload is the newest build's upload time of the package's latest version (Story 38.1); "
+        "the age is null for a package with none.",
     ),
     PageDef(
         "query-atlas",
@@ -146,8 +146,7 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "query-atlas",
         "bsl-shell",
         note="Wired to build_packages_model (is_actionable + adoption stage + downloads) "
-        "over the composed semantic_packages store (`pyforge atlas run --pipelines "
-        "semantic_packages`).",
+        "over the composed semantic_packages store (`pyforge atlas run --pipelines derived_artifacts,semantic_packages`, after core and vcs_health).",
     ),
     PageDef(
         "detail-cf-atlas",
@@ -155,7 +154,7 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "detail-cf-atlas",
         "bsl-shell",
         note="Wired to build_packages_model (full per-package metric row) over the "
-        "composed semantic_packages store (`pyforge atlas run --pipelines semantic_packages`).",
+        "composed semantic_packages store (`pyforge atlas run --pipelines derived_artifacts,semantic_packages`, after core and vcs_health).",
     ),
     PageDef(
         "behind-upstream",
