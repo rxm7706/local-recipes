@@ -5108,7 +5108,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/semantic_packages/nodes.py (the deferred-input columns); pipelines/core (core_version_download_history.upload_date)
   origin: Story 37.6 (CAP-69)
   severity: low
-  promoted: 2026-10-23 -- atlas Story 37.6; no owning story yet
+  promoted: 2026-10-23 -- atlas Story 37.6; owned by Story 38.1 (2026-10-24)
   status: open
 
 ### DW-atlas-37-7-1: The find-alternative has no candidate table.
@@ -5131,7 +5131,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/semantic_packages/nodes.py (feedstock_archived)
   origin: Story 37.7 (CAP-69)
   severity: low
-  promoted: 2026-10-23 -- atlas Story 37.7; no owning story yet
+  promoted: 2026-10-23 -- atlas Story 37.7; owned by Story 38.1 (2026-10-24)
   status: open
 
 ### DW-atlas-37-7-3: A package built by a live feedstock can be attributed to an archived one.

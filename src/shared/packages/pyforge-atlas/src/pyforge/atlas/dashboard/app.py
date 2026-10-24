@@ -194,9 +194,9 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "bsl-shell",
         note="Wired to build_version_downloads_model over core_version_download_history "
         "(Story 37.3): downloads per package and version over the months the download store "
-        "covers. The store holds no upload date, so that column stays empty until Story 37.6's "
-        "per-version upload times are wired into it (DW-atlas-37-6-2). The chart sums each version "
-        "label across packages.",
+        "covers. That store holds no upload date, so the column is empty here; with board projections "
+        "on (Story 38.1) it shows each version's upload date. The chart sums each version label across "
+        "packages.",
         chart=ChartDef("bar", x="version", y="downloads"),
     ),
     PageDef(
@@ -422,7 +422,7 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
     PageDef("factory-status", "Factory Status", "factory-status", "factory"),
 )
 
-#: Story 37.4 (CAP-69): the four boards' definitions, and Stories 37.5-37.10's boards, with ``pyforge.atlas.board_projections`` on.
+#: Story 37.4 (CAP-69): the four boards' definitions, and Stories 37.5-37.10's and 38.1's boards, with ``pyforge.atlas.board_projections`` on.
 #: Off, ``PAGE_INVENTORY``'s entries stand: the two shells, and the coverage boards' earlier paths.
 PROJECTED_PAGES: dict[str, PageDef] = {
     page.id: page
@@ -515,6 +515,18 @@ PROJECTED_PAGES: dict[str, PageDef] = {
             "Basilisk catalog) or ok. Entries that fetch live and persist nothing are not listed.",
             filters=("tier", "status"),
         ),
+        # Story 38.1 (CAP-69)
+        PageDef(
+            "version-downloads",
+            "Version Downloads",
+            "version-downloads",
+            "bsl-shell",
+            note="Wired to build_version_downloads_model over derived_version_downloads, which derived_artifacts' "
+            "project_version_downloads writes: downloads per package and version over the months the download store "
+            "covers, with each version's upload date (the UTC date of its earliest file in conda-forge's full "
+            "repodata; empty for a version with no timed file). The chart sums each version label across packages.",
+            chart=ChartDef("bar", x="version", y="downloads"),
+        ),
         # Story 37.6 (CAP-69)
         PageDef(
             "release-cadence",
@@ -539,8 +551,8 @@ PROJECTED_PAGES: dict[str, PageDef] = {
             "each archived package on the channel, the top 10 active candidates by keyword, summary-term, "
             "shared-dependent and shared-maintainer overlap, weighted by recency and downloads. Archived is the "
             "cf-graph's flag or the GitHub archive query. adoption_stage is the adoption-stage board's classifier; "
-            "until semantic_packages carries upload times (DW-atlas-37-6-2) it reads unknown, and recency counts every "
-            "candidate as fresh.",
+            "both read semantic_packages' upload times (Story 38.1), so a package with none reads unknown and counts "
+            "as fresh.",
             filters=("archived_name",),
         ),
         # Story 37.8 (CAP-69)
@@ -1010,6 +1022,10 @@ def build_dashboard(
     index_health_path = root / (
         _data.CATALOG_INDEX_HEALTH_PARQUET if projected else _data.BOOTSTRAP_INDEX_HEALTH_PARQUET
     )
+    # Story 38.1: version-downloads with upload dates with the flag on, the history without them off
+    version_downloads_path = root / (
+        _data.DERIVED_VERSION_DOWNLOADS_PARQUET if projected else _data.VERSION_DOWNLOADS_PARQUET
+    )
     # Story 37.6: the release-cadence counts with the flag on, the path nothing writes off
     cadence_path = root / (_data.DERIVED_RELEASE_CADENCE_PARQUET if projected else _data.RELEASE_CADENCE_PARQUET)
     # Story 37.7: the find-alternative candidates with the flag on, the path nothing writes off
@@ -1042,7 +1058,7 @@ def build_dashboard(
     # (same AD-17 discipline as above: each page's OWN file mtime, "unavailable" +
     # a reason when absent — never a fabricated stamp).
     cve_watcher_provenance = _provenance.resolve_for_file(vuln_history_path)
-    version_downloads_provenance = _provenance.resolve_for_file(root / _data.VERSION_DOWNLOADS_PARQUET)
+    version_downloads_provenance = _provenance.resolve_for_file(version_downloads_path)
     release_cadence_provenance = _provenance.resolve_for_file(cadence_path)
     find_alternative_provenance = _provenance.resolve_for_file(alternatives_path)
     scan_project_provenance = _provenance.resolve_for_file(root / _data.SCAN_RESULT_LATEST_PARQUET)
@@ -1139,7 +1155,7 @@ def build_dashboard(
         ),
         _data_page(
             by_id["version-downloads"],
-            lambda: _data.load_version_downloads(root / _data.VERSION_DOWNLOADS_PARQUET),
+            lambda: _data.load_version_downloads(version_downloads_path),
             grounded=False,
             provenance=version_downloads_provenance,
         ),

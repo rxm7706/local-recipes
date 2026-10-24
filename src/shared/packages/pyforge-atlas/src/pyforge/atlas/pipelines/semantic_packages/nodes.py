@@ -2,23 +2,24 @@
 
 PURE pandas function: DataFrames in -> DataFrame out, NO inline IO (the whole-package
 no-inline-IO scan bans HTTP/DB clients here exactly like every other pipeline's nodes).
-DOWNSTREAM ONLY of the sealed `core` + `vcs_health` pipelines' OWN, ALREADY-PRODUCED
-catalog outputs -- read here by their existing catalog dataset names (AD-3: execution
-order resolves from those names, never a procedural call order); this module does not
-touch `pipelines/core/` or `pipelines/vcs_health/`.
+DOWNSTREAM ONLY of ALREADY-PRODUCED catalog outputs, never a `_raw` source: the sealed
+`core` + `vcs_health` pipelines' own, and (Story 38.1) `derived_artifacts`'
+`derived_release_cadence` and `derived_graph_archived_feedstocks` -- read here by their
+existing catalog dataset names (AD-3: execution order resolves from those names, never a
+procedural call order); this module does not touch `pipelines/core/` or
+`pipelines/vcs_health/`.
 """
 
 from __future__ import annotations
 
+import time
+
 import pandas as pd
 
-# The `metrics.METRIC_PROVENANCE` columns whose legacy source is not yet in the migrated
-# store (`data_wiring: "deferred-input-not-in-migrated-store"`) -- declared here as
-# explicit NULL (nullable Int64) columns, NEVER fabricated. `staleness_age_days` /
-# `adoption_stage` (semantic/metrics.py) already null-coalesce these inputs
-# (`ts.isnull()`, `.fill_null(0)`), so a downstream BSL query degrades to an honest
-# NULL / "unknown" instead of crashing on a missing column.
-_DEFERRED_INPUT_COLUMNS = (
+# Story 38.1: the upload-time inputs `metrics.adoption_stage` / `staleness_age_days` read, as
+# legacy adoption_stage.py derives them; NULL for a package the release cadence lacks, never
+# fabricated (the metrics null-coalesce them to an honest NULL / "unknown").
+_UPLOAD_COLUMNS = (
     "latest_conda_upload",
     "latest_upload_age_days",
     "releases_30d",
@@ -46,6 +47,9 @@ def compose_semantic_packages(
     core_feedstock_attribution: pd.DataFrame,
     vcs_archived_feedstocks: pd.DataFrame,
     core_downloads: pd.DataFrame,
+    derived_release_cadence: pd.DataFrame | None = None,
+    derived_graph_archived_feedstocks: pd.DataFrame | None = None,
+    now: int | None = None,
 ) -> pd.DataFrame:
     """Compose the `semantic_packages` primary store `build_packages_model`
     (semantic/models.py) binds to (DW-D2-2).
@@ -56,17 +60,18 @@ def compose_semantic_packages(
     - ``latest_status`` -- LEFT-joined from `core_latest_status`
       (`migrated-column`, `metrics.METRIC_PROVENANCE["is_actionable"]`).
     - ``feedstock_archived`` -- derived by joining `core_feedstock_attribution`
-      (conda_name -> feedstock_name) against `vcs_archived_feedstocks` (the
-      archived-feedstock skip-set) -- exactly the join
-      `METRIC_PROVENANCE["is_actionable"]` names ("feedstock_archived joinable from
-      vcs_archived_feedstocks"). A package with no attribution, or whose feedstock never
-      appears in the skip-set, is NOT archived (0) -- matching the legacy
-      ``COALESCE(feedstock_archived, 0) = 0`` default.
+      (conda_name -> feedstock_name) against the archived feedstocks: legacy Phase E.5's
+      `vcs_archived_feedstocks` and (Story 38.1) the cf-graph's own flag,
+      `derived_graph_archived_feedstocks`, which a public run fills where the GitHub query
+      does not. A package with no attribution, or whose feedstock is in neither set, is NOT
+      archived (0) -- matching the legacy ``COALESCE(feedstock_archived, 0) = 0`` default.
     - ``downloads_total`` / ``downloads_30d`` -- LEFT-joined from `core_downloads`
       (`migrated-column`).
-    - ``latest_conda_upload`` / ``latest_upload_age_days`` / ``releases_30d`` /
-      ``total_versions`` -- see `_DEFERRED_INPUT_COLUMNS` above: declared NULL, never
-      fabricated.
+    - ``latest_conda_upload`` / ``releases_30d`` / ``total_versions`` -- LEFT-joined from
+      `derived_release_cadence` (Story 38.1; legacy Phase B and adoption_stage.py's
+      ``package_version_downloads`` counts); ``latest_upload_age_days`` is
+      ``(now - latest_conda_upload) // 86400``, NULL with no upload time (legacy
+      adoption_stage.py:103). A package the cadence lacks keeps all four NULL.
 
     Every join is LEFT off the Phase B population -- an unmatched row degrades to
     NULL/absent, never a fabricated value (mirrors `dashboard/data.py::_bsl_query_or_empty`).
@@ -115,6 +120,12 @@ def compose_semantic_packages(
     ):
         archived_feedstocks = set(vcs_archived_feedstocks["feedstock_name"].dropna())
     if (
+        derived_graph_archived_feedstocks is not None
+        and not derived_graph_archived_feedstocks.empty
+        and "feedstock_name" in derived_graph_archived_feedstocks.columns
+    ):
+        archived_feedstocks |= set(derived_graph_archived_feedstocks["feedstock_name"].dropna())
+    if (
         core_feedstock_attribution is not None
         and not core_feedstock_attribution.empty
         and {"conda_name", "feedstock_name"} <= set(core_feedstock_attribution.columns)
@@ -136,8 +147,20 @@ def compose_semantic_packages(
         else:
             out[col] = pd.array([pd.NA] * len(out), dtype="Int64")
 
-    # Deferred inputs -- never fabricated (see docstring / _DEFERRED_INPUT_COLUMNS).
-    for col in _DEFERRED_INPUT_COLUMNS:
-        out[col] = pd.array([pd.NA] * len(out), dtype="Int64")
+    # Upload-time inputs (Story 38.1) -- from the release cadence, never fabricated.
+    cadence_columns = ["latest_conda_upload", "releases_30d", "total_versions"]
+    if (
+        derived_release_cadence is not None
+        and not derived_release_cadence.empty
+        and {"conda_name", *cadence_columns} <= set(derived_release_cadence.columns)
+    ):
+        cadence = derived_release_cadence[["conda_name", *cadence_columns]].drop_duplicates("conda_name")
+        out = out.merge(cadence, on="conda_name", how="left")
+    for col in cadence_columns:
+        out[col] = out[col].astype("Int64") if col in out.columns else pd.array([pd.NA] * len(out), dtype="Int64")
+    now_ts = int(time.time()) if now is None else now
+    upload = out["latest_conda_upload"]
+    # legacy `(now - latest_conda_upload) // 86400 if latest_conda_upload else None`: 0 is no upload time
+    out["latest_upload_age_days"] = ((now_ts - upload) // 86400).where(upload.notna() & (upload != 0)).astype("Int64")
 
     return out[list(_OUTPUT_COLUMNS)].reset_index(drop=True)

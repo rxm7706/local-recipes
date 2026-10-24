@@ -5,7 +5,8 @@ version's files". Operator ruling 2026-10-23: atlas takes it from each subdir's 
 file record carries a ``timestamp``. The bodies are large (linux-64 is 59 MB compressed, about 800,000 files), so each
 is streamed: stdlib ``compression.zstd``, then an incremental JSON decode of one ``packages`` / ``packages.conda``
 record at a time. A subdir is kept as one small aggregate, (``conda_name``, ``version``, ``upload_unix``,
-``file_count``), so no run ever holds a whole repodata document.
+``file_count``, ``last_upload_unix``), so no run ever holds a whole repodata document. Story 38.1 adds
+``last_upload_unix``, a version's newest file, which legacy Phase B's ``latest_conda_upload`` reads.
 
 As Story 34.4's ``S3DownloadStatsDataset`` does, a subdir is fetched again only when its ETag changes (a conditional
 GET; a 304 keeps the cache), only behind ``pyforge.atlas.live_public_sources``, and a failure keeps the cached copy
@@ -38,7 +39,7 @@ from .refresh import StalenessMarker, _safe_int
 
 logger = logging.getLogger(__name__)
 
-COLUMNS = ["conda_name", "version", "upload_unix", "file_count"]
+COLUMNS = ["conda_name", "version", "upload_unix", "file_count", "last_upload_unix"]
 #: the two record maps of a repodata document; ``removed`` and ``info`` carry no files
 RECORD_SECTIONS = frozenset({"packages", "packages.conda"})
 #: conda reads a timestamp above this (the last second of year 9999) as milliseconds
@@ -55,7 +56,7 @@ _EXPECTED_ERRORS = (DatasetError, zstd.ZstdError, ValueError, EOFError, OSError,
 # requests' timeout, per connect attempt and per silent gap between reads -- not a total (APIDataset sets none)
 _REQUEST_TIMEOUT = 90
 # bump when aggregate_records' output changes: a manifest of another version re-fetches every subdir
-AGGREGATE_VERSION = 1
+AGGREGATE_VERSION = 2  # 2: Story 38.1's last_upload_unix
 _WHITESPACE = " \t\r\n"
 _WHITESPACE_RUN = re.compile(r"[ \t\r\n]*")
 
@@ -198,7 +199,8 @@ def _text(value: Any) -> TypeGuard[str]:
 
 
 def aggregate_records(records: Iterator[tuple[str, Any]]) -> pd.DataFrame:
-    """One row per (``conda_name``, ``version``): the earliest file timestamp in seconds, and the file count."""
+    """One row per (``conda_name``, ``version``): the earliest file timestamp in seconds, the file count, and the
+    latest file timestamp."""
     seen: dict[tuple[str, str], list[Any]] = {}
     for _, record in records:
         if not isinstance(record, dict):
@@ -208,13 +210,15 @@ def aggregate_records(records: Iterator[tuple[str, Any]]) -> pd.DataFrame:
             continue
         entry = seen.get((name, version))
         if entry is None:
-            entry = seen[(name, version)] = [None, 0]
+            entry = seen[(name, version)] = [None, 0, None]
         entry[1] += 1
         ts = _seconds(record.get("timestamp"))
         if ts is not None and (entry[0] is None or ts < entry[0]):
             entry[0] = ts
+        if ts is not None and (entry[2] is None or ts > entry[2]):
+            entry[2] = ts
     frame = pd.DataFrame(
-        [(name, version, ts, count) for (name, version), (ts, count) in seen.items()],
+        [(name, version, first, count, last) for (name, version), (first, count, last) in seen.items()],
         columns=COLUMNS,
     )
     return _typed(frame)
@@ -227,7 +231,15 @@ def aggregate_subdir(body: bytes, *, chunk: int = _CHUNK) -> pd.DataFrame:
 
 
 def _typed(frame: pd.DataFrame) -> pd.DataFrame:
-    return frame.astype({"conda_name": object, "version": object, "upload_unix": "Int64", "file_count": "int64"})
+    return frame.astype(
+        {
+            "conda_name": object,
+            "version": object,
+            "upload_unix": "Int64",
+            "file_count": "int64",
+            "last_upload_unix": "Int64",
+        }
+    )
 
 
 def _parquet_writer(frame: pd.DataFrame) -> Callable[[Path], None]:
@@ -255,13 +267,15 @@ def _readable(path: Path) -> bool:
 
 
 def combine_subdirs(frames: list[pd.DataFrame]) -> pd.DataFrame:
-    """The subdirs' aggregates as one: a version's earliest upload across subdirs, and all its files."""
+    """The subdirs' aggregates as one: a version's earliest and latest upload across subdirs, and all its files."""
     frames = [f for f in frames if not f.empty]
     if not frames:
         return _typed(pd.DataFrame(columns=COLUMNS))
     joined = pd.concat(frames, ignore_index=True)
     out = joined.groupby(["conda_name", "version"], sort=True, as_index=False).agg(
-        upload_unix=("upload_unix", "min"), file_count=("file_count", "sum")
+        upload_unix=("upload_unix", "min"),
+        file_count=("file_count", "sum"),
+        last_upload_unix=("last_upload_unix", "max"),
     )
     return _typed(out[COLUMNS])
 

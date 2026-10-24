@@ -3,7 +3,8 @@
 A port of legacy ``release_cadence.py``'s query over ``package_version_downloads``: per package, the versions and the
 ones uploaded in the last 30, 90 and 365 days (``upload_unix >= now - N days``), the first and last upload and the
 version last uploaded. The trend label stays the board's: ``metrics.release_trend_label`` is legacy's ``_classify``.
-PURE: every input arrives as a frame.
+Story 38.1 adds ``latest_conda_upload``, legacy Phase B's (CFA:1285-1325): the newest file of the version the current
+repodata names as latest, which ``semantic_packages`` reads. PURE: every input arrives as a frame.
 """
 
 from __future__ import annotations
@@ -21,6 +22,7 @@ COLUMNS = [
     "first_upload",
     "last_upload",
     "latest_version",
+    "latest_conda_upload",
 ]
 
 
@@ -33,6 +35,7 @@ def _typed(frame: pd.DataFrame) -> pd.DataFrame:
             "first_upload": "Int64",
             "last_upload": "Int64",
             "latest_version": object,
+            "latest_conda_upload": "Int64",
         }
     )
 
@@ -49,7 +52,9 @@ def project_release_cadence(
     versions whose ``upload_unix`` is on or after ``now`` minus its days, so an untimed version is in none. The scope is
     ``core_packages_enumerated``, as legacy's table holds only the packages its ``packages`` table lists.
     ``latest_version`` is the version with the latest upload; among equal uploads, the lexicographically larger
-    version string (legacy's order among ties is SQLite's).
+    version string (legacy's order among ties is SQLite's). ``latest_conda_upload`` is the newest file time of the
+    version ``core_packages_enumerated.latest_version`` names (legacy Phase B's latest record), NULL when that version
+    has no timed file or no row here.
     """
     uploads = core_repodata_uploads_raw
     if (
@@ -80,4 +85,15 @@ def project_release_cadence(
         ["conda_name", "upload_unix", "version"], ascending=[True, False, False], na_position="last", kind="stable"
     ).drop_duplicates("conda_name")
     out["latest_version"] = latest.set_index("conda_name")["version"]
+    out["latest_conda_upload"] = _latest_conda_upload(uploads, core_packages_enumerated)
     return _typed(out.reset_index()[COLUMNS])
+
+
+def _latest_conda_upload(uploads: pd.DataFrame, enumerated: pd.DataFrame) -> pd.Series:
+    """Per package, the last file time of the version the current repodata names as latest."""
+    if "latest_version" not in enumerated.columns or "last_upload_unix" not in uploads.columns:
+        return pd.Series(dtype="Int64")
+    latest = enumerated[["conda_name", "latest_version"]].dropna().drop_duplicates("conda_name")
+    times = uploads[["conda_name", "version", "last_upload_unix"]].rename(columns={"version": "latest_version"})
+    joined = latest.merge(times, on=["conda_name", "latest_version"], how="left")
+    return joined.set_index("conda_name")["last_upload_unix"].astype("Int64")

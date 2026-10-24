@@ -47,6 +47,16 @@ def _core_shaped_frames() -> dict[str, pd.DataFrame]:
                 "downloads_30d": pd.array([1, 2, 3], dtype="Int64"),
             }
         ),
+        # Story 38.1: the two produced inputs (derived_artifacts' release cadence and cf-graph archived set)
+        "derived_release_cadence": pd.DataFrame(
+            {
+                "conda_name": ["a"],
+                "latest_conda_upload": pd.array([1_699_000_000], dtype="Int64"),
+                "releases_30d": [1],
+                "total_versions": [4],
+            }
+        ),
+        "derived_graph_archived_feedstocks": pd.DataFrame({"feedstock_name": ["alpha"], "archived": [True]}),
     }
 
 
@@ -93,9 +103,10 @@ def test_missing_required_upstream_fails_loud_naming_the_dataset(tmp_path: Path)
     assert not (tmp_path / "semantic_packages.parquet").exists()
 
 
-def test_pipeline_reads_only_sealed_seven_output_names_never_a_raw_source() -> None:
-    """DOWNSTREAM ONLY: every declared input is an existing `core`/`vcs_health` catalog
-    OUTPUT name (never a `_raw` source this pipeline would have to fetch itself)."""
+def test_pipeline_reads_only_produced_output_names_never_a_raw_source() -> None:
+    """DOWNSTREAM ONLY: every declared input is an existing produced catalog OUTPUT name --
+    `core`/`vcs_health`'s, and (Story 38.1) `derived_artifacts`' release cadence and cf-graph
+    archived set -- never a `_raw` source this pipeline would have to fetch itself."""
     pipeline = create_pipeline()
     assert pipeline.inputs() == {
         "core_packages_enumerated",
@@ -103,6 +114,8 @@ def test_pipeline_reads_only_sealed_seven_output_names_never_a_raw_source() -> N
         "core_feedstock_attribution",
         "vcs_archived_feedstocks",
         "core_downloads",
+        "derived_release_cadence",
+        "derived_graph_archived_feedstocks",
     }
     assert pipeline.outputs() == {"semantic_packages"}
     assert not any(name.endswith("_raw") for name in pipeline.inputs())

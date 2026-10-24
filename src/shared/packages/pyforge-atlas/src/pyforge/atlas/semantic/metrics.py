@@ -289,18 +289,19 @@ METRIC_PROVENANCE: dict[str, dict[str, str]] = {
         "kind": "dimension",
         "legacy_source": "staleness_report.py (query loop age_days)",
         "provenance": "legacy-formula",
-        "data_wiring": "deferred-input-not-in-migrated-store",
-        "note": "latest_conda_upload is not yet a migrated Parquet column; D1 lands "
-        "the (now-ts)//86400 formula + its legacy anchor, D2 wires the column.",
+        "data_wiring": "migrated-column",
+        "note": "latest_conda_upload is semantic_packages' column (Story 38.1: the newest file of "
+        "the latest version, from the full repodata via derived_release_cadence); the "
+        "(now-ts)//86400 formula is legacy's.",
     },
     "adoption_stage": {
         "kind": "dimension",
         "legacy_source": "adoption_stage.py::_classify",
         "provenance": "legacy-formula",
-        "data_wiring": "deferred-input-not-in-migrated-store",
-        "note": "age/releases_30d/total_versions derive from per-version upload times; "
-        "migrated core_version_download_history lacks upload_unix. Formula ported "
-        "verbatim + anchored; D2 wires the inputs.",
+        "data_wiring": "migrated-column",
+        "note": "latest_upload_age_days/releases_30d/total_versions are semantic_packages' "
+        "columns (Story 38.1: per-version upload times from the full repodata via "
+        "derived_release_cadence). Formula ported verbatim + anchored.",
     },
     "is_actionable": {
         "kind": "dimension",

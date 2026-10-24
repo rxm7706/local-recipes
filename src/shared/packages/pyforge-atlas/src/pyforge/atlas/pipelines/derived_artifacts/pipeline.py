@@ -6,7 +6,8 @@ PURE nodes: ``build_universe_sbom`` (CycloneDX BOM), ``build_inventory_universe`
 ``build_inventory_aoss_free_queue`` (Story 23.4 deliverable A + AOSS queue),
 ``build_identity_complete_export`` (Story 23.5 complete export join); the three board projections
 ``project_behind_upstream``, ``project_live_catalog_coverage`` and ``project_universe_sbom_summary``
-(Story 37.4); ``export_purl_artifacts`` (Story 37.8); ``score_alternative_candidates`` (Story 37.7); ``project_release_cadence`` (Story 37.6).
+(Story 37.4); ``export_purl_artifacts`` (Story 37.8); ``score_alternative_candidates`` (Story 37.7); ``project_release_cadence`` (Story 37.6); ``project_graph_archived_feedstocks`` and
+``project_version_downloads`` (Story 38.1).
 ``inputs=`` bind to catalog NAMES (AD-3 cross-pipeline edges). Node names FROZEN.
 """
 
@@ -15,6 +16,7 @@ from __future__ import annotations
 from kedro.pipeline import Pipeline, node
 
 from .alternatives import score_alternative_candidates
+from .lifecycle import project_graph_archived_feedstocks, project_version_downloads
 from .nodes import (
     assign_inventory_priority,
     build_identity_complete_export,
@@ -186,6 +188,19 @@ def create_pipeline(**kwargs) -> Pipeline:
                 inputs=["core_repodata_uploads_raw", "core_packages_enumerated"],
                 outputs="derived_release_cadence",
                 name="project_release_cadence",
+            ),
+            # Story 38.1: the cf-graph's archived feedstocks, and version-downloads' upload dates
+            node(
+                func=project_graph_archived_feedstocks,
+                inputs="core_cf_graph_raw",
+                outputs="derived_graph_archived_feedstocks",
+                name="project_graph_archived_feedstocks",
+            ),
+            node(
+                func=project_version_downloads,
+                inputs=["core_version_download_history", "core_repodata_uploads_raw"],
+                outputs="derived_version_downloads",
+                name="project_version_downloads",
             ),
         ]
     )

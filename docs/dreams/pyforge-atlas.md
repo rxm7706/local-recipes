@@ -583,6 +583,25 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   "**Data gap:**" stays for those three cases. The static export still drops the live-scan note whichever label it
   carries. **Constraints:** a fix under CAP-63 / CAP-69, with no CAP and no flag; the label only, no board's data or
   note text changes. Owner `spec-pyforge-atlas`. → Epic 37 / Story 37.11, specced 2026-10-22.
+- **2026-10-24 (the semantic store has its upload times and archived flag)** — **Found: three boards read
+  "unknown" or empty because `semantic_packages` holds no upload time and no archived flag.** It declares
+  `latest_conda_upload`, `latest_upload_age_days`, `releases_30d` and `total_versions` NULL ("D2 wires the inputs"),
+  so the adoption-stage board reads `unknown` for every package and find-alternative ranks every candidate as fresh
+  (DW-atlas-37-6-2). Its `feedstock_archived` joins only the GitHub archive query, empty on a public run, so it marks
+  none of the 828 packages attributed to an archived feedstock (DW-atlas-37-7-2). Version-downloads' `upload_date` is
+  null too. Story 37.6 now streams every version's upload times out of the full repodata, and the cf-graph carries the
+  archived flag. **What it looks like when fixed:**
+  - `semantic_packages` fills the four columns as legacy does: the latest version's newest file, its age, the
+    versions released in 30 days, and the version count;
+  - `feedstock_archived` adds the cf-graph flag through attribution;
+  - version-downloads shows each version's upload date.
+
+  **Constraints:**
+  - the boards' dimension names stay;
+  - no core output changes;
+  - the version-downloads path moves behind `pyforge.atlas.board_projections`, like Epic 37's boards.
+
+  Owner `spec-pyforge-atlas` (CAP-69, no new CAP). → Epic 38 / Story 38.1, specced 2026-10-24.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 

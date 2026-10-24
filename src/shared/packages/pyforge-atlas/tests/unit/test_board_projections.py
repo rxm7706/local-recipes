@@ -23,6 +23,7 @@ from pyforge.atlas import provenance
 from pyforge.atlas.dashboard import app, data, static_export
 from pyforge.atlas.pipelines.catalog_index.nodes import report_catalog_index_health
 from pyforge.atlas.pipelines.derived_artifacts.alternatives import score_alternative_candidates
+from pyforge.atlas.pipelines.derived_artifacts.lifecycle import project_version_downloads
 from pyforge.atlas.pipelines.derived_artifacts.nodes import (
     BEHIND_UPSTREAM_COLUMNS,
     LIVE_CATALOG_COVERAGE_FIELDS,
@@ -51,6 +52,7 @@ PROJECTED = (
     "export-purls",
     "find-alternative",
     "release-cadence",
+    "version-downloads",
 )
 NOW = 1_700_000_000
 STAMP = "2026-10-22T00:00:00Z"
@@ -427,6 +429,14 @@ def _data_root(tmp_path: Path) -> Path:
             now=NOW,
         ),
     )
+    # Story 38.1: one version's downloads with its upload date
+    _write(
+        root / data.DERIVED_VERSION_DOWNLOADS_PARQUET,
+        project_version_downloads(
+            pd.DataFrame({"conda_name": ["a"], "version": ["1.0"], "downloads": [5]}),
+            pd.DataFrame({"conda_name": ["a"], "version": ["1.0"], "upload_unix": [NOW - 86_400]}),
+        ),
+    )
     # Story 37.6: one package with a version uploaded ten days before NOW
     _write(
         root / data.DERIVED_RELEASE_CADENCE_PARQUET,
@@ -477,6 +487,7 @@ def test_with_the_flag_off_the_four_boards_read_as_before(tmp_path: Path) -> Non
         "export-purls",
         "find-alternative",
         "release-cadence",
+        "version-downloads",
     ):
         frame = _frame(page_id)
         assert frame is not None and frame.empty, page_id  # the earlier paths, which nothing writes
@@ -500,6 +511,7 @@ def test_with_the_flag_on_each_board_is_stamped_from_the_file_it_reads(tmp_path:
         "export-purls": data.DERIVED_PURL_EXPORT_MANIFEST_PARQUET,
         "find-alternative": data.DERIVED_ALTERNATIVE_CANDIDATES_PARQUET,
         "release-cadence": data.DERIVED_RELEASE_CADENCE_PARQUET,
+        "version-downloads": data.DERIVED_VERSION_DOWNLOADS_PARQUET,
     }
     for offset, path in enumerate(reads.values()):  # a distinct mtime per file, so a swapped stamp shows
         stamp = 1_600_000_000 + offset * 86_400

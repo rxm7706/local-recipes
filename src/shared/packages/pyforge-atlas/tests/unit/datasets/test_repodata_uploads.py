@@ -75,6 +75,14 @@ def _rows(frame: pd.DataFrame) -> dict[tuple[str, str], tuple[Any, int]]:
     }
 
 
+def _last(frame: pd.DataFrame) -> dict[tuple[str, str], Any]:
+    """Story 38.1: each version's newest file time."""
+    return {
+        (n, v): None if pd.isna(t) else int(t)
+        for n, v, t in frame[["conda_name", "version", "last_upload_unix"]].itertuples(index=False)
+    }
+
+
 # --------------------------------------------------------------------------- #
 # the stream parse
 # --------------------------------------------------------------------------- #
@@ -89,6 +97,21 @@ def test_every_record_of_both_sections_is_read_and_aggregated() -> None:
         ("b", "2.0"): (None, 1),  # counted, untimed
     }
     assert list(out.columns) == RU.COLUMNS and str(out["upload_unix"].dtype) == "Int64"
+
+
+def test_each_version_keeps_its_newest_file_time() -> None:
+    """Story 38.1: legacy Phase B's latest_conda_upload is a version's newest file, not its first."""
+    out = RU.aggregate_subdir(NOARCH)
+
+    assert _last(out) == {("a", "1.0"): T0 + 5 * DAY, ("a", "2.0"): T0 + 9 * DAY, ("b", "2.0"): None}
+    assert str(out["last_upload_unix"].dtype) == "Int64"
+
+
+def test_an_unholdable_timestamp_is_never_the_newest() -> None:
+    records = [("x-0.conda", _record("x", "1", T0)), ("x-1.conda", _record("x", "1", float("inf")))]
+    records += [("x-2.conda", _record("x", "1", 10**22)), ("x-3.conda", _record("x", "1", T0 + DAY))]
+
+    assert _last(RU.aggregate_records(iter(records))) == {("x", "1"): T0 + DAY}
 
 
 @pytest.mark.parametrize("chunk", [1, 2, 3, 5, 7, 64, 1 << 20])
@@ -205,6 +228,13 @@ def test_the_subdirs_combine_to_the_earliest_upload_and_every_file() -> None:
         ("a", "2.0"): (T0 + 9 * DAY, 1),
         ("b", "2.0"): (None, 2),
         ("c", "0.1"): (None, 1),
+    }
+    # Story 38.1: the newest file across subdirs (noarch's a-1.0 at +5 days beats linux-64's +1 day)
+    assert _last(out) == {
+        ("a", "1.0"): T0 + 5 * DAY,
+        ("a", "2.0"): T0 + 9 * DAY,
+        ("b", "2.0"): None,
+        ("c", "0.1"): None,
     }
 
 
@@ -477,8 +507,12 @@ def test_a_marker_that_cannot_be_removed_never_fails_a_load(tmp_path: Path, monk
         pd.DataFrame({"conda_name": ["a"], "version": ["1"]}),  # columns missing
         pd.DataFrame({"conda_name": ["a"], "version": ["1"], "upload_unix": ["soon"], "file_count": [1]}),
         pd.DataFrame({"conda_name": ["a"], "version": ["1"], "upload_unix": [1.5], "file_count": [1]}),
+        # Story 38.1: an aggregate-version-1 copy, written before last_upload_unix
+        pd.DataFrame(
+            {"conda_name": ["a"], "version": ["9"], "upload_unix": pd.array([1], dtype="Int64"), "file_count": [1]}
+        ),
     ],
-    ids=["other-columns", "string-times", "fractional-times"],
+    ids=["other-columns", "string-times", "fractional-times", "aggregate-version-1"],
 )
 def test_a_cached_copy_of_another_shape_is_skipped(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, frame) -> None:
     server = _Server({"noarch": NOARCH, "linux-64": LINUX}, {"noarch": '"n1"', "linux-64": '"l1"'})
@@ -537,12 +571,17 @@ def test_a_lost_subdir_copy_is_fetched_without_its_etag(tmp_path: Path, monkeypa
 
 
 @pytest.mark.usefixtures("live")
-def test_a_manifest_of_another_aggregate_version_fetches_again(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize("version", [1, "next"], ids=["before-last-upload", "a-later-one"])
+def test_a_manifest_of_another_aggregate_version_fetches_again(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, version: Any
+) -> None:
+    """Version 1 is the store before Story 38.1's last_upload_unix; its ETags never stand for a version-2 copy."""
     server = _Server({"noarch": NOARCH, "linux-64": LINUX}, {"noarch": '"n1"', "linux-64": '"l1"'})
     ds = _dataset(tmp_path, server, monkeypatch)
     ds.load()
     manifest = tmp_path / "store" / "manifest.json"
-    manifest.write_text(json.dumps({"aggregate_version": RU.AGGREGATE_VERSION + 1, "subdirs": {"noarch": '"n1"'}}))
+    stale = RU.AGGREGATE_VERSION + 1 if version == "next" else version
+    manifest.write_text(json.dumps({"aggregate_version": stale, "subdirs": {"noarch": '"n1"'}}))
     server.calls.clear()
 
     ds.load()
