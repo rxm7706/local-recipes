@@ -5226,4 +5226,5 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: Story 38.1 review 2
   severity: medium
   promoted: 2026-10-24 -- atlas Story 38.1; owned by Story 34.12
-  status: open
+  resolved: 2026-10-24 (Story 34.12: CisaKevDataset, EpssFeedDataset and CweCatalogDataset share VulnerabilityFeedDataset, which keeps the last frame that parsed to rows as raw/<entry>/last_good.parquet; a fetch failure, an HTTP error or a body that does not parse serves that copy, or on a fresh root the empty frame, under the AD-13 marker and never raises, so the run goes on)
+  status: closed
