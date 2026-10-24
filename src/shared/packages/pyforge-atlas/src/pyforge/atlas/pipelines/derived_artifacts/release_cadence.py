@@ -48,7 +48,8 @@ def project_release_cadence(
     ``total_versions`` counts every version, timed or not, as legacy's ``COUNT(*)`` does; each window counts the
     versions whose ``upload_unix`` is on or after ``now`` minus its days, so an untimed version is in none. The scope is
     ``core_packages_enumerated``, as legacy's table holds only the packages its ``packages`` table lists.
-    ``latest_version`` is the version with the latest upload; among equal uploads, the larger version string.
+    ``latest_version`` is the version with the latest upload; among equal uploads, the lexicographically larger
+    version string (legacy's order among ties is SQLite's).
     """
     uploads = core_repodata_uploads_raw
     if (
@@ -74,7 +75,7 @@ def project_release_cadence(
         first_upload=("upload_unix", "min"),
         last_upload=("upload_unix", "max"),
     )
-    # the version last uploaded: untimed versions last, then the larger version string first among equal uploads
+    # the version last uploaded: untimed versions last, then the lexicographically larger string among equal uploads
     latest = rows.sort_values(
         ["conda_name", "upload_unix", "version"], ascending=[True, False, False], na_position="last", kind="stable"
     ).drop_duplicates("conda_name")

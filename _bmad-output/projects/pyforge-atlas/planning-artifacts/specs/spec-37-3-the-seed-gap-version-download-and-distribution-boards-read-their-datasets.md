@@ -35,7 +35,8 @@ declared_low_risk: false
    license map: `tier`←`confidence`, `package_count`←`packages`). The CWE impact count is deferred (DW-B6-2), so it
    reads null, never a fabricated 0.
 2. **Version downloads.** The board reads `core_version_download_history`; `upload_date` is the store's when it has
-   one (a fixture, or Story 37.6's), else a typed null.
+   one (a fixture), else a typed null. Story 37.6 sources per-version upload times; wiring them here is
+   DW-atlas-37-6-2's.
 3. **Distribution.** `compose_distribution_breakdown` (`derived_artifacts`) writes the three cuts as one table behind a
    `facet` (`platform`, `python-version`, `channel`) to `derived_distribution_breakdown`, which the board reads.
    `downloads_90d` carries each cut's `downloads`: the months Anaconda's parquet holds, not a 90-day window (the name
@@ -84,7 +85,8 @@ Type / Effort / Deps: fix / M / Story 37.1 (the data root).
 - **`downloads_90d` is not a 90-day figure;** the board's note says what the store holds until a windowed cut exists.
 - **Page weight:** over a full data root the static version-downloads page is 37.2 MB and distribution 23.1 MB.
   DW-atlas-37-3-1: Story 37.2 caps them before Pages publishes them.
-- **The upload date stays null** on Pages and locally until Story 37.6 brings per-version upload times.
+- **The upload date stays null** on Pages and locally until Story 37.6's per-version upload times are wired into the
+  store (DW-atlas-37-6-2).
 
 </intent-contract>
 

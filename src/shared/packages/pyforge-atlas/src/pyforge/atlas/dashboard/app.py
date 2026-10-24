@@ -194,8 +194,9 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "bsl-shell",
         note="Wired to build_version_downloads_model over core_version_download_history "
         "(Story 37.3): downloads per package and version over the months the download store "
-        "covers. The store holds no upload date, so that column stays empty until per-version "
-        "upload times land (Story 37.6). The chart sums each version label across packages.",
+        "covers. The store holds no upload date, so that column stays empty until Story 37.6's "
+        "per-version upload times are wired into it (DW-atlas-37-6-2). The chart sums each version "
+        "label across packages.",
         chart=ChartDef("bar", x="version", y="downloads"),
     ),
     PageDef(
@@ -538,7 +539,8 @@ PROJECTED_PAGES: dict[str, PageDef] = {
             "each archived package on the channel, the top 10 active candidates by keyword, summary-term, "
             "shared-dependent and shared-maintainer overlap, weighted by recency and downloads. Archived is the "
             "cf-graph's flag or the GitHub archive query. adoption_stage is the adoption-stage board's classifier; "
-            "until per-version upload times land it reads unknown, and recency counts every candidate as fresh.",
+            "until semantic_packages carries upload times (DW-atlas-37-6-2) it reads unknown, and recency counts every "
+            "candidate as fresh.",
             filters=("archived_name",),
         ),
         # Story 37.8 (CAP-69)

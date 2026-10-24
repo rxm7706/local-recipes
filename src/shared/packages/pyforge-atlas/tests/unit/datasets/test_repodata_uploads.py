@@ -57,7 +57,8 @@ NOARCH = _repodata(
         "nameless-0.tar.bz2": _record(None, "1.0", T0),
         "versionless-0.tar.bz2": _record("v", None, T0),
     },
-    {"a-2.0-0.conda": _record("a", "2.0", (T0 + 9 * DAY) * 1000, summary="naïve — ünïcode")},  # its only file: ms
+    # its only file, in milliseconds with a fractional second (as conda-forge serves them): truncated to seconds
+    {"a-2.0-0.conda": _record("a", "2.0", (T0 + 9 * DAY) * 1000 + 999, summary="naïve — ünïcode")},
 )
 LINUX = _repodata(
     {"a-1.0-0.tar.bz2": _record("a", "1.0", T0 + 1 * DAY)},  # earlier than noarch's
@@ -112,6 +113,28 @@ def test_a_number_cut_at_the_buffer_end_is_read_whole() -> None:
     records = list(RU.iter_repodata_records(body, chunk=23))  # the first chunk ends inside 12345
 
     assert records == [("x-1-0.tar.bz2", {"name": "x", "version": "1"})]
+
+
+@pytest.mark.parametrize("number", [b"1.5", b"1e+5", b"12.25"], ids=["after-point", "after-exponent", "mid-fraction"])
+def test_a_float_cut_at_the_buffer_end_is_read_whole(number: bytes) -> None:
+    """``1.`` decodes as ``1`` with text left over; a scalar is accepted only once a delimiter follows it."""
+    raw = b'{"repodata_version": ' + number + b', "packages": {"x-1-0.tar.bz2": {"name": "x", "version": "1"}}}'
+
+    for chunk in range(21, 21 + len(number) + 1):  # every cut inside the number
+        records = list(RU.iter_repodata_records(io.BytesIO(raw), chunk=chunk))
+        assert records == [("x-1-0.tar.bz2", {"name": "x", "version": "1"})], chunk
+
+
+def test_an_unholdable_timestamp_is_no_time_and_the_file_still_counts() -> None:
+    bad = [float("inf"), float("nan"), 1e300, 10**22, -5, "1700000000", None]
+    records = [(f"x-{i}.conda", _record("x", "1", ts)) for i, ts in enumerate(bad)]
+    records.append(("x-ok.conda", _record("x", "1", T0)))
+    records.append(("y-huge.conda", _record("y", "1", 10**22)))  # its only file: past year 9999 even as ms
+    records.append(("z-inf.conda", _record("z", "1", float("inf"))))
+
+    out = RU.aggregate_records(iter(records))
+
+    assert _rows(out) == {("x", "1"): (T0, len(bad) + 1), ("y", "1"): (None, 1), ("z", "1"): (None, 1)}
 
 
 @pytest.mark.parametrize(
@@ -251,8 +274,21 @@ def test_a_failed_subdir_keeps_its_copy_under_the_marker(tmp_path: Path, monkeyp
 
 
 @pytest.mark.usefixtures("live")
-def test_a_corrupt_body_is_a_subdir_failure_never_a_raise(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    server = _Server({"noarch": b"garbage", "linux-64": LINUX}, {"noarch": '"n1"', "linux-64": '"l1"'})
+@pytest.mark.parametrize(
+    "body",
+    [
+        b"garbage",
+        b"",
+        NOARCH[: len(NOARCH) // 2],
+        zstd.compress(b'{"packages": {"x-1-0.tar.bz2": {"name": '),
+        zstd.compress(b'{"packages": {"x": ' + b"[" * 100_000 + b"]" * 100_000 + b"}}"),
+    ],
+    ids=["not-zstd", "empty", "zstd-cut-short", "json-cut-short", "nested-past-the-decoder"],
+)
+def test_a_corrupt_body_is_a_subdir_failure_never_a_raise(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, body: bytes
+) -> None:
+    server = _Server({"noarch": body, "linux-64": LINUX}, {"noarch": '"n1"', "linux-64": '"l1"'})
     ds = _dataset(tmp_path, server, monkeypatch)
 
     out = ds.load()
@@ -262,6 +298,21 @@ def test_a_corrupt_body_is_a_subdir_failure_never_a_raise(tmp_path: Path, monkey
     )
     marker = ds.staleness()
     assert marker is not None and marker.reason.startswith("1 of 2 subdirs not refreshed (noarch:")
+
+
+@pytest.mark.usefixtures("live")
+def test_a_lost_subdir_copy_is_fetched_without_its_etag(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """An ETag with no copy behind it would 304 forever and drop the subdir silently."""
+    server = _Server({"noarch": NOARCH, "linux-64": LINUX}, {"noarch": '"n1"', "linux-64": '"l1"'})
+    ds = _dataset(tmp_path, server, monkeypatch)
+    ds.load()
+    (tmp_path / "store" / "subdirs" / "noarch.parquet").unlink()
+    server.calls.clear()
+
+    out = ds.load()
+
+    assert server.calls == [("noarch", None), ("linux-64", '"l1"')]
+    assert ("a", "2.0") in _rows(out)
 
 
 @pytest.mark.usefixtures("live")

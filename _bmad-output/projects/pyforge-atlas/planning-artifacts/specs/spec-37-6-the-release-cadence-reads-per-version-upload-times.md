@@ -2,7 +2,7 @@
 title: "37.6: The release-cadence reads per-version upload times"
 type: 'feature'
 created: '2026-10-23'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '20621275f265b348e7748b81fe6d67dec3968125'
 flag:
   key: pyforge.atlas.board_projections            # existing; minted by Story 37.4, extended to this board
@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'the release-cadence reads primary/release_cadence as before, which nothing writes, and renders empty'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -69,7 +69,13 @@ anaconda.org files fan-out.
   upload time: it counts in `total_versions`, but in no window.
 - The scope is the enumerated packages (`core_packages_enumerated`), as legacy's `package_version_downloads` holds
   only packages its `packages` table lists. Repodata names that the current repodata does not list are dropped.
-- `latest_version` among equal upload times is the larger version string. Legacy's order among ties is SQLite's.
+- `latest_version` among equal upload times is the lexicographically larger version string (`8.0` over `10.0`; four
+  packages on the live data). Legacy's order among ties is SQLite's.
+- A version whose original files left the channel's main label, and was rebuilt later, dates from the rebuild:
+  bcdoc 0.16.0 moves from 2016 to 2026, and lapack 3.11.0 from 2024-03 to 2025-11. Against legacy's anaconda.org
+  times, 2,747 matched versions differ by more than 30 days and 1,065 by more than a year. Few fall in a
+  window: at legacy's snapshot, 18, 23 and 19 versions count only here in the 30-, 90- and 365-day windows, and 1,
+  0 and 0 only in legacy.
 - The board aggregates every package. Legacy's `--package`, `--maintainer` and `--limit` filters are query options,
   not data.
 
@@ -89,10 +95,16 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root).
 ## Acceptance Criteria
 
 - **AC1 — Parse.** Every record in `packages` and `packages.conda` of a zstd-compressed repodata is read, whatever its
-  whitespace and wherever a chunk boundary falls, including inside a multi-byte character or a number. A record with
-  no name or version is skipped. A malformed body is a failure of that subdir, never a crash.
-- **AC2 — Upload time.** A version's `upload_unix` is the earliest timestamp of its files across subdirs, in seconds;
-  a millisecond timestamp is divided by 1,000; an untimestamped file counts in `file_count` and nowhere else.
+  whitespace and wherever a chunk boundary falls, including inside a multi-byte character or a number (an integer,
+  a fraction or an exponent). A record with no name or version is skipped. A malformed body is a failure of that
+  subdir, never a crash:
+  - not zstd, empty or cut short;
+  - JSON that is malformed or nested past the decoder's depth.
+
+  A timestamp no calendar holds (infinite, or past year 9999) is no time; it never fails the subdir.
+- **AC2 — Upload time.** A version's `upload_unix` is the earliest timestamp of its files across subdirs, in whole
+  seconds. A millisecond timestamp is truncated to its second. An untimed file counts in `file_count` and nowhere
+  else.
 - **AC3 — Cache.** A subdir is fetched with its cached ETag and reused on a 304. A failed fetch or parse keeps its
   cached copy and writes the staleness marker; a full success removes it. With the flag off nothing is fetched and
   the cache is served. Without `filepath` the dataset is the empty frame.
@@ -122,7 +134,9 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root).
 | a record with no timestamp | counted in `file_count`, no `upload_unix` |
 | a record with no name or version | skipped |
 | a subdir that answers 304 | its cached copy, no parse |
-| a subdir whose fetch fails or body is corrupt | its cached copy, staleness marker |
+| a subdir whose fetch fails or body is corrupt, empty, cut short or nested too deep | its cached copy, staleness marker |
+| a subdir's Parquet lost while its ETag stays in the manifest | fetched again without the ETag |
+| a timestamp that is infinite, NaN or past year 9999 | the file counts, with no time |
 | a version with no upload time | in `total_versions`, in no window |
 | a repodata name not enumerated | not on the board |
 | nothing in | an empty frame with the output columns |
@@ -147,18 +161,22 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root).
 
 ## Run results
 
-Run 2026-10-23 in the landing worktree on `20621275f2`, every verdict read from its exit code.
+Run 2026-10-23 in the landing worktree on `20621275f2`, every verdict read from its exit code; the numbers are those
+after review 1's fixes.
 
-- **AC1–AC5, tests:** `test_repodata_uploads.py` (27), `test_release_cadence.py` (5) and
-  `test_board_projections.py` pass; `pyforge-atlas-test` gives 3,302 passed and 20 skipped, then 103 passed (exit 0).
+- **AC1–AC5, tests:** `test_repodata_uploads.py` (36), `test_release_cadence.py` (5) and
+  `test_board_projections.py` pass; `pyforge-atlas-test` gives 3,311 passed and 20 skipped, then 103 passed (exit 0).
 - **Pins moved:** `derived_artifacts` has 14 nodes (13), the combined DAG 73 (72), the catalog 145 entries (143); the
   node has a timeout (900 s).
-- **Mutations**, each restored, each failing a named test (25 of 25):
-  - parse: milliseconds not converted; a bool or zero timestamp accepted; the latest file kept; files not counted;
-    nameless records kept; `packages.conda` ignored; a number cut at the buffer end not re-read; UTF-8 decoded per
-    chunk; the value cap removed;
-  - cache: the subdirs combined to the latest upload; their files not summed; the cached ETag not sent; a 304
-    parsed; the marker never removed; the flag ignored; `If-None-Match` not set; the manifest version ignored;
+- **Mutations**, each restored, each failing a named test (33 of 33):
+  - parse: milliseconds not converted, or divided as floats; a bool, zero, infinite or out-of-range timestamp
+    accepted; the latest file kept; files not counted; nameless records kept; `packages.conda` ignored; a number
+    cut at the buffer end not re-read, or a scalar accepted with no delimiter after it; UTF-8 decoded per chunk; the
+    value cap removed; an empty or cut-short body (`EOFError`) or nesting past the decoder (`RecursionError`)
+    escaping the subdir guard;
+  - cache: the subdirs combined to the latest upload; their files not summed; the cached ETag not sent, or sent
+    with no copy behind it; a 304 parsed; the marker never removed; the flag ignored; `If-None-Match` not set; the
+    manifest version ignored;
   - cadence: a window exclusive at its cutoff; untimed versions not counted; non-enumerated packages kept; a tie
     going to the smaller version; an untimed version as the latest;
   - board and provenance: the board path not switched; the dataset not marked for provenance.
@@ -176,8 +194,34 @@ Run 2026-10-23 in the landing worktree on `20621275f2`, every verdict read from 
 
 ## Spec Change Log
 
+- 2026-10-23, independent review (FAIL, 1 blocker), fixed on the same branch:
+  - B1: an empty or cut-short zstd body (`EOFError`), JSON nested past the decoder's depth (`RecursionError`), or an
+    infinite or huge timestamp (`OverflowError`) escaped the subdir guard. So `load()` raised, and one bad subdir
+    could fail a whole Pages build (atlas NFR-3: skip and mark stale, never fail). Now:
+    - the guard catches all three;
+    - a timestamp no calendar holds is no time, so one record never fails its subdir;
+    - each bad body is a test through `load()`.
+  - S1: the version-downloads and find-alternative notes, and Story 37.3's spec, promised that this story would fill
+    their upload dates. They now point at DW-atlas-37-6-2, which also names version-downloads' `upload_date`.
+  - S2: three plausible wrong ports passed the tests. Now:
+    - a millisecond fixture has a fractional second (float division would make it a float);
+    - a lost subdir copy is fetched without its ETag;
+    - malformed JSON inside valid zstd goes through `load()`.
+  - Nits:
+    - a scalar is accepted only once a delimiter follows it, so `1.5` cut after `1.` is read whole;
+    - the `latest_version` tie and the rebuilt-version effect are declared;
+    - `release_trend_label`'s provenance is `migrated-column`;
+    - the request timeout is 90 s of silence, so seven stalled subdirs end inside the node's 900 s.
 - 2026-10-23: drafted from Story 37.6, DW-atlas-37-6-1 and the operator's ruling on the source.
 
 ## Review Triage Log
 
-Pending.
+- 2026-10-23, review 1 (independent subagent, read the diff against this spec): FAIL, with 1 blocker, 2 should-fixes
+  and 6 nits, all addressed (Spec Change Log).
+  - The parser matches `json.loads` exactly on a live noarch body: 387,070 records at three chunk sizes.
+  - A live conditional GET answered 304.
+  - Against legacy's `cf_atlas.db`:
+    - 425,904 versions match, with a median difference of −54 s (the build timestamp precedes the upload);
+    - on 31,041 recently refreshed packages, the cadence counts agree for 93–94%, and the trend for 96.5%.
+  - Every Run-results number reproduces. The 515 MB is the whole process's peak; the imports alone are about 186 MB.
+  - It removed its scratch directory and wrote nothing tracked.

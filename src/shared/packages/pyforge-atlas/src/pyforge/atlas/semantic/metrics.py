@@ -363,10 +363,10 @@ METRIC_PROVENANCE: dict[str, dict[str, str]] = {
         "kind": "dimension",
         "legacy_source": "release_cadence.py::_classify",
         "provenance": "legacy-formula",
-        "data_wiring": "deferred-input-not-in-migrated-store",
-        "note": "releases_30d/90d/365d are not yet a migrated Parquet column (Story 20.5 "
-        "ports the release-cadence CLI page); D1/D2-style split holds: the formula lands "
-        "now, the live column lands when the release_cadence dataset materializes.",
+        "data_wiring": "migrated-column",
+        "note": "releases_30d/90d/365d are derived_release_cadence's columns (Story 37.6: "
+        "derived_artifacts' project_release_cadence, from per-version upload times in the "
+        "full repodata); the formula is legacy's, ported verbatim.",
     },
     "python_min_bump_status": {
         "kind": "dimension",

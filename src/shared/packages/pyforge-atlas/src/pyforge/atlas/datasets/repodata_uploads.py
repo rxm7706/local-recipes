@@ -18,6 +18,7 @@ import codecs
 import io
 import json
 import logging
+import math
 from collections.abc import Callable, Iterator
 from compression import zstd
 from pathlib import Path
@@ -44,11 +45,14 @@ _CHUNK = 1 << 20  # bytes read per refill
 # the most text one value may span: a record is a few KB and `removed` a few MB, so a value still unparsed past
 # this is a corrupt body, not a long one (it would otherwise pull the whole stream into memory)
 _MAX_VALUE_CHARS = 64 << 20
-_REQUEST_TIMEOUT = 600  # seconds; APIDataset sets none
+# seconds of silence a read may take (APIDataset sets none); seven subdirs stalled at once still end inside the
+# node's 900 s, so the AD-13 marker is written
+_REQUEST_TIMEOUT = 90
 # bump when aggregate_records' output changes: a manifest of another version re-fetches every subdir
 AGGREGATE_VERSION = 1
-# a fetch failure (kedro's wrapper), a body that is not zstd, not UTF-8 or not a repodata document
-_SUBDIR_ERRORS = (DatasetError, zstd.ZstdError, ValueError, OSError)
+# a fetch failure (kedro's wrapper); a body that is not zstd, empty or cut short (EOFError), not UTF-8, not a
+# repodata document, nested past the decoder's depth (RecursionError) or holding an out-of-range number
+_SUBDIR_ERRORS = (DatasetError, zstd.ZstdError, ValueError, OSError, EOFError, RecursionError, OverflowError)
 
 _WHITESPACE = " \t\r\n"
 
@@ -108,11 +112,17 @@ class _Reader:
                 if len(self.buf) - start > _MAX_VALUE_CHARS or not self._fill():
                     raise ValueError(f"repodata: malformed JSON at offset {start}") from None
                 continue
-            if end == len(self.buf) and not self.eof:
+            if not self.eof and not isinstance(value, (dict, list, str)) and self._cut(end):
                 self._fill()
                 continue
             self.pos = end
             return value
+
+    def _cut(self, end: int) -> bool:
+        """Whether a scalar ending at ``end`` may be cut short: ``1.5`` read as ``1`` from ``1.``. A whole scalar is
+        followed by a delimiter; a container or a string closes itself."""
+        rest = self.buf[end:].lstrip(_WHITESPACE)
+        return not rest or rest[0] not in ",}]"
 
 
 def iter_repodata_records(stream: _ByteStream, *, chunk: int = _CHUNK) -> Iterator[tuple[str, Any]]:
@@ -147,11 +157,18 @@ def iter_repodata_records(stream: _ByteStream, *, chunk: int = _CHUNK) -> Iterat
 
 
 def _seconds(timestamp: Any) -> int | None:
-    """A record's ``timestamp`` in epoch seconds, or ``None`` when it has none."""
-    if isinstance(timestamp, bool) or not isinstance(timestamp, (int, float)) or timestamp <= 0:
+    """A record's ``timestamp`` in epoch seconds (milliseconds truncated), or ``None`` when it has none, or one no
+    calendar holds (infinite, or past year 9999 even read as milliseconds): one bad record never fails a subdir."""
+    if isinstance(timestamp, bool) or not isinstance(timestamp, (int, float)):
+        return None
+    if isinstance(timestamp, float) and not math.isfinite(timestamp):
+        return None
+    if timestamp <= 0:
         return None
     value = int(timestamp)
-    return value // 1000 if value > _MS_THRESHOLD else value
+    if value > _MS_THRESHOLD:
+        value //= 1000
+    return value if value <= _MS_THRESHOLD else None
 
 
 def aggregate_records(records: Iterator[tuple[str, Any]]) -> pd.DataFrame:
