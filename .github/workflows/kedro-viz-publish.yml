@@ -211,15 +211,19 @@ jobs:
 
       # Story 37.12 (CAP-63, CAP-64): the build starts from the last-good copies the previous successful run
       # saved, so a public source that cannot be reached today serves its previous copy under the AD-13
-      # marker (Story 34.12) instead of an empty table. What persists is what a dataset keeps as its own
-      # last-good copy: `raw/` and every store except the vulnerability database (`stores/vdb`, 9.6 GB, still
-      # rebuilt every run); never a pipeline output, so a node that stops writing cannot hide behind an old
-      # file. The list says `stores/*` beside `!stores/vdb`, never `stores`: actions/cache lists matches
-      # without their descendants and tar recurses into a listed directory, so an exclusion under a listed
-      # `stores` would be ignored. The key is per run and the restore takes the newest saved entry; a miss or
-      # an eviction is the fresh root of before. The cache is the repository's own, reached as upload-artifact
-      # reaches its store: no secret and no GitHub token are passed. This workflow has no pull_request
-      # trigger, so no pull request writes a cache that main restores.
+      # marker (Story 34.12) instead of an empty table. What persists is `raw/` and every store except the
+      # vulnerability database (`stores/vdb`, 9.6 GB, still rebuilt every run): there each dataset keeps its
+      # own last-good copy and marker. Three plain raw-layer node outputs there are rewritten every run, and
+      # the PyPI-to-conda map merges onto its last copy, as on a workstation. The output layers
+      # (`intermediate/`, `primary/`, `derived/`) never persist, so a node that stops writing cannot hide
+      # behind an old file. The list says `stores/*` beside `!stores/vdb`, never `stores`: actions/cache
+      # lists matches without their descendants and tar recurses into a listed directory, so an exclusion
+      # under a listed `stores` would be ignored. The key is per run attempt; the restore takes the newest
+      # saved entry, and a miss or an eviction is the fresh root of before. Operator ruling 2026-10-24
+      # (option C): the copies reach the weekly run only once the operator raises the repository's Actions
+      # cache limit (DW-atlas-37-12-1). The cache is the repository's own, reached as upload-artifact reaches
+      # its store: no secret and no GitHub token are passed. No workflow here has a trigger that runs
+      # untrusted input in main's cache scope (pull_request_target, workflow_run, issue_comment, ...).
       - name: Restore the public stores' last-good copies
         if: ${{ steps.vizro_flag.outputs.enabled == 'true' }}
         uses: actions/cache/restore@v6
@@ -228,7 +232,7 @@ jobs:
             src/shared/packages/pyforge-atlas/data/raw
             src/shared/packages/pyforge-atlas/data/stores/*
             !src/shared/packages/pyforge-atlas/data/stores/vdb
-          key: pyforge-atlas-last-good-${{ github.run_id }}
+          key: pyforge-atlas-last-good-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             pyforge-atlas-last-good-
 
@@ -250,7 +254,7 @@ jobs:
             src/shared/packages/pyforge-atlas/data/raw
             src/shared/packages/pyforge-atlas/data/stores/*
             !src/shared/packages/pyforge-atlas/data/stores/vdb
-          key: pyforge-atlas-last-good-${{ github.run_id }}
+          key: pyforge-atlas-last-good-${{ github.run_id }}-${{ github.run_attempt }}
 
       # The same Dashboard object dashboard-dryrun builds, one static page per board, ONE
       # vendored assets/plotly.min.js; never a commit (the export is gitignored).

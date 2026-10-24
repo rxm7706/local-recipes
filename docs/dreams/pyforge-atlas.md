@@ -639,8 +639,11 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   **Constraints:**
   - a fix under CAP-63 (the Pages job, amended 2026-10-19) and CAP-64 (AD-13 last-good), with no new CAP and no
     flag;
-  - only what a dataset keeps as its own last-good copy persists: never the 9.6 GB vulnerability database store,
-    and never a pipeline output, so a node that stops writing cannot hide behind last week's file;
+  - what persists is `raw/` and the stores, where each dataset keeps its own last-good copy: never the 9.6 GB
+    vulnerability database store, and never an output layer (`intermediate/`, `primary/`, `derived/`), so a node
+    that stops writing cannot hide behind last week's file;
+  - the copies are kept in the repository's Actions cache; they reach the weekly run only once the operator raises
+    the cache limit (operator ruling 2026-10-24, "Cache + raise limit"; DW-atlas-37-12-1);
   - the job stays public-only (no secret, no token, no `PYFORGE_ATLAS_CREDENTIALED`; AD-11), and a failed build
     still fails the job.
 

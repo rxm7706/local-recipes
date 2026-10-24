@@ -174,10 +174,30 @@ DATA_ROOT = f"{MEMBER}/data"
 # `stores/*` beside `!stores/vdb`, never `stores`: actions/cache globs with implicitDescendants false and tar
 # recurses into a listed directory, so an exclusion under a listed `stores` would archive the 9.6 GB vdb store.
 LAST_GOOD_PATHS = [f"{DATA_ROOT}/raw", f"{DATA_ROOT}/stores/*", f"!{DATA_ROOT}/stores/vdb"]
-CACHE_KEY = "pyforge-atlas-last-good-${{ github.run_id }}"
+CACHE_KEY = "pyforge-atlas-last-good-${{ github.run_id }}-${{ github.run_attempt }}"
 CACHE_PREFIX = "pyforge-atlas-last-good-"
 GLOBALS = REPO_ROOT / MEMBER / "conf" / "base" / "globals.yml"
 CATALOG = REPO_ROOT / MEMBER / "conf" / "base" / "catalog.yml"
+WORKFLOWS = REPO_ROOT / ".github" / "workflows"
+PATH_KEYS = ("filepath", "path", "filename")  # the keys CatalogIndexDataset reads an entry's path from
+# Plain (pandas) raw-layer entries under a cached path, none of them a last-good store: three node outputs the
+# build rewrites every run, and the query-plane estate source, which steward's export writes and the Pages build never
+# does (query_plane_cache is not one of its pipelines), so on Pages it is never there to persist.
+PLAIN_RAW_ENTRIES = {
+    "org_audit_candidates",
+    "artifactory_downloads_raw",
+    "artifactory_consumption_raw",
+    "query_plane_estate_source",
+}
+# Events that run in the default branch's cache scope on input a pull request or an outsider controls.
+UNTRUSTED_IN_MAIN_SCOPE = {
+    "pull_request_target",
+    "workflow_run",
+    "issue_comment",
+    "issues",
+    "discussion",
+    "discussion_comment",
+}
 
 
 def _cache_step(kind: str) -> dict:
@@ -199,13 +219,17 @@ def _data_root_paths() -> dict[str, str]:
     }
 
 
-def _resolved_filepath(entry: dict, paths: dict[str, str]) -> str:
-    filepath = str(entry.get("filepath", ""))
-    for key, value in paths.items():
-        filepath = filepath.replace(f"${{globals:paths.{key}}}", value)
-    if filepath.startswith("${runtime_params:"):
-        filepath = filepath.split(",", 1)[1].rstrip("}")  # the default a run without the param writes
-    return filepath
+def _resolved_paths(entry: dict, paths: dict[str, str]) -> list[str]:
+    resolved = []
+    for path_key in PATH_KEYS:
+        value = str(entry.get(path_key, ""))
+        for key, root in paths.items():
+            value = value.replace(f"${{globals:paths.{key}}}", root)
+        if value.startswith("${runtime_params:"):
+            value = value.split(",", 1)[1].rstrip("}")  # the default a run without the param writes
+        if value:
+            resolved.append(value)
+    return resolved
 
 
 def test_the_vizro_job_restores_the_last_good_copies_before_the_build_and_saves_them_after() -> None:
@@ -223,6 +247,8 @@ def test_the_vizro_job_restores_the_last_good_copies_before_the_build_and_saves_
     # nothing and still fails the job.
     assert restore["if"] == save["if"] == build["if"] == "${{ steps.vizro_flag.outputs.enabled == 'true' }}"
     assert "continue-on-error" not in build and "continue-on-error" not in save
+    # The default shell (bash -e) stops the step at a failed bootstrap: catalog_index cannot turn it green.
+    assert "shell" not in build
     assert [s for s in steps if "actions/cache" in str(s.get("uses", ""))] == [restore, save]
 
 
@@ -230,14 +256,14 @@ def test_the_restore_and_the_save_name_the_same_paths_and_key() -> None:
     restore, save = _cache_step("restore")["with"], _cache_step("save")["with"]
     # actions/cache hashes the path list into the entry's version: a save under other paths is never restored.
     assert restore["path"].splitlines() == save["path"].splitlines() == LAST_GOOD_PATHS
-    assert restore["key"] == save["key"] == CACHE_KEY  # one entry per run
-    assert restore["restore-keys"].split() == [CACHE_PREFIX]  # the newest entry a run before this one saved
+    assert restore["key"] == save["key"] == CACHE_KEY  # one entry per run attempt: a re-run keeps its fresher copies
+    assert restore["restore-keys"].split() == [CACHE_PREFIX]  # the newest entry an earlier run saved
     assert CACHE_KEY.startswith(CACHE_PREFIX)
     assert set(restore) == {"path", "key", "restore-keys"}  # no fail-on-cache-miss: a miss is the fresh root
     assert set(save) == {"path", "key"}
 
 
-def test_only_last_good_copies_persist_never_the_vdb_store_or_a_pipeline_output() -> None:
+def test_only_last_good_copies_persist_never_the_vdb_store_or_an_output_layer() -> None:
     includes = [path for path in LAST_GOOD_PATHS if not path.startswith("!")]
     excludes = [path[1:] for path in LAST_GOOD_PATHS if path.startswith("!")]
     assert excludes == [f"{DATA_ROOT}/stores/vdb"]
@@ -251,13 +277,15 @@ def test_only_last_good_copies_persist_never_the_vdb_store_or_a_pipeline_output(
 
 
 def test_the_cached_paths_are_the_data_root_the_build_writes() -> None:
-    task = tomllib.loads(PIXI.read_text(encoding="utf-8"))["feature"]["pyforge-atlas"]["tasks"][
-        "pyforge-atlas-bootstrap"
-    ]
-    assert task["cwd"] == MEMBER  # Kedro resolves `data` against the member directory
+    features = tomllib.loads(PIXI.read_text(encoding="utf-8"))["feature"]
+    atlas = features["pyforge-atlas"]
+    assert atlas["tasks"]["pyforge-atlas-bootstrap"]["cwd"] == MEMBER  # Kedro resolves `data` against the member
     assert _data_root_paths()["data_root"] == "data"
-    job = _workflow()["jobs"]["vizro"]
-    assert "PYFORGE_ATLAS_DATA_ROOT" not in yaml.safe_dump(job)  # an override would move the data off the cache
+    # An override anywhere the job reads its environment would move the data off the cached paths.
+    assert "PYFORGE_ATLAS_DATA_ROOT" not in yaml.safe_dump(_workflow())  # workflow, job and step env
+    for task in ("pyforge-atlas-bootstrap", "vizro-static-export"):
+        assert "PYFORGE_ATLAS_DATA_ROOT" not in atlas["tasks"][task].get("env", {}), task
+    assert "PYFORGE_ATLAS_DATA_ROOT" not in atlas.get("activation", {}).get("env", {})
 
 
 def test_every_last_good_store_under_the_data_root_is_cached() -> None:
@@ -266,28 +294,37 @@ def test_every_last_good_store_under_the_data_root_is_cached() -> None:
     paths = _data_root_paths()
     catalog = yaml.safe_load(CATALOG.read_text(encoding="utf-8"))
     cached, excluded = ("data/raw/", "data/stores/"), "data/stores/vdb"
-    raw_under_root: list[str] = []
+    raw_under_root: set[str] = set()
+    plain_outputs: set[str] = set()
     for name, entry in catalog.items():
         if not isinstance(entry, dict):
             continue
-        filepath = _resolved_filepath(entry, paths)
-        if not filepath.startswith("data/"):
-            continue  # seeds, conf files and the recipes tree are tracked, not run state
         layer = (entry.get("metadata") or {}).get("layer")
-        if layer == "raw":
-            raw_under_root.append(name)
-            if filepath == excluded:
-                assert name == "vulnerability_vdb_store"
+        for path in _resolved_paths(entry, paths):
+            if not path.startswith("data/"):
+                continue  # seeds, conf files and the recipes tree are tracked, not run state
+            if layer != "raw":
+                assert not path.startswith(cached), (name, path)  # an output layer never persists
+                continue
+            raw_under_root.add(name)
+            if path == excluded or path.startswith(f"{excluded}/"):
+                assert name == "vulnerability_vdb_store", (name, path)  # nothing else hides under the exclusion
             else:
-                assert filepath.startswith(cached), (name, filepath)
-        else:
-            assert not filepath.startswith(cached), (name, filepath)  # an output never persists
-    assert {"vulnerability_cisa_kev_raw", "core_s3_download_stats_raw", "pypi_conda_map_store"} <= set(raw_under_root)
+                assert path.startswith(cached), (name, path)
+                if str(entry.get("type", "")).startswith("pandas."):
+                    plain_outputs.add(name)
+    assert {"vulnerability_cisa_kev_raw", "core_s3_download_stats_raw", "pypi_conda_map_store"} <= raw_under_root
+    assert plain_outputs == PLAIN_RAW_ENTRIES  # a new plain output under a cached path is a decision, not a drift
 
 
-def test_no_pull_request_can_write_a_cache_main_restores() -> None:
-    on_block = _workflow().get("on", _workflow().get(True))
-    assert not {"pull_request", "pull_request_target"} & set(on_block)
+def test_no_workflow_runs_untrusted_input_in_main_s_cache_scope() -> None:
+    """A pull_request run saves to the pull request's own cache scope; these events run in main's, where a
+    poisoned pyforge-atlas-last-good-* entry would reach the Pages build."""
+    for workflow in sorted(WORKFLOWS.glob("*.y*ml")):
+        document = yaml.safe_load(workflow.read_text(encoding="utf-8"))
+        on_block = document.get("on", document.get(True))
+        events = {on_block} if isinstance(on_block, str) else set(on_block or ())
+        assert not events & UNTRUSTED_IN_MAIN_SCOPE, (workflow.name, sorted(events & UNTRUSTED_IN_MAIN_SCOPE))
 
 
 def test_the_flag_is_in_the_tree_off_by_default_and_on_only_in_dev() -> None:
