@@ -108,6 +108,16 @@ def test_an_unreadable_store_is_unavailable(tmp_path, payload):
     assert found.kind == "unavailable" and found.reason.startswith(f"snapshot store unreadable: {path} (")
 
 
+def test_an_unreadable_store_keeps_its_marker_reason(tmp_path):
+    path = tmp_path / data.VULN_ROLLUP_SNAPSHOTS_PARQUET
+    path.parent.mkdir(parents=True)
+    path.write_bytes(b"not parquet")
+    _store(tmp_path).save(nodes.snapshot_vulnerability_rollup(_rollup({"a": 1}), now=T0))  # appends nothing
+    found = provenance.resolve_for_snapshot_history(path)
+    assert found.kind == "unavailable" and found.reason.startswith(f"snapshot store unreadable: {path} (")
+    assert "); stale: no snapshot appended: the store could not be read (marked " in found.reason
+
+
 def test_a_store_without_the_column_is_unavailable(tmp_path):
     path = tmp_path / "s.parquet"
     pd.DataFrame({"conda_name": ["a"]}).to_parquet(path, index=False)

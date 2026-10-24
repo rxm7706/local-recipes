@@ -10,6 +10,8 @@ catalog's own dataset object — never a hardcoded name list:
 - ``IncrementalParquetDataset`` -> its own ``fetched_at`` column (oldest +
   newest recorded row timestamp).
 - ``kedro_datasets.pandas.ParquetDataset`` -> the materialized file's mtime.
+- a ``SnapshotHistoryDataset`` store, read by path (``resolve_for_snapshot_history``, Story 37.13) -> its latest
+  ``snapshot_at`` (``snapshot-at``), with its AD-13 marker's reason while it carries one.
 - ``kedro_datasets.api.APIDataset`` -> ``now`` (the read genuinely IS the
   fetch for a live API source).
 - anything else -> ``null`` + a stated reason (a REQUIRED, valid, non-error
@@ -149,31 +151,29 @@ def resolve_for_snapshot_history(path: str | os.PathLike[str], column: str = "sn
                 stale += f" (marked {_iso(marker.marked_at)})"
             except ValueError, OverflowError, OSError:
                 pass
+
+    def _gap(reason: str) -> ProvenanceInfo:
+        """``unavailable``, keeping the marker's reason beside the store's."""
+        return ProvenanceInfo(
+            kind="unavailable", build_stamp=None, reason=reason if stale is None else f"{reason}; {stale}"
+        )
+
     found = resolve_for_file(p)
     if found.kind == "unavailable":
-        reason = found.reason if stale is None else f"{found.reason}; {stale}"
-        return ProvenanceInfo(kind="unavailable", build_stamp=None, reason=reason)
+        return _gap(str(found.reason))
     try:
         if column not in pq.read_schema(p).names:
-            return ProvenanceInfo(kind="unavailable", build_stamp=None, reason=f"no {column!r} column in {p}")
+            return _gap(f"no {column!r} column in {p}")
         values = pd.read_parquet(p, columns=[column])[column]
     except Exception as exc:  # a truncated write: advisory, never a crash
-        return ProvenanceInfo(
-            kind="unavailable",
-            build_stamp=None,
-            reason=f"snapshot store unreadable: {p} ({type(exc).__name__})",
-        )
+        return _gap(f"snapshot store unreadable: {p} ({type(exc).__name__})")
     seconds = pd.to_numeric(values, errors="coerce").dropna()
     if seconds.empty:
-        return ProvenanceInfo(kind="unavailable", build_stamp=None, reason=f"no {column!r} recorded in {p}")
+        return _gap(f"no {column!r} recorded in {p}")
     try:
         stamp = _iso(float(seconds.max()))
     except ValueError, OverflowError, OSError:
-        return ProvenanceInfo(
-            kind="unavailable",
-            build_stamp=None,
-            reason=f"latest {column!r} out of convertible range: {p} ({seconds.max()!r})",
-        )
+        return _gap(f"latest {column!r} out of convertible range: {p} ({seconds.max()!r})")
     return ProvenanceInfo(kind="snapshot-at", build_stamp=stamp, reason=stale)
 
 

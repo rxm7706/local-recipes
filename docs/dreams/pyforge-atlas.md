@@ -658,8 +658,9 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   37.12 review 4). **What it looks like when fixed:**
   - a save that appends no snapshot (an empty frame, or a store that cannot be read) leaves the AD-13 staleness marker
     beside the snapshot store, and the next save that appends one removes it;
-  - the cve-watcher's AD-17 stamp is its latest snapshot's time, not the time the diff file was written; while the
-    store carries the marker, the stamp line says the diff is stale and why;
+  - the cve-watcher's AD-17 stamp is its latest snapshot's time (or the diff file's, if that is older), not the time
+    the diff file was last rewritten; while the store carries the marker, the stamp line says the diff is stale and
+    why;
   - with no snapshot store, the board reads as a data gap, not as an empty table stamped now;
   - the bootstrap-index-health board reads the snapshot store's marker as `stale`, as it reads every other store's.
 

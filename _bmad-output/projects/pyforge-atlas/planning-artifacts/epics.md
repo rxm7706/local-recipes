@@ -2890,7 +2890,7 @@ So that a run whose vulnerability database build failed never shows the previous
 **When** the cve-watcher board is built with `pyforge.atlas.board_projections` on
 **Then** its AD-17 stamp is the older of its latest snapshot's time and the diff file's mtime, and the stamp line says `stale` with the reason while `SnapshotHistoryDataset` carries the AD-13 marker it writes on a save that appends no snapshot (removed by the next save that appends one); with no snapshot store the board reads as a data gap
 **And** the diff, its columns, the catalog and the node count do not change; with the flag off the board is stamped as before; no other board's stamp changes
-**Status:** in-progress
+**Status:** done
 
 ## Epic 38: The semantic store has its upload times and archived flag (spec-pyforge-atlas CAP-69, FR-77)
 

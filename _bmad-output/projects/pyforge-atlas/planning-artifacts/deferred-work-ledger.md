@@ -5261,5 +5261,5 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: Story 37.12 review 4
   severity: low
   promoted: 2026-10-24 -- atlas Story 37.12; owner atlas (a fix to Story 37.5's nodes)
-  resolved: 2026-10-24 (Story 37.13: SnapshotHistoryDataset leaves the AD-13 marker <store>.staleness.json on a save that appends no snapshot, an empty frame or a store it cannot read, and removes it after a save that appends one; with pyforge.atlas.board_projections on, the cve-watcher's AD-17 stamp is the older of its latest snapshot's time and the diff file's mtime, and the stamp line says stale with the marker's reason, so an earlier run's diff is dated by its own snapshot and marked; with no snapshot store the board reads as a data gap)
+  resolved: 2026-10-24 (Story 37.13: SnapshotHistoryDataset leaves the AD-13 marker <store>.staleness.json on a save that appends no snapshot, an empty frame or a store it cannot read, and removes it after a save that writes rows; with pyforge.atlas.board_projections on, the cve-watcher's AD-17 stamp is the older of its latest snapshot's time and the diff file's mtime, and the stamp line says stale with the marker's reason, so an earlier run's diff is dated by its own snapshot and marked; with no snapshot store the board reads as a data gap)
   status: closed
