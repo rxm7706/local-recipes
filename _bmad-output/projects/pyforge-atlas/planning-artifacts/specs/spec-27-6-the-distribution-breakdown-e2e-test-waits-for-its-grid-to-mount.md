@@ -2,9 +2,9 @@
 title: '27.6: The distribution-breakdown e2e test waits for its grid to mount'
 type: 'fix'
 created: '2026-10-24'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '9ab7ef1cf1'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -23,8 +23,8 @@ declared_low_risk: false
 ## Intent
 
 **Problem:** `test_declared_controls_render_against_real_rows` fails under parallel load while the page it tests is
-healthy, because its last assertion carries all of the page's data-callback and render time under Playwright's 5 s
-default. Line numbers below are at `9ab7ef1cf1`.
+healthy, because its last assertion carried all of the page's data-callback and render time under Playwright's 5 s
+default. Line numbers below are at `9ab7ef1cf1` unless marked.
 
 - **What failed.** A full-scope `pr-preflight` for Story 37.13 (PR #2300) on 2026-10-24 red the `pyforge-atlas-test`
   lane on `tests/integration/dashboard/test_dashboard_e2e.py::test_declared_controls_render_against_real_rows`
@@ -34,48 +34,49 @@ default. Line numbers below are at `9ab7ef1cf1`.
   times alone (about 6 s each). It failed the same way in Story 31.1's preflight on 2026-10-15, recorded as
   `DW-atlas-retro-2026-10-15-1` (medium, open).
 - **How the page renders.** Vizro 0.1.60's `AgGrid.build` returns an empty `html.Div(id=<grid id>)` placeholder;
-  the page's `on_page_load` callback fills it with the real `dash_ag_grid.AgGrid`, and the browser then fetches and
-  parses AG Grid's own script (`async-community.js`) when the grid first mounts. The facet filter is built from the
-  layout (static since Story 27.5) and the chart's `#…--chart` container is in the layout too, so the test's three
-  15 s waits (`:238`-`:240`) do not wait for the callback. The grid assertion alone carried the callback, the browser
-  applying its output, and AG Grid's script, under the 5 s default.
-- **Where the time goes.** An in-page timeline (a `MutationObserver` plus the browser's resource timings) under
-  Chromium CPU throttling at 1x, 4x, 8x, 12x, 16x and 24x: the `on_page_load` request answers within 130 ms at every
-  rate, so the server is not the cost. At 24x the answer arrives 7.1 s after the page opens, the browser finishes
-  applying it at 25.4 s, fetches `async-community.js` at 26.2 s and mounts the grid at 32.4 s; at every rate the
-  `linux-64` row is in the DOM within 4 ms of the grid's `.ag-root-wrapper`.
-- **Reproduced under load.** 32 copies of the real test body (a scratch harness that calls the test function) on 16
-  xdist workers beside 48 busy-loop processes on this 16-core host ran 3:52 and failed 4 of the 24 copies that got a
-  server with the preflight's message; one call log reads `data-dash-is-loading="true"` then empty, as the preflight's
-  did. The other 8 copies errored in the fixture, the server not binding within 60 s at that load; the preflight run
-  did not hit that. At 32 busy loops the same harness failed 4 of 31 (one setup error).
-- **Timed under load.** A scratch timing harness (the same page, every step waited up to 180 s, 32 copies on 16
-  workers) at 48 busy loops: the grid mounted 6.6-22.3 s after `goto` (median 14.4 s), up to 16.0 s after the chart;
-  the facet dropdown appeared 2.4-20.4 s after `goto`, always before the grid mounted; the row was in the DOM within
-  0.5 s of the mount. At 32 busy loops: mount 6.5-21.2 s, dropdown up to 17.5 s, mount up to 11.4 s after the chart
-  (3 of 32 copies over 5 s, the before-fix failure rate). A first fix, a 15 s mount wait after the chart, passed two
-  batches at 48 busy loops and failed 3 of 24 copies in the third, on the dropdown's own 15 s wait: per-step budgets
-  do not fit a page whose every element can wait on the same busy main thread.
-- **Ruled out.** The fixture: the server is bound before the test starts (`wait_for_server`), and the callback
-  answers quickly. A defect in the page: alone the grid mounts about 140 ms after the callback output lands and holds
-  the row. `networkidle`: it settles before the callback output is applied under throttling (1.2 s at 8x, row at 9.4
-  s), so it is no wait on the grid.
+  the page's `on_page_load` callback fills it with the real `dash_ag_grid.AgGrid`, `rowData` included, and the
+  browser then applies that output and loads dash-ag-grid's lazy grid chunk (`async-community.js`: ag-grid-react and
+  the Dash wrapper; AG Grid's core is in the eagerly loaded `dash_ag_grid.min.js`) before the grid mounts. The facet
+  filter is built from the layout (static since Story 27.5) and the chart's `#…--chart` container is in the layout
+  too, so the test's three 15 s waits (`:238`-`:240`) did not wait for the callback. The grid assertion alone carried
+  the callback, the browser applying its output, and the chunk, under the 5 s default.
+- **Reproduced under load.** A scratch harness (a parametrized test that calls the real test function 32 times, run
+  with `-n 16`) beside `python3 -c "while True: pass"` busy loops on this 16-core host. At 48 busy loops: 4 of the 24
+  copies that got a server failed with the preflight's message; one call log reads `data-dash-is-loading="true"` then
+  empty, as the preflight's did. At 32 busy loops: 4 of 31. After a host reboot, the original test body at 48 busy
+  loops again: 4 of 25. The remaining copies errored in the fixture, its server not binding within 60 s at that
+  synthetic load; no real preflight run has hit that.
+- **Where the time goes (in the page, under load).** A `MutationObserver` plus a 50 ms poll in the page recorded when
+  each element first showed, for 25 copies at 48 busy loops: the filter and the chart were visible 3.9-16.9 s before
+  the grid mounted, the dropdown 0.4-16.3 s before; the grid mounted 6.3-20.8 s after navigation (median 13.3 s), and
+  the `linux-64` row was in the DOM within 1 ms of the mount in every copy. The `on_page_load` request took 0.4-1.9 s,
+  so most of the time is the busy browser, not the Vizro server. Under Chromium CPU throttling alone (1x-24x, an idle
+  host), the same order held and the request took at most 130 ms.
+- **Why one budget.** A first fix waited 15 s for the mount after the chart. It passed two batches at 48 busy loops
+  and failed 3 of 24 copies in the third, on the dropdown's own 15 s wait: Playwright-side, from `goto`, the grid
+  mounted up to 22.3 s and the dropdown showed up to 20.4 s. Every step of this page waits on the same busy main
+  thread, so per-step budgets do not fit it; one budget on the element drawn last does.
+- **Ruled out.** The fixture: the server is bound before the test starts (`wait_for_server`). A defect in the page:
+  alone the grid mounts about 140 ms after the callback output lands and holds the row. `networkidle` (`:236`): it
+  settled before the callback output was applied (1.2 s at 8x throttling, row at 9.4 s), so it waited on nothing the
+  test checks while carrying render time on its own 30 s default.
 
 **Approach:**
-1. In `test_declared_controls_render_against_real_rows`, right after `networkidle`, wait for the AG Grid to mount
-   inside `#distribution-breakdown--grid` (`.ag-root-wrapper` attached) with `timeout=60_000`, the budget this suite
-   gives a loaded host (the fixture's `wait_for_server` 60 s, the WASM smoke's 60 s ready wait). The grid is the
-   element the page draws last, so this one wait carries the whole render, about 2.7 times the slowest mount
-   measured (22.3 s). It is the grid's loaded state: it does not pass on the placeholder, and it does not depend on
-   the row.
-2. Keep the filter, dropdown and chart checks and their 15 s timeouts unchanged, now after the mount, and keep the row
-   assertion last with its default timeout: the row is in the DOM when the grid mounts, so a mounted grid without it
-   fails within 5 s, showing the grid's text.
-3. Replace the comment above the waits: the filter and the chart's container render from the layout, the grid from
-   the data callback, and why the mount wait is first and 60 s.
-4. Close `DW-atlas-retro-2026-10-15-1` with a `resolution:` naming this story and a `verified:` line citing the
-   `path:line` it fixed. Its proposed fix (`timeout=15_000` on the row assertion) is refined: a wait on the row text
-   alone reads a grid that never mounts and a mounted grid without the row the same way.
+1. In `test_declared_controls_render_against_real_rows`, right after `goto`, wait for the AG Grid to mount inside
+   `#distribution-breakdown--grid` (`.ag-root-wrapper` attached) with `timeout=60_000`, the budget this suite gives a
+   loaded host (the fixture's `wait_for_server` 60 s, the WASM smoke's 60 s ready wait,
+   `tests/integration/wasm/test_wasm_smoke.py:168`): 2.7 times the slowest mount measured (22.3 s). It is the grid's
+   loaded state: it cannot match the placeholder, and it does not depend on the row.
+2. Drop `page.wait_for_load_state("networkidle")`: the mount wait replaces it. `goto` keeps Playwright's 30 s default
+   for the `load` event; it took at most 4.0 s at 48 busy loops.
+3. Keep the filter, dropdown and chart checks and their 15 s timeouts unchanged, now after the mount, where those
+   elements are already drawn; keep the row assertion last with its default 5 s, since the row is in the DOM within
+   1 ms of the mount. A mounted grid without the row fails within 5 s, showing the grid's text.
+4. Replace the comment above the waits: why the grid is drawn last, and why its wait is first and 60 s.
+5. Close `DW-atlas-retro-2026-10-15-1` with a `resolution:` naming this story and a `verified:` line citing the
+   `path:line` it fixed. Its proposed fix (`timeout=15_000` on the row assertion) is refined: under load the whole
+   render, not only the row, outruns a 15 s step, and putting the whole budget on the row would make a real missing
+   row take 60 s to report.
 
 Ledger key: `27-6-the-distribution-breakdown-e2e-test-waits-for-its-grid-to-mount`.
 Type / Effort / Deps: fix / S / S-27.5.
@@ -90,12 +91,12 @@ Type / Effort / Deps: fix / S / S-27.5.
 
 ## Acceptance Criteria
 
-- **AC1 — Waits on the mount first.** The test's first check after `networkidle` asserts
-  `#distribution-breakdown--grid .ag-root-wrapper` is attached with `timeout=60_000`; the filter, dropdown, chart and
-  `linux-64` row checks follow it unchanged.
+- **AC1 — Waits on the mount first.** The test's first check after `goto` asserts
+  `#distribution-breakdown--grid .ag-root-wrapper` is attached with `timeout=60_000`; there is no `networkidle` wait;
+  the filter, dropdown, chart and `linux-64` row checks follow it unchanged.
 - **AC2 — Stable under load.** With the harness that failed 4 of 24 before the fix (32 copies, 16 workers, 48 busy
-  loops), no copy fails its assertions, over at least three batches; setup errors from the server not binding are
-  counted and reported, not counted as passes.
+  loops), no copy fails its assertions, over at least three batches, plus at least one batch at 32 busy loops; setup
+  errors from the fixture's server not binding are counted and reported apart, never as passes.
 - **AC3 — A missing row still fails.** Against a fixture data root whose `derived_distribution_breakdown` has no
   `linux-64` row, the fixed test fails on `Locator expected to contain text 'linux-64'`, and the failure shows the
   grid's actual text (the other rows), not a timeout on the mount.
@@ -115,11 +116,11 @@ Type / Effort / Deps: fix / S / S-27.5.
 
 | Input | Expected |
 |---|---|
-| the fixture root, an idle host | passes in about 6 s, as today |
-| the fixture root, the load harness | passes; the mount wait absorbs the callback and AG Grid's script |
-| a root without the `linux-64` row | fails on the row assertion, showing the grid's text |
+| the fixture root, an idle host | passes in about 7 s, as today |
+| the fixture root, the load harness | passes; the mount wait absorbs the callback and the lazy grid chunk |
+| a root without the `linux-64` row | fails on the row assertion within 5 s of the mount, showing the grid's text |
 | a callback that never fills the grid | fails on the mount wait after 60 s, naming `.ag-root-wrapper` |
-| a filter that never builds its selector (Story 27.5's defect) | fails on the dropdown check, 15 s after the mount |
+| a filter that never builds its selector (Story 27.5's 0×0 container) | fails on `expect(facet_filter).to_be_visible`, 15 s after the mount |
 
 </intent-contract>
 
@@ -148,7 +149,8 @@ Type / Effort / Deps: fix / S / S-27.5.
 - `pixi run --frozen -e pyforge-atlas pytest "src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_e2e.py" -q -p no:cacheprovider` — expected: every test passes.
 - AC2, the load harness, on a scratch file placed beside the test and removed afterwards: a parametrized test that
   calls `test_declared_controls_render_against_real_rows(dashboard_server)` 32 times, run with `-n 16` beside 48
-  `python3 -c "while True: pass"` processes — expected: no failed copy, exit code read directly.
+  `python3 -c "while True: pass"` processes (three batches), and beside 32 (at least one) — expected: no copy fails
+  its assertions; setup errors (`dashboard server did not bind port … within 60s`) counted apart.
 - AC3, on the same scratch file: a fixture that copies the fixture data root without the `linux-64` row and points
   `FIXTURE_DATA_ROOT` at it — expected: `1 failed`, `Locator expected to contain text 'linux-64'`, actual text
   showing `osx-arm64`.
@@ -161,12 +163,69 @@ Type / Effort / Deps: fix / S / S-27.5.
 - `TMPDIR=$HOME/.cache/pyforge-preflight-tmp PYFORGE_PREFLIGHT_SCOPE=full pixi run -e pyforge-guild pr-preflight` —
   expected: exit 0.
 
+## Review Triage Log
+
+### 2026-10-24 — Review 1 (independent subagent, read-only): FAIL
+- verdicts: 1 blocker, 4 should-fix, 7 nits; all accepted.
+- B1 (DW row closed on evidence the spec did not record): the Auto Run Result below now records every batch, AC3 and
+  AC5.
+- S1 (surface reconcile and scoped stamps missing): done before landing, on `spec-pyforge-atlas` and its co-governor
+  `pyforge-steward/spec-pyforge-unifying-strategy`.
+- S2 (`goto` and `networkidle` still carried render time on smaller budgets): `networkidle` dropped; `goto`'s 30 s
+  `load` default kept, measured at most 4.0 s under load.
+- S3 (the ordering evidence was circular, the timing harness waited in sequence): re-measured in the page with a
+  `MutationObserver` under 48 busy loops; the order holds in every copy (Intent).
+- S4 ("every copy passes" cannot hold while the fixture errors at that load): reworded to "no copy fails its
+  assertions; setup errors counted apart" in the epic, the Dream and AC2.
+- N1 (`async-community.js` is dash-ag-grid's lazy chunk, not AG Grid's core), N2 (CPU throttling says nothing about
+  the server under host load; the in-page run now times `on_page_load` under load), N3 (one-decimal figures), N5 (the
+  0×0 filter fails on `facet_filter` visibility), N6 (the DW resolution's argument), N7 (status `in-review`, this
+  log): fixed. N4 (row check at 15 s): declined; the in-page run puts the row within 1 ms of the mount, so the
+  default 5 s keeps a real missing row's report fast.
+
 ## Spec Change Log
 
 - 2026-10-24: minted with Story 27.6 under Epic 27 from the Dream entry of that date; implemented the same session.
   The cause was measured (CPU throttling timeline, load harness) before the fix.
+- 2026-10-24: redesigned before review. The first fix (a 15 s mount wait after the chart, `35f5beed9e`) failed 3 of
+  24 copies in one load batch on the dropdown's own 15 s wait; the mount wait moved first with one 60 s budget
+  (`9c39037823`).
+- 2026-10-24: review 1 fixes: `networkidle` dropped and the comment corrected (`bb0c148438`); Intent re-measured in
+  the page; ACs, matrix and the DW row reworded.
 
 ## Auto Run Result
 
-- Implemented by hand in worktree `.claude/worktrees/exciting-faraday-1e4549` from `9ab7ef1cf1`.
-- Reproduction before the fix: load harness at 48 busy loops, 4 of 24 copies failed (3:52); see Intent.
+- Implemented by hand in worktree `.claude/worktrees/exciting-faraday-1e4549` from `9ab7ef1cf1`. The host rebooted
+  once mid-session (16:02, a clean systemd reboot); the before-fix batch was re-run after it under the same
+  conditions as the after-fix batches.
+- Load harness: 32 copies of the test body, `-n 16`, beside N busy loops; "served" = copies whose fixture server
+  bound. Setup errors are the fixture's `dashboard server did not bind port … within 60s`, never counted as passes.
+
+| Code | Busy loops | Failed / served | Setup errors | Failing check |
+|---|---|---|---|---|
+| before (`9ab7ef1cf1`) | 48 | 4 / 24 | 8 | grid `to_contain_text`, 5 s |
+| before | 32 | 4 / 31 | 1 | grid `to_contain_text`, 5 s |
+| before, after the reboot | 48 | 4 / 25 | 7 | grid `to_contain_text`, 5 s |
+| first fix (`35f5beed9e`, 15 s mount wait after the chart) | 48 | 0 / 25, 0 / 21 (a), 3 / 24 | 7, 11, 8 | dropdown `to_be_visible`, 15 s |
+| first fix | 32 | 0 / 30 | 2 | — |
+| one 60 s mount wait first (`9c39037823`) | 48 | 0 / 17, 0 / 22, 0 / 32 | 15, 10, 0 | — |
+| `9c39037823` | 32 | 0 / 32, 0 / 32 | 0, 0 | — |
+| final (`bb0c148438`, no `networkidle`) | 48 | 0 / 27, 0 / 28, 0 / 27 | 5, 4, 5 | — |
+| final | 32 | 0 / 30 | 2 | — |
+
+- (a) A commit's pre-commit hook stashed the then-unstaged test file while this batch's workers started, so it may
+  have run the original test; it is not counted as evidence for either version.
+- AC1: `test_dashboard_e2e.py:241` (`.ag-root-wrapper` attached, `timeout=60_000`) is the first check after `goto`;
+  `:243`-`:246` unchanged.
+- AC3 (final code): the test against a fixture root without the `linux-64` row → `1 failed`,
+  `AssertionError: Locator expected to contain text 'linux-64'` on `to_contain_text … with timeout 5000ms`, actual
+  value the grid's three other rows (`osx-arm64`, `3.12`, `3.11`).
+- Alone (final code): 3 of 3 passed, 6.3-6.6 s each.
+- AC4: `git diff 9ab7ef1cf1..HEAD -- src/` touches only `test_dashboard_e2e.py`, adds no `skip`, `xfail`, `rerun`,
+  `flaky`, `retry` or `sleep`, and keeps all five original assertions.
+- AC5 (final code, scratch harness moved out first): `pixi run --frozen -e pyforge-atlas kedro-test` (it runs
+  `pyforge-atlas-test`) exit 0, 3,478 passed and 20 skipped, then 103 passed; `kedro-catalog-check` exit 0, 71
+  passed.
+- Residual risk: at 48 busy loops on 16 cores (a load past any measured preflight) the shared `dashboard_server`
+  fixture can fail to bind within its 60 s; it errors at setup, visibly, and no real preflight run has hit it. Not
+  changed here (the fixture serves the whole file).
