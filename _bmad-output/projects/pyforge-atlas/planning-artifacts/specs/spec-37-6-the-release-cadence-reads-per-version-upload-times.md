@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'the release-cadence reads primary/release_cadence as before, which nothing writes, and renders empty'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -74,8 +74,14 @@ anaconda.org files fan-out.
 - A version whose original files left the channel's main label, and was rebuilt later, dates from the rebuild:
   bcdoc 0.16.0 moves from 2016 to 2026, and lapack 3.11.0 from 2024-03 to 2025-11. Against legacy's anaconda.org
   times, 2,747 matched versions differ by more than 30 days and 1,065 by more than a year. Few fall in a
-  window: at legacy's snapshot, 18, 23 and 19 versions count only here in the 30-, 90- and 365-day windows, and 1,
-  0 and 0 only in legacy.
+  window: at legacy's snapshot, 18, 23 and 19 versions count only here in the 30-, 90- and 365-day windows, and at
+  most one only in legacy.
+- A version that exists only under a label other than main (a pre-release such as e3sm-unified 1.14.0rc1, gql
+  4.4.0b1 or eelbrain 0.43.0b0) is not in the main-label repodata, so it is not counted. Legacy's anaconda.org
+  listing counts it: 64, 351 and 1,298 of legacy's 30-, 90- and 365-day versions are absent here for that reason.
+- The stream parse counts what the bytes hold where `json.loads` (and so conda) would keep the last of a duplicate:
+  a repeated filename or section counts each time, and bytes after the top-level object are not read. Neither
+  occurs on the live bodies.
 - The board aggregates every package. Legacy's `--package`, `--maintainer` and `--limit` filters are query options,
   not data.
 
@@ -99,7 +105,9 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root).
   a fraction or an exponent). A record with no name or version is skipped. A malformed body is a failure of that
   subdir, never a crash:
   - not zstd, empty or cut short;
-  - JSON that is malformed or nested past the decoder's depth.
+  - JSON that is malformed, nested past the decoder's depth, or keyed by a non-string;
+  - a name or version that UTF-8 cannot encode (that record is skipped);
+  - any other exception inside one subdir's fetch, parse or write.
 
   A timestamp no calendar holds (infinite, or past year 9999) is no time; it never fails the subdir.
 - **AC2 — Upload time.** A version's `upload_unix` is the earliest timestamp of its files across subdirs, in whole
@@ -162,21 +170,21 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root).
 ## Run results
 
 Run 2026-10-23 in the landing worktree on `20621275f2`, every verdict read from its exit code; the numbers are those
-after review 1's fixes.
+after review 2's fixes.
 
-- **AC1–AC5, tests:** `test_repodata_uploads.py` (36), `test_release_cadence.py` (5) and
-  `test_board_projections.py` pass; `pyforge-atlas-test` gives 3,311 passed and 20 skipped, then 103 passed (exit 0).
+- **AC1–AC5, tests:** `test_repodata_uploads.py` (45), `test_release_cadence.py` (5) and
+  `test_board_projections.py` pass; `pyforge-atlas-test` gives 3,320 passed and 20 skipped, then 103 passed (exit 0).
 - **Pins moved:** `derived_artifacts` has 14 nodes (13), the combined DAG 73 (72), the catalog 145 entries (143); the
   node has a timeout (900 s).
-- **Mutations**, each restored, each failing a named test (33 of 33):
+- **Mutations**, each restored, each failing a named test (37 of 37):
   - parse: milliseconds not converted, or divided as floats; a bool, zero, infinite or out-of-range timestamp
     accepted; the latest file kept; files not counted; nameless records kept; `packages.conda` ignored; a number
-    cut at the buffer end not re-read, or a scalar accepted with no delimiter after it; UTF-8 decoded per chunk; the
-    value cap removed; an empty or cut-short body (`EOFError`) or nesting past the decoder (`RecursionError`)
-    escaping the subdir guard;
+    cut at the buffer end not re-read, a cut number accepted, whitespace after a number refilling, or the refill
+    uncapped; UTF-8 decoded per chunk; the value cap removed; a non-string key accepted; surrogate text kept; the
+    subdir guard narrowed to a list of exceptions;
   - cache: the subdirs combined to the latest upload; their files not summed; the cached ETag not sent, or sent
-    with no copy behind it; a 304 parsed; the marker never removed; the flag ignored; `If-None-Match` not set; the
-    manifest version ignored;
+    with no copy or an unreadable one behind it; an unreadable copy raising on read; a 304 parsed; the marker never
+    removed; the flag ignored; `If-None-Match` not set; the manifest version ignored;
   - cadence: a window exclusive at its cutoff; untimed versions not counted; non-enumerated packages kept; a tie
     going to the smaller version; an untimed version as the latest;
   - board and provenance: the board path not switched; the dataset not marked for provenance.
@@ -188,12 +196,31 @@ after review 1's fixes.
   - the node runs in 0.3 s over all 34,720 enumerated packages. 5,192 released in the last 30 days, 9,011 in 90 and
     16,273 in 365; a package has a median of 4 versions (numpy 113, python 179);
   - **against legacy:** the primary checkout's `cf_atlas.db` holds 442,267 per-version `upload_unix` values from
-    anaconda.org's files API. 425,904 of them match a timed version here, with a median difference of 55 s; 98.7%
-    are within an hour, and 99.2% within a day.
+    anaconda.org's files API. 425,904 of them match a timed version here, a median of 54 s earlier than legacy's (the
+    build timestamp precedes the upload); 98.7% are within an hour, and 99.2% within a day.
 
 
 ## Spec Change Log
 
+- 2026-10-23, review 2 (FAIL, 3 blockers), fixed on the same branch:
+  - R2-B1, R2-B2: more exception classes still escaped a load. A non-string key raised `TypeError`, and a lone-surrogate
+    name or version raised `UnicodeEncodeError` at the Parquet write. Now:
+    - keys and filenames must be strings;
+    - a record whose text UTF-8 cannot encode is skipped;
+    - the guard is structural: any exception inside one subdir's fetch, parse or write is that subdir's failure,
+      under the marker, so the class of escaping exceptions is closed, not listed.
+  - R2-B3: the scalar refill had no cap, so whitespace or junk after a number piled up in the buffer. Now:
+    - a number is cut only at the buffer's end or before a character a number goes on with, so whitespace ends it;
+    - the refill stops at the value cap.
+  - Should-fix: Story 37.7's spec and a `semantic/models.py` comment still promised that this story would fill their
+    upload columns. They point at DW-atlas-37-6-2.
+  - Nits:
+    - the dead `OverflowError` guard went with the old exception list;
+    - the timeout comment says what requests' timeout is (per connect and per silent read, not a total);
+    - the change log names `data_wiring`;
+    - two deviations are declared: versions only under a non-main label, and the parse's leniency on duplicates;
+    - the parity median's sign is restated;
+    - an unreadable cached copy is skipped on read and fetched again without its ETag.
 - 2026-10-23, independent review (FAIL, 1 blocker), fixed on the same branch:
   - B1: an empty or cut-short zstd body (`EOFError`), JSON nested past the decoder's depth (`RecursionError`), or an
     infinite or huge timestamp (`OverflowError`) escaped the subdir guard. So `load()` raised, and one bad subdir
@@ -210,12 +237,20 @@ after review 1's fixes.
   - Nits:
     - a scalar is accepted only once a delimiter follows it, so `1.5` cut after `1.` is read whole;
     - the `latest_version` tie and the rebuilt-version effect are declared;
-    - `release_trend_label`'s provenance is `migrated-column`;
+    - `release_trend_label`'s `data_wiring` is `migrated-column`;
     - the request timeout is 90 s of silence, so seven stalled subdirs end inside the node's 900 s.
 - 2026-10-23: drafted from Story 37.6, DW-atlas-37-6-1 and the operator's ruling on the source.
 
 ## Review Triage Log
 
+- 2026-10-23, review 2 (independent subagent): FAIL, with 3 blockers, 1 should-fix and 6 nits, all addressed (Spec
+  Change Log).
+  - It confirmed round 1's fixes.
+  - The parser matches `json` on 13 crafted documents at every chunk size, and on 400 random ones.
+  - A live osx-arm64 body: 346,120 records match `json` exactly.
+  - 20,000 random byte mutations raised nothing unguarded.
+  - Every Run-results number reproduces.
+  - It removed its scratch directory and wrote nothing tracked.
 - 2026-10-23, review 1 (independent subagent, read the diff against this spec): FAIL, with 1 blocker, 2 should-fixes
   and 6 nits, all addressed (Spec Change Log).
   - The parser matches `json.loads` exactly on a live noarch body: 387,070 records at three chunk sizes.

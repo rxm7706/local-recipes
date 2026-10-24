@@ -77,7 +77,7 @@ keywords, and atlas stores neither.
 - The archived set adds the cf-graph's `archived` flag to legacy's Phase E.5 GitHub query
   (`vcs_archived_feedstocks`), which a public run does not fill.
 - `semantic_packages` has no upload times yet (`latest_conda_upload`, `latest_upload_age_days`, `releases_30d` and
-  `total_versions` are NULL; Story 37.6 sources them). Until then:
+  `total_versions` are NULL; Story 37.6 sources the times, and DW-atlas-37-6-2 wires them in). Until then:
   - recency is 1.0 for every candidate, as legacy gives a package with no upload time;
   - `adoption_stage` reads `unknown`, as the adoption-stage board does today.
 - Ties in the composite fall to the candidate name; legacy's order among ties is SQLite's row order.
@@ -142,7 +142,8 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root).
     apache-airflow-core family to apache-airflow-core-split.
 
   Legacy's attribution does the same, and the fix belongs in core's attribution, so it is DW-atlas-37-7-3's.
-- Until Story 37.6 lands upload times, recency does not separate a stale candidate from a fresh one.
+- Until `semantic_packages` carries upload times (DW-atlas-37-6-2), recency does not separate a stale candidate from
+  a fresh one.
 
 ## I/O & Edge-Case Matrix
 
@@ -238,7 +239,8 @@ after review 2's fixes.
     - AC1 names the `unattributed=False` flag;
     - round 1's row count is restated as the net change.
   - Not changed: `_typed` and `_num` assume the epoch-second Int64 inputs `semantic_packages` declares (the atlas
-    naming rule). Story 37.6 owns those columns' types. `_as_bool` reads only bool and Int64 flags.
+    naming rule). DW-atlas-37-6-2, which wires those columns, owns their types. `_as_bool` reads only bool and
+    Int64 flags.
 - 2026-10-23, independent review (FAIL, 2 blockers), fixed on the same branch:
   - B1: no spec-surface reconcile or stamp; the merge gate's spec-surface check exited 2. The three governing Specs
     are reconciled and stamped.

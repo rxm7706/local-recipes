@@ -243,7 +243,7 @@ def build_version_downloads_model(table: Any) -> SemanticModel:
             "conda_name": Dimension(expr=lambda t: t.conda_name),
             "version": Dimension(expr=lambda t: t.version),
             # Story 37.3: the board reads core_version_download_history, which holds no upload
-            # date; a store that has one (a fixture, or Story 37.6's) shows it, else it is null
+            # date; a store that has one (a fixture; DW-atlas-37-6-2 wires Story 37.6's times in) shows it, else null
             "upload_date": Dimension(expr=lambda t: t.upload_date if "upload_date" in t.columns else _null(t, "date")),
         },
         measures={

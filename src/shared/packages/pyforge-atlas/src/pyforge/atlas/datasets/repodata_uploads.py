@@ -22,9 +22,10 @@ import math
 from collections.abc import Callable, Iterator
 from compression import zstd
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Protocol, TypeGuard
 
 import pandas as pd
+import pyarrow.parquet as pq
 from kedro.io import AbstractDataset, DatasetError
 from kedro_datasets.api import APIDataset
 from pyforge.core.atomic_write import atomic_write
@@ -45,15 +46,10 @@ _CHUNK = 1 << 20  # bytes read per refill
 # the most text one value may span: a record is a few KB and `removed` a few MB, so a value still unparsed past
 # this is a corrupt body, not a long one (it would otherwise pull the whole stream into memory)
 _MAX_VALUE_CHARS = 64 << 20
-# seconds of silence a read may take (APIDataset sets none); seven subdirs stalled at once still end inside the
-# node's 900 s, so the AD-13 marker is written
+# requests' timeout, per connect attempt and per silent gap between reads -- not a total (APIDataset sets none)
 _REQUEST_TIMEOUT = 90
 # bump when aggregate_records' output changes: a manifest of another version re-fetches every subdir
 AGGREGATE_VERSION = 1
-# a fetch failure (kedro's wrapper); a body that is not zstd, empty or cut short (EOFError), not UTF-8, not a
-# repodata document, nested past the decoder's depth (RecursionError) or holding an out-of-range number
-_SUBDIR_ERRORS = (DatasetError, zstd.ZstdError, ValueError, OSError, EOFError, RecursionError, OverflowError)
-
 _WHITESPACE = " \t\r\n"
 
 
@@ -100,6 +96,12 @@ class _Reader:
             raise ValueError(f"repodata: expected {char!r} at offset {self.pos}, got {self.peek()!r}")
         self.pos += 1
 
+    def key(self) -> str:
+        """The next object key, which JSON requires to be a string."""
+        if self.peek() != '"':
+            raise ValueError(f"repodata: expected a string key at offset {self.pos}, got {self.peek()!r}")
+        return str(self.value())
+
     def value(self) -> Any:
         """The next JSON value. A value that ends exactly at the buffer's end may be cut short (a number), so it is
         decoded again once more text is in."""
@@ -113,16 +115,18 @@ class _Reader:
                     raise ValueError(f"repodata: malformed JSON at offset {start}") from None
                 continue
             if not self.eof and not isinstance(value, (dict, list, str)) and self._cut(end):
+                if len(self.buf) - start > _MAX_VALUE_CHARS:
+                    raise ValueError(f"repodata: a number at offset {start} runs past the value cap")
                 self._fill()
                 continue
             self.pos = end
             return value
 
     def _cut(self, end: int) -> bool:
-        """Whether a scalar ending at ``end`` may be cut short: ``1.5`` read as ``1`` from ``1.``. A whole scalar is
-        followed by a delimiter; a container or a string closes itself."""
-        rest = self.buf[end:].lstrip(_WHITESPACE)
-        return not rest or rest[0] not in ",}]"
+        """Whether a number ending at ``end`` may be cut short: ``1.5`` read as ``1`` from ``1.``, at the buffer's end or
+        before a character a number goes on with. Whitespace, a delimiter or anything else ends it; a container or a
+        string closes itself."""
+        return end == len(self.buf) or self.buf[end] in ".eE+-0123456789"
 
 
 def iter_repodata_records(stream: _ByteStream, *, chunk: int = _CHUNK) -> Iterator[tuple[str, Any]]:
@@ -137,7 +141,7 @@ def iter_repodata_records(stream: _ByteStream, *, chunk: int = _CHUNK) -> Iterat
         if not first:
             reader.expect(",")
         first = False
-        key = reader.value()
+        key = reader.key()
         reader.expect(":")
         if key in RECORD_SECTIONS and reader.peek() == "{":
             reader.expect("{")
@@ -149,9 +153,9 @@ def iter_repodata_records(stream: _ByteStream, *, chunk: int = _CHUNK) -> Iterat
                 if not inner_first:
                     reader.expect(",")
                 inner_first = False
-                filename = reader.value()
+                filename = reader.key()
                 reader.expect(":")
-                yield str(filename), reader.value()
+                yield filename, reader.value()
         else:
             reader.value()  # info, repodata_version, removed, ...
 
@@ -171,6 +175,18 @@ def _seconds(timestamp: Any) -> int | None:
     return value if value <= _MS_THRESHOLD else None
 
 
+def _text(value: Any) -> TypeGuard[str]:
+    """A non-empty string Parquet can hold: JSON's ``\\ud800`` escape decodes to a lone surrogate, which UTF-8 cannot
+    encode, so such a record is skipped rather than failing its subdir's write."""
+    if not isinstance(value, str) or not value:
+        return False
+    try:
+        value.encode("utf-8")
+    except UnicodeEncodeError:
+        return False
+    return True
+
+
 def aggregate_records(records: Iterator[tuple[str, Any]]) -> pd.DataFrame:
     """One row per (``conda_name``, ``version``): the earliest file timestamp in seconds, and the file count."""
     seen: dict[tuple[str, str], list[Any]] = {}
@@ -178,7 +194,7 @@ def aggregate_records(records: Iterator[tuple[str, Any]]) -> pd.DataFrame:
         if not isinstance(record, dict):
             continue
         name, version = record.get("name"), record.get("version")
-        if not isinstance(name, str) or not name or not isinstance(version, str) or not version:
+        if not _text(name) or not _text(version):
             continue
         entry = seen.get((name, version))
         if entry is None:
@@ -209,6 +225,15 @@ def _parquet_writer(frame: pd.DataFrame) -> Callable[[Path], None]:
         frame.to_parquet(path, index=False)
 
     return _write
+
+
+def _readable(path: Path) -> bool:
+    """Whether a cached subdir copy exists and its Parquet footer reads."""
+    try:
+        pq.read_metadata(path)
+    except Exception:  # noqa: BLE001 -- absent, truncated or not Parquet
+        return False
+    return True
 
 
 def combine_subdirs(frames: list[pd.DataFrame]) -> pd.DataFrame:
@@ -351,24 +376,26 @@ class RepodataUploadsDataset(AbstractDataset):
         failures: list[str] = []
         for subdir in self._subdirs:
             path = self._subdir_path(subdir)
-            etag = manifest.get(subdir) if path.is_file() else None
+            # an ETag with no readable copy behind it would answer 304 forever and drop the subdir
+            etag = manifest.get(subdir) if _readable(path) else None
             try:
                 status, body, new_etag = self._get(self._subdir_url(subdir), etag)
                 if status == 304:
                     continue
-                frame = aggregate_subdir(body)
-            except _SUBDIR_ERRORS as exc:
+                atomic_write(path, _parquet_writer(aggregate_subdir(body)))
+            # one subdir's failure, whatever raised it (a transport error, a hostile or corrupt body, a write), is that
+            # subdir's: its copy stays, under the marker (atlas NFR-3: skip and mark stale, never fail)
+            except Exception as exc:  # noqa: BLE001
                 failures.append(f"{subdir}: {_describe_exc(exc)}")
                 continue
+            if new_etag:
+                manifest[subdir] = new_etag
+            else:
+                manifest.pop(subdir, None)
             try:
-                atomic_write(path, _parquet_writer(frame))
-                if new_etag:
-                    manifest[subdir] = new_etag
-                else:
-                    manifest.pop(subdir, None)
                 self._write_manifest(manifest)
             except OSError as exc:
-                failures.append(f"{subdir}: write failed: {exc}")
+                failures.append(f"{subdir}: manifest write failed: {exc}")
         if failures:
             self._mark_stale(
                 f"{len(failures)} of {len(self._subdirs)} subdirs not refreshed ({failures[0]}) -- keeping them"
@@ -382,8 +409,12 @@ class RepodataUploadsDataset(AbstractDataset):
         frames = []
         for subdir in self._subdirs:
             path = self._subdir_path(subdir)
-            if path.is_file():
+            if not path.is_file():
+                continue
+            try:
                 frames.append(pd.read_parquet(path))
+            except Exception as exc:  # noqa: BLE001 -- an unreadable copy is no copy; the next live load fetches it
+                logger.warning("%s: unreadable cached %s skipped: %s", type(self).__name__, subdir, exc)
         return combine_subdirs(frames)
 
     def load(self) -> pd.DataFrame:

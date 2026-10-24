@@ -147,6 +147,39 @@ def test_a_malformed_document_raises_value_error(body: bytes) -> None:
         list(RU.iter_repodata_records(io.BytesIO(body), chunk=8))
 
 
+def test_whitespace_after_a_number_never_refills(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A number followed by whitespace is whole: a long run of it must not pile up in the buffer."""
+    monkeypatch.setattr(RU, "_MAX_VALUE_CHARS", 100)
+    raw = b'{"repodata_version": 1' + b" " * 10_000 + b', "packages": {"x-1.conda": {"name": "x", "version": "1"}}}'
+
+    records = list(RU.iter_repodata_records(io.BytesIO(raw), chunk=16))
+
+    assert records == [("x-1.conda", {"name": "x", "version": "1"})]
+
+
+def test_a_number_that_never_ends_stops_at_the_cap(monkeypatch: pytest.MonkeyPatch) -> None:
+    """``1.`` followed by more than the cap of non-delimiters is a corrupt body, read only up to the cap."""
+    monkeypatch.setattr(RU, "_MAX_VALUE_CHARS", 100)
+    body = io.BytesIO(b'{"a": 1.' + b"5" * 10_000 + b"x}")
+
+    with pytest.raises(ValueError):
+        list(RU.iter_repodata_records(body, chunk=16))
+    assert body.tell() < 300
+
+
+def test_a_record_whose_name_is_a_lone_surrogate_is_skipped() -> None:
+    """JSON's ``\\ud800`` escape decodes to a string UTF-8 cannot encode, so Parquet could not write it."""
+    body = zstd.compress(
+        b'{"packages": {"bad.conda": {"name": "\\ud800", "version": "1", "timestamp": 1700000000},'
+        b' "bad2.conda": {"name": "y", "version": "\\udfff", "timestamp": 1700000000},'
+        b' "ok.conda": {"name": "x", "version": "1", "timestamp": 1700000000}}}'
+    )
+
+    out = RU.aggregate_subdir(body)
+
+    assert _rows(out) == {("x", "1"): (1_700_000_000, 1)}
+
+
 def test_a_value_longer_than_the_cap_stops_the_read_early(monkeypatch: pytest.MonkeyPatch) -> None:
     """A corrupt body (a string that never closes) must not pull the whole stream into memory."""
     monkeypatch.setattr(RU, "_MAX_VALUE_CHARS", 100)
@@ -282,8 +315,22 @@ def test_a_failed_subdir_keeps_its_copy_under_the_marker(tmp_path: Path, monkeyp
         NOARCH[: len(NOARCH) // 2],
         zstd.compress(b'{"packages": {"x-1-0.tar.bz2": {"name": '),
         zstd.compress(b'{"packages": {"x": ' + b"[" * 100_000 + b"]" * 100_000 + b"}}"),
+        zstd.compress(b'{[1]: 2, "packages": {}}'),
+        zstd.compress(b'{{"a": 1}: 2}'),
+        zstd.compress(b'{1: 2, "packages": {}}'),
+        zstd.compress(b'{"packages": {1: {"name": "x", "version": "1"}}}'),
     ],
-    ids=["not-zstd", "empty", "zstd-cut-short", "json-cut-short", "nested-past-the-decoder"],
+    ids=[
+        "not-zstd",
+        "empty",
+        "zstd-cut-short",
+        "json-cut-short",
+        "nested-past-the-decoder",
+        "list-key",
+        "object-key",
+        "number-key",
+        "number-filename",
+    ],
 )
 def test_a_corrupt_body_is_a_subdir_failure_never_a_raise(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, body: bytes
@@ -298,6 +345,44 @@ def test_a_corrupt_body_is_a_subdir_failure_never_a_raise(
     )
     marker = ds.staleness()
     assert marker is not None and marker.reason.startswith("1 of 2 subdirs not refreshed (noarch:")
+
+
+@pytest.mark.usefixtures("live")
+def test_any_failure_of_one_subdir_is_that_subdirs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Whatever raises inside one subdir's fetch, parse or write, the load never raises (atlas NFR-3)."""
+    server = _Server({"noarch": NOARCH, "linux-64": LINUX}, {"noarch": '"n1"', "linux-64": '"l1"'})
+    ds = _dataset(tmp_path, server, monkeypatch)
+    real = RU.aggregate_subdir
+
+    def flaky(body: bytes, **kw: Any) -> pd.DataFrame:
+        if body is NOARCH:
+            raise TypeError("an unexpected shape")
+        return real(body, **kw)
+
+    monkeypatch.setattr(RU, "aggregate_subdir", flaky)
+
+    out = ds.load()
+
+    assert set(out["conda_name"]) == {"a", "b", "c"}
+    marker = ds.staleness()
+    assert marker is not None and "noarch: " in marker.reason and "unexpected shape" in marker.reason
+
+
+@pytest.mark.usefixtures("live")
+def test_an_unreadable_copy_is_skipped_and_fetched_again(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    server = _Server({"noarch": NOARCH, "linux-64": LINUX}, {"noarch": '"n1"', "linux-64": '"l1"'})
+    ds = _dataset(tmp_path, server, monkeypatch)
+    ds.load()
+    (tmp_path / "store" / "subdirs" / "noarch.parquet").write_bytes(b"not parquet")
+
+    monkeypatch.setattr(public_sources, "live", lambda: False)
+    served = ds.load()  # the flag off: the unreadable copy is skipped, never raised
+    monkeypatch.setattr(public_sources, "live", lambda: True)
+    server.calls.clear()
+    fetched = ds.load()
+
+    assert set(served["conda_name"]) == {"a", "b", "c"} and ("a", "2.0") not in _rows(served)
+    assert server.calls == [("noarch", None), ("linux-64", '"l1"')] and ("a", "2.0") in _rows(fetched)
 
 
 @pytest.mark.usefixtures("live")
