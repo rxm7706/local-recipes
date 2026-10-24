@@ -287,6 +287,8 @@ Run 2026-10-24 in worktree `laughing-jackson-2bff14` (branch `claude/laughing-ja
   `test_no_done_and_flagged_spec_is_uncarried_across_the_eight_projects` (this spec was `done` with
   `followup_review_recommended: true` while review 5 ran). Every other lane passed: atlas 3,433 passed and 20 skipped,
   then 103 passed; 13,205 passed in the marshal lane apart from that one test.
+- The same command at `e0a3bb78b1`, after review 5's fixes and the re-stamp: **exit 0**, 21 of 37 lanes. Its atlas
+  lane: 3,433 passed and 20 skipped, then 103 passed; marshal 13,206 passed and 16 skipped.
 
 ## Spec Change Log
 
