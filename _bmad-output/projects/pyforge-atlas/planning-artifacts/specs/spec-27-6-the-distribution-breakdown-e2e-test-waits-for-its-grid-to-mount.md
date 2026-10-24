@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-24'
 status: 'in-review'
 baseline_revision: '9ab7ef1cf1'
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -31,7 +31,7 @@ default. Line numbers below are at `9ab7ef1cf1` unless marked.
   (`:217`, assertion at `:242`): `AssertionError: Locator expected to contain text 'linux-64'` on
   `locator("#distribution-breakdown--grid")`, timeout 5000 ms. The call log shows the grid `data-dash-is-loading="true"`,
   then empty. The suite took 3:57 there against about 44 s alone; the test passed the preflight run before and three
-  times alone (about 6 s each). It failed the same way in Story 31.1's preflight on 2026-10-15, recorded as
+  times alone (6-7 s each). It failed the same way in Story 31.1's preflight on 2026-10-15, recorded as
   `DW-atlas-retro-2026-10-15-1` (medium, open).
 - **How the page renders.** Vizro 0.1.60's `AgGrid.build` returns an empty `html.Div(id=<grid id>)` placeholder;
   the page's `on_page_load` callback fills it with the real `dash_ag_grid.AgGrid`, `rowData` included, and the
@@ -52,27 +52,39 @@ default. Line numbers below are at `9ab7ef1cf1` unless marked.
   the `linux-64` row was in the DOM within 1 ms of the mount in every copy. The `on_page_load` request took 0.4-1.9 s,
   so most of the time is the busy browser, not the Vizro server. Under Chromium CPU throttling alone (1x-24x, an idle
   host), the same order held and the request took at most 130 ms.
-- **Why one budget.** A first fix waited 15 s for the mount after the chart. It passed two batches at 48 busy loops
-  and failed 3 of 24 copies in the third, on the dropdown's own 15 s wait: Playwright-side, from `goto`, the grid
+- **Why one budget.** A first fix waited 15 s for the mount after the chart. At 48 busy loops it passed one counted
+  batch (a second is discounted, see the Auto Run Result) and failed 3 of 24 copies in a third, on the dropdown's own
+  15 s wait: Playwright-side, from `goto`, the grid
   mounted up to 22.3 s and the dropdown showed up to 20.4 s. Every step of this page waits on the same busy main
   thread, so per-step budgets do not fit it; one budget on the element drawn last does.
+- **The same exposure elsewhere in the file.** `test_dashboard_e2e_navigation_and_rendering` (`:134`-`:137`,
+  `:147`-`:149`, `:160`-`:162`, `:172`) and `test_every_grounded_page_renders_rows_on_the_fixture_data_root`
+  (`:210`-`:212`) check grids that Vizro fills the same way, under the same 5 s default (review 2, should-fix 3). Their
+  pages draw no chart, so they render sooner: 16 copies of each at 48 busy loops failed 0 of 30. The exposure is
+  real but did not reproduce; the change there is for consistency with the measured mechanism.
 - **Ruled out.** The fixture: the server is bound before the test starts (`wait_for_server`). A defect in the page:
   alone the grid mounts about 140 ms after the callback output lands and holds the row. `networkidle` (`:236`): it
   settled before the callback output was applied (1.2 s at 8x throttling, row at 9.4 s), so it waited on nothing the
   test checks while carrying render time on its own 30 s default.
 
 **Approach:**
-1. In `test_declared_controls_render_against_real_rows`, right after `goto`, wait for the AG Grid to mount inside
-   `#distribution-breakdown--grid` (`.ag-root-wrapper` attached) with `timeout=60_000`, the budget this suite gives a
-   loaded host (the fixture's `wait_for_server` 60 s, the WASM smoke's 60 s ready wait,
+1. Add one helper, `expect_grid_mounted(grid)`, that waits for the AG Grid to replace Vizro's placeholder
+   (`.ag-root-wrapper` attached inside the grid's id) with `GRID_MOUNT_TIMEOUT_MS = 60_000`, the budget this suite
+   gives a loaded host (the fixture's `wait_for_server` 60 s, the WASM smoke's 60 s ready wait,
    `tests/integration/wasm/test_wasm_smoke.py:168`): 2.7 times the slowest mount measured (22.3 s). It is the grid's
    loaded state: it cannot match the placeholder, and it does not depend on the row.
+   In `test_declared_controls_render_against_real_rows` it is the first check after `goto`.
 2. Drop `page.wait_for_load_state("networkidle")`: the mount wait replaces it. `goto` keeps Playwright's 30 s default
    for the `load` event; it took at most 4.0 s at 48 busy loops.
 3. Keep the filter, dropdown and chart checks and their 15 s timeouts unchanged, now after the mount, where those
    elements are already drawn; keep the row assertion last with its default 5 s, since the row is in the DOM within
    1 ms of the mount. A mounted grid without the row fails within 5 s, showing the grid's text.
-4. Replace the comment above the waits: why the grid is drawn last, and why its wait is first and 60 s.
+4. Replace the comment above the waits: the grid is drawn after the filter, its dropdown and the chart's container,
+   so its mount is the one wait that carries the page's render. The old comment's claim that #1836 and #1838 were a
+   loaded runner outrunning 5 s goes: those runs were Story 27.5's filter defect (`DW-atlas-27-3-1`).
+4a. In the navigation test and the grounded-pages test, each page's grid is mounted (the helper, right after that
+   page's `goto`) before its checks run; their assertions and timeouts do not change. The file's layout-only checks
+   (headings, cards, the scan pages' fields, the landmarks) are not grid checks and stay as they are.
 5. Close `DW-atlas-retro-2026-10-15-1` with a `resolution:` naming this story and a `verified:` line citing the
    `path:line` it fixed. Its proposed fix (`timeout=15_000` on the row assertion) is refined: under load the whole
    render, not only the row, outruns a 15 s step, and putting the whole budget on the row would make a real missing
@@ -91,17 +103,21 @@ Type / Effort / Deps: fix / S / S-27.5.
 
 ## Acceptance Criteria
 
-- **AC1 — Waits on the mount first.** The test's first check after `goto` asserts
-  `#distribution-breakdown--grid .ag-root-wrapper` is attached with `timeout=60_000`; there is no `networkidle` wait;
-  the filter, dropdown, chart and `linux-64` row checks follow it unchanged.
+- **AC1 — Waits on the mount first.** The test's first check after `goto` is `expect_grid_mounted(grid)`, which
+  asserts `.ag-root-wrapper` is attached inside `#distribution-breakdown--grid` with `timeout=60_000`; there is no
+  `networkidle` wait; the filter, dropdown, chart and `linux-64` row checks follow it unchanged.
+- **AC1b — Every grid check waits on its mount.** In the navigation and grounded-pages tests, each grid the test
+  asserts on is passed to `expect_grid_mounted` after its page's `goto` and before its first check; under the load
+  harness neither test fails its assertions.
 - **AC2 — Stable under load.** With the harness that failed 4 of 24 before the fix (32 copies, 16 workers, 48 busy
   loops), no copy fails its assertions, over at least three batches, plus at least one batch at 32 busy loops; setup
   errors from the fixture's server not binding are counted and reported apart, never as passes.
 - **AC3 — A missing row still fails.** Against a fixture data root whose `derived_distribution_breakdown` has no
   `linux-64` row, the fixed test fails on `Locator expected to contain text 'linux-64'`, and the failure shows the
   grid's actual text (the other rows), not a timeout on the mount.
-- **AC4 — Nothing weakened.** The test keeps every assertion it had; `git diff` adds no `skip`, `xfail`, `rerun`,
-  `flaky`, `retry` or `sleep`; under `src/` only `test_dashboard_e2e.py` changes.
+- **AC4 — Nothing weakened.** Every test in the file keeps every assertion it had (this test: two `assert`s and four
+  `expect`s); `git diff` adds no `skip`, `xfail`, `rerun`, `flaky`, `retry` or `sleep`; under `src/` only
+  `test_dashboard_e2e.py` changes.
 - **AC5 — Suites.** `pixi run -e pyforge-atlas pyforge-atlas-test`, `kedro-test` and `kedro-catalog-check` pass.
 - **AC6 — Row closed.** `DW-atlas-retro-2026-10-15-1` reads `status: closed` with a `resolution:` naming Story 27.6
   and a `verified:` line citing the test's `path:line`.
@@ -109,14 +125,14 @@ Type / Effort / Deps: fix / S / S-27.5.
 ## Boundaries & Constraints
 
 - Test-only: `src/pyforge/atlas/**` does not change; the page renders as it does today.
-- Only `test_declared_controls_render_against_real_rows` changes; the file's other tests and the fixture stay as they
-  are.
+- Only `test_dashboard_e2e.py` changes: the helper, this test, and the grid checks of the navigation and
+  grounded-pages tests. The fixture, the scan-pages test and the semantic-navigation test stay as they are.
 
 ## I/O & Edge-Case Matrix
 
 | Input | Expected |
 |---|---|
-| the fixture root, an idle host | passes in about 7 s, as today |
+| the fixture root, an idle host | passes in 6-7 s, as today |
 | the fixture root, the load harness | passes; the mount wait absorbs the callback and the lazy grid chunk |
 | a root without the `linux-64` row | fails on the row assertion within 5 s of the mount, showing the grid's text |
 | a callback that never fills the grid | fails on the mount wait after 60 s, naming `.ag-root-wrapper` |
@@ -183,6 +199,17 @@ Type / Effort / Deps: fix / S / S-27.5.
   log): fixed. N4 (row check at 15 s): declined; the in-page run puts the row within 1 ms of the mount, so the
   default 5 s keeps a real missing row's report fast.
 
+### 2026-10-24 — Review 2 (independent subagent, read-only): PASS, 0 blockers
+- verdicts: 3 should-fix, 7 nits; all fixed.
+- S1 (the comment's #1836/#1838 "loaded runner" claim): dropped; those runs were Story 27.5's filter defect.
+- S2 (the epic's Given still said "AG Grid's own script"): reworded, and the base's `networkidle` named.
+- S3 (the file's other grid checks shared the 5 s exposure): fixed here rather than recorded (the repo's fix-now
+  rule): one helper, `expect_grid_mounted`, now gates every grid check in the file; measured before and after under
+  load (Auto Run Result).
+- N1 (DW wording), N2 (six assertions, not five), N3 (memlog figures, corrected in the reconcile entry), N4 (one
+  measurement pair in the comments: in-page 20.8 s and 16.9 s), N5 ("the chart's container"), N6 ("one counted
+  batch"), N7 (idle 6-7 s everywhere): fixed. The docstring duplicate the reviewer noted at `:281`-`:282` is fixed too.
+
 ## Spec Change Log
 
 - 2026-10-24: minted with Story 27.6 under Epic 27 from the Dream entry of that date; implemented the same session.
@@ -192,6 +219,8 @@ Type / Effort / Deps: fix / S / S-27.5.
   (`9c39037823`).
 - 2026-10-24: review 1 fixes: `networkidle` dropped and the comment corrected (`bb0c148438`); Intent re-measured in
   the page; ACs, matrix and the DW row reworded.
+- 2026-10-24: review 2 fixes: scope widened from one test to every grid check in the file (AC1b, Approach 4a), one
+  helper; the #1836/#1838 claim dropped.
 
 ## Auto Run Result
 
@@ -212,20 +241,29 @@ Type / Effort / Deps: fix / S / S-27.5.
 | `9c39037823` | 32 | 0 / 32, 0 / 32 | 0, 0 | — |
 | final (`bb0c148438`, no `networkidle`) | 48 | 0 / 27, 0 / 28, 0 / 27 | 5, 4, 5 | — |
 | final | 32 | 0 / 30 | 2 | — |
+| navigation + grounded-pages tests, before (16 copies each) | 48 | 0 / 30 | 2 | — |
+| navigation + grounded-pages tests, with `expect_grid_mounted` | 48 | 0 / 24 | 8 | — |
 
 - (a) A commit's pre-commit hook stashed the then-unstaged test file while this batch's workers started, so it may
   have run the original test; it is not counted as evidence for either version.
-- AC1: `test_dashboard_e2e.py:241` (`.ag-root-wrapper` attached, `timeout=60_000`) is the first check after `goto`;
-  `:243`-`:246` unchanged.
+- AC1: `test_dashboard_e2e.py:255` (`expect_grid_mounted(grid)`; the helper at `:75`-`:77` attaches
+  `.ag-root-wrapper` with `GRID_MOUNT_TIMEOUT_MS = 60_000`, `:72`) is the first check after `goto`; `:256`-`:260`
+  unchanged. AC1b: `:137`, `:155`, `:168`, `:182` (navigation) and `:226` (grounded pages).
+- The whole file alone, final code: 5 passed in 34.9 s.
+- A full-scope `pr-preflight` dry run on `2777973183` plus the matrix row (before the helper change): exit 0, 21 of
+  37 lanes.
 - AC3 (final code): the test against a fixture root without the `linux-64` row → `1 failed`,
   `AssertionError: Locator expected to contain text 'linux-64'` on `to_contain_text … with timeout 5000ms`, actual
   value the grid's three other rows (`osx-arm64`, `3.12`, `3.11`).
 - Alone (final code): 3 of 3 passed, 6.3-6.6 s each.
 - AC4: `git diff 9ab7ef1cf1..HEAD -- src/` touches only `test_dashboard_e2e.py`, adds no `skip`, `xfail`, `rerun`,
-  `flaky`, `retry` or `sleep`, and keeps all five original assertions.
+  `flaky`, `retry` or `sleep`, and keeps every assertion in the file (this test's two `assert`s and four `expect`s).
 - AC5 (final code, scratch harness moved out first): `pixi run --frozen -e pyforge-atlas kedro-test` (it runs
   `pyforge-atlas-test`) exit 0, 3,478 passed and 20 skipped, then 103 passed; `kedro-catalog-check` exit 0, 71
   passed.
 - Residual risk: at 48 busy loops on 16 cores (a load past any measured preflight) the shared `dashboard_server`
   fixture can fail to bind within its 60 s; it errors at setup, visibly, and no real preflight run has hit it. Not
-  changed here (the fixture serves the whole file).
+  changed here: no real run has failed on it, and the fixture serves the whole file.
+- Residual risk: the file's layout-only checks (headings, cards, the scan pages' fields, landmarks) keep Playwright's
+  5 s default; in the page, at 48 busy loops, layout elements showed at most 4.8 s after navigation (the filter's
+  container), a thin margin at a load past any measured preflight, and none failed in any batch.

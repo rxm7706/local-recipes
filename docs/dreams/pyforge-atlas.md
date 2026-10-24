@@ -691,17 +691,20 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
     before the grid mounted in every copy; the grid mounted up to 20.8 s after navigation and up to 16.9 s after the
     chart, with the `linux-64` row within 1 ms of the mount. The `on_page_load` request took at most 1.9 s there, so
     most of the time is the busy browser, not the Vizro server.
-  - A first fix, a 15 s mount wait after the chart, still failed 3 of 24 copies in one of three batches, on the
+  - A first fix, a 15 s mount wait after the chart, still failed 3 of 24 copies in one counted batch, on the
     dropdown's own 15 s wait: under load every step can take longer than 15 s, so budgets per step do not fit.
+  - The file's two other grid tests (the navigation walk and the grounded pages) check grids filled the same way
+    under the same 5 s default.
   **What it looks like when fixed:** right after the page opens, the test waits up to 60 s for the AG Grid to mount
   inside `#distribution-breakdown--grid`, the element drawn last, with the budget the suite gives a loaded host (the
   fixture's server bind, the WASM smoke); then it checks the filter, its dropdown, the chart and the row as before.
-  Under the same load no copy fails its assertions (setup errors, the fixture's server not binding within 60 s at
-  that synthetic load, are counted apart), and a fixture root without the `linux-64` row still fails it on the row,
-  with the grid's actual text.
+  Every other grid check in the file waits for its grid's mount the same way, through one helper. Under the same
+  load no copy fails its assertions (setup errors, the fixture's server not binding within 60 s at that synthetic
+  load, are counted apart), and a fixture root without the `linux-64` row still fails on the row, with the grid's
+  actual text.
   **Constraints:**
-  - A `fix` story: no CAP, no FR, no flag (`spec-feature-flag-governance` Q1). Test-only: one test changes, and no
-    skip, `xfail`, retry or rerun is added (AD-11: gates are never weakened); every assertion stays.
+  - A `fix` story: no CAP, no FR, no flag (`spec-feature-flag-governance` Q1). Test-only: the e2e file's grid checks
+    change, and no skip, `xfail`, retry or rerun is added (AD-11: gates are never weakened); every assertion stays.
   - It goes into Epic 27, which owns this test (Stories 27.3 and 27.5), and reopens it until it lands.
   **Kinships:** [[pyforge-steward]] (the pre-push preflight lane that surfaced it). Owner `spec-pyforge-atlas` (CAP-8,
   the read surface). → Epic 27 / Story 27.6, specced 2026-10-24.

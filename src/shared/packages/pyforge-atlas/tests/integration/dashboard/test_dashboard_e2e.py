@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 
 import pytest
-from playwright.sync_api import expect, sync_playwright
+from playwright.sync_api import Locator, expect, sync_playwright
 
 from pyforge.atlas.dashboard import app
 
@@ -63,6 +63,18 @@ def run_vizro_server(port: int, data_root: str, stamp: str, now: int, sprint_pat
 
 
 FIXTURE_DATA_ROOT = Path(__file__).resolve().parents[2] / "fixtures" / "data"
+
+# Vizro builds every AgGrid as an empty placeholder that the page's on_page_load callback fills, and the browser then
+# applies that output and loads dash-ag-grid's lazy grid chunk, so a grid is the last thing its page draws. On a
+# loaded host that runs far past Playwright's 5 s default: under parallel load the distribution-breakdown grid
+# mounted up to 20.8 s after navigation (Story 27.6). A grid check therefore first waits for the mount, with the 60 s
+# this suite gives a loaded host (wait_for_server, the WASM smoke); the grid's rows arrive with it.
+GRID_MOUNT_TIMEOUT_MS = 60_000
+
+
+def expect_grid_mounted(grid: Locator) -> None:
+    """Wait until the AG Grid has replaced Vizro's placeholder inside ``grid``."""
+    expect(grid.locator(".ag-root-wrapper")).to_be_attached(timeout=GRID_MOUNT_TIMEOUT_MS)
 
 
 @pytest.fixture()
@@ -121,6 +133,8 @@ def test_dashboard_e2e_navigation_and_rendering(dashboard_server):
 
         # 1. Open the home page (feedstock-health is the first page)
         page.goto(dashboard_server)
+        grid_fh = page.locator("#feedstock-health--grid")
+        expect_grid_mounted(grid_fh)
 
         # Assert page title or header
         expect(page).to_have_title(re.compile("cf_atlas Factory"))
@@ -130,7 +144,6 @@ def test_dashboard_e2e_navigation_and_rendering(dashboard_server):
         expect(about_card).to_contain_text("Ports the feedstock-health read CLI")
 
         # 3. Verify AgGrid is rendered and contains feedstock data
-        grid_fh = page.locator("#feedstock-health--grid")
         expect(grid_fh).to_be_visible()
         expect(grid_fh).to_contain_text("alpha")
         expect(grid_fh).to_contain_text("beta")
@@ -138,37 +151,40 @@ def test_dashboard_e2e_navigation_and_rendering(dashboard_server):
 
         # 4. Navigate to "My Feedstocks" page
         page.goto(f"{dashboard_server}/my-feedstocks")
+        grid_my = page.locator("#my-feedstocks--grid")
+        expect_grid_mounted(grid_my)
 
         # Verify page content and grid are visible (expect handles wait)
         about_my = page.locator("#my-feedstocks--about")
         expect(about_my).to_contain_text("Ports the my-feedstocks read CLI")
 
-        grid_my = page.locator("#my-feedstocks--grid")
         expect(grid_my).to_be_visible()
         expect(grid_my).to_contain_text("alice")
         expect(grid_my).to_contain_text("bob")
 
         # 5. Navigate to "Factory Status" page
         page.goto(f"{dashboard_server}/factory-status")
+        grid_fs = page.locator("#factory-status--grid")
+        expect_grid_mounted(grid_fs)
 
         # Verify that factory status page renders its specific card and timestamp (AD-17)
         stamp_card = page.locator("#factory-status--stamp")
         expect(stamp_card).to_contain_text("Build timestamp (AD-17):")
         expect(stamp_card).to_contain_text("2026-07-18T12:00:00Z")
 
-        grid_fs = page.locator("#factory-status--grid")
         expect(grid_fs).to_be_visible()
         expect(grid_fs).to_contain_text("d1-define-the-boring-semantic-layer-bsl-models")
         expect(grid_fs).to_contain_text("done")
 
         # 6. Navigate to "Staleness Report" page (a BSL-wired shell page)
         page.goto(f"{dashboard_server}/staleness-report")
+        grid_st = page.locator("#staleness-report--grid")
+        expect_grid_mounted(grid_st)
 
         # Verify BSL-wired shell description and AgGrid
         about_st = page.locator("#staleness-report--about")
         expect(about_st).to_contain_text("Wired to build_packages_model.staleness_age_days")
 
-        grid_st = page.locator("#staleness-report--grid")
         expect(grid_st).to_be_visible()
 
         # 7. Close browser
@@ -207,6 +223,7 @@ def test_every_grounded_page_renders_rows_on_the_fixture_data_root(dashboard_ser
             for page_def in grounded:
                 page.goto(f"{dashboard_server}{_page_path(page_def)}")
                 grid = page.locator(f"#{page_def.id}--grid")
+                expect_grid_mounted(grid)
                 expect(grid).to_be_visible()
                 for cell in GROUNDED_PAGE_EVIDENCE[page_def.id]:
                     expect(grid).to_contain_text(cell)
@@ -230,15 +247,12 @@ def test_declared_controls_render_against_real_rows(dashboard_server):
         page = context.new_page()
         try:
             page.goto(f"{dashboard_server}{_page_path(page_def)}")
-            # The grid mounts last: Vizro builds it as an empty placeholder that the page's on_page_load callback
-            # fills, and the browser then applies that output and loads dash-ag-grid's lazy grid chunk, after the
-            # filter, its dropdown and the chart are drawn. So the grid's mount is the one wait that carries the
-            # page's render, and it gets the 60 s this suite gives a loaded host (the fixture's server bind, the
-            # WASM smoke). Under parallel load the grid took up to 22.3 s to mount, up to 16.9 s after the chart
-            # (Story 27.6); a loaded CI runner outran 5 s on 2026-10-04 too (#1836, #1838). The checks below then
-            # find a drawn page, and a mounted grid without the row fails on the row, showing the grid's text.
+            # The grid is drawn after the filter, its dropdown and the chart's container (up to 16.9 s after the
+            # chart under parallel load, Story 27.6), so its mount is the one wait that carries this page's render;
+            # the checks below then find a drawn page, and a mounted grid without the row fails on the row,
+            # showing the grid's text.
             grid = page.locator("#distribution-breakdown--grid")
-            expect(grid.locator(".ag-root-wrapper")).to_be_attached(timeout=60_000)
+            expect_grid_mounted(grid)
             facet_filter = page.locator("#distribution-breakdown--filter-facet")
             expect(facet_filter).to_be_visible(timeout=15_000)
             expect(facet_filter.locator("button.dash-dropdown")).to_be_visible(timeout=15_000)
@@ -279,7 +293,7 @@ def test_dashboard_pages_semantic_nav_and_aria(dashboard_server):
 
     What this asserts as REAL (verified against the rendered DOM, never assumed):
       * exactly one real ``<a href>`` navigation link per ``PAGE_INVENTORY`` entry
-        ``PAGE_INVENTORY`` entry, in its deterministic order) — genuine semantic
+        (in its deterministic order) — genuine semantic
         HTML anchors, not JS-only click handlers a scraper/browser-agent could miss;
       * each link's accessible name (its text content) equals that page's title
         EXACTLY — the accessible name IS the page identity, never generic
