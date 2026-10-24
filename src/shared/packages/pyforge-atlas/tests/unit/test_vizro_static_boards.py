@@ -334,15 +334,17 @@ def test_only_last_good_copies_persist_never_the_vdb_store_or_an_output_layer() 
 
 
 def test_the_cached_paths_are_the_data_root_the_build_writes() -> None:
-    features = tomllib.loads(PIXI.read_text(encoding="utf-8"))["feature"]
-    atlas = features["pyforge-atlas"]
+    manifest = tomllib.loads(PIXI.read_text(encoding="utf-8"))
+    atlas = manifest["feature"]["pyforge-atlas"]
     assert atlas["tasks"]["pyforge-atlas-bootstrap"]["cwd"] == MEMBER  # Kedro resolves `data` against the member
     assert _data_root_paths()["data_root"] == "data"
     # An override anywhere the job reads its environment would move the data off the cached paths.
     assert "PYFORGE_ATLAS_DATA_ROOT" not in yaml.safe_dump(_workflow())  # workflow, job and step env
     for task in ("pyforge-atlas-bootstrap", "vizro-static-export"):
         assert "PYFORGE_ATLAS_DATA_ROOT" not in atlas["tasks"][task].get("env", {}), task
-    assert "PYFORGE_ATLAS_DATA_ROOT" not in atlas.get("activation", {}).get("env", {})
+        assert "PYFORGE_ATLAS_DATA_ROOT" not in atlas["tasks"][task]["cmd"], task  # nor as a command prefix
+    for scope in (atlas, manifest):  # the feature's activation env and the workspace's
+        assert "PYFORGE_ATLAS_DATA_ROOT" not in scope.get("activation", {}).get("env", {})
 
 
 def test_every_last_good_store_under_the_data_root_is_cached() -> None:

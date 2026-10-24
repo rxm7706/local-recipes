@@ -12,7 +12,7 @@ entries: 60
 real deferrals** (the run log's index of "54" double-counted two aliases; see § Provenance).
 Follow-up intake and verification campaigns added more `## DW-` headings without retiring
 that migration set — the frontmatter `entries` field tracks **`## DW-` headings only**, not
-the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**215** `### DW-` headings
+the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**216** `### DW-` headings
 today). Stale narrative prose here is exactly what Story 27.4's counting test guards against.
 
 ## Why this file exists
@@ -5249,5 +5249,16 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: Story 37.12 review 2
   severity: low
   promoted: 2026-10-24 -- atlas Story 37.12 review 2
-  resolved: 2026-10-24 (Story 37.12 review 3: the blocking reason was wrong -- `diff_vulnerability_snapshots` falls back to the second-latest snapshot when none is `since_days` old (`pipelines/vulnerability/nodes.py`, `older_ts = older[0] if older else int(stamps[1])`), so two cached snapshots hours apart already give the cve-watcher a diff. The vizro job now caches `data/primary/vulnerability_rollup_snapshots` beside `raw/` and `stores/*`, so on Pages the cve-watcher fills from the second run whose cache survives. The IncrementalParquetDataset TTL row caches stay uncached by design: an optimisation, each Pages build recomputes them as before)
+  resolved: 2026-10-24 (Story 37.12 review 3: the blocking reason was wrong -- `diff_vulnerability_snapshots` falls back to the second-latest snapshot when none is `since_days` old (`pipelines/vulnerability/nodes.py`, `older_ts = older[0] if older else int(stamps[1])`), so two cached snapshots hours apart already give the cve-watcher a pair to diff. The vizro job now caches `data/primary/vulnerability_rollup_snapshots` beside `raw/` and `stores/*` (operator ruling 2026-10-24: "Approve"), so on Pages the cve-watcher has a pair from the second run whose cache survives; a pair with no moved count still renders empty. The IncrementalParquetDataset TTL row caches stay uncached by design: an optimisation, each Pages build recomputes them as before)
   status: closed
+
+### DW-atlas-37-12-3: On Pages, a run whose vulnerability database build fails republishes the previous cve-watcher diff as current.
+
+- source_spec: `planning-artifacts/specs/spec-37-12-the-pages-data-build-keeps-its-last-good-copies-between-runs.md`
+  summary: Story 37.12 caches the vulnerability snapshot history between Pages runs but never `stores/vdb`, which every run rebuilds. When that build fails, the store is absent, `vulnerability_package_rollup` is empty, and `SnapshotHistoryDataset.save` appends nothing for an empty frame, so `diff_vulnerability_snapshots` diffs the same two snapshots as the run before and writes the same `derived_vuln_history`. The cve-watcher board (`dashboard/data.py::load_cve_watcher`) shows no snapshot date, and its AD-17 stamp is the derived file's fresh mtime, so the old diff reads as current with no marker. On a workstation the vdb store keeps its last-good copy, so the rollup is not empty there. Fix in Story 37.5's nodes (out of Story 37.12's workflow-only boundary): mark the diff stale, or write it empty, when the latest snapshot is not this run's, or carry the latest snapshot's age to the board.
+  evidence: Story 37.12 review 4 (2026-10-24), a probe over the real `SnapshotHistoryDataset` and `diff_vulnerability_snapshots`: with the third run's rollup empty, its diff equalled the second run's and the latest snapshot was 27 hours old.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/vulnerability/nodes.py (snapshot_vulnerability_rollup, diff_vulnerability_snapshots); src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/snapshot_history.py (save skips an empty frame); src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/data.py (load_cve_watcher)
+  origin: Story 37.12 review 4
+  severity: low
+  promoted: 2026-10-24 -- atlas Story 37.12; owner atlas (a fix to Story 37.5's nodes)
+  status: open

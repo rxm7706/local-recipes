@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-24'
 status: 'in-progress'
 baseline_revision: '2859b706da'
-review_loop_iteration: 3
+review_loop_iteration: 4
 followup_review_recommended: true
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -19,6 +19,7 @@ context:
   - src/shared/packages/pyforge-atlas/tests/unit/test_vizro_static_boards.py
 deferred:
   - DW-atlas-37-12-1
+  - DW-atlas-37-12-3
 declared_low_risk: false
 ---
 
@@ -55,8 +56,9 @@ bootstrap-index-health board reads `missing` (34.12's residual risk).
    - The snapshot history (`vulnerability_rollup_snapshots`, the one `SnapshotHistoryDataset`) is appended to on
      every run and deduplicated on `(snapshot_at, conda_name)`. `diff_vulnerability_snapshots` diffs the latest
      snapshot against the newest one at least `since_days` (7) older. When none is, it falls back to the
-     second-latest. So two cached snapshots, even hours apart, fill the cve-watcher on Pages, which Story 37.5 left
-     empty there "until a store persists across runs". **Operator ruling 2026-10-24: "Approve"** (this scope change,
+     second-latest. So from the second run whose cache survives, the cve-watcher has a pair of snapshots to diff on
+     Pages, which Story 37.5 left empty there "until a store persists across runs". A pair hours apart often moves no
+     count, and then the board is still empty. **Operator ruling 2026-10-24: "Approve"** (this scope change,
      given in the Story 37.12 session; on the memlog).
    - Seven raw-layer entries there are no last-good store. Five are plain (any type outside
      `pyforge.atlas.datasets`), and two are the SBOM entries, whose runtime-param defaults the Pages build never
@@ -121,7 +123,8 @@ Type / Effort / Deps: fix / S / 34.12.
   output-layer path, never `cache/`, and never `stores` itself.
 - **AC5 — The build's own data root.** The `globals.yml` data root defaults to `data`, and the bootstrap task runs
   from the member directory. `PYFORGE_ATLAS_DATA_ROOT` is set nowhere the job reads: not in the workflow, job or step
-  `env`, not in the bootstrap or export pixi task's `env`, and not in the `pyforge-atlas` activation env.
+  `env`; not in the bootstrap or export pixi task's `env` or `cmd`; and not in the `pyforge-atlas` feature's or the
+  workspace's activation env.
 - **AC6 — Every last-good copy is covered.** Read every path key `CatalogIndexDataset` reads (`filepath`, `path`,
   `filename`). Every raw-layer entry whose path resolves under the data root lies under `raw/` or `stores/`. Nothing
   except the vulnerability database store lies at or under `stores/vdb`. Every `SnapshotHistoryDataset` lies under
@@ -159,9 +162,20 @@ Type / Effort / Deps: fix / S / 34.12.
   read again and age out first.
 - **The snapshot history grows.** Nothing prunes `vulnerability_rollup_snapshots`: each run that saves adds one
   snapshot, about as many rows as packages with a vulnerability. An eviction resets it.
-  - If the snapshot node stopped writing, the cve-watcher would keep diffing the last two snapshots it had, each
-    dated by its `snapshot_at`.
   - A run between snapshots fewer than 7 days apart diffs against the second-latest, as legacy `cve_watcher.py` does.
+- **A failed vulnerability database build republishes the previous diff as current** (`DW-atlas-37-12-3`; worse
+  than on a workstation).
+  - `stores/vdb` is not cached, so a run whose vdb build fails has no store, and its rollup is empty.
+  - `SnapshotHistoryDataset.save` appends nothing for an empty frame. So `diff_vulnerability_snapshots` diffs the
+    same pair as the run before.
+  - The cve-watcher board shows no snapshot date, and its AD-17 stamp is the derived file's fresh mtime. So the old
+    diff reads as current, with no marker.
+  - On a workstation the vdb store keeps its last-good copy and the rollup is not empty.
+  - Review 4's probe showed it: the third run's diff equalled the second's, from a 27-hour-old snapshot.
+  - The fix belongs to Story 37.5's nodes, outside this workflow-only story.
+- **A partial rollup appends a partial snapshot.** A run whose vulnerability data is incomplete appends what it has,
+  and the diff then shows packages dropping to 0, a mass "resolved". That is Story 37.5's behaviour, the same as on a
+  workstation, but Pages rebuilds the vdb every run, so it is reached more often.
 - **Other branches.** A dispatch on another branch reads main's entries and saves to its own branch's scope; main
   never reads it.
 - **Stale directories.** A restored directory of a removed or renamed catalog entry rides along until someone deletes
@@ -169,9 +183,15 @@ Type / Effort / Deps: fix / S / 34.12.
 - **Trusted copies.** A copy the previous run accepted is trusted as last-good again, and each dataset's own checks
   still apply on load (34.12's shape check and set-aside, the stores' `_readable` checks). The PyPI-to-conda map keeps
   every key any earlier run exported (Approach 3).
-- **Partial restore.** If the tar extract fails partway, `actions/cache` only warns and leaves a partial tree. The
-  readers set aside or refetch what they cannot read (review 1 checked 34.12's set-aside and the S3 and repodata
-  `_readable` checks).
+- **Partial restore.** If the tar extract fails partway, `actions/cache` only warns and leaves a partial tree.
+  - The raw-layer readers set aside or refetch what they cannot read (review 1 checked 34.12's set-aside and the S3
+    and repodata `_readable` checks).
+  - `SnapshotHistoryDataset` does not. It keeps an unreadable history and skips every later append, and the save step
+    caches the bad file again.
+  - So the cve-watcher stays empty on Pages until the entry is evicted. After the limit raise, that may not happen
+    while runs come less than 7 days apart.
+  - Recovery is the operator's: delete the repository's `pyforge-atlas-last-good-*` Actions cache entries. The next
+    run then starts from a fresh root.
 - **Unexecuted behaviour.** The `@actions/glob` behaviour was read from the upstream source; it was not executed here,
   because there is no runner. The first runs on main after the merge are the live proof (*Verification*).
 
@@ -196,8 +216,10 @@ Type / Effort / Deps: fix / S / 34.12.
   keep).
 - Epic: Epic 37 (done; this story reopens it until it lands).
 - Ledger key: `37-12-the-pages-data-build-keeps-its-last-good-copies-between-runs`; status at mint `in-progress`.
-- Deferred work: opens `DW-atlas-37-12-1` (operator-owned: raise the repository's Actions cache limit). Review 2's
-  `DW-atlas-37-12-2` (the snapshot history on Pages) was opened and closed on the branch (review 3).
+- Deferred work: opens `DW-atlas-37-12-1` (operator-owned: raise the repository's Actions cache limit) and
+  `DW-atlas-37-12-3` (atlas: a failed vdb build republishes the previous cve-watcher diff as current; a fix to Story
+  37.5's nodes). Review 2's `DW-atlas-37-12-2` (the snapshot history on Pages) was opened and closed on the branch
+  (review 3).
 - Follows Story 34.12 (its residual risk "the Pages job builds on a fresh data root").
 
 ## Verification
@@ -225,7 +247,7 @@ Run 2026-10-24 in worktree `laughing-jackson-2bff14` (branch `claude/laughing-ja
 - **Tests:** `test_vizro_static_boards.py`: 19 passed (13 before, 6 new; reviews 1 and 2 widened four of them).
   `pixi run -e pyforge-atlas pyforge-atlas-test` (before review 1's fixes): 3,433 passed and 20 skipped, then 103
   passed. `pixi run -e pyforge-guild lint-types`: exit 0. `scripts/ci_surface_gates.py --check`: exit 0.
-- **Mutations** (`scratchpad/mutate.py`, each restored): 39 of 39 killed.
+- **Mutations** (`scratchpad/mutate.py` and two by hand, each restored): 41 of 41 killed.
   - The first 20: no restore; no save; the restore after the build; the save before the build; the save under
     `always()`; the restore ungated; `stores` listed as itself; no vdb exclusion; `primary/` cached; the save naming
     another path list; a key that differs; no `restore-keys`; `fail-on-cache-miss`; `continue-on-error` on the build;
@@ -242,6 +264,8 @@ Run 2026-10-24 in worktree `laughing-jackson-2bff14` (branch `claude/laughing-ja
     `DegradingParquetDataset` (a class outside the pinned last-good set) under `raw/`; a second
     `SnapshotHistoryDataset`, not cached; the history store moved off its listed path; a primary output nested under
     the history store's path.
+  - After review 4: `PYFORGE_ATLAS_DATA_ROOT=` as a prefix of the bootstrap task's `cmd`; a workspace-level
+    `[activation.env]` setting it.
 - **Upstream behaviour, read 2026-10-24** (`actions/toolkit` main):
   - `packages/cache/src/internal/cacheUtils.ts`: in `resolvePaths`, `implicitDescendants: false`; `getCacheVersion` is
     a SHA-256 of the path strings, the compression method and a salt.
@@ -254,6 +278,15 @@ Run 2026-10-24 in worktree `laughing-jackson-2bff14` (branch `claude/laughing-ja
 
 ## Spec Change Log
 
+- 2026-10-24, review 4 (FAIL: 0 blockers, 2 should-fix, 3 nits), fixed on the same branch:
+  - S1 (a failed vdb build republishes the previous diff as current, unmarked): a residual risk and
+    `DW-atlas-37-12-3` (a fix to Story 37.5's nodes, outside this story's Never).
+  - S2 ("the readers set aside or refetch" was false for the snapshot history): the partial-restore residual risk says
+    `SnapshotHistoryDataset` keeps an unreadable file and skips later appends, and names the operator's recovery.
+  - N1: a partial rollup's mass "resolved" diff is a residual risk; "fill the cve-watcher" now reads "a pair of
+    snapshots to diff" (Approach 3, the DW-2 resolution). N2: the epics `updated:` stamp names the snapshot history.
+    N3: the team memory calls the 4 hours a lower bound. AC5 and its test cover the task `cmd` and the workspace's
+    activation env.
 - 2026-10-24: operator ruling "Approve" on review 3's scope change (the snapshot history persists); recorded in
   Approach 3 and the memlog.
 - 2026-10-24, review 3 (FAIL: 0 blockers, 2 should-fix, 3 nits), fixed on the same branch:
@@ -294,6 +327,14 @@ Run 2026-10-24 in worktree `laughing-jackson-2bff14` (branch `claude/laughing-ja
 
 ## Review Triage Log
 
+- 2026-10-24, review 4 (independent subagent): FAIL, 0 blockers, 2 should-fix, 3 nits.
+  - It confirmed the write order (the snapshot is appended before the diff reads it), the dedupe and the schema
+    handling.
+  - It checked all 32 pinned last-good classes and found none wrong.
+  - It probed the real `SnapshotHistoryDataset` and diff node with a failed vdb build, a truncated history and a
+    partial rollup, which gave S1, S2 and N1.
+  - It ran 6 mutants; the 2 survivors folded into the AC5 nit.
+  - Every finding was fixed on the branch (Spec Change Log).
 - 2026-10-24, review 3 (independent subagent): FAIL, 0 blockers, 2 should-fix, 3 nits.
   - It checked the five plain entries against the pipelines and found every raw entry under the data root cached.
   - It found that the cve-watcher's diff falls back to the second-latest snapshot, which it proved by running
