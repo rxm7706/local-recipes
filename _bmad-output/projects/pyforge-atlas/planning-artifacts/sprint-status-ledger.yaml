@@ -135,7 +135,7 @@ development_status:
   37-7-the-find-alternative-scores-candidates-for-archived-packages: done
   37-8-the-export-purls-lists-the-purl-artifacts: done
   37-9-the-mapping-gap-classifies-the-unmapped-packages: done
-  38-1-the-semantic-store-reads-its-upload-times-and-archived-flag: backlog
+  38-1-the-semantic-store-reads-its-upload-times-and-archived-flag: done
   4-1-integrate-kedro-dagster-for-scheduling-execution: done
   4-2-integrate-kedro-viz-expose-a-pixi-task: done
   5-1-define-the-boring-semantic-layer-bsl-models: done
@@ -216,7 +216,7 @@ development_status:
   epic-36-retrospective: optional
   epic-37: done
   epic-37-retrospective: optional
-  epic-38: backlog
+  epic-38: done
   epic-38-retrospective: optional
   epic-4: done
   epic-4-retrospective: done
