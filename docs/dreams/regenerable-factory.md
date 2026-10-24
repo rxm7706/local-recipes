@@ -38,10 +38,10 @@ repo-wide.
   baselines. This Dream is that loop, applied to everything.
 - **The transformer** — `bmad-spec` distills brownfield code + docs into the
   five-field Spec with stable CAP-IDs and an append-only memlog; re-derives
-  on update instead of hand-patching. Piloted on [[design-code-bridge]].
+  on update instead of hand-patching. Piloted on [[pyforge-herald|design-code-bridge]].
 - **The map** — 24 Dreams, no-straggler policy: every shipped surface already
   traces to a Dream; what's missing is the spec layer beneath the realized
-  ones ([[packaging-factory]], [[enterprise-airgap]], [[modernist-identity]],
+  ones ([[packaging-factory]], [[enterprise-airgap]], [[pyforge-herald|modernist-identity]],
   [[fleet-stewardship]], [[factory-console]] have no BMAD spec;
   [[pyforge-marshal]] and [[fleet-stewardship]] lean on legacy Tier-1 specs).
 
@@ -63,7 +63,7 @@ repo-wide.
 
 ## Kinships
 
-[[pyforge-genesis]] (the operating model this completes — brownfield adoption
+[[pyforge-charter|pyforge-genesis]] (the operating model this completes — brownfield adoption
 implies backfill) · [[pyforge-marshal]] (BMAD executes every change) ·
 [[pyforge-warden]] (drift gate temperament: never false-green) ·
 [[agent-portability]] (the Spec is what makes regeneration

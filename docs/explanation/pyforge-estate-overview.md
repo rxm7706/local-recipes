@@ -7,7 +7,7 @@ sources:
   - src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py
   - docs/how-to/one-chain-station-ops.md
-verified: 2026-09-19
+verified: 2026-10-24
 ---
 
 # PyForge Estate Overview
@@ -24,7 +24,7 @@ PyForge operates as an Agentic Software Development Life Cycle (SDLC) driven ent
 4. **Verification:** Independent stations gate quality and compliance. Agents cannot judge their own work.
 
 > [!NOTE]
-> **Governed Execution:** Because code is mechanically generated and governed by Specs, you should never hand-edit a `SPEC.md` or a `sprint-status-ledger.yaml`. They are managed via `bmad-spec` and `pixi run -e pyforge-guild sprint-ledger-sync`. For operational instructions on running these commands, see [One-Chain Station Ops](../how-to/one-chain-station-ops.md).
+> **Governed Execution:** Because code is mechanically generated and governed by Specs, you should never hand-edit a `SPEC.md` or a `sprint-status-ledger.yaml`. They are managed via `bmad-spec` (after a memlog append) and `pixi run -e pyforge-guild sprint-ledger-sync -- --project <station>`. For operational instructions on running these commands, see [One-Chain Station Ops](../how-to/one-chain-station-ops.md).
 
 ## The Eight Stations of the PyForge Guild
 
@@ -45,12 +45,12 @@ Work is divided among eight accountable "Smiths" (personas). Each holds a statio
 
 PyForge uses a hexagonal (ports-and-adapters) architecture at the package level and a modular monolith at the platform level. This monolithic design is known as the Canopy.
 
-The system runs on one Django and ASGI process, backed by PostgreSQL and Redis. It has no microservices or scattered process trees.
+The system runs on one Django and ASGI process, backed by PostgreSQL and Redis. Since steward Stories 74.1 and 74.2 it can also consume an ops-provided S3-compatible object store (behind the flag `pyforge.steward.object_store_consumer`); the chart names the bucket and prefix and never deploys a store. It has no microservices or scattered process trees.
 
 ### Platform Host
 
 - **Lane 1 (CMS):** Wagtail mounts at `/` to act as the front door and public dossier (its admin is at `/cms/`).
-- **Lane 2 (Portals):** Each station provides a reusable Django app using HTMX. These portals mount uniformly at `/stations/<name>/` (for example, `django-warden`).
+- **Lane 2 (Portals):** Each station provides a reusable Django app using HTMX. These portals mount uniformly at `/stations/<name>/` (for example, `django-warden`). An optional index at `/stations/` (steward Story 91.1, flag `pyforge.steward.stations_index`, on in dev only) lists each portal as mounted or absent; with the flag off, that path falls through to Wagtail.
 - **Service Faces (MCP):** Programmatic APIs for each station are exposed as Model Context Protocol apps mounted at `POST /stations/<name>/mcp`.
 - **Chrome:** `django-pyforge` provides the base layout, app switcher, and registration protocol. Portals register here instead of hardcoding routes.
 

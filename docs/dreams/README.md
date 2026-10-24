@@ -151,13 +151,12 @@ contract; the Dream is the "why" behind it.
 
 ## Dreams
 
-**133 Dream files as of 2026-09-09** (README excluded), of which **72 are mapped below** — the
-**61 omitted** are the archived per-station satellites folded into their parent Dream on
-2026-08-08 (see **Dream-level-only consolidation**) plus later-seeded Dreams not yet given a row
-(at this count: 20 archived, 22 specified, 16 realized, 3 dreamt). *(Two rows added 2026-09-09
-for doctor's `capability-effect-check` and `status-body-consistency`, both minted in that pass —
-new Dreams get a row on arrival; the 61 are a pre-existing backlog D2 owns, not a place to file
-new work.)* Re-derive rather than trust the
+**173 Dream files as of 2026-10-24** (README excluded), **every one mapped below.** Until then the
+archived per-station satellites folded into their parent Dream (see **Dream-level-only
+consolidation**) and some later-seeded Dreams had no row; the last 64 were added on 2026-10-24
+(doctor Story 30.4) in **Folded and later-seeded Dreams** at the end, each row's Status and
+description read from that file's own frontmatter and its fold banner. New Dreams get a row on
+arrival. Re-derive rather than trust the
 literal: `ls docs/dreams/*.md | wc -l` for the total, and the per-status split from each file's
 own frontmatter. **Reconciliation is file-driven, not row-driven.** It was row-driven until
 doctor Story 21.6: `dreams-hygiene` read this table and judged only the Dreams with a row here,
@@ -168,8 +167,9 @@ from that walk: `dream-readme-missing` (a Dream file with no row below — the o
 named rather than silent), `specified-spec-not-ready` (the `status:` rule stated above,
 enforced), and `kinship-wikilink-dead` (a `Kinship` wikilink that resolves to no file under
 `docs/dreams/`). All three WARN and none gates; `dreams-hygiene-check` runs them, and
-`detectors-ci` has since Story 41.1. Rows are still **not** added by hand to close the
-`dream-readme-missing` backlog. The **frontmatter is the source of
+`detectors-ci` has since Story 41.1. The `dream-readme-missing` backlog was closed on 2026-10-24
+by operator ruling (doctor Story 30.4): its rows were derived from each file's frontmatter, not
+written from memory, and a new Dream's row lands with the Dream. The **frontmatter is the source of
 truth**; this table is a
 curated map, and its Status column is now synced from frontmatter rather than hand-copied.
 *(Historical: 25 Dreams as of 2026-07-23 — 3 born Dream-first — the regenerable factory among
@@ -313,3 +313,72 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | [`work-passports-dated-extracts.md`](work-passports-dated-extracts.md) | archived | Operator approved Q1–6 on 2026-09-15 (Dream § Operator rulings). Spec `ready` (CAP-1..7; CAP-6/7 later slots). Steward Epic **61** (61.1–61.5 `backlog`) is the marshal dispatch home. Not Epic 8. |
 | [`docs-shelf-alignment.md`](docs-shelf-alignment.md) | archived | Residue of realized [[general-docs-consistency]] after Epic 22. Spec `ready` 2026-09-14: workflow specs stub+how-to (not a full move); brownfield extract-then-stub; new Doctor source (not an extension of `general_docs_consistency`); doctor Epic 23; do not mint empty `docs/dashboard/vizro/`. |
 | [`vocabulary-one-name-one-job.md`](vocabulary-one-name-one-job.md) | archived | Operator accepted Q1–20 on 2026-09-15 (Dream § Operator rulings). Spec `ready` (CAP-1..8; CAP-4 already met). Steward Epic **59** (59.1–59.7 `backlog`) is the marshal dispatch home. |
+
+**Folded and later-seeded Dreams** *(rows added 2026-10-24, doctor Story 30.4: Status and description from each file's frontmatter, fold target from its "Consolidated into" banner)*
+
+| Dream | Status | What it is |
+|---|---|---|
+| [`agent-tool-surface.md`](agent-tool-surface.md) | archived | Agent tool surface — every craft reachable through one governed API. Folded into [`pyforge-marshal.md`](pyforge-marshal.md). |
+| [`artifact-console.md`](artifact-console.md) | archived | Artifact console — the factory board, hosted as a chat artifact. Folded into [`pyforge-marshal.md`](pyforge-marshal.md). |
+| [`artifactory-download-intelligence.md`](artifactory-download-intelligence.md) | archived | An enterprise Artifactory mirror's own download telemetry joins the universe picture. Folded into [`pyforge-atlas.md`](pyforge-atlas.md). |
+| [`asgi-multiplexer-monolith.md`](asgi-multiplexer-monolith.md) | archived | Django, Langflow, and DB-GPT co-locate in one ASGI process without starving each other. Folded into [`pyforge-steward.md`](pyforge-steward.md). |
+| [`atlas-kedro-catalog-expansion.md`](atlas-kedro-catalog-expansion.md) | archived | Expand the Atlas Kedro catalog so live indexes match the packaging inventory. Folded into [`pyforge-atlas.md`](pyforge-atlas.md). |
+| [`atlas-query-dashboards.md`](atlas-query-dashboards.md) | archived | A query against the atlas DB becomes an interactive dashboard, no SPA framework. Folded into [`pyforge-atlas.md`](pyforge-atlas.md). |
+| [`conda-forge-packaging-inventory-operations.md`](conda-forge-packaging-inventory-operations.md) | archived | Build a conda-forge packaging inventory from scratch as a continuous intake engine. Folded into [`pyforge-atlas.md`](pyforge-atlas.md). |
+| [`copilot-cli-packaging.md`](copilot-cli-packaging.md) | archived | copilot-cli on conda-forge — blocked at the license. Folded into [`pyforge-mason.md`](pyforge-mason.md). |
+| [`dashboard-velocity-captures-hand-driven-work.md`](dashboard-velocity-captures-hand-driven-work.md) | archived | Dashboard velocity counts every story's real effort, not just bmad-loop-journaled ones. Folded into [`pyforge-marshal.md`](pyforge-marshal.md). |
+| [`db-gpt-django-plugin.md`](db-gpt-django-plugin.md) | archived | DB-GPT's agentic, file-hungry model integrates into a stateless Django control plane. Folded into [`pyforge-steward.md`](pyforge-steward.md). |
+| [`db-gpt-packaging.md`](db-gpt-packaging.md) | archived | DB-GPT on conda-forge — the multi-output agent stack. Folded into [`pyforge-mason.md`](pyforge-mason.md). |
+| [`deck-visual-qa.md`](deck-visual-qa.md) | archived | A deck is proven to look right, not merely to render without crashing. Folded into [`pyforge-herald.md`](pyforge-herald.md). |
+| [`deferred-work-audit-completeness.md`](deferred-work-audit-completeness.md) | archived | Deferred-work audit completeness. Folded into [`pyforge-doctor.md`](pyforge-doctor.md). |
+| [`deferred-work-resolution-sweep.md`](deferred-work-resolution-sweep.md) | archived | Deferred-work resolution sweep. Folded into [`pyforge-doctor.md`](pyforge-doctor.md). |
+| [`developer-machine-bootstrap.md`](developer-machine-bootstrap.md) | archived | A new contributor or agent is productive on this repo without tribal knowledge. Folded into [`pyforge-steward.md`](pyforge-steward.md). |
+| [`django-accelerator-framework.md`](django-accelerator-framework.md) | archived | A Django-service scaffolding engine, if this repo ever births new Django-based stations. Folded into [`pyforge-mason.md`](pyforge-mason.md). |
+| [`enterprise-data-models-and-apis.md`](enterprise-data-models-and-apis.md) | archived | A normalized data model and REST API pattern, waiting for a PyForge-native subject. Folded into [`pyforge-atlas.md`](pyforge-atlas.md). |
+| [`enterprise-multi-agent-orchestration.md`](enterprise-multi-agent-orchestration.md) | archived | Django, Langflow, and DB-GPT scale as isolated containers behind one gateway. Folded into [`pyforge-steward.md`](pyforge-steward.md). |
+| [`fleet-chain-completeness.md`](fleet-chain-completeness.md) | archived | Fleet Chain Completeness — Orchestrated Dream-to-Code Regeneration. Folded into [`pyforge-marshal.md`](pyforge-marshal.md). |
+| [`fleet-hygiene-verification-exemplar-program.md`](fleet-hygiene-verification-exemplar-program.md) | archived | Fleet hygiene, verification & exemplar-standard program. Folded into [`pyforge-doctor.md`](pyforge-doctor.md). |
+| [`general-docs-consistency.md`](general-docs-consistency.md) | archived | General documentation stops contradicting itself, and stays that way. Folded into [`pyforge-doctor.md`](pyforge-doctor.md). |
+| [`genesis-installer.md`](genesis-installer.md) | archived | Genesis installer — the seed, made executable. Folded into [`pyforge-marshal.md`](pyforge-marshal.md). |
+| [`herald-moments-2-4-missing-surface.md`](herald-moments-2-4-missing-surface.md) | archived | Herald — Moments 2–4 Missing Surface. Folded into [`pyforge-herald.md`](pyforge-herald.md). |
+| [`herald-pitch.md`](herald-pitch.md) | archived | Herald's Pitch Deck — Moment 1 Orchestration (Consolidated). Folded into [`pyforge-herald.md`](pyforge-herald.md). |
+| [`landing-evidence-grammar.md`](landing-evidence-grammar.md) | archived | A legitimate landing is recognizable no matter which of the three-plus paths landed it. Folded into [`pyforge-marshal.md`](pyforge-marshal.md). |
+| [`langflow-django-plugin.md`](langflow-django-plugin.md) | archived | Langflow integrates into a cookiecutter-django project without fighting it. Folded into [`pyforge-steward.md`](pyforge-steward.md). |
+| [`local-ocp-hybrid-environment.md`](local-ocp-hybrid-environment.md) | archived | A local OpenShift hybrid environment runs the agentic SDLC end to end — visual lifecycle, wired BMAD suite, multiplexed apps, synced tracker. Folded into [`pyforge-steward.md`](pyforge-steward.md). |
+| [`machine-checked-recipe-knowledge.md`](machine-checked-recipe-knowledge.md) | archived | The CFE failure catalog is generated from the skill spec, every row lint-verified against its enforcing check. Folded into [`pyforge-mason.md`](pyforge-mason.md). |
+| [`marshal-dependency-aware-dispatch.md`](marshal-dependency-aware-dispatch.md) | archived | Marshal Dependency-Aware Dispatch — the fleet orders its own backlog and forgets nothing it kills. Folded into [`pyforge-marshal.md`](pyforge-marshal.md). |
+| [`marshal-drain-self-resolution.md`](marshal-drain-self-resolution.md) | archived | Fleet drain heals itself — archive pointer. Folded into [`pyforge-marshal.md`](pyforge-marshal.md). |
+| [`marshal-land-cross-project-story-key-collision.md`](marshal-land-cross-project-story-key-collision.md) | archived | A GitHub PR-merge branch from one project never masquerades as a same-numbered story in another. Folded into [`pyforge-marshal.md`](pyforge-marshal.md). |
+| [`marshal-land-merge-subject.md`](marshal-land-merge-subject.md) | archived | Marshal-driven landings are provably Marshal-driven. Folded into [`pyforge-marshal.md`](pyforge-marshal.md). |
+| [`marshal-launch-environment-integrity.md`](marshal-launch-environment-integrity.md) | archived | Marshal trusts the environment it launches into — until it silently doesn't. Folded into [`pyforge-marshal.md`](pyforge-marshal.md). |
+| [`marshal-parallel-dispatch-fanout.md`](marshal-parallel-dispatch-fanout.md) | archived | Parallel dispatch fan-out when dependencies and surfaces are disjoint — without breaking the zombie guards. Folded into [`pyforge-marshal.md`](pyforge-marshal.md). |
+| [`marshal-run-watch.md`](marshal-run-watch.md) | archived | The operator stops re-pasting the status prompt — marshal watches its own runs. Folded into [`pyforge-marshal.md`](pyforge-marshal.md). |
+| [`marshal-single-story-dispatch.md`](marshal-single-story-dispatch.md) | archived | Single-story dispatch is a marshal verb, not a session's discipline. Folded into [`pyforge-marshal.md`](pyforge-marshal.md). |
+| [`marshal-status-harness-run-id-poisoning.md`](marshal-status-harness-run-id-poisoning.md) | archived | A spin-time poll timeout never permanently blinds marshal status to a healthy run. Folded into [`pyforge-marshal.md`](pyforge-marshal.md). |
+| [`marshal-templated-merge-subject-cross-project-collision.md`](marshal-templated-merge-subject-cross-project-collision.md) | archived | The templated merge-subject shape never masquerades as a same-numbered story from another project. Folded into [`pyforge-marshal.md`](pyforge-marshal.md). |
+| [`mcp-era-isolation.md`](mcp-era-isolation.md) | archived | Isolate MCP eras without one lockfile. Folded into [`pyforge-steward.md`](pyforge-steward.md). |
+| [`microsoft-org-sweep.md`](microsoft-org-sweep.md) | archived | Microsoft org sweep — audit one upstream org, package what is missing. Folded into [`pyforge-atlas.md`](pyforge-atlas.md). |
+| [`miniforge-installer.md`](miniforge-installer.md) | archived | A custom-branded Python distributable, if this repo ever needs one. Folded into [`pyforge-mason.md`](pyforge-mason.md). |
+| [`multi-repo-workspaces.md`](multi-repo-workspaces.md) | archived | One workspace opens every repo a story touches. Folded into [`pyforge-steward.md`](pyforge-steward.md). |
+| [`ocp-as-a-portability-profile.md`](ocp-as-a-portability-profile.md) | archived | OpenShift runs as a CI portability profile — the OCP overlay proven on a real cluster. Folded into [`pyforge-steward.md`](pyforge-steward.md). |
+| [`pixi-container-image.md`](pixi-container-image.md) | archived | A shared base container image with pixi already installed, if this repo ever ships one. Folded into [`pyforge-mason.md`](pyforge-mason.md). |
+| [`platform-datastores-consumed-not-self-hosted.md`](platform-datastores-consumed-not-self-hosted.md) | archived | Postgres and Redis become consumed, not self-hosted, matching the IdP and object-storage pattern. Folded into [`pyforge-steward.md`](pyforge-steward.md). |
+| [`platform-fifteen-factors.md`](platform-fifteen-factors.md) | archived | The platform host earns its 15 factors — OIDC-delegated auth, telemetry, startup refusals, policy-as-tests, pixi-sourced deps. Folded into [`pyforge-steward.md`](pyforge-steward.md). |
+| [`platform-object-storage-kind.md`](platform-object-storage-kind.md) | archived | The estate gets an S3-compatible object store, without becoming its operator. Folded into [`pyforge-steward.md`](pyforge-steward.md). |
+| [`pptx-custom-shapes.md`](pptx-custom-shapes.md) | archived | Programmatic OOXML shapes for information-dense slides, if the .pptx pipeline. Folded into [`pyforge-herald.md`](pyforge-herald.md). |
+| [`pptx-deck-generation.md`](pptx-deck-generation.md) | archived | A second, PowerPoint-native deck pipeline, if this repo ever needs editable. Folded into [`pyforge-herald.md`](pyforge-herald.md). |
+| [`pyforge-atlas-intelligence-platform.md`](pyforge-atlas-intelligence-platform.md) | archived | Dream — PyForge Atlas Intelligence Platform. Folded into [`pyforge-atlas.md`](pyforge-atlas.md). |
+| [`pyforge-core.md`](pyforge-core.md) | archived | One primitive, one home — the shared floor under eight stations. Folded into [`pyforge-marshal.md`](pyforge-marshal.md). |
+| [`pyforge-doctor-dependency-health.md`](pyforge-doctor-dependency-health.md) | archived | Dream — PyForge Doctor: Dependency Health Diagnostics. Folded into [`pyforge-doctor.md`](pyforge-doctor.md). |
+| [`pyforge-marshal-loop-orchestrator.md`](pyforge-marshal-loop-orchestrator.md) | archived | Dream — PyForge Marshal: Loop Orchestrator. Folded into [`pyforge-marshal.md`](pyforge-marshal.md). |
+| [`pyforge-mason-recipe-validator.md`](pyforge-mason-recipe-validator.md) | archived | Dream — PyForge Mason: Recipe Validator. Folded into [`pyforge-mason.md`](pyforge-mason.md). |
+| [`pyforge-scribe-team-memory.md`](pyforge-scribe-team-memory.md) | archived | Dream — PyForge Scribe: Team Memory Management. Folded into [`pyforge-scribe.md`](pyforge-scribe.md). |
+| [`pyforge-steward-feedstock-maintenance.md`](pyforge-steward-feedstock-maintenance.md) | archived | Dream — PyForge Steward: Feedstock Maintenance Automation. |
+| [`pyforge-testing-charter.md`](pyforge-testing-charter.md) | archived | Dream — PyForge Testing Charter: Systematic Testing for the Guild. Folded into [`pyforge-marshal.md`](pyforge-marshal.md). |
+| [`python-agent-platform.md`](python-agent-platform.md) | archived | One Django service hosts the agentic engines as pluggable applications, anywhere — including air-gapped. Folded into [`pyforge-steward.md`](pyforge-steward.md). |
+| [`reusable-cicd-workflows.md`](reusable-cicd-workflows.md) | archived | A centrally-maintained CI/CD workflow family, if this repo ever needs more than plain Actions. Folded into [`pyforge-mason.md`](pyforge-mason.md). |
+| [`scratch-worktree-lifecycle.md`](scratch-worktree-lifecycle.md) | archived | A scratch worktree for one story's work is one command, not five. Folded into [`pyforge-steward.md`](pyforge-steward.md). |
+| [`scribe-mines-raw-session-transcripts.md`](scribe-mines-raw-session-transcripts.md) | archived | Scribe reaches past curated memory into the raw session transcripts underneath it. Folded into [`pyforge-scribe.md`](pyforge-scribe.md). |
+| [`sibling-dreams-drift.md`](sibling-dreams-drift.md) | archived | Sibling dreams directories don't drift silently. Folded into [`pyforge-doctor.md`](pyforge-doctor.md). |
+| [`surface-drift-reconciliation.md`](surface-drift-reconciliation.md) | archived | A drift gate nobody can clear, and a drift signal anyone can launder. Folded into [`pyforge-marshal.md`](pyforge-marshal.md). |
+| [`wagtail-corporate-brain.md`](wagtail-corporate-brain.md) | archived | The "Corporate Brain" CMS atlas's own WikiSyncer has been waiting to push to. Folded into [`pyforge-atlas.md`](pyforge-atlas.md). |

@@ -2,7 +2,8 @@
 title: FR-51's model tiering is fully wired and never turned on
 type: dream
 owner: marshal
-status: archived   # 2026-09-16 — folded into [[marshal-token-economy]] (operator-ruled
+status: archived
+                   # 2026-09-16 — folded into [[marshal-token-economy]] (operator-ruled
                    # token-savings consolidation: one starting point). Was `realized`.
 ---
 

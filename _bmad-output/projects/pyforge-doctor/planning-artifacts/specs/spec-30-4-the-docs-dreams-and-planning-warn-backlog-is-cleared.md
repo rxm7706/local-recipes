@@ -29,9 +29,11 @@ each detector as one summary line, so the backlog is read as three findings and 
   `dream-status-trailing-comment` (a `status:` line ending in a `#` comment), 32 `kinship-wikilink-dead` (a Kinship
   `[[slug]]` that resolves to no file under `docs/dreams/`), 2 `realization-log-missing` (an archived Dream with no
   `## Realization log`). The README says the 64 are a backlog whose rows are not added by hand.
-- **`docs-currency` (20).** `docs/reference/skills-catalog.md` is stale against its generator
-  (`scripts/docs_skills_catalog.py`); 19 authored pages name `sources:` that moved past their `verified:` date, and
-  four of them hold dead references (five in all).
+- **`docs-currency` (20).** `docs/reference/bmad-estate-llms-full.md` is `kind: generated` with no `generator:` in
+  `docs/map.yaml` (its generator is scribe's CLI, and `docs-currency` runs only a `scripts/docs_*.py`); 19 authored
+  pages name `sources:` that moved past their `verified:` date, and four of them hold dead references (five in all).
+  (A preflight run in another worktree also showed `docs/reference/skills-catalog.md` stale; at this branch's base
+  its `--check` is current, so it is not part of the 20.)
 - **`bmad-output-hygiene` (5).** Orphan planning files: herald
   `deckcraft-board-epics-displaced-2026-08-08.json`; marshal `change-history/sprint-change-proposal-2026-08-12.md` and
   `change-history/sprint-change-proposal-2026-09-01-drain-self-resolution.md`; steward
@@ -40,7 +42,10 @@ each detector as one summary line, so the backlog is read as three findings and 
   session and, shown the 146, chose to clear them all ("All 146").
 
 **Approach:**
-1. Regenerate `docs/reference/skills-catalog.md` with `pixi run -e pyforge-guild docs-skills-catalog`.
+1. Give `bmad-estate-llms-full.md` a generator `docs-currency` will run: `scripts/docs_bmad_estate.py`, a door that
+   hands both modes to `scribe catalog bmad-estate` (`--check` / `--write`) through the same interpreter, with unit
+   tests in `tests/scripts/test_docs_bmad_estate.py`; name it in `docs/map.yaml`. `bmad-estate-check` stays the
+   detector of record.
 2. For each authored-stale page: read each stale source's history since the page's `verified:` date, check every
    claim the page makes that the source backs, correct what changed, fix each dead reference (or mark a deliberate
    historical citation with the `governance-currency:ignore` markers), then set `verified: 2026-10-24`.
@@ -70,14 +75,14 @@ Type / Effort / Deps: fix / L / S-30.3.
   `bmad-output-hygiene` each report no `warn` finding.
 - **AC2 — Re-verified, not re-stamped.** Each of the 19 pages' `verified:` moves only with a recorded review of each
   stale source (Auto Run Result lists, per page, what changed and what was corrected).
-- **AC3 — Detectors untouched.** No file under `src/shared/packages/pyforge-doctor/src/` or `scripts/` changes except
-  generated output; no check, threshold or severity changes.
+- **AC3 — Detectors untouched.** No file under `src/shared/packages/pyforge-doctor/src/` changes; under `scripts/`
+  only the new `docs_bmad_estate.py` door is added; no check, threshold or severity changes.
 - **AC4 — README policy.** The README carries a row for every Dream file, and its backlog sentence states the ruling.
 - **AC5 — Suites and gates.** `pixi run -e pyforge-doctor pyforge-doctor-test` green; full-scope `pr-preflight` exit 0.
 
 ## Boundaries & Constraints
 
-- Docs, Dreams and planning records only; no code.
+- Docs, Dreams and planning records, plus the one generator door and its tests; no detector code.
 - A generated page is changed only by its generator.
 - A Dream's narrative is not rewritten; only the named lines and sections change.
 
@@ -106,4 +111,28 @@ Type / Effort / Deps: fix / L / S-30.3.
 
 ## Auto Run Result
 
-- Pending.
+- Worktree `.claude/worktrees/exciting-faraday-1e4549-wt-preflight-warn-hygiene-2026-10-24`, branch
+  `preflight-warn-hygiene-2026-10-24`, from `9ab7ef1cf1`. Three workers took disjoint file sets (11 how-to pages; 8
+  tutorial, reference and explanation pages; the Dream files); the README rows, the orphans, the generator door, the
+  MAP.md row and the reconcile were done by the session that owns the story.
+- Evidence for AC2 and the Dream classes, per page and per finding:
+  `spec-30-4-the-docs-dreams-and-planning-warn-backlog-is-cleared-evidence.md` (beside this spec).
+- `dreams-hygiene` 121 → 0: 23 status comments moved verbatim to their own lines; 32 dead Kinship links in 14 files
+  retargeted (`deckcraft`, `design-code-bridge`, `modernist-identity`, `video-scripts` → `[[pyforge-herald|…]]`;
+  `pyforge-genesis` → `[[pyforge-charter|pyforge-genesis]]`), turned into a relative link (`presentation-deck` →
+  `docs/how-to/presentation-deck.md`), backticked (two sibling-org Dreams that never existed here) or dropped
+  (`intelligence-before-foundry`, never a Dream); 2 archived Dreams gained a Realization log from their history; 64
+  README rows derived from frontmatter (63 with a verified fold target), the count paragraph and the backlog sentence
+  rewritten. Found and fixed on the way: commit `1e845b55fc` had cut the first line of the status comment in
+  `marshal-run-watch.md`, `library-catalog-manifest-sync.md` and `run-state-one-publisher.md`; restored from
+  `1e845b55fc^`.
+- `docs-currency` 20 → 0: 19 pages re-verified (corrections in 17, none needed in 2), five dead references fixed or
+  marked historical, and the generator door named in `docs/map.yaml`. Found and fixed on the way: `docs/MAP.md`
+  still listed the retired Tier 1 `docs/specs/` folder as live.
+- `bmad-output-hygiene` 5 → 0: steward Epic 11 names `sprint-change-proposal-2026-08-21.md` by file; the mcp-host
+  readiness report names its proposal; marshal Story 5.10 and the Epic 28 lead-in to 28.18 name theirs; marshal's
+  `DW-BOARD-2026-08-08-1` names where the displaced herald epics array is kept.
+- Also clean after the change: `docs-map-hygiene`, `general-docs-consistency`, `governance-currency`,
+  `dream-chain-check` (exit 0 each); `scripts-lib-test` 985 passed, 3 skipped (with the 9 new door tests).
+- Outside these three detectors and not changed: `status-body-consistency` warns on 12 `SPEC.md` files' open
+  questions, none of them touched here.

@@ -2,7 +2,8 @@
 title: The Distributed AI Economy — Intelligence Hubs, Frames, Cogs, Ops, and the Accountability Plane
 type: dream
 owner: steward
-status: archived   # 2026-09-14 -- steward Epic 53 (spec-intelligence-hub hub:CAP-1..4) is 6/6
+status: archived
+                    # 2026-09-14 -- steward Epic 53 (spec-intelligence-hub hub:CAP-1..4) is 6/6
                     # stories done: the Charter carries the Hub vocabulary map (53.1), one
                     # Company Frame + eight station Frames pass the in-repo preflight (53.2,
                     # 53.5, and 53.6 which moved Frame identity onto the v0.3 qualified-ref

@@ -2,7 +2,8 @@
 title: Claude spends the tokens the factory already learned to save
 type: dream
 owner: marshal
-status: archived   # 2026-09-16 — folded into [[marshal-token-economy]] (operator-ruled
+status: archived
+                   # 2026-09-16 — folded into [[marshal-token-economy]] (operator-ruled
                    # token-savings consolidation: one starting point). Was `dreamt`;
                    # seeded the same day. Its Spec stays live and re-derives against
                    # the parent Dream.

@@ -2,7 +2,8 @@
 title: The platform host earns its 15 factors — OIDC-delegated auth, telemetry, startup refusals, policy-as-tests, pixi-sourced deps
 type: dream
 owner: steward
-status: archived   # 2026-08-22 — spec-platform-fifteen-factors, decomposed into the station backlog same day
+status: archived
+# 2026-08-22 — spec-platform-fifteen-factors, decomposed into the station backlog same day
 archived-reason: folded-into-station-dream
 ---
 

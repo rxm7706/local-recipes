@@ -5,7 +5,7 @@ sources:
   - src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py
   - pixi.toml
-verified: 2026-09-20
+verified: 2026-10-24
 ---
 
 # PyForge Ecosystem Architecture
@@ -40,7 +40,7 @@ When you run a command like:
 ```bash
 pixi run -e pyforge-guild pyforge steward workspace start my-project
 ```
-You are executing a CLI entry point defined within `src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py`. The `pyforge` executable (`src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py`) acts as a router, mapping the station token to that distribution's own console script (`steward`, `marshal`, `scribe`, `doctor`, …) and forwarding the remaining arguments. `pyforge-guild` is the session default environment; it carries the `doctor`, `marshal`, `scribe` and `steward` console scripts (so `pyforge --help` there lists exactly those four stations). `herald`, `mason`, `warden` and `pyforge-atlas` are installed only in their own `pyforge-<station>` environments, which also own each station's test/build tasks.
+You are executing a CLI entry point defined within `src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py`. The `pyforge` executable (`src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py`) acts as a router, mapping the station token to that distribution's own console script (`steward`, `marshal`, `scribe`, `doctor`, …) and forwarding the remaining arguments. `pyforge-guild` is the session default environment; it carries the `doctor`, `herald`, `marshal`, `mason`, `scribe` and `steward` console scripts, so `pyforge --help` there lists those six and names the two it lacks with their environments. `warden` and `pyforge-atlas` run in their own `pyforge-warden` and `pyforge-atlas` environments; asked for one of them in the Guild env, the router names the environment to use rather than calling it unknown. Each station's test and build tasks live in its own `pyforge-<station>` environment, and the laptop install `pyforge-foundry-full` carries all eight. One bare noun is routed too: `pyforge context …` runs `marshal context …`.
 
 ## AI Engines
 The PyForge Estate supports direct integration with AI orchestration engines. Langflow mounts inside the platform image as a pluggable Django app; DB-GPT runs as a sidecar container beside the Canopy (`src/platform/compose/compose.yml`). Either can invoke the PyForge Station CLIs or interact with the platform's API to perform automated tasks.

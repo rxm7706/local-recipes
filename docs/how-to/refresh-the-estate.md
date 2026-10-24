@@ -10,7 +10,7 @@ sources:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/estate_verify.py
   - scripts/pin_policy_check.py
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/release-cadence.md
-verified: 2026-10-13
+verified: 2026-10-24
 ---
 
 # How to refresh the estate
@@ -147,6 +147,11 @@ the journal says those packages moved — then runs gating checks (`llms-full-ch
 governed path that moved and runs **scoped** `spec_surface_check.py --write-baseline --spec …` (never
 a bare global stamp).
 
+The checks and the BMAD-estate catalog run in the `pyforge-guild` env as it is installed
+(`pixi run --as-is`), so install that env first. A generator that fails reds the run (exit 1) after
+the other generators, the checks and the stamps have run, and the summary names it first; only a
+failed `generate-bmad-suite` stops the run early.
+
 ```bash
 pixi run -e pyforge-steward pyforge steward estate reconcile
 ```
@@ -172,6 +177,10 @@ pixi run -e pyforge-steward pyforge steward estate verify
 pixi run -e pyforge-steward pyforge steward estate verify --all
 pixi run -e pyforge-steward pyforge steward estate verify --env pyforge-guild --lane detectors-ci
 ```
+
+`--lane` runs that lane plus every lane it depends on, dependencies first. A register probe whose
+env this run did not install reads `skipped`, never red (`--all` installs every env). A red row in the
+journal carries the last lines the step printed.
 
 Use `--budget-minutes` to cap long `pixi install --frozen` rows; `--keep` leaves the worktree path
 in the summary.

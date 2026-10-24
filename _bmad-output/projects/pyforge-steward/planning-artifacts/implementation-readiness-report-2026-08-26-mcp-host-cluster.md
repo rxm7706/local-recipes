@@ -1,7 +1,8 @@
 # Steward — mcp-host cluster required readiness (2026-08-26)
 
 Gate of `spec-mcp-era-isolation` CAP-4 after the operator asked to enforce
-the MCP bridge on the cluster without mixing it into Epic 34.
+the MCP bridge on the cluster without mixing it into Epic 34. The change it gates:
+`sprint-change-proposal-2026-08-26-mcp-host-cluster.md`.
 
 **Question:** could a developer implement 35.1 without inventing decisions?
 

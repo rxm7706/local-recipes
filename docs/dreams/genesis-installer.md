@@ -32,7 +32,7 @@ archived-reason: absorbed
 
 ## The Dream
 
-[[pyforge-genesis]] is the operating model: the Charter, the Lexicon, the Guild, the
+[[pyforge-charter|pyforge-genesis]] is the operating model: the Charter, the Lexicon, the Guild, the
 Dream→Code chain. This Dream is the **machine that installs it** — the difference between
 a model that exists in one repository and a model that can be adopted by any repository.
 
@@ -74,7 +74,7 @@ prose, which is precisely the Dream↔Spec gap [[fidelity-enforcement]] names.
 
 ## Why this is the Marshal's
 
-Splitting this out of [[pyforge-genesis]] (2026-07-28, Charter §5 amendment) resolved a
+Splitting this out of [[pyforge-charter|pyforge-genesis]] (2026-07-28, Charter §5 amendment) resolved a
 Dream that was doing two jobs at once. Genesis-the-Dream is **constitutive** — it records
 the Charter, the Lexicon, and the Guild's membership, and is owned by `guild` because it
 precedes the stations. The installer is **buildable work**, and buildable work with no
@@ -181,7 +181,7 @@ verb, made real.
   no relation left to name:** the 2026-07-28 split completed 2026-07-30 and the two
   projects now share zero artifacts. Verb mapping deliberately left open — `genesis init`
   collides with the shipped `marshal init <slug>`.
-- **2026-07-28** — split from [[pyforge-genesis]] per the Charter §5 amendment
+- **2026-07-28** — split from [[pyforge-charter|pyforge-genesis]] per the Charter §5 amendment
   ("owning is becoming — at the planning tier"). Genesis keeps the constitutive records;
   the installer becomes this Dream, owned by the Marshal. The chain (Spec, PRD,
   architecture, epics) moves to `pyforge-marshal` — physically blocked until Marshal's

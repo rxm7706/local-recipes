@@ -10,7 +10,7 @@ sources:
   - .claude/memory/reference/bmad-loop-escalation-and-landing-traps.md
   - .claude/memory/reference/fleet-landing-pass-liveness.md
   - docs/how-to/driving-a-pyforge-station-backlog.md
-verified: 2026-10-10
+verified: 2026-10-24
 ---
 
 # Troubleshoot BMAD Agent Loops
@@ -31,6 +31,8 @@ pixi run -e pyforge-guild marshal watch --project <slug>            # ground-tru
 pixi run -e pyforge-guild marshal status --project <slug> --run <run_id>
 ```
 `UNSUPERVISED` means no Marshal supervisor sidecar, not a dead engine. Before killing or re-spinning anything, confirm liveness in the loop home with `bmad-loop status <run_id> --json` and `bmad-loop list --json`; a dispatch session's log can be followed with `marshal factory dispatch-attach`.
+
+A dispatch run whose recorded worktree is gone, and that never finished, is **stale**: it never reads as live or blocks the next dispatch on its station. `marshal status` and `fleet-picture` report it as stale, the next dispatch on that station warns with `MRS-DISP-065`, and a resume or `dispatch-attach` on it refuses with `MRS-DISP-023`. Both messages name the remedy: move the run dir into the station's `implementation-artifacts/dispatch-runs-quarantine/` and list it in that folder's `README.md` (moving it back reverses it).
 
 ## Step 2: Halt a runaway loop
 Stop a live bmad-loop run (engine plus agent session) from its loop home:

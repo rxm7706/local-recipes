@@ -394,53 +394,17 @@ def test_live_repo_gather_reports_no_finding_naming_warden() -> None:
     assert not any(f.evidence.get("station") == "warden" for f in findings)
 
 
-# --- Row: >=1 true positive elsewhere (live) --------------------------------
+# --- Row: the live tree is clean (live) -------------------------------------
 
 
-def _git_grep_matches(repo_root: Path, basename: str) -> list[str]:
-    result = subprocess.run(
-        ["git", "grep", "-l", "--fixed-strings", "-e", basename],
-        cwd=repo_root,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert result.returncode in (0, 1), f"git grep itself failed: {result.stderr}"
-    return [line for line in result.stdout.splitlines() if line.strip()]
-
-
-def test_live_repo_gather_surfaces_at_least_one_true_positive_naming_a_non_warden_station() -> None:
+def test_live_repo_gather_is_clean_after_the_warn_backlog_sweep() -> None:
+    """Until 2026-10-24 this row asserted a live true positive outside warden
+    (herald's displaced Guildhall epics array, an orphan). Doctor Story 30.4
+    cited that file and the other four live orphans from the records they
+    belong to, so the live tree is the clean case now. Detection on a
+    non-warden station stays proven on a fixture:
+    ``test_orphan_file_with_no_inbound_references_resolves_true_not_a_warn``
+    (station ``pyforge-acme``) and the all-classes fixture above."""
     repo_root = _require_repo_root()
-
-    # Re-verify the cited herald fixture is STILL grounded before asserting
-    # against it -- fail loud (not silently) if this fact has changed.
-    #
-    # Built from two parts (not one literal) so this line's own text is
-    # never a contiguous match for the full basename: `_git_grep_matches`
-    # below scans this very file among everything else in the repo, and a
-    # bare literal here would make THIS test the fixture's one and only
-    # "inbound reference" -- self-sabotaging both this pre-check and
-    # `gather()`'s own identical git-grep-based check.
-    basename = "deckcraft-board-epics-displaced-2026-08-08" + ".json"
-    own_relpath = "_bmad-output/projects/pyforge-herald/planning-artifacts/" + basename
-    herald_file = repo_root / own_relpath
-    assert herald_file.is_file(), (
-        f"the cited herald fixture {own_relpath} no longer exists -- re-verify "
-        "a live true positive and update this test to cite it instead"
-    )
-    others = [m for m in _git_grep_matches(repo_root, basename) if m != own_relpath]
-    assert not others, (
-        f"the cited herald fixture is no longer unreferenced repo-wide "
-        f"(now referenced by {others}) -- re-verify a live true positive "
-        "and update this test to cite it instead"
-    )
-
     findings = hygiene.gather(repo_root)
-
-    assert any(
-        f.check == HygieneFindingKind.ORPHAN_FILE.value
-        and f.evidence.get("station") == "herald"
-        and f.evidence.get("path") == "_bmad-output/projects/pyforge-herald/planning-artifacts/" + basename
-        for f in findings
-    ), "expected the re-verified herald orphan file to be reported"
-    assert any(f.evidence.get("station") not in (None, "warden") for f in findings)
+    assert [f for f in findings if f.status is not DoctorStatus.OK] == []

@@ -33,7 +33,7 @@ afterthought.**
 
 ## The frontier
 
-- **[[presenton-pixi-image]]** and **[[deckcraft]]** — the two air-gapped
+- **[[presenton-pixi-image]]** and **[[pyforge-herald|deckcraft]]** — the two air-gapped
   application expressions, both unbuilt.
 - **Warden's registry perimeter** ([[pyforge-warden]] ring 2): block/allow lists
   on Artifactory — quarantine before the firewall.
@@ -46,7 +46,7 @@ afterthought.**
   ([[pyforge-doctor]] found it; [[pyforge-steward]] still owns the key lifecycle.)
 - **Deployment & install operations** (bundles, OpenShift, mirrors) are the
   **Steward's** station ([[pyforge-steward]], adopted 2026-07-23).
-- Offline bundle format for the whole operating model ([[pyforge-genesis]]
+- Offline bundle format for the whole operating model ([[pyforge-charter|pyforge-genesis]]
   behind a firewall) — kinship with [[sentinel]]'s §40 Airgap Bundle & Install.
 
 ## Kinships

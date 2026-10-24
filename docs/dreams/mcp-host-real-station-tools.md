@@ -2,7 +2,8 @@
 title: The sidecar that only says its own name
 type: dream
 owner: steward
-status: archived   # 2026-09-12, same day as seeding -- spec-mcp-host-real-station-tools
+status: archived
+                    # 2026-09-12, same day as seeding -- spec-mcp-host-real-station-tools
                     # shipped CAP-1..3 and all three were proven live on a real deployed
                     # CRC cluster before this session ended (see the Spec's own Design
                     # Notes + this file's Realization log)

@@ -275,3 +275,21 @@ categories above, this file should be the first thing they read, so the
 finding lands as "yes, catalogued, category 3, still not done" rather
 than as a fresh, isolated discovery that fades from context again in six
 weeks.
+
+## Realization log
+
+- **2026-08-15** — Seeded (`92355c3eba`) as the catalog of recurring hygiene, verification,
+  audit, dashboard-metric and exemplar needs, beside `deferred-work-resolution-sweep`, with
+  `_bmad-output/EXEMPLAR-STANDARD.md` refreshed in the same commit. The same day its
+  hygiene-sweep angle (Category 3) converged into `spec-deferred-work-visibility` as CAP-8/9
+  (`2ffa858b5d`; Category 2 records it), and the second confirmed detector blind spot
+  (`chain-completeness` INV-A, `DW-CHAIN-COMPLETENESS-1`) was added to Category 1
+  (`fbde190a47`).
+- **2026-09-05** — `title:` added from the H1 by the dreams-hygiene sweep (`e4016f4aa1`);
+  status stayed `dreamt`.
+- **2026-09-17** — Folded into [[pyforge-doctor]] by the doctor one-chain-per-station fold
+  (`4d3ae19674`): `status: dreamt` became `archived` with `archived-reason:
+  folded-into-station-dream`, `type: dream` was added, and the *Consolidated into* banner
+  was added. New work appends to the station Dream.
+- **2026-10-24** — This log added from the file's own text and `git log --follow` (doctor
+  Story 30.4); no status change.

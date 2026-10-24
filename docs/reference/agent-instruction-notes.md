@@ -144,7 +144,9 @@ This is a multi-skill repo: conda-forge recipe work uses the `conda-forge-expert
 
 **Critical Rule — PR CI gates (ALWAYS-ON, every PR to `rxm7706/local-recipes`):** follow [`docs/how-to/refresh-the-estate.md`](../how-to/refresh-the-estate.md) for a full pin refresh; the rules below still apply to every PR (do NOT wait for red CI):
 
+<!-- governance-currency:ignore-start (the legacy intake tier, quoted as it stood; emptied 2026-10-10, its files now under archive/docs/specs/) -->
 1. **Any change outside `recipes/`** (docs, `.github/`, `docs/specs/`, `src/`, `prototypes/`, `pixi.toml`, dashboards — anything but `recipes/**`) → **add the `maintenance` label**: `gh pr edit <n> --repo rxm7706/local-recipes --add-label maintenance`.
+   <!-- governance-currency:ignore-end -->
 2. **`pixi.toml` changed** → regenerate + commit `environment.yaml` through `pixi run -e pyforge-steward pyforge steward estate reconcile` (or run the exporter it wraps: `pixi project export conda-environment -e build > environment.yaml`). This sync check is UNGATED — the `maintenance` label does not suppress it. Also fix `main` directly whenever a `pixi.toml` dep change lands there.
 3. **`pixi.toml`/`pixi.lock` changed** → also run `pixi run -e pyforge-guild pyforge-station-tests` locally first: that touches every PyForge station's "shared surface" per `.github/workflows/pyforge-station-tests.yml`, so `pyforge-core` + ALL 8 station suites fire together in CI, not just the one you meant to touch. Locally the `pyforge-core` leg runs first and fails fastest; in CI `core-test` is a concurrent peer of the station jobs that fires on any shared-surface OR any single-station change (its sole-ownership meta-tests scan every station's tree). Found live 2026-09-14: a 5-day GitHub Actions billing outage (see `.claude/memory/` project notes) let ~260 PRs merge with this workflow never actually running; the next `pixi.toml` push afterward surfaced 5 days of accumulated doctor/marshal/mason drift all at once, entirely unrelated to that PR's own diff.
 
@@ -243,7 +245,9 @@ This repo is spec-driven and tool-agnostic — **everything starts with a Dream;
 | **2 — Spec & planning (BMAD)** | `_bmad-output/projects/<slug>/planning-artifacts/` | `bmad-spec` output + PRD, architecture/API specs, epics+stories, gate reports — produced from the Dream. **The active spec lives here.** | tracked, permanent |
 | **3 — Execution output** | `_bmad-output/projects/<slug>/implementation-artifacts/` | story files, sprint YAMLs, test outputs, retros, derived per-effort specs | **gitignored / local-only** |
 
+<!-- governance-currency:ignore-start (the legacy intake tier, quoted as it stood; emptied 2026-10-10, its files now under archive/docs/specs/) -->
 Rules: the **active spec is a BMAD artifact in Tier 2** (produced from a Tier-0 Dream) — don't hand-author new specs in the legacy `docs/specs/`, and never drop one into a Tier-3 output dir; `implementation-artifacts/` is gitignored, so **nothing there may be git-tracked** (HARD `tracked-impl-artifact` finding).
+<!-- governance-currency:ignore-end -->
 
 **Story specs are durable (tracked), NOT Tier-3 (convention since 2026-07-25).** Per-story intent-contract specs are load-bearing in a spec-driven build — the spec *is* the contract — so they must survive worktree teardown and live in every clone. bmad-loop drafts a story spec into the run's gitignored `implementation-artifacts/` (runtime scratch); **after the story merges, promote that spec into the tracked `planning-artifacts/specs/` subdir and commit it** (the source of record). Motivating incident: pyforge-warden lost 13 of 31 story specs entirely (all of Epics 3 & 4) plus 8 husks to Tier-3 worktree teardown before this convention existed — **fully recovered 2026-07-25 to 31/31 real originals.** Recovery-source hierarchy (highest fidelity first): (1) **Claude Code session transcripts** `~/.claude/projects/**/*.jsonl` — the `Write`/`Edit` tool-calls that created each spec survive there, so originals (often incl. the dev/review triage log) come back verbatim (recovered warden's last 13 this way); (2) surviving bmad-loop **run-worktree snapshots**; (3) **`epics.md` regeneration** (Intent + ACs only — the contract, not the narrative). pyforge-atlas is the cautionary counter-case: its dev-session transcripts are NOT in the local store, so only 2 of 32 originals survived (30 are epics.md contract-specs). See each project's `planning-artifacts/specs/README.md`. This supersedes the "derived per-effort specs → Tier-3" row above for **story** specs.
 
@@ -339,6 +343,7 @@ For extended architectural context, please reference the centralized `docs/` fol
 - **`docs/dreams/pyforge-herald.md`** + **`docs/how-to/presentation-deck.md`** § *The MCP bridge* — decks/prototypes round-trip between Claude Design and the repo via the `claude-design` MCP tools (seed → design visually → pull → extract/build/`deck-export`); no manual downloads. Piloted 2026-07-23 (Marshal deck). Same spec, § *Artifact dependency tree & editing surfaces* — **read before editing any deck artifact**: per-deck branch heads (deck prototype / infographic trio head / exec summary / marp exports), what derives from what, and the two propagation paths.
 - **`docs/reference/library-llms-full.md`** — LLM/agent-facing catalog of every library and CLI in the pixi environments: capabilities, version pins, import-name gotchas, env membership, and what is deliberately NOT installed. Derived from `pixi.toml` (regeneration prompt in its header) — consult before importing a library or proposing a new dependency. Drift detector: `pixi run -e pyforge-guild llms-full-check` (exits non-zero when the catalog is stale; reconcile by regenerating).
 
+<!-- governance-currency:ignore-start (the legacy intake tier, quoted as it stood; emptied 2026-10-10, its files now under archive/docs/specs/) -->
 #### Intake specs (`docs/specs/` — LEGACY Tier 1, being phased out)
 
 > **Legacy.** `docs/specs/` is the former hand-authored intake-spec tier — **superseded** by the
@@ -348,6 +353,7 @@ For extended architectural context, please reference the centralized `docs/` fol
 > `shipped`/`superseded` specs sunset to `archive/docs/specs/` by their own frontmatter
 > `status:` (Story 23.3); `docs/specs/` itself keeps only `in-progress` specs and the three
 > `workflow` stubs (bodies moved to `docs/how-to/`).
+<!-- governance-currency:ignore-end -->
 
 One table row per spec; the **spec file itself is the source of truth** (frontmatter contract + its
 `## Current State` block where present) — long-form status detail is deliberately not duplicated here.

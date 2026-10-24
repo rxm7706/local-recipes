@@ -7,7 +7,7 @@ sources:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/sprint_ledger_query.py
   - .claude/skills/bmad-sprint-ledger-query/SKILL.md
   - pixi.toml
-verified: 2026-09-20
+verified: 2026-10-24
 ---
 
 # How to Monitor the Fleet
@@ -18,7 +18,7 @@ This guide explains how to use the fleet monitoring tools to gain situational aw
 
 ## Generate a Fleet Picture
 
-The most comprehensive way to monitor the fleet is by generating the Fleet Picture. It reads each station's **tracked** `_bmad-output/projects/<slug>/planning-artifacts/sprint-status-ledger.yaml` (the twin of the gitignored Tier-3 feed — never the feed itself, and never an ad-hoc regex over commit subjects) and aggregates every station into one report: done / in-progress / projected / blocked counts, plus an `ATTENTION` block naming anything that needs a human (an escalation, a dead run, idle-with-backlog, an open PR). Running stations are detected live from `marshal status --format json`.
+The most comprehensive way to monitor the fleet is by generating the Fleet Picture. It reads each station's **tracked** `_bmad-output/projects/<slug>/planning-artifacts/sprint-status-ledger.yaml` (the twin of the gitignored Tier-3 feed — never the feed itself, and never an ad-hoc regex over commit subjects) and aggregates every station into one report: done / completeness / projection / blocked counts per station and per epic, a live state column, plus an `ATTENTION` block naming anything that needs a human (for example an escalation, a dead or stale run, idle-with-backlog, an open PR, or a Pages deploy more than a day behind its inputs). Running stations are detected live from `marshal status --format json`.
 
 ```bash
 pixi run -e pyforge-guild fleet-picture
@@ -58,4 +58,4 @@ For continuous background monitoring on an operator's workstation, `scripts/flee
 ./scripts/fleet-poll-hourly.sh
 ```
 
-Each tick fetches and rebases the primary checkout and every loop home under `~/.bmad-loops/pyforge-*/` onto `origin/main`, pushes their branches, then writes an `AGENT_LOOP_TICK_fleet-poll` line to `.cursor/fleet-poll.log` whose prompt asks the attached Cursor agent to run the full `fleet-picture`, `pyforge marshal status --format json`, and summarise the delta since the last poll. It is a workstation loop that wakes an agent — not a cron job for a deployment server, and it does not itself detect stalled runs; the `loop-stall-check` and `baseline-drift-check` watchdogs (`pixi run -e pyforge-guild detectors -- --scope runtime`) do that.
+Each tick fetches `origin` in the primary checkout and in every loop home under `~/.bmad-loops/pyforge-*/`. A checkout on a `loop/*` branch is fast-forwarded to `origin/main` (never rebased; a diverged branch is reported, not merged) and that branch is pushed; any other branch, `main` included, is only fetched, and `main` is never pushed. The tick then writes an `AGENT_LOOP_TICK_fleet-poll` line to `.cursor/fleet-poll.log` whose prompt asks the attached Cursor agent to run the full `fleet-picture`, `pyforge marshal status --format json`, and summarise the delta since the last poll. It is a workstation loop that wakes an agent — not a cron job for a deployment server, and it does not itself detect stalled runs; the `loop-stall-check` and `baseline-drift-check` watchdogs (`pixi run -e pyforge-guild detectors -- --scope runtime`) do that.
