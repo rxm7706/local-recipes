@@ -5097,6 +5097,18 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: operator ruling 2026-10-19 on CAP-69
   severity: low
   promoted: 2026-10-19 -- atlas Epic 37 chain; owned by Story 37.6
+  resolved: 2026-10-23 (Story 37.6: core_repodata_uploads_raw streams every subdir's full repodata.json.zst into per-version earliest upload times, per the operator's ruling of that date; derived_artifacts' project_release_cadence writes legacy release-cadence's counts to derived_release_cadence, which the board reads with pyforge.atlas.board_projections on)
+  status: closed
+
+### DW-atlas-37-6-2: semantic_packages and the version-downloads board leave their upload times NULL.
+
+- source_spec: `planning-artifacts/specs/spec-37-6-the-release-cadence-reads-per-version-upload-times.md`
+  summary: `semantic_packages` declares `latest_conda_upload`, `latest_upload_age_days`, `releases_30d` and `total_versions` NULL (`metrics.METRIC_PROVENANCE`: "D2 wires the inputs"), so the adoption-stage board reads `unknown` for every package, and find-alternative's recency is 1.0 and its stage `unknown`. Story 37.6's `core_repodata_uploads_raw` now holds every version's earliest upload, which is what those columns derive from (legacy `adoption_stage.py`, `staleness_report.py`). The version-downloads board's `upload_date` (`core_version_download_history`, Story 37.3) is null for the same reason. Wiring them changes the adoption-stage, staleness, find-alternative and version-downloads boards' outputs, so it is its own story.
+  evidence: Story 37.6 (2026-10-23, the spec's Residual risk); Story 37.7's Run results (adoption_stage all `unknown`).
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/semantic_packages/nodes.py (the deferred-input columns); pipelines/core (core_version_download_history.upload_date)
+  origin: Story 37.6 (CAP-69)
+  severity: low
+  promoted: 2026-10-23 -- atlas Story 37.6; no owning story yet
   status: open
 
 ### DW-atlas-37-7-1: The find-alternative has no candidate table.

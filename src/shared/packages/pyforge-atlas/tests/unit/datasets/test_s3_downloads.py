@@ -291,6 +291,18 @@ def test_a_listing_that_is_not_a_listing_marks_stale(tmp_path: Path, live: None)
     assert _marker(tmp_path)["reason"].startswith("listing failed: ValueError")
 
 
+def test_a_marker_that_cannot_be_removed_never_fails_a_load(tmp_path: Path, live: None) -> None:
+    """Story 37.6 review: a full success removes the marker, and a marker it cannot remove is only a warning."""
+    bucket = _Bucket()
+    ds = _dataset(tmp_path, bucket)
+    ds.load()
+    (tmp_path / "s3" / ".staleness.json").mkdir()  # unlink() refuses a directory
+
+    out = ds.load()
+
+    assert set(out["month"]) == {"2026-08", "2026-09"}
+
+
 def test_a_failed_month_keeps_the_others_and_names_it(tmp_path: Path, live: None) -> None:
     bucket = _Bucket()
     bucket.bodies[f"{BASE}/conda/monthly/2026/2026-09.parquet"] = b"PAR1 truncated"

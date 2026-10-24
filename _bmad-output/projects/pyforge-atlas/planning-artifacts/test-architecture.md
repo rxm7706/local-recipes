@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: 4f20345f2c74ed61
+source_fingerprint: 9537bc3318bf4e8f
 story_count: 139
-test_file_count: 183
+test_file_count: 185
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -21,10 +21,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Station:** `pyforge-atlas`
 - **Stories parsed:** 139
 - **Epics parsed:** 37
-- **Test files inventoried:** 183 under `src/shared/packages/pyforge-atlas/tests/`
+- **Test files inventoried:** 185 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `4f20345f2c74ed61`
+- **Source fingerprint:** `9537bc3318bf4e8f`
 
 ## Risk Assessment
 
@@ -133,6 +133,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_rate_limit.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_recipe_extras.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_refresh_assets.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_repodata_uploads.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_request_datasets.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_s3_downloads.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_sbom_intake.py` | unit | none observed |
@@ -183,6 +184,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_inventory_verification.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_inventory_verified_packages.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_purl_exports.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_release_cadence.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_universe_sbom.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/pypi_intelligence/test_mapping_export.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/pypi_intelligence/test_mapping_gap.py` | unit | none observed |
