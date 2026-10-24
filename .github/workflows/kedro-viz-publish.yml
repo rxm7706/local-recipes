@@ -214,9 +214,10 @@ jobs:
       # instead of an empty table. What persists is what a dataset reads back as its own previous copy:
       # `raw/` and every store except the vulnerability database (`stores/vdb`, 9.6 GB, still rebuilt every
       # run), where each dataset keeps its last-good copy and marker, and the vulnerability snapshot history
-      # the cve-watcher diffs (`primary/vulnerability_rollup_snapshots`, Story 37.5), which each run appends
-      # to. Five plain raw-layer entries there are no such store (three rewritten every build, two only other
-      # stations write), and the PyPI-to-conda map merges onto its last copy, as on a workstation. No other
+      # the cve-watcher diffs (`primary/vulnerability_rollup_snapshots`, Story 37.5), which each run whose
+      # rollup has rows appends to. Seven raw-layer entries there are no such store (three rewritten every
+      # build, two only other stations write, two SBOM entries the build never writes), and the PyPI-to-conda
+      # map merges onto its last copy, as on a workstation. No other
       # output-layer file persists, so a stopped node's table in `intermediate/`, `primary/` or `derived/`
       # cannot hide behind an old file. The list says `stores/*` beside `!stores/vdb`, never `stores`:
       # actions/cache lists matches without their descendants and tar recurses into a listed directory, so an

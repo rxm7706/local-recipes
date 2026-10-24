@@ -4,8 +4,8 @@ type: 'fix'
 created: '2026-10-24'
 status: 'done'
 baseline_revision: '2859b706da'
-review_loop_iteration: 4
-followup_review_recommended: true
+review_loop_iteration: 5
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-34-12-a-vulnerability-feed-that-cannot-be-reached-keeps-its-last-good-copy.md
@@ -53,8 +53,8 @@ bootstrap-index-health board reads `missing` (34.12's residual risk).
    `data/stores/vdb`), and `data/primary/vulnerability_rollup_snapshots`. Every raw-layer catalog entry under the data
    root lies under the first two. In all but seven, the dataset keeps its own last-good copy and marker; a trigger node
    emits a refresh request, and the store's dataset writes the copy. The test pins the 32 classes that do this.
-   - The snapshot history (`vulnerability_rollup_snapshots`, the one `SnapshotHistoryDataset`) is appended to on
-     every run and deduplicated on `(snapshot_at, conda_name)`. `diff_vulnerability_snapshots` diffs the latest
+   - The snapshot history (`vulnerability_rollup_snapshots`, the one `SnapshotHistoryDataset`) is appended to by
+     each run whose rollup has rows, and deduplicated on `(snapshot_at, conda_name)`. `diff_vulnerability_snapshots` diffs the latest
      snapshot against the newest one at least `since_days` (7) older. When none is, it falls back to the
      second-latest. So from the second run whose cache survives, the cve-watcher has a pair of snapshots to diff on
      Pages, which Story 37.5 left empty there "until a store persists across runs". A pair hours apart often moves no
@@ -214,7 +214,7 @@ Type / Effort / Deps: fix / S / 34.12.
   `SPEC.md` text changes; the memlog carries the decision and the operator's ruling.
 - Dream: `docs/dreams/pyforge-atlas.md` § *Realization log*, the 2026-10-24 entry (on Pages, last-good has nothing to
   keep).
-- Epic: Epic 37 (done; this story reopens it until it lands).
+- Epic: Epic 37 (done; this story reopened it, and it is done again on the branch before the merge).
 - Ledger key: `37-12-the-pages-data-build-keeps-its-last-good-copies-between-runs`; status at mint `in-progress`.
 - Deferred work: opens `DW-atlas-37-12-1` (operator-owned: raise the repository's Actions cache limit) and
   `DW-atlas-37-12-3` (atlas: a failed vdb build republishes the previous cve-watcher diff as current; a fix to Story
@@ -244,7 +244,7 @@ in `on.push.paths`. The first run is the weekly schedule, a push touching the vi
 
 Run 2026-10-24 in worktree `laughing-jackson-2bff14` (branch `claude/laughing-jackson-2bff14`, from `2859b706da`).
 
-- **Tests:** `test_vizro_static_boards.py`: 19 passed (13 before, 6 new; reviews 1 and 2 widened four of them).
+- **Tests:** `test_vizro_static_boards.py`: 19 passed (13 before, 6 new; reviews 1 to 4 widened them).
   `pixi run -e pyforge-atlas pyforge-atlas-test` (before review 1's fixes): 3,433 passed and 20 skipped, then 103
   passed. `pixi run -e pyforge-guild lint-types`: exit 0. `scripts/ci_surface_gates.py --check`: exit 0.
 - **Mutations** (`scratchpad/mutate.py` and two by hand, each restored): 41 of 41 killed.
@@ -276,8 +276,26 @@ Run 2026-10-24 in worktree `laughing-jackson-2bff14` (branch `claude/laughing-ja
 - **Cache budget, 2026-10-24** (`gh api repos/rxm7706/local-recipes/actions/cache/usage` and `…/actions/caches`):
   10,450,545,115 bytes in 29 entries; the oldest last read at 11:42Z, at 15:18Z.
 
+### Landing
+
+- Main had not moved past `2859b706da` at the promotion (`git fetch`; nothing to merge).
+- Spec surface: reconcile events on `spec-pyforge-atlas` and `spec-pyforge-unifying-strategy` naming every governed
+  path, then one scoped stamp each; `spec-surface-check` exit 0. `tea-playwright-all` added 37.12 to the atlas Story
+  Coverage Matrix (the other stations' fingerprint-only drift reverted); `tea-playwright-check` exit 0.
+- `TMPDIR=$HOME/.cache/pyforge-preflight-tmp PYFORGE_PREFLIGHT_SCOPE=full pixi run -e pyforge-guild pr-preflight` at
+  `a9c724f3fd`: exit 1, one lane red: `pyforge-marshal-test`'s
+  `test_no_done_and_flagged_spec_is_uncarried_across_the_eight_projects` (this spec was `done` with
+  `followup_review_recommended: true` while review 5 ran). Every other lane passed: atlas 3,433 passed and 20 skipped,
+  then 103 passed; 13,205 passed in the marshal lane apart from that one test.
+
 ## Spec Change Log
 
+- 2026-10-24, review 5 (read-only, PASS: 0 blockers, 1 should-fix, 4 nits), fixed on the same branch:
+  - S1: the post-review-4 verdicts are recorded under *Landing*.
+  - Nits: the memlog reconcile events' "seven tests" (six) and "209 -> 216" (a stale count corrected) are
+    corrected by an event; "every run appends" now reads "each run whose rollup has rows" (Approach 3, the workflow
+    comment, the test comment); the Binding line and the epics stamp say epic-37 is done again; the workflow comment
+    counts the seven non-last-good raw entries, as the test does; `followup_review_recommended` is false.
 - 2026-10-24: promoted `done` on the branch (epics.md, the ledger key, this spec) before the merge; epic-37 back to
   done.
 - 2026-10-24, review 4 (FAIL: 0 blockers, 2 should-fix, 3 nits), fixed on the same branch:
@@ -329,6 +347,12 @@ Run 2026-10-24 in worktree `laughing-jackson-2bff14` (branch `claude/laughing-ja
 
 ## Review Triage Log
 
+- 2026-10-24, review 5 (independent subagent, read-only while the preflight ran): PASS, 0 blockers, 1 should-fix,
+  4 nits.
+  - It checked every round-4 fix against the code.
+  - It confirmed that the stamps' baseline hashes match HEAD, and recomputed the test-architecture fingerprint.
+  - It confirmed that the statuses and counts agree.
+  - Every finding was fixed on the branch (Spec Change Log).
 - 2026-10-24, review 4 (independent subagent): FAIL, 0 blockers, 2 should-fix, 3 nits.
   - It confirmed the write order (the snapshot is appended before the diff reads it), the dedupe and the schema
     handling.

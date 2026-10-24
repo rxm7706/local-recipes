@@ -173,8 +173,8 @@ MEMBER = "src/shared/packages/pyforge-atlas"
 DATA_ROOT = f"{MEMBER}/data"
 # `stores/*` beside `!stores/vdb`, never `stores`: actions/cache globs with implicitDescendants false and tar
 # recurses into a listed directory, so an exclusion under a listed `stores` would archive the 9.6 GB vdb store.
-# The one output-layer path: the vulnerability snapshot history (Story 37.5), which each run appends to and the
-# cve-watcher diffs, so it is a store across runs, not a table a node rewrites.
+# The one output-layer path: the vulnerability snapshot history (Story 37.5), which each run whose rollup has rows
+# appends to and the cve-watcher diffs, so it is a store across runs, not a table a node rewrites.
 HISTORY_STORES = {"vulnerability_rollup_snapshots": f"{DATA_ROOT}/primary/vulnerability_rollup_snapshots"}
 LAST_GOOD_PATHS = [
     f"{DATA_ROOT}/raw",
