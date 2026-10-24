@@ -194,7 +194,8 @@ def _seconds(timestamp: Any) -> int | None:
 
 
 def _build_number(value: Any) -> int:
-    """A record's ``build_number``, 0 when it has none, or one that is not an int64 (legacy ``build_number or 0``)."""
+    """A record's ``build_number``: 0 when it has none, as legacy's ``build_number or 0`` reads it, and 0 for one that
+    is not an int64 integer (legacy would compare a float as it is; Parquet's Int64 column holds only an integer)."""
     if isinstance(value, bool) or not isinstance(value, int) or not _INT64_MIN <= value <= _INT64_MAX:
         return 0
     return value
@@ -275,17 +276,19 @@ def _reason(exc: BaseException) -> str:
 
 
 def _readable(path: Path) -> bool:
-    """Whether a cached subdir copy exists and its Parquet footer reads."""
+    """Whether a cached subdir copy exists, its Parquet footer reads, and it has this aggregate version's columns.
+    Only then is its ETag sent: a copy of another shape is fetched again, never kept by a 304 and skipped on read."""
     try:
-        pq.read_metadata(path)
+        names = pq.read_schema(path).names
     except Exception:  # noqa: BLE001 -- absent, truncated or not Parquet
         return False
-    return True
+    return names == COLUMNS
 
 
 def combine_subdirs(frames: list[pd.DataFrame]) -> pd.DataFrame:
     """The subdirs' aggregates as one: a version's earliest upload across subdirs, all its files, and its newest
-    build across subdirs (the highest build number, then the latest time; a v1 copy's null build ranks lowest)."""
+    build across subdirs (the highest build number, then the latest time). A version any served v1 copy holds has no
+    known newest build, so both of its newest-build columns are null."""
     frames = [f for f in frames if not f.empty]
     if not frames:
         return _typed(pd.DataFrame(columns=COLUMNS))
@@ -296,16 +299,17 @@ def combine_subdirs(frames: list[pd.DataFrame]) -> pd.DataFrame:
         file_count=("file_count", "sum"),
     )
     ranked = joined.assign(
-        _build=joined["last_build_number"].astype("Int64").fillna(_INT64_MIN),
-        _time=joined["last_upload_unix"].astype("Int64").fillna(0),
-    ).sort_values([*keys, "_build", "_time"], kind="stable")
+        _build=joined["last_build_number"].astype("Int64"),
+        _time=joined["last_upload_unix"].astype("Int64").fillna(0),  # an untimed newest file ranks below a timed one
+        # a v1 copy's null build sorts last, so it is kept: its newest build could be any, so the version's is unknown
+    ).sort_values([*keys, "_build", "_time"], kind="stable", na_position="last")
     newest = ranked.drop_duplicates(keys, keep="last")[[*keys, "last_upload_unix", "last_build_number"]]
-    out = out.merge(newest, on=keys, how="left")
-    return _typed(out[COLUMNS])
+    return _typed(out.merge(newest, on=keys, how="left")[COLUMNS])
 
 
 class RepodataUploadsDataset(AbstractDataset):
-    """conda-forge's full repodata, as one row per package version: its earliest upload and its file count.
+    """conda-forge's full repodata, as one row per package version: its earliest upload, its file count, and its newest
+    build's build number and file time.
 
     ``url`` is the channel base (``CONDA_FORGE_BASE_URL``). With ``filepath``, each subdir's aggregate is cached as
     ``<filepath>/subdirs/<subdir>.parquet`` and ``manifest.json`` holds each cached subdir's ETag under the aggregate

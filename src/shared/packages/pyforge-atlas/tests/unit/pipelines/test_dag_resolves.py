@@ -419,3 +419,30 @@ def test_upstream_discovery_free_inputs_are_all_produced_by_the_bootstrap_pipeli
     # Named assertion for the specific Story 21.6 dependency the finding called
     # out — a clearer failure message than the set-diff above if this regresses.
     assert "enterprise_jfrog_names" in (discovery_create() + artifactory_create()).all_outputs()
+
+
+def test_the_bootstrap_dag_produces_every_input_a_registered_pipeline_produces():
+    """Story 38.1 review 2: every free input of the ``pyforge-atlas-bootstrap`` task's combined DAG that some
+    registered pipeline produces is produced inside that DAG, so a fresh data root never loads a dataset nothing in the
+    run has written. Story 37.7's scorer read ``semantic_packages`` while the Pages job built it in a later step, and
+    the Vizro build failed on a fresh runner (kedro-viz-publish, 2026-10-24)."""
+    import tomllib
+    from pathlib import Path
+
+    from kedro.framework.project import configure_project
+
+    from pyforge.atlas.pipeline_registry import register_pipelines
+
+    pixi = Path(__file__).resolve().parents[7] / "pixi.toml"  # the repo root
+    task = tomllib.loads(pixi.read_text(encoding="utf-8"))["feature"]["pyforge-atlas"]["tasks"][
+        "pyforge-atlas-bootstrap"
+    ]
+    names = task["cmd"].split("--pipelines ", 1)[1].split()[0].split(",")
+    configure_project("pyforge.atlas")
+    registered = register_pipelines()
+    combined = sum((registered[name] for name in names[1:]), registered[names[0]])
+    produced_anywhere = set().union(*(p.all_outputs() for key, p in registered.items() if key != "__default__"))
+
+    missing = (combined.inputs() & produced_anywhere) - combined.all_outputs()
+
+    assert not missing, f"the bootstrap DAG reads {sorted(missing)}, which only a pipeline outside it produces"

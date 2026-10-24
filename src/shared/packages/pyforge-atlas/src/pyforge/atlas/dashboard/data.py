@@ -39,9 +39,10 @@ PACKAGE_MAINTAINERS_PARQUET = "intermediate/vcs_package_maintainers/vcs_package_
 # ``semantic_packages`` Kedro pipeline (Story 20.3, CAP-6 / ``query-plane-catalog``
 # ruling) from the sealed ``core`` + ``vcs_health`` pipelines' own catalog outputs and
 # (Story 38.1) ``derived_artifacts``' release cadence and cf-graph archived set. The two
-# pipelines read each other's outputs, so run them together (after ``core`` +
-# ``vcs_health``): ``pyforge atlas run --pipelines derived_artifacts,semantic_packages``,
-# or the default pipeline. A package the cadence lacks keeps its upload columns NULL,
+# pipelines read each other's outputs, and ``derived_artifacts`` reads several more, so
+# build them in one DAG with the fetch pipelines: ``pixi run -e pyforge-atlas
+# pyforge-atlas-bootstrap``, or the default pipeline. A package the cadence lacks keeps
+# its upload columns NULL,
 # never fabricated. In a checkout where the pipeline has not yet run, the loader still
 # degrades honestly to an empty result via the same ``_bsl_query_or_empty`` seam
 # every page uses. Closes DW-D2-2.
@@ -299,13 +300,14 @@ def load_release_cadence(parquet: str | os.PathLike[str] | None = None) -> pd.Da
     )
 
 
-def load_find_alternative(parquet: str | os.PathLike[str] | None = None) -> pd.DataFrame:
-    """`find-alternative` — build_alternative_candidates_model."""
+def load_find_alternative(parquet: str | os.PathLike[str] | None = None, *, now: int | None = None) -> pd.DataFrame:
+    """`find-alternative` — build_alternative_candidates_model, its stage on the board's clock (Story 38.1)."""
     return _bsl_query_or_empty(
         parquet,
         models.build_alternative_candidates_model,
         ["archived_name", "candidate_name", "adoption_stage"],
         ["similarity_score", "downloads_total"],
+        model_kwargs={"now_unix": now},
     )
 
 

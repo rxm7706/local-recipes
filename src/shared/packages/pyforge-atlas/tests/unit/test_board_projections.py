@@ -537,6 +537,24 @@ def test_with_the_flag_on_each_board_is_stamped_from_the_file_it_reads(tmp_path:
         assert expected and expected in _card_text(dashboard, page_id), page_id
 
 
+def test_find_alternative_classifies_its_candidates_on_the_boards_clock(tmp_path: Path) -> None:
+    """Story 38.1 review 2: a candidate scored at 360 days old reads declining on a board built a week later, as the
+    adoption-stage board reads the same package."""
+    root = _data_root(tmp_path)
+    candidates = pd.read_parquet(root / data.DERIVED_ALTERNATIVE_CANDIDATES_PARQUET).iloc[:1]
+    candidates = candidates.assign(
+        latest_conda_upload=pd.array([NOW - 360 * 86_400], dtype="Int64"),
+        latest_upload_age_days=pd.array([360], dtype="Int64"),
+        releases_30d=pd.array([0], dtype="Int64"),
+        total_versions=pd.array([2], dtype="Int64"),
+    )
+    _write(root / data.DERIVED_ALTERNATIVE_CANDIDATES_PARQUET, candidates)
+
+    app.build_dashboard(build_stamp=STAMP, data_root=root, now=NOW + 7 * 86_400, board_projections=True)
+
+    assert _frame("find-alternative")["adoption_stage"].tolist() == ["declining"]
+
+
 def test_the_dashboard_reads_the_flag_when_not_told(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(data, "board_projections", lambda **_: True)
 

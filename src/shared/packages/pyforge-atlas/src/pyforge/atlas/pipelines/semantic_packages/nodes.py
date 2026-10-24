@@ -71,7 +71,8 @@ def compose_semantic_packages(
       `derived_release_cadence` (Story 38.1; legacy Phase B and adoption_stage.py's
       ``package_version_downloads`` counts); ``latest_upload_age_days`` is
       ``(now - latest_conda_upload) // 86400``, NULL with no upload time (legacy
-      adoption_stage.py:103). A package the cadence lacks keeps all four NULL.
+      adoption_stage.py:103). A package the cadence lacks, or whose newest build the cadence does not know,
+      keeps all four NULL.
 
     Every join is LEFT off the Phase B population -- an unmatched row degrades to
     NULL/absent, never a fabricated value (mirrors `dashboard/data.py::_bsl_query_or_empty`).
@@ -152,10 +153,15 @@ def compose_semantic_packages(
     if (
         derived_release_cadence is not None
         and not derived_release_cadence.empty
-        and {"conda_name", *cadence_columns} <= set(derived_release_cadence.columns)
+        and {"conda_name", "latest_build_known", *cadence_columns} <= set(derived_release_cadence.columns)
     ):
-        cadence = derived_release_cadence[["conda_name", *cadence_columns]].drop_duplicates("conda_name")
-        out = out.merge(cadence, on="conda_name", how="left")
+        cadence = derived_release_cadence[["conda_name", "latest_build_known", *cadence_columns]]
+        cadence = cadence.drop_duplicates("conda_name")
+        # a newest build of unknown provenance (a copy cached before Story 38.1) leaves all three NULL, so the stage
+        # reads unknown; with the counts kept and the time NULL, legacy's `age or 99999` would read it silent
+        known = cadence["latest_build_known"].fillna(False).astype(bool)
+        cadence = cadence.assign(**{col: cadence[col].astype("Int64").where(known) for col in cadence_columns})
+        out = out.merge(cadence.drop(columns="latest_build_known"), on="conda_name", how="left")
     for col in cadence_columns:
         out[col] = out[col].astype("Int64") if col in out.columns else pd.array([pd.NA] * len(out), dtype="Int64")
     now_ts = int(time.time()) if now is None else now

@@ -124,10 +124,9 @@ def test_the_vizro_job_builds_the_public_data_before_it_exports() -> None:
         t.startswith(("/usr/", "/opt/")) and len(t.rstrip("/").split("/")) >= 3 for t in targets
     )  # never /usr or /opt
     assert _workflow()["jobs"]["vizro"]["timeout-minutes"] == 240  # three times the measured build
-    assert build["run"].split("\n")[:2] == [
-        "pixi run --frozen -e pyforge-atlas pyforge-atlas-bootstrap",
-        "pixi run --frozen -e pyforge-atlas pyforge atlas run --pipelines semantic_packages",
-    ]
+    # Story 38.1: semantic_packages builds inside the bootstrap's one DAG, never as a step after it
+    assert build["run"].split("\n")[0] == "pixi run --frozen -e pyforge-atlas pyforge-atlas-bootstrap"
+    assert "--pipelines semantic_packages" not in build["run"]
     assert "continue-on-error" not in build  # a failed build fails the job; Pages keeps its last export
 
 
@@ -139,7 +138,7 @@ def test_the_vizro_job_runs_public_sources_only() -> None:
     assert all("env" not in step for step in _steps(job) if step.get("name") == "Build the public atlas data")
 
 
-def test_the_bootstrap_task_runs_the_eight_fetch_pipelines_and_never_the_estate_cache() -> None:
+def test_the_bootstrap_task_runs_the_fetch_pipelines_with_the_semantic_store_and_never_the_estate_cache() -> None:
     task = tomllib.loads(PIXI.read_text(encoding="utf-8"))["feature"]["pyforge-atlas"]["tasks"][
         "pyforge-atlas-bootstrap"
     ]
@@ -153,6 +152,7 @@ def test_the_bootstrap_task_runs_the_eight_fetch_pipelines_and_never_the_estate_
         "derived_artifacts",
         "seed_gaps",
         "artifactory_downloads",
+        "semantic_packages",  # Story 38.1: it and derived_artifacts read each other's outputs
     ]
     assert task["cwd"] == "src/shared/packages/pyforge-atlas"
 

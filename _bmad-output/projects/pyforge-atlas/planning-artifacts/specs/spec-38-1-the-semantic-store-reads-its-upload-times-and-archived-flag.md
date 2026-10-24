@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'version-downloads reads core_version_download_history as before, with a null upload_date'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -47,7 +47,10 @@ flag.
    time, as legacy reads it. The aggregate version moves to 2, so a live load fetches every subdir again; until then a
    v1 copy is served with both columns null (AD-13).
 2. **The release cadence** (`project_release_cadence`) adds `latest_conda_upload`: the newest build's file time of the
-   version `core_packages_enumerated` names as latest, legacy Phase B's `latest_conda_upload` (CFA:1285-1325).
+   version `core_packages_enumerated` names as latest, legacy Phase B's `latest_conda_upload` (CFA:1285-1325). It adds
+   `latest_build_known` too: false when that version has no row in the store, or its row came from a v1 copy. The
+   semantic store then leaves the package's upload columns NULL, so its stage reads `unknown`; with the counts kept
+   and the time NULL, legacy's `age or 99999` would read it `silent`.
 3. **A node,** `project_graph_archived_feedstocks` (`derived_artifacts`), writes `derived_graph_archived_feedstocks`:
    every feedstock the cf-graph flags archived. Core's Phase J skip-set and Story 37.7's scorer read the same flag.
 4. **`compose_semantic_packages`** reads `derived_release_cadence` and `derived_graph_archived_feedstocks`, both produced
@@ -66,9 +69,12 @@ flag.
    `version_downloads.py`'s `upload_unix`) and writes `derived_version_downloads`. Behind
    `pyforge.atlas.board_projections` the board reads it; off, it reads `core_version_download_history` as before.
 6. **Provenance:** `metrics.METRIC_PROVENANCE`'s `staleness_age_days` and `adoption_stage` move to `migrated-column`.
-7. **Run order:** `semantic_packages` and `derived_artifacts` read each other's outputs, so they run together
-   (`pyforge atlas run --pipelines derived_artifacts,semantic_packages`) or as the default pipeline; the board notes and
-   the pipeline README say so.
+7. **Run order:** `semantic_packages` and `derived_artifacts` read each other's outputs, and `derived_artifacts` reads
+   most fetch pipelines' outputs, so `semantic_packages` joins the `pyforge-atlas-bootstrap` task's one DAG. The Pages
+   job's separate `semantic_packages` step goes: built after the bootstrap, it left Story 37.7's scorer with nothing to
+   read, and the Vizro build failed on every merge since 37.7 (kedro-viz-publish, 2026-10-24). A DAG test pins that the
+   bootstrap produces every input a registered pipeline produces. The board notes and the pipeline README name the
+   task.
 
 **Deviations from legacy:**
 - The upload times come from the main-label full repodata (Story 37.6's ruling and its declared deviations): a version
@@ -94,8 +100,9 @@ Type / Effort / Deps: feature / M / Story 37.6.
 
 - **AC1 — Newest build.** The upload aggregate carries each version's earliest file time, and its newest build's
   build number and file time, across subdirs. A copy cached at aggregate version 1 is served with those two null.
-- **AC2 — Latest upload.** `latest_conda_upload` is the last file time of the enumerated latest version, NULL when that
-  version has no timed file.
+- **AC2 — Latest upload.** `latest_conda_upload` is the file time of the enumerated latest version's newest build (the
+  highest build number, then the latest time), NULL when that build has no timed file; `latest_build_known` is false
+  when the version has no row, or its row came from a v1 copy, and the semantic store then reads the package unknown.
 - **AC3 — Semantic inputs.** `semantic_packages` fills its four upload columns as legacy derives them, NULL for a
   package the cadence lacks, and `feedstock_archived` from either archived source through attribution.
 - **AC4 — Classifiers.** Over the composed store, `adoption_stage` and `staleness_age_days` classify packages with real
@@ -123,7 +130,8 @@ Type / Effort / Deps: feature / M / Story 37.6.
 | a package in the cadence with a timed latest version | all four columns filled |
 | the latest version's newest build untimed, an older build timed | `latest_conda_upload` NULL |
 | a late rebuild of an older build number on another subdir | not the newest build |
-| a subdir copy cached at aggregate version 1 | served; its newest build null |
+| a subdir copy cached at aggregate version 1 | served; its newest build null; the package's stage `unknown` |
+| a copy of another shape with a current manifest | refetched without its ETag |
 | the latest version untimed, older versions timed | `latest_conda_upload` NULL, the counts filled |
 | a package not in the cadence | the four columns NULL |
 | a feedstock archived only in the cf-graph | `feedstock_archived` 1 |
@@ -137,7 +145,7 @@ Type / Effort / Deps: feature / M / Story 37.6.
 
 - Parent Spec capability: `spec-pyforge-atlas` CAP-69 (FR-77). No CAP is minted, and no `SPEC.md` text changes.
 - Dream: `docs/dreams/pyforge-atlas.md` § *Realization log*, the 2026-10-24 entry.
-- Epic: Epic 38 (in progress). Closes DW-atlas-37-6-2 and DW-atlas-37-7-2.
+- Epic: Epic 38 (`backlog` until this story lands). Closes DW-atlas-37-6-2 and DW-atlas-37-7-2; opens DW-atlas-38-1-1.
 - Ledger key: `38-1-the-semantic-store-reads-its-upload-times-and-archived-flag`.
 
 ## Verification
@@ -153,30 +161,32 @@ Type / Effort / Deps: feature / M / Story 37.6.
 
 ## Run results
 
-2026-10-24, after review 1's fixes:
-- `pixi run -e pyforge-atlas pyforge-atlas-test`: 3,353 passed, 20 skipped; the second run, 103 passed.
+2026-10-24, after review 2's fixes:
+- `pixi run -e pyforge-atlas pyforge-atlas-test`: 3,361 passed, 20 skipped; the second run, 103 passed.
 - `pixi run -e pyforge-guild lint-types`: exit 0.
-- Mutation check, 43 mutations over the upload store (newest-build ranking within and across subdirs, the
-  build-number bound, the v1 serve, the version bump), the cadence, the model clock, the semantic node and pipeline,
-  the two lifecycle nodes and the board path: all 43 fail a named test. Before review, 29 mutations left one
-  equivalent survivor and three that new tests now cover.
+- Mutation check, 62 mutations in three passes. Every one fails a named test, except one equivalent mutant that a
+  later edit removed: a second pass that nulled a v1-mixed version's newest build, which the sort already does.
+  - After review 1, 43: the newest-build ranking within and across subdirs, the build-number bound, the v1 serve, the
+    version bump, the cadence, the model clock, the semantic node and pipeline, the two lifecycle nodes, the board path.
+  - After review 2, 19: the known newest build, the shape-checked ETag, the combine's sort, find-alternative's clock,
+    the bootstrap's one DAG and the workflow step.
 
-Real data, 2026-10-24: the v2 upload store fetched live into scratch (140 s; 446,663 versions, 436,926 with a newest
-build time) over Story 37.2's data root (34,720 enumerated packages) and the cf-graph of Story 37.7's run.
-- Cadence: 34,495 packages with `latest_conda_upload`. The graph flags 1,601 feedstocks archived;
-  `vcs_archived_feedstocks` is empty on a public run.
+Real data, 2026-10-24: the v2 upload store fetched live into scratch (446,669 versions, 436,932 with a newest build
+time) over Story 37.2's data root (34,720 enumerated packages) and the cf-graph of Story 37.7's run.
+- Cadence: 34,495 packages with `latest_conda_upload`; every package's newest build is known (a fresh store holds no
+  v1 copy). The graph flags 1,601 feedstocks archived; `vcs_archived_feedstocks` is empty on a public run.
 - `semantic_packages` before: no upload column set, 0 archived, every package `unknown`.
-- After: 34,495 packages with an upload time and an age (median 270 days); 828 archived. Adoption stage: mature 13,985,
-  declining 8,602, silent 7,056, stable 4,141, bleeding-edge 936. The 225 packages whose latest version's newest build
+- After: 34,495 packages with an upload time and an age (median 270 days); 828 archived. Adoption stage: mature 13,988,
+  declining 8,602, silent 7,055, stable 4,139, bleeding-edge 936. The 225 packages whose latest version's newest build
   has no timed file read `silent`, legacy's `age or 99999` rule.
 - Against legacy `cf_atlas.db` (read-only), 34,669 packages matched:
-  - `latest_conda_upload`: of 34,430 set in both, 95.7% exact (95.1% before review, when the newest file stood for the
-    newest build). The other 1,493 are newer here, and legacy's own age accounts for them: 1,228 have a newer latest
-    version here, and the other 265 were rebuilt after legacy's newest record (2026-10-18).
+  - `latest_conda_upload`: of 34,430 set in both, 95.7% exact (95.1% before review 1, when the newest file stood for
+    the newest build). The other 1,493 are newer here, and legacy's own age accounts for them: 1,228 have a newer
+    latest version here, and the other 265 were rebuilt after legacy's newest record (2026-10-18).
   - `feedstock_archived`: 825 legacy, 828 here, 99.99% agree; no package legacy marks archived reads live here.
   - Adoption stage: 92.9% agree. The difference is mostly legacy's own age: its `package_version_downloads` ends
-    2026-10-09, so the last 15 days' uploads are missing from its 30-day window (mature to stable 1,661; stable to
-    bleeding-edge 424).
+    2026-10-09, so the last 15 days' uploads are missing from its 30-day window (mature to stable 1,664; stable to
+    bleeding-edge 425).
   - At legacy's own cutoff, with the store truncated to it: `releases_30d` 99.81% exact over 33,809 packages;
     `total_versions` 95.64% exact, 4.34% fewer here (the deviation above).
 - Version-downloads: 448,301 rows, 428,065 dated (95.5%), carrying 99.3% of the downloads.
@@ -186,6 +196,9 @@ build time) over Story 37.2's data root (34,720 enumerated packages) and the cf-
 - 2026-10-24: drafted from Story 38.1, DW-atlas-37-6-2 and DW-atlas-37-7-2.
 - 2026-10-24: review 1 — the newest build instead of the newest file (legacy Phase B's record), a v1 copy served
   across the version bump, the stage on the model's clock, the run order documented.
+- 2026-10-24: review 2 — a newest build of unknown provenance reads unknown, not silent; `semantic_packages` builds in
+  the bootstrap's one DAG (the Pages Vizro build was red since Story 37.7); find-alternative's stage on the board's
+  clock; a copy of another shape refetched; a v1-mixed version's newest build null.
 
 ## Review Triage Log
 
@@ -206,3 +219,21 @@ build time) over Story 37.2's data root (34,720 enumerated packages) and the cf-
   twice no longer raises (N3); the date test uses a time a local-date reading fails (N4); a flag-off test writes the
   history and reads it with a null date (N5); the epics header and run counts (N6); the seconds reading is a declared
   deviation (N7).
+
+**Review 2 (independent, 2026-10-24): FAIL** — review 1's findings verified fixed (S3 and S4 partly); 1 must-fix,
+3 should-fix, 6 nits; all fixed.
+- B-1: a served v1 copy left `latest_conda_upload` NULL with the counts filled, so a package uploaded five days ago read
+  `silent`. Fixed: the cadence's `latest_build_known`; the semantic store leaves all three inputs NULL where it is
+  false, and the stage reads `unknown`.
+- B-2: the documented run order failed on a fresh data root, and the Pages job built `semantic_packages` after the
+  bootstrap. The live check found the Vizro build red on main since Story 37.7 merged (`semantic_packages: Failed while
+  loading data`). Fixed: `semantic_packages` joins the bootstrap task; the separate step goes; a DAG test pins the
+  bootstrap's self-sufficiency; the notes and README name the task. The same live check found five earlier red runs
+  from a cwe.mitre.org outage: a public vulnerability feed's connection failure fails the whole build. That is
+  DW-atlas-38-1-1, not this story's surface.
+- B-3: AC2 described the newest file. Fixed.
+- B-4: find-alternative's stage read the age stored at scoring time. Fixed: the candidates carry `latest_conda_upload`;
+  the model and loader take the board's `now`.
+- Nits: a v1-mixed version's newest build is null (N-a); `_readable` checks the columns, so a copy of another shape is
+  refetched rather than kept by a 304 (N-b); `_build_number`'s docstring (N-c); stale "newest file" wording (N-d);
+  `build_packages_model`'s expected columns (N-e); the Binding line (N-f).

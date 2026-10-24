@@ -55,6 +55,7 @@ def _core_shaped_frames() -> dict[str, pd.DataFrame]:
                 "latest_conda_upload": pd.array([1_699_000_000], dtype="Int64"),
                 "releases_30d": [1],
                 "total_versions": [4],
+                "latest_build_known": [True],
             }
         ),
         "derived_graph_archived_feedstocks": pd.DataFrame({"feedstock_name": ["alpha"], "archived": [True]}),

@@ -136,7 +136,7 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "staleness-report",
         "bsl-shell",
         note="Wired to build_packages_model.staleness_age_days over the composed "
-        "semantic_packages store (`pyforge atlas run --pipelines derived_artifacts,semantic_packages`, after core and vcs_health). "
+        "semantic_packages store (`pixi run -e pyforge-atlas pyforge-atlas-bootstrap`, which builds it with every pipeline it reads). "
         "latest_conda_upload is the newest build's upload time of the package's latest version (Story 38.1); "
         "the age is null for a package with none.",
     ),
@@ -146,7 +146,7 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "query-atlas",
         "bsl-shell",
         note="Wired to build_packages_model (is_actionable + adoption stage + downloads) "
-        "over the composed semantic_packages store (`pyforge atlas run --pipelines derived_artifacts,semantic_packages`, after core and vcs_health).",
+        "over the composed semantic_packages store (`pixi run -e pyforge-atlas pyforge-atlas-bootstrap`, which builds it with every pipeline it reads).",
     ),
     PageDef(
         "detail-cf-atlas",
@@ -154,7 +154,7 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "detail-cf-atlas",
         "bsl-shell",
         note="Wired to build_packages_model (full per-package metric row) over the "
-        "composed semantic_packages store (`pyforge atlas run --pipelines derived_artifacts,semantic_packages`, after core and vcs_health).",
+        "composed semantic_packages store (`pixi run -e pyforge-atlas pyforge-atlas-bootstrap`, which builds it with every pipeline it reads).",
     ),
     PageDef(
         "behind-upstream",
@@ -1166,7 +1166,7 @@ def build_dashboard(
         ),
         _data_page(
             by_id["find-alternative"],
-            lambda: _data.load_find_alternative(alternatives_path),
+            lambda: _data.load_find_alternative(alternatives_path, now=now),
             grounded=False,
             provenance=find_alternative_provenance,
         ),

@@ -23,6 +23,7 @@ COLUMNS = [
     "last_upload",
     "latest_version",
     "latest_conda_upload",
+    "latest_build_known",
 ]
 
 
@@ -36,6 +37,7 @@ def _typed(frame: pd.DataFrame) -> pd.DataFrame:
             "last_upload": "Int64",
             "latest_version": object,
             "latest_conda_upload": "Int64",
+            "latest_build_known": bool,
         }
     )
 
@@ -85,20 +87,33 @@ def project_release_cadence(
         ["conda_name", "upload_unix", "version"], ascending=[True, False, False], na_position="last", kind="stable"
     ).drop_duplicates("conda_name")
     out["latest_version"] = latest.set_index("conda_name")["version"]
-    out["latest_conda_upload"] = _latest_conda_upload(uploads, core_packages_enumerated)
+    newest = _newest_build(uploads, core_packages_enumerated)
+    out["latest_conda_upload"] = newest["latest_conda_upload"]
+    out["latest_build_known"] = newest["latest_build_known"].reindex(out.index).fillna(False).astype(bool)
     return _typed(out.reset_index()[COLUMNS])
 
 
-def _latest_conda_upload(uploads: pd.DataFrame, enumerated: pd.DataFrame) -> pd.Series:
-    """Per package, the newest build's file time of the version the current repodata names as latest."""
-    if "latest_version" not in enumerated.columns or "last_upload_unix" not in uploads.columns:
-        return pd.Series(dtype="Int64")
+def _newest_build(uploads: pd.DataFrame, enumerated: pd.DataFrame) -> pd.DataFrame:
+    """Per package, the newest build's file time of the version the current repodata names as latest, and whether that
+    build is known. It is not when the version has no row here, or its row came from a copy cached before Story 38.1
+    (no build number): ``semantic_packages`` then reads the package's stage as unknown, never as an untimed build."""
+    needed = {"last_upload_unix", "last_build_number"}
+    if "latest_version" not in enumerated.columns or not needed <= set(uploads.columns):
+        return pd.DataFrame(
+            {"latest_conda_upload": pd.Series(dtype="Int64"), "latest_build_known": pd.Series(dtype=bool)}
+        )
     latest = enumerated[["conda_name", "latest_version"]].dropna().drop_duplicates("conda_name")
     times = (
-        uploads[["conda_name", "version", "last_upload_unix"]]
+        uploads[["conda_name", "version", *sorted(needed)]]
         .rename(columns={"version": "latest_version"})
-        .groupby(["conda_name", "latest_version"], as_index=False)["last_upload_unix"]
-        .max()  # the store is one row per version; a frame with two is still one row per package here
+        # the store is one row per version; a frame with two is still one row per package here
+        .groupby(["conda_name", "latest_version"], as_index=False)
+        .agg(last_upload_unix=("last_upload_unix", "max"), last_build_number=("last_build_number", "max"))
     )
-    joined = latest.merge(times, on=["conda_name", "latest_version"], how="left")
-    return joined.set_index("conda_name")["last_upload_unix"].astype("Int64")
+    joined = latest.merge(times, on=["conda_name", "latest_version"], how="left").set_index("conda_name")
+    return pd.DataFrame(
+        {
+            "latest_conda_upload": joined["last_upload_unix"].astype("Int64"),
+            "latest_build_known": joined["last_build_number"].notna(),
+        }
+    )

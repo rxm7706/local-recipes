@@ -27,7 +27,8 @@ MIN_SCORE = 0.10
 WEIGHTS = {"kw": 3, "term": 2, "dep": 4, "maint": 1}
 RECENCY_SPAN_DAYS = 5 * 365
 #: the candidate's adoption-stage inputs, passed through so the board classifies them as build_packages_model does
-STAGE_COLUMNS = ["latest_upload_age_days", "releases_30d", "total_versions"]
+# Story 38.1: latest_conda_upload too, so the board classifies a candidate on its own clock
+STAGE_COLUMNS = ["latest_conda_upload", "latest_upload_age_days", "releases_30d", "total_versions"]
 COLUMNS = [
     "archived_name",
     "candidate_name",

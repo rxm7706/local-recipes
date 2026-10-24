@@ -28,11 +28,12 @@ DAY = 86_400
 
 
 def _uploads(rows: list[tuple[str, str, int | None, int | None]]) -> pd.DataFrame:
-    """(name, version, earliest file time, latest file time)."""
+    """(name, version, earliest file time, newest build's time), each with a known newest build (build 0)."""
     frame = pd.DataFrame(rows, columns=["conda_name", "version", "upload_unix", "last_upload_unix"])
     for col in ("upload_unix", "last_upload_unix"):
         frame[col] = frame[col].astype("Int64")
     frame["file_count"] = 1
+    frame["last_build_number"] = pd.array([0] * len(frame), dtype="Int64")
     return frame
 
 
@@ -41,6 +42,8 @@ def _enumerated(pairs: list[tuple[str, str]]) -> pd.DataFrame:
 
 
 def _compose(names: list[str], cadence=None, graph_archived=None, vcs_archived=None, attribution=None) -> pd.DataFrame:
+    if cadence is not None and "latest_build_known" not in cadence.columns:
+        cadence = cadence.assign(latest_build_known=True)  # a cadence that knows each newest build
     return compose_semantic_packages(
         pd.DataFrame({"conda_name": names}),
         pd.DataFrame({"conda_name": names, "latest_status": ["active"] * len(names)}),
@@ -62,7 +65,7 @@ def _rows(out: pd.DataFrame) -> dict[str, dict]:
 # --------------------------------------------------------------------------- #
 
 
-def test_the_latest_upload_is_the_newest_file_of_the_enumerated_latest_version() -> None:
+def test_the_latest_upload_is_the_newest_build_of_the_enumerated_latest_version() -> None:
     uploads = _uploads(
         [
             ("a", "1.0", NOW - 100 * DAY, NOW - 90 * DAY),
@@ -77,9 +80,82 @@ def test_the_latest_upload_is_the_newest_file_of_the_enumerated_latest_version()
 
     out = _rows(project_release_cadence(uploads, enumerated, now=NOW))
 
-    assert out["a"]["latest_conda_upload"] == NOW - 5 * DAY  # the newest file, not the version's first
+    assert out["a"]["latest_conda_upload"] == NOW - 5 * DAY  # the newest build's time, not the version's first file
     assert out["b"]["latest_conda_upload"] == NOW - 10 * DAY
     assert pd.isna(out["c"]["latest_conda_upload"])  # the latest version has no timed file
+
+
+def test_a_newest_build_from_a_copy_cached_before_this_story_reads_unknown(tmp_path: Path) -> None:
+    """Review 2: a version served from an aggregate-version-1 copy has its counts but no known newest build, so the
+    stage reads unknown with a null age -- never silent, which legacy's `age or 99999` would make of a NULL time."""
+    uploads = _uploads([("a", "2.0", NOW - 5 * DAY, None), ("a", "1.0", NOW - 90 * DAY, NOW - 90 * DAY)])
+    uploads["last_build_number"] = pd.array([None, 0], dtype="Int64")  # 2.0 from a v1 copy
+    enumerated = _enumerated([("a", "2.0")])
+
+    cadence = project_release_cadence(uploads, enumerated, now=NOW)
+    rows = _rows(cadence)
+    assert (rows["a"]["latest_build_known"], rows["a"]["releases_30d"], rows["a"]["total_versions"]) == (False, 1, 2)
+    composed = compose_semantic_packages(
+        pd.DataFrame({"conda_name": ["a"]}),
+        pd.DataFrame({"conda_name": ["a"], "latest_status": ["active"]}),
+        pd.DataFrame({"conda_name": ["a"], "feedstock_name": ["a"]}),
+        pd.DataFrame({"feedstock_name": [], "archived": []}),
+        pd.DataFrame({"conda_name": ["a"], "downloads_total": [1], "downloads_30d": [1]}),
+        cadence,
+        None,
+        now=NOW,
+    )
+    path = tmp_path / "semantic_packages.parquet"
+    composed.to_parquet(path, index=False)
+    model = models.build_packages_model(models.duckdb_table_from_parquet(str(path)), now_unix=NOW)
+    out = model.query(dimensions=["adoption_stage", "staleness_age_days"], measures=["package_count"]).execute()
+
+    assert (out["adoption_stage"].iloc[0], pd.isna(out["staleness_age_days"].iloc[0])) == ("unknown", True)
+    for col in ("latest_conda_upload", "latest_upload_age_days", "releases_30d", "total_versions"):
+        assert pd.isna(composed[col].iloc[0]), col
+
+
+def test_a_cadence_of_an_earlier_shape_leaves_the_upload_columns_null() -> None:
+    """A release cadence written before review 2 (no latest_build_known) cannot say which newest builds it knows."""
+    cadence = pd.DataFrame(
+        {"conda_name": ["a"], "latest_conda_upload": [NOW - DAY], "releases_30d": [1], "total_versions": [2]}
+    )
+
+    out = compose_semantic_packages(
+        pd.DataFrame({"conda_name": ["a"]}),
+        pd.DataFrame({"conda_name": ["a"], "latest_status": ["active"]}),
+        pd.DataFrame({"conda_name": ["a"], "feedstock_name": ["a"]}),
+        pd.DataFrame({"feedstock_name": [], "archived": []}),
+        pd.DataFrame({"conda_name": ["a"], "downloads_total": [1], "downloads_30d": [1]}),
+        cadence,
+        None,
+        now=NOW,
+    )
+
+    for col in ("latest_conda_upload", "latest_upload_age_days", "releases_30d", "total_versions"):
+        assert pd.isna(out[col].iloc[0]), col
+
+
+def test_a_package_with_no_enumerated_latest_version_has_no_known_newest_build() -> None:
+    uploads = _uploads([("a", "1.0", NOW - DAY, NOW - DAY), ("b", "1.0", NOW - DAY, NOW - DAY)])
+    enumerated = pd.DataFrame({"conda_name": ["a", "b"], "latest_version": ["1.0", None]})
+
+    rows = _rows(project_release_cadence(uploads, enumerated, now=NOW))
+
+    assert (bool(rows["a"]["latest_build_known"]), bool(rows["b"]["latest_build_known"])) == (True, False)
+    assert rows["a"]["latest_conda_upload"] == NOW - DAY and pd.isna(rows["b"]["latest_conda_upload"])
+
+
+def test_a_known_untimed_newest_build_reads_as_legacy_does() -> None:
+    """The newest build is known and untimed (legacy: latest_conda_upload None), so the counts stay and the stage is
+    legacy's `age or 99999` silent."""
+    uploads = _uploads([("a", "2.0", NOW - 5 * DAY, None)])
+
+    cadence = project_release_cadence(uploads, _enumerated([("a", "2.0")]), now=NOW)
+    composed = _compose(["a"], cadence=cadence)
+
+    assert bool(_rows(cadence)["a"]["latest_build_known"]) is True
+    assert pd.isna(composed["latest_conda_upload"].iloc[0]) and int(composed["total_versions"].iloc[0]) == 1
 
 
 def test_the_latest_upload_tolerates_a_version_listed_twice() -> None:

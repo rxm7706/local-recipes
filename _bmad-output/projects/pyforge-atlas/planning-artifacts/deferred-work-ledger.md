@@ -5214,3 +5214,14 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-10-19 -- atlas Epic 37 chain; owned by Story 37.10
   resolved: 2026-10-23 (Story 37.10: the catalog_index pipeline's report_catalog_index_health writes catalog_index_health over CatalogIndexDataset after each build; the board reads it with pyforge.atlas.board_projections on)
   status: closed
+
+### DW-atlas-38-1-1: One public vulnerability feed's outage fails the whole Pages data build.
+
+- source_spec: `planning-artifacts/specs/spec-38-1-the-semantic-store-reads-its-upload-times-and-archived-flag.md`
+  summary: `vulnerability_feeds.py`'s `CweCatalogDataset`, `EpssFeedDataset` and `CisaKevDataset` load through `APIDataset` with no fallback, so a connection failure raises `DatasetError` and stops the run. kedro-viz-publish's Vizro job builds the public data on every merge touching atlas, and five consecutive runs on main (2026-10-23, Stories 37.11 to 37.8) failed with `vulnerability_cwe_catalog_raw: Failed to connect to the remote server` (a cwe.mitre.org connect timeout). Pages kept its last export each time. CAP-64 promises a plain run fills every public dataset; AD-13 says a fetch failure keeps the last good copy under a staleness marker instead.
+  evidence: Story 38.1 review 2's live check of kedro-viz-publish runs 39908595513, 39931632612, 39941141589, 40018149689, 40027620039 (2026-10-24).
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/vulnerability_feeds.py (CweCatalogDataset, EpssFeedDataset, CisaKevDataset); conf/base/catalog.yml (vulnerability_cwe_catalog_raw)
+  origin: Story 38.1 review 2
+  severity: medium
+  promoted: 2026-10-24 -- atlas Story 38.1; no owning story yet
+  status: open

@@ -61,10 +61,11 @@ def build_packages_model(table: Any, *, now_unix: int | None = None) -> Semantic
     clock for live use; the gate pins it).
 
     Expected input columns: ``conda_name``, ``latest_status``, ``feedstock_archived``,
-    ``latest_conda_upload``, ``downloads_total``, ``downloads_30d``,
-    ``latest_upload_age_days``, ``releases_30d``, ``total_versions``. Story 38.1 fills
-    the upload columns from Story 37.6's per-version upload times; ``adoption_stage``
-    and ``staleness_age_days`` both read ``latest_conda_upload`` against ``now_unix``.
+    ``latest_conda_upload``, ``downloads_total``, ``downloads_30d``, ``releases_30d``,
+    ``total_versions``. Story 38.1 fills the upload columns from Story 37.6's per-version
+    upload times; ``adoption_stage`` and ``staleness_age_days`` both read
+    ``latest_conda_upload`` against ``now_unix`` (the store's ``latest_upload_age_days``
+    is the compose-time age, which this model does not read).
     """
     now = int(time.time()) if now_unix is None else now_unix
     return SemanticModel(
@@ -279,15 +280,16 @@ def build_release_cadence_model(table: Any) -> SemanticModel:
 # ---------------------------------------------------------------------------
 
 
-def _candidate_stage(t: Any) -> Any:
-    """A candidate's stage by ``metrics.adoption_stage`` over its own inputs (Story 37.7); a store in the
-    earlier shape, which carries an ``adoption_stage`` column and no inputs, is read as it was."""
+def _candidate_stage(t: Any, now_unix: int | None = None) -> Any:
+    """A candidate's stage by ``metrics.adoption_stage`` over its own inputs (Story 37.7); with ``now_unix`` and the
+    candidate's ``latest_conda_upload`` (Story 38.1), on the board's clock, as the packages boards read it. A store in
+    the earlier shape, which carries an ``adoption_stage`` column and no inputs, is read as it was."""
     if "latest_upload_age_days" in t.columns:
-        return metrics.adoption_stage(t)
+        return metrics.adoption_stage(t, now_unix if "latest_conda_upload" in t.columns else None)
     return t.adoption_stage
 
 
-def build_alternative_candidates_model(table: Any) -> SemanticModel:
+def build_alternative_candidates_model(table: Any, *, now_unix: int | None = None) -> SemanticModel:
     """`find-alternative` — ranked replacement candidates for an archived package.
 
     ``similarity_score`` is a pre-computed composite (keyword/summary/dependent/
@@ -295,7 +297,8 @@ def build_alternative_candidates_model(table: Any) -> SemanticModel:
     in-memory scorer) — a Phase-E/J pipeline output column, not a BSL-derived formula
     (mirrors ``downloads_total`` being a pre-aggregated measure, not re-summed logic).
     ``adoption_stage`` is the candidate's lifecycle stage by ``metrics.adoption_stage``, the
-    classifier ``build_packages_model`` declares, over the candidate's own inputs (Story 37.7).
+    classifier ``build_packages_model`` declares, over the candidate's own inputs (Story 37.7), against
+    ``now_unix`` when given (Story 38.1), else the age stored at scoring time.
     """
     return SemanticModel(
         table=table,
@@ -303,7 +306,7 @@ def build_alternative_candidates_model(table: Any) -> SemanticModel:
         dimensions={
             "archived_name": Dimension(expr=lambda t: t.archived_name),
             "candidate_name": Dimension(expr=lambda t: t.candidate_name),
-            "adoption_stage": Dimension(expr=_candidate_stage),
+            "adoption_stage": Dimension(expr=lambda t: _candidate_stage(t, now_unix)),
         },
         measures={
             "similarity_score": Measure(expr=lambda t: t.similarity_score.mean()),
