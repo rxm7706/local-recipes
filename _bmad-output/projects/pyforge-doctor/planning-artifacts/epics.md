@@ -2494,6 +2494,17 @@ generator for its own surface. **FRs covered:** FR-17 (minted 2026-09-19 on the 
 **And** the pages agents should read (reference) are exact by construction; authored explanation stays for humans
 **Status:** done
 
+### Story 30.4: The docs, Dream and planning warn backlog is cleared
+**Type:** fix • **Effort:** L • **Deps:** S-30.3 • **FR/AD:** — (a `fix`, so no new CAP and no FR; `spec-feature-flag-governance` Q1: a `fix` needs no flag) • spec-pyforge-doctor CAP-84 (documentation currency), CAP-42 (the fleet hygiene sweep)
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix)
+**Surface:** `docs/reference/skills-catalog.md` (regenerated), the 19 authored-stale pages under `docs/{tutorials,how-to,reference,explanation}/` (content and `verified:`), `docs/dreams/README.md` (rows and the backlog sentence), the `docs/dreams/*.md` files the three Dream classes name, the five orphan planning files' citing records (herald, marshal, steward), the memlog of every Spec governing a changed file (the surface reconcile), `scripts/.spec-surface-baseline.json` (the scoped stamps)
+**Spec:** `planning-artifacts/specs/spec-30-4-the-docs-dreams-and-planning-warn-backlog-is-cleared.md`
+**Given** `9ab7ef1cf1`, where `dreams-hygiene` reports 121 warnings (64 `dream-readme-missing`, 23 `dream-status-trailing-comment`, 32 `kinship-wikilink-dead`, 2 `realization-log-missing`), `docs-currency` 20 (19 `docs-currency-authored-stale`, 1 `docs-currency-generated-stale`) and `bmad-output-hygiene` 5 `orphan-file`, and a full-scope `pr-preflight` shows each detector as one line
+**When** the change lands
+**Then** `python -m pyforge.doctor.sources dreams-hygiene`, `docs-currency` and `bmad-output-hygiene` report no warning; each authored page was re-read against every source that moved past its `verified:` and corrected where needed before its re-stamp; each Dream file has a README row derived from its frontmatter; each dead Kinship link points at the Dream that absorbed its target or is gone
+**And** no detector, check, threshold or severity changes; the README's "rows are not added by hand" sentence is replaced by the operator's ruling; the full-scope `pr-preflight` exits 0; `pixi run -e pyforge-doctor pyforge-doctor-test` green
+**Status:** backlog
+
 ## Epic 31: Doctor names the refs it judges by their full refname (spec-pyforge-doctor CAP-85)
 
 Minted 2026-09-27 (late) from the station Dream's entry of the same name: marshal Stories 60.1 and 61.1 closed the
