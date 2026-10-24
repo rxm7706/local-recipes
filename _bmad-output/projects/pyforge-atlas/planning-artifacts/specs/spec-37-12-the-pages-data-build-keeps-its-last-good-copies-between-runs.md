@@ -56,7 +56,8 @@ bootstrap-index-health board reads `missing` (34.12's residual risk).
      every run and deduplicated on `(snapshot_at, conda_name)`. `diff_vulnerability_snapshots` diffs the latest
      snapshot against the newest one at least `since_days` (7) older. When none is, it falls back to the
      second-latest. So two cached snapshots, even hours apart, fill the cve-watcher on Pages, which Story 37.5 left
-     empty there "until a store persists across runs".
+     empty there "until a store persists across runs". **Operator ruling 2026-10-24: "Approve"** (this scope change,
+     given in the Story 37.12 session; on the memlog).
    - Seven raw-layer entries there are no last-good store. Five are plain (any type outside
      `pyforge.atlas.datasets`), and two are the SBOM entries, whose runtime-param defaults the Pages build never
      writes. `org_audit_candidates`, `artifactory_downloads_raw` and `artifactory_consumption_raw` are
@@ -253,6 +254,8 @@ Run 2026-10-24 in worktree `laughing-jackson-2bff14` (branch `claude/laughing-ja
 
 ## Spec Change Log
 
+- 2026-10-24: operator ruling "Approve" on review 3's scope change (the snapshot history persists); recorded in
+  Approach 3 and the memlog.
 - 2026-10-24, review 3 (FAIL: 0 blockers, 2 should-fix, 3 nits), fixed on the same branch:
   - S1 (the deferral reason misread the cve-watcher): `diff_vulnerability_snapshots` falls back to the second-latest
     snapshot. So the job now caches `data/primary/vulnerability_rollup_snapshots` too, and the cve-watcher fills on
