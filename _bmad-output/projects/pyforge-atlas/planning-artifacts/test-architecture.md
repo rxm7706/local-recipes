@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: 3a2b13748133536d
-story_count: 141
+source_fingerprint: 3eec928fbe00ea5d
+story_count: 142
 test_file_count: 186
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 141
+- **Stories parsed:** 142
 - **Epics parsed:** 38
 - **Test files inventoried:** 186 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `3a2b13748133536d`
+- **Source fingerprint:** `3eec928fbe00ea5d`
 
 ## Risk Assessment
 
@@ -410,6 +410,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 37.9 | The mapping-gap classifies the unmapped packages | none observed |
 | 37.10 | The bootstrap-index-health reports each catalog entry's freshness | none observed |
 | 37.11 | A board's note reads "Data gap" only where data is missing | none observed |
+| 37.12 | The Pages data build keeps its last good copies between runs | none observed |
 | 38.1 | The semantic store reads its upload times and archived flag | none observed |
 
 ## Quality Gates

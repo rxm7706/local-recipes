@@ -2,7 +2,7 @@
 title: '37.12: The Pages data build keeps its last good copies between runs'
 type: 'fix'
 created: '2026-10-24'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '2859b706da'
 review_loop_iteration: 4
 followup_review_recommended: true
@@ -278,6 +278,8 @@ Run 2026-10-24 in worktree `laughing-jackson-2bff14` (branch `claude/laughing-ja
 
 ## Spec Change Log
 
+- 2026-10-24: promoted `done` on the branch (epics.md, the ledger key, this spec) before the merge; epic-37 back to
+  done.
 - 2026-10-24, review 4 (FAIL: 0 blockers, 2 should-fix, 3 nits), fixed on the same branch:
   - S1 (a failed vdb build republishes the previous diff as current, unmarked): a residual risk and
     `DW-atlas-37-12-3` (a fix to Story 37.5's nodes, outside this story's Never).

@@ -2874,7 +2874,7 @@ So that a public source that cannot be reached on build day shows its previous d
 **When** the job runs after a run whose build succeeded
 **Then** it restores that run's `data/raw`, `data/stores/*` and vulnerability snapshot history (never `data/stores/vdb`, no other output-layer file) from the repository's Actions cache before the build and saves its own after a build that succeeds, so an unreachable public source serves the previous copy under its AD-13 marker (`stale`, with the reason) and the cve-watcher has an earlier snapshot to diff; the copies reach the weekly run once the operator raises the cache limit (operator ruling 2026-10-24, `DW-atlas-37-12-1`)
 **And** the job stays public-only (no secret, no token, no `PYFORGE_ATLAS_CREDENTIALED`; AD-11), a failed build still fails the job and saves nothing, and the workflow test pins the steps' order, paths, key and gate, and that every last-good store under the data root is cached
-**Status:** in-progress
+**Status:** done
 
 ## Epic 38: The semantic store has its upload times and archived flag (spec-pyforge-atlas CAP-69, FR-77)
 

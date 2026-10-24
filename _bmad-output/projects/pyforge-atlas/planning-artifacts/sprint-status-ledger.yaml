@@ -128,7 +128,7 @@ development_status:
   37-1-the-dashboard-reads-the-data-root-kedro-writes: done
   37-10-the-bootstrap-index-health-reports-each-catalog-entry-s-freshness: done
   37-11-a-board-s-note-reads-data-gap-only-where-data-is-missing: done
-  37-12-the-pages-data-build-keeps-its-last-good-copies-between-runs: in-progress
+  37-12-the-pages-data-build-keeps-its-last-good-copies-between-runs: done
   37-2-the-pages-vizro-export-builds-the-public-atlas-data-first: done
   37-3-the-seed-gap-version-download-and-distribution-boards-read-their-datasets: done
   37-4-behind-upstream-whodepends-live-catalog-coverage-and-the-universe-sbom-boards-fill: done
@@ -216,7 +216,7 @@ development_status:
   epic-35-retrospective: optional
   epic-36: in-progress
   epic-36-retrospective: optional
-  epic-37: in-progress
+  epic-37: done
   epic-37-retrospective: optional
   epic-38: done
   epic-38-retrospective: optional
