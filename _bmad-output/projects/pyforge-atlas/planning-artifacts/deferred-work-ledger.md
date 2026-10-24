@@ -5109,7 +5109,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: Story 37.6 (CAP-69)
   severity: low
   promoted: 2026-10-23 -- atlas Story 37.6; owned by Story 38.1 (2026-10-24)
-  status: open
+  resolved: 2026-10-24 (Story 38.1, #2296: semantic_packages reads latest_conda_upload, latest_upload_age_days, releases_30d and total_versions from derived_release_cadence, over the upload store's newest build per version; the packages model classifies adoption stage and staleness on one clock; find-alternative's recency and stage read them; derived_version_downloads carries each version's UTC upload date, which the version-downloads board reads with pyforge.atlas.board_projections on)
+  status: closed
 
 ### DW-atlas-37-7-1: The find-alternative has no candidate table.
 
@@ -5132,7 +5133,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: Story 37.7 (CAP-69)
   severity: low
   promoted: 2026-10-23 -- atlas Story 37.7; owned by Story 38.1 (2026-10-24)
-  status: open
+  resolved: 2026-10-24 (Story 38.1, #2296: semantic_packages.feedstock_archived reads the cf-graph's own flag through derived_artifacts' derived_graph_archived_feedstocks, beside vcs_archived_feedstocks, through attribution; 828 packages archived on Story 37.2's live root, 99.99% agreement with legacy)
+  status: closed
 
 ### DW-atlas-37-7-3: A package built by a live feedstock can be attributed to an archived one.
 
