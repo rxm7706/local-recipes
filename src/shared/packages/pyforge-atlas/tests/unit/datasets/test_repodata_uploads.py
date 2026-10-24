@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import io
 import json
+import logging
 from compression import zstd
 from pathlib import Path
 from typing import Any
@@ -383,6 +384,127 @@ def test_an_unreadable_copy_is_skipped_and_fetched_again(tmp_path: Path, monkeyp
 
     assert set(served["conda_name"]) == {"a", "b", "c"} and ("a", "2.0") not in _rows(served)
     assert server.calls == [("noarch", None), ("linux-64", '"l1"')] and ("a", "2.0") in _rows(fetched)
+
+
+@pytest.mark.usefixtures("live")
+def test_every_failure_is_named_and_an_unexpected_one_logged_with_its_traceback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    server = _Server({"noarch": NOARCH, "linux-64": b""}, {"noarch": '"n1"', "linux-64": '"l1"'})
+    ds = _dataset(tmp_path, server, monkeypatch)
+    real = RU.aggregate_subdir
+
+    def buggy(body: bytes, **kw: Any) -> pd.DataFrame:
+        if body is NOARCH:
+            raise TypeError("a parser bug")
+        return real(body, **kw)
+
+    monkeypatch.setattr(RU, "aggregate_subdir", buggy)
+
+    with caplog.at_level(logging.WARNING, logger=RU.__name__):
+        ds.load()
+
+    marker = ds.staleness()
+    assert marker is not None and marker.reason.startswith("2 of 2 subdirs not refreshed (noarch: ")
+    assert "a parser bug" in marker.reason and "linux-64: " in marker.reason
+    traced = {
+        subdir: bool(r.exc_info)
+        for r in caplog.records
+        for subdir in ("noarch", "linux-64")
+        if f": {subdir} not refreshed: " in r.getMessage()
+    }
+    assert traced == {"noarch": True, "linux-64": False}  # the parser bug carries its traceback; an empty body does not
+
+
+@pytest.mark.usefixtures("live")
+def test_a_304_to_a_request_with_no_etag_is_a_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """With no copy and no ETag sent, a 304 answers nothing: the subdir must not vanish without a marker."""
+    ds = RepodataUploadsDataset(url=BASE, subdirs=("noarch",), filepath=str(tmp_path / "store"))
+    monkeypatch.setattr(ds, "_get", lambda url, etag: (304, b"", None))
+
+    out = ds.load()
+
+    marker = ds.staleness()
+    assert out.empty and marker is not None and "304 Not Modified to a request with no ETag" in marker.reason
+
+
+@pytest.mark.usefixtures("live")
+def test_a_corrupt_body_under_a_new_etag_keeps_the_old_etag(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The ETag advances only with a written copy, or the corrupt body would answer 304 from then on."""
+    server = _Server({"noarch": NOARCH, "linux-64": LINUX}, {"noarch": '"n1"', "linux-64": '"l1"'})
+    ds = _dataset(tmp_path, server, monkeypatch)
+    ds.load()
+    server.bodies["noarch"], server.etags["noarch"] = b"corrupt", '"n2"'
+    server.etags["linux-64"] = '"l2"'  # a sibling that succeeds writes the manifest
+    ds.load()
+    server.calls.clear()
+
+    ds.load()
+
+    assert server.calls[0] == ("noarch", '"n1"')
+    assert json.loads((tmp_path / "store" / "manifest.json").read_text())["subdirs"]["noarch"] == '"n1"'
+
+
+@pytest.mark.usefixtures("live")
+def test_a_marker_that_cannot_be_removed_never_fails_a_load(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    server = _Server({"noarch": NOARCH, "linux-64": LINUX}, {"noarch": '"n1"', "linux-64": '"l1"'})
+    ds = _dataset(tmp_path, server, monkeypatch)
+    ds.load()
+    (tmp_path / "store" / ".staleness.json").mkdir()  # unlink() refuses a directory
+
+    out = ds.load()  # every subdir a 304: a full success, which removes the marker
+
+    assert _rows(out)[("a", "1.0")] == (T0 + DAY, 3)
+
+
+@pytest.mark.parametrize(
+    "frame",
+    [
+        pd.DataFrame({"conda_name": ["a"], "version": ["1"]}),  # columns missing
+        pd.DataFrame({"conda_name": ["a"], "version": ["1"], "upload_unix": ["soon"], "file_count": [1]}),
+        pd.DataFrame({"conda_name": ["a"], "version": ["1"], "upload_unix": [1.5], "file_count": [1]}),
+    ],
+    ids=["other-columns", "string-times", "fractional-times"],
+)
+def test_a_cached_copy_of_another_shape_is_skipped(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, frame) -> None:
+    server = _Server({"noarch": NOARCH, "linux-64": LINUX}, {"noarch": '"n1"', "linux-64": '"l1"'})
+    ds = _dataset(tmp_path, server, monkeypatch)
+    monkeypatch.setattr(public_sources, "live", lambda: True)
+    ds.load()
+    frame.to_parquet(tmp_path / "store" / "subdirs" / "noarch.parquet", index=False)
+    monkeypatch.setattr(public_sources, "live", lambda: False)
+
+    out = ds.load()
+
+    assert set(out["conda_name"]) == {"a", "b", "c"} and ("a", "2.0") not in _rows(out)
+
+
+@pytest.mark.usefixtures("live")
+def test_a_tampered_manifest_or_marker_never_raises(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    server = _Server({"noarch": NOARCH, "linux-64": LINUX}, {"noarch": '"n1"', "linux-64": '"l1"'})
+    ds = _dataset(tmp_path, server, monkeypatch)
+    ds.load()
+    store = tmp_path / "store"
+    (store / "manifest.json").write_text("[" * 100_000 + "]" * 100_000)
+    server.calls.clear()
+
+    ds.load()  # the manifest reads as none: both fetched again
+
+    assert server.calls == [("noarch", None), ("linux-64", None)]
+    (store / ".staleness.json").write_text("[" * 100_000 + "]" * 100_000)
+    assert ds.staleness() is None
+    (store / ".staleness.json").write_text('{"stale": true, "reason": "x", "marked_at": Infinity}')
+    marker = ds.staleness()
+    assert marker is not None and marker.marked_at == 0
+
+
+def test_a_body_that_decompresses_past_the_cap_stops(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A few KB of zstd can expand to any length of whitespace."""
+    monkeypatch.setattr(RU, "_MAX_BODY_CHARS", 1_000)
+    body = zstd.compress(b'{"packages": {}' + b" " * 100_000 + b"}")
+
+    with pytest.raises(ValueError):
+        RU.aggregate_subdir(body, chunk=64)
 
 
 @pytest.mark.usefixtures("live")

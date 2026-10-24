@@ -325,7 +325,10 @@ class S3DownloadStatsDataset(AbstractDataset):
         if failures:
             self._mark_stale(f"{len(failures)} of {len(listed)} months not refreshed ({failures[0]}) -- keeping them")
         else:
-            (self._dir / self.STALENESS_FILENAME).unlink(missing_ok=True)
+            try:
+                (self._dir / self.STALENESS_FILENAME).unlink(missing_ok=True)
+            except OSError as exc:  # Story 37.6 review: a marker that cannot be removed never fails a load
+                logger.warning("could not remove the staleness marker of %s: %s", self._dir, exc)
 
     # -- read ----------------------------------------------------------------------
 

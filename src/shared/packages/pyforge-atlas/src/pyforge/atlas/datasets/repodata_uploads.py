@@ -19,6 +19,7 @@ import io
 import json
 import logging
 import math
+import re
 from collections.abc import Callable, Iterator
 from compression import zstd
 from pathlib import Path
@@ -46,11 +47,17 @@ _CHUNK = 1 << 20  # bytes read per refill
 # the most text one value may span: a record is a few KB and `removed` a few MB, so a value still unparsed past
 # this is a corrupt body, not a long one (it would otherwise pull the whole stream into memory)
 _MAX_VALUE_CHARS = 64 << 20
+# the most text one subdir may decompress to: linux-64 is about 1.5 G characters, so a body past this is hostile
+# (a few KB of zstd can expand to any length of whitespace)
+_MAX_BODY_CHARS = 8 << 30
+# the failures a body or a transport can cause; anything else inside a subdir is logged with its traceback
+_EXPECTED_ERRORS = (DatasetError, zstd.ZstdError, ValueError, EOFError, OSError, RecursionError)
 # requests' timeout, per connect attempt and per silent gap between reads -- not a total (APIDataset sets none)
 _REQUEST_TIMEOUT = 90
 # bump when aggregate_records' output changes: a manifest of another version re-fetches every subdir
 AGGREGATE_VERSION = 1
 _WHITESPACE = " \t\r\n"
+_WHITESPACE_RUN = re.compile(r"[ \t\r\n]*")
 
 
 class _ByteStream(Protocol):
@@ -68,6 +75,7 @@ class _Reader:
         self.buf = ""
         self.pos = 0
         self.eof = False
+        self._read = 0  # characters decoded so far
 
     def _fill(self) -> bool:
         """Append the next chunk, keeping what is unread. ``False`` at the end of the stream."""
@@ -75,6 +83,9 @@ class _Reader:
             return False
         data = self._stream.read(self._chunk)
         text = self._decoder.decode(data, final=not data)
+        self._read += len(text)
+        if self._read > _MAX_BODY_CHARS:
+            raise ValueError(f"repodata: the body decompresses past {_MAX_BODY_CHARS:,} characters")
         self.buf = self.buf[self.pos :] + text
         self.pos = 0
         if not data:
@@ -84,8 +95,7 @@ class _Reader:
     def peek(self) -> str:
         """The next non-whitespace character, or ``""`` at the end."""
         while True:
-            while self.pos < len(self.buf) and self.buf[self.pos] in _WHITESPACE:
-                self.pos += 1
+            self.pos = _WHITESPACE_RUN.match(self.buf, self.pos).end()  # type: ignore[union-attr]  # `*` always matches
             if self.pos < len(self.buf):
                 return self.buf[self.pos]
             if not self._fill():
@@ -227,6 +237,14 @@ def _parquet_writer(frame: pd.DataFrame) -> Callable[[Path], None]:
     return _write
 
 
+def _reason(exc: BaseException) -> str:
+    """An exception as a marker line; an exception that cannot describe itself is named by its type."""
+    try:
+        return _describe_exc(exc)
+    except Exception:  # noqa: BLE001
+        return type(exc).__name__
+
+
 def _readable(path: Path) -> bool:
     """Whether a cached subdir copy exists and its Parquet footer reads."""
     try:
@@ -302,7 +320,7 @@ class RepodataUploadsDataset(AbstractDataset):
             return None
         try:
             raw = json.loads((self._dir / self.STALENESS_FILENAME).read_text(encoding="utf-8"))
-        except OSError, ValueError:
+        except OSError, ValueError, RecursionError:  # a missing, garbled or tampered file
             return None
         if not isinstance(raw, dict):
             return None
@@ -333,7 +351,7 @@ class RepodataUploadsDataset(AbstractDataset):
         assert self._dir is not None
         try:
             raw = json.loads((self._dir / self.MANIFEST_FILENAME).read_text(encoding="utf-8"))
-        except OSError, ValueError:
+        except OSError, ValueError, RecursionError:  # a missing, garbled or tampered file
             return {}
         if not isinstance(raw, dict) or raw.get("aggregate_version") != AGGREGATE_VERSION:
             return {}
@@ -381,12 +399,23 @@ class RepodataUploadsDataset(AbstractDataset):
             try:
                 status, body, new_etag = self._get(self._subdir_url(subdir), etag)
                 if status == 304:
+                    if etag is None:  # a 304 to a GET that sent no ETag answers nothing: no copy stands behind it
+                        raise DatasetError(f"{subdir}: 304 Not Modified to a request with no ETag")
                     continue
                 atomic_write(path, _parquet_writer(aggregate_subdir(body)))
             # one subdir's failure, whatever raised it (a transport error, a hostile or corrupt body, a write), is that
-            # subdir's: its copy stays, under the marker (atlas NFR-3: skip and mark stale, never fail)
+            # subdir's: its copy stays, under the marker (atlas NFR-3: skip and mark stale, never fail). Each failure is
+            # logged as it happens, an unexpected one with its traceback, so a parser bug is never only a stale serve.
             except Exception as exc:  # noqa: BLE001
-                failures.append(f"{subdir}: {_describe_exc(exc)}")
+                reason = _reason(exc)
+                failures.append(f"{subdir}: {reason}")
+                logger.warning(
+                    "%s: %s not refreshed: %s",
+                    type(self).__name__,
+                    subdir,
+                    reason,
+                    exc_info=not isinstance(exc, _EXPECTED_ERRORS),
+                )
                 continue
             if new_etag:
                 manifest[subdir] = new_etag
@@ -398,10 +427,13 @@ class RepodataUploadsDataset(AbstractDataset):
                 failures.append(f"{subdir}: manifest write failed: {exc}")
         if failures:
             self._mark_stale(
-                f"{len(failures)} of {len(self._subdirs)} subdirs not refreshed ({failures[0]}) -- keeping them"
+                f"{len(failures)} of {len(self._subdirs)} subdirs not refreshed ({'; '.join(failures)}) -- keeping them"
             )
         else:
-            (self._dir / self.STALENESS_FILENAME).unlink(missing_ok=True)
+            try:
+                (self._dir / self.STALENESS_FILENAME).unlink(missing_ok=True)
+            except OSError as exc:
+                logger.warning("could not remove the staleness marker of %s: %s", self._dir, exc)
 
     # -- read ----------------------------------------------------------------------
 
@@ -412,9 +444,13 @@ class RepodataUploadsDataset(AbstractDataset):
             if not path.is_file():
                 continue
             try:
-                frames.append(pd.read_parquet(path))
-            except Exception as exc:  # noqa: BLE001 -- an unreadable copy is no copy; the next live load fetches it
-                logger.warning("%s: unreadable cached %s skipped: %s", type(self).__name__, subdir, exc)
+                frame = pd.read_parquet(path)
+                if list(frame.columns) != COLUMNS:
+                    raise ValueError(f"columns {list(frame.columns)}, not {COLUMNS}")
+                frames.append(_typed(frame))
+            # an unreadable copy, or one of another shape, is no copy; the next live load fetches it again
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("%s: unusable cached %s skipped: %s", type(self).__name__, subdir, exc)
         return combine_subdirs(frames)
 
     def load(self) -> pd.DataFrame:

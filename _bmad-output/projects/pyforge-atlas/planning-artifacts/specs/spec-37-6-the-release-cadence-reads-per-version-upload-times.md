@@ -2,7 +2,7 @@
 title: "37.6: The release-cadence reads per-version upload times"
 type: 'feature'
 created: '2026-10-23'
-status: 'in-review'
+status: 'done'
 baseline_revision: '20621275f265b348e7748b81fe6d67dec3968125'
 flag:
   key: pyforge.atlas.board_projections            # existing; minted by Story 37.4, extended to this board
@@ -11,7 +11,7 @@ flag:
   scope: global                                   # v1 is global only
   fallback: 'the release-cadence reads primary/release_cadence as before, which nothing writes, and renders empty'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 2
+review_loop_iteration: 3
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -170,13 +170,13 @@ Type / Effort / Deps: feature / M / Story 37.1 (the data root).
 ## Run results
 
 Run 2026-10-23 in the landing worktree on `20621275f2`, every verdict read from its exit code; the numbers are those
-after review 2's fixes.
+after review 3's fixes.
 
-- **AC1–AC5, tests:** `test_repodata_uploads.py` (45), `test_release_cadence.py` (5) and
-  `test_board_projections.py` pass; `pyforge-atlas-test` gives 3,320 passed and 20 skipped, then 103 passed (exit 0).
+- **AC1–AC5, tests:** `test_repodata_uploads.py` (54), `test_release_cadence.py` (5) and
+  `test_board_projections.py` pass; `pyforge-atlas-test` gives 3,330 passed and 20 skipped, then 103 passed (exit 0).
 - **Pins moved:** `derived_artifacts` has 14 nodes (13), the combined DAG 73 (72), the catalog 145 entries (143); the
   node has a timeout (900 s).
-- **Mutations**, each restored, each failing a named test (37 of 37):
+- **Mutations**, each restored, each failing a named test (48 of 48):
   - parse: milliseconds not converted, or divided as floats; a bool, zero, infinite or out-of-range timestamp
     accepted; the latest file kept; files not counted; nameless records kept; `packages.conda` ignored; a number
     cut at the buffer end not re-read, a cut number accepted, whitespace after a number refilling, or the refill
@@ -187,6 +187,10 @@ after review 2's fixes.
     removed; the flag ignored; `If-None-Match` not set; the manifest version ignored;
   - cadence: a window exclusive at its cutoff; untimed versions not counted; non-enumerated packages kept; a tie
     going to the smaller version; an untimed version as the latest;
+  - failure handling: the marker unlink unguarded (here and in `S3DownloadStatsDataset`); a cached copy's shape not
+    checked; a tampered manifest or marker raising; a marker's `Infinity` raising; a 304 with no ETag accepted;
+    only the first failure named; an unexpected failure logged without its traceback; the body cap removed; the
+    ETag advanced before the copy is written;
   - board and provenance: the board path not switched; the dataset not marked for provenance.
 - **Real data:** a live load of the seven subdirs into a scratch store, with Story 37.2's live data root for
   `core_packages_enumerated`:
@@ -202,6 +206,24 @@ after review 2's fixes.
 
 ## Spec Change Log
 
+- 2026-10-24, review 3 (PASS, 0 blockers, 6 should-fixes), all fixed on the same branch:
+  - S1: a staleness marker that cannot be removed now logs a warning instead of raising out of a load. The same
+    unguarded unlink in Story 34.4's `S3DownloadStatsDataset` is fixed too, with a test.
+  - S2: a cached copy of another shape (other columns, or `upload_unix` that is not whole seconds) is skipped as no
+    copy, so it can never fail `combine_subdirs`.
+  - S3: a deeply nested `manifest.json` or marker reads as absent, and `refresh._safe_int` reads a marker's `Infinity`
+    as its default.
+  - S4: each subdir failure is logged as it happens, an unexpected one (outside the transport and body errors) with
+    its traceback, and the marker names every failure. A parser bug is never only a stale serve.
+  - S5: a 304 to a request that sent no ETag is a failure, since no copy stands behind it.
+  - S6: a test pins that the ETag advances only with a written copy, with a succeeding sibling that writes the
+    manifest.
+  - Nits:
+    - whitespace is skipped with a regular expression;
+    - a subdir's decompressed text is capped at 8 G characters;
+    - a failure that cannot describe itself is named by its type;
+    - the round-2 commit subject over-claimed "no exception escapes a load". The claim is: no exception inside one
+      subdir's fetch, parse or write, nor from the cache, manifest or marker files, escapes it.
 - 2026-10-23, review 2 (FAIL, 3 blockers), fixed on the same branch:
   - R2-B1, R2-B2: more exception classes still escaped a load. A non-string key raised `TypeError`, and a lone-surrogate
     name or version raised `UnicodeEncodeError` at the Parquet write. Now:
@@ -243,6 +265,14 @@ after review 2's fixes.
 
 ## Review Triage Log
 
+- 2026-10-24, review 3 (independent subagent): PASS, with 0 blockers, 6 should-fixes and 4 nits, all addressed (Spec
+  Change Log).
+  - About 50 hostile body shapes through `load()` and about 56,000 parse cases: no exception a network body could
+    push out of a load.
+  - Every number shape at every chunk boundary matches `json.loads`; no legitimate number is misread.
+  - 11 of the listed mutations were spot-checked, and each fails its named test.
+  - The live store's counts reproduce.
+  - It removed its scratch directory and wrote nothing tracked.
 - 2026-10-23, review 2 (independent subagent): FAIL, with 3 blockers, 1 should-fix and 6 nits, all addressed (Spec
   Change Log).
   - It confirmed round 1's fixes.
