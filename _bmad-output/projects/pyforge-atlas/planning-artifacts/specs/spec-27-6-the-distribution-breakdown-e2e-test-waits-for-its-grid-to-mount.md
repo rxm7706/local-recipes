@@ -37,8 +37,8 @@ default. Line numbers below are at `9ab7ef1cf1`.
   the page's `on_page_load` callback fills it with the real `dash_ag_grid.AgGrid`, and the browser then fetches and
   parses AG Grid's own script (`async-community.js`) when the grid first mounts. The facet filter is built from the
   layout (static since Story 27.5) and the chart's `#…--chart` container is in the layout too, so the test's three
-  15 s waits (`:238`-`:240`) pass before the callback runs. The grid assertion alone carries the callback, the browser
-  applying its output, and AG Grid's script.
+  15 s waits (`:238`-`:240`) do not wait for the callback. The grid assertion alone carried the callback, the browser
+  applying its output, and AG Grid's script, under the 5 s default.
 - **Where the time goes.** An in-page timeline (a `MutationObserver` plus the browser's resource timings) under
   Chromium CPU throttling at 1x, 4x, 8x, 12x, 16x and 24x: the `on_page_load` request answers within 130 ms at every
   rate, so the server is not the cost. At 24x the answer arrives 7.1 s after the page opens, the browser finishes
@@ -48,21 +48,32 @@ default. Line numbers below are at `9ab7ef1cf1`.
   xdist workers beside 48 busy-loop processes on this 16-core host ran 3:52 and failed 4 of the 24 copies that got a
   server with the preflight's message; one call log reads `data-dash-is-loading="true"` then empty, as the preflight's
   did. The other 8 copies errored in the fixture, the server not binding within 60 s at that load; the preflight run
-  did not hit that.
+  did not hit that. At 32 busy loops the same harness failed 4 of 31 (one setup error).
+- **Timed under load.** A scratch timing harness (the same page, every step waited up to 180 s, 32 copies on 16
+  workers) at 48 busy loops: the grid mounted 6.6-22.3 s after `goto` (median 14.4 s), up to 16.0 s after the chart;
+  the facet dropdown appeared 2.4-20.4 s after `goto`, always before the grid mounted; the row was in the DOM within
+  0.5 s of the mount. At 32 busy loops: mount 6.5-21.2 s, dropdown up to 17.5 s, mount up to 11.4 s after the chart
+  (3 of 32 copies over 5 s, the before-fix failure rate). A first fix, a 15 s mount wait after the chart, passed two
+  batches at 48 busy loops and failed 3 of 24 copies in the third, on the dropdown's own 15 s wait: per-step budgets
+  do not fit a page whose every element can wait on the same busy main thread.
 - **Ruled out.** The fixture: the server is bound before the test starts (`wait_for_server`), and the callback
   answers quickly. A defect in the page: alone the grid mounts about 140 ms after the callback output lands and holds
   the row. `networkidle`: it settles before the callback output is applied under throttling (1.2 s at 8x, row at 9.4
   s), so it is no wait on the grid.
 
 **Approach:**
-1. In `test_declared_controls_render_against_real_rows`, wait for the AG Grid to mount inside
-   `#distribution-breakdown--grid` (`.ag-root-wrapper` attached) with `timeout=15_000`, the budget the test's other
-   waits use, then assert `to_contain_text("linux-64")`. The mount wait is the grid's loaded state: it does not pass
-   on the placeholder, and it does not depend on the row. The row assertion keeps its default timeout, since the row
-   is in the DOM when the grid mounts.
-2. Correct the comment above the waits: the filter and the chart's container render from the layout, and the grid
-   from the data callback.
-3. Close `DW-atlas-retro-2026-10-15-1` with a `resolution:` naming this story and a `verified:` line citing the
+1. In `test_declared_controls_render_against_real_rows`, right after `networkidle`, wait for the AG Grid to mount
+   inside `#distribution-breakdown--grid` (`.ag-root-wrapper` attached) with `timeout=60_000`, the budget this suite
+   gives a loaded host (the fixture's `wait_for_server` 60 s, the WASM smoke's 60 s ready wait). The grid is the
+   element the page draws last, so this one wait carries the whole render, about 2.7 times the slowest mount
+   measured (22.3 s). It is the grid's loaded state: it does not pass on the placeholder, and it does not depend on
+   the row.
+2. Keep the filter, dropdown and chart checks and their 15 s timeouts unchanged, now after the mount, and keep the row
+   assertion last with its default timeout: the row is in the DOM when the grid mounts, so a mounted grid without it
+   fails within 5 s, showing the grid's text.
+3. Replace the comment above the waits: the filter and the chart's container render from the layout, the grid from
+   the data callback, and why the mount wait is first and 60 s.
+4. Close `DW-atlas-retro-2026-10-15-1` with a `resolution:` naming this story and a `verified:` line citing the
    `path:line` it fixed. Its proposed fix (`timeout=15_000` on the row assertion) is refined: a wait on the row text
    alone reads a grid that never mounts and a mounted grid without the row the same way.
 
@@ -79,8 +90,9 @@ Type / Effort / Deps: fix / S / S-27.5.
 
 ## Acceptance Criteria
 
-- **AC1 — Waits on the mount.** The test asserts `#distribution-breakdown--grid .ag-root-wrapper` is attached with
-  `timeout=15_000` before it asserts the `linux-64` row.
+- **AC1 — Waits on the mount first.** The test's first check after `networkidle` asserts
+  `#distribution-breakdown--grid .ag-root-wrapper` is attached with `timeout=60_000`; the filter, dropdown, chart and
+  `linux-64` row checks follow it unchanged.
 - **AC2 — Stable under load.** With the harness that failed 4 of 24 before the fix (32 copies, 16 workers, 48 busy
   loops), no copy fails its assertions, over at least three batches; setup errors from the server not binding are
   counted and reported, not counted as passes.
@@ -106,7 +118,8 @@ Type / Effort / Deps: fix / S / S-27.5.
 | the fixture root, an idle host | passes in about 6 s, as today |
 | the fixture root, the load harness | passes; the mount wait absorbs the callback and AG Grid's script |
 | a root without the `linux-64` row | fails on the row assertion, showing the grid's text |
-| a callback that never fills the grid | fails on the mount wait after 15 s, naming `.ag-root-wrapper` |
+| a callback that never fills the grid | fails on the mount wait after 60 s, naming `.ag-root-wrapper` |
+| a filter that never builds its selector (Story 27.5's defect) | fails on the dropdown check, 15 s after the mount |
 
 </intent-contract>
 
