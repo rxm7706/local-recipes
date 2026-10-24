@@ -206,6 +206,9 @@ after review 3's fixes.
 
 ## Spec Change Log
 
+- 2026-10-24, CI on PR #2295: the deep-nesting case raised `RecursionError` locally but parsed on the runner
+  (Python 3.14 bounds the C recursion by the real stack). It is now its own test of the contract: the load never
+  raises, whether the subdir fails under the marker or parses to no version.
 - 2026-10-24, review 3 (PASS, 0 blockers, 6 should-fixes), all fixed on the same branch:
   - S1: a staleness marker that cannot be removed now logs a warning instead of raising out of a load. The same
     unguarded unlink in Story 34.4's `S3DownloadStatsDataset` is fixed too, with a test.

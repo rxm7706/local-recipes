@@ -315,7 +315,6 @@ def test_a_failed_subdir_keeps_its_copy_under_the_marker(tmp_path: Path, monkeyp
         b"",
         NOARCH[: len(NOARCH) // 2],
         zstd.compress(b'{"packages": {"x-1-0.tar.bz2": {"name": '),
-        zstd.compress(b'{"packages": {"x": ' + b"[" * 100_000 + b"]" * 100_000 + b"}}"),
         zstd.compress(b'{[1]: 2, "packages": {}}'),
         zstd.compress(b'{{"a": 1}: 2}'),
         zstd.compress(b'{1: 2, "packages": {}}'),
@@ -326,7 +325,6 @@ def test_a_failed_subdir_keeps_its_copy_under_the_marker(tmp_path: Path, monkeyp
         "empty",
         "zstd-cut-short",
         "json-cut-short",
-        "nested-past-the-decoder",
         "list-key",
         "object-key",
         "number-key",
@@ -346,6 +344,22 @@ def test_a_corrupt_body_is_a_subdir_failure_never_a_raise(
     )
     marker = ds.staleness()
     assert marker is not None and marker.reason.startswith("1 of 2 subdirs not refreshed (noarch:")
+
+
+@pytest.mark.usefixtures("live")
+def test_a_body_nested_past_the_decoder_never_fails_a_load(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Whether 100,000 levels of nesting raise RecursionError depends on the interpreter's C stack (Python 3.14 bounds
+    it by the real stack, so a CI runner parses what a laptop refuses). Either way the load never raises: the subdir
+    fails under the marker, or parses to no version."""
+    nested = zstd.compress(b'{"packages": {"x": ' + b"[" * 100_000 + b"]" * 100_000 + b"}}")
+    server = _Server({"noarch": nested, "linux-64": LINUX}, {"noarch": '"n1"', "linux-64": '"l1"'})
+    ds = _dataset(tmp_path, server, monkeypatch)
+
+    out = ds.load()
+
+    assert set(out["conda_name"]) == {"a", "b", "c"}  # linux-64's versions; the nested record names none
+    marker = ds.staleness()
+    assert marker is None or marker.reason.startswith("1 of 2 subdirs not refreshed (noarch: RecursionError")
 
 
 @pytest.mark.usefixtures("live")
