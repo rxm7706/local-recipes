@@ -2585,7 +2585,7 @@ So that one unreachable host no longer stops the whole run.
 **Surface:** `datasets/vulnerability_feeds.py` (`CisaKevDataset`, `EpssFeedDataset`, `CweCatalogDataset`), `datasets/__init__.py`, `provenance.py`, `conf/base/catalog.yml` (the three entries), the Spec companion `live-sources.md`, tests
 **Given** the three feeds load through `APIDataset` with no fallback, so a connection failure raises `DatasetError` out of the catalog: kedro-viz-publish's Vizro job failed on five merges to main on 2026-10-23 with `vulnerability_cwe_catalog_raw: Failed to connect to the remote server` (`DW-atlas-38-1-1`)
 **When** a feed's fetch fails, returns an HTTP error, or returns a body that does not parse to rows
-**Then** the dataset serves its last good frame from `raw/<entry>/last_good.parquet` (or, on a fresh root, the empty frame of the feed's columns) under the AD-13 `.staleness.json` marker, never raises, and the run goes on; the bootstrap-index-health board shows the entry `stale` with its reason, and provenance reports the copy's age
+**Then** the dataset serves its last good frame from `raw/<entry>/last_good.parquet` (or, on a fresh root, the empty frame of the feed's columns) under the AD-13 `.staleness.json` marker, never raises, and the run goes on; the bootstrap-index-health board shows the entry `stale` (on a fresh root `missing`) with the marker's reason, and provenance reports the copy's age
 **And** each request carries a timeout and no `~/.netrc` credential; unit tests with no network cover a connect failure, an HTTP error, a malformed body and a fresh root, and fail when the fallback is removed (mutation)
 **Status:** in-progress
 

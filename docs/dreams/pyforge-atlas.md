@@ -613,7 +613,8 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   - each feed keeps its last good frame under the entry's own path in the data root;
   - a failed fetch, an HTTP error or a body that does not parse to rows serves that copy (or, on a fresh root, the
     empty frame of the feed's columns) under the AD-13 staleness marker, and the run goes on;
-  - the bootstrap-index-health board reads each feed's marker and shows it `stale`, with the reason.
+  - the bootstrap-index-health board reads each feed's marker: `stale` with the reason while a copy exists, `missing`
+    with the same reason on a fresh root.
 
   **Constraints:**
   - a fix under CAP-64, with no new CAP and no flag: the feeds fetch on every load, as they do today;
