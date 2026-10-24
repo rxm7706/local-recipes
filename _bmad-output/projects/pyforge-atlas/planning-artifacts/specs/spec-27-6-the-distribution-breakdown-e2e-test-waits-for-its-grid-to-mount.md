@@ -2,9 +2,9 @@
 title: '27.6: The distribution-breakdown e2e test waits for its grid to mount'
 type: 'fix'
 created: '2026-10-24'
-status: 'in-review'
+status: 'done'
 baseline_revision: '9ab7ef1cf1'
-review_loop_iteration: 2
+review_loop_iteration: 3
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -47,8 +47,9 @@ default. Line numbers below are at `9ab7ef1cf1` unless marked.
   loops again: 4 of 25. The remaining copies errored in the fixture, its server not binding within 60 s at that
   synthetic load; no real preflight run has hit that.
 - **Where the time goes (in the page, under load).** A `MutationObserver` plus a 50 ms poll in the page recorded when
-  each element first showed, for 25 copies at 48 busy loops: the filter and the chart were visible 3.9-16.9 s before
-  the grid mounted, the dropdown 0.4-16.3 s before; the grid mounted 6.3-20.8 s after navigation (median 13.3 s), and
+  each element first showed, for 25 copies at 48 busy loops: the filter's container and the chart's were visible
+  1.5-4.8 s after navigation, 3.9-16.9 s before the grid mounted, the dropdown 0.4-16.3 s before; the grid mounted
+  6.3-20.8 s after navigation (median 13.3 s), and
   the `linux-64` row was in the DOM within 1 ms of the mount in every copy. The `on_page_load` request took 0.4-1.9 s,
   so most of the time is the busy browser, not the Vizro server. Under Chromium CPU throttling alone (1x-24x, an idle
   host), the same order held and the request took at most 130 ms.
@@ -126,7 +127,8 @@ Type / Effort / Deps: fix / S / S-27.5.
 
 - Test-only: `src/pyforge/atlas/**` does not change; the page renders as it does today.
 - Only `test_dashboard_e2e.py` changes: the helper, this test, and the grid checks of the navigation and
-  grounded-pages tests. The fixture, the scan-pages test and the semantic-navigation test stay as they are.
+  grounded-pages tests, plus a doubled line in the semantic-navigation test's docstring. The fixture, the scan-pages
+  test and the semantic-navigation test's code stay as they are.
 
 ## I/O & Edge-Case Matrix
 
@@ -206,9 +208,24 @@ Type / Effort / Deps: fix / S / S-27.5.
 - S3 (the file's other grid checks shared the 5 s exposure): fixed here rather than recorded (the repo's fix-now
   rule): one helper, `expect_grid_mounted`, now gates every grid check in the file; measured before and after under
   load (Auto Run Result).
-- N1 (DW wording), N2 (six assertions, not five), N3 (memlog figures, corrected in the reconcile entry), N4 (one
+- N1 (DW wording), N2 (six assertions, not five), N3 (memlog figures, corrected in the reconcile entry appended at
+  landing), N4 (one
   measurement pair in the comments: in-page 20.8 s and 16.9 s), N5 ("the chart's container"), N6 ("one counted
-  batch"), N7 (idle 6-7 s everywhere): fixed. The docstring duplicate the reviewer noted at `:281`-`:282` is fixed too.
+  batch"), N7 (idle 6-7 s everywhere): fixed. The docstring duplicate the reviewer noted (`:281`-`:282` at
+  `2777973183`) is fixed too.
+
+### 2026-10-24 — Review 3 (independent subagent, read-only, on the widened delta): PASS, 0 blockers
+- verdicts: 3 should-fix, 6 nits; all fixed.
+- S1 (no memlog entry recorded the widening or corrected the figures): the landing's surface reconcile entry does
+  both, on `spec-pyforge-atlas` and its co-governor.
+- S2 (the layout residual risk claimed "none failed" for tests never load-tested, and its 4.8 s was absolute while
+  the Intent gave relative times): reworded to name the two tests not load-tested; the absolute range is in the
+  Intent.
+- S3 (the "final" evidence predated the helper change): AC3, the alone runs, the whole file, AC5 and the full-scope
+  preflight re-run on the final commit; every row names its commit.
+- N1 (boundaries and epic surface now name the docstring fix), N2 (cite revision), N3 (per-test split of the other
+  tests' batches), N4 (DW resolution names #1836/#1838 as Story 27.5's defect), N5 (Dream qualifier, 0 of 30), N6
+  (this entry, iteration 3): fixed.
 
 ## Spec Change Log
 
@@ -241,29 +258,35 @@ Type / Effort / Deps: fix / S / S-27.5.
 | `9c39037823` | 32 | 0 / 32, 0 / 32 | 0, 0 | — |
 | final (`bb0c148438`, no `networkidle`) | 48 | 0 / 27, 0 / 28, 0 / 27 | 5, 4, 5 | — |
 | final | 32 | 0 / 30 | 2 | — |
-| navigation + grounded-pages tests, before (16 copies each) | 48 | 0 / 30 | 2 | — |
-| navigation + grounded-pages tests, with `expect_grid_mounted` | 48 | 0 / 24 | 8 | — |
+| final, with the helper (`9a0215fb36`) | 48 | 0 / 32 | 0 | — |
+| navigation test, before (`2777973183`, 16 copies) | 48 | 0 / 15 | 1 | — |
+| grounded-pages test, before (`2777973183`, 16 copies, same batch) | 48 | 0 / 15 | 1 | — |
+| navigation test, with `expect_grid_mounted` (`9a0215fb36`'s code) | 48 | 0 / 13 | 3 | — |
+| grounded-pages test, with `expect_grid_mounted` (same batch) | 48 | 0 / 11 | 5 | — |
 
 - (a) A commit's pre-commit hook stashed the then-unstaged test file while this batch's workers started, so it may
   have run the original test; it is not counted as evidence for either version.
 - AC1: `test_dashboard_e2e.py:255` (`expect_grid_mounted(grid)`; the helper at `:75`-`:77` attaches
   `.ag-root-wrapper` with `GRID_MOUNT_TIMEOUT_MS = 60_000`, `:72`) is the first check after `goto`; `:256`-`:260`
   unchanged. AC1b: `:137`, `:155`, `:168`, `:182` (navigation) and `:226` (grounded pages).
-- The whole file alone, final code: 5 passed in 34.9 s.
-- A full-scope `pr-preflight` dry run on `2777973183` plus the matrix row (before the helper change): exit 0, 21 of
-  37 lanes.
-- AC3 (final code): the test against a fixture root without the `linux-64` row → `1 failed`,
+- `9a0215fb36` is the last commit that touches `src/`; the runs below marked with it ran on that test file.
+- The whole file alone (`9a0215fb36`): 5 passed in 33.6 s (34.9 s on the working tree before that commit).
+- An earlier full-scope `pr-preflight` on `2777973183` plus the uncommitted matrix row, before the helper change:
+  exit 0, 21 of 37 lanes. The landing preflight on the final commit is recorded below.
+- AC3 (`9a0215fb36`): the test against a fixture root without the `linux-64` row → `1 failed`,
   `AssertionError: Locator expected to contain text 'linux-64'` on `to_contain_text … with timeout 5000ms`, actual
   value the grid's three other rows (`osx-arm64`, `3.12`, `3.11`).
-- Alone (final code): 3 of 3 passed, 6.3-6.6 s each.
+- Alone (`9a0215fb36`): 3 of 3 passed, 6.1-6.4 s each (6.3-6.6 s on `bb0c148438`).
 - AC4: `git diff 9ab7ef1cf1..HEAD -- src/` touches only `test_dashboard_e2e.py`, adds no `skip`, `xfail`, `rerun`,
   `flaky`, `retry` or `sleep`, and keeps every assertion in the file (this test's two `assert`s and four `expect`s).
-- AC5 (final code, scratch harness moved out first): `pixi run --frozen -e pyforge-atlas kedro-test` (it runs
+- AC5 (`9a0215fb36`, scratch harness moved out first): `pixi run --frozen -e pyforge-atlas kedro-test` (it runs
   `pyforge-atlas-test`) exit 0, 3,478 passed and 20 skipped, then 103 passed; `kedro-catalog-check` exit 0, 71
-  passed.
+  passed. The same on `bb0c148438`.
 - Residual risk: at 48 busy loops on 16 cores (a load past any measured preflight) the shared `dashboard_server`
   fixture can fail to bind within its 60 s; it errors at setup, visibly, and no real preflight run has hit it. Not
   changed here: no real run has failed on it, and the fixture serves the whole file.
 - Residual risk: the file's layout-only checks (headings, cards, the scan pages' fields, landmarks) keep Playwright's
-  5 s default; in the page, at 48 busy loops, layout elements showed at most 4.8 s after navigation (the filter's
-  container), a thin margin at a load past any measured preflight, and none failed in any batch.
+  5 s default. In the page, at 48 busy loops, the distribution-breakdown page's layout elements showed 1.5-4.8 s after
+  navigation (Intent), a thin margin at a load past any measured preflight. The scan-pages and semantic-navigation
+  tests, which hold most of those checks, were not load-tested; the declared-controls, navigation and grounded-pages
+  tests were, and none failed.

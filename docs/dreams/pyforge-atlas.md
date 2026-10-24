@@ -694,7 +694,8 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   - A first fix, a 15 s mount wait after the chart, still failed 3 of 24 copies in one counted batch, on the
     dropdown's own 15 s wait: under load every step can take longer than 15 s, so budgets per step do not fit.
   - The file's two other grid tests (the navigation walk and the grounded pages) check grids filled the same way
-    under the same 5 s default.
+    under the same 5 s default; their pages draw no chart and render sooner, and under the same load they failed 0 of
+    30 copies, so the exposure there is real but did not reproduce.
   **What it looks like when fixed:** right after the page opens, the test waits up to 60 s for the AG Grid to mount
   inside `#distribution-breakdown--grid`, the element drawn last, with the budget the suite gives a loaded host (the
   fixture's server bind, the WASM smoke); then it checks the filter, its dropdown, the chart and the row as before.
