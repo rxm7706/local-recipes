@@ -149,6 +149,7 @@ from .vulnerability_feeds import (
     CisaKevDataset,
     CweCatalogDataset,
     EpssFeedDataset,
+    VulnerabilityFeedDataset,
     parse_cisa_kev_catalog,
     parse_cwe_catalog_zip,
     parse_epss_csv_gz,
@@ -272,7 +273,8 @@ __all__ = [
     "parse_cf_graph_tarball",
     # Story 34.1 — public JSON sources decoded to records (endoflife.date, SPDX list)
     "JSONSourceDataset",
-    # Vulnerability side-catalog feeds (KEV / EPSS / CWE)
+    # Vulnerability side-catalog feeds (KEV / EPSS / CWE); Story 34.12: last-good under the AD-13 marker
+    "VulnerabilityFeedDataset",
     "CisaKevDataset",
     "EpssFeedDataset",
     "CweCatalogDataset",
