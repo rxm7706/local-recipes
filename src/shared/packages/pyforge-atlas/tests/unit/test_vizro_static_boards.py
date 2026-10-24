@@ -180,14 +180,16 @@ GLOBALS = REPO_ROOT / MEMBER / "conf" / "base" / "globals.yml"
 CATALOG = REPO_ROOT / MEMBER / "conf" / "base" / "catalog.yml"
 WORKFLOWS = REPO_ROOT / ".github" / "workflows"
 PATH_KEYS = ("filepath", "path", "filename")  # the keys CatalogIndexDataset reads an entry's path from
-# Plain (pandas) raw-layer entries under a cached path, none of them a last-good store: three node outputs the
-# build rewrites every run, and the query-plane estate source, which steward's export writes and the Pages build never
-# does (query_plane_cache is not one of its pipelines), so on Pages it is never there to persist.
+# Plain raw-layer entries (any type outside pyforge.atlas.datasets) under a cached path, none of them a last-good
+# store: three node outputs the build rewrites every run, and two files another station writes that the Pages build
+# never does (steward's estate export, which only query_plane_cache reads and the build does not run; warden's fleet
+# inventory), so on Pages they are never there to persist.
 PLAIN_RAW_ENTRIES = {
     "org_audit_candidates",
     "artifactory_downloads_raw",
     "artifactory_consumption_raw",
     "query_plane_estate_source",
+    "warden_fleet_inventory",
 }
 # Events that run in the default branch's cache scope on input a pull request or an outsider controls.
 UNTRUSTED_IN_MAIN_SCOPE = {
@@ -248,7 +250,10 @@ def test_the_vizro_job_restores_the_last_good_copies_before_the_build_and_saves_
     assert restore["if"] == save["if"] == build["if"] == "${{ steps.vizro_flag.outputs.enabled == 'true' }}"
     assert "continue-on-error" not in build and "continue-on-error" not in save
     # The default shell (bash -e) stops the step at a failed bootstrap: catalog_index cannot turn it green.
+    document, job = _workflow(), _workflow()["jobs"]["vizro"]
     assert "shell" not in build
+    for scope in (job, document):
+        assert "shell" not in (scope.get("defaults") or {}).get("run", {})
     assert [s for s in steps if "actions/cache" in str(s.get("uses", ""))] == [restore, save]
 
 
@@ -264,8 +269,9 @@ def test_the_restore_and_the_save_name_the_same_paths_and_key() -> None:
 
 
 def test_only_last_good_copies_persist_never_the_vdb_store_or_an_output_layer() -> None:
-    includes = [path for path in LAST_GOOD_PATHS if not path.startswith("!")]
-    excludes = [path[1:] for path in LAST_GOOD_PATHS if path.startswith("!")]
+    listed = _cache_step("save")["with"]["path"].splitlines()  # the product's list, not this module's literal
+    includes = [path for path in listed if not path.startswith("!")]
+    excludes = [path[1:] for path in listed if path.startswith("!")]
     assert excludes == [f"{DATA_ROOT}/stores/vdb"]
     assert _data_root_paths()["vdb_store"] == "data/stores/vdb"
     # Each exclusion's parent is listed by its children (`<parent>/*`), never as itself, or tar would recurse into it.
@@ -311,7 +317,7 @@ def test_every_last_good_store_under_the_data_root_is_cached() -> None:
                 assert name == "vulnerability_vdb_store", (name, path)  # nothing else hides under the exclusion
             else:
                 assert path.startswith(cached), (name, path)
-                if str(entry.get("type", "")).startswith("pandas."):
+                if not str(entry.get("type", "")).startswith("pyforge.atlas.datasets."):
                     plain_outputs.add(name)
     assert {"vulnerability_cisa_kev_raw", "core_s3_download_stats_raw", "pypi_conda_map_store"} <= raw_under_root
     assert plain_outputs == PLAIN_RAW_ENTRIES  # a new plain output under a cached path is a decision, not a drift

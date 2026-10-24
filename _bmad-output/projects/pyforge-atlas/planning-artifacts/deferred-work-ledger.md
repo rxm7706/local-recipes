@@ -12,7 +12,7 @@ entries: 60
 real deferrals** (the run log's index of "54" double-counted two aliases; see § Provenance).
 Follow-up intake and verification campaigns added more `## DW-` headings without retiring
 that migration set — the frontmatter `entries` field tracks **`## DW-` headings only**, not
-the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**214** `### DW-` headings
+the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**215** `### DW-` headings
 today). Stale narrative prose here is exactly what Story 27.4's counting test guards against.
 
 ## Why this file exists
@@ -5232,10 +5232,21 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 ### DW-atlas-37-12-1: The Pages last-good cache survives between runs only once the repository's Actions cache limit is raised.
 
 - source_spec: `planning-artifacts/specs/spec-37-12-the-pages-data-build-keeps-its-last-good-copies-between-runs.md`
-  summary: Story 37.12's `vizro` job saves the public stores' last-good copies with `actions/cache/save@v6` and restores the newest with `actions/cache/restore@v6`, so an outage on Pages serves the previous copy under its AD-13 marker. The repository's Actions cache is over its 10 GB limit (10,450,545,115 bytes in 29 entries on 2026-10-24, about 9.9 GB of them pixi environments), and GitHub evicts the least recently used entries: at 15:18Z the oldest entry had last been read at 11:42Z, so an entry unread for about 3.5 hours is gone. Until the limit is raised, the copies survive only between runs a few hours apart, never to the weekly run; a miss is the fresh root of before. Operator ruling 2026-10-24 (option C, "Cache + raise limit"): keep actions/cache, and the operator raises the limit. Only the operator can close this: raise the repository's Actions cache size limit (repository Settings, Actions, cache storage), then confirm on a weekly `vizro` run that the restore step logs `Cache restored from key: pyforge-atlas-last-good-<run_id>`.
+  summary: Story 37.12's `vizro` job saves the public stores' last-good copies with `actions/cache/save@v6` and restores the newest with `actions/cache/restore@v6`, so an outage on Pages serves the previous copy under its AD-13 marker. The repository's Actions cache is over its 10 GB limit (10,450,545,115 bytes in 29 entries on 2026-10-24, about 9.9 GB of them pixi environments), and GitHub evicts the least recently used entries: at 15:18Z the oldest entry had last been read at 11:42Z, so an entry unread for about 3.5 hours is gone. Until the limit is raised, the copies survive only between runs a few hours apart, never to the weekly run; a miss is the fresh root of before. Operator ruling 2026-10-24 (option C, "Cache + raise limit"): keep actions/cache, and the operator raises the limit. Only the operator can close this: raise the repository's Actions cache size limit (repository Settings, Actions, cache storage), then confirm on a weekly `vizro` run that the restore step logs `Cache restored from key: pyforge-atlas-last-good-<run_id>-<run_attempt>`.
   evidence: Story 37.12 review 1, read-only `gh api repos/rxm7706/local-recipes/actions/caches?sort=last_accessed_at&direction=asc` and `gh api repos/rxm7706/local-recipes/actions/cache/usage`, 2026-10-24 15:13Z and 15:18Z.
   location: the GitHub repository setting for the Actions cache size limit (rxm7706/local-recipes; operator-owned, never changed from a session); `.github/workflows/kedro-viz-publish.yml` (the `vizro` job's restore and save steps)
   origin: Story 37.12 review 1 (blocker), operator ruling 2026-10-24
   severity: medium
   promoted: 2026-10-24 -- atlas Story 37.12; operator-owned (a repository setting)
+  status: open
+
+### DW-atlas-37-12-2: On Pages, the cve-watcher's snapshot history and the TTL row caches still start empty every run.
+
+- source_spec: `planning-artifacts/specs/spec-37-12-the-pages-data-build-keeps-its-last-good-copies-between-runs.md`
+  summary: Story 37.12 persists `data/raw` and `data/stores/*` (the last-good stores) between Pages runs and deliberately no output layer. Two kinds of output-layer dataset also read their own previous copy: `vulnerability_rollup_snapshots` (`primary/`, a `SnapshotHistoryDataset` each run appends to, which the cve-watcher diffs; Story 37.5's residual risk says the board stays empty on Pages "until a store persists across runs") and the `IncrementalParquetDataset` TTL row caches (`intermediate/`, `primary/`). On Pages they still start empty every run, so the cve-watcher board stays empty there. Persisting the snapshot store only helps once cached copies survive a week (two snapshots at least `params:cve_watcher.since_days`, 7, apart), so it waits on DW-atlas-37-12-1; then decide whether a history store joins the cache, and how a stale history is marked.
+  evidence: Story 37.12 review 2 (2026-10-24); `conf/base/catalog.yml` (`vulnerability_rollup_snapshots`, the `# A3: IncrementalParquetDataset` entries); Story 37.5's spec, Residual risk.
+  location: .github/workflows/kedro-viz-publish.yml (the vizro job's cache paths); src/shared/packages/pyforge-atlas/conf/base/catalog.yml (vulnerability_rollup_snapshots)
+  origin: Story 37.12 review 2
+  severity: low
+  promoted: 2026-10-24 -- atlas Story 37.12; blocked on DW-atlas-37-12-1 (the operator's cache-limit raise)
   status: open

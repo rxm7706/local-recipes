@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-24'
 status: 'in-progress'
 baseline_revision: '2859b706da'
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: true
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -19,6 +19,7 @@ context:
   - src/shared/packages/pyforge-atlas/tests/unit/test_vizro_static_boards.py
 deferred:
   - DW-atlas-37-12-1
+  - DW-atlas-37-12-2
 declared_low_risk: false
 ---
 
@@ -45,15 +46,17 @@ bootstrap-index-health board reads `missing` (34.12's residual risk).
    `actions/cache/save@v6`, using the same paths and key. Both steps carry the build's gate,
    `steps.vizro_flag.outputs.enabled == 'true'`, with no status function, so `success()` is implied. A failed build
    fails the job and saves nothing, and the next run restores the last good save. A failed export after a good build
-   still keeps the build's copies. The build keeps the default shell (`bash -e`), so a failed bootstrap stops the
-   step before `catalog_index` can turn it green.
+   still keeps the build's copies. The build keeps the default shell (`bash -e`; no `shell:` on the step and no
+   `defaults.run.shell` on the job or workflow), so a failed bootstrap stops the step before `catalog_index` can turn
+   it green.
 3. What persists: `data/raw` and `data/stores/*`, except `data/stores/vdb`. Every raw-layer catalog entry under the
    data root lies there, and in nearly all of them the dataset keeps its own last-good copy and marker. A trigger node
    emits a refresh request and the store's dataset writes the copy.
-   - Four plain (pandas) raw-layer entries also lie there, and none is a last-good store. `org_audit_candidates`,
-     `artifactory_downloads_raw` and `artifactory_consumption_raw` are rewritten by their nodes on every build.
-     `query_plane_estate_source` is written by steward's export; the Pages build never writes it, because
-     `query_plane_cache` is not one of its pipelines.
+   - Five plain raw-layer entries (any type outside `pyforge.atlas.datasets`) also lie there, and none is a
+     last-good store. `org_audit_candidates`, `artifactory_downloads_raw` and `artifactory_consumption_raw` are
+     rewritten by their nodes on every build. Two are written only by another station, never by the Pages build:
+     `query_plane_estate_source` (steward's export; only `query_plane_cache` reads it, and the build does not run that
+     pipeline) and `warden_fleet_inventory` (`stores/warden_fleet_inventory.json`, warden's export).
    - `pypi_conda_map_store` (`stores/pypi_conda_map.json`, a `MappingCacheDataset`) merges each export onto its last
      copy and keeps the keys only the old copy has. On Pages that map now grows across runs, as it does on a
      workstation, and it feeds `pypi_json_raw`'s candidate set.
@@ -95,7 +98,7 @@ Type / Effort / Deps: fix / S / 34.12.
   before `Build the public atlas data`, under the build's gate.
 - **AC2 — Save after a build that succeeds.** It runs `actions/cache/save@v6` after the build and before the export,
   under the build's gate with no `always()`/`failure()`. Neither the build nor the save carries `continue-on-error`,
-  and the build keeps the default shell.
+  and the build keeps the default shell (no `shell:` on the step, no `defaults.run.shell` on the job or workflow).
 - **AC3 — Same entry.** The restore and the save name the same path list and the key
   `pyforge-atlas-last-good-${{ github.run_id }}-${{ github.run_attempt }}`. The restore's only fallback is the key's
   prefix, and it does not set `fail-on-cache-miss`.
@@ -107,7 +110,8 @@ Type / Effort / Deps: fix / S / 34.12.
 - **AC6 — Every last-good copy is covered.** Read every path key `CatalogIndexDataset` reads (`filepath`, `path`,
   `filename`). Every raw-layer entry whose path resolves under the data root lies under `raw/` or `stores/`. Nothing
   except the vulnerability database store lies at or under `stores/vdb`. No other layer's entry lies under a cached
-  path. The plain raw-layer entries under a cached path are exactly the four named in Approach 3.
+  path. The plain raw-layer entries (any type outside `pyforge.atlas.datasets`) under a cached path are exactly the
+  five named in Approach 3.
 - **AC7 — Public-only.** The job names no secret, no `GITHUB_TOKEN`/`GH_TOKEN` and no `PYFORGE_ATLAS_CREDENTIALED`
   (Story 37.2's test). No workflow in `.github/workflows/` has a trigger that runs untrusted input in main's cache
   scope (`pull_request_target`, `workflow_run`, `issue_comment`, `issues`, `discussion`, `discussion_comment`). A
@@ -126,16 +130,23 @@ Type / Effort / Deps: fix / S / 34.12.
 **Residual risk:**
 - **Eviction, until the limit is raised (operator ruling 2026-10-24, `DW-atlas-37-12-1`).** On 2026-10-24 the
   repository's Actions cache held 10,450,545,115 bytes in 29 entries, about 9.9 GB of them pixi environments. That is
-  over the 10 GB limit, and GitHub evicts the least recently used entries. At 15:18Z the oldest entry had last been
-  read at 11:42Z, so an entry left unread for about 3.5 hours is gone.
+  over the 10 GB limit, and GitHub evicts the least recently used entries. The horizon is set by how much the other
+  workflows write, not by a fixed time: at 15:18Z the oldest entry had last been read at 11:42Z, and at 15:54Z
+  review 2 still found it (about 4 hours unread).
   - Until the operator raises the limit, the copies survive only between runs a few hours apart. Recent push runs
     came 1 to 11 hours apart, and the copies never survive to the weekly run.
-  - After the raise, the weekly-only case still reads its entry about 6 days 22 hours after the save, inside GitHub's
-    7-day unused-entry window.
+  - After the raise, the weekly-only case reads its entry about 7 days minus the build's run time (1 to 4 hours)
+    after the save, inside GitHub's 7-day unused-entry window. A schedule delay longer than that margin loses the
+    copy; that run is the fresh root of before.
   - An evicted entry is the fresh root of before, never worse.
 - **Cache pressure.** Each run that builds saves one entry of a few hundred MB. On a 2026-10-21 public root, `raw/`
   was 19 MB and `stores/` without `vdb` about 290 MB, 242 MB of it the S3 download aggregates. Older entries are never
   read again and age out first.
+- **Output-layer stores still start empty on Pages** (`DW-atlas-37-12-2`, blocked on `DW-atlas-37-12-1`). Two
+  kinds of output-layer dataset read their own previous copy: `vulnerability_rollup_snapshots` (`primary/`, the
+  `SnapshotHistoryDataset` the cve-watcher diffs; Story 37.5's residual risk) and the `IncrementalParquetDataset` TTL
+  row caches. They are not cached, so the cve-watcher stays empty on Pages. Approach 5 covers the raw-layer stores
+  only. Caching the snapshot store helps only once copies survive a week, which needs the limit raise.
 - **Other branches.** A dispatch on another branch reads main's entries and saves to its own branch's scope; main
   never reads it.
 - **Stale directories.** A restored directory of a removed or renamed catalog entry rides along until someone deletes
@@ -170,7 +181,8 @@ Type / Effort / Deps: fix / S / 34.12.
   keep).
 - Epic: Epic 37 (done; this story reopens it until it lands).
 - Ledger key: `37-12-the-pages-data-build-keeps-its-last-good-copies-between-runs`; status at mint `in-progress`.
-- Deferred work: opens `DW-atlas-37-12-1` (operator-owned: raise the repository's Actions cache limit).
+- Deferred work: opens `DW-atlas-37-12-1` (operator-owned: raise the repository's Actions cache limit) and
+  `DW-atlas-37-12-2` (the output-layer history store and TTL caches on Pages; blocked on the first).
 - Follows Story 34.12 (its residual risk "the Pages job builds on a fresh data root").
 
 ## Verification
@@ -195,10 +207,10 @@ in `on.push.paths`. The first run is the weekly schedule, a push touching the vi
 
 Run 2026-10-24 in worktree `laughing-jackson-2bff14` (branch `claude/laughing-jackson-2bff14`, from `2859b706da`).
 
-- **Tests:** `test_vizro_static_boards.py`: 19 passed (12 before, 7 new; review 1's fixes widened four of them).
+- **Tests:** `test_vizro_static_boards.py`: 19 passed (13 before, 6 new; reviews 1 and 2 widened four of them).
   `pixi run -e pyforge-atlas pyforge-atlas-test` (before review 1's fixes): 3,433 passed and 20 skipped, then 103
   passed. `pixi run -e pyforge-guild lint-types`: exit 0. `scripts/ci_surface_gates.py --check`: exit 0.
-- **Mutations** (`scratchpad/mutate.py`, each restored): 28 of 28 killed.
+- **Mutations** (`scratchpad/mutate.py`, each restored): 33 of 33 killed.
   - The first 20: no restore; no save; the restore after the build; the save before the build; the save under
     `always()`; the restore ungated; `stores` listed as itself; no vdb exclusion; `primary/` cached; the save naming
     another path list; a key that differs; no `restore-keys`; `fail-on-cache-miss`; `continue-on-error` on the build;
@@ -208,6 +220,9 @@ Run 2026-10-24 in worktree `laughing-jackson-2bff14` (branch `claude/laughing-ja
     key under `cache/`; `PYFORGE_ATLAS_DATA_ROOT` in the workflow-level env; the same in the bootstrap pixi task's
     env; `shell: bash {0}` on the build; a `workflow_run` trigger in another workflow; a new plain raw output under
     `raw/`.
+  - After review 2: a plain `json.JSONDataset` raw output under `raw/`; a `text.TextDataset` under `stores/`;
+    `defaults.run.shell: bash {0}` on the job; the same on the workflow; `warden_fleet_inventory` dropped from the
+    plain set.
 - **Upstream behaviour, read 2026-10-24** (`actions/toolkit` main):
   - `packages/cache/src/internal/cacheUtils.ts`: in `resolvePaths`, `implicitDescendants: false`; `getCacheVersion` is
     a SHA-256 of the path strings, the compression method and a salt.
@@ -220,6 +235,16 @@ Run 2026-10-24 in worktree `laughing-jackson-2bff14` (branch `claude/laughing-ja
 
 ## Spec Change Log
 
+- 2026-10-24, review 2 (FAIL: 0 blockers, 4 should-fix, 3 nits), fixed on the same branch:
+  - S1: the memlog's decision entry still named the old key, "every raw-layer copy" and this workflow's own triggers;
+    a correction event follows it (the memlog is append-only).
+  - S2: the plain-entry guard reads every type outside `pyforge.atlas.datasets`, and `warden_fleet_inventory` is the
+    fifth plain entry (Approach 3, AC6, the workflow comment).
+  - S3: the shell check covers `defaults.run.shell` on the job and the workflow (AC2).
+  - S4: the output-layer stores that read their own previous copy are a residual risk and `DW-atlas-37-12-2`.
+  - Nits: the DW row and the team-memory capture name the per-attempt key; the test count is 13 before and 6 new;
+    the eviction horizon is set by write volume, and the weekly margin after the raise is about the build's run
+    time; the path-list test reads the workflow's own list, not the module's literal.
 - 2026-10-24, review 1 (FAIL: 1 blocker, 3 should-fix, 2 nits), fixed on the same branch:
   - Blocker (the cache evicts within about 3.5 hours): put to the operator. The ruling (option C, "Cache + raise
     limit") is in Approach 6, the memlog, the Dream entry and Story 37.12's Then line. The raise is
@@ -236,6 +261,15 @@ Run 2026-10-24 in worktree `laughing-jackson-2bff14` (branch `claude/laughing-ja
 
 ## Review Triage Log
 
+- 2026-10-24, review 2 (independent subagent): FAIL, 0 blockers, 4 should-fix, 3 nits.
+  - It confirmed the operator's ruling is recorded the same way in all six places.
+  - It checked every round-1 fix against the code (the map's merge in `refresh.py`, its use in
+    `request_datasets.py`, `catalog_index.py`'s path keys) and traced `@actions/glob` through `stores/*` with
+    `!stores/vdb`.
+  - It ran 17 mutants: 5 survivors became S2 and S3; 4 more were harmless.
+  - It ran the planning detectors (`chain-completeness`, `dream-chain`, `dreams-hygiene`, `deferred-work`,
+    `story-status`, `spec-surface`): all exit 0.
+  - Every finding was fixed on the branch (Spec Change Log).
 - 2026-10-24, review 1 (independent subagent, read the diff against this spec): FAIL, 1 blocker, 3 should-fix, 2
   nits.
   - It read the upstream `actions/toolkit` and `actions/cache` source and confirmed the globbing, the tar recursion,

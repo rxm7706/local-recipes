@@ -213,8 +213,9 @@ jobs:
       # saved, so a public source that cannot be reached today serves its previous copy under the AD-13
       # marker (Story 34.12) instead of an empty table. What persists is `raw/` and every store except the
       # vulnerability database (`stores/vdb`, 9.6 GB, still rebuilt every run): there each dataset keeps its
-      # own last-good copy and marker. Three plain raw-layer node outputs there are rewritten every run, and
-      # the PyPI-to-conda map merges onto its last copy, as on a workstation. The output layers
+      # own last-good copy and marker. Five plain raw-layer entries there are no such store (three rewritten
+      # every build, two only other stations write), and the PyPI-to-conda map merges onto its last copy, as on
+      # a workstation. The output layers
       # (`intermediate/`, `primary/`, `derived/`) never persist, so a node that stops writing cannot hide
       # behind an old file. The list says `stores/*` beside `!stores/vdb`, never `stores`: actions/cache
       # lists matches without their descendants and tar recurses into a listed directory, so an exclusion
