@@ -622,6 +622,29 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   - the vulnerability nodes and their outputs do not change.
 
   Owner `spec-pyforge-atlas` (CAP-64, no new CAP). → Epic 34 / Story 34.12, specced 2026-10-24.
+- **2026-10-24 (on Pages, last-good has nothing to keep)** — **Found: Story 34.12's fallback cannot help the build
+  that needed it.** A feed that cannot be reached now serves its last good copy, but the kedro-viz-publish `vizro`
+  job starts every run from a fresh checkout: the data root (`src/shared/packages/pyforge-atlas/data`) is empty, so
+  there is no copy. An outage of a public source on Pages still publishes that source's table empty under its
+  marker, and the bootstrap-index-health board reads `missing` (Story 34.12's residual risk). The same holds for
+  every public store that keeps a last-good copy: the `raw/` copies, the download and upload aggregates, the
+  discovery indexes and the OSV store. **What it looks like when fixed:**
+  - the job restores the previous run's last-good copies before it builds, and saves this run's after a build
+    that succeeds;
+  - an outage of a public source on Pages serves the previous copy under its marker, so the board reads `stale`
+    with the reason, and provenance reports the copy's age;
+  - a store inside its refresh cadence, or one whose host says it has not changed, is not fetched again, as on a
+    workstation.
+
+  **Constraints:**
+  - a fix under CAP-63 (the Pages job, amended 2026-10-19) and CAP-64 (AD-13 last-good), with no new CAP and no
+    flag;
+  - only what a dataset keeps as its own last-good copy persists: never the 9.6 GB vulnerability database store,
+    and never a pipeline output, so a node that stops writing cannot hide behind last week's file;
+  - the job stays public-only (no secret, no token, no `PYFORGE_ATLAS_CREDENTIALED`; AD-11), and a failed build
+    still fails the job.
+
+  Owner `spec-pyforge-atlas` (CAP-63, CAP-64, no new CAP). → Epic 37 / Story 37.12, specced 2026-10-24.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 
