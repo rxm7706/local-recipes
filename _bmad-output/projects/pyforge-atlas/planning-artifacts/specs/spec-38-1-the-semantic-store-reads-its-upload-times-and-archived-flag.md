@@ -2,7 +2,7 @@
 title: "38.1: The semantic store reads its upload times and archived flag"
 type: 'feature'
 created: '2026-10-24'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'c6fbf20497591bb5bb56296f5b8ab25be94fe4b2'
 flag:
   key: pyforge.atlas.board_projections            # existing; minted by Story 37.4, extended to this board's path

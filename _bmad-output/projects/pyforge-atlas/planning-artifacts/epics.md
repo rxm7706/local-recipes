@@ -2868,7 +2868,7 @@ So that the adoption-stage, staleness, find-alternative and version-downloads bo
 **When** a run has written `core_repodata_uploads_raw`, `core_packages_enumerated`, the cf-graph and the attribution
 **Then** `semantic_packages` carries `latest_conda_upload`, `latest_upload_age_days`, `releases_30d` and `total_versions` as legacy derives them, and `feedstock_archived` from either source
 **And** with the flag on, version-downloads reads each version's `upload_date`; the adoption-stage board classifies packages out of `unknown`
-**Status:** backlog
+**Status:** done
 
 ## Validation note — 2026-08-26 (chain-currency sweep)
 
