@@ -173,23 +173,71 @@ MEMBER = "src/shared/packages/pyforge-atlas"
 DATA_ROOT = f"{MEMBER}/data"
 # `stores/*` beside `!stores/vdb`, never `stores`: actions/cache globs with implicitDescendants false and tar
 # recurses into a listed directory, so an exclusion under a listed `stores` would archive the 9.6 GB vdb store.
-LAST_GOOD_PATHS = [f"{DATA_ROOT}/raw", f"{DATA_ROOT}/stores/*", f"!{DATA_ROOT}/stores/vdb"]
+# The one output-layer path: the vulnerability snapshot history (Story 37.5), which each run appends to and the
+# cve-watcher diffs, so it is a store across runs, not a table a node rewrites.
+HISTORY_STORES = {"vulnerability_rollup_snapshots": f"{DATA_ROOT}/primary/vulnerability_rollup_snapshots"}
+LAST_GOOD_PATHS = [
+    f"{DATA_ROOT}/raw",
+    f"{DATA_ROOT}/stores/*",
+    HISTORY_STORES["vulnerability_rollup_snapshots"],
+    f"!{DATA_ROOT}/stores/vdb",
+]
 CACHE_KEY = "pyforge-atlas-last-good-${{ github.run_id }}-${{ github.run_attempt }}"
 CACHE_PREFIX = "pyforge-atlas-last-good-"
 GLOBALS = REPO_ROOT / MEMBER / "conf" / "base" / "globals.yml"
 CATALOG = REPO_ROOT / MEMBER / "conf" / "base" / "catalog.yml"
 WORKFLOWS = REPO_ROOT / ".github" / "workflows"
 PATH_KEYS = ("filepath", "path", "filename")  # the keys CatalogIndexDataset reads an entry's path from
-# Plain raw-layer entries (any type outside pyforge.atlas.datasets) under a cached path, none of them a last-good
-# store: three node outputs the build rewrites every run, and two files another station writes that the Pages build
-# never does (steward's estate export, which only query_plane_cache reads and the build does not run; warden's fleet
-# inventory), so on Pages they are never there to persist.
-PLAIN_RAW_ENTRIES = {
+# Raw-layer entries under a cached path that are no last-good store: five plain ones (three node outputs the build
+# rewrites every run; steward's estate export, which only query_plane_cache reads and the build does not run;
+# warden's fleet inventory) and the two SBOM entries, whose runtime-param defaults the Pages build never writes.
+NOT_LAST_GOOD = {
     "org_audit_candidates",
     "artifactory_downloads_raw",
     "artifactory_consumption_raw",
     "query_plane_estate_source",
     "warden_fleet_inventory",
+    "sbom_intake_entry",
+    "sbom_resolution_entry",
+}
+# The dataset classes that keep a last-good copy (or a store) and its AD-13 marker under their own path. A raw-layer
+# entry of another class under a cached path is a decision to record here, not a silent addition to the cache.
+LAST_GOOD_TYPES = {
+    f"pyforge.atlas.datasets.{name}"
+    for name in (
+        "AboutMaintainersDataset",
+        "AnacondaDist2026Dataset",
+        "AossPremiumPythonDataset",
+        "BasiliskBatchDataset",
+        "BasiliskDetailDataset",
+        "BasiliskPackagesDataset",
+        "CfGraphTarballDataset",
+        "CisaKevDataset",
+        "CweCatalogDataset",
+        "DebianPackagesDataset",
+        "EpssFeedDataset",
+        "FedoraPackagesDataset",
+        "GitHubRequestDataset",
+        "HomebrewPackagesDataset",
+        "JSONSourceDataset",
+        "MappingCacheDataset",
+        "MigrationCategoryDataset",
+        "MigrationDetailDataset",
+        "NixpkgsPackagesDataset",
+        "OSVOfflineStoreDataset",
+        "OpenTeamsBoardDataset",
+        "ParselmouthMappingDataset",
+        "PurlAssociatorMappingsDataset",
+        "PyPIClickHouseDownloadsDataset",
+        "PyPIJsonFanOutDataset",
+        "RegistryUpstreamDataset",
+        "RepodataUploadsDataset",
+        "S3DownloadStatsDataset",
+        "SpackPackagesDataset",
+        "StagedRecipesPRDataset",
+        "TrendingSnapshotDataset",
+        "VcsHostSeedDataset",
+    )
 }
 # Events that run in the default branch's cache scope on input a pull request or an outsider controls.
 UNTRUSTED_IN_MAIN_SCOPE = {
@@ -272,14 +320,17 @@ def test_only_last_good_copies_persist_never_the_vdb_store_or_an_output_layer() 
     listed = _cache_step("save")["with"]["path"].splitlines()  # the product's list, not this module's literal
     includes = [path for path in listed if not path.startswith("!")]
     excludes = [path[1:] for path in listed if path.startswith("!")]
+    assert listed[-1].startswith("!")  # a negation only removes what the patterns before it matched
     assert excludes == [f"{DATA_ROOT}/stores/vdb"]
     assert _data_root_paths()["vdb_store"] == "data/stores/vdb"
     # Each exclusion's parent is listed by its children (`<parent>/*`), never as itself, or tar would recurse into it.
     for excluded in excludes:
         parent = excluded.rsplit("/", 1)[0]
         assert f"{parent}/*" in includes and parent not in includes and DATA_ROOT not in includes
+    history = set(HISTORY_STORES.values())
     for layer in ("intermediate", "primary", "derived", "cache"):
-        assert not any(path.startswith(f"{DATA_ROOT}/{layer}") for path in includes), layer
+        listed_layer = {path for path in includes if path.startswith(f"{DATA_ROOT}/{layer}")}
+        assert listed_layer <= history, (layer, listed_layer - history)
 
 
 def test_the_cached_paths_are_the_data_root_the_build_writes() -> None:
@@ -296,12 +347,14 @@ def test_the_cached_paths_are_the_data_root_the_build_writes() -> None:
 
 def test_every_last_good_store_under_the_data_root_is_cached() -> None:
     """A raw-layer entry keeps its last-good copy (and AD-13 marker) under its own path: every one under the data
-    root lies under a cached path, the vdb store the one exclusion, and no output layer lies under one."""
+    root lies under a cached path, the vdb store the one exclusion; of the other layers only the snapshot history
+    lies under one, and every snapshot history store does."""
     paths = _data_root_paths()
     catalog = yaml.safe_load(CATALOG.read_text(encoding="utf-8"))
     cached, excluded = ("data/raw/", "data/stores/"), "data/stores/vdb"
+    history = {name: path.removeprefix(f"{MEMBER}/") + "/" for name, path in HISTORY_STORES.items()}
     raw_under_root: set[str] = set()
-    plain_outputs: set[str] = set()
+    not_last_good: set[str] = set()
     for name, entry in catalog.items():
         if not isinstance(entry, dict):
             continue
@@ -309,18 +362,24 @@ def test_every_last_good_store_under_the_data_root_is_cached() -> None:
         for path in _resolved_paths(entry, paths):
             if not path.startswith("data/"):
                 continue  # seeds, conf files and the recipes tree are tracked, not run state
+            if str(entry.get("type", "")).endswith(".SnapshotHistoryDataset"):
+                assert name in history and path.startswith(history[name]), (name, path)  # a history persists
+                continue
             if layer != "raw":
-                assert not path.startswith(cached), (name, path)  # an output layer never persists
+                assert not path.startswith((*cached, *history.values())), (name, path)  # an output never persists
                 continue
             raw_under_root.add(name)
             if path == excluded or path.startswith(f"{excluded}/"):
                 assert name == "vulnerability_vdb_store", (name, path)  # nothing else hides under the exclusion
             else:
                 assert path.startswith(cached), (name, path)
-                if not str(entry.get("type", "")).startswith("pyforge.atlas.datasets."):
-                    plain_outputs.add(name)
+                if entry.get("type") not in LAST_GOOD_TYPES:
+                    not_last_good.add(name)
     assert {"vulnerability_cisa_kev_raw", "core_s3_download_stats_raw", "pypi_conda_map_store"} <= raw_under_root
-    assert plain_outputs == PLAIN_RAW_ENTRIES  # a new plain output under a cached path is a decision, not a drift
+    # A raw entry of a class not known to keep a last-good copy is a decision to record, not a drift.
+    assert not_last_good == NOT_LAST_GOOD
+    used = {entry.get("type") for name, entry in catalog.items() if name in raw_under_root}
+    assert LAST_GOOD_TYPES <= used  # no stale name hides a class that left the catalog
 
 
 def test_no_workflow_runs_untrusted_input_in_main_s_cache_scope() -> None:

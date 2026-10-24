@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-24'
 status: 'in-progress'
 baseline_revision: '2859b706da'
-review_loop_iteration: 2
+review_loop_iteration: 3
 followup_review_recommended: true
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -19,7 +19,6 @@ context:
   - src/shared/packages/pyforge-atlas/tests/unit/test_vizro_static_boards.py
 deferred:
   - DW-atlas-37-12-1
-  - DW-atlas-37-12-2
 declared_low_risk: false
 ---
 
@@ -49,28 +48,42 @@ bootstrap-index-health board reads `missing` (34.12's residual risk).
    still keeps the build's copies. The build keeps the default shell (`bash -e`; no `shell:` on the step and no
    `defaults.run.shell` on the job or workflow), so a failed bootstrap stops the step before `catalog_index` can turn
    it green.
-3. What persists: `data/raw` and `data/stores/*`, except `data/stores/vdb`. Every raw-layer catalog entry under the
-   data root lies there, and in nearly all of them the dataset keeps its own last-good copy and marker. A trigger node
-   emits a refresh request and the store's dataset writes the copy.
-   - Five plain raw-layer entries (any type outside `pyforge.atlas.datasets`) also lie there, and none is a
-     last-good store. `org_audit_candidates`, `artifactory_downloads_raw` and `artifactory_consumption_raw` are
+3. What persists is what a dataset reads back as its own previous copy: `data/raw` and `data/stores/*` (except
+   `data/stores/vdb`), and `data/primary/vulnerability_rollup_snapshots`. Every raw-layer catalog entry under the data
+   root lies under the first two. In all but seven, the dataset keeps its own last-good copy and marker; a trigger node
+   emits a refresh request, and the store's dataset writes the copy. The test pins the 32 classes that do this.
+   - The snapshot history (`vulnerability_rollup_snapshots`, the one `SnapshotHistoryDataset`) is appended to on
+     every run and deduplicated on `(snapshot_at, conda_name)`. `diff_vulnerability_snapshots` diffs the latest
+     snapshot against the newest one at least `since_days` (7) older. When none is, it falls back to the
+     second-latest. So two cached snapshots, even hours apart, fill the cve-watcher on Pages, which Story 37.5 left
+     empty there "until a store persists across runs".
+   - Seven raw-layer entries there are no last-good store. Five are plain (any type outside
+     `pyforge.atlas.datasets`), and two are the SBOM entries, whose runtime-param defaults the Pages build never
+     writes. `org_audit_candidates`, `artifactory_downloads_raw` and `artifactory_consumption_raw` are
      rewritten by their nodes on every build. Two are written only by another station, never by the Pages build:
      `query_plane_estate_source` (steward's export; only `query_plane_cache` reads it, and the build does not run that
      pipeline) and `warden_fleet_inventory` (`stores/warden_fleet_inventory.json`, warden's export).
    - `pypi_conda_map_store` (`stores/pypi_conda_map.json`, a `MappingCacheDataset`) merges each export onto its last
      copy and keeps the keys only the old copy has. On Pages that map now grows across runs, as it does on a
      workstation, and it feeds `pypi_json_raw`'s candidate set.
-   - Not persisted: the vulnerability database store (9.6 GB on 2026-10-21, close to the repository's whole 10 GB
-     default cache; it is rebuilt every run, as today), the output layers (`intermediate/`, `primary/`, `derived/`)
-     and `cache/`. So a node that stops writing cannot hide behind an old file.
+   - Not persisted:
+     - the vulnerability database store (9.6 GB on 2026-10-21, close to the repository's whole 10 GB default cache;
+       it is rebuilt every run, as today);
+     - every other output-layer file (`intermediate/`, `primary/`, `derived/`), so a stopped node's table there
+       cannot hide behind an old file;
+     - `cache/`;
+     - the `IncrementalParquetDataset` TTL row caches. They are only an optimisation, and each Pages build recomputes
+       them, as before.
+     The raw layer's three plain node outputs are cached and rewritten every build.
 4. The list is `stores/*` beside `!stores/vdb`, never `stores`. `actions/cache` resolves its patterns with
    `@actions/glob` and `implicitDescendants: false` (`cacheUtils.resolvePaths`). It archives the matches with
    `tar --files-from` and no `--no-recursion` (`tar.ts`), so a listed directory is archived whole and an exclusion
    under it is ignored. With `stores/*`, each child of `stores/` is a match, and `!stores/vdb` removes that one
    child. The entry's version hashes the path strings (`getCacheVersion`), so the restore and the save carry the same
    list. GNU tar keeps each file's mtime on extract (no `-m`), so provenance still reports a restored copy's own age.
-5. The consequence is the same as on a workstation: a store that is inside its refresh cadence, or whose ETag has not
-   changed, is not fetched again. That covers Story 34.4's S3 months and Story 37.6's repodata subdirs.
+5. The consequence is the same as on a workstation, for the cached stores: a store that is inside its refresh
+   cadence, or whose ETag has not changed, is not fetched again. That covers Story 34.4's S3 months and Story 37.6's
+   repodata subdirs.
 6. **Operator ruling 2026-10-24 (option C, "Cache + raise limit"):** keep `actions/cache` for the copies. The operator
    raises the repository's Actions cache limit; that is an operator-owned setting, never changed from a session.
    Until it is raised, the copies survive only between runs a few hours apart (see *Residual risk*). The pending
@@ -102,16 +115,17 @@ Type / Effort / Deps: fix / S / 34.12.
 - **AC3 — Same entry.** The restore and the save name the same path list and the key
   `pyforge-atlas-last-good-${{ github.run_id }}-${{ github.run_attempt }}`. The restore's only fallback is the key's
   prefix, and it does not set `fail-on-cache-miss`.
-- **AC4 — What persists.** The path list is exactly `<member>/data/raw`, `<member>/data/stores/*` and
-  `!<member>/data/stores/vdb`. It never lists an output layer or `cache/`, and never lists `stores` itself.
+- **AC4 — What persists.** The path list is exactly `<member>/data/raw`, `<member>/data/stores/*`,
+  `<member>/data/primary/vulnerability_rollup_snapshots` and, last, `!<member>/data/stores/vdb`. It lists no other
+  output-layer path, never `cache/`, and never `stores` itself.
 - **AC5 — The build's own data root.** The `globals.yml` data root defaults to `data`, and the bootstrap task runs
   from the member directory. `PYFORGE_ATLAS_DATA_ROOT` is set nowhere the job reads: not in the workflow, job or step
   `env`, not in the bootstrap or export pixi task's `env`, and not in the `pyforge-atlas` activation env.
 - **AC6 — Every last-good copy is covered.** Read every path key `CatalogIndexDataset` reads (`filepath`, `path`,
   `filename`). Every raw-layer entry whose path resolves under the data root lies under `raw/` or `stores/`. Nothing
-  except the vulnerability database store lies at or under `stores/vdb`. No other layer's entry lies under a cached
-  path. The plain raw-layer entries (any type outside `pyforge.atlas.datasets`) under a cached path are exactly the
-  five named in Approach 3.
+  except the vulnerability database store lies at or under `stores/vdb`. Every `SnapshotHistoryDataset` lies under
+  its listed path, and no other entry of another layer lies under a cached path. The raw-layer entries under a cached
+  path whose class is not one of the pinned last-good classes are exactly the seven named in Approach 3.
 - **AC7 — Public-only.** The job names no secret, no `GITHUB_TOKEN`/`GH_TOKEN` and no `PYFORGE_ATLAS_CREDENTIALED`
   (Story 37.2's test). No workflow in `.github/workflows/` has a trigger that runs untrusted input in main's cache
   scope (`pull_request_target`, `workflow_run`, `issue_comment`, `issues`, `discussion`, `discussion_comment`). A
@@ -121,7 +135,7 @@ Type / Effort / Deps: fix / S / 34.12.
 ## Boundaries & Constraints
 
 **Never:**
-- cache the vulnerability database store or an output layer;
+- cache the vulnerability database store, or an output-layer file other than the snapshot history;
 - pass a secret or token to the job, or set `PYFORGE_ATLAS_CREDENTIALED`;
 - let a failed build pass or save;
 - change a dataset, a node or the export;
@@ -142,11 +156,11 @@ Type / Effort / Deps: fix / S / 34.12.
 - **Cache pressure.** Each run that builds saves one entry of a few hundred MB. On a 2026-10-21 public root, `raw/`
   was 19 MB and `stores/` without `vdb` about 290 MB, 242 MB of it the S3 download aggregates. Older entries are never
   read again and age out first.
-- **Output-layer stores still start empty on Pages** (`DW-atlas-37-12-2`, blocked on `DW-atlas-37-12-1`). Two
-  kinds of output-layer dataset read their own previous copy: `vulnerability_rollup_snapshots` (`primary/`, the
-  `SnapshotHistoryDataset` the cve-watcher diffs; Story 37.5's residual risk) and the `IncrementalParquetDataset` TTL
-  row caches. They are not cached, so the cve-watcher stays empty on Pages. Approach 5 covers the raw-layer stores
-  only. Caching the snapshot store helps only once copies survive a week, which needs the limit raise.
+- **The snapshot history grows.** Nothing prunes `vulnerability_rollup_snapshots`: each run that saves adds one
+  snapshot, about as many rows as packages with a vulnerability. An eviction resets it.
+  - If the snapshot node stopped writing, the cve-watcher would keep diffing the last two snapshots it had, each
+    dated by its `snapshot_at`.
+  - A run between snapshots fewer than 7 days apart diffs against the second-latest, as legacy `cve_watcher.py` does.
 - **Other branches.** A dispatch on another branch reads main's entries and saves to its own branch's scope; main
   never reads it.
 - **Stale directories.** A restored directory of a removed or renamed catalog entry rides along until someone deletes
@@ -164,7 +178,7 @@ Type / Effort / Deps: fix / S / 34.12.
 
 | Run | Cache | Build | Data root at build start | Saved |
 |---|---|---|---|---|
-| first after the merge | none | succeeds | empty (as before) | this run's `raw/`, `stores/*` without `vdb` |
+| first after the merge | none | succeeds | empty (as before) | this run's `raw/`, `stores/*` without `vdb`, the snapshot history |
 | next, a feed down | newest entry | succeeds | the previous copies | this run's (the down feed's copy is the restored one, marked stale) |
 | next, build fails | newest entry | fails | the previous copies | nothing; the job fails |
 | next, entry evicted | none | succeeds | empty | this run's |
@@ -181,8 +195,8 @@ Type / Effort / Deps: fix / S / 34.12.
   keep).
 - Epic: Epic 37 (done; this story reopens it until it lands).
 - Ledger key: `37-12-the-pages-data-build-keeps-its-last-good-copies-between-runs`; status at mint `in-progress`.
-- Deferred work: opens `DW-atlas-37-12-1` (operator-owned: raise the repository's Actions cache limit) and
-  `DW-atlas-37-12-2` (the output-layer history store and TTL caches on Pages; blocked on the first).
+- Deferred work: opens `DW-atlas-37-12-1` (operator-owned: raise the repository's Actions cache limit). Review 2's
+  `DW-atlas-37-12-2` (the snapshot history on Pages) was opened and closed on the branch (review 3).
 - Follows Story 34.12 (its residual risk "the Pages job builds on a fresh data root").
 
 ## Verification
@@ -210,7 +224,7 @@ Run 2026-10-24 in worktree `laughing-jackson-2bff14` (branch `claude/laughing-ja
 - **Tests:** `test_vizro_static_boards.py`: 19 passed (13 before, 6 new; reviews 1 and 2 widened four of them).
   `pixi run -e pyforge-atlas pyforge-atlas-test` (before review 1's fixes): 3,433 passed and 20 skipped, then 103
   passed. `pixi run -e pyforge-guild lint-types`: exit 0. `scripts/ci_surface_gates.py --check`: exit 0.
-- **Mutations** (`scratchpad/mutate.py`, each restored): 33 of 33 killed.
+- **Mutations** (`scratchpad/mutate.py`, each restored): 39 of 39 killed.
   - The first 20: no restore; no save; the restore after the build; the save before the build; the save under
     `always()`; the restore ungated; `stores` listed as itself; no vdb exclusion; `primary/` cached; the save naming
     another path list; a key that differs; no `restore-keys`; `fail-on-cache-miss`; `continue-on-error` on the build;
@@ -223,6 +237,10 @@ Run 2026-10-24 in worktree `laughing-jackson-2bff14` (branch `claude/laughing-ja
   - After review 2: a plain `json.JSONDataset` raw output under `raw/`; a `text.TextDataset` under `stores/`;
     `defaults.run.shell: bash {0}` on the job; the same on the workflow; `warden_fleet_inventory` dropped from the
     plain set.
+  - After review 3: the history store left out of the list; the negation listed first; a raw output of
+    `DegradingParquetDataset` (a class outside the pinned last-good set) under `raw/`; a second
+    `SnapshotHistoryDataset`, not cached; the history store moved off its listed path; a primary output nested under
+    the history store's path.
 - **Upstream behaviour, read 2026-10-24** (`actions/toolkit` main):
   - `packages/cache/src/internal/cacheUtils.ts`: in `resolvePaths`, `implicitDescendants: false`; `getCacheVersion` is
     a SHA-256 of the path strings, the compression method and a salt.
@@ -235,6 +253,17 @@ Run 2026-10-24 in worktree `laughing-jackson-2bff14` (branch `claude/laughing-ja
 
 ## Spec Change Log
 
+- 2026-10-24, review 3 (FAIL: 0 blockers, 2 should-fix, 3 nits), fixed on the same branch:
+  - S1 (the deferral reason misread the cve-watcher): `diff_vulnerability_snapshots` falls back to the second-latest
+    snapshot. So the job now caches `data/primary/vulnerability_rollup_snapshots` too, and the cve-watcher fills on
+    Pages without the limit raise. `DW-atlas-37-12-2` is closed, and Approach 3, AC4, AC6, Never, the residual risks,
+    the Dream, Story 37.12, the workflow comment and the memlog (a correction event) say so.
+  - S2 (the eviction horizon was still a fixed 3.5 hours in three records): the DW row, the team-memory capture and
+    the memlog correction now say it depends on how much the other workflows write.
+  - N1 (the plain-entry guard read the type's module): the test pins the 32 last-good classes and the seven raw
+    entries that are not, and checks that no pinned class is stale.
+  - N2 ("a node that stops writing cannot hide" was absolute): the wording names the output layers, and says the
+    raw layer's plain node outputs are cached and rewritten. N3: review 1's S2 line corrected.
 - 2026-10-24, review 2 (FAIL: 0 blockers, 4 should-fix, 3 nits), fixed on the same branch:
   - S1: the memlog's decision entry still named the old key, "every raw-layer copy" and this workflow's own triggers;
     a correction event follows it (the memlog is append-only).
@@ -249,8 +278,9 @@ Run 2026-10-24 in worktree `laughing-jackson-2bff14` (branch `claude/laughing-ja
   - Blocker (the cache evicts within about 3.5 hours): put to the operator. The ruling (option C, "Cache + raise
     limit") is in Approach 6, the memlog, the Dream entry and Story 37.12's Then line. The raise is
     `DW-atlas-37-12-1` and a scribe project capture. The eviction residual risk now carries the measured horizon.
-  - S2 ("never a pipeline output" was wrong): Approach 3, the Dream, the story and the workflow comment now name the
-    four plain raw-layer entries and the PyPI-to-conda map's merge. The test pins the plain entries.
+  - S2 ("never a pipeline output" was wrong): Approach 3 and the workflow comment name the plain raw-layer entries
+    and the PyPI-to-conda map's merge, the Dream and the story say "never an output layer", and the test pins the
+    plain entries. (Review 3's N3 corrected this line, which had said the Dream and the story name them too.)
   - S3 (wrong trigger): `test_no_workflow_runs_untrusted_input_in_main_s_cache_scope` scans every workflow for events
     that run in main's cache scope. The workflow comment says so.
   - S4 (test gaps): every catalog path key; a store nested under `stores/vdb/`; the data root override in the
@@ -261,6 +291,13 @@ Run 2026-10-24 in worktree `laughing-jackson-2bff14` (branch `claude/laughing-ja
 
 ## Review Triage Log
 
+- 2026-10-24, review 3 (independent subagent): FAIL, 0 blockers, 2 should-fix, 3 nits.
+  - It checked the five plain entries against the pipelines and found every raw entry under the data root cached.
+  - It found that the cve-watcher's diff falls back to the second-latest snapshot, which it proved by running
+    `diff_vulnerability_snapshots` on two snapshots 3 hours apart (S1).
+  - It ran 10 mutants; the one survivor became N1.
+  - It ran the planning detectors: all exit 0.
+  - Every finding was fixed on the branch (Spec Change Log).
 - 2026-10-24, review 2 (independent subagent): FAIL, 0 blockers, 4 should-fix, 3 nits.
   - It confirmed the operator's ruling is recorded the same way in all six places.
   - It checked every round-1 fix against the code (the map's merge in `refresh.py`, its use in

@@ -209,18 +209,19 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost
           df -h /
 
-      # Story 37.12 (CAP-63, CAP-64): the build starts from the last-good copies the previous successful run
-      # saved, so a public source that cannot be reached today serves its previous copy under the AD-13
-      # marker (Story 34.12) instead of an empty table. What persists is `raw/` and every store except the
-      # vulnerability database (`stores/vdb`, 9.6 GB, still rebuilt every run): there each dataset keeps its
-      # own last-good copy and marker. Five plain raw-layer entries there are no such store (three rewritten
-      # every build, two only other stations write), and the PyPI-to-conda map merges onto its last copy, as on
-      # a workstation. The output layers
-      # (`intermediate/`, `primary/`, `derived/`) never persist, so a node that stops writing cannot hide
-      # behind an old file. The list says `stores/*` beside `!stores/vdb`, never `stores`: actions/cache
-      # lists matches without their descendants and tar recurses into a listed directory, so an exclusion
-      # under a listed `stores` would be ignored. The key is per run attempt; the restore takes the newest
-      # saved entry, and a miss or an eviction is the fresh root of before. Operator ruling 2026-10-24
+      # Story 37.12 (CAP-63, CAP-64): the build starts from what the previous successful run saved, so a public
+      # source that cannot be reached today serves its previous copy under the AD-13 marker (Story 34.12)
+      # instead of an empty table. What persists is what a dataset reads back as its own previous copy:
+      # `raw/` and every store except the vulnerability database (`stores/vdb`, 9.6 GB, still rebuilt every
+      # run), where each dataset keeps its last-good copy and marker, and the vulnerability snapshot history
+      # the cve-watcher diffs (`primary/vulnerability_rollup_snapshots`, Story 37.5), which each run appends
+      # to. Five plain raw-layer entries there are no such store (three rewritten every build, two only other
+      # stations write), and the PyPI-to-conda map merges onto its last copy, as on a workstation. No other
+      # output-layer file persists, so a stopped node's table in `intermediate/`, `primary/` or `derived/`
+      # cannot hide behind an old file. The list says `stores/*` beside `!stores/vdb`, never `stores`:
+      # actions/cache lists matches without their descendants and tar recurses into a listed directory, so an
+      # exclusion under a listed `stores` would be ignored. The key is per run attempt; the restore takes the
+      # newest saved entry, and a miss or an eviction is the fresh root of before. Operator ruling 2026-10-24
       # (option C): the copies reach the weekly run only once the operator raises the repository's Actions
       # cache limit (DW-atlas-37-12-1). The cache is the repository's own, reached as upload-artifact reaches
       # its store: no secret and no GitHub token are passed. No workflow here has a trigger that runs
@@ -232,6 +233,7 @@ jobs:
           path: |
             src/shared/packages/pyforge-atlas/data/raw
             src/shared/packages/pyforge-atlas/data/stores/*
+            src/shared/packages/pyforge-atlas/data/primary/vulnerability_rollup_snapshots
             !src/shared/packages/pyforge-atlas/data/stores/vdb
           key: pyforge-atlas-last-good-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
@@ -254,6 +256,7 @@ jobs:
           path: |
             src/shared/packages/pyforge-atlas/data/raw
             src/shared/packages/pyforge-atlas/data/stores/*
+            src/shared/packages/pyforge-atlas/data/primary/vulnerability_rollup_snapshots
             !src/shared/packages/pyforge-atlas/data/stores/vdb
           key: pyforge-atlas-last-good-${{ github.run_id }}-${{ github.run_attempt }}
 
