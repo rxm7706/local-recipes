@@ -485,21 +485,28 @@ pypi_intelligence_scored:
 
 # --- external sources (layer raw) ---
 
+# Story 34.12 (CAP-64, AD-13): the three feeds fetch on every load and keep the last frame that
+# parsed to rows as <filepath>/last_good.parquet; an unreachable host, an HTTP error or a body that
+# does not parse serves that copy (or, on a fresh root, the empty frame) under .staleness.json, and
+# the run goes on. No flag, no credential.
 vulnerability_cisa_kev_raw:
   type: pyforge.atlas.datasets.CisaKevDataset
   url: ${globals:fetcher_urls.CISA_KEV_URL}
+  filepath: ${globals:paths.data_root}/raw/vulnerability_cisa_kev_raw
   metadata:
     layer: raw
 
 vulnerability_epss_raw:
   type: pyforge.atlas.datasets.EpssFeedDataset
   url: ${globals:fetcher_urls.EPSS_FEED_URL}
+  filepath: ${globals:paths.data_root}/raw/vulnerability_epss_raw
   metadata:
     layer: raw
 
 vulnerability_cwe_catalog_raw:
   type: pyforge.atlas.datasets.CweCatalogDataset
   url: ${globals:fetcher_urls.CWE_CATALOG_URL}
+  filepath: ${globals:paths.data_root}/raw/vulnerability_cwe_catalog_raw
   metadata:
     layer: raw
 

@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: 88afc767503d1e00
-story_count: 140
+source_fingerprint: 3a2b13748133536d
+story_count: 141
 test_file_count: 186
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 140
+- **Stories parsed:** 141
 - **Epics parsed:** 38
 - **Test files inventoried:** 186 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `88afc767503d1e00`
+- **Source fingerprint:** `3a2b13748133536d`
 
 ## Risk Assessment
 
@@ -391,6 +391,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 34.9 | Phase P fills from the public ClickHouse mirror | none observed |
 | 34.10 | Phase H covers every mapped PyPI project, gated by its serial | none observed |
 | 34.11 | The Phase C mapping fills legacy's name-coincidence and recipe-source tiers | none observed |
+| 34.12 | A vulnerability feed that cannot be reached keeps its last good copy | none observed |
 | 35.1 | One opt-in switch, and GitHub authenticates | none observed |
 | 35.2 | The VCS batches come from the whole universe | none observed |
 | 35.3 | Upstream versions and feedstock health come from GitHub | none observed |

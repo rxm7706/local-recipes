@@ -48,6 +48,7 @@ from pyforge.atlas.datasets import (
     PyPIClickHouseDownloadsDataset,
     RepodataUploadsDataset,
     S3DownloadStatsDataset,
+    VulnerabilityFeedDataset,
 )
 
 SCHEMA_VERSION = "1"
@@ -230,6 +231,7 @@ def resolve_for_catalog_dataset(catalog: Any, name: str, loaded_value: Any) -> P
         S3DownloadStatsDataset,
         PyPIClickHouseDownloadsDataset,
         RepodataUploadsDataset,
+        VulnerabilityFeedDataset,
     )
     source = dataset if isinstance(dataset, marked) else getattr(dataset, "source", None)
     if isinstance(source, marked):
@@ -241,6 +243,7 @@ def resolve_for_catalog_dataset(catalog: Any, name: str, loaded_value: Any) -> P
         # a load that fetched nothing (its flag off) served that copy as it stood.
         # Story 34.9: PyPIClickHouseDownloadsDataset keeps the same marker beside its last-good.
         # Story 37.6: RepodataUploadsDataset's copy is its subdir cache, dated by its manifest.
+        # Story 34.12: the KEV, EPSS and CWE feeds keep last-good beside the same marker.
         marker = source.staleness()
         last_good = source.last_good_path
         fetched = bool(getattr(source, "refreshed", True))

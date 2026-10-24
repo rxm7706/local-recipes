@@ -602,6 +602,26 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   - the version-downloads path moves behind `pyforge.atlas.board_projections`, like Epic 37's boards.
 
   Owner `spec-pyforge-atlas` (CAP-69, no new CAP). → Epic 38 / Story 38.1, specced 2026-10-24.
+- **2026-10-24 (one vulnerability feed down stops the whole build)** — **Found: when cwe.mitre.org does not answer,
+  no Pages data build finishes.** `vulnerability_feeds.py`'s `CisaKevDataset`, `EpssFeedDataset` and
+  `CweCatalogDataset` load through `APIDataset` with no fallback, so a connection failure raises `DatasetError` out
+  of the catalog and stops the run. kedro-viz-publish's Vizro job failed on five consecutive merges to main on
+  2026-10-23 with `vulnerability_cwe_catalog_raw: Failed to connect to the remote server` (a connect timeout; runs
+  39908595513, 39931632612, 39941141589, 40018149689, 40027620039), and Pages kept its last export each time
+  (DW-atlas-38-1-1). The three feeds also send no timeout, and requests reads `~/.netrc` for their hosts. **What it
+  looks like when fixed:**
+  - each feed keeps its last good frame under the entry's own path in the data root;
+  - a failed fetch, an HTTP error or a body that does not parse to rows serves that copy (or, on a fresh root, the
+    empty frame of the feed's columns) under the AD-13 staleness marker, and the run goes on;
+  - the bootstrap-index-health board reads each feed's marker: `stale` with the reason while a copy exists, `missing`
+    with the same reason on a fresh root.
+
+  **Constraints:**
+  - a fix under CAP-64, with no new CAP and no flag: the feeds fetch on every load, as they do today;
+  - no test reaches the network, and no run sets `PYFORGE_ATLAS_CREDENTIALED`;
+  - the vulnerability nodes and their outputs do not change.
+
+  Owner `spec-pyforge-atlas` (CAP-64, no new CAP). → Epic 34 / Story 34.12, specced 2026-10-24.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 
