@@ -126,6 +126,17 @@ core_s3_version_downloads_raw:
   metadata:
     layer: raw
 
+# Story 37.6 (CAP-69): each version's earliest upload and file count, from every subdir's full
+# repodata.json.zst (operator ruling 2026-10-23), streamed and cached per subdir under
+# stores/core_repodata_uploads (fetched again only when a subdir's ETag changes), behind
+# pyforge.atlas.live_public_sources (off: serve the cache, fetch nothing). No credential.
+core_repodata_uploads_raw:
+  type: pyforge.atlas.datasets.RepodataUploadsDataset
+  url: ${globals:endpoint_bases.CONDA_FORGE_BASE_URL}
+  filepath: ${globals:paths.data_root}/stores/core_repodata_uploads
+  metadata:
+    layer: raw
+
 # The conda-forge bot's graph (Phases E/J/M; consumed cross-pipeline by E per AD-3 —
 # declared ONCE here by the core producer). Story 34.3: regro/cf-graph-countyfair now serves
 # conda-forge/conda-forge-bot-data, whose tarball no longer holds node_attrs/, pr_info/ or
@@ -1066,6 +1077,13 @@ derived_purl_export_manifest:
 derived_alternative_candidates:
   type: pandas.ParquetDataset
   filepath: ${globals:paths.data_root}/derived/derived_alternative_candidates/derived_alternative_candidates.parquet
+  metadata:
+    layer: derived
+
+# Story 37.6 (CAP-69): legacy release-cadence's per-package counts, which the release-cadence board reads.
+derived_release_cadence:
+  type: pandas.ParquetDataset
+  filepath: ${globals:paths.data_root}/derived/derived_release_cadence/derived_release_cadence.parquet
   metadata:
     layer: derived
 

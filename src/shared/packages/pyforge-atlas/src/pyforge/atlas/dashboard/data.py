@@ -94,6 +94,8 @@ DERIVED_MAPPING_GAP_PARQUET = "derived/derived_mapping_gap/derived_mapping_gap.p
 CATALOG_INDEX_HEALTH_PARQUET = "derived/catalog_index_health/catalog_index_health.parquet"
 # Story 37.8: the six export-purls artifacts' manifest
 DERIVED_PURL_EXPORT_MANIFEST_PARQUET = "derived/derived_purl_export_manifest/derived_purl_export_manifest.parquet"
+# Story 37.6: the release-cadence counts per package
+DERIVED_RELEASE_CADENCE_PARQUET = "derived/derived_release_cadence/derived_release_cadence.parquet"
 # Story 37.7: the find-alternative candidates for every archived package
 DERIVED_ALTERNATIVE_CANDIDATES_PARQUET = "derived/derived_alternative_candidates/derived_alternative_candidates.parquet"
 

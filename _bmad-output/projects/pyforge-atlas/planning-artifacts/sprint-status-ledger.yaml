@@ -131,7 +131,7 @@ development_status:
   37-3-the-seed-gap-version-download-and-distribution-boards-read-their-datasets: done
   37-4-behind-upstream-whodepends-live-catalog-coverage-and-the-universe-sbom-boards-fill: done
   37-5-the-cve-watcher-reads-a-vulnerability-history: done
-  37-6-the-release-cadence-reads-per-version-upload-times: backlog
+  37-6-the-release-cadence-reads-per-version-upload-times: done
   37-7-the-find-alternative-scores-candidates-for-archived-packages: done
   37-8-the-export-purls-lists-the-purl-artifacts: done
   37-9-the-mapping-gap-classifies-the-unmapped-packages: done
@@ -213,7 +213,7 @@ development_status:
   epic-35-retrospective: optional
   epic-36: in-progress
   epic-36-retrospective: optional
-  epic-37: in-progress
+  epic-37: done
   epic-37-retrospective: optional
   epic-4: done
   epic-4-retrospective: done

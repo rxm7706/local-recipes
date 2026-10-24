@@ -6,7 +6,7 @@ PURE nodes: ``build_universe_sbom`` (CycloneDX BOM), ``build_inventory_universe`
 ``build_inventory_aoss_free_queue`` (Story 23.4 deliverable A + AOSS queue),
 ``build_identity_complete_export`` (Story 23.5 complete export join); the three board projections
 ``project_behind_upstream``, ``project_live_catalog_coverage`` and ``project_universe_sbom_summary``
-(Story 37.4); ``export_purl_artifacts`` (Story 37.8); ``score_alternative_candidates`` (Story 37.7).
+(Story 37.4); ``export_purl_artifacts`` (Story 37.8); ``score_alternative_candidates`` (Story 37.7); ``project_release_cadence`` (Story 37.6).
 ``inputs=`` bind to catalog NAMES (AD-3 cross-pipeline edges). Node names FROZEN.
 """
 
@@ -29,6 +29,7 @@ from .nodes import (
     project_universe_sbom_summary,
 )
 from .purl_exports import export_purl_artifacts
+from .release_cadence import project_release_cadence
 
 
 def create_pipeline(**kwargs) -> Pipeline:
@@ -178,6 +179,13 @@ def create_pipeline(**kwargs) -> Pipeline:
                 ],
                 outputs="derived_alternative_candidates",
                 name="score_alternative_candidates",
+            ),
+            # Story 37.6: legacy release-cadence's counts, from the full repodata's upload times
+            node(
+                func=project_release_cadence,
+                inputs=["core_repodata_uploads_raw", "core_packages_enumerated"],
+                outputs="derived_release_cadence",
+                name="project_release_cadence",
             ),
         ]
     )

@@ -421,7 +421,7 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
     PageDef("factory-status", "Factory Status", "factory-status", "factory"),
 )
 
-#: Story 37.4 (CAP-69): the four boards' definitions, and Stories 37.5 and 37.7-37.10's boards, with ``pyforge.atlas.board_projections`` on.
+#: Story 37.4 (CAP-69): the four boards' definitions, and Stories 37.5-37.10's boards, with ``pyforge.atlas.board_projections`` on.
 #: Off, ``PAGE_INVENTORY``'s entries stand: the two shells, and the coverage boards' earlier paths.
 PROJECTED_PAGES: dict[str, PageDef] = {
     page.id: page
@@ -513,6 +513,19 @@ PROJECTED_PAGES: dict[str, PageDef] = {
             "the scale sanity gate: 30,000 conda-forge packages, 5,000 Anaconda main, a non-empty PyPI index and "
             "Basilisk catalog) or ok. Entries that fetch live and persist nothing are not listed.",
             filters=("tier", "status"),
+        ),
+        # Story 37.6 (CAP-69)
+        PageDef(
+            "release-cadence",
+            "Release Cadence",
+            "release-cadence",
+            "bsl-shell",
+            note="Wired to build_release_cadence_model over derived_release_cadence, which derived_artifacts' "
+            "project_release_cadence writes as legacy release-cadence counts: per package, its versions and the ones "
+            "uploaded in the last 30, 90 and 365 days. A version's upload time is its earliest file timestamp in "
+            "conda-forge's full repodata. trend_label is legacy's accelerating/stable/decelerating/one-version/silent "
+            "classifier. The 90-day window is charted.",
+            chart=ChartDef("bar", x="conda_name", y="release_count_90d"),
         ),
         # Story 37.7 (CAP-69)
         PageDef(
@@ -995,6 +1008,8 @@ def build_dashboard(
     index_health_path = root / (
         _data.CATALOG_INDEX_HEALTH_PARQUET if projected else _data.BOOTSTRAP_INDEX_HEALTH_PARQUET
     )
+    # Story 37.6: the release-cadence counts with the flag on, the path nothing writes off
+    cadence_path = root / (_data.DERIVED_RELEASE_CADENCE_PARQUET if projected else _data.RELEASE_CADENCE_PARQUET)
     # Story 37.7: the find-alternative candidates with the flag on, the path nothing writes off
     alternatives_path = root / (
         _data.DERIVED_ALTERNATIVE_CANDIDATES_PARQUET if projected else _data.ALTERNATIVE_CANDIDATES_PARQUET
@@ -1026,7 +1041,7 @@ def build_dashboard(
     # a reason when absent — never a fabricated stamp).
     cve_watcher_provenance = _provenance.resolve_for_file(vuln_history_path)
     version_downloads_provenance = _provenance.resolve_for_file(root / _data.VERSION_DOWNLOADS_PARQUET)
-    release_cadence_provenance = _provenance.resolve_for_file(root / _data.RELEASE_CADENCE_PARQUET)
+    release_cadence_provenance = _provenance.resolve_for_file(cadence_path)
     find_alternative_provenance = _provenance.resolve_for_file(alternatives_path)
     scan_project_provenance = _provenance.resolve_for_file(root / _data.SCAN_RESULT_LATEST_PARQUET)
     env_inspect_provenance = _provenance.resolve_for_file(root / _data.ENV_INSPECT_LATEST_PARQUET)
@@ -1128,7 +1143,7 @@ def build_dashboard(
         ),
         _data_page(
             by_id["release-cadence"],
-            lambda: _data.load_release_cadence(root / _data.RELEASE_CADENCE_PARQUET),
+            lambda: _data.load_release_cadence(cadence_path),
             grounded=False,
             provenance=release_cadence_provenance,
         ),

@@ -32,6 +32,7 @@ from pyforge.atlas.pipelines.derived_artifacts.nodes import (
     project_universe_sbom_summary,
 )
 from pyforge.atlas.pipelines.derived_artifacts.purl_exports import export_purl_artifacts
+from pyforge.atlas.pipelines.derived_artifacts.release_cadence import project_release_cadence
 from pyforge.atlas.pipelines.pypi_intelligence.nodes import classify_mapping_gap
 from pyforge.atlas.pipelines.vulnerability.nodes import diff_vulnerability_snapshots, snapshot_vulnerability_rollup
 
@@ -49,6 +50,7 @@ PROJECTED = (
     "bootstrap-index-health",
     "export-purls",
     "find-alternative",
+    "release-cadence",
 )
 NOW = 1_700_000_000
 STAMP = "2026-10-22T00:00:00Z"
@@ -425,6 +427,17 @@ def _data_root(tmp_path: Path) -> Path:
             now=NOW,
         ),
     )
+    # Story 37.6: one package with a version uploaded ten days before NOW
+    _write(
+        root / data.DERIVED_RELEASE_CADENCE_PARQUET,
+        project_release_cadence(
+            pd.DataFrame(
+                {"conda_name": ["a"], "version": ["1.0"], "upload_unix": [NOW - 10 * 86_400], "file_count": [2]}
+            ),
+            _enumerated([("a", "1.0")]),
+            now=NOW,
+        ),
+    )
     # Story 37.8: one active package's artifacts and their manifest
     _write(
         root / data.DERIVED_PURL_EXPORT_MANIFEST_PARQUET,
@@ -463,6 +476,7 @@ def test_with_the_flag_off_the_four_boards_read_as_before(tmp_path: Path) -> Non
         "bootstrap-index-health",
         "export-purls",
         "find-alternative",
+        "release-cadence",
     ):
         frame = _frame(page_id)
         assert frame is not None and frame.empty, page_id  # the earlier paths, which nothing writes
@@ -485,6 +499,7 @@ def test_with_the_flag_on_each_board_is_stamped_from_the_file_it_reads(tmp_path:
         "bootstrap-index-health": data.CATALOG_INDEX_HEALTH_PARQUET,
         "export-purls": data.DERIVED_PURL_EXPORT_MANIFEST_PARQUET,
         "find-alternative": data.DERIVED_ALTERNATIVE_CANDIDATES_PARQUET,
+        "release-cadence": data.DERIVED_RELEASE_CADENCE_PARQUET,
     }
     for offset, path in enumerate(reads.values()):  # a distinct mtime per file, so a swapped stamp shows
         stamp = 1_600_000_000 + offset * 86_400

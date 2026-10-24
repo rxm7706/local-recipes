@@ -92,6 +92,7 @@ from .refresh import (
     StalenessMarker,
     VDBStoreDataset,
 )
+from .repodata_uploads import RepodataUploadsDataset
 from .request_datasets import (
     AnacondaDownloadsDataset,
     BigQueryDownloadsDataset,
@@ -264,6 +265,7 @@ __all__ = [
     "CatalogIndexDataset",
     # Story 37.8: the local recipes' conda-forge-expert stamps
     "RecipeExtrasDataset",
+    "RepodataUploadsDataset",
     "parse_feedstock_outputs_zip",
     "repodata_json_to_rows",
     "channeldata_json_to_rows",
