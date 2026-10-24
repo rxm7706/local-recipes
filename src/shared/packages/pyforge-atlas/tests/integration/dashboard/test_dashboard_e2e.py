@@ -230,14 +230,13 @@ def test_declared_controls_render_against_real_rows(dashboard_server):
         page = context.new_page()
         try:
             page.goto(f"{dashboard_server}{_page_path(page_def)}")
-            page.wait_for_load_state("networkidle")
             # The grid mounts last: Vizro builds it as an empty placeholder that the page's on_page_load callback
-            # fills, and the browser then applies that output and loads AG Grid's own script, after the filter and
-            # the chart are drawn. So the grid's mount is the one wait that carries the page's render, and it gets
-            # the 60 s this suite gives a loaded host (the fixture's server bind, the WASM smoke). Under parallel
-            # load the grid took up to 23 s to mount, up to 16 s after the chart (Story 27.6); a loaded CI runner
-            # outran 5 s on 2026-10-04 too (#1836, #1838). The checks below then find a drawn page, and a mounted
-            # grid without the row fails on the row, showing the grid's text.
+            # fills, and the browser then applies that output and loads dash-ag-grid's lazy grid chunk, after the
+            # filter, its dropdown and the chart are drawn. So the grid's mount is the one wait that carries the
+            # page's render, and it gets the 60 s this suite gives a loaded host (the fixture's server bind, the
+            # WASM smoke). Under parallel load the grid took up to 22.3 s to mount, up to 16.9 s after the chart
+            # (Story 27.6); a loaded CI runner outran 5 s on 2026-10-04 too (#1836, #1838). The checks below then
+            # find a drawn page, and a mounted grid without the row fails on the row, showing the grid's text.
             grid = page.locator("#distribution-breakdown--grid")
             expect(grid.locator(".ag-root-wrapper")).to_be_attached(timeout=60_000)
             facet_filter = page.locator("#distribution-breakdown--filter-facet")
