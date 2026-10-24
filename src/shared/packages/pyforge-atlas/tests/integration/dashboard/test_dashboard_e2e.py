@@ -230,15 +230,21 @@ def test_declared_controls_render_against_real_rows(dashboard_server):
         page = context.new_page()
         try:
             page.goto(f"{dashboard_server}{_page_path(page_def)}")
-            # The filter and chart render after the page's data callback. A loaded CI runner took longer than
-            # Playwright's 5 s default twice on 2026-10-04 (#1836, #1838), so wait for the network to settle and
-            # allow 15 s.
+            # A loaded CI runner took longer than Playwright's 5 s default twice on 2026-10-04 (#1836, #1838), so
+            # each wait for the page to render allows 15 s. The filter and the chart's container render from the
+            # layout.
             page.wait_for_load_state("networkidle")
             facet_filter = page.locator("#distribution-breakdown--filter-facet")
             expect(facet_filter).to_be_visible(timeout=15_000)
             expect(facet_filter.locator("button.dash-dropdown")).to_be_visible(timeout=15_000)
             expect(page.locator("#distribution-breakdown--chart")).to_be_visible(timeout=15_000)
+            # The grid does not: Vizro builds it as an empty placeholder that the page's on_page_load callback
+            # fills, and the browser then loads AG Grid's own script before the grid mounts, so the waits above
+            # pass first. Wait for the mount, then read the row, which is in the DOM once the grid mounts: a
+            # mounted grid without it fails on the row, showing the grid's text (Story 27.6; under parallel load
+            # the mount took longer than 5 s).
             grid = page.locator("#distribution-breakdown--grid")
+            expect(grid.locator(".ag-root-wrapper")).to_be_attached(timeout=15_000)
             expect(grid).to_contain_text("linux-64")
         finally:
             context.close()

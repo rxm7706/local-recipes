@@ -4914,7 +4914,9 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: retrospective 2026-10-15 (Epics 25-31)
   severity: medium
   promoted: 2026-10-15 — atlas's 2026-10-15 retrospective
-  status: open
+  resolution: Story 27.6 (atlas, Epic 27): the test waits up to 15 s for the AG Grid to mount inside `#distribution-breakdown--grid` (`.ag-root-wrapper` attached), then asserts the `linux-64` row. The proposed `timeout=15_000` on the row assertion alone was refined after measuring the cause: Vizro fills the grid from the page's `on_page_load` callback and the browser then loads AG Grid's own script, after the filter and the chart's container (both from the layout) have passed their waits; a wait on the row text alone would read a grid that never mounts and a mounted grid without the row the same way.
+  verified: 2026-10-24 atlas Story 27.6 (worktree `.claude/worktrees/exciting-faraday-1e4549`; landing PR to follow) -- `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_e2e.py:247` waits on the mount and `:248` asserts the row. Before the fix, 32 copies of the test on 16 xdist workers beside 48 busy loops failed 4 of 24 (and 4 of 31 beside 32); after it, see the story spec's Auto Run Result.
+  status: closed
 
 ### DW-atlas-retro-2026-10-15-2: The two `mypy` lanes share each package's `.mypy_cache` when pr-preflight runs them at once.
 
