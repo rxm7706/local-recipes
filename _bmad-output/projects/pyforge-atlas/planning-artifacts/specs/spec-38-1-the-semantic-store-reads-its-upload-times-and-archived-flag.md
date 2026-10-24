@@ -165,6 +165,8 @@ Type / Effort / Deps: feature / M / Story 37.6.
 - `pixi run -e pyforge-atlas pyforge-atlas-test`: 3,362 passed, 20 skipped; the second run, 103 passed (after
   review 3).
 - `pixi run -e pyforge-guild lint-types`: exit 0.
+- `PYFORGE_PREFLIGHT_SCOPE=full pixi run -e pyforge-guild pr-preflight`: exit 0, with every station suite (the
+  diff changes `pixi.toml`): core, scribe, mason, warden, atlas, marshal, herald, doctor and steward.
 - Mutation check, 65 mutations in four passes. Every one fails a named test, except one equivalent mutant that a
   later edit removed: a second pass that nulled a v1-mixed version's newest build, which the sort already does.
   - After review 1, 43: the newest-build ranking within and across subdirs, the build-number bound, the v1 serve, the
