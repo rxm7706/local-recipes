@@ -89,6 +89,8 @@ DERIVED_LIVE_CATALOG_COVERAGE_PARQUET = "derived/derived_live_catalog_coverage/d
 DERIVED_UNIVERSE_SBOM_SUMMARY_PARQUET = "derived/derived_universe_sbom_summary/derived_universe_sbom_summary.parquet"
 # Story 37.5: the cve-watcher's diff of two vulnerability snapshots
 DERIVED_VULN_HISTORY_PARQUET = "derived/derived_vuln_history/derived_vuln_history.parquet"
+# Story 37.13: the snapshot store that diff reads; the cve-watcher's AD-17 stamp is its latest snapshot
+VULN_ROLLUP_SNAPSHOTS_PARQUET = "primary/vulnerability_rollup_snapshots/vulnerability_rollup_snapshots.parquet"
 # Story 37.9: the mapping-gap classification
 DERIVED_MAPPING_GAP_PARQUET = "derived/derived_mapping_gap/derived_mapping_gap.parquet"
 # Story 37.10: every catalog entry's last write and row count

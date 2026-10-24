@@ -42,6 +42,9 @@ def _write(tmp_path: Path, frame: pd.DataFrame) -> Path:
         ("CORE_DEPENDENCIES_PARQUET", "core_dependencies"),
         ("DERIVED_LIVE_CATALOG_COVERAGE_PARQUET", "derived_live_catalog_coverage"),
         ("DERIVED_UNIVERSE_SBOM_SUMMARY_PARQUET", "derived_universe_sbom_summary"),
+        # Story 37.13: the cve-watcher's diff (Story 37.5) and the snapshot store that stamps it
+        ("DERIVED_VULN_HISTORY_PARQUET", "derived_vuln_history"),
+        ("VULN_ROLLUP_SNAPSHOTS_PARQUET", "vulnerability_rollup_snapshots"),
     ],
 )
 def test_each_board_reads_the_path_its_dataset_is_written_to(constant, dataset):
