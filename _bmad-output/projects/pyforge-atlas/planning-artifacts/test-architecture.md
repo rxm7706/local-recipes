@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: ba96031a35577e4f
+source_fingerprint: 4f20345f2c74ed61
 story_count: 139
-test_file_count: 182
+test_file_count: 183
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -21,10 +21,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Station:** `pyforge-atlas`
 - **Stories parsed:** 139
 - **Epics parsed:** 37
-- **Test files inventoried:** 182 under `src/shared/packages/pyforge-atlas/tests/`
+- **Test files inventoried:** 183 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `ba96031a35577e4f`
+- **Source fingerprint:** `4f20345f2c74ed61`
 
 ## Risk Assessment
 
@@ -174,6 +174,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/artifactory_downloads/test_nodes.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/catalog_index/test_nodes.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/core/test_nodes.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_alternatives.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_derived_artifacts_e2e.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_identity_complete_export.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_inventory_aoss_free_queue.py` | unit | none observed |

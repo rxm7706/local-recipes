@@ -22,6 +22,7 @@ from vizro.managers import data_manager
 from pyforge.atlas import provenance
 from pyforge.atlas.dashboard import app, data, static_export
 from pyforge.atlas.pipelines.catalog_index.nodes import report_catalog_index_health
+from pyforge.atlas.pipelines.derived_artifacts.alternatives import score_alternative_candidates
 from pyforge.atlas.pipelines.derived_artifacts.nodes import (
     BEHIND_UPSTREAM_COLUMNS,
     LIVE_CATALOG_COVERAGE_FIELDS,
@@ -47,6 +48,7 @@ PROJECTED = (
     "mapping-gap",
     "bootstrap-index-health",
     "export-purls",
+    "find-alternative",
 )
 NOW = 1_700_000_000
 STAMP = "2026-10-22T00:00:00Z"
@@ -403,6 +405,26 @@ def _data_root(tmp_path: Path) -> Path:
             {"tiers": {"core_packages_enumerated": "Tier 0"}},
         ),
     )
+    # Story 37.7: one archived package and the one active package that shares its summary
+    _write(
+        root / data.DERIVED_ALTERNATIVE_CANDIDATES_PARQUET,
+        score_alternative_candidates(
+            pd.DataFrame(
+                {
+                    "feedstock_name": ["old", "new"],
+                    "conda_name": ["old", "new"],
+                    "depends_on": [None, None],
+                    "feedstock_archived": [True, False],
+                    "summary": ["Parse yaml files", "Parse yaml quickly"],
+                    "keywords": [[], []],
+                }
+            ),
+            pd.DataFrame({"conda_name": ["old", "new"], "feedstock_name": ["old", "new"]}),
+            pd.DataFrame({"conda_name": ["old", "new"], "latest_status": ["active", "active"]}),
+            None,
+            now=NOW,
+        ),
+    )
     # Story 37.8: one active package's artifacts and their manifest
     _write(
         root / data.DERIVED_PURL_EXPORT_MANIFEST_PARQUET,
@@ -440,6 +462,7 @@ def test_with_the_flag_off_the_four_boards_read_as_before(tmp_path: Path) -> Non
         "mapping-gap",
         "bootstrap-index-health",
         "export-purls",
+        "find-alternative",
     ):
         frame = _frame(page_id)
         assert frame is not None and frame.empty, page_id  # the earlier paths, which nothing writes
@@ -461,6 +484,7 @@ def test_with_the_flag_on_each_board_is_stamped_from_the_file_it_reads(tmp_path:
         "mapping-gap": data.DERIVED_MAPPING_GAP_PARQUET,
         "bootstrap-index-health": data.CATALOG_INDEX_HEALTH_PARQUET,
         "export-purls": data.DERIVED_PURL_EXPORT_MANIFEST_PARQUET,
+        "find-alternative": data.DERIVED_ALTERNATIVE_CANDIDATES_PARQUET,
     }
     for offset, path in enumerate(reads.values()):  # a distinct mtime per file, so a swapped stamp shows
         stamp = 1_600_000_000 + offset * 86_400

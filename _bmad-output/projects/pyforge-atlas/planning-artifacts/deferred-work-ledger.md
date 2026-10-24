@@ -5108,6 +5108,29 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: operator ruling 2026-10-19 on CAP-69
   severity: low
   promoted: 2026-10-19 -- atlas Epic 37 chain; owned by Story 37.7
+  resolved: 2026-10-23 (Story 37.7: derived_artifacts' score_alternative_candidates writes legacy find-alternative's top 10 candidates for every archived package on the channel to derived_alternative_candidates, from the summary and keywords the cf-graph anchor rows now carry; the board reads it with pyforge.atlas.board_projections on)
+  status: closed
+
+### DW-atlas-37-7-2: semantic_packages marks no feedstock archived on a public run.
+
+- source_spec: `planning-artifacts/specs/spec-37-7-the-find-alternative-scores-candidates-for-archived-packages.md`
+  summary: `semantic_packages.feedstock_archived` joins only `vcs_archived_feedstocks`, which legacy's Phase E.5 GitHub query fills and a public run leaves empty. So every package reads unarchived: 0 of 34,720 on Story 37.2's live root, where 828 packages on the channel are attributed to a feedstock the cf-graph flags archived. The actionable and adoption views count archived feedstocks as live. Story 37.7's scorer reads the cf-graph flag as well, and so does core's Phase J skip-set; the views that read `semantic_packages` do not.
+  evidence: Story 37.7's real-data check (2026-10-23, the spec's Run results).
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/semantic_packages/nodes.py (feedstock_archived)
+  origin: Story 37.7 (CAP-69)
+  severity: low
+  promoted: 2026-10-23 -- atlas Story 37.7; no owning story yet
+  status: open
+
+### DW-atlas-37-7-3: A package built by a live feedstock can be attributed to an archived one.
+
+- source_spec: `planning-artifacts/specs/spec-37-7-the-find-alternative-scores-candidates-for-archived-packages.md`
+  summary: Phase B.5 (core's `attribute_feedstocks` and `_pick_feedstock`, legacy CFA:1572) can attribute a package to an archived feedstock while a live feedstock now lists it as an output. Every view that reads the attribution then treats the package as archived. On Story 37.2's live root, 60 of the 828 packages attributed to an archived feedstock are also outputs of a live one, and find-alternative suggests replacements for them. Two paths lead there. In 44 cases the archived feedstock is the one named after the package (duckdb, grpcio, grpcio-tools, cryptography-vectors, email_validator), which `_pick_feedstock` prefers or the registry alone lists. In 16 cases the archived feedstock is not named after the package and comes through the first-entry fallback or a registry that never lists the live feedstock: libgcc and libstdcxx go to m2w64-gcc-libs, the apache-airflow-core family to apache-airflow-core-split, the mingw-w64-ucrt packages to m2w64-gcc, and spacy-model-en_core_web_* to spacy-model-en_core_web. Legacy attributes the same way, so the fix is a deliberate deviation in core's parity-gated attribution, not a scorer change.
+  evidence: Story 37.7 reviews 1 (S2) and 2 (R2-S1), and its real-data check (2026-10-23, the spec's Run results).
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/core/nodes.py (_pick_feedstock, attribute_feedstocks)
+  origin: Story 37.7 review 1
+  severity: low
+  promoted: 2026-10-23 -- atlas Story 37.7; no owning story yet
   status: open
 
 ### DW-atlas-37-8-1: The export-purls has no manifest of PURL artifacts.

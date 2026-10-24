@@ -56,7 +56,9 @@ CASES = [
         {
             "archived_name": ["old", "old"],
             "candidate_name": ["new1", "new2"],
-            "adoption_stage": ["stable", "mature"],
+            "latest_upload_age_days": [10, 800],
+            "releases_30d": [1, 0],
+            "total_versions": [3, 5],
             "similarity_score": [0.5, 1.0],
             "downloads_total": [10, 20],
         },
@@ -225,6 +227,59 @@ def test_the_release_cadence_trend_follows_the_legacy_classifier(tmp_path):
     out = bsl_query(model, dimensions=["conda_name", "trend_label"], measures=["release_count_30d"])
 
     assert dict(zip(out["conda_name"], out["trend_label"], strict=True)) == {"p": "silent", "q": "accelerating"}
+
+
+def test_a_candidates_stage_is_the_adoption_stage_boards(tmp_path):
+    """Story 37.7: find-alternative classifies a candidate with build_packages_model's classifier."""
+    stage = {
+        "latest_upload_age_days": [10, 800, 400, None],
+        "releases_30d": [1, 0, 0, None],
+        "total_versions": [3, 5, 2, None],
+    }
+    names = ["fresh", "silent", "declining", "unknown"]
+    (tmp_path / "c").mkdir()
+    (tmp_path / "p").mkdir()
+    candidates = _model(
+        tmp_path / "c",
+        models.build_alternative_candidates_model,
+        {
+            "archived_name": ["old"] * 4,
+            "candidate_name": names,
+            "similarity_score": [1.0] * 4,
+            "downloads_total": [1] * 4,
+            **stage,
+        },
+    )
+    packages = _model(
+        tmp_path / "p",
+        models.build_packages_model,
+        {"conda_name": names, "latest_status": ["active"] * 4, "feedstock_archived": [0] * 4, **stage},
+    )
+
+    out = bsl_query(candidates, dimensions=["candidate_name", "adoption_stage"], measures=["similarity_score"])
+    ref = bsl_query(packages, dimensions=["conda_name", "adoption_stage"], measures=["package_count"])
+
+    assert (
+        dict(zip(out["candidate_name"], out["adoption_stage"], strict=True))
+        == dict(zip(ref["conda_name"], ref["adoption_stage"], strict=True))
+        == {"fresh": "stable", "silent": "silent", "declining": "declining", "unknown": "unknown"}
+    )
+
+
+def test_a_candidates_store_in_the_earlier_shape_reads_its_own_stage(tmp_path):
+    """With the flag off the board reads primary/alternative_candidates, whose shape carries adoption_stage."""
+    columns = {
+        "archived_name": ["old"],
+        "candidate_name": ["new"],
+        "adoption_stage": ["stable"],
+        "similarity_score": [1.0],
+        "downloads_total": [1],
+    }
+    model = _model(tmp_path, models.build_alternative_candidates_model, columns)
+
+    out = bsl_query(model, dimensions=["candidate_name", "adoption_stage"], measures=["similarity_score"])
+
+    assert out["adoption_stage"].tolist() == ["stable"]
 
 
 def test_the_identity_export_counts_each_gist_column_it_is_given(tmp_path):
