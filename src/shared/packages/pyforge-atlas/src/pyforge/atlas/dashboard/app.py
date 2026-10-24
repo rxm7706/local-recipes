@@ -54,6 +54,7 @@ from __future__ import annotations
 import time
 import warnings
 from dataclasses import dataclass, replace
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable
 
@@ -482,7 +483,9 @@ PROJECTED_PAGES: dict[str, PageDef] = {
             "snapshot with the most recent one more than since_days older (else the one before it), as legacy "
             "cve-watcher does: one row per package and severity whose count moved. The severities are total, "
             "critical_high and kev, since the rollup counts critical and high together. Empty until two runs "
-            "have written snapshots. DESIGN.md § 3.1's maintainer filter is not declared.",
+            "have written snapshots. The stamp is the latest snapshot's time (the diff file's, if that is older), "
+            "and says stale when the last run appended no snapshot (its rollup was empty); a snapshot store that "
+            "cannot be read is a data gap. DESIGN.md § 3.1's maintainer filter is not declared.",
             filters=("severity", "since_days"),
         ),
         # Story 37.9 (CAP-69)
@@ -597,7 +600,9 @@ def _provenance_line(provenance: ProvenanceInfo) -> str:
     dashboard's build/render time standing in for it (C6)."""
     if provenance.kind == "unavailable":
         return f"**Data build stamp (AD-17):** unavailable — {provenance.reason}"
-    return f"**Data build stamp (AD-17):** `{provenance.build_stamp}` ({provenance.kind})"
+    line = f"**Data build stamp (AD-17):** `{provenance.build_stamp}` ({provenance.kind})"
+    # Story 37.13: a stamp that is not current says why (the cve-watcher's stale snapshot store)
+    return f"{line} — {provenance.reason}" if provenance.reason else line
 
 
 # A page's note describes its data unless the data is missing (Story 37.11): a shell page with no
@@ -816,6 +821,21 @@ def _resolve_two_file_provenance(
     ranked_stamp = ranked.build_stamp or ""
     enterprise_stamp = enterprise.build_stamp or ""
     return ranked if ranked_stamp <= enterprise_stamp else enterprise
+
+
+def _resolve_cve_watcher_provenance(diff_path: Path, store_path: Path) -> ProvenanceInfo:
+    """AD-17 for the cve-watcher with the flag on (Story 37.13): its diff was built when its latest snapshot was
+    taken, not when the diff file was last rewritten, which every run does. Either file unavailable wins (the diff
+    first), else the older of the two stamps, carrying the snapshot store's stale reason."""
+    diff = _provenance.resolve_for_file(diff_path)
+    if diff.kind == "unavailable":
+        return diff
+    store = _provenance.resolve_for_snapshot_history(store_path)
+    if store.kind == "unavailable":
+        return store
+    if datetime.fromisoformat(diff.build_stamp or "") < datetime.fromisoformat(store.build_stamp or ""):
+        return replace(diff, reason=store.reason)
+    return store
 
 
 def _identity_workbook_page(
@@ -1056,7 +1076,11 @@ def build_dashboard(
     # Story 20.5 (CAP-7) — the 19 remaining pages' own backing Parquet provenance
     # (same AD-17 discipline as above: each page's OWN file mtime, "unavailable" +
     # a reason when absent — never a fabricated stamp).
-    cve_watcher_provenance = _provenance.resolve_for_file(vuln_history_path)
+    cve_watcher_provenance = (
+        _resolve_cve_watcher_provenance(vuln_history_path, root / _data.VULN_ROLLUP_SNAPSHOTS_PARQUET)
+        if projected
+        else _provenance.resolve_for_file(vuln_history_path)
+    )
     version_downloads_provenance = _provenance.resolve_for_file(version_downloads_path)
     release_cadence_provenance = _provenance.resolve_for_file(cadence_path)
     find_alternative_provenance = _provenance.resolve_for_file(alternatives_path)

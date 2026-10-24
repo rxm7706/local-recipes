@@ -386,6 +386,8 @@ def _data_root(tmp_path: Path) -> Path:
         ignore_index=True,
     )
     _write(root / data.DERIVED_VULN_HISTORY_PARQUET, diff_vulnerability_snapshots(snapshots, 7))
+    # Story 37.13: the store the diff read, which stamps the cve-watcher
+    _write(root / data.VULN_ROLLUP_SNAPSHOTS_PARQUET, snapshots)
     # Story 37.9: one enumerated package with no PyPI name
     _write(
         root / data.DERIVED_MAPPING_GAP_PARQUET,
@@ -532,6 +534,10 @@ def test_with_the_flag_on_each_board_is_stamped_from_the_file_it_reads(tmp_path:
 
     dashboard = app.build_dashboard(build_stamp=STAMP, data_root=root, now=NOW, board_projections=True)
 
+    # Story 37.13: the cve-watcher's diff was built when its latest snapshot was taken, older than the diff file
+    snapshot = provenance.resolve_for_snapshot_history(root / data.VULN_ROLLUP_SNAPSHOTS_PARQUET).build_stamp
+    assert snapshot and f"`{snapshot}` (snapshot-at)" in _card_text(dashboard, "cve-watcher")
+    del reads["cve-watcher"]
     for page_id, path in reads.items():
         expected = provenance.resolve_for_file(root / path).build_stamp
         assert expected and expected in _card_text(dashboard, page_id), page_id

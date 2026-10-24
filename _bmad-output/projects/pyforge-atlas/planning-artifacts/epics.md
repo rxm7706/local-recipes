@@ -2876,6 +2876,22 @@ So that a public source that cannot be reached on build day shows its previous d
 **And** the job stays public-only (no secret, no token, no `PYFORGE_ATLAS_CREDENTIALED`; AD-11), a failed build still fails the job and saves nothing, and the workflow test pins the steps' order, paths, key and gate, and that every last-good store under the data root is cached
 **Status:** done
 
+### Story 37.13: The cve-watcher marks an earlier run's diff stale
+
+As a Pages reader,
+I want the cve-watcher to date its diff by its latest snapshot and say when that snapshot is not the last run's,
+So that a run whose vulnerability database build failed never shows the previous run's diff as current.
+
+**Type:** fix • **Effort:** S • **Deps:** 37.5, 37.12 • **FR/AD:** spec-pyforge-atlas CAP-69 (FR-77) and CAP-64 (FR-72; no new CAP) • AD-13, AD-17
+**Flag:** `pyforge.atlas.board_projections` (Story 37.5's; the board change is on its on path only)
+**Surface:** `datasets/snapshot_history.py` (the AD-13 marker), `provenance.py` (the snapshot store's stamp), `dashboard/app.py` (the cve-watcher's stamp and the stamp line's reason), `dashboard/data.py` (the store's path), tests
+**Spec:** `planning-artifacts/specs/spec-37-13-the-cve-watcher-marks-an-earlier-run-s-diff-stale.md`
+**Given** a Pages run whose vulnerability database build fails, so `vulnerability_package_rollup` is empty, the snapshot store is unchanged, and the diff equals the run before under the diff file's fresh mtime (DW-atlas-37-12-3)
+**When** the cve-watcher board is built with `pyforge.atlas.board_projections` on
+**Then** its AD-17 stamp is the older of its latest snapshot's time and the diff file's mtime, and the stamp line says `stale` with the reason while `SnapshotHistoryDataset` carries the AD-13 marker it writes on a save that appends no snapshot (removed by the next save that appends one); with no snapshot store the board reads as a data gap
+**And** the diff, its columns, the catalog and the node count do not change; with the flag off the board is stamped as before; no other board's stamp changes
+**Status:** done
+
 ## Epic 38: The semantic store has its upload times and archived flag (spec-pyforge-atlas CAP-69, FR-77)
 
 Minted 2026-10-24 from the Dream entry of that date, closing DW-atlas-37-6-2 and DW-atlas-37-7-2. Story 37.6 streams
