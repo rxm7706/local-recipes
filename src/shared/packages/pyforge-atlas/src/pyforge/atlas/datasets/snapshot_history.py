@@ -40,7 +40,7 @@ def read_staleness(filepath: str | Path) -> StalenessMarker | None:
         return StalenessMarker(stale=True, reason="staleness marker unreadable", marked_at=0)
     return StalenessMarker(
         stale=bool(raw.get("stale", True)),
-        reason=str(raw.get("reason", "")),
+        reason=str(raw.get("reason") or "no reason recorded"),
         marked_at=_safe_int(raw.get("marked_at", 0)),
         last_good_exists=bool(raw.get("last_good_exists", False)),
     )

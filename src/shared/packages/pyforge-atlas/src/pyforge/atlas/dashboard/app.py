@@ -483,8 +483,9 @@ PROJECTED_PAGES: dict[str, PageDef] = {
             "snapshot with the most recent one more than since_days older (else the one before it), as legacy "
             "cve-watcher does: one row per package and severity whose count moved. The severities are total, "
             "critical_high and kev, since the rollup counts critical and high together. Empty until two runs "
-            "have written snapshots. The stamp is the latest snapshot's time, and says stale when the last run "
-            "appended no snapshot (its rollup was empty, or the store could not be read). DESIGN.md § 3.1's maintainer filter is not declared.",
+            "have written snapshots. The stamp is the latest snapshot's time (the diff file's, if that is older), "
+            "and says stale when the last run appended no snapshot (its rollup was empty, or the store could not "
+            "be read). DESIGN.md § 3.1's maintainer filter is not declared.",
             filters=("severity", "since_days"),
         ),
         # Story 37.9 (CAP-69)

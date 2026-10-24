@@ -39,6 +39,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+import pyarrow.parquet as pq
 from kedro_datasets.pandas import ParquetDataset
 
 from pyforge.atlas.datasets import (
@@ -153,8 +154,10 @@ def resolve_for_snapshot_history(path: str | os.PathLike[str], column: str = "sn
         reason = found.reason if stale is None else f"{found.reason}; {stale}"
         return ProvenanceInfo(kind="unavailable", build_stamp=None, reason=reason)
     try:
+        if column not in pq.read_schema(p).names:
+            return ProvenanceInfo(kind="unavailable", build_stamp=None, reason=f"no {column!r} column in {p}")
         values = pd.read_parquet(p, columns=[column])[column]
-    except Exception as exc:  # a truncated write, or a store without the column: advisory, never a crash
+    except Exception as exc:  # a truncated write: advisory, never a crash
         return ProvenanceInfo(
             kind="unavailable",
             build_stamp=None,

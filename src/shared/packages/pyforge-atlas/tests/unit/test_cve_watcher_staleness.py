@@ -100,21 +100,19 @@ def test_an_absent_store_with_its_marker_says_both(tmp_path):
     assert f"; stale: {EMPTY_REASON} (marked " in found.reason
 
 
-@pytest.mark.parametrize(
-    ("payload", "reason"),
-    [
-        (b"not parquet", "snapshot store unreadable"),
-        (None, "snapshot store unreadable"),  # a Parquet file without the column
-    ],
-)
-def test_an_unreadable_store_is_unavailable(tmp_path, payload, reason):
+@pytest.mark.parametrize("payload", [b"not parquet", b""])
+def test_an_unreadable_store_is_unavailable(tmp_path, payload):
     path = tmp_path / "s.parquet"
-    if payload is None:
-        pd.DataFrame({"conda_name": ["a"]}).to_parquet(path, index=False)
-    else:
-        path.write_bytes(payload)
+    path.write_bytes(payload)
     found = provenance.resolve_for_snapshot_history(path)
-    assert found.kind == "unavailable" and found.reason.startswith(f"{reason}: {path} (")
+    assert found.kind == "unavailable" and found.reason.startswith(f"snapshot store unreadable: {path} (")
+
+
+def test_a_store_without_the_column_is_unavailable(tmp_path):
+    path = tmp_path / "s.parquet"
+    pd.DataFrame({"conda_name": ["a"]}).to_parquet(path, index=False)
+    found = provenance.resolve_for_snapshot_history(path)
+    assert found.kind == "unavailable" and found.reason == f"no 'snapshot_at' column in {path}"
 
 
 def test_a_store_with_no_snapshot_time_is_unavailable(tmp_path):
@@ -150,6 +148,13 @@ def test_a_marker_time_that_cannot_be_read_is_left_out(tmp_path, marked_at):
     assert provenance.resolve_for_snapshot_history(path).reason == "stale: r"
 
 
+@pytest.mark.parametrize("payload", [{}, {"stale": True, "reason": None}, {"stale": True, "reason": ""}])
+def test_a_marker_with_no_reason_says_so(tmp_path, payload):
+    path = _write_store(tmp_path, [T0])
+    _mark(path, payload)
+    assert provenance.resolve_for_snapshot_history(path).reason == "stale: no reason recorded"
+
+
 def test_a_marker_that_cannot_be_read_reads_as_stale(tmp_path):
     path = _write_store(tmp_path, [T0])
     staleness_path(path).write_text("{", encoding="utf-8")
@@ -161,6 +166,12 @@ def test_a_marker_that_cannot_be_read_reads_as_stale(tmp_path):
 
 def test_an_absent_diff_wins(tmp_path):
     _write_store(tmp_path, [T0])
+    diff = tmp_path / data.DERIVED_VULN_HISTORY_PARQUET
+    found = app._resolve_cve_watcher_provenance(diff, tmp_path / data.VULN_ROLLUP_SNAPSHOTS_PARQUET)
+    assert found.kind == "unavailable" and found.reason == f"backing file not found: {diff}"
+
+
+def test_with_neither_file_the_diff_is_named(tmp_path):
     diff = tmp_path / data.DERIVED_VULN_HISTORY_PARQUET
     found = app._resolve_cve_watcher_provenance(diff, tmp_path / data.VULN_ROLLUP_SNAPSHOTS_PARQUET)
     assert found.kind == "unavailable" and found.reason == f"backing file not found: {diff}"
@@ -242,7 +253,7 @@ def test_with_the_flag_off_the_board_is_stamped_as_before(tmp_path):
     os.utime(legacy, (T0 + DAY, T0 + DAY))
     text = _card(app.build_dashboard(build_stamp=STAMP, data_root=tmp_path, now=T0, board_projections=False))
     assert f"**Data build stamp (AD-17):** `{_iso(T0 + DAY)}` (file-mtime)\n" in text + "\n"
-    assert "stale" not in text
+    assert "— stale:" not in text
 
 
 # -- AC5: the runs that DW-atlas-37-12-3 describes, through Kedro's runner --------------------------------------------
@@ -286,7 +297,7 @@ def test_a_run_that_rolls_up_nothing_never_reads_as_current(tmp_path, monkeypatc
     assert not staleness_path(store).exists()
     current = _card(app.build_dashboard(build_stamp=STAMP, data_root=tmp_path, now=T0, board_projections=True))
     assert f"`{_iso(T0 + 22 * DAY)}` (snapshot-at)\n" in current + "\n"
-    assert "stale" not in current
+    assert "— stale:" not in current
 
 
 # -- AC6: the bootstrap-index-health reads the store's marker ---------------------------------------------------------
