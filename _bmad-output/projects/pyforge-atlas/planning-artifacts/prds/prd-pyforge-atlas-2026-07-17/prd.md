@@ -3,7 +3,7 @@ fr-derivation-from: "2026-09-17"
 title: cf_atlas Kedro/Dagster/DuckDB Migration
 status: final
 created: 2026-07-17
-updated: "2026-10-25"   # RE-STAMPED 2026-10-25 (chain-currency behind-code: the package pyproject.toml moved with marshal Story 103.1's numpy>=2.5.3 declaration, #2307): the atlas landings since the 2026-10-22 stamp (Stories 35.2-35.4, 37.4-37.13, 38.1, 34.12, 27.6) and the Spec memlog through 2026-10-25 folded; no FR added, renumbered or amended; FR-72's plain-run consequence recorded as not holding on a fresh data root (DW-atlas-37-2-1). See § Currency reconciliation — 2026-10-25. Prior: RE-STAMPED 2026-10-22 (UTC; 2026-10-21 local): FR-71 amended in place with CAP-63's 2026-10-21 operator ruling (on Pages the identity boards show what public inputs give them; credentialed and enterprise sources stay empty). See § Currency reconciliation — 2026-10-22. Prior: RE-STAMPED 2026-10-19: FR-77 registered from spec-pyforge-atlas CAP-69 (the Vizro boards read the datasets the pipelines write; Epic 37) and FR-71 amended with CAP-63 (the producer builds the public data first, weekly and on push). See § Currency reconciliation — 2026-10-19. Prior: RE-STAMPED 2026-10-18 (later): FR-72..FR-76 registered from spec-pyforge-atlas CAP-64..CAP-68 (atlas fills its own data; Epics 34-36). Earlier the same day: chain-currency cascade (spec -> PRD) for atlas Story 33.1, a fix under spec-pyforge-atlas CAP-9 (the atlas CLI reaches the verbs its contracts name, from any directory); no FR added, renumbered or amended, no AD moved. See § Currency reconciliation — 2026-10-18. Prior: RE-STAMPED 2026-10-15: CAP-63 amended (the vizro-static-export task and job run in -e pyforge-atlas; the vendored plotly.min.js is the one exact-file VENDORED_ROOTS entry); FR-71 follows in place, no FR added or removed, no AD moved. See § Currency reconciliation — 2026-10-15. Prior: RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for CAP-62 and CAP-63 (Epic 30): FR-70 and FR-71 registered (the Kedro-Viz DAG export reaches Pages as a workflow artifact, amending CAP-41 / FR-62's producer; Vizro boards publish as static exports under /dashboard/vizro/). See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-13 entries (Story 28.1 landed; Epic 29 / Story 29.1 minted and implemented, a fix under CAP-16 -- the range test server records each response before writing it); no CAP added or amended, no FR moved. See § Currency reconciliation — 2026-10-13. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Story 25.1's gate cleared, its key flipped blocked -> backlog by operator ruling); no FR registered. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for marshal Story 66.2's backfill of atlas's deferred-work ledger (co-governor surface reconcile); no FR registered. See § Currency reconciliation — 2026-10-03. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-61 (Epic 25); FR-69 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-20 (fleet consistency pass).
+updated: "2026-10-25"   # RE-STAMPED 2026-10-25 (Story 39.1, the FR arrows were counted, not traced): 23 FR heading arrows re-mapped to the spec-pyforge-atlas capabilities that realize them (the memlog's 2026-10-25 approved re-map, amended for FR-6 after review); the `### FR-61..FR-68 delivered` heading loses its counted arrow; the fold-provenance line gains a correction; FR-15, FR-61 and FR-63 keep their arrows pending a source-capability decision. No FR added, renumbered or amended in text. See § Currency reconciliation — 2026-10-25 (Story 39.1). Earlier 2026-10-25: RE-STAMPED 2026-10-25 (chain-currency behind-code: the package pyproject.toml moved with marshal Story 103.1's numpy>=2.5.3 declaration, #2307): the atlas landings since the 2026-10-22 stamp (Stories 35.2-35.4, 37.4-37.13, 38.1, 34.12, 27.6) and the Spec memlog through 2026-10-25 folded; no FR added, renumbered or amended; FR-72's plain-run consequence recorded as not holding on a fresh data root (DW-atlas-37-2-1). See § Currency reconciliation — 2026-10-25. Prior: RE-STAMPED 2026-10-22 (UTC; 2026-10-21 local): FR-71 amended in place with CAP-63's 2026-10-21 operator ruling (on Pages the identity boards show what public inputs give them; credentialed and enterprise sources stay empty). See § Currency reconciliation — 2026-10-22. Prior: RE-STAMPED 2026-10-19: FR-77 registered from spec-pyforge-atlas CAP-69 (the Vizro boards read the datasets the pipelines write; Epic 37) and FR-71 amended with CAP-63 (the producer builds the public data first, weekly and on push). See § Currency reconciliation — 2026-10-19. Prior: RE-STAMPED 2026-10-18 (later): FR-72..FR-76 registered from spec-pyforge-atlas CAP-64..CAP-68 (atlas fills its own data; Epics 34-36). Earlier the same day: chain-currency cascade (spec -> PRD) for atlas Story 33.1, a fix under spec-pyforge-atlas CAP-9 (the atlas CLI reaches the verbs its contracts name, from any directory); no FR added, renumbered or amended, no AD moved. See § Currency reconciliation — 2026-10-18. Prior: RE-STAMPED 2026-10-15: CAP-63 amended (the vizro-static-export task and job run in -e pyforge-atlas; the vendored plotly.min.js is the one exact-file VENDORED_ROOTS entry); FR-71 follows in place, no FR added or removed, no AD moved. See § Currency reconciliation — 2026-10-15. Prior: RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for CAP-62 and CAP-63 (Epic 30): FR-70 and FR-71 registered (the Kedro-Viz DAG export reaches Pages as a workflow artifact, amending CAP-41 / FR-62's producer; Vizro boards publish as static exports under /dashboard/vizro/). See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-13 entries (Story 28.1 landed; Epic 29 / Story 29.1 minted and implemented, a fix under CAP-16 -- the range test server records each response before writing it); no CAP added or amended, no FR moved. See § Currency reconciliation — 2026-10-13. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Story 25.1's gate cleared, its key flipped blocked -> backlog by operator ruling); no FR registered. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for marshal Story 66.2's backfill of atlas's deferred-work ledger (co-governor surface reconcile); no FR registered. See § Currency reconciliation — 2026-10-03. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-61 (Epic 25); FR-69 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-20 (fleet consistency pass).
 project: pyforge-atlas
 intent_source: docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.6, ANALYSIS COMPLETE)
 currency_review: Reviewed 2026-08-01 — spec corrections applied to PRD. CAP-8 "28-CLI inventory is answerable" false claim corrected to "8 pages + factory-status; full 28-CLI deferred (DW-D2-1)". FR-4 run-admission retirement (silent-drop cap) already correctly stated (line 248-249). AD-23 lock-store placement details remain architectural (not PRD-level). Reviewed again 2026-08-26 — post-08-08 spec-estate and code motion reconciled in the appended section "Currency reconciliation — 2026-08-26" (Epics 12-19 delivery, four post-migration capability specs, CAP-19 query-plane ownership, spec archivals/parking).
@@ -11,7 +11,7 @@ currency_review: Reviewed 2026-08-01 — spec corrections applied to PRD. CAP-8 
 
 ## Fold provenance (2026-09-17)
 
-Every FR in this PRD derives from spec-pyforge-atlas CAP-1..CAP-60. Kernel FR-1..FR-22 ← CAP-1..CAP-22. Later FRs cite the reminted CAP with the same number modulo the reminted set.
+Every FR in this PRD derives from spec-pyforge-atlas CAP-1..CAP-60. Kernel FR-1..FR-22 ← CAP-1..CAP-22. Later FRs cite the reminted CAP with the same number modulo the reminted set. *(Corrected 2026-10-25, Story 39.1: those arrows were counted, not traced, so most named the wrong capability; § Currency reconciliation — 2026-10-25 (Story 39.1) re-maps them from evidence. Not every FR derives from CAP-1..CAP-60 either: three have no capability yet, and the FRs registered after the fold cite CAP-61..CAP-69.)*
 
 # PRD: cf_atlas Kedro/Dagster/DuckDB Migration
 
@@ -207,7 +207,7 @@ FR locations: § 4.1 FR-1..4 · § 4.2 FR-5 · § 4.3 FR-6 · § 4.4 FR-7, FR-11
 every source and output cataloged, every phase a node, incremental state a
 reusable dataset class, resumability native. Realizes UJ-5.
 
-#### FR-1: Declarative data access via the Kedro Data Catalog ← CAP-1
+#### FR-1: Declarative data access via the Kedro Data Catalog ← CAP-2
 All API sources and Parquet outputs are datasets in `conf/base/catalog.yml`;
 no data-access logic in node functions. Credentials are scoped **per
 destination host** — a fix, not a port: legacy `_http.py` injects the JFrog
@@ -217,7 +217,7 @@ credential on every outbound request. (Spec § 5.1; Story A2.)
 - Consequence: all 20 `resolve_*_urls` override points (incl. new
   `BASILISK_BASE_URL`) survive for enterprise/air-gapped routing.
 
-#### FR-2: Phases refactored into modular, DAG-resolved pipelines ← CAP-2
+#### FR-2: Phases refactored into modular, DAG-resolved pipelines ← CAP-1
 The 23 cataloged phases become nodes in the seven domain pipelines; execution
 order resolves from the DAG. Phase I becomes an explicit node. The § 3.3
 per-phase engineering contracts bind the ports (Phase P two-layer cost gate,
@@ -238,7 +238,7 @@ never a global constant. (Story A3, the designated first loop story/worktree
 smoke.)
 - Consequence: unit test proves stale rows re-fetch, fresh rows skip.
 
-#### FR-4: `phase_state` removed; resumability via runner + persisted Parquet ← CAP-4
+#### FR-4: `phase_state` removed; resumability via runner + persisted Parquet ← CAP-3, CAP-7
 Checkpointing is Kedro-native; the bespoke `phase_state` table is deleted with
 the legacy orchestrator at B4 parity. (Stories A3, B4.)
 - Consequence: an interrupted run resumes from persisted intermediates
@@ -246,7 +246,7 @@ the legacy orchestrator at B4 parity. (Stories A3, B4.)
 
 ### 4.2 Compute Engine (Wave F)
 
-#### FR-5: DuckDB replaces SQLite and all fragmented compute proposals ← CAP-5
+#### FR-5: DuckDB replaces SQLite and all fragmented compute proposals ← CAP-6
 One engine for analytical compute, graph traversal (recursive CTEs), and
 vector search (`vss`), reading partitioned Parquet natively. Sequencing: the
 Kedro path writes partitioned Parquet from Wave A (spec § 5.1) and B4 retires
@@ -262,7 +262,7 @@ residue cleanup (migrate/delete any surface still reading legacy
 
 ### 4.3 Orchestration & Operations (Wave C)
 
-#### FR-6: Dagster orchestrates schedules + retries via `kedro-dagster` ← CAP-6
+#### FR-6: Dagster orchestrates schedules + retries via `kedro-dagster` ← CAP-4, CAP-5, CAP-15
 The Kedro DAG compiles to a Dagster repository; schedules encode the
 `guides/atlas-operations.md` cadence table; the three bootstrap profiles
 become named job configurations (profile defaults lose to explicit config);
@@ -281,14 +281,14 @@ UJ-1. (Stories C1, C2, B5, G3, H4.)
 
 ### 4.4 Agent Interfaces (Waves B, E)
 
-#### FR-7: MCP surface preserved (Kedro-API-native; kedro-mcp never load-bearing) ← CAP-7
+#### FR-7: MCP surface preserved (Kedro-API-native; kedro-mcp never load-bearing) ← CAP-9
 The atlas-relevant MCP tools (23 of 46 in `conda_forge_server.py`) are audited
 and re-authored over Kedro session/catalog APIs; agents trigger named
 pipelines and read datasets via MCP. `library-futures` / `add-handoff` / the
 seed-gap suggesters stay CLI-only. Realizes UJ-2. (Story B3.)
 - Consequence: the trigger/read surface works with `kedro-mcp` absent.
 
-#### FR-11: A2A interface for inter-agent collaboration ← CAP-11
+#### FR-11: A2A interface for inter-agent collaboration ← CAP-10
 The cf_atlas analytical agent exchanges structured payloads with the
 `conda-forge-expert` authoring agent (publish/subscribe or direct message);
 contract violations and policy breaches raise A2A alerts. Realizes UJ-2, UJ-4.
@@ -304,7 +304,7 @@ first-class dimensions. Realizes UJ-3. (Story D1.)
 - Consequence: `bsl-metric-check` proves BSL answers match legacy CLI outputs
   on core metrics (staleness, adoption stage, feedstock health).
 
-#### FR-9: Read surface migrates from 28 CLIs to Vizro / Vizro-AI ← CAP-9
+#### FR-9: Read surface migrates from 28 CLIs to Vizro / Vizro-AI ← CAP-8
 Read-only CLIs become Vizro pages plus a Vizro-AI NL field, exposed as web
 dashboard and as the `query_vizro_ai` MCP tool. Three exceptions stay
 CLI-first with latest-report artifacts surfaced read-only: `add-handoff`
@@ -330,7 +330,7 @@ spec § 2.4). Realizes UJ-3. (Stories D2, D3; Q3 gates the D3 LLM backend.)
 
 ### 4.6 Data Quality, Lineage & Observability (Waves E–F)
 
-#### FR-10: Data-quality contracts halt bad data (pandera-first) ← CAP-10
+#### FR-10: Data-quality contracts halt bad data (pandera-first) ← CAP-11
 Inline pandera contracts in nodes; Great Expectations as boundary layer behind
 the same validator-agnostic `AfterNodeRunHook` — GX **version-capped at
 conda-forge 1.18.2** (upstream declares `<3.14` at 1.19.0; no GX ≥1.19
@@ -359,7 +359,7 @@ namespace (incl. the `recommend-2027` six-property set) and the
   `cfe:*` properties and the `?channel=conda-forge` qualifier intact — never
   stripped during normalization.
 
-#### FR-16: Dependency-hygiene scan node (deptry) ← CAP-16
+#### FR-16: Dependency-hygiene scan node (deptry) ← CAP-13
 A hygiene node runs deptry when project source accompanies the manifest;
 source-less inputs report `not-applicable` (frozen semantics shared with
 pyforge-warden). Findings fill the `hygiene` axis of the four-axis
@@ -370,7 +370,7 @@ data or `not-applicable`. (Story F4.)
   `hygiene` finding; a source-less input reports `not-applicable`, never a
   failure.
 
-#### FR-17: Transitive resolution + the universe BOM extend the intake ← CAP-17
+#### FR-17: Transitive resolution + the universe BOM extend the intake ← CAP-13, CAP-15
 A transitive-resolver node (pip `--dry-run --report` / py-rattler solve)
 upgrades bare manifests to full dependency sets (depth + fan-out recorded),
 honoring mirror routing and degrading gracefully offline (`unresolved`
@@ -381,7 +381,7 @@ dataset under the 14-day freshness contract. The matching node preserves
 - Consequence: NBSP-padded pasted `conda list`/`pip list` text parses
   identically to ASCII-space form (fixture).
 
-#### FR-18: Unified CI policy gate ← CAP-18
+#### FR-18: Unified CI policy gate ← CAP-13
 One terminal node assembles the `ComplianceReport`, converges pyforge-warden's
 strict exit-code gate with `inventory-match --policy` thresholds, emits the
 schema-validated artifact, and halts Dagster on failure (A2A alert; CI
@@ -398,7 +398,7 @@ mode is recorded as future option, not committed. Realizes UJ-4. (Story F4.)
 
 ### 4.8 Portability (Wave G)
 
-#### FR-14: WASM portability for the intelligence surface ← CAP-14
+#### FR-14: WASM portability for the intelligence surface ← CAP-16
 The Vizro-AI dashboard + BSL layer run in-browser via duckdb-wasm/Pyodide;
 Parquet artifacts publish to a static host (GitHub Pages per Q4 default;
 emitter host-agnostic) and are pulled via HTTP Range with zero backend.
@@ -428,7 +428,7 @@ pixi env (worktree economics) and the `kedro-test` verify task. (Story A1.)
 evidence-gating pattern (measured evidence → FR + story). They are **riders**
 on the migration, never its justification (PRFAQ).
 
-#### FR-19: Conda-native vulnerability source — Basilisk (prefix.dev) ← CAP-19
+#### FR-19: Conda-native vulnerability source — Basilisk (prefix.dev) ← CAP-14
 Two nodes: `POST /v1/querybatch` (≤1,000 queries/request) writes
 `basilisk_vulns` keyed by conda PURL (CEP-63 draft form); a bounded
 `GET /v1/vulns/{id}` detail fetch under standard rate-limit discipline.
@@ -444,7 +444,7 @@ via the `behind_upstream` join). Basilisk is pre-announcement: offline-skip +
 - Consequence: offline (consumer profile), the nodes skip gracefully and mark
   the dataset stale rather than failing.
 
-#### FR-20: Release-to-availability velocity signal (rebuild-cadence-guarded) ← CAP-20
+#### FR-20: Release-to-availability velocity signal (rebuild-cadence-guarded) ← CAP-14
 `release_lag_hours` + `release_lag_qualifies` on the Phase H join — no new
 external source. Hard constraints: restrict to upstream releases ≤90 days old,
 and compute against **first availability of the matched version** (minimum
@@ -458,7 +458,7 @@ re-verify both against the spec § 15 evidence gists at B9. (Story B9.)
   release is excluded (`release_lag_qualifies = false`), and a same-version
   rebuild inside the window does not shift `release_lag_hours`.
 
-#### FR-21: Migration-readiness source — conda-forge-bot-data status datasets ← CAP-21
+#### FR-21: Migration-readiness source — conda-forge-bot-data status datasets ← CAP-14
 Category-list + per-migration detail datasets (partitioned by active
 migration — new migrations need no code change) plus a readiness-classification
 node producing the four-way split (noarch / rebuild-done / confirmed-pending /
@@ -472,7 +472,7 @@ the existing `resolve_github_raw_urls`; `version_status.v2.json` is excluded.
 
 ### 4.11 The AI Software Factory Layer (Wave H)
 
-#### FR-22: Karpathy wiki + agent crews + CMS sync + Dagster triggers ← CAP-22
+#### FR-22: Karpathy wiki + agent crews + CMS sync + Dagster triggers ← CAP-17
 Committed scope (Q5 resolution): (a) the `wiki/raw/ → compiled/ → outputs/`
 scaffold with the 5 personas (H1); (b) `agno` compile/lint/Q&A crews on that
 scaffold (H2); (c) La Suite/Wagtail REST sync to the Layer-1 CMS (H3);
@@ -2921,7 +2921,7 @@ to `.claude/skills/` **reproducibly**; contradicting content is excluded **with 
 contradiction recorded**, not silently dropped. A verdict of "not yet" is a valid, final
 outcome and closes the FR.
 
-#### FR-62: Always-current published DAG view ← CAP-2
+#### FR-62: Always-current published DAG view ← CAP-41, CAP-62
 **Consequences:** CI builds Kedro-Viz from the **real** package — never the 77-node
 stub-mirror prototype — on pushes touching the pipelines tree, and publishes it the way
 `docs/dashboard/` already does. Per the Spec's own *owner ≠ mechanism* constraint, the
@@ -2935,27 +2935,27 @@ FR is closed by the **decision**, not by an installation.
 
 ### Upstream discovery — `spec-upstream-discovery` (FR-64..FR-68)
 
-#### FR-64: Trending ingest ← CAP-4
+#### FR-64: Trending ingest ← CAP-53
 **Consequences:** a discovery pipeline ingests GitHub-trending candidates on a schedule,
 writing to a named dataset under the shipped `<domain>_<entity>` convention; the fetcher
 is injected at the seam, never inlined (AD-1).
 
-#### FR-65: Tier classification ← CAP-5
+#### FR-65: Tier classification ← CAP-54
 **Consequences:** each candidate is classified into a packaging tier by declared rules,
 and an unclassifiable candidate is reported rather than silently tiered.
 
-#### FR-66: Operator surface ← CAP-6
+#### FR-66: Operator surface ← CAP-55
 **Consequences:** a `trending-candidates` CLI/MCP tool answers "what is worth packaging
 next?" with `--json`; it is read-only and offline-safe like every other atlas read-side
 surface.
 
-#### FR-67: Fixed-source audit track ← CAP-7
+#### FR-67: Fixed-source audit track ← CAP-56
 **Consequences:** the org-audit track (the June-2026 `github.com/microsoft/*` sweep) runs
 from a declared candidate list rather than trending, and re-verifies each candidate's
 current state before proposing it — a candidate that shipped independently since the list
 was written is dropped, not re-proposed.
 
-#### FR-68: Downstream handoff ← CAP-8
+#### FR-68: Downstream handoff ← CAP-57
 **Consequences:** a selected candidate hands off to Mason's packaging flow as structured
 data, not prose; Atlas proposes and never authors a recipe (Charter §4 — one craft each).
 
@@ -2968,7 +2968,7 @@ the pyforge-unifying-strategy pack
 (`_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/`),
 and the shipped package at `src/shared/packages/pyforge-atlas/`.
 
-### FR-61..FR-68 delivered ← CAP-1
+### FR-61..FR-68 delivered
 
 Both Specs decomposed above on 2026-08-08 shipped in full: `spec-kedro-org-tooling-adoption`
 (Epic 12, stories 12.1–12.3 done — kedro-skills audited-then-adopted at a pinned
@@ -3443,4 +3443,42 @@ Story 27.6 (#2301) changes tests only (CAP-8). No FR moves.
 **Content changed:** this section and `updated:`. No FR is added, renumbered or amended; the FR space stays FR-1..FR-77
 (FR-78 is the next free id). The spine's reconciliation of the same date records the two divergences found against
 the code: AD-3's pipeline count and the MCP registry wording.
+
+## Currency reconciliation — 2026-10-25 (Story 39.1)
+
+The 2026-09-17 one-chain fold (`86d1cdf3ee`) appended an `← CAP-n` arrow to every FR heading by counting, so
+FR-1..FR-22 read CAP-1..CAP-22 and FR-61..FR-68 read CAP-1..CAP-8. Only FR-3, FR-8, FR-12 and FR-13 named the
+capability that realizes them. Story 39.1 re-maps 23 headings from evidence. The full table, with each old arrow and
+its evidence, is the 2026-10-25 "approved re-map for Story 39.1" decision on `spec-pyforge-atlas`'s memlog, amended
+once the same day after review (the FR-6 row). By block:
+
+- **Kernel FR-1..FR-22 (§ 4).** Each FR now cites the kernel capability whose success text, read before the fold cut
+  it to its first line, states the requirement:
+  - FR-1 → CAP-2 and FR-2 → CAP-1 (catalog-declared IO; the DAG as orchestrator);
+  - FR-4 → CAP-3, CAP-7 (incremental state replaces `phase_state`; the legacy checkpoint table retires at recorded
+    parity);
+  - FR-5 → CAP-6; FR-6 → CAP-4, CAP-5, CAP-15 (the orchestrated plane, its sensors from Story G3, and the external
+    stores refreshed as scheduled assets); FR-7 → CAP-9; FR-9 → CAP-8;
+  - FR-10 → CAP-11 and FR-11 → CAP-10, which the fold had swapped; FR-14 → CAP-16;
+  - FR-16 and FR-18 → CAP-13, and FR-17 → CAP-13, CAP-15 (the four-axis compliance report and the universe BOM);
+  - FR-19..FR-21 → CAP-14, the three new signals, which the fold had pointed at the Unity satellite's CAP-19..CAP-21;
+  - FR-22 → CAP-17.
+- **FR-62, FR-64..FR-68 (the 2026-08-08 addendum).** The capabilities their source Specs became. FR-62 → CAP-41,
+  CAP-62: the Kedro-Viz publish that CAP-41 keeps in sync and CAP-62 re-specifies as a workflow artifact (FR-70 is its
+  producer; its body's `steward deploy dashboard` mechanism is history since CAP-62). FR-64..FR-68 → CAP-53..CAP-57,
+  `spec-upstream-discovery` CAP-1..CAP-5.
+- **Two more fold-written lines.** `### FR-61..FR-68 delivered` (§ Currency reconciliation — 2026-08-26) no longer
+  carries an arrow: it summarizes two Specs and defines no FR. `## Fold provenance (2026-09-17)` keeps its text and
+  points here.
+
+**Not re-mapped:** FR-15, FR-61 and FR-63. No capability carries them. FR-61 (kedro-skills audit-then-adopt) and FR-63
+(a recorded verdict on `vscode-kedro`) come from `spec-kedro-org-tooling-adoption`'s plain-list Capabilities 1 and 3,
+which the fold never minted. FR-15 (Pixi-first, conda-forge-only) derives from the Spec's Constraints bullet
+"Conda-forge-only, pixi-managed, py3.14-floored provisioning". They keep their counted arrows until the operator picks
+a source: `DW-atlas-39-1`.
+
+**Content changed:** this section, 23 FR heading arrows, the `### FR-61..FR-68 delivered` heading and one sentence under
+`## Fold provenance (2026-09-17)`. `updated:` bumped. No FR is added or renumbered, and no FR title or body moves; the
+FR space stays FR-1..FR-77 (FR-78 is the next free id). The satellite FR series (Unity Data Stack FR-1..FR-60, Wasm
+Analytics Stack FR-1..FR-17) is untouched.
 
