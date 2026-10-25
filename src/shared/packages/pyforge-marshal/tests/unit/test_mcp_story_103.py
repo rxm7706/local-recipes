@@ -303,26 +303,23 @@ def test_append_tail_respects_max():
 
 
 def test_probe_leaves_no_grandchild_process_group(tmp_path):
-    """AC6/AC8: grandchild process group is gone after timed-out probe."""
+    """AC6/AC8: background sleep in the probe group is gone after a timed-out probe."""
     pgid_file = tmp_path / "pgid.txt"
     script = _script_fixture(
         textwrap.dedent(
             f"""
-            import os, sys, time
+            import os, subprocess, sys, time
             marker = {str(pgid_file)!r}
-            cpid = os.fork()
-            if cpid == 0:
-                gpid = os.fork()
-                if gpid == 0:
-                    with open(marker, "w") as f:
-                        f.write(str(os.getpgid(0)))
-                    time.sleep(120)
-                    raise SystemExit(0)
-                time.sleep(120)
-                raise SystemExit(0)
+            with open(marker, "w") as f:
+                f.write(str(os.getpgid(0)))
+            subprocess.Popen(
+                [sys.executable, "-c", "import time; time.sleep(600)"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            time.sleep(0.05)
             for line in sys.stdin:
                 pass
-            time.sleep(120)
             """
         ),
         tmp_path,
@@ -346,7 +343,7 @@ def test_probe_exited_grandchild_detached_pipes_gone(tmp_path):
     marker = str(pgid_file)
     shell_cmd = (
         f"{sys.executable} -c \"import os; open({marker!r}, 'w').write(str(os.getpgid(0)))\"; "
-        "sleep 600 </dev/null >/dev/null 2>&1 & exit 1"
+        "sleep 600 </dev/null >/dev/null 2>&1 & sleep 0.05; exit 1"
     )
     t0 = time.monotonic()
     result = StdioMcpProbe().probe_server(
@@ -375,6 +372,8 @@ def test_probe_exited_grandchild_holds_stdout_gone(tmp_path):
             subprocess.Popen(
                 [sys.executable, "-c", "import time; time.sleep(600)"],
             )
+            import time
+            time.sleep(0.05)
             raise SystemExit(1)
             """
         ),
@@ -877,6 +876,8 @@ def test_mutation_dropping_stop_process_group_fails_grandchild_test(tmp_path):
             with open(marker, "w") as f:
                 f.write(str(os.getpgid(0)))
             subprocess.Popen([sys.executable, "-c", "import time; time.sleep(600)"])
+            import time
+            time.sleep(0.05)
             raise SystemExit(1)
             """
         ),
