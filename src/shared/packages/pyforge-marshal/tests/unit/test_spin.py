@@ -4506,8 +4506,11 @@ def test_the_real_pyforge_marshal_policy_declares_a_working_model_tier_map():
     # the fleet moved back to claude/sonnet), so this asserts the SHAPE the
     # story established, not a pinned ladder -- pinned ids turned this test
     # red on `main` the first time the harness changed.
+    # 2026-10-25: the three classes a story falls into by default must exist; an
+    # operator-ruled opt-in class (`fable`, selected by a spec's `difficulty:`) may
+    # sit beside them and is held to the same shape below.
     tier_map = parsed["model_tier_map"]
-    assert set(tier_map) == {"heavy", "medium", "easy"}
+    assert {"heavy", "medium", "easy"} <= set(tier_map)
     for difficulty, stages in tier_map.items():
         assert "dev" in stages, difficulty
         for stage, entry in stages.items():

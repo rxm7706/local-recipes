@@ -3426,13 +3426,18 @@ surface reconciles of 2026-10-22 (atlas Story 37.4's flag row in `pyforge-core`'
 ## 43. Currency reconciliation — 2026-10-25
 
 `spec-pyforge-marshal`'s memlog moved after § 42: doctor Story 30.5's surface reconcile (2026-10-24,
-`scripts/governance_currency_check.py`, a fix with no marshal contract change) and Story 103.1's ruling, evidence,
-design and mint (2026-10-25). `SPEC.md` is unchanged. No CAP is added.
+`scripts/governance_currency_check.py`, a fix with no marshal contract change), Story 103.1's ruling, evidence,
+design and mint (2026-10-25), and Story 87.19's (2026-10-25, later). `SPEC.md` is unchanged. No CAP is added.
 
 - **Story 103.1** (Epic 103; CAP-1 / FR-5, CAP-21 / FR-153, CAP-22 / FR-154): `marshal-mcp` is rebuilt on the official
   MCP SDK's `MCPServer` and gains a real `--help`, and `marshal preflight` starts each declared MCP server and completes
   a handshake once its command resolves on `PATH`. It realizes FR-5, FR-153 and FR-154 as written: the server
   FR-153 describes had never started, and the probe FR-5 and AD-43 call for checked only `PATH`.
+- **Story 87.19** (Epic 87, CAP-287 / FR-234): the content gate judges the objects a push sends (what no branch or tag
+  `git ls-remote origin` lists already reaches), not the tagged commit's whole tree, so a preserve built on today's
+  `main` can pass, and a secret that an intermediate unpushed commit added is caught. `MRS-STATUS-016` names a push path that works
+  while `pyforge.marshal.preserve_refs` is off. It realizes FR-234 as written; no flag, and every push stays
+  operator-gated.
 
 ### The FR space: no FR registered
 

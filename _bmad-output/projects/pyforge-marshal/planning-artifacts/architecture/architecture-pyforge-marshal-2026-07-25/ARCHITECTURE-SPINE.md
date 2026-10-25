@@ -2347,8 +2347,8 @@ every AD; they land as written:
 
 ## Currency reconciliation — 2026-10-25
 
-*`prd→arch` cascade for the PRD's § 43: Story 103.1 (marshal's own MCP server starts, and preflight proves it).*
-Checked against every AD; it lands as written:
+*`prd→arch` cascade for the PRD's § 43: Story 103.1 (marshal's own MCP server starts, and preflight proves it) and
+Story 87.19 (the content gate judges only what a push sends).* Checked against every AD; they land as written:
 
 - **AD-43 (the tool surface is policy-declared and home-rendered):** the render and its copy-when-absent rule do not
   move. The probe reads only the home's rendered `.mcp.json`, never `~/.claude.json`, and its finding stays
@@ -2361,6 +2361,15 @@ Checked against every AD; it lands as written:
   non-egress. The server's stderr tail is redacted with `redact_raw_text` before it reaches a finding.
 - **AD-3:** unchanged. The new adapter sits under `adapters/`, which the contract leaves out of `source_modules` on
   purpose, and it never references `bmad_loop`.
+- **AD-81 (preserved work is a protected tag), for Story 87.19 (the content gate judges only what a push sends):** the
+  gate still stands before every push of a `preserve/` or `archive/` tag, with the same rules: a purge-listed sha or
+  path, a blob the secret scan flags, a file over the size cap. It now applies the blob rules to the objects the push
+  sends (what no branch or tag `git ls-remote origin` lists already reaches, intermediate commits included; pull refs
+  are not trusted), as Story 87.15's acceptance criteria wrote them, not to the tagged commit's whole tree. An
+  unreadable remote is a refusal. The batched read runs through `pyforge.core.process` (a concrete-only bytes path;
+  the port does not change), so `spec-pyforge-core`'s one sanctioned process seam holds. "Content
+  that was only ever local reaches `origin` only after the operator reviews it row by row" does not move: the story
+  pushes nothing.
 - Doctor Story 30.5's 2026-10-24 surface reconcile touches no marshal decision.
 
 **Content changed:** this section. `updated:` bumped. No AD added, amended or removed.
