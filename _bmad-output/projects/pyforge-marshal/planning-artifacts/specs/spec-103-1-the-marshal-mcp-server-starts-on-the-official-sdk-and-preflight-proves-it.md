@@ -7,7 +7,7 @@ baseline_revision: 205e11db703884392d34cbe4d748e103aa5bffac
 review_loop_iteration: 5
 followup_review_recommended: false
 landing_review: required
-difficulty: fable
+difficulty: frontier
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
