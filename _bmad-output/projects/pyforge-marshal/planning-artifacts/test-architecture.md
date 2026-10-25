@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: 9ed058f88866a313
-story_count: 459
+source_fingerprint: 22a4bbd4beb8e78f
+story_count: 460
 test_file_count: 269
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 459
+- **Stories parsed:** 460
 - **Epics parsed:** 101
 - **Test files inventoried:** 269 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `9ed058f88866a313`
+- **Source fingerprint:** `22a4bbd4beb8e78f`
 
 ## Risk Assessment
 
@@ -857,6 +857,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 87.16 | The orphaned tips are re-preserved as local archive tags | none observed |
 | 87.17 | The legacy promoter reads every commit's bytes | none observed |
 | 87.18 | The legacy promoter lists every legacy ref | none observed |
+| 87.19 | The content gate judges only what a push sends | none observed |
 | 88.1 | Marshal commits a tracked file under an ignored directory | none observed |
 | 89.1 | A re-dispatch never lands a story whose review failed | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_only_spec_gate_89_1.py` |
 | 90.1 | The dispatch supervisor records completion only after the harness session has... | none observed |
