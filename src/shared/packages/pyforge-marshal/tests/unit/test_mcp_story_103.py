@@ -14,6 +14,8 @@ import pytest
 from pyforge.marshal.adapters.mcp_stdio_probe import (
     StdioMcpProbe,
     _read_json_line,
+    _stderr_reader,
+    _stop_process_group,
     default_mcp_probe,
     probe_server_from_rendered,
 )
@@ -27,6 +29,44 @@ PACKAGE_SRC = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal
 
 def test_default_mcp_probe_factory():
     assert isinstance(default_mcp_probe(), StdioMcpProbe)
+
+
+def test_read_json_line_skips_blank_lines_and_parses_success():
+    import time
+
+    class _Proc:
+        def __init__(self):
+            self.stdout = self
+            self._returncode = None
+
+        def poll(self):
+            return self._returncode
+
+        def readline(self):
+            return '{"jsonrpc":"2.0","id":1,"result":{}}\n'
+
+    tail: list[str] = [""]
+    parsed, err = _read_json_line(_Proc(), deadline=time.monotonic() + 1, stderr_tail=tail)
+    assert err is None and parsed is not None and parsed.get("id") == 1
+
+
+def test_read_json_line_non_dict_json_is_bad_reply():
+    import time
+
+    class _Proc:
+        def __init__(self):
+            self.stdout = self
+            self._returncode = None
+
+        def poll(self):
+            return self._returncode
+
+        def readline(self):
+            return '[1,2,3]\n'
+
+    tail: list[str] = [""]
+    parsed, err = _read_json_line(_Proc(), deadline=time.monotonic() + 1, stderr_tail=tail)
+    assert parsed is None and err == "bad-reply"
 
 
 def test_read_json_line_bad_reply_and_error_reply():
@@ -222,6 +262,81 @@ def test_stdio_probe_answers_initialize_and_tools_list(tmp_path):
     )
     assert result.outcome == "started"
     assert result.tool_count == 1
+
+
+def test_stderr_reader_appends_tail():
+    import io
+
+    class _Proc:
+        stderr = io.StringIO("hello stderr")
+
+    tail = [""]
+    _stderr_reader(_Proc(), tail)
+    assert "hello stderr" in tail[0]
+
+
+def test_stop_process_group_noop_when_already_exited():
+    class _Proc:
+        _code = 0
+
+        def poll(self):
+            return self._code
+
+    _stop_process_group(_Proc())  # must not raise
+
+
+def test_stdio_probe_initialize_reply_missing_result(tmp_path):
+    script = _script_fixture(
+        'import json,sys\nprint(json.dumps({"jsonrpc":"2.0","id":1}))\n',
+        tmp_path,
+    )
+    result = StdioMcpProbe().probe_server(
+        server_name="t",
+        command=sys.executable,
+        args=(script,),
+        env={},
+        cwd=str(tmp_path),
+        timeout_s=5,
+    )
+    assert result.outcome == "bad-reply"
+
+
+def test_stdio_probe_tools_reply_none_without_error(monkeypatch, tmp_path):
+    script = _script_fixture(
+        textwrap.dedent(
+            """
+            import json, sys
+            for line in sys.stdin:
+                msg = json.loads(line)
+                mid = msg.get("id")
+                if msg.get("method") == "initialize":
+                    print(json.dumps({"jsonrpc":"2.0","id":mid,"result":{"serverInfo":{"name":"t"},"capabilities":{}}}))
+                    sys.stdout.flush()
+            """
+        ),
+        tmp_path,
+    )
+    import pyforge.marshal.adapters.mcp_stdio_probe as probe_mod
+
+    real_read = probe_mod._read_json_line
+    calls = {"n": 0}
+
+    def patched_read(proc, *, deadline, stderr_tail):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return real_read(proc, deadline=deadline, stderr_tail=stderr_tail)
+        return None, None
+
+    monkeypatch.setattr(probe_mod, "_read_json_line", patched_read)
+    result = StdioMcpProbe().probe_server(
+        server_name="t",
+        command=sys.executable,
+        args=(script,),
+        env={},
+        cwd=str(tmp_path),
+        timeout_s=5,
+    )
+    assert result.outcome == "bad-reply"
 
 
 def test_stdio_probe_bad_reply(tmp_path):
