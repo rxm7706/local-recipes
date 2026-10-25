@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: 8288923379165115
-story_count: 460
-test_file_count: 269
+source_fingerprint: d11ed3dd7e49d913
+story_count: 461
+test_file_count: 270
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 460
-- **Epics parsed:** 101
-- **Test files inventoried:** 269 under `src/shared/packages/pyforge-marshal/tests/`
+- **Stories parsed:** 461
+- **Epics parsed:** 102
+- **Test files inventoried:** 270 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `8288923379165115`
+- **Source fingerprint:** `d11ed3dd7e49d913`
 
 ## Risk Assessment
 
@@ -123,6 +123,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 101: A landing under the CI master switch names every gate it stopped
 - Epic 102: A re-landing does not re-verify from scratch when only main moved
 - Epic 103: Marshal's own MCP server starts, and preflight proves it
+- Epic 104: Marshal's own render never blocks a loop-home refresh
 
 ### Low-risk epics
 
@@ -316,6 +317,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_loop_runner_hook.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_marshal_recall_plugin.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_mcp_registration.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_mcp_story_103.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_mcp_tools.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_model.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_model_cost.py` | unit | none observed |
@@ -876,6 +878,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 101.1 | The landing line lists every surface the CI master switch pauses | none observed |
 | 102.1 | A landing reuses its verified verdict when only a merge of main moved the branch | none observed |
 | 103.1 | The marshal-mcp server starts on the official SDK, and preflight proves it | none observed |
+| 104.1 | The .mcp.json marshal renders never makes a loop home dirty | none observed |
 
 ## Quality Gates
 
