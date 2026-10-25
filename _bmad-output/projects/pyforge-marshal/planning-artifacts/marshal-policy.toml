@@ -718,7 +718,8 @@ verify_commands = [
   # and their tests (the sweeper, the detectors and readers, the fleet poll, the one-off migration scripts), the flagd
   # tree (pyforge.marshal.preserve_refs), the build-skill customizations (87.11), the how-tos and the map, the purge list
   # and the retirement ledger under docs/governance/, the tracked preserve manifests, the one workflow whose tag-push
-  # trigger 87.15 filters, team memory (87.11's scribe capture correction), and every Spec memlog.
+  # trigger 87.15 filters, team memory (87.11's scribe capture correction), and every Spec memlog. Widened 2026-10-25
+  # (Story 87.19): pyforge-core's process seam, which gains a bytes stdin/stdout path for the batched gate read.
   "src/shared/packages/pyforge-marshal/**",
   "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
   "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
@@ -729,6 +730,7 @@ verify_commands = [
   "environment.yaml",
   "scripts/.spec-surface-baseline.json",
   "src/shared/packages/pyforge-core/src/pyforge/core/preserve_refs.py",
+  "src/shared/packages/pyforge-core/src/pyforge/core/process.py",
   "src/shared/packages/pyforge-core/src/pyforge/core/landing_evidence.py",
   "src/shared/packages/pyforge-core/tests/**",
   "scripts/**",
