@@ -38,7 +38,7 @@ development_status:
   101-1-the-landing-line-lists-every-surface-the-ci-master-switch-pauses: done
   102-1-a-landing-reuses-its-verified-verdict-when-only-a-merge-of-main-moved-the-branch: done
   103-1-the-marshal-mcp-server-starts-on-the-official-sdk-and-preflight-proves-it: done
-  104-1-the-mcp-json-marshal-renders-never-makes-a-loop-home-dirty: backlog
+  104-1-the-mcp-json-marshal-renders-never-makes-a-loop-home-dirty: done
   11-1-neutral-contract-and-agent-adapter-fan-out: done
   11-2-projects-md-index-and-artifact-symlink-derivation: done
   11-3-migration-registry-and-runner: done
@@ -487,7 +487,7 @@ development_status:
   epic-102-retrospective: optional
   epic-103: done
   epic-103-retrospective: optional
-  epic-104: backlog
+  epic-104: done
   epic-104-retrospective: optional
   epic-11: done
   epic-11-retrospective: optional
