@@ -262,21 +262,19 @@ def test_inventory_reads_nested_legacy_refs(clone: Path, bare_origin: Path) -> N
     assert "refs/tags/archive/scribe-1-3-dangling-91d3571f" in sources
 
 
-def test_push_reviewed_ac9_skips_origin_rows_and_continues_after_git_error(
-    clone: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Story 87.19 AC9: cap 20/run, skip twins already on origin, survive ``PreserveGitError``."""
-    from pyforge.core.preserve_refs import PreserveGitError, PushPreserveResult
+def test_push_reviewed_ac9_cap_and_skip_already_on_origin(clone: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Story 87.19 AC9: 25 rows, 3 on origin → 20 pushes then 2 on the next run."""
+    from pyforge.core.preserve_refs import PushPreserveResult
 
     commit = _commit_on(clone)
     rows: list[lpp.ManifestRow] = []
-    on_origin: set[str] = set()
+    listed_on_origin: set[str] = set()
+
     for i in range(25):
         twin = f"refs/tags/preserve/unbound/hand-{i:04d}"
         _git(clone, "tag", "-a", "-m", "t", twin.removeprefix("refs/tags/"), commit)
         if i < 3:
-            _git(clone, "push", "-q", "origin", f"{twin}:{twin}")
-            on_origin.add(twin)
+            listed_on_origin.add(twin)
         rows.append(
             lpp.ManifestRow(
                 kind="promote",
@@ -289,24 +287,55 @@ def test_push_reviewed_ac9_skips_origin_rows_and_continues_after_git_error(
             )
         )
 
-    listed_on_origin: set[str] = set(on_origin)
-    push_calls: list[str] = []
-
     def _fake_remote(repo: Path, patterns: object, **kwargs: object) -> frozenset[str]:
         return frozenset(listed_on_origin)
 
     def _fake_push(repo: Path, refname: str, **kwargs: object) -> PushPreserveResult:
-        push_calls.append(refname)
-        if refname.endswith("hand-0010"):
-            raise PreserveGitError("simulated push failure")
+        from pyforge.core.preserve_refs import ContentGateFinding, ContentGateReason
+
+        run_push_count = int(kwargs.get("run_push_count", 0))
+        if run_push_count >= 20:
+            return PushPreserveResult(
+                refname,
+                False,
+                (
+                    ContentGateFinding(
+                        ContentGateReason.PUSH_CAP_RUN,
+                        "per-run push cap (20) exceeded",
+                    ),
+                ),
+            )
         listed_on_origin.add(refname)
         return PushPreserveResult(refname, True, ())
 
     monkeypatch.setattr(lpp, "remote_ref_names", _fake_remote)
     monkeypatch.setattr(lpp, "push_preserve_ref", _fake_push)
     notes1 = lpp.push_reviewed_rows(clone, rows)
-    assert len(push_calls) == 20
+    assert sum(1 for n in notes1 if n.startswith("pushed ")) == 20
     notes2 = lpp.push_reviewed_rows(clone, rows)
-    assert len(push_calls) == 22
-    assert sum(1 for n in notes2 if n.startswith("skipped push")) >= 3
-    assert any("simulated push failure" in n for n in notes1)
+    assert sum(1 for n in notes2 if n.startswith("pushed ")) == 2
+    assert sum(1 for n in notes2 if n.startswith("skipped push")) == 3
+
+
+def test_push_reviewed_ac9_survives_preserve_git_error(clone: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from pyforge.core.preserve_refs import PreserveGitError, PushPreserveResult
+
+    commit = _commit_on(clone)
+    twin = "refs/tags/preserve/unbound/hand-9999"
+    _git(clone, "tag", "-a", "-m", "t", twin.removeprefix("refs/tags/"), commit)
+    row = lpp.ManifestRow(
+        kind="promote",
+        source_ref="refs/heads/x",
+        commit_sha=commit,
+        twin_ref=twin,
+        twin_evidence="test",
+        reviewed=True,
+        action="write_twin",
+    )
+
+    def _fail_push(repo: Path, refname: str, **kwargs: object) -> PushPreserveResult:
+        raise PreserveGitError("simulated push failure")
+
+    monkeypatch.setattr(lpp, "push_preserve_ref", _fail_push)
+    notes = lpp.push_reviewed_rows(clone, [row])
+    assert any("simulated push failure" in n for n in notes)
