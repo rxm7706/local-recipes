@@ -182,16 +182,80 @@ def test_stdio_probe_error_reply(tmp_path):
 
 
 def test_stdio_probe_timed_out(tmp_path):
-    script = _script_fixture("import time; time.sleep(60)\n", tmp_path)
+    script = _script_fixture("import sys; sys.stdin.read()\n", tmp_path)
     result = StdioMcpProbe().probe_server(
         server_name="t",
         command=sys.executable,
         args=(script,),
         env={},
         cwd=str(tmp_path),
-        timeout_s=0.3,
+        timeout_s=0.25,
     )
     assert result.outcome == "timed-out"
+
+
+def test_stdio_probe_tools_list_missing_tools_key(tmp_path):
+    script = _script_fixture(
+        textwrap.dedent(
+            """
+            import json, sys
+            for line in sys.stdin:
+                msg = json.loads(line)
+                mid = msg.get("id")
+                method = msg.get("method")
+                if method == "initialize":
+                    print(json.dumps({"jsonrpc":"2.0","id":mid,"result":{"serverInfo":{"name":"t"},"capabilities":{}}}))
+                    sys.stdout.flush()
+                elif method == "tools/list":
+                    print(json.dumps({"jsonrpc":"2.0","id":mid,"result":{}}))
+                    sys.stdout.flush()
+                    break
+            """
+        ),
+        tmp_path,
+    )
+    result = StdioMcpProbe().probe_server(
+        server_name="t",
+        command=sys.executable,
+        args=(script,),
+        env={},
+        cwd=str(tmp_path),
+        timeout_s=5,
+    )
+    assert result.outcome == "bad-reply"
+
+
+def test_stdio_probe_heavy_stderr_still_started(tmp_path):
+    script = _script_fixture(
+        textwrap.dedent(
+            """
+            import json, sys
+            sys.stderr.write("x" * 3000)
+            sys.stderr.flush()
+            for line in sys.stdin:
+                msg = json.loads(line)
+                mid = msg.get("id")
+                if msg.get("method") == "initialize":
+                    print(json.dumps({"jsonrpc":"2.0","id":mid,"result":{"serverInfo":{"name":"t"},"capabilities":{}}}))
+                    sys.stdout.flush()
+                elif msg.get("method") == "tools/list":
+                    print(json.dumps({"jsonrpc":"2.0","id":mid,"result":{"tools":[]}}))
+                    sys.stdout.flush()
+                    break
+            """
+        ),
+        tmp_path,
+    )
+    result = StdioMcpProbe().probe_server(
+        server_name="t",
+        command=sys.executable,
+        args=(script,),
+        env={},
+        cwd=str(tmp_path),
+        timeout_s=5,
+    )
+    assert result.outcome == "started"
+    assert len(result.stderr_tail) <= 2048
 
 
 def test_stdio_probe_spawn_failed():
