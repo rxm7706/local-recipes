@@ -1628,6 +1628,20 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   shared `info/exclude` is not used. **Kinships:** Story 103.1 (the server the file registers). Operator direction,
   2026-10-25: "fix / include / resolve the gaps identified autonomously". Owner `spec-pyforge-marshal`. → Epic 104 /
   Story 104.1, specced 2026-10-25.
+- **2026-10-25 (the PRD's FR arrows were numbered, not traced)** — **Found: most of the marshal PRD's `FR-n ← CAP-m`
+  arrows name the wrong capability.** Two chain reviews of Stories 103.1 and 104.1 found FR-153/154 pointing at CAP-111/112
+  and FR-133..135 at CAP-91..93, while the Spec carries those requirements as CAP-21/22 and CAP-132..134. Before the
+  2026-09-16 fold the FR headings had no arrows; the fold commit (`1e845b55fc`) appended them by counting, so FR-128..FR-195
+  read CAP-(FR−42) and the requirements added to § 7 after the first draft read whatever came next. Arrows written later,
+  by Spec renders (FR-196 onward), are right. Doctor's `fr-without-cap` only checks that a cited CAP exists, so nothing
+  noticed. **What it looks like when fixed:** every arrow names the capability that realizes the requirement, derived
+  from evidence rather than position: the source Spec's own `CAP-k → FR-n` lines, the FR body naming its source Spec,
+  stories that cite both, and matching titles, mapped through the Spec's `← spec-<old> CAP-k` provenance. A requirement
+  whose source Spec no longer carries it (FR-144..FR-147) keeps its arrow, flagged for an operator decision.
+  **Constraints:** a chore under `spec-one-chain-per-station` CAP-5 (FRs derive from CAPs) and CAP-8 (the marshal pilot);
+  no CAP, no flag, no `SPEC.md` change; no detector rule changes. Operator ruling, 2026-10-25: "Apply the PRD FR→CAP
+  re-map as proposed: 71 headings through a chore story chain, and leave FR-144..FR-147 unchanged with a note that they
+  need a source-capability decision." Owner `spec-pyforge-marshal`. → Epic 105 / Story 105.1, specced 2026-10-25.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint

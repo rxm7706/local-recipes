@@ -736,6 +736,20 @@ verify_commands = [
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
   ".marshal/seed-state.yml",
 ]
+"105" = [  # every marshal PRD FR arrow names the Spec capability that realizes it (a chore under
+  # spec-one-chain-per-station CAP-5 and CAP-8, no CAP; Story 105.1), added 2026-10-25. Planning files only: the PRD,
+  # the spine and epics re-stamps, the deferred-work ledger, the story spec and every Spec memlog.
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/prds/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/architecture/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/test-architecture.md",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+  "scripts/.spec-surface-baseline.json",
+]
 "87" = [  # preserved work is a protected tag, and no cleanup destroys it (spec-pyforge-marshal CAP-287; Story 87.1's
   # sweeper fix), added 2026-10-04. The default surface, restated because a declared entry replaces it outright, plus:
   # pyforge-core's preserve_refs grammar and its tests (87.3, 87.15; spec-pyforge-core co-governs), the repo scripts

@@ -9140,3 +9140,14 @@ status: open
   severity: low
   promoted: 2026-10-15 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-marshal-105-1: Marshal PRD FR-144..FR-147 (section 16.5, detector self-verification) have no realizing capability: they keep the fold's counted arrows CAP-102..CAP-105 until the operator picks their source.
+
+- source_spec: `planning-artifacts/specs/spec-105-1-every-marshal-prd-fr-arrow-names-the-spec-capability-that-realizes-it.md`
+  summary: Marshal PRD FR-144..FR-147 (section 16.5, detector self-verification) have no realizing capability: they keep the fold's counted arrows CAP-102..CAP-105 until the operator picks their source.
+  evidence: Story 105.1 (2026-10-25) re-mapped the fold's counted FR arrows from evidence, and the operator ruled to leave these four unchanged pending a source-capability decision. Their PRD section names spec-dream-to-code-model-self-verification, whose status is absorbed and whose CAP-1..CAP-3 now describe the verify_scope primitive, not fixture meta-tests, a detector-incident log or the --dreams mode. Their current arrows point at spec-pyforge-marshal CAP-102..CAP-105, which are fleet-chain-completeness capabilities. Options: re-point them at the Spec or station that now owns detector self-verification (doctor is the likely owner), mint a marshal CAP for them, or retire the FRs.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/prds/prd-pyforge-marshal-2026-07-25/prd.md (FR-144..FR-147)
+  origin: spec-deferred 34ffbcae964e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-25 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
