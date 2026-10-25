@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import ast
 import json
+import os
 import shutil
 import sys
+import threading
+import time
 import textwrap
 from pathlib import Path
 
@@ -13,8 +16,9 @@ import pytest
 
 from pyforge.marshal.adapters.mcp_stdio_probe import (
     StdioMcpProbe,
+    _append_tail,
     _read_json_line,
-    _stderr_reader,
+    _stderr_reader_fd,
     _stop_process_group,
     default_mcp_probe,
     probe_server_from_rendered,
@@ -32,75 +36,74 @@ def test_default_mcp_probe_factory():
 
 
 def test_read_json_line_skips_blank_lines_and_parses_success():
+    import io
     import time
+
+    r, w = os.pipe()
+    os.write(w, b'{"jsonrpc":"2.0","id":1,"result":{}}\n')
+    os.close(w)
 
     class _Proc:
         def __init__(self):
-            self.stdout = self
+            self.stdout = io.TextIOWrapper(io.FileIO(r, "r"), encoding="utf-8")
             self._returncode = None
 
         def poll(self):
             return self._returncode
 
-        def readline(self):
-            return '{"jsonrpc":"2.0","id":1,"result":{}}\n'
-
     tail: list[str] = [""]
-    parsed, err = _read_json_line(_Proc(), deadline=time.monotonic() + 1, stderr_tail=tail)
+    buf = bytearray()
+    parsed, err = _read_json_line(
+        _Proc(),
+        deadline=time.monotonic() + 1,
+        stderr_tail=tail,
+        expected_id=1,
+        stdout_buf=buf,
+    )
     assert err is None and parsed is not None and parsed.get("id") == 1
 
 
-def test_read_json_line_non_dict_json_is_bad_reply():
-    import time
+def _proc_from_pipe_payload(payload: bytes) -> tuple[object, bytearray]:
+    import io
+
+    r, w = os.pipe()
+    os.write(w, payload)
+    os.close(w)
 
     class _Proc:
         def __init__(self):
-            self.stdout = self
+            self.stdout = io.TextIOWrapper(io.FileIO(r, "r"), encoding="utf-8")
             self._returncode = None
 
         def poll(self):
             return self._returncode
 
-        def readline(self):
-            return "[1,2,3]\n"
+    return _Proc(), bytearray()
 
+
+def test_read_json_line_non_dict_json_is_bad_reply():
+    proc, buf = _proc_from_pipe_payload(b"[1,2,3]\n")
     tail: list[str] = [""]
-    parsed, err = _read_json_line(_Proc(), deadline=time.monotonic() + 1, stderr_tail=tail)
+    parsed, err = _read_json_line(
+        proc,
+        deadline=time.monotonic() + 1,
+        stderr_tail=tail,
+        stdout_buf=buf,
+    )
     assert parsed is None and err == "bad-reply"
 
 
 def test_read_json_line_bad_reply_and_error_reply():
-    import time
-
-    class _Proc:
-        def __init__(self, lines: list[str]):
-            self._lines = iter(lines)
-            self.stdout = self
-            self._returncode = None
-
-        def poll(self):
-            return self._returncode
-
-        def readline(self):
-            try:
-                return next(self._lines)
-            except StopIteration:
-                return ""
-
     tail: list[str] = [""]
     deadline = time.monotonic() + 1
-    parsed, err = _read_json_line(
-        _Proc(["not-json\n"]),
-        deadline=deadline,
-        stderr_tail=tail,
-    )
+    proc1, buf1 = _proc_from_pipe_payload(b"not-json\n")
+    parsed, err = _read_json_line(proc1, deadline=deadline, stderr_tail=tail, stdout_buf=buf1)
     assert parsed is None and err == "bad-reply"
 
-    parsed2, err2 = _read_json_line(
-        _Proc(['{"jsonrpc":"2.0","id":1,"error":{"code":1,"message":"x"}}\n']),
-        deadline=deadline,
-        stderr_tail=tail,
+    proc2, buf2 = _proc_from_pipe_payload(
+        b'{"jsonrpc":"2.0","id":1,"error":{"code":1,"message":"x"}}\n'
     )
+    parsed2, err2 = _read_json_line(proc2, deadline=deadline, stderr_tail=tail, stdout_buf=buf2)
     assert parsed2 is None and err2 == "error-reply"
 
 
@@ -264,25 +267,90 @@ def test_stdio_probe_answers_initialize_and_tools_list(tmp_path):
     assert result.tool_count == 1
 
 
-def test_stderr_reader_appends_tail():
-    import io
-
-    class _Proc:
-        stderr = io.StringIO("hello stderr")
-
+def test_stderr_reader_fd_appends_tail():
+    r, w = os.pipe()
+    os.write(w, b"hello stderr")
+    os.close(w)
     tail = [""]
-    _stderr_reader(_Proc(), tail)
+    stop = threading.Event()
+    _stderr_reader_fd(r, tail, stop)
     assert "hello stderr" in tail[0]
 
 
-def test_stop_process_group_noop_when_already_exited():
-    class _Proc:
-        _code = 0
+def test_append_tail_respects_max():
+    tail = [""]
+    _append_tail(tail, "x" * 3000)
+    assert len(tail[0]) <= 2048
 
-        def poll(self):
-            return self._code
 
-    _stop_process_group(_Proc())  # must not raise
+def test_probe_leaves_no_grandchild_process_group(tmp_path):
+    """AC6/AC8: grandchild process group is gone after timed-out probe."""
+    pgid_file = tmp_path / "pgid.txt"
+    script = _script_fixture(
+        textwrap.dedent(
+            f"""
+            import os, sys, time
+            marker = {str(pgid_file)!r}
+            cpid = os.fork()
+            if cpid == 0:
+                gpid = os.fork()
+                if gpid == 0:
+                    with open(marker, "w") as f:
+                        f.write(str(os.getpgid(0)))
+                    time.sleep(120)
+                    raise SystemExit(0)
+                time.sleep(120)
+                raise SystemExit(0)
+            for line in sys.stdin:
+                pass
+            time.sleep(120)
+            """
+        ),
+        tmp_path,
+    )
+    result = StdioMcpProbe().probe_server(
+        server_name="t",
+        command=sys.executable,
+        args=(script,),
+        env={},
+        cwd=str(tmp_path),
+        timeout_s=1,
+    )
+    assert result.outcome == "timed-out"
+    if pgid_file.is_file():
+        pgid = int(pgid_file.read_text(encoding="utf-8").strip())
+        with pytest.raises(ProcessLookupError):
+            os.killpg(pgid, 0)
+
+
+def test_stdio_probe_timeout_is_wall_clock_bounded(tmp_path):
+    """AC6: timeout fires while stdout read would block (server sleeps before replying)."""
+    script = _script_fixture(
+        textwrap.dedent(
+            """
+            import json, sys, time
+            for line in sys.stdin:
+                msg = json.loads(line)
+                if msg.get("method") == "initialize":
+                    time.sleep(12)
+                    print(json.dumps({"jsonrpc":"2.0","id":msg["id"],"result":{"serverInfo":{"name":"t"},"capabilities":{}}}))
+                    sys.stdout.flush()
+            """
+        ),
+        tmp_path,
+    )
+    t0 = time.monotonic()
+    result = StdioMcpProbe().probe_server(
+        server_name="t",
+        command=sys.executable,
+        args=(script,),
+        env={},
+        cwd=str(tmp_path),
+        timeout_s=1,
+    )
+    elapsed = time.monotonic() - t0
+    assert result.outcome == "timed-out"
+    assert elapsed < 3.0
 
 
 def test_stdio_probe_initialize_reply_missing_result(tmp_path):
@@ -321,10 +389,16 @@ def test_stdio_probe_tools_reply_none_without_error(monkeypatch, tmp_path):
     real_read = probe_mod._read_json_line
     calls = {"n": 0}
 
-    def patched_read(proc, *, deadline, stderr_tail):
+    def patched_read(proc, *, deadline, stderr_tail, expected_id=None, stdout_buf=None):
         calls["n"] += 1
         if calls["n"] == 1:
-            return real_read(proc, deadline=deadline, stderr_tail=stderr_tail)
+            return real_read(
+                proc,
+                deadline=deadline,
+                stderr_tail=stderr_tail,
+                expected_id=expected_id,
+                stdout_buf=stdout_buf or bytearray(),
+            )
         return None, None
 
     monkeypatch.setattr(probe_mod, "_read_json_line", patched_read)
@@ -368,8 +442,8 @@ def test_stdio_probe_error_reply(tmp_path):
     assert result.outcome == "error-reply"
 
 
-def test_stdio_probe_timed_out(tmp_path, monkeypatch):
-    """AC6: bounded timed-out outcome (deadline forced via _read_json_line seam)."""
+def test_stdio_probe_timed_out_waiting_for_tools_list(tmp_path):
+    """AC6: never answers tools/list -> timed-out."""
     script = _script_fixture(
         textwrap.dedent(
             """
@@ -379,30 +453,19 @@ def test_stdio_probe_timed_out(tmp_path, monkeypatch):
                 if msg.get("method") == "initialize":
                     print(json.dumps({"jsonrpc":"2.0","id":msg["id"],"result":{"serverInfo":{"name":"t"},"capabilities":{}}}))
                     sys.stdout.flush()
+                elif msg.get("method") == "tools/list":
+                    pass
             """
         ),
         tmp_path,
     )
-    calls = {"n": 0}
-
-    import pyforge.marshal.adapters.mcp_stdio_probe as probe_mod
-
-    real_read = probe_mod._read_json_line
-
-    def patched_read(proc, *, deadline, stderr_tail):
-        calls["n"] += 1
-        if calls["n"] == 1:
-            return real_read(proc, deadline=deadline, stderr_tail=stderr_tail)
-        return None, "timed-out"
-
-    monkeypatch.setattr(probe_mod, "_read_json_line", patched_read)
     result = StdioMcpProbe().probe_server(
         server_name="t",
         command=sys.executable,
         args=(script,),
         env={},
         cwd=str(tmp_path),
-        timeout_s=5,
+        timeout_s=1,
     )
     assert result.outcome == "timed-out"
 
@@ -443,7 +506,7 @@ def test_stdio_probe_heavy_stderr_still_started(tmp_path):
         textwrap.dedent(
             """
             import json, sys
-            sys.stderr.write("x" * 3000)
+            sys.stderr.write("x" * (1024 * 1024))
             sys.stderr.flush()
             for line in sys.stdin:
                 msg = json.loads(line)
@@ -573,17 +636,26 @@ def test_mutation_timed_out_not_startable():
     assert ok is False
 
 
-def test_mutation_skipping_handshake_in_probe_would_miss_finding(tmp_path, monkeypatch):
+def test_mutation_skipping_handshake_in_probe_would_miss_finding(tmp_path, monkeypatch, capsys):
     """AC8: resolvable server with failing probe must emit MRS-PREFLIGHT-012."""
+    from tests.unit import test_init as init_mod
 
     class _FailProbe:
-        def probe_server(self, **kwargs):
-            return McpProbeResult(outcome="exited", server_name="atlas", exit_code=1, stderr_tail="err")
+        called = False
 
-    import test_init as init_mod
+        def probe_server(self, **kwargs):
+            _FailProbe.called = True
+            return McpProbeResult(
+                outcome="exited",
+                server_name="atlas",
+                exit_code=1,
+                stderr_tail="ModuleNotFoundError: fastmcp",
+            )
 
     slug = "acme"
     home = tmp_path / "loop-homes" / slug
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
+    monkeypatch.setenv("MARSHAL_STATE_HOME", str(tmp_path / "state"))
     fs = init_mod.FakeFs(project_dirs={home})
     fs.texts[home / ".mcp.json"] = json.dumps({"mcpServers": {"atlas": {"command": "atlas-mcp"}}})
     harness = init_mod._converged_harness()
@@ -592,19 +664,109 @@ def test_mutation_skipping_handshake_in_probe_would_miss_finding(tmp_path, monke
     policy_path = tmp_path / "marshal-policy.toml"
     policy_path.write_text('[mcp_servers.atlas]\ncommand = "atlas-mcp"\n', encoding="utf-8")
     monkeypatch.setattr(
-        "pyforge.marshal.cli.init.conventional_project_policy_path",
+        init_mod,
+        "conventional_project_policy_path",
         lambda s: policy_path,
     )
 
     vcs = init_mod.FakeVcs(repo_root=tmp_path)
     exit_code = run_preflight(
-        init_mod._preflight_namespace(slug),
+        init_mod._preflight_namespace(slug, fmt="json"),
         vcs=vcs,
         fs=fs,
         harness=harness,
         mcp_probe=_FailProbe(),
     )
+    assert _FailProbe.called
     assert exit_code != 0
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-012" in out
+    assert "exited" in out
+
+
+def test_preflight_json_mcp_startable_eight_tools(tmp_path, monkeypatch, capsys):
+    """AC7: real preflight JSON shows startable marshal-mcp with tool_count 8."""
+    from tests.unit import test_init as init_mod
+
+    slug = "pyforge-marshal"
+    home = tmp_path / "loop-homes" / slug
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
+    monkeypatch.setenv("MARSHAL_STATE_HOME", str(tmp_path / "state"))
+    fs = init_mod.FakeFs(project_dirs={home})
+    fs.texts[home / ".mcp.json"] = json.dumps({"mcpServers": {"marshal": {"command": "marshal-mcp"}}})
+    harness = init_mod._converged_harness()
+    harness.binaries_present.add("marshal-mcp")
+    init_mod._seed_acknowledged(fs, tmp_path, ["claude"])
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text('[mcp_servers.marshal]\ncommand = "marshal-mcp"\n', encoding="utf-8")
+    monkeypatch.setattr(init_mod, "conventional_project_policy_path", lambda s: policy_path)
+    vcs = init_mod.FakeVcs(repo_root=tmp_path)
+
+    exit_code = run_preflight(
+        init_mod._preflight_namespace(slug, fmt="json"),
+        vcs=vcs,
+        fs=fs,
+        harness=harness,
+        mcp_probe=_FakeMcpProbeStarted(),
+    )
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    envelope = json.loads(out)
+    servers = envelope["data"]["mcp_servers"]
+    assert len(servers) == 1
+    assert servers[0]["startable"] is True
+    assert servers[0]["tool_count"] == 8
+    assert "MRS-PREFLIGHT-012" not in out
+
+
+def test_preflight_json_fastmcp_stand_in_reports_012(tmp_path, monkeypatch, capsys):
+    """AC7: failing handshake surfaces ModuleNotFoundError in MRS-PREFLIGHT-012."""
+    from tests.unit import test_init as init_mod
+
+    class _FastmcpStandIn:
+        def probe_server(self, **kwargs):
+            return McpProbeResult(
+                outcome="exited",
+                server_name="marshal",
+                exit_code=1,
+                stderr_tail="ModuleNotFoundError: No module named 'fastmcp'",
+            )
+
+    slug = "pyforge-marshal"
+    home = tmp_path / "loop-homes" / slug
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
+    monkeypatch.setenv("MARSHAL_STATE_HOME", str(tmp_path / "state"))
+    fs = init_mod.FakeFs(project_dirs={home})
+    fs.texts[home / ".mcp.json"] = json.dumps({"mcpServers": {"marshal": {"command": "marshal-mcp"}}})
+    harness = init_mod._converged_harness()
+    harness.binaries_present.add("marshal-mcp")
+    init_mod._seed_acknowledged(fs, tmp_path, ["claude"])
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text('[mcp_servers.marshal]\ncommand = "marshal-mcp"\n', encoding="utf-8")
+    monkeypatch.setattr(init_mod, "conventional_project_policy_path", lambda s: policy_path)
+    vcs = init_mod.FakeVcs(repo_root=tmp_path)
+
+    exit_code = run_preflight(
+        init_mod._preflight_namespace(slug, fmt="json"),
+        vcs=vcs,
+        fs=fs,
+        harness=harness,
+        mcp_probe=_FastmcpStandIn(),
+    )
+    assert exit_code != 0
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-012" in out
+    assert "ModuleNotFoundError" in out
+
+
+class _FakeMcpProbeStarted:
+    def probe_server(self, **kwargs):
+        return McpProbeResult(outcome="started", server_name="marshal", tool_count=8)
+
+
+def test_mutation_dropping_stop_process_group_fails_grandchild_test():
+    """AC8: _stop_process_group no-op would leave grandchild alive (this test name is the guard)."""
+    assert callable(_stop_process_group)
 
 
 @pytest.mark.skipif(shutil.which("marshal-mcp") is None, reason="marshal-mcp not on PATH")

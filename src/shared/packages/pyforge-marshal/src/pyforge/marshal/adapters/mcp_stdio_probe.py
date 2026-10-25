@@ -7,8 +7,10 @@ from __future__ import annotations
 
 import json
 import os
+import selectors
 import signal
 import subprocess
+import sys
 import threading
 from collections.abc import Mapping
 from pathlib import Path
@@ -19,6 +21,7 @@ MCP_PROBE_TIMEOUT_S = 15.0
 _STDERR_TAIL_MAX = 2048
 _PROTOCOL_VERSION = "2025-06-18"
 _CLIENT_NAME = "marshal-preflight"
+_READ_CHUNK = 4096
 
 
 def _merge_env(base: Mapping[str, str], overlay: Mapping[str, str]) -> dict[str, str]:
@@ -28,77 +31,186 @@ def _merge_env(base: Mapping[str, str], overlay: Mapping[str, str]) -> dict[str,
     return merged
 
 
+def _append_tail(tail: list[str], chunk: str) -> None:
+    tail[0] = (tail[0] + chunk)[-_STDERR_TAIL_MAX:]
+
+
+def _stderr_reader_fd(fd: int, tail: list[str], stop: threading.Event) -> None:
+    while not stop.is_set():
+        try:
+            chunk = os.read(fd, _READ_CHUNK)
+        except OSError:
+            break
+        if not chunk:
+            break
+        _append_tail(tail, chunk.decode("utf-8", errors="replace"))
+
+
+def _drain_stdout(proc: subprocess.Popen[str], buf: bytearray) -> None:
+    if proc.stdout is None:
+        return
+    try:
+        fd = proc.stdout.fileno()
+    except (AttributeError, ValueError, OSError):
+        return
+    while True:
+        try:
+            chunk = os.read(fd, _READ_CHUNK)
+        except OSError:
+            break
+        if not chunk:
+            break
+        buf.extend(chunk)
+
+
 def _read_json_line(
     proc: subprocess.Popen[str],
     *,
     deadline: float,
     stderr_tail: list[str],
+    expected_id: int | None = None,
+    stdout_buf: bytearray,
 ) -> tuple[dict[str, object] | None, str | None]:
-    """Return (parsed object, error tag) where error is bad-reply | error-reply | timed-out."""
+    """Return (parsed object, error tag) where error is bad-reply | error-reply | timed-out | exited."""
     import time
 
-    while time.monotonic() < deadline:
-        if proc.poll() is not None:
-            return None, "exited"
-        line = proc.stdout.readline() if proc.stdout is not None else ""
-        if not line:
-            if proc.poll() is not None:
-                return None, "exited"
-            time.sleep(0.01)
-            continue
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            parsed = json.loads(line)
-        except json.JSONDecodeError:
-            stderr_tail[0] = (stderr_tail[0] + line + "\n")[-_STDERR_TAIL_MAX:]
-            return None, "bad-reply"
-        if not isinstance(parsed, dict):
-            return None, "bad-reply"
-        if parsed.get("error") is not None:
-            return None, "error-reply"
-        return parsed, None
-    return None, "timed-out"
+    if proc.stdout is None:
+        return None, "bad-reply"
 
-
-def _stderr_reader(proc: subprocess.Popen[str], tail_holder: list[str]) -> None:
-    if proc.stderr is None:
-        return
     try:
-        for chunk in iter(proc.stderr.read, ""):
-            if not chunk:
-                break
-            tail_holder[0] = (tail_holder[0] + chunk)[-_STDERR_TAIL_MAX:]
+        fd = proc.stdout.fileno()
+    except (AttributeError, ValueError, OSError):
+        return None, "bad-reply"
+
+    sel = selectors.DefaultSelector()
+    try:
+        sel.register(fd, selectors.EVENT_READ)
     except OSError:
-        pass
+        return None, "bad-reply"
+
+    try:
+        while time.monotonic() < deadline:
+            if proc.poll() is not None:
+                _drain_stdout(proc, stdout_buf)
+                return None, "exited"
+
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return None, "timed-out"
+
+            events = sel.select(timeout=min(remaining, 0.05))
+            if not events:
+                continue
+
+            try:
+                chunk = os.read(fd, _READ_CHUNK)
+            except OSError:
+                if proc.poll() is not None:
+                    _drain_stdout(proc, stdout_buf)
+                    return None, "exited"
+                continue
+
+            if not chunk:
+                if proc.poll() is not None:
+                    _drain_stdout(proc, stdout_buf)
+                    return None, "exited"
+                continue
+
+            stdout_buf.extend(chunk)
+            while True:
+                nl = stdout_buf.find(b"\n")
+                if nl < 0:
+                    break
+                line_bytes = stdout_buf[:nl]
+                del stdout_buf[: nl + 1]
+                line = line_bytes.decode("utf-8", errors="replace").strip()
+                if not line:
+                    continue
+                try:
+                    parsed = json.loads(line)
+                except json.JSONDecodeError:
+                    _append_tail(stderr_tail, line + "\n")
+                    return None, "bad-reply"
+                if not isinstance(parsed, dict):
+                    return None, "bad-reply"
+                if parsed.get("error") is not None:
+                    return None, "error-reply"
+                msg_id = parsed.get("id")
+                if expected_id is not None and msg_id != expected_id:
+                    continue
+                if expected_id is not None and msg_id is None:
+                    continue
+                return parsed, None
+
+        return None, "timed-out"
+    finally:
+        sel.close()
+
+
+def _popen_kwargs(*, start_new_session: bool) -> dict[str, object]:
+    if sys.platform == "win32":
+        return {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
+    if start_new_session:
+        return {"start_new_session": True}
+    return {}
 
 
 def _stop_process_group(proc: subprocess.Popen[str]) -> None:
-    if proc.poll() is not None:
-        return
+    pgid: int | None = None
     try:
         pgid = os.getpgid(proc.pid)
     except OSError:
         pgid = None
-    try:
-        if pgid is not None:
-            os.killpg(pgid, signal.SIGTERM)
-        else:
+
+    if sys.platform == "win32":
+        try:
             proc.terminate()
-    except OSError:
-        pass
+        except OSError:
+            pass
+        try:
+            proc.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            try:
+                proc.kill()
+            except OSError:
+                pass
+            proc.wait(timeout=2)
+        return
+
+    if pgid is not None:
+        try:
+            os.killpg(pgid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+        except OSError:
+            try:
+                proc.terminate()
+            except OSError:
+                pass
+    else:
+        try:
+            proc.terminate()
+        except OSError:
+            pass
+
     try:
         proc.wait(timeout=2)
     except subprocess.TimeoutExpired:
-        try:
-            if pgid is not None:
+        if pgid is not None:
+            try:
                 os.killpg(pgid, signal.SIGKILL)
-            else:
-                proc.kill()
+            except ProcessLookupError:
+                pass
+            except OSError:
+                pass
+        try:
+            proc.kill()
         except OSError:
             pass
-        proc.wait(timeout=2)
+        try:
+            proc.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            pass
 
 
 class StdioMcpProbe(McpProbePort):
@@ -120,6 +232,11 @@ class StdioMcpProbe(McpProbePort):
         merged = _merge_env({}, env)
         stderr_tail = [""]
         deadline = time.monotonic() + timeout_s
+        stdout_buf = bytearray()
+        proc: subprocess.Popen[str] | None = None
+        reader: threading.Thread | None = None
+        stop_stderr = threading.Event()
+
         try:
             proc = subprocess.Popen(
                 argv,
@@ -128,9 +245,9 @@ class StdioMcpProbe(McpProbePort):
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                text=True,
-                bufsize=1,
-                start_new_session=True,
+                text=False,
+                bufsize=0,
+                **_popen_kwargs(start_new_session=True),
             )
         except OSError as exc:
             return McpProbeResult(
@@ -139,17 +256,32 @@ class StdioMcpProbe(McpProbePort):
                 stderr_tail=str(exc)[-_STDERR_TAIL_MAX:],
             )
 
-        reader = threading.Thread(target=_stderr_reader, args=(proc, stderr_tail), daemon=True)
-        reader.start()
+        assert proc is not None
+        if proc.stderr is not None:
+            try:
+                stderr_fd = proc.stderr.fileno()
+            except (AttributeError, ValueError, OSError):
+                stderr_fd = None
+            if stderr_fd is not None:
+                reader = threading.Thread(
+                    target=_stderr_reader_fd,
+                    args=(stderr_fd, stderr_tail, stop_stderr),
+                    daemon=True,
+                )
+                reader.start()
 
-        def write_line(payload: dict[str, object]) -> None:
-            if proc.stdin is None:
-                return
-            proc.stdin.write(json.dumps(payload) + "\n")
-            proc.stdin.flush()
+        def write_line(payload: dict[str, object]) -> bool:
+            if proc is None or proc.stdin is None:
+                return False
+            try:
+                proc.stdin.write((json.dumps(payload) + "\n").encode("utf-8"))
+                proc.stdin.flush()
+            except OSError:
+                return False
+            return True
 
         try:
-            write_line(
+            if not write_line(
                 {
                     "jsonrpc": "2.0",
                     "id": 1,
@@ -160,8 +292,22 @@ class StdioMcpProbe(McpProbePort):
                         "clientInfo": {"name": _CLIENT_NAME, "version": "0"},
                     },
                 }
+            ):
+                code = proc.wait(timeout=1) if proc.poll() is None else proc.returncode
+                return McpProbeResult(
+                    outcome="exited",
+                    server_name=server_name,
+                    exit_code=code,
+                    stderr_tail=stderr_tail[0],
+                )
+
+            init_reply, init_err = _read_json_line(
+                proc,
+                deadline=deadline,
+                stderr_tail=stderr_tail,
+                expected_id=1,
+                stdout_buf=stdout_buf,
             )
-            init_reply, init_err = _read_json_line(proc, deadline=deadline, stderr_tail=stderr_tail)
             if init_err == "exited":
                 code = proc.wait(timeout=1)
                 return McpProbeResult(
@@ -177,17 +323,51 @@ class StdioMcpProbe(McpProbePort):
                     server_name=server_name,
                     stderr_tail=stderr_tail[0],
                 )
-            if init_reply is None or "result" not in init_reply:
+            if init_reply is None:
+                return McpProbeResult(
+                    outcome="bad-reply",
+                    server_name=server_name,
+                    stderr_tail=stderr_tail[0],
+                )
+            init_result = init_reply.get("result")
+            if not isinstance(init_result, dict):
+                return McpProbeResult(
+                    outcome="bad-reply",
+                    server_name=server_name,
+                    stderr_tail=stderr_tail[0],
+                )
+            server_info = init_result.get("serverInfo")
+            if not isinstance(server_info, dict):
                 return McpProbeResult(
                     outcome="bad-reply",
                     server_name=server_name,
                     stderr_tail=stderr_tail[0],
                 )
 
-            write_line({"jsonrpc": "2.0", "method": "notifications/initialized"})
-            write_line({"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}})
+            if not write_line({"jsonrpc": "2.0", "method": "notifications/initialized"}):
+                code = proc.wait(timeout=1) if proc.poll() is None else proc.returncode
+                return McpProbeResult(
+                    outcome="exited",
+                    server_name=server_name,
+                    exit_code=code,
+                    stderr_tail=stderr_tail[0],
+                )
+            if not write_line({"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}):
+                code = proc.wait(timeout=1) if proc.poll() is None else proc.returncode
+                return McpProbeResult(
+                    outcome="exited",
+                    server_name=server_name,
+                    exit_code=code,
+                    stderr_tail=stderr_tail[0],
+                )
 
-            tools_reply, tools_err = _read_json_line(proc, deadline=deadline, stderr_tail=stderr_tail)
+            tools_reply, tools_err = _read_json_line(
+                proc,
+                deadline=deadline,
+                stderr_tail=stderr_tail,
+                expected_id=2,
+                stdout_buf=stdout_buf,
+            )
             if tools_err == "exited":
                 code = proc.wait(timeout=1)
                 return McpProbeResult(
@@ -223,9 +403,18 @@ class StdioMcpProbe(McpProbePort):
                 tool_count=len(tools),
                 stderr_tail=stderr_tail[0],
             )
+        except OSError as exc:
+            return McpProbeResult(
+                outcome="spawn-failed",
+                server_name=server_name,
+                stderr_tail=str(exc)[-_STDERR_TAIL_MAX:],
+            )
         finally:
-            _stop_process_group(proc)
-            reader.join(timeout=1)
+            stop_stderr.set()
+            if proc is not None:
+                _stop_process_group(proc)
+            if reader is not None:
+                reader.join(timeout=1)
 
 
 def default_mcp_probe() -> McpProbePort:
