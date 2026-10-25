@@ -5,7 +5,7 @@ created: '2026-10-25'
 status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
-difficulty: fable
+difficulty: frontier
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md

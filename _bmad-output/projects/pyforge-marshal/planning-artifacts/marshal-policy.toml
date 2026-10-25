@@ -956,14 +956,15 @@ review = { harness = "cursor", model = "composer-2.5-fast" }
 [model_tier_map.easy]
 dev = { harness = "cursor", model = "composer-2.5" }
 
-# fable (operator ruling 2026-10-25, "can you use CLAUDE FABLE", for Story 103.1's fourth dev pass after three
-# composer-2.5-fast passes failed independent review): an opt-in difficulty class a story spec selects with
-# `difficulty: fable`. Same Cursor harness (signed in; the standalone claude CLI is not), Claude Fable 5.1 with
-# thinking for dev and review. Cursor lists every Fable variant as "NO ZDR" (no zero data retention). Not in
-# model_cost_catalog yet, so a launch carries MRS-DISP-043 (WARN) until its price is catalogued.
-[model_tier_map.fable]
-dev = { harness = "cursor", model = "claude-fable-5-1-thinking-high" }
-review = { harness = "cursor", model = "claude-fable-5-1-thinking-high" }
+# frontier (operator rulings 2026-10-25: "can you use CLAUDE FABLE", then "use the Claude Harness and Fable 5.1 as
+# the Model -- this tier can be called "Frontier""): an opt-in difficulty class a story spec selects with
+# `difficulty: frontier`, for a story the default tiers could not finish (Story 103.1, after three composer-2.5-fast
+# passes failed independent review). Claude Code harness with Claude Fable 5.1 for dev and review. It replaces the
+# short-lived Cursor `fable` tier, whose launch Cursor refused on its monthly Fable usage limit. The harness needs
+# the standalone claude CLI signed in (`claude auth status` loggedIn true).
+[model_tier_map.frontier]
+dev = { harness = "claude", model = "claude-fable-5-1" }
+review = { harness = "claude", model = "claude-fable-5-1" }
 
 # model_cost_catalog (Story 28.10, CAP-11): declared price snapshot from
 # spec-marshal-token-economy/model-economics.md (2026-08-30). Advisory only —
@@ -990,15 +991,6 @@ input_per_million = 2.00
 output_per_million = 6.00
 cache_read_per_million = 0.50
 
-# 2026-10-25: the opt-in `fable` tier's model. Without an entry under the provider of the harness that resolves it
-# (cursor), dispatch reads it as uncatalogued and drops the override (MRS-DISP-043), launching Cursor's default model
-# instead. Prices are Anthropic's first-party list rates for Claude Fable 5.1 (input $10, output $50, cache read
-# $0.25 per MTok), not Cursor's own billing; advisory, like the rest of this snapshot.
-[model_cost_catalog.providers.cursor.models."claude-fable-5-1-thinking-high"]
-input_per_million = 10.00
-output_per_million = 50.00
-cache_read_per_million = 0.25
-
 [model_cost_catalog.providers.anthropic]
 subscription_pool = "claude-max"
 
@@ -1007,6 +999,15 @@ input_per_million = 2.00
 output_per_million = 10.00
 cache_read_per_million = 0.20
 cache_write_per_million = 2.50
+
+# 2026-10-25: the `frontier` tier's model. Dispatch keeps a tier model's override only when the catalog lists it under
+# the provider of the harness that resolves it (claude -> anthropic); otherwise MRS-DISP-043 drops it. Anthropic's
+# first-party list rates for Claude Fable 5.1: input $10, output $50, cache read $0.25, cache write $12.50 per MTok.
+[model_cost_catalog.providers.anthropic.models."claude-fable-5-1"]
+input_per_million = 10.00
+output_per_million = 50.00
+cache_read_per_million = 0.25
+cache_write_per_million = 12.50
 
 [model_cost_catalog.providers.openai]
 subscription_pool = "copilot-pro"
