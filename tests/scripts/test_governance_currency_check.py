@@ -97,3 +97,33 @@ def test_missing_cursor_rules_glob_is_a_finding(tmp_path, monkeypatch):
     assert len(findings) == 1
     assert findings[0]["kind"] == "missing-document"
     assert findings[0]["reference"] == mod._CURSOR_RULES_GLOB
+
+
+# --- doctor Story 30.5: the rules docs_currency.py mirrors ------------------
+
+
+def test_a_bmad_token_naming_a_check_task_resolves(tmp_path, monkeypatch):
+    """`bmad-output-hygiene` is a Doctor source whose detector task is `bmad-output-hygiene-check`."""
+    mod = _load_detector()
+    empty_root = tmp_path / "repo"
+    (empty_root / ".claude" / "skills").mkdir(parents=True)
+    monkeypatch.setattr(mod, "ROOT", empty_root)
+    monkeypatch.setattr(mod, "SKILLS_DIR", empty_root / ".claude" / "skills")
+    monkeypatch.setattr(mod, "_TASKS", frozenset({"bmad-foo-check"}))
+    assert mod._resolves_as_identifier("bmad-foo")
+    assert not mod._resolves_as_identifier("bmad-bar")
+
+
+def test_an_absent_directory_matched_only_by_a_directory_rule_is_ignored(tmp_path, monkeypatch):
+    """git cannot tell an absent path is a directory, so `docs/build-export/` matches only the slashed form."""
+    for var in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR"):
+        monkeypatch.delenv(var, raising=False)
+    mod = _load_detector()
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+    (repo / ".gitignore").write_text("docs/build-export/\n", encoding="utf-8")
+    monkeypatch.setattr(mod, "ROOT", repo)
+    assert mod._is_git_ignored("docs/build-export")
+    assert mod._is_git_ignored("docs/build-export/")
+    assert not mod._is_git_ignored("docs/never-there")

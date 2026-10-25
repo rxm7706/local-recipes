@@ -158,7 +158,9 @@ def _resolves_as_identifier(name: str) -> bool:
         return True
     if _TASKS is None:
         _TASKS = _pixi_task_names() | _pixi_dependency_names()
-    return name in _TASKS
+    # A detector named by its source, whose pixi task is `<token>-check` (doctor Story 30.5:
+    # `bmad-output-hygiene`). docs_currency.py mirrors this rule.
+    return name in _TASKS or f"{name}-check" in _TASKS
 
 
 def _is_git_ignored(rel: str) -> bool:
@@ -169,12 +171,15 @@ def _is_git_ignored(rel: str) -> bool:
     that never ships.
     """
     import subprocess
-    try:
-        return subprocess.run(
-            ["git", "check-ignore", "-q", rel], cwd=ROOT, check=False
-        ).returncode == 0
-    except OSError:
-        return False
+    # Retried as `rel/` (doctor Story 30.5): git cannot tell an absent path is a directory, so a
+    # directory-only rule (`docs/dashboard/kedro-viz/`) matches only the slashed form. docs_currency.py mirrors it.
+    for candidate in (rel, f"{rel.rstrip('/')}/"):
+        try:
+            if subprocess.run(["git", "check-ignore", "-q", candidate], cwd=ROOT, check=False).returncode == 0:
+                return True
+        except OSError:
+            return False
+    return False
 
 
 def _check_document(rel: str) -> list[dict]:

@@ -38,7 +38,9 @@ Three read-only checks over ``docs/map.yaml`` (the new machine registry) and
   copy** of that script via :func:`.locate_checkout_script` (Story 40.1's
   pattern -- never ``target / generator``) with ``--check --root <target>``
   so the judged tree supplies only data. The exit code is the verdict: 0
-  means current, anything else is one WARN naming the page. Declared paths
+  means current, 1 is one stale WARN naming the page, and any other exit
+  (2 is the generators' could-not-run) is one could-not-run WARN on the same
+  check (Story 30.5). Declared paths
   outside ``scripts/docs_*.py`` or carrying ``..`` are one WARN and never
   run. When Doctor's checkout lacks the script, one WARN reports it and
   nothing falls back to the target's copy. A page with no ``generator:``
@@ -343,20 +345,26 @@ def _pixi_identifiers(target: Path) -> frozenset[str]:
 
 
 def _is_git_ignored(target: Path, rel: str) -> bool:
-    try:
-        run_git(target, ["check-ignore", "-q", rel])
-        return True
-    except CliBridgeError:
-        return False
+    """``git check-ignore`` for ``rel``, retried as ``rel/`` (Story 30.5): git cannot tell an absent path
+    is a directory, so a directory-only rule (``docs/dashboard/kedro-viz/``) matches only the slashed form."""
+    for candidate in (rel, f"{rel.rstrip('/')}/"):
+        try:
+            run_git(target, ["check-ignore", "-q", candidate])
+            return True
+        except CliBridgeError:
+            continue
+    return False
 
 
 def _resolves_as_identifier(target: Path, name: str, pixi_ids: frozenset[str]) -> bool:
+    """A ``bmad-*``/``skf-*`` token names a skill, a script, a pixi task or dependency, or a detector
+    whose pixi task is ``<token>-check`` (Story 30.5: ``bmad-output-hygiene`` is a Doctor source)."""
     skill_dir = target / ".claude" / "skills" / name
     if skill_dir.is_dir() and any(skill_dir.rglob("SKILL.md")):
         return True
     if (target / "scripts" / name).exists() or (target / "scripts" / f"{name}.py").exists():
         return True
-    return name in pixi_ids
+    return name in pixi_ids or f"{name}-check" in pixi_ids
 
 
 def _strip_ignored(text: str) -> str:
@@ -499,6 +507,16 @@ def _check_generated_page(target: Path, page: dict) -> Finding | None:
         )
     if returncode == 0:
         return None
+    if returncode != 1:
+        # The docs generators exit 1 when the page is stale and 2 when they cannot run (Story 30.5:
+        # scripts/docs_bmad_estate.py where pyforge.scribe is missing); anything but 1 is could-not-run.
+        return Finding(
+            source=Source.DOCS_CURRENCY,
+            check=_CHECK_GENERATED_STALE,
+            status=DoctorStatus.WARN,
+            message=(f"{rel}: could not run generator {generator} -- its --check exited {returncode}, not 0 or 1"),
+            evidence={"page": rel, "generator": generator, "exit": returncode, "output": output[-2000:]},
+        )
     return Finding(
         source=Source.DOCS_CURRENCY,
         check=_CHECK_GENERATED_STALE,

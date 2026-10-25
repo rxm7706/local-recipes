@@ -53,7 +53,8 @@ declared_low_risk: false
    naming the exit code, with the output tail in evidence.
 2. `_is_git_ignored` in both detectors: when the plain path is not ignored, try it again with a trailing `/`.
 3. `_resolves_as_identifier` in both detectors: a token also resolves when `<token>-check` is a pixi task.
-4. Restore the two references Story 30.4 reworded (`docs/dashboard/kedro-viz/`, `bmad-output-hygiene`).
+4. Restore `docs/dashboard/kedro-viz/` in `github-workflows.md`; in `the-detector-framework.md`, name the sources
+   `dreams-hygiene` and `bmad-output-hygiene` where Story 30.4 wrote their `-check` tasks to pass the scan.
 5. Close `DW-doctor-30-4-1` and `-2` with `resolution:` and `verified:` lines.
 
 Ledger key: `30-5-docs-currency-tells-a-generator-that-cannot-run-from-a-stale-page`.
@@ -78,9 +79,10 @@ Type / Effort / Deps: fix / S / S-30.4.
   a `bmad-bar` with neither a skill, a script, a task nor a `-check` task still is.
 - **AC4 — Nothing else moves.** No check name, severity, threshold or schema changes; the two detectors' resolution
   and ignore rules stay identical.
-- **AC5 — The references read as before.** `docs/reference/github-workflows.md` and
-  `docs/explanation/the-detector-framework.md` carry their pre-30.4 references, and `docs-currency` and
-  `governance-currency` report no warning on the tree.
+- **AC5 — The references read true.** `docs/reference/github-workflows.md` names `docs/dashboard/kedro-viz/` again,
+  and the sentence Story 30.4 added to `docs/explanation/the-detector-framework.md` names the warn-only sources
+  (`dreams-hygiene`, `bmad-output-hygiene`) rather than their tasks; `docs-currency` and `governance-currency`
+  report no warning on the tree.
 - **AC6 — Suites.** `pixi run -e pyforge-doctor pyforge-doctor-test` and `pixi run -e pyforge-guild scripts-lib-test`
   pass; `DW-doctor-30-4-1` and `-2` read `status: closed` with `resolution:` and `verified:` lines.
 
@@ -117,4 +119,11 @@ Type / Effort / Deps: fix / S / S-30.4.
 
 ## Auto Run Result
 
-- Pending.
+- Worktree `.claude/worktrees/exciting-faraday-1e4549-wt-docs-currency-detector-gaps-2026-10-25`, branch
+  `docs-currency-detector-gaps-2026-10-25`, from `0fc09c4aa3`.
+- AC1-AC3: `test_sources_docs_currency.py` 31 passed (five new: exit 2 and 3 read could-not-run, exit 1 still stale,
+  a directory-only ignore rule, a `-check` task); `test_governance_currency_check.py` 9 passed (two new).
+- Mutation: undoing each of the five rule changes (the slash retry and the `-check` rule in each detector, the exit
+  mapping in `docs-currency`) fails its new test; all five killed.
+- AC5: `docs-currency` exit 0 with no warning; `governance-currency` exit 0.
+- `pixi run -e pyforge-guild lint-types` exit 0.
