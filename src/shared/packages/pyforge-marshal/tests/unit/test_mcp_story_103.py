@@ -779,6 +779,133 @@ def test_mutation_dropping_stop_process_group_fails_grandchild_test():
     assert callable(_stop_process_group)
 
 
+def test_read_json_line_times_out_with_no_data():
+    import io
+
+    r, _w = os.pipe()
+    proc = type("P", (), {"stdout": io.TextIOWrapper(io.FileIO(r, "r"), encoding="utf-8"), "poll": lambda self: None})()
+    parsed, err = _read_json_line(
+        proc,
+        deadline=time.monotonic() + 0.05,
+        stderr_tail=[""],
+        stdout_buf=bytearray(),
+    )
+    assert parsed is None and err == "timed-out"
+
+
+def test_stdio_probe_initialize_missing_server_info(tmp_path):
+    script = _script_fixture(
+        'import json,sys\nprint(json.dumps({"jsonrpc":"2.0","id":1,"result":{"capabilities":{}}}))\n',
+        tmp_path,
+    )
+    result = StdioMcpProbe().probe_server(
+        server_name="t",
+        command=sys.executable,
+        args=(script,),
+        env={},
+        cwd=str(tmp_path),
+        timeout_s=5,
+    )
+    assert result.outcome == "bad-reply"
+
+
+def test_stdio_probe_skips_unexpected_json_rpc_id(tmp_path):
+    script = _script_fixture(
+        textwrap.dedent(
+            """
+            import json, sys
+            print(json.dumps({"jsonrpc":"2.0","id":99,"result":{"serverInfo":{"name":"x"},"capabilities":{}}}))
+            sys.stdout.flush()
+            for line in sys.stdin:
+                msg = json.loads(line)
+                mid = msg.get("id")
+                if msg.get("method") == "initialize":
+                    print(json.dumps({"jsonrpc":"2.0","id":mid,"result":{"serverInfo":{"name":"t"},"capabilities":{}}}))
+                    sys.stdout.flush()
+                elif msg.get("method") == "tools/list":
+                    print(json.dumps({"jsonrpc":"2.0","id":mid,"result":{"tools":[]}}))
+                    sys.stdout.flush()
+                    break
+            """
+        ),
+        tmp_path,
+    )
+    result = StdioMcpProbe().probe_server(
+        server_name="t",
+        command=sys.executable,
+        args=(script,),
+        env={},
+        cwd=str(tmp_path),
+        timeout_s=5,
+    )
+    assert result.outcome == "started"
+
+
+def test_stop_process_group_terminates_running_child(tmp_path):
+    script = _script_fixture("import time\ntime.sleep(60)\n", tmp_path)
+    import subprocess
+
+    proc = subprocess.Popen(
+        [sys.executable, script],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+    )
+    _stop_process_group(proc)
+    assert proc.poll() is not None
+
+
+def test_popen_kwargs_windows_branch(monkeypatch):
+    import pyforge.marshal.adapters.mcp_stdio_probe as mod
+
+    monkeypatch.setattr(mod.sys, "platform", "win32")
+    assert "creationflags" in mod._popen_kwargs(start_new_session=True)
+
+
+def test_stop_process_group_windows_branch(monkeypatch):
+    import subprocess
+
+    import pyforge.marshal.adapters.mcp_stdio_probe as mod
+
+    monkeypatch.setattr(mod.sys, "platform", "win32")
+    proc = subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(30)"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
+    )
+    mod._stop_process_group(proc)
+    assert proc.poll() is not None
+
+
+def test_probe_server_from_rendered_with_string_args(tmp_path):
+    script = _script_fixture(
+        textwrap.dedent(
+            """
+            import json, sys
+            for line in sys.stdin:
+                msg = json.loads(line)
+                mid = msg.get("id")
+                if msg.get("method") == "initialize":
+                    print(json.dumps({"jsonrpc":"2.0","id":mid,"result":{"serverInfo":{"name":"t"},"capabilities":{}}}))
+                    sys.stdout.flush()
+                elif msg.get("method") == "tools/list":
+                    print(json.dumps({"jsonrpc":"2.0","id":mid,"result":{"tools":[{"name":"a"}]}}))
+                    sys.stdout.flush()
+                    break
+            """
+        ),
+        tmp_path,
+    )
+    result = probe_server_from_rendered(
+        server_name="s",
+        rendered={"command": sys.executable, "args": [script, "extra"], "env": {"K": "V"}},
+        home=tmp_path,
+    )
+    assert result.outcome == "started"
+    assert result.tool_count == 1
+
+
 @pytest.mark.skipif(shutil.which("marshal-mcp") is None, reason="marshal-mcp not on PATH")
 def test_real_marshal_mcp_handshake_via_adapter():
     """AC1: real console script answers initialize and tools/list."""
