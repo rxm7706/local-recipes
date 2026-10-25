@@ -192,9 +192,9 @@ def run_check_script(
     """Run ``sys.executable script_path *args`` in ``cwd``; return
     ``(returncode, combined stdout+stderr)`` -- for a repo-local mutator
     script's own self-check mode (Story 30.3, ``spec-pyforge-doctor``
-    CAP-84), where EVERY exit code the script defines is a meaningful,
-    already-decided result (0 current, non-zero stale/drifted/hand-edited)
-    that the CALLER interprets, never a sign the run itself failed.
+    CAP-84), where EVERY exit code is a result the CALLER interprets (for
+    the docs generators: 0 current, 1 stale, anything else or a traceback
+    could-not-run, Story 30.5), never a failure of this helper.
 
     Added for ``sources/docs_currency.py``'s generated-page-stale check:
     each ``kind: generated`` page in ``docs/map.yaml`` names its own

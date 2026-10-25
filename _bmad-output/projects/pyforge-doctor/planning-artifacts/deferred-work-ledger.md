@@ -3127,7 +3127,9 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   origin: doctor Story 30.4 independent review 1, 2026-10-24
   severity: low
   promoted: 2026-10-24 — recorded with Story 30.4's review fixes
-  status: open
+  resolution: doctor Story 30.5 (spec-pyforge-doctor CAP-84, Epic 30): `_check_generated_page` reads a generator's `--check` exit 1 as stale, and any other non-zero exit or an exit 1 whose output carries a Python traceback (a crash) as could-not-run, with its own message and the exit code in evidence, on the same `docs-currency-generated-stale` check. Only `scripts/docs_bmad_estate.py` exits 2 by design (where `pyforge.scribe` is not importable); argparse exits 2 on a usage error, and the five `_docs_gen_common` generators crash with exit 1 when their `head_stamp` cannot run.
+  verified: 2026-10-24 doctor Story 30.5 (branch docs-currency-detector-gaps-2026-10-25; landing PR to follow) -- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/docs_currency.py:518` (`if returncode != 1 or crashed`); `src/shared/packages/pyforge-doctor/tests/unit/test_sources_docs_currency.py::test_a_generator_that_cannot_run_reads_could_not_run_not_stale` (exits 2 and 3), `::test_a_generator_that_crashes_reads_could_not_run_not_stale` and `::test_a_generator_exit_1_still_reads_stale`; undoing either half of the condition fails its test.
+  status: closed
 
 ### DW-doctor-30-4-2: `docs-currency` flags true references to gitignored or runtime paths, and `bmad-*` words that are not skills, as dead.
 
@@ -3140,4 +3142,6 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   origin: doctor Story 30.4 independent review 1, 2026-10-24
   severity: low
   promoted: 2026-10-24 — recorded with Story 30.4's review fixes
-  status: open
+  resolution: doctor Story 30.5 (spec-pyforge-doctor CAP-84, Epic 30): in `docs-currency` and in `scripts/governance_currency_check.py`, which it mirrors, the ignore probe for a path the page writes with a trailing slash is retried in that slashed form (a directory-only rule matches an absent directory only that way; written without the slash, the path still reads as a file), and a `bmad-*`/`skf-*` token resolves when `<token>-check` is a pixi task (a detector named by its source). `docs/reference/github-workflows.md` names `docs/dashboard/kedro-viz/` again and `docs/explanation/the-detector-framework.md` names the sources `dreams-hygiene` and `bmad-output-hygiene`. `.claude/worktrees/` stays a placeholder: only a local `.git/info/exclude` ignores it, so a fresh clone rightly reads it as absent.
+  verified: 2026-10-24 doctor Story 30.5 (branch docs-currency-detector-gaps-2026-10-25; landing PR to follow) -- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/docs_currency.py:351` (`_is_git_ignored`) and `:365` (`_resolves_as_identifier`); `scripts/governance_currency_check.py:144` and `:169`; four new tests, two per detector, each failing when its rule is undone or the slash retry is made unconditional; `docs-currency` and `governance-currency` report no warning on the tree.
+  status: closed
