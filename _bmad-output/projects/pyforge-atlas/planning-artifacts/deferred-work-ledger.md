@@ -5240,7 +5240,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: Story 37.12 review 1 (blocker), operator ruling 2026-10-24
   severity: medium
   promoted: 2026-10-24 -- atlas Story 37.12; operator-owned (a repository setting)
-  status: open
+  resolved: 2026-10-25 (the operator raised rxm7706/local-recipes' Actions cache limits: storage 40 GB and retention 45 days, read back with `gh api repos/rxm7706/local-recipes/actions/cache/storage-limit` and `.../retention-limit`, against 8.96 GB in use. kedro-viz-publish run 40178693436, a workflow_dispatch on main 028cbceaac, succeeded; its vizro job logged `Cache restored from key: pyforge-atlas-last-good-40126025801-1`, the entry run 40126025801 saved at 2026-10-24 21:15Z, and saved `pyforge-atlas-last-good-40178693436-1`. A full week between runs is not yet observed; the 45-day retention and the limit's headroom cover it.)
+  status: closed
 
 ### DW-atlas-37-12-2: On Pages, the cve-watcher's snapshot history and the TTL row caches still start empty every run.
 
