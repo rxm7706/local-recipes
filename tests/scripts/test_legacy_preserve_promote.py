@@ -314,7 +314,7 @@ def test_push_reviewed_ac9_cap_and_skip_already_on_origin(clone: Path, monkeypat
     assert sum(1 for n in notes1 if n.startswith("pushed ")) == 20
     notes2 = lpp.push_reviewed_rows(clone, rows)
     assert sum(1 for n in notes2 if n.startswith("pushed ")) == 2
-    assert sum(1 for n in notes2 if n.startswith("skipped push")) == 3
+    assert sum(1 for n in notes2 if n.startswith("skipped push")) == 23
 
 
 def test_push_reviewed_ac9_survives_preserve_git_error(clone: Path, monkeypatch: pytest.MonkeyPatch) -> None:
