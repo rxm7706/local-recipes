@@ -299,7 +299,7 @@ def _handshake(
     """Run initialize -> notifications/initialized -> tools/list; the caller fills in the stderr tail."""
     buf = bytearray()
 
-    def closed_stdin(reported_server_name: str | None = None) -> McpProbeResult:
+    def closed_stdin(reported_server_name: str | None = None, *, initialized: bool = False) -> McpProbeResult:
         remaining = deadline - time.monotonic()
         code = _wait_exit(proc, min(max(remaining, 0.0), _CLOSE_GRACE_S))
         if code is None:
@@ -307,9 +307,9 @@ def _handshake(
                 outcome="bad-reply",
                 server_name=server_name,
                 detail=(
-                    "the server closed its stdin before replying"
-                    if reported_server_name is None
-                    else "the server closed its stdin after answering initialize"
+                    "the server closed its stdin after answering initialize"
+                    if initialized
+                    else "the server closed its stdin before replying"
                 ),
                 reported_server_name=reported_server_name,
             )
@@ -341,7 +341,7 @@ def _handshake(
     reported_name = reported if isinstance(reported, str) else None
 
     if not _write(proc, _INITIALIZED) or not _write(proc, _TOOLS_LIST):
-        return closed_stdin(reported_server_name=reported_name)
+        return closed_stdin(reported_server_name=reported_name, initialized=True)
     reply, error, detail = _read_reply(proc, chunks, buf, deadline=deadline, expected_id=_TOOLS_ID)
     if error is not None or reply is None:
         return failed(error or "bad-reply", detail, reported_server_name=reported_name)

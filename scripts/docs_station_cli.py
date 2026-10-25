@@ -122,8 +122,9 @@ def _guild_hosted_packages(root: Path) -> set[str]:
 # Scrubbing the variables removes both. TERMINAL_WIDTH is typer's own width
 # override, inherited from whoever ran the generator. PYTHON_COLORS=1 makes
 # Python 3.14's argparse colour its own --help and outranks NO_COLOR (Story
-# 103.1 round-6 review: `--check` read the page stale with it set). None of
-# these has any business in a captured --help.
+# 103.1 round-6 review: `--check` read the page stale with it set).
+# TYPER_USE_RICH=0 swaps typer's rich help for click's plain formatter, a
+# different page again. None of these has any business in a captured --help.
 _TERMINAL_FORCING_VARS = (
     "FORCE_COLOR",
     "PY_COLORS",
@@ -132,6 +133,7 @@ _TERMINAL_FORCING_VARS = (
     "GITHUB_ACTIONS",
     "TTY_COMPATIBLE",
     "TERMINAL_WIDTH",
+    "TYPER_USE_RICH",
 )
 
 

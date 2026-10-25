@@ -151,10 +151,11 @@ def test_capture_help_scrubs_terminal_forcing_variables_and_pins_columns(monkeyp
     """Marshal Story 103.1 (AC9): with the caller's environment forcing a terminal
     (FORCE_COLOR, PY_COLORS, GITHUB_ACTIONS, ...), rich wraps at 80 under a dumb
     TERM or pollutes the capture with escape codes otherwise, and PYTHON_COLORS=1
-    colours argparse's own --help past NO_COLOR, so a harness rendered this page
-    stale. The child's environment carries none of those seven variables, whatever
-    the caller had, and pins COLUMNS=100 and NO_COLOR=1. The seven are named
-    literally here so dropping one from the tuple reds this test."""
+    colours argparse's own --help past NO_COLOR, and TYPER_USE_RICH=0 swaps typer
+    to click's formatter, so a harness rendered this page stale. The child's
+    environment carries none of those eight variables, whatever the caller had, and
+    pins COLUMNS=100 and NO_COLOR=1. The eight are named literally here so dropping
+    one from the tuple reds this test."""
     import subprocess
 
     forcing = {
@@ -165,6 +166,7 @@ def test_capture_help_scrubs_terminal_forcing_variables_and_pins_columns(monkeyp
         "GITHUB_ACTIONS",
         "TTY_COMPATIBLE",
         "TERMINAL_WIDTH",
+        "TYPER_USE_RICH",
     }
     assert set(m._TERMINAL_FORCING_VARS) >= forcing
 
@@ -183,6 +185,7 @@ def test_capture_help_scrubs_terminal_forcing_variables_and_pins_columns(monkeyp
     monkeypatch.setenv("GITHUB_ACTIONS", "true")
     monkeypatch.setenv("TTY_COMPATIBLE", "1")
     monkeypatch.setenv("TERMINAL_WIDTH", "80")
+    monkeypatch.setenv("TYPER_USE_RICH", "0")
     monkeypatch.setenv("TERM", "dumb")
     monkeypatch.setenv("COLUMNS", "80")
     monkeypatch.setenv("PATH", "/opt/bin")
@@ -197,6 +200,7 @@ def test_capture_help_scrubs_terminal_forcing_variables_and_pins_columns(monkeyp
     assert "GITHUB_ACTIONS" not in env
     assert "TTY_COMPATIBLE" not in env
     assert "TERMINAL_WIDTH" not in env
+    assert "TYPER_USE_RICH" not in env
     assert env["COLUMNS"] == "100"
     assert env["NO_COLOR"] == "1"
     # The rest of the caller's environment still reaches the child (PATH above all).

@@ -21,6 +21,7 @@ import sys
 import textwrap
 import threading
 import time
+from importlib.metadata import entry_points
 from importlib.metadata import version as installed_version
 from pathlib import Path
 
@@ -718,6 +719,17 @@ def test_handshake_closed_stdin_after_initialize_carries_the_reported_server_nam
     assert result.reported_server_name == "answered"
 
 
+def test_handshake_closed_stdin_after_a_nameless_initialize_still_says_initialize_was_answered():
+    """``serverInfo`` without a string name: no reported name, but ``initialize`` was answered all the same."""
+    proc = _FakeProc()
+    proc.stdin = _StdinBreaksAfterFirstWrite()  # type: ignore[attr-defined]
+    source = _ScriptedChunks(_reply_line(1, {"serverInfo": {}, "capabilities": {}}))
+    result = probe_mod._handshake(proc, source, server_name="s", deadline=time.monotonic() + 5)
+    assert result.outcome == "bad-reply"
+    assert result.detail == "the server closed its stdin after answering initialize"
+    assert result.reported_server_name is None
+
+
 class _SinkStdin:
     def write(self, _data: bytes) -> None:
         pass
@@ -1372,6 +1384,12 @@ def test_real_marshal_mcp_answers_initialize_and_lists_exactly_the_eight_tools(t
     assert result.reported_server_name == "pyforge-marshal"
     assert result.tool_count == 8
     assert set(result.tool_names) == EIGHT_TOOLS
+
+
+def test_marshal_mcp_console_script_is_declared_on_server_main():
+    """Off ``PATH``, AC1 and AC7 run ``python -m pyforge.marshal.mcp``; this pins the console script they stand in for."""
+    (entry,) = [ep for ep in entry_points(group="console_scripts") if ep.name == "marshal-mcp"]
+    assert entry.value == "pyforge.marshal.mcp.server:main"
 
 
 # --- AC2: the tools are registered, in process ------------------------------------------------------------------

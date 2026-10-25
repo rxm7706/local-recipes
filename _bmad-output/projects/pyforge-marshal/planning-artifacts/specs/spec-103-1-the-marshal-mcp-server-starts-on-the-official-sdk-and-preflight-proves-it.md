@@ -308,8 +308,8 @@ Type / Effort / Deps: fix / M / —.
 - 2026-10-25 (Round 6, independent re-review): residual risk recorded outside the contract — on Windows the probe's
   stdout reader thread (`_ThreadChunks._pump`) has no stop flag, and the stop (CTRL_BREAK to the console group, then
   terminate the direct child) does not reach a grandchild that ignores CTRL_BREAK or has no console. No declared server
-  here runs on Windows; a job object would close it. `scripts/docs_station_cli.py` also scrubs `PYTHON_COLORS` (the
-  one terminal-forcing variable dev pass 4 missed).
+  here runs on Windows; a job object would close it. `scripts/docs_station_cli.py` also scrubs `PYTHON_COLORS` and
+  `TYPER_USE_RICH`, the two variables dev pass 4's scrub missed (the second found by the check of the round-6 fixes).
 
 ## Review Triage Log
 
@@ -368,10 +368,11 @@ Type / Effort / Deps: fix / M / —.
   - should-fix — corrected in this round: the Auto Run Result read `pyforge-marshal-test` and the coverage gate as exit
     0 "on the final tree"; at `80fadf67cf` both exited 1 (1 failed, 13350 passed) on
     `test_followup_review_carried.py`, the done-and-flagged meta-test, because this spec was `done` with
-    `followup_review_recommended: true` and no deferred-work row. Clearing the flag on this review clears it; both are
-    re-run below. "Renders identically from a harness and a plain shell" held only without `PYTHON_COLORS`; "every
-    real-process fixture ends in `_assert_group_gone`" holds for the scripted fixtures, not for the three tests that
-    run the real `marshal-mcp` (no pgid marker exists for an installed console script; the scripted fixtures cover the
+    `followup_review_recommended: true` and no deferred-work row. Clearing the flag on this review clears it. Re-run on
+    the final round-6 tree: `pyforge-marshal-test` exit 0 — 13356 passed, 19 skipped; `pyforge-marshal-coverage-gate`
+    exit 0 — 7 touched modules ≥ 80%; `deferred-work-check` exit 0. "Renders identically from a harness and a plain shell" held only without `PYTHON_COLORS`; "every
+    real-process fixture ends in `_assert_group_gone`" holds for the scripted fixtures, not for the two tests that
+    run the real `marshal-mcp` nor the crash stand-in (no pgid marker exists for an installed console script; the scripted fixtures cover the
     stop path).
   - nit — fixed: the AC1 and positive AC7 real-server tests no longer skip when `marshal-mcp` is off `PATH` (AC1 uses
     `_marshal_mcp_argv()`; AC7 puts a shim that runs `python -m pyforge.marshal.mcp` on `PATH`), verified with
@@ -382,6 +383,13 @@ Type / Effort / Deps: fix / M / —.
   - nit — recorded as residual risk (Spec Change Log): the Windows path. `_ThreadChunks._pump` has no stop flag, and the
     Windows stop (CTRL_BREAK, then terminate the direct child) does not reach a grandchild that ignores CTRL_BREAK or
     has no console. No declared server runs on Windows here; a job object would close it.
+  - A second independent check of the round-6 fix commit `497424b41f` (PASS, 0 blockers): the plain `join()` cannot
+    block (both `b""` puts return at once; measured); the new exit-code test fails under the mutation it targets; the
+    AC7 shim resolves through `PATH` exactly as the crash stand-in does. Fixed from its findings: `closed_stdin` takes an
+    explicit `initialized` flag (a `serverInfo` with no string name still reads "after answering initialize"; new
+    test); `TYPER_USE_RICH` joins the scrub (`=0` swaps typer to click's formatter; `--check` exited 1 with it); a
+    test pins the `marshal-mcp` console script to `pyforge.marshal.mcp.server:main`, since off `PATH` AC1/AC7 run the
+    module directly; the stale `landing_review: required` lines, counts and variable list below corrected.
   - Landing note: PR #2307 conflicts with `main` (this spec's `difficulty: frontier` on both sides; four memlogs).
     Resolved by merging `origin/main` with memlog unions, then scoped stamps for every Spec the detector names.
 
@@ -651,8 +659,8 @@ Type / Effort / Deps: fix / M / —.
 
 ## Auto Run Result
 
-Status: done (dev pass 4 and its review pass, 2026-10-25, Claude Fable 5.1 on the frontier tier; `landing_review: required`
-stays — an independent re-review on the draft PR before merge).
+Status: done (dev pass 4 and its review pass, 2026-10-25, Claude Fable 5.1 on the frontier tier; Round 6, the independent
+re-review on the draft PR, passed it, and `landing_review` is now `passed`).
 
 Summary of the implemented change: `marshal-mcp` runs on the official `MCPServer` with a real `--help`/`--version`
 (`mcp>=2.2` declared on the package, the package `pixi.toml` and the root `[feature.pyforge-marshal.dependencies]`);
@@ -661,7 +669,7 @@ Summary of the implemented change: `marshal-mcp` runs on the official `MCPServer
 reader-thread path for win32) and maps the outcome in `core/mcp_probe.py` to `startable` / `tool_count` or one redacted
 `MRS-PREFLIGHT-012`. This pass closed the round-5 blocker at its root — `scripts/docs_station_cli.py::capture_help` now
 builds a deterministic child environment, so the cheat sheet renders identically from a harness and a plain shell
-(Round 6 added `PYTHON_COLORS`, the one variable the scrub missed) — and
+(Round 6 added `PYTHON_COLORS` and `TYPER_USE_RICH`, the two variables the scrub missed) — and
 worked every round-5 should-fix and nit, then the twelve patch entries of this pass's review.
 
 Files changed in this pass (since `e7d271fa2f`):
@@ -678,13 +686,14 @@ Files changed in this pass (since `e7d271fa2f`):
 - `src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/__main__.py` — `raise SystemExit(main())`.
 - `src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/__init__.py`, `cli/init.py` — docstrings (no FastMCP
   wording; the fourth sub-case and the DI seam named).
-- `src/shared/packages/pyforge-marshal/tests/unit/test_mcp_story_103.py` — rewritten, 100 tests: AC1–AC8 as the
+- `src/shared/packages/pyforge-marshal/tests/unit/test_mcp_story_103.py` — rewritten, 100 tests at dev pass 4 (104 after Round 6): AC1–AC8 as the
   Acceptance Criteria name them, every real-process fixture ending in an unconditional process-group check, the three
   AC8 mutation tests, the closed-stdin and post-exit-drain tests this pass's review added.
 - `src/shared/packages/pyforge-marshal/tests/unit/test_init.py` — the five no-probe preflight tests inject
   `_FailIfCalledMcpProbe`.
 - `scripts/docs_station_cli.py` — `_TERMINAL_FORCING_VARS` and `_help_env()`: the child runs without `FORCE_COLOR`,
-  `PY_COLORS`, `CLICOLOR_FORCE`, `GITHUB_ACTIONS`, `TTY_COMPATIBLE`, `TERMINAL_WIDTH`, with `NO_COLOR=1` and
+  `PY_COLORS`, `CLICOLOR_FORCE`, `GITHUB_ACTIONS`, `TTY_COMPATIBLE`, `TERMINAL_WIDTH` (Round 6 added `PYTHON_COLORS`
+  and `TYPER_USE_RICH`), with `NO_COLOR=1` and
   `COLUMNS=100`.
 - `tests/scripts/test_docs_station_cli.py` — the scrub asserted by literal variable name.
 - `docs/reference/station-cheat-sheet.md`, `docs/map.yaml` — regenerated: `marshal-mcp --help` usage, every block at 100
@@ -724,16 +733,17 @@ re-review on the draft PR, read these hunks and passed them; the flag is now `fa
 patched hunks (the two `_handshake` closed-stdin tests and the `_ScriptedChunks` drain test, the `_ThreadChunks` EOF join,
 the literal-name scrub test, the `exit_code` and `reported_server_name` carries in `_handshake`) were verified by the
 implementer's targeted tests and the orchestrator's full re-run below, not yet by an independent reader; the draft-PR
-re-review that `landing_review: required` already demands should read those hunks first. Patched counts by verdict:
+re-review (Round 6) read those hunks first and passed them. Patched counts by verdict:
 high 0, medium 4, low 8.
 
 Verification performed on the final tree (every exit code read from `$?`, never through a pipe):
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`: exit 0 — 13355 passed, 15 skipped. [Round 6: at
-  `80fadf67cf` this exited 1 — `test_followup_review_carried.py` on this spec's own flag; see Round 6 for the re-run.]
+  `80fadf67cf` this exited 1 — `test_followup_review_carried.py` on this spec's own flag; on the final round-6 tree it exits 0 —
+  13356 passed, 19 skipped.]
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test`: exit 0 — 130 passed, 3 skipped (red before the atlas declaration:
   `test_every_hard_import_is_a_declared_dependency[pyforge-atlas]`).
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-coverage-gate`: exit 0 [Round 6: exit 1 at `80fadf67cf`, the
-  same meta-test; the floors themselves held] — 7 touched modules ≥ 80%
+  same meta-test; the floors themselves held; exit 0 on the final round-6 tree] — 7 touched modules ≥ 80%
   (`adapters/mcp_stdio_probe.py` 94%, `mcp/server.py` 97%, `cli/init.py` 91%).
 - `pixi run --frozen -e pyforge-guild lint-types`: exit 0 (ruff, `ruff format --check`, mypy over every package).
 - `pixi run --frozen -e pyforge-guild docs-gen-test`: exit 0 — 48 passed.
@@ -745,7 +755,7 @@ Verification performed on the final tree (every exit code read from `$?`, never 
 - AC8: reproduced by the intent-alignment auditor on a scratch copy — each of the three mutations fails its named test
   (`test_mutation_skipping_handshake_in_probe_would_miss_finding`, `test_mutation_timed_out_not_startable`,
   `test_mutation_dropping_stop_process_group_leaves_a_grandchild`); all three pass unmutated.
-- Matrix audit: every row of the I/O & Edge-Case Matrix is covered by a passing test (110 selected tests across
+- Matrix audit: every row of the I/O & Edge-Case Matrix is covered by a passing test (110 selected tests at dev pass 4, across
   `test_mcp_story_103.py` and `test_init.py`, exit 0).
 - `pixi run --frozen -e pyforge-guild pyforge-station-tests` with `TMPDIR` off tmpfs: exit 0 — core 2564, kit 95, atlas
   3478+103, doctor 3831+4, herald 2074, marshal 13355, mason 1622+12, scribe 428, steward 2981, warden 2440. (A first
