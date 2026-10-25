@@ -956,6 +956,15 @@ review = { harness = "cursor", model = "composer-2.5-fast" }
 [model_tier_map.easy]
 dev = { harness = "cursor", model = "composer-2.5" }
 
+# fable (operator ruling 2026-10-25, "can you use CLAUDE FABLE", for Story 103.1's fourth dev pass after three
+# composer-2.5-fast passes failed independent review): an opt-in difficulty class a story spec selects with
+# `difficulty: fable`. Same Cursor harness (signed in; the standalone claude CLI is not), Claude Fable 5.1 with
+# thinking for dev and review. Cursor lists every Fable variant as "NO ZDR" (no zero data retention). Not in
+# model_cost_catalog yet, so a launch carries MRS-DISP-043 (WARN) until its price is catalogued.
+[model_tier_map.fable]
+dev = { harness = "cursor", model = "claude-fable-5-1-thinking-high" }
+review = { harness = "cursor", model = "claude-fable-5-1-thinking-high" }
+
 # model_cost_catalog (Story 28.10, CAP-11): declared price snapshot from
 # spec-marshal-token-economy/model-economics.md (2026-08-30). Advisory only —
 # never fetched live, never a gate. Must stay LAST alongside model_tier_map
