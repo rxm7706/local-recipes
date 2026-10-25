@@ -2,10 +2,10 @@
 title: "103.1: The marshal-mcp server starts on the official SDK, and preflight proves it"
 type: 'fix'
 created: '2026-10-25'
-status: 'in-review'
+status: 'done'
 baseline_revision: e7d271fa2f1b43d644413c946478c65cdf3a0be1
 review_loop_iteration: 5
-followup_review_recommended: false
+followup_review_recommended: true
 landing_review: required
 difficulty: frontier
 context:
@@ -607,51 +607,113 @@ Type / Effort / Deps: fix / M / —.
 
 ## Auto Run Result
 
-Status: in-review (dev pass 4, 2026-10-25, Claude Fable 5.1 on the frontier tier; `landing_review: required` stays —
-an independent re-review on the draft PR before merge).
-Implementation: `marshal-mcp` on the official `MCPServer` with a real `--help`/`--version`; `mcp>=2.2` declared in the
-package `pyproject.toml`, the package `pixi.toml` and the root `[feature.pyforge-marshal.dependencies]`; the stdio
-preflight handshake through `McpProbePort` / `adapters/mcp_stdio_probe.py` (deadline-bounded reads, concurrent stderr,
-one process-group stop on every path, a reader-thread path for win32), the pure verdict in `core/mcp_probe.py`, wired
-through `_probe_mcp_servers` and `run_preflight(mcp_probe=…)`; `capture_help` in `scripts/docs_station_cli.py` builds a
-deterministic child environment (the AC9 root cause).
-Dev pass 4 worked the round-5 blocker, every should-fix and every nit (the Review Triage Log entry above), corrected
-the round-4 entry, and deleted the wrong team-memory file.
-Verification (every exit code read from `$?`, never through a pipe):
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`: exit 0 — 13350 passed, 15 skipped (the Story 103 module
-  alone: 96 passed).
+Status: done (dev pass 4 and its review pass, 2026-10-25, Claude Fable 5.1 on the frontier tier; `landing_review: required`
+stays — an independent re-review on the draft PR before merge).
+
+Summary of the implemented change: `marshal-mcp` runs on the official `MCPServer` with a real `--help`/`--version`
+(`mcp>=2.2` declared on the package, the package `pixi.toml` and the root `[feature.pyforge-marshal.dependencies]`);
+`marshal preflight` starts every declared server from the home's rendered `.mcp.json` through `McpProbePort` /
+`adapters/mcp_stdio_probe.py` (deadline-bounded reads, concurrent stderr, one process-group stop on every path, a
+reader-thread path for win32) and maps the outcome in `core/mcp_probe.py` to `startable` / `tool_count` or one redacted
+`MRS-PREFLIGHT-012`. This pass closed the round-5 blocker at its root — `scripts/docs_station_cli.py::capture_help` now
+builds a deterministic child environment, so the cheat sheet renders identically from a harness and a plain shell — and
+worked every round-5 should-fix and nit, then the twelve patch entries of this pass's review.
+
+Files changed in this pass (since `e7d271fa2f`):
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/mcp_stdio_probe.py` — rewritten: `_SelectorChunks` /
+  `_ThreadChunks` stdout sources, `_parse_buffered` / `_read_reply` with the post-exit drain, `_handshake` carrying
+  `reported_server_name` / `tool_names` / `detail` and the child's exit code, one `_stop_process_group` in `probe_server`'s
+  `finally`, `_close_pipes`, `default_mcp_probe()` as the production fallback.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/mcp_probe.py` — `McpProbeResult` gains
+  `reported_server_name`, `tool_names`, `detail`.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/mcp_probe.py` — redacts `detail` beside the stderr tail;
+  never prints text it could not redact.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/server.py` — `--help` names MCP, stdio and
+  `[mcp_servers.marshal]`; `--version` degrades when the distribution is absent; `SERVER_NAME`.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/__main__.py` — `raise SystemExit(main())`.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/__init__.py`, `cli/init.py` — docstrings (no FastMCP
+  wording; the fourth sub-case and the DI seam named).
+- `src/shared/packages/pyforge-marshal/tests/unit/test_mcp_story_103.py` — rewritten, 100 tests: AC1–AC8 as the
+  Acceptance Criteria name them, every real-process fixture ending in an unconditional process-group check, the three
+  AC8 mutation tests, the closed-stdin and post-exit-drain tests this pass's review added.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_init.py` — the five no-probe preflight tests inject
+  `_FailIfCalledMcpProbe`.
+- `scripts/docs_station_cli.py` — `_TERMINAL_FORCING_VARS` and `_help_env()`: the child runs without `FORCE_COLOR`,
+  `PY_COLORS`, `CLICOLOR_FORCE`, `GITHUB_ACTIONS`, `TTY_COMPATIBLE`, `TERMINAL_WIDTH`, with `NO_COLOR=1` and
+  `COLUMNS=100`.
+- `tests/scripts/test_docs_station_cli.py` — the scrub asserted by literal variable name.
+- `docs/reference/station-cheat-sheet.md`, `docs/map.yaml` — regenerated: `marshal-mcp --help` usage, every block at 100
+  columns.
+- `src/shared/packages/pyforge-atlas/pyproject.toml`, `src/shared/packages/pyforge-atlas/pixi.toml` — `numpy>=2.5.3`
+  declared (imported at module level by `pipelines/derived_artifacts/alternatives.py`, atlas Story 37.7).
+- `pixi.lock` — the `pyforge-atlas` `conda_source` hash and its depends list (`numpy >=2.5.3`) in the ten environments
+  that build it; no resolved package changes.
+- `.steward/estate-refresh/2026-10-14.json` — restored to `origin/main` (round-5 should-fix 8).
+- `.claude/memory/project/story-103-1-build-auto-round-4-closed-round-3-probe-blockers.md`,
+  `.claude/memory/project/story-103-1-build-auto-fix-pass-2026-10-25-mcp-stdio-probe-n.md` — deleted (progress notes,
+  the first wrong about AC9); `.claude/memory/feedback/a-generated-page-that-captures-a-cli-s-help-is-not-determini.md`
+  — new, the durable lesson, via `scribe capture --type feedback`; `.claude/memory/MEMORY.md` index updated.
+- Memlogs: `spec-pyforge-marshal`, `spec-pyforge-core`, `spec-pyforge-doctor` (reconcile and a mechanism correction),
+  `spec-pyforge-atlas`, `spec-pixi-candidate-currency` — every changed governed path named.
+- This story spec: round-4 entry corrected, dev-pass-4 entries, the review-pass triage log, Spec Change Log entries, this
+  result. `scripts/.spec-surface-baseline.json` is unchanged from `e7d271fa2f`.
+
+Review findings breakdown (30 findings: high 0, medium 4, low 22, false 4):
+- Patched, 12 entries: medium — the `_ThreadChunks` EOF race that could flake a test; the untested `closed_stdin` branch;
+  the untested post-exit drain; the tautological scrub test. Low — the AC9 mechanism text (three places); the
+  `_close_pipes` docstring; the stale `remaining` before the grace wait; the `# type: ignore` on `failed`; the inaccurate
+  team-memory note; the stderr thread assigned before `start()`; the missing exit code on `bad-reply`/`error-reply`
+  from an exited child; `default_mcp_probe()` unused by production code.
+- Deferred: none.
+- Rejected, 14: blind hunter 2 (an escape-code guard for a state the scrub makes unreachable), 8, 9 and 11 (edits to this
+  spec's own log; corrected here as the run's output), 10 (false: the AUD-ATLAS-010 block's own floor rule), 13 (an SKF
+  recompile and a spec edit); edge case 2, 3 and 5 (guards for states not shown reachable: a newline-less flood, a
+  non-compliant server's request, `register` failing on a fresh pipe), 7 (false: the log records a deletion), 8 (a
+  `setsid` descendant is beyond any process group; residual risk recorded in the Spec Change Log); intent audit 1, 2
+  and 4 (the AC's named surface is run by hand, the shared fixtures are the ones the intent prescribes, the atlas
+  declaration is hygiene a verify command requires), 3 and 5 (false: AC9's command was run; the stamp is the landing
+  supervisor's by the dispatch rule).
+
+Follow-up review recommendation: true — a first pass that patched four `medium` entries. The unverified risk: the
+patched hunks (the two `_handshake` closed-stdin tests and the `_ScriptedChunks` drain test, the `_ThreadChunks` EOF join,
+the literal-name scrub test, the `exit_code` and `reported_server_name` carries in `_handshake`) were verified by the
+implementer's targeted tests and the orchestrator's full re-run below, not yet by an independent reader; the draft-PR
+re-review that `landing_review: required` already demands should read those hunks first. Patched counts by verdict:
+high 0, medium 4, low 8.
+
+Verification performed on the final tree (every exit code read from `$?`, never through a pipe):
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`: exit 0 — 13355 passed, 15 skipped.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test`: exit 0 — 130 passed, 3 skipped (red before the atlas declaration:
+  `test_every_hard_import_is_a_declared_dependency[pyforge-atlas]`).
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-coverage-gate`: exit 0 — 7 touched modules ≥ 80%
-  (`adapters/mcp_stdio_probe.py` 90%, `mcp/server.py` 97%, `mcp/__main__.py` 83%, `cli/init.py` 91%).
-- `pixi run --frozen -e pyforge-guild lint-types`: exit 0 (ruff, ruff format, mypy over every package); the marshal
-  package re-checked with ruff after the last test edit (all checks passed, 485 files formatted).
-- AC1 by hand: `printf '<initialize>' | timeout 20 pixi run --frozen -e pyforge-guild marshal-mcp`: exit 0, one JSON
-  line, `result.serverInfo.name == "pyforge-marshal"`, `protocolVersion 2025-06-18`.
-- AC4 by hand: `pixi run --frozen -e pyforge-guild marshal-mcp --help </dev/null`: exit 0, usage names MCP and stdio;
-  `--version`: `0.1.0`.
-- AC8 mutations (a script applied each, ran its named test, restored the bytes): skip the handshake →
-  `test_mutation_skipping_handshake_in_probe_would_miss_finding` FAILS; `timed-out` → startable →
-  `test_mutation_timed_out_not_startable` FAILS; drop the stop → `test_mutation_dropping_stop_process_group_leaves_a_grandchild`
-  FAILS; tree restored, the three pass.
-- AC9: `pixi run -e pyforge-guild docs-station-cli` (regenerate) exit 0; `pixi run --frozen -e pyforge-guild
-  docs-station-cli -- --check` exit **0** from a plain shell and exit **0** under `FORCE_COLOR=1 TERM=dumb`;
-  `pixi run --frozen -e pyforge-guild docs-gen-test` 48 passed.
-- `pixi run -e pyforge-guild llms-full-check`: exit 0 (clean).
-- `pixi run -e pyforge-guild pyforge-station-tests`: exit 0 — every station suite green (core 2564, kit 95, atlas 3478+103,
-  doctor 3831+4, herald 2049, marshal 13351, mason 1622+12, scribe 428, steward 2981, warden 2440).
-- `environment.yaml` is byte-identical to `pixi project export conda-environment -e build` (the exporter `estate
-  reconcile` wraps); the reconcile itself was not re-run so `.steward/estate-refresh/2026-10-14.json` stays as restored
-  from `origin/main` (round-5 should-fix 8).
-- `python scripts/spec_surface_reconcile.py`: exit 0 and `pixi run --frozen -e pyforge-guild spec-surface-check`: exit 0
-  after the memlog events (`spec-pyforge-marshal`, `spec-pyforge-core`, `spec-pyforge-doctor`, `spec-pyforge-atlas`).
-  No scoped stamp was kept: the dispatch forbids `--write-baseline` in a producer run (a producer that stamps its own
-  baseline launders drift), so `scripts/.spec-surface-baseline.json` was restored to its state at `e7d271fa2f` after
-  the implementer stamped it; both checks pass on the memlog movement alone, and the landing supervisor stamps.
-- `PYFORGE_PREFLIGHT_SCOPE=full pixi run -e pyforge-guild pr-preflight` (TMPDIR off tmpfs): exit **1**. 37 lanes selected; 34 ok; one red, `detectors-ci`, on two findings, neither this change's: (a) `ledger-direction` — `pyforge-marshal/87-19` landed-but-unpromoted: Story 87.19 merged to `main` after this branch forked (`d287eceb0a`, 05:25), `origin/main`'s ledger has `87-19 … done` and this worktree's ledger has no such key — clears when the landing merges `origin/main` (22 commits behind); (b) `chain-currency` staleness, edge `code→retro` (code 2026-10-25, newest marshal retro 2026-10-11): `origin/main` carries the same edge (its newest retro is also `retro-pyforge-marshal-2026-10-11.md`, its last marshal `src/` commit is `a21fc23200`, 87.19, 2026-10-25), so it is the fleet's state, not this branch's; the runbook remedy is a real marshal retrospective, planning work outside a fix story (and `epic-103-retrospective` is reserved for after this epic lands). Two lanes were cancelled by the stop-on-red: `pyforge-steward-test` (run green separately above, 2981 passed) and `test-ci` (the CFE suite in `local-recipes`, hours long; its `meta/` tier — the one that holds `test_spec_surface_check.py` and the `pixi.toml`/`pixi.lock` guards — run alone: `pixi run --frozen -e local-recipes pytest .claude/skills/conda-forge-expert/tests/meta -m "not network"` exit 0, 7813 passed, 6 skipped; the unit and integration tiers are left to CI, which arbitrates them). Lane logs: `~/.cache/pyforge-preflight-tmp/pyforge-preflight-jm7gfh0p/`.
-- `pixi run --frozen -e pyforge-ci pyforge-deps-test`: exit 0 — 130 passed, 3 skipped. It was red on `main` and on this
-  branch (`test_every_hard_import_is_a_declared_dependency[pyforge-atlas]`: `pipelines/derived_artifacts/alternatives.py`,
-  atlas Story 37.7, imports `numpy` with no declaration). The command is one of this story's two verify commands, so the
-  orchestrator's verify step declared `numpy>=2.5.3` (the version in the `pyforge-atlas` env, present transitively) in
-  the atlas package `pyproject.toml` and `pixi.toml`, named both on the `spec-pyforge-atlas` memlog; no root `pixi.toml`,
-  `pixi.lock` or `environment.yaml` change (pixi does not rehash a path dependency's own manifest).
-Follow-up review recommendation: false — nothing new was found beyond the round-5 list; every item was closed, not deferred.
-Blocking condition: `landing_review: required` — independent re-review on the draft PR before merge.
+  (`adapters/mcp_stdio_probe.py` 94%, `mcp/server.py` 97%, `cli/init.py` 91%).
+- `pixi run --frozen -e pyforge-guild lint-types`: exit 0 (ruff, `ruff format --check`, mypy over every package).
+- `pixi run --frozen -e pyforge-guild docs-gen-test`: exit 0 — 48 passed.
+- `pixi run --frozen -e pyforge-guild docs-station-cli -- --check`: exit 0 from a plain shell and exit 0 under
+  `FORCE_COLOR=1 TERM=dumb` (AC9).
+- AC1 by hand from `pyforge-guild`: the `initialize` pipe returns one JSON line, `result.serverInfo.name ==
+  "pyforge-marshal"`, `protocolVersion 2025-06-18`, every pipeline stage 0. AC4 by hand: `marshal-mcp --help </dev/null`
+  exit 0, `--version` prints `0.1.0` exit 0, `--bogus` exit 2.
+- AC8: reproduced by the intent-alignment auditor on a scratch copy — each of the three mutations fails its named test
+  (`test_mutation_skipping_handshake_in_probe_would_miss_finding`, `test_mutation_timed_out_not_startable`,
+  `test_mutation_dropping_stop_process_group_leaves_a_grandchild`); all three pass unmutated.
+- Matrix audit: every row of the I/O & Edge-Case Matrix is covered by a passing test (110 selected tests across
+  `test_mcp_story_103.py` and `test_init.py`, exit 0).
+- `pixi run --frozen -e pyforge-guild pyforge-station-tests` with `TMPDIR` off tmpfs: exit 0 — core 2564, kit 95, atlas
+  3478+103, doctor 3831+4, herald 2074, marshal 13355, mason 1622+12, scribe 428, steward 2981, warden 2440. (A first
+  run with `TMPDIR` unset stopped red in herald on 23 `EXDEV` cross-device errors from the tmpfs `/tmp` — the documented
+  trap, not this branch's.)
+- `pixi lock --check`: exit 0 ("Lock-file was already up-to-date") after the re-lock; `environment.yaml` byte-identical to
+  `pixi project export conda-environment -e build`.
+- `python3 scripts/spec_surface_reconcile.py`: exit 0; `pixi run --frozen -e pyforge-guild spec-surface-check`: exit 0 —
+  on the memlog movement alone. No scoped stamp in this run (the dispatch forbids `--write-baseline` in a producer run);
+  the landing supervisor stamps `spec-pyforge-marshal`, `spec-pyforge-core`, `spec-pyforge-doctor`, `spec-pyforge-atlas`
+  and `spec-pixi-candidate-currency`.
+- Not re-run after the review patches: `PYFORGE_PREFLIGHT_SCOPE=full pr-preflight` (the implementer's run before the
+  patches: 34/37 lanes ok; `detectors-ci` red only on `ledger-direction` 87-19, which clears when the landing merges
+  `origin/main`, and the fleet-wide `chain-currency` `code→retro` edge that `origin/main` carries too); `llms-full-check`
+  (exit 0 before the patches; no manifest row changed since).
+
+Residual risks: a server that starts but fails on its first tool call still passes (the probe lists tools); each declared
+server costs up to 15 s per preflight; one `protocolVersion` is offered; the rendered `env` is passed as written (no
+`${VAR}` expansion); a `setsid` descendant escapes the process-group stop. All recorded in the Spec Change Log.
