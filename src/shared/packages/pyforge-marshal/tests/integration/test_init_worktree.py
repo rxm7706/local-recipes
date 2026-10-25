@@ -1,26 +1,13 @@
-"""Integration test -- Stories 1.4/1.5/1.6/1.7/1.8, ``@pytest.mark.slow``
-(real ``git``/filesystem I/O against a throwaway temp repo shaped like this
-one: a tracked ``_bmad-output/projects/<slug>/planning-artifacts/`` on
-``main``). Drives the full ``marshal init``/``marshal homes``/``marshal
-preflight``/``marshal teardown`` commands end-to-end through ``cli.main.main``
-with the REAL ``GitVcs``/``LocalFs``/``BmadLoopHarness`` adapters (no fakes
--- those live in ``tests/unit/test_init.py``), proving the Acceptance
-Criteria a fake-port test cannot: a real git worktree lands on disk on the
-right branch, a real second invocation is a true zero-write no-op, the
-home's gitignored Tier-3 store (Story 1.5) really resolves to the SAME real
-directory as the repo's own canonical copy, ``marshal homes`` (Story 1.6)
-really auto-discovers real worktrees via real ``git worktree list`` and
-really detects a real hand-edited desync, ``marshal preflight`` (Story 1.7)
-really invokes the installed ``bmad-loop --version``, really resolves the
-real ``claude`` profile via the installed ``bmad_loop`` package, really
-copies a real seed file's bytes, and really persists a machine-scoped
-acknowledgement across two invocations, and ``marshal teardown`` (Story 1.8)
-really removes a real worktree+branch via real ``git worktree remove``/
-``git branch -D``, and -- the story's own headline scenario -- really
-recognizes a REAL single-parent squash-merge commit (this repo's own
-bmad-loop landing convention) as merged via the real ``git commit-tree``+
-``git cherry`` fallback, where real bare ancestry would misreport it as
-unmerged.
+"""Integration tests for ``marshal init``/``homes``/``preflight``/``teardown``.
+
+Most cases are ``@pytest.mark.slow`` (real ``git``/filesystem I/O in a throwaway
+repo with tracked ``_bmad-output/projects/<slug>/planning-artifacts/`` on
+``main``). Story 104.1 adds fast cases (no ``slow`` marker) for root
+``.mcp.json`` gitignore behavior after ``marshal init``.
+
+Slow cases drive the full commands through ``cli.main.main`` with REAL
+``GitVcs``/``LocalFs``/``BmadLoopHarness`` adapters (fakes live in
+``tests/unit/test_init.py``).
 """
 
 from __future__ import annotations

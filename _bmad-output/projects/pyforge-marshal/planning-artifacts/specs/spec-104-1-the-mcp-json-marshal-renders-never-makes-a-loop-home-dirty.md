@@ -2,10 +2,10 @@
 title: "104.1: The .mcp.json marshal renders never makes a loop home dirty"
 type: 'fix'
 created: '2026-10-25'
-status: 'in-review'
+status: 'done'
+followup_review_recommended: false
 baseline_revision: 'b0753539a36f349d608c80bfac9e62fdb3ffd485'
 review_loop_iteration: 0
-followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -212,4 +212,34 @@ Type / Effort / Deps: fix / S / —.
     `git check-ignore`; the Dream's "fixed the same way" corrected; teardown named.
   - nit not applied here: the PRD's FR-133..FR-135 arrows (`← CAP-91..93`) are pre-fold ids, part of a PRD-wide
     FR→CAP re-map proposed as its own task.
+
+### 2026-10-25 — Review pass (bmad-build-auto)
+- verdicts: 8 findings — high 0, medium 0, low 1, false 4, reject 3
+- findings:
+  - `[low]` `[patch]` Module docstring claimed every case is slow — updated header for Story 104.1 fast cases.
+  - `[false]` `[reject]` Missing automated AC1 `git check-ignore` test — AC1 verified manually at repo root during dispatch (`git check-ignore -v .mcp.json` exit 0, line 40).
+  - `[false]` `[reject]` Missing producer baseline stamp — dispatch used memlog reconcile only (`spec_surface_reconcile.py` OK); operator policy forbids producer `--write-baseline`; `spec-surface-check` exit 0 after memlogs.
+  - `[false]` `[reject]` AC2/AC6 not in patch — verified in dispatch commands (seed check, dry-run zero actions, oracle, suites, lint-types, coverage).
+  - `[false]` `[reject]` No `marshal refresh` integration test — spec Never runs fleet refresh; AC3 exercises the same porcelain probe refresh uses.
+  - `[reject]` `[reject]` Preflight seed-copy E2E not extended — root ignore applies to any untracked `/.mcp.json`; init render path is the story's primary proof (AC3).
+  - `[reject]` `[reject]` AC5 uses `replace` not parametrized AC3 — dedicated negative test satisfies AC5 mutation requirement.
+  - `[reject]` `[reject]` Template path via `seed.state.store` duplicates unit test — acceptable integration-local helper.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added anchored `/.mcp.json` to `model-ignores.gitignore.j2`, re-rendered the managed region via `marshal seed update --run`, and added fast integration tests proving a rendered loop home stays clean to git while nested `.mcp.json` remains visible.
+
+Files changed:
+- `model-ignores.gitignore.j2` — root MCP config ignore with AD-43/bmad-loop comment.
+- `.gitignore` / `.marshal/seed-state.yml` — seed update output (paired commit).
+- `tests/integration/test_init_worktree.py` — AC3–AC5 integration cases + docstring.
+- Co-governor `.memlog.md` entries on `spec-pyforge-marshal`, `spec-pyforge-core`, `spec-pyforge-pages`.
+
+Review: 1 low patch (docstring); 4 false/reject on scope or verified elsewhere; 3 reject as out-of-story or acceptable design.
+
+Verification: `pyforge-marshal-test` 13359 passed; `pyforge-deps-test` 130 passed; `git check-ignore -v .mcp.json` OK; `marshal seed check` OK; seed update dry-run zero actions; `marshal-local-recipes-seed-oracle` 2 passed; coverage gate OK; `lint-types` OK; `pixi run -e pyforge-guild python scripts/spec_surface_reconcile.py` OK; `spec-surface-check` OK.
+
+Residual risk: Loop homes whose checkout predates this ignore rule still need one operator `merge --ff-only` (spec after-landing). Fleet refresh not run in this dispatch.
 
