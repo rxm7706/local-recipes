@@ -394,17 +394,46 @@ def test_live_repo_gather_reports_no_finding_naming_warden() -> None:
     assert not any(f.evidence.get("station") == "warden" for f in findings)
 
 
-# --- Row: the live tree is clean (live) -------------------------------------
+# --- Row: the five cited orphans stay cited (live) --------------------------
+
+#: The five live orphans doctor Story 30.4 cited from the records they belong to (2026-10-24).
+#: Each name is joined from two parts so this file's own text never matches the whole basename:
+#: `gather()`'s orphan check greps the repo, this test file included, and a literal here would be
+#: the inbound reference that keeps the row green after a real citation is lost.
+_STORY_30_4_CITED = tuple(
+    stem + ext
+    for stem, ext in (
+        ("_bmad-output/projects/pyforge-herald/planning-artifacts/deckcraft-board-epics-displaced-2026-08-08", ".json"),
+        (
+            "_bmad-output/projects/pyforge-marshal/planning-artifacts/change-history/sprint-change-proposal-2026-08-12",
+            ".md",
+        ),
+        (
+            "_bmad-output/projects/pyforge-marshal/planning-artifacts/change-history/"
+            "sprint-change-proposal-2026-09-01-drain-self-resolution",
+            ".md",
+        ),
+        ("_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-change-proposal-2026-08-21", ".md"),
+        (
+            "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-change-proposal-2026-08-26-mcp-host-cluster",
+            ".md",
+        ),
+    )
+)
 
 
-def test_live_repo_gather_is_clean_after_the_warn_backlog_sweep() -> None:
+def test_live_repo_gather_no_longer_reports_the_orphans_story_30_4_cited() -> None:
     """Until 2026-10-24 this row asserted a live true positive outside warden
     (herald's displaced Guildhall epics array, an orphan). Doctor Story 30.4
     cited that file and the other four live orphans from the records they
-    belong to, so the live tree is the clean case now. Detection on a
+    belong to; this row now guards those citations, and only those, so an
+    orphan added elsewhere stays a warn, not a red doctor suite. Detection on a
     non-warden station stays proven on a fixture:
     ``test_orphan_file_with_no_inbound_references_resolves_true_not_a_warn``
     (station ``pyforge-acme``) and the all-classes fixture above."""
     repo_root = _require_repo_root()
+    for relpath in _STORY_30_4_CITED:
+        assert (repo_root / relpath).is_file(), f"{relpath} moved -- update this row"
     findings = hygiene.gather(repo_root)
-    assert [f for f in findings if f.status is not DoctorStatus.OK] == []
+    reported = {f.evidence.get("path") for f in findings if f.check == HygieneFindingKind.ORPHAN_FILE.value}
+    assert reported.isdisjoint(_STORY_30_4_CITED)

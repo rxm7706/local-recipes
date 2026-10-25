@@ -38,7 +38,7 @@ symbols. Graphify `code:` stays a derived extra for `index report`,
 ## Kinships
 
 [[pyforge-scribe]] · [[scribe-knowledge-layers]] ·
-[[marshal-token-economy]]
+[[marshal-token-economy]] · `intelligence-before-foundry`
 
 ## Realization log
 

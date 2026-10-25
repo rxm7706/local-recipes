@@ -37,8 +37,9 @@ merge.
 row: while the master is on it reads `drift` (undeclared pause), and every workflow job whose
 `if:` reads the master reads `paused` with `paused_by_master: true` on that surface row (the
 machine-readable flag; `detail` carries the human text). Surfaces the master does not gate, and
-rows whose own switch already pauses them, keep their previous verdict. A `retired` or
-`paused-manually` row is never counted as paused by the master, even when its workflow still reads it.
+rows whose own switch already pauses them, keep their previous verdict. A `value` row, a `retired` row
+or a `paused-manually` row is never counted as paused by the master, even when its workflow still
+reads it.
 
 **Dispatch carve-out:** `workflow_dispatch` runs ignore pause variables by design (operator
 intentional runs). Scheduled and PR/push runs honor pauses.

@@ -943,7 +943,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   impact: a station whose ledger says 47/47 renders as 63% and "paused". This is the visible half of the story-set question; the invisible half is that no detector compares a build line's story ids against the ledger's, so the divergence is silent.
   NOT the earlier claim: `DW-LEDGER-2026-08-08-1` alleged 34 orphan story specs and was retracted as self-inflicted damage. This is a different, genuinely pre-existing thing — the ledger is correct and complete; the BOARD's story set is the one that diverges.
   remedy: belongs with `spec-dashboard-project-path-derivation` (FR-140..FR-143) — derive the build line's story set from the ledger, or declare explicitly that a station may carry two and render both.
-  preserved: the displaced `projects.herald.epics` array (the DECKCRAFT story set) is kept at `_bmad-output/projects/pyforge-herald/planning-artifacts/deckcraft-board-epics-displaced-2026-08-08.json`.
+  note: 2026-10-24 (doctor Story 30.4) — the displaced `projects.herald.epics` array (the DECKCRAFT story set) is kept at `_bmad-output/projects/pyforge-herald/planning-artifacts/deckcraft-board-epics-displaced-2026-08-08.json`.
 
   resolution: CLOSED 2026-09-05 — obsolete: the Guildhall board that rendered the divergent Herald story set is retired — `docs/dashboard/` now holds only `README.md`, `index.html` and `kedro-viz/` (no `data.js`, generator deleted by steward 30.2, ledger-done), and `retired-console-check` fails CI if it is reintroduced. Closed as obsolete.
   status: closed

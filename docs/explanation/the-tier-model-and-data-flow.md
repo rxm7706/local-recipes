@@ -18,7 +18,7 @@ This document explains the rationale behind the tiers of the PyForge data flow, 
 **Role:** Human aspiration and raw intake.
 **Nature:** Tracked, permanent, forward-looking.
 
-Dreams are markdown files authored by humans. They represent feature requests, bug reports, and architectural aspirations, and they are the seed for the entire pipeline. Agents *append* to a Dream (a Realization-log entry, a sibling acknowledgement) rather than rewriting it, and the Dream-append-first rule enforced by `chain-sprawl-check` prefers appending to a station's living Dream over minting a new Dream file. A Dream is live or archived, never both: once a folded Dream's body is in its station Dream, the file moves to `archive/docs/dreams/` (CHAIN-STANDARD §11).
+Dreams are markdown files authored by humans. They represent feature requests, bug reports, and architectural aspirations, and they are the seed for the entire pipeline. Agents *append* to a Dream (a Realization-log entry, a sibling acknowledgement) rather than rewriting it, and the Dream-append-first rule enforced by `chain-sprawl-check` prefers appending to a station's living Dream over minting a new Dream file. The standard is that a Dream is live or archived, never both: once a folded Dream's body is in its station Dream, the file moves to `archive/docs/dreams/` (CHAIN-STANDARD §11). That move goes one station per PR and is still in progress, so many archived Dreams still sit in `docs/dreams/`.
 
 ## Tier 1: Legacy Specs (retired 2026-10-10)
 **Role:** Former hand-authored specifications.

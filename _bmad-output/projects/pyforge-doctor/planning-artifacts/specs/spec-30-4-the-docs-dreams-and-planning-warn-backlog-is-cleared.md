@@ -2,9 +2,9 @@
 title: '30.4: The docs, Dream and planning warn backlog is cleared'
 type: 'fix'
 created: '2026-10-24'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '9ab7ef1cf1'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
@@ -53,7 +53,10 @@ each detector as one summary line, so the backlog is read as three findings and 
    absorbed its target (a fold's "Consolidated into" banner, a rename) or drop it where none did; add a
    `## Realization log` to each archived Dream without one, from its own history.
 4. Add one `docs/dreams/README.md` row per missing Dream, derived from its own frontmatter (`title:`, `status:`), in
-   a table for the backlog; replace the README's sentence that rows are not added by hand with the ruling.
+   a table for the backlog; replace the README's sentence that rows are not added by hand with the ruling. Most of
+   these Dreams are archived, and CHAIN-STANDARD §11 (CAP-11, 2026-09-29) moves an archived Dream to
+   `archive/docs/dreams/` one station per PR, so each row is interim: it goes in the PR that moves its file
+   (`readme-table-orphan` names a row whose file is gone). The §11 moves themselves are not this story.
 5. Cite each orphan planning file from the record it belongs to (its companion readiness report, its Spec memlog, or
    its epic).
 6. Reconcile every Spec governing a changed file (memlog event naming the paths), stamp each, and re-stamp any
@@ -105,6 +108,25 @@ Type / Effort / Deps: fix / L / S-30.3.
 - `TMPDIR=$HOME/.cache/pyforge-preflight-tmp PYFORGE_PREFLIGHT_SCOPE=full pixi run -e pyforge-guild pr-preflight` —
   expected: exit 0.
 
+## Review Triage Log
+
+### 2026-10-24 — Review 1 (independent subagent, read-only): FAIL
+- verdicts: 1 blocker, 6 should-fix, 8 nits; all fixed or recorded.
+- B1 (the operator decision on the memlog names a skills-catalog regeneration that never happened, and not the
+  door): corrected by an appended event (the memlog is append-only).
+- S1 (the README rows contradict CHAIN-STANDARD §11's archive move): the rows are stated as interim in the README,
+  in Approach 4 and in the residual risks; the tier page says the move is in progress.
+- S2 (the door read a scribe CLI that cannot start as stale): `--check` now delegates to
+  `bmad_estate_check.run_check`, with a test for that case; the detector's own mapping is `DW-doctor-30-4-1`.
+- S3 (two README rows cut multi-line titles): fixed; all 64 rows checked against yaml-parsed titles.
+- S4 (the rewritten live orphan test gated every station's orphans): narrowed to the five cited files, joined from
+  parts so the test file cannot be their inbound reference.
+- S5 (AC5 evidence missing): doctor suite, reconcile, stamps, promotion and the full preflight recorded below.
+- S6 (the README's governing Spec must carry the ruling): a decision entry on `docs/governance/spec-pyforge-charter`.
+- N1 (`intelligence-before-foundry` backticked, not dropped), N2 (`DW-doctor-30-4-2`), N3 (the detectors how-to
+  names the no-generator and disallowed-path cases), N4 (`value` rows in pause-ci), N5 (MAP.md row), N6 (counts),
+  N7 (`note:` in place of a new `preserved:` field): fixed. N8: no change needed.
+
 ## Spec Change Log
 
 - 2026-10-24: minted with Story 30.4 under Epic 30 from the Dream entry of that date.
@@ -126,13 +148,23 @@ Type / Effort / Deps: fix / L / S-30.3.
   rewritten. Found and fixed on the way: commit `1e845b55fc` had cut the first line of the status comment in
   `marshal-run-watch.md`, `library-catalog-manifest-sync.md` and `run-state-one-publisher.md`; restored from
   `1e845b55fc^`.
-- `docs-currency` 20 → 0: 19 pages re-verified (corrections in 17, none needed in 2), five dead references fixed or
+- `docs-currency` 20 → 0: 19 pages re-verified (content corrected in 17, historical-citation markers only in
+  `agent-instruction-notes.md`, nothing needed in `configure-your-coding-agent.md`), five dead references fixed or
   marked historical, and the generator door named in `docs/map.yaml`. Found and fixed on the way: `docs/MAP.md`
   still listed the retired Tier 1 `docs/specs/` folder as live.
 - `bmad-output-hygiene` 5 → 0: steward Epic 11 names `sprint-change-proposal-2026-08-21.md` by file; the mcp-host
   readiness report names its proposal; marshal Story 5.10 and the Epic 28 lead-in to 28.18 name theirs; marshal's
   `DW-BOARD-2026-08-08-1` names where the displaced herald epics array is kept.
 - Also clean after the change: `docs-map-hygiene`, `general-docs-consistency`, `governance-currency`,
-  `dream-chain-check` (exit 0 each); `scripts-lib-test` 985 passed, 3 skipped (with the 9 new door tests).
+  `dream-chain-check`, `deferred-work-check`, `spec-surface-check`, `story-status-check` (exit 0 each);
+  `scripts-lib-test` 985 passed, 3 skipped (before review 1; the door's tests are 8 after it, with
+  `test_bmad_estate_check.py` 13 passed); `pixi run -e pyforge-doctor pyforge-doctor-test` exit 0, 3,819 passed and
+  1 skipped, then 4 passed (after review 1's fixes).
+- Doctor's live-tree pins follow the cleared state: `test_live_tree_dream_readme_missing_count` and
+  `test_live_tree_kinship_wikilink_dead_count` assert 0 (AGENTS.md pre-PR item 8's shape); the live orphan row now
+  asserts only that the five files this story cited are not reported, so an orphan added elsewhere stays a warn.
 - Outside these three detectors and not changed: `status-body-consistency` warns on 12 `SPEC.md` files' open
   questions, none of them touched here.
+- Residual risks: the 64 interim README rows (Approach 4); `DW-doctor-30-4-1` (`docs-currency` reads a generator's
+  could-not-run exit as stale, so in an env without `pyforge.scribe` the BMAD-estate page reads stale; detector code
+  is outside this story); `DW-doctor-30-4-2` (the dead-reference scan's false positives this story reworded around).

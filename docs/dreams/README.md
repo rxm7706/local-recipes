@@ -169,7 +169,10 @@ enforced), and `kinship-wikilink-dead` (a `Kinship` wikilink that resolves to no
 `docs/dreams/`). All three WARN and none gates; `dreams-hygiene-check` runs them, and
 `detectors-ci` has since Story 41.1. The `dream-readme-missing` backlog was closed on 2026-10-24
 by operator ruling (doctor Story 30.4): its rows were derived from each file's frontmatter, not
-written from memory, and a new Dream's row lands with the Dream. The **frontmatter is the source of
+written from memory, and a new Dream's row lands with the Dream. Most of those rows are archived
+Dreams that CHAIN-STANDARD §11 moves to `archive/docs/dreams/` one station per PR; each row is
+interim, and goes in the PR that moves its file (`readme-table-orphan` names a row whose file is
+gone). The **frontmatter is the source of
 truth**; this table is a
 curated map, and its Status column is now synced from frontmatter rather than hand-copied.
 *(Historical: 25 Dreams as of 2026-07-23 — 3 born Dream-first — the regenerable factory among
@@ -365,8 +368,8 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | [`platform-datastores-consumed-not-self-hosted.md`](platform-datastores-consumed-not-self-hosted.md) | archived | Postgres and Redis become consumed, not self-hosted, matching the IdP and object-storage pattern. Folded into [`pyforge-steward.md`](pyforge-steward.md). |
 | [`platform-fifteen-factors.md`](platform-fifteen-factors.md) | archived | The platform host earns its 15 factors — OIDC-delegated auth, telemetry, startup refusals, policy-as-tests, pixi-sourced deps. Folded into [`pyforge-steward.md`](pyforge-steward.md). |
 | [`platform-object-storage-kind.md`](platform-object-storage-kind.md) | archived | The estate gets an S3-compatible object store, without becoming its operator. Folded into [`pyforge-steward.md`](pyforge-steward.md). |
-| [`pptx-custom-shapes.md`](pptx-custom-shapes.md) | archived | Programmatic OOXML shapes for information-dense slides, if the .pptx pipeline. Folded into [`pyforge-herald.md`](pyforge-herald.md). |
-| [`pptx-deck-generation.md`](pptx-deck-generation.md) | archived | A second, PowerPoint-native deck pipeline, if this repo ever needs editable. Folded into [`pyforge-herald.md`](pyforge-herald.md). |
+| [`pptx-custom-shapes.md`](pptx-custom-shapes.md) | archived | Programmatic OOXML shapes for information-dense slides, if the .pptx pipeline ever exists. Folded into [`pyforge-herald.md`](pyforge-herald.md). |
+| [`pptx-deck-generation.md`](pptx-deck-generation.md) | archived | A second, PowerPoint-native deck pipeline, if this repo ever needs editable .pptx output. Folded into [`pyforge-herald.md`](pyforge-herald.md). |
 | [`pyforge-atlas-intelligence-platform.md`](pyforge-atlas-intelligence-platform.md) | archived | Dream — PyForge Atlas Intelligence Platform. Folded into [`pyforge-atlas.md`](pyforge-atlas.md). |
 | [`pyforge-core.md`](pyforge-core.md) | archived | One primitive, one home — the shared floor under eight stations. Folded into [`pyforge-marshal.md`](pyforge-marshal.md). |
 | [`pyforge-doctor-dependency-health.md`](pyforge-doctor-dependency-health.md) | archived | Dream — PyForge Doctor: Dependency Health Diagnostics. Folded into [`pyforge-doctor.md`](pyforge-doctor.md). |

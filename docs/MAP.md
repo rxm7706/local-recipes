@@ -23,7 +23,7 @@ general documentation:
 | Layer | Paths | Why excluded |
 |-------|-------|--------------|
 | Dreams (Tier 0) | `docs/dreams/` | Raw aspirations; Herald/BMAD intake |
-| Legacy intake specs (Tier 1, retired) | `archive/docs/specs/` | The hand-authored spec tier is retired: doctor Story 37.1 emptied the old folder on 2026-10-10, and its specs live under `archive/docs/specs/` (Story 23.3) |
+| Legacy intake specs (Tier 1, retired) | `archive/docs/specs/` | The hand-authored spec tier is retired: doctor Story 37.1 emptied the old folder on 2026-10-10; its specs were archived under `archive/docs/specs/` (Story 23.3) or carried into a station chain as a Spec companion |
 | BMAD planning (Tier 2) | `_bmad-output/projects/*/planning-artifacts/` | Active specs, epics, architecture |
 | BMAD execution (Tier 3) | `_bmad-output/projects/*/implementation-artifacts/` | Gitignored runtime scratch |
 | Tool entry points | `README.md`, `CLAUDE.md`, `AGENTS.md`, `.cursor/rules/` | Agent/human front doors — Story 22.6 corrects pointers into this map, not relocates them |
