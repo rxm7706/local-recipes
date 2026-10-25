@@ -2,9 +2,9 @@
 title: "39.1: Every atlas PRD FR arrow names the Spec capability that realizes it"
 type: 'chore'
 created: '2026-10-25'
-status: 'ready-for-dev'
+status: 'in-review'
 baseline_revision: 'f8803da678fc3f0864545db0135c865f7badb0f8'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 declared_low_risk: false
 context:
@@ -20,7 +20,7 @@ deferred:
   - summary: >-
       Atlas PRD FR-15, FR-61 and FR-63 have no realizing capability: they keep the 2026-09-17 fold's counted arrows CAP-15, CAP-1 and CAP-3 until the operator picks their source.
     evidence: |-
-      Story 39.1 (2026-10-25) re-mapped the fold's counted FR arrows from evidence, and the operator ruled ("Approve as proposed") to leave these three unchanged pending a source-capability decision. FR-61 (kedro-skills audit-then-adopt) and FR-63 (a recorded verdict on vscode-kedro) come from spec-kedro-org-tooling-adoption, which numbered its capabilities as a plain list ("Capability 1..3"), not CAP-n. The fold (86d1cdf3ee) minted spec-pyforge-atlas CAPs only from CAP-n lines, so Capabilities 1 and 3 never became capabilities, while their stories (atlas 11.1, 11.3) stayed done; Capability 2 survives as CAP-41 through spec-atlas-kedro-catalog-expansion CAP-6. FR-15 (Pixi-first, nebi-scaffolded, conda-forge-only) derives from the Spec's Constraints bullet "Conda-forge-only, pixi-managed, py3.14-floored provisioning", not from a CAP; its arrow names CAP-15, the derived layer. Options: restore kedro-org Capabilities 1 and 3 as spec-pyforge-atlas CAPs through bmad-spec and point FR-61 and FR-63 at them, or retire those FRs; for FR-15, mint a toolchain CAP from the constraint, or let the FR cite the constraint instead of a CAP.
+      Story 39.1 (2026-10-25) re-mapped the fold's counted FR arrows from evidence, and the operator ruled ("Approve as proposed") to leave these three unchanged pending a source-capability decision. FR-61 (kedro-skills audit-then-adopt) and FR-63 (a recorded verdict on vscode-kedro) come from spec-kedro-org-tooling-adoption, which numbered its capabilities as a plain list ("Capability 1..3"), not CAP-n. The fold (86d1cdf3ee) minted spec-pyforge-atlas CAPs only from CAP-n lines, so Capabilities 1 and 3 never became capabilities, while their stories (atlas 11.1, 11.3) stayed done; Capability 2's published DAG view is extended by CAP-41 and re-specified by CAP-62. FR-15 (Pixi-first, nebi-scaffolded, conda-forge-only) derives from the Spec's Constraints bullet "Conda-forge-only, pixi-managed, py3.14-floored provisioning", not from a CAP; its arrow names CAP-15, the derived layer. Options: restore kedro-org Capabilities 1 and 3 as spec-pyforge-atlas CAPs through bmad-spec and point FR-61 and FR-63 at them, or retire those FRs; for FR-15, mint a toolchain CAP from the constraint, or let the FR cite the constraint instead of a CAP.
     location: >-
       _bmad-output/projects/pyforge-atlas/planning-artifacts/prds/prd-pyforge-atlas-2026-07-17/prd.md (FR-15, FR-61, FR-63)
     severity: low
@@ -46,7 +46,8 @@ deferred:
 
 **Approach:**
 - **The table is the contract.** `spec-pyforge-atlas`'s memlog carries the approved re-map (the 2026-10-25 decision
-  entry "the approved re-map for Story 39.1"): 23 headings, each `FR-n <- <new> (was CAP-k) [evidence]`. It was
+  entry "the approved re-map for Story 39.1", amended for the FR-6 row by the "amendment to the approved re-map"
+  entry after the round-1 review): 23 headings, each `FR-n <- <new> (was CAP-k) [evidence]`. It was
   derived from each CAP's full intent and success text at `86d1cdf3ee^` (this Spec's `SPEC.md` cut those bullets to
   their first line at the fold), the FR title and body, and, for FR-61..FR-68, the source Specs'
   own capabilities mapped through the `← spec-<old> CAP-k` provenance lines.
@@ -76,7 +77,7 @@ Type / Effort / Deps: chore / S / —.
 
 ## Acceptance Criteria
 
-- **AC1 — The 23 arrows.** Every heading in the memlog table carries exactly its new arrow, and no other FR heading's
+- **AC1 — The 23 arrows.** Every heading in the memlog table, as amended, carries exactly its new arrow, and no other FR heading's
   arrow changed: a diff of the PRD's `#### FR-` lines against `f8803da678` shows exactly 23 changed lines.
 - **AC2 — The two other fold lines.** `### FR-61..FR-68 delivered` carries no arrow, and `## Fold provenance
   (2026-09-17)` keeps its original sentences and adds one that points at the Story 39.1 currency section.
@@ -135,8 +136,34 @@ Type / Effort / Deps: chore / S / —.
 - `pixi run -e pyforge-guild python scripts/chain_currency_sweep_check.py --json --project pyforge-atlas` — expected: exit 0 (AC5).
 - `pixi run -e pyforge-guild detectors-ci` — expected: no new findings against `main` (AC5).
 
+## Auto Run Result
+
+Status: in-review (hand-built in the chain PR; promoted to `done` by `dispatch_land_finalize` after the merge)
+Implementation: the 23 PRD FR heading arrows rewritten from the memlog table as amended (`#### FR-` lines changed: 23);
+the `### FR-61..FR-68 delivered` heading's arrow dropped; one correction sentence added to the PRD's fold-provenance
+paragraph; PRD § Currency reconciliation — 2026-10-25 (Story 39.1) and the spine's section of the same name added;
+PRD, spine and epics re-stamped; `DW-atlas-39-1` ingested for FR-15, FR-61 and FR-63.
+
 ## Spec Change Log
 
 - 2026-10-25: minted from the Dream entry of 2026-10-25 (the PRD's FR arrows were counted, not traced) at the
   operator's rulings "Approve as proposed (Recommended)", "Drop the arrow (Recommended)" and "Append a correction
   (Recommended)". `type: chore`, no flag, no CAP.
+- 2026-10-25: review round 1 of the table (before the PRD edit) found FR-6 missing CAP-5; the operator ruled
+  "CAP-4, CAP-5, CAP-15" for FR-6, recorded as a memlog amendment. The `deferred:` evidence now says Capability 2's
+  view is extended by CAP-41 and re-specified by CAP-62, not that it survives through
+  `spec-atlas-kedro-catalog-expansion` CAP-6.
+- 2026-10-25: implemented in the chain PR (23 arrows, the two fold lines, PRD and spine currency sections,
+  re-stamps, `DW-atlas-39-1`); moved to `in-review`.
+
+## Review Triage Log
+
+- **Round 1, 2026-10-25 (independent review of the approved table at `0f92bd6ae9`, before the PRD edit): FAIL on one
+  row.** FR-6's stories include G3, "Dagster sensors" (prd.md:274, :533; epics.md:133, :190; Story 8.3), which CAP-5
+  realizes; with the table as approved no FR cited CAP-5. Raised to the operator because it changes an approved row;
+  ruled "CAP-4, CAP-5, CAP-15" (CAP-15 for Story B5's external-refresh assets). Confirmed: the other 22 changed rows,
+  FR-3, FR-8, FR-12, FR-13, and the three deferred rows; no fold-written arrow missed. Evidence corrections applied
+  without a citation change: FR-16's tag is B, not S; kedro-org Capability 2 does not survive through
+  `spec-atlas-kedro-catalog-expansion` CAP-6 (a separate trigger follow-on); the fold-provenance correction also covers
+  "Every FR in this PRD derives from … CAP-1..CAP-60", and stays inside its paragraph so no new line opens with an FR
+  id ahead of the FR headings.

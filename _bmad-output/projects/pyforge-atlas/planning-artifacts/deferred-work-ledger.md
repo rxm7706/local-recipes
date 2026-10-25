@@ -5266,3 +5266,14 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-10-24 -- atlas Story 37.12; owner atlas (a fix to Story 37.5's nodes)
   resolved: 2026-10-24 (Story 37.13: SnapshotHistoryDataset leaves the AD-13 marker <store>.staleness.json on a save that appends no snapshot, an empty frame or a store it cannot read, and removes it after a save that writes rows; with pyforge.atlas.board_projections on, the cve-watcher's AD-17 stamp is the older of its latest snapshot's time and the diff file's mtime, and the stamp line says stale with the marker's reason, so an earlier run's diff is dated by its own snapshot and marked; with no snapshot store the board reads as a data gap)
   status: closed
+
+### DW-atlas-39-1: Atlas PRD FR-15, FR-61 and FR-63 have no realizing capability: they keep the 2026-09-17 fold's counted arrows CAP-15, CAP-1 and CAP-3 until the operator picks their source.
+
+- source_spec: `planning-artifacts/specs/spec-39-1-every-atlas-prd-fr-arrow-names-the-spec-capability-that-realizes-it.md`
+  summary: Atlas PRD FR-15, FR-61 and FR-63 have no realizing capability: they keep the 2026-09-17 fold's counted arrows CAP-15, CAP-1 and CAP-3 until the operator picks their source.
+  evidence: Story 39.1 (2026-10-25) re-mapped the fold's counted FR arrows from evidence, and the operator ruled ("Approve as proposed") to leave these three unchanged pending a source-capability decision. FR-61 (kedro-skills audit-then-adopt) and FR-63 (a recorded verdict on vscode-kedro) come from spec-kedro-org-tooling-adoption, which numbered its capabilities as a plain list ("Capability 1..3"), not CAP-n. The fold (86d1cdf3ee) minted spec-pyforge-atlas CAPs only from CAP-n lines, so Capabilities 1 and 3 never became capabilities, while their stories (atlas 11.1, 11.3) stayed done; Capability 2's published DAG view is extended by CAP-41 and re-specified by CAP-62. FR-15 (Pixi-first, nebi-scaffolded, conda-forge-only) derives from the Spec's Constraints bullet "Conda-forge-only, pixi-managed, py3.14-floored provisioning", not from a CAP; its arrow names CAP-15, the derived layer. Options: restore kedro-org Capabilities 1 and 3 as spec-pyforge-atlas CAPs through bmad-spec and point FR-61 and FR-63 at them, or retire those FRs; for FR-15, mint a toolchain CAP from the constraint, or let the FR cite the constraint instead of a CAP.
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/prds/prd-pyforge-atlas-2026-07-17/prd.md (FR-15, FR-61, FR-63)
+  origin: spec-deferred 9588d5cf96f1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-25 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
