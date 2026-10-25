@@ -3793,7 +3793,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "910c6bbd68910f30dfbfc5f1bad1ad9fdcf21fb9"
+  "memlog": "3e09bcec174e3a46844c08d8410a1f9f720b1ef2"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -3926,8 +3926,8 @@
    "src/shared/packages/pyforge-marshal/docs/air-gapped-deployment.md": "cd3b26918793a0fbe2b9f5ffc3fdf1648ce791c0",
    "src/shared/packages/pyforge-marshal/docs/finding-remedy-reference.md": "ce26072f8cc4cff045bde65522687eb52c2b8ac8",
    "src/shared/packages/pyforge-marshal/docs/managed-region-contract.md": "9c446ae9091cd493ada7cc1f8ba8562e604dca2e",
-   "src/shared/packages/pyforge-marshal/pixi.toml": "bd0aef746376857333fce40ffd2fdf3e1bda1314",
-   "src/shared/packages/pyforge-marshal/pyproject.toml": "c001cc87338b592cd6d2f98f7d39d1e3c1faf656",
+   "src/shared/packages/pyforge-marshal/pixi.toml": "42af2e488bde2a91c8667d40841c351fbfc08d8f",
+   "src/shared/packages/pyforge-marshal/pyproject.toml": "88a66be8737969100816b55f40a68eb85cfa0f4a",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/__init__.py": "b9e09847a6e53c11db7d1afdbeefd6fc00ff6c2e",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/clock_system.py": "e9b2f6d0cf1b73337cd7fd0dbd3a892bd98f0c70",
@@ -4412,7 +4412,7 @@
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e",
    "tests/scripts/test_tea_playwright_check.py": "be266df25acac99bc9a8a317e4e3f4f68374844b"
   },
-  "memlog": "3aa91b0ee2e073bf173aa8c563143e21bcc44ff6"
+  "memlog": "c9ec7669e772d1f3b0cb39b92d133424e4198909"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
