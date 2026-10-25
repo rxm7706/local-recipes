@@ -2,9 +2,9 @@
 title: "103.1: The marshal-mcp server starts on the official SDK, and preflight proves it"
 type: 'fix'
 created: '2026-10-25'
-status: 'in-review'
+status: 'ready-for-dev'
 baseline_revision: 2ab8529aeb6646855e94199e3371392f52611601
-review_loop_iteration: 2
+review_loop_iteration: 3
 followup_review_recommended: false
 landing_review: required
 context:
@@ -281,6 +281,53 @@ Type / Effort / Deps: fix / M / —.
   coverage gate; `scripts/docs_station_cli.py` and `docs/reference/library-llms-full.md` joined the surface.
 
 ## Review Triage Log
+
+- **Round 3, 2026-10-25 (independent re-review of draft PR #2307, head `d3910b6f59`, rework `2ab8529aeb..HEAD`):
+  FAIL — 3 blockers. Sent back to `ready-for-dev`; `landing_review: required` stays.** Resolved since round 2: the
+  deadline while the child lives, `BrokenPipeError` on write, `id` matching and `serverInfo`, chunked stderr, all three
+  AC8 mutations, lint, spec-surface. Do the three blockers first, exactly as written:
+  - **blocker 1 (new) — `_drain_stdout` hangs** (`adapters/mcp_stdio_probe.py:51-65`, called at `:96`, `:111`, `:117`):
+    it reads to EOF with no deadline, so `sh -c 'sleep 600 & exit 1'` (a grandchild holding stdout after the child
+    exits) blocks preflight forever. Fix: never block past the deadline — when the child has exited, stop the whole
+    process group FIRST (blocker 2), then drain only what is already buffered with a select-bounded, non-blocking read
+    against the remaining deadline.
+  - **blocker 2 — the process group is still not stopped** (`:179-216`): `os.getpgid(proc.pid)` runs after the child
+    was reaped, raises `ProcessLookupError`, and only `proc.terminate()` runs; SIGKILL is sent only if the direct child
+    outlives 2 s. Fix: `pgid = proc.pid` (guaranteed by `start_new_session=True`; never call `getpgid`);
+    `os.killpg(pgid, SIGTERM)` ignoring `ProcessLookupError`; wait the short grace; `os.killpg(pgid, SIGKILL)`
+    UNCONDITIONALLY, ignoring `ProcessLookupError`; then reap the child with a guarded wait. Tests (no slow marker):
+    after EVERY real-process fixture assert `os.killpg(pgid, 0)` raises `ProcessLookupError` — unconditionally, not
+    behind `if pgid_file.is_file()`; add fixtures for (a) child exits while a grandchild with detached pipes lives
+    (`sleep 600 </dev/null >/dev/null 2>&1 & exit 1`), (b) child exits while a grandchild holds stdout
+    (`sleep 600 & exit 1`), (c) a grandchild that ignores SIGTERM (`(trap '' TERM; exec sleep 600) & sleep 600`).
+    Each must return within the timeout and leave no group member alive. Replace the hollow
+    `test_mutation_dropping_stop_process_group_fails_grandchild_test` (`tests/unit/test_mcp_story_103.py:775-777`,
+    `assert callable(...)`) with a real assertion.
+  - **blocker 3 — AC9 still stale** (`docs/reference/station-cheat-sheet.md:193-222`): the scribe block is wrapped at
+    80 columns; `main` has 100. Fix: run exactly `pixi run -e pyforge-guild docs-station-cli`, commit, and confirm
+    `pixi run --frozen -e pyforge-guild docs-station-cli -- --check` exits 0. Correct the Auto Run Result's claim.
+  - **should-fix** — `probe_server` (`:312`, `:364`, `:372`): an unguarded `proc.wait(timeout=1)` raises
+    `TimeoutExpired` for a server that answers `initialize`, closes stdin and stays alive, crashing preflight. Wrap the
+    whole probe body so ANY exception maps to one of the six outcomes (with the stop always run). Windows read path
+    (`:87-103`): `selectors` on a pipe fd does not work on Windows; use a reader thread and a queue on win32.
+  - **should-fix — tests**: AC5 — a `_probe_mcp_servers`-level test for each of the five failure outcomes asserting
+    `startable: false`, the outcome name and the redacted stderr tail; a recording fake that fails if called in the
+    unresolvable and nothing-declared tests (`test_init.py:2809`, `:2870`). AC1 — carry the reported server name and
+    tool names in `McpProbeResult` and assert `pyforge-marshal` and the eight names. AC2 — assert the call returns the
+    stubbed value (`:163`). AC4 — patch `build_server` to raise, assert the help text and the installed version, and add
+    a subprocess case with stdin open and closed. AC7 — at least one test drives a real server through the adapter (the
+    real `marshal-mcp`, and a tiny script that imports a missing module as the fastmcp stand-in).
+  - **should-fix — scope and stamp**: restore `.steward/estate-refresh/2026-10-14.json` from `origin/main` (it still
+    carries this worktree's absolute paths, +342/−48). Append a `spec-pyforge-marshal` memlog event naming the eight
+    still-unnamed paths: `cli/init.py`, `core/egress.py`, `core/findings.py`, the package `pyproject.toml` and
+    `pixi.toml`, `tests/unit/test_init.py`, `tests/unit/test_egress.py`, `tests/meta/test_ad34_egress_registry_completeness.py`.
+  - **nits** — `mcp/__main__.py:8` `raise SystemExit(main())`; close the three pipes after the joins; `mcp/__init__.py:8`
+    still says "FastMCP-free"; delete or use the dead `_popen_kwargs` (`:152-157`); unregister the stdout fd on EOF
+    (`:115-119` busy-loops); record `${VAR}` expansion as residual risk and the pyforge-core
+    `test_process_sole_ownership.py` exemption in the Spec Change Log; move the shared sandbox fixtures to a
+    `conftest.py`.
+  - Note: the branch will conflict with `main` (81f66ee411) in four memlogs; the landing's union heal handles memlogs,
+    then the scoped stamps must be re-run.
 
 - **Round 2, 2026-10-25 (independent code review of the dispatch branch, `d287eceb0a..de66441fa4` plus the
   fix-pass commits through `44bc730c56`): FAIL — 7 blockers, 10 should-fix, 6 nits. Sent back to `ready-for-dev`;
