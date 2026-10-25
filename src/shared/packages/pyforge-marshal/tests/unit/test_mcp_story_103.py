@@ -151,6 +151,82 @@ def test_stdio_probe_answers_initialize_and_tools_list(tmp_path):
     assert result.tool_count == 1
 
 
+def test_stdio_probe_bad_reply(tmp_path):
+    script = _script_fixture('print("not json at all")\nimport time; time.sleep(2)\n', tmp_path)
+    result = StdioMcpProbe().probe_server(
+        server_name="t",
+        command=sys.executable,
+        args=(script,),
+        env={},
+        cwd=str(tmp_path),
+        timeout_s=5,
+    )
+    assert result.outcome == "bad-reply"
+
+
+def test_stdio_probe_error_reply(tmp_path):
+    script = _script_fixture(
+        'import json,sys\n'
+        'print(json.dumps({"jsonrpc":"2.0","id":1,"error":{"code":-1,"message":"nope"}}))\n',
+        tmp_path,
+    )
+    result = StdioMcpProbe().probe_server(
+        server_name="t",
+        command=sys.executable,
+        args=(script,),
+        env={},
+        cwd=str(tmp_path),
+        timeout_s=5,
+    )
+    assert result.outcome == "error-reply"
+
+
+def test_stdio_probe_timed_out(tmp_path):
+    script = _script_fixture("import time; time.sleep(60)\n", tmp_path)
+    result = StdioMcpProbe().probe_server(
+        server_name="t",
+        command=sys.executable,
+        args=(script,),
+        env={},
+        cwd=str(tmp_path),
+        timeout_s=0.3,
+    )
+    assert result.outcome == "timed-out"
+
+
+def test_stdio_probe_spawn_failed():
+    result = StdioMcpProbe().probe_server(
+        server_name="t",
+        command="/no/such/binary-ever",
+        args=(),
+        env={},
+        cwd="/tmp",
+        timeout_s=1,
+    )
+    assert result.outcome == "spawn-failed"
+
+
+def test_probe_server_from_rendered_missing_command(tmp_path):
+    result = probe_server_from_rendered(
+        server_name="x",
+        rendered={},
+        home=tmp_path,
+    )
+    assert result.outcome == "spawn-failed"
+
+
+def test_main_invokes_stdio_server_when_no_args(monkeypatch):
+    seen: list[str] = []
+
+    class _FakeServer:
+        def run(self):
+            seen.append("run")
+
+    monkeypatch.setattr("pyforge.marshal.mcp.server.build_server", lambda: _FakeServer())
+    assert main([]) == 0
+    assert seen == ["run"]
+
+
 def test_stdio_probe_exited_on_early_failure(tmp_path):
     script = _script_fixture(
         'import sys; print("fail", file=sys.stderr); sys.exit(1)\n',
