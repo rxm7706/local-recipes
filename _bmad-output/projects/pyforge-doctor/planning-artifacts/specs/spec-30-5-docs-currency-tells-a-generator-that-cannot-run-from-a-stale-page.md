@@ -176,3 +176,9 @@ Type / Effort / Deps: fix / S / S-30.4.
   only path of each surface that moved, so each memlog carries a reconcile event and each Spec is stamped scoped.
 - Scoped stamps: `spec-pyforge-doctor`, `spec-pyforge-core`, `spec-pyforge-marshal`, `spec-pixi-candidate-currency`,
   `spec-deck-family-currency`, `spec-deck-family-lockstep`, `spec-pyforge-pages`.
+- Full-scope `pr-preflight`: run 1 red on `detectors-ci` (`ad_citation_check`: the herald reconcile lines cited bare
+  `CAP-84` and `CAP-69`); the six reconcile lines now read `spec-pyforge-doctor:CAP-84` and
+  `spec-pyforge-atlas:CAP-69` and those Specs are re-stamped. Run 2 red on `pyforge-atlas-test`:
+  `test_dashboard_e2e.py::test_declared_controls_render_against_real_rows` waited the full 60 s for the grid mount at
+  load average ~21 (the lane took 202 s; alone it passes in 53 s, 3478 passed). No file of this story touches atlas;
+  the flake is atlas's, recorded as a follow-up. Run 3 exit 0 at `dd702c728c`.
