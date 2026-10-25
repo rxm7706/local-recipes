@@ -81,10 +81,16 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Print the installed pyforge-marshal version and exit",
     )
-    if argv is None:
-        parsed, unknown = parser.parse_known_args()
-    else:
-        parsed, unknown = parser.parse_known_args(argv)
+    try:
+        if argv is None:
+            parsed, unknown = parser.parse_known_args()
+        else:
+            parsed, unknown = parser.parse_known_args(argv)
+    except SystemExit as exc:
+        code = exc.code
+        if code is None or code == 0:
+            return 0
+        return int(code) if isinstance(code, int) else 2
     if unknown:
         parser.print_usage(sys.stderr)
         print(f"marshal-mcp: error: unrecognized arguments: {' '.join(unknown)}", file=sys.stderr)

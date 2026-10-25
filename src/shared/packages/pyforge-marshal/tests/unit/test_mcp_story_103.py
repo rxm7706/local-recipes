@@ -184,7 +184,7 @@ def test_mutation_skipping_handshake_in_probe_would_miss_finding(tmp_path, monke
         def probe_server(self, **kwargs):
             return McpProbeResult(outcome="exited", server_name="atlas", exit_code=1, stderr_tail="err")
 
-    from . import test_init as init_mod
+    import test_init as init_mod
 
     slug = "acme"
     home = tmp_path / "loop-homes" / slug

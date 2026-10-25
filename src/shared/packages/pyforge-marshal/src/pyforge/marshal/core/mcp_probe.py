@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 from pyforge.marshal.core.egress import redact_raw_text
-from pyforge.marshal.core.findings import Finding
-from pyforge.marshal.core.model import Severity
+from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.ports.mcp_probe import McpProbeResult
 
 
