@@ -33,6 +33,20 @@ EIGHT_TOOLS = {
 }
 
 
+def test_build_server_tool_calls_delegate(monkeypatch):
+    """AC2: each registered tool delegates to tools.py."""
+    import asyncio
+
+    sentinel = {"list_marshal_tools": object()}
+    monkeypatch.setattr(
+        "pyforge.marshal.mcp.tools.list_marshal_tools",
+        lambda: sentinel["list_marshal_tools"],
+    )
+    server = build_server()
+    result = asyncio.run(server.call_tool("list_marshal_tools", {}))
+    assert result is sentinel["list_marshal_tools"]
+
+
 def test_build_server_registers_eight_tools():
     """AC2: SDK tool list matches the eight named tools."""
     import asyncio
@@ -294,6 +308,51 @@ def test_stdio_probe_spawn_failed():
         timeout_s=1,
     )
     assert result.outcome == "spawn-failed"
+
+
+def test_probe_server_from_rendered_with_args_and_env(tmp_path):
+    script = _script_fixture(
+        textwrap.dedent(
+            """
+            import json, os, sys
+            assert os.environ.get("PROBE_FOO") == "bar"
+            for line in sys.stdin:
+                msg = json.loads(line)
+                mid = msg.get("id")
+                if msg.get("method") == "initialize":
+                    print(json.dumps({"jsonrpc":"2.0","id":mid,"result":{"serverInfo":{"name":"t"},"capabilities":{}}}))
+                    sys.stdout.flush()
+                elif msg.get("method") == "tools/list":
+                    print(json.dumps({"jsonrpc":"2.0","id":mid,"result":{"tools":[]}}))
+                    sys.stdout.flush()
+                    break
+            """
+        ),
+        tmp_path,
+    )
+    result = probe_server_from_rendered(
+        server_name="s",
+        rendered={"command": sys.executable, "args": [script], "env": {"PROBE_FOO": "bar"}},
+        home=tmp_path,
+    )
+    assert result.outcome == "started"
+
+
+def test_stdio_probe_initialize_missing_result(tmp_path):
+    script = _script_fixture(
+        'import json,sys\n'
+        'print(json.dumps({"jsonrpc":"2.0","id":1,"result":{}}))\n',
+        tmp_path,
+    )
+    result = StdioMcpProbe().probe_server(
+        server_name="t",
+        command=sys.executable,
+        args=(script,),
+        env={},
+        cwd=str(tmp_path),
+        timeout_s=5,
+    )
+    assert result.outcome == "bad-reply"
 
 
 def test_probe_server_from_rendered_missing_command(tmp_path):
