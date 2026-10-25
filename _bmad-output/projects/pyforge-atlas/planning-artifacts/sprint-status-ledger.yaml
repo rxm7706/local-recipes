@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: atlas
-# stories: 219
+# stories: 220
 development_status:
   1-1-generate-legacy-contextual-skill: done
   10-1-restore-atlas-dependency-completeness-so-the-suite-can-collect: done
@@ -89,6 +89,7 @@ development_status:
   27-3-the-read-surfaces-render-what-design-specifies-on-real-data: done
   27-4-the-planning-record-matches-the-tree-and-owed-reviews-run: done
   27-5-the-distribution-breakdown-facet-filter-builds-its-control: done
+  27-6-the-distribution-breakdown-e2e-test-waits-for-its-grid-to-mount: done
   28-1-the-live-attach-fixture-postgres-starts-under-any-basetemp: done
   29-1-the-range-test-server-records-each-response-before-the-client-can-read-it: done
   3-1-port-the-conda-side-backbone-phases-into-kedro-nodes: done

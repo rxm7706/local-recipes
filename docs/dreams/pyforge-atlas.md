@@ -671,6 +671,44 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   - no other board's stamp changes.
 
   Owner `spec-pyforge-atlas` (CAP-69, CAP-64, no new CAP). → Epic 37 / Story 37.13, specced 2026-10-24.
+- **2026-10-24 (the distribution-breakdown grid wait under load)** — **Found: the declared-controls e2e test fails
+  under parallel load while the page is healthy.** `test_declared_controls_render_against_real_rows` red the
+  `pyforge-atlas-test` lane of a full-scope `pr-preflight` on 2026-10-24 (Story 37.13, PR #2300) with
+  `Locator expected to contain text 'linux-64'` on `#distribution-breakdown--grid`: the grid was still
+  `data-dash-is-loading="true"`, then empty, when Playwright's 5 s default ran out. The suite took 3:57 there against
+  about 44 s alone; the test passed the run before and three times alone. It failed the same way in Story 31.1's
+  preflight on 2026-10-15 (`DW-atlas-retro-2026-10-15-1`).
+  **Evidence:**
+  - Vizro builds every AgGrid as an empty placeholder and fills it from the page's `on_page_load` callback; the
+    browser then applies that output and loads dash-ag-grid's lazy grid chunk (`async-community.js`) before the grid
+    mounts. The facet filter (static since Story 27.5) and the chart's container render from the layout, so the
+    test's three 15 s waits did not wait for that callback, and the grid assertion alone carried it under the 5 s
+    default.
+  - Reproduced under load: 32 copies of the real test body on 16 xdist workers beside 48 busy-loop processes failed
+    4 of 24 copies that got a server, with the same message and the same `data-dash-is-loading`-then-empty call log
+    (4 of 31 beside 32 busy loops; 4 of 25 beside 48 again after a host reboot).
+  - Timed in the page (a `MutationObserver`) under that load: the filter, its dropdown and the chart were visible
+    before the grid mounted in every copy; the grid mounted up to 20.8 s after navigation and up to 16.9 s after the
+    chart, with the `linux-64` row within 1 ms of the mount. The `on_page_load` request took at most 1.9 s there, so
+    most of the time is the busy browser, not the Vizro server.
+  - A first fix, a 15 s mount wait after the chart, still failed 3 of 24 copies in one counted batch, on the
+    dropdown's own 15 s wait: under load every step can take longer than 15 s, so budgets per step do not fit.
+  - The file's two other grid tests (the navigation walk and the grounded pages) check grids filled the same way
+    under the same 5 s default; their pages draw no chart and render sooner, and under the same load they failed 0 of
+    30 copies, so the exposure there is real but did not reproduce.
+  **What it looks like when fixed:** right after the page opens, the test waits up to 60 s for the AG Grid to mount
+  inside `#distribution-breakdown--grid`, the element drawn last, with the budget the suite gives a loaded host (the
+  fixture's server bind, the WASM smoke); then it checks the filter, its dropdown, the chart and the row as before.
+  Every other grid check in the file waits for its grid's mount the same way, through one helper. Under the same
+  load no copy fails its assertions (setup errors, the fixture's server not binding within 60 s at that synthetic
+  load, are counted apart), and a fixture root without the `linux-64` row still fails on the row, with the grid's
+  actual text.
+  **Constraints:**
+  - A `fix` story: no CAP, no FR, no flag (`spec-feature-flag-governance` Q1). Test-only: the e2e file's grid checks
+    change, and no skip, `xfail`, retry or rerun is added (AD-11: gates are never weakened); every assertion stays.
+  - It goes into Epic 27, which owns this test (Stories 27.3 and 27.5), and reopens it until it lands.
+  **Kinships:** [[pyforge-steward]] (the pre-push preflight lane that surfaced it). Owner `spec-pyforge-atlas` (CAP-8,
+  the read surface). → Epic 27 / Story 27.6, specced 2026-10-24.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 
