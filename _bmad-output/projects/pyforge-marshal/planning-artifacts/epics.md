@@ -10064,7 +10064,7 @@ start has exited 1 since Story 18.1. The preflight probe (`MRS-PREFLIGHT-012`) c
 added. It is a new epic because Epics 6 and 18 are done.
 **HARD boundaries:**
 - The registered tools keep their names, arguments and delegation to `tools.py`; only the SDK class changes.
-- The probe imports no MCP SDK, never reads or writes `~/.claude.json` (AD-43), and always stops the server it starts.
+- The probe imports no MCP SDK, never reads or writes `~/.claude.json` (AD-43), and always stops the server it starts with its whole process group.
 - No package new to the factory: `pyforge-guild` already carries the `mcp` SDK; it is declared, and the
   `pyforge-marshal` test env gains it.
 
@@ -10074,9 +10074,9 @@ As the operator whose marshal loop home registers a `marshal` MCP server that no
 I want `marshal-mcp` built on the official SDK, and preflight to start each declared server and complete an MCP handshake,
 So that a registered tool surface is one an agent can reach, and a server that cannot start reds preflight instead of passing it.
 
-**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-1 (FR-5, preflight), CAP-21 (← spec-agent-tool-surface CAP-1, FR-153) and CAP-22 (← spec-agent-tool-surface CAP-2, FR-154); AD-43, AD-4 • Dream 2026-10-25 (marshal's own MCP server has never started) • operator ruling 2026-10-25 • DW-FU-18-2
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-1 (FR-5, preflight), CAP-21 (← spec-agent-tool-surface CAP-1, FR-153) and CAP-22 (← spec-agent-tool-surface CAP-2, FR-154); AD-43, AD-4, AD-34 • Dream 2026-10-25 (marshal's own MCP server has never started) • operator ruling 2026-10-25 • DW-FU-18-2
 **Flag:** none (`spec-feature-flag-governance` Q1, a fix)
-**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/server.py` (`build_server` on `MCPServer`, `main` with argparse); the package `pyproject.toml` and `pixi.toml` and the root `pixi.toml`'s `[feature.pyforge-marshal.dependencies]` (`mcp>=2.2`); `ports/mcp_probe.py` (new); `adapters/mcp_stdio_probe.py` (new); `core/mcp_probe.py` (new, pure); `cli/init.py` (`_probe_mcp_servers`, the `mcp_probe` seam on `run_preflight`); their tests; `pixi.lock`, and `environment.yaml` if the exported set moves; `docs/reference/station-cheat-sheet.md` (regenerated)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/server.py` (`build_server` on `MCPServer`, `main` with argparse); the package `pyproject.toml` and `pixi.toml` and the root `pixi.toml`'s `[feature.pyforge-marshal.dependencies]` (`mcp>=2.2`); `ports/mcp_probe.py` (new); `adapters/mcp_stdio_probe.py` (new); `core/mcp_probe.py` (new, pure), `core/egress.py` (`EGRESS_PORTS`) and `core/findings.py`; `cli/init.py` (`_probe_mcp_servers`, the `mcp_probe` seam on `run_preflight`); their tests; `pixi.lock`, and `environment.yaml` if the exported set moves; `docs/reference/station-cheat-sheet.md` (regenerated); `scripts/docs_station_cli.py` (a docstring example) and `docs/reference/library-llms-full.md` (the `pyforge-marshal` env row)
 **Spec:** `planning-artifacts/specs/spec-103-1-the-marshal-mcp-server-starts-on-the-official-sdk-and-preflight-proves-it.md`
 **Given** `028cbceaac`, where `mcp/server.py:15` imports `fastmcp` (absent from `pyforge-guild`), `main` (`:66`) ignores its arguments, and `_probe_mcp_servers` (`cli/init.py:505`) marks a bare command resolvable by a `PATH` lookup alone (`:587`)
 **When** the story lands

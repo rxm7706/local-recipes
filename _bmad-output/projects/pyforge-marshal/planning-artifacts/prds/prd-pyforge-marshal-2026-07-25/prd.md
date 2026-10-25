@@ -3431,7 +3431,7 @@ design and mint (2026-10-25). `SPEC.md` is unchanged. No CAP is added.
 
 - **Story 103.1** (Epic 103; CAP-1 / FR-5, CAP-21 / FR-153, CAP-22 / FR-154): `marshal-mcp` is rebuilt on the official
   MCP SDK's `MCPServer` and gains a real `--help`, and `marshal preflight` starts each declared MCP server and completes
-  a handshake instead of looking its command up on `PATH`. It realizes FR-5, FR-153 and FR-154 as written: the server
+  a handshake once its command resolves on `PATH`. It realizes FR-5, FR-153 and FR-154 as written: the server
   FR-153 describes had never started, and the probe FR-5 and AD-43 call for checked only `PATH`.
 
 ### The FR space: no FR registered

@@ -2352,10 +2352,15 @@ Checked against every AD; it lands as written:
 
 - **AD-43 (the tool surface is policy-declared and home-rendered):** the render and its copy-when-absent rule do not
   move. The probe reads only the home's rendered `.mcp.json`, never `~/.claude.json`, and its finding stays
-  `MRS-PREFLIGHT-012` at ERROR. "Preflight probes resolvability" now means the declared server starts and answers.
+  `MRS-PREFLIGHT-012` at ERROR. The Rule's "preflight probes resolvability" is met more strongly, not amended: a
+  declared command that resolves is also started and must answer.
 - **AD-4:** the mapping from a probe result to a finding is pure, in `core/`; the process the probe starts lives in a
   new adapter behind a new port.
-- **AD-3:** the new adapter joins the import-linter contract's `source_modules`; it never references `bmad_loop`.
+- **AD-34 (redaction is a port-boundary property):** the new `McpProbePort` passes argv and an environment to a
+  child process, the carve-out the Rule makes for `ProcessPort` and `HarnessPort`, so `EGRESS_PORTS` classifies it
+  non-egress. The server's stderr tail is redacted with `redact_raw_text` before it reaches a finding.
+- **AD-3:** unchanged. The new adapter sits under `adapters/`, which the contract leaves out of `source_modules` on
+  purpose, and it never references `bmad_loop`.
 - Doctor Story 30.5's 2026-10-24 surface reconcile touches no marshal decision.
 
 **Content changed:** this section. `updated:` bumped. No AD added, amended or removed.

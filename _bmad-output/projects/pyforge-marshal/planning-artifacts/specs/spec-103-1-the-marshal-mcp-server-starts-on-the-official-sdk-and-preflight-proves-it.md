@@ -16,12 +16,16 @@ context:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/egress.py
+  - src/shared/packages/pyforge-marshal/tests/meta/test_ad34_egress_registry_completeness.py
+  - src/shared/packages/pyforge-marshal/tests/meta/test_ad3_ad4_import_linter.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/harness.py
   - src/shared/packages/pyforge-marshal/pyproject.toml
   - src/shared/packages/pyforge-marshal/pixi.toml
   - src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py
   - src/shared/packages/django-marshal/src/django_marshal_portal/mcp_asgi.py
   - scripts/docs_station_cli.py
+  - docs/reference/library-llms-full.md
 declared_low_risk: false
 ---
 
@@ -77,29 +81,44 @@ reports it healthy. Line numbers are at `028cbceaac`.
   already carries mcp 2.2.0.
 - **The probe.** A new port, `ports/mcp_probe.py` (a `Protocol` and frozen value types only), and a new adapter,
   `adapters/mcp_stdio_probe.py`, start one declared server and complete a handshake:
-  - the command, args and env come from the home's own rendered `.mcp.json` (what an agent would launch), the env
-    merged over the caller's environment as Claude Code does;
-  - it writes newline-delimited JSON-RPC to the child's stdin: `initialize` (a fixed `protocolVersion`, empty
-    `capabilities`, `clientInfo.name` `marshal-preflight`), then `notifications/initialized`, then `tools/list`;
-  - it waits at most a timeout (`MCP_PROBE_TIMEOUT_S`, 15 s) for both replies, then always terminates the child, kills
-    it after a short grace and reaps it, whatever happened;
-  - it keeps the last 2 KiB of stderr and returns a frozen result: `started` / `exited` (with the exit code) /
-    `timed-out` / `bad-reply` / `error-reply` / `spawn-failed`, the server name, and the tool count;
+  - the command, args and env come from the home's own rendered `.mcp.json` (what an agent would launch, which a hand
+    edit may have made differ from policy), the env merged over the caller's environment as Claude Code does; the
+    working directory is the home;
+  - the child starts in its own session (`start_new_session=True`), so a server launched through a wrapper (`npx`,
+    `uvx`, `pixi run`, a shell script) is stopped together with every process it spawned;
+  - it writes newline-delimited JSON-RPC to the child's stdin in the MCP lifecycle's order: `initialize` (a fixed
+    `protocolVersion`, empty `capabilities`, `clientInfo.name` `marshal-preflight`); once the `initialize` result
+    arrives, `notifications/initialized` and then `tools/list`;
+  - it reads stderr concurrently, so a server that writes a lot to stderr cannot block on a full pipe, and keeps the
+    last 2 KiB;
+  - it waits at most a timeout (`MCP_PROBE_TIMEOUT_S`, 15 s) for both replies, then always signals the child's process
+    group (terminate, then kill after a short grace) and reaps the child, whatever happened;
+  - it returns a frozen result: `started` / `exited` (with the exit code) / `timed-out` / `bad-reply` / `error-reply` /
+    `spawn-failed`, the server name, the tool count and the stderr tail;
   - it imports no MCP SDK, so it judges any declared server the same way.
+- **The port is not an egress port (AD-34).** `McpProbePort` passes argv and an environment to a child process, the
+  carve-out AD-34's Rule makes for `ProcessPort` and `HarnessPort`, so it joins `core/egress.py`'s `EGRESS_PORTS` as
+  `False` (`tests/meta/test_ad34_egress_registry_completeness.py` requires every port `Protocol` to be classified).
+  The stderr tail is a child's raw text bound for a finding, which every `Envelope` consumer prints, so it passes
+  through `core.egress.redact_raw_text` first.
 - **The decision is pure.** `core/mcp_probe.py` maps a probe result to `(startable, findings)`. Only `started` with a
   `serverInfo` and a `tools` list is startable. Every other outcome is one `MRS-PREFLIGHT-012` (ERROR, the code's
-  existing tier; `core/verdict.py:1026`) naming the server, the outcome and the stderr tail. `core/findings.py`'s
+  existing tier; `core/verdict.py:1026`) naming the server, the outcome and the redacted stderr tail. `core/findings.py`'s
   description of `MRS-PREFLIGHT-012` gains the fourth sub-case.
 - **The wiring.** `run_preflight` gains an `mcp_probe` DI seam (Story 28.3's `kit_probe` pattern); production
   supplies the adapter. `_probe_mcp_servers` runs it only for a server whose command already resolved, so a command
   missing from `PATH` keeps today's message. Each `data.mcp_servers` entry gains `startable` and `tool_count` beside
-  `name`, `command` and `resolvable`. A project with no declared server runs no probe.
+  `name`, `command` and `resolvable`. A project with no declared server runs no probe. Story 6.9's existing preflight
+  tests (`tests/unit/test_init.py:2780-2914`) inject the fake probe, so none of them starts a real binary.
 - **The cheat sheet.** `pixi run -e pyforge-guild docs-station-cli` regenerates `docs/reference/station-cheat-sheet.md`,
   which then shows `marshal-mcp --help`'s usage. The page is doctor's (`spec-pyforge-doctor` CAP-84), so its memlog
   carries the surface reconcile and its scoped stamp.
-- **The import-linter seam.** `pyforge.marshal.adapters.mcp_stdio_probe` joins the AD-3 contract's `source_modules`
-  (the comment there asks each new adapter's story to add it), and any list `tests/meta/test_ad3_ad4_import_linter.py`
-  pins moves with it.
+- **Two texts that name today's failure.** `scripts/docs_station_cli.py`'s `capture_help` docstring (`:113-116`)
+  gives `marshal-mcp` without `fastmcp` as its example of a crashing script; it gets a neutral example. The
+  `pyforge-marshal` env row of `docs/reference/library-llms-full.md` (`:99`) and its `mcp` entry gain the new
+  dependency, so `llms-full-check` stays green.
+- **AD-3 is unchanged.** The new adapter sits under `adapters/`, which the AD-3 contract's `source_modules` leaves out
+  on purpose (`tests/meta/test_ad3_ad4_import_linter.py:109-132` pins that set); it never references `bmad_loop`.
 - **`type: fix`, no flag.** Story 18.1's server and Story 6.9's probe are meant to work; this restores both. Under
   `spec-feature-flag-governance` Q1 a fix carries no flag.
 
@@ -121,14 +140,14 @@ Type / Effort / Deps: fix / M / —.
 ### Living CAP citations
 
 - **`spec-pyforge-marshal` CAP-1** (loop homes and isolation, FR-5): a home is preflight-verified. This story makes
-  the verification start the tool surface the home registers instead of looking it up on `PATH`.
+  the verification start the tool surface the home registers once its command resolves on `PATH`.
 - **`spec-pyforge-marshal` CAP-21** (← `spec-agent-tool-surface` CAP-1, FR-153, one governed surface) and **CAP-22**
   (← `spec-agent-tool-surface` CAP-2, FR-154, the surface survives a clone): marshal's tools are reachable through the
   registered server. The PRD's § 16.7 headings still carry the pre-fold arrows `← CAP-111` / `← CAP-112`; the Spec's
   own ids are cited here. This story mints no CAP and changes no `SPEC.md` text.
 - **AD-43:** the tool surface is policy-declared and home-rendered, and the user-scoped registry is never read or
   written; the probe reads only the home's rendered `.mcp.json`. **AD-4:** the decision is pure in `core/`; the
-  process lives in an adapter. **AD-3:** the new adapter joins the import-linter seam.
+  process lives in an adapter. **AD-34:** the new port is classified non-egress, and the stderr tail is redacted.
 - **Origin.** `docs/dreams/pyforge-marshal.md` Realization log, the 2026-10-25 (marshal's own MCP server has never
   started) entry; the operator's ruling of 2026-10-25.
 
@@ -153,9 +172,10 @@ Type / Effort / Deps: fix / M / —.
   project with no declared server runs no probe.
 - **AC6 — The adapter.** Against small scripted servers (a test fixture that answers, one that exits 1 after writing
   to stderr, one that never answers, one that prints a line that is not JSON, one that answers `initialize` with a
-  JSON-RPC error), the adapter returns `started`, `exited`, `timed-out` (bounded by a short test timeout), `bad-reply`
-  and `error-reply`, and no child process is left running after any of them.
-- **AC7 — Preflight end to end.** `marshal preflight pyforge-marshal --json`, run against a home whose `.mcp.json`
+  JSON-RPC error, one that forks a grandchild and then never answers, one that writes 1 MiB to stderr before it
+  answers), the adapter returns `started`, `exited`, `timed-out` (bounded by a short test timeout), `bad-reply`,
+  `error-reply`, `timed-out` and `started`, and no process of the child's group is left running after any of them.
+- **AC7 — Preflight end to end.** `marshal preflight pyforge-marshal --format json`, run against a home whose `.mcp.json`
   registers `marshal-mcp`, shows the server `startable: true` with `tool_count: 8` and no `MRS-PREFLIGHT-012`; the
   same run against today's `fastmcp`-importing server (a fixture standing in for it) shows `MRS-PREFLIGHT-012` with
   `ModuleNotFoundError` in its message.
@@ -164,16 +184,17 @@ Type / Effort / Deps: fix / M / —.
 - **AC9 — The cheat sheet.** `pixi run -e pyforge-guild docs-station-cli -- --check` exits 0, and the page shows
   `marshal-mcp --help`'s usage instead of the "not resolvable" note.
 - **AC10 — The suites.** `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` and `pixi run --frozen -e pyforge-ci
-  pyforge-deps-test` are green; the `pyforge-marshal` coverage gate holds.
+  pyforge-deps-test` are green; the `pyforge-marshal` coverage gate holds. AC2, AC4, AC5 and AC6's tests live under
+  `tests/unit`, which the coverage gate measures; AC4 also calls `main(argv)` in process.
 
 ## Boundaries & Constraints
 
 **Always:**
-- Stop every child the probe starts, on every path, and reap it.
+- Stop every process the probe starts (the child's whole process group), on every path, and reap the child.
 - Read the server's command, args and env from the home's own rendered `.mcp.json`.
 - Keep the eight tools' names, arguments and answers exactly as they are.
 - Reconcile every governed path on the memlogs of the Specs that govern it (`spec-pyforge-marshal`;
-  `spec-pyforge-core`, which co-governs station `src/`; `spec-pyforge-doctor` for the cheat sheet), then stamp scoped
+  `spec-pyforge-core`, which co-governs station `src/`; `spec-pyforge-doctor` for the cheat sheet and `scripts/docs_station_cli.py`), then stamp scoped
   (AGENTS.md pre-PR item 5).
 - Regenerate `environment.yaml` in the PR that changes `pixi.toml` (AGENTS.md § Policy), and run every station suite
   (AGENTS.md pre-PR item 7).
@@ -221,8 +242,8 @@ Type / Effort / Deps: fix / M / —.
   `epic-103-retrospective` are minted with it.
 - Ledger key: `103-1-the-marshal-mcp-server-starts-on-the-official-sdk-and-preflight-proves-it`.
 - Deps: —.
-- Deferred work: closes the marshal half of `DW-FU-18-2` (AC2 proves registered tools, not a file); the coverage
-  report itself (`mcp/coverage.py`) is unchanged, so the entry's resolution names what remains.
+- Deferred work: `DW-FU-18-2` stays open, a kinship only. This story proves marshal's registered tools (AC2) but does
+  not change `mcp/coverage.py`, the entry's own location.
 - Surface: `marshal-policy.toml` `[epic_surfaces]."103"`, added with this mint.
 - Minted 2026-10-25 in one chain commit.
 
@@ -239,6 +260,7 @@ Type / Effort / Deps: fix / M / —.
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
 - `pixi run -e pyforge-guild docs-station-cli -- --check` — expected: exit 0 after the regeneration (AC9).
 - `pixi run -e pyforge-steward pyforge steward estate reconcile` — expected: `environment.yaml` current with `pixi.toml`.
+- `pixi run -e pyforge-guild llms-full-check` — expected: exit 0.
 - `pixi run -e pyforge-guild pyforge-station-tests` — expected: pass (a `pixi.toml` change fires every station suite).
 - `python3 scripts/spec_surface_reconcile.py` and `pixi run --frozen -e pyforge-guild spec-surface-check` — expected: exit 0 after the memlog entries and the scoped stamps.
 - The three mutations of AC8 — expected: each fails its named test. Restore each.
@@ -250,7 +272,25 @@ Type / Effort / Deps: fix / M / —.
   operator's ruling "Go with the migration: move marshal-mcp to the official SDK MCPServer, add a real --help, and make
   preflight run a startup handshake. Plan it as one marshal story through the full Dream-to-code chain." `type: fix`,
   no flag, no CAP.
+- 2026-10-25: chain review round 1 (independent reviewer, PASS, 0 blockers). Applied: AD-34 classification and stderr
+  redaction; the MCP lifecycle order (wait for the `initialize` result); process-group stop, concurrent stderr and
+  two more AC6 fixtures; `--format json` in AC7; the AD-3 step dropped (its meta-test pins the set); `DW-FU-18-2` kept
+  as a kinship; cwd = the home; the existing preflight tests inject the fake probe; unit-suite placement for the
+  coverage gate; `scripts/docs_station_cli.py` and `docs/reference/library-llms-full.md` joined the surface.
 
 ## Review Triage Log
 
-- No review has run yet.
+- **Round 1, 2026-10-25 (chain review of `863ee4395c`, independent reviewer): PASS, 0 blockers, 7 should-fix, 8 nits;
+  all applied.**
+  - should-fix: the AD-3 `source_modules` step would red `test_ad3_ad4_import_linter.py:109-132` — dropped.
+  - should-fix: a new port `Protocol` needs an AD-34 `EGRESS_PORTS` entry — added (non-egress, process-spawn
+    carve-out), stderr tail redacted.
+  - should-fix: AC7 used `--json`; preflight takes `--format json` (`cli/init.py:1251`) — fixed.
+  - should-fix: the handshake was pipelined; `notifications/initialized` now waits for the `initialize` result.
+  - should-fix: only the direct child was stopped — process group, concurrent stderr, grandchild and heavy-stderr
+    fixtures added.
+  - should-fix: `DW-FU-18-2` was claimed half-closed outside the surface — kept as a kinship.
+  - should-fix: the spine read AD-43 as reinterpreted — reworded as met more strongly, not amended.
+  - nits: memlog design aligned (rendered `.mcp.json`, root `pixi.toml` pin) by a follow-up event; epics FR/AD and
+    Surface aligned; "instead of" `PATH` wording fixed in the PRD and here; two stale texts joined the surface;
+    Story 6.9's tests inject the fake probe; unit placement for coverage; cwd = the home.
