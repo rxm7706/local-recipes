@@ -49,7 +49,7 @@ def test_read_json_line_bad_reply_and_error_reply():
             except StopIteration:
                 return ""
 
-    tail: list[str] = []
+    tail: list[str] = [""]
     deadline = time.monotonic() + 1
     parsed, err = _read_json_line(
         _Proc(["not-json\n"]),
