@@ -168,7 +168,10 @@ def _stop_process_group(proc: subprocess.Popen[str]) -> None:
                 proc.kill()
             except OSError:
                 pass
-            proc.wait(timeout=2)
+            try:
+                proc.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                pass
         return
 
     pgid: int | None = None

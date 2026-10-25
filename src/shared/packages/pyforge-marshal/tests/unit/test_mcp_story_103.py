@@ -938,6 +938,31 @@ def test_stop_process_group_without_pgid_terminates_child(monkeypatch):
     assert terminated
 
 
+def test_read_json_line_exited_drains_stdout():
+    import io
+
+    r, w = os.pipe()
+    os.write(w, b'{"jsonrpc":"2.0","id":1,"result":{}}\n')
+    os.close(w)
+
+    class _Proc:
+        def __init__(self):
+            self.stdout = io.TextIOWrapper(io.FileIO(r, "r"), encoding="utf-8")
+            self._code = 1
+
+        def poll(self):
+            return self._code
+
+    buf = bytearray()
+    parsed, err = _read_json_line(
+        _Proc(),
+        deadline=time.monotonic() + 1,
+        stderr_tail=[""],
+        stdout_buf=buf,
+    )
+    assert parsed is None and err == "exited"
+
+
 def test_stdio_probe_write_fails_when_stdin_closed(tmp_path):
     script = _script_fixture("import sys\nsys.stdin.close()\n", tmp_path)
     result = StdioMcpProbe().probe_server(
