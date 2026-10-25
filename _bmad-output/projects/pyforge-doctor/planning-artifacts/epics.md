@@ -2505,6 +2505,17 @@ generator for its own surface. **FRs covered:** FR-17 (minted 2026-09-19 on the 
 **And** no detector, check, threshold or severity changes (the generator door is the one new script, with unit tests); the README's "rows are not added by hand" sentence is replaced by the operator's ruling; the full-scope `pr-preflight` exits 0; `pixi run -e pyforge-doctor pyforge-doctor-test` green
 **Status:** done
 
+### Story 30.5: docs-currency tells a generator that cannot run from a stale page, and stops flagging true references
+**Type:** fix • **Effort:** S • **Deps:** S-30.4 • **FR/AD:** — (a `fix`, so no new CAP and no FR; `spec-feature-flag-governance` Q1: a `fix` needs no flag) • spec-pyforge-doctor CAP-84 (documentation currency)
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix)
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/docs_currency.py` (`_check_generated_page`, `_is_git_ignored`, `_resolves_as_identifier`), `scripts/governance_currency_check.py` (the mirrored `_is_git_ignored`, `_resolves_as_identifier`), their unit tests (`tests/unit/test_sources_docs_currency.py`, `tests/scripts/test_governance_currency_check.py`), `docs/reference/github-workflows.md` and `docs/explanation/the-detector-framework.md` (the two references Story 30.4 reworded), doctor's deferred-work ledger (`DW-doctor-30-4-1`, `DW-doctor-30-4-2` closed), the memlog of every Spec governing a changed file and the scoped stamps
+**Spec:** `planning-artifacts/specs/spec-30-5-docs-currency-tells-a-generator-that-cannot-run-from-a-stale-page.md`
+**Given** `0fc09c4aa3`, where a generator's `--check` exit 2 reads "stale against its generator", the dead-reference scan strips a path's trailing `/` before `git check-ignore` (so `docs/dashboard/kedro-viz/`, ignored by a directory-only rule, reads as dead), and a backticked `bmad-output-hygiene` (a doctor source with the task `bmad-output-hygiene-check`) reads as a dead skill, in `docs-currency` and in `governance-currency` alike
+**When** either detector scans
+**Then** exit 1 reads stale and any other non-zero exit reads could-not-run; an absent path matched only by a directory-only ignore rule is not dead; a `bmad-*`/`skf-*` token whose `<token>-check` is a pixi task is not dead
+**And** a truly dead path, a truly unknown `bmad-*` token and a stale generator still warn (unit tests both ways, in both detectors); no check name, severity or threshold changes; the two reworded references read as before 30.4; `DW-doctor-30-4-1` and `-2` close with `resolution:` and `verified:` lines; `pixi run -e pyforge-doctor pyforge-doctor-test` and `scripts-lib-test` green
+**Status:** backlog
+
 ## Epic 31: Doctor names the refs it judges by their full refname (spec-pyforge-doctor CAP-85)
 
 Minted 2026-09-27 (late) from the station Dream's entry of the same name: marshal Stories 60.1 and 61.1 closed the
