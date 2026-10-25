@@ -1005,6 +1005,58 @@ def test_stop_process_group_sigkill_after_wait_timeout(monkeypatch):
     assert (99, signal.SIGKILL) in kills
 
 
+def test_stdio_probe_unknown_read_error_tag_is_bad_reply(tmp_path, monkeypatch):
+    script = _script_fixture("import time\ntime.sleep(60)\n", tmp_path)
+    import pyforge.marshal.adapters.mcp_stdio_probe as probe_mod
+
+    monkeypatch.setattr(
+        probe_mod,
+        "_read_json_line",
+        lambda *a, **k: (None, "not-a-valid-outcome-tag"),
+    )
+    result = StdioMcpProbe().probe_server(
+        server_name="t",
+        command=sys.executable,
+        args=(script,),
+        env={},
+        cwd=str(tmp_path),
+        timeout_s=5,
+    )
+    assert result.outcome == "bad-reply"
+
+
+def test_stop_process_group_killpg_lookup_error_falls_back(monkeypatch):
+    import signal
+
+    import pyforge.marshal.adapters.mcp_stdio_probe as mod
+
+    class _Proc:
+        pid = 3
+        terminated = False
+
+        def poll(self):
+            return None
+
+        def terminate(self):
+            self.terminated = True
+
+        def kill(self):
+            pass
+
+        def wait(self, timeout=None):
+            return 0
+
+    def killpg(_pg, sig):
+        if sig == signal.SIGTERM:
+            raise ProcessLookupError()
+
+    monkeypatch.setattr(mod.os, "getpgid", lambda _pid: 100)
+    monkeypatch.setattr(mod.os, "killpg", killpg)
+    proc = _Proc()
+    mod._stop_process_group(proc)
+    assert proc.terminated
+
+
 def test_probe_server_from_rendered_with_string_args(tmp_path):
     script = _script_fixture(
         textwrap.dedent(
