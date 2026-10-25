@@ -859,23 +859,62 @@ def test_popen_kwargs_windows_branch(monkeypatch):
     import pyforge.marshal.adapters.mcp_stdio_probe as mod
 
     monkeypatch.setattr(mod.sys, "platform", "win32")
+    monkeypatch.setattr(mod.subprocess, "CREATE_NEW_PROCESS_GROUP", 512, raising=False)
     assert "creationflags" in mod._popen_kwargs(start_new_session=True)
 
 
 def test_stop_process_group_windows_branch(monkeypatch):
+    import pyforge.marshal.adapters.mcp_stdio_probe as mod
+
+    class _WinProc:
+        terminated = False
+        killed = False
+
+        def poll(self):
+            return None
+
+        def terminate(self):
+            self.terminated = True
+
+        def kill(self):
+            self.killed = True
+
+        def wait(self, timeout=None):
+            return 0
+
+    monkeypatch.setattr(mod.sys, "platform", "win32")
+    proc = _WinProc()
+    mod._stop_process_group(proc)
+    assert proc.terminated
+
+
+def test_stop_process_group_sigkill_after_wait_timeout(monkeypatch):
+    import signal
     import subprocess
 
     import pyforge.marshal.adapters.mcp_stdio_probe as mod
 
-    monkeypatch.setattr(mod.sys, "platform", "win32")
-    proc = subprocess.Popen(
-        [sys.executable, "-c", "import time; time.sleep(30)"],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
-    )
-    mod._stop_process_group(proc)
-    assert proc.poll() is not None
+    class _SlowProc:
+        pid = 42
+
+        def poll(self):
+            return None
+
+        def terminate(self):
+            pass
+
+        def kill(self):
+            pass
+
+        def wait(self, timeout=None):
+            raise subprocess.TimeoutExpired("cmd", timeout)
+
+    kills: list[tuple[int, int]] = []
+    monkeypatch.setattr(mod.os, "getpgid", lambda _pid: 99)
+    monkeypatch.setattr(mod.os, "killpg", lambda pg, sig: kills.append((pg, sig)))
+    mod._stop_process_group(_SlowProc())
+    assert (99, signal.SIGTERM) in kills
+    assert (99, signal.SIGKILL) in kills
 
 
 def test_probe_server_from_rendered_with_string_args(tmp_path):
