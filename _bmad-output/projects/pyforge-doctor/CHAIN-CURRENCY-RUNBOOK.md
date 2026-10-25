@@ -297,3 +297,15 @@ Regenerating a board view is optional confirmation, not the measure.
   run gives. The retro found two defects the finding did not name, recorded as candidate fix stories and not repaired:
   a `claude`-profile run's verify-fix turn launched `cursor-agent`, and a cached local pixi accepted a lock that every CI
   runner refused.
+
+- **Run 2026-10-25 (atlas) — 1 finding cleared, single station.** Entry: pyforge-atlas `staleness` with three edges:
+  `feeds code→retro` (marshal Story 103.1 declared `numpy>=2.5.3` in the package `pyproject.toml` on 2026-10-25; the
+  last retro was 2026-10-15) and `behind-code` on the PRD and the spine (both 2026-10-22). Exit:
+  `chain_currency_sweep_check.py --project pyforge-atlas` exit 0. Remedy: a station retro over Epics 30, 32–38 and Story
+  27.6 (`planning-artifacts/retros/retro-pyforge-atlas-2026-10-25.md`); PRD and spine `## Currency reconciliation —
+  2026-10-25` (no FR or AD change); the `epic-N-retrospective` keys for 30, 32–35, 37 and 38 moved to `done` through a
+  worktree-local feed and `sprint-ledger-sync`. Deviation: drafted by a subagent and checked against the code before
+  commit. The truth-up found what the finding did not name, recorded and not repaired: AD-3 counts ten pipelines where
+  twelve are registered, the MCP `list_pipelines` text calls its eight-name trigger set the registry,
+  `test_dependency_completeness.py` runs on no atlas change (the third recurrence of `DW-atlas-retro-2026-10-15-4`),
+  and `brotli` is still undeclared (`DW-atlas-34-5-1`).
