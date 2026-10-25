@@ -469,6 +469,13 @@ class StdioMcpProbe(McpProbePort):
                 _stop_process_group(proc)
             if reader is not None:
                 reader.join(timeout=1)
+            if proc is not None:
+                for stream in (proc.stdin, proc.stdout, proc.stderr):
+                    if stream is not None:
+                        try:
+                            stream.close()
+                        except OSError:
+                            pass
 
 
 def default_mcp_probe() -> McpProbePort:

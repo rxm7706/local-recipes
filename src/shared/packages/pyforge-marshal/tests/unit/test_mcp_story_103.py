@@ -339,11 +339,10 @@ def test_probe_leaves_no_grandchild_process_group(tmp_path):
 
 def test_probe_exited_grandchild_detached_pipes_gone(tmp_path):
     """AC6: ``sleep … & exit 1`` with detached stdio leaves a background child in the group."""
-    pgid_file = tmp_path / "pgid.txt"
-    marker = str(pgid_file)
+    bg_pid_file = tmp_path / "bg.pid"
     shell_cmd = (
-        f"{sys.executable} -c \"import os; open({marker!r}, 'w').write(str(os.getpgid(0)))\"; "
-        "sleep 600 </dev/null >/dev/null 2>&1 & sleep 0.05; exit 1"
+        f"sleep 600 </dev/null >/dev/null 2>&1 & echo $! > {bg_pid_file}; "
+        "sleep 0.05; exit 1"
     )
     t0 = time.monotonic()
     result = StdioMcpProbe().probe_server(
@@ -356,7 +355,9 @@ def test_probe_exited_grandchild_detached_pipes_gone(tmp_path):
     )
     assert time.monotonic() - t0 < 5.0
     assert result.outcome == "exited"
-    _assert_pgid_dead(int(pgid_file.read_text(encoding="utf-8").strip()))
+    bg_pid = int(bg_pid_file.read_text(encoding="utf-8").strip())
+    with pytest.raises(ProcessLookupError):
+        os.kill(bg_pid, 0)
 
 
 def test_probe_exited_grandchild_holds_stdout_gone(tmp_path):
