@@ -2,7 +2,8 @@
 title: "87.19: The content gate judges only what a push sends"
 type: 'fix'
 created: '2026-10-25'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '81f66ee411eff4856d5c8a75a950aa977a638a48'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

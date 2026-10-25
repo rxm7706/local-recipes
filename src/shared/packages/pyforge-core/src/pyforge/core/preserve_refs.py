@@ -117,6 +117,7 @@ class ContentGateReason(StrEnum):
     SIZE_CAP = "size-cap"
     PUSH_CAP_RUN = "push-cap-run"
     PUSH_CAP_STORY = "push-cap-story"
+    REMOTE_UNREADABLE = "unreadable-remote"
 
 
 @dataclass(frozen=True, slots=True)
@@ -196,9 +197,24 @@ class TagPreserveResult:
     noop: bool
 
 
-def _git(repo: Path, *args: str) -> tuple[int, str, str]:
+def _git(
+    repo: Path, *args: str, timeout_s: float | None = None, input: bytes | None = None
+) -> tuple[int, str, str]:
+    if input is not None:
+        rc, bout, berr = _git_bytes(repo, *args, input=input, timeout_s=timeout_s)
+        return rc, bout.decode("utf-8", errors="replace"), berr.decode("utf-8", errors="replace")
     try:
-        result = _PROCESS.run(["git", *args], cwd=repo)
+        result = _PROCESS.run(["git", *args], cwd=repo, timeout_s=timeout_s)
+    except ProcessError as exc:
+        raise PreserveGitError(str(exc)) from exc
+    return result.returncode, result.stdout, result.stderr
+
+
+def _git_bytes(
+    repo: Path, *args: str, input: bytes | None = None, timeout_s: float | None = None
+) -> tuple[int, bytes, bytes]:
+    try:
+        result = _PROCESS.run_bytes(["git", *args], cwd=repo, input=input, timeout_s=timeout_s)
     except ProcessError as exc:
         raise PreserveGitError(str(exc)) from exc
     return result.returncode, result.stdout, result.stderr
@@ -554,25 +570,126 @@ def _commit_descends_from(repo: Path, commit: str, ancestor: str) -> bool:
     return rc == 0
 
 
-def _scan_blob_for_secrets(repo: Path, blob: str) -> ContentGateFinding | None:
-    rc, out, err = _git(repo, "cat-file", "-p", blob)
-    if rc != 0:
-        raise PreserveGitError(err.strip() or "git cat-file failed")
-    text = out.replace("\x00", "")
+def _scan_text_for_secrets(text: str, *, label: str, sha: str) -> ContentGateFinding | None:
+    cleaned = text.replace("\x00", "")
     for name, pattern in _SECRET_PATTERNS:
-        if pattern.search(text):
+        if pattern.search(cleaned):
             return ContentGateFinding(
                 ContentGateReason.SECRET,
-                f"secret scan matched {name} (blob {blob[:8]})",
+                f"secret scan matched {name} ({label} {sha[:8]})",
             )
     return None
 
 
-def _blob_size(repo: Path, blob: str) -> int:
-    rc, out, err = _git(repo, "cat-file", "-s", blob)
+def _remote_exclusion_shas(repo: Path, remote: str) -> frozenset[str] | None:
+    """Object ids reachable from ``remote``'s heads and tags; ``None`` when the remote cannot be read."""
+    try:
+        rc, out, _ = _git(
+            repo,
+            "ls-remote",
+            remote,
+            "refs/heads/*",
+            "refs/tags/*",
+            timeout_s=REMOTE_PROBE_TIMEOUT_S,
+        )
+    except PreserveGitError:
+        return None
     if rc != 0:
-        raise PreserveGitError(err.strip() or "git cat-file -s failed")
-    return int(out.strip())
+        return None
+    shas: set[str] = set()
+    for line in out.splitlines():
+        sha, _, ref = line.partition("\t")
+        ref = ref.strip()
+        if not sha.strip() or not ref or ref.endswith("^{}"):
+            continue
+        shas.add(sha.strip())
+    return frozenset(shas)
+
+
+def _rev_list_exclusion_stdin(exclusion_shas: frozenset[str]) -> bytes:
+    if not exclusion_shas:
+        return b""
+    return "".join(f"^{s}\n" for s in sorted(exclusion_shas)).encode()
+
+
+def _sent_object_lines(repo: Path, commit: str, exclusion_shas: frozenset[str]) -> list[tuple[str, str | None]]:
+    """Objects a push would send: ``rev-list --objects`` minus what ``remote`` already lists."""
+    stdin = _rev_list_exclusion_stdin(exclusion_shas)
+    rc, out, err = _git(repo, "rev-list", "--objects", "--ignore-missing", "--stdin", commit, input=stdin)
+    if rc != 0:
+        raise PreserveGitError(err.strip() or "git rev-list failed")
+    rows: list[tuple[str, str | None]] = []
+    for line in out.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        parts = line.split(None, 1)
+        sha = parts[0]
+        path = parts[1] if len(parts) > 1 else None
+        rows.append((sha, path))
+    return rows
+
+
+def _sent_commit_touched_paths(repo: Path, commit: str, exclusion_shas: frozenset[str]) -> set[str]:
+    stdin = _rev_list_exclusion_stdin(exclusion_shas)
+    rc, out, err = _git(
+        repo,
+        "log",
+        "--name-only",
+        "--format=",
+        "--no-renames",
+        "--diff-merges=first-parent",
+        "--ignore-missing",
+        "--stdin",
+        commit,
+        input=stdin,
+    )
+    if rc != 0:
+        raise PreserveGitError(err.strip() or "git log failed")
+    return {line.strip() for line in out.splitlines() if line.strip()}
+
+
+def _parse_batch_check(stdout: bytes) -> dict[str, tuple[str, int]]:
+    """Map sha -> (type, size); missing objects are omitted."""
+    info: dict[str, tuple[str, int]] = {}
+    for line in stdout.splitlines():
+        if not line.strip():
+            continue
+        parts = line.decode("ascii", errors="replace").split()
+        if len(parts) == 2 and parts[1] == "missing":
+            continue
+        if len(parts) >= 3:
+            sha, obj_type, size_str = parts[0], parts[1], parts[2]
+            if obj_type == "missing":
+                continue
+            info[sha] = (obj_type, int(size_str))
+    return info
+
+
+def _read_batch_objects(repo: Path, shas: tuple[str, ...]) -> dict[str, bytes]:
+    if not shas:
+        return {}
+    request = "".join(f"{s}\n" for s in shas).encode()
+    rc, out, err = _git_bytes(repo, "cat-file", "--batch", input=request)
+    if rc != 0:
+        raise PreserveGitError(err.strip() or "git cat-file --batch failed")
+    contents: dict[str, bytes] = {}
+    pos = 0
+    while pos < len(out):
+        header_end = out.find(b"\n", pos)
+        if header_end < 0:
+            break
+        header = out[pos:header_end].decode("ascii", errors="replace")
+        pos = header_end + 1
+        parts = header.split()
+        if len(parts) < 3:
+            break
+        sha, _obj_type, size_str = parts[0], parts[1], parts[2]
+        size = int(size_str)
+        payload = out[pos : pos + size]
+        pos += size + 1  # trailing newline after payload
+        contents[sha] = payload
+    return contents
 
 
 def run_content_gate(
@@ -581,9 +698,25 @@ def run_content_gate(
     commit: str,
     purge_list: PurgeList,
     per_file_max_bytes: int = DEFAULT_PER_FILE_MAX_BYTES,
+    remote: str = ORIGIN_REMOTE,
+    annotated_tag_ref: str | None = None,
 ) -> tuple[ContentGateFinding, ...]:
-    """Refuse (a) purge-listed ancestry, (b) purge-listed paths, (c) secrets, (d) oversize blobs."""
+    """Refuse purge-listed ancestry/paths, secrets, oversize blobs, or an unreadable ``remote``.
+
+    Judges only objects a push would send: everything ``rev-list --objects`` names for ``commit``
+    minus what ``remote``'s ``refs/heads/*`` and ``refs/tags/*`` already reach. ``refs/pull/*`` is
+    never treated as public.
+    """
     findings: list[ContentGateFinding] = []
+    exclusion = _remote_exclusion_shas(repo, remote)
+    if exclusion is None:
+        return (
+            ContentGateFinding(
+                ContentGateReason.REMOTE_UNREADABLE,
+                f"could not read remote {remote!r} (ls-remote failed, timed out, or process error)",
+            ),
+        )
+
     full_commit = _full_sha(repo, commit)
     for listed in purge_list.commit_shas:
         if full_commit.startswith(listed) or listed.startswith(full_commit):
@@ -599,32 +732,77 @@ def run_content_gate(
                 )
             )
             break
-    tree = _git_out(repo, "rev-parse", f"{full_commit}^{{tree}}")
+
     if purge_list.paths:
+        tree = _git_out(repo, "rev-parse", f"{full_commit}^{{tree}}")
         paths_in_tree = _tree_paths(repo, tree)
         for banned in purge_list.paths:
             if banned in paths_in_tree:
                 findings.append(
                     ContentGateFinding(ContentGateReason.PURGE_PATH, f"tree carries purge-listed path {banned!r}")
                 )
-    rc, out, err = _git(repo, "ls-tree", "-r", tree)
-    if rc != 0:
-        raise PreserveGitError(err.strip() or "git ls-tree failed")
-    for line in out.splitlines():
-        if not line.strip():
-            continue
-        _mode, _type, blob, path = line.split(None, 3)
-        size = _blob_size(repo, blob)
-        if size > per_file_max_bytes:
-            findings.append(
-                ContentGateFinding(
-                    ContentGateReason.SIZE_CAP,
-                    f"file {path!r} exceeds cap ({size} > {per_file_max_bytes} bytes)",
+        for path in _sent_commit_touched_paths(repo, full_commit, exclusion):
+            if path in purge_list.paths:
+                findings.append(
+                    ContentGateFinding(ContentGateReason.PURGE_PATH, f"sent commit touched purge-listed path {path!r}")
                 )
-            )
-        secret_hit = _scan_blob_for_secrets(repo, blob)
-        if secret_hit is not None:
-            findings.append(secret_hit)
+
+    sent_rows = _sent_object_lines(repo, full_commit, exclusion)
+    sent_shas = tuple(dict.fromkeys(sha for sha, _ in sent_rows))
+    path_by_sha = {sha: path for sha, path in sent_rows if path is not None}
+
+    extra_scan_shas: list[str] = []
+    if annotated_tag_ref and annotated_tag_ref.startswith(PRESERVE_REF_PREFIX):
+        try:
+            tag_sha = _full_sha(repo, annotated_tag_ref)
+            extra_scan_shas.append(tag_sha)
+        except PreserveGitError:
+            pass
+
+    batch_check_input = "".join(f"{s}\n" for s in (*sent_shas, *extra_scan_shas)).encode()
+    rc, check_out, err = _git_bytes(repo, "cat-file", "--batch-check", input=batch_check_input)
+    if rc != 0:
+        raise PreserveGitError(err.strip() or "git cat-file --batch-check failed")
+    meta = _parse_batch_check(check_out)
+
+    read_for_secrets: list[str] = []
+    for sha in sent_shas:
+        obj_type, size = meta.get(sha, ("", 0))
+        if obj_type == "blob":
+            label = f"file {path_by_sha[sha]!r}" if sha in path_by_sha else f"blob"
+            if size > per_file_max_bytes:
+                findings.append(
+                    ContentGateFinding(
+                        ContentGateReason.SIZE_CAP,
+                        f"{label} exceeds cap ({size} > {per_file_max_bytes} bytes)",
+                    )
+                )
+                continue
+            read_for_secrets.append(sha)
+        elif obj_type == "commit":
+            read_for_secrets.append(sha)
+
+    for tag_sha in extra_scan_shas:
+        if tag_sha not in read_for_secrets:
+            read_for_secrets.append(tag_sha)
+
+    bodies = _read_batch_objects(repo, tuple(read_for_secrets))
+    for sha in read_for_secrets:
+        obj_type = meta.get(sha, ("", 0))[0]
+        raw = bodies.get(sha, b"")
+        text = raw.decode("utf-8", errors="replace")
+        if obj_type == "commit":
+            label = "commit"
+        elif sha in extra_scan_shas:
+            label = "tag"
+        elif sha in path_by_sha:
+            label = f"file {path_by_sha[sha]!r}"
+        else:
+            label = "blob"
+        hit = _scan_text_for_secrets(text, label=label, sha=sha)
+        if hit is not None:
+            findings.append(hit)
+
     return tuple(findings)
 
 
