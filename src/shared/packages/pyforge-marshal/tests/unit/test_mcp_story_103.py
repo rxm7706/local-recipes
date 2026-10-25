@@ -1451,3 +1451,14 @@ def test_python_m_pyforge_marshal_mcp_propagates_the_usage_exit_code():
     )
     assert completed.returncode == 2
     assert "unrecognized arguments" in completed.stderr
+
+
+def test_dunder_main_module_raises_system_exit_with_mains_code(monkeypatch, capsys):
+    """``python -m pyforge.marshal.mcp`` is ``raise SystemExit(main())``: a usage error reaches the shell as 2."""
+    import runpy
+
+    monkeypatch.setattr(sys, "argv", ["marshal-mcp", "--bogus"])
+    with pytest.raises(SystemExit) as exc_info:
+        runpy.run_module("pyforge.marshal.mcp", run_name="__main__", alter_sys=True)
+    assert exc_info.value.code == 2
+    assert "unrecognized arguments: --bogus" in capsys.readouterr().err
