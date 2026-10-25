@@ -714,8 +714,32 @@ def test_handshake_closed_stdin_after_initialize_carries_the_reported_server_nam
     source = _ScriptedChunks(_reply_line(1, {"serverInfo": {"name": "answered"}, "capabilities": {}}))
     result = probe_mod._handshake(proc, source, server_name="s", deadline=time.monotonic() + 5)
     assert result.outcome == "bad-reply"
-    assert result.detail == "the server closed its stdin before replying"
+    assert result.detail == "the server closed its stdin after answering initialize"
     assert result.reported_server_name == "answered"
+
+
+class _SinkStdin:
+    def write(self, _data: bytes) -> None:
+        pass
+
+    def flush(self) -> None:
+        pass
+
+
+@pytest.mark.parametrize(
+    "line, outcome",
+    [
+        (b'{"jsonrpc":"2.0","id":1,"error":{"code":-32600,"message":"bad"}}\n', "error-reply"),
+        (_reply_line(1, {"capabilities": {}}), "bad-reply"),
+    ],
+)
+def test_handshake_failure_from_an_exited_child_carries_its_exit_code(line: bytes, outcome: str):
+    """A child that answered and has already exited: the failure outcome keeps the child's exit code."""
+    proc = _FakeProc(returncode=3)
+    proc.stdin = _SinkStdin()  # type: ignore[attr-defined]
+    result = probe_mod._handshake(proc, _ScriptedChunks(line), server_name="s", deadline=time.monotonic() + 5)
+    assert result.outcome == outcome
+    assert result.exit_code == 3
 
 
 def test_read_reply_parses_what_an_exited_child_wrote_before_reporting_exited():
@@ -1270,10 +1294,17 @@ def test_mutation_dropping_stop_process_group_leaves_a_grandchild(tmp_path: Path
 # --- AC7: preflight end to end through the real adapter --------------------------------------------------------
 
 
-@pytest.mark.skipif(shutil.which("marshal-mcp") is None, reason="marshal-mcp is not on PATH")
 def test_preflight_json_through_the_real_adapter_shows_marshal_mcp_startable_with_eight_tools(
     repo_root, tmp_path, monkeypatch, capsys
 ):
+    if shutil.which("marshal-mcp") is None:
+        # No installed console script here: a shim runs the same server module, so this case never skips.
+        bin_dir = tmp_path / "bin"
+        bin_dir.mkdir()
+        shim = bin_dir / "marshal-mcp"
+        shim.write_text(f'#!/bin/sh\nexec "{sys.executable}" -m pyforge.marshal.mcp "$@"\n', encoding="utf-8")
+        shim.chmod(0o755)
+        monkeypatch.setenv("PATH", f"{bin_dir}{os.pathsep}{os.environ.get('PATH', '')}")
     (tmp_path / "loop-homes" / "pyforge-marshal").mkdir(parents=True)  # the home is the server's cwd
     exit_code, envelope, _ = _preflight_json(
         repo_root,
@@ -1332,12 +1363,10 @@ def test_preflight_json_through_the_real_adapter_reports_a_fastmcp_style_crash(
 # --- AC1: the real console script through the adapter ----------------------------------------------------------
 
 
-@pytest.mark.skipif(shutil.which("marshal-mcp") is None, reason="marshal-mcp is not on PATH")
 def test_real_marshal_mcp_answers_initialize_and_lists_exactly_the_eight_tools(tmp_path: Path):
-    resolved = shutil.which("marshal-mcp")
-    assert resolved is not None
+    command, *args = _marshal_mcp_argv()
     result = StdioMcpProbe().probe_server(
-        server_name="marshal", command=resolved, args=(), env={}, cwd=str(tmp_path), timeout_s=20.0
+        server_name="marshal", command=command, args=tuple(args), env={}, cwd=str(tmp_path), timeout_s=20.0
     )
     assert result.outcome == "started", result
     assert result.reported_server_name == "pyforge-marshal"

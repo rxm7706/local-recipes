@@ -167,8 +167,8 @@ class _ThreadChunks:
             return None
         if not chunk:
             self._eof = True
-            # The pump returns right after queueing EOF; let it finish so ``busy()`` reads False once EOF is reported.
-            self._thread.join(timeout=_POLL_SLICE_S)
+            # The pump returns right after queueing EOF, so this join cannot block; ``busy()`` then reads False.
+            self._thread.join()
         return chunk
 
     def busy(self) -> bool:
@@ -306,7 +306,11 @@ def _handshake(
             return McpProbeResult(
                 outcome="bad-reply",
                 server_name=server_name,
-                detail="the server closed its stdin before replying",
+                detail=(
+                    "the server closed its stdin before replying"
+                    if reported_server_name is None
+                    else "the server closed its stdin after answering initialize"
+                ),
                 reported_server_name=reported_server_name,
             )
         return McpProbeResult(

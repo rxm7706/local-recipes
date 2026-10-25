@@ -150,13 +150,22 @@ def test_main_write_then_check_roundtrip(tmp_path: Path, monkeypatch: pytest.Mon
 def test_capture_help_scrubs_terminal_forcing_variables_and_pins_columns(monkeypatch: pytest.MonkeyPatch):
     """Marshal Story 103.1 (AC9): with the caller's environment forcing a terminal
     (FORCE_COLOR, PY_COLORS, GITHUB_ACTIONS, ...), rich wraps at 80 under a dumb
-    TERM or pollutes the capture with escape codes otherwise, so a harness rendered
-    this page stale. The child's environment carries none of those six variables,
-    whatever the caller had, and pins COLUMNS=100 and NO_COLOR=1. The six are named
+    TERM or pollutes the capture with escape codes otherwise, and PYTHON_COLORS=1
+    colours argparse's own --help past NO_COLOR, so a harness rendered this page
+    stale. The child's environment carries none of those seven variables, whatever
+    the caller had, and pins COLUMNS=100 and NO_COLOR=1. The seven are named
     literally here so dropping one from the tuple reds this test."""
     import subprocess
 
-    forcing = {"FORCE_COLOR", "PY_COLORS", "CLICOLOR_FORCE", "GITHUB_ACTIONS", "TTY_COMPATIBLE", "TERMINAL_WIDTH"}
+    forcing = {
+        "FORCE_COLOR",
+        "PY_COLORS",
+        "PYTHON_COLORS",
+        "CLICOLOR_FORCE",
+        "GITHUB_ACTIONS",
+        "TTY_COMPATIBLE",
+        "TERMINAL_WIDTH",
+    }
     assert set(m._TERMINAL_FORCING_VARS) >= forcing
 
     seen: dict[str, dict[str, str]] = {}
@@ -169,6 +178,7 @@ def test_capture_help_scrubs_terminal_forcing_variables_and_pins_columns(monkeyp
     monkeypatch.setattr(m.shutil, "which", lambda name: f"/opt/bin/{name}")
     monkeypatch.setenv("FORCE_COLOR", "1")
     monkeypatch.setenv("PY_COLORS", "1")
+    monkeypatch.setenv("PYTHON_COLORS", "1")
     monkeypatch.setenv("CLICOLOR_FORCE", "1")
     monkeypatch.setenv("GITHUB_ACTIONS", "true")
     monkeypatch.setenv("TTY_COMPATIBLE", "1")
@@ -182,6 +192,7 @@ def test_capture_help_scrubs_terminal_forcing_variables_and_pins_columns(monkeyp
     env = seen["env"]
     assert "FORCE_COLOR" not in env
     assert "PY_COLORS" not in env
+    assert "PYTHON_COLORS" not in env
     assert "CLICOLOR_FORCE" not in env
     assert "GITHUB_ACTIONS" not in env
     assert "TTY_COMPATIBLE" not in env
