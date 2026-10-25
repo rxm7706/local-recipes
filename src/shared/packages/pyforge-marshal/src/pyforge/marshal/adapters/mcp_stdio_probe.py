@@ -48,21 +48,44 @@ def _stderr_reader_fd(fd: int, tail: list[str], stop: threading.Event) -> None:
         _append_tail(tail, chunk.decode("utf-8", errors="replace"))
 
 
-def _drain_stdout(proc: subprocess.Popen[bytes], buf: bytearray) -> None:
+def _drain_stdout_buffered(
+    proc: subprocess.Popen[bytes],
+    buf: bytearray,
+    *,
+    deadline: float,
+) -> None:
+    """Drain stdout only while data is already available; never block past ``deadline``."""
+    import time
+
     if proc.stdout is None:
         return
     try:
         fd = proc.stdout.fileno()
     except AttributeError, ValueError, OSError:
         return
-    while True:
+
+    sel = selectors.DefaultSelector()
+    try:
         try:
-            chunk = os.read(fd, _READ_CHUNK)
+            sel.register(fd, selectors.EVENT_READ)
         except OSError:
-            break
-        if not chunk:
-            break
-        buf.extend(chunk)
+            return
+        while time.monotonic() < deadline:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break
+            events = sel.select(timeout=min(remaining, 0.05))
+            if not events:
+                break
+            try:
+                chunk = os.read(fd, _READ_CHUNK)
+            except OSError:
+                break
+            if not chunk:
+                break
+            buf.extend(chunk)
+    finally:
+        sel.close()
 
 
 def _read_json_line(
@@ -93,7 +116,8 @@ def _read_json_line(
     try:
         while time.monotonic() < deadline:
             if proc.poll() is not None:
-                _drain_stdout(proc, stdout_buf)
+                _stop_process_group(proc)
+                _drain_stdout_buffered(proc, stdout_buf, deadline=deadline)
                 return None, "exited"
 
             remaining = deadline - time.monotonic()
@@ -108,13 +132,15 @@ def _read_json_line(
                 chunk = os.read(fd, _READ_CHUNK)
             except OSError:
                 if proc.poll() is not None:
-                    _drain_stdout(proc, stdout_buf)
+                    _stop_process_group(proc)
+                    _drain_stdout_buffered(proc, stdout_buf, deadline=deadline)
                     return None, "exited"
                 continue
 
             if not chunk:
                 if proc.poll() is not None:
-                    _drain_stdout(proc, stdout_buf)
+                    _stop_process_group(proc)
+                    _drain_stdout_buffered(proc, stdout_buf, deadline=deadline)
                     return None, "exited"
                 continue
 
@@ -149,12 +175,13 @@ def _read_json_line(
         sel.close()
 
 
-def _popen_kwargs(*, start_new_session: bool) -> dict[str, bool | int]:
-    if sys.platform == "win32":
-        return {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
-    if start_new_session:
-        return {"start_new_session": True}
-    return {}
+def _child_exit_code(proc: subprocess.Popen[bytes]) -> int | None:
+    if proc.poll() is not None:
+        return proc.returncode
+    try:
+        return proc.wait(timeout=1)
+    except subprocess.TimeoutExpired:
+        return None
 
 
 def _stop_process_group(proc: subprocess.Popen[bytes]) -> None:
@@ -176,21 +203,13 @@ def _stop_process_group(proc: subprocess.Popen[bytes]) -> None:
                 pass
         return
 
-    pgid: int | None = None
+    # ``start_new_session=True`` makes the direct child the process-group leader.
+    pgid = proc.pid
     try:
-        pgid = os.getpgid(proc.pid)
+        os.killpg(pgid, signal.SIGTERM)
+    except ProcessLookupError:
+        pass
     except OSError:
-        pgid = None
-
-    if pgid is not None:
-        try:
-            os.killpg(pgid, signal.SIGTERM)
-        except ProcessLookupError, OSError:
-            try:
-                proc.terminate()
-            except OSError:
-                pass
-    else:
         try:
             proc.terminate()
         except OSError:
@@ -199,13 +218,18 @@ def _stop_process_group(proc: subprocess.Popen[bytes]) -> None:
     try:
         proc.wait(timeout=2)
     except subprocess.TimeoutExpired:
-        if pgid is not None:
-            try:
-                os.killpg(pgid, signal.SIGKILL)
-            except ProcessLookupError:
-                pass
-            except OSError:
-                pass
+        pass
+
+    try:
+        os.killpg(pgid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+    except OSError:
+        pass
+
+    try:
+        proc.wait(timeout=2)
+    except subprocess.TimeoutExpired:
         try:
             proc.kill()
         except OSError:
@@ -309,7 +333,7 @@ class StdioMcpProbe(McpProbePort):
                     },
                 }
             ):
-                code = proc.wait(timeout=1) if proc.poll() is None else proc.returncode
+                code = _child_exit_code(proc)
                 return McpProbeResult(
                     outcome="exited",
                     server_name=server_name,
@@ -325,7 +349,7 @@ class StdioMcpProbe(McpProbePort):
                 stdout_buf=stdout_buf,
             )
             if init_err == "exited":
-                code = proc.wait(timeout=1)
+                code = _child_exit_code(proc)
                 return McpProbeResult(
                     outcome="exited",
                     server_name=server_name,
@@ -361,7 +385,7 @@ class StdioMcpProbe(McpProbePort):
                 )
 
             if not write_line({"jsonrpc": "2.0", "method": "notifications/initialized"}):
-                code = proc.wait(timeout=1) if proc.poll() is None else proc.returncode
+                code = _child_exit_code(proc)
                 return McpProbeResult(
                     outcome="exited",
                     server_name=server_name,
@@ -369,7 +393,7 @@ class StdioMcpProbe(McpProbePort):
                     stderr_tail=stderr_tail[0],
                 )
             if not write_line({"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}):
-                code = proc.wait(timeout=1) if proc.poll() is None else proc.returncode
+                code = _child_exit_code(proc)
                 return McpProbeResult(
                     outcome="exited",
                     server_name=server_name,
@@ -385,7 +409,7 @@ class StdioMcpProbe(McpProbePort):
                 stdout_buf=stdout_buf,
             )
             if tools_err == "exited":
-                code = proc.wait(timeout=1)
+                code = _child_exit_code(proc)
                 return McpProbeResult(
                     outcome="exited",
                     server_name=server_name,
@@ -422,6 +446,12 @@ class StdioMcpProbe(McpProbePort):
         except OSError as exc:
             return McpProbeResult(
                 outcome="spawn-failed",
+                server_name=server_name,
+                stderr_tail=str(exc)[-_STDERR_TAIL_MAX:],
+            )
+        except Exception as exc:
+            return McpProbeResult(
+                outcome="bad-reply",
                 server_name=server_name,
                 stderr_tail=str(exc)[-_STDERR_TAIL_MAX:],
             )

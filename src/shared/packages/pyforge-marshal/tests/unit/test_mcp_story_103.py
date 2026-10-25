@@ -247,6 +247,11 @@ def _script_fixture(content: str, tmp_path: Path) -> str:
     return str(path)
 
 
+def _assert_pgid_dead(pgid: int) -> None:
+    with pytest.raises(ProcessLookupError):
+        os.killpg(pgid, 0)
+
+
 def test_stdio_probe_answers_initialize_and_tools_list(tmp_path):
     """AC6/AC1 helper: scripted server returns started with tool count."""
     script = _script_fixture(
@@ -331,10 +336,112 @@ def test_probe_leaves_no_grandchild_process_group(tmp_path):
         timeout_s=1,
     )
     assert result.outcome == "timed-out"
-    if pgid_file.is_file():
-        pgid = int(pgid_file.read_text(encoding="utf-8").strip())
-        with pytest.raises(ProcessLookupError):
-            os.killpg(pgid, 0)
+    pgid = int(pgid_file.read_text(encoding="utf-8").strip())
+    _assert_pgid_dead(pgid)
+
+
+def test_probe_exited_grandchild_detached_pipes_gone(tmp_path):
+    """AC6: shell exits while a grandchild with detached stdio still lives in the group."""
+    pgid_file = tmp_path / "pgid.txt"
+    script = _script_fixture(
+        textwrap.dedent(
+            f"""
+            import os, subprocess, sys
+            marker = {str(pgid_file)!r}
+            with open(marker, "w") as f:
+                f.write(str(os.getpgid(0)))
+            subprocess.Popen(
+                [sys.executable, "-c", "import time; time.sleep(600)"],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            raise SystemExit(1)
+            """
+        ),
+        tmp_path,
+    )
+    t0 = time.monotonic()
+    result = StdioMcpProbe().probe_server(
+        server_name="t",
+        command=sys.executable,
+        args=(script,),
+        env={},
+        cwd=str(tmp_path),
+        timeout_s=2,
+    )
+    assert time.monotonic() - t0 < 5.0
+    assert result.outcome == "exited"
+    _assert_pgid_dead(int(pgid_file.read_text(encoding="utf-8").strip()))
+
+
+def test_probe_exited_grandchild_holds_stdout_gone(tmp_path):
+    """AC6: parent exits while a background sleep keeps stdout open (``sleep & exit 1``)."""
+    pgid_file = tmp_path / "pgid.txt"
+    script = _script_fixture(
+        textwrap.dedent(
+            f"""
+            import os, subprocess, sys
+            marker = {str(pgid_file)!r}
+            with open(marker, "w") as f:
+                f.write(str(os.getpgid(0)))
+            subprocess.Popen(
+                [sys.executable, "-c", "import time; time.sleep(600)"],
+            )
+            raise SystemExit(1)
+            """
+        ),
+        tmp_path,
+    )
+    t0 = time.monotonic()
+    result = StdioMcpProbe().probe_server(
+        server_name="t",
+        command=sys.executable,
+        args=(script,),
+        env={},
+        cwd=str(tmp_path),
+        timeout_s=2,
+    )
+    assert time.monotonic() - t0 < 5.0
+    assert result.outcome == "exited"
+    _assert_pgid_dead(int(pgid_file.read_text(encoding="utf-8").strip()))
+
+
+def test_probe_sigterm_ignoring_grandchild_gone(tmp_path):
+    """AC6: a grandchild ignores SIGTERM; probe still tears down the whole group."""
+    pgid_file = tmp_path / "pgid.txt"
+    script = _script_fixture(
+        textwrap.dedent(
+            f"""
+            import os, subprocess, sys
+            marker = {str(pgid_file)!r}
+            with open(marker, "w") as f:
+                f.write(str(os.getpgid(0)))
+            subprocess.Popen(
+                [
+                    sys.executable,
+                    "-c",
+                    "import signal, time; signal.signal(signal.SIGTERM, signal.SIG_IGN); time.sleep(600)",
+                ],
+            )
+            import time
+            time.sleep(600)
+            """
+        ),
+        tmp_path,
+    )
+    t0 = time.monotonic()
+    result = StdioMcpProbe().probe_server(
+        server_name="t",
+        command=sys.executable,
+        args=(script,),
+        env={},
+        cwd=str(tmp_path),
+        timeout_s=2,
+    )
+    assert time.monotonic() - t0 < 8.0
+    assert result.outcome in ("timed-out", "exited")
+    _assert_pgid_dead(int(pgid_file.read_text(encoding="utf-8").strip()))
 
 
 def test_stdio_probe_timeout_is_wall_clock_bounded(tmp_path):
@@ -772,9 +879,32 @@ class _FakeMcpProbeStarted:
         return McpProbeResult(outcome="started", server_name="marshal", tool_count=8)
 
 
-def test_mutation_dropping_stop_process_group_fails_grandchild_test():
-    """AC8: _stop_process_group no-op would leave grandchild alive (this test name is the guard)."""
-    assert callable(_stop_process_group)
+def test_mutation_dropping_stop_process_group_fails_grandchild_test(tmp_path):
+    """AC8: real ``_stop_process_group`` clears the stdout grandchild (mutation: no-op stop leaves pgid alive)."""
+    pgid_file = tmp_path / "pgid.txt"
+    script = _script_fixture(
+        textwrap.dedent(
+            f"""
+            import os, subprocess, sys
+            marker = {str(pgid_file)!r}
+            with open(marker, "w") as f:
+                f.write(str(os.getpgid(0)))
+            subprocess.Popen([sys.executable, "-c", "import time; time.sleep(600)"])
+            raise SystemExit(1)
+            """
+        ),
+        tmp_path,
+    )
+    result = StdioMcpProbe().probe_server(
+        server_name="t",
+        command=sys.executable,
+        args=(script,),
+        env={},
+        cwd=str(tmp_path),
+        timeout_s=2,
+    )
+    assert result.outcome == "exited"
+    _assert_pgid_dead(int(pgid_file.read_text(encoding="utf-8").strip()))
 
 
 def test_read_json_line_times_out_with_no_data():
@@ -956,7 +1086,9 @@ def test_stop_process_group_windows_kills_when_wait_times_out(monkeypatch):
     assert proc.killed
 
 
-def test_stop_process_group_without_pgid_terminates_child(monkeypatch):
+def test_stop_process_group_killpg_oserror_falls_back_to_terminate(monkeypatch):
+    import signal
+
     import pyforge.marshal.adapters.mcp_stdio_probe as mod
 
     terminated: list[int] = []
@@ -976,19 +1108,29 @@ def test_stop_process_group_without_pgid_terminates_child(monkeypatch):
         def wait(self, timeout=None):
             return 0
 
-    monkeypatch.setattr(mod.os, "getpgid", lambda _pid: (_ for _ in ()).throw(OSError("no pgid")))
+    def killpg(_pg, sig):
+        if sig == signal.SIGTERM:
+            raise OSError("killpg failed")
+
+    monkeypatch.setattr(mod.os, "killpg", killpg)
     mod._stop_process_group(_Proc())
     assert terminated
 
 
-def test_read_json_line_exited_drains_stdout():
+def test_read_json_line_exited_drains_stdout(monkeypatch):
     import io
+
+    import pyforge.marshal.adapters.mcp_stdio_probe as probe_mod
+
+    monkeypatch.setattr(probe_mod, "_stop_process_group", lambda _proc: None)
 
     r, w = os.pipe()
     os.write(w, b'{"jsonrpc":"2.0","id":1,"result":{}}\n')
     os.close(w)
 
     class _Proc:
+        pid = 99999
+
         def __init__(self):
             self.stdout = io.TextIOWrapper(io.FileIO(r, "r"), encoding="utf-8")
             self._code = 1
@@ -1041,11 +1183,10 @@ def test_stop_process_group_sigkill_after_wait_timeout(monkeypatch):
             raise subprocess.TimeoutExpired("cmd", timeout)
 
     kills: list[tuple[int, int]] = []
-    monkeypatch.setattr(mod.os, "getpgid", lambda _pid: 99)
     monkeypatch.setattr(mod.os, "killpg", lambda pg, sig: kills.append((pg, sig)))
     mod._stop_process_group(_SlowProc())
-    assert (99, signal.SIGTERM) in kills
-    assert (99, signal.SIGKILL) in kills
+    assert (42, signal.SIGTERM) in kills
+    assert (42, signal.SIGKILL) in kills
 
 
 def test_stdio_probe_unknown_read_error_tag_is_bad_reply(tmp_path, monkeypatch):
@@ -1068,20 +1209,19 @@ def test_stdio_probe_unknown_read_error_tag_is_bad_reply(tmp_path, monkeypatch):
     assert result.outcome == "bad-reply"
 
 
-def test_stop_process_group_killpg_lookup_error_falls_back(monkeypatch):
+def test_stop_process_group_killpg_lookup_error_still_sends_sigkill(monkeypatch):
     import signal
 
     import pyforge.marshal.adapters.mcp_stdio_probe as mod
 
     class _Proc:
         pid = 3
-        terminated = False
 
         def poll(self):
             return None
 
         def terminate(self):
-            self.terminated = True
+            pass
 
         def kill(self):
             pass
@@ -1089,15 +1229,16 @@ def test_stop_process_group_killpg_lookup_error_falls_back(monkeypatch):
         def wait(self, timeout=None):
             return 0
 
-    def killpg(_pg, sig):
-        if sig == signal.SIGTERM:
-            raise ProcessLookupError()
+    signals: list[int] = []
 
-    monkeypatch.setattr(mod.os, "getpgid", lambda _pid: 100)
+    def killpg(_pg, sig):
+        signals.append(sig)
+        raise ProcessLookupError()
+
     monkeypatch.setattr(mod.os, "killpg", killpg)
-    proc = _Proc()
-    mod._stop_process_group(proc)
-    assert proc.terminated
+    mod._stop_process_group(_Proc())
+    assert signal.SIGTERM in signals
+    assert signal.SIGKILL in signals
 
 
 def test_probe_server_from_rendered_with_string_args(tmp_path):
