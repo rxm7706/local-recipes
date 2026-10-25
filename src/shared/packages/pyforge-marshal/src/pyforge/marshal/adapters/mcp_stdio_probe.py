@@ -167,6 +167,8 @@ class _ThreadChunks:
             return None
         if not chunk:
             self._eof = True
+            # The pump returns right after queueing EOF; let it finish so ``busy()`` reads False once EOF is reported.
+            self._thread.join(timeout=_POLL_SLICE_S)
         return chunk
 
     def busy(self) -> bool:
@@ -270,6 +272,7 @@ def _read_reply(
         reply, error, detail = _parse_buffered(buf, expected_id=expected_id)
         if reply is not None or error is not None:
             return reply, error, detail
+        remaining = deadline - time.monotonic()  # the slice and the drain above consumed some of it
         if proc.poll() is None and _wait_exit(proc, min(remaining, _CLOSE_GRACE_S)) is None:
             return None, "bad-reply", "the server closed its stdout before replying"
         return None, "exited", ""
@@ -296,7 +299,7 @@ def _handshake(
     """Run initialize -> notifications/initialized -> tools/list; the caller fills in the stderr tail."""
     buf = bytearray()
 
-    def closed_stdin() -> McpProbeResult:
+    def closed_stdin(reported_server_name: str | None = None) -> McpProbeResult:
         remaining = deadline - time.monotonic()
         code = _wait_exit(proc, min(max(remaining, 0.0), _CLOSE_GRACE_S))
         if code is None:
@@ -304,17 +307,21 @@ def _handshake(
                 outcome="bad-reply",
                 server_name=server_name,
                 detail="the server closed its stdin before replying",
+                reported_server_name=reported_server_name,
             )
-        return McpProbeResult(outcome="exited", server_name=server_name, exit_code=code)
+        return McpProbeResult(
+            outcome="exited", server_name=server_name, exit_code=code, reported_server_name=reported_server_name
+        )
 
-    def failed(error: _ReadError, detail: str, **carried: object) -> McpProbeResult:
-        exit_code = proc.returncode if error == "exited" else None
+    def failed(error: _ReadError, detail: str, reported_server_name: str | None = None) -> McpProbeResult:
+        # A child that has already exited has a known code whatever the outcome; carry it.
+        exit_code = proc.returncode if proc.poll() is not None else None
         return McpProbeResult(
             outcome=error,
             server_name=server_name,
             exit_code=exit_code,
             detail=detail,
-            **carried,  # type: ignore[arg-type]
+            reported_server_name=reported_server_name,
         )
 
     if not _write(proc, _INITIALIZE):
@@ -330,7 +337,7 @@ def _handshake(
     reported_name = reported if isinstance(reported, str) else None
 
     if not _write(proc, _INITIALIZED) or not _write(proc, _TOOLS_LIST):
-        return closed_stdin()
+        return closed_stdin(reported_server_name=reported_name)
     reply, error, detail = _read_reply(proc, chunks, buf, deadline=deadline, expected_id=_TOOLS_ID)
     if error is not None or reply is None:
         return failed(error or "bad-reply", detail, reported_server_name=reported_name)
@@ -430,7 +437,11 @@ def _stop_process_group(proc: subprocess.Popen[bytes]) -> None:
 
 
 def _close_pipes(proc: subprocess.Popen[bytes], *, keep_stdout: bool, keep_stderr: bool) -> None:
-    """Close our ends of the pipes -- except one a reader thread is still blocked on (it closes at EOF)."""
+    """Close our ends of the pipes -- except one a reader thread is still blocked on.
+
+    Nothing closes that one explicitly: its file object closes when the ``Popen`` is garbage-collected at the end
+    of ``probe_server``, and the daemon thread's blocked read ends with it.
+    """
     streams = [proc.stdin]
     if not keep_stdout:
         streams.append(proc.stdout)
@@ -481,13 +492,15 @@ class StdioMcpProbe(McpProbePort):
             )
 
         try:
-            stderr_reader = threading.Thread(
+            reader = threading.Thread(
                 target=_stderr_reader_fd,
                 args=(_pipe_fd(proc.stderr), stderr_tail, stop_stderr),
                 name="marshal-mcp-probe-stderr",
                 daemon=True,
             )
-            stderr_reader.start()
+            reader.start()
+            # Assigned only once started: the ``finally`` joins it, and joining a never-started thread raises.
+            stderr_reader = reader
             chunks = _open_chunks(_pipe_fd(proc.stdout))
             result = _handshake(proc, chunks, server_name=server_name, deadline=deadline)
         except Exception as exc:  # noqa: BLE001 -- the probe is a verdict, never a crash
@@ -543,7 +556,7 @@ def probe_server_from_rendered(
     env: dict[str, str] = {}
     if isinstance(raw_env, dict):
         env = {str(k): str(v) for k, v in raw_env.items()}
-    port = probe if probe is not None else StdioMcpProbe()
+    port = probe if probe is not None else default_mcp_probe()
     return port.probe_server(
         server_name=server_name,
         command=command,

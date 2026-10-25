@@ -370,7 +370,10 @@ def test_adapter_bad_reply_when_the_server_closes_stdout_and_lives(tmp_path: Pat
     _assert_group_gone(pgid_file)
 
 
-def test_adapter_judges_a_server_that_closes_stdin_without_crashing(tmp_path: Path):
+def test_adapter_never_raises_and_stops_the_group_when_the_server_closes_stdin_and_lives(tmp_path: Path):
+    """Which outcome depends on a race (the write usually lands before the child closes fd 0, so ``timed-out``;
+    ``bad-reply`` if the close wins); what this checks is that neither path raises and the group is gone.
+    ``closed_stdin`` itself is driven deterministically by ``test_handshake_closed_stdin_*`` below."""
     script, pgid_file = _py_server(tmp_path, "closein", "import os, time\nos.close(0)\ntime.sleep(600)\n")
     result = _probe(tmp_path, script, timeout_s=1.0)
     assert result.outcome in ("bad-reply", "timed-out")
@@ -625,6 +628,94 @@ def test_read_reply_returns_the_matching_reply():
         os.close(read_end)
     assert error is None and detail == ""
     assert reply == {"jsonrpc": "2.0", "id": 1, "result": {"ok": True}}
+
+
+class _ScriptedChunks:
+    """A chunk source with ``_SelectorChunks``'s surface that returns a scripted sequence."""
+
+    def __init__(self, *chunks: bytes | None) -> None:
+        self._chunks = list(chunks)
+        self.closed = False
+
+    def next_chunk(self, timeout: float) -> bytes | None:
+        return self._chunks.pop(0) if self._chunks else b""
+
+    def busy(self) -> bool:
+        return False
+
+    def close(self) -> None:
+        self.closed = True
+
+
+def test_read_reply_drains_and_parses_a_reply_that_arrives_as_the_exit_is_noticed():
+    """The child has exited and the first read slice is empty: the post-exit drain reads the reply and it is returned."""
+    source = _ScriptedChunks(None, _reply_line(2, {"tools": [{"name": "late"}]}), b"")
+    reply, error, detail = _read_reply(
+        _FakeProc(returncode=0), source, bytearray(), deadline=time.monotonic() + 1, expected_id=2
+    )
+    assert error is None and detail == ""
+    assert reply is not None and reply["id"] == 2 and reply["result"] == {"tools": [{"name": "late"}]}
+
+
+class _BrokenStdin:
+    def write(self, _data: bytes) -> None:
+        raise BrokenPipeError(32, "Broken pipe")
+
+    def flush(self) -> None:
+        pass
+
+
+class _BrokenStdinProc(_FakeProc):
+    stdin = _BrokenStdin()
+
+
+@pytest.mark.parametrize(
+    "proc, outcome, exit_code",
+    [
+        (_BrokenStdinProc(), "bad-reply", None),
+        (_BrokenStdinProc(exits_after_wait=7), "exited", 7),
+    ],
+)
+def test_handshake_closed_stdin_on_the_first_write(proc, outcome, exit_code):
+    """``initialize`` cannot be written: a child that exits in the grace is ``exited`` with its code; one that lives
+    is ``bad-reply`` with the stdin detail."""
+    read_end, write_end = os.pipe()
+    source = _SelectorChunks(read_end)
+    try:
+        result = probe_mod._handshake(proc, source, server_name="s", deadline=time.monotonic() + 5)
+    finally:
+        source.close()
+        os.close(write_end)
+        os.close(read_end)
+    assert result.outcome == outcome
+    assert result.exit_code == exit_code
+    assert result.reported_server_name is None
+    if outcome == "bad-reply":
+        assert result.detail == "the server closed its stdin before replying"
+    assert proc.waits and proc.waits[0] <= probe_mod._CLOSE_GRACE_S
+
+
+class _StdinBreaksAfterFirstWrite:
+    def __init__(self) -> None:
+        self.writes = 0
+
+    def write(self, _data: bytes) -> None:
+        self.writes += 1
+        if self.writes > 1:
+            raise BrokenPipeError(32, "Broken pipe")
+
+    def flush(self) -> None:
+        pass
+
+
+def test_handshake_closed_stdin_after_initialize_carries_the_reported_server_name():
+    proc = _FakeProc()
+    proc.stdin = _StdinBreaksAfterFirstWrite()  # type: ignore[attr-defined]
+    source = _ScriptedChunks(_reply_line(1, {"serverInfo": {"name": "answered"}, "capabilities": {}}))
+    result = probe_mod._handshake(proc, source, server_name="s", deadline=time.monotonic() + 5)
+    assert result.outcome == "bad-reply"
+    assert result.detail == "the server closed its stdin before replying"
+    assert result.reported_server_name == "answered"
 
 
 def test_read_reply_parses_what_an_exited_child_wrote_before_reporting_exited():
