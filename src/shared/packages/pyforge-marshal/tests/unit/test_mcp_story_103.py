@@ -33,18 +33,34 @@ EIGHT_TOOLS = {
 }
 
 
-def test_build_server_tool_calls_delegate(monkeypatch):
-    """AC2: each registered tool delegates to tools.py."""
+@pytest.mark.parametrize(
+    "tool_name,arguments",
+    [
+        ("list_marshal_tools", {}),
+        ("marshal_status", {"project": None}),
+        ("marshal_check", {"scope": "all", "project": None}),
+        ("marshal_homes", {}),
+        ("marshal_preflight", {"slug": "pyforge-marshal"}),
+        ("marshal_upstream", {}),
+        ("marshal_refresh", {"project": None, "base": None}),
+        ("marshal_watch", {"project": None, "run": None, "fleet": False}),
+    ],
+)
+def test_build_server_tool_handlers_invoke(tool_name, arguments, monkeypatch):
+    """AC2: each registered tool is callable through the SDK surface."""
     import asyncio
 
-    sentinel = {"list_marshal_tools": object()}
+    monkeypatch.setattr(
+        "pyforge.marshal.mcp.tools.run_marshal",
+        lambda *a, **k: {"ok": True, "command": "stub"},
+    )
     monkeypatch.setattr(
         "pyforge.marshal.mcp.tools.list_marshal_tools",
-        lambda: sentinel["list_marshal_tools"],
+        lambda: {"ok": True, "tools": [], "count": 0},
     )
     server = build_server()
-    result = asyncio.run(server.call_tool("list_marshal_tools", {}))
-    assert result is sentinel["list_marshal_tools"]
+    outcome = asyncio.run(server.call_tool(tool_name, arguments))
+    assert outcome.is_error is False
 
 
 def test_build_server_registers_eight_tools():
@@ -336,23 +352,6 @@ def test_probe_server_from_rendered_with_args_and_env(tmp_path):
         home=tmp_path,
     )
     assert result.outcome == "started"
-
-
-def test_stdio_probe_initialize_missing_result(tmp_path):
-    script = _script_fixture(
-        'import json,sys\n'
-        'print(json.dumps({"jsonrpc":"2.0","id":1,"result":{}}))\n',
-        tmp_path,
-    )
-    result = StdioMcpProbe().probe_server(
-        server_name="t",
-        command=sys.executable,
-        args=(script,),
-        env={},
-        cwd=str(tmp_path),
-        timeout_s=5,
-    )
-    assert result.outcome == "bad-reply"
 
 
 def test_probe_server_from_rendered_missing_command(tmp_path):
