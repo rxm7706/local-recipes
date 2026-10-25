@@ -54,6 +54,7 @@ kedro-dagster = ">=0.7.0"    # py3.14-unclassified glue — kedro-test import sm
 # story, not smuggled into a dependency fix.
 pandas = ">=3.0.3"
 pyarrow = ">=24.0.0"
+numpy = ">=2.5.3"                     # pipelines/derived_artifacts/alternatives.py imports it at module level
 pyyaml = ">=6.0.3"                    # imported as `yaml`
 pydantic = ">=2.13.4"                 # pydantic_core arrives with it
 attrs = ">=26.1.0"                    # imported as `attr` (observability.py)

@@ -225,6 +225,8 @@ EGRESS_PORTS: Mapping[str, bool] = {
     "ModelListFetchPort": False,
     # Story 90.1/92.1: process-group observation only — no network egress.
     "SessionGroupPort": False,
+    # Story 103.1: stdio MCP startup probe — process spawn only (AD-34 carve-out).
+    "McpProbePort": False,
 }
 
 
