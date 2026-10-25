@@ -32,6 +32,12 @@ _bmad-output/projects/*/.bmad-config.user.toml
 # prevent.
 .bmad-loop/profiles/
 
+# marshal init (AD-43) renders policy-declared MCP servers into the loop home's
+# root `.mcp.json` (copy-when-absent); bmad-loop seeds the same configs into run
+# worktrees. Untracked, it makes `marshal refresh` and `bmad-loop run` refuse the
+# home as dirty -- the same failure shape `.bmad-loop/profiles/` above prevents.
+/.mcp.json
+
 # The plan artifact (AD-57): derived, cheap to regenerate, and a committed
 # stale plan is a hazard -- so the plan file is ignored, but NOT the whole
 # `.marshal/` directory: `.marshal/seed-state.yml` is git-tracked (AD-52).

@@ -10127,7 +10127,7 @@ So that a home holding marshal's rendered MCP registration reads clean to refres
 **When** the story lands
 **Then** `git check-ignore -v .mcp.json` names the `model-ignores` region at the repo root; a home holding a rendered `.mcp.json` reads clean to `has_uncommitted_changes` and to `git status --porcelain`; a nested `.mcp.json` is not ignored
 **And** `marshal seed check` and the local-recipes seed oracle stay green; `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 105: The marshal PRD's FR arrows name the capabilities the Spec carries
 

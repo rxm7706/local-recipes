@@ -16,7 +16,7 @@
 model_version: 1.0.0
 seed_model_version: 0.1.0
 adopted_at: '2026-10-11T08:57:57Z'
-last_update: '2026-10-11T08:57:57Z'
+last_update: '2026-10-25T21:36:09Z'
 mode: adopt
 agents: []
 managed:
@@ -48,12 +48,12 @@ managed:
 - id: gitignore
   path: .gitignore
   class: hybrid-managed-region
-  body_sha: 6dfa035c
+  body_sha: '12233758'
   inserted_region_spans:
   - name: model-ignores
     start: 75
-    end: 2165
-    body_sha: 6dfa035c
+    end: 2501
+    body_sha: '12233758'
 - id: readme-badge
   path: README.md
   class: hybrid-managed-region
