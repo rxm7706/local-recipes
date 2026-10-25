@@ -363,19 +363,31 @@ def test_probe_server_from_rendered_missing_command(tmp_path):
     assert result.outcome == "spawn-failed"
 
 
-def test_main_invokes_stdio_server_when_no_args(monkeypatch):
-    seen: list[str] = []
-
-    class _FakeServer:
-        def run(self, *args, **kwargs):
-            seen.append("run")
-
-    monkeypatch.setattr(
-        "pyforge.marshal.mcp.server.build_server",
-        lambda *args, **kwargs: _FakeServer(),
+def test_stdio_probe_exited_after_initialize(tmp_path):
+    script = _script_fixture(
+        textwrap.dedent(
+            """
+            import json, sys
+            for line in sys.stdin:
+                msg = json.loads(line)
+                if msg.get("method") == "initialize":
+                    print(json.dumps({"jsonrpc":"2.0","id":msg["id"],"result":{"serverInfo":{"name":"t"},"capabilities":{}}}))
+                    sys.stdout.flush()
+                    sys.exit(3)
+            """
+        ),
+        tmp_path,
     )
-    assert main([]) == 0
-    assert seen == ["run"]
+    result = StdioMcpProbe().probe_server(
+        server_name="t",
+        command=sys.executable,
+        args=(script,),
+        env={},
+        cwd=str(tmp_path),
+        timeout_s=5,
+    )
+    assert result.outcome == "exited"
+    assert result.exit_code == 3
 
 
 def test_stdio_probe_exited_on_early_failure(tmp_path):
