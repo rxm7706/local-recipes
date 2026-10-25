@@ -711,6 +711,30 @@ verify_commands = [
   "docs/reference/station-cheat-sheet.md",
   "scripts/docs_station_cli.py",
   "docs/reference/library-llms-full.md",
+  # Widened 2026-10-25 (Story 104.1's chain): the paths 103.1's pixi.toml / pixi.lock change regenerates, which its
+  # dispatch wrote and the scope gate reported as MRS-GATE-012 (WARN).
+  ".steward/estate-refresh/*.json",
+  "docs/dreams/pyforge-unifying-strategy.md",
+  "docs/how-to/pixi-tasks.md",
+  "docs/map.yaml",
+  "docs/reference/bmad-estate-llms-full.md",
+  "docs/reference/environments.md",
+]
+"104" = [  # the .mcp.json marshal renders never makes a loop home dirty (a fix under spec-pyforge-marshal CAP-133,
+  # CAP-1, CAP-14 and CAP-15, no CAP; Story 104.1), added 2026-10-25. The default surface, restated because a declared
+  # entry replaces it outright; its package glob covers the seed template and its tests. Plus the repo .gitignore
+  # (already in the default) whose model-ignores region is re-rendered, the seed state that records the region's hash,
+  # and every Spec memlog (marshal's src/ is co-governed by spec-pyforge-core).
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+  ".marshal/seed-state.yml",
 ]
 "87" = [  # preserved work is a protected tag, and no cleanup destroys it (spec-pyforge-marshal CAP-287; Story 87.1's
   # sweeper fix), added 2026-10-04. The default surface, restated because a declared entry replaces it outright, plus:

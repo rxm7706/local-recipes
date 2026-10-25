@@ -1608,6 +1608,25 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   Operator ruling, 2026-10-25: "Go with the migration: move marshal-mcp to the official SDK MCPServer, add a real
   --help, and make preflight run a startup handshake. Plan it as one marshal story through the full Dream-to-code
   chain." Owner `spec-pyforge-marshal`. → Epic 103 / Story 103.1, specced 2026-10-25.
+- **2026-10-25 (the marshal home is dirty with marshal's own file)** — **Found: `marshal refresh` refuses the marshal
+  loop home because of a file marshal wrote there.** On 2026-10-25 every loop home was 180 commits behind `main`.
+  `marshal refresh` fast-forwarded seven and refused `pyforge-marshal` (`MRS-REFRESH-003`, dirty working tree) for one
+  untracked `.mcp.json`. `marshal init` rendered that file on 2026-10-04 from the policy's `[mcp_servers.marshal]`
+  (Story 6.9 / 18.1, AD-43); no other station declares a server, so no other home has one. The refresh probe counts
+  untracked files on purpose (`git status --porcelain` with `status.showUntrackedFiles=normal`), and so does
+  bmad-loop's own `worktree_clean`, so `bmad-loop run` would refuse the home too. bmad-loop's Claude profile already
+  calls `.mcp.json` a gitignored config it seeds into run worktrees, and this repo deliberately tracks no
+  `.mcp.json`, but nothing ignores it. Two files marshal writes into loop homes had the same gap and were fixed the
+  same way: `.bmad-loop/profiles/` and `.bmad-loop/marshal-model-cost-catalog.json`. The operator's session moved the
+  file aside, refreshed and put it back, so the next refresh refuses again. **What it looks like when fixed:** the
+  `.gitignore` model region that `marshal seed` manages ignores `/.mcp.json` at the repo root, so a home with
+  marshal's rendered file reads clean to refresh, to bmad-loop and to the dispatch supervisor, in this repo and in
+  every repo the seed installs. **Constraints:** a fix under CAP-133 (fast-forward with a clean-worktree check),
+  CAP-1 (loop homes) and CAP-14 / CAP-15 (the seeded `.gitignore` region), with no CAP and no flag. The refresh probe
+  stays as strict as it is; the home's file is not deleted, since preflight requires it (`MRS-PREFLIGHT-012`); and the
+  shared `info/exclude` is not used. **Kinships:** Story 103.1 (the server the file registers). Operator direction,
+  2026-10-25: "fix / include / resolve the gaps identified autonomously". Owner `spec-pyforge-marshal`. → Epic 104 /
+  Story 104.1, specced 2026-10-25.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint
