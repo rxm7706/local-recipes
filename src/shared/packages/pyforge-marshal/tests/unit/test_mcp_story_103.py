@@ -340,10 +340,7 @@ def test_probe_leaves_no_grandchild_process_group(tmp_path):
 def test_probe_exited_grandchild_detached_pipes_gone(tmp_path):
     """AC6: ``sleep … & exit 1`` with detached stdio leaves a background child in the group."""
     bg_pid_file = tmp_path / "bg.pid"
-    shell_cmd = (
-        f"sleep 600 </dev/null >/dev/null 2>&1 & echo $! > {bg_pid_file}; "
-        "sleep 0.05; exit 1"
-    )
+    shell_cmd = f"sleep 600 </dev/null >/dev/null 2>&1 & echo $! > {bg_pid_file}; sleep 0.05; exit 1"
     t0 = time.monotonic()
     result = StdioMcpProbe().probe_server(
         server_name="t",
