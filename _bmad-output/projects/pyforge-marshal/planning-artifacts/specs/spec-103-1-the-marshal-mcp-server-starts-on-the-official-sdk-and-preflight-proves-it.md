@@ -367,14 +367,18 @@ Type / Effort / Deps: fix / M / —.
   implementation subagent ran).** The AC9 blocker has a root cause in the generator, not in how it was invoked.
   `scripts/docs_station_cli.py::capture_help` pins `COLUMNS=100` and claims deterministic wrapping "regardless of
   caller's terminal", but it inherits the rest of the caller's environment, and typer 0.27.2 / rich 15.0.0 ignore
-  `COLUMNS` when the caller's environment forces a terminal. Measured in this worktree, `pixi run --frozen -e
-  pyforge-guild scribe --help` with `NO_COLOR=1 COLUMNS=100`: plain environment 100 columns; `TERM=dumb` alone 100;
-  `TERM=dumb FORCE_COLOR=1` 80 (typer sets `force_terminal=True` whenever `FORCE_COLOR`, `PY_COLORS` or
-  `GITHUB_ACTIONS` is set, and rich's `Console.size` returns 80x25 for a forced terminal whose `TERM` is `dumb` or
-  `unknown` before it reads `COLUMNS`); `FORCE_COLOR=1` alone 140 (the pty's width, still read before `COLUMNS` in that
-  branch). The three earlier passes ran under a harness with such an environment, so every one of their renders was
-  an 80-column page, and `--check` run from a plain terminal reads it as stale. In this session's environment none
-  of those variables is set and `--check` exits 1 against the committed page, as the round-5 reviewer found.
+  `COLUMNS` when the caller's environment forces a terminal and `TERM` is `dumb` or `unknown`. Measured in this
+  worktree, `pixi run --frozen -e pyforge-guild scribe --help` with `NO_COLOR=1 COLUMNS=100`: plain environment 100
+  columns; `TERM=dumb` alone 100; `TERM=dumb FORCE_COLOR=1` 80 (typer sets `force_terminal=True` whenever
+  `FORCE_COLOR`, `PY_COLORS` or `GITHUB_ACTIONS` is set, and rich's `Console.size` returns 80x25 for a forced terminal
+  whose `TERM` is `dumb` or `unknown` before it reads `COLUMNS`). `FORCE_COLOR=1` alone still wraps at 100 visible
+  columns but emits ANSI styling into the capture (154 escape sequences; the 140-character raw lines are escape-code
+  overhead, not the pty's width -- `NO_COLOR` removes colour, not bold/dim), so a forced terminal corrupts the page
+  either way. (Corrected in the review pass of this dev pass: the first version of this entry read the 140 as the
+  pty's width.) The three earlier passes ran under a harness with `TERM=dumb` and a forcing variable, so every one
+  of their renders was an 80-column page, and `--check` run from a plain terminal reads it as stale. In this
+  session's environment none of those variables is set and `--check` exits 1 against the committed page, as the
+  round-5 reviewer found.
   - Durable close for AC9 (a broken window in a file this story already touches, AGENTS.md behavioural guideline 3):
     make `capture_help` build the child's environment deterministically. Remove `FORCE_COLOR`, `PY_COLORS`,
     `CLICOLOR_FORCE`, `GITHUB_ACTIONS`, `TTY_COMPATIBLE` and `TERMINAL_WIDTH` from the copied environment beside the
