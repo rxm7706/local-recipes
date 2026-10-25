@@ -62,7 +62,7 @@ def test_read_json_line_non_dict_json_is_bad_reply():
             return self._returncode
 
         def readline(self):
-            return '[1,2,3]\n'
+            return "[1,2,3]\n"
 
     tail: list[str] = [""]
     parsed, err = _read_json_line(_Proc(), deadline=time.monotonic() + 1, stderr_tail=tail)
