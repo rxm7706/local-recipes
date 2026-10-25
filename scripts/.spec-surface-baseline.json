@@ -848,7 +848,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_frozen_path.py": "2a38239a62f116214029ee7ca34126debddffe31",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_general_docs_consistency.py": "970077c94ea1f6e62a58ab10d423026ee848eddb",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_honest_reads_41_2.py": "e6b08482528bbd6fc25c3f54036d9e7afe5b352c",
-   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_hygiene.py": "498e92a084492afff39969810834bbf6b8862313",
+   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_hygiene.py": "1eb559480ed0668a7480dc22091016e77eb13358",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_ledger.py": "48ad6f9c55c88d7044bb7aa8e6b1cf077962f8ed",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_ledger_direction.py": "44bcb672ed752054ad17fa550370fe29f30ec0c7",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_live_proof_surfaces.py": "926db86411b426a6db62d1e867e5f6696ed40739",
@@ -868,7 +868,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "7604be3845ddaf9571feaea910fb54a535774be6"
+  "memlog": "275b225746bf7be61fbcaa2d87be69309dcb8d20"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
