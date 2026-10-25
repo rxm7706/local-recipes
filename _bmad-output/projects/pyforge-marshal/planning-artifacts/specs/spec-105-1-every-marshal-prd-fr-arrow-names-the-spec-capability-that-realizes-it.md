@@ -2,7 +2,7 @@
 title: "105.1: Every marshal PRD FR arrow names the Spec capability that realizes it"
 type: 'chore'
 created: '2026-10-25'
-status: 'ready-for-dev'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -123,6 +123,13 @@ Type / Effort / Deps: chore / S / —.
 - `pixi run -e pyforge-guild python -m pyforge.doctor.sources fr-without-cap` — expected: OK (AC4).
 - `pixi run -e pyforge-guild python scripts/chain_currency_sweep_check.py --json --project pyforge-marshal` — expected: no errors (AC4).
 - `pixi run -e pyforge-guild detectors-ci` — expected: exit 0 (AC4).
+
+## Auto Run Result
+
+Status: in-review (hand-built in the chain PR; promoted to `done` by `dispatch_land_finalize` after the merge)
+Implementation: the 71 PRD FR heading arrows rewritten from the memlog table (`#### FR-` lines changed: 71); PRD
+§ 44 and the spine's Currency reconciliation 2026-10-25 (Story 105.1) added; PRD, spine and epics re-stamped;
+`DW-marshal-105-1` ingested for FR-144..FR-147.
 
 ## Spec Change Log
 
