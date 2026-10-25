@@ -12,7 +12,12 @@ from pathlib import Path
 
 import pytest
 
-from pyforge.marshal.adapters.mcp_stdio_probe import StdioMcpProbe, probe_server_from_rendered
+from pyforge.marshal.adapters.mcp_stdio_probe import (
+    StdioMcpProbe,
+    _read_json_line,
+    default_mcp_probe,
+    probe_server_from_rendered,
+)
 from pyforge.marshal.cli.init import _probe_mcp_servers, run_preflight
 from pyforge.marshal.core import policy
 from pyforge.marshal.core.mcp_probe import evaluate_mcp_probe
@@ -20,6 +25,46 @@ from pyforge.marshal.mcp.server import build_server, main
 from pyforge.marshal.ports.mcp_probe import McpProbeResult
 
 PACKAGE_SRC = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal"
+
+def test_default_mcp_probe_factory():
+    assert isinstance(default_mcp_probe(), StdioMcpProbe)
+
+
+def test_read_json_line_bad_reply_and_error_reply():
+    import io
+    import time
+
+    class _Proc:
+        def __init__(self, lines: list[str]):
+            self._lines = iter(lines)
+            self.stdout = self
+            self._returncode = None
+
+        def poll(self):
+            return self._returncode
+
+        def readline(self):
+            try:
+                return next(self._lines)
+            except StopIteration:
+                return ""
+
+    tail: list[str] = []
+    deadline = time.monotonic() + 1
+    parsed, err = _read_json_line(
+        _Proc(["not-json\n"]),
+        deadline=deadline,
+        stderr_tail=tail,
+    )
+    assert parsed is None and err == "bad-reply"
+
+    parsed2, err2 = _read_json_line(
+        _Proc(['{"jsonrpc":"2.0","id":1,"error":{"code":1,"message":"x"}}\n']),
+        deadline=deadline,
+        stderr_tail=tail,
+    )
+    assert parsed2 is None and err2 == "error-reply"
+
 
 EIGHT_TOOLS = {
     "list_marshal_tools",
