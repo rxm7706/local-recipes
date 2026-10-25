@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
+from pyforge.core.process import BytesProcessResult, PosixProcess, ProcessError, ProcessResult
 
 
 @pytest.fixture
@@ -573,3 +573,44 @@ def test_spawn_detached_wraps_a_generic_launch_oserror(process, tmp_path, monkey
     monkeypatch.setattr(process_module.subprocess, "Popen", _raise_eacces)
     with pytest.raises(ProcessError, match="cannot launch"):
         process.spawn_detached(["whatever"], cwd=tmp_path, log_path=tmp_path / "spawned.log")
+
+
+# --- run_bytes (Story 87.19): stdin + byte-exact stdout ---------------------------------
+
+
+def test_run_bytes_delivers_stdin_and_returns_bytes(process, tmp_path):
+    script = (
+        "import sys\n"
+        "data = sys.stdin.buffer.read()\n"
+        "sys.stdout.buffer.write(data)\n"
+        "sys.stdout.buffer.write(b'\\xff')\n"
+    )
+    result = process.run_bytes(
+        [sys.executable, "-c", script],
+        cwd=tmp_path,
+        input=b"hello",
+    )
+    assert isinstance(result, BytesProcessResult)
+    assert result.returncode == 0
+    assert result.stdout == b"hello\xff"
+
+
+def test_run_without_input_still_closes_stdin(process, tmp_path):
+    """A child that reads stdin must see EOF when ``run`` is used (stdin=DEVNULL)."""
+    script = "import sys; sys.exit(0 if sys.stdin.read() == '' else 1)"
+    result = process.run([sys.executable, "-c", script], cwd=tmp_path)
+    assert result.returncode == 0
+
+
+def test_run_bytes_timeout_raises_process_error(process, tmp_path):
+    with pytest.raises(ProcessError, match="timed out"):
+        process.run_bytes(
+            [sys.executable, "-c", "import time; time.sleep(30)"],
+            cwd=tmp_path,
+            timeout_s=0.2,
+        )
+
+
+def test_run_bytes_launch_failure_raises_process_error(process, tmp_path):
+    with pytest.raises(ProcessError):
+        process.run_bytes(["/no/such/binary"], cwd=tmp_path)

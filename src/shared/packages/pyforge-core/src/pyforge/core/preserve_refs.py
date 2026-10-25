@@ -872,7 +872,14 @@ def push_preserve_ref(
     commit = _full_sha(repo, f"{refname}^{{commit}}")
     plist_path = purge_list_path if purge_list_path is not None else default_purge_list_path(repo)
     purge_list = load_purge_list(plist_path)
-    gate_findings = run_content_gate(repo, commit=commit, purge_list=purge_list, per_file_max_bytes=per_file_max_bytes)
+    gate_findings = run_content_gate(
+        repo,
+        commit=commit,
+        purge_list=purge_list,
+        per_file_max_bytes=per_file_max_bytes,
+        remote=remote,
+        annotated_tag_ref=refname,
+    )
     if gate_findings:
         return PushPreserveResult(refname, False, gate_findings)
 

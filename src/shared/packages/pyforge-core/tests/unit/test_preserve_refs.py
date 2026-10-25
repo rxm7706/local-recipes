@@ -11,6 +11,7 @@ import pytest
 
 from pyforge.core.preserve_refs import (
     PRESERVE_PRODUCERS,
+    ContentGateFinding,
     ContentGateReason,
     PreserveRefConflictError,
     PreserveRefNameError,
@@ -421,3 +422,137 @@ def test_observe_preserve_debt_is_none_not_empty_when_origin_cannot_be_read(git_
     _tagged(repo)
     _run(repo, "remote", "set-url", "origin", str(repo / "no-such-remote.git"))
     assert observe_preserve_debt(repo) is None
+
+
+# ---------------------------------------------------------------------------
+# Story 87.19 -- content gate judges only what a push sends.
+# ---------------------------------------------------------------------------
+
+_SYNTHETIC_SECRET = "sk-ant-api03-SYNTHETICTEST0000000000000000\n"
+_EMPTY_PURGE = PurgeList(frozenset(), frozenset())
+
+
+def test_content_gate_ac1_public_content_on_origin_passes(git_pair: tuple[Path, Path]):
+    repo, _bare = git_pair
+    (repo / "public_bad.txt").write_text(_SYNTHETIC_SECRET, encoding="utf-8")
+    (repo / "big.bin").write_bytes(b"x" * (5 * 1024 * 1024 + 1))
+    _run(repo, "add", "public_bad.txt", "big.bin")
+    _run(repo, "commit", "-m", "public bad on main")
+    _run(repo, "push", "origin", "HEAD:main")
+    _run(repo, "fetch", "origin")
+    (repo / "clean.txt").write_text("ok\n", encoding="utf-8")
+    _run(repo, "add", "clean.txt")
+    _run(repo, "commit", "-m", "preserve tip")
+    tip = _run(repo, "rev-parse", "HEAD").stdout.strip()
+    assert run_content_gate(repo, commit=tip, purge_list=_EMPTY_PURGE) == ()
+    ref = render_preserve_ref(commit_sha=tip, producer="hand", project_slug="pyforge-marshal", story_key="87.19")
+    tag_preserve(repo, refname=ref, commit=tip, trailers=_trailers(tip))
+    purge_path = _write_purge_list(repo)
+    result = push_preserve_ref(repo, ref, purge_list_path=purge_path, remote="origin")
+    assert result.pushed is True
+
+
+def test_content_gate_ac2_intermediate_secret_refused(git_pair: tuple[Path, Path]):
+    repo, _ = git_pair
+    (repo / "secret.txt").write_text(_SYNTHETIC_SECRET, encoding="utf-8")
+    _run(repo, "add", "secret.txt")
+    _run(repo, "commit", "-m", "add secret")
+    _run(repo, "rm", "secret.txt")
+    _run(repo, "commit", "-m", "remove secret")
+    tip = _run(repo, "rev-parse", "HEAD").stdout.strip()
+    findings = run_content_gate(repo, commit=tip, purge_list=_EMPTY_PURGE)
+    assert any(f.reason is ContentGateReason.SECRET and "secret.txt" in f.message for f in findings)
+
+
+def test_content_gate_ac3_pull_refs_not_public(git_pair: tuple[Path, Path]):
+    repo, bare = git_pair
+    (repo / "pull_secret.txt").write_text(_SYNTHETIC_SECRET, encoding="utf-8")
+    _run(repo, "add", "pull_secret.txt")
+    _run(repo, "commit", "-m", "pull only")
+    bad_commit = _run(repo, "rev-parse", "HEAD").stdout.strip()
+    _run(repo, "push", "origin", f"{bad_commit}:refs/pull/1/head")
+    _run(repo, "fetch", "origin")
+    (repo / "clean.txt").write_text("ok\n", encoding="utf-8")
+    _run(repo, "add", "clean.txt")
+    _run(repo, "commit", "-m", "preserve")
+    tip = _run(repo, "rev-parse", "HEAD").stdout.strip()
+    findings = run_content_gate(repo, commit=tip, purge_list=_EMPTY_PURGE)
+    assert any(f.reason is ContentGateReason.SECRET for f in findings)
+
+
+def test_content_gate_ac4_tag_and_commit_message_secrets(git_pair: tuple[Path, Path]):
+    repo, _ = git_pair
+    _run(repo, "commit", "--allow-empty", "-m", f"empty with {_SYNTHETIC_SECRET.strip()}")
+    tip = _run(repo, "rev-parse", "HEAD").stdout.strip()
+    commit_findings = run_content_gate(repo, commit=tip, purge_list=_EMPTY_PURGE)
+    assert any(f.reason is ContentGateReason.SECRET and "commit" in f.message for f in commit_findings)
+
+    ref = render_preserve_ref(commit_sha=tip, producer="hand", project_slug="pyforge-marshal", story_key="87.19")
+    msg = f"Preserve-Producer: hand\n\n{_SYNTHETIC_SECRET}"
+    _run(repo, "tag", "-a", ref.removeprefix("refs/tags/"), "-m", msg, tip)
+    tag_findings = run_content_gate(
+        repo, commit=tip, purge_list=_EMPTY_PURGE, annotated_tag_ref=ref
+    )
+    assert any(f.reason is ContentGateReason.SECRET and "tag" in f.message for f in tag_findings)
+
+
+def test_content_gate_ac6_unreadable_remote(git_pair: tuple[Path, Path]):
+    repo, _ = git_pair
+    tip = _run(repo, "rev-parse", "HEAD").stdout.strip()
+    _run(repo, "remote", "set-url", "origin", str(repo / "missing-remote.git"))
+    findings = run_content_gate(repo, commit=tip, purge_list=_EMPTY_PURGE, remote="origin")
+    assert findings == (
+        ContentGateFinding(
+            ContentGateReason.REMOTE_UNREADABLE,
+            "could not read remote 'origin' (ls-remote failed, timed out, or process error)",
+        ),
+    )
+
+
+def test_content_gate_ac7_fixed_process_count(git_pair: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch):
+    import pyforge.core.preserve_refs as mod
+
+    repo, _ = git_pair
+    real = mod._PROCESS
+    counts: list[int] = []
+
+    class _Counting:
+        def run(self, *args, **kwargs):
+            counts.append(1)
+            return real.run(*args, **kwargs)
+
+        def run_bytes(self, *args, **kwargs):
+            counts.append(1)
+            return real.run_bytes(*args, **kwargs)
+
+        def __getattr__(self, name: str):
+            return getattr(real, name)
+
+    monkeypatch.setattr(mod, "_PROCESS", _Counting())
+    (repo / "small0.txt").write_text("s\n", encoding="utf-8")
+    _run(repo, "add", "small0.txt")
+    _run(repo, "commit", "-m", "three blobs")
+    for name in ("small1.txt", "small2.txt"):
+        (repo / name).write_text("s\n", encoding="utf-8")
+        _run(repo, "add", name)
+    _run(repo, "commit", "-m", "two more")
+    tip_small = _run(repo, "rev-parse", "HEAD").stdout.strip()
+    run_content_gate(repo, commit=tip_small, purge_list=_EMPTY_PURGE)
+    small_count = len(counts)
+    counts.clear()
+    for i in range(300):
+        (repo / f"blob{i}.txt").write_text(f"v{i}\n", encoding="utf-8")
+        _run(repo, "add", f"blob{i}.txt")
+    _run(repo, "commit", "-m", "many blobs")
+    tip_large = _run(repo, "rev-parse", "HEAD").stdout.strip()
+    run_content_gate(repo, commit=tip_large, purge_list=_EMPTY_PURGE)
+    assert len(counts) == small_count
+
+
+def test_content_gate_mutation_unreadable_remote_never_passes(git_pair: tuple[Path, Path]):
+    repo, _ = git_pair
+    tip = _run(repo, "rev-parse", "HEAD").stdout.strip()
+    _run(repo, "remote", "set-url", "origin", str(repo / "missing-remote.git"))
+    findings = run_content_gate(repo, commit=tip, purge_list=_EMPTY_PURGE)
+    assert any(f.reason is ContentGateReason.REMOTE_UNREADABLE for f in findings)
+    assert not any(f.reason is ContentGateReason.SECRET for f in findings)
