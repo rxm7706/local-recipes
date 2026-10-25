@@ -2,7 +2,7 @@
 title: "104.1: The .mcp.json marshal renders never makes a loop home dirty"
 type: 'fix'
 created: '2026-10-25'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'b0753539a36f349d608c80bfac9e62fdb3ffd485'
 review_loop_iteration: 0
 followup_review_recommended: false
