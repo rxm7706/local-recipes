@@ -602,9 +602,9 @@
  "pyforge-doctor/spec-pixi-candidate-currency": {
   "files": {
    "pixi.lock": "a7f23d48cc776010b7d5d298f97d10707dad00aa",
-   "pixi.toml": "f6ea3ae559f3a593214345c02061c9131e8e47ef"
+   "pixi.toml": "980c38dfd5be27ede2ebc4a7ab1709344b1b4ca3"
   },
-  "memlog": "cb1237bbc423bd20a2eb36c66557128d98f12add"
+  "memlog": "5e91e42ff07b18b628452cc46ac893c84d9ed4b8"
  },
  "pyforge-doctor/spec-pyforge-doctor": {
   "files": {
