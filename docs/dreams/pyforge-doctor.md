@@ -100,8 +100,8 @@ forward. That dream is archived; this one is the real record.
   hands both modes to scribe's CLI; each
   authored page is re-read against the sources that moved, corrected where they changed it, and re-stamped
   `verified:`; every dead reference resolves; every Dream file has a `docs/dreams/README.md` row, a status line with no
-  trailing comment, Kinship links that resolve (retargeted to the Dream a folded one now lives in, or dropped where
-  none does) and, when archived, a Realization log; each orphan planning file is cited from the record it belongs to.
+  trailing comment, Kinship links that resolve (retargeted to the Dream a folded one now lives in, or plain text
+  where none does) and, when archived, a Realization log; each orphan planning file is cited from the record it belongs to.
   **Constraints:** a `fix` under CAP-84 (documentation currency) and CAP-42 (the fleet hygiene sweep), with no CAP and
   no flag; no detector, threshold or severity changes (the door is the one new script); the README's sentence that rows are never added by hand to
   close the backlog is replaced in the same change, since the operator ruled to close it (a governance edit, recorded

@@ -2,9 +2,9 @@
 title: '30.4: The docs, Dream and planning warn backlog is cleared'
 type: 'fix'
 created: '2026-10-24'
-status: 'in-review'
+status: 'done'
 baseline_revision: '9ab7ef1cf1'
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
@@ -54,7 +54,7 @@ each detector as one summary line, so the backlog is read as three findings and 
    `## Realization log` to each archived Dream without one, from its own history.
 4. Add one `docs/dreams/README.md` row per missing Dream, derived from its own frontmatter (`title:`, `status:`), in
    a table for the backlog; replace the README's sentence that rows are not added by hand with the ruling. Most of
-   these Dreams are archived, and CHAIN-STANDARD §11 (CAP-11, 2026-09-29) moves an archived Dream to
+   these Dreams are archived, and CHAIN-STANDARD §11 (`spec-one-chain-per-station` CAP-11, 2026-09-29) moves an archived Dream to
    `archive/docs/dreams/` one station per PR, so each row is interim: it goes in the PR that moves its file
    (`readme-table-orphan` names a row whose file is gone). The §11 moves themselves are not this story.
 5. Cite each orphan planning file from the record it belongs to (its companion readiness report, its Spec memlog, or
@@ -79,7 +79,8 @@ Type / Effort / Deps: fix / L / S-30.3.
 - **AC2 — Re-verified, not re-stamped.** Each of the 19 pages' `verified:` moves only with a recorded review of each
   stale source (Auto Run Result lists, per page, what changed and what was corrected).
 - **AC3 — Detectors untouched.** No file under `src/shared/packages/pyforge-doctor/src/` changes; under `scripts/`
-  only the new `docs_bmad_estate.py` door is added; no check, threshold or severity changes.
+  only the new `docs_bmad_estate.py` door is added and `spec_surface_allowlist.txt` gains its line; doctor's
+  `tests/` change only in the live-tree pins; no check, threshold or severity changes.
 - **AC4 — README policy.** The README carries a row for every Dream file, and its backlog sentence states the ruling.
 - **AC5 — Suites and gates.** `pixi run -e pyforge-doctor pyforge-doctor-test` green; full-scope `pr-preflight` exit 0.
 
@@ -120,12 +121,29 @@ Type / Effort / Deps: fix / L / S-30.3.
   `bmad_estate_check.run_check`, with a test for that case; the detector's own mapping is `DW-doctor-30-4-1`.
 - S3 (two README rows cut multi-line titles): fixed; all 64 rows checked against yaml-parsed titles.
 - S4 (the rewritten live orphan test gated every station's orphans): narrowed to the five cited files, joined from
-  parts so the test file cannot be their inbound reference.
-- S5 (AC5 evidence missing): doctor suite, reconcile, stamps, promotion and the full preflight recorded below.
+  parts so the test file cannot be their inbound reference. (Review 2 found the narrowed row could still never
+  fail; see review 2, should-fix 1.)
+- S5 (AC5 evidence missing): the doctor suite, the reconcile, the stamps, the promotion and the full preflight
+  are recorded in the Auto Run Result before landing.
 - S6 (the README's governing Spec must carry the ruling): a decision entry on `docs/governance/spec-pyforge-charter`.
 - N1 (`intelligence-before-foundry` backticked, not dropped), N2 (`DW-doctor-30-4-2`), N3 (the detectors how-to
   names the no-generator and disallowed-path cases), N4 (`value` rows in pause-ci), N5 (MAP.md row), N6 (counts),
   N7 (`note:` in place of a new `preserved:` field): fixed. N8: no change needed.
+
+### 2026-10-24 — Review 2 (independent subagent, read-only): FAIL, 0 blockers
+- verdicts: 5 should-fix, 6 nits; all fixed.
+- S1 (the live orphan row could never fail, because the story spec also names the five files and `gather()`
+  counts any inbound reference): the row now pins each file to the record that cites it and reads that record;
+  removing the readiness report's citation fails it (`no longer cites`), restoring it passes.
+- S2 (the door's sibling import broke under `PYTHONSAFEPATH`): it puts its own folder on `sys.path`, as the other
+  generators do; `PYTHONSAFEPATH=1 python scripts/docs_bmad_estate.py --check` exits 0.
+- S3 (the steward reconcile claimed Kinship retargets that never happened; the charter reconcile left two edits
+  out): corrected by appended events.
+- S4 (the doctor reconcile named 14 paths in shorthand): a new event names every governed path in full.
+- S5 (evidence still pending): reworded; recorded below before landing.
+- Nits: the Kinship wording (nothing was dropped), `spec-one-chain-per-station` CAP-11 qualified, the test
+  counts, AC3 and the epic Surface name every changed file class, and the decision's dead-reference clause is
+  corrected on the memlog. The stale baseline keys for `pyforge-genesis` are not this story's.
 
 ## Spec Change Log
 
@@ -142,8 +160,8 @@ Type / Effort / Deps: fix / L / S-30.3.
 - `dreams-hygiene` 121 → 0: 23 status comments moved verbatim to their own lines; 32 dead Kinship links in 14 files
   retargeted (`deckcraft`, `design-code-bridge`, `modernist-identity`, `video-scripts` → `[[pyforge-herald|…]]`;
   `pyforge-genesis` → `[[pyforge-charter|pyforge-genesis]]`), turned into a relative link (`presentation-deck` →
-  `docs/how-to/presentation-deck.md`), backticked (two sibling-org Dreams that never existed here) or dropped
-  (`intelligence-before-foundry`, never a Dream); 2 archived Dreams gained a Realization log from their history; 64
+  `docs/how-to/presentation-deck.md`) or backticked (two sibling-org Dreams that never existed here, and
+  `intelligence-before-foundry`, never a Dream); 2 archived Dreams gained a Realization log from their history; 64
   README rows derived from frontmatter (63 with a verified fold target), the count paragraph and the backlog sentence
   rewritten. Found and fixed on the way: commit `1e845b55fc` had cut the first line of the status comment in
   `marshal-run-watch.md`, `library-catalog-manifest-sync.md` and `run-state-one-publisher.md`; restored from
@@ -157,12 +175,20 @@ Type / Effort / Deps: fix / L / S-30.3.
   `DW-BOARD-2026-08-08-1` names where the displaced herald epics array is kept.
 - Also clean after the change: `docs-map-hygiene`, `general-docs-consistency`, `governance-currency`,
   `dream-chain-check`, `deferred-work-check`, `spec-surface-check`, `story-status-check` (exit 0 each);
-  `scripts-lib-test` 985 passed, 3 skipped (before review 1; the door's tests are 8 after it, with
-  `test_bmad_estate_check.py` 13 passed); `pixi run -e pyforge-doctor pyforge-doctor-test` exit 0, 3,819 passed and
-  1 skipped, then 4 passed (after review 1's fixes).
+  `scripts-lib-test` 985 passed, 3 skipped (before review 1); after it, `test_docs_bmad_estate.py` 8 passed and
+  `test_bmad_estate_check.py` 5 passed; `pixi run -e pyforge-doctor pyforge-doctor-test` exit 0 on the final test
+  code after review 2 (3,819 passed, 1 skipped, then the task's second leg 4 passed). The live orphan row's mutation:
+  removing the mcp-host readiness report's citation fails it (`no longer cites`); restoring it passes.
+  `PYTHONSAFEPATH=1 python scripts/docs_bmad_estate.py --check` exits 0.
+- Promotion: the feed key, `sprint-ledger-sync -- --project doctor` (30-4 done, epic-30 done again), the epic's
+  `**Status:** done` and this spec's `status: done`; doctor's `test-architecture.md` names 30.4
+  (`tea-playwright-all`, other stations' fingerprint-only drift reverted). Chain currency: the memlog's 2026-10-24
+  entries put the spec ahead of the PRD past the two-day window, so doctor's PRD and spine carry a 2026-10-24
+  re-stamp and a currency section and the epics an AMENDED note; `chain-currency-sweep-check` then reads all eight
+  stations current.
 - Doctor's live-tree pins follow the cleared state: `test_live_tree_dream_readme_missing_count` and
-  `test_live_tree_kinship_wikilink_dead_count` assert 0 (AGENTS.md pre-PR item 8's shape); the live orphan row now
-  asserts only that the five files this story cited are not reported, so an orphan added elsewhere stays a warn.
+  `test_live_tree_kinship_wikilink_dead_count` assert 0 (AGENTS.md pre-PR item 8's shape); the live orphan row pins
+  each of the five files this story cited to the record that cites it, so an orphan added elsewhere stays a warn.
 - Outside these three detectors and not changed: `status-body-consistency` warns on 12 `SPEC.md` files' open
   questions, none of them touched here.
 - Residual risks: the 64 interim README rows (Approach 4); `DW-doctor-30-4-1` (`docs-currency` reads a generator's

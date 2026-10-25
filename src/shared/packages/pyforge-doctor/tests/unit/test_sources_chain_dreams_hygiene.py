@@ -509,8 +509,9 @@ def test_kinship_wikilink_skips_frontmatter_below_a_banner(tmp_path: Path) -> No
 def test_live_tree_kinship_wikilink_dead_count() -> None:
     """Measured live 2026-10-24: 0 -- doctor Story 30.4 retargeted each dead
     Kinship wikilink under ``docs/dreams/`` to the Dream that absorbed its
-    target, or dropped it (32 on 2026-10-04 after Story 41.3 repaired the 34
-    glued-opener Dreams; 30 on 2026-09-25)."""
+    target, or turned it into plain text or a plain link where no Dream did
+    (32 on 2026-10-04 after Story 41.3 repaired the 34 glued-opener Dreams;
+    30 on 2026-09-25)."""
     repo_root = _require_repo_root()
     findings = chain.gather_dreams_hygiene(repo_root)
     dead = [f for f in findings if f.check == "kinship-wikilink-dead"]

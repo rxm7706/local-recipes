@@ -25,7 +25,11 @@ import subprocess
 import sys
 from pathlib import Path
 
-import bmad_estate_check
+# The sibling detector is imported from this script's own folder, which Python leaves off sys.path under
+# PYTHONSAFEPATH / -P / -I; the other docs_*.py generators guard the same way.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import bmad_estate_check  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 PREFIX = "[docs-bmad-estate]"

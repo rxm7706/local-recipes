@@ -396,44 +396,62 @@ def test_live_repo_gather_reports_no_finding_naming_warden() -> None:
 
 # --- Row: the five cited orphans stay cited (live) --------------------------
 
-#: The five live orphans doctor Story 30.4 cited from the records they belong to (2026-10-24).
-#: Each name is joined from two parts so this file's own text never matches the whole basename:
-#: `gather()`'s orphan check greps the repo, this test file included, and a literal here would be
-#: the inbound reference that keeps the row green after a real citation is lost.
-_STORY_30_4_CITED = tuple(
-    stem + ext
-    for stem, ext in (
-        ("_bmad-output/projects/pyforge-herald/planning-artifacts/deckcraft-board-epics-displaced-2026-08-08", ".json"),
-        (
-            "_bmad-output/projects/pyforge-marshal/planning-artifacts/change-history/sprint-change-proposal-2026-08-12",
-            ".md",
-        ),
-        (
-            "_bmad-output/projects/pyforge-marshal/planning-artifacts/change-history/"
-            "sprint-change-proposal-2026-09-01-drain-self-resolution",
-            ".md",
-        ),
-        ("_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-change-proposal-2026-08-21", ".md"),
-        (
-            "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-change-proposal-2026-08-26-mcp-host-cluster",
-            ".md",
-        ),
-    )
+_PLANNING = "_bmad-output/projects/{station}/planning-artifacts/"
+
+#: The five live orphans doctor Story 30.4 cited (2026-10-24), each with the record that cites it.
+#: Each file name is joined from two parts so this test's own text never holds the whole basename
+#: (`gather()`'s orphan check greps the repo, this file included). The row reads the citing record
+#: itself, because other text (the story spec, its evidence) also names these files and would keep
+#: `gather()` quiet after a real citation is lost.
+_STORY_30_4_CITED = (
+    (
+        _PLANNING.format(station="pyforge-herald") + "deckcraft-board-epics-displaced-2026-08-08",
+        ".json",
+        _PLANNING.format(station="pyforge-marshal") + "deferred-work-ledger.md",
+    ),
+    (
+        _PLANNING.format(station="pyforge-marshal") + "change-history/sprint-change-proposal-2026-08-12",
+        ".md",
+        _PLANNING.format(station="pyforge-marshal") + "epics.md",
+    ),
+    (
+        _PLANNING.format(station="pyforge-marshal")
+        + "change-history/sprint-change-proposal-2026-09-01-drain-self-resolution",
+        ".md",
+        _PLANNING.format(station="pyforge-marshal") + "epics.md",
+    ),
+    (
+        _PLANNING.format(station="pyforge-steward") + "sprint-change-proposal-2026-08-21",
+        ".md",
+        _PLANNING.format(station="pyforge-steward") + "epics.md",
+    ),
+    (
+        _PLANNING.format(station="pyforge-steward") + "sprint-change-proposal-2026-08-26-mcp-host-cluster",
+        ".md",
+        _PLANNING.format(station="pyforge-steward") + "implementation-readiness-report-2026-08-26-mcp-host-cluster.md",
+    ),
 )
 
 
-def test_live_repo_gather_no_longer_reports_the_orphans_story_30_4_cited() -> None:
+def test_live_repo_the_orphans_story_30_4_cited_stay_cited_by_their_records() -> None:
     """Until 2026-10-24 this row asserted a live true positive outside warden
     (herald's displaced Guildhall epics array, an orphan). Doctor Story 30.4
     cited that file and the other four live orphans from the records they
-    belong to; this row now guards those citations, and only those, so an
+    belong to; this row guards those five citations, and only those, so an
     orphan added elsewhere stays a warn, not a red doctor suite. Detection on a
     non-warden station stays proven on a fixture:
     ``test_orphan_file_with_no_inbound_references_resolves_true_not_a_warn``
     (station ``pyforge-acme``) and the all-classes fixture above."""
     repo_root = _require_repo_root()
-    for relpath in _STORY_30_4_CITED:
+    cited = []
+    for stem, ext, citing in _STORY_30_4_CITED:
+        relpath = stem + ext
+        cited.append(relpath)
         assert (repo_root / relpath).is_file(), f"{relpath} moved -- update this row"
+        basename = relpath.rsplit("/", 1)[1]
+        assert basename in (repo_root / citing).read_text(encoding="utf-8"), (
+            f"{citing} no longer cites {basename} -- restore the citation or update this row"
+        )
     findings = hygiene.gather(repo_root)
     reported = {f.evidence.get("path") for f in findings if f.check == HygieneFindingKind.ORPHAN_FILE.value}
-    assert reported.isdisjoint(_STORY_30_4_CITED)
+    assert reported.isdisjoint(cited)
