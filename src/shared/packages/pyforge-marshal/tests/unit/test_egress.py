@@ -600,6 +600,7 @@ def test_egress_ports_registry_contents():
         "RunPublisherPort": False,
         "ModelListFetchPort": False,
         "SessionGroupPort": False,
+        "McpProbePort": False,
     }
 
 
