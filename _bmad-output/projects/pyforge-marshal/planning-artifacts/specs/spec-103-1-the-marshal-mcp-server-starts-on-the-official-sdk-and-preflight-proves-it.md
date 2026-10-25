@@ -2,10 +2,11 @@
 title: "103.1: The marshal-mcp server starts on the official SDK, and preflight proves it"
 type: 'fix'
 created: '2026-10-25'
-status: 'in-review'
+status: 'ready-for-dev'
 baseline_revision: d287eceb0aad21de55ab9579ce565b1e00c25abd
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
+landing_review: required
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -280,6 +281,63 @@ Type / Effort / Deps: fix / M / —.
   coverage gate; `scripts/docs_station_cli.py` and `docs/reference/library-llms-full.md` joined the surface.
 
 ## Review Triage Log
+
+- **Round 2, 2026-10-25 (independent code review of the dispatch branch, `d287eceb0a..de66441fa4` plus the
+  fix-pass commits through `44bc730c56`): FAIL — 7 blockers, 10 should-fix, 6 nits. Sent back to `ready-for-dev`;
+  `landing_review: required` holds the verified landing at a draft PR for an independent re-review.** Run
+  `pyforge-marshal-20261025T102941102Z-2ac9a1a6` ended `failed` at finalize: the scoped spec-surface stamp refused
+  because the `spec-pyforge-marshal` memlog did not NAME `adapters/mcp_stdio_probe.py`, `core/mcp_probe.py`,
+  `mcp/__init__.py`, `mcp/server.py`, `ports/mcp_probe.py` and `tests/unit/test_mcp_tools.py`.
+  - **blocker — the timeout is never enforced** (`adapters/mcp_stdio_probe.py:40-48`): `proc.stdout.readline()`
+    blocks and the deadline is checked only between lines. Measured: `timeout_s=1` against a server that sleeps 12 s
+    returned after 12.04 s as `exited`; a grandchild holding stdout hung past 60 s. Read stdout against the remaining
+    deadline (`selectors` + `os.read`, or a reader thread with `queue.get(timeout=remaining)`).
+  - **blocker — `BrokenPipeError` on a write is unhandled** (`:145-149`, `:187-188`; `cli/init.py:607-619` does not
+    catch it): a server that answers `initialize` and then exits crashes preflight (200/200 runs). Catch `OSError` on
+    every write and map it to `exited`; wrap the probe body so any unexpected exception becomes one of the six
+    outcomes.
+  - **blocker — the process group is not always stopped** (`:77-79`): `_stop_process_group` returns early when the
+    direct child already exited, leaving grandchildren running; after SIGTERM it waits only on the child. Always
+    `os.killpg(pid, SIGTERM)` (ignore `ProcessLookupError`), wait, then `killpg(SIGKILL)` unconditionally, then reap.
+  - **blocker — AC8: two of three mutations survive.** The skip-handshake test (`tests/unit/test_mcp_story_103.py:576-607`)
+    exits on `MRS-PREFLIGHT-009` because `test_init.py`'s autouse sandbox fixtures do not apply in this module; set
+    `BMAD_LOOP_HOME_ROOT` / `MARSHAL_STATE_HOME` to `tmp_path`, assert the fake probe was called and that
+    `MRS-PREFLIGHT-012` and `exited` appear. Dropping `_stop_process_group` fails no test: add a real-process test
+    asserting `os.killpg(pgid, 0)` raises `ProcessLookupError` after each probe.
+  - **blocker — AC6 fixtures** (`:371-407`, `:441-471`): `timed-out` is monkeypatched, not real; the grandchild fixture
+    is missing; the heavy-stderr fixture writes 3000 bytes, not 1 MiB; no test asserts the group is gone. Add the real
+    never-answer, grandchild and 1 MiB fixtures with a liveness assertion after each.
+  - **blocker — AC7 has no test**: `marshal preflight … --format json` against a home registering `marshal-mcp`
+    (`startable: true`, `tool_count: 8`, no `MRS-PREFLIGHT-012`) and against a fastmcp-importing stand-in
+    (`MRS-PREFLIGHT-012` with `ModuleNotFoundError`).
+  - **blocker — AC9: `docs-station-cli -- --check` exits 1 (STALE)**: the committed `docs/reference/station-cheat-sheet.md`
+    scribe block (about lines 192-223) is wrapped at 80 columns; the generator pins `COLUMNS=100`. Regenerate it in
+    `pyforge-guild`.
+  - **should-fix** — stderr is not captured while the server lives (`:65-74`, `:164-225`: `iter(proc.stderr.read, "")`
+    reads to EOF; the result snapshots the tail before stop/join): read chunks with `os.read(fd, 4096)` and build the
+    result after stop and join. Replies are not matched by JSON-RPC `id` and `serverInfo` is never checked (`:57-61`,
+    `:180`): skip messages without the expected `id`; require `result.serverInfo` to be an object. `poll()` runs before
+    stdout is drained (`:41-42`): drain to EOF before `exited`. Not portable to Windows (`:81-101`; the env is locked for
+    win-64): branch on `sys.platform`, use `CREATE_NEW_PROCESS_GROUP` and `terminate()`/`kill()` there.
+  - **should-fix — tests**: AC5 has no `_probe_mcp_servers`-level test of the five failure outcomes asserting
+    `startable: false`, the outcome name, the redacted stderr tail; "runs no probe" is not asserted for the
+    unresolvable and no-declared cases (inject a fake that fails when called). AC1: carry the reported server name and
+    tool names in the result and assert `pyforge-marshal` and the eight names. AC2: assert the call returns the stubbed
+    `tools` value. AC4: patch `build_server` to raise in the `--help`/`--version`/unknown tests, assert the text and
+    the installed version, and add a subprocess case with stdin open and closed under 5 s.
+  - **should-fix — out of scope**: `.steward/estate-refresh/2026-10-14.json` (+342/−48) rewrote steward Story 100.7's
+    tracked journal with this worktree's absolute paths; restore it from `main` unless steward's contract says reconcile
+    overwrites the latest journal.
+  - **should-fix — the finalize stamp**: append a `spec-pyforge-marshal` memlog event that NAMES every changed path
+    under `src/shared/packages/pyforge-marshal/` (and every other Spec `spec-surface-check` names), so the landing's
+    scoped stamp succeeds.
+  - **nits** — `mcp/__main__.py:8`: `raise SystemExit(main())`. Close the three pipes (`with Popen` or `finally`); pass
+    `encoding="utf-8", errors="replace"`; guard the final `wait(timeout=2)`. The docstring at `:37` omits `exited`. Record
+    in Residual risk that `${VAR}` expansion in `.mcp.json` env is not applied. Add the `pyforge-core`
+    `test_process_sole_ownership.py` exemption to the Spec Change Log (the exemption itself is justified). Move the
+    shared sandbox fixtures to `conftest.py` instead of importing `test_init`.
+  - Note: the Auto Run Result's claim that `pyforge-deps-test` is red is not borne out; the supervisor's verification
+    ran it and it passed (only `pyforge-core-test` and the coverage gate failed before the fix pass).
 
 - **Round 1, 2026-10-25 (chain review of `863ee4395c`, independent reviewer): PASS, 0 blockers, 7 should-fix, 8 nits;
   all applied.**
