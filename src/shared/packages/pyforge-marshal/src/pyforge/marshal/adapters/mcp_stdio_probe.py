@@ -14,6 +14,7 @@ import sys
 import threading
 from collections.abc import Mapping
 from pathlib import Path
+from typing import Literal
 
 from pyforge.marshal.ports.mcp_probe import McpProbePort, McpProbeResult
 
@@ -22,6 +23,7 @@ _STDERR_TAIL_MAX = 2048
 _PROTOCOL_VERSION = "2025-06-18"
 _CLIENT_NAME = "marshal-preflight"
 _READ_CHUNK = 4096
+_BINARY_TEXT_MODE: Literal[False] = False
 
 
 def _merge_env(base: Mapping[str, str], overlay: Mapping[str, str]) -> dict[str, str]:
@@ -46,7 +48,7 @@ def _stderr_reader_fd(fd: int, tail: list[str], stop: threading.Event) -> None:
         _append_tail(tail, chunk.decode("utf-8", errors="replace"))
 
 
-def _drain_stdout(proc: subprocess.Popen[str], buf: bytearray) -> None:
+def _drain_stdout(proc: subprocess.Popen[bytes], buf: bytearray) -> None:
     if proc.stdout is None:
         return
     try:
@@ -64,7 +66,7 @@ def _drain_stdout(proc: subprocess.Popen[str], buf: bytearray) -> None:
 
 
 def _read_json_line(
-    proc: subprocess.Popen[str],
+    proc: subprocess.Popen[bytes],
     *,
     deadline: float,
     stderr_tail: list[str],
@@ -147,7 +149,7 @@ def _read_json_line(
         sel.close()
 
 
-def _popen_kwargs(*, start_new_session: bool) -> dict[str, object]:
+def _popen_kwargs(*, start_new_session: bool) -> dict[str, bool | int]:
     if sys.platform == "win32":
         return {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
     if start_new_session:
@@ -155,7 +157,7 @@ def _popen_kwargs(*, start_new_session: bool) -> dict[str, object]:
     return {}
 
 
-def _stop_process_group(proc: subprocess.Popen[str]) -> None:
+def _stop_process_group(proc: subprocess.Popen[bytes]) -> None:
     if sys.platform == "win32":
         try:
             proc.terminate()
@@ -234,22 +236,35 @@ class StdioMcpProbe(McpProbePort):
         stderr_tail = [""]
         deadline = time.monotonic() + timeout_s
         stdout_buf = bytearray()
-        proc: subprocess.Popen[str] | None = None
+        proc: subprocess.Popen[bytes] | None = None
         reader: threading.Thread | None = None
         stop_stderr = threading.Event()
 
         try:
-            proc = subprocess.Popen(
-                argv,
-                cwd=cwd,
-                env=merged,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=False,
-                bufsize=0,
-                **_popen_kwargs(start_new_session=True),
-            )
+            if sys.platform == "win32":
+                proc = subprocess.Popen(
+                    argv,
+                    cwd=cwd,
+                    env=merged,
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=_BINARY_TEXT_MODE,
+                    bufsize=0,
+                    creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
+                )
+            else:
+                proc = subprocess.Popen(
+                    argv,
+                    cwd=cwd,
+                    env=merged,
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=_BINARY_TEXT_MODE,
+                    bufsize=0,
+                    start_new_session=True,
+                )
         except OSError as exc:
             return McpProbeResult(
                 outcome="spawn-failed",

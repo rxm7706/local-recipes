@@ -861,6 +861,51 @@ def test_popen_kwargs_windows_branch(monkeypatch):
     assert "creationflags" in mod._popen_kwargs(start_new_session=True)
 
 
+def test_stdio_probe_spawns_with_windows_creationflags(monkeypatch, tmp_path):
+    import pyforge.marshal.adapters.mcp_stdio_probe as mod
+
+    creationflags: list[int] = []
+
+    class _FakeProc:
+        returncode = 0
+        stdin = None
+        stdout = None
+        stderr = None
+
+        def poll(self):
+            return 0
+
+        def terminate(self):
+            pass
+
+        def kill(self):
+            pass
+
+        def wait(self, timeout=None):
+            return 0
+
+    def fake_popen(_argv, **kwargs):
+        flag = kwargs.get("creationflags")
+        if isinstance(flag, int):
+            creationflags.append(flag)
+        return _FakeProc()
+
+    monkeypatch.setattr(mod.sys, "platform", "win32")
+    monkeypatch.setattr(mod.subprocess, "CREATE_NEW_PROCESS_GROUP", 512, raising=False)
+    monkeypatch.setattr(mod.subprocess, "Popen", fake_popen)
+
+    result = mod.StdioMcpProbe().probe_server(
+        server_name="t",
+        command=sys.executable,
+        args=("-c", "pass"),
+        env={},
+        cwd=str(tmp_path),
+        timeout_s=5,
+    )
+    assert creationflags == [512]
+    assert result.outcome == "exited"
+
+
 def test_stop_process_group_windows_branch(monkeypatch):
     import pyforge.marshal.adapters.mcp_stdio_probe as mod
 
