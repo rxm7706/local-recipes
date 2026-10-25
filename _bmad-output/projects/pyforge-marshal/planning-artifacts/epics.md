@@ -10098,7 +10098,7 @@ So that a registered tool surface is one an agent can reach, and a server that c
 **When** the story lands
 **Then** `pixi run -e pyforge-guild marshal-mcp` answers an MCP `initialize` with `serverInfo.name` `pyforge-marshal`, and `tools/list` returns the eight registered tools; `marshal-mcp --help` exits 0 without reading stdin; `marshal preflight pyforge-marshal` reports the server `startable` with its tool count
 **And** a declared server that exits, hangs past the timeout or answers with anything but an MCP reply is `MRS-PREFLIGHT-012` (ERROR) with its stderr tail; no `fastmcp` import remains in the package; removing the handshake call, or treating a timeout as startable, fails a named test (mutation); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
