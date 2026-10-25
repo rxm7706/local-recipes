@@ -215,9 +215,8 @@ def _stop_process_group(proc: subprocess.Popen[bytes]) -> None:
     import time
 
     pgid = proc.pid
-    if proc.poll() is not None:
-        # Shell wrappers may exit before a just-spawned background child joins the group.
-        time.sleep(0.05)
+    # Background children may join the group slightly after a wrapper exits.
+    time.sleep(0.05)
     try:
         os.killpg(pgid, signal.SIGTERM)
     except ProcessLookupError:
@@ -233,6 +232,14 @@ def _stop_process_group(proc: subprocess.Popen[bytes]) -> None:
     except subprocess.TimeoutExpired:
         pass
 
+    try:
+        os.killpg(pgid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+    except OSError:
+        pass
+
+    time.sleep(0.05)
     try:
         os.killpg(pgid, signal.SIGKILL)
     except ProcessLookupError:
