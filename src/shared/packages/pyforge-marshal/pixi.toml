@@ -48,4 +48,4 @@ pyforge-core = { path = "../pyforge-core" }
 # identical pin -- see tests/meta/test_manifest_sync.py.
 copier = ">=9.17,<10"
 packaging = ">=24.0"
-mcp = ">=2.2.0"  # Story 103.1: marshal-mcp official SDK (matches pyproject.toml; this exact string is what pixi.lock records)
+mcp = ">=2.2.0"  # Story 103.1: marshal-mcp official SDK (matches pyproject.toml; pixi.lock records this exact string, so the two stay ">=2.2.0")
