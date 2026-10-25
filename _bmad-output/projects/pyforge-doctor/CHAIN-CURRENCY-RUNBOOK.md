@@ -287,3 +287,13 @@ Regenerating a board view is optional confirmation, not the measure.
   Tier 3. The truth-up found three gaps the finding did not name, recorded as rows and not repaired: `pyforge-deps-test`
   runs for no atlas change, `steward-test` misses the station `src/` its guild-env test reads, and the two `mypy` lanes
   share one cache.
+
+- **Run 2026-10-25 (marshal) — 1 finding cleared, single station.** Entry: pyforge-marshal `staleness`, `feeds
+  code→retro` (Story 103.1 moved the package `pyproject.toml` to 2026-10-25 with `mcp>=2.2.0`; the last retro was
+  2026-10-11). Exit: `chain_currency_sweep_check.py --project pyforge-marshal` exit 0. Remedy: a station retro over
+  Epics 103–105 (`planning-artifacts/retros/retro-pyforge-marshal-2026-10-25.md`), and the `epic-103-retrospective` and
+  `epic-104-retrospective` keys moved to `done` through a worktree-local feed and `sprint-ledger-sync`; landed with
+  Story 105.1's PR (#2314). Deviation: written by hand, not `bmad-retrospective -H`, for the reason the 2026-10-15 atlas
+  run gives. The retro found two defects the finding did not name, recorded as candidate fix stories and not repaired:
+  a `claude`-profile run's verify-fix turn launched `cursor-agent`, and a cached local pixi accepted a lock that every CI
+  runner refused.

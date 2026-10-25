@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: d11ed3dd7e49d913
-story_count: 461
+source_fingerprint: ac1b908ca1a97a7a
+story_count: 462
 test_file_count: 270
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 461
-- **Epics parsed:** 102
+- **Stories parsed:** 462
+- **Epics parsed:** 103
 - **Test files inventoried:** 270 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `d11ed3dd7e49d913`
+- **Source fingerprint:** `ac1b908ca1a97a7a`
 
 ## Risk Assessment
 
@@ -124,6 +124,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 102: A re-landing does not re-verify from scratch when only main moved
 - Epic 103: Marshal's own MCP server starts, and preflight proves it
 - Epic 104: Marshal's own render never blocks a loop-home refresh
+- Epic 105: The marshal PRD's FR arrows name the capabilities the Spec carries
 
 ### Low-risk epics
 
@@ -879,6 +880,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 102.1 | A landing reuses its verified verdict when only a merge of main moved the branch | none observed |
 | 103.1 | The marshal-mcp server starts on the official SDK, and preflight proves it | none observed |
 | 104.1 | The .mcp.json marshal renders never makes a loop home dirty | none observed |
+| 105.1 | Every marshal PRD FR arrow names the Spec capability that realizes it | none observed |
 
 ## Quality Gates
 
