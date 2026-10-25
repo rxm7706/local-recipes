@@ -7,9 +7,9 @@ import json
 import os
 import shutil
 import sys
+import textwrap
 import threading
 import time
-import textwrap
 from pathlib import Path
 
 import pytest
@@ -116,9 +116,7 @@ def test_read_json_line_bad_reply_and_error_reply():
     parsed, err = _read_json_line(proc1, deadline=deadline, stderr_tail=tail, stdout_buf=buf1)
     assert parsed is None and err == "bad-reply"
 
-    proc2, buf2 = _proc_from_pipe_payload(
-        b'{"jsonrpc":"2.0","id":1,"error":{"code":1,"message":"x"}}\n'
-    )
+    proc2, buf2 = _proc_from_pipe_payload(b'{"jsonrpc":"2.0","id":1,"error":{"code":1,"message":"x"}}\n')
     parsed2, err2 = _read_json_line(proc2, deadline=deadline, stderr_tail=tail, stdout_buf=buf2)
     assert parsed2 is None and err2 == "error-reply"
 

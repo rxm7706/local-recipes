@@ -51,7 +51,7 @@ def _drain_stdout(proc: subprocess.Popen[str], buf: bytearray) -> None:
         return
     try:
         fd = proc.stdout.fileno()
-    except (AttributeError, ValueError, OSError):
+    except AttributeError, ValueError, OSError:
         return
     while True:
         try:
@@ -79,7 +79,7 @@ def _read_json_line(
 
     try:
         fd = proc.stdout.fileno()
-    except (AttributeError, ValueError, OSError):
+    except AttributeError, ValueError, OSError:
         return None, "bad-reply"
 
     sel = selectors.DefaultSelector()
@@ -183,7 +183,7 @@ def _stop_process_group(proc: subprocess.Popen[str]) -> None:
     if pgid is not None:
         try:
             os.killpg(pgid, signal.SIGTERM)
-        except (ProcessLookupError, OSError):
+        except ProcessLookupError, OSError:
             try:
                 proc.terminate()
             except OSError:
@@ -261,7 +261,7 @@ class StdioMcpProbe(McpProbePort):
         if proc.stderr is not None:
             try:
                 stderr_fd = proc.stderr.fileno()
-            except (AttributeError, ValueError, OSError):
+            except AttributeError, ValueError, OSError:
                 stderr_fd = None
             if stderr_fd is not None:
                 reader = threading.Thread(
