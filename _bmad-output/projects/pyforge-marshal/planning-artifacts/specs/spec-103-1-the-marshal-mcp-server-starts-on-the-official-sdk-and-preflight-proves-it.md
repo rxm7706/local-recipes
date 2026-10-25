@@ -2,7 +2,7 @@
 title: "103.1: The marshal-mcp server starts on the official SDK, and preflight proves it"
 type: 'fix'
 created: '2026-10-25'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: e7d271fa2f1b43d644413c946478c65cdf3a0be1
 review_loop_iteration: 5
 followup_review_recommended: false
@@ -555,9 +555,47 @@ Type / Effort / Deps: fix / M / —.
 
 ## Auto Run Result
 
-Status: in-review  
-Implementation: marshal-mcp on official `MCPServer`, `mcp>=2.2` dependency, stdio preflight handshake via `McpProbePort` / `adapters/mcp_stdio_probe.py` (deadline-bounded stdout reads, concurrent stderr, `pgid=proc.pid` process-group teardown with settle/retry, Windows branch), pure verdict in `core/mcp_probe.py`, wired through `_probe_mcp_servers` and `run_preflight(mcp_probe=…)`.  
-Round-4 fix pass (2026-10-25): `adapters/mcp_stdio_probe.py` and `tests/unit/test_mcp_story_103.py` — round-3 blockers 1–3 closed; memlog event on `spec-pyforge-marshal` naming both paths.  
-Verification: `pyforge-marshal-test` 13286 passed; `pyforge-marshal-coverage-gate` OK; `lint-types` OK; `docs-station-cli --check` OK; `python scripts/spec_surface_reconcile.py` OK. `pyforge-deps-test` still red on unrelated `pyforge-atlas` numpy completeness.  
-Follow-up review recommendation: false (this pass patched round-3 blockers only; no new high/medium findings).  
-Blocking condition: `landing_review: required` — independent re-review on draft PR before merge.
+Status: in-review (dev pass 4, 2026-10-25, Claude Fable 5.1 on the frontier tier; `landing_review: required` stays —
+an independent re-review on the draft PR before merge).
+Implementation: `marshal-mcp` on the official `MCPServer` with a real `--help`/`--version`; `mcp>=2.2` declared in the
+package `pyproject.toml`, the package `pixi.toml` and the root `[feature.pyforge-marshal.dependencies]`; the stdio
+preflight handshake through `McpProbePort` / `adapters/mcp_stdio_probe.py` (deadline-bounded reads, concurrent stderr,
+one process-group stop on every path, a reader-thread path for win32), the pure verdict in `core/mcp_probe.py`, wired
+through `_probe_mcp_servers` and `run_preflight(mcp_probe=…)`; `capture_help` in `scripts/docs_station_cli.py` builds a
+deterministic child environment (the AC9 root cause).
+Dev pass 4 worked the round-5 blocker, every should-fix and every nit (the Review Triage Log entry above), corrected
+the round-4 entry, and deleted the wrong team-memory file.
+Verification (every exit code read from `$?`, never through a pipe):
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`: exit 0 — 13350 passed, 15 skipped (the Story 103 module
+  alone: 96 passed).
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-coverage-gate`: exit 0 — 7 touched modules ≥ 80%
+  (`adapters/mcp_stdio_probe.py` 90%, `mcp/server.py` 97%, `mcp/__main__.py` 83%, `cli/init.py` 91%).
+- `pixi run --frozen -e pyforge-guild lint-types`: exit 0 (ruff, ruff format, mypy over every package); the marshal
+  package re-checked with ruff after the last test edit (all checks passed, 485 files formatted).
+- AC1 by hand: `printf '<initialize>' | timeout 20 pixi run --frozen -e pyforge-guild marshal-mcp`: exit 0, one JSON
+  line, `result.serverInfo.name == "pyforge-marshal"`, `protocolVersion 2025-06-18`.
+- AC4 by hand: `pixi run --frozen -e pyforge-guild marshal-mcp --help </dev/null`: exit 0, usage names MCP and stdio;
+  `--version`: `0.1.0`.
+- AC8 mutations (a script applied each, ran its named test, restored the bytes): skip the handshake →
+  `test_mutation_skipping_handshake_in_probe_would_miss_finding` FAILS; `timed-out` → startable →
+  `test_mutation_timed_out_not_startable` FAILS; drop the stop → `test_mutation_dropping_stop_process_group_leaves_a_grandchild`
+  FAILS; tree restored, the three pass.
+- AC9: `pixi run -e pyforge-guild docs-station-cli` (regenerate) exit 0; `pixi run --frozen -e pyforge-guild
+  docs-station-cli -- --check` exit **0** from a plain shell and exit **0** under `FORCE_COLOR=1 TERM=dumb`;
+  `pixi run --frozen -e pyforge-guild docs-gen-test` 48 passed.
+- `pixi run -e pyforge-guild llms-full-check`: exit 0 (clean).
+- `pixi run -e pyforge-guild pyforge-station-tests`: exit 0 — every station suite green (core 2564, kit 95, atlas 3478+103,
+  doctor 3831+4, herald 2049, marshal 13351, mason 1622+12, scribe 428, steward 2981, warden 2440).
+- `environment.yaml` is byte-identical to `pixi project export conda-environment -e build` (the exporter `estate
+  reconcile` wraps); the reconcile itself was not re-run so `.steward/estate-refresh/2026-10-14.json` stays as restored
+  from `origin/main` (round-5 should-fix 8).
+- `python scripts/spec_surface_reconcile.py`: exit 0 and `pixi run --frozen -e pyforge-guild spec-surface-check`: exit 0
+  after the three memlog events (`spec-pyforge-marshal`, `spec-pyforge-core`, `spec-pyforge-doctor`) and the scoped stamps
+  (`--spec pyforge-marshal/spec-pyforge-core`, `--spec pyforge-doctor/spec-pyforge-doctor`, then
+  `--spec pyforge-marshal/spec-pyforge-marshal` after this entry was written).
+- `PYFORGE_PREFLIGHT_SCOPE=full pixi run -e pyforge-guild pr-preflight` (TMPDIR off tmpfs): exit **1**. 37 lanes selected; 34 ok; one red, `detectors-ci`, on two findings, neither this change's: (a) `ledger-direction` — `pyforge-marshal/87-19` landed-but-unpromoted: Story 87.19 merged to `main` after this branch forked (`d287eceb0a`, 05:25), `origin/main`'s ledger has `87-19 … done` and this worktree's ledger has no such key — clears when the landing merges `origin/main` (22 commits behind); (b) `chain-currency` staleness, edge `code→retro` (code 2026-10-25, newest marshal retro 2026-10-11): `origin/main` carries the same edge (its newest retro is also `retro-pyforge-marshal-2026-10-11.md`, its last marshal `src/` commit is `a21fc23200`, 87.19, 2026-10-25), so it is the fleet's state, not this branch's; the runbook remedy is a real marshal retrospective, planning work outside a fix story (and `epic-103-retrospective` is reserved for after this epic lands). Two lanes were cancelled by the stop-on-red: `pyforge-steward-test` (run green separately above, 2981 passed) and `test-ci` (the CFE suite in `local-recipes`, hours long; its `meta/` tier — the one that holds `test_spec_surface_check.py` and the `pixi.toml`/`pixi.lock` guards — run alone: `pixi run --frozen -e local-recipes pytest .claude/skills/conda-forge-expert/tests/meta -m "not network"` exit 0, 7813 passed, 6 skipped; the unit and integration tiers are left to CI, which arbitrates them). Lane logs: `~/.cache/pyforge-preflight-tmp/pyforge-preflight-jm7gfh0p/`.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test`: exit 1 — the one red, `pyforge-atlas` imports `numpy` without
+  declaring it (`test_every_hard_import_is_a_declared_dependency[pyforge-atlas]`); red on `main` too (round 5), a file
+  this branch does not touch, not this story's. 129 passed, 3 skipped otherwise.
+Follow-up review recommendation: false — nothing new was found beyond the round-5 list; every item was closed, not deferred.
+Blocking condition: `landing_review: required` — independent re-review on the draft PR before merge.
