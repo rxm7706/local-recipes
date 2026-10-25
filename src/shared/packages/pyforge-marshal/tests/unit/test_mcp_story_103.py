@@ -269,7 +269,7 @@ def test_adapter_started_after_one_mebibyte_of_stderr(tmp_path: Path):
     script, pgid_file = _py_server(
         tmp_path,
         "chatty",
-        "import sys\nsys.stderr.write('x' * (1024 * 1024))\nsys.stderr.flush()\n" + _ANSWERING_BODY,
+        "import sys\nsys.stderr.write('x' * (1024 * 1024))\nsys.stderr.flush()\n" + textwrap.dedent(_ANSWERING_BODY),
     )
     started = time.monotonic()
     result = _probe(tmp_path, script)
@@ -404,13 +404,15 @@ def test_adapter_skips_notifications_and_other_ids(tmp_path: Path):
     script, pgid_file = _py_server(
         tmp_path,
         "noise",
-        """
-        import json, sys
-        print(json.dumps({"jsonrpc": "2.0", "method": "notifications/message", "params": {"level": "info"}}))
-        print(json.dumps({"jsonrpc": "2.0", "id": 99, "result": {"serverInfo": {"name": "stale"}}}))
-        sys.stdout.flush()
-        """
-        + _ANSWERING_BODY,
+        textwrap.dedent(
+            """
+            import json, sys
+            print(json.dumps({"jsonrpc": "2.0", "method": "notifications/message", "params": {"level": "info"}}))
+            print(json.dumps({"jsonrpc": "2.0", "id": 99, "result": {"serverInfo": {"name": "stale"}}}))
+            sys.stdout.flush()
+            """
+        )
+        + textwrap.dedent(_ANSWERING_BODY),
     )
     result = _probe(tmp_path, script)
     assert result.outcome == "started"
@@ -437,13 +439,15 @@ def test_adapter_passes_rendered_args_and_env_with_the_home_as_cwd(tmp_path: Pat
     script, pgid_file = _py_server(
         tmp_path,
         "envcheck",
-        """
-        import os, sys
-        assert os.environ.get("PROBE_FOO") == "bar", os.environ.get("PROBE_FOO")
-        assert os.getcwd() == os.path.realpath(sys.argv[2]), (os.getcwd(), sys.argv[2])
-        assert sys.argv[1] == "extra", sys.argv
-        """
-        + _ANSWERING_BODY,
+        textwrap.dedent(
+            """
+            import os, sys
+            assert os.environ.get("PROBE_FOO") == "bar", os.environ.get("PROBE_FOO")
+            assert os.getcwd() == os.path.realpath(sys.argv[2]), (os.getcwd(), sys.argv[2])
+            assert sys.argv[1] == "extra", sys.argv
+            """
+        )
+        + textwrap.dedent(_ANSWERING_BODY),
     )
     result = probe_server_from_rendered(
         server_name="s",
