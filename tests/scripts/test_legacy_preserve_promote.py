@@ -260,3 +260,53 @@ def test_inventory_reads_nested_legacy_refs(clone: Path, bare_origin: Path) -> N
     )
     assert sources["refs/tags/archive/recover-scribe-1-3"].twin_ref.startswith("refs/tags/archive/tags/")
     assert "refs/tags/archive/scribe-1-3-dangling-91d3571f" in sources
+
+
+def test_push_reviewed_ac9_skips_origin_rows_and_continues_after_git_error(
+    clone: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 87.19 AC9: cap 20/run, skip twins already on origin, survive ``PreserveGitError``."""
+    from pyforge.core.preserve_refs import PreserveGitError, PushPreserveResult
+
+    commit = _commit_on(clone)
+    rows: list[lpp.ManifestRow] = []
+    on_origin: set[str] = set()
+    for i in range(25):
+        twin = f"refs/tags/preserve/unbound/hand-{i:04d}"
+        _git(clone, "tag", "-a", "-m", "t", twin.removeprefix("refs/tags/"), commit)
+        if i < 3:
+            _git(clone, "push", "-q", "origin", f"{twin}:{twin}")
+            on_origin.add(twin)
+        rows.append(
+            lpp.ManifestRow(
+                kind="promote",
+                source_ref=f"refs/heads/x{i}",
+                commit_sha=commit,
+                twin_ref=twin,
+                twin_evidence="test",
+                reviewed=True,
+                action="write_twin",
+            )
+        )
+
+    listed_on_origin: set[str] = set(on_origin)
+    push_calls: list[str] = []
+
+    def _fake_remote(repo: Path, patterns: object, **kwargs: object) -> frozenset[str]:
+        return frozenset(listed_on_origin)
+
+    def _fake_push(repo: Path, refname: str, **kwargs: object) -> PushPreserveResult:
+        push_calls.append(refname)
+        if refname.endswith("hand-0010"):
+            raise PreserveGitError("simulated push failure")
+        listed_on_origin.add(refname)
+        return PushPreserveResult(refname, True, ())
+
+    monkeypatch.setattr(lpp, "remote_ref_names", _fake_remote)
+    monkeypatch.setattr(lpp, "push_preserve_ref", _fake_push)
+    notes1 = lpp.push_reviewed_rows(clone, rows)
+    assert len(push_calls) == 20
+    notes2 = lpp.push_reviewed_rows(clone, rows)
+    assert len(push_calls) == 22
+    assert sum(1 for n in notes2 if n.startswith("skipped push")) >= 3
+    assert any("simulated push failure" in n for n in notes1)
