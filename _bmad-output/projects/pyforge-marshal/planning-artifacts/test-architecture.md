@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: a63f7f6253960ac2
-story_count: 458
+source_fingerprint: 3b9681536f9bfdad
+story_count: 459
 test_file_count: 269
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 458
-- **Epics parsed:** 100
+- **Stories parsed:** 459
+- **Epics parsed:** 101
 - **Test files inventoried:** 269 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `a63f7f6253960ac2`
+- **Source fingerprint:** `3b9681536f9bfdad`
 
 ## Risk Assessment
 
@@ -122,6 +122,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 100: A landing says which CI gates were paused when it merged (spec-pyforge-marshal CAP-292)
 - Epic 101: A landing under the CI master switch names every gate it stopped
 - Epic 102: A re-landing does not re-verify from scratch when only main moved
+- Epic 103: Marshal's own MCP server starts, and preflight proves it
 
 ### Low-risk epics
 
@@ -873,6 +874,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 100.1 | A landing records which CI surfaces were paused when it merged | none observed |
 | 101.1 | The landing line lists every surface the CI master switch pauses | none observed |
 | 102.1 | A landing reuses its verified verdict when only a merge of main moved the branch | none observed |
+| 103.1 | The marshal-mcp server starts on the official SDK, and preflight proves it | none observed |
 
 ## Quality Gates
 

@@ -1588,6 +1588,26 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   CAP-287 (FR-234), with no CAP and no flag: the promoter is Story 87.12's one-off, dry-run-default script and is not
   flag-gated. Nothing is pushed: every push stays operator-gated behind the Story 87.15 content gate. Owner
   `spec-pyforge-marshal`. → Epic 87 / Stories 87.17 and 87.18, specced 2026-10-22.
+- **2026-10-25 (marshal's own MCP server has never started)** — **Found: the `marshal` MCP server that `marshal
+  init` registers cannot start, and preflight reports it healthy.** Marshal's policy declares
+  `[mcp_servers.marshal] command = "marshal-mcp"` (Story 18.1), and `marshal init` renders it into the marshal loop
+  home's `.mcp.json`. `marshal-mcp` builds its server on the third-party `fastmcp` package, which no environment that
+  carries `marshal-mcp` installs: from `pyforge-guild` it exits 1 with `ModuleNotFoundError: No module named
+  'fastmcp'`, and `local-recipes`, which has `fastmcp`, has no `marshal-mcp`. Every other server here already moved to
+  the official SDK's `MCPServer` (mcp 2.x renamed `FastMCP`): atlas's, the conda-forge server and marshal's own HTTP
+  face. No test builds the server, and the preflight probe (`MRS-PREFLIGHT-012`) only asks whether the command is on
+  `PATH`, so it has been green since 2026-08-23 for a server no session could reach. **What it looks like when
+  fixed:** `marshal-mcp` is built on the official SDK and, run from `pyforge-guild`, answers an MCP `initialize` and
+  lists its tools; `marshal-mcp --help` prints its usage and exits without starting a server. `marshal preflight`
+  starts each declared server, completes the handshake within a timeout and stops it. A server that crashes, hangs or
+  answers with something other than an MCP reply is `MRS-PREFLIGHT-012` with the tail of its stderr; one that answers
+  is reported with its tool count. **Constraints:** a fix under CAP-1 (a preflight-verified home), CAP-21 (one
+  governed surface) and CAP-22 (the surface survives a clone), with no CAP and no flag. No package new to the factory:
+  `pyforge-guild` already carries the `mcp` SDK, which is now declared. The probe speaks plain JSON-RPC and imports
+  no SDK, so it works for any declared server. **Kinships:** DW-FU-18-2 (tool-surface coverage counts a file, not a working server).
+  Operator ruling, 2026-10-25: "Go with the migration: move marshal-mcp to the official SDK MCPServer, add a real
+  --help, and make preflight run a startup handshake. Plan it as one marshal story through the full Dream-to-code
+  chain." Owner `spec-pyforge-marshal`. → Epic 103 / Story 103.1, specced 2026-10-25.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint
