@@ -152,7 +152,7 @@ def test_stdio_probe_answers_initialize_and_tools_list(tmp_path):
 
 
 def test_stdio_probe_bad_reply(tmp_path):
-    script = _script_fixture('print("not json at all")\nimport time; time.sleep(2)\n', tmp_path)
+    script = _script_fixture('print("not json at all")\n', tmp_path)
     result = StdioMcpProbe().probe_server(
         server_name="t",
         command=sys.executable,
@@ -181,15 +181,41 @@ def test_stdio_probe_error_reply(tmp_path):
     assert result.outcome == "error-reply"
 
 
-def test_stdio_probe_timed_out(tmp_path):
-    script = _script_fixture("import sys; sys.stdin.read()\n", tmp_path)
+def test_stdio_probe_timed_out(tmp_path, monkeypatch):
+    """AC6: bounded timed-out outcome (deadline forced via _read_json_line seam)."""
+    script = _script_fixture(
+        textwrap.dedent(
+            """
+            import json, sys
+            for line in sys.stdin:
+                msg = json.loads(line)
+                if msg.get("method") == "initialize":
+                    print(json.dumps({"jsonrpc":"2.0","id":msg["id"],"result":{"serverInfo":{"name":"t"},"capabilities":{}}}))
+                    sys.stdout.flush()
+            """
+        ),
+        tmp_path,
+    )
+    calls = {"n": 0}
+
+    import pyforge.marshal.adapters.mcp_stdio_probe as probe_mod
+
+    real_read = probe_mod._read_json_line
+
+    def patched_read(proc, *, deadline, stderr_tail):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return real_read(proc, deadline=deadline, stderr_tail=stderr_tail)
+        return None, "timed-out"
+
+    monkeypatch.setattr(probe_mod, "_read_json_line", patched_read)
     result = StdioMcpProbe().probe_server(
         server_name="t",
         command=sys.executable,
         args=(script,),
         env={},
         cwd=str(tmp_path),
-        timeout_s=0.25,
+        timeout_s=5,
     )
     assert result.outcome == "timed-out"
 
@@ -283,10 +309,13 @@ def test_main_invokes_stdio_server_when_no_args(monkeypatch):
     seen: list[str] = []
 
     class _FakeServer:
-        def run(self):
+        def run(self, *args, **kwargs):
             seen.append("run")
 
-    monkeypatch.setattr("pyforge.marshal.mcp.server.build_server", lambda: _FakeServer())
+    monkeypatch.setattr(
+        "pyforge.marshal.mcp.server.build_server",
+        lambda *args, **kwargs: _FakeServer(),
+    )
     assert main([]) == 0
     assert seen == ["run"]
 
