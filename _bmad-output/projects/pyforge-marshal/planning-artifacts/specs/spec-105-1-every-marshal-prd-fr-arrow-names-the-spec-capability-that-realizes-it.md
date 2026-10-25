@@ -45,7 +45,8 @@ deferred:
 
 **Approach:**
 - **The table is the contract.** `spec-pyforge-marshal`'s memlog carries the approved re-map (the 2026-10-25 decision
-  entry "the approved re-map for Story 105.1"): 71 headings, each `FR-n ← <new> (was CAP-k)`. It was derived from the
+  entry "the approved re-map for Story 105.1", amended for 13 rows by the "amendment to the approved re-map" entry
+  after the round-1 review): 71 headings, each `FR-n ← <new> (was CAP-k)`. It was derived from the
   source Spec's own `CAP-k → FR-n` lines, the FR body naming its source and CAP range, stories that cite an FR and a
   source CAP together, and the source CAP headline matching the FR title by position, each mapped through the Spec's
   `← spec-<old> CAP-k` provenance.
@@ -74,7 +75,7 @@ Type / Effort / Deps: chore / S / —.
 
 ## Acceptance Criteria
 
-- **AC1 — The 71 arrows.** Every heading in the memlog table carries exactly its new arrow, and no other FR heading's
+- **AC1 — The 71 arrows.** Every heading in the memlog table, as amended, carries exactly its new arrow, and no other FR heading's
   arrow changed (a diff of the PRD's `#### FR-` lines against `d287eceb0a` shows exactly 71 changed lines).
 - **AC2 — Every cited capability exists.** Each `CAP-n` in a changed arrow without a `spec-` prefix is declared in
   `spec-pyforge-marshal/SPEC.md`; each cross-Spec arrow names a CAP its Spec declares.
@@ -141,6 +142,8 @@ Implementation: the 71 PRD FR heading arrows rewritten from the memlog table (`#
 - 2026-10-25: implemented in the chain PR (71 arrows, PRD § 44, re-stamps, DW-marshal-105-1); moved to `in-review`.
 - 2026-10-25: review round 1 corrected the FR-144..FR-147 evidence (the absorbed Spec listed them as its four scope
   items; the fold dropped them, not re-scoped them) in § 44, this spec's `deferred:` item, the DW row and the memlog.
+- 2026-10-25: the operator approved the reviewer's 13 row amendments ("Apply the reviewer's 12 row amendments … with a
+  memlog amendment entry"); they are recorded on the memlog and applied to the PRD headings and § 44. Still 71 headings.
 
 ## Review Triage Log
 
@@ -150,4 +153,5 @@ Implementation: the 71 PRD FR heading arrows rewritten from the memlog table (`#
   Change Log entries; a `spec-one-chain-per-station` memlog entry; `test-architecture.md` regenerated. Raised for the
   operator because they change approved rows: FR-170 (CAP-90, not CAP-92); FR-175..FR-177 (CAP-4 / CAP-4, CAP-91 /
   CAP-90, not CAP-2); FR-184 (CAP-123..CAP-125); FR-188 (CAP-50..CAP-52); FR-189 (CAP-61..CAP-63); FR-59 (+CAP-206);
-  FR-60 (+CAP-206, CAP-210, CAP-211); nits FR-139 (+CAP-234), FR-172/173 (+CAP-9), FR-179 (+CAP-5).
+  FR-60 (+CAP-206, CAP-210, CAP-211); nits FR-139 (+CAP-234), FR-172/173 (+CAP-9), FR-179 (+CAP-5). All 13 applied
+  on the operator's 2026-10-25 ruling, with a memlog amendment entry.

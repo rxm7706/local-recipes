@@ -374,7 +374,7 @@ The supervisor pushes a run's work at its own stage boundaries, and durability i
 - Push is read-only against working trees and remotes — never a force-push, never a rewrite — so it cannot disturb a live session.
 - *Motivating evidence: measured 2026-07-31 — 6 station loop branches on no remote, ~5,150 lines on `recover/*`, one story's 734-line transport branch (spec included) unpushed six days, 156 dangling commits one `git gc` from unrecoverable, and 1,748 lines sitting 40 minutes as a local-only commit. Nine detectors ran green throughout because none asked the durability question — the window reopens roughly every 60–90 minutes, once per station's dev phase.*
 
-#### FR-170: A retired story branch is not a push failure *(added 2026-08-09 — `docs/dreams/durable-runs.md`)* ← CAP-92
+#### FR-170: A retired story branch is not a push failure *(added 2026-08-09 — `docs/dreams/durable-runs.md`)* ← CAP-90
 The supervisor distinguishes a branch that **cannot** be pushed from one that no longer **needs** to be, and proves the difference rather than assuming it.
 **Consequences:**
 - bmad-loop deletes a story's branch when the story merges into the station branch; the supervisor polls, so it routinely acts on a `dev-commit-landed`/`story-merged` boundary *after* the branch is gone. That is the ordinary success path, not a fault.
@@ -389,7 +389,7 @@ The supervisor distinguishes a branch that **cannot** be pushed from one that no
 - Station branches (`loop/*`) are in scope: they are precisely the long-lived branches whose name always exists remotely and whose tip silently falls behind between runs — the case the name check structurally cannot see.
 - *Motivating evidence: measured 2026-08-09 — `loop/pyforge-doctor` on origin at `3f43f486c9` while the local branch stood 8 PRs ahead at `cbd965110b`, reported clean. The Dream's own founding observation ("nine detectors ran green because none asked the durability question") reproduced inside the detector written to ask it.*
 
-#### FR-172: `marshal land` refuses while a run is in flight *(added 2026-08-09 — `docs/dreams/pr-lifecycle.md`)* ← CAP-210
+#### FR-172: `marshal land` refuses while a run is in flight *(added 2026-08-09 — `docs/dreams/pr-lifecycle.md`)* ← CAP-9, CAP-210
 The last mile knows whether the road is still in use.
 **Consequences:**
 - `land` resolves its head branch to the loop-home **station branch** and retires it by default; invoked during a live run it would merge and then **delete the branch bmad-loop is actively merging stories into**. It now refuses, by name, when a supervisor/engine is live for that slug — the same liveness reading `marshal status` already produces, not a new mechanism.
@@ -397,7 +397,7 @@ The last mile knows whether the road is still in use.
 - Landing a wave while a run continues stays supported; what is refused is the **branch retirement**, not the merge.
 - *Motivating evidence: measured 2026-08-09 — avoided only because a human read `cli/land.py` before invoking it. A safety property that depends on someone reading the source is not one.*
 
-#### FR-173: A landing leaves the loop home current with `main` *(added 2026-08-09 — `docs/dreams/pr-lifecycle.md`)* ← CAP-209
+#### FR-173: A landing leaves the loop home current with `main` *(added 2026-08-09 — `docs/dreams/pr-lifecycle.md`)* ← CAP-9, CAP-209
 "Resync" means the station branch is current, not merely that the feed is.
 **Consequences:**
 - `landing_resync` today resyncs the **feed**; `landing_resync_commands` is empty by default, so nothing returns the loop home to `main` after its own work merges. The station branch begins drifting the moment the first PR lands.
@@ -413,7 +413,7 @@ bmad-loop names the governed paths it changed, in the owning Spec's memlog, as p
 - Reconciliation is **per-file naming** under FR-165's rule. The loop is never handed `--write-baseline`: a producer that can stamp its own baseline is the laundering FR-165 exists to end.
 - *Motivating evidence: measured 2026-08-09 — the first three loop-produced stories landed drifted 14 governed paths across `spec-pyforge-doctor` plus `pixi.toml` against two further surfaces, every one named by hand at landing. The gate is correct; the machine writing most of the repo's code does not know it exists.*
 
-#### FR-175: The loop's deferred work reaches the tracked ledger *(added 2026-08-09 — the Marshal↔loop seam review)* ← CAP-2
+#### FR-175: The loop's deferred work reaches the tracked ledger *(added 2026-08-09 — the Marshal↔loop seam review)* ← CAP-4
 A follow-up the loop defers is a decision of record, not a local note.
 **Consequences:**
 - When bmad-loop spends its damping cap it files "follow-up review still recommended" into `implementation-artifacts/deferred-work.md` — **gitignored Tier-3**, invisible to CI and absent from every clone — under a **generic `DW-<n>` id** that the next damped story collides with.
@@ -421,14 +421,14 @@ A follow-up the loop defers is a decision of record, not a local note.
 - Promotion carries the ledger's `DW-<story>-<n>` convention so ids cannot collide, and happens as part of the story or its landing — not as archaeology someone performs later.
 - Scope note: this is about the **transport** of a deferral into the tracked tier. Whether each follow-up review is then *done* stays the operator's call.
 
-#### FR-176: The failed-story safety net is reported, not merely written *(added 2026-08-09 — the Marshal↔loop seam review)* ← CAP-2
+#### FR-176: The failed-story safety net is reported, not merely written *(added 2026-08-09 — the Marshal↔loop seam review)* ← CAP-4, CAP-91
 A `changes.patch` left by a killed story is surfaced, so a patch holding unlanded work cannot sit unnoticed.
 **Consequences:**
 - A session-timeout kill defers a story and preserves its work at `<run>/failed/<story>/changes.patch`. **Nothing in the repo reads that path** — measured 2026-08-09: **7 patches on disk, 26 KB to 205 KB**, across doctor/herald/marshal/mason/warden.
 - All seven belong to stories that later reached `done`, so **nothing is lost today** — which is precisely why it has gone unnoticed. The gap is the absence of a signal, not a present loss.
 - Reported alongside the other durability signals (`unpushed-work-check`'s family), keyed on whether the owning story has since landed: a patch whose story is `done` is spent and can be said so; one whose story is not is real pending work on one disk.
 
-#### FR-177: One pusher, not two *(added 2026-08-09 — the Marshal↔loop seam review)* ← CAP-2
+#### FR-177: One pusher, not two *(added 2026-08-09 — the Marshal↔loop seam review)* ← CAP-90
 `loop_push_watch.py`'s role is reconciled with the supervisor that now subsumes it.
 **Consequences:**
 - FR-61 gave the supervisor its own `boundary: "interval"` push (`_INTERVAL_PUSH_BOUNDARY`), so during a run the standalone watcher duplicates it — two processes pushing the same branches on overlapping timers.
@@ -443,7 +443,7 @@ Isolation covers the shared git directory, not just the working tree.
 - `marshal preflight`/`homes` reports a loop home whose shared git state has been mutated — at minimum `info/exclude` — so the condition is visible rather than discovered by a missing file weeks later.
 - The existing filesystem-walking guard (`test_skill_files_tracked.py`) stays: it is the only signal that survives the rule, and it is what caught the third recurrence.
 
-#### FR-179: The board answers "how much is left" *(added 2026-08-09 — `docs/dreams/factory-console.md`)* ← CAP-96
+#### FR-179: The board answers "how much is left" *(added 2026-08-09 — `docs/dreams/factory-console.md`)* ← CAP-5, CAP-96
 A fleet roll-up renders on both boards; live-only fields stay local.
 **Consequences:**
 - Per-station `done / total`, `epics done / total` and a **PyForge roll-up** row, counted from each project's **tracked** `sprint-status-ledger.yaml` via the same `parse_sprint_status` the deploy already uses — never a second parser, and never the gitignored Tier-3 feed CI cannot read.
@@ -482,7 +482,7 @@ A story whose attempt or review-cycle count crosses a configured threshold — d
 - The escalation applies on the deferral-then-resume path (`run_resume`'s existing re-render), is journaled with intent/outcome discipline (AD-28) naming trigger and resulting model, and is bounded — it does not re-fire without a new trigger (C-6).
 - A story with no declared difficulty still has a baseline model to escalate from — not a no-op for undeclared stories.
 
-#### FR-184: The parallel-fan-out clamp is surfaced, not silent *(added 2026-08-14 backfill — `docs/dreams/horizontal-run-concurrency.md`; shipped via Story 3.13)* ← CAP-124
+#### FR-184: The parallel-fan-out clamp is surfaced, not silent *(added 2026-08-14 backfill — `docs/dreams/horizontal-run-concurrency.md`; shipped via Story 3.13)* ← CAP-123, CAP-124, CAP-125
 `bmad_loop==0.9.0`'s server-side clamp of `max_parallel` to 1 (an unbuilt Phase-5 stub) is surfaced as a loud advisory (`MRS-POLICY-007` WARN), registered in Story 6.8's `upstream-register.json`, and assessed for Marshal-side readiness (`parallel-fan-out-readiness-assessment.md`).
 **Consequences:**
 - Marshal must **not** build concurrent dispatch while upstream clamps (AD-2/AD-3 wrap-never-fork); the capability itself stays parked until upstream Phase 5 ships, at which point adoption starts from the readiness assessment, not a fresh investigation.
@@ -505,7 +505,7 @@ A backlog story merged with no `bmad-loop` run record is detected as completed f
 **Consequences:**
 - Purely additive and forward-only: no strategy/gate changes, no retroactive relabelling of pre-fix `not-loop-native` rows (explicit non-goal); FR-186's classification precision sharpens with zero change to FR-186 itself.
 
-#### FR-188: A baseline-drift defer can never pass silently *(added 2026-08-14 — `docs/dreams/bmad-loop-baseline-drift.md`; spec-bmad-loop-baseline-drift)* ← CAP-51
+#### FR-188: A baseline-drift defer can never pass silently *(added 2026-08-14 — `docs/dreams/bmad-loop-baseline-drift.md`; spec-bmad-loop-baseline-drift)* ← CAP-50, CAP-51, CAP-52
 A Marshal-side detector at the adapter seam recognizes `bmad_loop`'s baseline-drift defer signature from the feeds the package itself writes, surfaces it loudly with the recovery inputs named, and the drafted upstream issue is filed behind its two gates.
 **Consequences:**
 - Reads only feeds `bmad_loop` writes (`journal.jsonl`, `state.json`, `attempt-preserve/*` refs, `failed/*/changes.patch`) — never imports or edits the git-pinned package (HARD constraint: it ships via pixi, is imported by live loops, and is wiped on `pixi install`); scope=runtime like `loop-stall-check`, excluded from `detectors-ci`.
@@ -514,7 +514,7 @@ A Marshal-side detector at the adapter seam recognizes `bmad_loop`'s baseline-dr
 - The upstream filing against `bmad-code-org/bmad-loop` is strictly gated — repo-access check and duplicate search recorded, then either filed (URL in the Dream's Realization log) or a duplicate linked — and carries FR-189's Story 10.1 evidence too: the two loss modes share one coordinated report.
 - *Motivating evidence: five occurrences in one session (2026-08-14) — marshal 8.1–9.5, 9.6, 10.1, mason 3.6–3.9 — each recovered only by manual git archaeology (PRs #482–#484). Queued as Stories 20.1–20.3.*
 
-#### FR-189: An intent-gap revert leaves a recoverable artifact *(added 2026-08-14 — `docs/dreams/bmad-loop-intent-gap-work-preservation.md`; spec-bmad-loop-intent-gap-work-preservation)* ← CAP-61
+#### FR-189: An intent-gap revert leaves a recoverable artifact *(added 2026-08-14 — `docs/dreams/bmad-loop-intent-gap-work-preservation.md`; spec-bmad-loop-intent-gap-work-preservation)* ← CAP-61, CAP-62, CAP-63
 When `bmad_loop`'s intent-gap protocol reverts an attempt, Marshal-side compensation at the adapter seam preserves the discarded work the way the deferred-story path already does — branch or patch — the escalation text names the artifact, and a detector flags any halt missing one.
 **Consequences:**
 - Preservation symmetry with `scm.keep_failed`: an `attempt-preserve/*` branch for real commits, a `failed/<story>/changes.patch` otherwise; the worktree stays reverted clean per protocol; no edits to the installed package.
@@ -694,7 +694,7 @@ Commits, PR bodies and comments Marshal emits carry no AI-attribution or courtes
 - Attribution, if ever added, is opt-in configuration and default-off.
 - *Grounding: the repo's standing convention, and the cautionary precedent of an editor vendor defaulting an AI co-author trailer on and reverting it after backlash — a commit trailer is part of the permanent authorship and blame record.*
 
-#### FR-59: Landing rules are declared policy *(added 2026-08-01 — CAP-9, operator ruling via `docs/dreams/pr-lifecycle.md`; resolves Q-3)* ← CAP-9, CAP-208
+#### FR-59: Landing rules are declared policy *(added 2026-08-01 — CAP-9, operator ruling via `docs/dreams/pr-lifecycle.md`; resolves Q-3)* ← CAP-9, CAP-206, CAP-208
 The rules a repository demands for landing compose from the policy layers with per-key provenance, like every other governed value.
 **Consequences:**
 - Required checks, merge strategy, label rules, branch-retirement behaviour, and repo-specific triggers are policy keys, not memorized habits — including this repository's `maintenance` label on non-`recipes/` changes and the **ungated** `environment.yaml` sync check that the label does not suppress.
@@ -702,7 +702,7 @@ The rules a repository demands for landing compose from the policy layers with p
 - *Grounding: five PRs hand-driven in one session (2026-07-31), each repeating the same written-but-unenforced sequence; one (#170) merged a real detector break because nothing in the landing path asked.*
 - *(Amended 2026-10-04, FR-234 / AD-47 as amended:)* branch retirement never deletes an operational `loop/*` head: `marshal land` merges a `loop/<slug>` PR without `--delete-branch` and records `branch_retired` only from a post-merge remote fact. Only `marshal teardown` removes a station branch, under AD-81's preserve precondition (§ 37).
 
-#### FR-60: The last mile lands itself — `marshal land` *(added 2026-08-01 — CAP-9)* ← CAP-9, CAP-209
+#### FR-60: The last mile lands itself — `marshal land` *(added 2026-08-01 — CAP-9)* ← CAP-9, CAP-206, CAP-209, CAP-210, CAP-211
 A story or wave that passed its gates lands on the integration branch without a human driving the sequence.
 **Consequences:**
 - `marshal land` opens or updates the PR, applies required labels, waits on required checks, merges by the declared strategy, retires the branch, and resyncs — idempotently and re-entrantly, so a half-landed story (PR open, checks green, merge never issued) converges on re-run.
@@ -1896,7 +1896,7 @@ The comparison reads git and the ledger, never infers from the feed.
 **Consequences:** no story status is derived from `sprint-status.yaml` (a statement of intent);
 the oracle is merge history.
 
-#### FR-139: Promotion never races the orchestrator, and never downgrades ← CAP-232
+#### FR-139: Promotion never races the orchestrator, and never downgrades ← CAP-232, CAP-234
 Single-writer discipline, and terminal states are monotonic.
 **Consequences:** concurrent promotion attempts serialize on a lock; **a transition moving any
 key backwards from `done` is refused and named, not written** — closing DW-SYNC-2026-08-08-1,
@@ -3445,18 +3445,20 @@ design and mint (2026-10-25). `SPEC.md` is unchanged. No CAP is added.
 The 2026-09-16 fold (`1e845b55fc`) appended an `← CAP-n` arrow to every FR heading by counting, so most of the arrows
 on FR-59..FR-65 and FR-128..FR-195 named the wrong capability (FR-153 "One governed surface ← CAP-111", where CAP-111
 is the Python-floor capability). Story 105.1 re-maps 71 of them from evidence; the full table, with each old arrow, is
-the 2026-10-25 "approved re-map" decision on `spec-pyforge-marshal`'s memlog. By block:
+the 2026-10-25 "approved re-map" decision on `spec-pyforge-marshal`'s memlog, amended once the same day after review
+(13 rows; the "amendment to the approved re-map" decision). By block:
 
 - **FR-59..FR-65** (added to § 7 on 2026-08-01): the folded `spec-pr-lifecycle`, `spec-durable-runs`,
   `spec-fidelity-enforcement` and `spec-one-front-door` capabilities their `added` notes name (FR-59/60 keep CAP-9 beside
-  the `pr-lifecycle` CAP).
+  the `pr-lifecycle` and `one-front-door` CAPs that each source Spec maps to them).
 - **FR-128..FR-132**: `spec-pyforge-testing-charter` CAP-1..5, which is not folded into this Spec.
 - **FR-133..FR-143, FR-148..FR-156, FR-164..FR-169**: the folded CAPs of each section's named Spec, by title and
   position (for example FR-153..FR-156 → CAP-21..CAP-24).
 - **FR-157..FR-163**: `spec-pyforge-core` CAP-1..7, in the cross-Spec form FR-209/210/226 already use.
 - **FR-170..FR-195** (added to § 7 on 2026-08-09..14, and § 18.1): the folded CAPs of the Spec each `added` note or FR
-  body names; FR-175..FR-178 and FR-180, which came from Marshal's own seam review and preflight work, cite Marshal's
-  CAP-1 and CAP-2.
+  body names. FR-175..FR-177, from Marshal's own seam review, cite the landing family (CAP-4) and the durable-runs
+  push (CAP-90, CAP-91) their stories build on; FR-178 cites Marshal's CAP-1. FR-180's `added` note names
+  `pr-lifecycle`, but its refusal of a stale home is preflight's, so it cites CAP-1 too.
 
 **Not re-mapped:** FR-144..FR-147 (§ 16.5, detector self-verification). Their named Spec,
 `spec-dream-to-code-model-self-verification`, listed exactly these four as its scope items, but the fold minted no
