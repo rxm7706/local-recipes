@@ -34,6 +34,7 @@ dependencies = [
     # lean-env tension this deliberately accepts.
     "pandas>=3.0.3",
     "pyarrow>=24.0.0",
+    "numpy>=2.5.3",                   # pipelines/derived_artifacts/alternatives.py imports it at module level
     "PyYAML>=6.0.3",                  # conda: pyyaml — imported as `yaml`
     "pydantic>=2.13.4",
     "attrs>=26.1.0",                  # imported as `attr`

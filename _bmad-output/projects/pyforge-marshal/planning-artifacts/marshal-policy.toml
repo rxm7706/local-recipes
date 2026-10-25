@@ -742,7 +742,8 @@ verify_commands = [
   # and their tests (the sweeper, the detectors and readers, the fleet poll, the one-off migration scripts), the flagd
   # tree (pyforge.marshal.preserve_refs), the build-skill customizations (87.11), the how-tos and the map, the purge list
   # and the retirement ledger under docs/governance/, the tracked preserve manifests, the one workflow whose tag-push
-  # trigger 87.15 filters, team memory (87.11's scribe capture correction), and every Spec memlog.
+  # trigger 87.15 filters, team memory (87.11's scribe capture correction), and every Spec memlog. Widened 2026-10-25
+  # (Story 87.19): pyforge-core's process seam, which gains a bytes stdin/stdout path for the batched gate read.
   "src/shared/packages/pyforge-marshal/**",
   "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
   "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
@@ -753,6 +754,7 @@ verify_commands = [
   "environment.yaml",
   "scripts/.spec-surface-baseline.json",
   "src/shared/packages/pyforge-core/src/pyforge/core/preserve_refs.py",
+  "src/shared/packages/pyforge-core/src/pyforge/core/process.py",
   "src/shared/packages/pyforge-core/src/pyforge/core/landing_evidence.py",
   "src/shared/packages/pyforge-core/tests/**",
   "scripts/**",
@@ -978,6 +980,16 @@ review = { harness = "cursor", model = "composer-2.5-fast" }
 [model_tier_map.easy]
 dev = { harness = "cursor", model = "composer-2.5" }
 
+# frontier (operator rulings 2026-10-25: "can you use CLAUDE FABLE", then "use the Claude Harness and Fable 5.1 as
+# the Model -- this tier can be called "Frontier""): an opt-in difficulty class a story spec selects with
+# `difficulty: frontier`, for a story the default tiers could not finish (Story 103.1, after three composer-2.5-fast
+# passes failed independent review). Claude Code harness with Claude Fable 5.1 for dev and review. It replaces the
+# short-lived Cursor `fable` tier, whose launch Cursor refused on its monthly Fable usage limit. The harness needs
+# the standalone claude CLI signed in (`claude auth status` loggedIn true).
+[model_tier_map.frontier]
+dev = { harness = "claude", model = "claude-fable-5-1" }
+review = { harness = "claude", model = "claude-fable-5-1" }
+
 # model_cost_catalog (Story 28.10, CAP-11): declared price snapshot from
 # spec-marshal-token-economy/model-economics.md (2026-08-30). Advisory only —
 # never fetched live, never a gate. Must stay LAST alongside model_tier_map
@@ -1011,6 +1023,15 @@ input_per_million = 2.00
 output_per_million = 10.00
 cache_read_per_million = 0.20
 cache_write_per_million = 2.50
+
+# 2026-10-25: the `frontier` tier's model. Dispatch keeps a tier model's override only when the catalog lists it under
+# the provider of the harness that resolves it (claude -> anthropic); otherwise MRS-DISP-043 drops it. Anthropic's
+# first-party list rates for Claude Fable 5.1: input $10, output $50, cache read $0.25, cache write $12.50 per MTok.
+[model_cost_catalog.providers.anthropic.models."claude-fable-5-1"]
+input_per_million = 10.00
+output_per_million = 50.00
+cache_read_per_million = 0.25
+cache_write_per_million = 12.50
 
 [model_cost_catalog.providers.openai]
 subscription_pool = "copilot-pro"

@@ -108,11 +108,51 @@ def _guild_hosted_packages(root: Path) -> set[str]:
     return {name for name, spec in deps.items() if isinstance(spec, dict) and "path" in spec}
 
 
+# Variables that make rich (and typer, which builds its console on rich) treat
+# a pipe as a forced terminal. Two things then go wrong with the capture, both
+# measured with `scribe --help` under rich 15.0.0 / typer 0.27.2 on 2026-10-25:
+# (1) forced AND TERM is `dumb`/`unknown` -> rich's dumb-terminal early return
+#     sizes the console 80x25 before COLUMNS is read, so the COLUMNS pin below
+#     is ignored and the text wraps at 80 (the three stale renders marshal Story
+#     103.1 found; `--check` from a plain shell read every one as stale);
+# (2) forced otherwise -> COLUMNS is honoured (rich reads it in Console.__init__
+#     and again in Console.size; visible width 100), but the forced console
+#     emits ANSI styling -- 154 escape sequences in that one --help, bold/dim that
+#     NO_COLOR does not remove -- so escape codes pollute the captured page.
+# Scrubbing the variables removes both. TERMINAL_WIDTH is typer's own width
+# override, inherited from whoever ran the generator. PYTHON_COLORS=1 makes
+# Python 3.14's argparse colour its own --help and outranks NO_COLOR (Story
+# 103.1 round-6 review: `--check` read the page stale with it set).
+# TYPER_USE_RICH=0 swaps typer's rich help for click's plain formatter, a
+# different page again. None of these has any business in a captured --help.
+_TERMINAL_FORCING_VARS = (
+    "FORCE_COLOR",
+    "PY_COLORS",
+    "PYTHON_COLORS",
+    "CLICOLOR_FORCE",
+    "GITHUB_ACTIONS",
+    "TTY_COMPATIBLE",
+    "TERMINAL_WIDTH",
+    "TYPER_USE_RICH",
+)
+
+
+def _help_env() -> dict[str, str]:
+    """The environment every ``--help`` child runs in: the caller's, minus every
+    variable in ``_TERMINAL_FORCING_VARS``, plus ``NO_COLOR=1`` and a fixed
+    ``COLUMNS=100`` -- the child's stdout is a pipe, so with nothing forcing a
+    terminal, argparse, click and rich all read COLUMNS and wrap identically
+    wherever the generator runs."""
+    env = {key: value for key, value in os.environ.items() if key not in _TERMINAL_FORCING_VARS}
+    env["NO_COLOR"] = "1"
+    env["COLUMNS"] = "100"
+    return env
+
+
 def capture_help(console_script: str) -> str | None:
     """``<console_script> --help`` from whatever is on PATH in the CURRENT
     process, or ``None`` when it does not resolve here, exits non-zero
-    (e.g. a console script that crashes with an unmet import, like
-    ``marshal-mcp`` when ``fastmcp`` is absent), or its output cannot be
+    (e.g. a console script that crashes with an unmet import), or its output cannot be
     decoded as text -- ``None`` is exactly the "not resolvable on PATH"
     outcome ``render()`` already handles, so a broken script degrades to
     the same short note as a missing one rather than embedding a raw
@@ -127,20 +167,21 @@ def capture_help(console_script: str) -> str | None:
     resolve depends on the invoking environment. Bounded in practice:
     ``detectors-ci`` and ``pyforge doctor check`` are always run as
     ``-e pyforge-guild``, the same environment this script's own pixi task
-    is registered under."""
+    is registered under.
+
+    The child's environment is built by ``_help_env`` so the captured text
+    wraps the same way from a plain shell and from a harness (marshal Story
+    103.1 found three renders of this page wrapped at 80 columns, not 100)."""
     resolved = shutil.which(console_script)
     if resolved is None:
         return None
-    env = dict(os.environ)
-    env["NO_COLOR"] = "1"
-    env["COLUMNS"] = "100"  # deterministic argparse/click wrapping regardless of caller's terminal
     try:
         result = subprocess.run(
             [resolved, "--help"],
             capture_output=True,
             text=True,
             timeout=30,
-            env=env,
+            env=_help_env(),
             check=False,
         )
     except (subprocess.TimeoutExpired, OSError, UnicodeDecodeError):

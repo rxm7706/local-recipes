@@ -1285,7 +1285,10 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # declared server's `command` is not resolvable (not on `PATH` via
 # `HarnessPort.binary_present`, and not an existing absolute path via
 # `FsPort.exists`) -- the SAME resolvability seam `MRS-PREFLIGHT-006`'s own
-# `verify_commands` check already uses. It classifies `Verdict.ERROR`, the
+# `verify_commands` check already uses; or (Story 103.1, fourth sub-case) the
+# command resolves but the server fails the stdio startup handshake
+# (exited, timed-out, bad-reply, error-reply, spawn-failed). It classifies
+# `Verdict.ERROR`, the
 # same tier as `MRS-PREFLIGHT-006`/`008`/`009`: a real, attempted
 # resolvability check found (or could not confirm) a real problem. This
 # probe reads ONLY the home's own rendered `.mcp.json` plus `PATH`/disk

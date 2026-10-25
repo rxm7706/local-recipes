@@ -36,7 +36,7 @@ exclusion -- Doctor (``cli_bridge.py``, its own already-working sole-site
 guard), Warden (``engines.py``, the fleet's own confirmed-conforming single
 seam), Steward (``deploy.py``/``provision.py``/``keys.py``, CAP-6's
 sanctioned raw-``CalledProcessError`` opt-out, pinned by 11 tests) -- plus
-five file-level exclusions, each carrying its own inline comment naming
+six file-level exclusions, each carrying its own inline comment naming
 the capability gap: Marshal's ``adapters/harness_bmadloop.py`` (4 sanctioned
 call sites -- interactive stdio passthrough, append-mode log),
 ``adapters/harness_bmadbuild.py`` (its one remaining raw site, a DETACHED
@@ -52,7 +52,11 @@ AND replaces the caller, so there is no analog, not merely a missing
 option), and Atlas's ``query_plane_boot.py`` (its one sanctioned
 ``duckdb-server`` launch site, needing the live ``Popen`` handle's
 terminate/wait/kill lifecycle no ``ProcessPort`` method offers -- see the
-Atlas paragraph below). Running
+Atlas paragraph below), and Marshal's ``adapters/mcp_stdio_probe.py``
+(Story 103.1's newline-delimited JSON-RPC MCP preflight handshake --
+interactive stdin/stdout/stderr pipes plus a live ``Popen`` handle's
+process-group teardown, the same capability gap as ``harness_bmadloop``'s
+stdio passthrough). Running
 the detector's real-tree scan against every OTHER
 sibling station before shipping this guard surfaced three more real,
 pre-existing, un-migrated ``subprocess`` implementations this story's
@@ -146,7 +150,9 @@ _OUT_OF_SCOPE_STATIONS = frozenset(
 # detaches a CHILD, never replaces the caller's own process, so there is no
 # analog at all, not merely a missing option. Atlas's `query_plane_boot.py`
 # keeps its one `subprocess.Popen`: see the module docstring above for its
-# separate, live-handle-lifecycle reason. Mirrors Doctor's
+# separate, live-handle-lifecycle reason. mcp_stdio_probe.py (Story 103.1)
+# keeps interactive stdio pipes for the MCP initialize/tools/list handshake.
+# Mirrors Doctor's
 # own `_EXEMPT_RELATIVE_PATHS` pattern, one level deeper (relative to
 # PACKAGES_ROOT, not a single package's own root, since this guard's scan
 # surface spans stations).
@@ -164,6 +170,7 @@ _EXEMPT_RELATIVE_PATHS = frozenset(
         Path("pyforge-marshal/src/pyforge/marshal/adapters/skill_invoke_harness.py"),
         Path("pyforge-marshal/src/pyforge/marshal/cli/dispatch.py"),
         Path("pyforge-atlas/src/pyforge/atlas/query_plane_boot.py"),
+        Path("pyforge-marshal/src/pyforge/marshal/adapters/mcp_stdio_probe.py"),
     }
 )
 
@@ -304,6 +311,12 @@ def test_cli_dispatch_is_excluded_from_the_scan():
 
 def test_query_plane_boot_is_excluded_from_the_scan():
     excluded = PACKAGES_ROOT / "pyforge-atlas/src/pyforge/atlas/query_plane_boot.py"
+    assert excluded.is_file(), f"expected {excluded} to exist"
+    assert excluded not in _scannable_files()
+
+
+def test_mcp_stdio_probe_is_excluded_from_the_scan():
+    excluded = PACKAGES_ROOT / "pyforge-marshal/src/pyforge/marshal/adapters/mcp_stdio_probe.py"
     assert excluded.is_file(), f"expected {excluded} to exist"
     assert excluded not in _scannable_files()
 
