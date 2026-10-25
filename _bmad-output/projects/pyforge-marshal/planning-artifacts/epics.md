@@ -9602,7 +9602,7 @@ So that a clean preserve reaches `origin`, and a secret that an earlier unpushed
 **When** the gate reads `git ls-remote <remote> 'refs/heads/*' 'refs/tags/*'` once with a timeout and judges `git rev-list --objects --ignore-missing --stdin <commit>` with the listed shas excluded, reading sent objects through one `cat-file --batch-check` and one `cat-file --batch` on a new bytes path of `PosixProcess`
 **Then** a preserve that adds only clean content on top of public files passes and is pushed; a secret in an intermediate unpushed commit, in a blob reachable on the remote only from `refs/pull/*`, or in the tag or commit message is refused; a new blob over the cap, a new planted credential, a purge-listed ancestor and a purge-listed path are still refused; an unreadable or timed-out remote is a refusal with a new named reason
 **And** the gate's process count does not grow with the number of blobs or listed refs; `push_reviewed_rows` skips a row already on `origin` and survives one row's `PreserveGitError`; `MRS-STATUS-016` names `marshal preserve push` with the flag it needs and `scripts/legacy_preserve_promote.py --push-reviewed`; six mutations each fail a named test; a read-only run from the story worktree over `origin/main` and every tag `ls-remote` does not list refuses none in under 120 s and pushes nothing; `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 88: Marshal's commits stage every tracked path they name
 
