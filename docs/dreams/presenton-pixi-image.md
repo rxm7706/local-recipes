@@ -56,7 +56,7 @@ as an internal platform service.
   OpenShift-ready), passing [[pyforge-warden]]-grade dependency gates.
 - Distribution through the [[enterprise-airgap]] machinery (Artifactory
   routing, offline bundles).
-- Division of labor with [[deckcraft]]: presenton = the repackaged *app*;
+- Division of labor with [[pyforge-herald|deckcraft]]: presenton = the repackaged *app*;
   deckcraft = the from-primitives *pipeline*. Complementary, not competing.
 - Stations: [[packaging-factory]] (Mason) repackages; **[[pyforge-steward]]
   deploys and operates** the OpenShift service.

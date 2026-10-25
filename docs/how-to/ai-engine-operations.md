@@ -5,7 +5,7 @@ sources:
   - src/platform/compose/compose.yml
   - src/platform/compose/dbgpt/Containerfile
   - docs/explanation/platform-deployment-architecture.md
-verified: 2026-09-20
+verified: 2026-10-24
 ---
 
 # AI Engine Operations
@@ -26,11 +26,11 @@ To run the full stack locally without Docker (PostgreSQL + pgvector, Redis, and 
    ```
 
 2. **Run the services:**
-   Start the per-user PostgreSQL, Redis and Silo processes from that env (`pixi shell -e platform-dev`, then `pg_ctl` / `redis-server` / `silo`), or bring up the container stack instead with `docker compose -f src/platform/compose/compose.yml up` (postgres, redis, the platform image, and the `dbgpt` sidecar). The Django-side steps are in [Local Platform Development](../tutorials/local-platform-development.md).
+   Start the per-user PostgreSQL, Redis and Silo processes from that env (`pixi shell -e platform-dev`, then `pg_ctl` / `redis-server` / `silo`), or bring up the container stack instead with `docker compose -f src/platform/compose/compose.yml up` (PostgreSQL 17 with pgvector, redis, Silo object storage, Keycloak, the platform web and worker, the `dbgpt` sidecar and the MCP host). The stack refuses to start until `LANGFLOW_SUPERUSER_PASSWORD` is set, in `src/platform/compose/.env` (git-ignored) or your shell: Langflow auto-login is off, and Langflow rejects an empty or default password. The Django-side steps are in [Local Platform Development](../tutorials/local-platform-development.md).
 
 ## Running the DB-GPT Sidecar
 
-DB-GPT operates as a sidecar container in production (`src/platform/compose/dbgpt/Containerfile`), but locally it can be tested using its dedicated environment.
+DB-GPT operates as a sidecar container in production (`src/platform/compose/dbgpt/Containerfile`), but locally it can be tested using its dedicated environment (linux-64 only, the platform the sidecar image targets).
 
 1. **Enter the environment:**
    ```bash

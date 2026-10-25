@@ -10,8 +10,10 @@ scrub (``GIT_DIR``/``GIT_WORK_TREE`` inherited from a nested worktree's own
 environment would otherwise point every fixture repo's ``git`` calls at
 THIS repo instead of the tmp one).
 
-The two live-repo tests (zero false positives against warden; >=1 true
-positive elsewhere) run ``gather`` against the real monorepo root, resolved
+The two live-repo tests (zero false positives against warden; the five
+orphans doctor Story 30.4 cited stay cited by their records -- until
+2026-10-24 the second asserted a live true positive) run ``gather`` against
+the real monorepo root, resolved
 the same guarded way ``test_hygiene_definitions.py`` does (this file sits at
 the identical ``tests/unit/`` depth, so the same ``parents[6]`` lands at the
 monorepo root; an ``IndexError`` degrades to a skip).
@@ -394,53 +396,64 @@ def test_live_repo_gather_reports_no_finding_naming_warden() -> None:
     assert not any(f.evidence.get("station") == "warden" for f in findings)
 
 
-# --- Row: >=1 true positive elsewhere (live) --------------------------------
+# --- Row: the five cited orphans stay cited (live) --------------------------
+
+_PLANNING = "_bmad-output/projects/{station}/planning-artifacts/"
+
+#: The five live orphans doctor Story 30.4 cited (2026-10-24), each with the record that cites it.
+#: Each file name is joined from two parts so this test's own text never holds the whole basename
+#: (`gather()`'s orphan check greps the repo, this file included). The row reads the citing record
+#: itself, because other text (the story spec, its evidence) also names these files and would keep
+#: `gather()` quiet after a real citation is lost.
+_STORY_30_4_CITED = (
+    (
+        _PLANNING.format(station="pyforge-herald") + "deckcraft-board-epics-displaced-2026-08-08",
+        ".json",
+        _PLANNING.format(station="pyforge-marshal") + "deferred-work-ledger.md",
+    ),
+    (
+        _PLANNING.format(station="pyforge-marshal") + "change-history/sprint-change-proposal-2026-08-12",
+        ".md",
+        _PLANNING.format(station="pyforge-marshal") + "epics.md",
+    ),
+    (
+        _PLANNING.format(station="pyforge-marshal")
+        + "change-history/sprint-change-proposal-2026-09-01-drain-self-resolution",
+        ".md",
+        _PLANNING.format(station="pyforge-marshal") + "epics.md",
+    ),
+    (
+        _PLANNING.format(station="pyforge-steward") + "sprint-change-proposal-2026-08-21",
+        ".md",
+        _PLANNING.format(station="pyforge-steward") + "epics.md",
+    ),
+    (
+        _PLANNING.format(station="pyforge-steward") + "sprint-change-proposal-2026-08-26-mcp-host-cluster",
+        ".md",
+        _PLANNING.format(station="pyforge-steward") + "implementation-readiness-report-2026-08-26-mcp-host-cluster.md",
+    ),
+)
 
 
-def _git_grep_matches(repo_root: Path, basename: str) -> list[str]:
-    result = subprocess.run(
-        ["git", "grep", "-l", "--fixed-strings", "-e", basename],
-        cwd=repo_root,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert result.returncode in (0, 1), f"git grep itself failed: {result.stderr}"
-    return [line for line in result.stdout.splitlines() if line.strip()]
-
-
-def test_live_repo_gather_surfaces_at_least_one_true_positive_naming_a_non_warden_station() -> None:
+def test_live_repo_the_orphans_story_30_4_cited_stay_cited_by_their_records() -> None:
+    """Until 2026-10-24 this row asserted a live true positive outside warden
+    (herald's displaced Guildhall epics array, an orphan). Doctor Story 30.4
+    cited that file and the other four live orphans from the records they
+    belong to; this row guards those five citations, and only those, so an
+    orphan added elsewhere stays a warn, not a red doctor suite. Detection on a
+    non-warden station stays proven on a fixture:
+    ``test_orphan_file_with_no_inbound_references_resolves_true_not_a_warn``
+    (station ``pyforge-acme``) and the all-classes fixture above."""
     repo_root = _require_repo_root()
-
-    # Re-verify the cited herald fixture is STILL grounded before asserting
-    # against it -- fail loud (not silently) if this fact has changed.
-    #
-    # Built from two parts (not one literal) so this line's own text is
-    # never a contiguous match for the full basename: `_git_grep_matches`
-    # below scans this very file among everything else in the repo, and a
-    # bare literal here would make THIS test the fixture's one and only
-    # "inbound reference" -- self-sabotaging both this pre-check and
-    # `gather()`'s own identical git-grep-based check.
-    basename = "deckcraft-board-epics-displaced-2026-08-08" + ".json"
-    own_relpath = "_bmad-output/projects/pyforge-herald/planning-artifacts/" + basename
-    herald_file = repo_root / own_relpath
-    assert herald_file.is_file(), (
-        f"the cited herald fixture {own_relpath} no longer exists -- re-verify "
-        "a live true positive and update this test to cite it instead"
-    )
-    others = [m for m in _git_grep_matches(repo_root, basename) if m != own_relpath]
-    assert not others, (
-        f"the cited herald fixture is no longer unreferenced repo-wide "
-        f"(now referenced by {others}) -- re-verify a live true positive "
-        "and update this test to cite it instead"
-    )
-
+    cited = []
+    for stem, ext, citing in _STORY_30_4_CITED:
+        relpath = stem + ext
+        cited.append(relpath)
+        assert (repo_root / relpath).is_file(), f"{relpath} moved -- update this row"
+        basename = relpath.rsplit("/", 1)[1]
+        assert basename in (repo_root / citing).read_text(encoding="utf-8"), (
+            f"{citing} no longer cites {basename} -- restore the citation or update this row"
+        )
     findings = hygiene.gather(repo_root)
-
-    assert any(
-        f.check == HygieneFindingKind.ORPHAN_FILE.value
-        and f.evidence.get("station") == "herald"
-        and f.evidence.get("path") == "_bmad-output/projects/pyforge-herald/planning-artifacts/" + basename
-        for f in findings
-    ), "expected the re-verified herald orphan file to be reported"
-    assert any(f.evidence.get("station") not in (None, "warden") for f in findings)
+    reported = {f.evidence.get("path") for f in findings if f.check == HygieneFindingKind.ORPHAN_FILE.value}
+    assert reported.isdisjoint(cited)

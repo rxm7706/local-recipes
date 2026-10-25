@@ -40,7 +40,7 @@ reusable templates, plugins, libraries, components, services, dashboards,
 reports, and applications on one python-first engineering platform — the
 **Inner-Source Model**: open-source culture and practices *inside* the
 enterprise. Chosen standards, shared toolchain, faster delivery, consistency by
-construction. Where [[pyforge-genesis]] installs the *operating model*, Unity
+construction. Where [[pyforge-charter|pyforge-genesis]] installs the *operating model*, Unity
 Data Stack is the *platform* an enterprise runs on it.
 
 ## What exists (stranded across three gists, now snapshot in `docs/intake/gists/`)
@@ -59,7 +59,7 @@ Data Stack is the *platform* an enterprise runs on it.
 
 ## Kinships
 
-[[pyforge-genesis]] (the installer would bootstrap Unity instances) ·
+[[pyforge-charter|pyforge-genesis]] (the installer would bootstrap Unity instances) ·
 [[pyforge-warden]] (the Security/Compliance agents of the toolchain spec) ·
 [[enterprise-airgap]] (the deployment posture) · [[packaging-factory]]
 (conda-native package supply).

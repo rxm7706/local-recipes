@@ -144,3 +144,18 @@ the binder becomes a stub). CAP-1..6 stay shipped. Nothing here unships them.
    the directory appears when that board publishes.
 
 `spec-docs-shelf-alignment` is `ready`. Epic 23 decomposes CAP-1..7.
+
+## Realization log
+
+- **2026-09-14** — Seeded (`4e533c54e7`) from the operator's ask to make the leftover-docs
+  sweep repeatable as Dream → Spec → stories; the same day `spec-docs-shelf-alignment` was
+  settled at `ready` and Epic 23 decomposed CAP-1..7 (§ *Settled 2026-09-14* above).
+- **2026-09-17** — Folded into [[pyforge-doctor]] by the doctor one-chain-per-station fold
+  (`4d3ae19674`): `status: specified` became `archived` with `archived-reason:
+  folded-into-station-dream`, and the *Consolidated into* banner was added. New work appends
+  to the station Dream.
+- **2026-10-10** — The [[agentic-sdlc-autonomy]] Kinship now names
+  `archive/docs/intake/agentic-sdlc/`, repointed when doctor Story 37.1 retired the legacy
+  `docs/specs/` tier (`c9e4f1539c`).
+- **2026-10-24** — This log added from the file's own text and `git log --follow` (doctor
+  Story 30.4); no status change.

@@ -61,7 +61,7 @@ console already knows.
 [[pyforge-marshal]] (visibility doctrine — the console is its ledger) ·
 [[pyforge-steward]] (owns the Pages deployment surface) ·
 [[pyforge-charter]] (the pipeline the console makes legible) ·
-[[modernist-identity]] (a candidate restyle; today the console has its own
+[[pyforge-herald|modernist-identity]] (a candidate restyle; today the console has its own
 mono/panel language).
 
 ## Realization log

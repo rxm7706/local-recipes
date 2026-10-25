@@ -2,7 +2,8 @@
 title: The PyForge Charter
 type: dream
 owner: guild
-status: specified   # 2026-09-09 — spec-pyforge-charter is at `in-progress` (past `ready`), holds CAP-1..CAP-8, and five amendments have executed against it; README:71's ladder puts `pitched` two acts behind. NOT `realized` (held 2026-09-16): CAP-7's Guildhall half is still unbacked. CAP-3's chain.py:96 leftover closed as doctor 21.4 (2026-09-10) — see the Realization log.
+status: specified
+# 2026-09-09 — spec-pyforge-charter is at `in-progress` (past `ready`), holds CAP-1..CAP-8, and five amendments have executed against it; README:71's ladder puts `pitched` two acts behind. NOT `realized` (held 2026-09-16): CAP-7's Guildhall half is still unbacked. CAP-3's chain.py:96 leftover closed as doctor 21.4 (2026-09-10) — see the Realization log.
 ---
 
 # The PyForge Charter — the Guild, the Smiths, the Mission
@@ -69,7 +70,7 @@ factory successfully brought that dream to life.
 > story) and stays the voice + design surface. Charter: [[pyforge-herald]].
 
 ### Key Responsibilities & Workflows
-* **Design↔Code Bridge:** Owning the `herald` CLI (seed / pull / watch / export) that makes Claude Design and the repo one surface — decks round-trip, no manual downloads ([[design-code-bridge]]).
+* **Design↔Code Bridge:** Owning the `herald` CLI (seed / pull / watch / export) that makes Claude Design and the repo one surface — decks round-trip, no manual downloads ([[pyforge-herald|design-code-bridge]]).
 * **Presentation Generation:** Ingesting raw concepts from **The Dream** to auto-render slide layouts (**The Deck**) for stakeholders and developers alike.
 * **Telemetry Infographics:** Converting the output files of Atlas and Warden into intuitive, math-calculated vector graphics, timeline charts, and dependency charts.
 * **Update Compilation:** Aggregating commit deltas, pipeline milestones, and metadata into crisp weekly updates and executive highlights.
@@ -1045,8 +1046,8 @@ herald broadcast slack,email --channel engineering-updates
 - **2026-08-08 (amendment)** — **`owner: guild` closes at one Dream; `pyforge-genesis`
   retires as a name and is absorbed here** (operator decision). §5 previously read
   *"reserved for the **two** Dreams that precede the stations — this Charter … and
-  [[pyforge-genesis]], the operating-model seed,"* and located both chains in a
-  `pyforge-genesis` project. That project had already dissolved on 2026-08-02, leaving
+  `pyforge-genesis`, the operating-model seed,"* (its link to the retired Dream unlinked on 2026-10-24, doctor Story
+  30.4) and located both chains in a `pyforge-genesis` project. That project had already dissolved on 2026-08-02, leaving
   the constitutive pair split across two Dreams and two `docs/governance/` Specs for no
   remaining reason: the installer half had moved to the Marshal on 2026-07-28, and what
   was left was one record with two names. The seed's content is preserved verbatim as
@@ -1114,7 +1115,7 @@ herald broadcast slack,email --channel engineering-updates
   **Consequence: eight Smiths, eight projects.** The `local-recipes` placeholder — what
   this monorepo started as — holds nothing in the target state and is retired; the
   Charter, being the unit of *legitimacy* rather than *contract*, needs no Spec.
-  Also settled: **[[pyforge-genesis]] stays** as the constitutive project — the origin
+  Also settled: **`pyforge-genesis` stays** as the constitutive project — the origin
   Dream plus the records of this Charter, the Lexicon, and the Guild's membership — so
   `owner: guild` keeps both its Dreams, as §5 always said. What moves is the **installer**:
   `genesis init` / `adopt` is buildable work and belongs to the **Marshal**, whose toolkit

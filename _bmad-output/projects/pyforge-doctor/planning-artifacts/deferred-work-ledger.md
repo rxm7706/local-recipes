@@ -3115,3 +3115,29 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   promoted: 2026-10-17 — recorded with steward Story 103.3's review fixes
   status: closed
   closed: 2026-10-17 — doctor Story 49.1 (spec `planning-artifacts/specs/spec-49-1-a-detector-s-task-is-the-one-that-runs-its-script.md`, Epic 49, a fix under FR-15): `discover()` gives a detector the first task whose `cmd` holds its repo-relative path, optionally `./`-prefixed, as one shell word (`scripts/detectors.py` `_runs_detector`; the `--json` skip and first-match order kept). The path rather than the row's `(?<![\w])<name>`, which would still take a same-named file in another directory (`tests/scripts/flag_gate_check.py`). Measured at `ab38be642f`: the 36 files of `tests/scripts/scripts-lib-test.txt` inline in a task placed first took nine of the 28 detectors (the review's six plus `bmad_estate_check`, `pin_policy_check`, `realization_register_check`); after the fix they take none, and the live mapping of all 28 is unchanged. Pinned by `tests/scripts/test_detectors_task_match.py` (`::test_a_task_listing_the_library_tests_inline_takes_no_detector`, `::test_a_detector_whose_own_task_is_gone_reads_as_a_registry_gap`, the boundary cases, a fixture tree with its own `pixi.toml`, and `::test_every_live_detector_keeps_its_task_and_that_task_runs_its_path`); six mutations on a scratch copy (the substring matcher restored, either boundary dropped, the row's bare-name option, the `--json` skip dropped, the `./` prefix dropped) each fail a named test. Steward's `tests/scripts/test_pyforge_ci_is_stdlib_only.py` asserted the capture, so its inline-listing test is renamed `test_a_library_task_is_named_when_it_runs_a_detector_not_when_it_lists_its_test` and checks both halves. Correction to the summary above: `detectors-ci` never runs a detector's task (`run_one` runs the script); the wrong task was what `--list`, `--json` and `docs/reference/detectors.md` named, and it hid the registry's "has no pixi task" gap.
+
+### DW-doctor-30-4-1: `docs-currency` reads a generator that could not run as a stale page.
+
+- source_spec: `planning-artifacts/specs/spec-30-4-the-docs-dreams-and-planning-warn-backlog-is-cleared.md`
+  summary: `_check_generated_page` maps every non-zero exit of a page's `--check` run to "stale against its generator -- a hand edit, or a source it derives from moved". A generator that exits 2 (could not run) is reported the same way. Story 30.4 added `scripts/docs_bmad_estate.py`, whose `--check` exits 2 where `pyforge.scribe` is not importable (the `pyforge-doctor` env, the pip fallback of the Detectors workflow), so there `bmad-estate-llms-full.md` reads stale when nothing is stale.
+  evidence: `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/docs_currency.py:500`-`:512` (only `returncode == 0` is current; everything else is the stale message); `scripts/docs_bmad_estate.py` returns `bmad_estate_check.run_check`'s 2 for could-not-run. Story 30.4 review 1, should-fix 2.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/docs_currency.py:_check_generated_page
+  owner: doctor (spec-pyforge-doctor CAP-84)
+  fix: read exit 2 from a generator's `--check` as could-not-run (its own WARN text, as the "could not run generator" branch already words it), and keep 1 as stale. A detector change, so a Story under CAP-84; Story 30.4's boundaries keep detector code out.
+  origin: doctor Story 30.4 independent review 1, 2026-10-24
+  severity: low
+  promoted: 2026-10-24 — recorded with Story 30.4's review fixes
+  status: open
+
+### DW-doctor-30-4-2: `docs-currency` flags true references to gitignored or runtime paths, and `bmad-*` words that are not skills, as dead.
+
+- source_spec: `planning-artifacts/specs/spec-30-4-the-docs-dreams-and-planning-warn-backlog-is-cleared.md`
+  summary: The authored-page dead-reference scan treats a backticked path under a real top-level directory as dead when it does not exist in the checkout, and any backticked `bmad-*` token as a skill name. Story 30.4 reworded three true references only to pass it: `.claude/worktrees` (exists only where an agent made a worktree), the kedro-viz export path (a gitignored workflow artifact) and `bmad-output-hygiene` (a doctor source, not a skill).
+  evidence: `docs/how-to/manage-worktrees-with-bmad.md`, `docs/reference/github-workflows.md`, `docs/explanation/the-detector-framework.md` at Story 30.4; the regexes mirror `scripts/governance_currency_check.py`. Story 30.4 review 1, nit 2.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/docs_currency.py (the body scan) and scripts/governance_currency_check.py (the regexes it mirrors)
+  owner: doctor (spec-pyforge-doctor CAP-84)
+  fix: skip paths the repo's `.gitignore` or a declared runtime-path list names, and match `bmad-*` only against the installed skill directories; or document the ignore-marker convention as the sanctioned answer for these cases.
+  origin: doctor Story 30.4 independent review 1, 2026-10-24
+  severity: low
+  promoted: 2026-10-24 — recorded with Story 30.4's review fixes
+  status: open

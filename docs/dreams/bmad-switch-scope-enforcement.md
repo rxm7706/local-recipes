@@ -77,7 +77,7 @@ Substantial prior art already exists and this Dream does not start from zero:
 - Distant prior art: a sibling org's `bmad-workspace-integration` dream (`wf-dev-cli`'s
   `extensions/bmad.py`, 650 LOC) does a related but broader thing — automatic switch-on-workspace-open
   plus checkpoint stash/restore plus scope.yml path-boundary enforcement. That dream's automatic-switch
-  trigger depends on a workspace-management capability ([[developer-workspace-management]]-shaped)
+  trigger depends on a workspace-management capability (`developer-workspace-management`-shaped)
   this repo doesn't have yet; its `checkpoint` verb has no documented local pain point. This Dream
   deliberately scopes down to only the piece with a real, already-bitten, already-triaged local gap.
 

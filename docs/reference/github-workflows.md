@@ -17,7 +17,7 @@ Workflows landed after the original audit and this table never caught up (one, `
 | workflow | trigger | what it does |
 |---|---|---|
 | **`detectors.yml`** | `pull_request`, `push` to main, dispatch | Runs the `detectors-ci` scope=repo subset of the doctor-sources detector suite. Added 2026-07-31 specifically because it *hadn't* existed: this repo had 9 detectors, 7 pixi tasks, 3 dashboard rows, and zero automatic invocation — every green was hand-run by whoever remembered, and PR #170 merged green while breaking `spec_surface_check` because nothing else ran it. |
-| **`kedro-viz-publish.yml`** | `push` to main (path-filtered to `pyforge-atlas`'s pipelines), dispatch | Epic 12/FR-62, atlas Story 30.1: builds the real pyforge-atlas Kedro DAG's static kedro-viz export and uploads it as the workflow artifact `kedro-viz-export`; it never commits to git (atlas 30.1 removed its old commit-to-`main` step; steward Story 102.3 then retired the `deploy dashboard` verb that step called). The Pages build downloads the newest unexpired artifact into `docs/dashboard/kedro-viz/` and mounts it (steward Story 102.4); with none, the mount is skipped. |
+| **`kedro-viz-publish.yml`** | `push` to main (path-filtered to `pyforge-atlas`'s pipelines), dispatch | Epic 12/FR-62, atlas Story 30.1: builds the real pyforge-atlas Kedro DAG's static kedro-viz export and uploads it as the workflow artifact `kedro-viz-export`; it never commits to git (atlas 30.1 removed its old commit-to-`main` step; steward Story 102.3 then retired the `deploy dashboard` verb that step called). The Pages build downloads the newest unexpired artifact into the gitignored `kedro-viz/` folder under `docs/dashboard/` and mounts it (steward Story 102.4); with none, the mount is skipped. |
 | **`platform-ci.yml`** | `pull_request`/`push`, path-filtered to `src/platform/**` + the shared packages/pixi files it builds from | Story 10.1: CI for the separately-built Django platform host (`src/platform/`) — ruff/mypy/pytest + a two-engine container build matrix, cost-isolated from the conda-forge factory's own detector/linter CI via the path filter. |
 
 **2026-10-11 (Story 36.1):** Story 13.6's retired CI live-demo workflow moved to `archive/.github/workflows/herald-live-demo.yml` (byte-identical `git mv`; GitHub no longer loads it). Live webhook proof superseded by Story 19.2's [`docs/how-to/run-herald-live-backend-locally.md`](../how-to/run-herald-live-backend-locally.md).
@@ -118,9 +118,10 @@ new code for `staged-recipes` string literals.**
 
 ---
 
-## Upstream divergence (deliberate)
+## Upstream divergence (deliberate, until 2026-10-14)
 
-Our two synced workflows are trimmed on purpose. Upstream additionally has:
+History: Story 99.7 retired both synced workflows on 2026-10-14 (see above). Until then they
+were trimmed on purpose. Upstream additionally has:
 
 - **`merge_group` support** — `bump_webservices_linter.py` + a
   `matrix-org/pr-details-action` step, for conda-forge's merge queue. Not applicable.
@@ -134,20 +135,21 @@ splits into two arguments and micromamba errors `Empty package name`.
 
 ## Where the pixi floor lives (keep all in step)
 
-`requires-pixi = ">=0.76.2"` in `pixi.toml` is the source of truth. It is restated in:
+`requires-pixi` in `pixi.toml` (`">=0.80.0"` on 2026-10-24) is the floor. Every site that
+restates it is listed in `scripts/pixi_version_registry.py`, the one registry: the manifest's
+`$schema` URL and feature floors, `pyforge-mason`'s own `pixi.toml`, `environment.yaml`, the
+`setup-pixi` pins in the workflows and in `.github/actions/sync-pypi-mappings/action.yml` and
+`.github/actions/platform-test-setup/action.yml`, and the Containerfile builder-stage image
+tags. Do not hand-edit the sites:
 
-1. `pixi.toml` `[feature.python]`
-2. `pixi.toml` `[feature.local-recipes]`
-3. `pixi.toml` (third feature block)
-4. `environment.yaml`
-5. `.github/workflows/staged-recipes-linter.yml` → `create-args: pixi>=0.76.2`
-6. `.github/workflows/pages.yml` → `pixi-version: v0.76.2`
-7. **`.github/actions/sync-pypi-mappings/action.yml` → `pixi-version: v0.76.2`**
+- `pixi run -e pyforge-guild pixi-version-check` fails on any drift (CI-safe).
+- `pixi run -e local-recipes bump-pixi-version -- <version>` rewrites every site and
+  regenerates `environment.yaml` in one pass.
 
-№7 was missed when the others were unified. Pinned at v0.59.0, it could not parse the
-manifest (`expected a string, found table`) and failed **32/32 runs**. Raised
-2026-07-26 together with `setup-pixi@v0.9.3 → v0.10.0`; the weekly cron stays off
-until one manual dispatch is observed green.
+History: the `sync-pypi-mappings` action pin was missed when the sites were first unified.
+Pinned at v0.59.0, it could not parse the manifest (`expected a string, found table`) and
+failed **32/32 runs**. It was raised 2026-07-26 together with `setup-pixi@v0.9.3 → v0.10.0`;
+the workflow's weekly schedule stays off until one manual dispatch is observed green.
 
 ---
 

@@ -5,7 +5,7 @@ sources:
   - src/shared/packages/pyforge-steward/tests/unit/test_cli.py
   - src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py
   - pixi.toml
-verified: 2026-09-20
+verified: 2026-10-24
 ---
 
 # Station CLI Operations
@@ -19,9 +19,9 @@ The basic structure of a PyForge CLI command is:
 pyforge <station> <noun> <verb> [options]
 ```
 
-`pyforge` (`src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py`) is dispatch only: it maps the station token to that distribution's own console script (`steward`, `marshal`, `scribe`, `doctor`, …) and forwards the remaining arguments. Calling the station script directly (`steward workspace start …`) is the same command.
+`pyforge` (`src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py`) is dispatch only: it maps the station token to that distribution's own console script (`steward`, `marshal`, `scribe`, `doctor`, …) and forwards the remaining arguments. Calling the station script directly (`steward workspace start …`) is the same command. One token is not a station: `pyforge context …` forwards to `marshal context …`.
 
-Run station commands from the `pyforge-guild` environment — the session default for every agent and harness. It carries `doctor`, `marshal`, `scribe` and `steward`; `pyforge --help` there lists exactly those four stations. `herald`, `mason`, `warden` and `pyforge-atlas` are installed only in their own `pyforge-<station>` environments. `local-recipes` (10 GB) is Mason's recipe-factory environment and includes every Guild task, so it also works, but it is not the default.
+Run station commands from the `pyforge-guild` environment — the session default for every agent and harness. It carries `doctor`, `herald`, `marshal`, `mason`, `scribe` and `steward`; `pyforge --help` there lists those six and names the stations not installed, each with its environment (`atlas` in `-e pyforge-atlas`, `warden` in `-e pyforge-warden`). Asking for one of those two in the Guild env exits with the `pixi run -e pyforge-<station> …` command to use instead. `local-recipes` (10 GB) is Mason's recipe-factory environment and includes every Guild task, so it also works, but it is not the default.
 
 ### Example: Invoking the Steward
 The Steward station handles workspace provisioning and credential lifecycle. To start a new scratch workspace:
@@ -39,11 +39,11 @@ pixi run -e pyforge-guild pyforge steward keys list
 Each station defines its own duties (subcommands). To see what a station can do, run its root help command:
 
 ```bash
-pixi run -e pyforge-guild pyforge <station> --help        # doctor, marshal, scribe, steward
-pixi run -e pyforge-<station> <station> --help            # herald, mason, warden
+pixi run -e pyforge-guild pyforge <station> --help        # doctor, herald, marshal, mason, scribe, steward
+pixi run -e pyforge-<station> pyforge <station> --help    # atlas, warden
 ```
 
-For example, `pixi run -e pyforge-mason mason --help` lists `recipe` (new / validate / build / diagnose / optimize / scan / submit / update, wrapping `conda-forge-expert`), `package`, `environment` and `doctor`.
+For example, `pixi run -e pyforge-guild pyforge mason --help` lists `recipe` (new / validate / build / diagnose / optimize / scan / submit / update, wrapping `conda-forge-expert`), `package`, `environment` and `doctor`.
 
 ## Scribe Data Recall
 

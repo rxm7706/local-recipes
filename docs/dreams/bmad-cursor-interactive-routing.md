@@ -2,7 +2,8 @@
 title: BMAD from inside Cursor's own chat — interactive routing, not just headless dispatch
 type: dream
 owner: marshal
-status: archived   # 2026-09-16 — folded into [[marshal-token-economy]] (operator-ruled
+status: archived
+                   # 2026-09-16 — folded into [[marshal-token-economy]] (operator-ruled
                    # token-savings consolidation: one starting point). Was `specified`.
 ---
 

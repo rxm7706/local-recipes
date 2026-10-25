@@ -7,7 +7,7 @@ sources:
   - src/platform/config/local_dev/mint.py
   - .github/workflows/platform-ci.yml
   - docs/dreams/platform-dev-boots-local.md
-verified: 2026-09-20
+verified: 2026-10-24
 ---
 
 # Local Platform Development
@@ -52,6 +52,8 @@ cd src/platform
 pixi run -e platform-dev python manage.py runserver
 ```
 
+`runserver` serves the WSGI app, so the Langflow mount (`/langflow/`, an ASGI route) is not there; an ASGI boot of `config.asgi` (uvicorn or gunicorn) mounts it and needs `LANGFLOW_SUPERUSER_PASSWORD`, as in Step 3.
+
 You can now access:
 - The Wagtail front door (Lane 1) at `http://localhost:8000/`
 - The Wagtail admin at `http://localhost:8000/cms/`
@@ -59,14 +61,17 @@ You can now access:
 - Station portals under `http://localhost:8000/stations/<name>/`, and the stations index at `http://localhost:8000/stations/` when flag `pyforge.steward.stations_index` is ON (dev has it ON; staging and production stay OFF until rollout)
 
 ## Step 5: Run the Platform Tests
-The Platform CI `test` job runs from `src/platform/` in the slim `platform-ci-test` environment (the sole authority for that job's dependencies): `manage.py check`, Ruff, mypy, the policy suite, the sqlmigrate extraction, and then the full suite. Mirror it locally:
+The Platform CI `test` job runs from `src/platform/` in the slim `platform-ci-test` environment (the sole authority for that job's dependencies): it installs Chromium for herald's deck-viewer browser check, then runs `manage.py check`, Ruff, Ruff format, mypy, the policy suite, the sqlmigrate extraction, and the full suite. Mirror it locally:
 ```bash
 pixi install -e platform-ci-test
 cd src/platform
+pixi run -e platform-ci-test python -m playwright install chromium   # once; CI adds --with-deps
 pixi run -e platform-ci-test python manage.py check
 pixi run -e platform-ci-test python -m pytest tests/policy -v
 pixi run -e platform-ci-test python -m pytest -v
 ```
+
+To replay the whole `test` job step for step (Ruff, mypy and the sqlmigrate extraction included), run the local twin from the repo root: `pixi run -e pyforge-guild platform-ci-local -- --test`.
 
 > [!IMPORTANT]
 > The `dashboard/` extra is the only place Django lives in a station package. Never import `django` or `channels` at the module level in the base `pyforge-<station>` packages. The base packages must be capable of importing and running their CLI without the `[dashboard]` extra installed.

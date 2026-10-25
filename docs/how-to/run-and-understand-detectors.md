@@ -5,7 +5,7 @@ sources:
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/verdict.py
   - docs/reference/judgement-vocabulary.md
-verified: 2026-09-20
+verified: 2026-10-24
 ---
 
 # How to run and understand Detectors
@@ -20,10 +20,13 @@ The detector registry is `scripts/detectors.py`. Run it through its pixi tasks i
 
 ```bash
 pixi run -e pyforge-guild detectors          # every detector, repo + runtime scope
-pixi run -e pyforge-guild detectors-ci       # the CI-safe subset (--scope repo)
+pixi run -e pyforge-guild detectors-ci       # the CI-safe subset (--scope repo --jobs auto)
 pixi run -e pyforge-guild detectors -- --list   # what the registry discovered
 pixi run -e pyforge-guild detectors -- --json   # machine-readable rows
+pixi run -e pyforge-guild detectors -- --jobs auto   # run script detectors in parallel
 ```
+
+`--jobs N` runs up to N script detectors at once (`auto` is the logical CPU count; the default is 1). Results keep the registry's order either way.
 
 ### Filtering by Scope
 
@@ -60,8 +63,8 @@ The detector registry adheres strictly to a three-tier exit code system:
 If the suite exits with `1` (FINDINGS), read the output block at the end of the script's execution.
 
 ### Registry Gaps
-A registry gap occurs if a script looks like a detector (`scripts/*_check.py` or `docs/dashboard/check_*.py`) but is not wired properly.
-- **Fix:** Declare its scope at module level — `DETECTOR = {"scope": "repo"}` or `{"scope": "runtime"}` (`DETECTOR = None` opts a residual mutation-only script out) — and map the script to a pixi task in `pixi.toml` (e.g. `[feature.guild-tasks.tasks.my-detector-check]`).
+A registry gap occurs if a script looks like a detector (`scripts/*_check.py`, `docs/dashboard/check_*.py`, or `scripts/ci_surface_gates.py`) but is not wired properly.
+- **Fix:** Declare its scope at module level — `DETECTOR = {"scope": "repo"}` or `{"scope": "runtime"}` (`DETECTOR = None` opts a residual mutation-only script out) — and map the script to a pixi task in `pixi.toml` (e.g. `[feature.guild-tasks.tasks.my-detector-check]`) whose `cmd` runs it by its repo-relative path, such as `python scripts/my_detector_check.py`. A task that only mentions the file name, or runs a test file of the same name, does not count.
 
 ### Spec Surface Drift (`spec-surface-check`)
 This occurs when a governed file is added or modified, but the owning Spec's `.memlog.md` did not record the event.
@@ -80,7 +83,8 @@ A page under `docs/tutorials`, `docs/how-to`, `docs/reference` or `docs/explanat
 - **Fix:** Add the page to the right quadrant table in `docs/MAP.md`, or repoint/remove the dead link.
 
 ### Docs currency (`docs-currency-check`)
-Three checks over `docs/map.yaml` (the registry) and `docs/MAP.md` (its render): `map-render` (the generated `## Page registry` section is stale against a fresh render of `docs/map.yaml`), `authored-page-stale` (a `kind: authored` page's own `sources:`/`verified:` frontmatter has fallen behind a named source's git last-touch, or a named source has no git history at all, or the page body cites a backticked skill/script/path token that no longer resolves), `skill-dir-hygiene` (a stray `README.md` inside a managed `bmad-*`/`pyforge-*`/`skf-*` skill directory). All three warn-only, fail-open.
+Four checks over `docs/map.yaml` (the registry) and `docs/MAP.md` (its render): `map-render` (the generated `## Page registry` section is stale against a fresh render of `docs/map.yaml`), `generated-stale` (a `kind: generated` page differs from a `--check` run of its declared `scripts/docs_*.py` generator, declares no `generator:` in `docs/map.yaml`, or declares one outside `scripts/docs_*.py`, which is never run), `authored-page-stale` (a `kind: authored` page's own `sources:`/`verified:` frontmatter has fallen behind a named source's git last-touch, or a named source has no git history at all, or the page body cites a backticked skill/script/path token that no longer resolves), `skill-dir-hygiene` (a stray `README.md` inside a managed `bmad-*`/`pyforge-*`/`skf-*` skill directory). All four warn-only, fail-open.
 - **Fix (map-render):** run `pixi run -e pyforge-guild docs-map-render` to regenerate the section from `docs/map.yaml`.
+- **Fix (generated-stale):** rerun the page's generator task (for example `pixi run -e pyforge-guild docs-skills-catalog`); never hand-edit a generated page. A page with no `generator:` gets one: a `scripts/docs_*.py` script that `--check` can run, even when the real generator is a station CLI (`scripts/docs_bmad_estate.py` hands both modes to `scribe catalog bmad-estate`).
 - **Fix (authored-page-stale):** after confirming the page's claims still hold against the named source's current content, bump its frontmatter `verified:` date; for a dead body reference, fix the token, or — when it is a deliberate historical citation — wrap it in `<!-- governance-currency:ignore-start (reason) --> ... <!-- governance-currency:ignore-end -->`.
 - **Fix (skill-dir-hygiene):** remove the stray file; nothing outside the Agent Skills layout belongs in a managed skill directory.

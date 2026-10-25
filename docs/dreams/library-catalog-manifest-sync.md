@@ -3,6 +3,7 @@ title: The library catalog can't see a station's own build manifest
 type: dream
 owner: marshal
 status: archived
+                    # 2026-09-12 -- spec-library-catalog-manifest-sync CAP-1/CAP-2 both
                     # shipped same day: Epic 36 (Stories 36.1, 36.2) done in pyforge-marshal's
                     # tracked ledger; llms-full-check clean against the real repo (352/320,
                     # zero findings); a synthetic-fixture regression suite proves the new

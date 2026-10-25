@@ -1566,6 +1566,7 @@ of `marshal land`'s landings being indistinguishable from a human's plain PR mer
 
 **Type:** feature • **Effort:** S • **Deps:** S-5.9 • **FR/AD:** FR-187; AD-5, AD-24, AD-34
 **Surface:** `cli/land.py`, `ports/forge.py`, `adapters/forge_gh.py`
+**Change proposal:** `change-history/sprint-change-proposal-2026-08-12.md`
 
 **Why now.** Discovered 2026-08-12 during Story 5.9's review pass 2: `core.promotion.
 marshal_native_merged_keys` correctly classifies `deploy land-story`'s templated subject and
@@ -4638,6 +4639,9 @@ station-wide wildcard (`src/shared/packages/pyforge-marshal/**` + common
 bookkeeping paths) as an immediate stopgap on 2026-08-31, unblocking the live
 Epic 28 drain campaign without waiting on this story's own implementation.
 This story ships the real mechanism to replace that stopgap.
+
+Stories 28.18–28.23 were added by
+`change-history/sprint-change-proposal-2026-09-01-drain-self-resolution.md` (Dream addendum F).
 
 ### Story 28.18: Re-preflight when the refuse predicate can change
 

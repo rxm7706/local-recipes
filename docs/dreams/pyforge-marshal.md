@@ -2776,7 +2776,7 @@ Substantial prior art already exists and this Dream does not start from zero:
 - Distant prior art: a sibling org's `bmad-workspace-integration` dream (`wf-dev-cli`'s
   `extensions/bmad.py`, 650 LOC) does a related but broader thing — automatic switch-on-workspace-open
   plus checkpoint stash/restore plus scope.yml path-boundary enforcement. That dream's automatic-switch
-  trigger depends on a workspace-management capability ([[developer-workspace-management]]-shaped)
+  trigger depends on a workspace-management capability (`developer-workspace-management`-shaped)
   this repo doesn't have yet; its `checkpoint` verb has no documented local pain point. This Dream
   deliberately scopes down to only the piece with a real, already-bitten, already-triaged local gap.
 
@@ -3201,7 +3201,7 @@ console already knows.
 [[pyforge-marshal]] (visibility doctrine — the console is its ledger) ·
 [[pyforge-steward]] (owns the Pages deployment surface) ·
 [[pyforge-charter]] (the pipeline the console makes legible) ·
-[[modernist-identity]] (a candidate restyle; today the console has its own
+[[pyforge-herald|modernist-identity]] (a candidate restyle; today the console has its own
 mono/panel language).
 
 ## Realization log
@@ -5540,10 +5540,10 @@ repo-wide.
   baselines. This Dream is that loop, applied to everything.
 - **The transformer** — `bmad-spec` distills brownfield code + docs into the
   five-field Spec with stable CAP-IDs and an append-only memlog; re-derives
-  on update instead of hand-patching. Piloted on [[design-code-bridge]].
+  on update instead of hand-patching. Piloted on [[pyforge-herald|design-code-bridge]].
 - **The map** — 24 Dreams, no-straggler policy: every shipped surface already
   traces to a Dream; what's missing is the spec layer beneath the realized
-  ones ([[packaging-factory]], [[enterprise-airgap]], [[modernist-identity]],
+  ones ([[packaging-factory]], [[enterprise-airgap]], [[pyforge-herald|modernist-identity]],
   [[fleet-stewardship]], [[factory-console]] have no BMAD spec;
   [[pyforge-marshal]] and [[fleet-stewardship]] lean on legacy Tier-1 specs).
 
@@ -5565,7 +5565,7 @@ repo-wide.
 
 ## Kinships
 
-[[pyforge-genesis]] (the operating model this completes — brownfield adoption
+[[pyforge-charter|pyforge-genesis]] (the operating model this completes — brownfield adoption
 implies backfill) · [[pyforge-marshal]] (BMAD executes every change) ·
 [[pyforge-warden]] (drift gate temperament: never false-green) ·
 [[agent-portability]] (the Spec is what makes regeneration

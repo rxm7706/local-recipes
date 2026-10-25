@@ -929,7 +929,7 @@ constraints of `spec-pyforge-unifying-strategy` § Host platform. Pattern A per 
 dreams ([[langflow-django-plugin]],
 [[db-gpt-django-plugin]]) is the default; a sidecar fallback requires a dated deviation in
 the Dream first (pap:AD-14) and is selected through pap:AD-17's per-engine config switch, added
-2026-08-21 after DB-GPT's Pattern-B deviation — see the 2026-08-21 sprint-change-proposal.
+2026-08-21 after DB-GPT's Pattern-B deviation — see `sprint-change-proposal-2026-08-21.md`.
 Langflow (11.1) is unaffected and stays on Pattern A.
 
 ### Story 11.1: Langflow joins as a pluggable app

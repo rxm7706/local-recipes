@@ -556,7 +556,7 @@ It is the **orchestration of existing capabilities** to expand Moment 1 (Pitch) 
 
 ## Kinships
 
-[[pyforge-herald]] (the Four Moments framework) · [[design-code-bridge]] (round-trip automation) · [[modernist-identity]] (brand consistency) · [[deckcraft]] (PPTX backend) · [[video-scripts]] (narration + companion videos) · [[presentation-deck]] (export formats and artifact tree).
+[[pyforge-herald]] (the Four Moments framework) · [[pyforge-herald|design-code-bridge]] (round-trip automation) · [[pyforge-herald|modernist-identity]] (brand consistency) · [[pyforge-herald|deckcraft]] (PPTX backend) · [[pyforge-herald|video-scripts]] (narration + companion videos) · [presentation-deck](../how-to/presentation-deck.md) (export formats and artifact tree).
 
 ## Success Criteria
 

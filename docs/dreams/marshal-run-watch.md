@@ -3,6 +3,7 @@ title: The operator stops re-pasting the status prompt — marshal watches its o
 type: dream
 owner: marshal
 status: archived
+                    # 2026-09-15 — spec-marshal-run-watch is `ready` (CAP-1..5; CAP-1+CAP-2 is
                     # the implementable round, CAP-3/4/5 named follow-ons). No open questions —
                     # the Dream left none.
 archived-reason: folded-into-station-dream
