@@ -111,8 +111,7 @@ def _guild_hosted_packages(root: Path) -> set[str]:
 def capture_help(console_script: str) -> str | None:
     """``<console_script> --help`` from whatever is on PATH in the CURRENT
     process, or ``None`` when it does not resolve here, exits non-zero
-    (e.g. a console script that crashes with an unmet import, like
-    ``marshal-mcp`` when ``fastmcp`` is absent), or its output cannot be
+    (e.g. a console script that crashes with an unmet import), or its output cannot be
     decoded as text -- ``None`` is exactly the "not resolvable on PATH"
     outcome ``render()`` already handles, so a broken script degrades to
     the same short note as a missing one rather than embedding a raw

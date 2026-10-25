@@ -1,0 +1,229 @@
+"""Story 103.1: marshal-mcp on official SDK + preflight stdio handshake."""
+
+from __future__ import annotations
+
+import ast
+import json
+import shutil
+import subprocess
+import sys
+import textwrap
+from pathlib import Path
+
+import pytest
+
+from pyforge.marshal.adapters.mcp_stdio_probe import StdioMcpProbe, probe_server_from_rendered
+from pyforge.marshal.cli.init import _probe_mcp_servers, run_preflight
+from pyforge.marshal.core import policy
+from pyforge.marshal.core.mcp_probe import evaluate_mcp_probe
+from pyforge.marshal.mcp.server import build_server, main
+from pyforge.marshal.ports.mcp_probe import McpProbeResult
+
+PACKAGE_SRC = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal"
+
+EIGHT_TOOLS = {
+    "list_marshal_tools",
+    "marshal_status",
+    "marshal_check",
+    "marshal_homes",
+    "marshal_preflight",
+    "marshal_upstream",
+    "marshal_refresh",
+    "marshal_watch",
+}
+
+
+def test_build_server_registers_eight_tools():
+    """AC2: SDK tool list matches the eight named tools."""
+    import asyncio
+
+    server = build_server()
+    tools = asyncio.run(server.list_tools())
+    names = {t.name for t in tools}
+    assert names == EIGHT_TOOLS
+
+
+def test_no_fastmcp_imports_in_marshal_package():
+    """AC3: no module under pyforge.marshal imports fastmcp."""
+    for path in PACKAGE_SRC.rglob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    assert not alias.name.startswith("fastmcp")
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                assert not node.module.startswith("fastmcp")
+
+
+def test_server_module_import_blocks_mcp_for_build_server(monkeypatch):
+    """AC3: build_server raises ImportError naming mcp when SDK blocked."""
+    import builtins
+    import importlib
+
+    real_import = builtins.__import__
+
+    def blocked(name, *args, **kwargs):
+        if name == "mcp" or (name and name.startswith("mcp.")):
+            raise ImportError("mcp blocked for test")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", blocked)
+    for key in list(sys.modules):
+        if key == "pyforge.marshal.mcp.server":
+            del sys.modules[key]
+    mod = importlib.import_module("pyforge.marshal.mcp.server")
+    with pytest.raises(ImportError, match="mcp"):
+        mod.build_server()
+
+
+def test_marshal_mcp_help_and_version_exit_zero():
+    """AC4: --help and --version exit 0 without building the server."""
+    assert main(["--help"]) == 0
+    assert main(["--version"]) == 0
+
+
+def test_marshal_mcp_unknown_argument_exits_two():
+    assert main(["--totally-unknown"]) == 2
+
+
+def test_evaluate_probe_started_is_startable():
+    ok, findings = evaluate_mcp_probe(
+        McpProbeResult(outcome="started", server_name="marshal", tool_count=8),
+        mcp_json_path="/tmp/.mcp.json",
+    )
+    assert ok is True
+    assert not findings
+
+
+@pytest.mark.parametrize(
+    "outcome",
+    ["exited", "timed-out", "bad-reply", "error-reply", "spawn-failed"],
+)
+def test_evaluate_probe_failure_emits_preflight_012(outcome):
+    ok, findings = evaluate_mcp_probe(
+        McpProbeResult(outcome=outcome, server_name="marshal", stderr_tail="ModuleNotFoundError: x"),
+        mcp_json_path="/tmp/.mcp.json",
+    )
+    assert ok is False
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-PREFLIGHT-012"
+    assert "marshal" in findings[0].message
+
+
+def _script_fixture(content: str, tmp_path: Path) -> str:
+    path = tmp_path / "fake_mcp_server.py"
+    path.write_text(content, encoding="utf-8")
+    path.chmod(0o755)
+    return str(path)
+
+
+def test_stdio_probe_answers_initialize_and_tools_list(tmp_path):
+    """AC6/AC1 helper: scripted server returns started with tool count."""
+    script = _script_fixture(
+        textwrap.dedent(
+            """
+            import json, sys
+            for line in sys.stdin:
+                msg = json.loads(line)
+                mid = msg.get("id")
+                method = msg.get("method")
+                if method == "initialize":
+                    print(json.dumps({"jsonrpc":"2.0","id":mid,"result":{"serverInfo":{"name":"t"},"capabilities":{}}}))
+                    sys.stdout.flush()
+                elif method == "tools/list":
+                    print(json.dumps({"jsonrpc":"2.0","id":mid,"result":{"tools":[{"name":"a"}]}}))
+                    sys.stdout.flush()
+                    break
+            """
+        ),
+        tmp_path,
+    )
+    probe = StdioMcpProbe()
+    result = probe.probe_server(
+        server_name="t",
+        command=sys.executable,
+        args=(script,),
+        env={},
+        cwd=str(tmp_path),
+        timeout_s=5,
+    )
+    assert result.outcome == "started"
+    assert result.tool_count == 1
+
+
+def test_stdio_probe_exited_on_early_failure(tmp_path):
+    script = _script_fixture(
+        'import sys; print("fail", file=sys.stderr); sys.exit(1)\n',
+        tmp_path,
+    )
+    result = StdioMcpProbe().probe_server(
+        server_name="t",
+        command=sys.executable,
+        args=(script,),
+        env={},
+        cwd=str(tmp_path),
+        timeout_s=5,
+    )
+    assert result.outcome == "exited"
+    assert result.exit_code == 1
+
+
+def test_mutation_timed_out_not_startable():
+    """AC8: mapping timed-out to startable must fail this test."""
+    ok, _ = evaluate_mcp_probe(
+        McpProbeResult(outcome="timed-out", server_name="x"),
+        mcp_json_path="/x",
+    )
+    assert ok is False
+
+
+def test_mutation_skipping_handshake_in_probe_would_miss_finding(tmp_path, monkeypatch):
+    """AC8: resolvable server with failing probe must emit MRS-PREFLIGHT-012."""
+
+    class _FailProbe:
+        def probe_server(self, **kwargs):
+            return McpProbeResult(outcome="exited", server_name="atlas", exit_code=1, stderr_tail="err")
+
+    from . import test_init as init_mod
+
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = init_mod.FakeFs(project_dirs={home})
+    fs.texts[home / ".mcp.json"] = json.dumps({"mcpServers": {"atlas": {"command": "atlas-mcp"}}})
+    harness = init_mod._converged_harness()
+    harness.binaries_present.add("atlas-mcp")
+    init_mod._seed_acknowledged(fs, tmp_path, ["claude"])
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text('[mcp_servers.atlas]\ncommand = "atlas-mcp"\n', encoding="utf-8")
+    monkeypatch.setattr(
+        "pyforge.marshal.cli.init.conventional_project_policy_path",
+        lambda s: policy_path,
+    )
+
+    vcs = init_mod.FakeVcs(repo_root=tmp_path)
+    exit_code = run_preflight(
+        init_mod._preflight_namespace(slug),
+        vcs=vcs,
+        fs=fs,
+        harness=harness,
+        mcp_probe=_FailProbe(),
+    )
+    assert exit_code != 0
+
+
+@pytest.mark.skipif(shutil.which("marshal-mcp") is None, reason="marshal-mcp not on PATH")
+def test_real_marshal_mcp_handshake_via_adapter():
+    """AC1: real console script answers initialize and tools/list."""
+    resolved = shutil.which("marshal-mcp")
+    assert resolved is not None
+    probe = StdioMcpProbe()
+    result = probe.probe_server(
+        server_name="marshal",
+        command=resolved,
+        args=(),
+        env={},
+        cwd=str(Path.cwd()),
+        timeout_s=20,
+    )
+    assert result.outcome == "started"
+    assert result.tool_count == 8

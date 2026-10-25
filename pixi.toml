@@ -698,6 +698,7 @@ cmd = "bash scripts/guild_image_ci.sh"
 # a documentation-level statement, not a platform-list removal.
 [feature.pyforge-marshal.dependencies]
 pyforge-marshal = { path = "src/shared/packages/pyforge-marshal" }  # -> built conda pkg
+mcp = ">=2.2.0"  # Story 103.1: marshal-mcp MCPServer; pixi does not rehash path-dep manifests
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: fs_local.py/harness_bmadloop.py/cli/config.py's mandatory run-dep (atomic_write*)
 pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # Story 19.2 / FR-130: seed source re-exports the shared kit (test-time only; not a package run-dep)
 bmad-loop = ">=0.12.0"  # marshal's declared runtime dep (pyproject: bmad-loop>=0.11.0,<0.13). From conda-forge: bmad-loop-feedstock ships a __unix (tmux) and a __win (uv) noarch variant since 0.12.0 build 1 (feedstock PR #4, 2026-09-26), so no SelfExplainML channel pin is needed. Keep in step with the local-recipes floor below.

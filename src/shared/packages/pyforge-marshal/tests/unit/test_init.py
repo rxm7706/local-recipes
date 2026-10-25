@@ -2780,6 +2780,33 @@ def test_preflight_policy_path_is_file_oserror_degrades_to_typed_finding(repo_ro
 # --- mcp server resolvability probe (Story 6.9, AD-43): MRS-PREFLIGHT-012 ----
 
 
+class _FakeMcpProbe:
+    """Injected stdio probe so Story 6.9 tests never spawn a real MCP binary."""
+
+    def __init__(self, result):
+        self._result = result
+
+    def probe_server(self, **kwargs):
+        from pyforge.marshal.ports.mcp_probe import McpProbeResult
+
+        if callable(self._result):
+            return self._result(**kwargs)
+        return self._result
+
+
+def _fake_mcp_started(**kwargs):
+    from pyforge.marshal.ports.mcp_probe import McpProbeResult
+
+    return McpProbeResult(
+        outcome="started",
+        server_name=kwargs.get("server_name", "atlas"),
+        tool_count=8,
+    )
+
+
+_FAKE_MCP_PROBE_STARTED = _FakeMcpProbe(_fake_mcp_started)
+
+
 def test_preflight_no_mcp_servers_declared_skips_probe(repo_root, tmp_path, capsys):
     slug = "acme"
     home = tmp_path / "loop-homes" / slug
@@ -2908,7 +2935,13 @@ def test_preflight_mcp_server_resolvable_reports_no_finding(repo_root, tmp_path,
     policy_path.write_text('[mcp_servers.atlas]\ncommand = "atlas-mcp"\n', encoding="utf-8")
     monkeypatch.setattr(init_module, "conventional_project_policy_path", lambda slug: policy_path)
 
-    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    exit_code = run_preflight(
+        _preflight_namespace(slug),
+        vcs=vcs,
+        fs=fs,
+        harness=harness,
+        mcp_probe=_FAKE_MCP_PROBE_STARTED,
+    )
     assert exit_code == EXIT_OK
     out = capsys.readouterr().out
     assert "MRS-PREFLIGHT-012" not in out
@@ -2933,7 +2966,13 @@ def test_preflight_mcp_probe_never_touches_user_scoped_registry(repo_root, tmp_p
     policy_path.write_text('[mcp_servers.atlas]\ncommand = "atlas-mcp"\n', encoding="utf-8")
     monkeypatch.setattr(init_module, "conventional_project_policy_path", lambda slug: policy_path)
 
-    run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    run_preflight(
+        _preflight_namespace(slug),
+        vcs=vcs,
+        fs=fs,
+        harness=harness,
+        mcp_probe=_FAKE_MCP_PROBE_STARTED,
+    )
     capsys.readouterr()
     every_touched_path = set(fs.texts.keys()) | set(fs.write_calls)
     assert not any(".claude.json" in str(p) for p in every_touched_path)

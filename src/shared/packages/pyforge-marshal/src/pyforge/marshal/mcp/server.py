@@ -1,20 +1,24 @@
-"""FastMCP registration wrapper for Marshal's tool surface (Story 18.1).
+"""Official ``mcp`` SDK registration wrapper for Marshal's tool surface (Story 18.1, 103.1).
 
-``fastmcp`` is imported LAZILY inside :func:`build_server` so this module
-— and ``pyforge.marshal.mcp.tools`` — import with FastMCP absent.
-Registration is the only FastMCP-touching step (atlas pattern).
+``mcp`` is imported LAZILY inside :func:`build_server` so this module
+— and ``pyforge.marshal.mcp.tools`` — import with the SDK absent.
+Registration is the only SDK-touching step (atlas pattern).
 """
 
 from __future__ import annotations
+
+import argparse
+import sys
+from importlib.metadata import version
 
 from pyforge.marshal.mcp import tools
 
 
 def build_server(name: str = "pyforge-marshal"):
-    """Build the FastMCP server exposing Marshal's named typed tools."""
-    from fastmcp import FastMCP  # lazy: registration-time only
+    """Build the official MCP server exposing Marshal's named typed tools."""
+    from mcp.server.mcpserver import MCPServer
 
-    mcp = FastMCP(name)
+    mcp = MCPServer(name)
 
     @mcp.tool()
     def list_marshal_tools() -> dict:
@@ -63,10 +67,34 @@ def build_server(name: str = "pyforge-marshal"):
     return mcp
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> int:
     """Console-script entry for ``marshal-mcp`` (stdio MCP server)."""
+    parser = argparse.ArgumentParser(
+        prog="marshal-mcp",
+        description=(
+            "MCP server for pyforge-marshal (stdio transport). "
+            "Registered in marshal policy as [mcp_servers.marshal]."
+        ),
+    )
+    parser.add_argument(
+        "--version",
+        action="store_true",
+        help="Print the installed pyforge-marshal version and exit",
+    )
+    if argv is None:
+        parsed, unknown = parser.parse_known_args()
+    else:
+        parsed, unknown = parser.parse_known_args(argv)
+    if unknown:
+        parser.print_usage(sys.stderr)
+        print(f"marshal-mcp: error: unrecognized arguments: {' '.join(unknown)}", file=sys.stderr)
+        return 2
+    if parsed.version:
+        print(version("pyforge-marshal"))
+        return 0
     build_server().run()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

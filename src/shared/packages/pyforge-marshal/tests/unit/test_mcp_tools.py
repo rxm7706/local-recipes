@@ -158,32 +158,6 @@ def test_marshal_watch_forwards_project_run_and_fleet():
     ]
 
 
-def test_tools_import_without_fastmcp(monkeypatch):
-    """FR-153 surface: tool bodies must not require fastmcp at import time."""
-    import builtins
-    import importlib
-    import sys
-
-    real_import = builtins.__import__
-
-    def blocked(name, *args, **kwargs):
-        if name == "fastmcp" or name.startswith("fastmcp."):
-            raise ImportError("fastmcp blocked for test")
-        return real_import(name, *args, **kwargs)
-
-    # Drop cached modules so re-import exercises the no-fastmcp path.
-    for key in list(sys.modules):
-        if key == "pyforge.marshal.mcp" or key.startswith("pyforge.marshal.mcp."):
-            if key.endswith("server"):
-                del sys.modules[key]
-            elif key in ("pyforge.marshal.mcp", "pyforge.marshal.mcp.tools"):
-                del sys.modules[key]
-
-    monkeypatch.setattr(builtins, "__import__", blocked)
-    mod = importlib.import_module("pyforge.marshal.mcp.tools")
-    assert mod.list_marshal_tools()["count"] >= 1
-
-
 def test_mcp_server_registration_spec_is_path_relative():
     spec = tools.mcp_server_registration_spec()
     command = spec["marshal"]["command"]

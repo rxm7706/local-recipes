@@ -240,7 +240,9 @@ from ..adapters.harness_bmadloop import (
     render_policy_toml,
     resolve_loop_runner,
 )
+from ..adapters.mcp_stdio_probe import probe_server_from_rendered
 from ..adapters.vcs_git import GitVcs, VcsCommandError
+from ..core.mcp_probe import evaluate_mcp_probe
 from ..core import identity, policy, status
 from ..core.identity import MalformedStoryKeyError
 from ..core.journal import (
@@ -255,6 +257,7 @@ from ..core.refs import local_branch_ref
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
+from ..ports.mcp_probe import McpProbePort
 from ..ports.vcs import VcsPort, WorktreeEntry
 from ..scope import UNRECOGNIZED, verify_scope
 from ..seed.detect.findings import Severity as SeedSeverity
@@ -508,6 +511,8 @@ def _probe_mcp_servers(
     effective: policy.EffectivePolicy,
     fs: FsPort,
     harness: HarnessPort,
+    *,
+    mcp_probe: McpProbePort | None = None,
 ) -> tuple[list[dict[str, object]], list[Finding]]:
     """Story 6.9 (AD-43): resolvability probe for the composed policy's
     ``mcp_servers``, modeled directly on ``run_preflight``'s own
@@ -585,7 +590,7 @@ def _probe_mcp_servers(
                 resolvable = False
             else:
                 resolvable = harness.binary_present(command)
-        entries.append({"name": name, "command": command, "resolvable": resolvable})
+        entry: dict[str, object] = {"name": name, "command": command, "resolvable": resolvable}
         if not resolvable:
             findings.append(
                 Finding(
@@ -597,6 +602,21 @@ def _probe_mcp_servers(
                     path=str(mcp_path),
                 )
             )
+            entries.append(entry)
+            continue
+        if isinstance(rendered, dict):
+            probe_result = probe_server_from_rendered(
+                server_name=name,
+                rendered=rendered,
+                home=home,
+                probe=mcp_probe,
+            )
+            startable, probe_findings = evaluate_mcp_probe(probe_result, mcp_json_path=str(mcp_path))
+            entry["startable"] = startable
+            if probe_result.tool_count is not None:
+                entry["tool_count"] = probe_result.tool_count
+            findings.extend(probe_findings)
+        entries.append(entry)
     return entries, findings
 
 
@@ -1384,6 +1404,7 @@ def run_preflight(
     harness: HarnessPort | None = None,
     kit_probe=None,
     kit_index_builder=None,
+    mcp_probe: McpProbePort | None = None,
 ) -> int:
     """Story 28.3 adds two more DI seams alongside ``vcs``/``fs``/``harness``:
     ``kit_probe`` (a ``seed.detect.kit.probe_instrument``-shaped callable
@@ -1716,7 +1737,9 @@ def run_preflight(
     data["verify_commands"] = verify_entries
 
     # --- MCP tool surface resolvability (Story 6.9, AD-43) -----------------------
-    mcp_entries, mcp_probe_findings = _probe_mcp_servers(slug, home, effective, fs, harness)
+    mcp_entries, mcp_probe_findings = _probe_mcp_servers(
+        slug, home, effective, fs, harness, mcp_probe=mcp_probe
+    )
     data["mcp_servers"] = mcp_entries
     findings.extend(mcp_probe_findings)
 
