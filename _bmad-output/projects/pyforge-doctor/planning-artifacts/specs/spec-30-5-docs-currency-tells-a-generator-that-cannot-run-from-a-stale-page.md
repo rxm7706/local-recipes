@@ -169,3 +169,8 @@ Type / Effort / Deps: fix / S / S-30.4.
   pyforge-doctor-scripts-test` exit 0 (823 passed, 65 skipped) after doctor's `test-architecture.md` was regenerated
   for 30.5 (the other stations' fingerprint-only drift reverted).
 - `pixi run -e pyforge-guild lint-types` exit 0; `story-status-check` and `chain-currency-sweep-check` exit 0.
+- Healed in passing: `spec-surface-check` read `pyforge-doctor/spec-pixi-candidate-currency` as drifted at the base
+  (`pixi.toml` moved with atlas Story 38.1's `ca442c6f75`, a bootstrap-task edit, and that Spec's memlog did not).
+  Its stamp matched `ca442c6f75`'s parent byte for byte and `pixi.lock` is unchanged, so its memlog carries a
+  reconcile event and the Spec is stamped scoped.
+- Scoped stamps: `spec-pyforge-doctor`, `spec-pyforge-core`, `spec-pyforge-marshal`, `spec-pixi-candidate-currency`.
