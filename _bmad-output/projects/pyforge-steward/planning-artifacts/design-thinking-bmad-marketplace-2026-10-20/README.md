@@ -29,6 +29,7 @@ Sample data. The paper skill card's lock command is not the runbook. Checksums, 
 | [prototypes/p3-skill-card.html](prototypes/p3-skill-card.html) | Story 109.3 Pages skill cards. Sections to render; commands on the mock are sample |
 | [prototypes/p3-skill-card.png](prototypes/p3-skill-card.png) | The same card, as reviewed in the session |
 | [prototypes/p4-wizard-of-oz-pilot.md](prototypes/p4-wizard-of-oz-pilot.md) | Story 109.5. Exit criteria before automating `bmp`, lint, or publish |
+| [analysis-against-main-2026-10-25.md](analysis-against-main-2026-10-25.md) | Re-check after merging `origin/main` `81f66ee411`. Round 0 and Round 1 runbooks. No renumber |
 
 ## What the committed tree took from this record
 

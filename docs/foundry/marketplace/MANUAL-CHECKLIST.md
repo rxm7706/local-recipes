@@ -3,6 +3,10 @@
 Automation of install and publish waits on this list (Story 109.5, CAP-173).
 The pages are a reading surface. They are not an install button.
 
+Re-checked 2026-10-25 against `origin/main` (`81f66ee411`). The steps are the same.
+The runbooks are `planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/analysis-against-main-2026-10-25.md`.
+Atlas's CVE boards and `marshal-mcp` are not listings. Do not invent a GHES mirror.
+
 ## Round 0 desk test (one person, one project)
 
 Do this in a repository that is not local-recipes.

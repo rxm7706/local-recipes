@@ -11,6 +11,7 @@ context:
   - docs/foundry/marketplace/MANUAL-CHECKLIST.md
   - docs/foundry/marketplace/.github/PULL_REQUEST_TEMPLATE.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/prototypes/p4-wizard-of-oz-pilot.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/analysis-against-main-2026-10-25.md
 declared_low_risk: false
 ---
 
@@ -20,7 +21,7 @@ declared_low_risk: false
 
 **Problem:** Two contribution lanes were decided (instructions-only and code-backed). Automating either lane before a person has run the desk test and the Wizard-of-Oz pilot would publish a path that has not been tried. `DW-FU-60-1`, `DW-FU-60-1-4`, and `DW-FRR-60-1` are still open and are not this story's closures.
 
-**Approach:** The manual checklist and the PR template are the pilot's tools (landed with Story 109.3). The pilot audience is Claude Code, Cursor, GitHub Copilot in VS Code, Google Gemini, Devin (Cognition AI), and a teammate with no AI tool yet. P4's two or three people are drawn from that list. Round 0 confirms Claude Code picks the skill up from `.claude/skills/` and Devin from `.agents/skills/`, which is what `tool-support-matrix.md` documents. The pilot's who, real-versus-faked table, tasks, and exit criteria are `prototypes/p4-wizard-of-oz-pilot.md`. This story records one Round 0 result and one Wizard-of-Oz result against that checklist, then either leaves both lanes manual or specs the smallest automation the notes justify. `@bmp/skillify` stays a faked template step until the publish gate. It does not close the three Epic 60 deferrals. `carried:` on those rows points here.
+**Approach:** Re-checked 2026-10-25 against `origin/main` `81f66ee411`. The sequence is Round 0, then the Round 1 pilot with two or three teammates, then an amendment of the 2026-10-21 brief only if those notes contradict it. The runbooks are `analysis-against-main-2026-10-25.md` beside `prototypes/p4-wizard-of-oz-pilot.md`. The manual checklist and the PR template are the pilot's tools (landed with Story 109.3). The pilot audience is Claude Code, Cursor, GitHub Copilot in VS Code, Google Gemini, Devin (Cognition AI), and a teammate with no AI tool yet. P4's two or three people are drawn from that list. Round 0 confirms Claude Code picks the skill up from `.claude/skills/` and Devin from `.agents/skills/`, which is what `tool-support-matrix.md` documents. The pilot's who, real-versus-faked table, tasks, and exit criteria are `prototypes/p4-wizard-of-oz-pilot.md`. This story records one Round 0 result and one Wizard-of-Oz result against that checklist, then either leaves both lanes manual or specs the smallest automation the notes justify. `@bmp/skillify` stays a faked template step until the publish gate. It does not close the three Epic 60 deferrals. `carried:` on those rows points here.
 
 ## Acceptance criteria
 
