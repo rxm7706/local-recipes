@@ -692,13 +692,34 @@ verify_commands = [
   "_bmad-output/projects/pyforge-atlas/planning-artifacts/marshal-policy.toml",
   "_bmad-output/projects/pyforge-doctor/planning-artifacts/marshal-policy.toml",
 ]
+"103" = [  # marshal's own MCP server starts, and preflight proves it (a fix under spec-pyforge-marshal CAP-1, CAP-21
+  # and CAP-22, no CAP; Story 103.1), added 2026-10-25. The default surface, restated because a declared entry replaces
+  # it outright; its package glob covers mcp/server.py, the new port, adapter and core module, cli/init.py, the package
+  # pyproject.toml and pixi.toml and their tests. Plus every Spec memlog (marshal's src/ is co-governed by
+  # spec-pyforge-core), doctor's generated station cheat sheet (regenerated because marshal-mcp --help now prints its
+  # usage) and the two texts that name today's failure: docs_station_cli.py's docstring example and the library
+  # catalog's pyforge-marshal env row, which gains mcp.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+  "docs/reference/station-cheat-sheet.md",
+  "scripts/docs_station_cli.py",
+  "docs/reference/library-llms-full.md",
+]
 "87" = [  # preserved work is a protected tag, and no cleanup destroys it (spec-pyforge-marshal CAP-287; Story 87.1's
   # sweeper fix), added 2026-10-04. The default surface, restated because a declared entry replaces it outright, plus:
   # pyforge-core's preserve_refs grammar and its tests (87.3, 87.15; spec-pyforge-core co-governs), the repo scripts
   # and their tests (the sweeper, the detectors and readers, the fleet poll, the one-off migration scripts), the flagd
   # tree (pyforge.marshal.preserve_refs), the build-skill customizations (87.11), the how-tos and the map, the purge list
   # and the retirement ledger under docs/governance/, the tracked preserve manifests, the one workflow whose tag-push
-  # trigger 87.15 filters, team memory (87.11's scribe capture correction), and every Spec memlog.
+  # trigger 87.15 filters, team memory (87.11's scribe capture correction), and every Spec memlog. Widened 2026-10-25
+  # (Story 87.19): pyforge-core's process seam, which gains a bytes stdin/stdout path for the batched gate read.
   "src/shared/packages/pyforge-marshal/**",
   "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
   "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
@@ -709,6 +730,7 @@ verify_commands = [
   "environment.yaml",
   "scripts/.spec-surface-baseline.json",
   "src/shared/packages/pyforge-core/src/pyforge/core/preserve_refs.py",
+  "src/shared/packages/pyforge-core/src/pyforge/core/process.py",
   "src/shared/packages/pyforge-core/src/pyforge/core/landing_evidence.py",
   "src/shared/packages/pyforge-core/tests/**",
   "scripts/**",

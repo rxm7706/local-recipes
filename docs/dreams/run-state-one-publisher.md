@@ -3,6 +3,7 @@ title: Run state is a service — the loop's truth leaves the laptop
 type: dream
 owner: marshal
 status: archived
+                    # 2026-09-12 — spec-run-state-one-publisher is `ready` (CAP-1..5; the four
                     # questions that gated it answered the same day by operator-accepted research).
                     # Seeded that morning from the one CAP-17 realization-gap row still OPEN after
                     # Epic 49 (steward 49.8 + marshal 33.4, blocked on each other by design); the

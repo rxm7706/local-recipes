@@ -30,6 +30,13 @@ from boring_semantic_layer import Dimension, Measure, SemanticModel
 from . import metrics
 
 
+def _null(table: Any, dtype: str) -> Any:
+    """Story 37.3: a typed null COLUMN on ``table`` (a scalar cannot be grouped or aggregated) -- a
+    value its store does not hold yet, shown as missing, never fabricated."""
+    base = table[table.columns[0]].cast("string")
+    return base.nullif(base).cast(dtype)
+
+
 def duckdb_table_from_parquet(path: str, *, connection: Any | None = None) -> Any:
     """Read a Parquet file as an Ibis DuckDB table (AD-4, offline, query-time seam).
 
@@ -54,11 +61,11 @@ def build_packages_model(table: Any, *, now_unix: int | None = None) -> Semantic
     clock for live use; the gate pins it).
 
     Expected input columns: ``conda_name``, ``latest_status``, ``feedstock_archived``,
-    ``latest_conda_upload``, ``downloads_total``, ``downloads_30d``,
-    ``latest_upload_age_days``, ``releases_30d``, ``total_versions``. Columns whose
-    legacy source is not yet in the migrated store (``latest_conda_upload`` and the
-    per-version fields) are ``deferred-input-not-in-migrated-store`` in
-    ``metrics.METRIC_PROVENANCE`` — the FORMULA lands in D1, the live column in D2.
+    ``latest_conda_upload``, ``downloads_total``, ``downloads_30d``, ``releases_30d``,
+    ``total_versions``. Story 38.1 fills the upload columns from Story 37.6's per-version
+    upload times; ``adoption_stage`` and ``staleness_age_days`` both read
+    ``latest_conda_upload`` against ``now_unix`` (the store's ``latest_upload_age_days``
+    is the compose-time age, which this model does not read).
     """
     now = int(time.time()) if now_unix is None else now_unix
     return SemanticModel(
@@ -68,7 +75,7 @@ def build_packages_model(table: Any, *, now_unix: int | None = None) -> Semantic
             "conda_name": Dimension(expr=lambda t: t.conda_name),
             "is_actionable": Dimension(expr=metrics.is_actionable),
             "staleness_age_days": Dimension(expr=lambda t: metrics.staleness_age_days(t, now)),
-            "adoption_stage": Dimension(expr=metrics.adoption_stage),
+            "adoption_stage": Dimension(expr=lambda t: metrics.adoption_stage(t, now)),
         },
         measures={
             "package_count": Measure(expr=lambda t: t.conda_name.count()),
@@ -235,7 +242,9 @@ def build_version_downloads_model(table: Any) -> SemanticModel:
         dimensions={
             "conda_name": Dimension(expr=lambda t: t.conda_name),
             "version": Dimension(expr=lambda t: t.version),
-            "upload_date": Dimension(expr=lambda t: t.upload_date),
+            # Story 37.3: core_version_download_history holds no upload date, so it reads null; Story 38.1's
+            # derived_version_downloads, which the board reads with board projections on, carries one
+            "upload_date": Dimension(expr=lambda t: t.upload_date if "upload_date" in t.columns else _null(t, "date")),
         },
         measures={
             "downloads": Measure(expr=lambda t: t.downloads.sum()),
@@ -271,13 +280,25 @@ def build_release_cadence_model(table: Any) -> SemanticModel:
 # ---------------------------------------------------------------------------
 
 
-def build_alternative_candidates_model(table: Any) -> SemanticModel:
+def _candidate_stage(t: Any, now_unix: int | None = None) -> Any:
+    """A candidate's stage by ``metrics.adoption_stage`` over its own inputs (Story 37.7); with ``now_unix`` and the
+    candidate's ``latest_conda_upload`` (Story 38.1), on the board's clock, as the packages boards read it. A store in
+    the earlier shape, which carries an ``adoption_stage`` column and no inputs, is read as it was."""
+    if "latest_upload_age_days" in t.columns:
+        return metrics.adoption_stage(t, now_unix if "latest_conda_upload" in t.columns else None)
+    return t.adoption_stage
+
+
+def build_alternative_candidates_model(table: Any, *, now_unix: int | None = None) -> SemanticModel:
     """`find-alternative` — ranked replacement candidates for an archived package.
 
     ``similarity_score`` is a pre-computed composite (keyword/summary/dependent/
     maintainer-overlap Jaccard x recency x downloads — ``find_alternative.py``'s own
     in-memory scorer) — a Phase-E/J pipeline output column, not a BSL-derived formula
     (mirrors ``downloads_total`` being a pre-aggregated measure, not re-summed logic).
+    ``adoption_stage`` is the candidate's lifecycle stage by ``metrics.adoption_stage``, the
+    classifier ``build_packages_model`` declares, over the candidate's own inputs (Story 37.7), against
+    ``now_unix`` when given (Story 38.1), else the age stored at scoring time.
     """
     return SemanticModel(
         table=table,
@@ -285,7 +306,7 @@ def build_alternative_candidates_model(table: Any) -> SemanticModel:
         dimensions={
             "archived_name": Dimension(expr=lambda t: t.archived_name),
             "candidate_name": Dimension(expr=lambda t: t.candidate_name),
-            "adoption_stage": Dimension(expr=lambda t: t.adoption_stage),
+            "adoption_stage": Dimension(expr=lambda t: _candidate_stage(t, now_unix)),
         },
         measures={
             "similarity_score": Measure(expr=lambda t: t.similarity_score.mean()),
@@ -391,6 +412,8 @@ def build_mapping_gap_model(table: Any) -> SemanticModel:
             "classification": Dimension(expr=lambda t: t.classification),
             "match_source": Dimension(expr=lambda t: t.match_source),
             "match_confidence": Dimension(expr=lambda t: t.match_confidence),
+            # Story 37.9: the PyPI name a recovery points to; a store without it shows it as missing
+            "candidate": Dimension(expr=lambda t: t.candidate if "candidate" in t.columns else _null(t, "string")),
         },
         measures={
             "gap_count": Measure(expr=lambda t: t.conda_name.count()),
@@ -398,8 +421,53 @@ def build_mapping_gap_model(table: Any) -> SemanticModel:
     )
 
 
+def build_behind_upstream_model(table: Any) -> SemanticModel:
+    """`behind-upstream` — each package whose upstream release is newer than its latest conda version.
+
+    Story 37.4 (CAP-69): reads ``derived_behind_upstream``, which ``project_behind_upstream`` writes
+    with legacy's lag labels (``major`` / ``minor`` / ``patch`` / ``unknown``).
+    """
+    return SemanticModel(
+        table=table,
+        name="behind_upstream",
+        dimensions={
+            "conda_name": Dimension(expr=lambda t: t.conda_name),
+            "latest_conda_version": Dimension(expr=lambda t: t.latest_conda_version),
+            "upstream_source": Dimension(expr=lambda t: t.upstream_source),
+            "upstream_version": Dimension(expr=lambda t: t.upstream_version),
+            "lag_label": Dimension(expr=lambda t: t.lag_label),
+        },
+        measures={
+            "package_count": Measure(expr=lambda t: t.conda_name.count()),
+        },
+    )
+
+
+def build_whodepends_model(table: Any) -> SemanticModel:
+    """`whodepends` — per depended-on package and dependency type, how many packages depend on it.
+
+    Story 37.4 (CAP-69): reads ``core_dependencies`` (``conda_name`` depends on ``depends_on``), legacy
+    ``whodepends --reverse`` for every package at once.
+    """
+    return SemanticModel(
+        table=table,
+        name="whodepends",
+        dimensions={
+            "depends_on": Dimension(expr=lambda t: t.depends_on),
+            "dep_type": Dimension(expr=lambda t: t.dep_type),
+        },
+        measures={
+            "dependent_count": Measure(expr=lambda t: t.conda_name.nunique()),
+        },
+    )
+
+
 def build_universe_sbom_summary_model(table: Any) -> SemanticModel:
-    """`universe-sbom` — universe-scale BOM SUMMARY (never a full ~856k-row browse)."""
+    """`universe-sbom` — the universe BOM, one row per component (never the full ~856k-row CycloneDX document).
+
+    Story 37.4: with ``pyforge.atlas.board_projections`` on it reads ``derived_universe_sbom_summary``
+    (``project_universe_sbom_summary``), one row per conda component of the BOM.
+    """
     return SemanticModel(
         table=table,
         name="universe_sbom_summary",
@@ -492,13 +560,14 @@ def build_lts_registry_gap_model(table: Any) -> SemanticModel:
     return SemanticModel(
         table=table,
         name="lts_registry_gap",
+        # Story 37.3: seed_gaps_lts_registry_report (slug, confidence, conda_name) under the board's names
         dimensions={
-            "product_name": Dimension(expr=lambda t: t.product_name),
-            "tier": Dimension(expr=lambda t: t.tier),
-            "matched_conda_name": Dimension(expr=lambda t: t.matched_conda_name),
+            "product_name": Dimension(expr=lambda t: t.slug),
+            "tier": Dimension(expr=lambda t: t.confidence),
+            "matched_conda_name": Dimension(expr=lambda t: t.conda_name),
         },
         measures={
-            "candidate_count": Measure(expr=lambda t: t.product_name.count()),
+            "candidate_count": Measure(expr=lambda t: t.slug.count()),
         },
     )
 
@@ -508,13 +577,15 @@ def build_cwe_seed_gap_model(table: Any) -> SemanticModel:
     return SemanticModel(
         table=table,
         name="cwe_seed_gap",
+        # Story 37.3: seed_gaps_cwe_report (cwe_id, category, confidence); the impact count is
+        # deferred (DW-B6-2), so it reads null rather than a fabricated 0
         dimensions={
             "cwe_id": Dimension(expr=lambda t: t.cwe_id),
-            "tier": Dimension(expr=lambda t: t.tier),
-            "suggested_category": Dimension(expr=lambda t: t.suggested_category),
+            "tier": Dimension(expr=lambda t: t.confidence),
+            "suggested_category": Dimension(expr=lambda t: t.category),
         },
         measures={
-            "package_impact_count": Measure(expr=lambda t: t.package_impact_count.sum()),
+            "package_impact_count": Measure(expr=lambda t: _null(t, "int64").max()),
         },
     )
 
@@ -524,12 +595,13 @@ def build_spdx_schema_gap_model(table: Any) -> SemanticModel:
     return SemanticModel(
         table=table,
         name="spdx_schema_gap",
+        # Story 37.3: seed_gaps_spdx_report (license, spdx_id, packages, tier)
         dimensions={
-            "license_id": Dimension(expr=lambda t: t.license_id),
+            "license_id": Dimension(expr=lambda t: t.spdx_id.fill_null(t.license)),
             "tier": Dimension(expr=lambda t: t.tier),
         },
         measures={
-            "package_usage_count": Measure(expr=lambda t: t.package_usage_count.sum()),
+            "package_usage_count": Measure(expr=lambda t: t.packages.sum()),
         },
     )
 
@@ -599,13 +671,14 @@ def build_license_map_gap_model(table: Any) -> SemanticModel:
     return SemanticModel(
         table=table,
         name="license_map_gap",
+        # Story 37.3: seed_gaps_license_map_report (license_raw, packages, confidence, suggested_spdx)
         dimensions={
             "license_raw": Dimension(expr=lambda t: t.license_raw),
-            "tier": Dimension(expr=lambda t: t.tier),
+            "tier": Dimension(expr=lambda t: t.confidence),
             "suggested_spdx": Dimension(expr=lambda t: t.suggested_spdx),
         },
         measures={
-            "package_count": Measure(expr=lambda t: t.package_count.sum()),
+            "package_count": Measure(expr=lambda t: t.packages.sum()),
         },
     )
 
@@ -704,7 +777,8 @@ def build_identity_complete_export_model(table: Any, *, gist_columns: tuple[str,
 
 
 def build_bootstrap_index_health_model(table: Any) -> SemanticModel:
-    """`bootstrap-index-health` — Tier 0/1 catalog index row counts (Story 21.9)."""
+    """`bootstrap-index-health` — each catalog entry's last write, row count, tier and status (Story 21.9; Story
+    37.10 writes ``catalog_index_health``)."""
     return SemanticModel(
         table=table,
         name="bootstrap_index_health",
@@ -712,6 +786,8 @@ def build_bootstrap_index_health_model(table: Any) -> SemanticModel:
             "catalog_entry": Dimension(expr=lambda t: t.catalog_entry),
             "tier": Dimension(expr=lambda t: t.tier),
             "regenerated_at": Dimension(expr=lambda t: t.regenerated_at),
+            # Story 37.10: missing / stale / empty / below_floor / ok; a store without the column reads null
+            "status": Dimension(expr=lambda t: t.status if "status" in t.columns else _null(t, "string")),
         },
         measures={
             "row_count": Measure(expr=lambda t: t.row_count.sum()),

@@ -391,7 +391,7 @@ def test_the_docs_site_lanes_trade_turns_and_every_other_lane_keeps_its_position
 def test_after_a_red_stop_no_lane_starts_even_one_pending_lanes_depend_on(tmp_path: Path) -> None:
     """Review nit: herald (holding the docs-site key) goes red while docs-site-install, which pages-build waits on,
     is deferred. The stop ends the run, so nothing that would only feed cancelled dependents starts: the install
-    never runs and is journaled as a lane that never started (Story 71.10)."""
+    never runs and is journaled as a lane that never started (Story 71.10), naming the red lane (Story 71.12)."""
     _write(
         tmp_path / "pixi.toml",
         _pixi(
@@ -420,5 +420,8 @@ def test_after_a_red_stop_no_lane_starts_even_one_pending_lanes_depend_on(tmp_pa
     )
     install = by_task["docs-site-install"]
     assert (install["status"], install["exit_code"], install["seconds"]) == ("cancelled", 0, 0.0)
-    assert "cancelled_by" not in install
+    assert (install["cancelled_by"], install["cancelled_by_environment"]) == (
+        "pyforge-herald-test",
+        by_task["pyforge-herald-test"]["environment"],
+    )
     assert by_task["pages-build"]["status"] == "cancelled"

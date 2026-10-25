@@ -28,7 +28,8 @@ Tier-0 verification Parquet.
 ``inventory_verified_packages``, and cross-channel BOOL sources into the canonical
 63-column ``identity_complete_export.parquet``.
 
-PURE nodes: pandas + stdlib only; no inline IO; ``dagster``/``kedro_mcp`` never imported
+PURE nodes: pandas + stdlib only (Story 37.4's lag classifier also imports ``packaging`` inside the
+function, as the ``universal_sbom`` nodes do); no inline IO; ``dagster``/``kedro_mcp`` never imported
 (AD-1). Reuses the ported purl primitives from the ``universal_sbom`` nodes.
 """
 
@@ -1384,3 +1385,242 @@ def build_identity_complete_export(
         rows.append(row)
 
     return pd.DataFrame(rows, columns=list(_IDENTITY_COMPLETE_EXPORT_COLUMNS))
+
+
+#: Story 37.3: the distribution-breakdown board's columns (``dashboard/data.py``'s model reads them)
+DISTRIBUTION_BREAKDOWN_COLUMNS = (
+    "conda_name",
+    "facet",
+    "bucket",
+    "downloads_90d",
+    "declared_python_min",
+    "empirical_floor",
+)
+#: Typed even when empty: an untyped empty column is written as Arrow ``null``, which DuckDB reads
+#: as INTEGER, and the bump classifier's string functions then fail on the board.
+_DISTRIBUTION_BREAKDOWN_DTYPES = {
+    "conda_name": "string",
+    "facet": "string",
+    "bucket": "string",
+    "downloads_90d": "Int64",
+    "declared_python_min": "string",
+    "empirical_floor": "string",
+}
+
+
+def compose_distribution_breakdown(
+    core_downloads_platform_breakdown: pd.DataFrame,
+    core_downloads_pyver_breakdown: pd.DataFrame,
+    core_downloads_channel_breakdown: pd.DataFrame,
+) -> pd.DataFrame:
+    """Story 37.3 (spec-pyforge-atlas CAP-69): the three download cuts ``compute_downloads`` writes
+    (platform, python version, channel) as one table behind a ``facet`` column, the shape the
+    distribution-breakdown board reads (legacy's platform-breakdown, pyver-breakdown and
+    channel-split tools). ``downloads_90d`` carries each cut's ``downloads``: the months Anaconda's
+    parquet holds, not a 90-day window (the board's name predates the store). The declared and
+    empirical Python floors are not migrated, so they are null (the bump classifier then reads
+    "unknown", never a fabricated answer). Pure; an absent or malformed cut contributes no rows, and
+    the table keeps its column types when no cut has any."""
+    parts = []
+    for frame, facet, column in (
+        (core_downloads_platform_breakdown, "platform", "platform"),
+        (core_downloads_pyver_breakdown, "python-version", "pyver"),
+        (core_downloads_channel_breakdown, "channel", "channel"),
+    ):
+        if (
+            frame is None
+            or getattr(frame, "empty", True)
+            or not {"conda_name", column, "downloads"} <= set(frame.columns)
+        ):
+            continue
+        parts.append(
+            pd.DataFrame(
+                {
+                    "conda_name": frame["conda_name"].astype("string"),
+                    "facet": facet,
+                    "bucket": frame[column].astype("string"),
+                    "downloads_90d": pd.array(frame["downloads"], dtype="Int64"),
+                }
+            )
+        )
+    if not parts:
+        return pd.DataFrame({name: pd.Series(dtype=dtype) for name, dtype in _DISTRIBUTION_BREAKDOWN_DTYPES.items()})
+    out = pd.concat(parts, ignore_index=True)
+    out["declared_python_min"] = pd.NA
+    out["empirical_floor"] = pd.NA
+    return out[list(DISTRIBUTION_BREAKDOWN_COLUMNS)].astype(_DISTRIBUTION_BREAKDOWN_DTYPES)
+
+
+# ---------------------------------------------------------------------------
+# Story 37.4 (spec-pyforge-atlas CAP-69): the projections three boards read. Each writes a typed
+# table even when its input is empty or malformed, so DuckDB never reads an untyped Arrow ``null``.
+# ---------------------------------------------------------------------------
+
+#: The behind-upstream board's columns (``semantic/models.py::build_behind_upstream_model``)
+BEHIND_UPSTREAM_COLUMNS = ("conda_name", "latest_conda_version", "upstream_source", "upstream_version", "lag_label")
+_BEHIND_UPSTREAM_DTYPES = {name: "string" for name in BEHIND_UPSTREAM_COLUMNS}
+#: Legacy behind_upstream.py's host order for a package with no source registry (atlas records none)
+_UPSTREAM_HOST_ORDER = ("github", "gitlab", "codeberg")
+
+
+def classify_lag(conda_version: str | None, upstream_version: str | None) -> str:
+    """Legacy ``behind_upstream._classify_lag``'s label, without its sort priority.
+
+    ``current`` when the upstream is not newer; ``major`` / ``minor`` / ``patch`` by the first release
+    segment that differs; ``unknown`` when a version is missing or is not PEP 440.
+    """
+    from packaging.version import InvalidVersion, Version  # function-local, as universal_sbom's nodes do
+
+    if not conda_version or not upstream_version:
+        return "unknown"
+    if conda_version == upstream_version:
+        return "current"
+    try:
+        conda, upstream = Version(conda_version), Version(upstream_version)
+    except InvalidVersion:
+        return "unknown"
+    if upstream <= conda:
+        return "current"
+    if not conda.release or not upstream.release:
+        return "unknown"
+    if upstream.release[0] != conda.release[0]:
+        return "major"
+    if len(conda.release) >= 2 and len(upstream.release) >= 2 and upstream.release[1] != conda.release[1]:
+        return "minor"
+    return "patch"
+
+
+def _text(value: Any) -> str | None:
+    """A cell as stripped text, or None when it is missing or blank."""
+    if value is None or (not isinstance(value, str) and pd.isna(value)):
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def project_behind_upstream(
+    vcs_upstream_versions: pd.DataFrame,
+    core_packages_enumerated: pd.DataFrame,
+) -> pd.DataFrame:
+    """Story 37.4: each enumerated package whose upstream release is newer than its latest conda version.
+
+    One upstream per package, the first host in legacy's order that holds a version with no error; a
+    package with no latest conda version is left out, as legacy's query leaves it out. Classified by
+    :func:`classify_lag`; a package that is ``current`` is left out too.
+    Pure; an absent or malformed input gives the typed empty table.
+    """
+    empty = pd.DataFrame({name: pd.Series(dtype=dtype) for name, dtype in _BEHIND_UPSTREAM_DTYPES.items()})
+    needed_upstream = {"conda_name", "host", "upstream_version"}
+    needed_enumerated = {"conda_name", "latest_version"}
+    if (
+        vcs_upstream_versions is None
+        or core_packages_enumerated is None
+        or getattr(vcs_upstream_versions, "empty", True)
+        or getattr(core_packages_enumerated, "empty", True)
+        or not needed_upstream <= set(vcs_upstream_versions.columns)
+        or not needed_enumerated <= set(core_packages_enumerated.columns)
+    ):
+        return empty
+
+    latest: dict[str, str | None] = {}
+    for name, version in zip(core_packages_enumerated["conda_name"], core_packages_enumerated["latest_version"]):
+        key = _text(name)
+        if key is not None and key not in latest:
+            latest[key] = _text(version)
+
+    errors = vcs_upstream_versions["last_error"] if "last_error" in vcs_upstream_versions.columns else None
+    candidates: dict[str, dict[str, str]] = {}
+    for index, (name, host, version) in enumerate(
+        zip(
+            vcs_upstream_versions["conda_name"],
+            vcs_upstream_versions["host"],
+            vcs_upstream_versions["upstream_version"],
+        )
+    ):
+        key, host_text, version_text = _text(name), _text(host), _text(version)
+        if key is None or latest.get(key) is None or host_text not in _UPSTREAM_HOST_ORDER or version_text is None:
+            continue  # legacy compares only a package with a latest conda version
+        if errors is not None and _text(errors.iloc[index]) is not None:
+            continue
+        candidates.setdefault(key, {}).setdefault(host_text, version_text)
+
+    rows = []
+    for key in sorted(candidates):
+        host = next(h for h in _UPSTREAM_HOST_ORDER if h in candidates[key])
+        upstream = candidates[key][host]
+        label = classify_lag(latest[key], upstream)
+        if label == "current":
+            continue
+        rows.append((key, latest[key], host, upstream, label))
+    if not rows:
+        return empty
+    return pd.DataFrame(rows, columns=list(BEHIND_UPSTREAM_COLUMNS)).astype(_BEHIND_UPSTREAM_DTYPES)
+
+
+#: The inventory flags the live-catalog-coverage board counts (``identity_complete_export``'s columns)
+LIVE_CATALOG_COVERAGE_FIELDS = (
+    "PyPI_Verified",
+    "CondaForge_Verified",
+    *(name for name in IDENTITY_COMPLETE_EXPORT_COLUMNS if name.startswith("in_")),
+)
+_LIVE_CATALOG_COVERAGE_DTYPES = {"field_name": "string", "true_count": "Int64", "total_count": "Int64"}
+
+
+def _flag_is_true(value: Any) -> bool:
+    """``True`` / ``"Yes"`` (the export's two shapes) count; anything else, a null included, does not."""
+    if isinstance(value, bool):
+        return value
+    text = _text(value)
+    return text is not None and text.lower() in {"yes", "true"}
+
+
+def project_live_catalog_coverage(identity_complete_export: pd.DataFrame) -> pd.DataFrame:
+    """Story 37.4: per inventory flag of the identity export, how many rows hold it and out of how many.
+
+    ``total_count`` is the export's row count; ``true_count`` the rows whose flag is ``True`` or "Yes".
+    A flag the export lacks gives no row. Pure; an absent or malformed export gives the typed empty table.
+    """
+    empty = pd.DataFrame({name: pd.Series(dtype=dtype) for name, dtype in _LIVE_CATALOG_COVERAGE_DTYPES.items()})
+    if identity_complete_export is None or not isinstance(identity_complete_export, pd.DataFrame):
+        return empty
+    total = len(identity_complete_export)
+    rows = [
+        (field, int(identity_complete_export[field].map(_flag_is_true).sum()), total)
+        for field in LIVE_CATALOG_COVERAGE_FIELDS
+        if field in identity_complete_export.columns
+    ]
+    if not rows or total == 0:
+        return empty
+    return pd.DataFrame(rows, columns=list(_LIVE_CATALOG_COVERAGE_DTYPES)).astype(_LIVE_CATALOG_COVERAGE_DTYPES)
+
+
+_UNIVERSE_SBOM_SUMMARY_DTYPES = {"component_purl": "string", "slice": "string", "with_vulns_count": "Int64"}
+
+
+def project_universe_sbom_summary(derived_universe_sbom: dict[str, Any] | None) -> pd.DataFrame:
+    """Story 37.4: one row per component of the universe BOM, for the universe-sbom board.
+
+    ``slice`` is ``mapped`` when the component names its PyPI project (``cfe:pypi_name``), else
+    ``unmapped`` (legacy's ``--conda-only`` is a different thing: the BOM without its PyPI side).
+    ``with_vulns_count`` is null: the BOM carries no vulnerability data. A component with no purl gives no
+    row. Pure; an absent or malformed BOM gives the typed empty table.
+    """
+    empty = pd.DataFrame({name: pd.Series(dtype=dtype) for name, dtype in _UNIVERSE_SBOM_SUMMARY_DTYPES.items()})
+    components = derived_universe_sbom.get("components") if isinstance(derived_universe_sbom, dict) else None
+    if not isinstance(components, list):
+        return empty
+    rows = []
+    for component in components:
+        if not isinstance(component, dict):
+            continue
+        purl = _text(component.get("purl"))
+        if purl is None:
+            continue
+        properties = component.get("properties")
+        mapped = isinstance(properties, list) and any(
+            isinstance(p, dict) and p.get("name") == "cfe:pypi_name" and _text(p.get("value")) for p in properties
+        )
+        rows.append((purl, "mapped" if mapped else "unmapped", pd.NA))
+    if not rows:
+        return empty
+    return pd.DataFrame(rows, columns=list(_UNIVERSE_SBOM_SUMMARY_DTYPES)).astype(_UNIVERSE_SBOM_SUMMARY_DTYPES)

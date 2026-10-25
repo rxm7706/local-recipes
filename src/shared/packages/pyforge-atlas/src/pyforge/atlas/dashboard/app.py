@@ -21,7 +21,11 @@ Page set (the full 34-page inventory, Story 20.5 / CAP-7 closing DW-D2-1):
     ``semantic_packages`` pipeline (Story 20.3); a checkout that has not run it yet gets
     the honest-empty result ``_bsl_query_or_empty`` returns, never a fabricated row.
   * NO-BSL-MODEL SHELL pages — behind-upstream, whodepends (no D1 BSL model exists yet; a
-    Card states the gap — no data function, no fabrication).
+    Card states the gap — no data function, no fabrication). With ``pyforge.atlas.board_projections``
+    on (Story 37.4), ``page_inventory`` swaps in ``PROJECTED_PAGES``: these two read their models,
+    and universe-sbom and live-catalog-coverage read the projections ``derived_artifacts`` writes; the
+    cve-watcher reads the vulnerability pipeline's diff of two snapshots (Story 37.5), and the mapping-gap
+    the classification pypi_intelligence writes (Story 37.9).
   * BSL-WIRED pages over their own per-page model (Story 20.5) — the remaining atlas-CLI /
     cyclonedx-suite / seed-gap-suggester pages, each routed through a model in
     ``semantic/models.py``. Each page's ``note`` names the pipeline that has still to
@@ -49,7 +53,8 @@ from __future__ import annotations
 
 import time
 import warnings
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable
 
@@ -132,9 +137,9 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "staleness-report",
         "bsl-shell",
         note="Wired to build_packages_model.staleness_age_days over the composed "
-        "semantic_packages store (`pyforge atlas run --pipelines semantic_packages`). "
-        "latest_conda_upload is declared NULL by that pipeline's node — it has no "
-        "migrated input — so the staleness age is null wherever that is the only source.",
+        "semantic_packages store (`pixi run -e pyforge-atlas pyforge-atlas-bootstrap`, which builds it with every pipeline it reads). "
+        "latest_conda_upload is the newest build's upload time of the package's latest version (Story 38.1); "
+        "the age is null for a package with none.",
     ),
     PageDef(
         "query-atlas",
@@ -142,8 +147,7 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "query-atlas",
         "bsl-shell",
         note="Wired to build_packages_model (is_actionable + adoption stage + downloads) "
-        "over the composed semantic_packages store (`pyforge atlas run --pipelines "
-        "semantic_packages`).",
+        "over the composed semantic_packages store (`pixi run -e pyforge-atlas pyforge-atlas-bootstrap`, which builds it with every pipeline it reads).",
     ),
     PageDef(
         "detail-cf-atlas",
@@ -151,7 +155,7 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "detail-cf-atlas",
         "bsl-shell",
         note="Wired to build_packages_model (full per-package metric row) over the "
-        "composed semantic_packages store (`pyforge atlas run --pipelines semantic_packages`).",
+        "composed semantic_packages store (`pixi run -e pyforge-atlas pyforge-atlas-bootstrap`, which builds it with every pipeline it reads).",
     ),
     PageDef(
         "behind-upstream",
@@ -188,8 +192,11 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "Version Downloads",
         "version-downloads",
         "bsl-shell",
-        note="Wired to build_version_downloads_model; renders empty until the "
-        "per-version download-history dataset materializes.",
+        note="Wired to build_version_downloads_model over core_version_download_history "
+        "(Story 37.3): downloads per package and version over the months the download store "
+        "covers. That store holds no upload date, so the column is empty here; with board projections "
+        "on (Story 38.1) it shows each version's upload date. The chart sums each version label across "
+        "packages.",
         chart=ChartDef("bar", x="version", y="downloads"),
     ),
     PageDef(
@@ -248,10 +255,14 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "distribution-breakdown",
         "bsl-shell",
         note="Merges platform-breakdown / pyver-breakdown / channel-split behind one "
-        "`facet` dimension (build_distribution_breakdown_model); the python-version "
-        "facet's --policy-check bump-safety classifier (pyver_breakdown.py's own "
-        "policy_check_status, ported verbatim) rides along. Renders empty until the "
-        "per-facet download-breakdown dataset materializes.",
+        "`facet` dimension (build_distribution_breakdown_model) over "
+        "derived_distribution_breakdown (Story 37.3). `downloads_90d` holds each cut's total "
+        "over the months the download store covers (legacy's downloads_total), not a 90-day "
+        "window. Platform and python-version count conda-forge only, channel counts every "
+        "channel: pick one facet before reading the chart. The python-version facet's "
+        "--policy-check bump-safety classifier (pyver_breakdown.py's own policy_check_status, "
+        "ported verbatim) reads unknown until the declared and empirical Python floors are "
+        "migrated.",
         filters=("facet",),
         chart=ChartDef("bar", x="bucket", y="downloads_90d"),
     ),
@@ -323,32 +334,37 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "LTS Registry Gap",
         "lts-registry-gap",
         "bsl-shell",
-        note="Wired to build_lts_registry_gap_model, READ-ONLY suggester; renders "
-        "empty until the endoflife.date diff dataset materializes.",
+        note="Wired to build_lts_registry_gap_model over seed_gaps_lts_registry_report "
+        "(Story 37.3), a READ-ONLY suggester: endoflife.date products that match an "
+        "actionable atlas package and are missing from lts-registry.yaml.",
     ),
     PageDef(
         "cwe-seed-gap",
         "CWE Seed Gap",
         "cwe-seed-gap",
         "bsl-shell",
-        note="Wired to build_cwe_seed_gap_model, READ-ONLY suggester; renders empty "
-        "until the Other-bucket CWE classification dataset materializes.",
+        note="Wired to build_cwe_seed_gap_model over seed_gaps_cwe_report (Story 37.3), "
+        "a READ-ONLY suggester: Other-bucket CWEs with a suggested category. The package "
+        "impact count stays empty until it is migrated (DW-B6-2).",
     ),
     PageDef(
         "spdx-schema-gap",
         "SPDX Schema Gap",
         "spdx-schema-gap",
         "bsl-shell",
-        note="Wired to build_spdx_schema_gap_model, READ-ONLY suggester; renders "
-        "empty until the vendored-vs-upstream SPDX diff dataset materializes.",
+        note="Wired to build_spdx_schema_gap_model over seed_gaps_spdx_report (Story "
+        "37.3), a READ-ONLY suggester: the vendored SPDX list against upstream. Usage counts "
+        "are empty on upstream-drift rows, and the add-to-schema and non-standard rows stay "
+        "empty until per-package licenses are migrated (DW-B6-1).",
     ),
     PageDef(
         "license-map-gap",
         "License Map Gap",
         "license-map-gap",
         "bsl-shell",
-        note="Wired to build_license_map_gap_model, READ-ONLY suggester; renders "
-        "empty until the unmapped-license dataset materializes.",
+        note="Wired to build_license_map_gap_model over seed_gaps_license_map_report "
+        "(Story 37.3), a READ-ONLY suggester: raw PyPI license strings that normalize to no "
+        "SPDX id, with a suggested one.",
     ),
     PageDef(
         "identity-catalog",
@@ -406,6 +422,174 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
     PageDef("factory-status", "Factory Status", "factory-status", "factory"),
 )
 
+#: Story 37.4 (CAP-69): the four boards' definitions, and Stories 37.5-37.10's and 38.1's boards, with ``pyforge.atlas.board_projections`` on.
+#: Off, ``PAGE_INVENTORY``'s entries stand: the two shells, and the coverage boards' earlier paths.
+PROJECTED_PAGES: dict[str, PageDef] = {
+    page.id: page
+    for page in (
+        PageDef(
+            "behind-upstream",
+            "Behind Upstream",
+            "behind-upstream",
+            "bsl-shell",
+            note="Wired to build_behind_upstream_model over derived_behind_upstream, which "
+            "derived_artifacts' project_behind_upstream writes: each enumerated package whose upstream "
+            "release (vcs_upstream_versions; GitHub, then GitLab, then Codeberg) is newer than its latest "
+            "conda version, labelled major, minor, patch or unknown as legacy behind-upstream labels it "
+            "(unknown: a version that is not PEP 440, often a tag such as bzip2-1.0.8). PyPI's version is "
+            "not compared yet. The chart counts packages per label.",
+            chart=ChartDef("bar", x="lag_label", y="package_count"),
+        ),
+        PageDef(
+            "whodepends",
+            "Who Depends",
+            "whodepends",
+            "bsl-shell",
+            note="Wired to build_whodepends_model over core_dependencies: per depended-on package and "
+            "dependency type, how many packages depend on it (legacy whodepends --reverse, for every "
+            "package at once). The dependency graph carries no pin spec. The chart sums each package's "
+            "dependents over its dependency types.",
+            chart=ChartDef("bar", x="depends_on", y="dependent_count"),
+        ),
+        PageDef(
+            "universe-sbom",
+            "Universe SBOM",
+            "universe-sbom",
+            "bsl-shell",
+            note="The universe BOM (build_universe_sbom_summary_model), one row per component from "
+            "derived_universe_sbom_summary, which derived_artifacts' project_universe_sbom_summary writes: "
+            "slice is mapped when the component names its PyPI project, else unmapped. with_vulns_count "
+            "stays empty: the BOM carries no vulnerability data. DESIGN.md's summary cards are not built.",
+            filters=("slice",),
+        ),
+        PageDef(
+            "live-catalog-coverage",
+            "Live Catalog Coverage",
+            "live-catalog-coverage",
+            "bsl-shell",
+            note="Wired to build_live_catalog_coverage_model over derived_live_catalog_coverage, which "
+            "derived_artifacts' project_live_catalog_coverage writes: per inventory flag of the identity "
+            "export (PyPI_Verified, CondaForge_Verified and the in_* channel flags), how many rows hold "
+            "it, out of how many.",
+        ),
+        # Story 37.5 (CAP-69)
+        PageDef(
+            "cve-watcher",
+            "CVE Watch",
+            "cve-watcher",
+            "bsl-shell",
+            note="Wired to build_vuln_history_model over derived_vuln_history. Each vulnerability run appends "
+            "its rollup to vulnerability_rollup_snapshots, and diff_vulnerability_snapshots compares the latest "
+            "snapshot with the most recent one more than since_days older (else the one before it), as legacy "
+            "cve-watcher does: one row per package and severity whose count moved. The severities are total, "
+            "critical_high and kev, since the rollup counts critical and high together. Empty until two runs "
+            "have written snapshots. The stamp is the latest snapshot's time (the diff file's, if that is older), "
+            "and says stale when the last run appended no snapshot (its rollup was empty); a snapshot store that "
+            "cannot be read is a data gap. DESIGN.md § 3.1's maintainer filter is not declared.",
+            filters=("severity", "since_days"),
+        ),
+        # Story 37.9 (CAP-69)
+        PageDef(
+            "mapping-gap",
+            "Mapping Gap",
+            "mapping-gap",
+            "bsl-shell",
+            note="Wired to build_mapping_gap_model over derived_mapping_gap, which pypi_intelligence's "
+            "classify_mapping_gap writes, read-only as legacy mapping-gap is without --write: each enumerated "
+            "package with no PyPI name, classified python_track (a run dependency on python or a PyPI upstream), "
+            "non_python_with_identity (another upstream) or non_python_no_identity. A python-track package's name "
+            "is looked up in the PyPI universe under legacy's four spellings: match_confidence is likely (one "
+            "bare-spelling hit, match_source g10_spelling), ambiguous, collision, uncorroborated (a hit only "
+            "after dropping a -py, -python or python- affix) or unrecovered. Legacy's grayskull and "
+            "purl-associator corroborators are not in atlas, so no row is verified.",
+        ),
+        # Story 37.10 (CAP-69)
+        PageDef(
+            "bootstrap-index-health",
+            "Bootstrap Index Health",
+            "bootstrap-index-health",
+            "bsl-shell",
+            note="Wired to build_bootstrap_index_health_model over catalog_index_health, which the catalog_index "
+            "pipeline writes after a build: every catalog entry the data root holds, its last write, the row count "
+            "its Parquet footer gives, and its tier in the catalog-sources matrix (Tier 0 to 3; untiered "
+            "otherwise). status is missing (never written), stale (its staleness marker), empty, below_floor (under "
+            "the scale sanity gate: 30,000 conda-forge packages, 5,000 Anaconda main, a non-empty PyPI index and "
+            "Basilisk catalog) or ok. Entries that fetch live and persist nothing are not listed.",
+            filters=("tier", "status"),
+        ),
+        # Story 38.1 (CAP-69)
+        PageDef(
+            "version-downloads",
+            "Version Downloads",
+            "version-downloads",
+            "bsl-shell",
+            note="Wired to build_version_downloads_model over derived_version_downloads, which derived_artifacts' "
+            "project_version_downloads writes: downloads per package and version over the months the download store "
+            "covers, with each version's upload date (the UTC date of its earliest file in conda-forge's full "
+            "repodata; empty for a version with no timed file). The chart sums each version label across packages.",
+            chart=ChartDef("bar", x="version", y="downloads"),
+        ),
+        # Story 37.6 (CAP-69)
+        PageDef(
+            "release-cadence",
+            "Release Cadence",
+            "release-cadence",
+            "bsl-shell",
+            note="Wired to build_release_cadence_model over derived_release_cadence, which derived_artifacts' "
+            "project_release_cadence writes as legacy release-cadence counts: per package, its versions and the ones "
+            "uploaded in the last 30, 90 and 365 days. A version's upload time is its earliest file timestamp in "
+            "conda-forge's full repodata. trend_label is legacy's accelerating/stable/decelerating/one-version/silent "
+            "classifier. The 90-day window is charted.",
+            chart=ChartDef("bar", x="conda_name", y="release_count_90d"),
+        ),
+        # Story 37.7 (CAP-69)
+        PageDef(
+            "find-alternative",
+            "Find Alternative",
+            "find-alternative",
+            "bsl-shell",
+            note="Wired to build_alternative_candidates_model over derived_alternative_candidates, which "
+            "derived_artifacts' score_alternative_candidates writes as legacy find-alternative scores one query: for "
+            "each archived package on the channel, the top 10 active candidates by keyword, summary-term, "
+            "shared-dependent and shared-maintainer overlap, weighted by recency and downloads. Archived is the "
+            "cf-graph's flag or the GitHub archive query. adoption_stage is the adoption-stage board's classifier; "
+            "both read semantic_packages' upload times (Story 38.1). A package with no known newest build reads "
+            "unknown; one whose newest build is untimed reads silent, as legacy reads it; either counts as fresh.",
+            filters=("archived_name",),
+        ),
+        # Story 37.8 (CAP-69)
+        PageDef(
+            "export-purls",
+            "Export Purls",
+            "export-purls",
+            "report-artifact",
+            note="An artifact-freshness index (build_purl_export_model) over derived_purl_export_manifest: one row "
+            "per artifact derived_artifacts' export_purl_artifacts writes to derived_purl_artifacts, as legacy "
+            "export-purls does: the active conda-forge purls, the same versioned, the PyPI universe's purls, the "
+            "conda-to-PyPI mapping TSV, the local recipes' pending or blocked exceptions, and the PyPI-unmapped "
+            "packages' upstream purls (from each recipe's own URLs). row_count is the artifact's lines, a TSV's "
+            "header not counted.",
+        ),
+    )
+}
+
+
+def page_inventory(*, projected: bool | None = None) -> tuple[PageDef, ...]:
+    """The page set ``build_dashboard`` builds: ``PAGE_INVENTORY``, with ``PROJECTED_PAGES`` swapped in
+    when ``pyforge.atlas.board_projections`` is on (``projected`` overrides the flag).
+
+    A swapped-in page keeps the base page's ``access_column``, so both states refuse the same static export
+    (sld:AD-10), and ``static_export.access_column_boards``' default over ``PAGE_INVENTORY`` holds in both."""
+    if projected is None:
+        projected = _data.board_projections()
+    if not projected:
+        return PAGE_INVENTORY
+    return tuple(
+        replace(PROJECTED_PAGES[page.id], access_column=page.access_column) if page.id in PROJECTED_PAGES else page
+        for page in PAGE_INVENTORY
+    )
+
+
 DASHBOARD_ID = "cf-atlas"
 DASHBOARD_TITLE = "cf_atlas Factory"
 
@@ -416,12 +600,28 @@ def _provenance_line(provenance: ProvenanceInfo) -> str:
     dashboard's build/render time standing in for it (C6)."""
     if provenance.kind == "unavailable":
         return f"**Data build stamp (AD-17):** unavailable — {provenance.reason}"
-    return f"**Data build stamp (AD-17):** `{provenance.build_stamp}` ({provenance.kind})"
+    line = f"**Data build stamp (AD-17):** `{provenance.build_stamp}` ({provenance.kind})"
+    # Story 37.13: a stamp that is not current says why (the cve-watcher's stale snapshot store)
+    return f"{line} — {provenance.reason}" if provenance.reason else line
 
 
-def _legibility_card(page: PageDef, *, grounded: bool, provenance: ProvenanceInfo) -> vm.Card:
-    """A semantic markdown Card carrying the page's provenance + any data-gap note
-    (NFR-8 agent-legibility — a deterministic, agent-readable header)."""
+# A page's note describes its data unless the data is missing (Story 37.11): a shell page with no
+# data function, the identity workbook's gap message, or a page whose own dataset is unavailable.
+NOTE_LABEL = "About this board"
+GAP_LABEL = "Data gap"
+
+
+def _note_label(*, has_data: bool, provenance: ProvenanceInfo) -> str:
+    """``GAP_LABEL`` where the page's data is missing, else ``NOTE_LABEL``."""
+    if not has_data or provenance.kind == "unavailable":
+        return GAP_LABEL
+    return NOTE_LABEL
+
+
+def _legibility_card(page: PageDef, *, grounded: bool, provenance: ProvenanceInfo, has_data: bool = True) -> vm.Card:
+    """A semantic markdown Card carrying the page's provenance + its note
+    (NFR-8 agent-legibility — a deterministic, agent-readable header). The note is
+    labelled a data gap only where the page's data is missing (``_note_label``)."""
     lines = [
         f"### {page.title}",
         "",
@@ -432,7 +632,7 @@ def _legibility_card(page: PageDef, *, grounded: bool, provenance: ProvenanceInf
         lines.append("**Data:** live — BSL query over the migrated catalog dataset.")
     if page.note:
         lines.append("")
-        lines.append(f"**Data gap:** {page.note}")
+        lines.append(f"**{_note_label(has_data=has_data, provenance=provenance)}:** {page.note}")
     lines.append("")
     lines.append(_provenance_line(provenance))
     return vm.Card(id=f"{page.id}--about", text="\n".join(lines))
@@ -603,7 +803,7 @@ def _shell_page(page: PageDef, *, provenance: ProvenanceInfo) -> vm.Page:
     return vm.Page(
         id=page.id,
         title=page.title,
-        components=[_legibility_card(page, grounded=False, provenance=provenance)],
+        components=[_legibility_card(page, grounded=False, provenance=provenance, has_data=False)],
     )
 
 
@@ -621,6 +821,21 @@ def _resolve_two_file_provenance(
     ranked_stamp = ranked.build_stamp or ""
     enterprise_stamp = enterprise.build_stamp or ""
     return ranked if ranked_stamp <= enterprise_stamp else enterprise
+
+
+def _resolve_cve_watcher_provenance(diff_path: Path, store_path: Path) -> ProvenanceInfo:
+    """AD-17 for the cve-watcher with the flag on (Story 37.13): its diff was built when its latest snapshot was
+    taken, not when the diff file was last rewritten, which every run does. Either file unavailable wins (the diff
+    first), else the older of the two stamps, carrying the snapshot store's stale reason."""
+    diff = _provenance.resolve_for_file(diff_path)
+    if diff.kind == "unavailable":
+        return diff
+    store = _provenance.resolve_for_snapshot_history(store_path)
+    if store.kind == "unavailable":
+        return store
+    if datetime.fromisoformat(diff.build_stamp or "") < datetime.fromisoformat(store.build_stamp or ""):
+        return replace(diff, reason=store.reason)
+    return store
 
 
 def _identity_workbook_page(
@@ -641,10 +856,10 @@ def _identity_workbook_page(
     ]
     if gap_message:
         lines.append("")
-        lines.append(f"**Data gap:** {gap_message}")
+        lines.append(f"**{GAP_LABEL}:** {gap_message}")
     elif page.note:
         lines.append("")
-        lines.append(f"**Data gap:** {page.note}")
+        lines.append(f"**{_note_label(has_data=True, provenance=provenance)}:** {page.note}")
     lines.append("")
     lines.append(_provenance_line(provenance))
     external_rows = "\n".join(
@@ -794,12 +1009,14 @@ def build_dashboard(
     sprint_status_path: str | Path | None = None,
     epics_path: str | Path | None = None,
     reset: bool = True,
+    board_projections: bool | None = None,
 ) -> vm.Dashboard:
     """Assemble the BSL-driven Vizro Dashboard object (OFFLINE — no server, no live data).
 
     ``build_stamp`` (AD-17) and ``now`` are injectable for determinism; both default to wall
     clock resolved ONCE here (never at import). ``reset`` clears Vizro's global managers so
-    repeated builds in one process (the gate) are independent.
+    repeated builds in one process (the gate) are independent. ``board_projections`` overrides
+    ``pyforge.atlas.board_projections`` (Story 37.4), read once here when it is None.
     """
     if reset:
         Vizro._reset()
@@ -808,6 +1025,36 @@ def build_dashboard(
     if now is None:
         now = int(time.time())
     root = Path(data_root) if data_root is not None else _data.default_data_root()
+    projected = _data.board_projections() if board_projections is None else board_projections
+    # Story 37.4: the two coverage boards' paths with the flag on, their earlier paths off
+    universe_sbom_path = root / (
+        _data.DERIVED_UNIVERSE_SBOM_SUMMARY_PARQUET if projected else _data.UNIVERSE_SBOM_SUMMARY_PARQUET
+    )
+    live_catalog_coverage_path = root / (
+        _data.DERIVED_LIVE_CATALOG_COVERAGE_PARQUET if projected else _data.LIVE_CATALOG_COVERAGE_PARQUET
+    )
+    # Story 37.5: the cve-watcher's diff with the flag on, the path nothing writes off
+    vuln_history_path = root / (_data.DERIVED_VULN_HISTORY_PARQUET if projected else _data.VULN_HISTORY_PARQUET)
+    # Story 37.9: the mapping-gap classification with the flag on, the path nothing writes off
+    mapping_gap_path = root / (_data.DERIVED_MAPPING_GAP_PARQUET if projected else _data.MAPPING_GAP_PARQUET)
+    # Story 37.10: the catalog index's health with the flag on, the path nothing writes off
+    index_health_path = root / (
+        _data.CATALOG_INDEX_HEALTH_PARQUET if projected else _data.BOOTSTRAP_INDEX_HEALTH_PARQUET
+    )
+    # Story 38.1: version-downloads with upload dates with the flag on, the history without them off
+    version_downloads_path = root / (
+        _data.DERIVED_VERSION_DOWNLOADS_PARQUET if projected else _data.VERSION_DOWNLOADS_PARQUET
+    )
+    # Story 37.6: the release-cadence counts with the flag on, the path nothing writes off
+    cadence_path = root / (_data.DERIVED_RELEASE_CADENCE_PARQUET if projected else _data.RELEASE_CADENCE_PARQUET)
+    # Story 37.7: the find-alternative candidates with the flag on, the path nothing writes off
+    alternatives_path = root / (
+        _data.DERIVED_ALTERNATIVE_CANDIDATES_PARQUET if projected else _data.ALTERNATIVE_CANDIDATES_PARQUET
+    )
+    # Story 37.8: the export-purls manifest with the flag on, the path nothing writes off
+    purl_manifest_path = root / (
+        _data.DERIVED_PURL_EXPORT_MANIFEST_PARQUET if projected else _data.PURL_EXPORT_MANIFEST_PARQUET
+    )
 
     # AD-17 (Story I4): each grounded/bsl-shell page's provenance is THAT page's own
     # backing Parquet file's mtime (resolve_for_file degrades to "unavailable" + a
@@ -829,16 +1076,20 @@ def build_dashboard(
     # Story 20.5 (CAP-7) — the 19 remaining pages' own backing Parquet provenance
     # (same AD-17 discipline as above: each page's OWN file mtime, "unavailable" +
     # a reason when absent — never a fabricated stamp).
-    cve_watcher_provenance = _provenance.resolve_for_file(root / _data.VULN_HISTORY_PARQUET)
-    version_downloads_provenance = _provenance.resolve_for_file(root / _data.VERSION_DOWNLOADS_PARQUET)
-    release_cadence_provenance = _provenance.resolve_for_file(root / _data.RELEASE_CADENCE_PARQUET)
-    find_alternative_provenance = _provenance.resolve_for_file(root / _data.ALTERNATIVE_CANDIDATES_PARQUET)
+    cve_watcher_provenance = (
+        _resolve_cve_watcher_provenance(vuln_history_path, root / _data.VULN_ROLLUP_SNAPSHOTS_PARQUET)
+        if projected
+        else _provenance.resolve_for_file(vuln_history_path)
+    )
+    version_downloads_provenance = _provenance.resolve_for_file(version_downloads_path)
+    release_cadence_provenance = _provenance.resolve_for_file(cadence_path)
+    find_alternative_provenance = _provenance.resolve_for_file(alternatives_path)
     scan_project_provenance = _provenance.resolve_for_file(root / _data.SCAN_RESULT_LATEST_PARQUET)
     env_inspect_provenance = _provenance.resolve_for_file(root / _data.ENV_INSPECT_LATEST_PARQUET)
     distribution_breakdown_provenance = _provenance.resolve_for_file(root / _data.DISTRIBUTION_BREAKDOWN_PARQUET)
-    export_purls_provenance = _provenance.resolve_for_file(root / _data.PURL_EXPORT_MANIFEST_PARQUET)
-    mapping_gap_provenance = _provenance.resolve_for_file(root / _data.MAPPING_GAP_PARQUET)
-    universe_sbom_provenance = _provenance.resolve_for_file(root / _data.UNIVERSE_SBOM_SUMMARY_PARQUET)
+    export_purls_provenance = _provenance.resolve_for_file(purl_manifest_path)
+    mapping_gap_provenance = _provenance.resolve_for_file(mapping_gap_path)
+    universe_sbom_provenance = _provenance.resolve_for_file(universe_sbom_path)
     inventory_match_provenance = _provenance.resolve_for_file(root / _data.INVENTORY_MATCH_LATEST_PARQUET)
     add_handoff_provenance = _provenance.resolve_for_file(root / _data.ADD_HANDOFF_LATEST_PARQUET)
     library_futures_provenance = _provenance.resolve_for_file(root / _data.LIBRARY_FUTURES_LATEST_PARQUET)
@@ -858,11 +1109,13 @@ def build_dashboard(
         identity_workbook_complete,
         identity_workbook_enterprise,
     )
-    bootstrap_index_health_provenance = _provenance.resolve_for_file(root / _data.BOOTSTRAP_INDEX_HEALTH_PARQUET)
+    bootstrap_index_health_provenance = _provenance.resolve_for_file(index_health_path)
     identity_export_snapshot_provenance = _provenance.resolve_for_file(root / _data.IDENTITY_EXPORT_PARQUET)
-    live_catalog_coverage_provenance = _provenance.resolve_for_file(root / _data.LIVE_CATALOG_COVERAGE_PARQUET)
+    live_catalog_coverage_provenance = _provenance.resolve_for_file(live_catalog_coverage_path)
+    behind_upstream_provenance = _provenance.resolve_for_file(root / _data.BEHIND_UPSTREAM_PARQUET)
+    whodepends_provenance = _provenance.resolve_for_file(root / _data.CORE_DEPENDENCIES_PARQUET)
 
-    by_id = {p.id: p for p in PAGE_INVENTORY}
+    by_id = {p.id: p for p in page_inventory(projected=projected)}
     pages: list[vm.Page] = [
         _data_page(
             by_id["feedstock-health"],
@@ -900,30 +1153,44 @@ def build_dashboard(
             grounded=False,
             provenance=packages_provenance,
         ),
-        _shell_page(by_id["behind-upstream"], provenance=no_bsl_model_provenance),
-        _shell_page(by_id["whodepends"], provenance=no_bsl_model_provenance),
+        _data_page(
+            by_id["behind-upstream"],
+            lambda: _data.load_behind_upstream(root / _data.BEHIND_UPSTREAM_PARQUET),
+            grounded=False,
+            provenance=behind_upstream_provenance,
+        )
+        if projected
+        else _shell_page(by_id["behind-upstream"], provenance=no_bsl_model_provenance),
+        _data_page(
+            by_id["whodepends"],
+            lambda: _data.load_whodepends(root / _data.CORE_DEPENDENCIES_PARQUET),
+            grounded=False,
+            provenance=whodepends_provenance,
+        )
+        if projected
+        else _shell_page(by_id["whodepends"], provenance=no_bsl_model_provenance),
         # -- Story 20.5 (CAP-7) — the remaining 19 pages --
         _data_page(
             by_id["cve-watcher"],
-            lambda: _data.load_cve_watcher(root / _data.VULN_HISTORY_PARQUET),
+            lambda: _data.load_cve_watcher(vuln_history_path),
             grounded=False,
             provenance=cve_watcher_provenance,
         ),
         _data_page(
             by_id["version-downloads"],
-            lambda: _data.load_version_downloads(root / _data.VERSION_DOWNLOADS_PARQUET),
+            lambda: _data.load_version_downloads(version_downloads_path),
             grounded=False,
             provenance=version_downloads_provenance,
         ),
         _data_page(
             by_id["release-cadence"],
-            lambda: _data.load_release_cadence(root / _data.RELEASE_CADENCE_PARQUET),
+            lambda: _data.load_release_cadence(cadence_path),
             grounded=False,
             provenance=release_cadence_provenance,
         ),
         _data_page(
             by_id["find-alternative"],
-            lambda: _data.load_find_alternative(root / _data.ALTERNATIVE_CANDIDATES_PARQUET),
+            lambda: _data.load_find_alternative(alternatives_path, now=now),
             grounded=False,
             provenance=find_alternative_provenance,
         ),
@@ -953,19 +1220,19 @@ def build_dashboard(
         ),
         _data_page(
             by_id["export-purls"],
-            lambda: _data.load_export_purls(root / _data.PURL_EXPORT_MANIFEST_PARQUET),
+            lambda: _data.load_export_purls(purl_manifest_path),
             grounded=False,
             provenance=export_purls_provenance,
         ),
         _data_page(
             by_id["mapping-gap"],
-            lambda: _data.load_mapping_gap(root / _data.MAPPING_GAP_PARQUET),
+            lambda: _data.load_mapping_gap(mapping_gap_path),
             grounded=False,
             provenance=mapping_gap_provenance,
         ),
         _data_page(
             by_id["universe-sbom"],
-            lambda: _data.load_universe_sbom(root / _data.UNIVERSE_SBOM_SUMMARY_PARQUET),
+            lambda: _data.load_universe_sbom(universe_sbom_path),
             grounded=False,
             provenance=universe_sbom_provenance,
         ),
@@ -1037,7 +1304,7 @@ def build_dashboard(
         ),
         _data_page(
             by_id["bootstrap-index-health"],
-            lambda: _data.load_bootstrap_index_health(root / _data.BOOTSTRAP_INDEX_HEALTH_PARQUET),
+            lambda: _data.load_bootstrap_index_health(index_health_path),
             grounded=False,
             provenance=bootstrap_index_health_provenance,
         ),
@@ -1049,7 +1316,7 @@ def build_dashboard(
         ),
         _data_page(
             by_id["live-catalog-coverage"],
-            lambda: _data.load_live_catalog_coverage(root / _data.LIVE_CATALOG_COVERAGE_PARQUET),
+            lambda: _data.load_live_catalog_coverage(live_catalog_coverage_path),
             grounded=False,
             provenance=live_catalog_coverage_provenance,
         ),

@@ -236,20 +236,47 @@ def _about_urls(payload: dict[str, Any]) -> dict[str, str | None]:
     }
 
 
+def _about_text(payload: dict[str, Any]) -> dict[str, Any]:
+    """Story 37.7: the recipe's ``about.summary`` and ``about.keywords`` (legacy Phase E, CFA:2327-2334).
+    The summary is stored as legacy's ``_str`` stores it (a list joined with ``, ``, any other value as its
+    string); keywords are kept only as a list, since legacy's scorer reads nothing else."""
+    meta = payload.get("meta_yaml")
+    about = meta.get("about") if isinstance(meta, dict) else None
+    about = about if isinstance(about, dict) else {}
+    summary = about.get("summary")
+    if isinstance(summary, list):
+        summary = ", ".join(str(s) for s in summary if s)
+    keywords = about.get("keywords")
+    return {
+        "summary": None if summary is None else str(summary),
+        "keywords": [str(k) for k in keywords if k] if isinstance(keywords, list) else [],
+    }
+
+
 RECIPE_FIELDS = ("source_url", "repo_url", "dev_url", "home_url")
+#: Story 37.7: the recipe's about text, on each output's anchor row
+ABOUT_FIELDS = ("summary", "keywords")
 
 
-def package_recipe_fields(graph: pd.DataFrame | None, attribution: pd.DataFrame | None) -> pd.DataFrame:
+def package_recipe_fields(
+    graph: pd.DataFrame | None,
+    attribution: pd.DataFrame | None,
+    fields: tuple[str, ...] = RECIPE_FIELDS,
+    *,
+    unattributed: bool = True,
+) -> pd.DataFrame:
     """Story 34.7: one row per conda package with its feedstock's recipe fields
-    (:data:`RECIPE_FIELDS`). Legacy Phase E writes them to every output Phase B.5 attributes to
-    the feedstock (``feedstock_to_conda``, CFA:2283-2287); ``core_feedstock_attribution`` is that
-    attribution. A package attribution has no row for takes its first anchor row. Pure."""
-    cols = ["conda_name", *RECIPE_FIELDS]
+    (:data:`RECIPE_FIELDS`, or any other anchor-row columns ``fields`` names). Legacy Phase E writes
+    them to every output Phase B.5 attributes to the feedstock (``feedstock_to_conda``,
+    CFA:2283-2287); ``core_feedstock_attribution`` is that attribution. A package attribution has no
+    row for takes its first anchor row, unless ``unattributed`` is false (Story 37.7: legacy's own
+    rule, where such a package gets nothing). Pure."""
+    cols = ["conda_name", *fields]
     if graph is None or graph.empty or "conda_name" not in graph.columns:
         return pd.DataFrame(columns=cols)
     frame = graph.reindex(columns=[*_CF_GRAPH_COLUMNS])
     anchors = frame[frame["depends_on"].isna() & frame["conda_name"].notna()]
-    by_feedstock = anchors.drop_duplicates("feedstock_name").set_index("feedstock_name")[list(RECIPE_FIELDS)]
+    by_feedstock = anchors.drop_duplicates("feedstock_name").set_index("feedstock_name")[list(fields)]
     parts = []
     attributed: set[str] = set()
     if (
@@ -261,8 +288,9 @@ def package_recipe_fields(graph: pd.DataFrame | None, attribution: pd.DataFrame 
         joined = att.join(by_feedstock, on="feedstock_name", how="inner")
         parts.append(joined[cols])
         attributed = set(att["conda_name"])
-    rest = anchors[~anchors["conda_name"].isin(attributed)].drop_duplicates("conda_name")
-    parts.append(rest[cols])
+    if unattributed:
+        rest = anchors[~anchors["conda_name"].isin(attributed)].drop_duplicates("conda_name")
+        parts.append(rest[cols])
     out = pd.concat(parts, ignore_index=True) if parts else pd.DataFrame(columns=cols)
     return out.astype(object).where(out.notna(), None).reset_index(drop=True)
 
@@ -322,6 +350,8 @@ _CF_GRAPH_COLUMNS = [
     "repo_url",  # Story 34.7: about.repository, else about.dev_url (legacy conda_repo_url); anchors only
     "dev_url",  # Story 34.7: about.dev_url; anchors only
     "home_url",  # Story 34.7: about.home; anchors only
+    "summary",  # Story 37.7: about.summary; anchors only
+    "keywords",  # Story 37.7: about.keywords (list); anchors only
 ]
 
 
@@ -391,7 +421,7 @@ def _cf_graph_frame(
         # every output a feedstock names, with or without a requirements block (Phase E)
         anchors = list(dict.fromkeys([*(name for name, _ in pairs), *_outputs_names(payload)])) or [feedstock]
         url = _source_url(payload)
-        about = _about_urls(payload)
+        about = {**_about_urls(payload), **_about_text(payload)}
         for source_name in anchors:
             rows.append(
                 {**base, "conda_name": source_name, "depends_on": pd.NA, "dep_type": pd.NA, "source_url": url, **about}
@@ -616,6 +646,8 @@ def _read_last_good(path: Path) -> pd.DataFrame | None:
         return None
     if "maintainers" in kept.columns:
         kept["maintainers"] = [_as_str_list(v) for v in kept["maintainers"]]
+    if "keywords" in kept.columns:  # Story 37.7: an anchor's list; an edge row's null stays null
+        kept["keywords"] = [None if v is None else _as_str_list(v) for v in kept["keywords"]]
     return kept
 
 

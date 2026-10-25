@@ -47,6 +47,14 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--flags-path", default=None, help="flag tree (default: PYFORGE_FLAGS_PATH or the repo's)")
     parser.add_argument("--export-commit", default=None, help="40-hex commit (default: GITHUB_SHA, else HEAD)")
     parser.add_argument("--print-flag", action="store_true", help="print enabled=true|false and exit 0")
+    parser.add_argument(
+        "--clock",
+        choices=("commit", "now"),
+        default="commit",
+        help="what exported_at is: the export commit's committer time (default; one commit's export is "
+        "byte-identical) or now (Story 37.2: the weekly build, whose data is newer than its commit; a local export "
+        "of data built after the commit needs it too, or the upload ages read negative)",
+    )
     return parser
 
 
@@ -93,8 +101,8 @@ def _run(args: argparse.Namespace) -> int:
         )
         return EXIT_REFUSED
 
-    exported_at = _resolve_exported_at(export_commit)
-    if exported_at is None:
+    exported_at = None if args.clock == "now" else _resolve_exported_at(export_commit)
+    if exported_at is None and args.clock == "commit":
         print(
             f"{_PREFIX}: exported_at could not be resolved (no committer time for export_commit "
             f"{export_commit[:12]}); nothing written",
@@ -105,7 +113,11 @@ def _run(args: argparse.Namespace) -> int:
     out_dir = args.out if args.out is not None else viz_manifest.repo_root() / STAGED_RELATIVE
     try:
         manifest = static_export.export_boards(
-            out_dir, export_commit=export_commit, exported_at=exported_at, data_root=args.data_root
+            out_dir,
+            export_commit=export_commit,
+            exported_at=exported_at,
+            data_root=args.data_root,
+            flags_path=args.flags_path,
         )
     except static_export.StaticExportError as exc:
         print(f"{_PREFIX}: {exc}", file=sys.stderr)

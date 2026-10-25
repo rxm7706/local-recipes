@@ -46,8 +46,8 @@ realization step.
 - Audit-as-contract → **[[pyforge-warden]]** + [[pyforge-marshal]]'s gates.
 - §40 Airgap Bundle · license bar · WASM branch → **[[enterprise-airgap]]**.
 - The knowledge problem, first organ → **[[team-memory]]**.
-- Its design-tokens pipeline (Figma↔JSON↔POTX) → **[[modernist-identity]]** /
-  **[[deckcraft]]**.
+- Its design-tokens pipeline (Figma↔JSON↔POTX) → **[[pyforge-herald|modernist-identity]]** /
+  **[[pyforge-herald|deckcraft]]**.
 
 **The unbuilt core**: the team knowledge graph compiled nightly from real tools.
 That remains this Dream's open claim — **owned, as of 2026-07-23, by the Scribe**

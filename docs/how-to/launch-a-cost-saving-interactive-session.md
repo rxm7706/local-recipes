@@ -3,7 +3,7 @@ sources:
   - CLAUDE.md
   - pixi.toml
   - docs/dreams/pyforge-marshal.md
-verified: 2026-09-24
+verified: 2026-10-24
 ---
 
 # How to Launch a Cost-Saving Interactive Session
@@ -37,7 +37,7 @@ Run this once per machine:
 pixi run -e pyforge-guild caveman-install --only claude --with-hooks
 ```
 
-This installs the output-compression skill for Claude Code and its `SessionStart`/`UserPromptSubmit` hooks plus a statusline badge, so you can see at a glance when it is active. Re-running the command is safe; it skips any target that reports already installed.
+This installs the output-compression skill for Claude Code and its `SessionStart`/`SubagentStart`/`UserPromptSubmit`/`SessionEnd` hooks plus a statusline badge that shows the active mode, so you can see at a glance when it is on. Re-running the command is safe; it skips any target that reports already installed (`--force` re-runs it). `caveman-install` is in the `pyforge-guild` env on linux-64 only for now.
 
 ## Launch wrapped by headroom
 
@@ -55,7 +55,7 @@ Claude Code disables the `/remote-control` (`/rc`) command while `ANTHROPIC_BASE
 
 ## Confirm both layers are active
 
-A wrapped session prints its own confirmation on launch, including the proxy URL it is routing through. For caveman, check the statusline badge the install step added, or run `caveman stats` in a separate terminal to see compression activity for the current session.
+A wrapped session prints its own confirmation on launch, including the proxy URL it is routing through. For caveman, check the statusline badge the install step added, or type `/caveman-stats` in the session to see its recorded output tokens and mode for the current session (the report leaves savings unknown, because nothing measures the same session without caveman).
 
 ## What You Get
 

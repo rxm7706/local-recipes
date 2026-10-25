@@ -5,7 +5,7 @@ sources:
   - scripts/ci_surface_gates.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/ci.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_ci.py
-verified: 2026-10-15
+verified: 2026-10-24
 ---
 
 # How to pause and resume CI surfaces
@@ -37,7 +37,9 @@ merge.
 row: while the master is on it reads `drift` (undeclared pause), and every workflow job whose
 `if:` reads the master reads `paused` with `paused_by_master: true` on that surface row (the
 machine-readable flag; `detail` carries the human text). Surfaces the master does not gate, and
-rows whose own switch already pauses them, keep their previous verdict.
+rows whose own switch already pauses them, keep their previous verdict. A `value` row, a `retired` row
+or a `paused-manually` row is never counted as paused by the master, even when its workflow still
+reads it.
 
 **Dispatch carve-out:** `workflow_dispatch` runs ignore pause variables by design (operator
 intentional runs). Scheduled and PR/push runs honor pauses.

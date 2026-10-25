@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: 89be63e18aaadbd1
-story_count: 138
-test_file_count: 168
+source_fingerprint: 6e3357061bbc87c7
+story_count: 144
+test_file_count: 187
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 138
-- **Epics parsed:** 37
-- **Test files inventoried:** 168 under `src/shared/packages/pyforge-atlas/tests/`
+- **Stories parsed:** 144
+- **Epics parsed:** 38
+- **Test files inventoried:** 187 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `89be63e18aaadbd1`
+- **Source fingerprint:** `6e3357061bbc87c7`
 
 ## Risk Assessment
 
@@ -69,6 +69,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 34: A plain run fills every dataset a public source serves (spec-pyforge-atlas CAP-64, FR-72)
 - Epic 36: Basilisk, the OpenTeams identity sources and the estate source (spec-pyforge-atlas CAP-66..CAP-68, FR-74..FR-76)
 - Epic 37: The Vizro boards read what the pipelines write, on Pages too (spec-pyforge-atlas CAP-63 amended, CAP-69, FR-71, FR-77)
+- Epic 38: The semantic store has its upload times and archived flag (spec-pyforge-atlas CAP-69, FR-77)
 
 ### Low-risk epics
 
@@ -113,11 +114,15 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_basilisk.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_basilisk_population.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_bigquery_cost_gate.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_catalog_index.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_cf_graph_split.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_clickhouse_downloads.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_core_sources.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_credentialed_switch.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_dependency_history.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_github_versions_health.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_hosts_and_registries.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_identity_live_sources.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_identity_sources.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_incremental_parquet.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_json_sources.py` | unit | none observed |
@@ -127,10 +132,13 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_pypi_json_phase_h.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_pypi_json_request_dataset.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_rate_limit.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_recipe_extras.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_refresh_assets.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_repodata_uploads.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_request_datasets.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_s3_downloads.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_sbom_intake.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_snapshot_history.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_story_27_2_degraded_datasets.py` | unit | 27.2 |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_tier3_sources.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_upstream_discovery.py` | unit | none observed |
@@ -166,7 +174,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/parity/test_parity_vcs_health.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/parity/test_parity_vulnerability.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/artifactory_downloads/test_nodes.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/catalog_index/test_nodes.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/core/test_nodes.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_alternatives.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_derived_artifacts_e2e.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_identity_complete_export.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_inventory_aoss_free_queue.py` | unit | none observed |
@@ -174,8 +184,11 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_inventory_universe.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_inventory_verification.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_inventory_verified_packages.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_purl_exports.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_release_cadence.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_universe_sbom.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/pypi_intelligence/test_mapping_export.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/pypi_intelligence/test_mapping_gap.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/pypi_intelligence/test_mapping_tiers.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/pypi_intelligence/test_nodes.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/pypi_intelligence/test_review_hardening.py` | unit | none observed |
@@ -184,6 +197,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/seed_gaps/test_nodes.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/seed_gaps/test_pipeline_shape.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/semantic_packages/test_nodes.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/semantic_packages/test_upload_inputs.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/test_dag_resolves.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/test_refresh_schedule_fixtures.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/test_refresh_single_writer.py` | unit | none observed |
@@ -196,13 +210,16 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vcs_health/test_nodes.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vcs_health/test_rate_limit_contract.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vcs_health/test_release_velocity.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vcs_health/test_universe_batches.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vulnerability/test_basilisk_nodes.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vulnerability/test_contracts.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vulnerability/test_nodes.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/vulnerability/test_vuln_history.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/policy_gate/test_policy_gate.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/query_plane/test_face_parity.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/rag/test_store_vss_free.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/rag/test_vss_similarity_search.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/semantic/test_board_models.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/semantic/test_bsl_metric_parity.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/semantic/test_composite_scores.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/semantic/test_maintainer_dimension.py` | unit | none observed |
@@ -211,7 +228,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/singularity/test_duckdb_sole_engine.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/singularity/test_one_duckdb_server_launch_site.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_admission.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_board_projections.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_board_wiring.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_cap18_kedro_hook_map.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_cve_watcher_staleness.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_dashboard_app.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_dashboard_data.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_dashboard_factory_status.py` | unit | none observed |
@@ -354,6 +374,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 27.3 | The read surfaces render what DESIGN.md specifies, and prove it on fixture data | none observed |
 | 27.4 | The planning record matches the tree and the cross-station seams hold | none observed |
 | 27.5 | The distribution-breakdown facet filter builds its control | none observed |
+| 27.6 | The distribution-breakdown e2e test waits for its grid to mount | none observed |
 | 28.1 | The live-attach fixture Postgres starts under any basetemp | none observed |
 | 29.1 | The range test server records each response before the client can read it | none observed |
 | 30.1 | The DAG export reaches Pages as a workflow artifact | none observed |
@@ -372,6 +393,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 34.9 | Phase P fills from the public ClickHouse mirror | none observed |
 | 34.10 | Phase H covers every mapped PyPI project, gated by its serial | none observed |
 | 34.11 | The Phase C mapping fills legacy's name-coincidence and recipe-source tiers | none observed |
+| 34.12 | A vulnerability feed that cannot be reached keeps its last good copy | none observed |
 | 35.1 | One opt-in switch, and GitHub authenticates | none observed |
 | 35.2 | The VCS batches come from the whole universe | none observed |
 | 35.3 | Upstream versions and feedstock health come from GitHub | none observed |
@@ -389,6 +411,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 37.8 | The export-purls lists the PURL artifacts | none observed |
 | 37.9 | The mapping-gap classifies the unmapped packages | none observed |
 | 37.10 | The bootstrap-index-health reports each catalog entry's freshness | none observed |
+| 37.11 | A board's note reads "Data gap" only where data is missing | none observed |
+| 37.12 | The Pages data build keeps its last good copies between runs | none observed |
+| 37.13 | The cve-watcher marks an earlier run's diff stale | none observed |
+| 38.1 | The semantic store reads its upload times and archived flag | none observed |
 
 ## Quality Gates
 

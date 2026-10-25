@@ -38,7 +38,11 @@ Three read-only checks over ``docs/map.yaml`` (the new machine registry) and
   copy** of that script via :func:`.locate_checkout_script` (Story 40.1's
   pattern -- never ``target / generator``) with ``--check --root <target>``
   so the judged tree supplies only data. The exit code is the verdict: 0
-  means current, anything else is one WARN naming the page. Declared paths
+  means current, 1 is one stale WARN naming the page, and any other exit,
+  or an exit 1 whose output carries a Python traceback (a crash), is one
+  could-not-run WARN on the same check (Story 30.5; only
+  ``scripts/docs_bmad_estate.py`` exits 2 by design, and argparse exits 2
+  on a usage error). Declared paths
   outside ``scripts/docs_*.py`` or carrying ``..`` are one WARN and never
   run. When Doctor's checkout lacks the script, one WARN reports it and
   nothing falls back to the target's copy. A page with no ``generator:``
@@ -105,6 +109,8 @@ _CHECK_MAP_UNREADABLE = "docs-currency-map-unreadable"
 _CHECK_OK = "docs-currency-ok"
 
 _GENERATOR_CHECK_TIMEOUT = 60.0
+# An uncaught exception exits 1, the generators' stale code; its traceback tells the crash apart (Story 30.5).
+_TRACEBACK = "Traceback (most recent call last)"
 
 _ALLOWED_DOCS_GENERATOR_DIR = "scripts"
 _ALLOWED_DOCS_GENERATOR_PREFIX = "docs_"
@@ -342,21 +348,29 @@ def _pixi_identifiers(target: Path) -> frozenset[str]:
     return frozenset(tasks) | frozenset(deps)
 
 
-def _is_git_ignored(target: Path, rel: str) -> bool:
-    try:
-        run_git(target, ["check-ignore", "-q", rel])
-        return True
-    except CliBridgeError:
-        return False
+def _is_git_ignored(target: Path, rel: str, *, directory: bool = False) -> bool:
+    """``git check-ignore`` for ``rel``; when the page wrote it with a trailing ``/``, retried as ``rel/``
+    (Story 30.5): git cannot tell an absent path is a directory, so a directory-only rule
+    (``docs/dashboard/kedro-viz/``) matches only the slashed form. A reference written without the slash is
+    not retried, so a deleted file whose name a directory-only rule (``build/``) matches still reads dead."""
+    for candidate in (rel, f"{rel}/") if directory else (rel,):
+        try:
+            run_git(target, ["check-ignore", "-q", candidate])
+            return True
+        except CliBridgeError:
+            continue
+    return False
 
 
 def _resolves_as_identifier(target: Path, name: str, pixi_ids: frozenset[str]) -> bool:
+    """A ``bmad-*``/``skf-*`` token names a skill, a script, a pixi task or dependency, or a detector
+    whose pixi task is ``<token>-check`` (Story 30.5: ``bmad-output-hygiene`` is a Doctor source)."""
     skill_dir = target / ".claude" / "skills" / name
     if skill_dir.is_dir() and any(skill_dir.rglob("SKILL.md")):
         return True
     if (target / "scripts" / name).exists() or (target / "scripts" / f"{name}.py").exists():
         return True
-    return name in pixi_ids
+    return name in pixi_ids or f"{name}-check" in pixi_ids
 
 
 def _strip_ignored(text: str) -> str:
@@ -398,10 +412,11 @@ def _dead_references(target: Path, text: str) -> list[str]:
             dead.append(ref)
             seen.add(ref)
     for match in _PATH_RE.finditer(text):
-        ref = match.group(1).rstrip("/")
+        written = match.group(1)
+        ref = written.rstrip("/")
         if ref in seen or "*" in ref or "<" in ref:
             continue
-        if not (target / ref).exists() and not _is_git_ignored(target, ref):
+        if not (target / ref).exists() and not _is_git_ignored(target, ref, directory=written.endswith("/")):
             dead.append(ref)
             seen.add(ref)
     return dead
@@ -499,6 +514,19 @@ def _check_generated_page(target: Path, page: dict) -> Finding | None:
         )
     if returncode == 0:
         return None
+    crashed = returncode == 1 and _TRACEBACK in output
+    if returncode != 1 or crashed:
+        # A docs generator exits 1 when its page is stale (Story 30.5). Only scripts/docs_bmad_estate.py exits 2
+        # by design (pyforge.scribe missing), argparse exits 2 on a usage error, and an uncaught exception exits
+        # 1 with a traceback: each is could-not-run, never a hand edit.
+        how = "crashed (exit 1 with a traceback)" if crashed else f"exited {returncode}, not 0 or 1"
+        return Finding(
+            source=Source.DOCS_CURRENCY,
+            check=_CHECK_GENERATED_STALE,
+            status=DoctorStatus.WARN,
+            message=(f"{rel}: could not run generator {generator} -- its --check {how}"),
+            evidence={"page": rel, "generator": generator, "exit": returncode, "output": output[-2000:]},
+        )
     return Finding(
         source=Source.DOCS_CURRENCY,
         check=_CHECK_GENERATED_STALE,

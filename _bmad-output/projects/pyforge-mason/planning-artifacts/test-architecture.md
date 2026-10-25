@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: 248c35e6a2351f28
-story_count: 113
+source_fingerprint: 59ac88326329ce88
+story_count: 114
 test_file_count: 43
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 113
+- **Stories parsed:** 114
 - **Epics parsed:** 31
 - **Test files inventoried:** 43 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `248c35e6a2351f28`
+- **Source fingerprint:** `59ac88326329ce88`
 
 ## Risk Assessment
 
@@ -228,6 +228,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 25.15 | Six duplicate recipe directories retire into recipes/langflow and recipes/dbt | none observed |
 | 25.16 | Three dbt adapter recipes are re-mirrored from their own feedstocks | none observed |
 | 26.1 | CFE's tests never ask GitHub whether a recipe maintainer exists | none observed |
+| 26.2 | CFE's tests never fetch conda-smithy's remote lint data | none observed |
 | 27.1 | Mason's package and the repo tooling it owns close their open deferrals | none observed |
 | 27.2 | CFE, its failure catalog and the closed rebuild campaign's records close thei... | none observed |
 | 28.1 | The rebuild guard reads a SHA field whatever type YAML gives it | none observed |

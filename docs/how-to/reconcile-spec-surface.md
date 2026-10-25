@@ -5,7 +5,7 @@ sources:
   - scripts/.spec-surface-baseline.json
   - _bmad/scripts/memlog.py
   - .claude/memory/feedback/spec-surface-check-py-s-write-baseline-reads-git-ls-files-so.md
-verified: 2026-09-20
+verified: 2026-10-24
 ---
 
 # How to Reconcile Spec Surface Drift
@@ -70,6 +70,8 @@ python scripts/spec_surface_check.py --write-baseline --spec pyforge-doctor/spec
 ```
 
 `--spec` is repeatable when several specs drifted. Run it with plain `python` from the `pyforge-guild` env — the script is a mutation-only residual; the read-only verdict lives in `pyforge.doctor.sources`.
+
+A scoped stamp accepts a changed, added or removed path only when the spec's memlog moved since the baseline **and** names that path (Step 2). Any other differing path refuses the whole stamp: it exits 1, leaves the baseline untouched, and lists each path with the command that accepts it explicitly (`--accept PATH`, repeatable). Prefer fixing the memlog entry; use `--accept` only for a path you have checked yourself.
 
 > [!CAUTION]
 > **Never run a bare `--write-baseline` without `--spec`.** A bare stamp covers every spec in the repository, accepting all pending drift — including undocumented changes your colleagues are working on in parallel worktrees — as correct.

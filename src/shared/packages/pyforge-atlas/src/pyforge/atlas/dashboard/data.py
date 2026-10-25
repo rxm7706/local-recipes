@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 import pandas as pd
+from pyforge.core.flags import read_boolean
 
 from ..semantic import models
 
@@ -36,12 +37,13 @@ PACKAGE_MAINTAINERS_PARQUET = "intermediate/vcs_package_maintainers/vcs_package_
 # (conda_name + latest_status + feedstock_archived + latest_conda_upload +
 # downloads_* + per-version fields) is derived by the named, downstream-only
 # ``semantic_packages`` Kedro pipeline (Story 20.3, CAP-6 / ``query-plane-catalog``
-# ruling) from the sealed ``core`` + ``vcs_health`` pipelines' own catalog outputs —
-# run it (after ``core`` + ``vcs_health``) with ``pyforge atlas run --pipelines
-# semantic_packages`` to materialize this Parquet. ``latest_conda_upload`` / the
-# per-version inputs are themselves ``deferred-input-not-in-migrated-store`` (D1
-# ``metrics.METRIC_PROVENANCE``) — the pipeline node declares them NULL, never
-# fabricated. In a checkout where the pipeline has not yet run, the loader still
+# ruling) from the sealed ``core`` + ``vcs_health`` pipelines' own catalog outputs and
+# (Story 38.1) ``derived_artifacts``' release cadence and cf-graph archived set. The two
+# pipelines read each other's outputs, and ``derived_artifacts`` reads several more, so
+# build them in one DAG with the fetch pipelines: ``pixi run -e pyforge-atlas
+# pyforge-atlas-bootstrap``, or the default pipeline. A package the cadence lacks, or
+# whose newest build it does not know, keeps its upload columns NULL, never fabricated.
+# In a checkout where the pipeline has not yet run, the loader still
 # degrades honestly to an empty result via the same ``_bsl_query_or_empty`` seam
 # every page uses. Closes DW-D2-2.
 PACKAGES_PARQUET = "primary/semantic_packages/semantic_packages.parquet"
@@ -53,12 +55,13 @@ ESTATE_CACHE_PARQUET = "primary/query_plane_estate/query_plane_estate.parquet"
 # produces them) — the loader below degrades honestly to an empty typed frame via
 # the SAME `_bsl_query_or_empty` seam until a future pipeline lands each one.
 VULN_HISTORY_PARQUET = "primary/vuln_history/vuln_history.parquet"
-VERSION_DOWNLOADS_PARQUET = "primary/version_downloads/version_downloads.parquet"
+# Story 37.3: the boards read the datasets the pipelines write (CAP-69)
+VERSION_DOWNLOADS_PARQUET = "primary/core_version_download_history/core_version_download_history.parquet"
 RELEASE_CADENCE_PARQUET = "primary/release_cadence/release_cadence.parquet"
 ALTERNATIVE_CANDIDATES_PARQUET = "primary/alternative_candidates/alternative_candidates.parquet"
 SCAN_RESULT_LATEST_PARQUET = "primary/scan_project_latest/scan_project_latest.parquet"
 ENV_INSPECT_LATEST_PARQUET = "primary/env_inspect_latest/env_inspect_latest.parquet"
-DISTRIBUTION_BREAKDOWN_PARQUET = "primary/distribution_breakdown/distribution_breakdown.parquet"
+DISTRIBUTION_BREAKDOWN_PARQUET = "derived/derived_distribution_breakdown/derived_distribution_breakdown.parquet"
 PURL_EXPORT_MANIFEST_PARQUET = "primary/purl_export_manifest/purl_export_manifest.parquet"
 MAPPING_GAP_PARQUET = "primary/mapping_gap/mapping_gap.parquet"
 UNIVERSE_SBOM_SUMMARY_PARQUET = "primary/universe_sbom_summary/universe_sbom_summary.parquet"
@@ -66,16 +69,40 @@ INVENTORY_MATCH_LATEST_PARQUET = "primary/inventory_match_latest/inventory_match
 ADD_HANDOFF_LATEST_PARQUET = "primary/add_handoff_latest/add_handoff_latest.parquet"
 LIBRARY_FUTURES_LATEST_PARQUET = "primary/library_futures_latest/library_futures_latest.parquet"
 RECOMMEND_2027_PARQUET = "primary/recommend_2027/recommend_2027.parquet"
-LTS_REGISTRY_GAP_PARQUET = "primary/lts_registry_gap/lts_registry_gap.parquet"
-CWE_SEED_GAP_PARQUET = "primary/cwe_seed_gap/cwe_seed_gap.parquet"
-SPDX_SCHEMA_GAP_PARQUET = "primary/spdx_schema_gap/spdx_schema_gap.parquet"
-LICENSE_MAP_GAP_PARQUET = "primary/license_map_gap/license_map_gap.parquet"
+LTS_REGISTRY_GAP_PARQUET = "derived/seed_gaps_lts_registry_report/seed_gaps_lts_registry_report.parquet"
+CWE_SEED_GAP_PARQUET = "derived/seed_gaps_cwe_report/seed_gaps_cwe_report.parquet"
+SPDX_SCHEMA_GAP_PARQUET = "derived/seed_gaps_spdx_report/seed_gaps_spdx_report.parquet"
+LICENSE_MAP_GAP_PARQUET = "derived/seed_gaps_license_map_report/seed_gaps_license_map_report.parquet"
 IDENTITY_COMPLETE_EXPORT_PARQUET = "derived/identity_complete_export/identity_complete_export.parquet"
 ENTERPRISE_JFROG_CONSUMPTION_PARQUET = "derived/enterprise_jfrog_consumption/enterprise_jfrog_consumption.parquet"
 # Story 21.9 (CAP-5) — Epic 21 bootstrap verification operator pages
 BOOTSTRAP_INDEX_HEALTH_PARQUET = "derived/bootstrap_index_health/bootstrap_index_health.parquet"
 IDENTITY_EXPORT_PARQUET = "derived/identity_export_parquet/identity_export_parquet.parquet"
 LIVE_CATALOG_COVERAGE_PARQUET = "derived/live_catalog_coverage/live_catalog_coverage.parquet"
+
+# Story 37.4 (CAP-69): with ``pyforge.atlas.board_projections`` on, four boards (Story 37.5: and the cve-watcher; Story 37.9: and the mapping-gap) read these instead.
+# Off, behind-upstream and whodepends stay shells and the two coverage boards read the paths above.
+BOARD_PROJECTIONS_FLAG = "pyforge.atlas.board_projections"
+BEHIND_UPSTREAM_PARQUET = "derived/derived_behind_upstream/derived_behind_upstream.parquet"
+CORE_DEPENDENCIES_PARQUET = "primary/core_dependencies/core_dependencies.parquet"
+DERIVED_LIVE_CATALOG_COVERAGE_PARQUET = "derived/derived_live_catalog_coverage/derived_live_catalog_coverage.parquet"
+DERIVED_UNIVERSE_SBOM_SUMMARY_PARQUET = "derived/derived_universe_sbom_summary/derived_universe_sbom_summary.parquet"
+# Story 37.5: the cve-watcher's diff of two vulnerability snapshots
+DERIVED_VULN_HISTORY_PARQUET = "derived/derived_vuln_history/derived_vuln_history.parquet"
+# Story 37.13: the snapshot store that diff reads; the cve-watcher's AD-17 stamp is its latest snapshot
+VULN_ROLLUP_SNAPSHOTS_PARQUET = "primary/vulnerability_rollup_snapshots/vulnerability_rollup_snapshots.parquet"
+# Story 37.9: the mapping-gap classification
+DERIVED_MAPPING_GAP_PARQUET = "derived/derived_mapping_gap/derived_mapping_gap.parquet"
+# Story 37.10: every catalog entry's last write and row count
+CATALOG_INDEX_HEALTH_PARQUET = "derived/catalog_index_health/catalog_index_health.parquet"
+# Story 37.8: the six export-purls artifacts' manifest
+DERIVED_PURL_EXPORT_MANIFEST_PARQUET = "derived/derived_purl_export_manifest/derived_purl_export_manifest.parquet"
+# Story 38.1: version-downloads with each version's upload date
+DERIVED_VERSION_DOWNLOADS_PARQUET = "derived/derived_version_downloads/derived_version_downloads.parquet"
+# Story 37.6: the release-cadence counts per package
+DERIVED_RELEASE_CADENCE_PARQUET = "derived/derived_release_cadence/derived_release_cadence.parquet"
+# Story 37.7: the find-alternative candidates for every archived package
+DERIVED_ALTERNATIVE_CANDIDATES_PARQUET = "derived/derived_alternative_candidates/derived_alternative_candidates.parquet"
 
 # Mirrors ``scripts/openteams_identity_dashboards.py::EXTERNAL_LIVE`` — static reference rows.
 IDENTITY_WORKBOOK_EXTERNAL_COUNTS: tuple[tuple[str, str, str, str], ...] = (
@@ -93,23 +120,33 @@ _IDENTITY_WORKBOOK_DIMENSIONS = ["match_bucket"]
 _IDENTITY_WORKBOOK_MEASURES = ["package_count", "artifactory_downloads_total"]
 
 
-def default_data_root() -> Path:
-    """The catalog ``data_root`` (env-overridable, mirrors globals.yml `paths.data_root`).
+#: Story 37.1: the Kedro project this module ships in (``src/shared/packages/pyforge-atlas``)
+_MEMBER_ROOT = Path(__file__).resolve().parents[4]
 
-    Defaults to ``<repo>/data`` — the repo-root-relative default the catalog resolves
-    against the process CWD (review-pass P9). ``PYFORGE_ATLAS_DATA_ROOT`` overrides it.
+
+def default_data_root() -> Path:
+    """The data root Kedro writes, which the boards read.
+
+    Story 37.1: ``globals.yml``'s ``paths.data_root`` is ``data`` unless
+    ``PYFORGE_ATLAS_DATA_ROOT`` overrides it, relative to the Kedro project -- the member, where
+    ``pyforge atlas run`` runs (Story 33.1). So the root is the member's ``data/``, and a relative
+    override is anchored at the member as Kedro and ``admission._data_root`` anchor it. A blank
+    override counts as unset, as in ``admission``. Before this story the walk went up to the repo
+    root's ``data/``, which holds only ``raw/``, so a local run never showed on the boards. An
+    installed layout with no member resolves against the working directory, where Kedro starts
+    looking for a project.
     """
-    env = os.environ.get("PYFORGE_ATLAS_DATA_ROOT")
-    if env:
-        return Path(env)
-    # Walk up to the repo root so this resolves whether run from the source tree or an installed
-    # layout. Anchor on ``.git`` (a UNIQUE repo-root marker) — NOT ``pixi.toml``, which the
-    # pyforge-atlas member also ships, so a pixi.toml walk would stop at the member dir.
-    current = Path(__file__).resolve()
-    for parent in current.parents:
-        if (parent / ".git").exists() or (parent / "_bmad-output").is_dir():
-            return parent / "data"
-    return (current.parents[8] if len(current.parents) > 8 else current.parent) / "data"
+    member = (_MEMBER_ROOT / "conf" / "base" / "catalog.yml").is_file()
+    base = _MEMBER_ROOT if member else Path.cwd()
+    root = Path((os.environ.get("PYFORGE_ATLAS_DATA_ROOT") or "").strip() or "data")
+    return root if root.is_absolute() else base / root
+
+
+def board_projections(*, flags_path: Path | str | None = None) -> bool:
+    """Story 37.4: whether behind-upstream, whodepends and the two coverage boards (Story 37.5: and the
+    cve-watcher; Story 37.9: and the mapping-gap) read the datasets the pipelines write (``pyforge.atlas.board_projections``; off when the tree
+    is missing or unreadable)."""
+    return read_boolean(BOARD_PROJECTIONS_FLAG, default=False, flags_path=flags_path)
 
 
 def _bsl_query_or_empty(
@@ -265,13 +302,14 @@ def load_release_cadence(parquet: str | os.PathLike[str] | None = None) -> pd.Da
     )
 
 
-def load_find_alternative(parquet: str | os.PathLike[str] | None = None) -> pd.DataFrame:
-    """`find-alternative` — build_alternative_candidates_model."""
+def load_find_alternative(parquet: str | os.PathLike[str] | None = None, *, now: int | None = None) -> pd.DataFrame:
+    """`find-alternative` — build_alternative_candidates_model, its stage on the board's clock (Story 38.1)."""
     return _bsl_query_or_empty(
         parquet,
         models.build_alternative_candidates_model,
         ["archived_name", "candidate_name", "adoption_stage"],
         ["similarity_score", "downloads_total"],
+        model_kwargs={"now_unix": now},
     )
 
 
@@ -349,7 +387,7 @@ def load_mapping_gap(parquet: str | os.PathLike[str] | None = None) -> pd.DataFr
     return _bsl_query_or_empty(
         parquet,
         models.build_mapping_gap_model,
-        ["conda_name", "classification", "match_source", "match_confidence"],
+        ["conda_name", "classification", "match_source", "match_confidence", "candidate"],
         ["gap_count"],
     )
 
@@ -453,7 +491,7 @@ def load_bootstrap_index_health(parquet: str | os.PathLike[str] | None = None) -
     return _bsl_query_or_empty(
         parquet,
         models.build_bootstrap_index_health_model,
-        ["catalog_entry", "tier", "regenerated_at"],
+        ["catalog_entry", "tier", "regenerated_at", "status"],
         ["row_count"],
     )
 
@@ -465,6 +503,26 @@ def load_identity_export_snapshot(parquet: str | os.PathLike[str] | None = None)
         models.build_identity_export_snapshot_model,
         ["identity_source"],
         ["package_count", "primary_purl_coverage_count", "openteams_issue_url_coverage_count"],
+    )
+
+
+def load_behind_upstream(parquet: str | os.PathLike[str] | None = None) -> pd.DataFrame:
+    """`behind-upstream` — Story 37.4: build_behind_upstream_model over ``derived_behind_upstream``."""
+    return _bsl_query_or_empty(
+        parquet,
+        models.build_behind_upstream_model,
+        ["conda_name", "latest_conda_version", "upstream_source", "upstream_version", "lag_label"],
+        ["package_count"],
+    )
+
+
+def load_whodepends(parquet: str | os.PathLike[str] | None = None) -> pd.DataFrame:
+    """`whodepends` — Story 37.4: build_whodepends_model over ``core_dependencies``."""
+    return _bsl_query_or_empty(
+        parquet,
+        models.build_whodepends_model,
+        ["depends_on", "dep_type"],
+        ["dependent_count"],
     )
 
 

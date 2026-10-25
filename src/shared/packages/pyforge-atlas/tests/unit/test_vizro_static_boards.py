@@ -16,7 +16,6 @@ import sys
 import tomllib
 from pathlib import Path
 
-import pytest
 import yaml
 from pyforge.testing_kit.flags import flagd_tree
 
@@ -69,7 +68,9 @@ def test_ac8_the_vizro_job_uploads_the_export_and_never_commits() -> None:
     flag_step = next(step for step in steps if step.get("id") == "vizro_flag")
     assert "vizro_static_export.py --print-flag" in flag_step["run"].replace("\\\n", " ").replace("  ", " ")
     export = next(step for step in steps if "vizro-static-export" in step.get("run", ""))
-    assert export["run"].strip() == "pixi run --frozen -e pyforge-atlas vizro-static-export"
+    assert export["run"].strip() == "pixi run --frozen -e pyforge-atlas vizro-static-export --clock now"
+    checkout = next(step for step in steps if str(step.get("uses", "")).startswith("actions/checkout"))
+    assert checkout["with"]["persist-credentials"] is False  # Story 37.2: the token never stays in .git/config
     assert export["if"] == upload["if"]
 
 
@@ -101,6 +102,298 @@ def test_ac8_the_vizro_job_runs_on_its_own_paths() -> None:
         assert spec in trigger or f"{spec}/**" in trigger, spec
 
 
+# --- Story 37.2 (CAP-63 amended 2026-10-19): the public data build, weekly -----------------------------
+
+
+def test_the_vizro_job_builds_the_public_data_before_it_exports() -> None:
+    steps = _steps(_workflow()["jobs"]["vizro"])
+    names = [step.get("name", "") for step in steps]
+    build = next(step for step in steps if step.get("name") == "Build the public atlas data")
+    export = next(step for step in steps if "vizro-static-export" in step.get("run", ""))
+    flag = next(step for step in steps if step.get("id") == "vizro_flag")
+
+    room = next(step for step in steps if step.get("name") == "Free disk space for the data build")
+    assert (
+        names.index(flag["name"]) < names.index(room["name"]) < names.index(build["name"]) < names.index(export["name"])
+    )
+    assert build["if"] == export["if"] == room["if"]  # flag off: no build and no export
+    (removal,) = [line for line in room["run"].splitlines() if "rm -rf" in line]
+    targets = removal.split("rm -rf", 1)[1].split()
+    assert "/usr/share/dotnet" in targets
+    assert all(
+        t.startswith(("/usr/", "/opt/")) and len(t.rstrip("/").split("/")) >= 3 for t in targets
+    )  # never /usr or /opt
+    assert _workflow()["jobs"]["vizro"]["timeout-minutes"] == 240  # three times the measured build
+    # Story 38.1: semantic_packages builds inside the bootstrap's one DAG, never as a step after it
+    assert build["run"].split("\n")[0] == "pixi run --frozen -e pyforge-atlas pyforge-atlas-bootstrap"
+    assert "--pipelines semantic_packages" not in build["run"]
+    assert "continue-on-error" not in build  # a failed build fails the job; Pages keeps its last export
+
+
+def test_the_vizro_job_runs_public_sources_only() -> None:
+    job = _workflow()["jobs"]["vizro"]
+    text = yaml.safe_dump(job)  # the parsed job: comments are not in it
+    assert "secrets." not in text and "PYFORGE_ATLAS_CREDENTIALED" not in text
+    assert "GITHUB_TOKEN" not in text and "GH_TOKEN" not in text and "PHASE_P" not in text
+    assert all("env" not in step for step in _steps(job) if step.get("name") == "Build the public atlas data")
+
+
+def test_the_bootstrap_task_runs_the_fetch_pipelines_with_the_semantic_store_and_never_the_estate_cache() -> None:
+    task = tomllib.loads(PIXI.read_text(encoding="utf-8"))["feature"]["pyforge-atlas"]["tasks"][
+        "pyforge-atlas-bootstrap"
+    ]
+    pipelines = task["cmd"].split("--pipelines ", 1)[1].split()[0].split(",")
+    assert pipelines == [
+        "core",
+        "pypi_intelligence",
+        "vulnerability",
+        "vcs_health",
+        "upstream_discovery",
+        "derived_artifacts",
+        "seed_gaps",
+        "artifactory_downloads",
+        "semantic_packages",  # Story 38.1: it and derived_artifacts read each other's outputs
+    ]
+    assert task["cwd"] == "src/shared/packages/pyforge-atlas"
+
+
+def test_the_workflow_rebuilds_weekly_and_still_on_push_and_dispatch() -> None:
+    document = _workflow()
+    on_block = document.get("on", document.get(True))
+    assert set(on_block) == {"push", "schedule", "workflow_dispatch"}
+    (entry,) = on_block["schedule"]
+    minute, hour, day_of_month, month, day_of_week = entry["cron"].split()
+    assert (day_of_month, month) == ("*", "*") and day_of_week.isdigit()  # once a week
+    assert minute.isdigit() and hour.isdigit()
+
+
+# --- Story 37.12 (CAP-63, CAP-64): the last-good copies persist between Pages runs ----------------------------
+
+MEMBER = "src/shared/packages/pyforge-atlas"
+DATA_ROOT = f"{MEMBER}/data"
+# `stores/*` beside `!stores/vdb`, never `stores`: actions/cache globs with implicitDescendants false and tar
+# recurses into a listed directory, so an exclusion under a listed `stores` would archive the 9.6 GB vdb store.
+# The one output-layer path: the vulnerability snapshot history (Story 37.5), which each run whose rollup has rows
+# appends to and the cve-watcher diffs, so it is a store across runs, not a table a node rewrites.
+HISTORY_STORES = {"vulnerability_rollup_snapshots": f"{DATA_ROOT}/primary/vulnerability_rollup_snapshots"}
+LAST_GOOD_PATHS = [
+    f"{DATA_ROOT}/raw",
+    f"{DATA_ROOT}/stores/*",
+    HISTORY_STORES["vulnerability_rollup_snapshots"],
+    f"!{DATA_ROOT}/stores/vdb",
+]
+CACHE_KEY = "pyforge-atlas-last-good-${{ github.run_id }}-${{ github.run_attempt }}"
+CACHE_PREFIX = "pyforge-atlas-last-good-"
+GLOBALS = REPO_ROOT / MEMBER / "conf" / "base" / "globals.yml"
+CATALOG = REPO_ROOT / MEMBER / "conf" / "base" / "catalog.yml"
+WORKFLOWS = REPO_ROOT / ".github" / "workflows"
+PATH_KEYS = ("filepath", "path", "filename")  # the keys CatalogIndexDataset reads an entry's path from
+# Raw-layer entries under a cached path that are no last-good store: five plain ones (three node outputs the build
+# rewrites every run; steward's estate export, which only query_plane_cache reads and the build does not run;
+# warden's fleet inventory) and the two SBOM entries, whose runtime-param defaults the Pages build never writes.
+NOT_LAST_GOOD = {
+    "org_audit_candidates",
+    "artifactory_downloads_raw",
+    "artifactory_consumption_raw",
+    "query_plane_estate_source",
+    "warden_fleet_inventory",
+    "sbom_intake_entry",
+    "sbom_resolution_entry",
+}
+# The dataset classes that keep a last-good copy (or a store) and its AD-13 marker under their own path. A raw-layer
+# entry of another class under a cached path is a decision to record here, not a silent addition to the cache.
+LAST_GOOD_TYPES = {
+    f"pyforge.atlas.datasets.{name}"
+    for name in (
+        "AboutMaintainersDataset",
+        "AnacondaDist2026Dataset",
+        "AossPremiumPythonDataset",
+        "BasiliskBatchDataset",
+        "BasiliskDetailDataset",
+        "BasiliskPackagesDataset",
+        "CfGraphTarballDataset",
+        "CisaKevDataset",
+        "CweCatalogDataset",
+        "DebianPackagesDataset",
+        "EpssFeedDataset",
+        "FedoraPackagesDataset",
+        "GitHubRequestDataset",
+        "HomebrewPackagesDataset",
+        "JSONSourceDataset",
+        "MappingCacheDataset",
+        "MigrationCategoryDataset",
+        "MigrationDetailDataset",
+        "NixpkgsPackagesDataset",
+        "OSVOfflineStoreDataset",
+        "OpenTeamsBoardDataset",
+        "ParselmouthMappingDataset",
+        "PurlAssociatorMappingsDataset",
+        "PyPIClickHouseDownloadsDataset",
+        "PyPIJsonFanOutDataset",
+        "RegistryUpstreamDataset",
+        "RepodataUploadsDataset",
+        "S3DownloadStatsDataset",
+        "SpackPackagesDataset",
+        "StagedRecipesPRDataset",
+        "TrendingSnapshotDataset",
+        "VcsHostSeedDataset",
+    )
+}
+# Events that run in the default branch's cache scope on input a pull request or an outsider controls.
+UNTRUSTED_IN_MAIN_SCOPE = {
+    "pull_request_target",
+    "workflow_run",
+    "issue_comment",
+    "issues",
+    "discussion",
+    "discussion_comment",
+}
+
+
+def _cache_step(kind: str) -> dict:
+    (step,) = [
+        step
+        for step in _steps(_workflow()["jobs"]["vizro"])
+        if str(step.get("uses", "")).startswith(f"actions/cache/{kind}@")
+    ]
+    return step
+
+
+def _data_root_paths() -> dict[str, str]:
+    """``globals.yml``'s ``paths``, each resolved with no env override, as the job runs them."""
+    paths = yaml.safe_load(GLOBALS.read_text(encoding="utf-8"))["paths"]
+    data_root = paths["data_root"]
+    assert data_root == "${env_or:PYFORGE_ATLAS_DATA_ROOT,data}"  # the member's data/, the root the build writes
+    return {key: str(value).replace("${paths.data_root}", "data") for key, value in paths.items()} | {
+        "data_root": "data"
+    }
+
+
+def _resolved_paths(entry: dict, paths: dict[str, str]) -> list[str]:
+    resolved = []
+    for path_key in PATH_KEYS:
+        value = str(entry.get(path_key, ""))
+        for key, root in paths.items():
+            value = value.replace(f"${{globals:paths.{key}}}", root)
+        if value.startswith("${runtime_params:"):
+            value = value.split(",", 1)[1].rstrip("}")  # the default a run without the param writes
+        if value:
+            resolved.append(value)
+    return resolved
+
+
+def test_the_vizro_job_restores_the_last_good_copies_before_the_build_and_saves_them_after() -> None:
+    steps = _steps(_workflow()["jobs"]["vizro"])
+    names = [step.get("name", "") for step in steps]
+    restore, save = _cache_step("restore"), _cache_step("save")
+    build = next(step for step in steps if step.get("name") == "Build the public atlas data")
+    export = next(step for step in steps if "vizro-static-export" in step.get("run", ""))
+    room = next(step for step in steps if step.get("name") == "Free disk space for the data build")
+    flag = next(step for step in steps if step.get("id") == "vizro_flag")
+    order = [names.index(step["name"]) for step in (flag, room, restore, build, save, export)]
+    assert order == sorted(order), names  # restored before the build reads it, saved before the export can fail
+    assert restore["uses"] == "actions/cache/restore@v6" and save["uses"] == "actions/cache/save@v6"
+    # The build's own gate: flag off, nothing restored or saved; no always()/failure(), so a failed build saves
+    # nothing and still fails the job.
+    assert restore["if"] == save["if"] == build["if"] == "${{ steps.vizro_flag.outputs.enabled == 'true' }}"
+    assert "continue-on-error" not in build and "continue-on-error" not in save
+    # The default shell (bash -e) stops the step at a failed bootstrap: catalog_index cannot turn it green.
+    document, job = _workflow(), _workflow()["jobs"]["vizro"]
+    assert "shell" not in build
+    for scope in (job, document):
+        assert "shell" not in (scope.get("defaults") or {}).get("run", {})
+    assert [s for s in steps if "actions/cache" in str(s.get("uses", ""))] == [restore, save]
+
+
+def test_the_restore_and_the_save_name_the_same_paths_and_key() -> None:
+    restore, save = _cache_step("restore")["with"], _cache_step("save")["with"]
+    # actions/cache hashes the path list into the entry's version: a save under other paths is never restored.
+    assert restore["path"].splitlines() == save["path"].splitlines() == LAST_GOOD_PATHS
+    assert restore["key"] == save["key"] == CACHE_KEY  # one entry per run attempt: a re-run keeps its fresher copies
+    assert restore["restore-keys"].split() == [CACHE_PREFIX]  # the newest entry an earlier run saved
+    assert CACHE_KEY.startswith(CACHE_PREFIX)
+    assert set(restore) == {"path", "key", "restore-keys"}  # no fail-on-cache-miss: a miss is the fresh root
+    assert set(save) == {"path", "key"}
+
+
+def test_only_last_good_copies_persist_never_the_vdb_store_or_an_output_layer() -> None:
+    listed = _cache_step("save")["with"]["path"].splitlines()  # the product's list, not this module's literal
+    includes = [path for path in listed if not path.startswith("!")]
+    excludes = [path[1:] for path in listed if path.startswith("!")]
+    assert listed[-1].startswith("!")  # a negation only removes what the patterns before it matched
+    assert excludes == [f"{DATA_ROOT}/stores/vdb"]
+    assert _data_root_paths()["vdb_store"] == "data/stores/vdb"
+    # Each exclusion's parent is listed by its children (`<parent>/*`), never as itself, or tar would recurse into it.
+    for excluded in excludes:
+        parent = excluded.rsplit("/", 1)[0]
+        assert f"{parent}/*" in includes and parent not in includes and DATA_ROOT not in includes
+    history = set(HISTORY_STORES.values())
+    for layer in ("intermediate", "primary", "derived", "cache"):
+        listed_layer = {path for path in includes if path.startswith(f"{DATA_ROOT}/{layer}")}
+        assert listed_layer <= history, (layer, listed_layer - history)
+
+
+def test_the_cached_paths_are_the_data_root_the_build_writes() -> None:
+    manifest = tomllib.loads(PIXI.read_text(encoding="utf-8"))
+    atlas = manifest["feature"]["pyforge-atlas"]
+    assert atlas["tasks"]["pyforge-atlas-bootstrap"]["cwd"] == MEMBER  # Kedro resolves `data` against the member
+    assert _data_root_paths()["data_root"] == "data"
+    # An override anywhere the job reads its environment would move the data off the cached paths.
+    assert "PYFORGE_ATLAS_DATA_ROOT" not in yaml.safe_dump(_workflow())  # workflow, job and step env
+    for task in ("pyforge-atlas-bootstrap", "vizro-static-export"):
+        assert "PYFORGE_ATLAS_DATA_ROOT" not in atlas["tasks"][task].get("env", {}), task
+        assert "PYFORGE_ATLAS_DATA_ROOT" not in atlas["tasks"][task]["cmd"], task  # nor as a command prefix
+    for scope in (atlas, manifest):  # the feature's activation env and the workspace's
+        assert "PYFORGE_ATLAS_DATA_ROOT" not in scope.get("activation", {}).get("env", {})
+
+
+def test_every_last_good_store_under_the_data_root_is_cached() -> None:
+    """A raw-layer entry keeps its last-good copy (and AD-13 marker) under its own path: every one under the data
+    root lies under a cached path, the vdb store the one exclusion; of the other layers only the snapshot history
+    lies under one, and every snapshot history store does."""
+    paths = _data_root_paths()
+    catalog = yaml.safe_load(CATALOG.read_text(encoding="utf-8"))
+    cached, excluded = ("data/raw/", "data/stores/"), "data/stores/vdb"
+    history = {name: path.removeprefix(f"{MEMBER}/") + "/" for name, path in HISTORY_STORES.items()}
+    raw_under_root: set[str] = set()
+    not_last_good: set[str] = set()
+    for name, entry in catalog.items():
+        if not isinstance(entry, dict):
+            continue
+        layer = (entry.get("metadata") or {}).get("layer")
+        for path in _resolved_paths(entry, paths):
+            if not path.startswith("data/"):
+                continue  # seeds, conf files and the recipes tree are tracked, not run state
+            if str(entry.get("type", "")).endswith(".SnapshotHistoryDataset"):
+                assert name in history and path.startswith(history[name]), (name, path)  # a history persists
+                continue
+            if layer != "raw":
+                assert not path.startswith((*cached, *history.values())), (name, path)  # an output never persists
+                continue
+            raw_under_root.add(name)
+            if path == excluded or path.startswith(f"{excluded}/"):
+                assert name == "vulnerability_vdb_store", (name, path)  # nothing else hides under the exclusion
+            else:
+                assert path.startswith(cached), (name, path)
+                if entry.get("type") not in LAST_GOOD_TYPES:
+                    not_last_good.add(name)
+    assert {"vulnerability_cisa_kev_raw", "core_s3_download_stats_raw", "pypi_conda_map_store"} <= raw_under_root
+    # A raw entry of a class not known to keep a last-good copy is a decision to record, not a drift.
+    assert not_last_good == NOT_LAST_GOOD
+    used = {entry.get("type") for name, entry in catalog.items() if name in raw_under_root}
+    assert LAST_GOOD_TYPES <= used  # no stale name hides a class that left the catalog
+
+
+def test_no_workflow_runs_untrusted_input_in_main_s_cache_scope() -> None:
+    """A pull_request run saves to the pull request's own cache scope; these events run in main's, where a
+    poisoned pyforge-atlas-last-good-* entry would reach the Pages build."""
+    for workflow in sorted(WORKFLOWS.glob("*.y*ml")):
+        document = yaml.safe_load(workflow.read_text(encoding="utf-8"))
+        on_block = document.get("on", document.get(True))
+        events = {on_block} if isinstance(on_block, str) else set(on_block or ())
+        assert not events & UNTRUSTED_IN_MAIN_SCOPE, (workflow.name, sorted(events & UNTRUSTED_IN_MAIN_SCOPE))
+
+
 def test_the_flag_is_in_the_tree_off_by_default_and_on_only_in_dev() -> None:
     entry = json.loads(FLAGS.read_text(encoding="utf-8"))["flags"][FLAG]
     assert entry["defaultVariant"] == "off"
@@ -116,10 +409,11 @@ def test_the_flag_is_in_the_tree_off_by_default_and_on_only_in_dev() -> None:
     assert vizro_static_boards.FLAG_KEY == FLAG
 
 
-@pytest.mark.parametrize(("variant", "expected"), [("on", True), ("off", False)])
-def test_boards_enabled_reads_the_tree(tmp_path: Path, variant: str, expected: bool) -> None:
-    tree = flagd_tree(tmp_path, {FLAG: variant})
-    assert vizro_static_boards.boards_enabled(flags_path=str(tree)) is expected
+def test_boards_enabled_reads_the_tree(tmp_path: Path) -> None:
+    on = flagd_tree(tmp_path, {FLAG: "on"}, name="on.json")
+    off = flagd_tree(tmp_path, {FLAG: "off"}, name="off.json")
+    assert vizro_static_boards.boards_enabled(flags_path=str(on)) is True
+    assert vizro_static_boards.boards_enabled(flags_path=str(off)) is False
 
 
 def test_the_task_flag_off_refuses_before_importing_the_dashboard(tmp_path: Path, capsys) -> None:

@@ -14,12 +14,14 @@ themselves be inside it. A governance document is an instrument.
 
 What is checked, and only what can be checked mechanically:
 
-* **Skill names** — a backticked ``bmad-*`` / ``skf-*`` token must resolve to a directory
-  under ``.claude/skills/``. This is the class that actually rotted.
+* **Skill names** — a backticked ``bmad-*`` / ``skf-*`` token must name a skill directory
+  under ``.claude/skills/``, a script, a pixi task or dependency, or a detector whose pixi
+  task is ``<token>-check``. This is the class that actually rotted.
 * **Script paths** — a backticked path ending ``.py`` under ``scripts/`` or ``_bmad/``
-  must exist on disk.
+  must exist on disk, or be gitignored.
 * **Repo-relative file paths** — a backticked path with a directory separator that names
-  a real top-level directory of this repo must exist.
+  a real top-level directory of this repo must exist, or be gitignored; a path written
+  with a trailing ``/`` is also tried as a directory, for directory-only ignore rules.
 
 Deliberate historical citations — a name quoted *because* it was removed — are exempted
 by an explicit marker, never by a heuristic:
@@ -140,9 +142,10 @@ _TASKS: frozenset[str] | None = None
 
 
 def _resolves_as_identifier(name: str) -> bool:
-    """A ``bmad-*``/``skf-*`` token names a skill, a script, or a pixi task.
+    """A ``bmad-*``/``skf-*`` token names a skill, a script, a pixi task or
+    dependency, or a detector whose pixi task is ``<token>-check``.
 
-    All three are DERIVED from the tree rather than hand-listed, because the first
+    All are DERIVED from the tree rather than hand-listed, because the first
     cut of this detector hand-assumed every such token was a skill and reported
     `bmad-loop` (the orchestrator package), `bmad-switch` (`scripts/bmad-switch`)
     and `bmad-groundtruth` (a pixi task) as dead. That is exactly the failure
@@ -158,10 +161,12 @@ def _resolves_as_identifier(name: str) -> bool:
         return True
     if _TASKS is None:
         _TASKS = _pixi_task_names() | _pixi_dependency_names()
-    return name in _TASKS
+    # A detector named by its source, whose pixi task is `<token>-check` (doctor
+    # Story 30.5: `bmad-output-hygiene`). docs_currency.py mirrors this rule.
+    return name in _TASKS or f"{name}-check" in _TASKS
 
 
-def _is_git_ignored(rel: str) -> bool:
+def _is_git_ignored(rel: str, *, directory: bool = False) -> bool:
     """Tier-3 paths are gitignored and absent from a fresh clone by design.
 
     This detector is scope=repo, so it may only judge tracked state; a reference to
@@ -169,12 +174,19 @@ def _is_git_ignored(rel: str) -> bool:
     that never ships.
     """
     import subprocess
-    try:
-        return subprocess.run(
-            ["git", "check-ignore", "-q", rel], cwd=ROOT, check=False
-        ).returncode == 0
-    except OSError:
-        return False
+    # A path the document wrote with a trailing `/` is retried as `rel/` (doctor
+    # Story 30.5): git cannot tell an absent path is a directory, so a directory-only
+    # rule (`docs/dashboard/kedro-viz/`) matches only the slashed form. Without the
+    # slash a deleted file whose name such a rule matches still reads dead.
+    # docs_currency.py mirrors this rule.
+    for candidate in (rel, f"{rel}/") if directory else (rel,):
+        try:
+            argv = ["git", "check-ignore", "-q", candidate]
+            if subprocess.run(argv, cwd=ROOT, check=False).returncode == 0:
+                return True
+        except OSError:
+            return False
+    return False
 
 
 def _check_document(rel: str) -> list[dict]:
@@ -207,7 +219,8 @@ def _check_document(rel: str) -> list[dict]:
             ref = m.group(1).rstrip("/")
             if "*" in ref or "<" in ref:
                 continue  # a glob or a placeholder, not a literal path
-            if not (ROOT / ref).exists() and not _is_git_ignored(ref):
+            directory = m.group(1).endswith("/")
+            if not (ROOT / ref).exists() and not _is_git_ignored(ref, directory=directory):
                 findings.append({
                     "document": rel, "kind": "path-not-found", "reference": ref,
                     "line": lineno, "detail": "path does not exist",

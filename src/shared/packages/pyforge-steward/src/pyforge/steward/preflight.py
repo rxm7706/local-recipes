@@ -589,7 +589,8 @@ class _RunCoordinator:
     # tuple, so a reader never sees a trigger without its environment; set only through
     # set_stop_cause, which checks and sets under stop_lock, so the first cause wins.
     stop_cause: tuple[str, str | None] | None = None
-    # Reentrant: the SIGINT handler sets the cause on the main thread and may re-enter itself.
+    # Reentrant, as it always was. Since Story 71.13 a nested SIGINT returns at the handler's guard before it reaches
+    # set_stop_cause, and the other callers run on pool threads, so no thread re-enters it today.
     stop_lock: threading.RLock = field(default_factory=threading.RLock)
     terminated_lanes: set[LaneKey] = field(default_factory=set)
     proc_lane: dict[int, LaneKey] = field(default_factory=dict)
@@ -659,6 +660,25 @@ def _stop_cause(coord: _RunCoordinator, default: str) -> tuple[str, str | None]:
     """The stop's ``(cancelled_by, cancelled_by_environment)``, or ``(default, None)`` before one is set."""
     cause = coord.stop_cause
     return cause if cause is not None else (default, None)
+
+
+def _cancelled_unstarted(coord: _RunCoordinator, lane: Lane, default: str) -> LaneResult:
+    """A lane the stop kept from running: ``cancelled``, exit 0, 0 s, naming the stop's cause.
+
+    Story 71.12: every such lane names it, whether the pool turned it away or the scheduler never submitted it, so
+    the journal does not depend on how the run interleaved. ``default`` is the cause before one is recorded.
+    """
+    trigger, trigger_env = _stop_cause(coord, default)
+    return LaneResult(
+        lane.task,
+        lane.environment,
+        0.0,
+        0,
+        "cancelled",
+        0.0,
+        cancelled_by=trigger,
+        cancelled_by_environment=trigger_env,
+    )
 
 
 def _terminate_proc_group(proc: subprocess.Popen[Any]) -> None:
@@ -997,19 +1017,9 @@ def _run_lane_in_pool(
 ) -> LaneResult:
     key = _lane_key(lane)
     if coord.cancel.is_set():
-        return LaneResult(lane.task, lane.environment, 0.0, 0, "cancelled", 0.0)
+        return _cancelled_unstarted(coord, lane, "interrupt")
     if _skip_lane_on_red_stop(coord):
-        trigger, trigger_env = _stop_cause(coord, "red")
-        return LaneResult(
-            lane.task,
-            lane.environment,
-            0.0,
-            0,
-            "cancelled",
-            0.0,
-            cancelled_by=trigger,
-            cancelled_by_environment=trigger_env,
-        )
+        return _cancelled_unstarted(coord, lane, "red")
 
     # Story 105.1: every mutex the lane holds (its CI service, the docs-site tree), taken in one sorted order, so two
     # lanes that each wait for the other's key cannot exist; released in reverse, whatever the lane did.
@@ -1020,19 +1030,9 @@ def _run_lane_in_pool(
             lock.acquire()
             held.append(lock)
         if coord.cancel.is_set():
-            return LaneResult(lane.task, lane.environment, 0.0, 0, "cancelled", 0.0)
+            return _cancelled_unstarted(coord, lane, "interrupt")
         if _skip_lane_on_red_stop(coord):
-            trigger, trigger_env = _stop_cause(coord, "red")
-            return LaneResult(
-                lane.task,
-                lane.environment,
-                0.0,
-                0,
-                "cancelled",
-                0.0,
-                cancelled_by=trigger,
-                cancelled_by_environment=trigger_env,
-            )
+            return _cancelled_unstarted(coord, lane, "red")
 
         lane_dir = scratch_root / lane_label(lane.task, lane.environment)
         log_path = _lane_log_path(scratch_root, lane.task, lane.environment)
@@ -1313,11 +1313,24 @@ def run_preflight(
             return _default_run_lane_ctx(coord, ctx)
 
     prior_sigint = signal.getsignal(signal.SIGINT)
+    # Story 71.13: Python runs the handler on the main thread between bytecodes, so a second SIGINT can land while the
+    # first call holds ``cancel``'s own Lock or ``proc_lock``; re-entering would wait forever on its own frame. A call
+    # that finds the handler running returns at once; once the handler has returned, a SIGINT runs it again.
+    sigint_running = False
 
     def _on_sigint(_signum: int, _frame: object | None) -> None:
-        coord.cancel.set()
-        coord.set_stop_cause(("interrupt", None))
-        coord.terminate_children()
+        nonlocal sigint_running
+        if sigint_running:
+            return
+        sigint_running = True
+        try:
+            # The cause before the flag, as a red lane records it (Story 71.12): a pool thread that sees ``cancel``
+            # set always finds the cause that set it.
+            coord.set_stop_cause(("interrupt", None))
+            coord.cancel.set()
+            coord.terminate_children()
+        finally:
+            sigint_running = False
 
     signal.signal(signal.SIGINT, _on_sigint)
 
@@ -1424,7 +1437,7 @@ def run_preflight(
             if _lane_key(lane) in results_by_key:
                 ordered.append(results_by_key[_lane_key(lane)])
             else:
-                ordered.append(LaneResult(lane.task, lane.environment, 0.0, 0, "cancelled", 0.0))
+                ordered.append(_cancelled_unstarted(coord, lane, "interrupt"))
         _append_journal(
             repo_root,
             {
@@ -1453,7 +1466,7 @@ def run_preflight(
         if _lane_key(lane) in results_by_key:
             result = results_by_key[_lane_key(lane)]
         elif coord.stop_on_red.is_set() and not coord.keep_going:
-            result = LaneResult(lane.task, lane.environment, 0.0, 0, "cancelled", 0.0)
+            result = _cancelled_unstarted(coord, lane, "red")
         else:
             result = LaneResult(lane.task, lane.environment, 0.0, 0, "not-run", 0.0)
         ordered_results.append(result)

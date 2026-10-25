@@ -98,13 +98,14 @@ def test_cross_pipeline_cf_graph_edge_resolves_by_name():
 # -- B2: pypi_intelligence (9 nodes) + vulnerability (5 nodes) ----------------
 
 
-def test_pypi_intelligence_pipeline_has_seventeen_nodes():
+def test_pypi_intelligence_pipeline_has_eighteen_nodes():
     # B5 added export_pypi_conda_map (the § 3.4 update-mapping-cache Q6 export shim).
     # Story 21.2 review fix #6 added refresh_pypi_json_store (the pypi_json_raw
     # external-refresh trigger — same § 3.4 boundary as export_pypi_conda_map).
     # Story 23.1 added five Tier-3 external-refresh triggers + flag_tier3_channels (+6).
+    # Story 37.9 added classify_mapping_gap.
     pypi = pypi_create()
-    assert len(pypi.nodes) == 17
+    assert len(pypi.nodes) == 18
     assert {n.name for n in pypi.nodes} == {
         "refresh_pypi_json_store",
         "map_pypi_conda",
@@ -123,15 +124,16 @@ def test_pypi_intelligence_pipeline_has_seventeen_nodes():
         "enrich_pypi_intelligence",
         "score_pypi_readiness",
         "export_pypi_conda_map",
+        "classify_mapping_gap",
     }
 
 
-def test_vulnerability_pipeline_has_eleven_nodes():
+def test_vulnerability_pipeline_has_thirteen_nodes():
     # B5 added refresh_vdb_store + refresh_osv_offline_store (§ 3.4 refresh assets).
     # B8 added the two Basilisk ingestion nodes (FR-19; ADDITIVE, not parity-gated AD-14).
-    # Story 36.1 added the two Basilisk triggers.
+    # Story 36.1 added the two Basilisk triggers; Story 37.5 the rollup's snapshot and its diff.
     vuln = vuln_create()
-    assert len(vuln.nodes) == 11
+    assert len(vuln.nodes) == 13
     assert {n.name for n in vuln.nodes} == {
         "refresh_vdb_store",
         "refresh_osv_offline_store",
@@ -144,6 +146,8 @@ def test_vulnerability_pipeline_has_eleven_nodes():
         "refresh_basilisk_details",
         "ingest_basilisk_advisories",
         "fetch_basilisk_details",
+        "snapshot_vulnerability_rollup",
+        "diff_vulnerability_snapshots",
     }
 
 
@@ -183,15 +187,20 @@ def test_universal_sbom_pipeline_has_four_nodes():
     }
 
 
-def test_derived_artifacts_pipeline_has_seven_nodes():
+def test_derived_artifacts_pipeline_has_sixteen_nodes():
     # B7: the full-universe CycloneDX BOM producer (AD-15 14-day freshness).
     # Story 23.8 added build_inventory_universe (the workbook-free metrics universe).
     # Story 23.3 added derive_basilisk_vuln_rollup + assign_inventory_priority.
     # Story 23.4 added build_inventory_verified_packages + build_inventory_aoss_free_queue.
     # Story 23.5 added build_identity_complete_export.
+    # Story 37.3 added compose_distribution_breakdown (the distribution-breakdown board's table).
+    # Story 37.4 added the three board projections; Story 37.8 export_purl_artifacts; Story 37.7
+    # score_alternative_candidates; Story 37.6 project_release_cadence; Story 38.1
+    # project_graph_archived_feedstocks + project_version_downloads.
     derived = derived_create()
-    assert len(derived.nodes) == 7
+    assert len(derived.nodes) == 16
     assert {n.name for n in derived.nodes} == {
+        "compose_distribution_breakdown",
         "build_universe_sbom",
         "build_inventory_universe",
         "derive_basilisk_vuln_rollup",
@@ -199,6 +208,14 @@ def test_derived_artifacts_pipeline_has_seven_nodes():
         "build_inventory_verified_packages",
         "build_inventory_aoss_free_queue",
         "build_identity_complete_export",
+        "project_behind_upstream",
+        "project_live_catalog_coverage",
+        "project_universe_sbom_summary",
+        "export_purl_artifacts",
+        "score_alternative_candidates",
+        "project_release_cadence",
+        "project_graph_archived_feedstocks",
+        "project_version_downloads",
     }
 
 
@@ -206,12 +223,16 @@ def test_combined_seven_pipeline_dag_resolves_topologically():
     combined = (
         core_create() + vcs_create() + pypi_create() + vuln_create() + seed_create() + sbom_create() + derived_create()
     )
-    # 8 core + 12 vcs + 17 pypi + 11 vuln + 4 seed_gaps + 4 universal_sbom
-    # + 7 derived_artifacts = 63 nodes (Story 25.2: vcs_health 10 -> 11; Story 34.8: 11 -> 12;
-    # Story 36.1: vulnerability 9 -> 11).
-    assert len(combined.nodes) == 63  # Story 34.8: + drive_migration_status; Story 36.1: + 2 Basilisk triggers
+    # 8 core + 12 vcs + 18 pypi + 13 vuln + 4 seed_gaps + 4 universal_sbom
+    # + 16 derived_artifacts = 75 nodes (Story 25.2: vcs_health 10 -> 11; Story 34.8: 11 -> 12;
+    # Story 36.1: vulnerability 9 -> 11; Story 37.3: derived_artifacts 7 -> 8; Story 37.4: 8 -> 11;
+    # Story 37.5: vulnerability 11 -> 13; Story 37.9: pypi_intelligence 17 -> 18; Story 37.8: derived_artifacts 11 -> 12;
+    # Story 37.7: 12 -> 13; Story 37.6: 13 -> 14; Story 38.1: 14 -> 16).
+    assert (
+        len(combined.nodes) == 75
+    )  # 34.8: drive_migration_status; 36.1: 2 Basilisk triggers; 37.3: compose_distribution_breakdown; 37.4: 3 projections
     grouped = combined.grouped_nodes
-    assert sum(len(g) for g in grouped) == 63
+    assert sum(len(g) for g in grouped) == 75
 
 
 def test_no_dataset_is_written_by_two_pipelines_b7():
@@ -360,10 +381,11 @@ def test_upstream_discovery_free_inputs_are_all_produced_by_the_bootstrap_pipeli
     ``pypi_universe`` / ``pypi_conda_mapping`` / ``pypi_intelligence_enriched``
     (pypi_intelligence). Each is a plain ``pandas.ParquetDataset`` with NO AD-13
     missing-file degrade, so a fresh-clone run needs every one of them actually
-    produced by SOME node in the same combined DAG — the exact
-    ``pyforge-atlas-bootstrap`` pixi task's pipeline list (core, pypi_intelligence,
-    vulnerability, vcs_health, upstream_discovery, derived_artifacts, seed_gaps,
-    artifactory_downloads). This pins that completeness so a future edit reverting
+    produced by SOME node in the same combined DAG — the ``pyforge-atlas-bootstrap``
+    pixi task's fetch pipelines (core, pypi_intelligence, vulnerability, vcs_health,
+    upstream_discovery, derived_artifacts, seed_gaps, artifactory_downloads; the task also
+    builds semantic_packages since Story 38.1, which the test below pins). This pins
+    that completeness so a future edit reverting
     the pixi.toml artifactory_downloads addition (or dropping any other producer)
     fails loudly here instead of only at a live, credentialed `kedro run`.
 
@@ -398,3 +420,30 @@ def test_upstream_discovery_free_inputs_are_all_produced_by_the_bootstrap_pipeli
     # Named assertion for the specific Story 21.6 dependency the finding called
     # out — a clearer failure message than the set-diff above if this regresses.
     assert "enterprise_jfrog_names" in (discovery_create() + artifactory_create()).all_outputs()
+
+
+def test_the_bootstrap_dag_produces_every_input_a_registered_pipeline_produces():
+    """Story 38.1 review 2: every free input of the ``pyforge-atlas-bootstrap`` task's combined DAG that some
+    registered pipeline produces is produced inside that DAG, so a fresh data root never loads a dataset nothing in the
+    run has written. Story 37.7's scorer read ``semantic_packages`` while the Pages job built it in a later step, and
+    the Vizro build failed on a fresh runner (kedro-viz-publish, 2026-10-24)."""
+    import tomllib
+    from pathlib import Path
+
+    from kedro.framework.project import configure_project
+
+    from pyforge.atlas.pipeline_registry import register_pipelines
+
+    pixi = Path(__file__).resolve().parents[7] / "pixi.toml"  # the repo root
+    task = tomllib.loads(pixi.read_text(encoding="utf-8"))["feature"]["pyforge-atlas"]["tasks"][
+        "pyforge-atlas-bootstrap"
+    ]
+    names = task["cmd"].split("--pipelines ", 1)[1].split()[0].split(",")
+    configure_project("pyforge.atlas")
+    registered = register_pipelines()
+    combined = sum((registered[name] for name in names[1:]), registered[names[0]])
+    produced_anywhere = set().union(*(p.all_outputs() for key, p in registered.items() if key != "__default__"))
+
+    missing = (combined.inputs() & produced_anywhere) - combined.all_outputs()
+
+    assert not missing, f"the bootstrap DAG reads {sorted(missing)}, which only a pipeline outside it produces"

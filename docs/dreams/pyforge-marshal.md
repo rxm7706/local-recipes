@@ -1569,6 +1569,73 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   chain and implement it - we need the speed to market before we move to wave 2", and "make sure we include this -
   Optional, marshal: a landing re-verification setting - that saves time too". Owner `spec-pyforge-marshal`.
   → Epic 102 / Story 102.1, specced 2026-10-15.
+- **2026-10-22 (the legacy promoter dies on one commit's bytes, and misses nested refs)** — **Found:
+  `scripts/legacy_preserve_promote.py` has never written a manifest.** The operator ruled on 2026-10-22 to promote the 17 `refs/attempt-preserve-dirty/*` refs
+  ("go ahead"). Its first run, dry, crashed before writing anything: `UnicodeDecodeError: 'utf-8' codec can't decode
+  bytes`. To classify the `rescue/dangling-*` tags, `_origin_main_patch_ids_since` runs `git show --binary | git
+  patch-id` over every `origin/main` commit since 2026-06-01 (13,145), and `_git` decodes each output as UTF-8 text.
+  One commit's `git show` output is not UTF-8: `e09f50352d`, a 2026-09-10 merge of `origin/main` into
+  `dispatch/pyforge-doctor/21.13`, whose combined diff cuts an em-dash in a hunk header. Story 87.12's tests never fed it
+  a non-UTF-8 byte. Once it ran, the independent review found the inventory silent on 8 of the legacy refs Story 87.12
+  names: `for-each-ref 'refs/heads/*'` and `'refs/tags/*'` match one level only, the three kept `attempt-preserve/*`
+  branches exist only on `origin`, and the archive-tag skip ran before the legacy tag table, which names two `archive/`
+  tags. **What it looks like when fixed:** `_patch_id` hands `git show`'s
+  bytes to `git patch-id` undecoded, and `_git` reads git's text output with `errors="replace"`, so no commit's bytes
+  stop the run. The inventory reads ref prefixes, both `refs/heads/attempt-preserve/` and
+  `refs/remotes/origin/attempt-preserve/`, and the legacy tag table before any skip; a legacy name carrying a date,
+  which AD-81 bars from a twin's name, falls back to a `preserve/unbound/hand-*` twin. The dry run writes a complete
+  manifest, and `--execute` writes the local twins. **Constraints:** a fix under
+  CAP-287 (FR-234), with no CAP and no flag: the promoter is Story 87.12's one-off, dry-run-default script and is not
+  flag-gated. Nothing is pushed: every push stays operator-gated behind the Story 87.15 content gate. Owner
+  `spec-pyforge-marshal`. → Epic 87 / Stories 87.17 and 87.18, specced 2026-10-22.
+- **2026-10-25 (marshal's own MCP server has never started)** — **Found: the `marshal` MCP server that `marshal
+  init` registers cannot start, and preflight reports it healthy.** Marshal's policy declares
+  `[mcp_servers.marshal] command = "marshal-mcp"` (Story 18.1), and `marshal init` renders it into the marshal loop
+  home's `.mcp.json`. `marshal-mcp` builds its server on the third-party `fastmcp` package, which no environment that
+  carries `marshal-mcp` installs: from `pyforge-guild` it exits 1 with `ModuleNotFoundError: No module named
+  'fastmcp'`, and `local-recipes`, which has `fastmcp`, has no `marshal-mcp`. Every other server here already moved to
+  the official SDK's `MCPServer` (mcp 2.x renamed `FastMCP`): atlas's, the conda-forge server and marshal's own HTTP
+  face. No test builds the server, and the preflight probe (`MRS-PREFLIGHT-012`) only asks whether the command is on
+  `PATH`, so it has been green since 2026-08-23 for a server no session could reach. **What it looks like when
+  fixed:** `marshal-mcp` is built on the official SDK and, run from `pyforge-guild`, answers an MCP `initialize` and
+  lists its tools; `marshal-mcp --help` prints its usage and exits without starting a server. `marshal preflight`
+  starts each declared server, completes the handshake within a timeout and stops it. A server that crashes, hangs or
+  answers with something other than an MCP reply is `MRS-PREFLIGHT-012` with the tail of its stderr; one that answers
+  is reported with its tool count. **Constraints:** a fix under CAP-1 (a preflight-verified home), CAP-21 (one
+  governed surface) and CAP-22 (the surface survives a clone), with no CAP and no flag. No package new to the factory:
+  `pyforge-guild` already carries the `mcp` SDK, which is now declared. The probe speaks plain JSON-RPC and imports
+  no SDK, so it works for any declared server. **Kinships:** DW-FU-18-2 (tool-surface coverage counts a file, not a working server).
+  Operator ruling, 2026-10-25: "Go with the migration: move marshal-mcp to the official SDK MCPServer, add a real
+  --help, and make preflight run a startup handshake. Plan it as one marshal story through the full Dream-to-code
+  chain." Owner `spec-pyforge-marshal`. → Epic 103 / Story 103.1, specced 2026-10-25.
+- **2026-10-25 (the content gate refuses what origin already holds)** — **Found: no preserve built on today's `main`
+  can pass the content gate, and the gate never reads a blob an earlier commit added.** On 2026-10-25 `marshal status`
+  reported 24 preserve tags that exist only locally (`MRS-STATUS-016`; 29 with the `archive/` twins), and the operator
+  asked to push them. `marshal preserve push` refused because `pyforge.marshal.preserve_refs` is off. A read-only run
+  of the gate's own check over the 29 tags then refused 25 of them. `run_content_gate` (Story 87.15) reads every blob
+  in the tagged commit's tree, not the blobs the push would add, and today's `origin/main` fails it too: three slide
+  decks over the 5 MB cap, and synthetic `sk-ant-`, `ghp_` and private-key strings in test fixtures and two story
+  specs, all of them already public. Story 87.15's acceptance criteria refuse a preserve that *adds* a credential or an oversize file;
+  the code judges the whole snapshot. Two more costs follow from that. A blob that an intermediate commit added and a
+  later one removed is never read, although the push sends it. And each run starts two `git` processes per blob, about
+  80 s per tag on this repository. Turning the flag on would push the 4 tags that pass and refuse the rest, and every
+  dispatch and spin preserve would be refused the same way. A wider scan of the objects the 29 pushes would send
+  (about 900; the number moves with `origin`'s refs) found no secret and no file over the cap. **What it looks like
+  when fixed:** the gate judges the objects a push sends: everything reachable from the tagged commit that no branch
+  or tag `git ls-remote origin` lists already reaches (pull refs are not trusted). The secret scan and the size cap
+  run on every sent blob, intermediate commits included, and on the tag and commit messages, through one batched read
+  on a bytes path of `pyforge.core.process`, and
+  the purge-list rules still hold. A preserve whose snapshot adds nothing but clean content passes. Run read-only over
+  this repository's 29 local-only tags, the gate refuses none. `MRS-STATUS-016` names a push path that works while the
+  flag is off, and a second `--push-reviewed` run skips the rows the first one pushed. **Constraints:** a fix under
+  CAP-287 (FR-234, AD-81), with no CAP and no flag: it makes the gate do what Story 87.15's acceptance criteria already
+  say. The code lives in `pyforge.core.preserve_refs` and `pyforge.core.process`, which `spec-pyforge-core` and
+  `spec-pyforge-unifying-strategy` co-govern; `ProcessPort` does not change. The story pushes nothing and the flag stays off: the push stays the operator's,
+  after the row-by-row review in Story 87.12's manifest. **Kinships:** Story 87.15 (the gate), Story 87.12 (the
+  reviewed manifest and `--push-reviewed`), Story 87.9 (`git ls-remote`, never local presence). Operator ruling,
+  2026-10-25: "start the option 2 chain here", where option 2 is "fix the gate, then push through the reviewed
+  manifest", chosen over turning the flag on in `dev`, a one-run flags override and a plain `git push`. Owner
+  `spec-pyforge-marshal`. → Epic 87 / Story 87.19, specced 2026-10-25.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint
@@ -2757,7 +2824,7 @@ Substantial prior art already exists and this Dream does not start from zero:
 - Distant prior art: a sibling org's `bmad-workspace-integration` dream (`wf-dev-cli`'s
   `extensions/bmad.py`, 650 LOC) does a related but broader thing — automatic switch-on-workspace-open
   plus checkpoint stash/restore plus scope.yml path-boundary enforcement. That dream's automatic-switch
-  trigger depends on a workspace-management capability ([[developer-workspace-management]]-shaped)
+  trigger depends on a workspace-management capability (`developer-workspace-management`-shaped)
   this repo doesn't have yet; its `checkpoint` verb has no documented local pain point. This Dream
   deliberately scopes down to only the piece with a real, already-bitten, already-triaged local gap.
 
@@ -3182,7 +3249,7 @@ console already knows.
 [[pyforge-marshal]] (visibility doctrine — the console is its ledger) ·
 [[pyforge-steward]] (owns the Pages deployment surface) ·
 [[pyforge-charter]] (the pipeline the console makes legible) ·
-[[modernist-identity]] (a candidate restyle; today the console has its own
+[[pyforge-herald|modernist-identity]] (a candidate restyle; today the console has its own
 mono/panel language).
 
 ## Realization log
@@ -5521,10 +5588,10 @@ repo-wide.
   baselines. This Dream is that loop, applied to everything.
 - **The transformer** — `bmad-spec` distills brownfield code + docs into the
   five-field Spec with stable CAP-IDs and an append-only memlog; re-derives
-  on update instead of hand-patching. Piloted on [[design-code-bridge]].
+  on update instead of hand-patching. Piloted on [[pyforge-herald|design-code-bridge]].
 - **The map** — 24 Dreams, no-straggler policy: every shipped surface already
   traces to a Dream; what's missing is the spec layer beneath the realized
-  ones ([[packaging-factory]], [[enterprise-airgap]], [[modernist-identity]],
+  ones ([[packaging-factory]], [[enterprise-airgap]], [[pyforge-herald|modernist-identity]],
   [[fleet-stewardship]], [[factory-console]] have no BMAD spec;
   [[pyforge-marshal]] and [[fleet-stewardship]] lean on legacy Tier-1 specs).
 
@@ -5546,7 +5613,7 @@ repo-wide.
 
 ## Kinships
 
-[[pyforge-genesis]] (the operating model this completes — brownfield adoption
+[[pyforge-charter|pyforge-genesis]] (the operating model this completes — brownfield adoption
 implies backfill) · [[pyforge-marshal]] (BMAD executes every change) ·
 [[pyforge-warden]] (drift gate temperament: never false-green) ·
 [[agent-portability]] (the Spec is what makes regeneration

@@ -7,7 +7,7 @@ sources:
   - CLAUDE.md
   - AGENTS.md
   - docs/how-to/configure-your-coding-agent.md
-verified: 2026-09-20
+verified: 2026-10-24
 ---
 
 # Agent Memory Lifecycle
@@ -45,9 +45,10 @@ pixi run -e pyforge-guild scribe capture --promote
 This scans the user-local auto-memory, classifies each entry, and proposes team-voice promotions — proposal-then-confirm, never a silent copy. `--transcripts` does the same over raw session transcripts, and `--source <path>` overrides the auto-detected directory for either.
 
 ### Recall
-`scribe recall "<question>"` answers from the compiled graph with a resolvable citation, or reports no grounded coverage — it never invents an uncited answer. `scribe graph compile` rebuilds that graph from `.claude/memory/`, the Spec memlogs, git history, retros and CHANGELOGs; with its heavy extras it runs in `-e pyforge-scribe`.
+`scribe recall "<question>"` answers from the compiled graph with a resolvable citation, or reports no grounded coverage — it never invents an uncited answer. By default it leaves out code (AST) nodes; `--mode planning`, `--mode memory` or `--mode code` picks one surface (or `--kind` names the node kinds; the two are exclusive), and `--scope <slug>` limits it to one project. For a team decision, `AGENTS.md` names `--mode planning`. `scribe graph compile` rebuilds that graph from `.claude/memory/`, the Spec memlogs, git history, retros and CHANGELOGs; with its heavy extras it runs in `-e pyforge-scribe`.
 
 ## Integration Requirements for New Agents
 If you are building a new agent loop to run against PyForge:
 1. Load `.claude/memory/MEMORY.md` into the agent's context at session start (Claude Code gets it through the `CLAUDE.md` import; other harnesses must read it explicitly). The rules file itself is a separate matter: `AGENTS.md` reaches Claude Code through `CLAUDE.md`'s `@AGENTS.md` import on every version, and natively on 2.1.277+ once the built-in `agents-md` mod is pinned to `claude-md-and-agents-md`; see [Configure your coding agent](../how-to/configure-your-coding-agent.md) for the per-harness setting.
 2. Give the agent a shell capability that can invoke `scribe capture` for team-relevant findings, and `scribe recall` before re-deriving something the team may already know.
+3. Close each session with the ritual `AGENTS.md` names for every harness: `scribe capture` and `marshal context advisory`.

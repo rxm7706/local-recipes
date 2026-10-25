@@ -958,6 +958,8 @@ _SHIPPED_CLOCKS = {
     "pyforge.atlas.live_public_sources": ("atlas", "34-4-", "2026-10-18", "", ""),
     "pyforge.atlas.live_vcs_universe": ("atlas", "35-1-", "2026-10-18", "", ""),
     "pyforge.atlas.basilisk_population": ("atlas", "36-1-", "2026-10-18", "", ""),
+    "pyforge.atlas.identity_live_sources": ("atlas", "36-2-", "2026-10-18", "", ""),
+    "pyforge.atlas.board_projections": ("atlas", "37-4-", "2026-10-22", "", ""),
     "pyforge.herald.deck_publish": ("herald", "29-1-", "2026-09-28", "", ""),
     # CAP-55 deck_viewer: Story 30.1 publish/twins; Story 30.2 portal + deck-twins API routes.
     "pyforge.herald.deck_viewer": ("herald", "30-1-", "2026-09-28", "", ""),
@@ -1084,6 +1086,8 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.atlas.live_public_sources": {"dev": True, "staging": True, "production": False},
         "pyforge.atlas.live_vcs_universe": {"dev": True, "staging": False, "production": False},
         "pyforge.atlas.basilisk_population": {"dev": True, "staging": False, "production": False},
+        "pyforge.atlas.identity_live_sources": {"dev": True, "staging": False, "production": False},
+        "pyforge.atlas.board_projections": {"dev": True, "staging": False, "production": False},
         "pyforge.warden.fix_target_resolution": {"dev": True, "staging": True, "production": False},
         "pyforge.warden.fix_manifest_edit": {"dev": True, "staging": True, "production": False},
         "pyforge.herald.deck_publish": {"dev": True, "staging": True, "production": False},

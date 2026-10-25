@@ -6597,3 +6597,47 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-10-17 — recorded with doctor Story 49.1's review fixes
   status: open
+
+### DW-steward-13-6: A workspace directory deleted by hand whose recorded HEAD is detached at commits no ref holds loses them when its own record is cleaned (the default clean writes .missing.txt and unregisters it), as at the baseline.
+
+- source_spec: `planning-artifacts/specs/spec-13-6-a-workspace-started-from-another-branch-is-landed-once-its-branch-is-on-main.md`
+  summary: A workspace directory deleted by hand whose recorded HEAD is detached at commits no ref holds loses them when its own record is cleaned (the default clean writes .missing.txt and unregisters it), as at the baseline.
+  evidence: Out of Story 13.6's scope by the operator's ruling of 2026-10-23, after six review rounds found the protection for this case leaking. Since review 8 every clean unregisters only its own worktree, so a kept sibling is no longer pruned by another clean; the record's own clean still drops its commits. A fix story (ref-contains check, keep or preserve-tag the recorded HEAD) is proposed.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
+  origin: spec-deferred 26ec7ebe7d77 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-steward-13-6-2: A present worktree whose branch is landed loses a commit only its refs/worktree/* or refs/bisect/* ref holds when clean --merged-only removes it, as at the baseline (CAP-157's proof refuses the note, but the tarball keeps files, not history).
+
+- source_spec: `planning-artifacts/specs/spec-13-6-a-workspace-started-from-another-branch-is-landed-once-its-branch-is-on-main.md`
+  summary: A present worktree whose branch is landed loses a commit only its refs/worktree/* or refs/bisect/* ref holds when clean --merged-only removes it, as at the baseline (CAP-157's proof refuses the note, but the tarball keeps files, not history).
+  evidence: Found at Story 13.6's eighth review (pre-existing: the baseline does the same to a source-landed worktree); out of 13.6's scope by the operator's ruling of 2026-10-23, beside DW-steward-13-6.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
+  origin: spec-deferred 87d41f4969f0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-steward-13-6-3: clean --delete of a present, locked worktree whose branch is landed reports an error row (git refuses to remove a locked worktree) rather than a named locked refusal, so a fleet --delete exits non-zero; the baseline does the same for a source-landed one, and the trunk now makes stacked workspaces reach it.
+
+- source_spec: `planning-artifacts/specs/spec-13-6-a-workspace-started-from-another-branch-is-landed-once-its-branch-is-on-main.md`
+  summary: clean --delete of a present, locked worktree whose branch is landed reports an error row (git refuses to remove a locked worktree) rather than a named locked refusal, so a fleet --delete exits non-zero; the baseline does the same for a source-landed one, and the trunk now makes stacked workspaces reach it.
+  evidence: Found at Story 13.6's final review (round 10). Not a loss: the worktree, its branch and its record stay. Deferred by the operator's ruling of 2026-10-23 (land 13.6 once no must-fix regression remains).
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
+  origin: spec-deferred 5684d6677539 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-steward-13-6-4: Story 13.6's final verification left four non-must-fix items: clean --merged-only refuses (not-merged) a present workspace git no longer lists when its HEAD cannot be read (non-UTF-8 repository path, or a directory the user cannot enter) where the baseline archived it or gave an error row, so one CLI case exits 0 instead of 1; the broadened per-record catch and the OSError guard in _worktree_head_landed have no pin of their own (a --delete sweep over a workspace the user cannot enter would pin t... [truncated, 656 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-13-6-a-workspace-started-from-another-branch-is-landed-once-its-branch-is-on-main.md`
+  summary: Story 13.6's final verification left four non-must-fix items: clean --merged-only refuses (not-merged) a present workspace git no longer lists when its HEAD cannot be read (non-UTF-8 repository path, or a directory the user cannot enter) where the baseline archived it or gave an error row, so one CLI case exits 0 instead of 1; the broadened per-record catch and the OSError guard in _worktree_head_landed have no pin of their own (a --delete sweep over a workspace the user cannot enter would pin t... [truncated, 656 chars total]
+  evidence: Round 14 verification (PASS, no must-fix against bdb49ec39f): a refusal keeps the record and loses nothing. Fault injection over 3,628 sweeps found no lost commit, branch or record.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
+  origin: spec-deferred 2f4bb4a396c7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

@@ -38,7 +38,16 @@ def _dataset(tmp_path: Path, url: str = GRAPHQL, credentials=None) -> GitHubRequ
 
 
 def _request(*repos: tuple[str, str]) -> RefreshRequest:
-    return RefreshRequest(store="vcs_github_api_raw", cadence_seconds=0, force=True, github_repos=tuple(repos))
+    # Story 35.2: with the flag on the store reads the universe's upstreams (conda_name, owner, repo)
+    upstream = tuple((f"conda-{repo}", owner, repo) for owner, repo in repos)
+    return RefreshRequest(
+        store="vcs_github_api_raw", cadence_seconds=0, force=True, github_repos=tuple(repos), upstream_repos=upstream
+    )
+
+
+def _release(tag: str = "v1.2") -> dict:
+    """Story 35.3: a Phase K repository node (latest release, latest tag)."""
+    return {"releases": {"nodes": [{"tagName": tag}]}, "refs": {"nodes": []}}
 
 
 def _health() -> dict:
@@ -83,17 +92,18 @@ def test_only_the_exact_value_1_turns_the_switch_on(monkeypatch, value):
 
 
 def test_with_the_switch_github_gets_a_bearer_header_and_the_rows_land(fake_transport, flag_on, switch_on, tmp_path):
-    fake_transport.answers[GRAPHQL] = (200, {"data": {"r0": _health()}})
+    fake_transport.answers[GRAPHQL] = (200, {"data": {"r0": _release()}})
     ds = _dataset(tmp_path)
 
     ds.save(_request(("o", "r")))
 
-    (sent,) = fake_transport.sent
-    assert sent.method == "POST" and sent.headers["Authorization"] == f"Bearer {TOKEN}"
-    assert fake_transport.timeouts == [ds._timeout_seconds]
+    sent = fake_transport.sent[0]  # Phase K's batch; Phase E.5's listing follows (Story 35.3)
+    assert all(r.method == "POST" and r.headers["Authorization"] == f"Bearer {TOKEN}" for r in fake_transport.sent)
+    # Story 35.3: a GraphQL POST waits 60 s at most
+    assert set(fake_transport.timeouts) == {min(ds._timeout_seconds, ds.GRAPHQL_TIMEOUT_SECONDS)}
     assert 'repository(owner: "o", name: "r")' in json.loads(sent.body)["query"]
-    row = ds.load().iloc[0]
-    assert (row["feedstock_name"], row["stars"], row["open_issues"]) == ("r", 7, 2)
+    row = ds.load().set_index("key").loc["conda-r"]
+    assert (row["kind"], row["repo"], row["upstream_version"]) == ("upstream", "o/r", "1.2")
     assert ds.staleness() is None
 
 
@@ -115,11 +125,11 @@ def test_a_url_off_https_api_github_com_never_receives_the_token(
 def test_the_switch_is_read_at_save_not_at_construction(fake_transport, flag_on, tmp_path, monkeypatch):
     ds = _dataset(tmp_path)  # built with the switch unset
     monkeypatch.setenv(credential_switch.SWITCH, "1")
-    fake_transport.answers[GRAPHQL] = (200, {"data": {"r0": _health()}})
+    fake_transport.answers[GRAPHQL] = (200, {"data": {"r0": _release()}})
 
     ds.save(_request(("o", "r")))
 
-    assert len(fake_transport.sent) == 1
+    assert fake_transport.sent
 
 
 @pytest.mark.parametrize(
@@ -154,7 +164,7 @@ def test_a_refusal_is_sent_once_and_never_reaches_a_marker_or_a_row(
 def test_a_refusal_after_a_good_chunk_keeps_its_rows_and_marks_the_store_stale(
     fake_transport, flag_on, switch_on, tmp_path, monkeypatch
 ):
-    answers = iter([(200, {"data": {f"r{i}": _health() for i in range(GITHUB_BATCH_QUERY_MAX)}}), (429, {})])
+    answers = iter([(200, {"data": {f"r{i}": _release() for i in range(GITHUB_BATCH_QUERY_MAX)}}), (429, {})])
     fake_transport.answers = _Each(answers)
     ds = _dataset(tmp_path)
     repos = [("o", f"r{i}") for i in range(GITHUB_BATCH_QUERY_MAX * 2 + 1)]  # three chunks
@@ -213,13 +223,13 @@ def test_a_graphql_error_body_says_why(fake_transport, flag_on, switch_on, tmp_p
 
 def test_a_missing_repository_keeps_its_own_graphql_error(fake_transport, flag_on, switch_on, tmp_path):
     missing = {"type": "NOT_FOUND", "path": ["r0"], "message": "Could not resolve to a Repository"}
-    fake_transport.answers[GRAPHQL] = (200, {"data": {"r0": None, "r1": _health()}, "errors": [missing]})
+    fake_transport.answers[GRAPHQL] = (200, {"data": {"r0": None, "r1": _release()}, "errors": [missing]})
     ds = _dataset(tmp_path)
 
     ds.save(_request(("o", "gone"), ("o", "here")))
 
-    errors = dict(zip(ds.load()["feedstock_name"], ds.load()["last_error"], strict=True))
-    assert errors["gone"].startswith("NOT_FOUND") and errors["here"] is None
+    errors = dict(zip(ds.load()["key"], ds.load()["last_error"], strict=True))
+    assert errors["conda-gone"].startswith("NOT_FOUND") and errors["conda-here"] is None
 
 
 def test_flag_off_keeps_the_path_this_story_found(fake_transport, switch_on, tmp_path):
@@ -268,14 +278,15 @@ def test_the_autouse_guard_fails_a_credentialed_request_without_the_switch(heade
 
 def test_with_the_flag_on_a_host_or_registry_request_carries_a_no_op_auth_and_no_credential(monkeypatch):
     from pyforge.atlas.datasets import public_sources
-    from pyforge.atlas.datasets.vcs_sources import _request_kwargs
+    from pyforge.atlas.datasets.vcs_sources import USER_AGENT, _request_kwargs
 
     monkeypatch.setattr(credential_switch, "live_vcs_universe", lambda: True)
     on = _request_kwargs(30, ["PRIVATE-TOKEN", "stub"])
     monkeypatch.setattr(credential_switch, "live_vcs_universe", lambda: False)
     off = _request_kwargs(30, ["PRIVATE-TOKEN", "stub"])
 
-    assert on == {"load_args": public_sources.request_args(30)}  # no credential; the no-op auth keeps ~/.netrc out
+    # no credential; the no-op auth keeps ~/.netrc out; Story 35.4 names atlas as the agent
+    assert on == {"load_args": {**public_sources.request_args(30), "headers": {"User-Agent": USER_AGENT}}}
     assert off == {"load_args": {"timeout": 30}, "credentials": ["PRIVATE-TOKEN", "stub"]}
 
 
@@ -322,12 +333,43 @@ def test_the_real_reader_reads_the_key_from_the_tree(tmp_path, monkeypatch, vari
 
 
 @flag_states("pyforge.atlas.live_vcs_universe")  # spelled out: the flag gate reads this file for the key
+def test_each_flag_state_reads_its_own_batch(switch_on, tmp_path, flag_provider, monkeypatch):
+    """Story 35.2 (AC5): on, the universe's GitHub upstreams; off, the identity batch, as before."""
+    flag_on = flag_provider[credential_switch.FLAG_KEY]
+    ds = _dataset(tmp_path)
+    monkeypatch.setattr(credential_switch, "live_vcs_universe", lambda: flag_on)
+    identity: list[list[tuple[str, str]]] = []
+    universe: list[list[tuple[str, str]]] = []
+    monkeypatch.setattr(ds, "fetch_repo_health", lambda repos, **_kw: identity.append(sorted(repos)))
+    # Story 35.3: with the flag on the store reads the universe through fetch_github (upstreams, feedstocks)
+    monkeypatch.setattr(
+        ds,
+        "fetch_github",
+        lambda upstream, _feedstocks, **_kw: universe.append(sorted({(o, r) for _c, o, r in upstream})),
+    )
+    request = RefreshRequest(
+        store="vcs_github_api_raw",
+        cadence_seconds=0,
+        force=True,
+        github_repos=(("identity", "only"),),
+        upstream_repos=(("pkg", "universe", "only"), ("pkg2", "universe", "only")),
+    )
+
+    ds.save(request)
+
+    if flag_on:
+        assert universe == [[("universe", "only")]] and identity == []
+    else:
+        assert identity == [[("identity", "only")]] and universe == []
+
+
+@flag_states("pyforge.atlas.live_vcs_universe")  # spelled out: the flag gate reads this file for the key
 def test_the_flag_is_read_at_each_save(fake_transport, switch_on, tmp_path, flag_provider, monkeypatch):
     """On: the switch decides and the bearer POST runs. Off: the path before this story (no request)."""
     flag_on = flag_provider[credential_switch.FLAG_KEY]
     ds = _dataset(tmp_path)  # built before the flag is read
     monkeypatch.setattr(credential_switch, "live_vcs_universe", lambda: flag_on)
-    fake_transport.answers[GRAPHQL] = (200, {"data": {"r0": _health()}})
+    fake_transport.answers[GRAPHQL] = (200, {"data": {"r0": _release()}})
 
     ds.save(_request(("o", "r")))
 

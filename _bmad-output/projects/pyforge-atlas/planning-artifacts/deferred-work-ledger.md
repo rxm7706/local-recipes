@@ -12,7 +12,7 @@ entries: 60
 real deferrals** (the run log's index of "54" double-counted two aliases; see § Provenance).
 Follow-up intake and verification campaigns added more `## DW-` headings without retiring
 that migration set — the frontmatter `entries` field tracks **`## DW-` headings only**, not
-the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**206** `### DW-` headings
+the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**216** `### DW-` headings
 today). Stale narrative prose here is exactly what Story 27.4's counting test guards against.
 
 ## Why this file exists
@@ -2121,6 +2121,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-10-21 — still-open — premise changed by atlas Story 37.1 (`src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/data.py::default_data_root`): it no longer walks up to `.git`; it returns the Kedro member's `data/` (a relative `PYFORGE_ATLAS_DATA_ROOT` anchored at the member), the root the catalog's `${globals:paths.data_root}/...` filepaths resolve to, so the dashboard and the MCP read surface now default to the same files. Still open: the dashboard's path constants remain a hand-maintained mirror of the catalog `filepath`s rather than one catalog-driven resolver.
 
 ### DW-10-5-8: Reusing `IncrementalParquetDataset._to_epoch_seconds` on the READ path makes its `logger.warning` ("normalizing N ms-mag
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
@@ -4912,7 +4914,9 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: retrospective 2026-10-15 (Epics 25-31)
   severity: medium
   promoted: 2026-10-15 — atlas's 2026-10-15 retrospective
-  status: open
+  resolution: Story 27.6 (atlas, Epic 27): right after `goto` the test waits up to 60 s for the AG Grid to mount inside `#distribution-breakdown--grid` (`.ag-root-wrapper` attached), the element the page draws last, then checks the filter, its dropdown, the chart and the `linux-64` row as before; the `networkidle` wait is gone. The proposed `timeout=15_000` on the row assertion was refined after measuring the cause: Vizro fills the grid from the page's `on_page_load` callback and the browser then loads dash-ag-grid's lazy grid chunk, and under load every step of the page waits on the same busy main thread (the grid mounted up to 22.3 s after `goto`, the dropdown up to 20.4 s), so 15 s steps still failed; putting the whole budget on the row instead would make a real missing row take 60 s to report. The row's evidence reads #1836 and #1838 as a loaded runner; those runs were Story 27.5's filter defect (`DW-atlas-27-3-1`), not load, and the test's comment no longer says otherwise.
+  verified: 2026-10-24 atlas Story 27.6 (worktree `.claude/worktrees/exciting-faraday-1e4549`; landing PR to follow) -- `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_e2e.py:255` waits on the mount (`expect_grid_mounted`, `:75`-`:77`, 60 s) and `:260` asserts the row; the file's other grid checks wait the same way (`:137`, `:155`, `:168`, `:182`, `:226`). Load harness (32 copies of the test, 16 xdist workers, busy loops): before the fix 4 of 24, 4 of 31 and 4 of 25 served copies failed; after it, no copy failed its assertions (setup errors, the fixture's server not binding within 60 s at that load, counted apart; per-batch counts in the story spec's Auto Run Result).
+  status: closed
 
 ### DW-atlas-retro-2026-10-15-2: The two `mypy` lanes share each package's `.mypy_cache` when pr-preflight runs them at once.
 
@@ -5083,7 +5087,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: operator ruling 2026-10-19 on CAP-69
   severity: low
   promoted: 2026-10-19 -- atlas Epic 37 chain; owned by Story 37.5
-  status: open
+  resolved: 2026-10-23 (Story 37.5: snapshot_vulnerability_rollup appends each run's rollup to vulnerability_rollup_snapshots, and diff_vulnerability_snapshots writes derived_vuln_history, which the cve-watcher reads with pyforge.atlas.board_projections on)
+  status: closed
 
 ### DW-atlas-37-6-1: The release-cadence has no per-version upload times.
 
@@ -5094,7 +5099,20 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: operator ruling 2026-10-19 on CAP-69
   severity: low
   promoted: 2026-10-19 -- atlas Epic 37 chain; owned by Story 37.6
-  status: open
+  resolved: 2026-10-23 (Story 37.6: core_repodata_uploads_raw streams every subdir's full repodata.json.zst into per-version earliest upload times, per the operator's ruling of that date; derived_artifacts' project_release_cadence writes legacy release-cadence's counts to derived_release_cadence, which the board reads with pyforge.atlas.board_projections on)
+  status: closed
+
+### DW-atlas-37-6-2: semantic_packages and the version-downloads board leave their upload times NULL.
+
+- source_spec: `planning-artifacts/specs/spec-37-6-the-release-cadence-reads-per-version-upload-times.md`
+  summary: `semantic_packages` declares `latest_conda_upload`, `latest_upload_age_days`, `releases_30d` and `total_versions` NULL (`metrics.METRIC_PROVENANCE`: "D2 wires the inputs"), so the adoption-stage board reads `unknown` for every package, and find-alternative's recency is 1.0 and its stage `unknown`. Story 37.6's `core_repodata_uploads_raw` now holds every version's earliest upload, which is what those columns derive from (legacy `adoption_stage.py`, `staleness_report.py`). The version-downloads board's `upload_date` (`core_version_download_history`, Story 37.3) is null for the same reason. Wiring them changes the adoption-stage, staleness, find-alternative and version-downloads boards' outputs, so it is its own story.
+  evidence: Story 37.6 (2026-10-23, the spec's Residual risk); Story 37.7's Run results (adoption_stage all `unknown`).
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/semantic_packages/nodes.py (the deferred-input columns); pipelines/core (core_version_download_history.upload_date)
+  origin: Story 37.6 (CAP-69)
+  severity: low
+  promoted: 2026-10-23 -- atlas Story 37.6; owned by Story 38.1 (2026-10-24)
+  resolved: 2026-10-24 (Story 38.1, #2296: semantic_packages reads latest_conda_upload, latest_upload_age_days, releases_30d and total_versions from derived_release_cadence, over the upload store's newest build per version; the packages model classifies adoption stage and staleness on one clock; find-alternative's recency and stage read them; derived_version_downloads carries each version's UTC upload date, which the version-downloads board reads with pyforge.atlas.board_projections on)
+  status: closed
 
 ### DW-atlas-37-7-1: The find-alternative has no candidate table.
 
@@ -5105,6 +5123,30 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: operator ruling 2026-10-19 on CAP-69
   severity: low
   promoted: 2026-10-19 -- atlas Epic 37 chain; owned by Story 37.7
+  resolved: 2026-10-23 (Story 37.7: derived_artifacts' score_alternative_candidates writes legacy find-alternative's top 10 candidates for every archived package on the channel to derived_alternative_candidates, from the summary and keywords the cf-graph anchor rows now carry; the board reads it with pyforge.atlas.board_projections on)
+  status: closed
+
+### DW-atlas-37-7-2: semantic_packages marks no feedstock archived on a public run.
+
+- source_spec: `planning-artifacts/specs/spec-37-7-the-find-alternative-scores-candidates-for-archived-packages.md`
+  summary: `semantic_packages.feedstock_archived` joins only `vcs_archived_feedstocks`, which legacy's Phase E.5 GitHub query fills and a public run leaves empty. So every package reads unarchived: 0 of 34,720 on Story 37.2's live root, where 828 packages on the channel are attributed to a feedstock the cf-graph flags archived. The actionable and adoption views count archived feedstocks as live. Story 37.7's scorer reads the cf-graph flag as well, and so does core's Phase J skip-set; the views that read `semantic_packages` do not.
+  evidence: Story 37.7's real-data check (2026-10-23, the spec's Run results).
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/semantic_packages/nodes.py (feedstock_archived)
+  origin: Story 37.7 (CAP-69)
+  severity: low
+  promoted: 2026-10-23 -- atlas Story 37.7; owned by Story 38.1 (2026-10-24)
+  resolved: 2026-10-24 (Story 38.1, #2296: semantic_packages.feedstock_archived reads the cf-graph's own flag through derived_artifacts' derived_graph_archived_feedstocks, beside vcs_archived_feedstocks, through attribution; 828 packages archived on Story 37.2's live root, 99.99% agreement with legacy)
+  status: closed
+
+### DW-atlas-37-7-3: A package built by a live feedstock can be attributed to an archived one.
+
+- source_spec: `planning-artifacts/specs/spec-37-7-the-find-alternative-scores-candidates-for-archived-packages.md`
+  summary: Phase B.5 (core's `attribute_feedstocks` and `_pick_feedstock`, legacy CFA:1572) can attribute a package to an archived feedstock while a live feedstock now lists it as an output. Every view that reads the attribution then treats the package as archived. On Story 37.2's live root, 60 of the 828 packages attributed to an archived feedstock are also outputs of a live one, and find-alternative suggests replacements for them. Two paths lead there. In 44 cases the archived feedstock is the one named after the package (duckdb, grpcio, grpcio-tools, cryptography-vectors, email_validator), which `_pick_feedstock` prefers or the registry alone lists. In 16 cases the archived feedstock is not named after the package and comes through the first-entry fallback or a registry that never lists the live feedstock: libgcc and libstdcxx go to m2w64-gcc-libs, the apache-airflow-core family to apache-airflow-core-split, the mingw-w64-ucrt packages to m2w64-gcc, and spacy-model-en_core_web_* to spacy-model-en_core_web. Legacy attributes the same way, so the fix is a deliberate deviation in core's parity-gated attribution, not a scorer change.
+  evidence: Story 37.7 reviews 1 (S2) and 2 (R2-S1), and its real-data check (2026-10-23, the spec's Run results).
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/core/nodes.py (_pick_feedstock, attribute_feedstocks)
+  origin: Story 37.7 review 1
+  severity: low
+  promoted: 2026-10-23 -- atlas Story 37.7; no owning story yet
   status: open
 
 ### DW-atlas-37-8-1: The export-purls has no manifest of PURL artifacts.
@@ -5116,7 +5158,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: operator ruling 2026-10-19 on CAP-69
   severity: low
   promoted: 2026-10-19 -- atlas Epic 37 chain; owned by Story 37.8
-  status: open
+  resolved: 2026-10-23 (Story 37.8: derived_artifacts' export_purl_artifacts writes legacy export-purls' six artifacts to derived_purl_artifacts and their manifest to derived_purl_export_manifest; the board reads it with pyforge.atlas.board_projections on)
+  status: closed
 
 ### DW-atlas-37-9-1: The mapping-gap has no classification.
 
@@ -5127,7 +5170,42 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: operator ruling 2026-10-19 on CAP-69
   severity: low
   promoted: 2026-10-19 -- atlas Epic 37 chain; owned by Story 37.9
+  resolved: 2026-10-23 (Story 37.9: pypi_intelligence's classify_mapping_gap writes derived_mapping_gap, legacy mapping_gap's classification and offline recovery, read-only; the board reads it with pyforge.atlas.board_projections on)
+  status: closed
+
+### DW-atlas-37-2-1: A plain `pyforge atlas run` fails on a fresh data root.
+
+- source_spec: `planning-artifacts/specs/spec-37-2-the-pages-vizro-export-builds-the-public-atlas-data-first.md`
+  summary: With no `--pipelines`, `pyforge atlas run` runs `__default__`, the sum of every registered pipeline. It includes `query_plane_cache`, whose input `query_plane_estate_source` (`raw/query_plane_estate_source/`) has no producer until Story 36.3, so on a fresh data root the run stops with `DatasetError: query_plane_estate_source: Failed while loading data` after 12 of 86 nodes. CAP-64 promises that a plain run fills every public dataset; the Pages job names its pipelines instead.
+  evidence: Story 37.2 live run, 2026-10-21, fresh scratch data root, no credentials: exit 1 at 5:25.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipeline_registry.py (register_pipelines); conf/base/catalog.yml (query_plane_estate_source)
+  origin: implementer finding, atlas Story 37.2 live verification
+  severity: medium
+  promoted: 2026-10-21 -- atlas Story 37.2; blocked on Story 36.3 (the estate source's producer)
   status: open
+
+### DW-atlas-37-4-1: `core_dependencies.depends_on` keeps unparsed requirement specs.
+
+- source_spec: `planning-artifacts/specs/spec-37-4-behind-upstream-whodepends-live-catalog-coverage-and-the-universe-sbom-boards-fill.md`
+  summary: `build_dependency_graph` copies the cf-graph's `depends_on` as it comes, and 76 of its distinct values are requirement specs, not package names (`boost>=1.67`, `moab[build="nompi_*"]`, `PyJWT[crypto]`). Since Story 37.4 the whodepends board shows them, and each splits its package's dependent count from the bare-name row. The node is parity-gated against legacy Phase J (AD-14), so normalizing the names needs its own legacy comparison, not a board story.
+  evidence: Story 37.4 review round 2, 2026-10-22, over the public scratch root: 76 of 16,004 distinct `depends_on` values carry a version, build or extras spec.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/core/nodes.py (build_dependency_graph)
+  origin: reviewer finding, atlas Story 37.4 review round 2 (N3)
+  severity: low
+  promoted: 2026-10-22 -- atlas Story 37.4
+  status: open
+
+### DW-atlas-37-3-1: Two boards' static pages are too heavy to publish as they stand.
+
+- source_spec: `planning-artifacts/specs/spec-37-3-the-seed-gap-version-download-and-distribution-boards-read-their-datasets.md`
+  summary: Once Story 37.3 wires them, the static export writes every row: `version-downloads/index.html` is 37.2 MB (448,301 rows plus the chart) and `distribution-breakdown/index.html` is 23.1 MB (210,170 rows) over a full data root. The live AgGrid ships the same frames. Pages must not publish them uncapped.
+  evidence: Story 37.3 review round 1 (2026-10-19), static export over the 2026-10-18 data root.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/static_export.py (_render_table, _render_chart)
+  origin: Story 37.3 review round 1
+  severity: medium
+  promoted: 2026-10-21 -- atlas Story 37.3; owned by Story 37.2, which publishes the export
+  verified: 2026-10-21 by atlas Story 37.2: a static page renders at most 5,000 rows of a frame, the largest by the page's chart measure (`src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/static_export.py::_capped`, `STATIC_ROW_CAP`); the caption names both counts. The live dashboard is unchanged.
+  status: closed
 
 ### DW-atlas-37-10-1: The bootstrap-index-health has no producer.
 
@@ -5138,4 +5216,53 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: operator ruling 2026-10-19 on CAP-69
   severity: low
   promoted: 2026-10-19 -- atlas Epic 37 chain; owned by Story 37.10
-  status: open
+  resolved: 2026-10-23 (Story 37.10: the catalog_index pipeline's report_catalog_index_health writes catalog_index_health over CatalogIndexDataset after each build; the board reads it with pyforge.atlas.board_projections on)
+  status: closed
+
+### DW-atlas-38-1-1: One public vulnerability feed's outage fails the whole Pages data build.
+
+- source_spec: `planning-artifacts/specs/spec-38-1-the-semantic-store-reads-its-upload-times-and-archived-flag.md`
+  summary: `vulnerability_feeds.py`'s `CweCatalogDataset`, `EpssFeedDataset` and `CisaKevDataset` load through `APIDataset` with no fallback, so a connection failure raises `DatasetError` and stops the run. kedro-viz-publish's Vizro job builds the public data on every merge touching atlas, and five consecutive runs on main (2026-10-23, Stories 37.11 to 37.8) failed with `vulnerability_cwe_catalog_raw: Failed to connect to the remote server` (a cwe.mitre.org connect timeout). Pages kept its last export each time. CAP-64 promises a plain run fills every public dataset; AD-13 says a fetch failure keeps the last good copy under a staleness marker instead.
+  evidence: Story 38.1 review 2's live check of kedro-viz-publish runs 39908595513, 39931632612, 39941141589, 40018149689, 40027620039 (2026-10-24).
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/vulnerability_feeds.py (CweCatalogDataset, EpssFeedDataset, CisaKevDataset); conf/base/catalog.yml (vulnerability_cwe_catalog_raw)
+  origin: Story 38.1 review 2
+  severity: medium
+  promoted: 2026-10-24 -- atlas Story 38.1; owned by Story 34.12
+  resolved: 2026-10-24 (Story 34.12: CisaKevDataset, EpssFeedDataset and CweCatalogDataset share VulnerabilityFeedDataset, which keeps the last frame that parsed to rows as raw/<entry>/last_good.parquet; a fetch failure, an HTTP error or a body that does not parse serves that copy, or on a fresh root the empty frame, under the AD-13 marker and never raises, so the run goes on)
+  status: closed
+
+### DW-atlas-37-12-1: The Pages last-good cache survives between runs only once the repository's Actions cache limit is raised.
+
+- source_spec: `planning-artifacts/specs/spec-37-12-the-pages-data-build-keeps-its-last-good-copies-between-runs.md`
+  summary: Story 37.12's `vizro` job saves the public stores' last-good copies with `actions/cache/save@v6` and restores the newest with `actions/cache/restore@v6`, so an outage on Pages serves the previous copy under its AD-13 marker. The repository's Actions cache is over its 10 GB limit (10,450,545,115 bytes in 29 entries on 2026-10-24, about 9.9 GB of them pixi environments), and GitHub evicts the least recently used entries, so how long an unread entry survives depends on how much the other workflows write: at 15:18Z the oldest entry had last been read at 11:42Z, and at 15:54Z it was still there (about 4 hours unread). Until the limit is raised, the copies survive only between runs a few hours apart, never to the weekly run; a miss is the fresh root of before. Operator ruling 2026-10-24 (option C, "Cache + raise limit"): keep actions/cache, and the operator raises the limit. Only the operator can close this: raise the repository's Actions cache size limit (repository Settings, Actions, cache storage), then confirm on a weekly `vizro` run that the restore step logs `Cache restored from key: pyforge-atlas-last-good-<run_id>-<run_attempt>`.
+  evidence: Story 37.12 review 1, read-only `gh api repos/rxm7706/local-recipes/actions/caches?sort=last_accessed_at&direction=asc` and `gh api repos/rxm7706/local-recipes/actions/cache/usage`, 2026-10-24 15:13Z and 15:18Z.
+  location: the GitHub repository setting for the Actions cache size limit (rxm7706/local-recipes; operator-owned, never changed from a session); `.github/workflows/kedro-viz-publish.yml` (the `vizro` job's restore and save steps)
+  origin: Story 37.12 review 1 (blocker), operator ruling 2026-10-24
+  severity: medium
+  promoted: 2026-10-24 -- atlas Story 37.12; operator-owned (a repository setting)
+  resolved: 2026-10-25 (the operator raised rxm7706/local-recipes' Actions cache limits: storage 40 GB and retention 45 days, read back with `gh api repos/rxm7706/local-recipes/actions/cache/storage-limit` and `.../retention-limit`, against 8.96 GB in use. kedro-viz-publish run 40178693436, a workflow_dispatch on main 028cbceaac, succeeded; its vizro job logged `Cache restored from key: pyforge-atlas-last-good-40126025801-1`, the entry run 40126025801 saved at 2026-10-24 21:15Z, and saved `pyforge-atlas-last-good-40178693436-1`. A full week between runs is not yet observed; the 45-day retention and the limit's headroom cover it.)
+  status: closed
+
+### DW-atlas-37-12-2: On Pages, the cve-watcher's snapshot history and the TTL row caches still start empty every run.
+
+- source_spec: `planning-artifacts/specs/spec-37-12-the-pages-data-build-keeps-its-last-good-copies-between-runs.md`
+  summary: Story 37.12 persists `data/raw` and `data/stores/*` (the last-good stores) between Pages runs and deliberately no output layer. Two kinds of output-layer dataset also read their own previous copy: `vulnerability_rollup_snapshots` (`primary/`, a `SnapshotHistoryDataset` each run appends to, which the cve-watcher diffs; Story 37.5's residual risk says the board stays empty on Pages "until a store persists across runs") and the `IncrementalParquetDataset` TTL row caches (`intermediate/`, `primary/`). On Pages they still start empty every run, so the cve-watcher board stays empty there. Persisting the snapshot store only helps once cached copies survive a week (two snapshots at least `params:cve_watcher.since_days`, 7, apart), so it waits on DW-atlas-37-12-1; then decide whether a history store joins the cache, and how a stale history is marked.
+  evidence: Story 37.12 review 2 (2026-10-24); `conf/base/catalog.yml` (`vulnerability_rollup_snapshots`, the `# A3: IncrementalParquetDataset` entries); Story 37.5's spec, Residual risk.
+  location: .github/workflows/kedro-viz-publish.yml (the vizro job's cache paths); src/shared/packages/pyforge-atlas/conf/base/catalog.yml (vulnerability_rollup_snapshots)
+  origin: Story 37.12 review 2
+  severity: low
+  promoted: 2026-10-24 -- atlas Story 37.12 review 2
+  resolved: 2026-10-24 (Story 37.12 review 3: the blocking reason was wrong -- `diff_vulnerability_snapshots` falls back to the second-latest snapshot when none is `since_days` old (`pipelines/vulnerability/nodes.py`, `older_ts = older[0] if older else int(stamps[1])`), so two cached snapshots hours apart already give the cve-watcher a pair to diff. The vizro job now caches `data/primary/vulnerability_rollup_snapshots` beside `raw/` and `stores/*` (operator ruling 2026-10-24: "Approve"), so on Pages the cve-watcher has a pair from the second run whose cache survives; a pair with no moved count still renders empty. The IncrementalParquetDataset TTL row caches stay uncached by design: an optimisation, each Pages build recomputes them as before)
+  status: closed
+
+### DW-atlas-37-12-3: On Pages, a run whose vulnerability database build fails republishes the previous cve-watcher diff as current.
+
+- source_spec: `planning-artifacts/specs/spec-37-12-the-pages-data-build-keeps-its-last-good-copies-between-runs.md`
+  summary: Story 37.12 caches the vulnerability snapshot history between Pages runs but never `stores/vdb`, which every run rebuilds. When that build fails, the store is absent, `vulnerability_package_rollup` is empty, and `SnapshotHistoryDataset.save` appends nothing for an empty frame, so `diff_vulnerability_snapshots` diffs the same two snapshots as the run before and writes the same `derived_vuln_history`. The cve-watcher board (`dashboard/data.py::load_cve_watcher`) shows no snapshot date, and its AD-17 stamp is the derived file's fresh mtime, so the old diff reads as current with no marker. On a workstation the vdb store keeps its last-good copy, so the rollup is not empty there. Fix in Story 37.5's nodes (out of Story 37.12's workflow-only boundary): mark the diff stale, or write it empty, when the latest snapshot is not this run's, or carry the latest snapshot's age to the board.
+  evidence: Story 37.12 review 4 (2026-10-24), a probe over the real `SnapshotHistoryDataset` and `diff_vulnerability_snapshots`: with the third run's rollup empty, its diff equalled the second run's and the latest snapshot was 27 hours old.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/vulnerability/nodes.py (snapshot_vulnerability_rollup, diff_vulnerability_snapshots); src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/snapshot_history.py (save skips an empty frame); src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/data.py (load_cve_watcher)
+  origin: Story 37.12 review 4
+  severity: low
+  promoted: 2026-10-24 -- atlas Story 37.12; owner atlas (a fix to Story 37.5's nodes)
+  resolved: 2026-10-24 (Story 37.13: SnapshotHistoryDataset leaves the AD-13 marker <store>.staleness.json on a save that appends no snapshot, an empty frame or a store it cannot read, and removes it after a save that writes rows; with pyforge.atlas.board_projections on, the cve-watcher's AD-17 stamp is the older of its latest snapshot's time and the diff file's mtime, and the stamp line says stale with the marker's reason, so an earlier run's diff is dated by its own snapshot and marked; with no snapshot store the board reads as a data gap)
+  status: closed

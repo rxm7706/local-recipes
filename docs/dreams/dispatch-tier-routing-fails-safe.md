@@ -2,7 +2,8 @@
 title: 'A cost-tier dispatch override that cannot resolve its harness must never launch'
 type: dream
 owner: marshal
-status: archived   # 2026-09-16 — folded into [[marshal-token-economy]] (operator-ruled
+status: archived
+                   # 2026-09-16 — folded into [[marshal-token-economy]] (operator-ruled
                    # token-savings consolidation: one starting point). Was `realized`.
 ---
 

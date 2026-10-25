@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 53209a19cebada3b
-story_count: 393
-test_file_count: 142
+source_fingerprint: 8c0e60c45fa9d23d
+story_count: 396
+test_file_count: 143
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 393
+- **Stories parsed:** 396
 - **Epics parsed:** 109
-- **Test files inventoried:** 142 under `src/shared/packages/pyforge-steward/tests/`
+- **Test files inventoried:** 143 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `53209a19cebada3b`
+- **Source fingerprint:** `8c0e60c45fa9d23d`
 
 ## Risk Assessment
 
@@ -292,6 +292,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_preserve_tag.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set_status_teardown.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_workspace_stacked_landing.py` | unit | none observed |
 
 ## Story Coverage Matrix
 
@@ -362,6 +363,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 13.3 | A repo set opens as one workspace | none observed |
 | 13.4 | The set reports and tears down safely | none observed |
 | 13.5 | `workspace clean --delete` removes a gone or landed workspace without a promp... | none observed |
+| 13.6 | A workspace started from another branch is landed once its branch is on main | none observed |
 | 14.1 | The pre-flight diff retrodicts a real upgrade | none observed |
 | 14.2 | Apply is deliberate, branched, and never clobbers custom | none observed |
 | 14.3 | Clobbered custom surfaces are caught and re-applied | none observed |
@@ -603,6 +605,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 71.9 | A reduced suite lane never fails on a segment that selects no tests | none observed |
 | 71.10 | A stopped lane is journaled cancelled, and the lane that stopped the run red | none observed |
 | 71.11 | No lane process outlives a stop, and a reduced lane cut short is never ok | none observed |
+| 71.12 | Every cancelled lane names what stopped the run | none observed |
+| 71.13 | A second SIGINT never deadlocks the preflight's interrupt handler | none observed |
 | 72.1 | The Guild environment answers pyforge mason | none observed |
 | 72.2 | Mason's five-tier skill cell requires its station skill and conda-forge-expert | none observed |
 | 73.1 | `steward session check` reads `marshal seed check`'s envelope, whatever its e... | none observed |

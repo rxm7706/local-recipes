@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 656
+# stories: 662
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -37,6 +37,7 @@ development_status:
   100-1-a-landing-records-which-ci-surfaces-were-paused-when-it-merged: done
   101-1-the-landing-line-lists-every-surface-the-ci-master-switch-pauses: done
   102-1-a-landing-reuses-its-verified-verdict-when-only-a-merge-of-main-moved-the-branch: done
+  103-1-the-marshal-mcp-server-starts-on-the-official-sdk-and-preflight-proves-it: backlog
   11-1-neutral-contract-and-agent-adapter-fan-out: done
   11-2-projects-md-index-and-artifact-symlink-derivation: done
   11-3-migration-registry-and-runner: done
@@ -442,6 +443,9 @@ development_status:
   87-14-the-sweeper-reports-stale-locked-agent-worktrees-and-orphan-directories: done
   87-15-a-preserve-reaches-origin-only-through-the-content-gate: done
   87-16-the-orphaned-tips-are-re-preserved-as-local-archive-tags: done
+  87-17-the-legacy-promoter-reads-every-commit-s-bytes: done
+  87-18-the-legacy-promoter-lists-every-legacy-ref: done
+  87-19-the-content-gate-judges-only-what-a-push-sends: backlog
   87-2-the-unpushed-work-detector-fails-closed-and-never-prints-a-tag-minting-remedy: done
   87-3-preserved-work-has-one-grammar-and-one-verb: done
   87-4-spin-parks-every-attempt-as-a-preserve-tag-before-bmad-loop-can-prune-it: done
@@ -480,6 +484,8 @@ development_status:
   epic-101-retrospective: optional
   epic-102: done
   epic-102-retrospective: optional
+  epic-103: backlog
+  epic-103-retrospective: optional
   epic-11: done
   epic-11-retrospective: optional
   epic-12: done
@@ -642,7 +648,7 @@ development_status:
   epic-85-retrospective: done
   epic-86: done
   epic-86-retrospective: optional
-  epic-87: done
+  epic-87: in-progress
   epic-87-retrospective: optional
   epic-88: done
   epic-88-retrospective: optional

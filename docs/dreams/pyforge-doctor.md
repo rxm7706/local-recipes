@@ -86,6 +86,59 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-10-24 (docs-currency's two detector gaps)** — **Found: `docs-currency` reports a generator that cannot run
+  as a stale page, and flags true references as dead in two shapes.** Story 30.4's review recorded both
+  (`DW-doctor-30-4-1`, `DW-doctor-30-4-2`). (1) `_check_generated_page` reads every non-zero exit of a generator's
+  `--check` as "stale against its generator", so `scripts/docs_bmad_estate.py`'s exit 2 (could not run, where
+  `pyforge.scribe` is not importable) reads as a hand edit. (2) The dead-reference scan strips a path's trailing `/`
+  before `git check-ignore`, so a directory-only ignore rule such as `docs/dashboard/kedro-viz/` never matches an
+  absent path; and a backticked `bmad-*` token resolves only as a skill, a script or an exact pixi task, so a
+  detector named by its source (`bmad-output-hygiene`, task `bmad-output-hygiene-check`) reads as a dead skill.
+  `scripts/governance_currency_check.py` mirrors both scan rules and has both gaps. Story 30.4 reworded three true
+  references around them. **What it looks like when fixed:** a generator exit of 2 (or any exit but 0 and 1, or a
+  crash that exits 1 with a traceback) is reported as could-not-run, never as stale; the ignore check also tries a
+  path the page wrote with a trailing `/` in that slashed form; a `bmad-*` or
+  `skf-*` token resolves when `<token>-check` is a pixi task; both detectors change together, and the kedro-viz and
+  `bmad-output-hygiene` references read as they did (`.claude/worktrees/` is ignored only by a local
+  `.git/info/exclude`, so a fresh clone rightly reads it as absent, and the page keeps its placeholder paths). **Constraints:** a fix under CAP-84, no CAP and no flag; no check name, severity or
+  threshold changes; the two detectors keep their mirrored rules identical. Owner `spec-pyforge-doctor`. → Epic 30 /
+  Story 30.5, specced 2026-10-24.
+- **2026-10-24 (the warn backlog behind three preflight lines)** — **Found: a full-scope `pr-preflight` prints one
+  line per detector, and three of those lines stood for 146 standing warnings.** `dreams-hygiene` printed one
+  `dream-readme-missing` line; run alone it reports 121 warnings (64 `dream-readme-missing`, 23
+  `dream-status-trailing-comment`, 32 `kinship-wikilink-dead`, 2 `realization-log-missing`). `docs-currency` holds
+  one `docs-currency-generated-stale` finding (`docs/reference/bmad-estate-llms-full.md` is `kind: generated` with no
+  `generator:` in `docs/map.yaml`, because its generator is scribe's CLI and the check runs only `scripts/docs_*.py`)
+  and 19 `docs-currency-authored-stale` pages (sources moved past `verified:`, five dead references).
+  `bmad-output-hygiene` printed one `orphan-file` line and holds five (herald 1, marshal 2, steward 2). Every one is
+  `warn` and none gates, so they ride every run unread; atlas Story 27.6's session listed the three summary lines as a
+  follow-up, and the operator chose, in session, to clear all 146 in one change ("All 146"). **What it looks like when
+  fixed:** the three detectors report `ok` on the branch: the generated page names a `scripts/docs_*.py` door that
+  hands both modes to scribe's CLI; each
+  authored page is re-read against the sources that moved, corrected where they changed it, and re-stamped
+  `verified:`; every dead reference resolves or is marked historical; every Dream file has a `docs/dreams/README.md`
+  row, a status line with no trailing comment, Kinship links that resolve (retargeted to the Dream a folded one now
+  lives in, or plain text or a plain link where none does) and, when archived, a Realization log; each orphan planning file is cited from the record it belongs to.
+  **Constraints:** a `fix` under CAP-84 (documentation currency) and CAP-42 (the fleet hygiene sweep), with no CAP and
+  no flag; no detector, threshold or severity changes (the door is the one new script); the README's sentence that rows are never added by hand to
+  close the backlog is replaced in the same change, since the operator ruled to close it (a governance edit, recorded
+  on the README's governing Spec); a stale page is re-verified against its sources, never re-stamped unread. Owner
+  `spec-pyforge-doctor`. → Epic 30 / Story 30.4, specced 2026-10-24.
+- **2026-10-22 (the fleet-picture probe guard)** — **Found: twice a new `fleet-picture` ATTENTION probe reached `main`
+  without a stub in the CFE meta-test, and each time the test failed without naming the probe.**
+  `.claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_main_attention.py` runs `fleet_picture.main()` with
+  every probe in its `_PROBES` tuple stubbed. A probe `main()` calls that is not listed reads the faked
+  `subprocess.run`, degrades to its own "could not check" line, and turns the file's three tests red. Story 45.1's
+  `ci_pause_drift_findings` did that (fixed by mason Story 31.1, CFE v8.100.4), and so did Story 48.2's
+  `pages_liveness_findings` (fixed by herald Story 45.1, CFE v8.101.1). The guard that would have named both was
+  written on the 2026-10-14 branch `doctor-45-2-fleet-picture-probe-list`, which never landed; its stub fix landed
+  separately, so only the guard remained (team memory, 2026-10-18 addendum). **What it looks like when fixed:** a test
+  in the same file reads `scripts/fleet_picture.py` with `ast` and requires `_PROBES` to equal the module-level
+  `*_findings` / `*_staleness` functions `main()` calls, naming each missing or extra probe, so the next probe fails by
+  name in the CFE lane. Epic 45's policy surface declares the meta-test and the CFE version carriers. **Constraints:**
+  a test-only fix under CAP-89 (Story 45.1, the probe this file first missed), no CAP and no flag;
+  `scripts/fleet_picture.py` does not change; the conda-forge-expert retro (Rule 2) lands with it. Owner
+  `spec-pyforge-doctor`. → Epic 45 / Story 45.3, specced 2026-10-22 (45.2 was the unlanded branch's number).
 - **2026-10-17 (the detector registry finds a detector's task by its path)** — **Found: `scripts/detectors.py` gives a
   detector the first pixi task whose `cmd` contains the detector's file name, so a task that names the detector's test
   file takes the detector.** `discover()` tests `path.name in c` (`scripts/detectors.py:166`-`:167` at `ab38be642f`),

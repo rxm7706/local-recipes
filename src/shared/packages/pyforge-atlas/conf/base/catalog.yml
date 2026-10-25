@@ -126,6 +126,17 @@ core_s3_version_downloads_raw:
   metadata:
     layer: raw
 
+# Story 37.6 (CAP-69): each version's earliest upload and file count, from every subdir's full
+# repodata.json.zst (operator ruling 2026-10-23), streamed and cached per subdir under
+# stores/core_repodata_uploads (fetched again only when a subdir's ETag changes), behind
+# pyforge.atlas.live_public_sources (off: serve the cache, fetch nothing). No credential.
+core_repodata_uploads_raw:
+  type: pyforge.atlas.datasets.RepodataUploadsDataset
+  url: ${globals:endpoint_bases.CONDA_FORGE_BASE_URL}
+  filepath: ${globals:paths.data_root}/stores/core_repodata_uploads
+  metadata:
+    layer: raw
+
 # The conda-forge bot's graph (Phases E/J/M; consumed cross-pipeline by E per AD-3 —
 # declared ONCE here by the core producer). Story 34.3: regro/cf-graph-countyfair now serves
 # conda-forge/conda-forge-bot-data, whose tarball no longer holds node_attrs/, pr_info/ or
@@ -412,6 +423,13 @@ pypi_conda_mapping:
   metadata:
     layer: primary
 
+# Story 37.9 (CAP-69): why each enumerated package has no PyPI name (legacy mapping_gap, read-only).
+derived_mapping_gap:
+  type: pandas.ParquetDataset
+  filepath: ${globals:paths.data_root}/derived/derived_mapping_gap/derived_mapping_gap.parquet
+  metadata:
+    layer: derived
+
 # Phase H (serial-gated). Legacy SQLite gate column was `pypi_version_fetched_at`
 # (historical provenance only); the Parquet TTL stamp is the generic `fetched_at`
 # (A3 P2 — standardized across all flipped datasets; ttl from ttls.pypi_current_versions).
@@ -467,21 +485,28 @@ pypi_intelligence_scored:
 
 # --- external sources (layer raw) ---
 
+# Story 34.12 (CAP-64, AD-13): the three feeds fetch on every load and keep the last frame that
+# parsed to rows as <filepath>/last_good.parquet; an unreachable host, an HTTP error or a body that
+# does not parse serves that copy (or, on a fresh root, the empty frame) under .staleness.json, and
+# the run goes on. No flag, no credential.
 vulnerability_cisa_kev_raw:
   type: pyforge.atlas.datasets.CisaKevDataset
   url: ${globals:fetcher_urls.CISA_KEV_URL}
+  filepath: ${globals:paths.data_root}/raw/vulnerability_cisa_kev_raw
   metadata:
     layer: raw
 
 vulnerability_epss_raw:
   type: pyforge.atlas.datasets.EpssFeedDataset
   url: ${globals:fetcher_urls.EPSS_FEED_URL}
+  filepath: ${globals:paths.data_root}/raw/vulnerability_epss_raw
   metadata:
     layer: raw
 
 vulnerability_cwe_catalog_raw:
   type: pyforge.atlas.datasets.CweCatalogDataset
   url: ${globals:fetcher_urls.CWE_CATALOG_URL}
+  filepath: ${globals:paths.data_root}/raw/vulnerability_cwe_catalog_raw
   metadata:
     layer: raw
 
@@ -565,6 +590,23 @@ vulnerability_package_rollup:
   metadata:
     layer: primary
 
+# Story 37.5 (CAP-69): every run's rollup as a dated snapshot (legacy vuln_history). Each save
+# appends; a load of an absent store is empty (AD-13).
+vulnerability_rollup_snapshots:
+  type: pyforge.atlas.datasets.SnapshotHistoryDataset
+  filepath: ${globals:paths.data_root}/primary/vulnerability_rollup_snapshots/vulnerability_rollup_snapshots.parquet
+  key_columns: [snapshot_at, conda_name]
+  columns: [snapshot_at, conda_name, vuln_total, vuln_critical_high, vuln_kev_affecting_current]
+  metadata:
+    layer: primary
+
+# Story 37.5 (CAP-69): the cve-watcher's table, what moved between two snapshots (legacy cve-watcher).
+derived_vuln_history:
+  type: pandas.ParquetDataset
+  filepath: ${globals:paths.data_root}/derived/derived_vuln_history/derived_vuln_history.parquet
+  metadata:
+    layer: derived
+
 # Phase G' (row-absence TTL).
 # A3: IncrementalParquetDataset
 vulnerability_package_version_vulns:
@@ -635,6 +677,7 @@ vcs_gitlab_api_raw:
   url: ${globals:endpoint_bases.GITLAB_API_BASE_URL}
   host: gitlab
   credentials: gitlab_token
+  timeout_seconds: 20  # Story 35.4: legacy Phase K's per-request timeout (the default is 900 s)
   filepath: ${globals:paths.data_root}/raw/vcs_gitlab_api_raw
   metadata:
     layer: raw
@@ -644,6 +687,7 @@ vcs_codeberg_api_raw:
   url: ${globals:endpoint_bases.CODEBERG_API_BASE_URL}
   host: codeberg
   credentials: codeberg_token
+  timeout_seconds: 20  # Story 35.4: legacy Phase K's per-request timeout (the default is 900 s)
   filepath: ${globals:paths.data_root}/raw/vcs_codeberg_api_raw
   metadata:
     layer: raw
@@ -689,6 +733,7 @@ vcs_registry_crates_raw:
   type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.CRATES_BASE_URL}
   registry: crates
+  rps: 1.0  # Story 35.4: legacy Phase L runs crates at concurrency 1 (about one request a second)
   credentials: crates_token
   filepath: ${globals:paths.data_root}/raw/vcs_registry_crates_raw
   metadata:
@@ -698,6 +743,7 @@ vcs_registry_rubygems_raw:
   type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.RUBYGEMS_BASE_URL}
   registry: rubygems
+  rps: 1.0  # Story 35.4: legacy Phase L runs rubygems at concurrency 1 (about one request a second)
   credentials: rubygems_token
   filepath: ${globals:paths.data_root}/raw/vcs_registry_rubygems_raw
   metadata:
@@ -1017,10 +1063,92 @@ derived_purl_exports:
   metadata:
     layer: derived
 
+# Story 37.8 (CAP-69): legacy export-purls' six artifacts, one text partition each (derived_purl_exports
+# above is Artifactory's TSV, written by artifactory_downloads), and the manifest the export-purls board reads.
+derived_purl_artifacts:
+  type: partitions.PartitionedDataset
+  path: ${globals:paths.data_root}/derived/derived_purl_artifacts
+  dataset: text.TextDataset
+  overwrite: true  # a run replaces every partition; none survives from an earlier run
+  metadata:
+    layer: derived
+
+derived_purl_export_manifest:
+  type: pandas.ParquetDataset
+  filepath: ${globals:paths.data_root}/derived/derived_purl_export_manifest/derived_purl_export_manifest.parquet
+  metadata:
+    layer: derived
+
+# Story 37.7 (CAP-69): legacy find-alternative's top 10 candidates for every archived package on the channel,
+# which the find-alternative board reads.
+derived_alternative_candidates:
+  type: pandas.ParquetDataset
+  filepath: ${globals:paths.data_root}/derived/derived_alternative_candidates/derived_alternative_candidates.parquet
+  metadata:
+    layer: derived
+
+# Story 37.6 (CAP-69): legacy release-cadence's per-package counts, which the release-cadence board reads.
+derived_release_cadence:
+  type: pandas.ParquetDataset
+  filepath: ${globals:paths.data_root}/derived/derived_release_cadence/derived_release_cadence.parquet
+  metadata:
+    layer: derived
+
+# Story 38.1 (CAP-69): every feedstock the cf-graph flags archived, which semantic_packages joins beside
+# vcs_archived_feedstocks (a public run leaves that GitHub query empty).
+derived_graph_archived_feedstocks:
+  type: pandas.ParquetDataset
+  filepath: ${globals:paths.data_root}/derived/derived_graph_archived_feedstocks/derived_graph_archived_feedstocks.parquet
+  metadata:
+    layer: derived
+
+# Story 38.1 (CAP-69): core_version_download_history with each version's upload date, which the
+# version-downloads board reads with pyforge.atlas.board_projections on.
+derived_version_downloads:
+  type: pandas.ParquetDataset
+  filepath: ${globals:paths.data_root}/derived/derived_version_downloads/derived_version_downloads.parquet
+  metadata:
+    layer: derived
+
+# Story 37.8 (CAP-69): each local recipe's conda-forge-expert stamps (status, conda name, upstream registry and
+# name), which export-purls' recipe exceptions read. Read-only; no credential.
+discovery_recipe_extras_raw:
+  type: pyforge.atlas.datasets.RecipeExtrasDataset
+  filepath: ${globals:paths.local_recipes_dir}
+  metadata:
+    layer: raw
+
+# Story 37.3 (CAP-69): the distribution-breakdown board's one table (the three download cuts)
+derived_distribution_breakdown:
+  type: pandas.ParquetDataset
+  filepath: ${globals:paths.data_root}/derived/derived_distribution_breakdown/derived_distribution_breakdown.parquet
+  metadata:
+    layer: derived
+
 # Full-universe CycloneDX BOM (~856k components).
 derived_universe_sbom:
   type: json.JSONDataset
   filepath: ${globals:paths.data_root}/derived/derived_universe_sbom/universe_sbom.cdx.json
+  metadata:
+    layer: derived
+
+# Story 37.4 (CAP-69): the projections the behind-upstream, live-catalog-coverage and universe-sbom
+# boards read (derived_artifacts' three project_* nodes)
+derived_behind_upstream:
+  type: pandas.ParquetDataset
+  filepath: ${globals:paths.data_root}/derived/derived_behind_upstream/derived_behind_upstream.parquet
+  metadata:
+    layer: derived
+
+derived_live_catalog_coverage:
+  type: pandas.ParquetDataset
+  filepath: ${globals:paths.data_root}/derived/derived_live_catalog_coverage/derived_live_catalog_coverage.parquet
+  metadata:
+    layer: derived
+
+derived_universe_sbom_summary:
+  type: pandas.ParquetDataset
+  filepath: ${globals:paths.data_root}/derived/derived_universe_sbom_summary/derived_universe_sbom_summary.parquet
   metadata:
     layer: derived
 
@@ -1418,13 +1546,15 @@ query_plane_estate:
 
 # =============================================================================
 # semantic_packages — composed dashboard-store derivation (Story 20.3, CAP-6;
-# `query-plane-catalog` ruling, 2026-08-26). DOWNSTREAM ONLY of the sealed `core` +
-# `vcs_health` pipelines' own catalog outputs — the opt-in optimization layer: the
-# sealed seven stay sealed (zero diff inside them) and a consumer may still read their
-# canonical datasets directly. `build_packages_model` (semantic/models.py) binds to
-# this Parquet; the 4 metrics.METRIC_PROVENANCE deferred-input columns
-# (latest_conda_upload / latest_upload_age_days / releases_30d / total_versions) are
-# declared NULL by the pipeline node, never fabricated. Closes DW-D2-2.
+# `query-plane-catalog` ruling, 2026-08-26). DOWNSTREAM ONLY of produced catalog
+# outputs: the sealed `core` + `vcs_health` pipelines' own, and (Story 38.1)
+# derived_artifacts' derived_release_cadence and derived_graph_archived_feedstocks — the
+# opt-in optimization layer: the sealed seven stay sealed (zero diff inside them) and a
+# consumer may still read their canonical datasets directly. `build_packages_model`
+# (semantic/models.py) binds to this Parquet; the upload columns (latest_conda_upload /
+# latest_upload_age_days / releases_30d / total_versions) are NULL for a package the
+# release cadence lacks or whose newest build it does not know, never fabricated.
+# Closes DW-D2-2.
 # =============================================================================
 
 semantic_packages:
@@ -1432,3 +1562,20 @@ semantic_packages:
   filepath: ${globals:paths.data_root}/primary/semantic_packages/semantic_packages.parquet
   metadata:
     layer: primary
+
+# Story 37.10 (CAP-69): every catalog entry under the data root, its last write, Parquet row count
+# and staleness marker. Read-only. filepath is this catalog (its sibling globals.yml expands the path
+# globals) and path the data root: Kedro makes both absolute against the project.
+catalog_index_raw:
+  type: pyforge.atlas.datasets.CatalogIndexDataset
+  filepath: conf/base/catalog.yml
+  path: ${globals:paths.data_root}
+  metadata:
+    layer: raw
+
+# Story 37.10 (CAP-69): the bootstrap-index-health board's table.
+catalog_index_health:
+  type: pandas.ParquetDataset
+  filepath: ${globals:paths.data_root}/derived/catalog_index_health/catalog_index_health.parquet
+  metadata:
+    layer: derived

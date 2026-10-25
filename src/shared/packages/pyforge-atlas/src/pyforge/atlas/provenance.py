@@ -10,6 +10,8 @@ catalog's own dataset object — never a hardcoded name list:
 - ``IncrementalParquetDataset`` -> its own ``fetched_at`` column (oldest +
   newest recorded row timestamp).
 - ``kedro_datasets.pandas.ParquetDataset`` -> the materialized file's mtime.
+- a ``SnapshotHistoryDataset`` store, read by path (``resolve_for_snapshot_history``, Story 37.13) -> its latest
+  ``snapshot_at`` (``snapshot-at``), with its AD-13 marker's reason while it carries one.
 - ``kedro_datasets.api.APIDataset`` -> ``now`` (the read genuinely IS the
   fetch for a live API source).
 - anything else -> ``null`` + a stated reason (a REQUIRED, valid, non-error
@@ -39,6 +41,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+import pyarrow.parquet as pq
 from kedro_datasets.pandas import ParquetDataset
 
 from pyforge.atlas.datasets import (
@@ -46,8 +49,11 @@ from pyforge.atlas.datasets import (
     IncrementalParquetDataset,
     JSONSourceDataset,
     PyPIClickHouseDownloadsDataset,
+    RepodataUploadsDataset,
     S3DownloadStatsDataset,
+    VulnerabilityFeedDataset,
 )
+from pyforge.atlas.datasets.snapshot_history import read_staleness
 
 SCHEMA_VERSION = "1"
 
@@ -128,6 +134,47 @@ def resolve_for_file(path: str | os.PathLike[str]) -> ProvenanceInfo:
             build_stamp=None,
             reason=f"backing file mtime out of convertible range: {p} ({st.st_mtime!r})",
         )
+
+
+def resolve_for_snapshot_history(path: str | os.PathLike[str], column: str = "snapshot_at") -> ProvenanceInfo:
+    """``snapshot-at`` provenance for a ``SnapshotHistoryDataset`` (Story 37.13): the latest snapshot's own recorded
+    time, never the store file's mtime, or ``unavailable`` + a reason when the store is absent, unreadable or holds no
+    snapshot time. While the store carries its AD-13 marker (its last save appended no snapshot), the reason says
+    ``stale: <the marker's reason>``; a marker that cannot be read says so and reads as stale too."""
+    p = Path(path)
+    marker = read_staleness(p)
+    stale = None
+    if marker is not None and marker.stale:
+        stale = f"stale: {marker.reason}"
+        if marker.marked_at > 0:
+            try:
+                stale += f" (marked {_iso(marker.marked_at)})"
+            except ValueError, OverflowError, OSError:
+                pass
+
+    def _gap(reason: str) -> ProvenanceInfo:
+        """``unavailable``, keeping the marker's reason beside the store's."""
+        return ProvenanceInfo(
+            kind="unavailable", build_stamp=None, reason=reason if stale is None else f"{reason}; {stale}"
+        )
+
+    found = resolve_for_file(p)
+    if found.kind == "unavailable":
+        return _gap(str(found.reason))
+    try:
+        if column not in pq.read_schema(p).names:
+            return _gap(f"no {column!r} column in {p}")
+        values = pd.read_parquet(p, columns=[column])[column]
+    except Exception as exc:  # a truncated write: advisory, never a crash
+        return _gap(f"snapshot store unreadable: {p} ({type(exc).__name__})")
+    seconds = pd.to_numeric(values, errors="coerce").dropna()
+    if seconds.empty:
+        return _gap(f"no {column!r} recorded in {p}")
+    try:
+        stamp = _iso(float(seconds.max()))
+    except ValueError, OverflowError, OSError:
+        return _gap(f"latest {column!r} out of convertible range: {p} ({seconds.max()!r})")
+    return ProvenanceInfo(kind="snapshot-at", build_stamp=stamp, reason=stale)
 
 
 def _datetime_to_epoch_seconds(col: Any) -> Any:
@@ -223,7 +270,14 @@ def resolve_for_catalog_dataset(catalog: Any, name: str, loaded_value: Any) -> P
                 reason=f"non-local protocol {protocol!r}: cannot stat the backing file locally",
             )
         return resolve_for_file(described["filepath"])
-    marked = (JSONSourceDataset, CfGraphTarballDataset, S3DownloadStatsDataset, PyPIClickHouseDownloadsDataset)
+    marked = (
+        JSONSourceDataset,
+        CfGraphTarballDataset,
+        S3DownloadStatsDataset,
+        PyPIClickHouseDownloadsDataset,
+        RepodataUploadsDataset,
+        VulnerabilityFeedDataset,
+    )
     source = dataset if isinstance(dataset, marked) else getattr(dataset, "source", None)
     if isinstance(source, marked):
         # Story 34.1: a fresh fetch is "now"; a load that served last-good (or nothing) says
@@ -233,6 +287,8 @@ def resolve_for_catalog_dataset(catalog: Any, name: str, loaded_value: Any) -> P
         # Story 34.4: S3DownloadStatsDataset's copy is its month cache, dated by its manifest;
         # a load that fetched nothing (its flag off) served that copy as it stood.
         # Story 34.9: PyPIClickHouseDownloadsDataset keeps the same marker beside its last-good.
+        # Story 37.6: RepodataUploadsDataset's copy is its subdir cache, dated by its manifest.
+        # Story 34.12: the KEV, EPSS and CWE feeds keep last-good beside the same marker.
         marker = source.staleness()
         last_good = source.last_good_path
         fetched = bool(getattr(source, "refreshed", True))

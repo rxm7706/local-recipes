@@ -4,7 +4,10 @@ PURE nodes: ``build_universe_sbom`` (CycloneDX BOM), ``build_inventory_universe`
 (workbook-free metrics universe), ``derive_basilisk_vuln_rollup`` + ``assign_inventory_priority``
 (Story 23.3 priority hierarchy), ``build_inventory_verified_packages`` +
 ``build_inventory_aoss_free_queue`` (Story 23.4 deliverable A + AOSS queue),
-``build_identity_complete_export`` (Story 23.5 complete export join).
+``build_identity_complete_export`` (Story 23.5 complete export join); the three board projections
+``project_behind_upstream``, ``project_live_catalog_coverage`` and ``project_universe_sbom_summary``
+(Story 37.4); ``export_purl_artifacts`` (Story 37.8); ``score_alternative_candidates`` (Story 37.7); ``project_release_cadence`` (Story 37.6); ``project_graph_archived_feedstocks`` and
+``project_version_downloads`` (Story 38.1).
 ``inputs=`` bind to catalog NAMES (AD-3 cross-pipeline edges). Node names FROZEN.
 """
 
@@ -12,6 +15,8 @@ from __future__ import annotations
 
 from kedro.pipeline import Pipeline, node
 
+from .alternatives import score_alternative_candidates
+from .lifecycle import project_graph_archived_feedstocks, project_version_downloads
 from .nodes import (
     assign_inventory_priority,
     build_identity_complete_export,
@@ -19,13 +24,30 @@ from .nodes import (
     build_inventory_universe,
     build_inventory_verified_packages,
     build_universe_sbom,
+    compose_distribution_breakdown,
     derive_basilisk_vuln_rollup,
+    project_behind_upstream,
+    project_live_catalog_coverage,
+    project_universe_sbom_summary,
 )
+from .purl_exports import export_purl_artifacts
+from .release_cadence import project_release_cadence
 
 
 def create_pipeline(**kwargs) -> Pipeline:
     return Pipeline(
         [
+            node(
+                # Story 37.3: the distribution-breakdown board's one table
+                func=compose_distribution_breakdown,
+                inputs=[
+                    "core_downloads_platform_breakdown",
+                    "core_downloads_pyver_breakdown",
+                    "core_downloads_channel_breakdown",
+                ],
+                outputs="derived_distribution_breakdown",
+                name="compose_distribution_breakdown",
+            ),
             node(
                 func=build_universe_sbom,
                 inputs=["core_packages_enumerated", "pypi_conda_mapping", "parameters"],
@@ -112,6 +134,73 @@ def create_pipeline(**kwargs) -> Pipeline:
                 ],
                 outputs="identity_complete_export",
                 name="build_identity_complete_export",
+            ),
+            # Story 37.4: the projections the behind-upstream, live-catalog-coverage and universe-sbom
+            # boards read
+            node(
+                func=project_behind_upstream,
+                inputs=["vcs_upstream_versions", "core_packages_enumerated"],
+                outputs="derived_behind_upstream",
+                name="project_behind_upstream",
+            ),
+            node(
+                func=project_live_catalog_coverage,
+                inputs="identity_complete_export",
+                outputs="derived_live_catalog_coverage",
+                name="project_live_catalog_coverage",
+            ),
+            node(
+                func=project_universe_sbom_summary,
+                inputs="derived_universe_sbom",
+                outputs="derived_universe_sbom_summary",
+                name="project_universe_sbom_summary",
+            ),
+            # Story 37.8: legacy export-purls' six artifacts and their manifest
+            node(
+                func=export_purl_artifacts,
+                inputs=[
+                    "core_packages_enumerated",
+                    "core_latest_status",
+                    "pypi_conda_mapping",
+                    "pypi_universe",
+                    "discovery_recipe_extras_raw",
+                    "core_cf_graph_raw",
+                    "core_feedstock_attribution",
+                ],
+                outputs=["derived_purl_artifacts", "derived_purl_export_manifest"],
+                name="export_purl_artifacts",
+            ),
+            # Story 37.7: legacy find-alternative's candidates for every archived package
+            node(
+                func=score_alternative_candidates,
+                inputs=[
+                    "core_cf_graph_raw",
+                    "core_feedstock_attribution",
+                    "semantic_packages",
+                    "core_dependencies",
+                ],
+                outputs="derived_alternative_candidates",
+                name="score_alternative_candidates",
+            ),
+            # Story 37.6: legacy release-cadence's counts, from the full repodata's upload times
+            node(
+                func=project_release_cadence,
+                inputs=["core_repodata_uploads_raw", "core_packages_enumerated"],
+                outputs="derived_release_cadence",
+                name="project_release_cadence",
+            ),
+            # Story 38.1: the cf-graph's archived feedstocks, and version-downloads' upload dates
+            node(
+                func=project_graph_archived_feedstocks,
+                inputs="core_cf_graph_raw",
+                outputs="derived_graph_archived_feedstocks",
+                name="project_graph_archived_feedstocks",
+            ),
+            node(
+                func=project_version_downloads,
+                inputs=["core_version_download_history", "core_repodata_uploads_raw"],
+                outputs="derived_version_downloads",
+                name="project_version_downloads",
             ),
         ]
     )

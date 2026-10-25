@@ -768,7 +768,11 @@ def test_a_worktree_with_an_uncommitted_edit_still_archives(repo: Path, tmp_path
 
 
 def test_a_worktree_whose_source_git_cannot_resolve_still_archives(repo: Path, tmp_path: Path):
-    """A proof git cannot give is no proof: the worktree archives, it is never dropped."""
+    """A proof git cannot give is no proof: the worktree archives, it is never dropped.
+
+    Story 13.6: the trunk ``origin/main`` is a landing ref too, and this worktree sits on it, so the trunk is removed
+    as well; with neither ref resolvable nothing proves the worktree landed.
+    """
     bookkeeping = repo / ".steward" / "workspaces.yaml"
     wt = tmp_path / "unproven"
     start_workspace("unproven", root=repo, bookkeeping=bookkeeping, path=wt, from_ref="origin/main")
@@ -777,6 +781,7 @@ def test_a_worktree_whose_source_git_cannot_resolve_still_archives(repo: Path, t
         for r in load_bookkeeping(bookkeeping)
     ]
     save_bookkeeping(bookkeeping, tuple(records))
+    _git("update-ref", "-d", "refs/remotes/origin/main", cwd=repo)
 
     assert _clean_one(repo, tmp_path, "unproven").name.endswith(".tar.gz")
 

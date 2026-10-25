@@ -26,7 +26,7 @@ Django; Herald's Guildhall board is vanilla JS).
 - A DuckDB query against `cf_atlas.db` renders as a Tabulator grid, a chart, or a pivot table —
   static queries as HTML fragments needing no WebSocket; genuinely interactive ones (filter,
   drill, re-sort live) running Bokeh's WebSocket protocol through whatever ASGI host is already in
-  play, the same server-driven shape [[data-visualization-dashboards]]'s WF source describes for
+  play, the same server-driven shape `data-visualization-dashboards`'s WF source describes for
   Django Channels, adapted to this repo's own hosting choices rather than assuming Django
   specifically.
 - Widget TYPES are pluggable, not hard-coded to the source dream's own SQL-Explorer-specific set —

@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: 42656373bd47c897
-story_count: 158
+source_fingerprint: 471b4990c456a837
+story_count: 161
 test_file_count: 98
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 158
+- **Stories parsed:** 161
 - **Epics parsed:** 49
 - **Test files inventoried:** 98 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `42656373bd47c897`
+- **Source fingerprint:** `471b4990c456a837`
 
 ## Risk Assessment
 
@@ -314,6 +314,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 30.1 | The map is enforced within its scope, the stubs are gone, and the new pages a... | none observed |
 | 30.2 | docs/map.yaml is the registry, MAP.md is its render, and `docs-currency` reds... | none observed |
 | 30.3 | The reference pages are generated — pixi tasks, station CLIs, detectors, skil... | none observed |
+| 30.4 | The docs, Dream and planning warn backlog is cleared | none observed |
+| 30.5 | docs-currency tells a generator that cannot run from a stale page, and stops ... | none observed |
 | 31.1 | Every Doctor source names the branch it reads by its full refname | none observed |
 | 32.1 | The gate's base normalizer names the remote-tracking ref | none observed |
 | 33.1 | The deferred-work source reds a done story whose recommended follow-up review... | none observed |
@@ -346,6 +348,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 43.1 | bmad-drift knows every file marshal dispatch writes into Tier-3 | none observed |
 | 44.1 | The doctor check speed budget is judged on the CPU the check spends | none observed |
 | 45.1 | Doctor names every CI surface that drifted, stuck or outlived its review date | none observed |
+| 45.3 | The fleet-picture meta-test names every probe `main()` calls | none observed |
 | 46.1 | The env-hygiene scan walks each tree once and skips test code | none observed |
 | 47.1 | The aggregate scripts test checks scope filtering without gathering | none observed |
 | 48.1 | One registry orders every section of the Pages site | none observed |

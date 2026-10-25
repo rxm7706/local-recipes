@@ -1973,6 +1973,99 @@ Drift — orphaned between stations.
   change, and no consumer of `ci status --json` changes. `pixi_env_matrix.py` changes only in its usage docstring. No
   test runs a bare `estate reconcile`, which rewrites the latest journal (`DW-steward-103-3-1`). Orchestrating
   session's brief, 2026-10-17. Owner `spec-pyforge-steward`. → Epic 108 / Story 108.1, specced 2026-10-17.
+- **2026-10-23 (a cancelled lane names no cause) — Found: the preflight journals a lane the stop kept from being
+  submitted `cancelled` with no `cancelled_by`, so one steward test fails under load.** Atlas Story 37.11's full
+  `pr-preflight` (branch HEAD `63cb853a8a`, 2026-10-22) went red on
+  `test_red_dependency_cancels_dependents` alone: `KeyError: 'cancelled_by'` at
+  `assert by_task["a"]["cancelled_by"] == "d"`, 1 failed and 2901 passed. In isolation the test passed 10 runs of 10.
+  Read at `9fc4cb1c2b` in `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py`.
+  - **Where the cause is dropped.** Four places journal a lane the stop keeps from running. `_run_lane_in_pool`'s
+    red-stop checks (`:1001`, `:1024`) name the stop's cause through `_stop_cause`. Its interrupt checks (`:999`,
+    `:1022`) name none. `run_preflight`'s result assembly journals every lane with no result `cancelled`, exit 0,
+    0 s, with no cause: after a red stop at `:1456`, after an interrupt at `:1427`. Story 71.10 AC (4) pinned that
+    last shape ("a lane that never started stays as today ... no `cancelled_by`").
+  - **Why it is timing.** The fixture's lane `a` depends on `b` and `c`; `b` depends on `d`, which goes red.
+    `_mark_dependency_blocked` (`:1338`) journals a dependent only once every dependency has a result, and the
+    scheduler offers a lane only while no red stop is set (`:1364`). When `d` fails before `c` is submitted (under load,
+    the pool thread runs `d` to its end while the main thread is still filling slots), `c` never runs. Then `a`
+    keeps a dependency with no result, and both reach `:1456` with no cause. So the cause on `c` and `e` depends on
+    whether the scheduler submitted them before the stop (submitted, the pool names `d`; not submitted, nothing
+    does), and the cause on `a` on whether `c` was.
+  - **Measured at `9fc4cb1c2b`** with the test's fixture and an injected runner. At `--jobs 1`, every run: only `d`
+    starts; `b` reads `cancelled_by: d`; `c`, `a` and `e` read `cancelled` with no `cancelled_by`. At `--jobs 4` on
+    an idle machine: `d` and `c` start, `a` reads `d`, and `e`, never submitted, has no cause.
+  **What it looks like when fixed:** every lane journaled `cancelled` names what stopped the run: the red lane's task
+  and environment, or `interrupt`, whichever cause was recorded first (`_stop_cause`). That holds whether the lane
+  was terminated, submitted and skipped, or never submitted. A never-started lane is still told apart by exit 0 and
+  0 s. This replaces Story 71.10 AC (4)'s "no `cancelled_by`" for a never-started lane, and Story 105.1's restatement
+  of it for a deferred docs-site lane. The field stays additive; `preflight.py` is its only reader outside the
+  tests, and the three tests that pinned its absence pin the cause. A dependent that `_mark_dependency_blocked`
+  reaches keeps its dependency's cause (Story 88.1); a dependent of a lane turned away on an interrupt therefore
+  names `interrupt` where it used to name that lane (found at the story's review). The SIGINT handler records its
+  cause before it sets the flag, as a red lane does. A `--jobs 1` test, in which the stop comes before `c` and `a`
+  can be submitted, fails on the old code and has no timing in it. The flaky test asserts the cause of every
+  cancelled lane. **Constraints:** a fix under CAP-159, with no CAP, no flag and no `SPEC.md` change. The scheduler,
+  the exit codes, the verdicts, `red_lanes` and the set of lanes that run do not change; only the cause fields do:
+  `cancelled_by` and `cancelled_by_environment` on cancelled lanes, and `blocked_by` and `blocked_by_environment` on
+  a `--keep-going` dependent of a lane turned away on an interrupt. Orchestrating session's brief, 2026-10-23. Owner
+  `spec-pyforge-steward`. → Epic 71 / Story 71.12, specced 2026-10-23; it reopens Epic 71.
+- **2026-10-23 (a second SIGINT deadlocks the handler) — Found: a second Ctrl-C that lands while the preflight's
+  SIGINT handler holds one of its locks hangs the run for good.** Story 71.12's third independent review found it, in
+  a function 71.12 touched but outside its ACs. Read at `884d7f1106` (71.12 merged) in
+  `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py`.
+  - **The handler takes two non-reentrant locks.** `run_preflight` installs `_on_sigint` (`:1316`-`:1323`), which
+    Python runs on the main thread between bytecodes. It records the cause under `stop_lock`, an `RLock` (`:593`),
+    then calls `coord.cancel.set()` (`:1320`); `threading.Event.set` holds the event's own `Lock` while it sets the
+    flag. Then `coord.terminate_children()` (`:1321`) takes `proc_lock`, a plain `Lock` (`:586`), to copy the
+    process list (`:646`) and again to mark each lane it signals (`:651`).
+  - **A second SIGINT inside either lock waits on itself.** Python can run the handler again, on the same thread,
+    while the first call still holds one of those locks. The nested call reaches the same `cancel.set()` or
+    `proc_lock` and blocks forever: the lock's holder is the frame it interrupted. Nothing times out, and the handler
+    swallows Ctrl-C, so only another signal (e.g. SIGTERM, SIGHUP or SIGKILL) ends the run. The window is a few
+    bytecodes per lock, so it takes a double Ctrl-C at the wrong instant.
+  - **Measured at `884d7f1106`** with no real signal: a test keeps the handler a one-lane run installed and calls it
+    with `cancel` (or `proc_lock`) replaced by a stand-in that, holding its lock, runs the handler once more. Both
+    calls were still blocked when their 10 s and 20 s joins expired.
+  **What it looks like when fixed:** a SIGINT that arrives while the handler is running returns at once, and the first
+  call finishes: the cause is recorded, `cancel` is set and every running lane is terminated, as for one SIGINT. A
+  SIGINT after the handler has returned runs it again, as today. The same two tests return within their joins, and
+  fail on the old code. **Constraints:** a fix under CAP-159, with no CAP, no flag and no `SPEC.md` change. What one
+  SIGINT does (Story 71.10, 71.11 and 71.12's journal, exit 130) does not change, and no lock becomes reentrant.
+  The operator's ask in chat, 2026-10-23, after 71.12's review. Owner `spec-pyforge-steward`. → Epic 71 /
+  Story 71.13, specced 2026-10-23; it reopens Epic 71.
+- **2026-10-23 (a stacked workspace never reads landed) — Found: a workspace started `--from` another branch is
+  never judged landed, so `clean` refuses it after its work is on `main`.** Found while cleaning up Story 71.13's
+  workspace, `steward workspace start chain-preflight-sigint-reentry-2026-10-23 --from claude/zealous-booth-19783d`. Its
+  branch merged to `main` as `bdb49ec39f`, yet `status` read it `unmerged ahead=18` and `clean <slug> --delete` skipped
+  it `not-merged`; the operator removed it by hand with `git worktree remove`. Read at `bdb49ec39f` in
+  `src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py`.
+  - **Every landing check reads only the recorded source.** `status_of`'s merged flag (`:687`), `clean --merged-only`
+    (`:1263`), `--delete`'s eligibility (`:1168`, `:1179`) and branch removal (`:1198`), the preserve-tag check
+    (`:1063`) and the archive's branch removal (`:1123`-`:1132`) all ask `merge-base --is-ancestor <branch>
+    <source>`. A stacked workspace's source is a local branch that stops moving once the work lands, so its branch
+    is never an ancestor of it.
+  - **The landed proof needs a remote source.** CAP-157's proof (`_landed_note_body`, `:989`-`:1000`) asks
+    `_source_commit` (`:788`) for the source's commit, and that answers only for a source under `refs/remotes/`
+    (`:797`). A local source proves nothing, so `--delete` refuses even a workspace whose branch is on it, and the
+    default `clean` writes a tarball where a note would do.
+  - **Measured** in a scratch repository with a bare origin: a `base` workspace off `origin/main` with one commit, a
+    `stacked` one `--from base` with another, then `stacked` merged into `main` and pushed. `status` read
+    `merged=False`, `clean --delete` skipped `stacked` as `not-merged`, and `clean --merged-only` skipped it too.
+  **What it looks like when fixed:** a workspace whose branch is an ancestor of the trunk, `origin/main` read as
+  `refs/remotes/origin/main`, counts as landed whatever it was started from: `status` reads it merged, `--merged-only`
+  and the default `clean` leave a `.landed.txt` note naming `origin/main` and delete its branch, and `--delete` drops
+  it. A workspace on neither its source nor the trunk is refused exactly as today, and a repository with no
+  `origin/main` (a repo-set member) gets today's verdict. *(Added at review:)* the trunk and any `origin/<b>` source
+  are compared by the commit their remote-tracking ref names, so a local ref named like them proves nothing, and a
+  detached HEAD with commits past a landed branch, read as the repository records it, keeps `--merged-only` from
+  removing a present worktree and the preserve check from skipping its tag. A directory deleted by hand never loses
+  more than at the baseline: the trunk lands it only when the HEAD git still records for it (or none) is landed and
+  it holds no per-worktree ref, and every clean unregisters only its own worktree (operator ruling, 2026-10-23); the
+  loss the baseline already had is `DW-steward-13-6`, a separate fix. **Constraints:** a fix under CAP-157 (amended in place:
+  the trunk joins the source as a landing ref), with no new CAP and no flag. `ahead`/`behind` still read the
+  recorded source; the proof's other conditions (clean tree, no hidden index entry, no gitlink, no per-worktree
+  ref, no Tier-3 work) do not change. The operator's ask in chat, 2026-10-23. Owner `spec-pyforge-steward`. →
+  Epic 13 / Story 13.6, specced 2026-10-23; it reopens Epic 13.
 
 - **2026-10-21 (the marketplace reset stays on steward) — The 2026-10-20 session re-decided the self-hosted BMAD marketplace, and steward still owns it.** The archived seed `docs/dreams/self-hosted-bmad-marketplace.md` stays archived (`folded-into-station-dream`). v1 (Epic 60, CAP-117..CAP-123, `CatalogEngine`, `registry/estate.yaml`, the conda/Artifactory backend) remains the engine. The reset's first artifact is a skill folder, not a new catalog: BMAD skills and modules, station skills built with BMAD, and agents built with BMAD; jobs find, install, create, and publish; first user a teammate on Claude Code, Cursor, GitHub Copilot in VS Code, Google Gemini, Devin (Cognition AI), or no AI tool yet. The pilot audience is that whole list. Skills copy into `.agents/skills/` and `.claude/skills/`. The 2026-10-20 tool matrix documents Claude Code's project skill path as `.claude/skills/` and Devin's as `.agents/skills/<name>/SKILL.md`. It marks Claude Code reading `.agents/skills/` as uncertain and does not list `.claude/skills/` for Devin. GitHub Pages is the browse host. `bmp` is a later face on `steward catalog`, not a new station and not a new duty. Mason and warden own the seed commands; scribe owns memory. The verbatim 2026-10-20 session, including prototypes, is `planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/`. Concepts A–F are the selected direction. The success signal is a teammate other than rxm7706 contributing a skill that a different teammate installs and uses. Pilots stay bmp tier community, which maps to trust_tier unverified, until a review record exists. **What it looks like when the reset is in the tree:** a product brief, three portable pilot skills (`@mason/environment`, `@mason/package`, `@warden/scan`) with `steps.md` and no `pixi run -e`, and `docs/foundry/marketplace/` rendering a static index from `pyforge.bmad-marketplace/v1` behind `pyforge.steward.marketplace_pages`, mounted at `/marketplace/` on the existing docs site. `CatalogEngine.render` is unchanged. **Decision 2026-10-21:** this monorepo hosts and publishes the marketplace. There is no separate marketplace repository. Teammates use an internal mirror of local-recipes. `catalog.yaml` `edit_store.mirrors` is a list of `{host, repo}` and starts empty. Foundry rebuilds CAP-169..CAP-173 at cutover (mode `rebuild`); nothing moves, and nothing changes at the `cutover_root` flip. **Open question:** which internal GitHub or GHES mirror of local-recipes, and is mirroring the full repository allowed at work? **Constraints:** CAP-169..CAP-173 on this station's Spec. No second Dream. `DW-FU-60-1`, `DW-FU-60-1-4`, and `DW-FRR-60-1` stay open and gain a `carried:` line. Owner `spec-pyforge-steward`. → Epic 109 / Stories 109.1–109.5, specced 2026-10-21.
 
@@ -3530,7 +3623,7 @@ afterthought.**
 
 ## The frontier
 
-- **[[presenton-pixi-image]]** and **[[deckcraft]]** — the two air-gapped
+- **[[presenton-pixi-image]]** and **[[pyforge-herald|deckcraft]]** — the two air-gapped
   application expressions, both unbuilt.
 - **Warden's registry perimeter** ([[pyforge-warden]] ring 2): block/allow lists
   on Artifactory — quarantine before the firewall.
@@ -3543,7 +3636,7 @@ afterthought.**
   ([[pyforge-doctor]] found it; [[pyforge-steward]] still owns the key lifecycle.)
 - **Deployment & install operations** (bundles, OpenShift, mirrors) are the
   **Steward's** station ([[pyforge-steward]], adopted 2026-07-23).
-- Offline bundle format for the whole operating model ([[pyforge-genesis]]
+- Offline bundle format for the whole operating model ([[pyforge-charter|pyforge-genesis]]
   behind a firewall) — kinship with [[sentinel]]'s §40 Airgap Bundle & Install.
 
 ## Kinships

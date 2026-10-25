@@ -763,3 +763,108 @@ def test_render_map_registry_groups_by_quadrant_sorted_by_path():
 def test_render_map_registry_is_deterministic():
     pages = [_POINTER_PAGE]
     assert docs_currency.render_map_registry(pages) == docs_currency.render_map_registry(list(pages))
+
+
+# --- Story 30.5 (DW-doctor-30-4-1, DW-doctor-30-4-2) -------------------------
+
+
+def _generated_tree(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, exit_code: int) -> None:
+    checkout = tmp_path / "checkout"
+    checkout.mkdir()
+    doctor_script = _write_checkout_stub_generator(checkout, "scripts/docs_pixi_tasks.py", exit_code=exit_code)
+    monkeypatch.setattr(docs_currency, "locate_checkout_script", lambda name: doctor_script)
+    _init_repo(tmp_path)
+    pages = [
+        _POINTER_PAGE,
+        {
+            "path": "how-to/pixi-tasks.md",
+            "quadrant": "how-to",
+            "owner": "steward",
+            "kind": "generated",
+            "generator": "scripts/docs_pixi_tasks.py",
+        },
+    ]
+    _write_map_yaml(tmp_path, pages)
+    _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
+    _write_authored_page(tmp_path, "how-to/pixi-tasks.md", body="generated content\n")
+    _commit_all(tmp_path, "seed")
+
+
+@pytest.mark.parametrize("exit_code", [2, 3])
+def test_a_generator_that_cannot_run_reads_could_not_run_not_stale(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, exit_code: int
+):
+    _generated_tree(tmp_path, monkeypatch, exit_code=exit_code)
+    findings = [f for f in docs_currency.gather(tmp_path) if f.check == "docs-currency-generated-stale"]
+    assert len(findings) == 1
+    assert findings[0].status == DoctorStatus.WARN
+    assert "could not run generator scripts/docs_pixi_tasks.py" in findings[0].message
+    assert f"exited {exit_code}" in findings[0].message
+    assert "stale against its generator" not in findings[0].message
+    assert findings[0].evidence["exit"] == exit_code
+
+
+def test_a_generator_exit_1_still_reads_stale(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    _generated_tree(tmp_path, monkeypatch, exit_code=1)
+    findings = [f for f in docs_currency.gather(tmp_path) if f.check == "docs-currency-generated-stale"]
+    assert len(findings) == 1
+    assert "stale against its generator" in findings[0].message
+
+
+def test_a_generator_that_crashes_reads_could_not_run_not_stale(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """An uncaught exception exits 1 too, the stale code; its traceback marks a crash, not a hand edit."""
+    _generated_tree(tmp_path, monkeypatch, exit_code=1)
+    stub = tmp_path / "checkout" / "scripts" / "docs_pixi_tasks.py"
+    stub.write_text("raise RuntimeError('no head to stamp')\n", encoding="utf-8")
+    findings = [f for f in docs_currency.gather(tmp_path) if f.check == "docs-currency-generated-stale"]
+    assert len(findings) == 1
+    assert "could not run generator scripts/docs_pixi_tasks.py" in findings[0].message
+    assert "crashed" in findings[0].message
+    assert "stale against its generator" not in findings[0].message
+    assert findings[0].evidence["exit"] == 1
+
+
+def _authored_tree(tmp_path: Path, body: str, *, gitignore: str = "", pixi_toml: str = "") -> None:
+    _init_repo(tmp_path)
+    pages = [
+        _POINTER_PAGE,
+        {"path": "how-to/example.md", "quadrant": "how-to", "owner": "fleet", "kind": "authored"},
+    ]
+    _write_map_yaml(tmp_path, pages)
+    _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
+    if gitignore:
+        (tmp_path / ".gitignore").write_text(gitignore, encoding="utf-8")
+    if pixi_toml:
+        (tmp_path / "pixi.toml").write_text(pixi_toml, encoding="utf-8")
+    _write_authored_page(tmp_path, "how-to/example.md", body=body)
+    _commit_all(tmp_path, "seed")
+
+
+def test_an_absent_directory_matched_only_by_a_directory_rule_is_not_dead(tmp_path: Path):
+    """`docs/dashboard/kedro-viz/` is ignored by a directory-only rule and staged only at build time.
+
+    Only a reference the page writes with the slash is retried; written without it, the same path reads
+    as a file, and a deleted file is dead.
+    """
+    dead_by_body = {}
+    for name, body in {
+        "directory": "The export lands in `docs/build-export/`; `docs/never-there/` is a typo.\n",
+        "file": "`docs/build-export` named as a file is dead.\n",
+    }.items():
+        _authored_tree(tmp_path / name, body, gitignore="docs/build-export/\n")
+        findings = [f for f in docs_currency.gather(tmp_path / name) if f.check == "docs-currency-authored-stale"]
+        assert len(findings) == 1
+        dead_by_body[name] = findings[0].evidence["dead_references"]
+    assert dead_by_body == {"directory": ["docs/never-there"], "file": ["docs/build-export"]}
+
+
+def test_a_bmad_token_naming_a_check_task_is_not_dead(tmp_path: Path):
+    """`bmad-output-hygiene` is a Doctor source whose detector task is `bmad-output-hygiene-check`."""
+    _authored_tree(
+        tmp_path,
+        "Run `bmad-foo` for its verdict; `bmad-bar` names nothing.\n",
+        pixi_toml='[feature.guild-tasks.tasks.bmad-foo-check]\ncmd = "python -m pyforge.doctor.sources bmad-foo"\n',
+    )
+    findings = [f for f in docs_currency.gather(tmp_path) if f.check == "docs-currency-authored-stale"]
+    assert len(findings) == 1
+    assert findings[0].evidence["dead_references"] == ["bmad-bar"]

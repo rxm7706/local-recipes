@@ -573,6 +573,142 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   **Kinships:** [[pyforge-herald]] (the Pages mount at `/dashboard/vizro/`), [[pyforge-steward]] (the Pages consumer
   of the artifact, steward 102.4). Owner `spec-pyforge-atlas` (CAP-63 amended; a new CAP for the board wiring);
   → `bmad-spec`.
+- **2026-10-22 (filled boards still read "Data gap")** — **Found: every board note says "Data gap", including on boards
+  that now hold data.** After Story 37.4, the Pages export shows 21 of 34 boards with data. Behind-upstream lists 95
+  rows under a note that opens "**Data gap:** Wired to `build_behind_upstream_model`…". `dashboard/app.py` labels every
+  `PageDef.note` that way in `_legibility_card` and in the identity-workbook page. Most notes now describe how a
+  board's data is wired, not what is missing. Only three cases are gaps: a shell page with no data function, the
+  identity workbook's `gap_message`, and a page whose own dataset is unavailable (its AD-17 stamp says so). **What it
+  looks like when fixed:** a note on a page with a data function and an available dataset reads "**About this board:**";
+  "**Data gap:**" stays for those three cases. The static export still drops the live-scan note whichever label it
+  carries. **Constraints:** a fix under CAP-63 / CAP-69, with no CAP and no flag; the label only, no board's data or
+  note text changes. Owner `spec-pyforge-atlas`. → Epic 37 / Story 37.11, specced 2026-10-22.
+- **2026-10-24 (the semantic store has its upload times and archived flag)** — **Found: three boards read
+  "unknown" or empty because `semantic_packages` holds no upload time and no archived flag.** It declares
+  `latest_conda_upload`, `latest_upload_age_days`, `releases_30d` and `total_versions` NULL ("D2 wires the inputs"),
+  so the adoption-stage board reads `unknown` for every package and find-alternative ranks every candidate as fresh
+  (DW-atlas-37-6-2). Its `feedstock_archived` joins only the GitHub archive query, empty on a public run, so it marks
+  none of the 828 packages attributed to an archived feedstock (DW-atlas-37-7-2). Version-downloads' `upload_date` is
+  null too. Story 37.6 now streams every version's upload times out of the full repodata, and the cf-graph carries the
+  archived flag. **What it looks like when fixed:**
+  - `semantic_packages` fills the four columns as legacy does: the upload time of the latest version's newest build,
+    its age, the versions released in 30 days, and the version count;
+  - `feedstock_archived` adds the cf-graph flag through attribution;
+  - version-downloads shows each version's upload date.
+
+  **Constraints:**
+  - the boards' dimension names stay;
+  - no core output changes;
+  - the version-downloads path moves behind `pyforge.atlas.board_projections`, like Epic 37's boards.
+
+  Owner `spec-pyforge-atlas` (CAP-69, no new CAP). → Epic 38 / Story 38.1, specced 2026-10-24.
+- **2026-10-24 (one vulnerability feed down stops the whole build)** — **Found: when cwe.mitre.org does not answer,
+  no Pages data build finishes.** `vulnerability_feeds.py`'s `CisaKevDataset`, `EpssFeedDataset` and
+  `CweCatalogDataset` load through `APIDataset` with no fallback, so a connection failure raises `DatasetError` out
+  of the catalog and stops the run. kedro-viz-publish's Vizro job failed on five consecutive merges to main on
+  2026-10-23 with `vulnerability_cwe_catalog_raw: Failed to connect to the remote server` (a connect timeout; runs
+  39908595513, 39931632612, 39941141589, 40018149689, 40027620039), and Pages kept its last export each time
+  (DW-atlas-38-1-1). The three feeds also send no timeout, and requests reads `~/.netrc` for their hosts. **What it
+  looks like when fixed:**
+  - each feed keeps its last good frame under the entry's own path in the data root;
+  - a failed fetch, an HTTP error or a body that does not parse to rows serves that copy (or, on a fresh root, the
+    empty frame of the feed's columns) under the AD-13 staleness marker, and the run goes on;
+  - the bootstrap-index-health board reads each feed's marker: `stale` with the reason while a copy exists, `missing`
+    with the same reason on a fresh root.
+
+  **Constraints:**
+  - a fix under CAP-64, with no new CAP and no flag: the feeds fetch on every load, as they do today;
+  - no test reaches the network, and no run sets `PYFORGE_ATLAS_CREDENTIALED`;
+  - the vulnerability nodes and their outputs do not change.
+
+  Owner `spec-pyforge-atlas` (CAP-64, no new CAP). → Epic 34 / Story 34.12, specced 2026-10-24.
+- **2026-10-24 (on Pages, last-good has nothing to keep)** — **Found: Story 34.12's fallback cannot help the build
+  that needed it.** A feed that cannot be reached now serves its last good copy, but the kedro-viz-publish `vizro`
+  job starts every run from a fresh checkout: the data root (`src/shared/packages/pyforge-atlas/data`) is empty, so
+  there is no copy. An outage of a public source on Pages still publishes that source's table empty under its
+  marker, and the bootstrap-index-health board reads `missing` (Story 34.12's residual risk). The same holds for
+  every public store that keeps a last-good copy: the `raw/` copies, the download and upload aggregates, the
+  discovery indexes and the OSV store. **What it looks like when fixed:**
+  - the job restores the previous run's last-good copies before it builds, and saves this run's after a build
+    that succeeds;
+  - an outage of a public source on Pages serves the previous copy under its marker, so the board reads `stale`
+    with the reason, and provenance reports the copy's age;
+  - a store inside its refresh cadence, or one whose host says it has not changed, is not fetched again, as on a
+    workstation.
+
+  **Constraints:**
+  - a fix under CAP-63 (the Pages job, amended 2026-10-19) and CAP-64 (AD-13 last-good), with no new CAP and no
+    flag;
+  - what persists is what a dataset reads back as its own previous copy: `raw/` and the stores, where each keeps
+    its last-good copy, and the vulnerability snapshot history the cve-watcher diffs; never the 9.6 GB
+    vulnerability database store, and no other output-layer file, so a stopped node's table in `intermediate/`,
+    `primary/` or `derived/` cannot hide behind last week's file;
+  - the copies are kept in the repository's Actions cache; they reach the weekly run only once the operator raises
+    the cache limit (operator ruling 2026-10-24, "Cache + raise limit"; DW-atlas-37-12-1);
+  - the job stays public-only (no secret, no token, no `PYFORGE_ATLAS_CREDENTIALED`; AD-11), and a failed build
+    still fails the job.
+
+  Owner `spec-pyforge-atlas` (CAP-63, CAP-64, no new CAP). → Epic 37 / Story 37.12, specced 2026-10-24.
+- **2026-10-24 (an earlier run's cve-watcher diff reads as current)** — **Found: on Pages, a run whose vulnerability
+  database build fails publishes the previous run's cve-watcher diff under a fresh stamp.** Story 37.12 keeps the
+  vulnerability snapshot history between Pages runs, but never `stores/vdb`, which every run rebuilds. When that build
+  fails, `vulnerability_package_rollup` is empty, `SnapshotHistoryDataset.save` appends nothing, and
+  `diff_vulnerability_snapshots` diffs the same two snapshots as the run before. The board shows no snapshot date, and
+  its AD-17 stamp is the diff file's mtime, so the old diff reads as current with no marker (DW-atlas-37-12-3, Story
+  37.12 review 4). **What it looks like when fixed:**
+  - a save that appends no snapshot (an empty frame, or a store that cannot be read) leaves the AD-13 staleness marker
+    beside the snapshot store, and the next save that appends one removes it;
+  - the cve-watcher's AD-17 stamp is its latest snapshot's time (or the diff file's, if that is older), not the time
+    the diff file was last rewritten; while the store carries the marker, the stamp line says the diff is stale and
+    why;
+  - with no snapshot store, the board reads as a data gap, not as an empty table stamped now;
+  - the bootstrap-index-health board reads the snapshot store's marker as `stale`, as it reads every other store's.
+
+  **Constraints:**
+  - a fix under CAP-69 (the boards no pipeline feeds) and CAP-64 (AD-13 markers), with no new CAP and no flag; the
+    board change stays behind `pyforge.atlas.board_projections`, as Story 37.5's board does;
+  - the diff's rows and columns do not change: an earlier diff keeps its rows, now dated by its own snapshot;
+  - no other board's stamp changes.
+
+  Owner `spec-pyforge-atlas` (CAP-69, CAP-64, no new CAP). → Epic 37 / Story 37.13, specced 2026-10-24.
+- **2026-10-24 (the distribution-breakdown grid wait under load)** — **Found: the declared-controls e2e test fails
+  under parallel load while the page is healthy.** `test_declared_controls_render_against_real_rows` red the
+  `pyforge-atlas-test` lane of a full-scope `pr-preflight` on 2026-10-24 (Story 37.13, PR #2300) with
+  `Locator expected to contain text 'linux-64'` on `#distribution-breakdown--grid`: the grid was still
+  `data-dash-is-loading="true"`, then empty, when Playwright's 5 s default ran out. The suite took 3:57 there against
+  about 44 s alone; the test passed the run before and three times alone. It failed the same way in Story 31.1's
+  preflight on 2026-10-15 (`DW-atlas-retro-2026-10-15-1`).
+  **Evidence:**
+  - Vizro builds every AgGrid as an empty placeholder and fills it from the page's `on_page_load` callback; the
+    browser then applies that output and loads dash-ag-grid's lazy grid chunk (`async-community.js`) before the grid
+    mounts. The facet filter (static since Story 27.5) and the chart's container render from the layout, so the
+    test's three 15 s waits did not wait for that callback, and the grid assertion alone carried it under the 5 s
+    default.
+  - Reproduced under load: 32 copies of the real test body on 16 xdist workers beside 48 busy-loop processes failed
+    4 of 24 copies that got a server, with the same message and the same `data-dash-is-loading`-then-empty call log
+    (4 of 31 beside 32 busy loops; 4 of 25 beside 48 again after a host reboot).
+  - Timed in the page (a `MutationObserver`) under that load: the filter, its dropdown and the chart were visible
+    before the grid mounted in every copy; the grid mounted up to 20.8 s after navigation and up to 16.9 s after the
+    chart, with the `linux-64` row within 1 ms of the mount. The `on_page_load` request took at most 1.9 s there, so
+    most of the time is the busy browser, not the Vizro server.
+  - A first fix, a 15 s mount wait after the chart, still failed 3 of 24 copies in one counted batch, on the
+    dropdown's own 15 s wait: under load every step can take longer than 15 s, so budgets per step do not fit.
+  - The file's two other grid tests (the navigation walk and the grounded pages) check grids filled the same way
+    under the same 5 s default; their pages draw no chart and render sooner, and under the same load they failed 0 of
+    30 copies, so the exposure there is real but did not reproduce.
+  **What it looks like when fixed:** right after the page opens, the test waits up to 60 s for the AG Grid to mount
+  inside `#distribution-breakdown--grid`, the element drawn last, with the budget the suite gives a loaded host (the
+  fixture's server bind, the WASM smoke); then it checks the filter, its dropdown, the chart and the row as before.
+  Every other grid check in the file waits for its grid's mount the same way, through one helper. Under the same
+  load no copy fails its assertions (setup errors, the fixture's server not binding within 60 s at that synthetic
+  load, are counted apart), and a fixture root without the `linux-64` row still fails on the row, with the grid's
+  actual text.
+  **Constraints:**
+  - A `fix` story: no CAP, no FR, no flag (`spec-feature-flag-governance` Q1). Test-only: the e2e file's grid checks
+    change, and no skip, `xfail`, retry or rerun is added (AD-11: gates are never weakened); every assertion stays.
+  - It goes into Epic 27, which owns this test (Stories 27.3 and 27.5), and reopens it until it lands.
+  **Kinships:** [[pyforge-steward]] (the pre-push preflight lane that surfaced it). Owner `spec-pyforge-atlas` (CAP-8,
+  the read surface). → Epic 27 / Story 27.6, specced 2026-10-24.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 

@@ -44,18 +44,21 @@ from kedro_datasets.api import APIDataset
 
 from . import credentials as credential_switch
 from . import public_sources
-from .rate_limit import DEFAULT_RPS, RateLimitedScheduler
+from .rate_limit import DEFAULT_RPS, FetchError, RateLimitedScheduler
 from .refresh import (
     DEFAULT_REFRESH_MAX_RETRIES,
     DEFAULT_REFRESH_TIMEOUT_SECONDS,
     RefreshRequest,
     _ParquetRefreshStore,
     fetch_one_with_retry,
+    retry_backoff_seconds,
 )
+from .request_datasets import _http_status, _retry_after, normalize_release_tag
 
 logger = logging.getLogger(__name__)
 
 _VERSION_SEGMENT_RE = re.compile(r"\d+|\D+")
+USER_AGENT = "pyforge-atlas (+https://github.com/rxm7706/local-recipes)"
 
 
 def _version_sort_key(version: str) -> tuple:
@@ -104,7 +107,9 @@ def _request_kwargs(timeout: int, credentials: Any) -> dict[str, Any]:
     may authenticate, and only under the switch), and a no-op auth keeps ``~/.netrc`` out. Off,
     the request is the one this story found."""
     if credential_switch.live_vcs_universe():
-        return {"load_args": public_sources.request_args(timeout)}
+        # Story 35.4: an identifying User-Agent, as legacy Phase L sends; crates.io answers
+        # requests' default agent with a 403.
+        return {"load_args": {**public_sources.request_args(timeout), "headers": {"User-Agent": USER_AGENT}}}
     return {"load_args": {"timeout": timeout}, "credentials": credentials}
 
 
@@ -145,6 +150,54 @@ def _codeberg_path(base: str, identifier: str) -> str:
         )
     owner, repo = parts
     return f"{base.rstrip('/')}/repos/{quote(owner, safe='')}/{quote(repo, safe='')}/tags?sort=updated&limit=1"
+
+
+def _status_of(exc: BaseException) -> int | None:
+    """The HTTP status a failed GET carries (a ``FetchError``'s or the response's), if any."""
+    status = getattr(exc, "status", None)
+    return status if isinstance(status, int) else _http_status(exc)
+
+
+def _why(exc: BaseException) -> str:
+    """Story 35.4: a row's error as legacy records it (``HTTP 404``), else the type of the failure
+    underneath (kedro's ``DatasetError`` wraps a ``ConnectionError`` or a timeout) -- never its text,
+    which can quote the request."""
+    status = _status_of(exc)
+    if status:
+        return f"HTTP {status}"
+    return type(_root_cause(exc)).__name__
+
+
+def _root_cause(exc: BaseException) -> BaseException:
+    """The innermost ``__cause__`` of ``exc``; a chain that loops back on itself stops where it repeats."""
+    seen = {id(exc)}
+    while exc.__cause__ is not None and id(exc.__cause__) not in seen:
+        exc = exc.__cause__
+        seen.add(id(exc))
+    return exc
+
+
+def _live_host_paths(host: str, base: str, identifier: str) -> tuple[str, str]:
+    """Story 35.4: legacy Phase K's REST pair for a host (``_phase_k_fetch_one``, CFA:4922-5036):
+    the latest release, then the tags. GitLab keeps the project path whole (subgroups)."""
+    root = base.rstrip("/")
+    if host == "gitlab":
+        project = quote(_require_identifier("gitlab", identifier), safe="")
+        return f"{root}/projects/{project}/releases?per_page=1", f"{root}/projects/{project}/repository/tags?per_page=1"
+    _codeberg_path(base, identifier)  # validates the clean owner/repo
+    owner, repo = (quote(part, safe="") for part in identifier.strip("/").split("/"))
+    return f"{root}/repos/{owner}/{repo}/releases/latest", f"{root}/repos/{owner}/{repo}/tags?limit=10"
+
+
+def _release_tag(payload: Any) -> str | None:
+    """The tag of a release: GitLab lists releases (``tag_name``, else ``name``, as legacy reads them,
+    CFA:4997), Codeberg (Gitea) returns the latest one (``tag_name``)."""
+    if isinstance(payload, list):
+        first = payload[0] if payload and isinstance(payload[0], dict) else {}
+        tag = first.get("tag_name") or first.get("name")
+    else:
+        tag = payload.get("tag_name") if isinstance(payload, dict) else None
+    return str(tag) if tag else None
 
 
 _HOST_SPECS: dict[str, _EndpointSpec] = {
@@ -219,7 +272,11 @@ def _crates_extract(payload: Any) -> str | None:
     if isinstance(payload, dict):
         crate = payload.get("crate")
         if isinstance(crate, dict):
-            v = crate.get("newest_version") or crate.get("max_stable_version")
+            if credential_switch.live_vcs_universe():
+                # Story 35.4: legacy _resolve_crates -- the newest stable version, else the newest
+                v = crate.get("max_stable_version") or crate.get("max_version")
+            else:
+                v = crate.get("newest_version") or crate.get("max_stable_version")
             return str(v) if v else None
     return None
 
@@ -238,6 +295,11 @@ def _rubygems_extract(payload: Any) -> str | None:
 
 def _maven_path(base: str, name: str) -> str:
     ident = _require_identifier("maven", name)
+    if credential_switch.live_vcs_universe():
+        # Story 35.4: legacy _resolve_maven -- a group:artifact coordinate asks for both
+        group, _, artifact = ident.partition(":")
+        query = f'g:"{group}" AND a:"{artifact}"' if artifact else f'a:"{ident}"'
+        return f"{base.rstrip('/')}/solrsearch/select?q={quote(query, safe='')}&rows=1&wt=json"
     return f"{base.rstrip('/')}/solrsearch/select?q=a:{quote(ident, safe='')}&rows=1&wt=json"
 
 
@@ -248,6 +310,8 @@ def _maven_extract(payload: Any) -> str | None:
             docs = resp.get("docs")
             if isinstance(docs, list) and docs and isinstance(docs[0], dict):
                 v = docs[0].get("latestVersion")
+                if not v and credential_switch.live_vcs_universe():
+                    v = docs[0].get("v")  # Story 35.4: legacy's fallback (CFA:5697), with the flag on only
                 return str(v) if v else None
     return None
 
@@ -261,6 +325,10 @@ def _nuget_extract(payload: Any) -> str | None:
     if isinstance(payload, dict):
         versions = payload.get("versions")
         if isinstance(versions, list) and versions:
+            if credential_switch.live_vcs_universe():
+                # Story 35.4: legacy _resolve_nuget -- the last stable version (no "-" pre-release)
+                stable = [v for v in versions if "-" not in str(v)]
+                return str((stable or versions)[-1])
             return str(versions[-1])
     return None
 
@@ -340,6 +408,71 @@ class VcsHostSeedDataset(_ParquetRefreshStore, AbstractDataset):
             sleep=self._sleep,
         )
 
+    def _get(self, url: str, fetcher: Callable[[str], Any] | None) -> Any:
+        """Story 35.4: one bounded GET with legacy's auth: GitLab's ``PRIVATE-TOKEN`` only under the
+        switch, else nothing (a no-op auth keeps ``~/.netrc`` out). ``fetcher`` takes the URL. A 429, a
+        5xx or a failure with no status (a dropped connection, a timeout) is retried, a ``Retry-After``
+        waited, as legacy retries them (CFA:5009-5014); any other refusal (a 404 release) is not, so the
+        tags are asked at once, as legacy does."""
+
+        def _do_fetch() -> Any:
+            if fetcher is not None:
+                return fetcher(url)
+            args = {**public_sources.request_args(self._timeout_seconds), "headers": {"User-Agent": USER_AGENT}}
+            auth = credential_switch.gitlab_auth(self._credentials, url) if self._host == "gitlab" else None
+            if auth is not None:
+                args["auth"] = auth
+                # requests strips only ``Authorization`` on a redirect to another host; a custom header
+                # would follow it, so a request that carries the token never follows a redirect (AD-2)
+                args["allow_redirects"] = False
+            response = APIDataset(url=url, load_args=args).load()
+            if getattr(response, "is_redirect", False):
+                raise FetchError(self._host, int(response.status_code))
+            return _coerce_json(response)
+
+        attempt = 0
+        while True:
+            self.scheduler.acquire()
+            try:
+                return _do_fetch()
+            except Exception as exc:
+                attempt += 1
+                status = _status_of(exc)
+                # a failure with no status is retried only when the network caused it (a dropped
+                # connection, a timeout: OSError underneath); a programming error is not
+                transient = status is None and isinstance(_root_cause(exc), OSError)
+                if attempt > self._max_retries or not (transient or status == 429 or (status or 0) >= 500):
+                    raise
+                self._sleep(_retry_after(exc) or retry_backoff_seconds(attempt))
+
+    def _release_or_tag(
+        self, identifier: str, *, fetcher: Callable[[str], Any] | None
+    ) -> tuple[str | None, str | None]:
+        """Story 35.4: the latest release, else the first tag, normalized as legacy does
+        (``_fetch_release_or_tag``, CFA:4990); ``(None, reason)`` when there is neither."""
+        try:
+            release_url, tags_url = _live_host_paths(self._host, self._base_url, identifier)
+        except ValueError as exc:
+            return None, str(exc)
+        try:
+            tag = _release_tag(self._get(release_url, fetcher))
+        except Exception:  # noqa: BLE001 -- no release (often a 404): legacy falls back to the tags
+            tag = None
+        if not tag:
+            try:
+                tags = self._get(tags_url, fetcher)
+            except Exception as exc:  # noqa: BLE001 -- one project's failure is its row's error (AD-13)
+                return None, _why(exc)
+            # legacy reads a tag's ``name``, else its ``tag_name``
+            names = (
+                [t.get("name") or t.get("tag_name") for t in tags if isinstance(t, dict)]
+                if isinstance(tags, list)
+                else []
+            )
+            tag = next((str(n) for n in names if n), None)
+        version = normalize_release_tag(tag)
+        return version, None if version else "no tags"
+
     def load_many(
         self,
         identifiers: Sequence[tuple[str, str]],
@@ -351,7 +484,13 @@ class VcsHostSeedDataset(_ParquetRefreshStore, AbstractDataset):
         treated as EMPTY for persistence — never clobbers last-good with an all-null
         result)."""
         rows: list[dict[str, Any]] = []
+        live = credential_switch.live_vcs_universe()
         for conda_name, identifier in identifiers:
+            if live:
+                # Story 35.4: legacy's release-then-tag path (CFA:4990)
+                version, error = self._release_or_tag(identifier, fetcher=fetcher)
+                rows.append({"conda_name": conda_name, "upstream_version": version, "last_error": error})
+                continue
             try:
                 payload = self.fetch_one(identifier, fetcher=fetcher)
                 version = _HOST_SPECS[self._host].extract(payload)
@@ -390,7 +529,8 @@ class VcsHostSeedDataset(_ParquetRefreshStore, AbstractDataset):
         if not data.force and not self._refresh_due(data.cadence_seconds):
             self._clear_stale()
             return
-        self.load_many(data.vcs_pairs)
+        # Story 35.2: with the flag on, the universe's pairs, not the identity subset
+        self.load_many(data.universe_pairs if credential_switch.live_vcs_universe() else data.vcs_pairs)
 
     def _describe(self) -> dict[str, Any]:
         return {
@@ -504,7 +644,8 @@ class RegistryUpstreamDataset(_ParquetRefreshStore, AbstractDataset):
         if not data.force and not self._refresh_due(data.cadence_seconds):
             self._clear_stale()
             return
-        self.load_many(data.vcs_pairs)
+        # Story 35.2: with the flag on, the universe's pairs, not the identity subset
+        self.load_many(data.universe_pairs if credential_switch.live_vcs_universe() else data.vcs_pairs)
 
     def _describe(self) -> dict[str, Any]:
         return {

@@ -7,6 +7,7 @@ tests/scripts/test_ci_surface_gates.py
 tests/scripts/test_deck_facts.py
 tests/scripts/test_deferred_work_intake.py
 tests/scripts/test_deferred_work_promote.py
+tests/scripts/test_docs_bmad_estate.py
 tests/scripts/test_docs_detectors.py
 tests/scripts/test_docs_environments.py
 tests/scripts/test_docs_gen_common.py

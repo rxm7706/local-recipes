@@ -24,6 +24,7 @@ from .basilisk import (
     chunk_queries,
     parse_basilisk_packages_response,
 )
+from .catalog_index import CatalogIndexDataset
 from .clickhouse_downloads import PyPIClickHouseDownloadsDataset
 from .core_sources import (
     CfGraphTarballDataset,
@@ -78,6 +79,7 @@ from .rate_limit import (
     parse_retry_after,
     resolve_worker_count,
 )
+from .recipe_extras import RecipeExtrasDataset
 from .refresh import (
     LEGACY_REFRESH_TTLS,
     VULN_DB_ENV_RESOURCE,
@@ -90,6 +92,7 @@ from .refresh import (
     StalenessMarker,
     VDBStoreDataset,
 )
+from .repodata_uploads import RepodataUploadsDataset
 from .request_datasets import (
     AnacondaDownloadsDataset,
     BigQueryDownloadsDataset,
@@ -110,6 +113,7 @@ from .sbom_intake import (
     parse_pip_list_text,
     parse_requirements_txt,
 )
+from .snapshot_history import SnapshotHistoryDataset
 from .tier3_sources import (
     DebianPackagesDataset,
     FedoraPackagesDataset,
@@ -145,6 +149,7 @@ from .vulnerability_feeds import (
     CisaKevDataset,
     CweCatalogDataset,
     EpssFeedDataset,
+    VulnerabilityFeedDataset,
     parse_cisa_kev_catalog,
     parse_cwe_catalog_zip,
     parse_epss_csv_gz,
@@ -255,13 +260,21 @@ __all__ = [
     "CondaChanneldataDataset",
     "CfGraphTarballDataset",
     "S3DownloadStatsDataset",
+    # Story 37.5: the append-only store the cve-watcher's history lives in
+    "SnapshotHistoryDataset",
+    # Story 37.10: every catalog entry's last write and row count on the data root
+    "CatalogIndexDataset",
+    # Story 37.8: the local recipes' conda-forge-expert stamps
+    "RecipeExtrasDataset",
+    "RepodataUploadsDataset",
     "parse_feedstock_outputs_zip",
     "repodata_json_to_rows",
     "channeldata_json_to_rows",
     "parse_cf_graph_tarball",
     # Story 34.1 — public JSON sources decoded to records (endoflife.date, SPDX list)
     "JSONSourceDataset",
-    # Vulnerability side-catalog feeds (KEV / EPSS / CWE)
+    # Vulnerability side-catalog feeds (KEV / EPSS / CWE); Story 34.12: last-good under the AD-13 marker
+    "VulnerabilityFeedDataset",
     "CisaKevDataset",
     "EpssFeedDataset",
     "CweCatalogDataset",

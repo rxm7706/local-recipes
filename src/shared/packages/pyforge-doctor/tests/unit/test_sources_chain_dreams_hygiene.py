@@ -332,14 +332,14 @@ def test_dream_readme_missing_reports_on_fixture(tmp_path: Path) -> None:
 
 
 def test_live_tree_dream_readme_missing_count() -> None:
-    """Measured live 2026-10-11: 64 Dream files lack a README.md table row
-    (65 on 2026-09-18, 67 on 2026-09-12; the 2026-10-11 marshal recall fold
-    archived marshal-recall-in-the-loop.md, which had no row; this test only
-    tracks the live count)."""
+    """Measured live 2026-10-24: 0 -- doctor Story 30.4 gave every Dream file a
+    README.md table row (64 lacked one on 2026-10-11, 65 on 2026-09-18, 67 on
+    2026-09-12). A new Dream lands with its row; this test only tracks the
+    live count."""
     repo_root = _require_repo_root()
     findings = chain.gather_dreams_hygiene(repo_root)
     missing = [f for f in findings if f.check == "dream-readme-missing"]
-    assert len(missing) == 64
+    assert len(missing) == 0
 
 
 def test_specified_spec_not_ready_reports_on_fixture(tmp_path: Path) -> None:
@@ -507,14 +507,15 @@ def test_kinship_wikilink_skips_frontmatter_below_a_banner(tmp_path: Path) -> No
 
 
 def test_live_tree_kinship_wikilink_dead_count() -> None:
-    """Measured live 2026-10-04 (Story 41.3): 32 dead Kinship wikilinks under
-    ``docs/dreams/`` after the 34 glued-opener Dreams were repaired (was 30 on
-    2026-09-25 when ``enterprise-airgap.md`` was still refused as
-    ``unparseable-frontmatter`` before the Kinship scan)."""
+    """Measured live 2026-10-24: 0 -- doctor Story 30.4 retargeted each dead
+    Kinship wikilink under ``docs/dreams/`` to the Dream that absorbed its
+    target, or turned it into plain text or a plain link where no Dream did
+    (32 on 2026-10-04 after Story 41.3 repaired the 34 glued-opener Dreams;
+    30 on 2026-09-25)."""
     repo_root = _require_repo_root()
     findings = chain.gather_dreams_hygiene(repo_root)
     dead = [f for f in findings if f.check == "kinship-wikilink-dead"]
-    assert len(dead) == 32
+    assert len(dead) == 0
 
 
 def test_specified_spec_ready_suppresses_finding(tmp_path: Path) -> None:

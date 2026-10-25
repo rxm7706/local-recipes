@@ -50,11 +50,13 @@ def test_the_readme_count_matches_the_names_it_lists() -> None:
 
 
 def test_the_bootstrap_task_runs_a_documented_subset_not_the_whole_registry() -> None:
-    """The bootstrap section deliberately runs eight of the eleven (it excludes the
-    entry-scoped ``universal_sbom`` and the two downstream composition/cache
-    pipelines). Pin that so "eight" there is not read as a drifted count."""
+    """The bootstrap section deliberately runs nine of the twelve as one DAG (it excludes the
+    entry-scoped ``universal_sbom``, the ``query_plane_cache`` cache, and ``catalog_index``, which runs
+    on its own after a build, Story 37.10; ``semantic_packages`` joined with Story 38.1, since it and
+    ``derived_artifacts`` read each other's outputs). Pin that so "nine" there is not read as a drifted
+    count."""
     text = README.read_text(encoding="utf-8")
-    assert "Materializes eight self-contained pipelines" in text
-    excluded = {"universal_sbom", "semantic_packages", "query_plane_cache"}
+    assert "Materializes nine pipelines" in text
+    excluded = {"universal_sbom", "query_plane_cache", "catalog_index"}
     assert excluded <= _registered()
-    assert len(_registered() - excluded) == 8
+    assert len(_registered() - excluded) == 9

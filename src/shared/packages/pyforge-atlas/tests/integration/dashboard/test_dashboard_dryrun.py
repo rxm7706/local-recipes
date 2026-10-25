@@ -498,7 +498,7 @@ _NEW_PAGE_LOADERS_NO_ARGS: dict[str, tuple] = {
     "export-purls": (dash_data.load_export_purls, ["artifact_name", "regenerated_at", "row_count"]),
     "mapping-gap": (
         dash_data.load_mapping_gap,
-        ["conda_name", "classification", "match_source", "match_confidence", "gap_count"],
+        ["conda_name", "classification", "match_source", "match_confidence", "candidate", "gap_count"],
     ),
     "universe-sbom": (dash_data.load_universe_sbom, ["component_purl", "slice", "with_vulns_count"]),
     "inventory-match": (
@@ -552,7 +552,7 @@ _NEW_PAGE_LOADERS_NO_ARGS: dict[str, tuple] = {
     ),
     "bootstrap-index-health": (
         dash_data.load_bootstrap_index_health,
-        ["catalog_entry", "tier", "regenerated_at", "row_count"],
+        ["catalog_entry", "tier", "regenerated_at", "status", "row_count"],
     ),
     "identity-export-snapshot": (
         dash_data.load_identity_export_snapshot,
@@ -619,7 +619,7 @@ _NEW_MODEL_SCHEMAS: dict[str, tuple] = {
     ),
     "mapping-gap": (
         models.build_mapping_gap_model,
-        ["conda_name", "classification", "match_source", "match_confidence"],
+        ["conda_name", "classification", "match_source", "match_confidence", "candidate"],
         ["gap_count"],
     ),
     "universe-sbom": (
@@ -711,7 +711,7 @@ _NEW_MODEL_SCHEMAS: dict[str, tuple] = {
     ),
     "bootstrap-index-health": (
         models.build_bootstrap_index_health_model,
-        ["catalog_entry", "tier", "regenerated_at"],
+        ["catalog_entry", "tier", "regenerated_at", "status"],
         ["row_count"],
     ),
     "identity-export-snapshot": (
@@ -894,7 +894,7 @@ def test_bootstrap_index_health_is_bsl_wired_and_light_up_with_data(write_parque
     expected = (
         models.build_bootstrap_index_health_model(table)
         .query(
-            dimensions=["catalog_entry", "tier", "regenerated_at"],
+            dimensions=["catalog_entry", "tier", "regenerated_at", "status"],
             measures=["row_count"],
         )
         .execute()

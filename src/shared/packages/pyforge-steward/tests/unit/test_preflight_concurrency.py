@@ -608,9 +608,10 @@ def test_sigint_cancels_real_subprocess_lanes(tmp_path: Path, monkeypatch: pytes
 
 
 @pytest.mark.skipif(not hasattr(signal, "SIGINT"), reason="SIGINT required")
-def test_sigint_leaves_a_never_started_lane_cancelled_without_cancelled_by(tmp_path: Path) -> None:
+def test_sigint_names_interrupt_on_a_never_started_lane(tmp_path: Path) -> None:
     """An interrupted run journals the lane it terminated `cancelled_by: interrupt`, and a lane that
-    never started `cancelled`, exit 0, 0 s and no `cancelled_by`."""
+    never started `cancelled`, exit 0, 0 s, also `cancelled_by: interrupt` (Story 71.12, replacing
+    Story 71.10 AC (4)'s no `cancelled_by`)."""
     repo = tmp_path / "repo"
     repo.mkdir()
     _write(repo / "pixi.toml", _mini_pixi("first", "second"))
@@ -633,7 +634,8 @@ def test_sigint_leaves_a_never_started_lane_cancelled_without_cancelled_by(tmp_p
     assert by_task["second"]["status"] == "cancelled"
     assert by_task["second"]["exit_code"] == 0
     assert by_task["second"]["seconds"] == 0.0
-    assert "cancelled_by" not in by_task["second"]
+    assert by_task["second"]["cancelled_by"] == "interrupt"
+    assert "cancelled_by_environment" not in by_task["second"]  # an interrupt is no lane (Story 103.5 AC4)
     _assert_group_gone(_scratch_root(tmp_path), "first")
 
 
@@ -671,8 +673,9 @@ def test_terminate_children_marks_only_a_process_it_signals(tmp_path: Path) -> N
     assert exited.returncode == 2
 
 
-def test_jobs_one_never_started_lanes_have_no_cancelled_by(tmp_path: Path) -> None:
-    """AC (4): with one worker, the lanes the stop kept from starting stay `cancelled`, exit 0, 0 s."""
+def test_jobs_one_never_started_lanes_name_the_red_lane(tmp_path: Path) -> None:
+    """AC (4): with one worker, the lanes the stop kept from starting stay `cancelled`, exit 0, 0 s, and
+    name the red lane (Story 71.12 replaced 71.10's no `cancelled_by`)."""
     repo = tmp_path / "repo"
     repo.mkdir()
     _write(repo / "pixi.toml", _mini_pixi("fail", "b", "c"))
@@ -692,7 +695,155 @@ def test_jobs_one_never_started_lanes_have_no_cancelled_by(tmp_path: Path) -> No
         assert by_task[name]["status"] == "cancelled"
         assert by_task[name]["exit_code"] == 0
         assert by_task[name]["seconds"] == 0.0
-        assert "cancelled_by" not in by_task[name]
+        assert by_task[name]["cancelled_by"] == "fail"
+        assert by_task[name]["cancelled_by_environment"] == by_task["fail"]["environment"]
+
+
+def _bare_coordinator(repo: Path) -> preflight._RunCoordinator:  # noqa: SLF001
+    return preflight._RunCoordinator(  # noqa: SLF001
+        repo_root=repo,
+        run_id="t",
+        run_start=0.0,
+        jobs=1,
+        keep_going=False,
+    )
+
+
+@pytest.mark.parametrize(
+    ("recorded", "expected"),
+    [(None, ("interrupt", None)), (("interrupt", None), ("interrupt", None)), (("fail", "env"), ("fail", "env"))],
+)
+def test_a_lane_the_pool_turns_away_on_an_interrupt_names_the_cause(
+    tmp_path: Path, recorded: tuple[str, str | None] | None, expected: tuple[str, str | None]
+) -> None:
+    """Story 71.12 AC (3): the pool's first interrupt check names the first recorded cause, `interrupt` before one."""
+    coord = _bare_coordinator(tmp_path)
+    if recorded is not None:
+        coord.set_stop_cause(recorded)
+    coord.cancel.set()
+    ran: list[preflight.LaneRunContext] = []
+    result = preflight._run_lane_in_pool(  # noqa: SLF001
+        coord, preflight.Lane("late", "env"), tmp_path / "scratch", (), lambda ctx: ran.append(ctx) or 0, False
+    )
+    assert ran == []
+    assert (result.status, result.exit_code, result.seconds) == ("cancelled", 0, 0.0)
+    assert (result.cancelled_by, result.cancelled_by_environment) == expected
+
+
+class _InterruptOnAcquire:
+    """A service lock whose acquisition is where SIGINT lands: the lane passed the first check, then waited."""
+
+    def __init__(self, coord: preflight._RunCoordinator, recorded: tuple[str, str | None] | None) -> None:  # noqa: SLF001
+        self.coord = coord
+        self.recorded = recorded
+
+    def acquire(self) -> bool:
+        if self.recorded is not None:
+            self.coord.set_stop_cause(self.recorded)
+        self.coord.cancel.set()
+        return True
+
+    def release(self) -> None:
+        pass
+
+
+@pytest.mark.parametrize(
+    ("recorded", "expected"),
+    [(None, ("interrupt", None)), (("interrupt", None), ("interrupt", None)), (("fail", "env"), ("fail", "env"))],
+)
+def test_a_lane_interrupted_while_it_waits_for_its_service_names_the_cause(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    recorded: tuple[str, str | None] | None,
+    expected: tuple[str, str | None],
+) -> None:
+    """Story 71.12 AC (3): the pool's second interrupt check, after the service lock, names the first recorded
+    cause, `interrupt` before one."""
+    coord = _bare_coordinator(tmp_path)
+    monkeypatch.setattr(coord, "mutex_lock", lambda _key: _InterruptOnAcquire(coord, recorded))
+    ran: list[preflight.LaneRunContext] = []
+    result = preflight._run_lane_in_pool(  # noqa: SLF001
+        coord,
+        preflight.Lane("late", "env"),
+        tmp_path / "scratch",
+        ("services:postgres",),
+        lambda ctx: ran.append(ctx) or 0,
+        False,
+    )
+    assert ran == []
+    assert (result.status, result.exit_code, result.seconds) == ("cancelled", 0, 0.0)
+    assert (result.cancelled_by, result.cancelled_by_environment) == expected
+
+
+@pytest.mark.skipif(not hasattr(signal, "SIGINT"), reason="SIGINT required")
+@pytest.mark.parametrize(
+    ("keep_going", "status", "field"),
+    [(False, "cancelled", "cancelled_by"), (True, "not-run", "blocked_by")],
+)
+def test_a_dependent_of_a_lane_turned_away_on_an_interrupt_names_interrupt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, keep_going: bool, status: str, field: str
+) -> None:
+    """Story 71.12 (review finding 2): after SIGINT the scheduler still submits ready lanes and the pool turns
+    them away naming `interrupt`, so a dependent `_mark_dependency_blocked` reaches names `interrupt` too, with no
+    environment, where it used to name the dependency itself.
+
+    `x` holds its worker until `z` is journaled; `w` runs the installed SIGINT handler itself, so the interrupt is
+    recorded before `w` returns (a real signal waits for the main thread's next bytecode check, which a loaded host
+    can hold off past any timeout: the round-2 review); `y` is then submitted and turned away; `z` depends on `y`.
+    Every step waits on an event, never on time.
+    """
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _write(
+        repo / "pixi.toml",
+        "[feature.guild-tasks.tasks.pr-preflight-lanes]\n"
+        'depends-on = ["x", "w", "z"]\n'
+        '[feature.guild-tasks.tasks.x]\ncmd = "true"\n'
+        '[feature.guild-tasks.tasks.w]\ncmd = "true"\n'
+        '[feature.guild-tasks.tasks.y]\ncmd = "true"\n'
+        '[feature.guild-tasks.tasks.z]\ndepends-on = ["y"]\ncmd = "true"\n',
+    )
+    z_journaled = threading.Event()
+    real_blocked = preflight._blocked_lane_result  # noqa: SLF001
+
+    def blocked_lane_result(lane: preflight.Lane, *args: Any, **kwargs: Any) -> preflight.LaneResult:
+        result = real_blocked(lane, *args, **kwargs)
+        if lane.task == "z":
+            z_journaled.set()
+        return result
+
+    monkeypatch.setattr(preflight, "_blocked_lane_result", blocked_lane_result)
+    ran: list[str] = []
+
+    def run_ctx(ctx: preflight.LaneRunContext) -> int:
+        ran.append(ctx.lane.task)
+        if ctx.lane.task == "x":
+            assert z_journaled.wait(timeout=10)
+        elif ctx.lane.task == "w":
+            handler = signal.getsignal(signal.SIGINT)
+            # run_preflight's own handler, never Python's default, whose KeyboardInterrupt would end the session.
+            assert callable(handler) and handler.__qualname__.endswith("_on_sigint")
+            handler(signal.SIGINT, None)
+        return 0
+
+    code = preflight.run_preflight(
+        repo,
+        jobs=2,
+        keep_going=keep_going,
+        install_environment=_NOOP_INSTALL,
+        run_lane_ctx=run_ctx,
+        scratch_parent=tmp_path / "scratch",
+    )
+    assert code == preflight.EXIT_INTERRUPT
+    assert z_journaled.is_set()
+    assert sorted(ran) == ["w", "x"]
+    by_task = {entry["task"]: entry for entry in _run_record(repo)["lanes"]}
+    # A failed wait inside a runner becomes a red lane, not a failed test; these keep a timeout from passing.
+    assert (by_task["x"]["status"], by_task["w"]["status"]) == ("ok", "ok")
+    assert (by_task["y"]["status"], by_task["y"]["cancelled_by"]) == ("cancelled", "interrupt")
+    assert "cancelled_by_environment" not in by_task["y"]
+    assert (by_task["z"]["status"], by_task["z"][field]) == (status, "interrupt")
+    assert f"{field}_environment" not in by_task["z"]
 
 
 def test_reduced_lane_cancelled_mid_segment(tmp_path: Path) -> None:
@@ -989,3 +1140,120 @@ def test_keep_going_reduced_lane_runs_every_segment(tmp_path: Path) -> None:
     rows = {row["label"]: row for row in reduced["suite_reduction_segments"]}
     assert rows["seg-one"]["outcome"] == "passed"
     assert rows["seg-two"]["outcome"] == "passed"
+
+
+def _sigint_handler_after_a_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> tuple[Callable[[int, Any], None], preflight._RunCoordinator]:  # noqa: SLF001
+    """Story 71.13: run one green lane and keep the SIGINT handler the run installed, with its coordinator.
+
+    The handler closes over the coordinator, so a test can call it after the run, with a lock swapped in that lets a
+    nested call land while the outer one holds it -- a second SIGINT, delivered by no real signal and no timing.
+    """
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _write(repo / "pixi.toml", _mini_pixi("only"))
+    coords = _capture_coordinators(monkeypatch)
+    installed: list[Callable[[int, Any], None]] = []
+    real_signal = signal.signal
+
+    def record(signum: int, handler: Any) -> Any:
+        if signum == signal.SIGINT and callable(handler) and handler.__qualname__.endswith("_on_sigint"):
+            installed.append(handler)
+        return real_signal(signum, handler)
+
+    monkeypatch.setattr(preflight.signal, "signal", record)
+    code = preflight.run_preflight(
+        repo,
+        jobs=1,
+        install_environment=_NOOP_INSTALL,
+        run_lane_ctx=lambda _ctx: 0,
+        scratch_parent=tmp_path / "scratch",
+    )
+    assert code == preflight.EXIT_OK
+    (handler,) = installed
+    (coord,) = coords
+    return handler, coord
+
+
+def _returns_within(target: Callable[[], None], seconds: float) -> bool:
+    """Run ``target`` on a daemon thread; whether it returned in time. A deadlocked call leaves only that thread."""
+    worker = threading.Thread(target=target, daemon=True)
+    worker.start()
+    worker.join(timeout=seconds)
+    return not worker.is_alive()
+
+
+class _NestedSigintEvent(threading.Event):
+    """``cancel`` whose ``set()`` takes its own lock and, holding it, takes a second SIGINT: the window of the defect."""
+
+    def __init__(self, nested: Callable[[], None]) -> None:
+        super().__init__()
+        self.nested = nested
+        self.fired = False
+
+    def set(self) -> None:
+        with self._cond:  # the non-reentrant Lock threading.Event.set holds
+            if not self.fired:
+                self.fired = True
+                self.nested()
+            self._flag = True
+            self._cond.notify_all()
+
+
+class _NestedSigintLock:
+    """``proc_lock`` that, once armed, takes a second SIGINT while held."""
+
+    def __init__(self) -> None:
+        self.lock = threading.Lock()
+        self.nested: Callable[[], None] | None = None
+
+    def __enter__(self) -> _NestedSigintLock:
+        self.lock.acquire()
+        nested, self.nested = self.nested, None
+        if nested is not None:
+            nested()
+        return self
+
+    def __exit__(self, *_exc: object) -> None:
+        self.lock.release()
+
+
+@pytest.mark.skipif(not hasattr(signal, "SIGINT"), reason="SIGINT required")
+def test_a_second_sigint_inside_cancel_set_returns_and_the_first_completes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 71.13 AC (1): a SIGINT that lands while the handler holds `cancel`'s lock does not deadlock it."""
+    handler, coord = _sigint_handler_after_a_run(tmp_path, monkeypatch)
+    coord.cancel = _NestedSigintEvent(lambda: handler(signal.SIGINT, None))
+    assert _returns_within(lambda: handler(signal.SIGINT, None), 10)
+    assert coord.cancel.is_set()
+    assert coord.stop_cause == ("interrupt", None)
+    # A later SIGINT, once the first has returned, runs the handler's body again as before: a fresh `cancel` is set.
+    coord.cancel = threading.Event()
+    assert _returns_within(lambda: handler(signal.SIGINT, None), 10)
+    assert coord.cancel.is_set()
+    assert coord.stop_cause == ("interrupt", None)
+
+
+@pytest.mark.skipif(not hasattr(signal, "SIGINT"), reason="SIGINT required")
+def test_a_second_sigint_while_proc_lock_is_held_returns_and_the_first_terminates_the_lane(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 71.13 AC (2): a SIGINT that lands while `terminate_children` holds `proc_lock` does not deadlock it."""
+    handler, coord = _sigint_handler_after_a_run(tmp_path, monkeypatch)
+    proc_lock = _NestedSigintLock()
+    coord.proc_lock = proc_lock  # type: ignore[assignment]
+    running = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"], start_new_session=True)
+    try:
+        coord.register_proc(running, ("sleeper", "env"))
+        proc_lock.nested = lambda: handler(signal.SIGINT, None)
+        assert _returns_within(lambda: handler(signal.SIGINT, None), 20)
+        assert proc_lock.nested is None  # the nested SIGINT did land inside the lock
+        assert running.wait(timeout=10) < 0
+        assert coord.terminated_lanes == {("sleeper", "env")}
+        assert coord.stop_cause == ("interrupt", None)
+    finally:
+        if running.poll() is None:
+            running.kill()
+            running.wait(timeout=5)

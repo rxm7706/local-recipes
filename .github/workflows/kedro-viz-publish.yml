@@ -11,6 +11,14 @@ name: Kedro-Viz publish (real atlas DAG)
 # 102.4's consumer step, herald CAP-61). GitHub filters paths per workflow, not per job, so
 # `on.push.paths` is the union of both producers' paths and the `changes` job tells each
 # producer whether the push touched its own (workflow_dispatch runs both).
+#
+# Story 37.2 (CAP-63 amended 2026-10-19): the `vizro` job builds the public atlas data on the
+# runner before it exports, and a weekly schedule rebuilds it (operator ruling "Weekly + on
+# push"); a scheduled run is not a push, so the `changes` job runs both producers.
+#
+# Story 37.12 (CAP-63, CAP-64): the `vizro` job restores the previous successful run's last-good copies
+# of the public stores before it builds and saves its own after, so an unreachable source on Pages serves
+# its previous copy under the AD-13 marker rather than an empty table.
 
 on:
   push:
@@ -22,6 +30,8 @@ on:
       - 'src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/**'
       - 'src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/**'
       - 'src/shared/packages/pyforge-atlas/src/pyforge/atlas/semantic/**'
+  schedule:
+    - cron: '17 5 * * 1'  # Mondays 05:17 UTC (Story 37.2); Pages takes the newest artifact on its next build
   workflow_dispatch:
 
 permissions:
@@ -152,9 +162,14 @@ jobs:
     needs: changes
     if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_KEDRO_VIZ_PUBLISH != 'true' && (needs.changes.outputs.vizro == 'true')) }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Story 37.2: the public data build took 1 h 20 min on a workstation (2026-10-21; PyPI's fan-out,
+    # rate-limited at 10 requests a second, is 40 min of it); a hosted runner gets three times that
+    timeout-minutes: 240
     steps:
       - uses: actions/checkout@v7
+        # Story 37.2: nothing in the build needs the job's token, so it is not left in .git/config
+        with:
+          persist-credentials: false
 
       # pyforge-atlas carries vizro and plotly (the same env as the publish job); local-recipes
       # (over 10 GB) is the recipe factory's env, never a station job's (orchestrator ruling 2026-10-15).
@@ -172,11 +187,87 @@ jobs:
           pixi run --frozen -e pyforge-atlas python \
             src/shared/packages/pyforge-atlas/tools/vizro_static_export.py --print-flag >> "$GITHUB_OUTPUT"
 
+      # Story 37.2 (CAP-63 amended 2026-10-19, operator ruling "Public-only Pages"): the boards are
+      # built from a fresh public atlas run on this runner, never from anyone's local data.
+      # `pyforge-atlas-bootstrap` writes the empty credentials stub (tools/bootstrap.py's
+      # CREDENTIAL_KEYS) and the store directories, then runs the eight fetch pipelines and
+      # `semantic_packages`, which composes the package boards' table, in one DAG (Story 38.1: it and
+      # derived_artifacts read each other's outputs, so a separate step left find-alternative's scorer
+      # with nothing to read on this fresh runner). The data root is the member's
+      # `data/`, which the export reads (Story 37.1). No secret reaches this job and
+      # PYFORGE_ATLAS_CREDENTIALED is never set (AD-11), so every credentialed or enterprise source
+      # stays empty; the identity boards show what public inputs give them (the purl associator and the
+      # tracked inventory; operator ruling 2026-10-21). Not run: `query_plane_cache`
+      # (its input is steward's export, Story 36.3) and `universal_sbom` (entry-scoped). A failed
+      # build fails the job, and Pages keeps the last export it published.
+      # The vulnerability database store alone is 9.6 GB (2026-10-21), more than a hosted runner has
+      # free beside the environment; the preinstalled toolchains this job never uses make room.
+      - name: Free disk space for the data build
+        if: ${{ steps.vizro_flag.outputs.enabled == 'true' }}
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          df -h /
+
+      # Story 37.12 (CAP-63, CAP-64): the build starts from what the previous successful run saved, so a public
+      # source that cannot be reached today serves its previous copy under the AD-13 marker (Story 34.12)
+      # instead of an empty table. What persists is what a dataset reads back as its own previous copy:
+      # `raw/` and every store except the vulnerability database (`stores/vdb`, 9.6 GB, still rebuilt every
+      # run), where each dataset keeps its last-good copy and marker, and the vulnerability snapshot history
+      # the cve-watcher diffs (`primary/vulnerability_rollup_snapshots`, Story 37.5), which each run whose
+      # rollup has rows appends to. Seven raw-layer entries there are no such store (three rewritten every
+      # build, two only other stations write, two SBOM entries the build never writes), and the PyPI-to-conda
+      # map merges onto its last copy, as on a workstation. No other
+      # output-layer file persists, so a stopped node's table in `intermediate/`, `primary/` or `derived/`
+      # cannot hide behind an old file. The list says `stores/*` beside `!stores/vdb`, never `stores`:
+      # actions/cache lists matches without their descendants and tar recurses into a listed directory, so an
+      # exclusion under a listed `stores` would be ignored. The key is per run attempt; the restore takes the
+      # newest saved entry, and a miss or an eviction is the fresh root of before. Operator ruling 2026-10-24
+      # (option C): the copies reach the weekly run only once the operator raises the repository's Actions
+      # cache limit (DW-atlas-37-12-1). The cache is the repository's own, reached as upload-artifact reaches
+      # its store: no secret and no GitHub token are passed. No workflow here has a trigger that runs
+      # untrusted input in main's cache scope (pull_request_target, workflow_run, issue_comment, ...).
+      - name: Restore the public stores' last-good copies
+        if: ${{ steps.vizro_flag.outputs.enabled == 'true' }}
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            src/shared/packages/pyforge-atlas/data/raw
+            src/shared/packages/pyforge-atlas/data/stores/*
+            src/shared/packages/pyforge-atlas/data/primary/vulnerability_rollup_snapshots
+            !src/shared/packages/pyforge-atlas/data/stores/vdb
+          key: pyforge-atlas-last-good-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            pyforge-atlas-last-good-
+
+      - name: Build the public atlas data
+        if: ${{ steps.vizro_flag.outputs.enabled == 'true' }}
+        run: |
+          pixi run --frozen -e pyforge-atlas pyforge-atlas-bootstrap
+          # Story 37.10: catalog_index reports what the build wrote (the bootstrap-index-health
+          # board), so it runs alone, last
+          pixi run --frozen -e pyforge-atlas pyforge atlas run --pipelines catalog_index
+
+      # Story 37.12: saved only after a build that succeeded (the gate implies success()), with the restore's
+      # own paths and key; after a failed build the job fails and the next run restores the last good save.
+      - name: Save the public stores' last-good copies
+        if: ${{ steps.vizro_flag.outputs.enabled == 'true' }}
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            src/shared/packages/pyforge-atlas/data/raw
+            src/shared/packages/pyforge-atlas/data/stores/*
+            src/shared/packages/pyforge-atlas/data/primary/vulnerability_rollup_snapshots
+            !src/shared/packages/pyforge-atlas/data/stores/vdb
+          key: pyforge-atlas-last-good-${{ github.run_id }}-${{ github.run_attempt }}
+
       # The same Dashboard object dashboard-dryrun builds, one static page per board, ONE
       # vendored assets/plotly.min.js; never a commit (the export is gitignored).
       - name: Export the Vizro boards as static pages
         if: ${{ steps.vizro_flag.outputs.enabled == 'true' }}
-        run: pixi run --frozen -e pyforge-atlas vizro-static-export
+        # Story 37.2: the pages are stamped with the build's own time (`--clock now`): a weekly run of an
+        # unchanged main would otherwise date this week's data by the last merge
+        run: pixi run --frozen -e pyforge-atlas vizro-static-export --clock now
 
       - name: Upload Vizro static export artifact
         if: ${{ steps.vizro_flag.outputs.enabled == 'true' }}
