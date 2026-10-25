@@ -156,12 +156,6 @@ def _popen_kwargs(*, start_new_session: bool) -> dict[str, object]:
 
 
 def _stop_process_group(proc: subprocess.Popen[str]) -> None:
-    pgid: int | None = None
-    try:
-        pgid = os.getpgid(proc.pid)
-    except OSError:
-        pgid = None
-
     if sys.platform == "win32":
         try:
             proc.terminate()
@@ -176,6 +170,12 @@ def _stop_process_group(proc: subprocess.Popen[str]) -> None:
                 pass
             proc.wait(timeout=2)
         return
+
+    pgid: int | None = None
+    try:
+        pgid = os.getpgid(proc.pid)
+    except OSError:
+        pgid = None
 
     if pgid is not None:
         try:

@@ -867,6 +867,7 @@ def test_stop_process_group_windows_branch(monkeypatch):
     import pyforge.marshal.adapters.mcp_stdio_probe as mod
 
     class _WinProc:
+        pid = 1
         terminated = False
         killed = False
 
@@ -886,6 +887,68 @@ def test_stop_process_group_windows_branch(monkeypatch):
     proc = _WinProc()
     mod._stop_process_group(proc)
     assert proc.terminated
+
+
+def test_stop_process_group_windows_kills_when_wait_times_out(monkeypatch):
+    import subprocess
+
+    import pyforge.marshal.adapters.mcp_stdio_probe as mod
+
+    class _WinProc:
+        pid = 1
+        killed = False
+
+        def terminate(self):
+            pass
+
+        def kill(self):
+            self.killed = True
+
+        def wait(self, timeout=None):
+            raise subprocess.TimeoutExpired("cmd", timeout)
+
+    monkeypatch.setattr(mod.sys, "platform", "win32")
+    proc = _WinProc()
+    mod._stop_process_group(proc)
+    assert proc.killed
+
+
+def test_stop_process_group_without_pgid_terminates_child(monkeypatch):
+    import pyforge.marshal.adapters.mcp_stdio_probe as mod
+
+    terminated: list[int] = []
+
+    class _Proc:
+        pid = 7
+
+        def poll(self):
+            return None
+
+        def terminate(self):
+            terminated.append(1)
+
+        def kill(self):
+            pass
+
+        def wait(self, timeout=None):
+            return 0
+
+    monkeypatch.setattr(mod.os, "getpgid", lambda _pid: (_ for _ in ()).throw(OSError("no pgid")))
+    mod._stop_process_group(_Proc())
+    assert terminated
+
+
+def test_stdio_probe_write_fails_when_stdin_closed(tmp_path):
+    script = _script_fixture("import sys\nsys.stdin.close()\n", tmp_path)
+    result = StdioMcpProbe().probe_server(
+        server_name="t",
+        command=sys.executable,
+        args=(script,),
+        env={},
+        cwd=str(tmp_path),
+        timeout_s=5,
+    )
+    assert result.outcome == "exited"
 
 
 def test_stop_process_group_sigkill_after_wait_timeout(monkeypatch):
