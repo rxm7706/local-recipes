@@ -283,6 +283,32 @@ Type / Effort / Deps: fix / M / —.
 
 ## Review Triage Log
 
+- **Dev pass 4 pre-flight diagnosis, 2026-10-25 (bmad-build-auto orchestrator, HEAD `e7d271fa2f`, before the
+  implementation subagent ran).** The AC9 blocker has a root cause in the generator, not in how it was invoked.
+  `scripts/docs_station_cli.py::capture_help` pins `COLUMNS=100` and claims deterministic wrapping "regardless of
+  caller's terminal", but it inherits the rest of the caller's environment, and typer 0.27.2 / rich 15.0.0 ignore
+  `COLUMNS` when the caller's environment forces a terminal. Measured in this worktree, `pixi run --frozen -e
+  pyforge-guild scribe --help` with `NO_COLOR=1 COLUMNS=100`: plain environment 100 columns; `TERM=dumb` alone 100;
+  `TERM=dumb FORCE_COLOR=1` 80 (typer sets `force_terminal=True` whenever `FORCE_COLOR`, `PY_COLORS` or
+  `GITHUB_ACTIONS` is set, and rich's `Console.size` returns 80x25 for a forced terminal whose `TERM` is `dumb` or
+  `unknown` before it reads `COLUMNS`); `FORCE_COLOR=1` alone 140 (the pty's width, still read before `COLUMNS` in that
+  branch). The three earlier passes ran under a harness with such an environment, so every one of their renders was
+  an 80-column page, and `--check` run from a plain terminal reads it as stale. In this session's environment none
+  of those variables is set and `--check` exits 1 against the committed page, as the round-5 reviewer found.
+  - Durable close for AC9 (a broken window in a file this story already touches, AGENTS.md behavioural guideline 3):
+    make `capture_help` build the child's environment deterministically. Remove `FORCE_COLOR`, `PY_COLORS`,
+    `CLICOLOR_FORCE`, `GITHUB_ACTIONS`, `TTY_COMPATIBLE` and `TERMINAL_WIDTH` from the copied environment beside the
+    existing `NO_COLOR=1` and `COLUMNS=100`; the child's stdout is a pipe, so rich then reads `COLUMNS`. Add a test in
+    `tests/scripts/test_docs_station_cli.py` that monkeypatches `subprocess.run`, sets `FORCE_COLOR=1` and `TERM=dumb`
+    in `os.environ`, and asserts the `env=` the generator passes carries none of the removed keys and has
+    `COLUMNS == "100"`. Run `pixi run --frozen -e pyforge-guild docs-gen-test`. Then regenerate with exactly
+    `pixi run -e pyforge-guild docs-station-cli` from the worktree root, confirm `pixi run --frozen -e pyforge-guild
+    docs-station-cli -- --check` exits 0, and record the exit code in the Auto Run Result. `scripts/docs_station_cli.py`
+    is already named on the `spec-pyforge-doctor` memlog for this story; the new reconcile entry names the generator
+    change and the regenerated page.
+  - Everything else in the round-5 entry stands as written: correct the round-4 entry and the Auto Run Result, fix
+    or delete the team-memory file it names, and work the should-fix list and nits.
+
 - **Round 5, 2026-10-25 (independent re-review of draft PR #2307, head `6f559f3de7`, rework `d4bdb881ce..HEAD`):
   FAIL — 1 blocker. Sent back to `ready-for-dev`; `landing_review: required` stays; the next pass runs on the
   operator-approved `fable` tier (Claude Fable 5.1), `difficulty: fable`.** Resolved and reproduced: the drain is
