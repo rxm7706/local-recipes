@@ -66,10 +66,12 @@ an earlier commit added. Line numbers are at `d287eceb0a`.
   run.
 
 **Approach:**
-1. **The process seam.** `PosixProcess` gains a concrete-only way to write bytes to a child's stdin and read its stdout
-   as bytes: either a keyword-only `input: bytes | None` together with bytes output, or a sibling method. The default
-   behaviour of `run` does not change. `ProcessPort` does not change either, since other stations' fakes implement
-   it. This follows the `env=` precedent (`process.py:150-158`).
+1. **The process seam.** `PosixProcess` gains a concrete-only sibling method that writes bytes to a child's stdin and
+   returns its own bytes result type (returncode, stdout bytes, stderr). `run` and `ProcessResult` do not change:
+   `ProcessResult`'s fields are `str` (`process.py:52-63`), and bytes from `run` would break `PosixProcess`'s match
+   with `ProcessPort` under strict mypy. `ProcessPort` does not change either, since other stations' fakes implement
+   it. This follows the `env=` precedent (`process.py:150-158`). Story 103.1's stdio probe also writes to a child's
+   stdin: whichever story lands second reuses the first one's path instead of adding a second stdin seam.
 2. **The sent set.** `run_content_gate` gains `remote` (default `ORIGIN_REMOTE`). It reads the remote once with
    `git ls-remote <remote> 'refs/heads/*' 'refs/tags/*'`, through `_git_via` with
    `timeout_s=REMOTE_PROBE_TIMEOUT_S`.
@@ -88,8 +90,10 @@ an earlier commit added. Line numbers are at `d287eceb0a`.
      reads every sent commit object and, when the caller names the annotated tag being pushed, that tag object.
    - The size cap applies to every sent blob.
    - The purge rules hold. A commit that matches or descends from a purge-listed sha is refused. A purge-listed path is
-     refused when it is an entry of the tip tree or of any sent tree, checked against tree entries rather than the
-     single path `rev-list` gives each object.
+     refused when the tip tree carries it (`git ls-tree -r`, as today) or any sent commit touched it:
+     `git log --name-only --format= --no-renames --diff-merges=first-parent --ignore-missing --stdin <commit>`, fed
+     the same `^<sha>` lines, gives the full path of everything a sent commit touched. The single path `rev-list`
+     gives each object is not used for this.
    - A secret finding names the object's path (or "commit" / "tag") and its short sha, never the matched text.
 6. **Callers.** `push_preserve_ref` passes its `remote` and the tag's refname through. Its caps, its one-refspec push
    and its `ls-remote` verification do not change. The other callers gain the fix with no change of their own:
@@ -99,7 +103,9 @@ an earlier commit added. Line numbers are at `d287eceb0a`.
    - `scripts/worktree_sweep.py`, including `write_and_push_archive_twin` (`:1099`), which runs on
      `--remote`/`--retire --execute` and is not flag-gated.
 7. **The operator's push path.** `push_reviewed_rows` reads `origin` once. It skips, and does not count, a row whose
-   twin `origin` already lists. A `PreserveGitError` on one row is recorded as that row's refusal, and the run goes on.
+   twin `origin` already lists. If `origin` cannot be read, it treats nothing as listed: each row's gate then refuses
+   with the unreadable-remote finding, and nothing is pushed or counted. A `PreserveGitError` on one row is recorded
+   as that row's refusal, and the run goes on.
 8. **The remedy.** `MRS-STATUS-016` names both push paths: `marshal preserve push` once `pyforge.marshal.preserve_refs`
    is on, and `scripts/legacy_preserve_promote.py --push-reviewed` for a reviewed legacy twin. Status reads no flag.
 9. **The runbook.** `docs/how-to/purge-preserved-refs.md:21` describes the gate. It is updated to the sent set and the
@@ -258,6 +264,9 @@ To be filled at landing: AC12's per-tag verdicts and total time, and each comman
   process seam joins the surface; `refs/pull/*` is not trusted; the remote read has a timeout; tag and commit bodies
   are scanned; the promoter's second run and per-row errors are fixed; the third co-governor is named; AC12 runs from
   the story worktree; Effort S to M.
+- 2026-10-25: chain review round 2 (same reviewer, PASS, 0 blockers, 4 nits); all applied. A sibling method with its
+  own bytes result pins the process seam; the purge-path read is named; an unreadable `origin` in
+  `push_reviewed_rows` is stated; Story 103.1's stdin path is shared, not duplicated.
 
 ## Review Triage Log
 
@@ -283,3 +292,13 @@ To be filled at landing: AC12's per-tag verdicts and total time, and each comman
     and stays out of every AC; Epic 87's header lists 87.19 among the unflagged fixes; the runbook line joins the
     surface; purge paths are checked against tree entries; over-cap blobs are not read; the two legacy sources are
     named in the operator steps; a tip-tree-only mutation added.
+- **Round 2, 2026-10-25 (re-review of `2a7f4507c3`, same reviewer): PASS, 0 blockers, 0 should-fix, 4 nits; all
+  applied.** B1 and S1–S8 fixed; N1–N9 fixed, N6 partly (closed by nit 2). The reviewer confirmed live on git 2.53
+  that `rev-list --stdin` takes `^<sha>` lines beside a commit argument and that `--ignore-missing` skips a missing
+  `^<sha>` (exit 0; exit 128 without it), and that the branch-and-tag listing is the full listing minus `refs/pull/*`.
+  - nit: a keyword-only bytes `input=` on `run` would break `ProcessResult`'s `str` fields under strict mypy. Fixed:
+    a sibling method with its own bytes result.
+  - nit: sent-tree entries give no full paths. Fixed: the `git log --name-only … --stdin` read named in Approach 5.
+  - nit: an unreadable `origin` in `push_reviewed_rows` was unstated. Fixed in Approach 7.
+  - nit: Story 103.1's stdio probe also writes to a child's stdin. Fixed: the second story to land reuses the first
+    one's path (Approach 1).
