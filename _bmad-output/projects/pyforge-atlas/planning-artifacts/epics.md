@@ -2928,6 +2928,36 @@ So that the adoption-stage, staleness, find-alternative and version-downloads bo
 **And** with the flag on, version-downloads reads each version's `upload_date`; the adoption-stage board classifies packages out of `unknown`
 **Status:** done
 
+## Epic 39: The atlas PRD's FR arrows name the capabilities the Spec carries
+
+Minted 2026-10-25 from the station Dream's entry of the same date (the PRD's FR arrows were counted, not traced), at
+the operator's rulings "Approve as proposed (Recommended)", "Drop the arrow (Recommended)" and "Append a correction
+(Recommended)". The 2026-09-17 one-chain fold appended an `← CAP-n` arrow to every FR heading by counting, so
+FR-1..FR-22 read CAP-1..CAP-22 and FR-61..FR-68 read CAP-1..CAP-8, and only four of those 30 name the capability that
+realizes them. A chore under `spec-one-chain-per-station` CAP-5 and CAP-3: no CAP is minted and no flag is added. It
+is a new epic because the concern is the PRD's traceability, not any capability epic.
+**HARD boundaries:**
+- Only the 23 approved arrows change, plus the two fold-written lines the rulings name; no FR title, body or number
+  moves.
+- FR-15, FR-61 and FR-63 keep their arrows until the operator decides their source capability.
+- No `SPEC.md` change, no detector rule change, and no satellite FR is touched.
+
+### Story 39.1: Every atlas PRD FR arrow names the Spec capability that realizes it
+
+As the operator reading the atlas PRD to learn which capability a requirement serves,
+I want every `FR-n ← CAP-m` arrow to name the capability the Spec actually carries,
+So that a requirement traces to its contract instead of to a number the fold counted.
+
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-5 (FRs derive from CAPs) and CAP-3 (the station fold procedure) • Dream 2026-10-25 (the PRD's FR arrows were counted, not traced) • operator rulings 2026-10-25
+**Flag:** none (`spec-feature-flag-governance` Q1, a chore)
+**Surface:** `planning-artifacts/prds/prd-pyforge-atlas-2026-07-17/prd.md` (23 FR headings, the `### FR-61..FR-68 delivered` heading, the fold-provenance line and a currency-reconciliation section); the spine and epics `updated:` re-stamps; the deferred-work ledger row for FR-15, FR-61 and FR-63
+**Spec:** `planning-artifacts/specs/spec-39-1-every-atlas-prd-fr-arrow-names-the-spec-capability-that-realizes-it.md`
+**Given** `f8803da678`, where the fold commit `86d1cdf3ee` numbered FR-1..FR-22 and FR-61..FR-68's arrows by counting
+**When** the story lands
+**Then** each of the 23 headings carries the arrow in the spec-pyforge-atlas memlog's 2026-10-25 re-map table, every cited CAP exists, and FR-15, FR-61 and FR-63 are named as awaiting a source-capability decision
+**And** doctor's `fr-without-cap` and the planning detectors stay green
+**Status:** backlog
+
 ## Validation note — 2026-08-26 (chain-currency sweep)
 
 Validated against the architecture spine as re-cut today (its `## Currency

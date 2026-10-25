@@ -709,6 +709,31 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   - It goes into Epic 27, which owns this test (Stories 27.3 and 27.5), and reopens it until it lands.
   **Kinships:** [[pyforge-steward]] (the pre-push preflight lane that surfaced it). Owner `spec-pyforge-atlas` (CAP-8,
   the read surface). → Epic 27 / Story 27.6, specced 2026-10-24.
+- **2026-10-25 (the PRD's FR arrows were counted, not traced)** — **Found: most of the atlas PRD's `FR-n ← CAP-m`
+  arrows name the wrong capability.** The 2026-09-17 one-chain fold (`86d1cdf3ee`) appended an arrow to every FR
+  heading by counting: FR-1..FR-22 read CAP-1..CAP-22, and FR-61..FR-68 read CAP-1..CAP-8. The PRD's own
+  `## Fold provenance (2026-09-17)` says so ("Kernel FR-1..FR-22 ← CAP-1..CAP-22"). Only FR-3, FR-8, FR-12 and FR-13
+  landed on the right capability. FR-1 (catalog-declared IO) cites CAP-1 (the DAG is the orchestrator); FR-10 and
+  FR-11 are swapped; FR-19..FR-21, the three new signals, cite the Unity satellite's CAP-19..CAP-21; FR-64..FR-68 cite
+  kernel CAP-4..CAP-8, while their own capabilities are CAP-53..CAP-57. A fleet audit the same day, after marshal
+  Story 105.1 fixed the same defect on marshal's PRD (PR #2314), found atlas the worst case. Doctor's `fr-without-cap`
+  checks only that a cited CAP exists, and atlas FR-1..FR-68 are in `docs/governance/fr-baseline.json`, so nothing
+  noticed. **What it looks like when fixed:** every arrow names the capability that realizes the requirement, traced
+  from evidence, not position: the FR title against the CAP title, the CAP's full success text from before the fold
+  (`86d1cdf3ee^`, because the station Spec cut each bullet to its first line), and the `← spec-<old> CAP-k` provenance.
+  Three requirements have no capability. FR-61 and FR-63 come from `spec-kedro-org-tooling-adoption`'s plain-list
+  "Capability 1" and "Capability 3", which the fold never minted; FR-15 (Pixi-first, conda-forge-only) comes from a
+  Spec constraint. They keep their arrows until the operator picks a source.
+  **Constraints:**
+  - a chore under `spec-one-chain-per-station` CAP-5 (FRs derive from CAPs) and CAP-3 (the station fold procedure),
+    with no CAP, no flag, no `SPEC.md` change and no detector change;
+  - only arrow text moves: no FR number, title or body;
+  - the Unity and Wasm satellite FRs, whose ids collide with the kernel's, are a separate decision (a renumbering, as
+    Story 39.2, only on an operator ruling).
+
+  Operator rulings 2026-10-25 (AskUserQuestion, verbatim choices): "Approve as proposed (Recommended)" (the 23-heading
+  table), "Drop the arrow (Recommended)" (the `### FR-61..FR-68 delivered` summary heading), "Append a correction
+  (Recommended)" (the fold-provenance line). Owner `spec-pyforge-atlas`. → Epic 39 / Story 39.1, specced 2026-10-25.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 
