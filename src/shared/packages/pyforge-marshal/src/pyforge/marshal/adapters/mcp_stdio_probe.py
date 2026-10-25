@@ -184,7 +184,10 @@ def _stop_process_group(proc: subprocess.Popen[str]) -> None:
         try:
             os.killpg(pgid, signal.SIGTERM)
         except ProcessLookupError:
-            pass
+            try:
+                proc.terminate()
+            except OSError:
+                pass
         except OSError:
             try:
                 proc.terminate()
