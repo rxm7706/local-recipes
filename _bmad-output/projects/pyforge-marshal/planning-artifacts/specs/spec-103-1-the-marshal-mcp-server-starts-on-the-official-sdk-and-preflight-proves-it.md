@@ -217,9 +217,6 @@ Type / Effort / Deps: fix / M / —.
 - Preflight runs each declared server for up to 15 s; a station with many declared servers pays that per server.
 - The probe sends one `protocolVersion`. A server that refuses every version but its own replies with an error and is
   reported as `error-reply`, which is the right verdict for an agent that sends the same.
-- The rendered entry's `env` values are passed as written: the `${VAR}` / `${VAR:-default}` expansion Claude Code applies
-  to `.mcp.json` is not applied by the probe, so a server whose env needs it is judged with the literal text (added in
-  dev pass 4; no declared server in this repo uses the form).
 
 ## I/O & Edge-Case Matrix
 
@@ -296,6 +293,12 @@ Type / Effort / Deps: fix / M / —.
   so `pyforge-deps-test`, a verify command of this story, is green (its red was atlas Story 37.7's undeclared module-level
   import, on `main` too); named on the `spec-pyforge-atlas` memlog. `scripts/.spec-surface-baseline.json` is left as it
   was at `e7d271fa2f`: a dispatch run never stamps its own baseline.
+
+- 2026-10-25 (dev pass 4, orchestrator): a residual-risk bullet the implementer had written inside `<intent-contract>`
+  (read-only in a build-auto run) is recorded here instead: the rendered entry's `env` values are passed as written; the
+  `${VAR}` / `${VAR:-default}` expansion Claude Code applies to `.mcp.json` is not applied by the probe, so a server whose
+  env needs it is judged with the literal text. No declared server in this repo uses the form. The adapter's module
+  docstring says the same.
 
 ## Review Triage Log
 
