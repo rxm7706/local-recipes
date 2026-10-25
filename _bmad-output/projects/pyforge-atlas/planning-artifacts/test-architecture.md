@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: 2db5c540fa304382
-story_count: 143
+source_fingerprint: 6e3357061bbc87c7
+story_count: 144
 test_file_count: 187
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 143
+- **Stories parsed:** 144
 - **Epics parsed:** 38
 - **Test files inventoried:** 187 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `2db5c540fa304382`
+- **Source fingerprint:** `6e3357061bbc87c7`
 
 ## Risk Assessment
 
@@ -374,6 +374,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 27.3 | The read surfaces render what DESIGN.md specifies, and prove it on fixture data | none observed |
 | 27.4 | The planning record matches the tree and the cross-station seams hold | none observed |
 | 27.5 | The distribution-breakdown facet filter builds its control | none observed |
+| 27.6 | The distribution-breakdown e2e test waits for its grid to mount | none observed |
 | 28.1 | The live-attach fixture Postgres starts under any basetemp | none observed |
 | 29.1 | The range test server records each response before the client can read it | none observed |
 | 30.1 | The DAG export reaches Pages as a workflow artifact | none observed |
