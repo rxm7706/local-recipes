@@ -36,11 +36,14 @@ numbers are at `d287eceb0a`.
 - **Who wrote it.** `marshal init` (`cli/init.py::_render_mcp_json`, `:468`) renders `<home>/.mcp.json` from the
   policy's `mcp_servers` (Story 6.9 / 18.1, AD-43), copy-when-absent. `marshal-policy.toml` declares
   `[mcp_servers.marshal]`; no other station declares a server, so no other home has the file. It was written on
-  2026-10-04 04:19:07, during a re-init of all eight homes.
+  2026-10-04 04:19:07, during a re-init of all eight homes. A second writer can put the same file there: preflight's
+  adapter seed-file step (Story 1.7, `cli/init.py:1781-1825`) copies a main-checkout `.mcp.json` into a home. The rule
+  covers both.
 - **Why it counts.** The refresh probe, `adapters/vcs_git.py::has_uncommitted_changes` (`:621-644`), runs `git -c
   status.showUntrackedFiles=normal status --porcelain`, so untracked files count on purpose (`cli/refresh.py:265-322`).
   bmad-loop's own `verify.worktree_clean` uses `git status --porcelain` too and prints `?? .mcp.json` for the home, so
-  `bmad-loop run` and `validate` would refuse it as well.
+  `bmad-loop run` and `validate` would refuse it as well, and so would `marshal teardown` (FR-6, the same probe at
+  `cli/init.py:2446`).
 - **What the rest of the system already assumes.** bmad-loop's Claude profile (`bmad_loop/data/profiles/claude.toml`)
   lists `.mcp.json` among the gitignored configs it seeds into run worktrees. `docs/dreams/pyforge-marshal.md` says
   there is deliberately no `.mcp.json` in the repo, and `git ls-files` lists none anywhere. Nothing ignores it.
@@ -55,24 +58,33 @@ numbers are at `d287eceb0a`.
 - **The rule.** `seed/templates/files/model-ignores.gitignore.j2` gains `/.mcp.json`, anchored to the repository
   root, under a comment that names `marshal init`'s render (AD-43) and bmad-loop's seeded configs. Anchoring keeps a
   nested `.mcp.json` (under `recipes/` or a package) visible to git.
-- **The region is re-rendered, not hand-edited.** The `.gitignore` `model-ignores` region is a seed
+- **The region is re-rendered, not hand-edited, in this order.** The `.gitignore` `model-ignores` region is a seed
   `hybrid-managed-region` (`seed/templates/manifest.yaml`) whose body hash `.marshal/seed-state.yml` records
-  (`6dfa035c`). `marshal seed update` re-renders it in this repo: a dry run first (it must plan only this region), then
-  `--run --yes`. The new region header hash and the seed state land together. `model_version` stays `1.0.0` unless
-  the seed's own rules require a bump for a template change; the implementer follows what `marshal seed update` and
-  the seed tests demand and records which.
-- **The test that proves the refusal is gone.** `tests/integration/test_init_worktree.py` (`:272-313` renders
-  `.mcp.json` today) gains a case: a real git home whose checkout carries the re-rendered `.gitignore`, a declared
-  `mcp_servers` entry, `marshal init`; then `GitVcs().has_uncommitted_changes(home)` is `False` and `git status
-  --porcelain` is empty. A second case puts a `.mcp.json` in a subdirectory and shows it untracked, proving the anchor.
+  (`6dfa035c`). `marshal seed update --run` refuses a dirty tree (`seed/verbs/preconditions.py`, rung 2, `_is_dirty`:
+  `git status --porcelain --untracked-files=normal`; only a dry run skips it, and `--force` skips rung 6 only). So:
+  (1) commit the template change, the tests and any spec status change, leaving the tree clean; (2) run `marshal seed
+  update --dry-run` and confirm it plans only the `model-ignores` region; (3) run `marshal seed update --run --yes`;
+  (4) commit `.gitignore` and `.marshal/seed-state.yml` together. `model_version` stays `1.0.0`: a hybrid region whose
+  body differs from its template is re-rendered without a bump (Story 97.2).
+- **The test that proves the refusal is gone.** No integration test covers `_render_mcp_json` today
+  (`tests/integration/test_init_worktree.py:250-313` is Story 1.7's preflight seed-copy test; the render has unit
+  tests only, in `test_init.py` and `test_mcp_registration.py`). A new case in `tests/integration/test_init_worktree.py`
+  is the first: a real git home whose `.gitignore` is built from the packaged `files/model-ignores.gitignore.j2`
+  template, a declared `mcp_servers` entry, `marshal init`; then `GitVcs().has_uncommitted_changes(home)` is `False`
+  and `git status --porcelain` is empty. Every existing case in that file is `@pytest.mark.slow`, and
+  `pyforge-marshal-test` runs `-m "not slow"`, so the new cases carry no slow marker; they stay fast (one `git init`,
+  no network). A second case puts `.mcp.json` inside a tracked subdirectory and asserts `git check-ignore` exits 1 for
+  it, proving the anchor.
 - **What does not change.** The refresh probe, `marshal init`'s render and its copy-when-absent rule, the home's file
   and the shared `info/exclude`.
 - **`type: fix`, no flag.** The refresh and the render are both meant to work together; this restores that. Under
   `spec-feature-flag-governance` Q1 a fix carries no flag.
 
 **After landing (not a dispatch gate):** a home that refuses to fast-forward never receives the new `.gitignore`. The
-marshal home therefore needs one last refresh with `.mcp.json` set aside and put back, after which its checkout
-carries the rule and later refreshes read it clean.
+marshal home therefore needs one fast-forward by MRS-PREFLIGHT-014's own remedy, `git -C ~/.bmad-loops/pyforge-marshal
+merge --ff-only refs/remotes/origin/main` (git allows it: `main` tracks no `.mcp.json`, so the untracked file is never
+overwritten). After that its checkout carries the rule, and `marshal refresh` reads the home clean and does the push
+and policy re-render itself.
 
 Ledger key: `104-1-the-mcp-json-marshal-renders-never-makes-a-loop-home-dirty`.
 Type / Effort / Deps: fix / S / —.
@@ -95,14 +107,15 @@ Type / Effort / Deps: fix / S / —.
 - **AC1 — The rule.** The template carries `/.mcp.json` with its comment, and this repo's `.gitignore` region carries
   it after the re-render. From the repo root, `git check-ignore -v .mcp.json` names the rule inside the
   `marshal-seed:begin region=model-ignores` block.
-- **AC2 — The seed stays green.** `marshal seed check` exits 0 for this repo and reports the region current. A `marshal
-  seed update` dry run afterwards plans nothing. The local-recipes seed oracle task passes (an adopt dry run of this
-  repo plans nothing outside the deferred artifacts).
+- **AC2 — The seed stays green.** `marshal seed check` exits 0 for this repo. A `marshal seed update --dry-run`
+  afterwards plans zero actions (its listed skips do not count). The local-recipes seed oracle
+  (`tests/integration/test_local_recipes_empty_plan.py`, whose update leg catches a missed re-render) passes.
 - **AC3 — A rendered home is clean.** The new integration case: after `marshal init` renders `.mcp.json` into a git
   home whose checkout carries the region, `has_uncommitted_changes` is `False` and `git status --porcelain` is empty.
-- **AC4 — The anchor.** A `.mcp.json` in a subdirectory of the same home is reported untracked (`git status
-  --porcelain` lists it).
-- **AC5 — Mutation.** Removing the rule from the template (and re-rendering) fails AC3's test. Restore it.
+- **AC4 — The anchor.** For a `.mcp.json` inside a tracked subdirectory of the same home, `git check-ignore` exits 1
+  and `git status --porcelain` lists the file.
+- **AC5 — Mutation.** Removing the rule from the template alone (the test builds its `.gitignore` from the template,
+  so no re-render or seed-state change is needed) fails AC3's test. Restore it.
 - **AC6 — The suites.** `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` and `pixi run --frozen -e pyforge-ci
   pyforge-deps-test` are green.
 
@@ -110,15 +123,16 @@ Type / Effort / Deps: fix / S / —.
 
 **Always:**
 - Change the region through `marshal seed`, and commit `.gitignore` and `.marshal/seed-state.yml` together.
-- Reconcile every governed path on the memlogs of the Specs that govern it (`spec-pyforge-marshal`, and
-  `spec-pyforge-core`, which co-governs station `src/`), then stamp scoped (AGENTS.md pre-PR item 5).
+- Reconcile every governed path on the memlogs of every Spec `spec-surface-check` names, then stamp each scoped
+  (AGENTS.md pre-PR item 5): today `spec-pyforge-marshal` (`.marshal/seed-state.yml`), `spec-pyforge-core` (the
+  template, and station `src/`) and `pyforge-herald/spec-pyforge-pages` (`.gitignore`; Story 86.2's precedent).
 
 **Ask first:**
 - A `model_version` bump, or any other seeded region or file the update plans to change.
 
 **Never:**
 - Never weaken `has_uncommitted_changes` or `bmad-loop`'s clean check, and never add a path allowlist to refresh.
-- Never delete or move a loop home's `.mcp.json`, and never write `$GIT_COMMON_DIR/info/exclude`.
+- Never delete or move a loop home's `.mcp.json` as part of the story, and never write `$GIT_COMMON_DIR/info/exclude`.
 - Never ignore `.mcp.json` below the root (no unanchored rule).
 - Never run `marshal refresh` against the fleet as part of the story; the after-landing step is the operator's or the
   landing agent's.
@@ -132,7 +146,8 @@ Type / Effort / Deps: fix / S / —.
 | Case | Before | After |
 |---|---|---|
 | home with marshal's rendered `/.mcp.json`, checkout carries the region | `?? .mcp.json`, refresh refuses | clean, refresh fast-forwards |
-| home whose checkout predates the region change | `?? .mcp.json`, refresh refuses | unchanged until one refresh with the file set aside |
+| home whose checkout predates the region change | `?? .mcp.json`, refresh refuses | unchanged until one `merge --ff-only` (the after-landing step) |
+| `marshal teardown` of a home holding the rendered file | refuses (dirty) | proceeds past the dirt check |
 | `.mcp.json` in a subdirectory | untracked | untracked (anchor) |
 | a tracked `.mcp.json` in another repo | tracked | tracked (ignore never hides a tracked file) |
 | policy declares no `mcp_servers` | no file, clean | no file, clean |
@@ -155,13 +170,13 @@ Type / Effort / Deps: fix / S / —.
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass, with AC3–AC5's tests (the station's `verify_commands`; MRS-GATE-010 binding).
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass, with AC3–AC5's tests, which carry no slow marker (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 
 **Run before the push (not dispatch gates):**
 - `git check-ignore -v .mcp.json` — expected: exit 0, naming the `.gitignore` line inside the `model-ignores` region (AC1).
 - `pixi run -e pyforge-guild marshal seed check` — expected: exit 0 (AC2).
-- `pixi run -e pyforge-guild marshal seed update --dry-run` — expected: an empty plan (AC2).
+- `pixi run -e pyforge-guild marshal seed update --dry-run` — expected: zero actions (AC2).
 - `pixi run --frozen -e pyforge-marshal marshal-local-recipes-seed-oracle` — expected: pass (AC2).
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-coverage-gate` — expected: exit 0.
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
@@ -169,15 +184,31 @@ Type / Effort / Deps: fix / S / —.
 - The mutation of AC5 — expected: AC3's test fails. Restore it.
 - `PYFORGE_PREFLIGHT_SCOPE=full pixi run -e pyforge-guild pr-preflight` — expected: exit 0.
 
-**After landing (not a gate):** with `~/.bmad-loops/pyforge-marshal/.mcp.json` set aside, `pixi run -e pyforge-guild
-marshal refresh --project pyforge-marshal` fast-forwards the home; put the file back unchanged; `git -C
-~/.bmad-loops/pyforge-marshal status --porcelain` is then empty.
+**After landing (not a gate):** `git -C ~/.bmad-loops/pyforge-marshal merge --ff-only refs/remotes/origin/main`, then
+`git -C ~/.bmad-loops/pyforge-marshal status --porcelain` is empty and `pixi run -e pyforge-guild marshal refresh
+--project pyforge-marshal` reports the home current, not refused.
 
 ## Spec Change Log
 
 - 2026-10-25: minted from the Dream entry of 2026-10-25 (the marshal home is dirty with marshal's own file) at the
   operator's direction "fix / include / resolve the gaps identified autonomously". `type: fix`, no flag, no CAP.
+- 2026-10-25: chain review round 1 (independent reviewer, PASS, 0 blockers). Applied: the seed's clean-tree rung and
+  the commit order around `seed update --run`; no slow marker on the new tests; the test-file citation corrected and
+  the preflight seed copy named as a second writer; `pyforge-herald/spec-pyforge-pages` added to the reconcile list;
+  the test builds its ignore file from the template; AC2 and AC4 made checkable; the after-landing step uses
+  MRS-PREFLIGHT-014's remedy instead of moving the file; teardown named.
 
 ## Review Triage Log
 
-- No review has run yet.
+- **Round 1, 2026-10-25 (chain review of `4ecadbd3be`, independent reviewer): PASS, 0 blockers, 4 should-fix, 7 nits;
+  all in scope applied.**
+  - should-fix: `seed update --run` refuses a dirty tree (rung 2) — commit order spelled out.
+  - should-fix: every `test_init_worktree.py` case is `slow` and the gate runs `-m "not slow"` — new cases carry no
+    marker.
+  - should-fix: `:272-313` is the preflight seed-copy test, not the render — citation corrected.
+  - should-fix: `.gitignore` is governed by `pyforge-herald/spec-pyforge-pages` — added to the reconcile list.
+  - nits applied: template-built ignore file; after-landing via `merge --ff-only`; AC2 "zero actions"; AC4 via
+    `git check-ignore`; the Dream's "fixed the same way" corrected; teardown named.
+  - nit not applied here: the PRD's FR-133..FR-135 arrows (`← CAP-91..93`) are pre-fold ids, part of a PRD-wide
+    FR→CAP re-map proposed as its own task.
+

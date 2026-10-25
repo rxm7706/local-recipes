@@ -1616,8 +1616,9 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   untracked files on purpose (`git status --porcelain` with `status.showUntrackedFiles=normal`), and so does
   bmad-loop's own `worktree_clean`, so `bmad-loop run` would refuse the home too. bmad-loop's Claude profile already
   calls `.mcp.json` a gitignored config it seeds into run worktrees, and this repo deliberately tracks no
-  `.mcp.json`, but nothing ignores it. Two files marshal writes into loop homes had the same gap and were fixed the
-  same way: `.bmad-loop/profiles/` and `.bmad-loop/marshal-model-cost-catalog.json`. The operator's session moved the
+  `.mcp.json`, but nothing ignores it. Two files marshal writes into loop homes had the same gap and were ignored
+  for the same refusal: `.bmad-loop/profiles/` in the seeded region and `.bmad-loop/marshal-model-cost-catalog.json`
+  beside it. The operator's session moved the
   file aside, refreshed and put it back, so the next refresh refuses again. **What it looks like when fixed:** the
   `.gitignore` model region that `marshal seed` manages ignores `/.mcp.json` at the repo root, so a home with
   marshal's rendered file reads clean to refresh, to bmad-loop and to the dispatch supervisor, in this repo and in
