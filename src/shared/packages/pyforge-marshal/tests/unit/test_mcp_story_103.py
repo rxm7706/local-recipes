@@ -980,6 +980,30 @@ def test_popen_kwargs_windows_branch(monkeypatch):
     assert "creationflags" in mod._popen_kwargs(start_new_session=True)
 
 
+def test_popen_kwargs_unix_branch():
+    import pyforge.marshal.adapters.mcp_stdio_probe as mod
+
+    assert mod._popen_kwargs(start_new_session=True) == {"start_new_session": True}
+    assert mod._popen_kwargs(start_new_session=False) == {}
+
+
+def test_stdio_probe_unexpected_exception_becomes_bad_reply(monkeypatch, tmp_path):
+    import pyforge.marshal.adapters.mcp_stdio_probe as probe_mod
+
+    script = _script_fixture("import time\ntime.sleep(60)\n", tmp_path)
+    monkeypatch.setattr(probe_mod.json, "dumps", lambda *_a, **_k: (_ for _ in ()).throw(RuntimeError("boom")))
+    result = StdioMcpProbe().probe_server(
+        server_name="t",
+        command=sys.executable,
+        args=(script,),
+        env={},
+        cwd=str(tmp_path),
+        timeout_s=5,
+    )
+    assert result.outcome == "bad-reply"
+    assert "boom" in result.stderr_tail
+
+
 def test_stdio_probe_spawns_with_windows_creationflags(monkeypatch, tmp_path):
     import pyforge.marshal.adapters.mcp_stdio_probe as mod
 
