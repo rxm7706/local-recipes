@@ -40,6 +40,7 @@ Waves map 1:1 to epics: Epic 1 = Wave 0 · 2 = A · 3 = B · 4 = C · 5 = D · 6
 | 19–23 + Epic 24 at 3 of 4 (pre-rekey 20–25) | the turn-on window | this directory (`retro-pyforge-atlas-2026-09-14.md`), one station retro covering 2026-08-26 → 2026-09-14 (chain-currency sweep); written under the numbering before the 2026-09-17 rekey |
 | — | the fleet lint / type gate | this directory (`retro-pyforge-atlas-2026-09-20.md`), what steward Story 66.1's first run found in this station |
 | 25–29, 31 | fixes, a new dataset and a second type gate | this directory (`retro-pyforge-atlas-2026-10-15.md`), one station retro covering 2026-09-20 → 2026-10-15 (chain-currency `code→retro`); moved the `epic-N-retrospective` keys for 25–29 and 31 to `done` |
+| 30, 32–35, 37, 38 (+ 27.6, 36.1–36.2) | atlas fills its own data, the boards read it | this directory (`retro-pyforge-atlas-2026-10-25.md`), one station retro covering 2026-10-15 → 2026-10-25 (chain-currency `code→retro` and `behind-code`, after marshal Story 103.1's numpy declaration); moved the `epic-N-retrospective` keys for 30, 32–35, 37 and 38 to `done`; 36 stays open on 36.3 |
 
 Epics 1–8 written 2026-07-25, one week after ship (2026-07-18), on the
 operator's decision to run rather than waive them. Epics 9–10 written

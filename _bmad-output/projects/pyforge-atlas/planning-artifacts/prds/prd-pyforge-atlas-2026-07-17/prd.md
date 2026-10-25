@@ -3,7 +3,7 @@ fr-derivation-from: "2026-09-17"
 title: cf_atlas Kedro/Dagster/DuckDB Migration
 status: final
 created: 2026-07-17
-updated: "2026-10-22"   # RE-STAMPED 2026-10-22 (UTC; 2026-10-21 local): FR-71 amended in place with CAP-63's 2026-10-21 operator ruling (on Pages the identity boards show what public inputs give them; credentialed and enterprise sources stay empty). See § Currency reconciliation — 2026-10-22. Prior: RE-STAMPED 2026-10-19: FR-77 registered from spec-pyforge-atlas CAP-69 (the Vizro boards read the datasets the pipelines write; Epic 37) and FR-71 amended with CAP-63 (the producer builds the public data first, weekly and on push). See § Currency reconciliation — 2026-10-19. Prior: RE-STAMPED 2026-10-18 (later): FR-72..FR-76 registered from spec-pyforge-atlas CAP-64..CAP-68 (atlas fills its own data; Epics 34-36). Earlier the same day: chain-currency cascade (spec -> PRD) for atlas Story 33.1, a fix under spec-pyforge-atlas CAP-9 (the atlas CLI reaches the verbs its contracts name, from any directory); no FR added, renumbered or amended, no AD moved. See § Currency reconciliation — 2026-10-18. Prior: RE-STAMPED 2026-10-15: CAP-63 amended (the vizro-static-export task and job run in -e pyforge-atlas; the vendored plotly.min.js is the one exact-file VENDORED_ROOTS entry); FR-71 follows in place, no FR added or removed, no AD moved. See § Currency reconciliation — 2026-10-15. Prior: RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for CAP-62 and CAP-63 (Epic 30): FR-70 and FR-71 registered (the Kedro-Viz DAG export reaches Pages as a workflow artifact, amending CAP-41 / FR-62's producer; Vizro boards publish as static exports under /dashboard/vizro/). See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-13 entries (Story 28.1 landed; Epic 29 / Story 29.1 minted and implemented, a fix under CAP-16 -- the range test server records each response before writing it); no CAP added or amended, no FR moved. See § Currency reconciliation — 2026-10-13. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Story 25.1's gate cleared, its key flipped blocked -> backlog by operator ruling); no FR registered. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for marshal Story 66.2's backfill of atlas's deferred-work ledger (co-governor surface reconcile); no FR registered. See § Currency reconciliation — 2026-10-03. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-61 (Epic 25); FR-69 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-20 (fleet consistency pass).
+updated: "2026-10-25"   # RE-STAMPED 2026-10-25 (chain-currency behind-code: the package pyproject.toml moved with marshal Story 103.1's numpy>=2.5.3 declaration, #2307): the atlas landings since the 2026-10-22 stamp (Stories 35.2-35.4, 37.4-37.13, 38.1, 34.12, 27.6) and the Spec memlog through 2026-10-25 folded; no FR added, renumbered or amended; FR-72's plain-run consequence recorded as not holding on a fresh data root (DW-atlas-37-2-1). See § Currency reconciliation — 2026-10-25. Prior: RE-STAMPED 2026-10-22 (UTC; 2026-10-21 local): FR-71 amended in place with CAP-63's 2026-10-21 operator ruling (on Pages the identity boards show what public inputs give them; credentialed and enterprise sources stay empty). See § Currency reconciliation — 2026-10-22. Prior: RE-STAMPED 2026-10-19: FR-77 registered from spec-pyforge-atlas CAP-69 (the Vizro boards read the datasets the pipelines write; Epic 37) and FR-71 amended with CAP-63 (the producer builds the public data first, weekly and on push). See § Currency reconciliation — 2026-10-19. Prior: RE-STAMPED 2026-10-18 (later): FR-72..FR-76 registered from spec-pyforge-atlas CAP-64..CAP-68 (atlas fills its own data; Epics 34-36). Earlier the same day: chain-currency cascade (spec -> PRD) for atlas Story 33.1, a fix under spec-pyforge-atlas CAP-9 (the atlas CLI reaches the verbs its contracts name, from any directory); no FR added, renumbered or amended, no AD moved. See § Currency reconciliation — 2026-10-18. Prior: RE-STAMPED 2026-10-15: CAP-63 amended (the vizro-static-export task and job run in -e pyforge-atlas; the vendored plotly.min.js is the one exact-file VENDORED_ROOTS entry); FR-71 follows in place, no FR added or removed, no AD moved. See § Currency reconciliation — 2026-10-15. Prior: RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for CAP-62 and CAP-63 (Epic 30): FR-70 and FR-71 registered (the Kedro-Viz DAG export reaches Pages as a workflow artifact, amending CAP-41 / FR-62's producer; Vizro boards publish as static exports under /dashboard/vizro/). See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-13 entries (Story 28.1 landed; Epic 29 / Story 29.1 minted and implemented, a fix under CAP-16 -- the range test server records each response before writing it); no CAP added or amended, no FR moved. See § Currency reconciliation — 2026-10-13. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Story 25.1's gate cleared, its key flipped blocked -> backlog by operator ruling); no FR registered. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for marshal Story 66.2's backfill of atlas's deferred-work ledger (co-governor surface reconcile); no FR registered. See § Currency reconciliation — 2026-10-03. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-61 (Epic 25); FR-69 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-20 (fleet consistency pass).
 project: pyforge-atlas
 intent_source: docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.6, ANALYSIS COMPLETE)
 currency_review: Reviewed 2026-08-01 — spec corrections applied to PRD. CAP-8 "28-CLI inventory is answerable" false claim corrected to "8 pages + factory-status; full 28-CLI deferred (DW-D2-1)". FR-4 run-admission retirement (silent-drop cap) already correctly stated (line 248-249). AD-23 lock-store placement details remain architectural (not PRD-level). Reviewed again 2026-08-26 — post-08-08 spec-estate and code motion reconciled in the appended section "Currency reconciliation — 2026-08-26" (Epics 12-19 delivery, four post-migration capability specs, CAP-19 query-plane ownership, spec archivals/parking).
@@ -3389,4 +3389,58 @@ enterprise input.
 
 **Content changed:** FR-71's identity sentence and `updated:`; this section. No FR added, renumbered or removed; no AD
 moves.
+
+## Currency reconciliation — 2026-10-25
+
+*Trigger: chain-currency `behind-code`. On 2026-10-25 marshal Story 103.1 (#2307, `67a4ae014c`) declared
+`numpy>=2.5.3` in the package `pyproject.toml`, atlas's code stage, three days after this PRD's 2026-10-22 stamp.*
+This section folds in the atlas landings since that stamp and the Spec memlog's entries of 2026-10-22 through
+2026-10-25: the operator's rulings on Story 37.6 (2026-10-23) and Story 37.12 (2026-10-24), and the decisions for
+37.5–37.13, 38.1, 34.12 and 27.6. Every one of those decisions is a story under an existing CAP. None mints or amends
+a CAP (`SPEC.md` still reads `updated: "2026-10-19"`), so no FR moves.
+
+- **FR-15 (pixi-first, conda-forge-only).** Holds as written. `numpy>=2.5.3` is now declared in `pyproject.toml:37`
+  and the package `pixi.toml:57`, at the floor the `pyforge-atlas` env resolves, and
+  `docs/reference/library-llms-full.md:349` already lists numpy. The red came from a test, not from an FR:
+  `tests/packaging/test_dependency_completeness.py` (AUD-ATLAS-010) checks that every hard import is a declared
+  dependency. It was red on `main` from Story 37.7's merge (#2294, 2026-10-23) until #2307, because no lane an atlas
+  landing runs includes it (retro-pyforge-atlas-2026-10-25 Finding 2; `DW-atlas-retro-2026-10-15-4`, open). Recorded
+  here; no FR added.
+- **FR-72 (a plain run fills every public dataset) ← CAP-64.** Two stories bring the network-blocked consequence
+  closer to the code:
+  - Story 34.12 (#2298): the three vulnerability feeds keep last-good under the marker instead of failing the build
+    (closes `DW-atlas-38-1-1`).
+  - Story 37.12 (#2299): the Pages job keeps those copies between runs in `actions/cache`. #2304 closed
+    `DW-atlas-37-12-1` once the operator raised the cache limits.
+
+  Epic 34 now runs 34.1–34.12; 34.11 and 34.12 were added after the decomposition line above was written.
+  **Recorded divergence, not repaired:** the first consequence does not hold on a fresh data root.
+  `register_pipelines()` puts `query_plane_cache` in `__default__` (`pipeline_registry.py:23`–`:24`). Its input,
+  `query_plane_estate_source`, has no producer until Story 36.3, which the operator's 2026-10-18 ruling keeps
+  `blocked`. So a plain `pyforge atlas run` stops at that load (`DW-atlas-37-2-1`, open, medium). The Pages job names
+  its pipelines instead.
+- **FR-73 ← CAP-65.** Holds as written. Stories 35.2–35.4 (#2279–#2281) take the batches from the universe behind
+  `pyforge.atlas.live_vcs_universe`, and they fill GitLab, Codeberg and the eight registries. The flag is off by
+  default and on in `dev` (`src/platform/config/flags.json`, `flag-overlays.json`).
+- **FR-77 ← CAP-69.** Holds as written. These stories landed under it:
+  - 37.4 (#2282), behind the new flag `pyforge.atlas.board_projections`;
+  - 37.11 (#2286), 37.5 (#2288), 37.9 (#2290), 37.10 (#2291), 37.8 (#2293) and 37.7 (#2294);
+  - 37.6 (#2295), under the operator's 2026-10-23 ruling: upload times come from each subdir's `repodata.json.zst`;
+  - 38.1 (#2296) and 37.13 (#2300).
+
+  The fourth consequence's "the six boards no pipeline feeds are backlog stories (Stories 37.5-37.10)" now reads as
+  history, because all six landed. Story 37.10 adds a twelfth registered pipeline, `catalog_index`. It runs after a
+  build and stays out of `__default__`; the spine records it against AD-3.
+- **FR-71 ← CAP-63.** Unchanged since its 2026-10-22 amendment. Story 37.12 changes only what the producer job
+  restores and saves. No data root is committed, and no secret is read.
+- **FR-7 (MCP surface).** Unaffected. No MCP tool is added, and the trigger set stays the eight `PIPELINE_NAMES`. The
+  four other registered pipelines are CLI-only by design (`tests/unit/mcp/test_audit_mapping.py:73`).
+- **FR-9 (the read surface).** Unaffected. Story 37.11 changes only a board note's label ("About this board" where the
+  board's dataset is available).
+
+Story 27.6 (#2301) changes tests only (CAP-8). No FR moves.
+
+**Content changed:** this section and `updated:`. No FR is added, renumbered or amended; the FR space stays FR-1..FR-77
+(FR-78 is the next free id). The spine's reconciliation of the same date records the two divergences found against
+the code: AD-3's pipeline count and the MCP registry wording.
 
