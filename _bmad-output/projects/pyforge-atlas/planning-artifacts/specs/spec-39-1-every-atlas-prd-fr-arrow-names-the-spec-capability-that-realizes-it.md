@@ -2,7 +2,7 @@
 title: "39.1: Every atlas PRD FR arrow names the Spec capability that realizes it"
 type: 'chore'
 created: '2026-10-25'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'f8803da678fc3f0864545db0135c865f7badb0f8'
 review_loop_iteration: 1
 followup_review_recommended: false
