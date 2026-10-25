@@ -2364,8 +2364,10 @@ Story 87.19 (the content gate judges only what a push sends).* Checked against e
 - **AD-81 (preserved work is a protected tag), for Story 87.19 (the content gate judges only what a push sends):** the
   gate still stands before every push of a `preserve/` or `archive/` tag, with the same rules: a purge-listed sha or
   path, a blob the secret scan flags, a file over the size cap. It now applies the blob rules to the objects the push
-  sends (what `git ls-remote origin` does not already reach, intermediate commits included), as Story 87.15's
-  acceptance criteria wrote them, not to the tagged commit's whole tree. An unreadable remote is a refusal. "Content
+  sends (what no branch or tag `git ls-remote origin` lists already reaches, intermediate commits included; pull refs
+  are not trusted), as Story 87.15's acceptance criteria wrote them, not to the tagged commit's whole tree. An
+  unreadable remote is a refusal. The batched read runs through `pyforge.core.process` (a concrete-only bytes path;
+  the port does not change), so `spec-pyforge-core`'s one sanctioned process seam holds. "Content
   that was only ever local reaches `origin` only after the operator reviews it row by row" does not move: the story
   pushes nothing.
 - Doctor Story 30.5's 2026-10-24 surface reconcile touches no marshal decision.
