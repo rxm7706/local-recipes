@@ -357,6 +357,6 @@ Type / Effort / Deps: fix / M / —.
 ## Auto Run Result
 
 Status: in-review  
-Implementation: marshal-mcp on official `MCPServer`, `mcp>=2.2` dependency, stdio preflight handshake via `McpProbePort` / `adapters/mcp_stdio_probe.py`, pure verdict in `core/mcp_probe.py`, wired through `_probe_mcp_servers` and `run_preflight(mcp_probe=…)`.  
-Verification (2026-10-25): `pyforge-marshal-test` green (13286 passed); `pyforge-marshal-coverage-gate` green; `docs-station-cli --check` green; `llms-full-check` clean; `python scripts/spec_surface_reconcile.py` OK after memlog reconcile on `spec-pyforge-marshal`, `spec-pyforge-core`, `spec-pyforge-doctor`.  
-Note: `pyforge-deps-test` reports a pre-existing `pyforge-atlas` import completeness failure unrelated to this diff.
+Implementation: marshal-mcp on official `MCPServer`, `mcp>=2.2` dependency, stdio preflight handshake via `McpProbePort` / `adapters/mcp_stdio_probe.py` (selectors-based deadline reads, concurrent stderr, process-group teardown including Windows branch), pure verdict in `core/mcp_probe.py`, wired through `_probe_mcp_servers` and `run_preflight(mcp_probe=…)`.  
+Verification (2026-10-25, build-auto fix pass after review round 2): `pyforge-marshal-test` green (13280 passed); `pyforge-marshal-coverage-gate` green; `lint-types` green; `docs-station-cli --check` green; `pixi run -e pyforge-guild python scripts/spec_surface_reconcile.py` OK; memlog reconcile on `spec-pyforge-marshal` and `spec-pyforge-core` naming `adapters/mcp_stdio_probe.py` and `tests/unit/test_mcp_story_103.py`.  
+Blocking condition: `landing_review: required` — independent re-review on draft PR before merge.
