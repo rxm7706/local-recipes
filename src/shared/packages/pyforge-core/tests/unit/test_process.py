@@ -580,10 +580,7 @@ def test_spawn_detached_wraps_a_generic_launch_oserror(process, tmp_path, monkey
 
 def test_run_bytes_delivers_stdin_and_returns_bytes(process, tmp_path):
     script = (
-        "import sys\n"
-        "data = sys.stdin.buffer.read()\n"
-        "sys.stdout.buffer.write(data)\n"
-        "sys.stdout.buffer.write(b'\\xff')\n"
+        "import sys\ndata = sys.stdin.buffer.read()\nsys.stdout.buffer.write(data)\nsys.stdout.buffer.write(b'\\xff')\n"
     )
     result = process.run_bytes(
         [sys.executable, "-c", script],

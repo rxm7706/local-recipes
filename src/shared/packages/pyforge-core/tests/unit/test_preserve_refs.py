@@ -490,9 +490,7 @@ def test_content_gate_ac4_tag_and_commit_message_secrets(git_pair: tuple[Path, P
     ref = render_preserve_ref(commit_sha=tip, producer="hand", project_slug="pyforge-marshal", story_key="87.19")
     msg = f"Preserve-Producer: hand\n\n{_SYNTHETIC_SECRET}"
     _run(repo, "tag", "-a", ref.removeprefix("refs/tags/"), "-m", msg, tip)
-    tag_findings = run_content_gate(
-        repo, commit=tip, purge_list=_EMPTY_PURGE, annotated_tag_ref=ref
-    )
+    tag_findings = run_content_gate(repo, commit=tip, purge_list=_EMPTY_PURGE, annotated_tag_ref=ref)
     assert any(f.reason is ContentGateReason.SECRET and "tag" in f.message for f in tag_findings)
 
 

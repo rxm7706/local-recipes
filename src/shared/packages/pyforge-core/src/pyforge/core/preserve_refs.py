@@ -197,9 +197,7 @@ class TagPreserveResult:
     noop: bool
 
 
-def _git(
-    repo: Path, *args: str, timeout_s: float | None = None, input: bytes | None = None
-) -> tuple[int, str, str]:
+def _git(repo: Path, *args: str, timeout_s: float | None = None, input: bytes | None = None) -> tuple[int, str, str]:
     if input is not None:
         rc, bout, berr = _git_bytes(repo, *args, input=input, timeout_s=timeout_s)
         return rc, bout.decode("utf-8", errors="replace"), berr.decode("utf-8", errors="replace")
@@ -769,7 +767,7 @@ def run_content_gate(
     for sha in sent_shas:
         obj_type, size = meta.get(sha, ("", 0))
         if obj_type == "blob":
-            label = f"file {path_by_sha[sha]!r}" if sha in path_by_sha else f"blob"
+            label = f"file {path_by_sha[sha]!r}" if sha in path_by_sha else "blob"
             if size > per_file_max_bytes:
                 findings.append(
                     ContentGateFinding(
