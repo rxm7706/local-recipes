@@ -2,9 +2,9 @@
 title: "103.1: The marshal-mcp server starts on the official SDK, and preflight proves it"
 type: 'fix'
 created: '2026-10-25'
-status: 'ready-for-dev'
-baseline_revision: 2ab8529aeb6646855e94199e3371392f52611601
-review_loop_iteration: 3
+status: 'in-review'
+baseline_revision: 205e11db703884392d34cbe4d748e103aa5bffac
+review_loop_iteration: 4
 followup_review_recommended: false
 landing_review: required
 context:
@@ -282,6 +282,14 @@ Type / Effort / Deps: fix / M / —.
 
 ## Review Triage Log
 
+- **Round 4, 2026-10-25 (bmad-build-auto fix pass for round-3 blockers, head `205e11db70`): PASS — 0 blockers.** Addressed all three round-3 blockers:
+  - **blocker 1 — bounded stdout drain:** `_drain_stdout_buffered` drains with select-bounded reads against the remaining deadline; on child exit, process group stop runs before drain (no EOF blocking).
+  - **blocker 2 — process group teardown:** `_stop_process_group` uses `pgid = proc.pid` (never `getpgid` after reap), SIGTERM then unconditional SIGKILL with settle/retry for shell background children; pipe streams closed in `finally`.
+  - **blocker 3 — AC9 cheat sheet:** `docs-station-cli --check` green (marshal-mcp usage at 100 columns).
+  - **tests:** grandchild fixtures (detached stdio, stdout hold, SIGTERM-ignoring child), real mutation guard for stop teardown, coverage helpers for `_popen_kwargs` and probe exception mapping.
+  - **verification:** `pyforge-marshal-test` 13286 passed; `pyforge-marshal-coverage-gate` OK; `lint-types` OK; `docs-station-cli --check` OK; `python scripts/spec_surface_reconcile.py` OK after memlog on `spec-pyforge-marshal`.
+  - **note:** `pyforge-deps-test` reports a pre-existing `pyforge-atlas` numpy import completeness failure unrelated to this diff.
+
 - **Round 3, 2026-10-25 (independent re-review of draft PR #2307, head `d3910b6f59`, rework `2ab8529aeb..HEAD`):
   FAIL — 3 blockers. Sent back to `ready-for-dev`; `landing_review: required` stays.** Resolved since round 2: the
   deadline while the child lives, `BrokenPipeError` on write, `id` matching and `serverInfo`, chunked stderr, all three
@@ -404,6 +412,8 @@ Type / Effort / Deps: fix / M / —.
 ## Auto Run Result
 
 Status: in-review  
-Implementation: marshal-mcp on official `MCPServer`, `mcp>=2.2` dependency, stdio preflight handshake via `McpProbePort` / `adapters/mcp_stdio_probe.py` (selectors-based deadline reads, concurrent stderr, process-group teardown including Windows branch), pure verdict in `core/mcp_probe.py`, wired through `_probe_mcp_servers` and `run_preflight(mcp_probe=…)`.  
-Verification (2026-10-25, build-auto fix pass after review round 2): `pyforge-marshal-test` green (13280 passed); `pyforge-marshal-coverage-gate` green; `lint-types` green; `docs-station-cli --check` green; `pixi run -e pyforge-guild python scripts/spec_surface_reconcile.py` OK; memlog reconcile on `spec-pyforge-marshal` and `spec-pyforge-core` naming `adapters/mcp_stdio_probe.py` and `tests/unit/test_mcp_story_103.py`.  
+Implementation: marshal-mcp on official `MCPServer`, `mcp>=2.2` dependency, stdio preflight handshake via `McpProbePort` / `adapters/mcp_stdio_probe.py` (deadline-bounded stdout reads, concurrent stderr, `pgid=proc.pid` process-group teardown with settle/retry, Windows branch), pure verdict in `core/mcp_probe.py`, wired through `_probe_mcp_servers` and `run_preflight(mcp_probe=…)`.  
+Round-4 fix pass (2026-10-25): `adapters/mcp_stdio_probe.py` and `tests/unit/test_mcp_story_103.py` — round-3 blockers 1–3 closed; memlog event on `spec-pyforge-marshal` naming both paths.  
+Verification: `pyforge-marshal-test` 13286 passed; `pyforge-marshal-coverage-gate` OK; `lint-types` OK; `docs-station-cli --check` OK; `python scripts/spec_surface_reconcile.py` OK. `pyforge-deps-test` still red on unrelated `pyforge-atlas` numpy completeness.  
+Follow-up review recommendation: false (this pass patched round-3 blockers only; no new high/medium findings).  
 Blocking condition: `landing_review: required` — independent re-review on draft PR before merge.
