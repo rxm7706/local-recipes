@@ -280,7 +280,7 @@ Type / Effort / Deps: fix / M / —.
   two more AC6 fixtures; `--format json` in AC7; the AD-3 step dropped (its meta-test pins the set); `DW-FU-18-2` kept
   as a kinship; cwd = the home; the existing preflight tests inject the fake probe; unit-suite placement for the
   coverage gate; `scripts/docs_station_cli.py` and `docs/reference/library-llms-full.md` joined the surface.
-- 2026-10-25 (dev pass 4): Residual risk gains the `${VAR}` bullet above. `McpProbeResult` carries
+- 2026-10-25 (dev pass 4): the `${VAR}` residual risk is recorded in the entry below (outside the contract). `McpProbeResult` carries
   `reported_server_name`, `tool_names` and `detail` (the probe's own one-line reason, redacted with the stderr tail) so
   AC1 can assert the server's name and the eight tool names. `tests/scripts/test_docs_station_cli.py` joins the surface
   (doctor's, with the generator): `capture_help` builds the child's environment deterministically (the AC9 root cause).
