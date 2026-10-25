@@ -18,9 +18,7 @@ def evaluate_mcp_probe(result: McpProbeResult, *, mcp_json_path: str) -> tuple[b
         detail += f", exit_code={result.exit_code}"
     if tail:
         detail += f", stderr={tail!r}"
-    message = (
-        f"MCP server {result.server_name!r} failed startup handshake ({detail})"
-    )
+    message = f"MCP server {result.server_name!r} failed startup handshake ({detail})"
     finding = Finding(
         code="MRS-PREFLIGHT-012",
         severity=Severity.ERROR,

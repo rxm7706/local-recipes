@@ -2787,7 +2787,6 @@ class _FakeMcpProbe:
         self._result = result
 
     def probe_server(self, **kwargs):
-        from pyforge.marshal.ports.mcp_probe import McpProbeResult
 
         if callable(self._result):
             return self._result(**kwargs)

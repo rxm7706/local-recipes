@@ -242,7 +242,6 @@ from ..adapters.harness_bmadloop import (
 )
 from ..adapters.mcp_stdio_probe import probe_server_from_rendered
 from ..adapters.vcs_git import GitVcs, VcsCommandError
-from ..core.mcp_probe import evaluate_mcp_probe
 from ..core import identity, policy, status
 from ..core.identity import MalformedStoryKeyError
 from ..core.journal import (
@@ -252,6 +251,7 @@ from ..core.journal import (
     mint_run_id,
     prepare_for_write,
 )
+from ..core.mcp_probe import evaluate_mcp_probe
 from ..core.model import Finding, Severity, build_envelope
 from ..core.refs import local_branch_ref
 from ..core.verdict import compute_verdict, exit_code_for
@@ -1737,9 +1737,7 @@ def run_preflight(
     data["verify_commands"] = verify_entries
 
     # --- MCP tool surface resolvability (Story 6.9, AD-43) -----------------------
-    mcp_entries, mcp_probe_findings = _probe_mcp_servers(
-        slug, home, effective, fs, harness, mcp_probe=mcp_probe
-    )
+    mcp_entries, mcp_probe_findings = _probe_mcp_servers(slug, home, effective, fs, harness, mcp_probe=mcp_probe)
     data["mcp_servers"] = mcp_entries
     findings.extend(mcp_probe_findings)
 

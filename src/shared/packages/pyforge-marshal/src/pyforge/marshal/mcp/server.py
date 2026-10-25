@@ -72,8 +72,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="marshal-mcp",
         description=(
-            "MCP server for pyforge-marshal (stdio transport). "
-            "Registered in marshal policy as [mcp_servers.marshal]."
+            "MCP server for pyforge-marshal (stdio transport). Registered in marshal policy as [mcp_servers.marshal]."
         ),
     )
     parser.add_argument(

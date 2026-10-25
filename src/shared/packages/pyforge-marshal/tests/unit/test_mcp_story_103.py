@@ -5,7 +5,6 @@ from __future__ import annotations
 import ast
 import json
 import shutil
-import subprocess
 import sys
 import textwrap
 from pathlib import Path
@@ -18,20 +17,19 @@ from pyforge.marshal.adapters.mcp_stdio_probe import (
     default_mcp_probe,
     probe_server_from_rendered,
 )
-from pyforge.marshal.cli.init import _probe_mcp_servers, run_preflight
-from pyforge.marshal.core import policy
+from pyforge.marshal.cli.init import run_preflight
 from pyforge.marshal.core.mcp_probe import evaluate_mcp_probe
 from pyforge.marshal.mcp.server import build_server, main
 from pyforge.marshal.ports.mcp_probe import McpProbeResult
 
 PACKAGE_SRC = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal"
 
+
 def test_default_mcp_probe_factory():
     assert isinstance(default_mcp_probe(), StdioMcpProbe)
 
 
 def test_read_json_line_bad_reply_and_error_reply():
-    import io
     import time
 
     class _Proc:
@@ -241,8 +239,7 @@ def test_stdio_probe_bad_reply(tmp_path):
 
 def test_stdio_probe_error_reply(tmp_path):
     script = _script_fixture(
-        'import json,sys\n'
-        'print(json.dumps({"jsonrpc":"2.0","id":1,"error":{"code":-1,"message":"nope"}}))\n',
+        'import json,sys\nprint(json.dumps({"jsonrpc":"2.0","id":1,"error":{"code":-1,"message":"nope"}}))\n',
         tmp_path,
     )
     result = StdioMcpProbe().probe_server(
