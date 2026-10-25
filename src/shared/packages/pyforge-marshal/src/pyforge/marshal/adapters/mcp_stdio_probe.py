@@ -145,9 +145,7 @@ class _ThreadChunks:
     def __init__(self, fd: int) -> None:
         self._chunks: queue.Queue[bytes] = queue.Queue()
         self._eof = False
-        self._thread = threading.Thread(
-            target=self._pump, args=(fd,), name="marshal-mcp-probe-stdout", daemon=True
-        )
+        self._thread = threading.Thread(target=self._pump, args=(fd,), name="marshal-mcp-probe-stdout", daemon=True)
         self._thread.start()
 
     def _pump(self, fd: int) -> None:
@@ -187,9 +185,7 @@ def _open_chunks(fd: int) -> _ChunkSource:
     return _SelectorChunks(fd)
 
 
-def _parse_buffered(
-    buf: bytearray, *, expected_id: int
-) -> tuple[dict[str, object] | None, _ReadError | None, str]:
+def _parse_buffered(buf: bytearray, *, expected_id: int) -> tuple[dict[str, object] | None, _ReadError | None, str]:
     """Consume complete lines from ``buf``: ``(reply, error, detail)`` for the request ``expected_id``.
 
     A line that is not a JSON object is ``bad-reply`` (the line is the detail); a JSON-RPC ``error`` addressed
