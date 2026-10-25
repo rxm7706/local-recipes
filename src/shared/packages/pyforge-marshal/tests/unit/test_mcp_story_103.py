@@ -82,9 +82,7 @@ def repo_root(tmp_path: Path) -> Path:
 # --- scripted servers -------------------------------------------------------------------------------------------
 
 _PGID_PREAMBLE = (
-    "import os as _os\n"
-    "with open({marker!r}, 'w', encoding='utf-8') as _f:\n"
-    "    _f.write(str(_os.getpgid(0)))\n"
+    "import os as _os\nwith open({marker!r}, 'w', encoding='utf-8') as _f:\n    _f.write(str(_os.getpgid(0)))\n"
 )
 
 _ANSWERING_BODY = """
@@ -392,7 +390,9 @@ def test_adapter_bad_reply_when_initialize_result_has_no_server_info(tmp_path: P
 
 
 def test_adapter_bad_reply_when_tools_list_result_has_no_tools(tmp_path: Path):
-    script, pgid_file = _py_server(tmp_path, "notools", _ANSWERING_BODY.replace('{"tools": [{"name": "alpha"}, {"name": "beta"}]}', "{}"))
+    script, pgid_file = _py_server(
+        tmp_path, "notools", _ANSWERING_BODY.replace('{"tools": [{"name": "alpha"}, {"name": "beta"}]}', "{}")
+    )
     result = _probe(tmp_path, script)
     assert result.outcome == "bad-reply"
     assert "tools" in result.detail
@@ -616,7 +616,9 @@ def test_read_reply_returns_the_matching_reply():
     os.write(write_end, _reply_line(1, {"ok": True}))
     source = _SelectorChunks(read_end)
     try:
-        reply, error, detail = _read_reply(_FakeProc(), source, bytearray(), deadline=time.monotonic() + 1, expected_id=1)
+        reply, error, detail = _read_reply(
+            _FakeProc(), source, bytearray(), deadline=time.monotonic() + 1, expected_id=1
+        )
     finally:
         source.close()
         os.close(write_end)
@@ -631,9 +633,13 @@ def test_read_reply_parses_what_an_exited_child_wrote_before_reporting_exited():
     os.close(write_end)
     source = _SelectorChunks(read_end)
     try:
-        reply, error, _ = _read_reply(_FakeProc(returncode=0), source, bytearray(), deadline=time.monotonic() + 1, expected_id=2)
+        reply, error, _ = _read_reply(
+            _FakeProc(returncode=0), source, bytearray(), deadline=time.monotonic() + 1, expected_id=2
+        )
         assert error is None and reply is not None and reply["id"] == 2
-        reply, error, _ = _read_reply(_FakeProc(returncode=0), source, bytearray(), deadline=time.monotonic() + 1, expected_id=3)
+        reply, error, _ = _read_reply(
+            _FakeProc(returncode=0), source, bytearray(), deadline=time.monotonic() + 1, expected_id=3
+        )
         assert (reply, error) == (None, "exited")
     finally:
         source.close()
@@ -776,7 +782,12 @@ def test_stop_windows_terminates_then_kills_and_sends_ctrl_break(monkeypatch: py
     assert gentle.calls == ["terminate", f"wait({probe_mod._TERM_GRACE_S})"]
     stubborn = _StopProc(pid=10, wait_outcomes=[None, 1])
     _stop_process_group(stubborn)
-    assert stubborn.calls == ["terminate", f"wait({probe_mod._TERM_GRACE_S})", "kill", f"wait({probe_mod._REAP_TIMEOUT_S})"]
+    assert stubborn.calls == [
+        "terminate",
+        f"wait({probe_mod._TERM_GRACE_S})",
+        "kill",
+        f"wait({probe_mod._REAP_TIMEOUT_S})",
+    ]
 
 
 def test_stop_windows_without_ctrl_break_only_signals_the_child(monkeypatch: pytest.MonkeyPatch):
@@ -862,10 +873,15 @@ def test_probe_server_on_windows_spawns_a_new_process_group_and_reads_through_th
     assert "terminate" in fake.calls
 
 
-def test_probe_server_maps_an_unexpected_exception_to_bad_reply_and_still_stops(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_probe_server_maps_an_unexpected_exception_to_bad_reply_and_still_stops(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
     script, pgid_file = _py_server(tmp_path, "boom", "import sys\nfor _line in sys.stdin:\n    pass\n")
 
     def exploding(*_args, **_kwargs):
+        deadline = time.monotonic() + 5
+        while not pgid_file.is_file() and time.monotonic() < deadline:  # let the child start before the blow-up
+            time.sleep(0.02)
         raise RuntimeError("boom")
 
     monkeypatch.setattr(probe_mod, "_handshake", exploding)
@@ -993,7 +1009,19 @@ class _FailIfCalledProbe:
         pytest.fail(f"the probe ran where no probe is due: {kwargs!r}")
 
 
-def _preflight_json(repo_root: Path, tmp_path: Path, monkeypatch, capsys, *, mcp_json, probe, slug="acme", server="atlas", command="atlas-mcp", binaries=("atlas-mcp",)):
+def _preflight_json(
+    repo_root: Path,
+    tmp_path: Path,
+    monkeypatch,
+    capsys,
+    *,
+    mcp_json,
+    probe,
+    slug="acme",
+    server="atlas",
+    command="atlas-mcp",
+    binaries=("atlas-mcp",),
+):
     import test_init as init_mod
 
     home = tmp_path / "loop-homes" / slug
@@ -1007,7 +1035,9 @@ def _preflight_json(repo_root: Path, tmp_path: Path, monkeypatch, capsys, *, mcp
     policy_path.write_text(f'[mcp_servers.{server}]\ncommand = "{command}"\n', encoding="utf-8")
     monkeypatch.setattr(init_module, "conventional_project_policy_path", lambda _slug: policy_path)
     vcs = init_mod.FakeVcs(repo_root=repo_root)
-    exit_code = run_preflight(init_mod._preflight_namespace(slug, fmt="json"), vcs=vcs, fs=fs, harness=harness, mcp_probe=probe)
+    exit_code = run_preflight(
+        init_mod._preflight_namespace(slug, fmt="json"), vcs=vcs, fs=fs, harness=harness, mcp_probe=probe
+    )
     envelope = json.loads(capsys.readouterr().out)
     return exit_code, envelope, home
 
@@ -1017,9 +1047,14 @@ def _preflight_012(envelope: dict) -> list[dict]:
 
 
 def test_probe_mcp_servers_started_is_startable_with_its_tool_count(repo_root, tmp_path, monkeypatch, capsys):
-    probe = _ScriptedProbe(McpProbeResult(outcome="started", server_name="atlas", tool_count=3, tool_names=("a", "b", "c")))
+    probe = _ScriptedProbe(
+        McpProbeResult(outcome="started", server_name="atlas", tool_count=3, tool_names=("a", "b", "c"))
+    )
     exit_code, envelope, home = _preflight_json(
-        repo_root, tmp_path, monkeypatch, capsys,
+        repo_root,
+        tmp_path,
+        monkeypatch,
+        capsys,
         mcp_json=json.dumps({"mcpServers": {"atlas": {"command": "atlas-mcp", "args": ["--x"], "env": {"A": "1"}}}}),
         probe=probe,
     )
@@ -1030,7 +1065,14 @@ def test_probe_mcp_servers_started_is_startable_with_its_tool_count(repo_root, t
     assert _preflight_012(envelope) == []
     # The handshake used the home's rendered entry, with the home as cwd.
     assert probe.calls == [
-        {"server_name": "atlas", "command": "atlas-mcp", "args": ("--x",), "env": {"A": "1"}, "cwd": str(home), "timeout_s": 15.0}
+        {
+            "server_name": "atlas",
+            "command": "atlas-mcp",
+            "args": ("--x",),
+            "env": {"A": "1"},
+            "cwd": str(home),
+            "timeout_s": 15.0,
+        }
     ]
 
 
@@ -1047,7 +1089,10 @@ def test_probe_mcp_servers_failure_outcome_is_not_startable_and_one_redacted_012
         )
     )
     exit_code, envelope, _ = _preflight_json(
-        repo_root, tmp_path, monkeypatch, capsys,
+        repo_root,
+        tmp_path,
+        monkeypatch,
+        capsys,
         mcp_json=json.dumps({"mcpServers": {"atlas": {"command": "atlas-mcp"}}}),
         probe=probe,
     )
@@ -1065,9 +1110,14 @@ def test_probe_mcp_servers_failure_outcome_is_not_startable_and_one_redacted_012
     assert _REDACTED in finding["message"]
 
 
-def test_probe_mcp_servers_unresolvable_command_keeps_its_message_and_runs_no_probe(repo_root, tmp_path, monkeypatch, capsys):
+def test_probe_mcp_servers_unresolvable_command_keeps_its_message_and_runs_no_probe(
+    repo_root, tmp_path, monkeypatch, capsys
+):
     exit_code, envelope, _ = _preflight_json(
-        repo_root, tmp_path, monkeypatch, capsys,
+        repo_root,
+        tmp_path,
+        monkeypatch,
+        capsys,
         mcp_json=json.dumps({"mcpServers": {"atlas": {"command": "definitely-not-a-real-binary-xyz"}}}),
         probe=_FailIfCalledProbe(),
         command="definitely-not-a-real-binary-xyz",
@@ -1081,7 +1131,9 @@ def test_probe_mcp_servers_unresolvable_command_keeps_its_message_and_runs_no_pr
 
 
 def test_probe_mcp_servers_missing_mcp_json_runs_no_probe(repo_root, tmp_path, monkeypatch, capsys):
-    exit_code, envelope, _ = _preflight_json(repo_root, tmp_path, monkeypatch, capsys, mcp_json=None, probe=_FailIfCalledProbe())
+    exit_code, envelope, _ = _preflight_json(
+        repo_root, tmp_path, monkeypatch, capsys, mcp_json=None, probe=_FailIfCalledProbe()
+    )
     assert exit_code != EXIT_OK
     assert envelope["data"]["mcp_servers"] == []
     (finding,) = _preflight_012(envelope)
@@ -1094,7 +1146,10 @@ def test_mutation_skipping_handshake_in_probe_would_miss_finding(repo_root, tmp_
         McpProbeResult(outcome="exited", server_name="atlas", exit_code=1, stderr_tail="ModuleNotFoundError: fastmcp")
     )
     exit_code, envelope, _ = _preflight_json(
-        repo_root, tmp_path, monkeypatch, capsys,
+        repo_root,
+        tmp_path,
+        monkeypatch,
+        capsys,
         mcp_json=json.dumps({"mcpServers": {"atlas": {"command": "atlas-mcp"}}}),
         probe=probe,
     )
@@ -1130,7 +1185,10 @@ def test_preflight_json_through_the_real_adapter_shows_marshal_mcp_startable_wit
 ):
     (tmp_path / "loop-homes" / "pyforge-marshal").mkdir(parents=True)  # the home is the server's cwd
     exit_code, envelope, _ = _preflight_json(
-        repo_root, tmp_path, monkeypatch, capsys,
+        repo_root,
+        tmp_path,
+        monkeypatch,
+        capsys,
         slug="pyforge-marshal",
         server="marshal",
         command="marshal-mcp",
@@ -1145,7 +1203,9 @@ def test_preflight_json_through_the_real_adapter_shows_marshal_mcp_startable_wit
     assert _preflight_012(envelope) == []
 
 
-def test_preflight_json_through_the_real_adapter_reports_a_fastmcp_style_crash(repo_root, tmp_path, monkeypatch, capsys):
+def test_preflight_json_through_the_real_adapter_reports_a_fastmcp_style_crash(
+    repo_root, tmp_path, monkeypatch, capsys
+):
     """A stand-in for the pre-103.1 server: ``marshal-mcp`` on PATH imports a module that is not installed."""
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
@@ -1158,7 +1218,10 @@ def test_preflight_json_through_the_real_adapter_reports_a_fastmcp_style_crash(r
     (tmp_path / "loop-homes" / "pyforge-marshal").mkdir(parents=True)
 
     exit_code, envelope, _ = _preflight_json(
-        repo_root, tmp_path, monkeypatch, capsys,
+        repo_root,
+        tmp_path,
+        monkeypatch,
+        capsys,
         slug="pyforge-marshal",
         server="marshal",
         command="marshal-mcp",

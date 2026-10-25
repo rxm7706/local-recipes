@@ -2824,7 +2824,9 @@ def test_preflight_no_mcp_servers_declared_skips_probe(repo_root, tmp_path, caps
     harness = _converged_harness()
     _seed_acknowledged(fs, tmp_path, ["claude"])
 
-    exit_code = run_preflight(_preflight_namespace(slug, fmt="json"), vcs=vcs, fs=fs, harness=harness, mcp_probe=_FAIL_IF_CALLED_MCP_PROBE)
+    exit_code = run_preflight(
+        _preflight_namespace(slug, fmt="json"), vcs=vcs, fs=fs, harness=harness, mcp_probe=_FAIL_IF_CALLED_MCP_PROBE
+    )
     assert exit_code == EXIT_OK
     out = capsys.readouterr().out
     envelope = json.loads(out)
@@ -2847,7 +2849,9 @@ def test_preflight_mcp_json_missing_reports_finding(repo_root, tmp_path, monkeyp
     policy_path.write_text('[mcp_servers.atlas]\ncommand = "atlas-mcp"\n', encoding="utf-8")
     monkeypatch.setattr(init_module, "conventional_project_policy_path", lambda slug: policy_path)
 
-    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness, mcp_probe=_FAIL_IF_CALLED_MCP_PROBE)
+    exit_code = run_preflight(
+        _preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness, mcp_probe=_FAIL_IF_CALLED_MCP_PROBE
+    )
     assert exit_code != EXIT_OK
     out = capsys.readouterr().out
     assert "MRS-PREFLIGHT-012" in out
@@ -2867,7 +2871,9 @@ def test_preflight_mcp_json_malformed_reports_finding(repo_root, tmp_path, monke
     policy_path.write_text('[mcp_servers.atlas]\ncommand = "atlas-mcp"\n', encoding="utf-8")
     monkeypatch.setattr(init_module, "conventional_project_policy_path", lambda slug: policy_path)
 
-    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness, mcp_probe=_FAIL_IF_CALLED_MCP_PROBE)
+    exit_code = run_preflight(
+        _preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness, mcp_probe=_FAIL_IF_CALLED_MCP_PROBE
+    )
     assert exit_code != EXIT_OK
     out = capsys.readouterr().out
     assert "MRS-PREFLIGHT-012" in out
@@ -2889,7 +2895,9 @@ def test_preflight_mcp_server_command_unresolvable_reports_finding(repo_root, tm
     policy_path.write_text('[mcp_servers.atlas]\ncommand = "definitely-not-a-real-binary-xyz"\n', encoding="utf-8")
     monkeypatch.setattr(init_module, "conventional_project_policy_path", lambda slug: policy_path)
 
-    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness, mcp_probe=_FAIL_IF_CALLED_MCP_PROBE)
+    exit_code = run_preflight(
+        _preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness, mcp_probe=_FAIL_IF_CALLED_MCP_PROBE
+    )
     assert exit_code != EXIT_OK
     out = capsys.readouterr().out
     assert "MRS-PREFLIGHT-012" in out
@@ -2923,7 +2931,9 @@ def test_preflight_mcp_server_relative_command_with_separator_never_resolvable(
     policy_path.write_text('[mcp_servers.atlas]\ncommand = "bin/atlas-mcp"\n', encoding="utf-8")
     monkeypatch.setattr(init_module, "conventional_project_policy_path", lambda slug: policy_path)
 
-    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness, mcp_probe=_FAIL_IF_CALLED_MCP_PROBE)
+    exit_code = run_preflight(
+        _preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness, mcp_probe=_FAIL_IF_CALLED_MCP_PROBE
+    )
     assert exit_code != EXIT_OK
     out = capsys.readouterr().out
     assert "MRS-PREFLIGHT-012" in out
