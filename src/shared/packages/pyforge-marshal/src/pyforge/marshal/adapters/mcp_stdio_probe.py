@@ -212,7 +212,12 @@ def _stop_process_group(proc: subprocess.Popen[bytes]) -> None:
         return
 
     # ``start_new_session=True`` makes the direct child the process-group leader.
+    import time
+
     pgid = proc.pid
+    if proc.poll() is not None:
+        # Shell wrappers may exit before a just-spawned background child joins the group.
+        time.sleep(0.05)
     try:
         os.killpg(pgid, signal.SIGTERM)
     except ProcessLookupError:
