@@ -2,7 +2,7 @@
 title: "105.1: Every marshal PRD FR arrow names the Spec capability that realizes it"
 type: 'chore'
 created: '2026-10-25'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false

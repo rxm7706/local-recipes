@@ -10156,7 +10156,7 @@ So that a requirement traces to its contract instead of to a number the fold cou
 **When** the story lands
 **Then** each of the 71 headings carries the arrow in the spec-pyforge-marshal memlog's 2026-10-25 re-map table, every cited CAP exists, and FR-144..FR-147 are named as awaiting a source-capability decision
 **And** doctor's `fr-without-cap` and the planning detectors stay green
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
