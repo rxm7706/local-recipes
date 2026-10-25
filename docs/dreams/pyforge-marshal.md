@@ -1608,6 +1608,34 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   Operator ruling, 2026-10-25: "Go with the migration: move marshal-mcp to the official SDK MCPServer, add a real
   --help, and make preflight run a startup handshake. Plan it as one marshal story through the full Dream-to-code
   chain." Owner `spec-pyforge-marshal`. → Epic 103 / Story 103.1, specced 2026-10-25.
+- **2026-10-25 (the content gate refuses what origin already holds)** — **Found: no preserve built on today's `main`
+  can pass the content gate, and the gate never reads a blob an earlier commit added.** On 2026-10-25 `marshal status`
+  reported 24 preserve tags that exist only locally (`MRS-STATUS-016`; 29 with the `archive/` twins), and the operator
+  asked to push them. `marshal preserve push` refused because `pyforge.marshal.preserve_refs` is off. A read-only run
+  of the gate's own check over the 29 tags then refused 25 of them. `run_content_gate` (Story 87.15) reads every blob
+  in the tagged commit's tree, not the blobs the push would add, and today's `origin/main` fails it too: three slide
+  decks over the 5 MB cap, and synthetic `sk-ant-`, `ghp_` and private-key strings in test fixtures and two story
+  specs, all of them already public. Story 87.15's acceptance criteria refuse a preserve that *adds* a credential or an oversize file;
+  the code judges the whole snapshot. Two more costs follow from that. A blob that an intermediate commit added and a
+  later one removed is never read, although the push sends it. And each run starts two `git` processes per blob, about
+  80 s per tag on this repository. Turning the flag on would push the 4 tags that pass and refuse the rest, and every
+  dispatch and spin preserve would be refused the same way. A wider scan of the objects the 29 pushes would send
+  (about 900; the number moves with `origin`'s refs) found no secret and no file over the cap. **What it looks like
+  when fixed:** the gate judges the objects a push sends: everything reachable from the tagged commit that no branch
+  or tag `git ls-remote origin` lists already reaches (pull refs are not trusted). The secret scan and the size cap
+  run on every sent blob, intermediate commits included, and on the tag and commit messages, through one batched read
+  on a bytes path of `pyforge.core.process`, and
+  the purge-list rules still hold. A preserve whose snapshot adds nothing but clean content passes. Run read-only over
+  this repository's 29 local-only tags, the gate refuses none. `MRS-STATUS-016` names a push path that works while the
+  flag is off, and a second `--push-reviewed` run skips the rows the first one pushed. **Constraints:** a fix under
+  CAP-287 (FR-234, AD-81), with no CAP and no flag: it makes the gate do what Story 87.15's acceptance criteria already
+  say. The code lives in `pyforge.core.preserve_refs` and `pyforge.core.process`, which `spec-pyforge-core` and
+  `spec-pyforge-unifying-strategy` co-govern; `ProcessPort` does not change. The story pushes nothing and the flag stays off: the push stays the operator's,
+  after the row-by-row review in Story 87.12's manifest. **Kinships:** Story 87.15 (the gate), Story 87.12 (the
+  reviewed manifest and `--push-reviewed`), Story 87.9 (`git ls-remote`, never local presence). Operator ruling,
+  2026-10-25: "start the option 2 chain here", where option 2 is "fix the gate, then push through the reviewed
+  manifest", chosen over turning the flag on in `dev`, a one-run flags override and a plain `git push`. Owner
+  `spec-pyforge-marshal`. → Epic 87 / Story 87.19, specced 2026-10-25.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint

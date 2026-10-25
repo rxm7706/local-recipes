@@ -1308,7 +1308,9 @@ def _preserve_debt_findings(slug: str | None, debt: Mapping[str, object]) -> lis
                 severity=Severity.WARN,
                 message=(
                     f"{where}{len(tags)} preserve tag(s) exist only locally -- `git ls-remote` does not list "
-                    f"them on origin: {_name_refs(tags)} -- push each with `marshal preserve push`"
+                    f"them on origin: {_name_refs(tags)} -- push with `marshal preserve push` once "
+                    f"`pyforge.marshal.preserve_refs` is on, or "
+                    f"`scripts/legacy_preserve_promote.py --push-reviewed` for a reviewed legacy twin"
                 ),
                 path=path,
             )

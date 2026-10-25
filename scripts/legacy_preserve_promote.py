@@ -26,11 +26,14 @@ from pyforge.core.preserve_refs import (
     ARCHIVE_REF_PREFIX,
     ATTEMPT_PRESERVE_BRANCH_PREFIX,
     ATTEMPT_PRESERVE_DIRTY_PREFIX,
+    ORIGIN_REMOTE,
     PRESERVE_REF_PREFIX,
+    PreserveGitError,
     PreserveRefNameError,
     PreserveTrailers,
     parse_preserve_ref,
     push_preserve_ref,
+    remote_ref_names,
     render_archive_heads_ref,
     render_archive_tags_ref,
     render_preserve_ref,
@@ -496,6 +499,11 @@ def push_reviewed_rows(repo: Path, rows: list[ManifestRow]) -> list[str]:
     notes: list[str] = []
     run_count = 0
     story_counts: dict[str, int] = {}
+    on_origin = remote_ref_names(
+        repo,
+        [f"{PRESERVE_REF_PREFIX}*", f"{ARCHIVE_REF_PREFIX}*"],
+        remote=ORIGIN_REMOTE,
+    )
     for row in rows:
         if row.action != "write_twin" or not row.twin_ref:
             continue
@@ -505,12 +513,19 @@ def push_reviewed_rows(repo: Path, rows: list[ManifestRow]) -> list[str]:
         if not _tag_exists(repo, row.twin_ref):
             notes.append(f"refused push {row.twin_ref}: twin not present locally")
             continue
-        result = push_preserve_ref(
-            repo,
-            row.twin_ref,
-            run_push_count=run_count,
-            story_push_counts=story_counts,
-        )
+        if on_origin is not None and row.twin_ref in on_origin:
+            notes.append(f"skipped push {row.twin_ref}: already on origin")
+            continue
+        try:
+            result = push_preserve_ref(
+                repo,
+                row.twin_ref,
+                run_push_count=run_count,
+                story_push_counts=story_counts,
+            )
+        except PreserveGitError as exc:
+            notes.append(f"refused push {row.twin_ref}: {exc}")
+            continue
         if result.pushed:
             run_count += 1
             notes.append(f"pushed {row.twin_ref}")

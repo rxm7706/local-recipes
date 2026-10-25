@@ -7051,6 +7051,14 @@ class TestPreserveDebt:
         assert payload["verdict"] == "warn"
         assert exit_code == 0
 
+    def test_mrs_status_016_names_both_push_paths(self, tmp_path, capsys, monkeypatch):
+        """Story 87.19 AC10: remedy names ``marshal preserve push`` and ``--push-reviewed``."""
+        _exit, payload, _row = _debt_sweep(capsys, monkeypatch, tmp_path, git=_git_answers(tags=(_ACME_TAG,)))
+        msg = next(f["message"] for f in payload["findings"] if f["code"] == "MRS-STATUS-016")
+        assert "marshal preserve push" in msg
+        assert "pyforge.marshal.preserve_refs" in msg
+        assert "legacy_preserve_promote.py --push-reviewed" in msg
+
     def test_a_tag_origin_lists_is_no_debt_and_adds_no_row_key(self, tmp_path, capsys, monkeypatch):
         _exit, payload, row = _debt_sweep(
             capsys, monkeypatch, tmp_path, git=_git_answers(tags=(_ACME_TAG,), on_origin=(_ACME_TAG,))
