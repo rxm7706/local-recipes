@@ -23,12 +23,28 @@ from pyforge.marshal.adapters.mcp_stdio_probe import (
     default_mcp_probe,
     probe_server_from_rendered,
 )
+from pyforge.marshal.cli import init as init_module
 from pyforge.marshal.cli.init import run_preflight
 from pyforge.marshal.core.mcp_probe import evaluate_mcp_probe
 from pyforge.marshal.mcp.server import build_server, main
 from pyforge.marshal.ports.mcp_probe import McpProbeResult
 
 PACKAGE_SRC = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal"
+
+
+@pytest.fixture(autouse=True)
+def _sandbox_loop_home_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
+
+
+@pytest.fixture(autouse=True)
+def _sandbox_state_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("MARSHAL_STATE_HOME", str(tmp_path / "state-home"))
+
+
+@pytest.fixture
+def repo_root(tmp_path: Path) -> Path:
+    return tmp_path / "repo"
 
 
 def test_default_mcp_probe_factory():
@@ -636,9 +652,9 @@ def test_mutation_timed_out_not_startable():
     assert ok is False
 
 
-def test_mutation_skipping_handshake_in_probe_would_miss_finding(tmp_path, monkeypatch, capsys):
+def test_mutation_skipping_handshake_in_probe_would_miss_finding(repo_root, tmp_path, monkeypatch, capsys):
     """AC8: resolvable server with failing probe must emit MRS-PREFLIGHT-012."""
-    from tests.unit import test_init as init_mod
+    import test_init as init_mod
 
     class _FailProbe:
         called = False
@@ -654,8 +670,6 @@ def test_mutation_skipping_handshake_in_probe_would_miss_finding(tmp_path, monke
 
     slug = "acme"
     home = tmp_path / "loop-homes" / slug
-    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
-    monkeypatch.setenv("MARSHAL_STATE_HOME", str(tmp_path / "state"))
     fs = init_mod.FakeFs(project_dirs={home})
     fs.texts[home / ".mcp.json"] = json.dumps({"mcpServers": {"atlas": {"command": "atlas-mcp"}}})
     harness = init_mod._converged_harness()
@@ -664,12 +678,12 @@ def test_mutation_skipping_handshake_in_probe_would_miss_finding(tmp_path, monke
     policy_path = tmp_path / "marshal-policy.toml"
     policy_path.write_text('[mcp_servers.atlas]\ncommand = "atlas-mcp"\n', encoding="utf-8")
     monkeypatch.setattr(
-        init_mod,
+        init_module,
         "conventional_project_policy_path",
         lambda s: policy_path,
     )
 
-    vcs = init_mod.FakeVcs(repo_root=tmp_path)
+    vcs = init_mod.FakeVcs(repo_root=repo_root)
     exit_code = run_preflight(
         init_mod._preflight_namespace(slug, fmt="json"),
         vcs=vcs,
@@ -684,14 +698,12 @@ def test_mutation_skipping_handshake_in_probe_would_miss_finding(tmp_path, monke
     assert "exited" in out
 
 
-def test_preflight_json_mcp_startable_eight_tools(tmp_path, monkeypatch, capsys):
+def test_preflight_json_mcp_startable_eight_tools(repo_root, tmp_path, monkeypatch, capsys):
     """AC7: real preflight JSON shows startable marshal-mcp with tool_count 8."""
-    from tests.unit import test_init as init_mod
+    import test_init as init_mod
 
     slug = "pyforge-marshal"
     home = tmp_path / "loop-homes" / slug
-    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
-    monkeypatch.setenv("MARSHAL_STATE_HOME", str(tmp_path / "state"))
     fs = init_mod.FakeFs(project_dirs={home})
     fs.texts[home / ".mcp.json"] = json.dumps({"mcpServers": {"marshal": {"command": "marshal-mcp"}}})
     harness = init_mod._converged_harness()
@@ -699,8 +711,8 @@ def test_preflight_json_mcp_startable_eight_tools(tmp_path, monkeypatch, capsys)
     init_mod._seed_acknowledged(fs, tmp_path, ["claude"])
     policy_path = tmp_path / "marshal-policy.toml"
     policy_path.write_text('[mcp_servers.marshal]\ncommand = "marshal-mcp"\n', encoding="utf-8")
-    monkeypatch.setattr(init_mod, "conventional_project_policy_path", lambda s: policy_path)
-    vcs = init_mod.FakeVcs(repo_root=tmp_path)
+    monkeypatch.setattr(init_module, "conventional_project_policy_path", lambda s: policy_path)
+    vcs = init_mod.FakeVcs(repo_root=repo_root)
 
     exit_code = run_preflight(
         init_mod._preflight_namespace(slug, fmt="json"),
@@ -719,9 +731,9 @@ def test_preflight_json_mcp_startable_eight_tools(tmp_path, monkeypatch, capsys)
     assert "MRS-PREFLIGHT-012" not in out
 
 
-def test_preflight_json_fastmcp_stand_in_reports_012(tmp_path, monkeypatch, capsys):
+def test_preflight_json_fastmcp_stand_in_reports_012(repo_root, tmp_path, monkeypatch, capsys):
     """AC7: failing handshake surfaces ModuleNotFoundError in MRS-PREFLIGHT-012."""
-    from tests.unit import test_init as init_mod
+    import test_init as init_mod
 
     class _FastmcpStandIn:
         def probe_server(self, **kwargs):
@@ -734,8 +746,6 @@ def test_preflight_json_fastmcp_stand_in_reports_012(tmp_path, monkeypatch, caps
 
     slug = "pyforge-marshal"
     home = tmp_path / "loop-homes" / slug
-    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
-    monkeypatch.setenv("MARSHAL_STATE_HOME", str(tmp_path / "state"))
     fs = init_mod.FakeFs(project_dirs={home})
     fs.texts[home / ".mcp.json"] = json.dumps({"mcpServers": {"marshal": {"command": "marshal-mcp"}}})
     harness = init_mod._converged_harness()
@@ -743,8 +753,8 @@ def test_preflight_json_fastmcp_stand_in_reports_012(tmp_path, monkeypatch, caps
     init_mod._seed_acknowledged(fs, tmp_path, ["claude"])
     policy_path = tmp_path / "marshal-policy.toml"
     policy_path.write_text('[mcp_servers.marshal]\ncommand = "marshal-mcp"\n', encoding="utf-8")
-    monkeypatch.setattr(init_mod, "conventional_project_policy_path", lambda s: policy_path)
-    vcs = init_mod.FakeVcs(repo_root=tmp_path)
+    monkeypatch.setattr(init_module, "conventional_project_policy_path", lambda s: policy_path)
+    vcs = init_mod.FakeVcs(repo_root=repo_root)
 
     exit_code = run_preflight(
         init_mod._preflight_namespace(slug, fmt="json"),
