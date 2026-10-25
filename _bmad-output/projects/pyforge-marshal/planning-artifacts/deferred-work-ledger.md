@@ -9140,3 +9140,14 @@ status: open
   severity: low
   promoted: 2026-10-15 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-marshal-105-1: Marshal PRD FR-144..FR-147 (section 16.5, detector self-verification) have no realizing capability: they keep the fold's counted arrows CAP-102..CAP-105 until the operator picks their source.
+
+- source_spec: `planning-artifacts/specs/spec-105-1-every-marshal-prd-fr-arrow-names-the-spec-capability-that-realizes-it.md`
+  summary: Marshal PRD FR-144..FR-147 (section 16.5, detector self-verification) have no realizing capability: they keep the fold's counted arrows CAP-102..CAP-105 until the operator picks their source.
+  evidence: Story 105.1 (2026-10-25) re-mapped the fold's counted FR arrows from evidence, and the operator ruled to leave these four unchanged pending a source-capability decision. Their PRD section names spec-dream-to-code-model-self-verification. Before the 2026-09-16 fold (1e845b55fc^) that Spec's "Scope (capabilities)" list held exactly these four: fixture meta-tests for dream_chain_check.py, fixture meta-tests for bmad_drift_check.py, a detector-incident log and the --dreams hygiene mode. The fold minted no spec-pyforge-marshal CAP from them (no CAP carries that provenance, and the Spec is now an absorbed stub), so the capabilities were dropped while their stories (marshal 17.1, 17.2) stayed done. Their current arrows point at CAP-102..CAP-105, which are fleet-chain-completeness capabilities. Options: restore the four capabilities the fold dropped as spec-pyforge-marshal CAPs (through bmad-spec) and point the FRs at them; or re-point them at the station that now owns detector self-verification; or retire the FRs.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/prds/prd-pyforge-marshal-2026-07-25/prd.md (FR-144..FR-147)
+  origin: spec-deferred 34ffbcae964e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-25 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
