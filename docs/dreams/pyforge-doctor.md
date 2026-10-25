@@ -86,7 +86,7 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
-- **2026-10-25 (docs-currency's two detector gaps)** — **Found: `docs-currency` reports a generator that cannot run
+- **2026-10-24 (docs-currency's two detector gaps)** — **Found: `docs-currency` reports a generator that cannot run
   as a stale page, and flags true references as dead in two shapes.** Story 30.4's review recorded both
   (`DW-doctor-30-4-1`, `DW-doctor-30-4-2`). (1) `_check_generated_page` reads every non-zero exit of a generator's
   `--check` as "stale against its generator", so `scripts/docs_bmad_estate.py`'s exit 2 (could not run, where
@@ -95,13 +95,14 @@ forward. That dream is archived; this one is the real record.
   absent path; and a backticked `bmad-*` token resolves only as a skill, a script or an exact pixi task, so a
   detector named by its source (`bmad-output-hygiene`, task `bmad-output-hygiene-check`) reads as a dead skill.
   `scripts/governance_currency_check.py` mirrors both scan rules and has both gaps. Story 30.4 reworded three true
-  references around them. **What it looks like when fixed:** a generator exit of 2 (or any exit but 0 and 1) is
-  reported as could-not-run, never as stale; the ignore check also tries the path with a trailing `/`; a `bmad-*` or
+  references around them. **What it looks like when fixed:** a generator exit of 2 (or any exit but 0 and 1, or a
+  crash that exits 1 with a traceback) is reported as could-not-run, never as stale; the ignore check also tries a
+  path the page wrote with a trailing `/` in that slashed form; a `bmad-*` or
   `skf-*` token resolves when `<token>-check` is a pixi task; both detectors change together, and the kedro-viz and
   `bmad-output-hygiene` references read as they did (`.claude/worktrees/` is ignored only by a local
   `.git/info/exclude`, so a fresh clone rightly reads it as absent, and the page keeps its placeholder paths). **Constraints:** a fix under CAP-84, no CAP and no flag; no check name, severity or
   threshold changes; the two detectors keep their mirrored rules identical. Owner `spec-pyforge-doctor`. → Epic 30 /
-  Story 30.5, specced 2026-10-25.
+  Story 30.5, specced 2026-10-24.
 - **2026-10-24 (the warn backlog behind three preflight lines)** — **Found: a full-scope `pr-preflight` prints one
   line per detector, and three of those lines stood for 146 standing warnings.** `dreams-hygiene` printed one
   `dream-readme-missing` line; run alone it reports 121 warnings (64 `dream-readme-missing`, 23

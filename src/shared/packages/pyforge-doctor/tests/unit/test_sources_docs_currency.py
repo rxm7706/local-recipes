@@ -811,6 +811,19 @@ def test_a_generator_exit_1_still_reads_stale(tmp_path: Path, monkeypatch: pytes
     assert "stale against its generator" in findings[0].message
 
 
+def test_a_generator_that_crashes_reads_could_not_run_not_stale(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """An uncaught exception exits 1 too, the stale code; its traceback marks a crash, not a hand edit."""
+    _generated_tree(tmp_path, monkeypatch, exit_code=1)
+    stub = tmp_path / "checkout" / "scripts" / "docs_pixi_tasks.py"
+    stub.write_text("raise RuntimeError('no head to stamp')\n", encoding="utf-8")
+    findings = [f for f in docs_currency.gather(tmp_path) if f.check == "docs-currency-generated-stale"]
+    assert len(findings) == 1
+    assert "could not run generator scripts/docs_pixi_tasks.py" in findings[0].message
+    assert "crashed" in findings[0].message
+    assert "stale against its generator" not in findings[0].message
+    assert findings[0].evidence["exit"] == 1
+
+
 def _authored_tree(tmp_path: Path, body: str, *, gitignore: str = "", pixi_toml: str = "") -> None:
     _init_repo(tmp_path)
     pages = [
@@ -828,15 +841,21 @@ def _authored_tree(tmp_path: Path, body: str, *, gitignore: str = "", pixi_toml:
 
 
 def test_an_absent_directory_matched_only_by_a_directory_rule_is_not_dead(tmp_path: Path):
-    """`docs/dashboard/kedro-viz/` is ignored by a directory-only rule and staged only at build time."""
-    _authored_tree(
-        tmp_path,
-        "The export lands in `docs/build-export/`; `docs/never-there/` is a typo.\n",
-        gitignore="docs/build-export/\n",
-    )
-    findings = [f for f in docs_currency.gather(tmp_path) if f.check == "docs-currency-authored-stale"]
-    assert len(findings) == 1
-    assert findings[0].evidence["dead_references"] == ["docs/never-there"]
+    """`docs/dashboard/kedro-viz/` is ignored by a directory-only rule and staged only at build time.
+
+    Only a reference the page writes with the slash is retried; written without it, the same path reads
+    as a file, and a deleted file is dead.
+    """
+    dead_by_body = {}
+    for name, body in {
+        "directory": "The export lands in `docs/build-export/`; `docs/never-there/` is a typo.\n",
+        "file": "`docs/build-export` named as a file is dead.\n",
+    }.items():
+        _authored_tree(tmp_path / name, body, gitignore="docs/build-export/\n")
+        findings = [f for f in docs_currency.gather(tmp_path / name) if f.check == "docs-currency-authored-stale"]
+        assert len(findings) == 1
+        dead_by_body[name] = findings[0].evidence["dead_references"]
+    assert dead_by_body == {"directory": ["docs/never-there"], "file": ["docs/build-export"]}
 
 
 def test_a_bmad_token_naming_a_check_task_is_not_dead(tmp_path: Path):

@@ -115,15 +115,23 @@ def test_a_bmad_token_naming_a_check_task_resolves(tmp_path, monkeypatch):
 
 
 def test_an_absent_directory_matched_only_by_a_directory_rule_is_ignored(tmp_path, monkeypatch):
-    """git cannot tell an absent path is a directory, so `docs/build-export/` matches only the slashed form."""
+    """git cannot tell an absent path is a directory, so `docs/build-export/` matches only the slashed form.
+
+    Only a reference the document writes with the slash is retried; the same path written without it
+    reads as a file, and a deleted file is dead.
+    """
     for var in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR"):
         monkeypatch.delenv(var, raising=False)
     mod = _load_detector()
     repo = tmp_path / "repo"
-    repo.mkdir()
+    (repo / "docs").mkdir(parents=True)
     subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
     (repo / ".gitignore").write_text("docs/build-export/\n", encoding="utf-8")
+    (repo / "docs" / "page.md").write_text(
+        "Staged into `docs/build-export/`; `docs/build-export` named as a file and"
+        " `docs/never-there/` are dead.\n",
+        encoding="utf-8",
+    )
     monkeypatch.setattr(mod, "ROOT", repo)
-    assert mod._is_git_ignored("docs/build-export")
-    assert mod._is_git_ignored("docs/build-export/")
-    assert not mod._is_git_ignored("docs/never-there")
+    dead = [f["reference"] for f in mod._check_document("docs/page.md")]
+    assert dead == ["docs/build-export", "docs/never-there"]

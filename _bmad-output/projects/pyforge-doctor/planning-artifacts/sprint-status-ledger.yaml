@@ -102,7 +102,7 @@ development_status:
   30-2-docs-map-yaml-is-the-registry-map-md-is-its-render-and-docs-currency-reds-a-stale-page: done
   30-3-the-reference-pages-are-generated-pixi-tasks-station-clis-detectors-skills-and-stamped: done
   30-4-the-docs-dreams-and-planning-warn-backlog-is-cleared: done
-  30-5-docs-currency-tells-a-generator-that-cannot-run-from-a-stale-page: backlog
+  30-5-docs-currency-tells-a-generator-that-cannot-run-from-a-stale-page: done
   31-1-every-doctor-source-names-the-branch-it-reads-by-its-full-refname: done
   32-1-the-gates-base-normalizer-names-the-remote-tracking-ref: done
   33-1-the-deferred-work-source-reds-a-done-story-whose-recommended-follow-up-review-nothing-carries: done
@@ -221,7 +221,7 @@ development_status:
   epic-29-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional
-  epic-30: in-progress
+  epic-30: done
   epic-30-retrospective: optional
   epic-31: done
   epic-31-retrospective: optional
