@@ -292,6 +292,11 @@ Type / Effort / Deps: fix / M / —.
   stdin/stdout/stderr pipes and a live `Popen` handle's process-group teardown, the same capability gap as
   `harness_bmadloop`'s stdio passthrough -- no `ProcessPort` method offers it.
 
+- 2026-10-25 (dev pass 4, orchestrator verify step): the atlas package `pyproject.toml` / `pixi.toml` gained `numpy>=2.5.3`
+  so `pyforge-deps-test`, a verify command of this story, is green (its red was atlas Story 37.7's undeclared module-level
+  import, on `main` too); named on the `spec-pyforge-atlas` memlog. `scripts/.spec-surface-baseline.json` is left as it
+  was at `e7d271fa2f`: a dispatch run never stamps its own baseline.
+
 ## Review Triage Log
 
 - **Dev pass 4, 2026-10-25 (Claude Fable 5.1, frontier tier; from HEAD `e7d271fa2f`; the implementer's pass, not a
@@ -590,12 +595,16 @@ Verification (every exit code read from `$?`, never through a pipe):
   reconcile` wraps); the reconcile itself was not re-run so `.steward/estate-refresh/2026-10-14.json` stays as restored
   from `origin/main` (round-5 should-fix 8).
 - `python scripts/spec_surface_reconcile.py`: exit 0 and `pixi run --frozen -e pyforge-guild spec-surface-check`: exit 0
-  after the three memlog events (`spec-pyforge-marshal`, `spec-pyforge-core`, `spec-pyforge-doctor`) and the scoped stamps
-  (`--spec pyforge-marshal/spec-pyforge-core`, `--spec pyforge-doctor/spec-pyforge-doctor`, then
-  `--spec pyforge-marshal/spec-pyforge-marshal` after this entry was written).
+  after the memlog events (`spec-pyforge-marshal`, `spec-pyforge-core`, `spec-pyforge-doctor`, `spec-pyforge-atlas`).
+  No scoped stamp was kept: the dispatch forbids `--write-baseline` in a producer run (a producer that stamps its own
+  baseline launders drift), so `scripts/.spec-surface-baseline.json` was restored to its state at `e7d271fa2f` after
+  the implementer stamped it; both checks pass on the memlog movement alone, and the landing supervisor stamps.
 - `PYFORGE_PREFLIGHT_SCOPE=full pixi run -e pyforge-guild pr-preflight` (TMPDIR off tmpfs): exit **1**. 37 lanes selected; 34 ok; one red, `detectors-ci`, on two findings, neither this change's: (a) `ledger-direction` — `pyforge-marshal/87-19` landed-but-unpromoted: Story 87.19 merged to `main` after this branch forked (`d287eceb0a`, 05:25), `origin/main`'s ledger has `87-19 … done` and this worktree's ledger has no such key — clears when the landing merges `origin/main` (22 commits behind); (b) `chain-currency` staleness, edge `code→retro` (code 2026-10-25, newest marshal retro 2026-10-11): `origin/main` carries the same edge (its newest retro is also `retro-pyforge-marshal-2026-10-11.md`, its last marshal `src/` commit is `a21fc23200`, 87.19, 2026-10-25), so it is the fleet's state, not this branch's; the runbook remedy is a real marshal retrospective, planning work outside a fix story (and `epic-103-retrospective` is reserved for after this epic lands). Two lanes were cancelled by the stop-on-red: `pyforge-steward-test` (run green separately above, 2981 passed) and `test-ci` (the CFE suite in `local-recipes`, hours long; its `meta/` tier — the one that holds `test_spec_surface_check.py` and the `pixi.toml`/`pixi.lock` guards — run alone: `pixi run --frozen -e local-recipes pytest .claude/skills/conda-forge-expert/tests/meta -m "not network"` exit 0, 7813 passed, 6 skipped; the unit and integration tiers are left to CI, which arbitrates them). Lane logs: `~/.cache/pyforge-preflight-tmp/pyforge-preflight-jm7gfh0p/`.
-- `pixi run --frozen -e pyforge-ci pyforge-deps-test`: exit 1 — the one red, `pyforge-atlas` imports `numpy` without
-  declaring it (`test_every_hard_import_is_a_declared_dependency[pyforge-atlas]`); red on `main` too (round 5), a file
-  this branch does not touch, not this story's. 129 passed, 3 skipped otherwise.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test`: exit 0 — 130 passed, 3 skipped. It was red on `main` and on this
+  branch (`test_every_hard_import_is_a_declared_dependency[pyforge-atlas]`: `pipelines/derived_artifacts/alternatives.py`,
+  atlas Story 37.7, imports `numpy` with no declaration). The command is one of this story's two verify commands, so the
+  orchestrator's verify step declared `numpy>=2.5.3` (the version in the `pyforge-atlas` env, present transitively) in
+  the atlas package `pyproject.toml` and `pixi.toml`, named both on the `spec-pyforge-atlas` memlog; no root `pixi.toml`,
+  `pixi.lock` or `environment.yaml` change (pixi does not rehash a path dependency's own manifest).
 Follow-up review recommendation: false — nothing new was found beyond the round-5 list; every item was closed, not deferred.
 Blocking condition: `landing_review: required` — independent re-review on the draft PR before merge.
