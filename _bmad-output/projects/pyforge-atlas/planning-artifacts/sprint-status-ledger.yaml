@@ -140,7 +140,7 @@ development_status:
   37-8-the-export-purls-lists-the-purl-artifacts: done
   37-9-the-mapping-gap-classifies-the-unmapped-packages: done
   38-1-the-semantic-store-reads-its-upload-times-and-archived-flag: done
-  39-1-every-atlas-prd-fr-arrow-names-the-spec-capability-that-realizes-it: backlog
+  39-1-every-atlas-prd-fr-arrow-names-the-spec-capability-that-realizes-it: done
   4-1-integrate-kedro-dagster-for-scheduling-execution: done
   4-2-integrate-kedro-viz-expose-a-pixi-task: done
   5-1-define-the-boring-semantic-layer-bsl-models: done
@@ -223,7 +223,7 @@ development_status:
   epic-37-retrospective: done
   epic-38: done
   epic-38-retrospective: done
-  epic-39: backlog
+  epic-39: done
   epic-39-retrospective: optional
   epic-4: done
   epic-4-retrospective: done
