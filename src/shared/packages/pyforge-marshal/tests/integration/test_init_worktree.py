@@ -31,7 +31,9 @@ from pathlib import Path
 
 import pytest
 
+from pyforge.marshal.adapters.vcs_git import GitVcs
 from pyforge.marshal.cli.main import main
+from pyforge.marshal.seed.state import store as seed_state_store
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
@@ -330,6 +332,41 @@ def test_preflight_refuses_an_unprovisioned_loop_home(tmp_path, monkeypatch, cap
     assert "marshal init" in out
 
 
+def _packaged_model_ignores_template_path() -> Path:
+    store_mod = Path(seed_state_store.__file__).resolve()
+    return store_mod.parents[1] / "templates" / "files" / "model-ignores.gitignore.j2"
+
+
+def _model_ignores_template_body(*, include_root_mcp_json_rule: bool = True) -> str:
+    body = _packaged_model_ignores_template_path().read_text(encoding="utf-8")
+    if not include_root_mcp_json_rule:
+        body = body.replace("/.mcp.json\n", "")
+    return body
+
+
+def _seed_model_ignores_gitignore(repo: Path, *, include_root_mcp_json_rule: bool = True) -> None:
+    """Story 104.1: the home's checkout must carry the packaged ``model-ignores`` body."""
+    region_body = _model_ignores_template_body(include_root_mcp_json_rule=include_root_mcp_json_rule)
+    gitignore = (
+        "# marshal-seed:begin region=model-ignores model-version=1.0.0 sha=00000000\n"
+        f"{region_body}"
+        "# marshal-seed:end region=model-ignores\n"
+    )
+    (repo / ".gitignore").write_text(gitignore, encoding="utf-8")
+    _git(repo, "add", ".gitignore")
+    _git(repo, "commit", "-m", "seed model-ignores gitignore")
+
+
+def _seed_mcp_servers_policy(repo: Path, slug: str) -> None:
+    policy_dir = repo / "_bmad-output" / "projects" / slug / "planning-artifacts"
+    (policy_dir / "marshal-policy.toml").write_text(
+        '[mcp_servers.test]\ncommand = "true"\nargs = []\n',
+        encoding="utf-8",
+    )
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "declare mcp server")
+
+
 def _seed_real_gitignore(repo: Path) -> None:
     """Commits the SAME two ``.gitignore`` patterns this repo's own root
     ``.gitignore`` carries for a loop home's ``_bmad/custom/.active-project``
@@ -347,6 +384,79 @@ def _seed_real_gitignore(repo: Path) -> None:
     )
     _git(repo, "add", ".gitignore")
     _git(repo, "commit", "-m", "seed gitignore")
+
+
+def test_init_rendered_root_mcp_json_leaves_home_clean(tmp_path, monkeypatch, capsys):
+    """Story 104.1 AC3: ``marshal init``'s ``.mcp.json`` render must not trip
+    ``has_uncommitted_changes`` when the checkout carries ``/.mcp.json`` in
+    ``model-ignores``."""
+    slug = "acme"
+    repo = _build_repo(tmp_path, slug)
+    _seed_model_ignores_gitignore(repo)
+    _seed_mcp_servers_policy(repo, slug)
+    loop_home_root = tmp_path / "loop-homes"
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(loop_home_root))
+    monkeypatch.chdir(repo)
+
+    assert main(["init", slug]) == 0
+    capsys.readouterr()
+    home = loop_home_root / slug
+    assert (home / ".mcp.json").is_file()
+
+    vcs = GitVcs()
+    assert vcs.has_uncommitted_changes(home) is False
+    assert _git(home, "status", "--porcelain").stdout.strip() == ""
+
+
+def test_nested_mcp_json_is_not_hidden_by_root_anchor(tmp_path, monkeypatch, capsys):
+    """Story 104.1 AC4: ``/.mcp.json`` ignores only the repository root."""
+    slug = "acme"
+    repo = _build_repo(tmp_path, slug)
+    nested = repo / "pkg"
+    nested.mkdir()
+    (nested / ".gitkeep").write_text("", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "tracked subdir")
+    _seed_model_ignores_gitignore(repo)
+    _seed_mcp_servers_policy(repo, slug)
+    loop_home_root = tmp_path / "loop-homes"
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(loop_home_root))
+    monkeypatch.chdir(repo)
+
+    assert main(["init", slug]) == 0
+    capsys.readouterr()
+    home = loop_home_root / slug
+    nested_mcp = home / "pkg" / ".mcp.json"
+    nested_mcp.parent.mkdir(parents=True, exist_ok=True)
+    nested_mcp.write_text('{"mcpServers": {}}', encoding="utf-8")
+
+    check = subprocess.run(
+        ["git", "-C", str(home), "check-ignore", str(nested_mcp.relative_to(home))],
+        capture_output=True,
+        text=True,
+    )
+    assert check.returncode == 1
+    status = _git(home, "status", "--porcelain").stdout
+    assert "pkg/.mcp.json" in status.replace("\\", "/")
+
+
+def test_init_rendered_root_mcp_json_without_ignore_rule_is_dirty(tmp_path, monkeypatch, capsys):
+    """Story 104.1 AC5: without ``/.mcp.json`` in the template-built ignore file,
+    the home reports dirty after init renders the file."""
+    slug = "acme"
+    repo = _build_repo(tmp_path, slug)
+    _seed_model_ignores_gitignore(repo, include_root_mcp_json_rule=False)
+    _seed_mcp_servers_policy(repo, slug)
+    loop_home_root = tmp_path / "loop-homes"
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(loop_home_root))
+    monkeypatch.chdir(repo)
+
+    assert main(["init", slug]) == 0
+    capsys.readouterr()
+    home = loop_home_root / slug
+    vcs = GitVcs()
+    assert vcs.has_uncommitted_changes(home) is True
+    assert ".mcp.json" in _git(home, "status", "--porcelain").stdout
 
 
 @pytest.mark.slow
