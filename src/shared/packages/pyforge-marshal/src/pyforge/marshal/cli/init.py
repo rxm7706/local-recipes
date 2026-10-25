@@ -523,9 +523,16 @@ def _probe_mcp_servers(
     home's OWN rendered ``.mcp.json`` -- never ``~/.claude.json`` (AD-43's
     hard constraint: the user-scoped registry is never read as authority
     and never written). One bundled code, ``MRS-PREFLIGHT-012``, covers all
-    three sub-cases (missing file, malformed file, unresolvable command) --
-    mirrors ``MRS-PREFLIGHT-008``'s own precedent for bundling closely
-    related "not satisfiably recorded" sub-cases under one code."""
+    four sub-cases (missing file, malformed file, unresolvable command, and --
+    Story 103.1 -- a resolvable command whose server fails the stdio startup
+    handshake) -- mirrors ``MRS-PREFLIGHT-008``'s own precedent for bundling
+    closely related "not satisfiably recorded" sub-cases under one code.
+
+    Story 103.1: a server whose command resolved is then started through
+    ``mcp_probe`` (the ``McpProbePort`` DI seam; production supplies the stdio
+    adapter) from the home's own rendered entry, and its entry gains
+    ``startable`` and ``tool_count``. A command that does not resolve keeps its
+    message and runs no probe; a project with no declared server runs none."""
     declared = effective.mcp_servers.value
     if not declared:
         return [], []

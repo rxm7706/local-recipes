@@ -6,7 +6,7 @@ registration-time-only dependency (atlas pattern) so tool bodies import
 without the SDK installed.
 
 Story 18.2 parity / coverage helpers live under ``.parity`` / ``.coverage``.
-They are FastMCP-free. Coverage is *not* imported here so
+They import no MCP SDK. Coverage is *not* imported here so
 ``python -m pyforge.marshal.mcp.coverage`` does not hit a double-load
 ``RuntimeWarning`` from package ``__init__`` pre-importing the module.
 """
