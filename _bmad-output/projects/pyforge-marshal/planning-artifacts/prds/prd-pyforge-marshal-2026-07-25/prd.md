@@ -3459,9 +3459,9 @@ the 2026-10-25 "approved re-map" decision on `spec-pyforge-marshal`'s memlog. By
   CAP-1 and CAP-2.
 
 **Not re-mapped:** FR-144..FR-147 (§ 16.5, detector self-verification). Their named Spec,
-`spec-dream-to-code-model-self-verification`, is absorbed and its CAPs now describe the `verify_scope` primitive, so no
-capability carries these four requirements. They keep their counted arrows until the operator picks a source:
-`DW-marshal-105-1`.
+`spec-dream-to-code-model-self-verification`, listed exactly these four as its scope items, but the fold minted no
+capability from them, so none carries these requirements now. They keep their counted arrows until the operator picks
+a source (restoring the dropped capabilities is the first option): `DW-marshal-105-1`.
 
 ### The FR space: no FR registered
 

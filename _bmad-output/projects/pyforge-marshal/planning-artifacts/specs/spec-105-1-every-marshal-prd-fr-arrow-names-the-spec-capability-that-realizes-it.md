@@ -5,6 +5,7 @@ created: '2026-10-25'
 status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
+declared_low_risk: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/prds/prd-pyforge-marshal-2026-07-25/prd.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
@@ -18,7 +19,7 @@ deferred:
   - summary: >-
       Marshal PRD FR-144..FR-147 (section 16.5, detector self-verification) have no realizing capability: they keep the fold's counted arrows CAP-102..CAP-105 until the operator picks their source.
     evidence: |-
-      Story 105.1 (2026-10-25) re-mapped the fold's counted FR arrows from evidence, and the operator ruled to leave these four unchanged pending a source-capability decision. Their PRD section names spec-dream-to-code-model-self-verification, whose status is absorbed and whose CAP-1..CAP-3 now describe the verify_scope primitive, not fixture meta-tests, a detector-incident log or the --dreams mode. Their current arrows point at spec-pyforge-marshal CAP-102..CAP-105, which are fleet-chain-completeness capabilities. Options: re-point them at the Spec or station that now owns detector self-verification (doctor is the likely owner), mint a marshal CAP for them, or retire the FRs.
+      Story 105.1 (2026-10-25) re-mapped the fold's counted FR arrows from evidence, and the operator ruled to leave these four unchanged pending a source-capability decision. Their PRD section names spec-dream-to-code-model-self-verification. Before the 2026-09-16 fold (1e845b55fc^) that Spec's "Scope (capabilities)" list held exactly these four: fixture meta-tests for dream_chain_check.py, fixture meta-tests for bmad_drift_check.py, a detector-incident log and the --dreams hygiene mode. The fold minted no spec-pyforge-marshal CAP from them (no CAP carries that provenance, and the Spec is now an absorbed stub), so the capabilities were dropped while their stories (marshal 17.1, 17.2) stayed done. Their current arrows point at CAP-102..CAP-105, which are fleet-chain-completeness capabilities. Options: restore the four capabilities the fold dropped as spec-pyforge-marshal CAPs (through bmad-spec) and point the FRs at them; or re-point them at the station that now owns detector self-verification; or retire the FRs.
     location: >-
       _bmad-output/projects/pyforge-marshal/planning-artifacts/prds/prd-pyforge-marshal-2026-07-25/prd.md (FR-144..FR-147)
     severity: low
@@ -50,7 +51,8 @@ deferred:
   `← spec-<old> CAP-k` provenance.
 - **The rewrite.** Each of the 71 headings' arrow is replaced, nothing else on the line. Cross-Spec arrows use the PRD's
   existing form, `← spec-pyforge-core CAP-n` (as FR-209/210/226 already do) and `← spec-pyforge-testing-charter CAP-n`.
-- **FR-144..FR-147 stay.** Their source Spec is absorbed and no capability carries them. Per the ruling they keep
+- **FR-144..FR-147 stay.** Their source Spec's four scope items are exactly these requirements, but the fold
+  minted no CAP from them, so no capability carries them now. Per the ruling they keep
   their arrows, the PRD's currency section names them as awaiting a source-capability decision, and the `deferred:`
   item above becomes a deferred-work ledger row.
 - **The record.** A PRD `## 44. Currency reconciliation — 2026-10-25 (Story 105.1)` section lists the re-map by
@@ -136,7 +138,16 @@ Implementation: the 71 PRD FR heading arrows rewritten from the memlog table (`#
 - 2026-10-25: minted from the Dream entry of 2026-10-25 (the PRD's FR arrows were numbered, not traced) at the
   operator's ruling "Apply the PRD FR→CAP re-map as proposed: 71 headings through a chore story chain, and leave
   FR-144..FR-147 unchanged with a note that they need a source-capability decision." `type: chore`, no flag, no CAP.
+- 2026-10-25: implemented in the chain PR (71 arrows, PRD § 44, re-stamps, DW-marshal-105-1); moved to `in-review`.
+- 2026-10-25: review round 1 corrected the FR-144..FR-147 evidence (the absorbed Spec listed them as its four scope
+  items; the fold dropped them, not re-scoped them) in § 44, this spec's `deferred:` item, the DW row and the memlog.
 
 ## Review Triage Log
 
-- No review has run yet.
+- **Round 1, 2026-10-25 (independent review of `fcb7f234fe` + `6f9731fe49`): PASS, 0 blockers.** The 71 applied arrows
+  equal the approved table; every cited CAP exists; detectors unaffected (all 71 FRs are baseline-exempt for
+  `fr-without-cap`). Applied: the false FR-144..FR-147 evidence corrected everywhere; `declared_low_risk` added;
+  Change Log entries; a `spec-one-chain-per-station` memlog entry; `test-architecture.md` regenerated. Raised for the
+  operator because they change approved rows: FR-170 (CAP-90, not CAP-92); FR-175..FR-177 (CAP-4 / CAP-4, CAP-91 /
+  CAP-90, not CAP-2); FR-184 (CAP-123..CAP-125); FR-188 (CAP-50..CAP-52); FR-189 (CAP-61..CAP-63); FR-59 (+CAP-206);
+  FR-60 (+CAP-206, CAP-210, CAP-211); nits FR-139 (+CAP-234), FR-172/173 (+CAP-9), FR-179 (+CAP-5).
