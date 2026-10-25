@@ -109,15 +109,19 @@ def _guild_hosted_packages(root: Path) -> set[str]:
 
 
 # Variables that make rich (and typer, which builds its console on rich) treat
-# a pipe as a forced terminal. With one of them set, rich sizes its output from
-# the console -- 80 columns when TERM is `dumb`/`unknown`, else the pty's width
-# -- BEFORE it reads COLUMNS, so the COLUMNS pin below is silently ignored:
-# measured with `scribe --help` 2026-10-25 (plain: 100 columns; FORCE_COLOR=1
-# TERM=dumb: 80; FORCE_COLOR=1 alone: the terminal's 140). A harness that sets
-# any of them rendered an 80-column page that `--check` from a plain shell then
-# read as stale (marshal Story 103.1, AC9). TERMINAL_WIDTH is typer's own
-# width override, inherited from whoever ran the generator; none of these has
-# any business in a captured --help.
+# a pipe as a forced terminal. Two things then go wrong with the capture, both
+# measured with `scribe --help` under rich 15.0.0 / typer 0.27.2 on 2026-10-25:
+# (1) forced AND TERM is `dumb`/`unknown` -> rich's dumb-terminal early return
+#     sizes the console 80x25 before COLUMNS is read, so the COLUMNS pin below
+#     is ignored and the text wraps at 80 (the three stale renders marshal Story
+#     103.1 found; `--check` from a plain shell read every one as stale);
+# (2) forced otherwise -> COLUMNS is honoured (rich reads it in Console.__init__
+#     and again in Console.size; visible width 100), but the forced console
+#     emits ANSI styling -- 154 escape sequences in that one --help, bold/dim that
+#     NO_COLOR does not remove -- so escape codes pollute the captured page.
+# Scrubbing the variables removes both. TERMINAL_WIDTH is typer's own width
+# override, inherited from whoever ran the generator; none of these has any
+# business in a captured --help.
 _TERMINAL_FORCING_VARS = (
     "FORCE_COLOR",
     "PY_COLORS",
