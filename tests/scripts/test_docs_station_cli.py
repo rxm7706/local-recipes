@@ -145,3 +145,36 @@ def test_main_write_then_check_roundtrip(tmp_path: Path, monkeypatch: pytest.Mon
     # regenerated -> --check reds it.
     monkeypatch.setattr(m, "capture_help", lambda script: "fixed help text plus a new verb")
     assert m.main() == 1
+
+
+def test_capture_help_scrubs_terminal_forcing_variables_and_pins_columns(monkeypatch: pytest.MonkeyPatch):
+    """Marshal Story 103.1 (AC9): rich/typer ignore COLUMNS when the caller's
+    environment forces a terminal (FORCE_COLOR, PY_COLORS, GITHUB_ACTIONS, ...),
+    so a harness rendered this page at 80 columns and `--check` from a plain
+    shell read it as stale. The child's environment carries none of those
+    variables, whatever the caller had, and pins COLUMNS=100 and NO_COLOR=1."""
+    import subprocess
+
+    seen: dict[str, dict[str, str]] = {}
+
+    def fake_run(argv, **kwargs):
+        seen["env"] = kwargs["env"]
+        return subprocess.CompletedProcess(argv, 0, stdout="usage: x [-h]\n", stderr="")
+
+    monkeypatch.setattr(m.subprocess, "run", fake_run)
+    monkeypatch.setattr(m.shutil, "which", lambda name: f"/opt/bin/{name}")
+    for key in m._TERMINAL_FORCING_VARS:
+        monkeypatch.setenv(key, "1")
+    monkeypatch.setenv("TERM", "dumb")
+    monkeypatch.setenv("COLUMNS", "80")
+    monkeypatch.setenv("PATH", "/opt/bin")
+
+    assert m.capture_help("x") == "usage: x [-h]\n"
+
+    env = seen["env"]
+    assert not (set(env) & set(m._TERMINAL_FORCING_VARS)), sorted(set(env) & set(m._TERMINAL_FORCING_VARS))
+    assert env["COLUMNS"] == "100"
+    assert env["NO_COLOR"] == "1"
+    # The rest of the caller's environment still reaches the child (PATH above all).
+    assert env["PATH"] == "/opt/bin"
+    assert env["TERM"] == "dumb"
