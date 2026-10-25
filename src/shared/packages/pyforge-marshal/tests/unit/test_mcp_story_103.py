@@ -341,31 +341,18 @@ def test_probe_leaves_no_grandchild_process_group(tmp_path):
 
 
 def test_probe_exited_grandchild_detached_pipes_gone(tmp_path):
-    """AC6: shell exits while a grandchild with detached stdio still lives in the group."""
+    """AC6: ``sleep … & exit 1`` with detached stdio leaves a background child in the group."""
     pgid_file = tmp_path / "pgid.txt"
-    script = _script_fixture(
-        textwrap.dedent(
-            f"""
-            import os, subprocess, sys
-            marker = {str(pgid_file)!r}
-            with open(marker, "w") as f:
-                f.write(str(os.getpgid(0)))
-            subprocess.Popen(
-                [sys.executable, "-c", "import time; time.sleep(600)"],
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-            raise SystemExit(1)
-            """
-        ),
-        tmp_path,
+    marker = str(pgid_file)
+    shell_cmd = (
+        f"{sys.executable} -c \"import os; open({marker!r}, 'w').write(str(os.getpgid(0)))\"; "
+        "sleep 600 </dev/null >/dev/null 2>&1 & exit 1"
     )
     t0 = time.monotonic()
     result = StdioMcpProbe().probe_server(
         server_name="t",
-        command=sys.executable,
-        args=(script,),
+        command="/bin/sh",
+        args=("-c", shell_cmd),
         env={},
         cwd=str(tmp_path),
         timeout_s=2,

@@ -175,6 +175,14 @@ def _read_json_line(
         sel.close()
 
 
+def _popen_kwargs(*, start_new_session: bool) -> dict[str, bool | int]:
+    if sys.platform == "win32":
+        return {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
+    if start_new_session:
+        return {"start_new_session": True}
+    return {}
+
+
 def _child_exit_code(proc: subprocess.Popen[bytes]) -> int | None:
     if proc.poll() is not None:
         return proc.returncode
