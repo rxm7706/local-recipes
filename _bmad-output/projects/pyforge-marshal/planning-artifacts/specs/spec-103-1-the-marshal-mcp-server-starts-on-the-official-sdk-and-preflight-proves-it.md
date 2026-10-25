@@ -2,8 +2,8 @@
 title: "103.1: The marshal-mcp server starts on the official SDK, and preflight proves it"
 type: 'fix'
 created: '2026-10-25'
-status: 'ready-for-dev'
-baseline_revision: 205e11db703884392d34cbe4d748e103aa5bffac
+status: 'in-progress'
+baseline_revision: e7d271fa2f1b43d644413c946478c65cdf3a0be1
 review_loop_iteration: 5
 followup_review_recommended: false
 landing_review: required
