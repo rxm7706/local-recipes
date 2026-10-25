@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-24'
 status: 'done'
 baseline_revision: '9ab7ef1cf1'
-review_loop_iteration: 2
+review_loop_iteration: 3
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
@@ -50,7 +50,8 @@ each detector as one summary line, so the backlog is read as three findings and 
    claim the page makes that the source backs, correct what changed, fix each dead reference (or mark a deliberate
    historical citation with the `governance-currency:ignore` markers), then set `verified: 2026-10-24`.
 3. For each Dream class: move the `status:` comment to the next line; retarget each dead Kinship link to the Dream that
-   absorbed its target (a fold's "Consolidated into" banner, a rename) or drop it where none did; add a
+   absorbed its target (a fold's "Consolidated into" banner, a rename), or make it plain text or a plain link where
+   none did; add a
    `## Realization log` to each archived Dream without one, from its own history.
 4. Add one `docs/dreams/README.md` row per missing Dream, derived from its own frontmatter (`title:`, `status:`), in
    a table for the backlog; replace the README's sentence that rows are not added by hand with the ruling. Most of
@@ -79,7 +80,8 @@ Type / Effort / Deps: fix / L / S-30.3.
 - **AC2 — Re-verified, not re-stamped.** Each of the 19 pages' `verified:` moves only with a recorded review of each
   stale source (Auto Run Result lists, per page, what changed and what was corrected).
 - **AC3 — Detectors untouched.** No file under `src/shared/packages/pyforge-doctor/src/` changes; under `scripts/`
-  only the new `docs_bmad_estate.py` door is added and `spec_surface_allowlist.txt` gains its line; doctor's
+  only the new `docs_bmad_estate.py` door is added, `spec_surface_allowlist.txt` gains its line and
+  `.spec-surface-baseline.json` takes the scoped stamps; doctor's
   `tests/` change only in the live-tree pins; no check, threshold or severity changes.
 - **AC4 — README policy.** The README carries a row for every Dream file, and its backlog sentence states the ruling.
 - **AC5 — Suites and gates.** `pixi run -e pyforge-doctor pyforge-doctor-test` green; full-scope `pr-preflight` exit 0.
@@ -145,6 +147,14 @@ Type / Effort / Deps: fix / L / S-30.3.
   counts, AC3 and the epic Surface name every changed file class, and the decision's dead-reference clause is
   corrected on the memlog. The stale baseline keys for `pyforge-genesis` are not this story's.
 
+### 2026-10-24 — Review 3 (independent subagent, read-only): PASS, 0 blockers
+- verdicts: 1 should-fix carried (S5), 5 nits; all fixed.
+- S5: the full-scope preflight result is recorded in the Auto Run Result.
+- Nits: the hygiene test's module docstring names the live orphan row's new purpose; the Kinship wording is
+  corrected on the memlog, in Approach 3 and in the Dream entry (nothing was dropped); the epic Surface names the
+  real citing records and AC3 names the baseline; the steward stamp's `pixi.toml` row is explained below; the
+  Charter's quoted amendment says its link was unlinked.
+
 ## Spec Change Log
 
 - 2026-10-24: minted with Story 30.4 under Epic 30 from the Dream entry of that date.
@@ -189,6 +199,18 @@ Type / Effort / Deps: fix / L / S-30.3.
 - Doctor's live-tree pins follow the cleared state: `test_live_tree_dream_readme_missing_count` and
   `test_live_tree_kinship_wikilink_dead_count` assert 0 (AGENTS.md pre-PR item 8's shape); the live orphan row pins
   each of the five files this story cited to the record that cites it, so an orphan added elsewhere stays a warn.
+- Scoped stamps (`a7f7ff3a8e`): `--spec pyforge-doctor/spec-pyforge-doctor` and
+  `--spec pyforge-steward/spec-pyforge-steward`, from a clean tree after `git add`; `spec-surface-check` exit 0. The
+  steward stamp also moved `spec-pyforge-steward`'s baseline row for `pixi.toml`, changed by atlas Story 38.1
+  (`ca442c6f75`), which reconciled it on `spec-pyforge-core` and `spec-pyforge-unifying-strategy`; one clean
+  co-governor clears a path (the overlap-tolerance rule), so the row was already reconciled, only not restamped. No
+  other Spec governs a changed file (`spec-pyforge-charter` sits under `docs/governance/`, which spec-surface does not
+  scan). The review-3 nit fixes then touched the doctor test's docstring and memlog, and doctor was stamped again.
+- Full-scope `pr-preflight` (`TMPDIR=$HOME/.cache/pyforge-preflight-tmp PYFORGE_PREFLIGHT_SCOPE=full`): first run
+  exit 1, only `ledger-direction`'s fail for atlas `27-6` (landed on `main` as `ddb19793d3` after this branch was cut,
+  so this branch's atlas ledger lacked it); after merging `origin/main` (`f3420328c6`), exit 0, 26 of 37 lanes. Its
+  one remaining note is the expected pre-merge `done-but-unmerged` warn for 30-4. The review-3 nit fixes after it
+  are docs, a test docstring, memlogs and the doctor stamp; the pre-push hook's preflight covers them.
 - Outside these three detectors and not changed: `status-body-consistency` warns on 12 `SPEC.md` files' open
   questions, none of them touched here.
 - Residual risks: the 64 interim README rows (Approach 4); `DW-doctor-30-4-1` (`docs-currency` reads a generator's

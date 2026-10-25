@@ -10,8 +10,10 @@ scrub (``GIT_DIR``/``GIT_WORK_TREE`` inherited from a nested worktree's own
 environment would otherwise point every fixture repo's ``git`` calls at
 THIS repo instead of the tmp one).
 
-The two live-repo tests (zero false positives against warden; >=1 true
-positive elsewhere) run ``gather`` against the real monorepo root, resolved
+The two live-repo tests (zero false positives against warden; the five
+orphans doctor Story 30.4 cited stay cited by their records -- until
+2026-10-24 the second asserted a live true positive) run ``gather`` against
+the real monorepo root, resolved
 the same guarded way ``test_hygiene_definitions.py`` does (this file sits at
 the identical ``tests/unit/`` depth, so the same ``parents[6]`` lands at the
 monorepo root; an ``IndexError`` degrades to a skip).

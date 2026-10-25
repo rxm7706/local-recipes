@@ -1046,8 +1046,8 @@ herald broadcast slack,email --channel engineering-updates
 - **2026-08-08 (amendment)** — **`owner: guild` closes at one Dream; `pyforge-genesis`
   retires as a name and is absorbed here** (operator decision). §5 previously read
   *"reserved for the **two** Dreams that precede the stations — this Charter … and
-  `pyforge-genesis`, the operating-model seed,"* and located both chains in a
-  `pyforge-genesis` project. That project had already dissolved on 2026-08-02, leaving
+  `pyforge-genesis`, the operating-model seed,"* (its link to the retired Dream unlinked on 2026-10-24, doctor Story
+  30.4) and located both chains in a `pyforge-genesis` project. That project had already dissolved on 2026-08-02, leaving
   the constitutive pair split across two Dreams and two `docs/governance/` Specs for no
   remaining reason: the installer half had moved to the Marshal on 2026-07-28, and what
   was left was one record with two names. The seed's content is preserved verbatim as
