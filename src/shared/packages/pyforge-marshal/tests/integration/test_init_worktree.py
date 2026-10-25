@@ -32,6 +32,7 @@ from pathlib import Path
 import pytest
 
 from pyforge.marshal.adapters.vcs_git import GitVcs
+from pyforge.marshal.cli import config as marshal_config
 from pyforge.marshal.cli.main import main
 from pyforge.marshal.seed.state import store as seed_state_store
 
@@ -397,6 +398,7 @@ def test_init_rendered_root_mcp_json_leaves_home_clean(tmp_path, monkeypatch, ca
     loop_home_root = tmp_path / "loop-homes"
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(loop_home_root))
     monkeypatch.chdir(repo)
+    monkeypatch.setattr(marshal_config, "repo_root", lambda: repo)
 
     assert main(["init", slug]) == 0
     capsys.readouterr()
@@ -422,6 +424,7 @@ def test_nested_mcp_json_is_not_hidden_by_root_anchor(tmp_path, monkeypatch, cap
     loop_home_root = tmp_path / "loop-homes"
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(loop_home_root))
     monkeypatch.chdir(repo)
+    monkeypatch.setattr(marshal_config, "repo_root", lambda: repo)
 
     assert main(["init", slug]) == 0
     capsys.readouterr()
@@ -450,10 +453,12 @@ def test_init_rendered_root_mcp_json_without_ignore_rule_is_dirty(tmp_path, monk
     loop_home_root = tmp_path / "loop-homes"
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(loop_home_root))
     monkeypatch.chdir(repo)
+    monkeypatch.setattr(marshal_config, "repo_root", lambda: repo)
 
     assert main(["init", slug]) == 0
     capsys.readouterr()
     home = loop_home_root / slug
+    assert (home / ".mcp.json").is_file()
     vcs = GitVcs()
     assert vcs.has_uncommitted_changes(home) is True
     assert ".mcp.json" in _git(home, "status", "--porcelain").stdout
