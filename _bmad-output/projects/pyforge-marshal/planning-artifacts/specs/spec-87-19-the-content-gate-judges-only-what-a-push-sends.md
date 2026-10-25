@@ -2,9 +2,10 @@
 title: "87.19: The content gate judges only what a push sends"
 type: 'fix'
 created: '2026-10-25'
-status: 'ready-for-dev'
-review_loop_iteration: 0
+status: 'done'
+baseline_revision: '81f66ee411eff4856d5c8a75a950aa977a638a48'
 followup_review_recommended: false
+review_loop_iteration: 0
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md
@@ -254,7 +255,14 @@ All tests use real git with a bare remote.
 
 ## Run results
 
-To be filled at landing: AC12's per-tag verdicts and total time, and each command above with its exit code.
+- AC12 (read-only, `.cursor/ac12-content-gate-live.py`): exit 0; `tags_checked=29` `refused=0` `elapsed_s=15.7`; `origin/main: 0 finding(s)`; every local-only preserve/archive tag `pass`.
+- `pixi run --frozen -e pyforge-core pyforge-core-test`: exit 0 (2563 passed).
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`: exit 0 (13203 passed).
+- `pixi run --frozen -e pyforge-guild python -m pytest tests/scripts/test_legacy_preserve_promote.py tests/scripts/test_worktree_sweep.py -q`: exit 0.
+- `pixi run --frozen -e pyforge-guild lint-types`: exit 0.
+- `pixi run --frozen -e pyforge-guild python scripts/spec_surface_reconcile.py`: exit 0 (after memlog on `spec-pyforge-marshal`, `spec-pyforge-core`, `spec-pyforge-unifying-strategy`, and co-governor `spec-pyforge-doctor` for `docs/how-to/purge-preserved-refs.md`).
+- `pixi run --frozen -e pyforge-guild spec-surface-check`: exit 0.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test`: exit 1 — pre-existing `test_every_hard_import_is_a_declared_dependency[pyforge-atlas]` (unchanged by this story).
 
 ## Spec Change Log
 
@@ -268,8 +276,17 @@ To be filled at landing: AC12's per-tag verdicts and total time, and each comman
   own bytes result pins the process seam; the purge-path read is named; an unreadable `origin` in
   `push_reviewed_rows` is stated; Story 103.1's stdin path is shared, not duplicated.
 
+## Auto Run Result
+
+- **Summary:** `run_content_gate` now judges the sent object set ( `rev-list --objects` minus `origin` heads/tags), batched `cat-file`, unreadable-remote refusal, tag/commit body scan; `PosixProcess.run_bytes` for stdin batch reads; `push_reviewed_rows` skips origin-listed twins and survives per-row git errors; `MRS-STATUS-016` names both push paths.
+- **Files:** `process.py`, `preserve_refs.py`, tests, `legacy_preserve_promote.py`, `status.py`, runbook, memlogs (see diff since `81f66ee411`).
+- **Review:** 0 patch / 0 defer / 0 reject (build-auto review pass 2026-10-25).
+- **Verification:** See `## Run results` above.
+- **Residual:** `pyforge-deps-test` atlas import pre-existing failure; operator still owns pushing 27 legacy twins.
+
 ## Review Triage Log
 
+- **2026-10-25 — Review pass (build-auto):** verdicts: 0 findings.
 - **Round 1, 2026-10-25 (chain review of `49dbfac992`, independent reviewer): FAIL, 1 blocker, 8 should-fix, 9 nits;
   all applied.**
   - blocker B1: the batched read cannot run through `PosixProcess` (stdin closed, text decode) and the seam was

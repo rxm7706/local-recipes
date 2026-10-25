@@ -18,4 +18,4 @@ When a preserve tag on `origin` must come down immediately:
 3. File the GitHub cache purge request.
 4. Restore the ruleset and append the incident to team memory via `scribe capture`.
 
-The content gate (`marshal preserve push`) refuses new tags that descend from purge-listed shas, carry purge-listed paths, fail the secret scan, or exceed the per-file size cap.
+The content gate (`marshal preserve push`, or `scripts/legacy_preserve_promote.py --push-reviewed` for reviewed legacy twins) judges only the objects a push would send — not blobs already reachable on `origin` through `refs/heads/*` or `refs/tags/*`. It refuses tags that descend from purge-listed shas, touch purge-listed paths, fail the secret scan, exceed the per-file size cap, or when `origin` cannot be read (`unreadable-remote`).
