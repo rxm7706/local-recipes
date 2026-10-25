@@ -295,3 +295,10 @@ Type / Effort / Deps: fix / M / —.
   - nits: memlog design aligned (rendered `.mcp.json`, root `pixi.toml` pin) by a follow-up event; epics FR/AD and
     Surface aligned; "instead of" `PATH` wording fixed in the PRD and here; two stale texts joined the surface;
     Story 6.9's tests inject the fake probe; unit placement for coverage; cwd = the home.
+
+## Auto Run Result
+
+Status: in-review  
+Implementation: marshal-mcp on official `MCPServer`, `mcp>=2.2` dependency, stdio preflight handshake via `McpProbePort` / `adapters/mcp_stdio_probe.py`, pure verdict in `core/mcp_probe.py`, wired through `_probe_mcp_servers` and `run_preflight(mcp_probe=…)`.  
+Verification (2026-10-25): `pyforge-marshal-test` green (13286 passed); `pyforge-marshal-coverage-gate` green; `docs-station-cli --check` green; `llms-full-check` clean; `python scripts/spec_surface_reconcile.py` OK after memlog reconcile on `spec-pyforge-marshal`, `spec-pyforge-core`, `spec-pyforge-doctor`.  
+Note: `pyforge-deps-test` reports a pre-existing `pyforge-atlas` import completeness failure unrelated to this diff.
