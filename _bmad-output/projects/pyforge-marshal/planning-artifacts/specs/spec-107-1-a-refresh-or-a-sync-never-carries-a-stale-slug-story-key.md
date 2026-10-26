@@ -2,7 +2,7 @@
 title: "107.1: A refresh or a sync never carries a stale-slug story key"
 type: 'fix'
 created: '2026-10-25'
-status: 'ready-for-dev'
+status: 'in-review'
 followup_review_recommended: false
 baseline_revision: '48445a6b8d8b1869495f6f2618516eeb0161dfbb'
 review_loop_iteration: 0

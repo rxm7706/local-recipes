@@ -38,14 +38,27 @@ the same as a bare sync. `done` is STRICTLY senior to `blocked` — a key moving
 treated as a lateral move between two protected states (found live 2026-09-10,
 DW-SYNC-2026-09-10-1). The pre-existing empty-feed guard below is the same idea at
 whole-file granularity; the per-key guard is where the real losses happen.
+
+**Stale-slug keys never reach the twin** (Story 107.1). A story key in the feed that the
+twin lacks, while the twin carries the same epic, story and suffix number under another key,
+is a stale copy of that story: ``marshal refresh`` used to write one through
+``sprint_plan.py generate``, whose slugs are cut at 60 characters and keep ``_`` and
+non-ASCII letters, beside the twin's ``chain.slugify_title`` key. A sync drops each such key
+from the feed and names it before it promotes, so it never lands in the twin as a duplicate.
+A feed key whose number the twin lacks is not stale and is promoted as before.
+``--feed-only`` runs the twin-to-feed half alone (drop the stale keys, then ``repair_feed``
+with the twin's full map), writes only the feed and prints one JSON report; it is the step
+``marshal refresh`` runs to keep each loop's feed in step with the tracked ledger.
 """
 
 from __future__ import annotations
 
 import argparse
 import importlib.util
+import json
 import re
 import sys
+from datetime import datetime
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -320,22 +333,117 @@ def repair_feed(
     return merged, lost, missing
 
 
+def _story_number(key: str) -> tuple[int, int, str] | None:
+    m = _STORY_KEY_RE.match(key)
+    return (int(m.group(1)), int(m.group(2)), m.group(3)) if m else None
+
+
+def stale_slug_keys(feed: dict[str, str], twin: dict[str, str]) -> list[tuple[str, str]]:
+    """Story keys in ``feed`` that ``twin`` lacks while it carries the same epic, story
+    and suffix number under another key, as ``(feed_key, twin_key)`` (Story 107.1).
+
+    Such a key is a second spelling of a story the twin already records -- the shape
+    ``sprint_plan.py generate`` wrote into every feed on 2026-10-25 (slugs cut at 60
+    characters, ``_`` and non-ASCII letters kept). A feed key whose number the twin lacks
+    is not returned: it may be a story the ledger has not received yet."""
+    carried: dict[tuple[int, int, str], str] = {}
+    for key in sorted(twin):
+        number = _story_number(key)
+        if number is not None:
+            carried.setdefault(number, key)
+    out: list[tuple[str, str]] = []
+    for key in sorted(feed):
+        if key in twin:
+            continue
+        number = _story_number(key)
+        if number is not None and number in carried:
+            out.append((key, carried[number]))
+    return out
+
+
+def drop_stale_feed_keys(
+    feed_path: Path,
+    incoming: dict[str, str],
+    twin_values: dict[str, str],
+) -> tuple[dict[str, str], list[tuple[str, str]]]:
+    """Remove ``stale_slug_keys`` from the feed file and from ``incoming``. Returns the
+    kept map and the dropped ``(feed_key, twin_key)`` pairs; writes nothing when none is
+    stale. The feed's head and tail are kept byte-for-byte."""
+    stale = stale_slug_keys(incoming, twin_values)
+    if not stale:
+        return incoming, []
+    gone = {key for key, _twin_key in stale}
+    kept = {k: v for k, v in incoming.items() if k not in gone}
+    _write_feed_development_status(feed_path, kept)
+    return kept, stale
+
+
+def _print_dropped_keys(stale: list[tuple[str, str]], incoming: dict[str, str]) -> None:
+    for key, twin_key in stale:
+        print(f"  {key}: feed {incoming[key]} (the twin carries it as {twin_key})")
+
+
 def _print_repaired_keys(
     lost: list[tuple[str, str, str]],
     missing: list[str],
     existing: dict[str, str],
     incoming: dict[str, str],
 ) -> None:
-    for key, twin_val, feed_val in sorted(
-        [(k, old, new) for k, old, new in lost]
-        + [(k, existing[k], "<absent>") for k in missing],
-        key=lambda row: row[0],
-    ):
-        if feed_val == "<absent>":
-            feed_display = "<absent>"
-        else:
-            feed_display = feed_val
-        print(f"  {key}: feed {feed_display} -> twin {twin_val}")
+    # A key the feed dropped while the twin holds it `done` is in both `lost` (as
+    # `<absent>`) and `missing`; name it once.
+    rows = {k: (old, new) for k, old, new in lost}
+    for k in missing:
+        rows.setdefault(k, (existing[k], "<absent>"))
+    for key in sorted(rows):
+        twin_val, feed_val = rows[key]
+        print(f"  {key}: feed {feed_val} -> twin {twin_val}")
+
+
+def _new_feed_text(slug: str, key: str) -> str:
+    """A feed's head in the fields ``sprint_plan.py generate`` writes, for ``--feed-only``
+    when no feed exists yet."""
+    stamp = datetime.now().strftime("%m-%d-%Y %H:%M")
+    return (
+        f"generated: {stamp}\n"
+        f"last_updated: {stamp}\n"
+        f"project: {slug}\n"
+        f"project_key: {key}\n"
+        "tracking_system: file-system\n"
+        f"story_location: _bmad-output/projects/{slug}/implementation-artifacts\n"
+        "development_status:\n"
+    )
+
+
+def feed_only(key: str) -> tuple[int, dict[str, object]]:
+    """``--feed-only`` (Story 107.1): bring one project's Tier-3 feed into step with its
+    tracked twin and never write the twin. Drops ``stale_slug_keys``, then runs
+    ``repair_feed`` with the twin's full map, so the twin's ``done`` and story ``blocked``
+    values win, twin keys the feed lacks are added, and a value the feed has advanced is
+    kept. Returns ``(exit code, JSON report)``."""
+    gen = _load_generate()
+    if key not in gen.PROJECT_SOURCES:
+        return 2, {"ok": False, "project": key,
+                   "error": f"unknown --project key {key!r}; valid: {', '.join(sorted(gen.PROJECT_SOURCES))}"}
+    rel = gen.PROJECT_SOURCES[key]
+    src = REPO_ROOT / rel
+    slug = gen._KEY_SLUG_OVERRIDE.get(key, f"pyforge-{key}")
+    dest = ledger_path_for(slug)
+    report: dict[str, object] = {"ok": True, "project": key, "feed": rel, "dropped": [], "repaired": []}
+    if not dest.is_file():
+        report["skipped"] = f"no tracked twin at {dest.relative_to(REPO_ROOT).as_posix()}"
+        return 0, report
+    twin = gen.parse_sprint_status(dest)
+    if src.is_file():
+        incoming = gen.parse_sprint_status(src)
+    else:
+        src.parent.mkdir(parents=True, exist_ok=True)
+        src.write_text(_new_feed_text(slug, key), encoding="utf-8")
+        incoming = {}
+    incoming, stale = drop_stale_feed_keys(src, incoming, twin)
+    _merged, lost, missing = repair_feed(src, incoming, twin)
+    report["dropped"] = [k for k, _twin_key in stale]
+    report["repaired"] = sorted({k for k, _old, _new in lost} | set(missing))
+    return 0, report
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -376,7 +484,24 @@ def main(argv: list[str] | None = None) -> int:
              "regression. Requires exactly one --project. Refuses on a malformed map, a "
              "dangling old key, a collision, or any `done` row that would not survive.",
     )
+    ap.add_argument(
+        "--feed-only",
+        action="store_true",
+        help="Bring one project's Tier-3 feed into step with its tracked twin and write "
+             "nothing else: drop stale-slug keys, pull the twin's protected values and "
+             "missing keys forward, print one JSON report. Never writes the twin. "
+             "Requires exactly one --project; `marshal refresh` runs it (Story 107.1).",
+    )
     args = ap.parse_args(argv)
+
+    if args.feed_only:
+        if len(args.project or []) != 1 or args.rekey or args.allow_regression:
+            print(json.dumps({"ok": False, "error": "--feed-only takes exactly one --project "
+                                                   "and no --rekey or --allow-regression"}))
+            return 2
+        rc, report = feed_only(args.project[0])
+        print(json.dumps(report))
+        return rc
 
     rekey_mapping: dict[str, str] | None = None
     if args.rekey:
@@ -449,6 +574,14 @@ def main(argv: list[str] | None = None) -> int:
                 # Judge the twin THROUGH the map: a done row whose key moved is
                 # the same row, not a dropped one. Statuses carry unchanged.
                 existing = {rekey_mapping.get(k, k): v for k, v in existing.items()}
+            # Story 107.1: a stale-slug copy of a story the twin already records never
+            # reaches the twin, whatever the flags: nothing regresses by leaving it out.
+            before_drop = statuses
+            statuses, stale = drop_stale_feed_keys(src, statuses, existing)
+            if stale:
+                print(f"  DROPPED   {key}: {len(stale)} stale-slug key(s) the tracked twin "
+                      f"carries under another slug, removed from the Tier-3 feed")
+                _print_dropped_keys(stale, before_drop)
             lost = regressions(existing, statuses)
             # Repair triggers on EITHER a terminal regression or a key the feed has
             # simply lost. The first cut keyed only on regression, so a feed already
@@ -460,8 +593,10 @@ def main(argv: list[str] | None = None) -> int:
                 missing_report = list(missing)
                 merged, lost, missing = repair_feed(src, statuses, existing)
                 assert merged is not None
+                lost_keys = {k for k, _old, _new in lost_report}
+                missing_only = [k for k in missing_report if k not in lost_keys]
                 print(f"  REPAIRED  {key}: restored {len(lost_report)} regressed + "
-                      f"{len(missing_report)} missing key(s) into the Tier-3 feed from the "
+                      f"{len(missing_only)} missing key(s) into the Tier-3 feed from the "
                       f"tracked twin")
                 _print_repaired_keys(lost_report, missing_report, existing, statuses)
                 statuses = merged
