@@ -2240,7 +2240,7 @@ So that a PRD arrow's target says what it realizes, and the detector's title-ove
 **When** the restore script rejoins each cut bullet to its pre-fold source text, restores each placeholder from the source block or the source memlog's capability entry, and takes the authored titles and bullets the memlog decision of 2026-10-26 carries where the source has none
 **Then** no capability line reads `from spec-`, no bullet reads 'See absorbed', every intent and success is the source's full text or the recorded authored text, and the independent review reads every authored title and bullet
 **And** 61 capability lines before and after; no id, order, provenance line or status moves; `chain-completeness`, `chain-currency` (herald) and `detectors-ci` stay green
-**Status:** in-review
+**Status:** in-progress
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

@@ -3626,7 +3626,7 @@ So that a PRD arrow's target says what it realizes, and the detector's title-ove
 **When** the restore script rejoins each cut bullet to its pre-fold source text (and adds the bullets the fold dropped from the source block)
 **Then** every intent and success is the source's full text, and no capability block lacks its intent or success
 **And** the capability line count is unchanged; no id, order, provenance line or status moves; `chain-completeness`, `chain-currency` and `detectors-ci` stay green
-**Status:** in-review
+**Status:** in-progress
 
 ### Story 33.2: Every mason NFR names the capabilities it bounds
 

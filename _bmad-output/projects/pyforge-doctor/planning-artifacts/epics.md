@@ -3463,7 +3463,7 @@ So that an arrow written by counting, or pointed at a Constraint, is a red PR in
 **When** a PRD line defines a requirement whose arrow names anything but a defined CAP, cites a CAP no definition line declares, spells its id without a hyphen, redefines an id already defined in the PRD, or sits in a run of four or more whose CAP numbers step with their ids while no title shares a word with its CAP
 **Then** the detector emits the named finding (`fr-cites-non-capability`, `fr-cap-unresolved`, `fr-id-unhyphenated`, `fr-duplicate-id`, `fr-counted-run`) as FAIL when it is new against `docs/governance/fr-baseline.json`, as baselined evidence when it is not, and as `fr-baseline-stale` WARN when a baseline entry no longer fires
 **And** the honest lockstep runs steward FR-32..FR-41, atlas FR-69..FR-77 and doctor FR-9..FR-13 stay quiet; a wrapped prose line or a column-0 sentence never defines; the title-overlap score is WARN only; `scripts/fr_baseline.py --prune` only removes; `pyforge-doctor-test` and its coverage floors, `lint-types` (doctor) and `detectors-ci` are green; `doctor check` stays inside its five-second CPU budget
-**Status:** in-review
+**Status:** in-progress
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

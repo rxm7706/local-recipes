@@ -952,7 +952,7 @@ So that an agent on any harness traces arrows instead of counting them, and the 
 **When** the operator asks on 2026-10-26 that the rule be encoded so agents stay aligned
 **Then** items 6 and 7 carry the two bullets, the block carries the pointer and the pitfall with its provenance line at 2026-10-26 / `92fa3edbbd`, the notes file carries the incident, and `.claude/memory/` carries the two captures with `MEMORY.md` lines
 **And** the scribe parity meta-test (`test_instruction_surface_parity.py`) and `governance-currency` stay green; no section is duplicated into a per-tool file; `pyforge-scribe-test` passes
-**Status:** in-review
+**Status:** in-progress
 
 ## Platform floor addendum — 2026-09-07
 
