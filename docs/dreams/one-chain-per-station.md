@@ -331,7 +331,7 @@ FR-14 and FR-15 the Charter's §6); the fold's own damage to the station
 Specs the arrows point at (167 placeholder titles `from spec-…`, titles cut
 to one letter, intents reading "See absorbed Spec memlog", roughly 560
 intent and success bullets cut at their first line); a detector that only
-checked that a cited number existed somewhere; none of the 79 NFR lines
+checked that a cited number existed somewhere; none of the 82 NFR lines
 citing anything, two stations numbering them with letters the detector
 could not read; and atlas's two satellite PRDs reusing the kernel's FR ids.
 

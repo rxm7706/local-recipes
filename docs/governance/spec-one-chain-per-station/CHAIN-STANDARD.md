@@ -313,10 +313,11 @@ CAP-297, minted from the Constraint "Two clocks" on the Story 108.1 review —
 this section's own rule applied); doctor FR-14 and FR-15, which cited
 Charter §6, by doctor Story 50.1.
 
-**NFRs.** §6 says every NFR cites a CAP; at this amendment none of the 79 NFR
-lines fleet-wide did (atlas 10, marshal 33, mason 16, warden 20), and marshal's
-and warden's ids are lettered (five of warden's outside the grammar:
-`NFR-R3a`, `NFR-R3b`, `NFR-P-warm`, `NFR-P-cold`, `NFR-P-concurrency`). The lettered family is sanctioned (§6); an NFR
+**NFRs.** §6 says every NFR cites a CAP; at this amendment none of the 82 NFR
+lines fleet-wide did (atlas 10, marshal 33, mason 16, warden 23, as the detector
+reads them), and marshal's and warden's ids are lettered (five of warden's
+outside the grammar: `NFR-R3a`, `NFR-R3b`, `NFR-P-warm`, `NFR-P-cold`,
+`NFR-P-concurrency`). The lettered family is sanctioned (§6); an NFR
 cites the CAP(s) it bounds; the 82 enter `docs/governance/fr-baseline.json`
 as the pre-rule population and leave it as each station's backfill story
 lands (atlas 41.3, marshal 108.2, mason 33.2, warden 20.2).

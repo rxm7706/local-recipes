@@ -44,7 +44,7 @@ Type / Effort / Deps: chore / M / —.
 ## Acceptance Criteria
 
 - **AC1 — No placeholder.** `grep -c ' — from spec-' SPEC.md` is 0 (was 23) and `grep -c 'ee absorbed Spec memlog' SPEC.md` is 0 (was 29).
-- **AC2 — Counts.** 168 `- **CAP-` lines before and after; the restore report reads 9 titles restored, 14 authored, 29 placeholder bullets restored, 147 rejoined, 15 split; `grep -c '^  - \*\*verified:\*\*' SPEC.md` is 15 more than before and no success line contains `- **verified:**`.
+- **AC2 — Counts.** 168 `- **CAP-n —` capability lines before and after; the restore report reads 9 titles restored, 14 authored, 29 placeholder bullets restored, 147 rejoined, 15 split; `grep -c '^  - \*\*verified:\*\*' SPEC.md` is 15 more than before and no success line contains `- **verified:**`.
 - **AC3 — The foundry memlog.** `spec-foundry-regenerate-not-fold/.memlog.md` ends with a 2026-10-26 CAP-7 event naming the amended rule; no Epic 44 ledger key moved (`git diff` on the steward ledger shows only this story's keys).
 - **AC4 — The ledger.** `docs/foundry/capability-ledger.yaml` has the three rows with `mode: rebuild`; `pixi run -e pyforge-guild capability-ledger-check` exits 0.
 - **AC5 — Gates.** `chain-completeness`, `chain-currency` (steward) and `detectors-ci` are green; the independent review reads every authored title.
@@ -86,7 +86,7 @@ Type / Effort / Deps: chore / M / —.
 
 **Run before the push (not dispatch gates):**
 - `grep -c ' — from spec-' _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md` — expected: `0` (AC1).
-- `grep -c '^- \*\*CAP-' _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md` — expected: `168` (AC2).
+- `grep -c '^- \*\*CAP-[0-9]* —' _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md` — expected: `168` (AC2).
 - `pixi run -e pyforge-guild capability-ledger-check` — expected: exit 0 (AC4).
 - `pixi run -e pyforge-guild python scripts/chain_currency_sweep_check.py --json --project pyforge-steward` — expected: no errors (AC5).
 - `pixi run -e pyforge-guild detectors-ci` — expected: exit 0 (AC5).
