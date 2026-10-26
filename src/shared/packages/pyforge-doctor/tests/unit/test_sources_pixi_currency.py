@@ -88,7 +88,7 @@ def _commit_all(repo: Path, message: str) -> str:
 
 
 def _write_dream_and_pixi(repo: Path) -> None:
-    dream = repo / "docs" / "dreams"
+    dream = repo / "archive" / "docs" / "dreams"
     dream.mkdir(parents=True, exist_ok=True)
     (dream / "pixi-candidate-currency.md").write_text(_MINIMAL_DREAM, encoding="utf-8")
     (repo / "pixi.toml").write_text('[project]\nname = "test"\n', encoding="utf-8")
@@ -132,7 +132,7 @@ def test_unreadable_dream_degrades_to_named_finding(tmp_path: Path) -> None:
 
 def test_unreadable_pixi_toml_degrades_to_named_finding(tmp_path: Path) -> None:
     _init_repo(tmp_path)
-    dream = tmp_path / "docs" / "dreams"
+    dream = tmp_path / "archive" / "docs" / "dreams"
     dream.mkdir(parents=True, exist_ok=True)
     (dream / "pixi-candidate-currency.md").write_text(_MINIMAL_DREAM, encoding="utf-8")
     _commit_all(tmp_path, "dream only")
@@ -144,7 +144,7 @@ def test_unreadable_pixi_toml_degrades_to_named_finding(tmp_path: Path) -> None:
 
 def test_unreadable_ledger_section_degrades_to_named_finding(tmp_path: Path) -> None:
     _init_repo(tmp_path)
-    dream = tmp_path / "docs" / "dreams"
+    dream = tmp_path / "archive" / "docs" / "dreams"
     dream.mkdir(parents=True, exist_ok=True)
     (dream / "pixi-candidate-currency.md").write_text(
         "# missing ledger headings\n",

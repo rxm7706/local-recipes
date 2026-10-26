@@ -21,7 +21,7 @@ name: Detectors
 # (dashboard-drift-check, loop-stall-check) reads gitignored Tier-3 sprint
 # feeds, tmux, and ~/.bmad-loops. None of that exists on a runner. Those
 # detectors observe what the factory DID, and the factory has no durable
-# observation plane yet — see docs/dreams/fidelity-enforcement.md. Their absence
+# observation plane yet — see archive/docs/dreams/fidelity-enforcement.md. Their absence
 # here is that gap, surfacing as a deployment constraint.
 #
 # ADVISORY, NOT BLOCKING — operator decision 2026-07-31 — WITH TWO SCOPED
@@ -40,7 +40,7 @@ name: Detectors
 # itself always succeeds, so their findings never block a merge.
 #
 # State that plainly rather than letting the green tick imply more than it means:
-# this is FAST FEEDBACK, not a gate. docs/dreams/fidelity-enforcement.md holds
+# this is FAST FEEDBACK, not a gate. archive/docs/dreams/fidelity-enforcement.md holds
 # that "a contract that nothing can fail against is a plan", and by its own test
 # an advisory check is the weaker thing. It is still a large step up from what
 # preceded it — nothing ran these at all, and PR #170 merged a real

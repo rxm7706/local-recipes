@@ -18,7 +18,7 @@ the moment its own epic's earlier stories clear, and burn a real dev attempt
 Found live 2026-08-03 in pyforge-marshal: ``2-3`` (deps ``S-3.2``), ``2-7``
 (deps ``S-4.1``), and ``8-5`` (deps ``S-10.2``). All three already documented
 their forward dependency in prose; it just never reached the file the engine
-reads. See ``docs/dreams/bmad-loop-forward-dependency-blindness.md``.
+reads. See ``archive/docs/dreams/bmad-loop-forward-dependency-blindness.md``.
 
 THE FIX (not this source's job -- this only reports a MISSING fix)
 ------------------------------------------------------------------

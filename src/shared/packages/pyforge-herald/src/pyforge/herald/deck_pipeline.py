@@ -1077,7 +1077,7 @@ def _windowed_read(
     as the server's per-call size cap requires. `_pull_and_land` refuses
     outright on a truncated single read -- every existing deck's prototype
     fits comfortably under the cap. `adopt`'s artifacts make no such
-    promise (`docs/dreams/design-sync-loop.md`'s own measured evidence
+    promise (`archive/docs/dreams/design-sync-loop.md`'s own measured evidence
     includes one that does not: `six-quarter-roadmap`'s primary prototype,
     ~320 KB), so this helper pages through ``offset`` until a window's own
     ``last_line`` reaches its ``total_lines`` -- or, for a file the server

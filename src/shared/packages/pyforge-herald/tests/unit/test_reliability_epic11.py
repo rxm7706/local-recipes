@@ -1,7 +1,7 @@
 """Story 11.2: reliability of the CLI-triggered equivalents to the
 original Epic 11 AC's webhook-retry/cron/gate-check/operator-alert
 machinery -- none of which exists in this architecture (see
-``docs/dreams/herald-moments-2-4-live-backend.md``). What DOES apply here:
+``archive/docs/dreams/herald-moments-2-4-live-backend.md``). What DOES apply here:
 
 * the operator-role write gate (AD-16) is enforced *consistently* across
   every one of the SIX write commands that exist now that all three

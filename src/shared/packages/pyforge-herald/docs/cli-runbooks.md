@@ -31,7 +31,7 @@ entry (the how-to gives the line), because a GitHub-hosted runner never has the
 gitignored `.herald/herald.db` a real repo checkout would.
 Persistent, publicly-reachable hosting behind Steward's live perimeter is
 tracked as deferred work (`_bmad-output/implementation-artifacts/deferred-work.md`),
-not built here. See `docs/dreams/herald-moments-2-4-live-backend.md` for
+not built here. See `archive/docs/dreams/herald-moments-2-4-live-backend.md` for
 the fuller live-backend version and why the rest of that scope was cut
 down. This runbook documents the system as it exists, not that Dream.
 
@@ -530,7 +530,7 @@ the entry was never installed) is a real, if narrow, failure mode.
 2. If the failure looks like it should have been automatic (a webhook not
    yet mounted, a cron job, an email/in-app alert), read
    [The webhook endpoint](#the-webhook-endpoint-ci-calls-story-134) above
-   and `docs/dreams/herald-moments-2-4-live-backend.md` first — it is very
+   and `archive/docs/dreams/herald-moments-2-4-live-backend.md` first — it is very
    likely the gap you're hitting is the documented, intentional scope cut,
    not a bug.
 3. Otherwise, file an issue against `rxm7706/local-recipes` describing the

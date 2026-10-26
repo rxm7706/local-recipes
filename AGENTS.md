@@ -243,7 +243,7 @@ compiled graph as a substitute for this file or a station `SKILL.md`.
    (`status: dreamt`, an owning station, Kinships to every chain it binds) and `bmad-spec`
    deriving the Spec from it — never with "draft the story specs and dispatch". Operator ruling
    2026-09-12, minted on the CAP-17 run-state gap
-   ([`docs/dreams/run-state-one-publisher.md`](docs/dreams/run-state-one-publisher.md)).
+   ([`archive/docs/dreams/run-state-one-publisher.md`](archive/docs/dreams/run-state-one-publisher.md)).
 5. **Spec → Story before code.** A `ready` Spec is a contract, not a work order. Once `bmad-spec`
    produces it inside a BMAD project, decompose its capabilities into a numbered Story (or
    Stories) in that project's `epics.md` and reflect it in the ledger (the Tier-3 feed, then

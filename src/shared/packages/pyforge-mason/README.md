@@ -6,7 +6,7 @@ Mason — the Artisan Builder's station. `mason recipe` / `package` / `environme
 
 - **Dream:** `docs/dreams/pyforge-mason.md`
 - **Planning:** `_bmad-output/projects/pyforge-mason/planning-artifacts/`
-- **Practice it tends:** `docs/dreams/packaging-factory.md`
+- **Practice it tends:** `archive/docs/dreams/packaging-factory.md`
 
 Epic 1 (complete) delivers the runnable skeleton: dual-artifact build wiring,
 the noun-verb CLI with global flags and dual output formats, the error

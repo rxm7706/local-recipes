@@ -1,0 +1,128 @@
+---
+title: "111.1: Marshal's 54 archived Dreams leave the live tree"
+type: 'chore'
+created: '2026-10-26'
+status: 'done'
+review_loop_iteration: 0
+followup_review_recommended: false
+declared_low_risk: false
+baseline_revision: '97c8211773'
+context:
+  - docs/governance/spec-one-chain-per-station/SPEC.md
+  - docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md
+  - docs/dreams/one-chain-per-station.md
+  - docs/dreams/pyforge-marshal.md
+  - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/one_chain.py
+  - _bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml
+  - scripts/fleet_picture.py
+deferred: []
+---
+
+<intent-contract>
+
+## Intent
+
+**Problem:** `spec-one-chain-per-station` CAP-11 (operator ruling 2026-09-29; CHAIN-STANDARD §11) says a Dream is live in
+`docs/dreams/` or archived under `archive/docs/dreams/`, never both, and that a folded satellite leaves the live tree only
+once its whole body sits verbatim in a dated section of its station Dream. The readers landed on 2026-09-29/30 (doctor
+36.1 and 36.2, marshal 75.1, herald 33.1) and no fold PR followed: at `97c8211773` (2026-10-26) 54 marshal Dreams under
+`docs/dreams/` still read `status: archived` (`adaptive-model-tiering`, `agent-portability`, `agent-tool-surface`, `agentic-sdlc-autonomy`, `artifact-chain-reconciliation`, `artifact-console`, `bmad-611-era-alignment`, `bmad-cursor-interactive-routing`, `bmad-loop-baseline-drift`, `bmad-loop-forward-dependency-blindness`, `bmad-loop-intent-gap-work-preservation`, `bmad-loop-liveness-footgun`, `bmad-output-hygiene`, `bmad-switch-scope-enforcement`, `cursor-native-tier-map`, `dashboard-project-path-derivation`, `dashboard-velocity-captures-hand-driven-work`, `dispatch-tier-routing-fails-safe`, `dream-to-code-model-self-verification`, `durable-runs`, `factory-console`, `fidelity-enforcement`, `fleet-chain-completeness`, `fleet-status-supervisor-fallback`, `genesis-installer`, `genesis-installer-name-retirement`, `horizontal-run-concurrency`, `landing-evidence-grammar`, `library-catalog-manifest-sync`, `loop-home-fleet-refresh`, `marshal-dependency-aware-dispatch`, `marshal-drain-self-resolution`, `marshal-land-cross-project-story-key-collision`, `marshal-land-merge-subject`, `marshal-launch-environment-integrity`, `marshal-parallel-dispatch-fanout`, `marshal-run-watch`, `marshal-single-story-dispatch`, `marshal-status-harness-run-id-poisoning`, `marshal-templated-merge-subject-cross-project-collision`, `marshal-token-economy`, `one-front-door`, `pr-lifecycle`, `pyforge-core`, `pyforge-marshal-loop-orchestrator`, `pyforge-testing-charter`, `quick-dev-reconciliation`, `regenerable-factory`, `risk-tiered-review-depth`, `run-state-one-publisher`, `spec-surface-overlap-tolerance`, `sprint-status-auto-promote`, `surface-drift-reconciliation`, `token-economy-claude-session-path`), each behind the `Consolidated into` banner the 2026-09-16/17 fold
+left, and doctor's `fold-complete` named them in its one WARN. The 2026-09-16 pilot had pasted 12 of the 54 bodies in full; 42 were pasted in part or not at all.
+
+**Approach:**
+- **Fold first, verbatim.** For each of the 42 satellites whose long paragraphs were not all in `docs/dreams/pyforge-marshal.md`
+  (measured with `fold-complete`'s own `long_paragraphs`: whitespace collapsed, headings dropped, paragraphs over 80
+  characters), the whole body goes in as a dated `## 2026-10-26 — <title> (folded from <slug>)` section: verbatim, headings
+  demoted one level, the one-chain banner left out, never trimmed (a body already partly there is pasted whole — the
+  standard asks for the body, not the difference).
+- **Then the move.** Every one of the 54 loses its one-chain banner (an older `Superseded` or `Absorbed` note is body and
+  stays) and moves with `git mv` to `archive/docs/dreams/<same name>`, frontmatter unchanged (`status: archived` stays:
+  location is the archive signal, CHAIN-STANDARD §11 as amended 2026-09-30).
+- **Pointers follow; records do not.** The README's 54 interim rows leave with their files; `spec-pyforge-marshal/SPEC.md`'s
+  `surface:` and `covers-dreams:` entries and the 3 absorbed pointer Specs whose `owner-dream:` named a moved file name the
+  archive path (script render under the memlog, anchors asserted once, both self-validate passes logged). Memlogs, story
+  specs, epic bodies, PRD prose, ledgers and the Dreams' own logs keep the path they were written with: a dated record
+  names what was true when it was written.
+
+Ledger key: `111-1-marshal-s-54-archived-dreams-leave-the-live-tree`.
+Type / Effort / Deps: chore / M / —.
+
+### Living CAP citations
+
+- `spec-one-chain-per-station` CAP-11 (the Guild's; Marshal mints no CAP and no FR, the relay shape of doctor Epic 36, marshal
+  Epic 75 and herald Epic 33); CHAIN-STANDARD §11.
+- `spec-feature-flag-governance` Q1: a `chore` needs no flag.
+- Siblings: the other seven station stories of the 2026-10-26 one-PR move (atlas 44.1, doctor 53.1, herald 48.1, marshal
+  111.1, mason 35.1, scribe 28.1, steward 115.1, warden 23.1).
+
+## Acceptance Criteria
+
+- Given the 54 marshal Dreams named above When `pixi run -e pyforge-guild fold-complete-check` runs Then each reads `fold-complete-ok` from `archive/docs/dreams/`, and `fold-complete-archived-in-live-tree` names no marshal Dream
+- Given `docs/dreams/` after the move When `ls docs/dreams/*.md` is read Then no file carries `owner: marshal` with `status: archived`, and `docs/dreams/README.md` has no row for a moved file (`readme-table-orphan` is silent)
+- Given a moved file When it is diffed against its pre-move content Then only the one-chain banner paragraph is gone; the frontmatter and every other line are unchanged
+- Given every live pointer that named `docs/dreams/<moved>.md` When the repo is grepped Then it names `archive/docs/dreams/<moved>.md`, and `governance-currency`, `dreams-hygiene`, `dream-chain`, `chain-sprawl`, `spec-surface` and `detectors-ci` are green
+- Given `docs/dreams/pyforge-marshal.md` When its 2026-10-26 sections are read Then each names the satellite it folds, its banner date, and the archive path
+
+## Tasks
+
+1. Measure: `long_paragraphs` of each archived marshal Dream against the station Dream's collapsed text.
+2. Fold the incomplete bodies (dated sections, verbatim, headings demoted, banner left out); re-measure to zero missing.
+3. Strip each banner and `git mv` the 54 files; run `fold-complete-check` and read its exit code.
+4. Drop the README rows; re-point every live pointer; prune `docs/governance/chain-sprawl-baseline.json`.
+5. Memlog event on `spec-pyforge-marshal` naming every surface path that moved or changed; script-render the Spec's `surface:` / `covers-dreams:` lines and the absorbed pointers' `owner-dream:`; scoped `--write-baseline --spec`.
+6. Run the planning detectors and the station suite; read every verdict from the exit code.
+
+## Boundaries & Constraints
+
+**Always:**
+- Paste a body whole and verbatim; demote headings; name the fold's source, banner date and archive path in the section's opening line.
+- Read every verdict from the exit code, never through a pipe.
+
+**Never:**
+- Do not trim, rewrite or re-flow a satellite's text; do not reset or un-archive a moved Dream.
+- Do not rewrite a dated record (memlog, story spec, epic body, PRD prose, ledger, research) to name the archive path.
+- Do not hand-edit `sprint-status-ledger.yaml` or any `SPEC.md`.
+
+## I/O & Edge-Case Matrix
+
+| Scenario | Input / State | Expected Output / Behavior | Error Handling |
+|----------|--------------|---------------------------|----------------|
+| incomplete fold | satellite with paragraphs missing from the station Dream | dated section carries the whole body verbatim; `fold-complete-ok` after the move | — |
+| complete fold | every paragraph already in the station Dream (banner aside) | no section added; banner stripped; `git mv` | — |
+| older banner | `Superseded` / `Absorbed` blockquote from 2026-08 | kept as body; pasted with the body | — |
+| wikilink to a moved slug | `[[slug]]` in a live Dream | resolves under the archive (`dreams-hygiene`) | — |
+| dated record naming the old path | memlog, story spec, PRD prose | left as written | — |
+
+</intent-contract>
+
+## Binding
+
+Parent capability: `spec-one-chain-per-station` CAP-11 (Guild relay; no marshal CAP or FR).
+Dream: `docs/dreams/one-chain-per-station.md` → § *2026-10-26 — The archived Dreams leave the live tree*.
+Ledger key: `111-1-marshal-s-54-archived-dreams-leave-the-live-tree`.
+Ledger status at mint: `done` (built in the same PR, the #2322 shape).
+Deps: —.
+Flag: none. This is a `chore` (`spec-feature-flag-governance` Q1).
+
+## Verification
+
+**Commands:**
+- `pixi run -e pyforge-guild fold-complete-check` — expected: exit 0; `fold-complete-archived-in-live-tree` absent.
+- `pixi run -e pyforge-guild dreams-hygiene-check` — expected: exit 0; no `readme-table-orphan`, no `kinship-wikilink-dead`.
+- `pixi run -e pyforge-guild spec-surface-check` — expected: exit 0 after the scoped stamps.
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (the station's `verify_commands`).
+
+**Manual checks:**
+- `grep -rl 'status: archived' docs/dreams/` — expected: no output.
+- `ls archive/docs/dreams | wc -l` — expected: 165 (158 moved + the 7 already there).
+
+## Review Triage Log
+
+- No independent review has run yet (implementation and review stay separate).
+
+## Auto Run Result
+
+Status: done
+
+Summary: marshal's 54 archived satellite Dreams moved to `archive/docs/dreams/`, 42 of them folded verbatim into `docs/dreams/pyforge-marshal.md` first; `fold-complete` reads 54 complete folds and 0 archived Dreams in the live tree for this station.

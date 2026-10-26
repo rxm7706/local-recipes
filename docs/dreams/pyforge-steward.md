@@ -7604,3 +7604,163 @@ the vendor private project.
   Herald later). Spec `ready`. Steward Epic **61** (61.1–61.5 `backlog`)
   is the marshal dispatch home. Dream `dreamt` → `specified`.
 - **2026-10-26 (every requirement derives from a capability) — Found:** the 2026-09-17 fold left 23 of the Spec's capability titles as `from spec-<old>` (CAP-1..CAP-4, steward's own duties, among them), 29 bullets as 'See absorbed Spec memlog', 147 cut at their first line and 15 `verified:` sub-bullets joined onto success lines; and the chain standard pyforge-foundry inherits (`spec-foundry-regenerate-not-fold` CAP-7) named FR ← CAP in its pre-amendment form. **Ruled** (2026-10-26, operator, fleet-wide: "yes forbid it" — a requirement cites one or more defined capabilities and nothing else; `spec-one-chain-per-station` CAP-5 as amended, CHAIN-STANDARD § 12; (e) every minted CAP routes `rebuild`). **For steward:** the text is restored by script from `97e0816ad2^` (9 titles from source lines, 14 authored from intent and recorded in the memlog for review; every id stable); the foundry memlog gains the 2026-10-26 CAP-7 event — B inherits the amended rule, not the exception; the capability ledger gains `pyforge-atlas:CAP-72`, `pyforge-doctor:CAP-92` and `CAP-93` as `rebuild`; no Epic 44 key moves and `spec-pyforge-unifying-strategy` is untouched. Epic 111 / Story 111.1, built in the one-PR effort with the other seven stations; no steward CAP minted.
+
+## 2026-10-26 — Firewalled Factory (folded from enterprise-airgap)
+
+*Folded 2026-10-26 under spec-one-chain-per-station CAP-11 (Story 115.1). The body below is `docs/dreams/enterprise-airgap.md`, verbatim, with its headings demoted one level and its 2026-09-17 fold banner left out; the file moved to `archive/docs/dreams/enterprise-airgap.md`.*
+
+## Enterprise air-gap — everything works where the internet doesn't
+
+### The Dream
+
+The whole factory — packaging, intelligence, gates, decks — runs inside
+regulated, air-gapped enterprises as naturally as it runs here: every outbound
+dependency routable through JFrog Artifactory / internal mirrors, every
+capability offline-first by design, credentials handled without leakage. Not a
+port; a posture: **air-gapped is the default deployment story, not an
+afterthought.**
+
+### What is real (the core)
+
+- **`docs/reference/enterprise-deployment.md`** + `docs/reference/pixi-config-jfrog.example.toml` —
+  the deployment doctrine.
+- **Runtime-driven routing** in `_http.py`: truststore + JFrog/GitHub/.netrc
+  auth chain — env-vars only, never committed config (CFE v6.0/v7.0).
+- **Air-gap-by-design decisions** across the stack: atlas's
+  `current_repodata.json` choice (explicitly JFrog-reusable), offline-safe read
+  CLIs, offline-safe deck bundles, the Pyodide/WASM atlas compilation
+  ([[pyforge-atlas]] G1).
+
+### The frontier
+
+- **[[presenton-pixi-image]]** and **[[pyforge-herald|deckcraft]]** — the two air-gapped
+  application expressions, both unbuilt.
+- **Warden's registry perimeter** ([[pyforge-warden]] ring 2): block/allow lists
+  on Artifactory — quarantine before the firewall.
+- **Closed (2026-09-09)** — the `JFROG_API_KEY` cross-resolver leak (the header
+  attaching to every outbound request regardless of host) is **fixed**:
+  `_http.py:508` gates `X-JFrog-Art-Api` on `is_configured_host`, with regression
+  coverage in `tests/unit/test_http_jfrog_host_gate.py`,
+  `test_dependency_checker_auth_host_gate.py` (including "never sent to an
+  explicitly named public channel") and `test_inventory_channel_auth_host_gate.py`.
+  ([[pyforge-doctor]] found it; [[pyforge-steward]] still owns the key lifecycle.)
+- **Deployment & install operations** (bundles, OpenShift, mirrors) are the
+  **Steward's** station ([[pyforge-steward]], adopted 2026-07-23).
+- Offline bundle format for the whole operating model ([[pyforge-charter|pyforge-genesis]]
+  behind a firewall) — kinship with [[sentinel]]'s §40 Airgap Bundle & Install.
+
+### Kinships
+
+- **[[miniforge-installer]]** (mason) — **reciprocal, recorded 2026-09-09.** Its activation
+  trigger is *steward-owned and un-watched*: "steward's enterprise-airgap / Story 12.3 work
+  surfaces a private-channel-locking need for a Python distributable." The socket already
+  exists and is empty by design —
+  `src/shared/packages/pyforge-mason/src/pyforge/mason/airgap_contract.py:54`,
+  `SUPPORTED_DISTRIBUTABLES: dict[str, DistributableBackend] = {}`
+  ("Empty by design (Story 9.2). External installers register later."). So whoever runs CAP-3's
+  mirror exercise or Story 12.3's air-gap parity check must also decide whether a Python
+  distributable needs private-channel locking, and tell mason if it does — nothing on the mason
+  side watches for it. *(Fleet readiness 2026-09-09, mason-E1 / Class D D11; the reciprocal half
+  is a note on `spec-enterprise-airgap`'s memlog.)*
+
+### Realization log
+
+- **2026 (CFE v6.0→v7.0)** — enterprise routing shipped runtime-driven.
+- **2026-07-23** — Dream retro-seeded from the deployment doc + the pattern's
+  presence across atlas/warden/presenton/deckcraft.
+- **2026-09-09** — **Fleet readiness pass** (`_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`, row stA / § C2). The host-gate fix verified live (`_http.py:508` plus five regression-test files); § *The frontier*'s "Known health issue" bullet was stale, security-shaped text and is closed. **Still unexercised:** CAP-3's success clause ("pipeline phases run against a JFrog remote-repo mirror unchanged") has no recorded run — realization-gate partial, placed `foundry-side`. Status stays `realized`.
+
+## 2026-10-26 — One HTAP query plane for every station and every agent (folded from htap-query-plane)
+
+*Folded 2026-10-26 under spec-one-chain-per-station CAP-11 (Story 115.1). The body below is `docs/dreams/htap-query-plane.md`, verbatim, with its headings demoted one level; the file moved to `archive/docs/dreams/htap-query-plane.md`.*
+
+> **Absorbed 2026-08-26** into
+> [`pyforge-unifying-strategy.md`](pyforge-unifying-strategy.md) § *The query
+> plane*. Bound as **CAP-19** on `spec-pyforge-unifying-strategy` (Epic 34).
+> Do not run `bmad-spec` against this file.
+
+## One HTAP query plane for every station and every agent
+
+### The Dream
+
+Narrative and contract live on the Unifying Strategy. One DuckDB HTAP plane;
+stations rebuild onto it; agents do not get the OLTP DSN.
+
+### Realization log
+
+- **2026-08-26** — Captured, absorbed the same day, then bound as CAP-19 when
+  the operator ruled the Unifying Strategy evergreen.
+
+## 2026-10-26 — Dream — PyForge Steward: Feedstock Maintenance Automation (folded from pyforge-steward-feedstock-maintenance)
+
+*Folded 2026-10-26 under spec-one-chain-per-station CAP-11 (Story 115.1). The body below is `docs/dreams/pyforge-steward-feedstock-maintenance.md`, verbatim, with its headings demoted one level; the file moved to `archive/docs/dreams/pyforge-steward-feedstock-maintenance.md`.*
+
+> **Superseded.** This Dream's full vision — upstream monitoring, autotick orchestration,
+> safe test-bumps, bot-comment routing, bulk maintenance groups, and health tracking across
+> 769 feedstocks — is already covered by pre-existing legacy Tier-1 specs, not by anything in
+> Steward's own scope: `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md`
+> (upstream monitoring + bulk maintenance across all 769 feedstocks, Tracks A/B),
+> [`docs/how-to/feedstock-failure-remediation.md`](../how-to/feedstock-failure-remediation.md)
+> (autotick/bot-comment triage — FLAKE/REAL_FIX/BLOCKED — and CI re-trigger), and
+> [`docs/how-to/feedstock-platform-expansion.md`](../how-to/feedstock-platform-expansion.md)
+> (the local-build-before-push safety discipline this Dream calls "safe version bumps").
+> Steward's real, already-authored Spec (`spec-pyforge-steward`, CAP-1..CAP-4) is
+> credentials/deploy/provisioning/budget — it has never covered feedstock maintenance, so this
+> is not a duplicate of Steward's own work; it is a mistagged restatement of a *different*,
+> already-real surface. Created 2026-08-02 in the same bulk commit already found this session
+> to contain fabricated content (a false migration note, boilerplate test-architecture docs,
+> and four sibling duplicate dreams — Marshal's loop-orchestrator, Mason's recipe-validator,
+> Atlas's intelligence-platform, Warden's compliance-gates — all retired the same day). Retired
+> same day rather than spec'd as new Steward work. See
+> `spec-pyforge-steward-feedstock-maintenance` for the retirement record.
+
+## PyForge Steward — Feedstock Maintenance Automation
+
+### Vision
+
+**Steward** automates feedstock maintenance — version tracking, autotick updates, bot command routing, and conda-forge integration — enabling hands-off recipe lifecycle management across 769+ feedstocks.
+
+**The ask**: Build an automated steward that keeps 769 feedstocks fresh, updated, and tested without requiring a human to review every upstream release.
+
+### Problem
+
+- **Autotick is fragile.** Version drops; Regro bot triggers build; build fails silently for days. Maintainer doesn't notice.
+- **Maintenance is manual.** Author picks 50 feedstocks to maintain; each needs quarterly updates. 200+ PRs/year to manage manually.
+- **Breakage is discovered late.** Upstream drops Python 3.10 support; recipes still target it. Build breaks in staged-recipes; CI blocks the PR.
+- **Version bumps are risky.** No way to test-bump safely. Merge a version bump, CI fails, 3-day rollback.
+- **Channels are noisy.** Conda-forge bot comments; human can't distinguish signal from noise. Real blockers hidden in PRs.
+
+### Realization
+
+**Steward** delivers:
+
+1. **Upstream Monitoring** — Tracks all upstream releases (PyPI, GitHub, CRAN, etc.). Detects new versions hourly. Ranks by stability (alpha/beta/RC vs release).
+
+2. **Autotick Orchestration** — Detects version updates, triggers builds automatically, monitors CI, and re-triggers on transient failures.
+
+3. **Safe Version Bumps** — Test-bumps locally before PR: does the build pass? Do tests pass? Only then create the PR.
+
+4. **Conda-forge Bot Integration** — Routes commands (`@conda-forge-admin, please rerender`), interprets bot comments, escalates real blockers.
+
+5. **Bulk Maintenance** — Operators define "maintenance groups" (e.g., "all my NumPy-dependent recipes"). Steward processes all N in parallel: updates, tests, lands.
+
+6. **Health Tracking** — Dashboard showing: # feedstocks up-to-date, # waiting on autotick, # blocked, last-update age per feedstock.
+
+### Success Criteria
+
+- ✅ **Coverage**: 769 feedstocks monitored; 90%+ have autotick enabled
+- ✅ **Velocity**: Version detection <1 hour from upstream release; PR up within 2 hours
+- ✅ **Reliability**: 95%+ of autotick PRs pass CI on first try
+- ✅ **Safety**: Test-bump prevents 99%+ of "merge-and-break" incidents
+- ✅ **Automation**: Maintenance groups require zero human intervention between version drops and merge
+- ✅ **Observability**: Every update tracked, every blockers flagged, every decision auditable
+
+### Acceptance
+
+Steward is done when:
+1. Upstream monitoring live for all 769 feedstocks
+2. Autotick enabled on 500+ feedstocks; 80%+ pass rate on first CI
+3. Test-bump feature proven safe: catches 100% of breaking changes before merge
+4. Bulk maintenance workflow tested: 20-feedstock group update completes in <30 min
+5. Health dashboard live: operators see maintenance status at a glance
+6. Integration with Doctor: stale dependency detection triggers update PRs automatically

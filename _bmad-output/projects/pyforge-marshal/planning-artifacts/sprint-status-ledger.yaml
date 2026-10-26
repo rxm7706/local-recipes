@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 679
+# stories: 682
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -51,6 +51,7 @@ development_status:
   11-4-marshal-seed-update-two-phase: done
   11-5-referenced-dependency-verification-and-doctor-delegation: done
   11-6-marshal-seed-explain-and-marshal-seed-version: done
+  111-1-marshal-s-54-archived-dreams-leave-the-live-tree: done
   12-1-full-pixi-wiring-distribution-and-repo-gate-compliance: done
   12-2-the-local-recipes-empty-plan-oracle-critical: done
   12-3-offline-operation-and-the-egress-counter: done
@@ -505,6 +506,8 @@ development_status:
   epic-108-retrospective: optional
   epic-11: done
   epic-11-retrospective: optional
+  epic-111: done
+  epic-111-retrospective: optional
   epic-12: done
   epic-12-retrospective: optional
   epic-13: done

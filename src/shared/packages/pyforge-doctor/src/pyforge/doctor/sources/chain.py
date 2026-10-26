@@ -1391,6 +1391,20 @@ def _parse_readme_dream_statuses(readme: Path) -> dict[str, str]:
     return out
 
 
+_ARCHIVED_DREAMS_REL = ("archive", "docs", "dreams")
+
+
+def _archived_dream_slugs(target: Path) -> set[str]:
+    """Stems of the Dreams under ``archive/docs/dreams/`` (CAP-11's one archive
+    home), so a Kinship wikilink naming a moved Dream still resolves. An absent
+    or unreadable archive contributes nothing -- never a finding of its own."""
+    adir = target.joinpath(*_ARCHIVED_DREAMS_REL)
+    try:
+        return {p.stem for p in adir.iterdir() if p.suffix == ".md" and p.is_file()}
+    except OSError:
+        return set()
+
+
 def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
     findings: list[Finding] = []
     dreams_dir = target / "docs" / "dreams"
@@ -1437,6 +1451,12 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
     readme_statuses = _parse_readme_dream_statuses(dreams_dir / "README.md")
     dream_paths = [p for p in entries if p.suffix == ".md" and p.name != "README.md"]
     dream_slugs = {p.stem for p in dream_paths}
+    # spec-one-chain-per-station CAP-11 (CHAIN-STANDARD section 11): an archived
+    # Dream lives under archive/docs/dreams/, and a Kinship wikilink that names
+    # it still resolves -- readers follow the move (sibling-drift does the same).
+    # Only the wikilink check reads the union: the README and roster checks walk
+    # docs/dreams/ alone, because an archived Dream has no row and no status to judge.
+    link_targets = dream_slugs | _archived_dream_slugs(target)
     dream_count = len(dream_paths)
     dream_meta: dict[str, dict[str, str]] = {}
 
@@ -1588,14 +1608,15 @@ def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
 
         for match in _KINSHIP_WIKILINK_RE.finditer(kinship_body):
             link_slug = match.group(1).strip().removesuffix(".md")
-            if link_slug and link_slug not in dream_slugs:
+            if link_slug and link_slug not in link_targets:
                 findings.append(
                     Finding(
                         source=Source.DREAMS_HYGIENE,
                         check="kinship-wikilink-dead",
                         status=DoctorStatus.WARN,
                         message=(
-                            f"Dream {slug!r} Kinship wikilink [[{link_slug}]] does not resolve under docs/dreams/"
+                            f"Dream {slug!r} Kinship wikilink [[{link_slug}]] does not resolve under docs/dreams/ "
+                            "or archive/docs/dreams/"
                         ),
                         evidence={
                             "subject": slug,

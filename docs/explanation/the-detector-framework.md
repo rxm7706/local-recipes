@@ -3,7 +3,7 @@ sources:
   - scripts/detectors.py
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py
   - docs/reference/judgement-vocabulary.md
-  - docs/dreams/fidelity-enforcement.md
+  - archive/docs/dreams/fidelity-enforcement.md
 verified: 2026-10-24
 ---
 
@@ -30,7 +30,7 @@ The framework explicitly splits detectors into two domains:
 1. **`scope="repo"`**: These read tracked files only. They can run anywhere, including CI runners (`detectors-ci`).
 2. **`scope="runtime"`**: These read host state, such as the gitignored Tier-3 sprint feeds, tmux panes, and `~/.bmad-loops`. They explicitly *cannot* run in CI.
 
-This split is intentional. It represents the factory's missing observation plane showing up as a deployment constraint: runtime detectors are precisely the ones with nowhere to run in an ephemeral CI runner, which is why they are executed by operators and agent watchdogs locally (`docs/dreams/fidelity-enforcement.md` is the Dream that closes that gap).
+This split is intentional. It represents the factory's missing observation plane showing up as a deployment constraint: runtime detectors are precisely the ones with nowhere to run in an ephemeral CI runner, which is why they are executed by operators and agent watchdogs locally (`archive/docs/dreams/fidelity-enforcement.md` is the Dream that closes that gap).
 
 ## "Unknown, Never Green"
 

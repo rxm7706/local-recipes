@@ -590,6 +590,12 @@ def derive(root: Path, slug: str, with_tests: bool = False) -> tuple[dict, list[
              f"{len(spec_hits)} SPEC.md match _bmad-output/projects/*/planning-artifacts/specs/spec-{slug}/")
 
     dream = root / "docs/dreams" / f"{slug}.md"
+    if not dream.is_file():
+        # spec-one-chain-per-station CAP-11 (CHAIN-STANDARD section 11): an archived
+        # Dream has one home, archive/docs/dreams/<same name>; the reader follows the move.
+        archived = root / "archive/docs/dreams" / f"{slug}.md"
+        if archived.is_file():
+            dream = archived
     dstatus = frontmatter_scalar(dream, "status")
     if dstatus:
         facts.append(fact("dream_status", dstatus, rel(dream), "frontmatter status"))

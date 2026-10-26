@@ -5,7 +5,7 @@ own commit history: when ``pixi.toml`` has moved past a declared policy
 threshold since a ledger section was last touched, emit a WARN naming the
 ledger and how far behind it is. Advisory only — never gates.
 
-See ``docs/dreams/pixi-candidate-currency.md`` and
+See ``archive/docs/dreams/pixi-candidate-currency.md`` and
 ``spec-pixi-candidate-currency`` CAP-4.
 """
 
@@ -27,7 +27,7 @@ __all__ = (
 # Declared policy threshold — not a magic number buried in gather logic.
 PIXI_CURRENCY_LEDGER_STALENESS_PIXI_COMMITS = 30
 
-_DREAM_REL = "docs/dreams/pixi-candidate-currency.md"
+_DREAM_REL = "archive/docs/dreams/pixi-candidate-currency.md"
 _PIXI_REL = "pixi.toml"
 
 _CHECK_STALE = "pixi-currency-ledger-stale"

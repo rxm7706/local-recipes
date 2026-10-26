@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: bcd912d9fd4f64de
-story_count: 151
+source_fingerprint: 9040b330094b6052
+story_count: 152
 test_file_count: 187
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 151
-- **Epics parsed:** 41
+- **Stories parsed:** 152
+- **Epics parsed:** 42
 - **Test files inventoried:** 187 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `bcd912d9fd4f64de`
+- **Source fingerprint:** `9040b330094b6052`
 
 ## Risk Assessment
 
@@ -73,6 +73,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 39: The atlas PRD's FR arrows name the capabilities the Spec carries
 - Epic 40: FR-15, FR-61 and FR-63 name what realizes them (spec-pyforge-atlas CAP-70, CAP-71)
 - Epic 41: Every atlas requirement derives from a capability (spec-pyforge-atlas CAP-72; spec-one-chain-per-station CAP-5 amended)
+- Epic 44: The archived atlas Dreams live in one archive home (spec-one-chain-per-station CAP-11)
 
 ### Low-risk epics
 
@@ -425,6 +426,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 41.1 | FR-15 names the capability minted from its Constraint, and the Spec's cut tex... | none observed |
 | 41.2 | The satellite PRDs' FR ids leave the kernel's id space | none observed |
 | 41.3 | Every atlas NFR names the capabilities it bounds | none observed |
+| 44.1 | Atlas's twelve archived Dreams leave the live tree | none observed |
 
 ## Quality Gates
 

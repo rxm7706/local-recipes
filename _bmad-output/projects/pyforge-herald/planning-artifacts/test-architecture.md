@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: herald
-source_fingerprint: 1cec0834eca63867
-story_count: 149
+source_fingerprint: 200afc72e8995ba5
+story_count: 150
 test_file_count: 97
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-herald`
-- **Stories parsed:** 149
-- **Epics parsed:** 47
+- **Stories parsed:** 150
+- **Epics parsed:** 48
 - **Test files inventoried:** 97 under `src/shared/packages/pyforge-herald/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `1cec0834eca63867`
+- **Source fingerprint:** `200afc72e8995ba5`
 
 ## Risk Assessment
 
@@ -71,6 +71,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 42: The Pages site shows the fleet and the guild, and builds for any host without a flag (spec-pyforge-herald CAP-60)
 - Epic 46: The herald PRD's FR arrows name the capabilities the Spec carries
 - Epic 47: The herald Spec's capability text is whole again (spec-one-chain-per-station CAP-5 amended, CAP-3)
+- Epic 48: The archived herald Dreams live in one archive home (spec-one-chain-per-station CAP-11)
 
 ### Low-risk epics
 
@@ -339,6 +340,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 45.1 | Herald's built-site tests install docs-site first, in preflight and CI | none observed |
 | 46.1 | Every herald PRD FR arrow names the Spec capability that realizes it | none observed |
 | 47.1 | The herald Spec's fold-cut capability text is restored | none observed |
+| 48.1 | Herald's ten archived Dreams leave the live tree, and deck-facts reads a deck... | none observed |
 
 ## Quality Gates
 

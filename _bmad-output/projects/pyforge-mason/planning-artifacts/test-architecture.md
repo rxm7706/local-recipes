@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: 5aa37d3ecedd2ecc
-story_count: 118
+source_fingerprint: 03c19c4845028d2c
+story_count: 119
 test_file_count: 43
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 118
-- **Epics parsed:** 34
+- **Stories parsed:** 119
+- **Epics parsed:** 35
 - **Test files inventoried:** 43 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `5aa37d3ecedd2ecc`
+- **Source fingerprint:** `03c19c4845028d2c`
 
 ## Risk Assessment
 
@@ -67,6 +67,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 32: The mason PRD's FR arrows name the capabilities the Spec carries
 - Epic 33: The mason Spec's capability text is whole again, and its NFRs get an owner (spec-one-chain-per-station CAP-5 amended, CAP-3)
 - Epic 34: The atlas's dependency graph and bot health read the conda-forge bot's split repos (fix under spec-pyforge-mason CAP-24)
+- Epic 35: The archived mason Dreams live in one archive home (spec-one-chain-per-station CAP-11)
 
 ### Low-risk epics
 
@@ -242,6 +243,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 33.1 | The mason Spec's fold-cut capability text is restored | none observed |
 | 33.2 | Every mason NFR names the capabilities it bounds | none observed |
 | 34.1 | The atlas reads the conda-forge bot's split graph repos | none observed |
+| 35.1 | Mason's twelve archived Dreams leave the live tree | none observed |
 
 ## Quality Gates
 

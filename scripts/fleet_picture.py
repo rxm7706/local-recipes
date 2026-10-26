@@ -873,7 +873,7 @@ def _baseline_drift_needs_lines(findings: list[dict]) -> list[str]:
         f"(e.g. {slug}/{story} run {run}: real {real} != drifted {drifted}; "
         f"{recover}) -- run `pixi run -e local-recipes baseline-drift-check` "
         f"for the full list, then recover per "
-        f"docs/dreams/bmad-loop-baseline-drift.md"
+        f"archive/docs/dreams/bmad-loop-baseline-drift.md"
     ]
 
 

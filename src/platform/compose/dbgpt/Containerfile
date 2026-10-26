@@ -15,7 +15,7 @@
 # disjoint -- confirmed live by attempting to add `dbgpt-app` to
 # `python-agent-platform` and watching the solve fail with exactly this
 # conflict -- which is the demonstrated pluggability failure
-# `docs/dreams/db-gpt-django-plugin.md`'s 2026-08-21 AD-14 entry records.
+# `archive/docs/dreams/db-gpt-django-plugin.md`'s 2026-08-21 AD-14 entry records.
 # See `pixi.toml`'s own `[feature.dbgpt-sidecar]` comment for the full
 # citation; not re-derived here.
 #

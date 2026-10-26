@@ -5,7 +5,7 @@
 # still matches that: Epic 11 mounts it inside the `platform` image as a
 # pluggable Django app (Pattern A), never a sidecar. DB-GPT does NOT --
 # Story 10.5 (AD-14 Pattern B deviation, dream doc
-# docs/dreams/db-gpt-django-plugin.md, 2026-08-21 entry) moved it to its own
+# archive/docs/dreams/db-gpt-django-plugin.md, 2026-08-21 entry) moved it to its own
 # `dbgpt` service below, because `dbgpt-app` transitively pins
 # `fastapi <0.113.0` while `langflow-base` (already resident in the shared
 # `python-agent-platform` env) needs `fastapi >=0.135.0` -- disjoint ranges,
@@ -344,7 +344,7 @@ services:
       # alembic/versions/*.py migration script DB-GPT autogenerates into the
       # same subtree on first boot. So `docker compose down && up` doesn't
       # silently lose all session/conversation state, per
-      # docs/dreams/db-gpt-django-plugin.md's own storage rule.
+      # archive/docs/dreams/db-gpt-django-plugin.md's own storage rule.
       #
       # Story 10.5 called this "interim, pending Story 11.2's PostgreSQL
       # wiring" -- Story 11.2 investigated that wiring and found it is NOT

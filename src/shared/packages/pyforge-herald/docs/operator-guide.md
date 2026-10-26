@@ -36,7 +36,7 @@ Story 13.6's CI demo is archived under `archive/.github/workflows/` (Story 36.1)
 keeps evidence validation and the progress snapshot current — an operator
 can point an optional local `cron` entry at it
 (see [`cli-runbooks.md`](cli-runbooks.md#how-to-run-the-scheduled-job-evidence-revalidation-and-progress-snapshot)).
-See `docs/dreams/herald-moments-2-4-live-backend.md` for the fuller,
+See `archive/docs/dreams/herald-moments-2-4-live-backend.md` for the fuller,
 live-backend version of this system that hasn't been fully built yet, and
 why.
 
@@ -192,7 +192,7 @@ same-day webhook delivery would overwrite each other rather than merge;
 and holding the webhook secret grants progress-write access that the CLI
 grants only to a verified operator. The fuller live-backend version this
 is working toward — a persistent host every checkout shares — is captured
-in `docs/dreams/herald-moments-2-4-live-backend.md`. Steward's
+in `archive/docs/dreams/herald-moments-2-4-live-backend.md`. Steward's
 `deploy perimeter` renders any ASGI callable it is given
 (`--asgi-application`, steward Story 86.1, which closed DW-13-6-1).
 
