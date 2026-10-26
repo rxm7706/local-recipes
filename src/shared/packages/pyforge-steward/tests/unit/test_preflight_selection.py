@@ -6,13 +6,15 @@ Every repository here is a real git repository carrying a copy of the REAL
 workflow files at run time; the expected sets below name lanes (that is the test's oracle)
 but steward holds no such table.
 
-The Story 71.2 spec's literal lane lists were minted against an older lane graph. Three lanes
+The Story 71.2 spec's literal lane lists were minted against an older lane graph. Four lanes
 joined the graph since and have no entry in them, and each has to run wherever CI's own rule
 says it does:
 
 * ``pyforge-doctor-aggregate-scripts-test`` -- ``detectors.yml``'s ``scripts-suite`` job runs it
   on every pull request, so it belongs with the always-on lanes;
 * ``scripts-lib-test`` -- the same job's third step (steward Story 103.3), always-on for the same
+  reason;
+* ``pyforge-deps-test`` -- the same job's fourth step (steward Story 71.14), always-on for the same
   reason;
 * ``pages-check`` -- herald Story 27.5 replaced ``pr-preflight``'s always-on ``site-check`` leg with
   ``pages-check``, selected when ``pages.yml``'s ``pull_request`` ``paths`` fire (Story 102.2).
@@ -55,7 +57,7 @@ def _run_journal_record(repo: Path) -> dict:
 STATIONS = ("atlas", "doctor", "herald", "marshal", "mason", "scribe", "steward", "warden")
 LINT = {"ruff", "ruff-format", "mypy", "target-version-check", "precommit-config-check"}
 SPEC_ALWAYS_ON = {"detectors-ci", "pyforge-doctor-scripts-test", "docs-map-render-test", "docs-gen-test"}
-ALWAYS_ON_SINCE_SPEC = {"pyforge-doctor-aggregate-scripts-test", "scripts-lib-test"}
+ALWAYS_ON_SINCE_SPEC = {"pyforge-doctor-aggregate-scripts-test", "scripts-lib-test", "pyforge-deps-test"}
 DOCS_SITE_VALIDATE = {"docs-site-validate-links", "docs-site-validate-sidebar-order", "docs-site-validate-sidebar"}
 PAGES_CHECK_LEAVES = {"pages-check", "pages-build", "docs-site-install"}
 GATES = {f"pyforge-{s}-coverage-gate" for s in STATIONS}
@@ -489,6 +491,7 @@ def oracle_selection(repo: Path, tmp_path: Path) -> set[str]:
         "pyforge-doctor-scripts-test",
         "pyforge-doctor-aggregate-scripts-test",
         "scripts-lib-test",
+        "pyforge-deps-test",
     }  # no paths filter
     if _oracle_fires(repo, "cfe-regression-net.yml", changed):
         chosen.add("test-ci")

@@ -114,6 +114,11 @@ jobs:
       # (steward Story 103.3). pr-preflight runs the same task.
       - name: tests/scripts files that need a library (scripts-lib-test)
         run: pixi run --frozen -e pyforge-guild scripts-lib-test
+      # Every pyforge-* package declares what it imports, in both manifests (AUD-ATLAS-010): the
+      # dependency-completeness test ran on no PR until steward Story 71.14, so atlas 37.7's undeclared
+      # numpy reached main. pr-preflight runs the same task, in the same env.
+      - name: tests/packaging (pyforge-deps-test)
+        run: pixi run --frozen -e pyforge-ci pyforge-deps-test
 
   detectors:
     # ci-surfaces: detectors.detectors

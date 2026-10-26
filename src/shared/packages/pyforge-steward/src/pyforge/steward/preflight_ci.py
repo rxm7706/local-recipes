@@ -1610,6 +1610,11 @@ STATION_PACKAGES = "src/shared/packages"
 _STATION_ENVIRONMENT_PREFIX = "pyforge-"
 _STATION_PACKAGE_PREFIXES = ("pyforge-", "django-")
 _PYTHON_SUFFIXES = (".py", ".pyi")
+#: Story 71.14: ``pyforge-deps-test`` runs ``tests/packaging``. The dependency-completeness test there reads each
+#: ``pyforge-*`` package's two manifests and every ``.py`` under its ``src/``; the others read the root ``pixi.toml``
+#: and the root ``Containerfile*``. Those paths keep its lane in a touched run.
+PACKAGING_TESTS_TASK = "pyforge-deps-test"
+_PACKAGE_MANIFESTS = ("pyproject.toml", "pixi.toml")
 
 
 @dataclass(frozen=True)
@@ -1627,6 +1632,20 @@ def touched_paths(selection: Selection) -> tuple[str, ...]:
 
 def _under(path: str, root: str) -> bool:
     return path == root or path.startswith(root.rstrip("/") + "/")
+
+
+def is_packaging_test_input(path: str) -> bool:
+    """Whether ``path`` is one ``tests/packaging`` reads (Story 71.14): a ``pyforge-*`` package's ``pyproject.toml``
+    or ``pixi.toml``, a ``.py`` file under the package's ``src/``, the root ``pixi.toml`` or a root ``Containerfile*``."""
+    if path == "pixi.toml" or ("/" not in path and path.startswith("Containerfile")):
+        return True
+    prefix = f"{STATION_PACKAGES}/{_STATION_ENVIRONMENT_PREFIX}"
+    if not path.startswith(prefix):
+        return False
+    parts = path[len(STATION_PACKAGES) + 1 :].split("/")
+    if len(parts) == 2:
+        return parts[1] in _PACKAGE_MANIFESTS
+    return len(parts) > 2 and parts[1] == "src" and path.endswith(".py")
 
 
 def station_package_dirs(repo_root: Path, environment: str) -> tuple[str, ...]:
@@ -1694,8 +1713,9 @@ def touch_verdict(
     *,
     lint_tasks: frozenset[str] | None = None,
 ) -> TouchVerdict:
-    """Whether ``changed`` touches ``lane`` (Story 103.6): its station package, a path its command names, or --
-    for a lane of the ``lint-types`` closure -- a Python file under ``src/``. The lane is its task and its
+    """Whether ``changed`` touches ``lane`` (Story 103.6): its station package, a path its command names, for the
+    packaging-tests lane a path ``tests/packaging`` reads (Story 71.14), or -- for a lane of the ``lint-types``
+    closure -- a Python file under ``src/``. The lane is its task and its
     environment: a station's lanes are told apart by environment alone (each coverage gate runs one command)."""
     for package in station_package_dirs(repo_root, lane.environment):
         hit = next((path for path in changed if _under(path, package)), None)
@@ -1705,6 +1725,10 @@ def touch_verdict(
         hit = next((path for path in changed if _under(path, named)), None)
         if hit is not None:
             return TouchVerdict(True, f"its command names {named}, which changed ({hit})")
+    if lane.task == PACKAGING_TESTS_TASK:
+        hit = next((path for path in changed if is_packaging_test_input(path)), None)
+        if hit is not None:
+            return TouchVerdict(True, f"tests/packaging reads {hit}, which changed")
     tasks = lint_types_tasks(pixi_data) if lint_tasks is None else lint_tasks
     if lane.task in tasks:
         hit = next((path for path in changed if path.startswith("src/") and path.endswith(_PYTHON_SUFFIXES)), None)
