@@ -2,7 +2,7 @@
 title: "40.1: FR-15, FR-61 and FR-63 name what realizes them"
 type: 'chore'
 created: '2026-10-25'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
@@ -115,7 +115,7 @@ Type / Effort / Deps: chore / S / —.
 
 ## Auto Run Result
 
-Status: in-review (hand-built in the chain PR)
+Status: done (hand-built and promoted to `done` in the chain PR, as #2240 did; the merge subject names marshal 106.1's key, the others land through their ledgers at `main` reading `done`)
 Implementation: the PRD FR arrows rewritten from the memlog table; PRD and spine § Currency reconciliation —
 2026-10-25 (Story 40.1) added; PRD, spine and epics re-stamped.
 
@@ -123,6 +123,7 @@ Implementation: the PRD FR arrows rewritten from the memlog table; PRD and spine
 
 - 2026-10-25: minted from the Dream entry of 2026-10-25 (FR-15, FR-61 and FR-63 had no capability to name) at the operator's rulings of 2026-10-25 on DW-atlas-39-1, "Restore 2 atlas CAPs (Recommended)" and "Cite the constraint (Recommended)". `type: chore`, no flag.
 - 2026-10-25: implemented in the chain PR; moved to `in-review`.
+- 2026-10-25: promoted to `done` in the chain PR after the independent review and its round-1 amendments: this spec, its `epics.md` Status line and its ledger keys.
 
 ## Review Triage Log
 

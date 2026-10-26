@@ -2,7 +2,7 @@
 title: "110.1: Every steward PRD FR arrow names the Spec capability that realizes it"
 type: 'chore'
 created: '2026-10-25'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: true
@@ -109,7 +109,7 @@ Type / Effort / Deps: chore / S / —.
 
 ## Auto Run Result
 
-Status: in-review (hand-built in the chain PR)
+Status: done (hand-built and promoted to `done` in the chain PR, as #2240 did; the merge subject names marshal 106.1's key, the others land through their ledgers at `main` reading `done`)
 Implementation: the PRD FR arrows rewritten from the memlog table; PRD and spine § Currency reconciliation —
 2026-10-25 (Story 110.1) added; PRD, spine and epics re-stamped.
 
@@ -119,6 +119,7 @@ Implementation: the PRD FR arrows rewritten from the memlog table; PRD and spine
 - 2026-10-25: implemented in the chain PR; moved to `in-review`.
 - 2026-10-25: round-1 review amendment applied on the operator's ruling "Apply all (Recommended)": FR-8..FR-11 read
   CAP-2, CAP-168.
+- 2026-10-25: promoted to `done` in the chain PR after the independent review and its round-1 amendments: this spec, its `epics.md` Status line and its ledger keys.
 
 ## Review Triage Log
 

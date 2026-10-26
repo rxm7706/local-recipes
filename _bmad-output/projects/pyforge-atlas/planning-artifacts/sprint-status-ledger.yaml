@@ -145,7 +145,7 @@ development_status:
   39-1-every-atlas-prd-fr-arrow-names-the-spec-capability-that-realizes-it: done
   4-1-integrate-kedro-dagster-for-scheduling-execution: done
   4-2-integrate-kedro-viz-expose-a-pixi-task: done
-  40-1-fr-15-fr-61-and-fr-63-name-what-realizes-them: backlog
+  40-1-fr-15-fr-61-and-fr-63-name-what-realizes-them: done
   5-1-define-the-boring-semantic-layer-bsl-models: done
   5-2-build-the-vizro-dashboard-port-the-28-clis-to-pages: done
   5-3-integrate-vizro-ai-expose-the-nl-interface-as-an-mcp-tool: done
@@ -230,7 +230,7 @@ development_status:
   epic-39-retrospective: optional
   epic-4: done
   epic-4-retrospective: done
-  epic-40: backlog
+  epic-40: done
   epic-40-retrospective: optional
   epic-5: done
   epic-5-retrospective: done

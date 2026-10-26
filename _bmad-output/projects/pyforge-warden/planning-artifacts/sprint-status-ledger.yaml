@@ -46,7 +46,7 @@ development_status:
   16-5-warden-inventories-the-items-of-the-operator-designated-github-projects: done
   17-1-eligibility-records-its-policy-and-warden-s-other-open-deferrals-close: done
   18-1-the-leak-guard-forbids-the-listed-terms-everywhere-and-the-organisation-s-name-in-warden-s-files: done
-  19-1-every-warden-prd-fr-arrow-names-the-spec-capability-that-realizes-it: backlog
+  19-1-every-warden-prd-fr-arrow-names-the-spec-capability-that-realizes-it: done
   2-1-conda-pypi-map-the-ecosystem-identity-predicate: done
   2-2-non-rendering-extraction-common-case-differential-oracle: done
   2-3-the-full-supported-construct-matrix: done
@@ -97,7 +97,7 @@ development_status:
   epic-17-retrospective: optional
   epic-18: done
   epic-18-retrospective: optional
-  epic-19: backlog
+  epic-19: done
   epic-19-retrospective: optional
   epic-2: done
   epic-2-retrospective: done
