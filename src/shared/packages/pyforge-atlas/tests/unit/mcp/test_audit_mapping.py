@@ -61,12 +61,12 @@ VALID_VERDICT_PREFIXES = ("read_dataset:", "pipeline-trigger", "deferred-to-BSL(
 # this story's scope forbids.
 #
 # Steward Story 34.2 (FR-47) registered `query_plane_cache` without adding this exemption --
-# found here (2026-08-27) as a pre-existing registry-mirror gap while landing Story 20.3;
+# found here (2026-08-27) as a pre-existing registry-mirror gap while landing Story 19.3 (pre-rekey 20.3);
 # fixed in the same edit rather than left red. `query_plane_cache` is invoked via `kedro run
 # --pipeline query_plane_cache` (see tests/test_query_plane_parquet_cache.py), never an MCP
 # trigger tool.
 #
-# Story 20.3 (CAP-6, `query-plane-catalog` ruling): `semantic_packages` is the SAME shape --
+# Story 19.3 (pre-rekey 20.3; CAP-6, `query-plane-catalog` ruling): `semantic_packages` is the SAME shape --
 # a named, downstream-only, opt-in derivation pipeline invoked via `pyforge atlas run --pipelines
 # semantic_packages` (see the story spec's AC), not through the MCP pipeline-trigger surface.
 # Story 37.10: catalog_index reports on what the other pipelines wrote; it runs after a build, as the two
@@ -113,7 +113,7 @@ def test_cli_only_tools_stay_cli_only():
     assert not normalized & set(audit.ATLAS_TOOL_AUDIT)
 
 
-def test_pipeline_trigger_tools_match_the_registered_pipelines():
+def test_pipeline_trigger_tools_match_the_mcp_triggerable_pipelines():
     assert audit.PIPELINE_TRIGGER_TOOLS == (
         "run_core_pipeline",
         "run_vcs_health_pipeline",

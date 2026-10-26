@@ -2,9 +2,9 @@
 title: "33.2: The spine counts twelve pipelines, and the MCP face names its eight as the MCP-triggerable ones"
 type: 'fix'
 created: '2026-10-25'
-status: 'ready-for-dev'
+status: 'in-review'
 baseline_revision: '529f06d52b6d6469b847519905c20bf528a60334'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 declared_low_risk: true
 context:
@@ -85,3 +85,29 @@ the SKF skill (one line of its text changes, in place).
 
 - 2026-10-25: drafted from the Dream entry of 2026-10-25 (twelve pipelines, eight triggers) and the 2026-10-25 atlas
   retro's Finding 7.
+- 2026-10-25: the Problem's "Story 20.3" corrected to its post-rekey number, Story 19.3 (`rekey-2026-09-17.md`).
+- 2026-10-25: implemented (`147dc077b4`), adding `run_pipeline`'s docstring and the skill's `run_pipeline` row, which
+  made the same claim; review round 1 PASS with 2 should-fixes, both fixed: the SKF anchors into `mcp/tools.py` re-pinned
+  two lines lower, and AD-3's `semantic_packages` entry names `derived_artifacts` as an input. Moved to `in-review`.
+
+## Run results
+
+2026-10-25, after the round-1 fixes:
+- `grep -rn "registered pipeline" src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp .claude/skills/pyforge-atlas`:
+  no match (AC2).
+- `pixi run -e pyforge-atlas pyforge-atlas-test`: 3478 passed, 20 skipped (AC3); after the fixes, the SKF, audit-mapping,
+  pipeline-inventory and CLI-parity tests: 38 passed.
+- `pixi run -e pyforge-guild lint-types`: exit 0.
+
+## Review Triage Log
+
+**Review 1 (independent, 2026-10-25): PASS** — AC1-AC3 met; 2 should-fix, 5 nits; all fixed.
+- should-fix: the `tools.py` comment grew two lines, so every SKF anchor below it (`provenance-map.json`
+  `source_line`s 116/140/202/215/241/252 and six `[SRC:]` ranges in `SKILL.md`) pointed two lines high. Fixed:
+  re-pinned by hand, as Story 33.1 did, and the skill's note names this story.
+- should-fix: AD-3 said `semantic_packages` sits downstream of `core` and `vcs_health`; since Story 38.1 it also reads
+  `derived_artifacts`. Fixed.
+- nits, fixed: the test `test_pipeline_trigger_tools_match_the_registered_pipelines` renamed to
+  `..._match_the_mcp_triggerable_pipelines`; the audit test's two pre-rekey "Story 20.3" citations read "Story 19.3
+  (pre-rekey 20.3)"; this spec's 20.3 edit now has a Change Log line; `SKILL.md`'s `PIPELINE_NAMES` entry no longer
+  calls it a "static registry mirror".

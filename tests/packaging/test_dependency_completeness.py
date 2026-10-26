@@ -100,7 +100,7 @@ MODULE_ALIASES: dict[str, frozenset[str]] = {
 # CONDA_ONLY_RUN_DEPS below).
 #
 # `brotli-python` is conda-forge's build of PyPI `Brotli` (the `brotli` conda package
-# is the C library alone); atlas declares it for the nixpkgs Tier-3 store (Story 34.13).
+# is the C library and CLI, with no Python module); atlas declares it for the nixpkgs Tier-3 store (Story 34.13).
 CONDA_TO_PYPI: dict[str, str] = {
     "brotli-python": "brotli",
 }

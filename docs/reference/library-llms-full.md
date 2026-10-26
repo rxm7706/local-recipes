@@ -188,7 +188,7 @@ manifest is a second, un-mirrored source root `pixi.toml` doesn't otherwise expo
   Resolvable transitively via **bokeh** in every other env; declared directly only in
   atlas's nested manifest, in step with its `pyproject.toml`.
 - **brotli-python** (>=1.2) — Brotli compression bindings (PyPI `Brotli`; imports as
-  `brotli`; the `brotli` conda package is the C library alone); `pyforge-atlas` only
+  `brotli`; the `brotli` conda package is the C library and CLI, with no Python module); `pyforge-atlas` only
   (`datasets/tier3_sources.py` decodes the nixpkgs `packages.json.br` through a guarded
   import, Story 34.13). Resolvable transitively via conda-forge **urllib3** in every env
   that has it; declared directly only in atlas's nested manifest, in step with its
