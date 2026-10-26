@@ -75,6 +75,13 @@ dependencies = [
     # (AUD-ATLAS-010) — floors pinned to the versions resolved in the working env.
     "tornado>=6.5.8",
     "starlette>=1.6.0",
+    # Story 34.13 (CAP-64, DW-atlas-34-5-1): `datasets/tier3_sources.py` decodes the nixpkgs
+    # `packages.json.br` through a guarded `importlib.import_module("brotli")`. The conda env
+    # carried it only through conda-forge `urllib3`'s `brotli-python` dependency; PyPI's
+    # `urllib3` makes brotli an extra, so a pip install had none and the store read stale.
+    # AUD-ATLAS-010: declared. No new package enters the env. Kept byte-for-byte in step with
+    # the member pixi.toml run-dependencies.
+    "brotli>=1.2",                    # PyPI: Brotli; conda: brotli-python
 ]
 
 [project.optional-dependencies]

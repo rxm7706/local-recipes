@@ -5006,7 +5006,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: review finding, atlas Story 34.5 independent review rounds 1-2
   severity: low
   promoted: 2026-10-18 -- implementer response to 34.5 review round 2
-  status: open
+  resolved: 2026-10-25 (Story 34.13: pyproject.toml declares brotli>=1.2 (PyPI Brotli) and the package pixi.toml brotli-python = ">=1.2", the floor the env already resolves through conda-forge urllib3; pixi.lock records it for every pyforge-atlas source entry, and a fresh pixi install -e pyforge-atlas --locked in a clean clone reads the lock as current; the dependency-parity test maps brotli-python to brotli (CONDA_TO_PYPI); the guarded import in datasets/tier3_sources.py is unchanged)
+  status: closed
 
 ### DW-atlas-34-6-1: The `pyforge-atlas-bootstrap` task description still names all three discovery stores as fetcher-less.
 

@@ -21,7 +21,8 @@ Public CLI export documented (`main`). Package `__init__.py` pins pandas
 `future.infer_string` and exports `__version__` only
 [SRC:src/pyforge/atlas/__init__.py:L34]. The `[SRC:…]` line citations and
 `provenance-map.json`'s `source_line`s were re-pointed by hand on 2026-10-18
-(atlas Story 33.1) against that story's landing tree; the compile commit above is unchanged.
+(atlas Story 33.1) against that story's landing tree, and the `mcp/tools.py` ones again on 2026-10-25
+(atlas Story 33.2, two lines lower); the compile commit above is unchanged.
 This skill is **not** `cf-atlas-legacy`
 and does **not** replace `conda-forge-expert`.
 
@@ -64,15 +65,15 @@ prints one line and returns without loading Kedro.
 
 **Pipeline run (CLI):** `pyforge atlas run --pipelines <name>[,<name>…]` —
 same execution plane as MCP `run_pipeline` (AD-23). The MCP trigger accepts the
-names in `PIPELINE_NAMES` [SRC:src/pyforge/atlas/mcp/tools.py:L97-L106]; the
+names in `PIPELINE_NAMES` [SRC:src/pyforge/atlas/mcp/tools.py:L99-L108]; the
 CLI accepts every registered Kedro pipeline. Kedro 1.6 deprecates the singular
 `--pipeline`.
 
 **Catalog list:** no CLI verb — use the MCP tool `list_atlas_datasets`
-(`list_datasets` [SRC:src/pyforge/atlas/mcp/tools.py:L252-L260]).
+(`list_datasets` [SRC:src/pyforge/atlas/mcp/tools.py:L254-L262]).
 
 **MCP read/trigger:** `run_pipeline`, `read_dataset`, `list_pipelines`,
-`list_datasets` [SRC:src/pyforge/atlas/mcp/tools.py:L116-L260]. Host face is
+`list_datasets` [SRC:src/pyforge/atlas/mcp/tools.py:L118-L262]. Host face is
 `POST /stations/atlas/mcp`, not ad-hoc HTTP.
 
 ## Key API Summary
@@ -80,9 +81,9 @@ CLI accepts every registered Kedro pipeline. Kedro 1.6 deprecates the singular
 | Function | Purpose | Key params |
 |---|---|---|
 | `main` | Kedro CLI entry (`pyforge-atlas` / `python -m pyforge.atlas`) | argv / `--version` |
-| `run_pipeline` | Trigger one registered pipeline via KedroSession | `name` |
+| `run_pipeline` | Trigger one MCP-triggerable pipeline via KedroSession | `name` |
 | `read_dataset` | Load one catalog dataset with provenance envelope | dataset name |
-| `list_pipelines` | Offline registry mirror of pipeline names | — |
+| `list_pipelines` | Offline mirror of the eight MCP-triggerable pipeline names (the other four are CLI-only) | — |
 | `list_datasets` | Catalog keys from a bootstrapped session | — |
 | `query_vizro_ai` | NL field over BSL (MCP) | `query` |
 | `query_trending_candidates` | Read classified trending list (MCP) | filters |
@@ -103,11 +104,11 @@ here — that remains `conda-forge-expert`.
 
 ## Key Types
 
-**`AtlasMCPError`** [SRC:src/pyforge/atlas/mcp/tools.py:L109-L113] — invalid
+**`AtlasMCPError`** [SRC:src/pyforge/atlas/mcp/tools.py:L111-L115] — invalid
 MCP-surface request (unknown pipeline).
 
-**`PIPELINE_NAMES`** [SRC:src/pyforge/atlas/mcp/tools.py:L97-L106] — static
-registry mirror (`core`, `vcs_health`, `pypi_intelligence`, `vulnerability`,
+**`PIPELINE_NAMES`** [SRC:src/pyforge/atlas/mcp/tools.py:L99-L108] — static
+mirror of the eight MCP-triggerable pipelines (`core`, `vcs_health`, `pypi_intelligence`, `vulnerability`,
 `seed_gaps`, `universal_sbom`, `derived_artifacts`, `upstream_discovery`).
 
 ## Architecture at a Glance
@@ -131,7 +132,7 @@ pyforge atlas package
 
 `run` with no `--pipelines` runs the whole `__default__` DAG. Unknown pipelines
 on the MCP trigger raise `AtlasMCPError`
-[SRC:src/pyforge/atlas/mcp/tools.py:L129-L130].
+[SRC:src/pyforge/atlas/mcp/tools.py:L131-L132].
 
 <!-- [MANUAL:api-notes] -->
 <!-- Add custom notes here. This section is preserved during skill updates. -->
