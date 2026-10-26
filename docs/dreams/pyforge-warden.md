@@ -222,6 +222,17 @@ the host or the source.
   Kinships: Story 16.1 (AC9) and Story 16.5 (the changed-files scan); the guard's file is also on steward's
   `spec-pyforge-unifying-strategy` surface. Owner: warden; a defect against `spec-pyforge-warden` CAP-26 (FR-43).
   → Epic 18 / Story 18.1, specced 2026-10-11.
+- **2026-10-25 (the PRD's FR arrows were mapped by subsection, not traced) — Found: four of the warden PRD's FR
+  arrows are wrong or missing.** A fleet audit of every station PRD's `FR-n ← CAP-m` arrows, run after marshal Story
+  105.1 found marshal's counted rather than traced, read all 41 warden arrows. The 2026-09-17 fold (`548e907247`) gave
+  each requirement bullet the capability of its subsection. FR-11 (an offline vulnerability database with its snapshot
+  time) and FR-12 (a stale database routes to `indeterminate`) read CAP-4, although CAP-11, air-gapped operation, states
+  both almost word for word. FR33 and FR35, the license and currency gate flags, are spelled without the hyphen, so the
+  fold skipped them and doctor's `fr-without-cap` cannot see them. **What it looks like when fixed:** FR-11 and FR-12
+  read CAP-11, CAP-4; FR33 and FR35 read CAP-5, tunable policy, and keep their spelling. **Constraints:** a chore under
+  `spec-one-chain-per-station` CAP-5 (FRs derive from CAPs) and CAP-3 (the station fold procedure); no CAP, no flag, no
+  `SPEC.md` change; no detector rule changes; renaming FR33 and FR35 needs its own ruling. Operator ruling, 2026-10-25:
+  "Do rows 1-5 in one PR". Owner `spec-pyforge-warden`. → Epic 19 / Story 19.1, specced 2026-10-25.
 
 ## Folded Dreams (2026-09-17)
 

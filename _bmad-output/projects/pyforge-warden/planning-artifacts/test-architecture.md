@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: warden
-source_fingerprint: cb82d34ab20e0c92
-story_count: 62
+source_fingerprint: bdb8db4a195d168a
+story_count: 63
 test_file_count: 80
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-warden`
-- **Stories parsed:** 62
-- **Epics parsed:** 18
+- **Stories parsed:** 63
+- **Epics parsed:** 19
 - **Test files inventoried:** 80 under `src/shared/packages/pyforge-warden/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `cb82d34ab20e0c92`
+- **Source fingerprint:** `bdb8db4a195d168a`
 
 ## Risk Assessment
 
@@ -52,6 +52,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 16: Warden scans the enterprise fleet on GitHub Enterprise (spec-pyforge-warden CAP-26)
 - Epic 17: Phase 4+5 of the deferral burn-down: warden's open medium and low deferrals
 - Epic 18: The leak guard keeps the fleet target private, not the organisation's public name (fix under spec-pyforge-warden CAP-26)
+- Epic 19: The warden PRD's FR arrows name the capabilities the Spec carries
 
 ### Low-risk epics
 
@@ -208,6 +209,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 16.5 | Warden inventories the items of the operator-designated GitHub Projects | none observed |
 | 17.1 | Eligibility records its policy, and warden's other open deferrals close | none observed |
 | 18.1 | The leak guard forbids the listed terms everywhere and the organisation's nam... | none observed |
+| 19.1 | Every warden PRD FR arrow names the Spec capability that realizes it | none observed |
 
 ## Quality Gates
 
