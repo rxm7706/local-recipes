@@ -4,6 +4,7 @@ type: dream
 owner: guild
 status: specified
 # 2026-09-09 — spec-pyforge-charter is at `in-progress` (past `ready`), holds CAP-1..CAP-8, and five amendments have executed against it; README:71's ladder puts `pitched` two acts behind. NOT `realized` (held 2026-09-16): CAP-7's Guildhall half is still unbacked. CAP-3's chain.py:96 leftover closed as doctor 21.4 (2026-09-10) — see the Realization log.
+# 2026-10-26 — spec-pyforge-charter reads `ready` (operator ruling, the one-chain re-audit's item 4; `in-progress` left the Spec enum at the 2026-09-17 rebase and this was its last live use). Still NOT `realized`: CAP-7's Guildhall half is unbacked.
 ---
 
 # The PyForge Charter — the Guild, the Smiths, the Mission
@@ -1282,3 +1283,12 @@ herald broadcast slack,email --channel engineering-updates
   `tests/scripts/test_bmad_cross_walk_is_declared.py`. Closes
   `spec-vocabulary-one-name-one-job` CAP-3 (Story 59.3), folded 2026-09-17
   into `spec-pyforge-steward` CAP-133.
+- **2026-10-26 (status correction on the Spec, not an amendment)** — `spec-pyforge-charter`
+  `in-progress` → `ready`, by operator ruling on the one-chain re-audit's item 4 (ruling sheet Q2).
+  CHAIN-STANDARD § 4 retired `in-progress` from the Spec enum at the 2026-09-17 rebase; the roster
+  kept it grandfathered only "until next edited", and this Spec was its last live use. `ready`
+  asserts only that the contract binds (the roster's definition), so the 2026-09-09 HELD reasons
+  — CAP-3's readers (mechanism since shipped as doctor Story 21.4) and CAP-7's Guildhall gate
+  (still waiting on the §7 referent) — become capability-level realization gaps, recorded in the
+  Spec's Realization status paragraph with the superseded text quoted per CAP-1. This Dream stays
+  `specified`, not `realized`, for the same CAP-7 reason. The Charter's own text is unchanged.

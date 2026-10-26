@@ -1,7 +1,8 @@
 ---
 id: SPEC-code-audit-remediation-2026-07-26
 spec: code-audit-remediation
-status: ready
+status: archived
+archived-reason: superseded   # 2026-10-26: moved to the archive home (CHAIN-STANDARD § 11, marshal Story 109.1); the waves closed 2026-07-27 (§ Spec closure stamp) and the residual findings live as deferred-work rows
 owner-dream: n/a
 program: regenerable-factory
 surface:

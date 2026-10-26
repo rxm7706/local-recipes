@@ -5,7 +5,7 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: becc445dbacfb5d3
+source_fingerprint: 71cbd4489c34c070
 story_count: 162
 test_file_count: 99
 coverage_target_unit: ">=80%"
@@ -24,7 +24,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Test files inventoried:** 99 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `becc445dbacfb5d3`
+- **Source fingerprint:** `71cbd4489c34c070`
 
 ## Risk Assessment
 
