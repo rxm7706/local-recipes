@@ -7118,7 +7118,7 @@ Minted 2026-10-26 from the station Dream's Realization log entry of the same dat
 cancelled at its 15-minute ceiling on 2026-10-23 and twice on 2026-10-26, two of the three on `main`'s own push runs.
 Each time the `playwright install --with-deps chromium` step spent 636–668 s, nearly all of it an apt download at
 38–43 kB/s that the runner image did not need. CAP-174 makes the job install only what the image lacks and sizes its budget from measured step times.
-Epic 112 because draft PR #2274 claims Epic 109 (with CAP-169..CAP-173 and FR-42..FR-47), Story 110.1 took 110 and
+Epic 112 because draft PR #2274 claims Epic 109 (with steward capability ids 169-173 and FR-42..FR-47), Story 110.1 took 110 and
 Story 111.1 took 111. **HARD boundaries:**
 - The lane is never paused, disabled or set `continue-on-error`; its `platform-ci.test` registry row, its `if:`
   fragment and its suite do not change.

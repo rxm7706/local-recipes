@@ -128,7 +128,7 @@ setup action, the environment or the suite.
 - Parent capability: `spec-pyforge-steward` CAP-174 (FR-48), minted with this story; works with CAP-166.
 - Dream: `docs/dreams/pyforge-steward.md` § *Realization log*, the 2026-10-26 entry.
 - Epic: Epic 112 (new), minted with this story; `epic-112` and `epic-112-retrospective` minted with it. Epic 112 because
-  draft PR #2274 claims Epic 109 with CAP-169..CAP-173 and FR-42..FR-47.
+  draft PR #2274 claims Epic 109 with steward capability ids 169-173 and FR-42..FR-47.
 - Ledger key: `112-1-the-platform-ci-test-job-installs-only-what-its-runner-image-lacks-and-its-budget-covers-a-slow-mirror`.
 - Deps: —.
 

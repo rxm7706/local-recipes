@@ -2901,7 +2901,7 @@ No FR is added, amended, renumbered or removed. **ONE kernel FR space stays FR-1
 
 *Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-steward` gained CAP-174 on 2026-10-26 from the
 Realization-log entry of that date (the Platform CI test job's budget is sized for a fast mirror). Same-day reconcile;
-the FR is derived from its CAP. CAP-169..CAP-173 and FR-42..FR-47 are claimed by draft PR #2274, so this FR takes the
+the FR is derived from its CAP. Steward capability ids 169-173 and FR-42..FR-47 are claimed by draft PR #2274, so this FR takes the
 next id free of it.*
 
 ### The FR space: FR-48 registered

@@ -2181,7 +2181,7 @@ Drift — orphaned between stations.
   (its archive is root-owned and follows the mirror's day); no browser cache (the CDN download is 8–11 s); the
   setup action, the suite and the other workflows' Chromium steps do not change. Direction 2026-10-26 from the
   session that landed PR #2322: mint a CAP through `bmad-spec`. Owner `spec-pyforge-steward` (CI surfaces are
-  steward's, CAP-166). CAP-169..CAP-173, FR-42..FR-47 and Epic 109 are claimed by draft PR #2274. → CAP-174 /
+  steward's, CAP-166). Steward capability ids 169-173, FR-42..FR-47 and Epic 109 are claimed by draft PR #2274. → CAP-174 /
   FR-48, Epic 112 / Story 112.1, specced 2026-10-26.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
