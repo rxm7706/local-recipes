@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """
-Offline PyPI-version source backed by the cf-graph-countyfair tarball.
+Offline PyPI-version source backed by the conda-forge bot's graph.
 
-Phase H normally fetches `pypi.org/pypi/<name>/json` per row. The cf-graph
-tarball that Phase E already downloads (~150 MB at
-`.claude/data/conda-forge-expert/cf-graph-countyfair.tar.gz`) contains
-`version_pr_info/<sharded>/<feedstock>.json` shards whose `new_version` field
-is the conda-forge autotick-bot's view of upstream. That signal is the bulk-
-load shortcut for Phase H: zero network, zero auth, ~1-2 min wall clock
-versus ~30 min of pypi.org fan-out.
+Phase H normally fetches `pypi.org/pypi/<name>/json` per row. The bot's
+`version_pr_info` archive that Phase E already downloads
+(`.claude/data/conda-forge-expert/cf-graph-version_pr_info.tar.gz`, from
+`conda-forge/conda-forge-bot-data-version_pr_info`; see `_cf_graph_source`)
+holds one `<feedstock>.json` per feedstock whose `new_version` field is the
+conda-forge autotick-bot's view of upstream. That signal is the bulk-load
+shortcut for Phase H: zero network, zero auth, ~1-2 min wall clock versus
+~30 min of pypi.org fan-out. A cache in the pre-split combined layout
+(`cf-graph-countyfair.tar.gz` with `version_pr_info/` inside) still reads.
 
 Trade-off: cf-graph lags pypi.org by hours-to-days (bot polling cadence),
 and it does NOT carry PEP 592 yanked status. Rows populated from cf-graph
@@ -19,23 +21,35 @@ Private module (underscore-prefixed) — not exposed as a CLI.
 """
 from __future__ import annotations
 
-import json
 import sys
-import tarfile
 from pathlib import Path
 from typing import Iterator
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+import _cf_graph_source as _cfgs  # type: ignore[import-not-found]  # noqa: E402
 
-_DEFAULT_TARBALL_RELATIVE = Path("cf-graph-countyfair.tar.gz")
-_VERSION_PR_INFO_MARKER = "/version_pr_info/"
+_KIND = "version_pr_info"
+
+
+def _data_dir() -> Path:
+    # _paths walks to the repo root by marker; the pre-2026-10 hand-rolled
+    # four-parent walk lives on only as the fallback when that walk fails.
+    from _paths import get_data_dir  # type: ignore[import-not-found]
+
+    return get_data_dir() or (
+        Path(__file__).resolve().parent.parent.parent.parent / "data" / "conda-forge-expert"
+    )
 
 
 def default_tarball_path() -> Path:
-    """Return the canonical cache location Phase E populates."""
-    base = Path(__file__).parent.parent.parent.parent / "data" / "conda-forge-expert"
-    return base / _DEFAULT_TARBALL_RELATIVE
+    """The cache Phase E populates: the split archive, else the legacy combined one.
+
+    Returns the split path when neither exists, so "missing" names the file
+    Phase E would write.
+    """
+    data_dir = _data_dir()
+    return _cfgs.source_path(data_dir, _KIND) or _cfgs.split_cache_path(data_dir, _KIND)
 
 
 def tarball_available(path: Path | None = None) -> bool:
@@ -61,26 +75,22 @@ def iter_feedstock_versions(
     if not tarball_available(path):
         return
 
-    with tarfile.open(path, "r:gz") as tf:
-        for member in tf:
-            if not member.isfile() or not member.name.endswith(".json"):
-                continue
-            if _VERSION_PR_INFO_MARKER not in member.name:
-                continue
-            feedstock = member.name.rsplit("/", 1)[-1][:-5]
-            handle = tf.extractfile(member)
-            if handle is None:
-                continue
-            try:
-                payload = json.load(handle)
-            except (json.JSONDecodeError, UnicodeDecodeError, OSError):
-                continue
-            if not isinstance(payload, dict):
-                continue
-            new_version = payload.get("new_version")
-            if not isinstance(new_version, str) or not new_version:
-                continue
-            yield feedstock, new_version
+    for feedstock, payload in _cfgs.iter_tar_records(path, _KIND):
+        new_version = payload.get("new_version")
+        if not isinstance(new_version, str) or not new_version:
+            continue
+        yield feedstock, new_version
+
+
+def has_version_records(path: Path | None = None) -> bool:
+    """True when the tarball holds at least one version_pr_info record.
+
+    A cache that holds none (the 2026-10 redirect of regro/cf-graph-countyfair
+    to conda-forge/conda-forge-bot-data served such an archive) must not be
+    read as "the bot found no upstream for every feedstock".
+    """
+    path = path or default_tarball_path()
+    return tarball_available(path) and _cfgs.has_records(path, _KIND)
 
 
 def build_pypi_version_map(

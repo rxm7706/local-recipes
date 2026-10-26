@@ -80,6 +80,7 @@
       "root_paths": [
         ".claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py",
         ".claude/skills/conda-forge-expert/scripts/_cf_graph_versions.py",
+        ".claude/skills/conda-forge-expert/scripts/_cf_graph_source.py",
         ".claude/data/conda-forge-expert/cf_atlas.db"
       ],
       "key_tech": [

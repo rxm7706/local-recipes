@@ -10,7 +10,7 @@ What it does (in order):
   2. CVE DB              — OSV.dev legacy DB (used by scan_for_vulnerabilities)
   3. vdb (multi-source)  — AppThreat vdb (~2.5 GB; used by Phase G + scan-project --vdb)
   4. cf_atlas            — conda repodata + feedstock-outputs + parselmouth + PyPI Simple
-  5. cf_atlas Phase E    — cf-graph-countyfair node_attrs (~150 MB tarball)
+  5. cf_atlas Phase E    — the bot's graph: conda-forge-bot-data-* (four tarballs, ~50 MB)
   6. cf_atlas Phase J/K/L/M — dep graph + VCS upstream + extra registries + bot health
   7. cf_atlas Phase G/G' — vdb risk summary (latest version + per-version with PHASE_GP_ENABLED)
   8. cf_atlas Phase H    — PyPI current version (with yanked detection)

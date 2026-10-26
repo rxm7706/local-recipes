@@ -769,3 +769,25 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
 
 Station Dream status is `specified` (Spec `spec-pyforge-mason` is `ready`). Mason-owned satellite Dreams archive in place with Consolidated-into banners. Practice Dream `packaging-factory` is archived into this station Dream (CHAIN-STANDARD precedence; no new station Dream minted). Recipe work stays `conda-forge-expert`; this fold is planning-chain only.
 - **2026-10-26 (every requirement derives from a capability) — Found:** the 2026-09-17 fold cut 8 of the Spec's intent and success bullets at their first line, and none of the 16 NFR lines cites a capability. **Ruled** (2026-10-26, operator, fleet-wide: "yes forbid it" — a requirement cites one or more defined capabilities and nothing else; `spec-one-chain-per-station` CAP-5 as amended, CHAIN-STANDARD § 12). **For mason:** the text is restored by script from `e062c19c9d^` with every id stable; the NFR backfill is minted `backlog` as Story 33.2 (ruling (c)) so the detector baseline has an owner for every mason row it carries. Epic 33 / Story 33.1, built in the one-PR effort with the other seven stations; no mason CAP minted, no requirement changes.
+- **2026-10-26 — Fixed: the atlas's dependency graph and bot health read the conda-forge bot's split repos again.**
+  A local `pr-preflight` failed `test_atlas_clis_smoke.py::test_whodepends_reverse_json`, and the same test failed in a
+  second worktree the same day: `whodepends python --reverse` returned no rows. Every local `cf_atlas.db` had 0 rows in
+  `dependencies`, although the build metadata listed every phase as run. The cause is upstream. GitHub now
+  301-redirects `regro/cf-graph-countyfair`, the repo the atlas downloads, to `conda-forge/conda-forge-bot-data`, and
+  that archive holds none of the bot's graph. cf-scripts publishes the graph as four repos:
+  `conda-forge/conda-forge-bot-data-node_attrs`, `-pr_info`, `-version_pr_info` and `-pr_json`. The download still
+  succeeded, so nothing failed. Phase J, the writer of `dependencies`, wiped the table and committed 0 edges without a
+  warning. Phases E and M and Phase H's cf-graph mode read nothing. pyforge-atlas ported its own reader on 2026-10-18
+  (atlas Story 34.3); CFE's `conda_forge_atlas.py` was never ported. Phase J also never wrote a `test` edge: the bot
+  keeps test requirements in the recipe's test section (v0 `test.requires`, v1 `tests[].requirements`), and the phase
+  read `requirements.test`.
+  **What it looks like when real:** Phase E fetches the four split archives and checks each one's top directory
+  before it replaces the cache, so a redirect to another repo cannot replace it. Phases E, H, J and M read the split
+  records, and Phase M resolves live bot PRs through `-pr_json`. A source with no record never replaces data: Phase J
+  keeps its table and the others write nothing, and each says why. Phase M also writes nothing from a partial set of
+  its three sources. `whodepends --reverse` answers again, `--type test`
+  answers for the first time, and the smoke test skips, naming the rebuild, on a checkout whose table is still empty.
+  **Constraints:** `.claude/skills/conda-forge-expert/` only: CFE scripts, tests and docs, in one `retro(cfe):` commit
+  with a CHANGELOG MINOR bump (AD-15), because the change adds gotcha G123. No pyforge-atlas, `pixi.toml` or `recipes/**`
+  change. A fix under CAP-24 (atlas intelligence: "what depends on it"): no flag and no new CAP. Owner: mason.
+  → Epic 34 / Story 34.1, specced 2026-10-26.
