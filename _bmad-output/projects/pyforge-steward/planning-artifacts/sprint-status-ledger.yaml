@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 609
+# stories: 610
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -70,6 +70,7 @@ development_status:
   13-4-the-set-reports-and-tears-down-safely: done
   13-5-workspace-clean-delete-removes-a-gone-or-landed-workspace-without-a-prompt-or-an-archive: done
   13-6-a-workspace-started-from-another-branch-is-landed-once-its-branch-is-on-main: done
+  13-7-a-landed-workspace-that-holds-tier-3-files-deletes-and-keeps-the-files: backlog
   14-1-the-pre-flight-diff-retrodicts-a-real-upgrade: done
   14-10-the-next-rehearsal-exercises-cap-6s-fallback-and-cap-8s-conflict-path-report-only: done
   14-2-apply-is-deliberate-branched-and-never-clobbers-custom: done
@@ -433,7 +434,7 @@ development_status:
   epic-11-retrospective: optional
   epic-12: done
   epic-12-retrospective: optional
-  epic-13: done
+  epic-13: in-progress
   epic-13-retrospective: optional
   epic-14: done
   epic-14-retrospective: optional
