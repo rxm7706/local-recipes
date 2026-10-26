@@ -57,7 +57,7 @@ development_status:
   11-4-isolation-and-statelessness-proven: done
   110-1-every-steward-prd-fr-arrow-names-the-spec-capability-that-realizes-it: done
   111-1-the-steward-spec-s-fold-cut-capability-text-is-restored-and-the-foundry-inherits-the-amended-rule: done
-  112-1-the-platform-ci-test-job-installs-only-what-its-runner-image-lacks-and-its-budget-covers-a-slow-mirror: in-progress
+  112-1-the-platform-ci-test-job-installs-only-what-its-runner-image-lacks-and-its-budget-covers-a-slow-mirror: done
   12-1-the-vanilla-chart-with-an-ocp-overlay: done
   12-2-gke-as-a-portability-profile: done
   12-3-air-gap-parity-is-a-failing-check: done
@@ -439,7 +439,7 @@ development_status:
   epic-110-retrospective: optional
   epic-111: done
   epic-111-retrospective: optional
-  epic-112: in-progress
+  epic-112: done
   epic-112-retrospective: optional
   epic-12: done
   epic-12-retrospective: optional

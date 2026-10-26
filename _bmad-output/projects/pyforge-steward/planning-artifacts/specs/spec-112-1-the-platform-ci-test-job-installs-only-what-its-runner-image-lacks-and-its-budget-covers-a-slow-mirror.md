@@ -2,7 +2,7 @@
 title: "112.1: The Platform CI `test` job installs only what its runner image lacks, and its budget covers a slow mirror"
 type: 'fix'
 created: '2026-10-26'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'a3cfc63fcd5a33266fb3164ce7cda8f2bf4a0322'
 flag-exempt: detector-or-gate   # a CI job's install step and budget; a flag-gated gate reports a silent green
 review_loop_iteration: 1
@@ -147,13 +147,22 @@ download, the browser test `PASSED` (AC3).
 
 ## Auto Run Result
 
-Status: in-progress (hand-built in the chain PR)
+Status: done (hand-built in the chain PR #2325; promoted after its own Platform CI run, inside the PR)
+Proving run: Platform CI run 40370564222, `test` job 121739856702, at `5abe23f783` (`pull_request`): success in 318 s
+(5 min 18 s, inside the 25-minute budget). The Chromium step took 11 s and its log reads "Chromium launches on
+this runner image; no system packages installed." with no apt line; the browser was installed from scratch (no
+browser cache exists, and the Playwright CDN download ran). The suite read `1346 passed, 20 skipped, 104 warnings in 200.01s`, with
+`test_playwright_records_zero_foreign_origin_requests` PASSED. AC1-AC5 met; AC5's full-scope preflight exited 0 at
+`5abe23f783` (16 of 38 lanes selected, 16 ok, none deferred).
 
 ## Spec Change Log
 
 - 2026-10-26: minted from the station Dream's entry of 2026-10-26 (the Platform CI test job's budget is sized for a fast mirror).
 - 2026-10-26: review round 1 applied: the second launch probe after `install-deps` (AC1, the edge-case matrix); the
   library, apt-rate, `main`-run and suite-cut wording; the line citation pinned to `a3cfc63fcd`.
+
+- 2026-10-26: promoted to `done` inside PR #2325 after the independent review (round 1 PASS, every finding applied)
+  and the PR's own Platform CI run 40370564222 proved AC3.
 
 ## Review Triage Log
 

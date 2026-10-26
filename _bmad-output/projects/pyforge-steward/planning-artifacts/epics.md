@@ -7139,7 +7139,7 @@ So that a slow apt mirror or runner reads as a slower green run, not a cancellat
 **When** the job runs on a PR or on `main`
 **Then** it runs `python -m playwright install chromium`, launches the browser once, and runs `python -m playwright install-deps chromium` only when that launch fails, after a `::warning::` naming the fallback, then launches it again and exits the step after an `::error::` if it still does not launch; `timeout-minutes` is 25 and the comment beside it names 668 s, 365 s and 1,033 s
 **And** the PR's own Platform CI `test` run, which installs the browser from scratch, completes inside 25 minutes with `test_playwright_records_zero_foreign_origin_requests` PASSED and no apt download in its log; `ci_surface_gates.py --check` and `detectors-ci` exit 0
-**Status:** in-progress
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
