@@ -2107,6 +2107,20 @@ Drift — orphaned between stations.
   (Recommended)"); the PR trigger option was declined ("Red-main banner (Recommended)"); no new GitHub call from the
   preflight, and no change to which lanes run. Owner `spec-pyforge-steward`. → Epic 99 / Story 99.8, specced
   2026-10-25; it reopens Epic 99.
+- **2026-10-25 (FR-1..FR-31 never got their arrows) — Found: the steward PRD's first 31 requirements name no
+  capability.** A fleet audit of every station PRD's `FR-n ← CAP-m` arrows, run after marshal Story 105.1 found
+  marshal's counted rather than traced, found steward's arrows right where they exist, and missing on FR-1..FR-31.
+  `spec-one-chain-per-station` CAP-5 makes a PRD re-derive a step of every fold PR; the 2026-09-17 steward fold
+  (`97e0816ad2`) skipped it, and the 31 FRs sit in `docs/governance/fr-baseline.json`, so `fr-without-cap` never read
+  them. FR-32..FR-41, written later by Spec renders, carry correct arrows. **What it looks like when fixed:** every
+  FR names its capability: FR-1..FR-7 CAP-1 (keys), FR-8..FR-11 CAP-2 (deploy; CAP-168 too, after review), FR-12..FR-15 CAP-3 (provision),
+  FR-16..FR-18 CAP-4 (budget), FR-19..FR-21 CAP-18..CAP-20, FR-22..FR-26 CAP-127..CAP-131, FR-27..FR-31 CAP-57..CAP-61,
+  each traced by section and title. **Constraints:** a chore under `spec-one-chain-per-station` CAP-5 (FRs derive from
+  CAPs) and CAP-3 (the station fold procedure); no CAP, no flag, no `SPEC.md` change (CAP-1..CAP-4 keep their
+  placeholder titles until a `bmad-spec` re-derive); no detector rule changes. Operator ruling, 2026-10-25: "Do rows 1-5
+  in one PR". Owner `spec-pyforge-steward`. → Epic 110 / Story 110.1, specced 2026-10-25. **Amended the same day (the
+  independent review; operator ruling "Apply all (Recommended)"):** FR-8..FR-11 also cite CAP-168, whose intent
+  names them as what its `pages` duty replaces.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

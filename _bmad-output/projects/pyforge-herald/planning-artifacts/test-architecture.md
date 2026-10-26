@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: herald
-source_fingerprint: b9f08b67b2aa3e05
-story_count: 147
+source_fingerprint: 804f9657289d0676
+story_count: 148
 test_file_count: 97
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-herald`
-- **Stories parsed:** 147
-- **Epics parsed:** 45
+- **Stories parsed:** 148
+- **Epics parsed:** 46
 - **Test files inventoried:** 97 under `src/shared/packages/pyforge-herald/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `b9f08b67b2aa3e05`
+- **Source fingerprint:** `804f9657289d0676`
 
 ## Risk Assessment
 
@@ -69,6 +69,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 39: The dossier shows which CI surfaces are not live (spec-pyforge-herald CAP-59)
 - Epic 41: Pages hygiene before the rework (fix under spec-pyforge-herald CAP-52 and CAP-44; no CAP)
 - Epic 42: The Pages site shows the fleet and the guild, and builds for any host without a flag (spec-pyforge-herald CAP-60)
+- Epic 46: The herald PRD's FR arrows name the capabilities the Spec carries
 
 ### Low-risk epics
 
@@ -335,6 +336,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 43.7 | docsite/ retires and one generator remains | none observed |
 | 44.1 | Every docs page renders its body and its links resolve | none observed |
 | 45.1 | Herald's built-site tests install docs-site first, in preflight and CI | none observed |
+| 46.1 | Every herald PRD FR arrow names the Spec capability that realizes it | none observed |
 
 ## Quality Gates
 

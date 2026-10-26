@@ -764,6 +764,18 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   - the sealed seven stay sealed (AD-3's rule is unchanged; only its enumeration grows).
 
   Owner `spec-pyforge-atlas` (CAP-9, AD-3, no new CAP). → Epic 33 / Story 33.2, specced 2026-10-25.
+- **2026-10-25 (FR-15, FR-61 and FR-63 had no capability to name)** — **Ruled: restore two capabilities, and let FR-15
+  cite its constraint.** Story 39.1 left three FRs on the fold's counted arrows and opened `DW-atlas-39-1`. FR-61
+  (kedro-skills audit-then-adopt) and FR-63 (a recorded vscode-kedro verdict) come from
+  `spec-kedro-org-tooling-adoption`, which listed its capabilities as a plain numbered list; the 2026-09-17 fold minted
+  CAPs only from `CAP-n` lines, so Capabilities 1 and 3 were dropped while atlas Stories 11.1 and 11.3, which delivered
+  them, stay done. FR-15 (Pixi-first, conda-forge-only) derives from the Spec's Constraints, not from any capability.
+  **What it looks like when fixed:** `spec-pyforge-atlas` declares the two as shipped CAP-70 and CAP-71, with that Spec
+  as their provenance; FR-61 and FR-63 cite them; FR-15's arrow names the constraint "Conda-forge-only, pixi-managed,
+  py3.14-floored provisioning". **Constraints:** a chore under `spec-one-chain-per-station` CAP-5 and CAP-3; two CAPs
+  restored, rendered into `SPEC.md` by script from the memlog decision; no flag; no FR text change; the satellite FR
+  series untouched. Operator rulings, 2026-10-25: "Restore 2 atlas CAPs (Recommended)" and "Cite the constraint
+  (Recommended)". Owner `spec-pyforge-atlas`. → Epic 40 / Story 40.1, specced 2026-10-25.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 

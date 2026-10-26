@@ -2,7 +2,7 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: "2026-10-25"   # RE-STAMPED 2026-10-25 (Story 105.1): 71 FR heading arrows the 2026-09-16 fold counted are re-mapped to the spec-pyforge-marshal (or cross-Spec) capabilities that realize them; FR-144..FR-147 wait on a source-capability decision (DW-marshal-105-1); no FR text, number or NFR moves. See § 44. Earlier 2026-10-25: RE-STAMPED 2026-10-25: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-24..25 entries (doctor Story 30.5's surface reconcile; Story 103.1 under CAP-1, CAP-21 and CAP-22 / FR-5, FR-153, FR-154, marshal-mcp on the official SDK and a preflight handshake); no FR registered. See § 43. Prior "2026-10-22"   # RE-STAMPED 2026-10-22: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-15..23 entries (Story 102.1, the 2026-10-22 surface reconciles, Stories 87.17 and 87.18 under CAP-287 / FR-234); no FR registered. See § 42. Prior "2026-10-14"   # RE-STAMPED 2026-10-14 (CAP-292): chain-currency cascade (spec -> PRD) for CAP-292 (Epic 100); FR-239 registered -- a dispatch landing records which CI surfaces were paused when it merged. See section 41. Earlier 2026-10-12: RE-STAMPED 2026-10-12 (Story 97.1): Extraction Manifest COPIED · MANAGED / COPIED · SEEDED tables move detector-registry, dreams-readme and detectors-ci-workflow to seeded (operator ruling 2026-10-12); no FR registered. See section Currency reconciliation — 2026-10-12 (Story 97.1). Earlier 2026-10-11 (recall fold): spec-marshal-recall-in-the-loop folded into spec-pyforge-marshal; FR-235..FR-238 registered from CAP-288..CAP-291 (Epic 93). See section Currency reconciliation — 2026-10-11 (recall fold). Earlier 2026-10-11: RE-STAMPED 2026-10-11: chain-currency cascade (spec -> PRD -> spine -> epics) after the memlog reconcile of marshal Story 90.1's code revert (its psutil group read held every dispatch live); no CAP/FR/AD/story moved. Prior: RE-STAMPED 2026-10-08: chain-currency behind-code (code -> PRD) truth-up for Story 46.9 as built (CAP-196, per-layer benchmark legs with cache-hit rates) and the cli.benchmark refusal fix that let its attr-defined mypy override go (MRS-BENCH-001..005); the spec memlog's entries since section 38 folded (Stories 22.18-22.21); no FR registered; two divergences and one FR-tag defect recorded. See section 39. Earlier 2026-10-07: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 34 entries since section 37 (fix stories 83.22, 83.23, 85.5, 70.2, 22.13-22.17, 53.4 and 85.6, their landings and surface reconciles); no FR registered. See section 38. Earlier 2026-10-04: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for CAP-287 (Epic 87); FR-234 registered; FR-59, FR-62 and FR-63 gain dated consequences. See section 37. Earlier 2026-10-03: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for CAP-286 (Epic 85); FR-233 registered. See section 36. Earlier 2026-10-02: RE-STAMPED 2026-10-02: chain-currency cascade (spec -> PRD) for CAP-285 (Epic 84); FR-232 registered. See section 35. Earlier 2026-10-01: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD) for CAP-284 (Epic 80); FR-231 registered. See section 34. Earlier 2026-09-30: RE-STAMPED 2026-09-30: chain-currency cascade (spec -> PRD) for CAP-283 (Epic 78); FR-230 registered. See section 33. Earlier 2026-09-29: RE-STAMPED 2026-09-29: chain-currency cascade (spec -> PRD) for CAP-282 (Epic 77); FR-229 registered. See section 32. Earlier 2026-09-28: RE-STAMPED (night): Epic 74 recorded for spec-feature-flag-governance CAP-3, CAP-4 and CAP-6 (the Guild's CAPs; no FR registered, the doctor Epic 24/25/32 relay). No AD amended. See section 31.11. Earlier: AMENDED (evening, cont. 6): operator rulings -- FR-225 (CAP-279, the loop-home scope for .bmad-loop/policy.toml), FR-227 (CAP-280 widened to dispatch land's ALREADY_LANDED read) and FR-228 (CAP-281, the per-campaign follow-up cap) amended in place; AD-55 amended in place on the spine. See § 31.10. Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade (spec -> PRD) for FR-228 / CAP-281 (Epic 73). No AD amended. See § 31.9. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade (spec -> PRD) for FR-227 / CAP-280 (Epic 72). No AD amended. See § 31.8. Earlier: AMENDED (evening, cont. 3): FR-211 re-scoped with CAP-265 (operator ruling; Story 54.1, key kept). No AD amended. See § 22 and § 31.7. Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade (spec -> PRD) for FR-226 / spec-pyforge-core CAP-11 (Epic 71). No AD amended. See § 31.6. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-225 / CAP-279 (Epic 70). No AD amended. See § 31.5. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-224 / CAP-278 (Epic 69). No AD amended. See § 31.4. Earlier: RE-STAMPED (later): chain-currency cascade (spec -> PRD) for FR-223 / CAP-277 (Epic 68). No AD amended. See § 31.3. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended. See § 31. Prior 2026-09-27
+updated: "2026-10-25"   # RE-STAMPED 2026-10-25 (Story 106.2): spec -> PRD for CAP-293..CAP-296, the four detector self-verification capabilities the 2026-09-16 fold dropped, restored on the operator's ruling; FR-144..FR-147 now cite them (they read the counted CAP-102..CAP-105); DW-marshal-105-1 closed; no FR text, number or NFR moves. See § 46. Earlier 2026-10-25: RE-STAMPED 2026-10-25 (Story 106.1): section 15's 62 seed-installer FRs (FR-66..FR-127), which never had arrows, now name the capabilities that realize them (CAP-8, CAP-10..CAP-18), or, for FR-120, FR-121, FR-125 and FR-126, the Spec constraint that states them (operator ruling "Cite the constraint"), with FR-101 citing CAP-15 and its constraint (review ruling); no FR text, number or NFR moves. See § 45. Earlier 2026-10-25: RE-STAMPED 2026-10-25 (Story 105.1): 71 FR heading arrows the 2026-09-16 fold counted are re-mapped to the spec-pyforge-marshal (or cross-Spec) capabilities that realize them; FR-144..FR-147 wait on a source-capability decision (DW-marshal-105-1); no FR text, number or NFR moves. See § 44. Earlier 2026-10-25: RE-STAMPED 2026-10-25: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-24..25 entries (doctor Story 30.5's surface reconcile; Story 103.1 under CAP-1, CAP-21 and CAP-22 / FR-5, FR-153, FR-154, marshal-mcp on the official SDK and a preflight handshake); no FR registered. See § 43. Prior "2026-10-22"   # RE-STAMPED 2026-10-22: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-15..23 entries (Story 102.1, the 2026-10-22 surface reconciles, Stories 87.17 and 87.18 under CAP-287 / FR-234); no FR registered. See § 42. Prior "2026-10-14"   # RE-STAMPED 2026-10-14 (CAP-292): chain-currency cascade (spec -> PRD) for CAP-292 (Epic 100); FR-239 registered -- a dispatch landing records which CI surfaces were paused when it merged. See section 41. Earlier 2026-10-12: RE-STAMPED 2026-10-12 (Story 97.1): Extraction Manifest COPIED · MANAGED / COPIED · SEEDED tables move detector-registry, dreams-readme and detectors-ci-workflow to seeded (operator ruling 2026-10-12); no FR registered. See section Currency reconciliation — 2026-10-12 (Story 97.1). Earlier 2026-10-11 (recall fold): spec-marshal-recall-in-the-loop folded into spec-pyforge-marshal; FR-235..FR-238 registered from CAP-288..CAP-291 (Epic 93). See section Currency reconciliation — 2026-10-11 (recall fold). Earlier 2026-10-11: RE-STAMPED 2026-10-11: chain-currency cascade (spec -> PRD -> spine -> epics) after the memlog reconcile of marshal Story 90.1's code revert (its psutil group read held every dispatch live); no CAP/FR/AD/story moved. Prior: RE-STAMPED 2026-10-08: chain-currency behind-code (code -> PRD) truth-up for Story 46.9 as built (CAP-196, per-layer benchmark legs with cache-hit rates) and the cli.benchmark refusal fix that let its attr-defined mypy override go (MRS-BENCH-001..005); the spec memlog's entries since section 38 folded (Stories 22.18-22.21); no FR registered; two divergences and one FR-tag defect recorded. See section 39. Earlier 2026-10-07: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 34 entries since section 37 (fix stories 83.22, 83.23, 85.5, 70.2, 22.13-22.17, 53.4 and 85.6, their landings and surface reconciles); no FR registered. See section 38. Earlier 2026-10-04: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for CAP-287 (Epic 87); FR-234 registered; FR-59, FR-62 and FR-63 gain dated consequences. See section 37. Earlier 2026-10-03: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for CAP-286 (Epic 85); FR-233 registered. See section 36. Earlier 2026-10-02: RE-STAMPED 2026-10-02: chain-currency cascade (spec -> PRD) for CAP-285 (Epic 84); FR-232 registered. See section 35. Earlier 2026-10-01: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD) for CAP-284 (Epic 80); FR-231 registered. See section 34. Earlier 2026-09-30: RE-STAMPED 2026-09-30: chain-currency cascade (spec -> PRD) for CAP-283 (Epic 78); FR-230 registered. See section 33. Earlier 2026-09-29: RE-STAMPED 2026-09-29: chain-currency cascade (spec -> PRD) for CAP-282 (Epic 77); FR-229 registered. See section 32. Earlier 2026-09-28: RE-STAMPED (night): Epic 74 recorded for spec-feature-flag-governance CAP-3, CAP-4 and CAP-6 (the Guild's CAPs; no FR registered, the doctor Epic 24/25/32 relay). No AD amended. See section 31.11. Earlier: AMENDED (evening, cont. 6): operator rulings -- FR-225 (CAP-279, the loop-home scope for .bmad-loop/policy.toml), FR-227 (CAP-280 widened to dispatch land's ALREADY_LANDED read) and FR-228 (CAP-281, the per-campaign follow-up cap) amended in place; AD-55 amended in place on the spine. See § 31.10. Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade (spec -> PRD) for FR-228 / CAP-281 (Epic 73). No AD amended. See § 31.9. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade (spec -> PRD) for FR-227 / CAP-280 (Epic 72). No AD amended. See § 31.8. Earlier: AMENDED (evening, cont. 3): FR-211 re-scoped with CAP-265 (operator ruling; Story 54.1, key kept). No AD amended. See § 22 and § 31.7. Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade (spec -> PRD) for FR-226 / spec-pyforge-core CAP-11 (Epic 71). No AD amended. See § 31.6. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-225 / CAP-279 (Epic 70). No AD amended. See § 31.5. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-224 / CAP-278 (Epic 69). No AD amended. See § 31.4. Earlier: RE-STAMPED (later): chain-currency cascade (spec -> PRD) for FR-223 / CAP-277 (Epic 68). No AD amended. See § 31.3. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended. See § 31. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED (late night, cont.): chain-currency cascade (spec -> PRD) for FR-220 / CAP-274 (Epic 65). No AD amended. See § 30.2. Earlier: RE-STAMPED (late night): chain-currency cascade (spec -> PRD) for FR-219 / CAP-273 (Epic 64). No AD amended. See § 30. Earlier: RE-STAMPED (late, cont.): chain-currency cascade (spec -> PRD) for FR-218 / CAP-272 (Epic 62). No AD amended. See § 29. Earlier: RE-STAMPED (late): chain-currency cascade (spec -> PRD) for FR-217 / CAP-271 (Epic 61). No AD amended. See § 28. Earlier: RE-STAMPED (night): chain-currency cascade (spec -> PRD) for FR-216 / CAP-270 (Epic 60). No AD amended. See § 27. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-215 / CAP-269 (Epic 59). No AD amended. See § 26. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-214 / CAP-268 (Epic 58). No AD amended. See § 25. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57), § 24; FR-212 / CAP-266 (Epic 56), § 23. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency (spec->prd, behind-code) — bmad-loop cap widened to <0.13 (spec-pyforge-marshal memlog 2026-09-26); Stack literal corrected in place; no FR change. Prior 2026-09-24
 # 2026-09-19  # currency reconciliation (§ 21): FR-201..FR-210 registered from spec-pyforge-marshal CAP-249..256 (Epic 51, the landing self-drives — second round) and spec-pyforge-core CAP-8..9 (Epic 52, the shared floor is a PR gate).
@@ -1525,160 +1525,160 @@ versioned artifact.
 
 #### Model manifest & classification
 
-- **FR-66** — The model is declared as **data** (a manifest file inside the package), not as
+- **FR-66** ← CAP-10 — The model is declared as **data** (a manifest file inside the package), not as
   code branches. Each entry carries: path or path-pattern, class, applicable model-version
   range, and (for HYBRID) its region names and anchors.
-- **FR-67** — Five classes are supported: `referenced`, `copied-managed`, `copied-seeded`,
+- **FR-67** ← CAP-10 — Five classes are supported: `referenced`, `copied-managed`, `copied-seeded`,
   `generated-derived`, `hybrid-managed-region`.
-- **FR-68** — The manifest supports an explicit `unclassified-deferred` state so that
+- **FR-68** ← CAP-10 — The manifest supports an explicit `unclassified-deferred` state so that
   deferral is enumerated rather than silent.
-- **FR-69** — A coverage check verifies that every artifact Genesis knows about carries
+- **FR-69** ← CAP-10 — A coverage check verifies that every artifact Genesis knows about carries
   exactly one class; an unclassified artifact is a HARD failure. (Mirrors
   `bmad_drift_check.py`'s `uncovered` finding.)
-- **FR-70** — The manifest is versioned by **model semver**, independent of the
+- **FR-70** ← CAP-10, CAP-17 — The manifest is versioned by **model semver**, independent of the
   `pyforge-genesis` package version. Both are recorded in installed state.
-- **FR-71** — The manifest declares the **never-write path set** (§ *The Extraction
+- **FR-71** ← CAP-10, CAP-15 — The manifest declares the **never-write path set** (§ *The Extraction
   Manifest*), which the apply and update paths enforce.
 
 #### `marshal seed init` (greenfield)
 
-- **FR-72** — `marshal seed init <path>` creates a Dream-first repository tree at `<path>`,
+- **FR-72** ← CAP-14 — `marshal seed init <path>` creates a Dream-first repository tree at `<path>`,
   materializing every manifest artifact applicable to a new repo.
-- **FR-73** — `init` accepts `--slug` (the first BMAD project slug, defaulting to the
+- **FR-73** ← CAP-14 — `init` accepts `--slug` (the first BMAD project slug, defaulting to the
   directory name) and `--agents` (comma-separated adapter selection).
-- **FR-74** — `init` seeds exactly one Dream stub at `docs/dreams/<slug>.md` conforming to
+- **FR-74** ← CAP-14 — `init` seeds exactly one Dream stub at `docs/dreams/<slug>.md` conforming to
   the Tier-0 frontmatter contract (`title`, `type: dream`, `owner`, `status: seeded`).
-- **FR-75** — `init` creates the BMAD multi-project subtree:
+- **FR-75** ← CAP-14 — `init` creates the BMAD multi-project subtree:
   `_bmad-output/projects/<slug>/{planning-artifacts,implementation-artifacts}`,
   `.bmad-config.toml`, `planning-artifacts/specs/README.md`, and `PROJECTS.md` with the
   first row.
-- **FR-76** — `init` writes the `.gitignore` model region covering the tier rules: the
+- **FR-76** ← CAP-14 — `init` writes the `.gitignore` model region covering the tier rules: the
   gitignored `implementation-artifacts/`, the two `_bmad-output` compatibility symlinks,
   `_bmad/custom/.active-project`, `.bmad-loop/runs/` and `cache/`, and
   `_bmad-output/projects/*/.bmad-config.user.toml`.
-- **FR-77** — `init` writes the state file recording `mode: init`, model version, CLI
+- **FR-77** ← CAP-14, CAP-17 — `init` writes the state file recording `mode: init`, model version, CLI
   version, selected agents, and the per-artifact hashes.
-- **FR-78** — `init` refuses to run into a non-empty directory unless `--force`; the
+- **FR-78** ← CAP-14 — `init` refuses to run into a non-empty directory unless `--force`; the
   documented path for an existing repo is `adopt`.
 
 #### `marshal seed adopt` (brownfield)
 
-- **FR-79** — `marshal seed adopt` runs **detect → plan → confirm → apply** and is **dry-run by
+- **FR-79** ← CAP-12 — `marshal seed adopt` runs **detect → plan → confirm → apply** and is **dry-run by
   default**; `--apply` (or `--yes` for unattended use) executes.
-- **FR-80** — Detect classifies each manifest artifact in the target repo as `absent`,
+- **FR-80** ← CAP-12 — Detect classifies each manifest artifact in the target repo as `absent`,
   `present-conformant`, `present-divergent`, or `present-legacy`.
-- **FR-81** — `present-legacy` artifacts are **recorded and preserved, never modified or
+- **FR-81** ← CAP-12 — `present-legacy` artifacts are **recorded and preserved, never modified or
   deleted**, and are listed in the state file's `legacy[]`.
-- **FR-82** — The plan is a **machine-readable artifact** written to disk (not only printed),
+- **FR-82** ← CAP-12 — The plan is a **machine-readable artifact** written to disk (not only printed),
   listing per artifact: path, class, detected state, proposed action, and rationale.
-- **FR-83** — Apply materializes only what the plan names. Artifacts already present are
+- **FR-83** ← CAP-12 — Apply materializes only what the plan names. Artifacts already present are
   preserved unless their class is `copied-managed` or `generated-derived`.
-- **FR-84** — `adopt` is **idempotent**: a second run on an unchanged repo produces an empty
+- **FR-84** ← CAP-12 — `adopt` is **idempotent**: a second run on an unchanged repo produces an empty
   plan and writes nothing.
-- **FR-85** — `adopt --apply` refuses on a dirty git worktree, and refuses outside a git
+- **FR-85** ← CAP-12 — `adopt --apply` refuses on a dirty git worktree, and refuses outside a git
   repository.
-- **FR-86** — `adopt` refuses (with a specific, actionable message) when a managed region or
+- **FR-86** ← CAP-12, CAP-11 — `adopt` refuses (with a specific, actionable message) when a managed region or
   managed file has been hand-modified, unless `--force`.
-- **FR-87** — `adopt` accepts `--skip <glob>` (recorded in state) and honors previously
+- **FR-87** ← CAP-12 — `adopt` accepts `--skip <glob>` (recorded in state) and honors previously
   recorded skips on subsequent runs.
 
 #### `marshal seed check` (conformance)
 
-- **FR-88** — `marshal seed check` is **read-only** and never writes to the repo (state file
+- **FR-88** ← CAP-13 — `marshal seed check` is **read-only** and never writes to the repo (state file
   included).
-- **FR-89** — `check` exits non-zero on any HARD finding; `--strict` additionally fails on
+- **FR-89** ← CAP-13 — `check` exits non-zero on any HARD finding; `--strict` additionally fails on
   DRIFT findings.
-- **FR-90** — Findings are typed and stable, at minimum: `artifact-missing`,
+- **FR-90** ← CAP-13 — Findings are typed and stable, at minimum: `artifact-missing`,
   `managed-file-modified`, `managed-region-modified`, `managed-region-missing`,
   `derived-stale`, `model-behind`, `state-invalid`, `never-write-violation`,
   `referenced-dep-missing`.
-- **FR-91** — `check --json` emits a machine-readable report suitable for CI annotation.
-- **FR-92** — `check` reports the repo's model version against the model version available
+- **FR-91** ← CAP-13 — `check --json` emits a machine-readable report suitable for CI annotation.
+- **FR-92** ← CAP-13 — `check` reports the repo's model version against the model version available
   in the installed package (`model-behind` / current / ahead).
-- **FR-93** — `check` runs offline and completes in under 5 seconds on a repo the size of
+- **FR-93** ← CAP-13 — `check` runs offline and completes in under 5 seconds on a repo the size of
   `local-recipes`.
 
 #### `marshal seed update` + migrations
 
-- **FR-94** — `marshal seed update` is **two-phase**: the default invocation writes a plan and
+- **FR-94** ← CAP-15 — `marshal seed update` is **two-phase**: the default invocation writes a plan and
   changes nothing; `--run` applies the plan.
-- **FR-95** — Update verifies REFERENCED dependencies against their declared floors and
+- **FR-95** ← CAP-15, CAP-13 — Update verifies REFERENCED dependencies against their declared floors and
   reports (does not install) anything missing or below floor; delegates to `doctor check`
   when available.
-- **FR-96** — Migrations are ordered by model semver, applied **exactly once**, and recorded
+- **FR-96** ← CAP-15, CAP-17 — Migrations are ordered by model semver, applied **exactly once**, and recorded
   in state's `migrations_applied[]`.
-- **FR-97** — Migrations may only touch `copied-managed`, `generated-derived`, and
+- **FR-97** ← CAP-15 — Migrations may only touch `copied-managed`, `generated-derived`, and
   `hybrid-managed-region` artifacts. Touching `copied-seeded` requires an explicit
   interactive/`--yes` opt-in and is reported as an offer, never imposed.
-- **FR-98** — Update regenerates `copied-managed` files wholesale and recomputes
+- **FR-98** ← CAP-15 — Update regenerates `copied-managed` files wholesale and recomputes
   `generated-derived` files, after hash-guard checks pass.
-- **FR-99** — Update replaces only the marked span of `hybrid-managed-region` files.
-- **FR-100** — Update **cannot** write to any path in the never-write set (FR-71); an attempt is
+- **FR-99** ← CAP-11, CAP-15 — Update replaces only the marked span of `hybrid-managed-region` files.
+- **FR-100** ← CAP-15 — Update **cannot** write to any path in the never-write set (FR-71); an attempt is
   a hard error and a test asserts it.
-- **FR-101** — `marshal seed update --force` maps to Copier `run_recopy` semantics (discard local
+- **FR-101** ← CAP-15, Constraint "Copier is a dependency, not a framework" — `marshal seed update --force` maps to Copier `run_recopy` semantics (discard local
   evolution of managed artifacts) and requires explicit confirmation.
 
 #### State file
 
-- **FR-102** — Genesis writes one tool-owned state file recording: `model_version`,
+- **FR-102** ← CAP-17 — Genesis writes one tool-owned state file recording: `model_version`,
   `seed_model_version`, `adopted_at`, `last_update`, `mode`, `agents[]`, `managed[]` (path +
   class + content hash), `skips[]`, `legacy[]`, `migrations_applied[]`.
-- **FR-103** — The state file carries a prominent do-not-hand-edit header.
-- **FR-104** — State is validated against a JSON schema on every read; an invalid state file
+- **FR-103** ← CAP-17 — The state file carries a prominent do-not-hand-edit header.
+- **FR-104** ← CAP-17 — State is validated against a JSON schema on every read; an invalid state file
   is a `state-invalid` finding, not a crash.
-- **FR-105** — Genesis never hand-edits Copier's answers file; if Copier's answers file is
+- **FR-105** ← CAP-17 — Genesis never hand-edits Copier's answers file; if Copier's answers file is
   used it is treated as a second tool-owned file.
-- **FR-106** — Content hashes cover managed files and managed regions, enabling FR-86 / FR-90.
-- **FR-107** — The state file is git-tracked (it is repo metadata, not scratch).
+- **FR-106** ← CAP-17, CAP-11 — Content hashes cover managed files and managed regions, enabling FR-86 / FR-90.
+- **FR-107** ← CAP-17 — The state file is git-tracked (it is repo metadata, not scratch).
 
 #### Managed regions
 
-- **FR-108** — A managed region is delimited by begin/end markers carrying the region name and
+- **FR-108** ← CAP-11 — A managed region is delimited by begin/end markers carrying the region name and
   the model version that wrote it.
-- **FR-109** — Update replaces the span between markers by **pure text substitution** — never
+- **FR-109** ← CAP-11 — Update replaces the span between markers by **pure text substitution** — never
   a three-way merge — so a half-merged file is not representable.
-- **FR-110** — Marker syntax is **per file format** (HTML comments for markdown, `#` comments
+- **FR-110** ← CAP-11 — Marker syntax is **per file format** (HTML comments for markdown, `#` comments
   for `.gitignore` / TOML / YAML), resolved through a format registry.
-- **FR-111** — If markers are absent in a file that should carry a region, Genesis inserts the
+- **FR-111** ← CAP-11 — If markers are absent in a file that should carry a region, Genesis inserts the
   region at a declared **anchor** (e.g. after the first `# Heading`), or appends when no
   anchor matches.
-- **FR-112** — Deleting the markers is a **sanctioned permanent opt-out**: Genesis records it
+- **FR-112** ← CAP-11 — Deleting the markers is a **sanctioned permanent opt-out**: Genesis records it
   in state and does not reinsert on later runs. (Mirrors Copier's locally-deleted-path rule.)
-- **FR-113** — Nested or overlapping regions are rejected with a specific error.
+- **FR-113** ← CAP-11 — Nested or overlapping regions are rejected with a specific error.
 
 #### Agent adapter fan-out
 
-- **FR-114** — The neutral contract (tiers, portability, Dream-first workflow) has exactly one
+- **FR-114** ← CAP-16 — The neutral contract (tiers, portability, Dream-first workflow) has exactly one
   source in the manifest; all adapter files derive from it.
-- **FR-115** — V1 supports four adapters: Claude Code (`CLAUDE.md`), Cursor
+- **FR-115** ← CAP-16 — V1 supports four adapters: Claude Code (`CLAUDE.md`), Cursor
   (`.cursor/rules/specs.mdc`), GitHub Copilot (`.github/copilot-instructions.md`), Gemini
   (`GEMINI.md`).
-- **FR-116** — Adapter selection is per-repo, recorded in state, and changeable later
+- **FR-116** ← CAP-16, CAP-17, CAP-12 — Adapter selection is per-repo, recorded in state, and changeable later
   (`marshal seed adopt --agents …` adds adapters idempotently).
-- **FR-117** — For an adapter file that already exists with repo-specific content
+- **FR-117** ← CAP-16 — For an adapter file that already exists with repo-specific content
   (`CLAUDE.md` is the common case), the model content is delivered as a **managed region**
   rather than by overwriting the file.
 
 #### Templates, distribution & CLI
 
-- **FR-118** — Model templates ship **inside** the `pyforge-marshal` package (as `pyforge/marshal/seed/templates/` package data — re-issued 2026-08-10, correct-course); no runtime fetch
+- **FR-118** ← CAP-18 — Model templates ship **inside** the `pyforge-marshal` package (as `pyforge/marshal/seed/templates/` package data — re-issued 2026-08-10, correct-course); no runtime fetch
   is required for any verb.
-- **FR-119** — `--template <path|url>` overrides the in-package templates, for development and
+- **FR-119** ← CAP-18 — `--template <path|url>` overrides the in-package templates, for development and
   for teams that fork the model.
-- **FR-120** — Genesis wraps Copier via its **public API only** (`run_copy`, `run_update`,
+- **FR-120** ← Constraint "Copier is a dependency, not a framework" — Genesis wraps Copier via its **public API only** (`run_copy`, `run_update`,
   `run_recopy`); no reliance on `Worker` internals or private modules.
-- **FR-121** — Copier's code-executing template features remain gated behind an explicit
+- **FR-121** ← Constraint "Copier is a dependency, not a framework" — Copier's code-executing template features remain gated behind an explicit
   `--unsafe` flag.
-- **FR-122** — Genesis is distributed as a pixi workspace member producing a conda package,
+- **FR-122** ← CAP-8 — Genesis is distributed as a pixi workspace member producing a conda package,
   plus wheel/sdist, with console entry point `genesis`.
-- **FR-123** — All verbs support `--json` for machine consumption and `--quiet` for
+- **FR-123** ← CAP-12, CAP-13 — All verbs support `--json` for machine consumption and `--quiet` for
   unattended runs.
-- **FR-124** — All mutating verbs support `--dry-run` explicitly (and default to it where
+- **FR-124** ← CAP-12, CAP-15 — All mutating verbs support `--dry-run` explicitly (and default to it where
   FR-79 requires).
-- **FR-125** — `marshal seed version` reports both the CLI version and the bundled model version.
-- **FR-126** — Non-zero exit codes are distinct and documented per failure mode (conformance
+- **FR-125** ← Constraint "Two clocks" — `marshal seed version` reports both the CLI version and the bundled model version.
+- **FR-126** ← Constraint "Every finding type is a member of one enum with a documented remedy string" — Non-zero exit codes are distinct and documented per failure mode (conformance
   failure, precondition failure, internal error).
-- **FR-127** — A `marshal seed explain <artifact>` verb prints an artifact's class, rationale, and
+- **FR-127** ← CAP-10 — A `marshal seed explain <artifact>` verb prints an artifact's class, rationale, and
   update behavior — the model documenting itself to the agents that read it (D1).
 
 ---
@@ -1932,22 +1932,22 @@ links 404.
 **Description.** Both detectors gate the tree; nothing gates the detectors. Three real
 incidents, one as recent as 2026-08-08.
 
-#### FR-144: Fixture-based meta-tests for `dream_chain_check.py` ← CAP-102
+#### FR-144: Fixture-based meta-tests for `dream_chain_check.py` ← CAP-293
 **Consequences:** known-good and known-bad trees assert *exact* findings, not "the live repo
 passes"; the `covers-dreams:`/`## Satellite:` coverage path is regression-pinned; unparseable
 frontmatter surfaces as a finding rather than being swallowed by `except: return {}`.
 
-#### FR-145: Fixture-based meta-tests for `bmad_drift_check.py` ← CAP-103
+#### FR-145: Fixture-based meta-tests for `bmad_drift_check.py` ← CAP-294
 **Consequences:** pin-missing, archive-misplaced, stray-file and spec-status-stale each have a
 fixture; the existing live-repo integrity test stays — it gates the tree, these gate the
 detector.
 
-#### FR-146: A detector-incident log ← CAP-104
+#### FR-146: A detector-incident log ← CAP-295
 **Consequences:** a tracked companion records date, detector, wrong claim, true value, root
 cause, fixing commit and pinning fixture; a new entry is mandatory in the same change that
 fixes a detector.
 
-#### FR-147: The `--dreams` hygiene mode ← CAP-105
+#### FR-147: The `--dreams` hygiene mode ← CAP-296
 **Consequences:** the mode promised by the 2026-07-23 restructure exists and reports Dream-tier
 hygiene findings.
 
@@ -3475,3 +3475,58 @@ a source (restoring the dropped capabilities is the first option): `DW-marshal-1
 **ONE FR space still FR-1..FR-239** (FR-240 = next free id). No NFR changes. No FR number, title or body moves.
 
 **Content changed:** this section and 71 FR heading arrows. `updated:` bumped.
+
+## 45. Currency reconciliation — 2026-10-25 (Story 106.1)
+
+§ 15's 62 requirements (FR-66..FR-127, the seed installer) carried no `← CAP-n` arrow. They came from the genesis
+installer's satellite PRD, renumbered into this FR space on 2026-08-08; its Spec's nine capabilities were folded into
+`spec-pyforge-marshal` on 2026-08-02 as CAP-10..CAP-18, and the 2026-09-16 fold (`1e845b55fc`) wrote no arrow on these
+bullets. Story 106.1 adds one to each, traced per requirement. The full table is the 2026-10-25 "approved table for
+Story 106.1" decision on `spec-pyforge-marshal`'s memlog. By subsection:
+
+- **Model manifest & classification** (FR-66..FR-71): CAP-10, operating model as data; FR-70 adds CAP-17 (both versions
+  recorded in state) and FR-71 adds CAP-15 (update refuses the never-write set).
+- **`marshal seed init`** (FR-72..FR-78): CAP-14; FR-77 adds CAP-17.
+- **`marshal seed adopt`** (FR-79..FR-87): CAP-12; FR-86 adds CAP-11 (the hand-edit is found by body hash).
+- **`marshal seed check`** (FR-88..FR-93): CAP-13.
+- **`marshal seed update` + migrations** (FR-94..FR-101): CAP-15; FR-95 adds CAP-13 (`referenced-dep-missing`), FR-96
+  adds CAP-17 (`migrations_applied[]`), FR-99 reads CAP-11, CAP-15 (only the marked span is replaced). FR-101 (`--force`
+  maps to `run_recopy`) reads CAP-15 and a constraint, below.
+- **State file** (FR-102..FR-107): CAP-17, the genesis-owned state file; FR-106 adds CAP-11.
+- **Managed regions** (FR-108..FR-113): CAP-11.
+- **Agent adapter fan-out** (FR-114..FR-117): CAP-16; FR-116 adds CAP-17 (adapters recorded in state) and CAP-12
+  (`seed adopt --agents` adds them idempotently).
+- **Templates, distribution & CLI** (FR-118..FR-127): FR-118 and FR-119 read CAP-18, air-gap by construction (templates
+  in the package; `--template` is the only network path). FR-122 reads CAP-8: since the 2026-08-10 correct-course the
+  seed ships inside `pyforge-marshal`, so its distribution is CAP-8's (the FR's text still names a `genesis` entry
+  point; that text is unchanged here). FR-123 reads CAP-12, CAP-13 and FR-124 CAP-12, CAP-15 (machine output and
+  dry-run). FR-127 (`seed explain`) reads CAP-10.
+
+**Four requirements cite a constraint, not a capability.** No capability states FR-120, FR-121, FR-125 or FR-126;
+the Spec's Constraints do. Per the operator's 2026-10-25 ruling ("Cite the constraint"), their arrows name the
+constraint: FR-120 and FR-121 `← Constraint "Copier is a dependency, not a framework"`; FR-125 `← Constraint "Two
+clocks"`; FR-126 `← Constraint "Every finding type is a member of one enum with a documented remedy string"`. FR-101's
+`--force` flag belongs to the update verb, CAP-15, and only the Copier constraint states its `run_recopy` mapping, so it
+cites both (the operator's ruling on the independent review, "CAP-15 + constraint").
+
+### The FR space: no FR registered
+
+**ONE FR space still FR-1..FR-239** (FR-240 = next free id). No NFR changes. No FR number, title or body moves.
+
+**Content changed:** this section and 62 FR bullet arrows. `updated:` bumped.
+
+## 46. Currency reconciliation — 2026-10-25 (Story 106.2)
+
+§ 44 left FR-144..FR-147 (§ 16.5, detector self-verification) on the fold's counted arrows CAP-102..CAP-105, because
+no capability carried them: `spec-dream-to-code-model-self-verification` listed its four scope items as a plain list,
+and the 2026-09-16 fold minted CAPs only from `CAP-n` lines, while marshal Stories 17.1 and 17.2 realized all four. On
+the operator's 2026-10-25 ruling ("Restore 4 marshal CAPs") Story 106.2 restores them as `spec-pyforge-marshal`
+CAP-293..CAP-296 (shipped; rendered into `SPEC.md` from the memlog decision of the same date) and points the four FRs
+at them: FR-144 ← CAP-293 (the Dream-chain detector's fixtures), FR-145 ← CAP-294 (the drift detector's fixtures),
+FR-146 ← CAP-295 (the detector-incident log), FR-147 ← CAP-296 (the Dream hygiene mode). `DW-marshal-105-1` is closed.
+
+### The FR space: no FR registered
+
+**ONE FR space still FR-1..FR-239** (FR-240 = next free id). No NFR changes. No FR number, title or body moves.
+
+**Content changed:** this section and four FR heading arrows. `updated:` bumped.

@@ -2,7 +2,7 @@
 id: SPEC-pyforge-atlas
 spec: pyforge-atlas
 status: ready
-updated: "2026-10-19"
+updated: "2026-10-25"
 owner-dream: docs/dreams/pyforge-atlas.md
 covers-dreams:
   - docs/dreams/pyforge-atlas.md
@@ -500,6 +500,21 @@ One-chain rebase 2026-09-17. Each reminted CAP keeps provenance `← spec-<old> 
     rewired whose dataset holds rows renders a non-empty table in `dashboard-dryrun` and in the static export; a test
     per rewired board proves its loader on a fixture shaped like the produced dataset; `dashboard-dryrun`, the
     provenance test and `kedro-catalog-check` stay green.
+- **CAP-70 — kedro-skills guidance is adopted only after an audit against the architecture invariants** ← spec-kedro-org-tooling-adoption Capability 1 (shipped; restored 2026-10-25: the 2026-09-17 fold minted no CAP from that Spec's plain-list capabilities)
+  - **intent:** `kedro-skills`, pinned at the version evaluated, runs against the real `pyforge-atlas` project, and every
+    piece of generated guidance is audited against Atlas's AD-invariants (AD-1's no-inline-IO scan, the injected-fetcher
+    seams, the `kedro-catalog-check` invariant, the credential-scoping allowlist) before any of it lands in
+    `.claude/skills/`.
+  - **success:** the written audit exists (`spec-kedro-org-tooling-adoption/kedro-skills-audit-report.md`); passing
+    content is committed reproducibly and version-pinned, contradicting content is excluded with the contradiction
+    recorded, a version bump re-triggers the audit, and a "not yet" verdict is a valid final outcome. Realized by atlas
+    Story 11.1.
+- **CAP-71 — the vscode-kedro adopt-or-defer decision is recorded** ← spec-kedro-org-tooling-adoption Capability 3 (shipped; restored 2026-10-25: the 2026-09-17 fold minted no CAP from that Spec's plain-list capabilities)
+  - **intent:** an explicit adopt-or-defer decision on `vscode-kedro`, with its reason, is committed where the next
+    reader finds it.
+  - **success:** the decision record exists (`spec-kedro-org-tooling-adoption/vscode-kedro-decision.md`), with an
+    optional one-line `.vscode/extensions.json` recommendation if deferred; either outcome closes the capability, and
+    silence does not. Realized by atlas Story 11.3.
 
 ## Constraints
 
