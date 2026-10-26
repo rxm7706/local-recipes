@@ -2909,15 +2909,16 @@ next id free of it.*
 #### FR-48: The Platform CI test job's time budget covers what it does on a slow runner, and it installs only what its runner image lacks ← CAP-174
 
 The Platform CI `test` job was cancelled at its 15-minute ceiling three times (2026-10-23, and twice on 2026-10-26,
-one of them `main`'s own push run). Each time one step took 636–668 s: `playwright install --with-deps chromium`,
-whose apt download ran at about 41 kB/s while the runner image already carried every library the browser links. The
-rest of the job sums to 365 s at worst. With no required status check on `main`, the cancellations merged unseen. The
+two of the three on `main`'s own push runs). Each time one step took 636–668 s: `playwright install --with-deps
+chromium`, nearly all of it an apt download at 38–43 kB/s while the runner image already carried every library the
+browser links. The rest of the job sums to 365 s at worst. With no required status check on `main`, the cancellations
+went unseen. The
 job now installs only what the image lacks and its budget is sized from what it measurably does, so a slow mirror reads
 as a slower green run.
 **Consequences (testable):**
 - The job installs the Chromium browser alone, launches it once, and runs `playwright install-deps chromium` only when
-  that launch fails, with a warning naming the fallback; on today's image the log shows the launch succeeding and no
-  apt download.
+  that launch fails, with a warning naming the fallback, then launches it again and fails the step with an error if it
+  still does not launch; on today's image the log shows the launch succeeding and no apt download.
 - `timeout-minutes` is 25: the fallback on the slowest mirror measured (668 s) plus the worst of the other steps
   (365 s) is 1,033 s, and 1,500 s leaves 45 % headroom; the comment beside it names those figures.
 - On a PR run that installs the browser from scratch, the job completes inside the budget and the herald deck viewer

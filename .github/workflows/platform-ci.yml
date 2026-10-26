@@ -171,12 +171,12 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && (github.event_name != 'workflow_dispatch' || inputs.jobs == 'all')) }}
     runs-on: ubuntu-latest
     # 25, not 15 (steward Story 112.1 / CAP-174), sized from the step times of
-    # the 200 test jobs of 2026-10-11..26. Every step but the Chromium install
-    # sums to 365 s at worst (pixi 26-32 s on a cache miss, the suite 243 s).
-    # The apt path of that install took 668 s on the slowest mirror seen (runs
-    # 39925508594, 40306113110, 40351088193 attempt 1, all cancelled at 15).
-    # 668 + 365 = 1033 s; 25 min (1500 s) leaves about 45 % headroom. Without
-    # the apt fallback below the job runs about 6 min.
+    # the last 200 test jobs (2026-10-11..26). Every step but the Chromium
+    # install sums to 365 s at worst (pixi 26-32 s on a cache miss, the suite
+    # 243 s). The apt path of that install took 668 s on the slowest mirror
+    # seen (runs 39925508594, 40306113110, 40351088193 attempt 1, all
+    # cancelled at 15). 668 + 365 = 1,033 s; 25 min (1,500 s) leaves about
+    # 45 % headroom. Without the apt fallback below the job runs about 6 min.
     timeout-minutes: 25
     defaults:
       run:
@@ -240,22 +240,29 @@ jobs:
       # once, and pull its system packages through apt only when that launch
       # fails. The image already ships every library the headless shell links;
       # installing with deps added only fonts and upgrades, from an apt mirror
-      # that ran at about 41 kB/s and cost 636-668 s on the three cancelled
-      # runs named above the job's timeout.
+      # that ran at 38-43 kB/s; the step took 636-668 s on the three cancelled
+      # runs named above the job's timeout. After the fallback the browser is
+      # launched again, so a failure reds this step, beside its cause.
       - name: Install Chromium for the herald deck viewer browser check
         run: |
-          python -m playwright install chromium
-          if python - <<'PY'
+          probe() {
+            python - <<'PY'
           from playwright.sync_api import sync_playwright
 
           with sync_playwright() as playwright:
               playwright.chromium.launch().close()
           PY
-          then
+          }
+          python -m playwright install chromium
+          if probe; then
             echo "Chromium launches on this runner image; no system packages installed."
           else
             echo "::warning::Chromium does not launch on this runner image; installing its system packages through apt (playwright install-deps chromium)."
             python -m playwright install-deps chromium
+            if ! probe; then
+              echo "::error::Chromium still does not launch after playwright install-deps chromium."
+              exit 1
+            fi
           fi
 
       - name: Django system checks (PostgreSQL + Redis, no other backing service)

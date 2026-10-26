@@ -843,9 +843,9 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
     the slowest path the job can still take (that fallback on the slowest apt mirror measured, plus the worst of every
     other step) with headroom, and the figures are written beside the number. A slow mirror or runner then reads as a
     slower green run, never a cancellation, and the lane is never paused, disabled or set `continue-on-error` to hide
-    one. (Three cancellations at the 15-minute ceiling, 2026-10-23 and 2026-10-26, each spent 636–668 s in
-    `playwright install --with-deps chromium`'s apt download at about 41 kB/s while the runner image already carried
-    every library the browser links; sizing in `.memlog.md`, 2026-10-26.)
+    one. (Three cancellations at the 15-minute ceiling, 2026-10-23 and 2026-10-26, each spent 636–668 s in the
+    `playwright install --with-deps chromium` step, nearly all of it an apt download at 38–43 kB/s, while the runner
+    image already carried every library the browser links; sizing and corrections in `.memlog.md`, 2026-10-26.)
   - **success:** on a PR run that installs the browser from scratch, the `test` job completes inside its budget, the
     browser check `test_playwright_records_zero_foreign_origin_requests` passes (not skips), and the log shows the
     launch succeeding with no apt download; the budget comment names the measured figures;
@@ -957,9 +957,10 @@ The `JFROG_API_KEY` cross-host leak pattern has a passing, named regression test
   (documented, not testable from this repository); the live `<SITE_URL>/build.json` is served within seconds of
   `deploy-pages` reporting success; nothing in `pages-check` reads git history once `presentations/*/src/pptx` is
   out of the checkout (Story 102.1's first check) — CAP-168.
-- The `ubuntu-latest` image keeps shipping the libraries the Playwright headless shell links (apt reported each one
-  already the newest version on 2026-10-23 and 2026-10-26); when an image drops one, the launch fails, the step warns
-  and runs `playwright install-deps chromium`, and CAP-174's budget covers that path on the slowest mirror measured.
+- The `ubuntu-latest` image keeps shipping the libraries the Playwright headless shell links (each one was already on
+  the image on 2026-10-23 and 2026-10-26, `libnss3` and `libglib2.0-0t64` one point release behind); when an image
+  drops one, the launch fails, the step warns and runs `playwright install-deps chromium`, and CAP-174's budget covers
+  that path on the slowest mirror measured.
 
 ## Open Questions
 

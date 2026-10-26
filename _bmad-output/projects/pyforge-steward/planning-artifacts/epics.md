@@ -7115,9 +7115,9 @@ So that a requirement's arrow lands on text that says what it guarantees, pyforg
 ## Epic 112: The Platform CI `test` job's budget covers a slow mirror (spec-pyforge-steward CAP-174 / FR-48)
 
 Minted 2026-10-26 from the station Dream's Realization log entry of the same date. The Platform CI `test` job was
-cancelled at its 15-minute ceiling on 2026-10-23 and twice on 2026-10-26, once on `main`'s own push run. Each time
-`playwright install --with-deps chromium` spent 636–668 s on an apt download at about 41 kB/s that the runner image
-did not need. CAP-174 makes the job install only what the image lacks and sizes its budget from measured step times.
+cancelled at its 15-minute ceiling on 2026-10-23 and twice on 2026-10-26, two of the three on `main`'s own push runs.
+Each time the `playwright install --with-deps chromium` step spent 636–668 s, nearly all of it an apt download at
+38–43 kB/s that the runner image did not need. CAP-174 makes the job install only what the image lacks and sizes its budget from measured step times.
 Epic 112 because draft PR #2274 claims Epic 109 (with CAP-169..CAP-173 and FR-42..FR-47), Story 110.1 took 110 and
 Story 111.1 took 111. **HARD boundaries:**
 - The lane is never paused, disabled or set `continue-on-error`; its `platform-ci.test` registry row, its `if:`
@@ -7137,7 +7137,7 @@ So that a slow apt mirror or runner reads as a slower green run, not a cancellat
 **Spec:** `planning-artifacts/specs/spec-112-1-the-platform-ci-test-job-installs-only-what-its-runner-image-lacks-and-its-budget-covers-a-slow-mirror.md`
 **Given** the `test` job at `timeout-minutes: 15` running `python -m playwright install --with-deps chromium`, which took 636–668 s on runs 39925508594, 40306113110 and 40351088193 (attempt 1) while every other step summed to 365 s at worst over 178 green jobs
 **When** the job runs on a PR or on `main`
-**Then** it runs `python -m playwright install chromium`, launches the browser once, and runs `python -m playwright install-deps chromium` only when that launch fails, after a `::warning::` naming the fallback; `timeout-minutes` is 25 and the comment beside it names 668 s, 365 s and 1,033 s
+**Then** it runs `python -m playwright install chromium`, launches the browser once, and runs `python -m playwright install-deps chromium` only when that launch fails, after a `::warning::` naming the fallback, then launches it again and exits the step after an `::error::` if it still does not launch; `timeout-minutes` is 25 and the comment beside it names 668 s, 365 s and 1,033 s
 **And** the PR's own Platform CI `test` run, which installs the browser from scratch, completes inside 25 minutes with `test_playwright_records_zero_foreign_origin_requests` PASSED and no apt download in its log; `ci_surface_gates.py --check` and `detectors-ci` exit 0
 **Status:** in-progress
 
