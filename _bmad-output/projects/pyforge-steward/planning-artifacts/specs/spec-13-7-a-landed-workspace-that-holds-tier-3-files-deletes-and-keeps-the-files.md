@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-25'
 status: 'in-review'
 baseline_revision: 'fd06415e4d1e1e3446ad6463f9e1149630d3311a'
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -63,9 +63,13 @@ declared_low_risk: false
   worktree and not as locked (its removal would fail after the move); every directory can be read; no file exists
   there at that path (`lexists`); and the destination does not resolve inside the worktree. Any failure is a skip
   reason naming the file, its non-UTF-8 bytes shown escaped.
-- *(Review round 1.)* A git-ignored listing that prints a warning is no proof: git leaves a directory it cannot open
-  out of the listing with only a warning and exit 0, so its contents would go with the worktree (pre-existing at
-  `fd06415e4d`, for the note and `--delete` alike).
+- *(Review rounds 1 and 2.)* A git-ignored listing that warns about a path under `_bmad-output/` is no proof, and the
+  reason quotes the warning: git leaves a directory it cannot open out of the listing with only a warning and exit 0,
+  so Tier-3 work in it would go with the worktree (pre-existing at `fd06415e4d`, for the note and `--delete` alike). A
+  warning about any other path changes nothing: that content is ignored and goes with the worktree, as at the
+  baseline. Each Tier-3 file's directory must be writable, a FIFO or socket (no data) goes with the worktree, and a
+  source that cannot be removed after its copy or link is made has that copy removed, so no file is ever in both
+  places.
 - `_execute_delete` re-reads the Tier-3 files, re-checks the same conditions, moves each file (its directories created
   as needed) by a call that itself fails on an existing path: a hard link, a new symlink, or, where no hard link can
   be made, a copy into an exclusively created file (a special file is never copied); then it removes the worktree and
@@ -102,7 +106,8 @@ fix / S / S-13.6.
 ## Boundaries & Constraints
 
 **Never:** overwrite or merge into a file that exists in the main checkout; delete a Tier-3 file; move anything for the
-default `clean` or `--merged-only`; change `start_workspace`, marshal's landing step or CAP-157's note proof; add a flag.
+default `clean` or `--merged-only`; change `start_workspace`, marshal's landing step or CAP-157's note proof (except
+the listing-warning rule above, which only refuses); add a flag.
 
 </intent-contract>
 
@@ -136,3 +141,10 @@ default `clean` or `--merged-only`; change `start_workspace`, marshal's landing 
   the workspace kept and a rerun finishes it; an empty Tier-3 directory goes with the worktree. Deferred: the dropped
   skip journal (frontmatter `deferred:`, pre-existing). Tests: `test_workspace_delete_tier3.py` (14), each fix pinned
   and caught by a mutation.
+- 2026-10-25: review round 2 (an independent verifier over `5fe1938dd6`; PASS, no must-fix; 20 of 21 probes of the
+  round-1 fixes held, the note text byte-identical over 16 ordinary states). Fixed: a Tier-3 directory that cannot
+  be written left a hard-linked file in both places and every rerun refused (the directory must be writable, and a
+  source that cannot be removed has its copy removed); the listing-warning rule refused a warning outside
+  `_bmad-output/`, such as an unreadable `.pixi/envs` entry, where the baseline deleted (now only a warning naming
+  `_bmad-output/` refuses, quoted in the reason); the `_landed_note_text` docstring names the warning rule; a FIFO or
+  socket is not moved. Tests: `test_workspace_delete_tier3.py` (18); each round-2 fix caught by a mutation.

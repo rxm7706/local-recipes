@@ -21,6 +21,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tarfile
@@ -1241,8 +1242,9 @@ def _landed_note_text(record: WorkspaceRecord, *, root: Path, stamp: str) -> str
       proves nothing about the branch;
     - no gitlink (a submodule's own ignored files would go unnamed) and no per-worktree ref
       (``refs/worktree/``, ``refs/bisect/``) that could hold a commit nothing else does;
-    - the git-ignored listing succeeds, and none of it is Tier-3 work under ``_bmad-output/``
-      other than a backlink symlink.
+    - the git-ignored listing succeeds with no warning naming a path under ``_bmad-output/`` (git
+      leaves a directory it cannot open out of the listing, with only a warning; Story 13.7), and
+      none of it is Tier-3 work under ``_bmad-output/`` other than a backlink symlink.
 
     Any command that fails, answers ambiguously, or prints what cannot be decoded is no proof
     (review 2: a non-UTF-8 ignored name crashed the sweep). Raises only if git cannot be
@@ -1309,12 +1311,16 @@ def _landed_proof(record: WorkspaceRecord, *, wt: Path, root: Path) -> _LandedPr
         return "not-merged"
     landing_ref, source_sha = landed_on
     listed = _git_bytes("-c", "status.showUntrackedFiles=normal", "status", "--ignored", "--porcelain", "-z", cwd=wt)
-    # A directory git cannot open is left out of the listing with only a warning and exit 0, so a warning is no
-    # proof either: whatever that directory holds would go with the worktree (Story 13.7 review 1).
-    if listed.returncode != 0 or listed.stderr.strip():
+    if listed.returncode != 0:
         return "git-ignored listing failed"
-    raw_ignored = [entry[3:] for entry in listed.stdout.split(b"\0") if entry.startswith(b"!! ")]
+    # git leaves a directory it cannot open out of the listing, with only a warning and exit 0. Under _bmad-output/
+    # it could hold Tier-3 work that would go with the worktree, so that warning is no proof (Story 13.7 reviews 1
+    # and 2); anywhere else it is ignored content, which goes with the worktree as at the baseline.
     work_prefixes = tuple(prefix.encode() for prefix in _IGNORED_WORK_PREFIXES)
+    warned = [line.strip() for line in listed.stderr.splitlines() if any(p in line for p in work_prefixes)]
+    if warned:
+        return f"git-ignored listing failed: {_shown(os.fsdecode(warned[0]))}"
+    raw_ignored = [entry[3:] for entry in listed.stdout.split(b"\0") if entry.startswith(b"!! ")]
     tier3 = [
         os.fsdecode(raw.rstrip(b"/"))
         for raw in raw_ignored
@@ -1554,30 +1560,36 @@ def _main_checkout(root: Path) -> Path | None:
     return main if (main / _BMAD_LOOP_WORKTREE_RELATIVE_PATH).is_file() else None
 
 
+def _holds_data(path: Path) -> bool:
+    """A regular file or a symlink; a FIFO or a socket holds no data and goes with the worktree (review 2)."""
+    mode = path.lstat().st_mode
+    return stat.S_ISREG(mode) or stat.S_ISLNK(mode)
+
+
 def _tier3_files(wt: Path, rel: str) -> list[str]:
-    """Every non-directory entry at or under ``wt / rel``, relative to ``wt``; a symlink is an entry, never followed.
-    An empty directory holds nothing and goes with the worktree. An unreadable directory raises, so no file is left
-    out of the move and then removed with the worktree."""
+    """Every file and symlink at or under ``wt / rel``, relative to ``wt``; a symlink is never followed. An empty
+    directory holds nothing and goes with the worktree. A directory or entry that cannot be read raises, so no file
+    is left out of the move and then removed with the worktree."""
     top = wt / rel
     if top.is_symlink() or not top.is_dir():
-        return [rel]
+        return [rel] if _holds_data(top) else []
     files: list[str] = []
 
     def _raise(exc: OSError) -> None:
         raise exc
 
     for dirpath, dirnames, filenames in os.walk(top, onerror=_raise):
-        base = Path(dirpath).relative_to(wt)
-        files.extend(str(base / name) for name in filenames)
-        files.extend(str(base / name) for name in dirnames if (Path(dirpath) / name).is_symlink())
+        here, base = Path(dirpath), Path(dirpath).relative_to(wt)
+        files.extend(str(base / name) for name in filenames if _holds_data(here / name))
+        files.extend(str(base / name) for name in dirnames if (here / name).is_symlink())
     return sorted(files)
 
 
 def _tier3_moves(root: Path, wt: Path, tier3: list[str]) -> tuple[Path, list[tuple[Path, Path]]] | str:
     """The main checkout and where each Tier-3 file goes in it (the same relative path), or why nothing can move:
     there is no main checkout, git does not list the worktree or lists it locked (its removal would then fail
-    after the move), a directory cannot be read, a file is already there, the path cannot be a directory, or it
-    resolves into the worktree."""
+    after the move), a directory cannot be read or written, a file is already there, the path cannot be a
+    directory, or it resolves into the worktree."""
     first = _shown(tier3[0])
     entries = _worktree_entries(root)
     main = _main_checkout(root)
@@ -1596,6 +1608,10 @@ def _tier3_moves(root: Path, wt: Path, tier3: list[str]) -> tuple[Path, list[tup
         except OSError as exc:
             return f"Tier-3 work: {_shown(rel)} cannot be read ({exc.strerror})"
         for leaf in leaves:
+            # The move removes the file from here, so its directory must be writable, or the file would end up in
+            # both places and every rerun would refuse it (review 2).
+            if not os.access((wt / leaf).parent, os.W_OK | os.X_OK):
+                return f"Tier-3 work: {_shown(leaf)} cannot move: its directory is not writable"
             dest = main / leaf
             if os.path.lexists(dest):
                 return f"Tier-3 work: {_shown(leaf)} already in {_shown(str(main))}"
@@ -1638,7 +1654,11 @@ def _move_no_clobber(src: Path, dest: Path) -> None:
                 shutil.copystat(src, dest)
     except FileExistsError as exc:
         raise WorkspaceError(f"Tier-3 work: {_shown(str(dest))} appeared before the move") from exc
-    os.unlink(src)
+    try:
+        os.unlink(src)
+    except OSError as exc:
+        os.unlink(dest)  # the file stays where it was, never in both places (review 2)
+        raise WorkspaceError(f"Tier-3 work: {_shown(str(src))} could not be removed ({exc.strerror})") from exc
 
 
 def _execute_delete(record: WorkspaceRecord, *, root: Path) -> tuple[Path, int] | None:

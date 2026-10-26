@@ -250,10 +250,88 @@ def test_a_tier3_directory_git_cannot_open_is_no_proof_and_nothing_is_removed(re
     finally:
         unreadable.chmod(0o755)
 
-    assert result["skipped"][0]["reason"] == "git-ignored listing failed"
+    reason = result["skipped"][0]["reason"]
+    assert reason.startswith("git-ignored listing failed: ") and str(_JOURNAL.parent) in reason  # git's warning
     assert (wt / _JOURNAL).is_file() and sibling.is_file()
     assert not (repo / _JOURNAL.parents[1]).exists()
     assert _branch_exists(repo, "landed")
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root reads any directory")
+def test_an_unreadable_directory_outside_bmad_output_deletes_as_before(repo: Path, tmp_path: Path):
+    """Ignored content elsewhere goes with the worktree, as at fd06415e4d; only a warning under ``_bmad-output/``
+    is no proof (review 2)."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    wt = _landed(repo, tmp_path, bookkeeping)
+    _git("config", "core.excludesFile", str(tmp_path / "excludes"), cwd=repo)
+    (tmp_path / "excludes").write_text(".pixi/envs\n", encoding="utf-8")
+    secret = wt / ".pixi" / "envs" / "e" / "secret"
+    secret.mkdir(parents=True)
+    secret.chmod(0)
+    try:
+        result = clean_workspaces(
+            delete=True, slug="landed", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "archive"
+        )
+    finally:
+        if secret.exists():
+            secret.chmod(0o755)
+
+    assert [row["slug"] for row in result["deleted"]] == ["landed"], result["skipped"]
+    assert not wt.exists()
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root writes any directory")
+def test_a_tier3_directory_that_cannot_be_written_moves_nothing(repo: Path, tmp_path: Path):
+    """The file could be linked into main but not removed here, and would be in both places (review 2)."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    wt = _landed(repo, tmp_path, bookkeeping)
+    _write(wt / _JOURNAL, "{}\n")
+    (wt / _JOURNAL).parent.chmod(0o500)
+    try:
+        result = clean_workspaces(
+            delete=True, slug="landed", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "archive"
+        )
+    finally:
+        (wt / _JOURNAL).parent.chmod(0o755)
+
+    assert result["skipped"][0]["reason"] == f"Tier-3 work: {_JOURNAL} cannot move: its directory is not writable"
+    assert (wt / _JOURNAL).is_file()
+    assert not (repo / _JOURNAL).exists()
+
+
+def test_a_source_that_cannot_be_removed_is_never_left_in_both_places(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    src_dir, main = tmp_path / "wt", tmp_path / "main"
+    _write(src_dir / "a.jsonl", "a\n")
+    real_unlink = os.unlink
+
+    def _refuse_source(path, *args, **kwargs):
+        if Path(path) == src_dir / "a.jsonl":
+            raise PermissionError(errno.EACCES, "Permission denied")
+        return real_unlink(path, *args, **kwargs)
+
+    monkeypatch.setattr(ws_module.os, "unlink", _refuse_source)
+
+    with pytest.raises(ws_module.WorkspaceError, match="could not be removed"):
+        ws_module._move_no_clobber(src_dir / "a.jsonl", main / "a.jsonl")
+
+    assert (src_dir / "a.jsonl").read_text(encoding="utf-8") == "a\n"
+    assert not (main / "a.jsonl").exists()
+
+
+def test_a_fifo_holds_no_data_and_goes_with_the_worktree(repo: Path, tmp_path: Path):
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    wt = _landed(repo, tmp_path, bookkeeping)
+    _write(wt / _JOURNAL, "{}\n")
+    os.mkfifo(wt / _JOURNAL.parent / "pipe")
+
+    result = clean_workspaces(
+        delete=True, slug="landed", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "archive"
+    )
+
+    assert result["deleted"][0]["tier3_moved"] == "1"
+    assert (repo / _JOURNAL).is_file()
+    assert not os.path.lexists(repo / _JOURNAL.parent / "pipe")
+    assert not wt.exists()
 
 
 def test_a_non_utf8_name_is_shown_escaped_and_the_report_prints(repo: Path, tmp_path: Path):
