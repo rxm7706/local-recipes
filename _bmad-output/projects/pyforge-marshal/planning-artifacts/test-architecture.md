@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: ac1b908ca1a97a7a
-story_count: 462
+source_fingerprint: b5233cf9eb9c11f8
+story_count: 463
 test_file_count: 270
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 462
-- **Epics parsed:** 103
+- **Stories parsed:** 463
+- **Epics parsed:** 104
 - **Test files inventoried:** 270 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `ac1b908ca1a97a7a`
+- **Source fingerprint:** `b5233cf9eb9c11f8`
 
 ## Risk Assessment
 
@@ -125,6 +125,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 103: Marshal's own MCP server starts, and preflight proves it
 - Epic 104: Marshal's own render never blocks a loop-home refresh
 - Epic 105: The marshal PRD's FR arrows name the capabilities the Spec carries
+- Epic 106: The marshal PRD's remaining FR arrows name what realizes them
 
 ### Low-risk epics
 
@@ -881,6 +882,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 103.1 | The marshal-mcp server starts on the official SDK, and preflight proves it | none observed |
 | 104.1 | The .mcp.json marshal renders never makes a loop home dirty | none observed |
 | 105.1 | Every marshal PRD FR arrow names the Spec capability that realizes it | none observed |
+| 106.1 | Every marshal seed-installer FR names the capability that realizes it | none observed |
 
 ## Quality Gates
 

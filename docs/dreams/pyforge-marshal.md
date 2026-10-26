@@ -1670,6 +1670,18 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   no CAP, no flag, no `SPEC.md` change; no detector rule changes. Operator ruling, 2026-10-25: "Apply the PRD FR→CAP
   re-map as proposed: 71 headings through a chore story chain, and leave FR-144..FR-147 unchanged with a note that they
   need a source-capability decision." Owner `spec-pyforge-marshal`. → Epic 105 / Story 105.1, specced 2026-10-25.
+- **2026-10-25 (the seed installer's FRs never got their arrows)** — **Found: § 15's 62 requirements name no
+  capability.** The fleet audit that followed Story 105.1 measured 62 marshal FRs no arrow cites, FR-66..FR-127, the
+  seed installer. They came from the genesis installer's satellite PRD (renumbered into this FR space on 2026-08-08),
+  whose nine capabilities were folded into this Spec on 2026-08-02 as CAP-10..CAP-18; the 2026-09-16 fold wrote no
+  arrow on these bullets, and all 62 are baseline-exempt, so `fr-without-cap` never read them. **What it looks like
+  when fixed:** every bullet names what realizes it, traced per requirement: the manifest CAP-10, init CAP-14, adopt
+  CAP-12, check CAP-13, update CAP-15, the state file CAP-17, managed regions CAP-11, adapters CAP-16, templates CAP-18,
+  the distribution CAP-8. Five requirements no capability states (Copier's public API, `--unsafe`, `--force`, the two
+  version clocks, distinct exit codes) cite the Spec constraint that states them. **Constraints:** a chore under
+  `spec-one-chain-per-station` CAP-5 (FRs derive from CAPs) and CAP-8 (the marshal pilot); no CAP, no flag, no
+  `SPEC.md` change; no detector rule changes. Operator rulings, 2026-10-25: "Do rows 1-5 in one PR" and "Cite the
+  constraint (Recommended)". Owner `spec-pyforge-marshal`. → Epic 106 / Story 106.1, specced 2026-10-25.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint
