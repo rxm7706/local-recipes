@@ -53,7 +53,7 @@ Type / Effort / Deps: feature / M / —.
 ## Acceptance Criteria
 
 - **AC1 — Fixtures with known answers.** Unit tests under `tmp_path` prove each rule yields exactly its named finding: a non-CAP arrow, a mention-only CAP, a cross-Spec cite into `docs/governance/`, dotted and lettered ids, an unhyphenated id, a satellite duplicate versus a reference heading in a `## Currency reconciliation — <date>` section, a counted run with and without title overlap, the wrapped prose line and the column-0 range line that must not define, a baselined finding, a stale baseline key, and `--prune`.
-- **AC2 — Live tree.** On the PR head `fr-without-cap` reports no FAIL; the five Constraint arrows are gone (atlas 41.1, marshal 108.1); doctor FR-14 and FR-15 cite CAP-9 and CAP-93; `fr-counted-run` names no run once marshal's CAP-235..CAP-238 titles are restored; the honest runs (steward FR-32..41, atlas FR-69..77, doctor FR-9..13) are quiet.
+- **AC2 — Live tree.** On the PR head `fr-without-cap` reports no FAIL; the five Constraint arrows are gone (atlas 41.1, marshal 108.1); doctor FR-14 and FR-15 cite CAP-9 and CAP-93; `fr-counted-run` names no run once marshal's pyforge-marshal:CAP-235..pyforge-marshal:CAP-238 titles are restored; the honest runs (steward FR-32..41, atlas FR-69..77, doctor FR-9..13) are quiet.
 - **AC3 — The baseline.** `docs/governance/fr-baseline.json` carries `findings` and `findings_sha`; each station's `projects` entry lists only ids whose definition has no arrow (the 82 NFR lines, warden FR9/FR30, atlas's arrowless satellite ids); every entry has a named owner story (atlas 41.2/41.3, marshal 108.2, mason 33.2, warden 20.2).
 - **AC4 — Suites.** `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green with its coverage floors; `pixi run -e pyforge-guild lint-types` green for the doctor package; `detectors-ci` exit 0; the five-second CPU budget test holds.
 - **AC5 — The chain.** CAP-92 and CAP-93 are defined after CAP-91; FR-14/FR-15/FR-16 carry their arrows; the capability ledger carries both CAPs as `rebuild`; the doctor retrospective for Epic 50 is in the PR (chain currency).
@@ -78,8 +78,8 @@ Type / Effort / Deps: feature / M / —.
 | `###### FR-1:` under `## Satellite:` after `#### FR-1:` | `fr-duplicate-id` (baselined for atlas until 41.2) |
 | `### FR-34: a dated note (2026-09-28)` under a currency section | none (reference) |
 | `  FR-10.)` / `FR-66–FR-71 encode…` | not a definition |
-| FR-164..FR-167 ← CAP-235..CAP-238, titles "b"/"a"/"t"/"t" | `fr-counted-run` (clears with the restored titles) |
-| steward FR-32..FR-41 ← CAP-159..CAP-168 | none (titles overlap) |
+| FR-164..FR-167 ← pyforge-marshal:CAP-235..pyforge-marshal:CAP-238, titles "b"/"a"/"t"/"t" | `fr-counted-run` (clears with the restored titles) |
+| steward FR-32..FR-41 ← pyforge-steward:CAP-159..pyforge-steward:CAP-168 | none (titles overlap) |
 
 </intent-contract>
 
