@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: warden
-source_fingerprint: 1a0d63565fe875e2
-story_count: 65
+source_fingerprint: 3585e1d84014142f
+story_count: 66
 test_file_count: 80
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-warden`
-- **Stories parsed:** 65
-- **Epics parsed:** 20
+- **Stories parsed:** 66
+- **Epics parsed:** 21
 - **Test files inventoried:** 80 under `src/shared/packages/pyforge-warden/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `1a0d63565fe875e2`
+- **Source fingerprint:** `3585e1d84014142f`
 
 ## Risk Assessment
 
@@ -54,6 +54,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 18: The leak guard keeps the fleet target private, not the organisation's public name (fix under spec-pyforge-warden CAP-26)
 - Epic 19: The warden PRD's FR arrows name the capabilities the Spec carries
 - Epic 20: The warden Spec's capability text is whole again, and its NFRs get an owner (spec-one-chain-per-station CAP-5 amended, CAP-3)
+- Epic 21: Warden's planning artifacts fit the one-chain shape (spec-one-chain-per-station CAP-11)
 
 ### Low-risk epics
 
@@ -213,6 +214,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 19.1 | Every warden PRD FR arrow names the Spec capability that realizes it | none observed |
 | 20.1 | The warden Spec's fold-cut capability text is restored | none observed |
 | 20.2 | Every warden NFR names the capabilities it bounds | none observed |
+| 21.1 | Warden's archived compliance-gates Spec folder moves to the archive home | none observed |
 
 ## Quality Gates
 
