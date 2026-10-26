@@ -583,6 +583,13 @@ def _empty_ci_var(_name: str) -> str:
 
 
 CI_VARS_REL = Path(".steward/ci-vars.json")
+#: Story 99.8: the envelope ``steward ci status`` saves (``ci.CI_STATUS_REL``); read for red ``main`` runs.
+CI_STATUS_REL = Path(".steward/ci-status.json")
+#: A ``main`` run that ended in any other conclusion is red for the banner. ``cancelled`` is not: a push-triggered
+#: workflow with ``cancel-in-progress`` cancels the run a newer push superseded, which says nothing about ``main``.
+NOT_RED_CONCLUSIONS = frozenset({"success", "skipped", "neutral", "cancelled"})
+#: A ``fetched_at`` this far past the clock is not trusted as fresh.
+_SNAPSHOT_CLOCK_SKEW = timedelta(minutes=5)
 CI_FLAG_KEY = "pyforge.steward.ci_pause_control"
 SNAPSHOT_MAX_AGE = timedelta(hours=24)
 
@@ -791,6 +798,88 @@ def print_ci_pause_banner(
         note = f" ({resolution.note})" if resolution.note else ""
         print(f"preflight: ci vars from {resolution.source}{note}", file=sys.stderr)
     for entry in paused:
+        print(f"preflight: {entry.banner_line()}", file=sys.stderr)
+
+
+@dataclass(frozen=True)
+class RedMainRun:
+    """One workflow run on ``main`` that did not succeed, and the CI surfaces it covers (Story 99.8)."""
+
+    surfaces: tuple[str, ...]
+    conclusion: str
+    run_id: int | None
+    created_at: str | None
+
+    def banner_line(self) -> str:
+        run = f"run {self.run_id}" if self.run_id is not None else "run ?"
+        when = f" ({self.created_at})" if self.created_at else ""
+        return f"main is red on {', '.join(self.surfaces)}: {self.conclusion or 'unknown'}, {run}{when}"
+
+
+def red_main_runs(repo_root: Path, *, now: datetime | None = None) -> tuple[list[RedMainRun], str | None]:
+    """The red ``main`` runs the last ``steward ci status`` saw, or a note naming why there is no answer.
+
+    The snapshot counts while it is no older than ``SNAPSHOT_MAX_AGE``, as the ci-vars snapshot does, and no newer
+    than the clock allows. Rows that share one workflow run share one entry. Advisory only: nothing here selects,
+    skips or fails a lane.
+    """
+    path = repo_root / CI_STATUS_REL
+    hint = "run `pyforge steward ci status` to refresh it"
+    if not path.is_file():
+        return [], f"no ci status snapshot ({hint})"
+    try:
+        doc = json.loads(path.read_bytes().decode("utf-8"))
+    except OSError, ValueError:  # UnicodeDecodeError and JSONDecodeError are ValueErrors
+        return [], f"the ci status snapshot is unreadable ({hint})"
+    if not isinstance(doc, dict) or not isinstance(doc.get("rows"), list):
+        return [], f"the ci status snapshot is unreadable ({hint})"
+    try:
+        fetched = datetime.fromisoformat(str(doc.get("fetched_at") or "").replace("Z", "+00:00"))
+    except ValueError:
+        return [], f"the ci status snapshot has no readable fetched_at ({hint})"
+    if fetched.tzinfo is None:
+        fetched = fetched.replace(tzinfo=UTC)
+    moment = now or datetime.now(tz=UTC)
+    if moment - fetched > SNAPSHOT_MAX_AGE:
+        hours = int((moment - fetched).total_seconds() // 3600)
+        return [], f"the ci status snapshot is {hours}h old ({hint})"
+    if fetched - moment > _SNAPSHOT_CLOCK_SKEW:
+        return [], f"the ci status snapshot's fetched_at is in the future ({hint})"
+    by_run: dict[object, RedMainRun] = {}
+    for row in doc["rows"]:
+        if not isinstance(row, dict):
+            continue
+        run = row.get("latest_main_run")
+        if not isinstance(run, dict) or str(run.get("conclusion") or "") in NOT_RED_CONCLUSIONS:
+            continue
+        raw_id = run.get("run_id")
+        run_id = raw_id if isinstance(raw_id, int) and not isinstance(raw_id, bool) else None
+        surface = str(row.get("id") or "")
+        key: object = run_id if run_id is not None else ("row", surface)
+        if key in by_run:
+            entry = by_run[key]
+            by_run[key] = RedMainRun((*entry.surfaces, surface), entry.conclusion, entry.run_id, entry.created_at)
+        else:
+            created = run.get("created_at")
+            by_run[key] = RedMainRun(
+                (surface,), str(run.get("conclusion") or ""), run_id, str(created) if created else None
+            )
+    return list(by_run.values()), None
+
+
+def print_main_red_banner(repo_root: Path, *, now: datetime | None = None) -> None:
+    """Print one advisory line per red ``main`` run, or one line saying the snapshot cannot answer (Story 99.8).
+
+    Never raises: a snapshot it cannot judge prints one line, so the banner cannot change a preflight's exit code.
+    """
+    try:
+        red, note = red_main_runs(repo_root, now=now)
+    except Exception as exc:  # noqa: BLE001 -- advisory: a snapshot it cannot judge never stops the preflight
+        red, note = [], f"the ci status snapshot could not be judged ({type(exc).__name__})"
+    if note is not None:
+        print(f"preflight: main CI state unknown: {note}", file=sys.stderr)
+        return
+    for entry in red:
         print(f"preflight: {entry.banner_line()}", file=sys.stderr)
 
 

@@ -998,6 +998,7 @@ _bmad-output/projects/*/_root-fallback-fork-*/
 # each observed etag -- host-scratch, not repo content.
 .steward/deck-integrity-baseline.json
 .steward/ci-vars.json
+.steward/ci-status.json
 
 # Fleet-drain / agent scratch worktrees (`git worktree add` under repo root).
 # Machine-local checkouts with pixi envs — never commit; remove with

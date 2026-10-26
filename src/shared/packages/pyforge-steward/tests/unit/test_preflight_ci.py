@@ -243,3 +243,119 @@ def test_a_row_without_a_local_twin_matches_no_lane() -> None:
     }
     assert preflight_ci._registry_row_for_lane(registry, "test-ci") is None
     assert preflight_ci._registry_row_for_lane(registry, "platform-ci-local") == registry["surfaces"][3]
+
+
+# ---- Story 99.8: the red-main banner --------------------------------------------------------------
+
+_NOW_998 = datetime(2026, 10, 25, 12, 0, 0, tzinfo=UTC)
+
+
+def _write_status(root: Path, rows: list[dict], *, fetched_at: str = "2026-10-25T10:00:00+00:00") -> None:
+    path = root / preflight_ci.CI_STATUS_REL
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps({"fetched_at": fetched_at, "repo": "o/r", "rate_limit": {}, "rows": rows}), encoding="utf-8"
+    )
+
+
+def _main_row(row_id: str, conclusion: str, run_id: int | None = 7) -> dict:
+    return {
+        "id": row_id,
+        "latest_main_run": {"conclusion": conclusion, "created_at": "2026-10-25T09:00:00Z", "run_id": run_id},
+    }
+
+
+def test_a_red_main_run_prints_one_line_for_every_surface_it_covers(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _write_status(
+        tmp_path,
+        [
+            _main_row("kedro-viz-publish.publish", "failure"),
+            _main_row("kedro-viz-publish.vizro", "failure"),
+            _main_row("pages", "success", run_id=8),
+            _main_row("detectors.detectors", "timed_out", run_id=9),
+            _main_row("lint-types", "cancelled", run_id=10),
+            {"id": "never-ran", "latest_main_run": None},
+            {"id": "older-envelope"},
+        ],
+    )
+    preflight_ci.print_main_red_banner(tmp_path, now=_NOW_998)
+    lines = capsys.readouterr().err.splitlines()
+    assert lines == [
+        "preflight: main is red on kedro-viz-publish.publish, kedro-viz-publish.vizro: failure, run 7 (2026-10-25T09:00:00Z)",
+        "preflight: main is red on detectors.detectors: timed_out, run 9 (2026-10-25T09:00:00Z)",
+    ]
+
+
+def test_a_green_main_prints_nothing(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    _write_status(tmp_path, [_main_row("pages", "success"), _main_row("x", "skipped", 2), _main_row("y", "neutral", 3)])
+    preflight_ci.print_main_red_banner(tmp_path, now=_NOW_998)
+    assert capsys.readouterr().err == ""
+
+
+@pytest.mark.parametrize(
+    ("setup", "needle"),
+    [
+        ("missing", "no ci status snapshot"),
+        ("stale", "is 26h old"),
+        ("corrupt", "is unreadable"),
+        ("no-rows", "is unreadable"),
+        ("no-time", "no readable fetched_at"),
+        ("not-utf8", "is unreadable"),
+        ("future", "is in the future"),
+    ],
+)
+def test_a_snapshot_that_cannot_answer_says_so_in_one_line(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], setup: str, needle: str
+) -> None:
+    path = tmp_path / preflight_ci.CI_STATUS_REL
+    if setup == "stale":
+        _write_status(tmp_path, [_main_row("pages", "failure")], fetched_at="2026-10-24T10:00:00+00:00")
+    elif setup == "corrupt":
+        path.parent.mkdir(parents=True)
+        path.write_text("{not json", encoding="utf-8")
+    elif setup == "no-rows":
+        path.parent.mkdir(parents=True)
+        path.write_text(json.dumps({"fetched_at": "2026-10-25T10:00:00+00:00"}), encoding="utf-8")
+    elif setup == "no-time":
+        _write_status(tmp_path, [_main_row("pages", "failure")], fetched_at="")
+    elif setup == "not-utf8":
+        path.parent.mkdir(parents=True)
+        path.write_bytes(b'{"fetched_at": "2026-10-25T10:00:00+00:00", "rows": ["\xff\xfe"]}')
+    elif setup == "future":
+        _write_status(tmp_path, [_main_row("pages", "failure")], fetched_at="2026-10-25T13:00:00+00:00")
+    preflight_ci.print_main_red_banner(tmp_path, now=_NOW_998)
+    lines = capsys.readouterr().err.splitlines()
+    assert len(lines) == 1
+    assert lines[0].startswith("preflight: main CI state unknown: ")
+    assert needle in lines[0]
+    assert "pyforge steward ci status" in lines[0]
+
+
+def test_odd_rows_are_judged_without_raising(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    _write_status(
+        tmp_path,
+        [
+            "not a row",
+            {"id": ["a", "list"], "latest_main_run": {"conclusion": "failure", "created_at": None, "run_id": None}},
+            {"id": {"a": "dict"}, "latest_main_run": {"conclusion": "failure", "run_id": "12"}},
+            {"id": "flag", "latest_main_run": {"conclusion": "failure", "run_id": True}},
+            {"id": "one", "latest_main_run": {"conclusion": "failure", "run_id": 1}},
+            {"id": "bad-run", "latest_main_run": "failure"},
+        ],
+    )
+    preflight_ci.print_main_red_banner(tmp_path, now=_NOW_998)
+    lines = capsys.readouterr().err.splitlines()
+    assert "preflight: main is red on one: failure, run 1" in lines
+    assert "preflight: main is red on flag: failure, run ?" in lines
+    assert len(lines) == 4
+
+
+def test_the_banner_never_raises(tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch) -> None:
+    def boom(_root: Path, *, now: datetime | None = None) -> tuple[list, str | None]:
+        raise RuntimeError("unexpected")
+
+    monkeypatch.setattr(preflight_ci, "red_main_runs", boom)
+    preflight_ci.print_main_red_banner(tmp_path, now=_NOW_998)
+    assert capsys.readouterr().err == "preflight: main CI state unknown: the ci status snapshot could not be judged (RuntimeError)\n"

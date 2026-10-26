@@ -1421,3 +1421,140 @@ def test_108_1_ac7_a_retired_row_that_reads_the_master_is_never_paused_by_it(tmp
     assert control["paused_by_master"] is True
     assert control["verdict"] == "paused"
     assert control["detail"] == _MASTER_PAUSE_DETAIL
+
+
+# ---- Story 99.8: each surface's latest main run, and the saved envelope ------------------------------
+
+from pyforge.steward import preflight_ci as _preflight_ci  # noqa: E402
+from pyforge.steward.ci import CI_STATUS_REL, _latest_main_run  # noqa: E402
+
+
+def _run(
+    run_id: int,
+    *,
+    branch: str = "main",
+    status: str = "completed",
+    conclusion: str | None = "success",
+    event: str = "push",
+) -> dict[str, object]:
+    return {
+        "databaseId": run_id,
+        "conclusion": conclusion,
+        "status": status,
+        "createdAt": f"2026-10-2{run_id % 10}T00:00:00Z",
+        "event": event,
+        "headBranch": branch,
+    }
+
+
+def test_latest_main_run_is_the_newest_completed_main_run() -> None:
+    runs = [
+        _run(9, status="in_progress", conclusion=None),
+        _run(8, branch="feature"),
+        _run(7, event="pull_request", conclusion="failure"),
+        _run(17, event="pull_request_target", conclusion="failure"),
+        _run(6, conclusion="failure"),
+        _run(5),
+    ]
+    assert _latest_main_run(runs) == {"conclusion": "failure", "created_at": "2026-10-26T00:00:00Z", "run_id": 6}
+
+
+def test_latest_main_run_is_null_when_no_listed_run_qualifies() -> None:
+    assert _latest_main_run([]) is None
+    assert _latest_main_run([_run(1, branch="feature"), _run(2, status="queued", conclusion=None)]) is None
+    assert _latest_main_run([{"databaseId": 3, "status": "completed", "conclusion": "failure"}]) is None
+    flagged = _latest_main_run([{**_run(4), "databaseId": True}])
+    assert flagged is not None and flagged["run_id"] is None
+
+
+def _runner_with_main_runs(tmp_path: Path, fixed_now: datetime, runs_by_workflow: dict[str, list[dict]]):
+    base = _make_runner(tmp_path, [], fixed_now)
+
+    def runner(argv: list[str], cwd: Path) -> _FakeProc:
+        if argv[:3] == ["gh", "run", "list"]:
+            assert "headBranch" in argv[argv.index("--json") + 1].split(",")
+            wf = argv[argv.index("--workflow") + 1]
+            if wf in runs_by_workflow:
+                return _FakeProc(argv, stdout=json.dumps(runs_by_workflow[wf]))
+        return base(argv, cwd)
+
+    return runner
+
+
+def _status_with_main_runs(tmp_path: Path, runs_by_workflow: dict[str, list[dict]]):
+    reg_path = _write_fixture_tree(tmp_path)
+    fixed_now = datetime(2026, 10, 25, 12, 0, 0, tzinfo=timezone.utc)
+    deps = CiDeps(
+        root=tmp_path,
+        runner=_runner_with_main_runs(tmp_path, fixed_now, runs_by_workflow),
+        registry_path=reg_path,
+        flag_on=lambda: True,
+        now=lambda: fixed_now,
+    )
+    return run_status(deps, json_out=True), fixed_now
+
+
+def test_each_row_reports_its_workflows_latest_main_run(tmp_path: Path) -> None:
+    import jsonschema
+
+    result, _now = _status_with_main_runs(
+        tmp_path, {".github/workflows/pyforge-station-tests.yml": [_run(4, conclusion="failure"), _run(3)]}
+    )
+    rows = {r["id"]: r for r in result.details["payload"]["rows"]}
+    assert rows["pause.guild-container"]["latest_main_run"] == {
+        "conclusion": "failure",
+        "created_at": "2026-10-24T00:00:00Z",
+        "run_id": 4,
+    }
+    assert rows["pages"]["latest_main_run"] is None
+    assert rows["retired.sample"]["latest_main_run"] is None
+    schema = json.loads(
+        resources.files("pyforge.steward").joinpath("data", "ci-status-schema.json").read_text(encoding="utf-8")
+    )
+    jsonschema.validate(json.loads(result.summary), schema)
+
+
+def test_an_envelope_without_the_field_still_validates() -> None:
+    import jsonschema
+
+    schema = json.loads(
+        resources.files("pyforge.steward").joinpath("data", "ci-status-schema.json").read_text(encoding="utf-8")
+    )
+    fixture = Path(__file__).resolve().parent.parent / "fixtures" / "ci_status_master_on.json"
+    doc = json.loads(fixture.read_text(encoding="utf-8"))
+    for row in doc["rows"]:
+        row.pop("latest_main_run", None)
+    jsonschema.validate(doc, schema)
+
+
+def test_status_saves_its_envelope_complete_or_partial(tmp_path: Path) -> None:
+    result, _now = _status_with_main_runs(tmp_path, {})
+    saved = json.loads((tmp_path / CI_STATUS_REL).read_text(encoding="utf-8"))
+    assert saved == result.details["payload"]
+
+    partial_root = tmp_path / "partial"
+    partial_root.mkdir()
+    reg_path = _write_fixture_tree(partial_root)
+    fixed_now = datetime(2026, 10, 25, 12, 0, 0, tzinfo=timezone.utc)
+    deps = CiDeps(
+        root=partial_root,
+        runner=_make_runner(partial_root, [], fixed_now, fail_run_for=".github/workflows/platform-ci.yml"),
+        registry_path=reg_path,
+        flag_on=lambda: True,
+        now=lambda: fixed_now,
+    )
+    partial = run_status(deps, json_out=True)
+    assert partial.ok is False
+    assert json.loads((partial_root / CI_STATUS_REL).read_text(encoding="utf-8"))["partial"] is True
+
+
+def test_the_preflight_reads_the_path_status_writes() -> None:
+    assert _preflight_ci.CI_STATUS_REL == CI_STATUS_REL
+
+
+def test_an_unwritable_snapshot_never_costs_the_envelope(tmp_path: Path) -> None:
+    (tmp_path / ".steward").write_text("a file, not a directory", encoding="utf-8")
+    result, _now = _status_with_main_runs(tmp_path, {})
+    assert result.ok is True
+    assert json.loads(result.summary)["rows"]
+    assert str(CI_STATUS_REL) in str(result.details["status_snapshot_error"])
