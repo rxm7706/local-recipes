@@ -761,7 +761,7 @@ argparse tree (AD-70); no separate package, no second binary.
 
 | # | Decision | Source |
 |---|---|---|
-| L-01 | Wrap **Copier `>=9.17,<10`** as a conda run-dependency; public `run_copy`/`run_update`/`run_recopy` only — implements Spec Constraint "Copier is a dependency, not a framework" with A-04, for CAP-14, CAP-15 | brief § Technical Approach; FR-120 (← CAP-14, CAP-15 since 2026-10-26), NFR-C2 |
+| L-01 | Wrap **Copier `>=9.17,<10`** as a conda run-dependency; public `run_copy`/`run_update`/`run_recopy` only — implements Spec Constraint "Copier is a dependency, not a framework" with A-04, for CAP-14, CAP-15 and CAP-12 | brief § Technical Approach; FR-120 (← CAP-14, CAP-15 since 2026-10-26), NFR-C2 |
 | L-02 | Model templates ship **in-package**; `--template` overrides | FR-118, FR-119, NFR-A1 |
 | L-03 | Five artifact classes: `referenced`, `copied-managed`, `copied-seeded`, `generated-derived`, `hybrid-managed-region` | PRD § Extraction Manifest; FR-67 |
 | L-04 | **Two version numbers** — CLI semver and model semver — both in state | FR-70, FR-102, FR-125 |
@@ -852,7 +852,7 @@ never-write guard lives there, not at call sites, so no future code path can byp
 
 #### A-04 — Copier is a dependency, not a framework
 
-*Implements Spec Constraint **"Copier is a dependency, not a framework"** for CAP-14 (`seed init`), CAP-15 (`seed update`) and CAP-12 (`seed adopt`, which feeds templates through `run_copy`); since 2026-10-26 FR-101, FR-120 and FR-121 cite those capabilities and this decision carries the Constraint (CHAIN-STANDARD §12).* Exactly one module (`engine/copier.py`) imports `copier`. Everything above it speaks a
+*Implements Spec Constraint **"Copier is a dependency, not a framework"** for CAP-14 (`seed init`), CAP-15 (`seed update`) and CAP-12 (`seed adopt`, which renders whole-file classes through `engine.materialize`); since 2026-10-26 FR-101, FR-120 and FR-121 cite those capabilities and this decision carries the Constraint (CHAIN-STANDARD §12).* Exactly one module (`engine/copier.py`) imports `copier`. Everything above it speaks a
 Genesis-internal `MaterializeRequest` type. Consequences: Copier can be swapped or
 version-bumped behind one seam; the public-API-only rule (FR-120) is enforceable by a
 single import-site test; and Copier's absence in a degraded environment fails in one
@@ -860,7 +860,7 @@ place with one message.
 
 #### A-05 — Two clocks: CLI version and model version
 
-*Implements Spec Constraint **"Two clocks"** for CAP-17 (the state file records both versions) and CAP-13 (`seed check` reports model vs bundled); since 2026-10-26 FR-125 cites those capabilities and this decision carries the Constraint.* `seed_model_version` moves with releases; `model_version` moves with the operating model.
+*Implements Spec Constraint **"Two clocks"** for CAP-297 (`seed version` reports both clocks; minted from this Constraint on 2026-10-26) and CAP-17 (the state file records both versions); since 2026-10-26 FR-125 cites those capabilities and this decision carries the Constraint.* `seed_model_version` moves with releases; `model_version` moves with the operating model.
 Migrations are keyed to `model_version` only. A repo can be current on the model and
 behind on the CLI, or vice versa, and both states are legible (FR-92, FR-125).
 

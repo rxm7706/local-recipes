@@ -80,7 +80,7 @@ Type / Effort / Deps: chore / M / —.
 
 - Parent capabilities: `spec-pyforge-marshal` CAP-12, CAP-13, CAP-14, CAP-15, CAP-17; `spec-one-chain-per-station` CAP-5 (amended) and CAP-8; `spec-feature-flag-governance` CAP-6 (placement precedent). No marshal CAP is minted.
 - Dream: `docs/dreams/pyforge-marshal.md` § *Realization log*, the 2026-10-26 entry.
-- Epic: Epic 108 (new), minted with this story and with Story 108.2 (`backlog`). `epic-108` and `epic-108-retrospective` are minted with it.
+- Epic: Epic 108 (new), minted with this story and with Story 108.2 (`backlog`); CAP-297 minted on the review and cited by FR-125. `epic-108` and `epic-108-retrospective` are minted with it.
 - Ledger key: `108-1-every-marshal-requirement-cites-a-capability-the-spec-s-cut-text-is-restored-and-the-harness-layers-carry-the-rule`.
 - Deps: —.
 - Minted 2026-10-26 in one chain commit; built in the same PR (the one-PR "every requirement derives from a capability" effort: atlas 41.1, doctor 50.1, herald 47.1, marshal 108.1, mason 33.1, scribe 27.1, steward 111.1, warden 20.1).
@@ -91,7 +91,7 @@ Type / Effort / Deps: chore / M / —.
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (this story touches no marshal code).
 
 **Run before the push (not dispatch gates):**
-- `git diff 92fa3edbbd -- _bmad-output/projects/pyforge-marshal/planning-artifacts/prds/prd-pyforge-marshal-2026-07-25/prd.md | grep -c '^+- \*\*FR-'` — expected: `5` (AC1).
+- `git diff 92fa3edbbd -- _bmad-output/projects/pyforge-marshal/planning-artifacts/prds/prd-pyforge-marshal-2026-07-25/prd.md | grep -c '^+- \*\*FR-[0-9]*\*\* ←'` — expected: `5` (AC1).
 - `grep -c ' — from spec-' _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md` — expected: `0` (AC3).
 - `python3 -c "import tomllib,glob;[tomllib.load(open(p,'rb')) for p in glob.glob('_bmad/custom/bmad-*.toml')]"` — expected: exit 0 (AC4).
 - `pixi run -e pyforge-guild python -m pyforge.doctor.sources fr-without-cap` — expected: no marshal FAIL (AC5).

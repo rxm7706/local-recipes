@@ -19,7 +19,7 @@ context:
 
 ## Intent
 
-**Problem:** CHAIN-STANDARD § 6 says every NFR cites a CAP; none of the 23 lettered NFR lines does, so they are baselined as the pre-rule arrowless population (ruling (c) of 2026-10-26).
+**Problem:** CHAIN-STANDARD § 6 says every NFR cites a CAP; none of the 20 lettered NFR lines does, so they are baselined as the pre-rule arrowless population (ruling (c) of 2026-10-26).
 
 **Approach:**
 - Trace each NFR against the Spec's capability successes and write `← CAP-m` on its defining line; record the table in the station memlog before editing the PRD.
@@ -34,7 +34,7 @@ Type / Effort / Deps: chore / S / 20.1.
 
 ## Acceptance Criteria
 
-- **AC1 — 23 arrows.** Every NFR line carries `← CAP-m`; a diff against the pre-story PRD shows exactly 23 changed NFR lines.
+- **AC1 — 20 arrows.** Every NFR line carries `← CAP-m`; a diff against the pre-story PRD shows exactly 20 changed NFR lines.
 - **AC2 — Defined cites.** Each cited CAP is a definition line in `spec-pyforge-warden/SPEC.md`; `fr-cap-unresolved` reports nothing for warden.
 - **AC3 — The baseline.** `docs/governance/fr-baseline.json` `projects.pyforge-warden` carries no NFR id after `--prune`.
 
@@ -50,8 +50,8 @@ Type / Effort / Deps: chore / S / 20.1.
 
 | Line | Before | After |
 |---|---|---|
-| the 23 lettered NFR lines | no arrow (baselined) | `← CAP-m` traced |
-| baseline `projects.pyforge-warden` | 23 ids | pruned |
+| the 20 lettered NFR lines | no arrow (baselined) | `← CAP-m` traced |
+| baseline `projects.pyforge-warden` | 20 ids | pruned |
 
 </intent-contract>
 

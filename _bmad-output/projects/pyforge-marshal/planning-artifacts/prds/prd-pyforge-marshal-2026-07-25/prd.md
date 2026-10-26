@@ -1675,7 +1675,7 @@ versioned artifact.
   unattended runs.
 - **FR-124** ← CAP-12, CAP-15 — All mutating verbs support `--dry-run` explicitly (and default to it where
   FR-79 requires).
-- **FR-125** ← CAP-17, CAP-13 — `marshal seed version` reports both the CLI version and the bundled model version.
+- **FR-125** ← CAP-297, CAP-17 — `marshal seed version` reports both the CLI version and the bundled model version.
 - **FR-126** ← CAP-13 — Non-zero exit codes are distinct and documented per failure mode (conformance
   failure, precondition failure, internal error).
 - **FR-127** ← CAP-10 — A `marshal seed explain <artifact>` verb prints an artifact's class, rationale, and
@@ -3537,8 +3537,8 @@ FR-146 ← CAP-295 (the detector-incident log), FR-147 ← CAP-296 (the Dream hy
 
 - **FR-101 ← CAP-15.** `--force` is the update verb's flag; the `run_recopy` mapping is HOW, carried by A-04 and L-01.
 - **FR-120 ← CAP-14, CAP-15** (ruling (a)): the public-API-only rule binds the verbs that call Copier, `seed init` and `seed update`; A-04 and L-01 now name the Constraint "Copier is a dependency, not a framework" as what they implement.
-- **FR-121 ← CAP-14, CAP-15, CAP-12**: the `--unsafe` gate on code-executing templates binds every verb that renders them, and `seed adopt` feeds the packaged templates through `copier.run_copy` (`seed/verbs/adopt.py`).
-- **FR-125 ← CAP-17, CAP-13**: `seed version` reports the two clocks the state file records (CAP-17) and `seed check` compares (CAP-13); A-05 names the Constraint "Two clocks".
+- **FR-121 ← CAP-14, CAP-15, CAP-12**: the `--unsafe` gate on code-executing templates binds every verb that renders them, and `seed adopt` renders whole-file classes through `engine.materialize` (`seed/verbs/adopt.py`), which is Copier's `run_copy`.
+- **FR-125 ← CAP-297, CAP-17**: `marshal seed version` is the verb the Constraint "Two clocks" names, and no capability stated it, so the review of Story 108.1 minted CAP-297 from the Constraint (CHAIN-STANDARD § 12); CAP-17 is the state file that records both clocks; A-05 names the Constraint, CAP-297 and CAP-17.
 - **FR-126 ← CAP-13**: distinct documented exit codes are CAP-13's typed, stable findings; P-10 names the Constraint "Every finding type is a member of one enum with a documented remedy string".
 - **The 33 lettered NFR lines** (`NFR-R1`.., `NFR-C2`..) cite nothing; CHAIN-STANDARD § 6 now sanctions the lettered family, they are the pre-rule population in `docs/governance/fr-baseline.json`, and Story 108.2 (`backlog`) arrows them to the capabilities they bound.
 - **Harness carriage.** The rule travels as `persistent_facts` in `_bmad/custom/bmad-prd.toml`, `bmad-spec.toml` and `bmad-architecture.toml` and as the `fr-arrow` review lens in `bmad-build.toml` (Story 74.3's placement for the feature-flag mandate).

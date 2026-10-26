@@ -29,7 +29,7 @@ docs/dreams/pyforge-<s>.md                                   Dream        status
 _bmad-output/projects/pyforge-<s>/planning-artifacts/
   specs/spec-pyforge-<s>/SPEC.md  +  .memlog.md               Spec         status: ready       (forever; CAP-n carry their own met dates)
   specs/spec-<E>-<S>-<slug>.md                               story spec   one file per story, named by the ledger key
-  prds/prd-pyforge-<s>-<created>/prd.md                      PRD          FR-n  ← CAP-n
+  prds/prd-pyforge-<s>-<created>/prd.md                      PRD          FR-n  ← CAP-m  (traced, never numbered)
   architecture/architecture-pyforge-<s>-<created>/           spine        AD-n  (prefixed: canopy:AD-n, pap:AD-n, fnd:AD-n)
   epics.md                                                   Epic E / Story E.S — sequential from 1, no gaps
   sprint-status-ledger.yaml                                  key: <E>-<S>-<slug>  (generated; never hand-edited)
@@ -130,7 +130,7 @@ heading, key and filename agree for all 1,445 stories, not only new ones.
 | Job | Family | Scope | Source |
 |---|---|---|---|
 | Spec capability | `CAP-n` | per station Spec, sequential from 1 | Spec CAP-3(b) |
-| Product requirement | `FR-n`, `NFR-n` — or a lettered NFR family `NFR-<L>n` where a PRD groups its NFRs (marshal `NFR-C2`, warden `NFR-S8`); the one grammar is `N?FR-[A-Z]?\d+(\.\d+)*`, always hyphenated, and a PRD never opens a second family | per PRD; each `← CAP-m` naming the defined CAP(s) it realizes (FR) or bounds (NFR), and nothing else — never a Constraint, Charter clause, AD or decision id (§2, §12) | Spec CAP-5 (amended 2026-10-26) |
+| Product requirement | `FR-n`, `NFR-n` — or a lettered NFR family `NFR-<L>n` where a PRD groups its NFRs (marshal `NFR-C2`, warden `NFR-S8`); the one grammar is `N?FR-[A-Z]?\d+(\.\d+)*`, always hyphenated; the letters are sections of the one lettered family (marshal's R, A, P, C, S, M, O), and what is forbidden is mixing `NFR-n` with `NFR-<L>n` in one PRD or spelling an id outside the grammar (`NFR-R3a`, `NFR-P-warm`) | per PRD; each `← CAP-m` naming the defined CAP(s) it realizes (FR) or bounds (NFR), and nothing else — never a Constraint, Charter clause, AD or decision id (§2, §12) | Spec CAP-5 (amended 2026-10-26) |
 | Architecture decision | `<spine>:AD-n` | per spine | steward spine |
 | Story | `E.S` | per station, sequential | vocabulary CAP-6 |
 | Deferred work | `DW-<STATION>-<n>` — **one** family, station token, sequential | per station | vocabulary CAP-6 Q14 said "new ids carry the token; no retro-rename of 1,338" — the rebase ends that carve-out: topic-word families (`DW-VOCAB-`, `DW-LEDGER-`, `DW-CANOPY-`, `DW-FU-`…) re-key through the fold map |
@@ -308,12 +308,15 @@ review ruling for FR-101, *"CAP-15 + constraint (Recommended)"*). Those
 rulings were made on a brief that did not show that each Constraint already
 lived as an AD, nor the ledger and CAP-7 consequences. The arrows they
 produced (atlas FR-15; marshal FR-101, FR-120, FR-121, FR-125, FR-126) are
-re-pointed by atlas Story 41.1 and marshal Story 108.1; doctor FR-14 and
-FR-15, which cited Charter §6, by doctor Story 50.1.
+re-pointed by atlas Story 41.1 and marshal Story 108.1 (FR-125 to marshal
+CAP-297, minted from the Constraint "Two clocks" on the Story 108.1 review —
+this section's own rule applied); doctor FR-14 and FR-15, which cited
+Charter §6, by doctor Story 50.1.
 
-**NFRs.** §6 says every NFR cites a CAP; at this amendment none of the 82 NFR
-lines fleet-wide did (atlas 10, marshal 33, mason 16, warden 23), and marshal's
-and warden's ids are lettered. The lettered family is sanctioned (§6); an NFR
+**NFRs.** §6 says every NFR cites a CAP; at this amendment none of the 79 NFR
+lines fleet-wide did (atlas 10, marshal 33, mason 16, warden 20), and marshal's
+and warden's ids are lettered (five of warden's outside the grammar:
+`NFR-R3a`, `NFR-R3b`, `NFR-P-warm`, `NFR-P-cold`, `NFR-P-concurrency`). The lettered family is sanctioned (§6); an NFR
 cites the CAP(s) it bounds; the 82 enter `docs/governance/fr-baseline.json`
 as the pre-rule population and leave it as each station's backfill story
 lands (atlas 41.3, marshal 108.2, mason 33.2, warden 20.2).
@@ -322,7 +325,8 @@ lands (atlas 41.3, marshal 108.2, mason 33.2, warden 20.2).
 fails, on new findings against a baseline that only shrinks: a post-date
 requirement with no CAP; a non-CAP arrow (`fr-cites-non-capability`); a cite
 that resolves to no definition line (`fr-cap-unresolved`); an unhyphenated
-id (`fr-id-unhyphenated`); a second definition of an id in one PRD
+id (`fr-id-unhyphenated`); an id spelled outside the grammar
+(`fr-id-malformed`); a second definition of an id in one PRD
 (`fr-duplicate-id`); and a counted run — four or more consecutive
 requirements whose CAP number steps with the requirement number while their
 titles share no word with the CAPs' (`fr-counted-run`). A title-overlap

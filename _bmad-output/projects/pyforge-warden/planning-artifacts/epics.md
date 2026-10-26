@@ -1080,7 +1080,7 @@ So that a requirement traces to its contract instead of to the subsection the fo
 
 ## Epic 20: The warden Spec's capability text is whole again, and its NFRs get an owner (spec-one-chain-per-station CAP-5 amended, CAP-3)
 
-Minted 2026-10-26 from the station Dream's entry of the same date and the operator's rulings of 2026-10-26 on the FR-arrow re-audit. Story 19.1 traced warden's FR arrows; Story 20.1 restores the 10 capability bullets the 2026-09-17 fold cut and gives CAP-13..CAP-17 back the intent and success bullets the fold dropped, and Story 20.2 (`backlog`, ruling (c)) arrows the 23 lettered NFR lines (`NFR-S8`, `NFR-R3`, …; the family CHAIN-STANDARD § 6 now sanctions) to the capabilities they bound. The four unhyphenated ids (FR9, FR30, FR33, FR35) stay as Story 19.1 kept them, baselined under `fr-id-unhyphenated`, until the operator rules on their spelling. A chore epic under `spec-one-chain-per-station` CAP-5 as amended; no CAP, no flag.
+Minted 2026-10-26 from the station Dream's entry of the same date and the operator's rulings of 2026-10-26 on the FR-arrow re-audit. Story 19.1 traced warden's FR arrows; Story 20.1 restores the 10 capability bullets the 2026-09-17 fold cut and gives CAP-13..CAP-17 back the intent and success bullets the fold dropped, and Story 20.2 (`backlog`, ruling (c)) arrows the 20 lettered NFR lines (`NFR-S8`, `NFR-R3`, …; the family CHAIN-STANDARD § 6 now sanctions) to the capabilities they bound, re-spelling the five outside the grammar (`NFR-R3a`, `NFR-R3b`, `NFR-P-warm`, `NFR-P-cold`, `NFR-P-concurrency`) only on an operator ruling. The four unhyphenated ids (FR9, FR30, FR33, FR35) stay as Story 19.1 kept them, baselined under `fr-id-unhyphenated`, until the operator rules on their spelling. A chore epic under `spec-one-chain-per-station` CAP-5 as amended; no CAP, no flag.
 **HARD boundaries:**
 - `SPEC.md` is never hand-edited: memlog correction, then the script render, both self-validate passes logged; 26 capability lines before and after.
 - No CAP id, order, provenance or status moves; no FR id is re-spelled without a ruling.
@@ -1104,14 +1104,14 @@ So that a PRD arrow's target says what it realizes, and the detector's title-ove
 ### Story 20.2: Every warden NFR names the capabilities it bounds
 
 As a reader who asks which capability a warden NFR bounds,
-I want each of the 23 lettered NFR lines to cite the capability or capabilities whose success it bounds,
+I want each of the 20 lettered NFR lines to cite the capability or capabilities whose success it bounds,
 So that the NFR tier derives from capabilities the way the FR tier does, and the baseline's arrowless population for this station reaches zero.
 
 **Type:** chore • **Effort:** S • **Deps:** 20.1 • **FR/AD:** spec-one-chain-per-station CAP-5 (amended 2026-10-26: an NFR cites the CAP(s) it bounds; the lettered family is sanctioned); CHAIN-STANDARD § 6 and § 12; the warden capabilities each NFR bounds, traced
 **Flag:** none (`type: chore`)
-**Surface:** `_bmad-output/projects/pyforge-warden/planning-artifacts/prds/prd-pyforge-warden-2026-07-14/prd.md` (the 23 lettered NFR lines gain `← CAP-m` traced from each capability's success); `docs/governance/fr-baseline.json` (`projects.pyforge-warden` loses the ids through `scripts/fr_baseline.py --prune`); the four unhyphenated ids (FR9, FR30, FR33, FR35) stay baselined under `fr-id-unhyphenated` until the operator rules on their spelling (Story 19.1 kept it)
+**Surface:** `_bmad-output/projects/pyforge-warden/planning-artifacts/prds/prd-pyforge-warden-2026-07-14/prd.md` (the 20 lettered NFR lines gain `← CAP-m` traced from each capability's success); `docs/governance/fr-baseline.json` (`projects.pyforge-warden` loses the ids through `scripts/fr_baseline.py --prune`); the four unhyphenated ids (FR9, FR30, FR33, FR35) stay baselined under `fr-id-unhyphenated` until the operator rules on their spelling (Story 19.1 kept it)
 **Spec:** `planning-artifacts/specs/spec-20-2-every-warden-nfr-names-the-capabilities-it-bounds.md`
-**Given** none of the 23 lettered NFR lines cites a capability (measured 2026-10-26), so they sit in `fr-baseline.json`'s `projects` map as the pre-rule population (ruling (c))
+**Given** none of the 20 lettered NFR lines cites a capability (measured 2026-10-26), so they sit in `fr-baseline.json`'s `projects` map as the pre-rule population (ruling (c))
 **When** each NFR is traced against the Spec's capability successes
 **Then** every NFR line carries `← CAP-m`, each cited CAP is a definition line in `spec-pyforge-warden/SPEC.md`, and the independent review reads each arrow
 **And** `scripts/fr_baseline.py --prune` drops the ids from the baseline; `fr-without-cap` stays green

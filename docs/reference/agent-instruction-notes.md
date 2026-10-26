@@ -30,7 +30,7 @@ The bullet stays in `AGENTS.md` § *Team memory*; its evidence clause read:
 
 ### Pre-PR checklist items 6 and 7: the FR-arrow incident (counted, not traced)
 
-   - Live incident (the 2026-09-16/17 one-chain folds, PRs #1382 and #1409–#1414): the PRD
+   - Live incident (the 2026-09-16/17 one-chain folds, PRs #1389 marshal, #1391 steward, #1410–#1414 doctor, mason, atlas, herald, warden): the PRD
      `FR-n ← CAP-m` arrows were written by counting (`FR-n ← CAP-n` on atlas; one capability per
      feature section on herald, mason and warden; none on steward's FR-1..FR-31 or marshal's
      seed installer) instead of traced from each capability's intent and success. Found by the

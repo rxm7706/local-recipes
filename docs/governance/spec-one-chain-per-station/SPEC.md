@@ -125,7 +125,7 @@ the PRD as the BMAD artifact it is, derived rather than duplicated.
     and the PRD is re-derived as a step of each fold PR, never backfilled
     later. Doctor `fr-without-cap` (doctor CAP-92) fails a post-date
     requirement with no CAP, a non-CAP arrow, a cite that resolves to no
-    definition line, an unhyphenated or duplicate id and a counted run — on
+    definition line, an unhyphenated, malformed or duplicate id and a counted run — on
     new findings only, against `docs/governance/fr-baseline.json`, which only
     shrinks.
   - **success:** Zero non-CAP arrows and zero post-date requirements without a

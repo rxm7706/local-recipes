@@ -3375,6 +3375,13 @@ capabilities:
     heading: "the Dream hygiene mode exists, distinct from chain completeness"
     mode: rebuild
     path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  # 2026-10-26 minted on the Story 108.1 review from the Constraint "Two clocks" (CHAIN-STANDARD section 12); FR-125 <- CAP-297, CAP-17
+  - id: pyforge-marshal:CAP-297
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "`seed version` reports the CLI clock and the model clock"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   # 2026-09-19 spec-pyforge-core draft→ready (Epic 14 realized CAP-1..7 in August; CAP-8/9 minted for Epic 52)
   - id: pyforge-core:CAP-1
     spec: pyforge-core
