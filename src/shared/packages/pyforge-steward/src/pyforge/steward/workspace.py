@@ -1254,28 +1254,47 @@ def _landed_note_text(record: WorkspaceRecord, *, root: Path, stamp: str) -> str
         return None
 
 
-def _landed_note_body(record: WorkspaceRecord, *, wt: Path, root: Path, stamp: str) -> str | None:
+@dataclass(frozen=True)
+class _LandedProof:
+    """What CAP-157's proof found for a worktree; ``tier3`` names real git-ignored paths under ``_bmad-output/``."""
+
+    head_sha: str
+    landing_ref: str
+    source_sha: str
+    ignored: list[str]
+    tier3: list[str]
+    journal: list[str]
+
+
+def _landed_proof(record: WorkspaceRecord, *, wt: Path, root: Path) -> _LandedProof | str:
+    """CAP-157's proof for ``wt``, or why there is none. Tier-3 paths are found, not refused: the note refuses them
+    and ``--delete`` moves them to the main checkout (Story 13.7). ``not-merged`` is only a HEAD or branch on no
+    landing ref; every other failure names its own cause (it was all ``not-merged`` before)."""
     if _worktree_dirty(wt):
-        return None
+        return "dirty"
     flags = _git_ok("ls-files", "-v", cwd=wt)
     if flags.returncode != 0 or any(
         line[:1].islower() or line[:1] == "S" for line in (flags.stdout or "").splitlines()
     ):
-        return None
+        return "dirty"
     staged = _git_ok("ls-files", "--stage", cwd=wt)
-    if staged.returncode != 0 or any(line.startswith("160000 ") for line in (staged.stdout or "").splitlines()):
-        return None
+    if staged.returncode != 0:
+        return "index listing failed"
+    if any(line.startswith("160000 ") for line in (staged.stdout or "").splitlines()):
+        return "holds a submodule"
     local_refs = _git_ok("for-each-ref", "--format=%(refname)", "refs/worktree/", "refs/bisect/", cwd=wt)
-    if local_refs.returncode != 0 or (local_refs.stdout or "").strip():
-        return None
+    if local_refs.returncode != 0:
+        return "per-worktree ref listing failed"
+    if (local_refs.stdout or "").strip():
+        return "holds per-worktree refs"
     head_sha = _commit_of("HEAD", cwd=wt)
     if head_sha is None:
-        return None
+        return "HEAD unreadable"
     tips = [head_sha]
     if _git_ok("rev-parse", "--verify", "--quiet", f"refs/heads/{record.branch}", cwd=root).returncode == 0:
         branch_sha = _commit_of(f"refs/heads/{record.branch}", cwd=root)
         if branch_sha is None:
-            return None
+            return "branch unreadable"
         tips.append(branch_sha)
     # Story 13.6: the source, then the trunk; the first that resolves under refs/remotes/ and holds every tip.
     landed_on: tuple[str, str] | None = None
@@ -1287,25 +1306,36 @@ def _landed_note_body(record: WorkspaceRecord, *, wt: Path, root: Path, stamp: s
             landed_on = (ref, ref_sha)
             break
     if landed_on is None:
-        return None
+        return "not-merged"
     landing_ref, source_sha = landed_on
     listed = _git_bytes("-c", "status.showUntrackedFiles=normal", "status", "--ignored", "--porcelain", "-z", cwd=wt)
     if listed.returncode != 0:
-        return None
+        return "git-ignored listing failed"
     raw_ignored = [entry[3:] for entry in listed.stdout.split(b"\0") if entry.startswith(b"!! ")]
     work_prefixes = tuple(prefix.encode() for prefix in _IGNORED_WORK_PREFIXES)
-    for raw in raw_ignored:
-        if raw.startswith(work_prefixes) and not (wt / os.fsdecode(raw.rstrip(b"/"))).is_symlink():
-            return None
+    tier3 = [
+        os.fsdecode(raw.rstrip(b"/"))
+        for raw in raw_ignored
+        if raw.startswith(work_prefixes) and not (wt / os.fsdecode(raw.rstrip(b"/"))).is_symlink()
+    ]
     ignored = [raw.decode("utf-8", "backslashreplace") for raw in raw_ignored]
-    shown = ignored[:_NOTE_IGNORED_LIMIT]
     journal: list[str] = []
     journal_path = wt / _SKIP_JOURNAL
     if journal_path.is_file() and not journal_path.is_symlink():
         try:
             journal = journal_path.read_text(encoding="utf-8", errors="backslashreplace").splitlines()
         except OSError:
-            return None
+            return "skip journal unreadable"
+    return _LandedProof(head_sha, landing_ref, source_sha, ignored, tier3, journal)
+
+
+def _landed_note_body(record: WorkspaceRecord, *, wt: Path, root: Path, stamp: str) -> str | None:
+    proof = _landed_proof(record, wt=wt, root=root)
+    if isinstance(proof, str) or proof.tier3:
+        return None
+    head_sha, landing_ref, source_sha = proof.head_sha, proof.landing_ref, proof.source_sha
+    ignored, journal = proof.ignored, proof.journal
+    shown = ignored[:_NOTE_IGNORED_LIMIT]
     lines = [
         f"workspace {record.slug!r} cleaned {stamp}: nothing unlanded, so no archive was kept (Story 69.1).",
         f"branch: {record.branch}",
@@ -1470,13 +1500,93 @@ def _delete_eligibility(record: WorkspaceRecord, *, root: Path) -> str | None:
         return "dirty"
     if not _branch_landed(root, record.branch, record.source):
         return "not-merged"
-    if _landed_note_body(record, wt=wt, root=root, stamp="") is None:
-        return "not-merged"
+    proof = _landed_proof(record, wt=wt, root=root)
+    if isinstance(proof, str):
+        return proof
+    if proof.tier3:
+        planned = _tier3_moves(root, wt, proof.tier3)
+        if isinstance(planned, str):
+            return planned
     return None
 
 
-def _execute_delete(record: WorkspaceRecord, *, root: Path) -> None:
-    """Remove a deletable worktree and its branch; never writes an archive artifact."""
+def _main_checkout(root: Path) -> Path | None:
+    """The main checkout, whose ``implementation-artifacts/`` is the Tier-3 store worktrees backlink to: the parent
+    of the common git directory when that is a ``.git`` directory, else None (Story 13.7)."""
+    common = _git_bytes("rev-parse", "--git-common-dir", cwd=root)
+    if common.returncode != 0:
+        return None
+    base = Path(os.fsdecode(common.stdout.strip()))
+    base = base if base.is_absolute() else root / base
+    return base.parent if base.name == ".git" else None
+
+
+def _tier3_files(wt: Path, rel: str) -> list[str]:
+    """Every non-directory entry at or under ``wt / rel``, relative to ``wt``; a symlink is an entry, never followed.
+    An unreadable directory raises, so no file is left out of the move and then removed with the worktree."""
+    top = wt / rel
+    if top.is_symlink() or not top.is_dir():
+        return [rel]
+    files: list[str] = []
+
+    def _raise(exc: OSError) -> None:
+        raise exc
+
+    for dirpath, dirnames, filenames in os.walk(top, onerror=_raise):
+        base = Path(dirpath).relative_to(wt)
+        files.extend(str(base / name) for name in filenames)
+        files.extend(str(base / name) for name in dirnames if (Path(dirpath) / name).is_symlink())
+    return sorted(files)
+
+
+def _tier3_moves(root: Path, wt: Path, tier3: list[str]) -> tuple[Path, list[tuple[Path, Path]]] | str:
+    """The main checkout and where each Tier-3 file goes in it (the same relative path), or why one cannot go:
+    there is no main checkout, a file is already there, the path cannot be a directory, or it resolves into the
+    worktree."""
+    main = _main_checkout(root)
+    wt_real = os.path.realpath(wt)
+    if main is None or os.path.realpath(main) == wt_real:
+        return f"Tier-3 work: {tier3[0]} (no main checkout to move it to)"
+    moves: list[tuple[Path, Path]] = []
+    for rel in tier3:
+        for leaf in _tier3_files(wt, rel):
+            dest = main / leaf
+            if os.path.lexists(dest):
+                return f"Tier-3 work: {leaf} already in {main}"
+            parent = dest.parent
+            while not os.path.lexists(parent):
+                parent = parent.parent
+            if not parent.is_dir():
+                return f"Tier-3 work: {leaf} cannot move: {parent} is not a directory"
+            real = os.path.realpath(dest)
+            if real == wt_real or real.startswith(wt_real + os.sep):
+                return f"Tier-3 work: {leaf} would move into the worktree"
+            moves.append((wt / leaf, dest))
+    return main, moves
+
+
+def _move_no_clobber(src: Path, dest: Path) -> None:
+    """Move one file to a path that must not exist. A hard link fails on an existing path, so a file written
+    there since the check is never overwritten; a symlink, another filesystem, or one without hard links moves."""
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    if not src.is_symlink():
+        try:
+            os.link(src, dest)
+        except FileExistsError as exc:
+            raise WorkspaceError(f"Tier-3 work: {dest} appeared before the move") from exc
+        except OSError:
+            pass
+        else:
+            os.unlink(src)
+            return
+    if os.path.lexists(dest):
+        raise WorkspaceError(f"Tier-3 work: {dest} appeared before the move")
+    shutil.move(os.fspath(src), os.fspath(dest))
+
+
+def _execute_delete(record: WorkspaceRecord, *, root: Path) -> tuple[Path, int] | None:
+    """Remove a deletable worktree and its branch; never writes an archive artifact. Tier-3 files go to the main
+    checkout first, and the result names it and how many moved (Story 13.7)."""
     wt = Path(record.path)
     present = wt.is_dir()
     branch_exists = _git_ok("rev-parse", "--verify", "--quiet", _branch_ref(record.branch), cwd=root).returncode == 0
@@ -1484,7 +1594,21 @@ def _execute_delete(record: WorkspaceRecord, *, root: Path) -> None:
     landed = branch_exists and (
         _branch_landed(root, record.branch, record.source) if present else _gone_branch_landed(record, root=root)
     )
+    moved: tuple[Path, int] | None = None
     if present:
+        # Read again, not trusted from the eligibility check: a file written since then moves too, or refuses.
+        proof = _landed_proof(record, wt=wt, root=root)
+        if isinstance(proof, str):
+            raise WorkspaceError(f"no longer deletable: {proof}")
+        if proof.tier3:
+            planned = _tier3_moves(root, wt, proof.tier3)
+            if isinstance(planned, str):
+                raise WorkspaceError(planned)
+            main, moves = planned
+            for src, dest in moves:
+                _move_no_clobber(src, dest)
+            if moves:
+                moved = (main, len(moves))
         result = _git_ok("worktree", "remove", "--force", str(wt), cwd=root)
         if result.returncode != 0:
             detail = (result.stderr or result.stdout or "").strip()
@@ -1494,6 +1618,7 @@ def _execute_delete(record: WorkspaceRecord, *, root: Path) -> None:
 
     if landed:
         _git_ok("branch", "-D", record.branch, cwd=root)
+    return moved
 
 
 def clean_workspaces(
@@ -1553,9 +1678,12 @@ def clean_workspaces(
                         remaining.append(record)
                         in_flight = None
                         continue
-                    _execute_delete(record, root=root)
+                    moved = _execute_delete(record, root=root)
                     in_flight = None
-                    deleted.append(record.to_dict())
+                    row = record.to_dict()
+                    if moved is not None:
+                        row["tier3_moved_to"], row["tier3_moved"] = str(moved[0]), str(moved[1])
+                    deleted.append(row)
                     continue
                 if merged_only and not (
                     _branch_landed(root, record.branch, record.source) and _worktree_head_landed(record, root=root)
@@ -1699,7 +1827,12 @@ def format_clean(result: dict[str, list[dict[str, str]]], *, as_json: bool) -> s
     for item in deleted:
         member = item.get("member")
         prefix = f"deleted {member}/" if member else "deleted "
-        lines.append(f"{prefix}{item['slug']}")
+        moved = (
+            f" ({item['tier3_moved']} Tier-3 file(s) moved to {item['tier3_moved_to']})"
+            if item.get("tier3_moved_to")
+            else ""
+        )
+        lines.append(f"{prefix}{item['slug']}{moved}")
     for item in skipped:
         member = item.get("member")
         prefix = f"skipped {member}/" if member else "skipped "

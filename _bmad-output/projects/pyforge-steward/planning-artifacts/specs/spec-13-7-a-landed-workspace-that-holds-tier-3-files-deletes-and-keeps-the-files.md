@@ -2,7 +2,7 @@
 title: '13.7: A landed workspace that holds Tier-3 files deletes, and keeps the files'
 type: 'fix'
 created: '2026-10-25'
-status: 'ready-for-dev'
+status: 'in-progress'
 baseline_revision: 'fd06415e4d1e1e3446ad6463f9e1149630d3311a'
 review_loop_iteration: 0
 followup_review_recommended: false
