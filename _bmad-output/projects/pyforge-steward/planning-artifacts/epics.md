@@ -5020,7 +5020,7 @@ So that an undeclared import, like atlas 37.7's `numpy`, is caught before it rea
 **When** a PR changes a `pyforge-*` package
 **Then** a full-scope `pr-preflight` runs `pyforge-deps-test` in `pyforge-ci`, the Detectors `scripts-suite` job runs the same task, and a touched-scope run keeps the lane when a path `tests/packaging` reads changed (a package's `pyproject.toml`, `pixi.toml` or Python under its `src/`, the root `pixi.toml`, a root `Containerfile*`)
 **And** doctor's `test_preflight_mirrors_scripts_suite.py` and steward's `test_pr_preflight_lanes_resolve_under_pixi.py` pass; a touched run over a diff with none of those paths still defers the lane; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 72: Mason's skill cell is two skills, and the Guild answers `pyforge mason` (spec-pyforge-steward CAP-160..161)
 
@@ -6439,7 +6439,7 @@ So that the next landing knows `main` is broken before it merges on top.
 **When** `steward ci status` has run in the last 24 hours and a registered surface's newest completed `main` run did not succeed
 **Then** that row's `latest_main_run` names the conclusion, time and run id, the envelope is saved to `.steward/ci-status.json`, and `pr-preflight` prints one advisory line per red run, naming every surface that shares it
 **And** the envelope still validates against the schema (fixtures included); a missing, stale or unreadable snapshot prints one line and nothing else; the verdict and exit code never change; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 100: The estate's library and BMAD pins move on one policy-driven, measured, repeatable path (spec-pyforge-steward CAP-167)
 

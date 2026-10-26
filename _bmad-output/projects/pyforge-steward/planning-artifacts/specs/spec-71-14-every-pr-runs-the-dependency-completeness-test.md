@@ -2,7 +2,7 @@
 title: "71.14: Every PR runs the dependency-completeness test, locally and in CI"
 type: 'fix'
 created: '2026-10-25'
-status: 'in-review'
+status: 'done'
 baseline_revision: '529f06d52b6d6469b847519905c20bf528a60334'
 flag-exempt: detector-or-gate   # a fix needs no flag (spec-feature-flag-governance Q1), and pr-preflight is a gate, as 71.12 and 71.13 recorded
 review_loop_iteration: 1
@@ -91,6 +91,8 @@ touch rule.
 - 2026-10-25: review round 1: the touch rule widened to every path `tests/packaging` reads (the root `pixi.toml` and
   root `Containerfile*` join; AC3 updated: the root `pixi.toml` now keeps the lane), and AC4 names the regenerated
   `pixi-tasks.md`. Implemented in its own green commit (the selection oracle moved with the lane). Moved to `in-review`.
+- 2026-10-25: promoted to `done` in the landing PR after its review round 1 fixes, with its ledger key, as multi-story
+  landings do (Pages #2240; steward 105.1), because one merge subject names one story key.
 
 ## Run results
 

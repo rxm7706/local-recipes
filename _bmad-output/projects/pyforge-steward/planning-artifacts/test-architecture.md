@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: d8fd52faae1f7692
-story_count: 391
+source_fingerprint: 0d2a78ccaa917cbb
+story_count: 393
 test_file_count: 141
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 391
+- **Stories parsed:** 393
 - **Epics parsed:** 108
 - **Test files inventoried:** 141 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `d8fd52faae1f7692`
+- **Source fingerprint:** `0d2a78ccaa917cbb`
 
 ## Risk Assessment
 
@@ -604,6 +604,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 71.11 | No lane process outlives a stop, and a reduced lane cut short is never ok | none observed |
 | 71.12 | Every cancelled lane names what stopped the run | none observed |
 | 71.13 | A second SIGINT never deadlocks the preflight's interrupt handler | none observed |
+| 71.14 | Every PR runs the dependency-completeness test, locally and in CI | none observed |
 | 72.1 | The Guild environment answers pyforge mason | none observed |
 | 72.2 | Mason's five-tier skill cell requires its station skill and conda-forge-expert | none observed |
 | 73.1 | `steward session check` reads `marshal seed check`'s envelope, whatever its e... | none observed |
@@ -661,6 +662,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 99.5 | The preflight honors what CI will skip, and says so | none observed |
 | 99.6 | A paused expensive build still runs once a week | none observed |
 | 99.7 | The hand-disabled workflows are retired or parked, and the convention is docu... | none observed |
+| 99.8 | A red main run on a CI surface reaches the next preflight | none observed |
 | 100.1 | The pin policy is declared once and an upgrade is judged against it | none observed |
 | 100.2 | One command moves the library pins on the policy and restores what the upgrad... | none observed |
 | 100.3 | Every derived surface regenerates from the lock by its own generator | none observed |

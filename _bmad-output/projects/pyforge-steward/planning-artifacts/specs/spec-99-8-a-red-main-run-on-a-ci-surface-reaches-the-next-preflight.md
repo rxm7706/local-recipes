@@ -2,7 +2,7 @@
 title: "99.8: A red main run on a CI surface reaches the next preflight"
 type: 'fix'
 created: '2026-10-25'
-status: 'in-review'
+status: 'done'
 baseline_revision: '529f06d52b6d6469b847519905c20bf528a60334'
 flag-exempt: detector-or-gate   # a fix needs no flag (spec-feature-flag-governance Q1; operator ruling 2026-10-25 "Fix, no flag (Recommended)"), and pr-preflight is a gate
 review_loop_iteration: 1
@@ -99,6 +99,8 @@ envelope field.
   snapshot: same lanes, same exit code), the banner never raises, the snapshot write is atomic and cannot cost the
   envelope; `cancelled` is not red; a future `fetched_at` is not fresh; a boolean run id is not a run id. Moved to
   `in-review`.
+- 2026-10-25: promoted to `done` in the landing PR after its review round 1 fixes, with its ledger key, as multi-story
+  landings do (Pages #2240; steward 105.1), because one merge subject names one story key.
 
 ## Run results
 
