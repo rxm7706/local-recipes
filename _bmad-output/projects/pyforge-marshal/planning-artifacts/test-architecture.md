@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: b5233cf9eb9c11f8
-story_count: 463
+source_fingerprint: 03133331a006e248
+story_count: 464
 test_file_count: 270
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 463
+- **Stories parsed:** 464
 - **Epics parsed:** 104
 - **Test files inventoried:** 270 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `b5233cf9eb9c11f8`
+- **Source fingerprint:** `03133331a006e248`
 
 ## Risk Assessment
 
@@ -883,6 +883,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 104.1 | The .mcp.json marshal renders never makes a loop home dirty | none observed |
 | 105.1 | Every marshal PRD FR arrow names the Spec capability that realizes it | none observed |
 | 106.1 | Every marshal seed-installer FR names the capability that realizes it | none observed |
+| 106.2 | FR-144..FR-147 trace to the capabilities the fold dropped | none observed |
 
 ## Quality Gates
 

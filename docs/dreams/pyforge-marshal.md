@@ -1682,6 +1682,18 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   `spec-one-chain-per-station` CAP-5 (FRs derive from CAPs) and CAP-8 (the marshal pilot); no CAP, no flag, no
   `SPEC.md` change; no detector rule changes. Operator rulings, 2026-10-25: "Do rows 1-5 in one PR" and "Cite the
   constraint (Recommended)". Owner `spec-pyforge-marshal`. → Epic 106 / Story 106.1, specced 2026-10-25.
+- **2026-10-25 (FR-144..FR-147's capabilities were dropped by the fold)** — **Ruled: restore them.** Story 105.1 left
+  FR-144..FR-147 (detector self-verification) on the fold's counted arrows CAP-102..CAP-105 and opened
+  `DW-marshal-105-1`: their source, `spec-dream-to-code-model-self-verification`, listed its four capabilities as a
+  plain numbered list, the 2026-09-16 fold minted CAPs only from `CAP-n` lines, and so nothing carries them while
+  Stories 17.1 and 17.2, which delivered them, stay done. No doctor capability carries them either, although the
+  detectors now run as `pyforge-doctor` sources. **What it looks like when fixed:** `spec-pyforge-marshal` declares
+  the four as shipped CAP-293..CAP-296 (the Dream-chain detector's fixtures, the drift detector's fixtures, the
+  detector-incident log, the Dream hygiene mode), with that Spec as their provenance, and FR-144..FR-147 cite them one to
+  one. **Constraints:** a chore under `spec-one-chain-per-station` CAP-5 and CAP-8; four CAPs restored, rendered into
+  `SPEC.md` by script from the memlog decision; no flag; no FR text change; no detector rule change. Operator ruling,
+  2026-10-25: "Restore 4 marshal CAPs (Recommended)". Owner `spec-pyforge-marshal`. → Epic 106 / Story 106.2, specced
+  2026-10-25.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint

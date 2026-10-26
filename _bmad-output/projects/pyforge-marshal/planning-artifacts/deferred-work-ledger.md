@@ -9150,4 +9150,5 @@ status: open
   origin: spec-deferred 34ffbcae964e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-10-25 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  resolved: 2026-10-25 (Story 106.2, operator ruling "Restore 4 marshal CAPs (Recommended)": spec-pyforge-marshal CAP-293..CAP-296 restore the four detector self-verification capabilities the 2026-09-16 fold dropped, shipped, with spec-dream-to-code-model-self-verification as their provenance; FR-144..FR-147 cite them one to one; PRD § 46)
+  status: closed
