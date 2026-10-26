@@ -70,7 +70,7 @@ hand-backs; recorded as the process gap below.
   FAIL; `findings` = atlas 22 `fr-duplicate-id` (Story 41.2's), warden 11 `fr-id-malformed` + 3
   `fr-id-unhyphenated` (Story 20.2's); `projects` = the NFR lines and atlas's arrowless satellite ids (Stories 41.3,
   108.2, 33.2, 20.2). Disposition: accept; the `owners` map names each.
-- **`fr-counted-run` has no live hit** once marshal's CAP-235..CAP-238 titles were restored — the rule is proven by
+- **`fr-counted-run` has no live hit** once marshal's `pyforge-marshal:CAP-235`..`pyforge-marshal:CAP-238` titles were restored — the rule is proven by
   fixtures (44 tests in `test_sources_one_chain_fr_arrows.py`), not by a live finding. The honest runs (steward
   FR-32..FR-41, atlas FR-69..FR-77, doctor FR-9..FR-13) are a live negative. Disposition: accept.
 - **Coverage.** `one_chain.py` 88 % from its two test files; the station suite 3876 passed; the five-second CPU
