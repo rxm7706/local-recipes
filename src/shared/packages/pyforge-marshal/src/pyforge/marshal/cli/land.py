@@ -1686,6 +1686,14 @@ def _promote_sprint_ledger(
                 incoming = {}
             if incoming:
                 existing = _parse_sync_sprint_status_text(fresh_ledger)
+                # Story 107.1: a stale-slug copy of a story the twin already records (the
+                # sync's own rule, `split_stale_keys`) never reaches the twin from a landing
+                # either; a copy further along than the twin's key flows on, as before.
+                split_stale = getattr(promote_mod, "split_stale_keys", None)
+                if callable(split_stale):
+                    dropped, _kept_ahead = split_stale(incoming, existing)
+                    gone = {feed_key for feed_key, _twin_key in dropped}
+                    incoming = {k: v for k, v in incoming.items() if k not in gone}
                 refusal = _land_feed_sync_refusal(promote_mod, existing, incoming)
                 if refusal is not None:
                     label, detail = refusal

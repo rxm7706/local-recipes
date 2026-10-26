@@ -750,6 +750,18 @@ verify_commands = [
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
   "scripts/.spec-surface-baseline.json",
 ]
+"107" = [  # a refresh or a sync never carries a stale-slug story key (a fix under spec-pyforge-marshal CAP-265,
+  # CAP-132 and CAP-134, no CAP; Story 107.1), added 2026-10-25. Narrower than the default surface on purpose: the
+  # marshal package (cli/refresh.py, core/refresh.py, cli/land.py and their tests), its specs, the root script the
+  # hand sync, the refresh and the landing share, and every Spec memlog (marshal's src/ is co-governed by
+  # spec-pyforge-core). The story touches no pixi file and no .gitignore.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  "scripts/promote_sprint_status.py",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "87" = [  # preserved work is a protected tag, and no cleanup destroys it (spec-pyforge-marshal CAP-287; Story 87.1's
   # sweeper fix), added 2026-10-04. The default surface, restated because a declared entry replaces it outright, plus:
   # pyforge-core's preserve_refs grammar and its tests (87.3, 87.15; spec-pyforge-core co-governs), the repo scripts

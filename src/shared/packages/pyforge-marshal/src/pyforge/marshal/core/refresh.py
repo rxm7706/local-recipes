@@ -8,9 +8,12 @@ Each home reports four checked steps -- ``fast_forward``, ``push``,
 ``render_policy`` step is not is ``incomplete`` (FR-135: FF-without-render).
 
 ``sync_status`` (added alongside the harness_preference/tmux fixes,
-2026-09-10) regenerates the station's Tier-3 ``sprint-status.yaml`` (the
-file ``marshal factory spin``/``bmad-loop`` read for actionable stories)
-from its tracked ``epics.md``. It is independent of the git fast-forward
+2026-09-10) syncs the station's Tier-3 ``sprint-status.yaml`` (the file
+``marshal factory spin``/``bmad-loop`` read for actionable stories) from
+its tracked ``sprint-status-ledger.yaml`` through
+``scripts/promote_sprint_status.py --feed-only`` (Story 107.1; until then it
+re-derived the feed from ``epics.md`` with ``sprint_plan.py generate``,
+whose slugs did not match the ledger's keys). It is independent of the git fast-forward
 outcome -- it writes to the SHARED physical
 ``_bmad-output/projects/<slug>/implementation-artifacts/`` location every
 worktree symlinks to, not to the loop home itself -- so it runs even for a
