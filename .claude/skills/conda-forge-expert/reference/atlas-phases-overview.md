@@ -255,7 +255,7 @@ them).
 | **Q** | Cross-channel presence | `current_repodata.json` for bioconda / pytorch / nvidia / robostack-staging via `<CHANNEL>_BASE_URL` | `PHASE_Q_TTL_DAYS=7` | default-on under maintainer+admin profiles | `pypi_intelligence.in_<channel>` BOOLs — "this PyPI project is packaged on bioconda but not conda-forge" migration queries |
 | **R** | Per-project enrichment | `pypi.org/pypi/<name>/json` for top-N (default 5000) candidate slice | `PHASE_R_TTL_DAYS=7` | opt-in admin-tier (`PHASE_R_ENABLED=1`) | `pypi_intelligence.{latest_version, license_spdx, requires_python, classifiers, repo_url, packaging_shape, has_wheel/sdist, wheel_platforms, python_tags}` |
 | **S** | Computed scores | pure SQL over `pypi_intelligence` Tier 1-3 columns | per-run | always when Phase R has data | `pypi_intelligence.conda_forge_readiness` (0-100 composite) + `recommended_template` (full `templates/python/<x>.yaml` path) |
-| **E** | cf-graph enrichment | `github.com/regro/cf-graph-countyfair` (master tarball, ~150 MB) | `ATLAS_CFGRAPH_TTL_DAYS` (default 1 d) | enabled by every v8.0.0 profile; otherwise opt-in (`PHASE_E_ENABLED=1`) | Recipe-format, maintainer junction, repo/dev/homepage URLs, extra-registry name columns |
+| **E** | cf-graph enrichment | the conda-forge bot's graph: `github.com/conda-forge/conda-forge-bot-data-{node_attrs,pr_info,version_pr_info,pr_json}` (four `main` tarballs, ~50 MB together, measured 2026-10-26) | `ATLAS_CFGRAPH_TTL_DAYS` (default 1 d) | enabled by every v8.0.0 profile; otherwise opt-in (`PHASE_E_ENABLED=1`) | Recipe-format, maintainer junction, repo/dev/homepage URLs, extra-registry name columns |
 | **E.5** | Archived feedstocks | `gh api graphql` (conda-forge org, `isArchived:true`) | per-run | always | Abandonment detection |
 | **F** | Download counts | `api.anaconda.org/package/conda-forge/<name>` OR `anaconda-package-data.s3.amazonaws.com/conda/monthly/<YYYY>/<YYYY-MM>.parquet` | `PHASE_F_TTL_DAYS=7` | always (`s3-parquet` pinned under `--profile admin` (v8.17.0+) and `--profile consumer`; `--profile maintainer` uses `auto` since maintainer-scoped row sets are small) | Usage signal — leaderboards, bus-factor, adoption-stage, "archived but used" |
 | **G** | vdb risk summary | local AppThreat vdb (per-row purls) | `PHASE_G_TTL_DAYS=7` | always when vdb available (auto-skip in `local-recipes` env) | `cve-watcher`, KEV queue, staleness `--by-risk` |
@@ -664,9 +664,18 @@ cost below $1/run.
 
 ### Phase E — cf-graph enrichment
 
-- **Data source.** `github.com/regro/cf-graph-countyfair` (master tarball,
-  ~150 MB compressed). The tarball is the basis for E + J + M, so all
-  three phases share the same cached download.
+- **Data source.** The conda-forge bot's graph, published by cf-scripts as
+  four repos: `conda-forge/conda-forge-bot-data-node_attrs`, `-pr_info`,
+  `-version_pr_info` and `-pr_json` (one `<feedstock>.json` per file under a
+  five-level sha1 shard; ~37 + 7 + 2 + 4 MB compressed, measured
+  2026-10-26). Phase E fetches all four into `cf-graph-<kind>.tar.gz`
+  (`scripts/_cf_graph_source.py`); Phases H (cf-graph mode), J and M read
+  the same caches. Until 2026-10 the graph was one repo,
+  `regro/cf-graph-countyfair`; GitHub now redirects it to
+  `conda-forge/conda-forge-bot-data`, whose archive holds none of it (CFE
+  v8.102.0, gotcha G123). Each download is checked before it replaces a
+  cache: the archive's top directory must be
+  `conda-forge-bot-data-<kind>-main`.
 - **Purpose.** Pull per-feedstock rendered-recipe metadata that is not in
   repodata: summary, homepage, dev_url, repo_url, keywords, maintainers,
   recipe_format (`meta.yaml` vs `recipe.yaml`), and extra-registry source
