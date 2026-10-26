@@ -2,7 +2,7 @@
 title: "33.2: The spine counts twelve pipelines, and the MCP face names its eight as the MCP-triggerable ones"
 type: 'fix'
 created: '2026-10-25'
-status: 'in-review'
+status: 'done'
 baseline_revision: '529f06d52b6d6469b847519905c20bf528a60334'
 review_loop_iteration: 1
 followup_review_recommended: false
@@ -89,6 +89,8 @@ the SKF skill (one line of its text changes, in place).
 - 2026-10-25: implemented (`147dc077b4`), adding `run_pipeline`'s docstring and the skill's `run_pipeline` row, which
   made the same claim; review round 1 PASS with 2 should-fixes, both fixed: the SKF anchors into `mcp/tools.py` re-pinned
   two lines lower, and AD-3's `semantic_packages` entry names `derived_artifacts` as an input. Moved to `in-review`.
+- 2026-10-25: promoted to `done` in the landing PR (#2317) after its review round 1 fixes, with its ledger key, as
+  multi-story landings do (Pages #2240; steward 105.1).
 
 ## Run results
 

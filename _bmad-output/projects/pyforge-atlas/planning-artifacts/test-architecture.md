@@ -5,7 +5,7 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: ed0f9e7f59bdd8fe
+source_fingerprint: dad3a6cd45aeab34
 story_count: 147
 test_file_count: 187
 coverage_target_unit: ">=80%"
@@ -24,7 +24,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Test files inventoried:** 187 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `ed0f9e7f59bdd8fe`
+- **Source fingerprint:** `dad3a6cd45aeab34`
 
 ## Risk Assessment
 

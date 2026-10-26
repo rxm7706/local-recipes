@@ -2,7 +2,7 @@
 title: "34.13: Atlas declares the brotli its nixpkgs store decodes"
 type: 'fix'
 created: '2026-10-25'
-status: 'in-review'
+status: 'done'
 baseline_revision: '529f06d52b6d6469b847519905c20bf528a60334'
 review_loop_iteration: 1
 followup_review_recommended: false
@@ -95,6 +95,8 @@ Ledger key: `34-13-atlas-declares-the-brotli-its-nixpkgs-store-decodes`. Type / 
   closed with this story's evidence; the map's direction (conda to PyPI) corrected in the Approach; the catalog and
   test comments no longer call the `brotli` conda package "the C library alone" (the package `pixi.toml` comment keeps
   that wording, so the manifest the lock hashes does not move). Moved to `in-review`.
+- 2026-10-25: promoted to `done` in the landing PR (#2317) after its review round 1 fixes, with its ledger key, as
+  multi-story landings do (Pages #2240; steward 105.1).
 
 ## Run results
 
@@ -116,8 +118,8 @@ Ledger key: `34-13-atlas-declares-the-brotli-its-nixpkgs-store-decodes`. Type / 
 **Review 1 (independent, 2026-10-25): FAIL** — AC1, AC3, AC4 met; AC2 met in the lock, its clean-clone proof
 unrecorded; AC5 not met. 1 must-fix, 2 should-fix, 4 nits.
 - must-fix: `DW-atlas-34-5-1` still `open`. Fixed: closed with this story's evidence.
-- should-fix: the ledger key is `backlog` and this spec `ready-for-dev`. This spec is now `in-review`; the key is
-  promoted to `done` by `dispatch_land_finalize` right after the merge, as Stories 105.1 and 39.1 were.
+- should-fix: the ledger key is `backlog` and this spec `ready-for-dev`. Both are promoted to `done` in the landing PR,
+  as multi-story landings do (this PR lands 34.13 and 33.2 under one merge subject).
 - should-fix: record the clean-clone proof. Recorded above.
 - nits: the map direction wording (fixed); "the C library alone" (fixed in the catalog and the test, kept in the
   package `pixi.toml` comment so the lock's manifest does not move); `_run_dependencies` silently overwrites if two

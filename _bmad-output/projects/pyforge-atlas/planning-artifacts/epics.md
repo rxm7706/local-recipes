@@ -2422,7 +2422,7 @@ So that neither text claims a pipeline count the registry no longer has.
 **When** the story lands
 **Then** AD-3's amendment names the twelve and which run in `__default__`, and every MCP text names the eight as the MCP-triggerable pipelines, the other four CLI-only by design
 **And** no pipeline, tool, trigger set or test assertion changes; `pixi run -e pyforge-atlas pyforge-atlas-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 34: A plain run fills every dataset a public source serves (spec-pyforge-atlas CAP-64, FR-72)
 
@@ -2630,7 +2630,7 @@ So that a pip install decodes `packages.json.br` instead of marking the store st
 **When** the story lands
 **Then** both manifests declare it at `>=1.2`, `pixi.lock` records that string for every pyforge-atlas source entry, and a fresh pixi installs the env `--locked`
 **And** `pyforge-deps-test` passes with the name map, `llms-full-check` passes, and `pixi run -e pyforge-atlas pyforge-atlas-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 35: VCS and registry fetches cover the full universe, credentialed on opt-in (spec-pyforge-atlas CAP-65, FR-73)
 
