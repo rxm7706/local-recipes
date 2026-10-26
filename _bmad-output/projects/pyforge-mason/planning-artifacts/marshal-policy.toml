@@ -367,6 +367,19 @@ verify_commands = [
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 
+"34" = [  # The atlas's dependency graph and bot health read the conda-forge bot's split repos (fix under spec-pyforge-mason CAP-24), added 2026-10-26
+  # The station's planning and package paths, plus Story 34.1's one retro(cfe) commit (the atlas scripts, their tests and
+  # docs, and the CFE version carriers) and every Spec memlog a surface reconcile names (spec-packaging-factory and
+  # spec-conda-forge-expert-rebuild govern the CFE surface).
+  "src/shared/packages/pyforge-mason/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-mason/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
+  ".claude/skills/conda-forge-expert/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
 "19" = [  # Mason has its own skills, and conda-forge-expert is one of them (spec-pyforge-mason CAP-29), added 2026-09-28
   "src/shared/packages/pyforge-mason/**",
   "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
