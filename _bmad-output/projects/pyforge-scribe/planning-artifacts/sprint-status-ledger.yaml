@@ -45,7 +45,7 @@ development_status:
   24-3-every-harness-is-pointed-at-the-catalog-once: done
   25-1-the-estate-catalog-skips-skill-directories-git-ignores: done
   26-1-recall-breaks-ties-by-recency-and-scribe-s-other-open-deferrals-close: done
-  27-1-the-instruction-surface-carries-the-requirement-arrow-rule: in-progress
+  27-1-the-instruction-surface-carries-the-requirement-arrow-rule: done
   3-1-the-scanner-surfaces-what-sessions-said-but-memory-missed: done
   3-2-transcripts-join-the-compile-sources: done
   3-3-the-nightly-compile-gets-a-schedule-and-a-cost-ceiling: done
@@ -101,7 +101,7 @@ development_status:
   epic-25-retrospective: optional
   epic-26: done
   epic-26-retrospective: optional
-  epic-27: in-progress
+  epic-27: done
   epic-27-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional

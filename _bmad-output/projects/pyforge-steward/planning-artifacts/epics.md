@@ -7110,7 +7110,7 @@ So that a requirement's arrow lands on text that says what it guarantees, pyforg
 **When** the operator rules on 2026-10-26 that a requirement cites defined capabilities only, and (e) that every minted CAP routes `rebuild`
 **Then** no steward capability line reads `from spec-`, no bullet reads 'See absorbed', the 15 verified sub-bullets are their own lines again, the foundry memlog carries the 2026-10-26 CAP-7 event, and the ledger carries the three rows as `rebuild`
 **And** 168 capability lines before and after; no id, order, provenance line or status moves; no Epic 44 key moves; `capability-ledger-check`, `chain-completeness`, `chain-currency` (steward) and `detectors-ci` stay green
-**Status:** in-progress
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

@@ -10256,7 +10256,7 @@ So that no marshal arrow points outside the capability tier, the Constraint is t
 **When** the operator rules on 2026-10-26 that a requirement cites defined capabilities only, and accepts (a) FR-120 ← CAP-14, CAP-15
 **Then** the five bullets carry only CAP cites (FR-121 adds CAP-12 because `seed adopt` feeds templates through `run_copy`), A-04/A-05/P-10/L-01 each name the Constraint they implement and the CAPs it bounds, every Spec block reads whole with every id stable, `bmad-prd.toml` and `bmad-architecture.toml` exist with the mandate under `[workflow] persistent_facts`, `bmad-spec.toml` carries it beside the flag mandate, and `bmad-build.toml` carries the `fr-arrow` `[[workflow.review_layers]]` lens
 **And** no FR number, title or body changes beyond the five arrows; no CAP is added, removed or renumbered; `fr-without-cap` resolves every marshal cite; `chain-completeness`, `chain-currency` (marshal) and `detectors-ci` stay green; `pyforge-marshal-test` passes (no marshal code changes)
-**Status:** in-progress
+**Status:** done
 
 ### Story 108.2: Every marshal NFR names the capabilities it bounds
 

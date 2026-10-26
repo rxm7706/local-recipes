@@ -3039,7 +3039,7 @@ So that a requirement never points outside the capability tier, and the arrow's 
 **When** the operator rules on 2026-10-26 that a requirement cites defined capabilities only
 **Then** `spec-pyforge-atlas` CAP-72 exists after CAP-71 with the Constraint as its provenance, FR-15 reads `← CAP-72`, AD-16 names the Constraint and CAP-72, the capability ledger carries CAP-72 as `rebuild`, and every cut bullet is the pre-fold text in full
 **And** no CAP id, order or provenance moves; `fr-without-cap` resolves FR-15's cite against CAP-72's definition line; `chain-completeness`, `chain-currency` and `detectors-ci` stay green
-**Status:** in-progress
+**Status:** done
 
 ### Story 41.2: The satellite PRDs' FR ids leave the kernel's id space
 

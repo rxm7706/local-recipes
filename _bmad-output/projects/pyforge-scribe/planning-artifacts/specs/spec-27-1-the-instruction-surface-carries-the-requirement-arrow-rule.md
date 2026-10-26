@@ -2,7 +2,7 @@
 title: "27.1: The instruction surface carries the requirement-arrow rule"
 type: 'chore'
 created: '2026-10-26'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: true
@@ -91,13 +91,15 @@ Type / Effort / Deps: chore / S / —.
 
 ## Auto Run Result
 
-Status: in-review (hand-built in the chain PR)
+Status: done (hand-built in the chain PR; promoted after the independent reviews, inside the PR)
 Implementation: the two AGENTS.md bullets; the block's pointer, pitfall and provenance line through `bmad-project-context` (record); the notes incident; two `scribe capture` entries; PRD, spine and epics re-stamped with § Currency reconciliation — 2026-10-26 (Story 27.1).
 
 ## Spec Change Log
 
 - 2026-10-26: minted from the station Dream's entry of 2026-10-26 (every requirement derives from a capability) at the operator's rulings of 2026-10-26 ("yes forbid it"; the ruling sheet accepted in full).
 
+- 2026-10-26: promoted to `done` inside the chain PR after the independent reviews of 2026-10-26 (planning tables: FAIL then PASS on the amendments; detector diff: FAIL then PASS on round 2), every finding applied in the chain PR.
+
 ## Review Triage Log
 
-- (none yet)
+- 2026-10-26: the independent reviews of 2026-10-26 (planning tables: FAIL then PASS on the amendments; detector diff: FAIL then PASS on round 2), every finding applied in the chain PR; no blocker open at promotion.

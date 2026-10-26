@@ -2,7 +2,7 @@
 title: "50.1: fr-without-cap resolves every arrow against a defined capability and names a counted run"
 type: 'feature'
 created: '2026-10-26'
-status: 'in-review'
+status: 'done'
 flag-exempt: detector-or-gate   # a check that judges; gating it off would silence the rule it enforces (spec-feature-flag-governance CAP-1, closed list)
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -107,13 +107,15 @@ Type / Effort / Deps: feature / M / —.
 
 ## Auto Run Result
 
-Status: in-review (hand-built in the chain PR)
+Status: done (hand-built in the chain PR; promoted after the independent reviews, inside the PR)
 Implementation: the detector upgrade (grammar, arrow parsing, definition-line resolution, five FAIL codes, the advisory WARN, the findings baseline and `--prune`/`--snapshot-findings`) with fixture tests; CAP-92 and CAP-93 rendered after CAP-91 (self-validate passes 1 and 2 logged); FR-14 ← CAP-9, FR-15 ← CAP-93, FR-16's heading; 84 cut and 4 placeholder bullets restored from `4d3ae19674^`; capability-ledger rows; PRD, spine and epics re-stamped with § Currency reconciliation — 2026-10-26.
 
 ## Spec Change Log
 
 - 2026-10-26: minted from the station Dream's entry of 2026-10-26 (every requirement derives from a capability) at the operator's rulings of 2026-10-26 ("yes forbid it"; the ruling sheet accepted in full).
 
+- 2026-10-26: promoted to `done` inside the chain PR after the independent reviews of 2026-10-26 (planning tables: FAIL then PASS on the amendments; detector diff: FAIL then PASS on round 2), every finding applied in the chain PR.
+
 ## Review Triage Log
 
-- (none yet)
+- 2026-10-26: the independent reviews of 2026-10-26 (planning tables: FAIL then PASS on the amendments; detector diff: FAIL then PASS on round 2), every finding applied in the chain PR; no blocker open at promotion.

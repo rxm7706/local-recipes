@@ -146,7 +146,7 @@ development_status:
   4-1-integrate-kedro-dagster-for-scheduling-execution: done
   4-2-integrate-kedro-viz-expose-a-pixi-task: done
   40-1-fr-15-fr-61-and-fr-63-name-what-realizes-them: done
-  41-1-fr-15-names-the-capability-minted-from-its-constraint-and-the-spec-s-cut-text-is-restored: in-progress
+  41-1-fr-15-names-the-capability-minted-from-its-constraint-and-the-spec-s-cut-text-is-restored: done
   41-2-the-satellite-prds-fr-ids-leave-the-kernel-s-id-space: backlog
   41-3-every-atlas-nfr-names-the-capabilities-it-bounds: backlog
   5-1-define-the-boring-semantic-layer-bsl-models: done
