@@ -31,9 +31,9 @@ context:
 
 **Approach:**
 - **The table is the contract.** `spec-pyforge-steward`'s memlog carries the approved table (the 2026-10-25 decision
-  entry "the approved table for Story 110.1"): FR-1..FR-7 ← CAP-1; FR-8..FR-11 ← CAP-2; FR-12..FR-15 ← CAP-3;
+  entry "the approved table for Story 110.1"): FR-1..FR-7 ← CAP-1; FR-8..FR-11 ← CAP-2, CAP-168 (CAP-168 added after review); FR-12..FR-15 ← CAP-3;
   FR-16..FR-18 ← CAP-4; FR-19..FR-21 ← CAP-18..CAP-20; FR-22..FR-26 ← CAP-127..CAP-131; FR-27..FR-31 ← CAP-57..CAP-61,
-  one capability per FR in order. Evidence: CAP-1..CAP-4's intent text names the four duties of PRD § 4.1..§ 4.4
+  one capability per FR in order (FR-8..FR-11 also cite CAP-168, after review). Evidence: CAP-1..CAP-4's intent text names the four duties of PRD § 4.1..§ 4.4
   (their titles are fold placeholders); the other three blocks match their capabilities title for title, through each
   capability's `← spec-<old> CAP-k` provenance.
 - **The addition.** Each heading gains ` ← CAP-n` at its end, in FR-32's shape; nothing else on the line changes.
@@ -75,7 +75,7 @@ Type / Effort / Deps: chore / S / —.
 | Headings | Before | After |
 |---|---|---|
 | FR-1..FR-7 (§ 4.1 Keys) | no arrow | CAP-1 |
-| FR-8..FR-11 (§ 4.2 Deploy) | no arrow | CAP-2 |
+| FR-8..FR-11 (§ 4.2 Deploy) | no arrow | CAP-2, CAP-168 (review) |
 | FR-12..FR-15 (§ 4.3 Provision) | no arrow | CAP-3 |
 | FR-16..FR-18 (§ 4.4 Budget) | no arrow | CAP-4 |
 | FR-19..FR-21 (module provisioning) | no arrow | CAP-18, CAP-19, CAP-20 |
@@ -102,7 +102,7 @@ Type / Effort / Deps: chore / S / —.
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`).
 
 **Run before the push (not dispatch gates):**
-- `git diff fd06415e4d -- _bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-steward-2026-07-25/prd.md | grep -c '^+#### FR-'` — expected: `31`` (AC1).
+- `git diff fd06415e4d -- _bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-steward-2026-07-25/prd.md | grep -c '^+#### FR-'` — expected: `31` (AC1).
 - `pixi run -e pyforge-guild python -m pyforge.doctor.sources fr-without-cap` — expected: OK.
 - `pixi run -e pyforge-guild python scripts/chain_currency_sweep_check.py --json --project pyforge-steward` — expected: no errors.
 - `pixi run -e pyforge-guild detectors-ci` — expected: exit 0.
@@ -117,7 +117,13 @@ Implementation: the PRD FR arrows rewritten from the memlog table; PRD and spine
 
 - 2026-10-25: minted from the Dream entry of 2026-10-25 (FR-1..FR-31 never got their arrows) at the operator's ruling of 2026-10-25 "Do rows 1-5 in one PR". `type: chore`, no flag.
 - 2026-10-25: implemented in the chain PR; moved to `in-review`.
+- 2026-10-25: round-1 review amendment applied on the operator's ruling "Apply all (Recommended)": FR-8..FR-11 read
+  CAP-2, CAP-168.
 
 ## Review Triage Log
 
-- (none yet)
+- **Round 1, 2026-10-25 (an independent reviewer over `fd06415e4d..efc10887a7`, reading the diff against the
+  Specs and the pre-fold text): PASS, 0 blockers, 5 should-fix, 9 nits across the seven stories.**
+  Steward: every row confirmed except FR-8..FR-11, which should also cite CAP-168 (its intent names them as what
+  the `pages` duty replaces; Story 102.3 cites CAP-168 extending CAP-2). Applied on the operator's ruling "Apply
+  all (Recommended)"; still 31 headings.

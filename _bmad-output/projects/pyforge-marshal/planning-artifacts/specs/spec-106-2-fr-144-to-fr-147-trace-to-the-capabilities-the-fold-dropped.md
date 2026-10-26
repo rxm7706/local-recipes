@@ -106,9 +106,10 @@ Type / Effort / Deps: chore / S / —.
 
 **Commands:**
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (the station's `verify_commands`).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`).
 
 **Run before the push (not dispatch gates):**
-- `git diff fd06415e4d -- _bmad-output/projects/pyforge-marshal/planning-artifacts/prds/prd-pyforge-marshal-2026-07-25/prd.md | grep -c '^+#### FR-14[4-7]:'` — expected: `4`` (AC1).
+- `git diff fd06415e4d -- _bmad-output/projects/pyforge-marshal/planning-artifacts/prds/prd-pyforge-marshal-2026-07-25/prd.md | grep -c '^+#### FR-14[4-7]:'` — expected: `4` (AC1).
 - `pixi run -e pyforge-guild python -m pyforge.doctor.sources fr-without-cap` — expected: OK.
 - `pixi run -e pyforge-guild python scripts/chain_currency_sweep_check.py --json --project pyforge-marshal` — expected: no errors.
 - `pixi run -e pyforge-guild detectors-ci` — expected: exit 0.
@@ -126,4 +127,8 @@ Implementation: the PRD FR arrows rewritten from the memlog table; PRD and spine
 
 ## Review Triage Log
 
-- (none yet)
+- **Round 1, 2026-10-25 (an independent reviewer over `fd06415e4d..efc10887a7`, reading the diff against the
+  Specs and the pre-fold text): PASS, 0 blockers, 5 should-fix, 9 nits across the seven stories.**
+  Marshal 106.2: FR-144..FR-147 ← CAP-293..CAP-296 confirmed one to one; the four rendered capabilities restate the
+  source Spec's scope items faithfully (CAP-295's log sits in `pyforge-doctor/docs/`, where Story 17.1 put it; CAP-296's
+  table-sync and realization-log clauses come from Story 17.2 and the code, not invented). No change needed.

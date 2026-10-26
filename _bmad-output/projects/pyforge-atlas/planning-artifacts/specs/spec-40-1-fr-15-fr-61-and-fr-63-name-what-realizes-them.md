@@ -108,7 +108,7 @@ Type / Effort / Deps: chore / S / —.
 - `pixi run -e pyforge-atlas kedro-test` — expected: pass (the station's `verify_commands`).
 
 **Run before the push (not dispatch gates):**
-- `git diff fd06415e4d -- _bmad-output/projects/pyforge-atlas/planning-artifacts/prds/prd-pyforge-atlas-2026-07-17/prd.md | grep -c '^+#### FR-'` — expected: `3`` (AC1).
+- `git diff fd06415e4d -- _bmad-output/projects/pyforge-atlas/planning-artifacts/prds/prd-pyforge-atlas-2026-07-17/prd.md | grep -c '^+#### FR-'` — expected: `3` (AC1).
 - `pixi run -e pyforge-guild python -m pyforge.doctor.sources fr-without-cap` — expected: OK.
 - `pixi run -e pyforge-guild python scripts/chain_currency_sweep_check.py --json --project pyforge-atlas` — expected: no errors.
 - `pixi run -e pyforge-guild detectors-ci` — expected: exit 0.
@@ -126,4 +126,7 @@ Implementation: the PRD FR arrows rewritten from the memlog table; PRD and spine
 
 ## Review Triage Log
 
-- (none yet)
+- **Round 1, 2026-10-25 (an independent reviewer over `fd06415e4d..efc10887a7`, reading the diff against the
+  Specs and the pre-fold text): PASS, 0 blockers, 5 should-fix, 9 nits across the seven stories.**
+  Atlas: FR-61 ← CAP-70, FR-63 ← CAP-71 and FR-15's constraint arrow confirmed; CAP-70 and CAP-71 restate
+  `spec-kedro-org-tooling-adoption`'s Capabilities 1 and 3 faithfully, and the files they name exist. No change needed.

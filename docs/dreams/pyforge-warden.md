@@ -232,7 +232,9 @@ the host or the source.
   read CAP-11, CAP-4; FR33 and FR35 read CAP-5, tunable policy, and keep their spelling. **Constraints:** a chore under
   `spec-one-chain-per-station` CAP-5 (FRs derive from CAPs) and CAP-3 (the station fold procedure); no CAP, no flag, no
   `SPEC.md` change; no detector rule changes; renaming FR33 and FR35 needs its own ruling. Operator ruling, 2026-10-25:
-  "Do rows 1-5 in one PR". Owner `spec-pyforge-warden`. → Epic 19 / Story 19.1, specced 2026-10-25.
+  "Do rows 1-5 in one PR". Owner `spec-pyforge-warden`. → Epic 19 / Story 19.1, specced 2026-10-25. **Amended the same
+  day (the independent review; operator ruling "Apply all (Recommended)"):** FR-34 and FR-36 read CAP-4, CAP-11 (their
+  cached feeds and snapshot provenance are CAP-11's), and FR35 reads CAP-5, CAP-11 (its freshness precondition).
 
 ## Folded Dreams (2026-09-17)
 

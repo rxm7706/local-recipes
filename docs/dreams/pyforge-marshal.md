@@ -1681,7 +1681,10 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   version clocks, distinct exit codes) cite the Spec constraint that states them. **Constraints:** a chore under
   `spec-one-chain-per-station` CAP-5 (FRs derive from CAPs) and CAP-8 (the marshal pilot); no CAP, no flag, no
   `SPEC.md` change; no detector rule changes. Operator rulings, 2026-10-25: "Do rows 1-5 in one PR" and "Cite the
-  constraint (Recommended)". Owner `spec-pyforge-marshal`. → Epic 106 / Story 106.1, specced 2026-10-25.
+  constraint (Recommended)". Owner `spec-pyforge-marshal`. → Epic 106 / Story 106.1, specced 2026-10-25. **Amended the
+  same day (the independent review; operator rulings "Apply all (Recommended)" and "CAP-15 + constraint
+  (Recommended)"):** FR-116 also cites CAP-17 and CAP-12, FR-96 CAP-17, and FR-101 cites CAP-15 beside its
+  constraint, so four requirements cite a constraint alone.
 - **2026-10-25 (FR-144..FR-147's capabilities were dropped by the fold)** — **Ruled: restore them.** Story 105.1 left
   FR-144..FR-147 (detector self-verification) on the fold's counted arrows CAP-102..CAP-105 and opened
   `DW-marshal-105-1`: their source, `spec-dream-to-code-model-self-verification`, listed its four capabilities as a

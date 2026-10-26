@@ -45,7 +45,7 @@ context:
   Q1 a chore carries no flag. Planning files only, so it is built in its own chain PR, not dispatched.
 
 Ledger key: `32-1-every-mason-prd-fr-arrow-names-the-spec-capability-that-realizes-it`.
-Type / Effort / Deps: chore / S / —.
+Type / Effort / Deps: chore / XS / —.
 
 ### Living CAP citations
 
@@ -100,7 +100,7 @@ Type / Effort / Deps: chore / S / —.
 - `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (the station's `verify_commands`).
 
 **Run before the push (not dispatch gates):**
-- `git diff fd06415e4d -- _bmad-output/projects/pyforge-mason/planning-artifacts/prds/prd-pyforge-mason-2026-07-25/prd.md | grep -c '^+#### FR-'` — expected: `3`` (AC1).
+- `git diff fd06415e4d -- _bmad-output/projects/pyforge-mason/planning-artifacts/prds/prd-pyforge-mason-2026-07-25/prd.md | grep -c '^+#### FR-'` — expected: `3` (AC1).
 - `pixi run -e pyforge-guild python -m pyforge.doctor.sources fr-without-cap` — expected: OK.
 - `pixi run -e pyforge-guild python scripts/chain_currency_sweep_check.py --json --project pyforge-mason` — expected: no errors.
 - `pixi run -e pyforge-guild detectors-ci` — expected: exit 0.
@@ -118,4 +118,6 @@ Implementation: the PRD FR arrows rewritten from the memlog table; PRD and spine
 
 ## Review Triage Log
 
-- (none yet)
+- **Round 1, 2026-10-25 (an independent reviewer over `fd06415e4d..efc10887a7`, reading the diff against the
+  Specs and the pre-fold text): PASS, 0 blockers, 5 should-fix, 9 nits across the seven stories.**
+  Mason: FR-48, FR-49 and FR-50 confirmed. Nit: the spec's effort read S against the epics' XS; aligned.
