@@ -10274,6 +10274,33 @@ So that the NFR tier derives from capabilities the way the FR tier does, and the
 **And** `scripts/fr_baseline.py --prune` drops the 33 ids from the baseline; `fr-without-cap` stays green
 **Status:** backlog
 
+## Epic 109: Marshal's planning artifacts fit the one-chain shape (spec-one-chain-per-station CAP-11)
+
+Minted 2026-10-26 from the station Dream's Realization log entry of the same date (planning artifacts outside the one-chain
+shape), on the 2026-10-26 re-audit of the one-chain rule (main `97c8211773`). Five loose `specs/spec-<slug>.md` files sat
+under the station `specs/` directory, neither Spec folders nor `spec-<E>-<S>-<slug>.md` story specs: one legacy Tier-2 Spec
+(the 2026-07-26 code audit) and four story specs that pre-date their ledger keys or never had one. CHAIN-STANDARD § 11 puts
+everything the fleet retires at `archive/<original path>`.
+**HARD boundaries:**
+- Every move is a `git mv`; nothing is deleted. The one text change is the audit Spec's frontmatter `status:` (`ready` →
+  `archived`, `archived-reason: superseded`); the four story specs are byte-identical.
+- No CAP, FR, AD or `SPEC.md` change; no story key is minted after the fact for a fix that landed without one.
+- Dated records that name the old paths stay as written; only live pointers follow the move.
+
+### Story 109.1: Marshal's five loose spec files move to the archive home
+
+As a reader who walks the station `specs/` directory to find the one Spec, its seams, its absorbed folders and its story specs,
+I want the five loose `spec-<slug>.md` files to sit under `archive/`, at their original paths,
+So that the directory shows the one-chain shape and each retired record is found where CHAIN-STANDARD § 11 says it is.
+
+**Type:** chore • **Effort:** XS • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-11 (one archive home) and CAP-3 (the station fold procedure); no marshal CAP, FR or AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-code-audit-remediation-2026-07-26.md` (status `archived`, reason `superseded`), `.../spec-status-harness-run-id-poisoning.md`, `.../spec-marshal-land-cross-project-story-key-collision.md`, `.../spec-dispatch-tier-routing-fails-safe.md`, `.../spec-land-promote-isolation.md` (from `planning-artifacts/specs/`); `docs/dreams/dispatch-tier-routing-fails-safe.md` (its "Story spec:" line) and `docs/reference/story-spec-flag-block.md` (its legacy-name example) re-pointed
+**Spec:** `planning-artifacts/specs/spec-109-1-marshal-s-five-loose-spec-files-move-to-the-archive-home.md`
+**Given** at `97c8211773` the five files sit under `planning-artifacts/specs/`: the audit Spec at `status: ready` with its waves closed 2026-07-27 and its branch abandoned; `spec-status-harness-run-id-poisoning.md` beside its ledger record `spec-39-1-…md`; `spec-marshal-land-cross-project-story-key-collision.md` and `spec-dispatch-tier-routing-fails-safe.md` beside their absorbed Spec folders, their fixes landed by direct commits (`d7fd62707b`; `6113ac34f2`, `97ca64d1e3`); `spec-land-promote-isolation.md` at `status: in-progress` although `21c29320a9` delivered it
+**When** each is moved by `git mv` to `archive/<original path>`, the audit Spec's status is set to `archived`, and the two live pointers are re-pointed
+**Then** `git` reports five renames and no deletion, the station `specs/` directory holds no loose `spec-<slug>.md`, and `spec-surface-check`, `governance-currency`, `chain-sprawl-check`, `fold-complete-check`, `bmad-drift-check` and `detectors-ci` exit 0
+**And** `tests/scripts/test_flag_rule.py`'s name-only population test still passes; dated records naming the old paths stay as written
 ## Epic 111: The archived marshal Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 
 Minted 2026-10-26 from `docs/governance/spec-one-chain-per-station/SPEC.md`, capability spec-one-chain-per-station:CAP-11 (owner Dream

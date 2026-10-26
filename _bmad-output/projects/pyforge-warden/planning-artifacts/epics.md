@@ -1117,6 +1117,30 @@ So that the NFR tier derives from capabilities the way the FR tier does, and the
 **And** `scripts/fr_baseline.py --prune` drops the ids from the baseline; `fr-without-cap` stays green
 **Status:** done
 
+## Epic 21: Warden's planning artifacts fit the one-chain shape (spec-one-chain-per-station CAP-11)
+
+Minted 2026-10-26 from the station Dream's Realization log entry of the same date (planning artifacts outside the one-chain
+shape), on the 2026-10-26 re-audit of the one-chain rule (main `97c8211773`). One `status: archived` Spec folder still sat
+under the station `specs/` directory; CHAIN-STANDARD § 11 puts everything the fleet retires at `archive/<original path>`.
+**HARD boundaries:**
+- The move is a `git mv`; nothing is deleted and the moved files' text does not change.
+- No CAP, FR, AD or `SPEC.md` change.
+- The Dream `docs/dreams/pyforge-warden-compliance-gates.md` stays in `docs/dreams/` (the archived-Dreams move is its own task).
+
+### Story 21.1: Warden's archived compliance-gates Spec folder moves to the archive home
+
+As a reader who walks the station `specs/` directory to find the one Spec, its absorbed folders and its story specs,
+I want the archived `spec-pyforge-warden-compliance-gates` folder to sit under `archive/`, at its original path,
+So that the directory shows the one-chain shape and the retirement record is found where CHAIN-STANDARD § 11 says it is.
+
+**Type:** chore • **Effort:** XS • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-11 (one archive home) and CAP-3 (the station fold procedure); no warden CAP, FR or AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `archive/_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden-compliance-gates/` (`SPEC.md` + `.memlog.md`, from `planning-artifacts/specs/`); `docs/governance/chain-sprawl-baseline.json` (pruned)
+**Spec:** `planning-artifacts/specs/spec-21-1-warden-s-archived-compliance-gates-spec-folder-moves-to-the-archive-home.md`
+**Given** at `97c8211773` `specs/spec-pyforge-warden-compliance-gates/` reads `status: archived` (`archived-reason: duplicate`, 2026-08-02) under the station directory
+**When** it is moved by `git mv` to `archive/<original path>` with its memlog, and the chain-sprawl baseline is pruned
+**Then** `git` reports two renames and no deletion, the station `specs/` directory holds no `status: archived` folder, `chain-sprawl-check` lists one fewer baseline folder, and `spec-surface-check`, `governance-currency`, `fold-complete-check`, `bmad-drift-check` and `detectors-ci` exit 0
+**And** the Spec's `owner-dream:` path still resolves
 ## Epic 23: The archived warden Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 
 Minted 2026-10-26 from `docs/governance/spec-one-chain-per-station/SPEC.md`, capability spec-one-chain-per-station:CAP-11 (owner Dream

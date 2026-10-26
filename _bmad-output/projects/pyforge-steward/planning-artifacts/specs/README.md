@@ -19,7 +19,9 @@ Dreams (`spec-unified-container/SPEC.md`, `spec-bmad-module-provisioning/SPEC.md
 `spec-foundry-capability-ledger/SPEC.md` (`ready`; `fcl:CAP-1..3`, strangler ledger + extract),
 `spec-platform-dev-boots-local/SPEC.md` (`ready`; `pdl:CAP-1`, toolbar on `platform-dev` only; Epic 56),
 `spec-build-league-scorecard/SPEC.md` (`draft`, Q5 parked),
-`spec-htap-query-plane/SPEC.md` (`archived` / absorbed — retirement record;
-query plane is unifying CAP-19 / Epic 34),
+`archive/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-htap-query-plane/SPEC.md`
+(`archived` / absorbed — retirement record, moved to the archive home on 2026-10-26 with
+`spec-pyforge-steward-feedstock-maintenance/` and the superseded `spec-22-prep-atlas-kedro-cli-introspection.md`,
+Story 113.1, CHAIN-STANDARD § 11; query plane is unifying CAP-19 / Epic 34),
 distinct from the per-story `spec-<epic>-<story>-...md` files above). See
 `archive/_bmad-output/DREAM-TRIAGE-2026-08-08.md`.

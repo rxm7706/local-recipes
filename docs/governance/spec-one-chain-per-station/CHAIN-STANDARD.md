@@ -41,7 +41,14 @@ Plus **declared seams** (Spec CAP-3): a Spec folder that survives the fold
 carries `fold-exemption: cross-station-seam` in its frontmatter. Today: marshal's
 `spec-pyforge-core` and `spec-pyforge-testing-charter`. Plus the **Guild chain**
 under `docs/governance/spec-<slug>/` for the constitutive Dream and gates that
-judge every Smith (Charter §5 as amended 2026-09-14).
+judge every Smith (Charter §5 as amended 2026-09-14). Plus **marshal's factory-doc
+set** (operator ruling 2026-10-26, the one-chain re-audit): `_bmad-output/projects/pyforge-marshal/planning-artifacts/PRD.md`,
+its `architecture.md` and four `architecture-<part>.md`, `integration-architecture.md`
+and `validation-report-PRD.md` in the same directory — the whole-factory rebuild
+contract the PRD's own § 0 decomposes across five stations, not a chain PRD: no
+`FR-n`, never read by `fr-without-cap`, governed by `bmad-drift` and
+`_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md`, and never moved into
+`prds/` (marshal's planning README § *Deliberate asymmetries*).
 
 **Everything else is a section, a CAP, or a Story** — never a new file.
 A new `docs/dreams/*.md` or `spec-*/` folder needs `fold-exemption:` from

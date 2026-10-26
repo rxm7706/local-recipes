@@ -122,7 +122,8 @@ with a new, narrowly-scoped Dream rather than reopening a shipped one).
   contains a cross-provider model) — `cli/dispatch.py`'s own live
   binary+authcheck preflight is a separate, already-hardened defense this
   effort did not need to duplicate. Story spec:
-  `planning-artifacts/specs/spec-dispatch-tier-routing-fails-safe.md`.
+  `archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dispatch-tier-routing-fails-safe.md`
+  (moved to the archive home on 2026-10-26, marshal Story 109.1).
 - **2026-09-12** — Residual gap closed, same day, on operator request.
   `cli/dispatch.py`'s own model-resolution path (`resolve_dispatch_model_
   with_retry_escalation`) now carries the identical `provider_declaring_

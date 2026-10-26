@@ -7141,6 +7141,32 @@ So that a slow apt mirror or runner reads as a slower green run, not a cancellat
 **And** the PR's own Platform CI `test` run, which installs the browser from scratch, completes inside 25 minutes with `test_playwright_records_zero_foreign_origin_requests` PASSED and no apt download in its log; `ci_surface_gates.py --check` and `detectors-ci` exit 0
 **Status:** done
 
+## Epic 113: Steward's planning artifacts fit the one-chain shape (spec-one-chain-per-station CAP-11)
+
+Minted 2026-10-26 from the station Dream's Realization log entry of the same date (planning artifacts outside the one-chain
+shape), on the 2026-10-26 re-audit of the one-chain rule (main `97c8211773`). Two `status: archived` Spec folders and one
+superseded preparatory spec still sat under the station `specs/` directory; CHAIN-STANDARD § 11 puts everything the fleet
+retires at `archive/<original path>`. Epic 113 because draft PR #2274 claims Epic 109 and Epics 110–112 are taken.
+**HARD boundaries:**
+- Every move is a `git mv`; nothing is deleted and no moved file's text changes.
+- No CAP, FR, AD or `SPEC.md` change; no story key is minted for the preparatory spec (it never had one, and atlas Story
+  24.3 superseded it).
+- The archived Specs' Dreams stay in `docs/dreams/` (the archived-Dreams move is its own task).
+
+### Story 113.1: Steward's archived Spec folders and its superseded preparatory spec move to the archive home
+
+As a reader who walks the station `specs/` directory to find the one Spec, its seams and its story specs,
+I want the two archived Spec folders and the superseded preparatory spec to sit under `archive/`, at their original paths,
+So that the directory shows the one-chain shape and a retired record is found where CHAIN-STANDARD § 11 says it is.
+
+**Type:** chore • **Effort:** XS • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-11 (one archive home) and CAP-3 (the station fold procedure); no steward CAP, FR or AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `archive/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-htap-query-plane/` and `.../spec-pyforge-steward-feedstock-maintenance/` (each `SPEC.md` + `.memlog.md`, from `planning-artifacts/specs/`); `archive/.../specs/spec-22-prep-atlas-kedro-cli-introspection.md`; `planning-artifacts/specs/README.md` (the re-pointed line); `docs/governance/chain-sprawl-baseline.json` (pruned); `src/shared/packages/pyforge-core/README.md` (the live preparatory-entry sentence)
+**Spec:** `planning-artifacts/specs/spec-113-1-steward-s-archived-spec-folders-and-its-superseded-preparatory-spec-move-to-the-archive-home.md`
+**Given** at `97c8211773` `specs/spec-htap-query-plane/` and `specs/spec-pyforge-steward-feedstock-maintenance/` read `status: archived` under the station directory, and `specs/spec-22-prep-atlas-kedro-cli-introspection.md` reads `status: superseded` with no ledger key
+**When** each is moved by `git mv` to `archive/<original path>` with its memlog, and the chain-sprawl baseline is pruned
+**Then** `git` reports renames and no deletion, the station `specs/` directory holds no `status: archived` folder and no loose `spec-<slug>.md`, `chain-sprawl-check` lists two fewer baseline folders, and `spec-surface-check`, `governance-currency`, `fold-complete-check`, `bmad-drift-check` and `detectors-ci` exit 0
+**And** the archived Specs' `owner-dream:` paths still resolve; dated records naming the old paths stay as written
 ## Epic 115: The archived steward Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 
 Minted 2026-10-26 from `docs/governance/spec-one-chain-per-station/SPEC.md`, capability spec-one-chain-per-station:CAP-11 (owner Dream

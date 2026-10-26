@@ -1,7 +1,7 @@
 ---
 id: SPEC-pyforge-charter
 spec: pyforge-charter
-status: in-progress
+status: ready
 owner-dream: docs/dreams/pyforge-charter.md
 covers-dreams:
   # Absorbed 2026-08-08 as CAP-5..CAP-8 + the Dream's § Satellite: The Seed.
@@ -178,16 +178,22 @@ accountability-made-real, §5 `guild` closed at one, §5 outcome-and-mechanism),
 superseded text quoted and its detectors updated in the same pass. Concretely: **8 stations ·
 1 constitutive Dream · 8 projects**.
 
-**Realization status (2026-09-09): HELD at `in-progress`, deliberately not advanced.** The
-success signal above is unmet by two of this Spec's own capabilities — CAP-3's named readers
-no longer hold the constants and a third unguarded mirror has appeared at `chain.py:96`, and
-CAP-7's Guildhall refusal-to-publish has no successor after the console retirement. Advancing
-would assert exactly the unbacked enforcement CAP-2 exists to refuse. The `dream-unowned`
-check is live, but through the roster, not through `bmad_drift_check.py`. **Owed to doctor,
-not doable here:** this Spec is registered in neither `board.py`'s `DEFERRED_SPECS` nor any
-decomposition — `in-progress` with eight capabilities, zero epics and zero ledger keys
-anywhere in the fleet — so it is exempt from neither the decomposition expectation nor the
-documented-deferral list. Register it with a reason ("a constitutive Spec whose
-CAP-1/4/5/6/8 are document-integrity properties no story can pick up"), and route the three
-detector-shaped capabilities (CAP-2, CAP-3, CAP-7) to doctor as stories under §5's
-outcome/mechanism rule — guild owns the outcome, doctor owns the verb.
+**Realization status (2026-10-26): `ready` — the contract binds (CHAIN-STANDARD § 4; operator
+ruling 2026-10-26, the one-chain re-audit's item 4).** Supersedes, quoted per CAP-1:
+"**Realization status (2026-09-09): HELD at `in-progress`, deliberately not advanced.** …
+Advancing would assert exactly the unbacked enforcement CAP-2 exists to refuse." `in-progress`
+left the Spec enum at the 2026-09-17 rebase (§ 4: "the rebase ends the grandfathering";
+`guild-roster.json` keeps it grandfathered only "until next edited", and this is that edit —
+this Spec was its last live use), and `ready` asserts only that the contract binds;
+realization is a capability-level fact, carried per CAP as `(Met <date>)`, so the gaps
+recorded on 2026-09-09 no longer hold the status. They stand as realization gaps: CAP-3's
+named readers no longer held the constants and a third unguarded mirror had appeared at
+`chain.py:96` (its mechanism has since shipped as doctor Story 21.4, 2026-09-10), and CAP-7's
+Guildhall refusal-to-publish has no successor after the console retirement (it waits on the
+§7 referent, the open question above). The `dream-unowned` check is live, but through the
+roster, not through `bmad_drift_check.py`. **Owed to doctor, not doable here:** this Spec is
+registered in `board.py`'s `DEFERRED_SPECS` (doctor Story 21.1, 2026-09-10: "a constitutive
+Spec whose CAP-1/4/5/6/8 are document-integrity properties no story can pick up; CAP-3
+mechanism shipped as doctor 21.4; CAP-7/AUT-3 wait on the Guildhall referent — do not mint a
+Charter epic") and in no decomposition — eight capabilities, zero epics and zero ledger keys
+anywhere in the fleet, by that ruling.

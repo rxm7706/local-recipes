@@ -148,7 +148,6 @@
     "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-enterprise-multi-agent-orchestration",
     "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-capability-ledger",
     "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-regenerate-not-fold",
-    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-htap-query-plane",
     "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-intelligence-hub",
     "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-jira-github-projects-sync",
     "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-langflow-django-plugin",
@@ -163,7 +162,6 @@
     "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-platform-fifteen-factors",
     "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-platform-image-one-pixi-env",
     "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-platform-object-storage-kind",
-    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward-feedstock-maintenance",
     "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy",
     "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-agent-platform",
     "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover",
@@ -177,7 +175,6 @@
     "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-compliance-factory-web-face",
     "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-golden-path-conda-blind-spot",
     "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-package-inventory-eligibility",
-    "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden-compliance-gates",
     "docs/governance/spec-coverage-gate-independence",
     "docs/governance/spec-one-chain-per-station",
     "docs/governance/spec-pyforge-charter"

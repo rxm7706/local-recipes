@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: b4b2a750ba1c82eb
-story_count: 398
+source_fingerprint: d359f39e27b0283c
+story_count: 399
 test_file_count: 142
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 398
-- **Epics parsed:** 112
+- **Stories parsed:** 399
+- **Epics parsed:** 113
 - **Test files inventoried:** 142 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `b4b2a750ba1c82eb`
+- **Source fingerprint:** `d359f39e27b0283c`
 
 ## Risk Assessment
 
@@ -137,6 +137,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 110: The steward PRD's first 31 FRs name the capabilities the Spec carries
 - Epic 111: The steward Spec's capability text is whole again, and the foundry inherits the amended rule (spec-one-chain-per-station CAP-5 amended, CAP-7)
 - Epic 112: The Platform CI `test` job's budget covers a slow mirror (spec-pyforge-steward CAP-174 / FR-48)
+- Epic 113: Steward's planning artifacts fit the one-chain shape (spec-one-chain-per-station CAP-11)
 - Epic 115: The archived steward Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 
 ### Low-risk epics
@@ -697,6 +698,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 110.1 | Every steward PRD FR arrow names the Spec capability that realizes it | none observed |
 | 111.1 | The steward Spec's fold-cut capability text is restored, and the foundry inhe... | none observed |
 | 112.1 | The Platform CI `test` job installs only what its runner image lacks, and its... | none observed |
+| 113.1 | Steward's archived Spec folders and its superseded preparatory spec move to t... | none observed |
 | 115.1 | Steward's 36 archived Dreams leave the live tree | none observed |
 
 ## Quality Gates

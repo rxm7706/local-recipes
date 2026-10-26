@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: 0fdfa2cb2813b4f0
-story_count: 468
+source_fingerprint: 4003b8f396f24bfc
+story_count: 469
 test_file_count: 270
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 468
-- **Epics parsed:** 107
+- **Stories parsed:** 469
+- **Epics parsed:** 108
 - **Test files inventoried:** 270 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `0fdfa2cb2813b4f0`
+- **Source fingerprint:** `4003b8f396f24bfc`
 
 ## Risk Assessment
 
@@ -128,6 +128,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 106: The marshal PRD's remaining FR arrows name what realizes them
 - Epic 107: A loop-home refresh keeps the Tier-3 feed on the tracked ledger's keys
 - Epic 108: Every marshal requirement derives from a capability, and the harness carries the rule (spec-one-chain-per-station CAP-5 amended; spec-pyforge-marshal CAP-297)
+- Epic 109: Marshal's planning artifacts fit the one-chain shape (spec-one-chain-per-station CAP-11)
 - Epic 111: The archived marshal Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 
 ### Low-risk epics
@@ -890,6 +891,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 107.1 | A refresh or a sync never carries a stale-slug story key | none observed |
 | 108.1 | Every marshal requirement cites a capability, the Spec's cut text is restored... | none observed |
 | 108.2 | Every marshal NFR names the capabilities it bounds | none observed |
+| 109.1 | Marshal's five loose spec files move to the archive home | none observed |
 | 111.1 | Marshal's 54 archived Dreams leave the live tree | none observed |
 
 ## Quality Gates
