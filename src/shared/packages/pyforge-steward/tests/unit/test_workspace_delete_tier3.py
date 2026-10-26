@@ -9,12 +9,14 @@ and every refusal names its own cause.
 
 from __future__ import annotations
 
+import errno
 import os
 import subprocess
 from pathlib import Path
 
 import pytest
 
+from pyforge.steward import workspace as ws_module
 from pyforge.steward.workspace import (
     clean_workspaces,
     format_clean,
@@ -39,13 +41,14 @@ def _branch_exists(repo: Path, branch: str) -> bool:
     )
 
 
-def _make_repo(tmp_path: Path, *, separate_git_dir: bool = False) -> Path:
+def _make_repo(tmp_path: Path, *, separate_git_dir: str | None = None) -> Path:
     origin = tmp_path / "origin.git"
     subprocess.run(["git", "init", "--bare", str(origin)], check=True, capture_output=True)
     work = tmp_path / "local-recipes"
     work.mkdir()
     if separate_git_dir:
-        _git("init", "-b", "main", f"--separate-git-dir={tmp_path / 'repo.git'}", cwd=work)
+        (tmp_path / separate_git_dir).parent.mkdir(parents=True, exist_ok=True)
+        _git("init", "-b", "main", f"--separate-git-dir={tmp_path / separate_git_dir}", cwd=work)
     else:
         _git("init", "-b", "main", cwd=work)
     _git("config", "user.email", "test@example.com", cwd=work)
@@ -160,8 +163,11 @@ def test_a_file_already_in_the_main_checkout_is_never_overwritten(repo: Path, tm
     assert [r.slug for r in load_bookkeeping(bookkeeping)] == ["landed"]
 
 
-def test_no_main_checkout_means_nothing_moves(tmp_path: Path):
-    repo = _make_repo(tmp_path, separate_git_dir=True)  # the common git directory is not a .git directory
+@pytest.mark.parametrize("git_dir", ["repo.git", "elsewhere/.git"])
+def test_a_separate_git_dir_has_no_main_checkout_so_nothing_moves(tmp_path: Path, git_dir: str):
+    """git lists the git directory, or the parent of one named ``.git``, as the main worktree; neither is the
+    checkout, so the files must not land there (review 1)."""
+    repo = _make_repo(tmp_path, separate_git_dir=git_dir)
     bookkeeping = repo / ".steward" / "workspaces.yaml"
     wt = _landed(repo, tmp_path, bookkeeping)
     _write(wt / _JOURNAL, "{}\n")
@@ -175,7 +181,132 @@ def test_no_main_checkout_means_nothing_moves(tmp_path: Path):
     assert result["skipped"][0]["reason"] == f"Tier-3 work: {tier3_dir} (no main checkout to move it to)"
     assert (wt / _JOURNAL).read_text(encoding="utf-8") == "{}\n"
     assert not (repo / _JOURNAL).exists()
+    assert list(tmp_path.rglob("journal.jsonl")) == [wt / _JOURNAL]  # nowhere beside the git directory
     assert _branch_exists(repo, "landed")
+
+
+def test_a_bare_repository_has_no_main_checkout_so_nothing_moves(tmp_path: Path):
+    _make_repo(tmp_path)
+    bare = tmp_path / "proj.git"
+    _git("clone", "--bare", str(tmp_path / "origin.git"), str(bare), cwd=tmp_path)
+    _git("config", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*", cwd=bare)
+    _git("config", "user.email", "test@example.com", cwd=bare)
+    _git("config", "user.name", "Test", cwd=bare)
+    _git("fetch", "origin", cwd=bare)
+    bookkeeping = tmp_path / "bookkeeping" / "workspaces.yaml"
+    wt = tmp_path / "bare-wt"
+    start_workspace("landed", root=bare, bookkeeping=bookkeeping, path=wt, from_ref="origin/main")
+    (wt / "work.txt").write_text("work\n", encoding="utf-8")
+    _git("add", "work.txt", cwd=wt)
+    _git("commit", "-m", "work", cwd=wt)
+    _git("push", "origin", "HEAD:main", cwd=wt)
+    _git("fetch", "origin", cwd=bare)
+    _write(wt / _JOURNAL, "{}\n")
+    tier3_dir = _JOURNAL.parents[2]  # git names the ignored implementation-artifacts directory
+
+    result = clean_workspaces(
+        delete=True, slug="landed", root=bare, bookkeeping=bookkeeping, archive_dir=tmp_path / "archive"
+    )
+
+    assert result["deleted"] == []
+    assert result["skipped"][0]["reason"] == f"Tier-3 work: {tier3_dir} (no main checkout to move it to)"
+    assert (wt / _JOURNAL).read_text(encoding="utf-8") == "{}\n"
+    assert not (tmp_path / "_bmad-output").exists()
+    assert _branch_exists(bare, "landed")
+
+
+def test_a_locked_worktree_moves_nothing(repo: Path, tmp_path: Path):
+    """Its removal would fail after the move, splitting the journal between the worktree and main (review 2)."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    wt = _landed(repo, tmp_path, bookkeeping)
+    _write(wt / _JOURNAL, "{}\n")
+    _git("worktree", "lock", str(wt), cwd=repo)
+    tier3_dir = _JOURNAL.parents[2]
+
+    result = clean_workspaces(
+        delete=True, slug="landed", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "archive"
+    )
+
+    assert result["skipped"][0]["reason"] == f"Tier-3 work: {tier3_dir} (the worktree is locked)"
+    assert (wt / _JOURNAL).is_file()
+    assert not (repo / _JOURNAL).exists()
+    assert [r.slug for r in load_bookkeeping(bookkeeping)] == ["landed"]
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root reads any directory")
+def test_a_tier3_directory_git_cannot_open_is_no_proof_and_nothing_is_removed(repo: Path, tmp_path: Path):
+    """git leaves a directory it cannot open out of the ignored listing, with a warning and exit 0 (review 1)."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    wt = _landed(repo, tmp_path, bookkeeping)
+    _write(wt / _JOURNAL, "{}\n")
+    sibling = wt / _JOURNAL.parents[1] / "r0" / "journal.jsonl"
+    _write(sibling, "r0\n")
+    unreadable = (wt / _JOURNAL).parent
+    unreadable.chmod(0)
+    try:
+        result = clean_workspaces(
+            delete=True, slug="landed", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "archive"
+        )
+    finally:
+        unreadable.chmod(0o755)
+
+    assert result["skipped"][0]["reason"] == "git-ignored listing failed"
+    assert (wt / _JOURNAL).is_file() and sibling.is_file()
+    assert not (repo / _JOURNAL.parents[1]).exists()
+    assert _branch_exists(repo, "landed")
+
+
+def test_a_non_utf8_name_is_shown_escaped_and_the_report_prints(repo: Path, tmp_path: Path):
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    wt = _landed(repo, tmp_path, bookkeeping)
+    name = os.fsdecode(b"run-\xff.jsonl")
+    _write(wt / _JOURNAL.parent / name, "workspace\n")
+    _write(repo / _JOURNAL.parent / name, "main\n")
+
+    result = clean_workspaces(
+        delete=True, slug="landed", root=repo, bookkeeping=bookkeeping, archive_dir=tmp_path / "archive"
+    )
+
+    reason = result["skipped"][0]["reason"]
+    assert reason == f"Tier-3 work: {_JOURNAL.parent}/run-\\xff.jsonl already in {repo}"
+    format_clean(result, as_json=False).encode("utf-8")  # review 4: a surrogate here raised on print
+    assert (repo / _JOURNAL.parent / name).read_text(encoding="utf-8") == "main\n"
+
+
+def test_a_symlink_never_replaces_a_file_written_after_the_check(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    # Every existence check says "absent", as when the file appears between the check and the move (review 1).
+    monkeypatch.setattr(ws_module.os.path, "lexists", lambda path: False)
+    src_dir, main = tmp_path / "wt", tmp_path / "main"
+    src_dir.mkdir()
+    main.mkdir()
+    (src_dir / "latest").symlink_to("runs/r2")
+    (main / "latest").write_text("written meanwhile\n", encoding="utf-8")
+
+    with pytest.raises(ws_module.WorkspaceError, match="appeared before the move"):
+        ws_module._move_no_clobber(src_dir / "latest", main / "latest")
+
+    assert (main / "latest").read_text(encoding="utf-8") == "written meanwhile\n"
+    assert (src_dir / "latest").is_symlink()
+
+
+def test_across_filesystems_a_copy_never_replaces_a_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    def _no_hard_link(src, dst, *args, **kwargs):
+        raise OSError(errno.EXDEV, "Invalid cross-device link")
+
+    monkeypatch.setattr(ws_module.os, "link", _no_hard_link)
+    src_dir, main = tmp_path / "wt", tmp_path / "main"
+    _write(src_dir / "a.jsonl", "a\n")
+    _write(src_dir / "b.jsonl", "b\n")
+    _write(main / "b.jsonl", "written meanwhile\n")
+    monkeypatch.setattr(ws_module.os.path, "lexists", lambda path: False)
+
+    ws_module._move_no_clobber(src_dir / "a.jsonl", main / "a.jsonl")
+    with pytest.raises(ws_module.WorkspaceError, match="appeared before the move"):
+        ws_module._move_no_clobber(src_dir / "b.jsonl", main / "b.jsonl")
+
+    assert (main / "a.jsonl").read_text(encoding="utf-8") == "a\n" and not (src_dir / "a.jsonl").exists()
+    assert (main / "b.jsonl").read_text(encoding="utf-8") == "written meanwhile\n"
+    assert (src_dir / "b.jsonl").read_text(encoding="utf-8") == "b\n"
 
 
 def test_a_per_worktree_ref_is_refused_by_name_not_as_not_merged(repo: Path, tmp_path: Path):

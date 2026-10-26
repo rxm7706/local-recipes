@@ -2129,8 +2129,8 @@ Drift — orphaned between stations.
     makes it `not-merged`, and removing that file makes it delete again.
   So every workspace landed by hand and then finalized stays undeletable, and the reason it gives is wrong.
   **What it looks like when fixed:** `--delete` moves the Tier-3 files it finds into the same paths in the main
-  checkout's shared Tier-3 store (the parent of `git rev-parse --git-common-dir`), where a backlinked worktree
-  would have written them, and then deletes the workspace. It never overwrites: when any file already exists there,
+  checkout's shared Tier-3 store (the first worktree `git worktree list` names, when it is a checkout), where a
+  backlinked worktree would have written them, and then deletes the workspace. It never overwrites: when any file already exists there,
   or there is no main checkout to receive it, the workspace is skipped with a reason that names the file. Every
   other proof failure is reported by its own name (a submodule, a per-worktree ref, an unreadable HEAD, a listing
   that fails); `not-merged` stays for a HEAD or branch that is not on a landing ref. **Constraints:** a fix under

@@ -2,9 +2,9 @@
 title: '13.7: A landed workspace that holds Tier-3 files deletes, and keeps the files'
 type: 'fix'
 created: '2026-10-25'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'fd06415e4d1e1e3446ad6463f9e1149630d3311a'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -14,7 +14,18 @@ context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-13-6-a-workspace-started-from-another-branch-is-landed-once-its-branch-is-on-main.md
   - src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
   - src/shared/packages/pyforge-steward/tests/unit/test_workspace_clean_delete.py
-deferred: []
+deferred:
+  - summary: >-
+      clean --delete drops a landed workspace's pre-push skip journal (.steward/preflight-skips.log) with the
+      worktree, where the default clean copies its lines into the .landed.txt note; it needs a ruling on where a
+      deleted workspace's skip lines belong (main checkout's journal, the clean output, or nowhere once CI ran).
+    evidence: |-
+      Found at Story 13.7's review round 1 (pre-existing: fd06415e4d does the same; Story 13.5 ruled --delete leaves
+      no note). A landed workspace's skipped pushes were arbitrated by CI on its merged PR, so the lines are audit
+      history, not open debt; steward preflight verify-deferred reads the journal of the checkout it runs in.
+    location: >-
+      src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
+    severity: low
 declared_low_risk: false
 ---
 
@@ -46,12 +57,20 @@ declared_low_risk: false
 - `_delete_eligibility` returns that helper's reason, so each refusal names its cause (`dirty`, a submodule, a
   per-worktree ref, an unreadable HEAD, a failed listing; `not-merged` only for a HEAD or branch on no landing ref).
   When the only thing in the way is Tier-3 files, it checks that each file (every non-directory entry under each
-  Tier-3 path) can move to the same relative path in the main checkout: the main checkout is the parent of
-  `git rev-parse --git-common-dir` when that directory is named `.git`, is not the worktree itself, and no file exists
-  there at that path (`lexists`), and the destination does not resolve inside the worktree. Any failure is a skip
-  reason naming the file.
+  Tier-3 path; an empty directory holds nothing and goes with the worktree) can move to the same relative path in the
+  main checkout: the main checkout is the first worktree `git worktree list --porcelain` names, when it is not bare and
+  holds `scripts/bmad-loop-worktree` (the file `repo_root()` looks for), and is not the worktree itself; git lists the
+  worktree and not as locked (its removal would fail after the move); every directory can be read; no file exists
+  there at that path (`lexists`); and the destination does not resolve inside the worktree. Any failure is a skip
+  reason naming the file, its non-UTF-8 bytes shown escaped.
+- *(Review round 1.)* A git-ignored listing that prints a warning is no proof: git leaves a directory it cannot open
+  out of the listing with only a warning and exit 0, so its contents would go with the worktree (pre-existing at
+  `fd06415e4d`, for the note and `--delete` alike).
 - `_execute_delete` re-reads the Tier-3 files, re-checks the same conditions, moves each file (its directories created
-  as needed), then removes the worktree and the branch as before. The deleted row gains `tier3_moved_to` (the main
+  as needed) by a call that itself fails on an existing path: a hard link, a new symlink, or, where no hard link can
+  be made, a copy into an exclusively created file (a special file is never copied); then it removes the worktree and
+  the branch as before. A move that fails part-way leaves the moved files in the main checkout and the rest in the
+  worktree, which is kept; a second run finishes the move. The deleted row gains `tier3_moved_to` (the main
   checkout) and the count of files moved; `format_clean` prints them.
 - A fix under CAP-107 and CAP-157: no CAP, no amendment, no flag. CAP-157's proof for the `.landed.txt` note, the default
   `clean`, `--merged-only`, `status`, `ls`, `start_workspace` and marshal's landing step do not change.
@@ -70,8 +89,9 @@ fix / S / S-13.6.
 - **AC2 — Nothing is overwritten.** The same workspace when the main checkout already has a file at that path: the
   workspace is skipped with a reason naming the path, the main checkout's file is unchanged, and the worktree, its
   file, the branch and the record stay.
-- **AC3 — No main checkout, no move.** When the main checkout cannot be found (a common directory not named `.git`),
-  the workspace is skipped with a reason naming the Tier-3 path, and nothing moves.
+- **AC3 — No main checkout, no move.** When the main checkout cannot be found (a bare repository, or a
+  `--separate-git-dir` one), or the worktree is locked, the workspace is skipped with a reason naming the Tier-3 path,
+  and nothing moves.
 - **AC4 — Each refusal says why.** A landed workspace with a per-worktree ref is skipped with a reason that names
   per-worktree refs, not `not-merged`; the 13.5 cases keep their reasons (`not-merged` for a commit not on its source,
   `dirty`, `branch <b> not on <source>`).
@@ -105,3 +125,14 @@ default `clean` or `--merged-only`; change `start_workspace`, marshal's landing 
 ## Spec Change Log
 
 - 2026-10-25: drafted from the Dream entry of 2026-10-25, found while cleaning up #2318's landing workspace.
+- 2026-10-25: review round 1 (an independent reviewer over `126b922582` against this spec; PASS, no must-fix). The
+  note text was byte-identical to `fd06415e4d` over 16 worktree states and the 13.5 reasons unchanged. Fixed: the
+  no-overwrite rule held only on the hard-link path (a symlink and a cross-filesystem copy now fail on an existing
+  path); a locked or unlisted worktree moved its files and then failed to be removed (refused before any move);
+  the main checkout was guessed from the common directory's name (now the first listed worktree, not bare, holding
+  `scripts/bmad-loop-worktree`); a non-UTF-8 name in a reason crashed the text report (shown escaped); an unreadable
+  Tier-3 directory was an error row (a refusal), and, found while fixing it, git's ignored listing omits a directory it
+  cannot open with exit 0, so a listing with a warning is now no proof (pre-existing). Accepted: a part-way move leaves
+  the workspace kept and a rerun finishes it; an empty Tier-3 directory goes with the worktree. Deferred: the dropped
+  skip journal (frontmatter `deferred:`, pre-existing). Tests: `test_workspace_delete_tier3.py` (14), each fix pinned
+  and caught by a mutation.

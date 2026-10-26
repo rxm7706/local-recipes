@@ -1309,7 +1309,9 @@ def _landed_proof(record: WorkspaceRecord, *, wt: Path, root: Path) -> _LandedPr
         return "not-merged"
     landing_ref, source_sha = landed_on
     listed = _git_bytes("-c", "status.showUntrackedFiles=normal", "status", "--ignored", "--porcelain", "-z", cwd=wt)
-    if listed.returncode != 0:
+    # A directory git cannot open is left out of the listing with only a warning and exit 0, so a warning is no
+    # proof either: whatever that directory holds would go with the worktree (Story 13.7 review 1).
+    if listed.returncode != 0 or listed.stderr.strip():
         return "git-ignored listing failed"
     raw_ignored = [entry[3:] for entry in listed.stdout.split(b"\0") if entry.startswith(b"!! ")]
     work_prefixes = tuple(prefix.encode() for prefix in _IGNORED_WORK_PREFIXES)
@@ -1510,20 +1512,52 @@ def _delete_eligibility(record: WorkspaceRecord, *, root: Path) -> str | None:
     return None
 
 
-def _main_checkout(root: Path) -> Path | None:
-    """The main checkout, whose ``implementation-artifacts/`` is the Tier-3 store worktrees backlink to: the parent
-    of the common git directory when that is a ``.git`` directory, else None (Story 13.7)."""
-    common = _git_bytes("rev-parse", "--git-common-dir", cwd=root)
-    if common.returncode != 0:
+def _shown(text: str) -> str:
+    """A path for a reason or a row: bytes that are not UTF-8 shown escaped, so printing it never raises."""
+    return text.encode("utf-8", "surrogateescape").decode("utf-8", "backslashreplace")
+
+
+def _worktree_entries(root: Path) -> list[tuple[str, frozenset[str]]] | None:
+    """Each worktree git lists, in its order (the main worktree first): its real path and the names of its fields
+    (``bare``, ``locked``, ...); None when git cannot list them."""
+    listed = _git_bytes("worktree", "list", "--porcelain", "-z", cwd=root)
+    if listed.returncode != 0:
         return None
-    base = Path(os.fsdecode(common.stdout.strip()))
-    base = base if base.is_absolute() else root / base
-    return base.parent if base.name == ".git" else None
+    entries: list[tuple[str, frozenset[str]]] = []
+    path: str | None = None
+    keys: set[str] = set()
+    for field in [*listed.stdout.split(b"\0"), b""]:
+        line = os.fsdecode(field)
+        if line.startswith("worktree "):
+            try:
+                path = os.path.realpath(line[len("worktree ") :])
+            except ValueError:
+                path = None
+            keys = set()
+        elif line:
+            keys.add(line.split(" ", 1)[0])
+        elif path is not None:
+            entries.append((path, frozenset(keys)))
+            path = None
+    return entries
+
+
+def _main_checkout(root: Path) -> Path | None:
+    """The main checkout, whose ``implementation-artifacts/`` is the Tier-3 store worktrees backlink to: the first
+    worktree git lists, when it is not bare and is a checkout of this repository (it holds the file ``repo_root``
+    looks for). For a ``--separate-git-dir`` repository git lists the git directory or its parent instead, so that
+    is no checkout either (Story 13.7 review 1)."""
+    entries = _worktree_entries(root)
+    if not entries or "bare" in entries[0][1]:
+        return None
+    main = Path(entries[0][0])
+    return main if (main / _BMAD_LOOP_WORKTREE_RELATIVE_PATH).is_file() else None
 
 
 def _tier3_files(wt: Path, rel: str) -> list[str]:
     """Every non-directory entry at or under ``wt / rel``, relative to ``wt``; a symlink is an entry, never followed.
-    An unreadable directory raises, so no file is left out of the move and then removed with the worktree."""
+    An empty directory holds nothing and goes with the worktree. An unreadable directory raises, so no file is left
+    out of the move and then removed with the worktree."""
     top = wt / rel
     if top.is_symlink() or not top.is_dir():
         return [rel]
@@ -1540,48 +1574,71 @@ def _tier3_files(wt: Path, rel: str) -> list[str]:
 
 
 def _tier3_moves(root: Path, wt: Path, tier3: list[str]) -> tuple[Path, list[tuple[Path, Path]]] | str:
-    """The main checkout and where each Tier-3 file goes in it (the same relative path), or why one cannot go:
-    there is no main checkout, a file is already there, the path cannot be a directory, or it resolves into the
-    worktree."""
+    """The main checkout and where each Tier-3 file goes in it (the same relative path), or why nothing can move:
+    there is no main checkout, git does not list the worktree or lists it locked (its removal would then fail
+    after the move), a directory cannot be read, a file is already there, the path cannot be a directory, or it
+    resolves into the worktree."""
+    first = _shown(tier3[0])
+    entries = _worktree_entries(root)
     main = _main_checkout(root)
     wt_real = os.path.realpath(wt)
-    if main is None or os.path.realpath(main) == wt_real:
-        return f"Tier-3 work: {tier3[0]} (no main checkout to move it to)"
+    if entries is None or main is None or os.path.realpath(main) == wt_real:
+        return f"Tier-3 work: {first} (no main checkout to move it to)"
+    keys = next((k for path, k in entries if path == wt_real), None)
+    if keys is None:
+        return f"Tier-3 work: {first} (git does not list the worktree)"
+    if "locked" in keys:
+        return f"Tier-3 work: {first} (the worktree is locked)"
     moves: list[tuple[Path, Path]] = []
     for rel in tier3:
-        for leaf in _tier3_files(wt, rel):
+        try:
+            leaves = _tier3_files(wt, rel)
+        except OSError as exc:
+            return f"Tier-3 work: {_shown(rel)} cannot be read ({exc.strerror})"
+        for leaf in leaves:
             dest = main / leaf
             if os.path.lexists(dest):
-                return f"Tier-3 work: {leaf} already in {main}"
+                return f"Tier-3 work: {_shown(leaf)} already in {_shown(str(main))}"
             parent = dest.parent
             while not os.path.lexists(parent):
                 parent = parent.parent
             if not parent.is_dir():
-                return f"Tier-3 work: {leaf} cannot move: {parent} is not a directory"
+                return f"Tier-3 work: {_shown(leaf)} cannot move: {_shown(str(parent))} is not a directory"
             real = os.path.realpath(dest)
             if real == wt_real or real.startswith(wt_real + os.sep):
-                return f"Tier-3 work: {leaf} would move into the worktree"
+                return f"Tier-3 work: {_shown(leaf)} would move into the worktree"
             moves.append((wt / leaf, dest))
     return main, moves
 
 
 def _move_no_clobber(src: Path, dest: Path) -> None:
-    """Move one file to a path that must not exist. A hard link fails on an existing path, so a file written
-    there since the check is never overwritten; a symlink, another filesystem, or one without hard links moves."""
+    """Move one file to a path that must not exist, by a call that itself fails when the path exists, so a file
+    written there since the check is never overwritten: a hard link, a new symlink, or, where no hard link can be
+    made (another filesystem), a copy into an exclusively created file. A special file is never copied."""
     dest.parent.mkdir(parents=True, exist_ok=True)
-    if not src.is_symlink():
-        try:
-            os.link(src, dest)
-        except FileExistsError as exc:
-            raise WorkspaceError(f"Tier-3 work: {dest} appeared before the move") from exc
-        except OSError:
-            pass
+    try:
+        if src.is_symlink():
+            os.symlink(os.readlink(src), dest)
         else:
-            os.unlink(src)
-            return
-    if os.path.lexists(dest):
-        raise WorkspaceError(f"Tier-3 work: {dest} appeared before the move")
-    shutil.move(os.fspath(src), os.fspath(dest))
+            try:
+                os.link(src, dest)
+            except FileExistsError:
+                raise
+            except OSError:
+                if not src.is_file():
+                    raise WorkspaceError(
+                        f"Tier-3 work: {_shown(str(src))} is not a regular file and cannot be copied"
+                    ) from None
+                with open(src, "rb") as reader, open(dest, "xb") as writer:
+                    try:
+                        shutil.copyfileobj(reader, writer)
+                    except BaseException:
+                        os.unlink(dest)
+                        raise
+                shutil.copystat(src, dest)
+    except FileExistsError as exc:
+        raise WorkspaceError(f"Tier-3 work: {_shown(str(dest))} appeared before the move") from exc
+    os.unlink(src)
 
 
 def _execute_delete(record: WorkspaceRecord, *, root: Path) -> tuple[Path, int] | None:
@@ -1682,7 +1739,7 @@ def clean_workspaces(
                     in_flight = None
                     row = record.to_dict()
                     if moved is not None:
-                        row["tier3_moved_to"], row["tier3_moved"] = str(moved[0]), str(moved[1])
+                        row["tier3_moved_to"], row["tier3_moved"] = _shown(str(moved[0])), str(moved[1])
                     deleted.append(row)
                     continue
                 if merged_only and not (
