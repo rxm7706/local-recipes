@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: fa8388a3a49e9eed
-story_count: 145
+source_fingerprint: dad3a6cd45aeab34
+story_count: 147
 test_file_count: 187
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 145
+- **Stories parsed:** 147
 - **Epics parsed:** 39
 - **Test files inventoried:** 187 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `fa8388a3a49e9eed`
+- **Source fingerprint:** `dad3a6cd45aeab34`
 
 ## Risk Assessment
 
@@ -383,6 +383,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 31.1 | Atlas passes mypy in `pyforge-foundry-full`, and a lane keeps it so | none observed |
 | 32.1 | The DAG export builds in CI, and a failed build fails its task | none observed |
 | 33.1 | The atlas CLI reaches the verbs its contracts name, from any directory | none observed |
+| 33.2 | The spine counts twelve pipelines, and the MCP face names its eight as the MC... | none observed |
 | 34.1 | endoflife.date and the SPDX list arrive as records the seed-gap reports read | none observed |
 | 34.2 | The Phase C mapping fills from the conda-forge bot's name mapping | none observed |
 | 34.3 | Dependencies, feedstock health and maintainers read the bot's split graph repos | none observed |
@@ -395,6 +396,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 34.10 | Phase H covers every mapped PyPI project, gated by its serial | none observed |
 | 34.11 | The Phase C mapping fills legacy's name-coincidence and recipe-source tiers | none observed |
 | 34.12 | A vulnerability feed that cannot be reached keeps its last good copy | none observed |
+| 34.13 | Atlas declares the brotli its nixpkgs store decodes | none observed |
 | 35.1 | One opt-in switch, and GitHub authenticates | none observed |
 | 35.2 | The VCS batches come from the whole universe | none observed |
 | 35.3 | Upstream versions and feedstock health come from GitHub | none observed |
