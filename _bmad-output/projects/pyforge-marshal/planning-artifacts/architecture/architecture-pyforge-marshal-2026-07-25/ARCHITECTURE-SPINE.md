@@ -2382,8 +2382,8 @@ amended or removed.
 
 ## Currency reconciliation — 2026-10-25 (Story 106.1)
 
-*`prd→arch` cascade for the PRD's § 45.* The seed installer's 62 FRs now name the capabilities (or, for five, the
-constraints) that realize them; no requirement's text moved, so no AD binding changes (AD-51..AD-65 still bind § 15).
+*`prd→arch` cascade for the PRD's § 45.* The seed installer's 62 FRs now name the capabilities (or, for four, the
+constraints alone; FR-101 cites CAP-15 and a constraint) that realize them; no requirement's text moved, so no AD binding changes (AD-51..AD-65 still bind § 15).
 **Content changed:** this section. `updated:` bumped. No AD added, amended or removed.
 
 ## Currency reconciliation — 2026-10-25 (Story 106.2)
