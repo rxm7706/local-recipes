@@ -4461,6 +4461,13 @@ capabilities:
     heading: "the Pages deploy workflow is steward's duct"
     mode: rebuild
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  # 2026-10-26 Platform CI test job budget (Epic 112): B rebuilds the CI lane's install and budget under its own CI
+  - id: pyforge-steward:CAP-174
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the Platform CI test job's time budget covers what it does on a slow runner, and it installs only what its runner image lacks"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - id: pyforge-warden:CAP-1
     spec: pyforge-warden
     station: pyforge-warden

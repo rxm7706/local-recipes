@@ -1352,6 +1352,22 @@ verify_commands = [
   ".github/workflows/pyforge-station-tests.yml",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"112" = [  # the Platform CI test job installs only what its runner image lacks, and its budget covers a slow mirror
+  # (spec-pyforge-steward CAP-174 / FR-48; Story 112.1, a fix, no flag), added 2026-10-26. The default surface,
+  # restated because a declared entry replaces it outright, plus the workflow whose Chromium step and timeout change,
+  # the regenerated TEA matrix, the PRD and spine (their 2026-10-26 FR-48 registration and re-stamp), the capability
+  # ledger row and every Spec memlog.
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/test-architecture.md",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/prds/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/**",
+  "scripts/.spec-surface-baseline.json",
+  ".github/workflows/platform-ci.yml",
+  "docs/foundry/capability-ledger.yaml",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "85" = [  # the protected refs are declared once, and no session deletes what would orphan commits (spec-pyforge-steward
   # CAP-165; Story 85.1's hook fix), added 2026-10-04. The default surface, restated because a declared entry replaces it
   # outright, plus: the session hook and the roster (85.1, 85.4), the rendered ruleset document (85.2), the repo scripts
