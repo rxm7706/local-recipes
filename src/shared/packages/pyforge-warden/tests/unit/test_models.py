@@ -745,7 +745,7 @@ def test_coherent_license_and_currency_findings_still_construct():
     assert eol.currency.verdict is CurrencyVerdict.EOL
 
 
-# --- Story 6.1 (P4): determinism (NFR-R3b) with the new fields POPULATED ------
+# --- Story 6.1 (P4): determinism (NFR-R3.2) with the new fields POPULATED ------
 
 
 def _report_with_all_new_fields() -> ComplianceReport:
@@ -834,7 +834,7 @@ def _report_with_all_new_fields() -> ComplianceReport:
 
 
 def test_report_with_new_fields_populated_is_twice_run_deterministic():
-    """NFR-R3b: two independent constructions of a report populating ALL the
+    """NFR-R3.2: two independent constructions of a report populating ALL the
     new 6.1 fields serialize byte-identically. The heterogeneous finding set
     (some license-only, some currency-only, one vuln-only) sorts without any
     cross-type comparison error — a TypeError there would surface as this
