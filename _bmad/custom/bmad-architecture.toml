@@ -1,0 +1,13 @@
+# Team override for bmad-architecture — local-recipes / PyForge estate.
+# Personal overrides go in bmad-architecture.user.toml (gitignored).
+#
+# Marshal Story 108.1 (spec-one-chain-per-station CAP-5 as amended 2026-10-26;
+# CHAIN-STANDARD § 2, § 12): the Constraint-to-AD mandate lives under
+# [workflow] persistent_facts, never in installer-owned SKILL.md (the marshal
+# Story 74.3 placement).
+
+[workflow]
+
+persistent_facts = [
+  "Constraints become ADs (Architect): a Spec Constraint reaches code through an architecture decision, never through a requirement's arrow. When an AD implements a Spec Constraint, the AD names that Constraint by its bolded lead and the CAP(s) it bounds (for example `implements Constraint \"Copier is a dependency, not a framework\" for CAP-14, CAP-15`), so the spine is the one place a Constraint is traced. An AD cites the FR/CAP it decides for; it never rewrites an FR's arrow to point at itself. A Constraint that promises a user- or operator-visible guarantee is minted as a CAP through `bmad-spec` before any FR cites it (`docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md` § 2, § 12).",
+]

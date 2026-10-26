@@ -215,8 +215,10 @@ def test_fr_new_without_citation_fails(tmp_path: Path) -> None:
 def test_fr_new_with_resolving_citation_same_line_or_first_body_line(tmp_path: Path) -> None:
     root = _fr_tree(tmp_path)
     _prd(root, "pyforge-marshal", "## FR-1: old\n\n## FR-2: same line ← CAP-1\n\n- **FR-3** new\n  ← CAP-2\n")
-    (f,) = one_chain.gather_fr_without_cap(root)
+    by = _by_check(one_chain.gather_fr_without_cap(root))
+    (f,) = by["fr-without-cap"]  # the advisory no-title-overlap WARN rides beside it
     assert f.status is DoctorStatus.OK and f.evidence["new_frs"] == 2
+    assert not any(x.status is DoctorStatus.FAIL for xs in by.values() for x in xs)
 
 
 def test_fr_citation_to_closed_or_absent_cap_is_unresolved(tmp_path: Path) -> None:
@@ -289,11 +291,14 @@ def test_live_tree_chain_sprawl_has_no_fail_at_ruling_snapshot() -> None:
 
 
 def test_live_tree_fr_without_cap_has_no_fail_at_ruling_snapshot() -> None:
+    """No FAIL on this checkout: every structural finding the tree still
+    carries is keyed in fr-baseline.json `findings` (Story 50.1 ratchet)."""
     root = _live_root()
     findings = one_chain.gather_fr_without_cap(root)
     fails = [f for f in findings if f.status is DoctorStatus.FAIL]
     assert not fails, [f.message for f in fails]
     assert not any(f.check == "fr-without-cap-no-baseline" for f in findings)
+    assert not any(f.check == "fr-baseline-stale" for f in findings), "prune fr-baseline.json"
 
 
 def test_live_roster_declares_the_closed_list() -> None:

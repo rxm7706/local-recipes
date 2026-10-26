@@ -641,20 +641,20 @@ One-chain mason fold. Station Spec is `ready`. CAPs sequential from 1 with no ga
 ### Absorbed capabilities reminted 2026-09-17
 
 - **CAP-14 — the slice map, derived not guessed** ← spec-conda-forge-expert-rebuild CAP-1 (shipped 2026-09-17)
-  - **intent:** Before any brief is written, `skf-analyze-source` runs against the live
-  - **success:** A tracked slice-map artifact under this Spec's directory lists every slice
+  - **intent:** Before any brief is written, `skf-analyze-source` runs against the live skill (`.claude/skills/conda-forge-expert/`) to confirm or correct the Dream's hypothesized seams (recipe-authoring · atlas-intelligence · project-scanning/MCP) and produce the authoritative slice map.
+  - **success:** A tracked slice-map artifact under this Spec's directory lists every slice with: its canonical scripts, its CLI wrappers, its MCP tool registrations, its pixi tasks, its SKILL.md/reference/guides knowledge sections, and its **complete caller inventory** (including Mason's `cfe.py` adapter surface). Coverage is total — every one of the 67 scripts, ~57 wrappers, and 46 MCP tools appears in exactly one slice (derive, don't declare); an unclassified file is a failing check, not a gap. The map fixes the slice ordering and names the first slice explicitly.
 
 - **CAP-15 — first slice: recipe generation, built + parallel-validated in one epic** ← spec-conda-forge-expert-rebuild CAP-2 (shipped 2026-09-17)
-  - **intent:** The recipe-generation slice — `scripts/recipe-generator.py` and its
-  - **success:** `skf-brief-skill` produces the slice brief with the relevant gotchas and
+  - **intent:** The recipe-generation slice — `scripts/recipe-generator.py` and its satellites, the `generate_recipe_from_pypi` / `update_recipe_from_github` MCP tools, their wrappers and pixi tasks, plus the generator's knowledge (G54 source-decision order, G91 build-system mirroring, G94c/G98 naming, the CFE-block emission contract) — is compiled as a Skill-Forge-authored replacement and **parallel-validated** in the same epic (the live original stays authoritative; flip and retirement are campaign-end). Chosen first because it is the skill's most volatile surface (v8.69/v8.70/v8.81 all churned it), has the richest regression-test net, and has a small, enumerable caller set.
+  - **success:** `skf-brief-skill` produces the slice brief with the relevant gotchas and constraints as verbatim inputs; `skf-create-skill` compiles the replacement; the slice's existing regression tests pass unmodified against the replacement (behavioral equivalence, not rewritten expectations); the **equivalence harness** runs old and new against the same corpus and reports zero divergence; `skf-audit-skill` reports zero drift. **The old path remains authoritative and every caller keeps resolving to it** — caller flip and retirement happen once, at the campaign's end cutover (CAP-3).
 
 - **CAP-16 — the anti-atlas guard, parallel-run form: divergence and the endgame enforced by a detector, not by discipline** ← spec-conda-forge-expert-rebuild CAP-3 (shipped 2026-09-17)
-  - **intent:** Parallel-run's two killers — silent divergence between the live original and
-  - **success:** A detector (registered in `scripts/detectors.py`) reads the slice map and
+  - **intent:** Parallel-run's two killers — silent divergence between the live original and the replacement, and an end cutover that never comes (the atlas outcome) — are made structurally impossible by a repo detector, in the style of `scripts/dream_chain_check.py`.
+  - **success:** A detector (registered in `scripts/detectors.py`) reads the slice map and fails CI when (a) any slice marked `parallel` has a red or stale equivalence-harness result — old and new must agree on the shared corpus at every commit; (b) any Rule-2 retro landing in the live skill is not mirrored into the affected slice briefs (dual-landing rule) — while parallel, knowledge has two homes ON PURPOSE and the detector is what makes that survivable; or (c) the campaign reaches its declared endgame date/state and any caller still resolves to legacy, or legacy code survives without a dated deprecation marker. It exits green pre-rebuild and each clause is proven red by a fixture before the first slice lands. The campaign cannot close — and the Dream cannot read `realized` — until the end cutover completes under clause (c).
 
 - **CAP-17 — campaign state: the sequence survives sessions** ← spec-conda-forge-expert-rebuild CAP-4 (shipped 2026-09-17)
-  - **intent:** The multi-slice sequence is tracked by `skf-campaign`'s file-based state
-  - **success:** Campaign state records per-slice status (mapped → briefed → compiled →
+  - **intent:** The multi-slice sequence is tracked by `skf-campaign`'s file-based state with resume, so the effort behaves like a `bmad-loop` run — interruptible, resumable, auditable — rather than living in any one session's memory.
+  - **success:** Campaign state records per-slice status (mapped → briefed → compiled → cut-over → audited → retired), survives session teardown, and a fresh session can resume from state alone; after the first slice completes, a dated re-scope note in the campaign state records the measured cost and the go/adjust/stop decision for the remaining slices before any second brief is written.
 
 - **CAP-18 — the local mirror as source of truth** ← spec-fleet-stewardship CAP-1 (shipped 2026-09-17)
   - **intent:** Every `recipes/<name>/` is a faithful, buildable mirror edited first, built locally, then pushed.

@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: e21e14490be4e4d8
-story_count: 148
+source_fingerprint: bcd912d9fd4f64de
+story_count: 151
 test_file_count: 187
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 148
-- **Epics parsed:** 40
+- **Stories parsed:** 151
+- **Epics parsed:** 41
 - **Test files inventoried:** 187 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `e21e14490be4e4d8`
+- **Source fingerprint:** `bcd912d9fd4f64de`
 
 ## Risk Assessment
 
@@ -72,6 +72,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 38: The semantic store has its upload times and archived flag (spec-pyforge-atlas CAP-69, FR-77)
 - Epic 39: The atlas PRD's FR arrows name the capabilities the Spec carries
 - Epic 40: FR-15, FR-61 and FR-63 name what realizes them (spec-pyforge-atlas CAP-70, CAP-71)
+- Epic 41: Every atlas requirement derives from a capability (spec-pyforge-atlas CAP-72; spec-one-chain-per-station CAP-5 amended)
 
 ### Low-risk epics
 
@@ -421,6 +422,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 38.1 | The semantic store reads its upload times and archived flag | none observed |
 | 39.1 | Every atlas PRD FR arrow names the Spec capability that realizes it | none observed |
 | 40.1 | FR-15, FR-61 and FR-63 name what realizes them | none observed |
+| 41.1 | FR-15 names the capability minted from its Constraint, and the Spec's cut tex... | none observed |
+| 41.2 | The satellite PRDs' FR ids leave the kernel's id space | none observed |
+| 41.3 | Every atlas NFR names the capabilities it bounds | none observed |
 
 ## Quality Gates
 

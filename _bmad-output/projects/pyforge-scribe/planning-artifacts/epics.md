@@ -11,7 +11,7 @@ inputDocuments:
   - _bmad-output/projects/pyforge-scribe/planning-artifacts/briefs/brief-pyforge-scribe-2026-07-25/brief.md
   - docs/specs/claude-team-memory.md
 mode: headless-express — no interactive elicitation; epic/story structure drafted directly from the PRD's Wave 1/Wave 2 split and the architecture spine's module breakdown
-updated: "2026-10-15"   # RE-STAMPED 2026-10-15: arch->epics cascade after the 2026-10-15 spine re-stamp (a stale surface glob re-pointed); no story, AC or ledger key moved. See § Currency reconciliation — 2026-10-15. Prior: AMENDED 2026-10-03 (Phase 4+5 landing): Story 26.1's four follow-up-review rows withdrawn by operator ruling (they run as review batches); it closes 5 rows. Prior: RE-STAMPED 2026-10-03 (Phase 4+5): Epic 26 / Story 26.1 minted (fix, no CAP): nine of scribe's 14 open medium and low deferrals, operator rulings of 2026-10-03. Prior: RE-STAMPED 2026-09-29: Epic 24 minted (24.1–24.3, spec-pyforge-scribe CAP-32) from the station Dream entry of 2026-09-29. Prior 2026-09-28:  chain-currency cascade (arch -> epics) after the 2026-09-28 spine re-stamp; no story change. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics); Epic 21 minted (21.1, spec-python-foundry-cutover fnd:CAP-15). Prior 2026-09-20
+updated: "2026-10-26"   # AMENDED 2026-10-26 (every requirement derives from a capability): Epic 27 / Story 27.1 minted (chore under spec-pyforge-scribe CAP-27 and CAP-29, spec-one-chain-per-station CAP-5 as amended; no CAP, no flag): AGENTS.md items 6 and 7 carry the requirement-arrow and multi-station-PR bullets, the block the CHAIN-STANDARD pointer and the shared-Postgres pitfall, the notes file the incident, team memory two captures; keys 27-1 (in-progress), epic-27 (in-progress) and epic-27-retrospective (optional) added; no other epic or story moved. Prior "2026-10-15"   # RE-STAMPED 2026-10-15: arch->epics cascade after the 2026-10-15 spine re-stamp (a stale surface glob re-pointed); no story, AC or ledger key moved. See § Currency reconciliation — 2026-10-15. Prior: AMENDED 2026-10-03 (Phase 4+5 landing): Story 26.1's four follow-up-review rows withdrawn by operator ruling (they run as review batches); it closes 5 rows. Prior: RE-STAMPED 2026-10-03 (Phase 4+5): Epic 26 / Story 26.1 minted (fix, no CAP): nine of scribe's 14 open medium and low deferrals, operator rulings of 2026-10-03. Prior: RE-STAMPED 2026-09-29: Epic 24 minted (24.1–24.3, spec-pyforge-scribe CAP-32) from the station Dream entry of 2026-09-29. Prior 2026-09-28:  chain-currency cascade (arch -> epics) after the 2026-09-28 spine re-stamp; no story change. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics); Epic 21 minted (21.1, spec-python-foundry-cutover fnd:CAP-15). Prior 2026-09-20
 currency_review: "Reviewed 2026-09-17 (one-chain scribe fold) — INV-A window cites spec-pyforge-scribe CAP-1..26; epic numbers unchanged. No blocked keys flipped."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -929,6 +929,29 @@ So that recall answers with the current statement and the deferral burn-down clo
 **Then** recall breaks an overlap tie by recency, transcript node ids no longer collide across subdirectories, the timer and the freshness period cannot drift apart silently, `governance-currency` reads the per-tool pointer files, and the Epic 3 surface is reconciled
 **And** each of the five rows is closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed; the five operator-bound or capability rows stay open; `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green
 **Spec:** `planning-artifacts/specs/spec-26-1-recall-breaks-ties-by-recency-and-scribe-s-other-open-deferrals-close.md`
+**Status:** done
+
+## Epic 27: The instruction surface carries the requirement-arrow rule (spec-pyforge-scribe CAP-27, CAP-29; spec-one-chain-per-station CAP-5 amended)
+
+Minted 2026-10-26 from the station Dream's entry of the same date and the operator's ask of 2026-10-26 that the requirement-arrow rule be encoded so agents stay aligned. Story 27.1 puts the rule and the multi-station-PR shape into AGENTS.md as pointers (items 6 and 7, outside the managed block), the CHAIN-STANDARD pointer and the shared-Postgres preflight pitfall into the block through `bmad-project-context`, the incident into the notes file, and the ruling into team memory. A chore epic under scribe CAP-27 and CAP-29; no CAP, no flag, no scribe code.
+**HARD boundaries:**
+- Point, never copy (CAP-27); no AGENTS.md section duplicated into a per-tool file (CAP-29); the parity meta-test and `governance-currency` stay green.
+- The `bmad:context` block changes only through the skill's record/refresh shape, with path-checked claims.
+
+### Story 27.1: The instruction surface carries the requirement-arrow rule
+
+As every harness that reads AGENTS.md before writing or reviewing a PRD requirement,
+I want the requirement-arrow rule and the multi-station-PR shape stated once in AGENTS.md as pointers, the incident behind them in the notes file, and the ruling in team memory,
+So that an agent on any harness traces arrows instead of counting them, and the next multi-station PR takes the #2240/#2319 shape without re-deriving it.
+
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-scribe CAP-27 (one AGENTS.md, pointers elsewhere) and CAP-29 (the duplicate-section collapse); spec-one-chain-per-station CAP-5 (amended 2026-10-26); CHAIN-STANDARD § 12
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `AGENTS.md` outside the `bmad:context` block (Pre-PR checklist item 6: the requirement-arrow bullet; item 7: the multi-station-PR bullet — both verbatim from the 2026-10-25 audit's proposed text); inside the block, through `bmad-project-context` (record): the CHAIN-STANDARD pointer on the Governance line under *Where things are*, the shared-Postgres preflight pitfall under *Known pitfalls*, the provenance line re-verified against `92fa3edbbd`; `docs/reference/agent-instruction-notes.md` § *Moved from AGENTS.md* (the FR-arrow incident behind items 6 and 7); `.claude/memory/` (two `scribe capture` entries: feedback 'trace, never count', project 'the 2026-10-26 ruling'; `MEMORY.md` index)
+**Spec:** `planning-artifacts/specs/spec-27-1-the-instruction-surface-carries-the-requirement-arrow-rule.md`
+**Given** at `92fa3edbbd` AGENTS.md's Pre-PR checklist items 6 and 7 say nothing about arrows or multi-station PRs, the `bmad:context` block's Governance line does not name CHAIN-STANDARD, no pitfall records the shared scribe Postgres that failed #2319's parallel preflight, and team memory holds neither the rule nor the ruling
+**When** the operator asks on 2026-10-26 that the rule be encoded so agents stay aligned
+**Then** items 6 and 7 carry the two bullets, the block carries the pointer and the pitfall with its provenance line at 2026-10-26 / `92fa3edbbd`, the notes file carries the incident, and `.claude/memory/` carries the two captures with `MEMORY.md` lines
+**And** the scribe parity meta-test (`test_instruction_surface_parity.py`) and `governance-currency` stay green; no section is duplicated into a per-tool file; `pyforge-scribe-test` passes
 **Status:** done
 
 ## Platform floor addendum — 2026-09-07

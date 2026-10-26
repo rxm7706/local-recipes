@@ -526,9 +526,10 @@ REGISTRY: tuple[SourceRegistration, ...] = (
         scope="repo",
         subject_station="fleet",
         owning_station="doctor",
-    ),  # Story 25.2 -- sources/one_chain.py. A PRD FR minted after the rule
-    # date cites a CAP that an open Spec under its station declares;
-    # docs/governance/fr-baseline.json is the pre-rule population. CAN FAIL.
+    ),  # Story 25.2 / 50.1 -- sources/one_chain.py. A PRD FR cites CAP
+    # definition lines (its station Spec's, or a named Spec's) and nothing
+    # else; docs/governance/fr-baseline.json holds the arrowless population
+    # and the baselined structural findings. CAN FAIL.
     SourceRegistration(
         source=Source.FOLD_COMPLETE,
         scope="repo",

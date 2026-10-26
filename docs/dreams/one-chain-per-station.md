@@ -316,3 +316,57 @@ CHAIN-STANDARD §7 and §11 carry it. The mechanism comes next, as Stories:
 - then one fold PR per station, which pastes in the missing bodies, moves
   the satellites and repoints their references;
 - then the Spec folders, `docs/intake/` and `docs/specs/`.
+
+## 2026-10-26 — Every requirement derives from a capability
+
+**What was found.** The 2026-09-16/17 folds wrote the PRDs' `FR-n ← CAP-m`
+arrows by counting instead of tracing: `FR-n ← CAP-n` on atlas, a section
+mapped wholesale onto one capability on herald, mason and warden, nothing at
+all on steward's FR-1..FR-31 and marshal's seed installer. Marshal Story
+105.1 (#2314), atlas 39.1 (#2316) and the five-station PR #2319 re-traced
+every arrow. The re-audit of 2026-10-26 found what the arrows alone could
+not fix: eight requirements citing something that is not a capability (six
+a Spec Constraint, by the 2026-10-25 "cite the constraint" rulings; doctor
+FR-14 and FR-15 the Charter's §6); the fold's own damage to the station
+Specs the arrows point at (167 placeholder titles `from spec-…`, titles cut
+to one letter, intents reading "See absorbed Spec memlog", roughly 560
+intent and success bullets cut at their first line); a detector that only
+checked that a cited number existed somewhere; none of the 82 NFR lines
+citing anything, two stations numbering them with letters the detector
+could not read; and atlas's two satellite PRDs reusing the kernel's FR ids.
+
+**The ruling.** Operator, 2026-10-26: *"yes forbid it — single pr for all
+stations / all open items for pyforge stations and aligned to unifying
+strategy / cutover"*, with the ask that the rule be encoded so agents stay
+aligned. It reverses the 2026-10-25 "Cite the constraint (Recommended)"
+rulings on atlas FR-15 and marshal FR-120, FR-121, FR-125, FR-126 (and the
+"CAP-15 + constraint" ruling on FR-101), by dated amendment — CHAIN-STANDARD
+§12 quotes them.
+
+**The rule, and where it lives.** A requirement cites one or more defined
+capabilities and nothing else; a Constraint reaches code through an AD; a
+Constraint that promises something visible becomes a CAP; a HOW-only line
+is not a requirement. Spec CAP-5 is amended to say so, CHAIN-STANDARD §2,
+§6 and §12 carry it, and `spec-foundry-regenerate-not-fold` CAP-7 names it
+as pyforge-foundry's starting discipline so B inherits the amended form, not
+the exception. It is enforced, not asserted: doctor CAP-92 upgrades
+`fr-without-cap` to resolve every cite against a definition line, fail a
+non-CAP arrow, read dotted and lettered ids, flag an unhyphenated or
+duplicate id and a counted run, on new findings only against a baseline
+that only shrinks. It is carried into every harness the way the feature-flag
+mandate is (marshal Story 74.3): `persistent_facts` for `bmad-prd`,
+`bmad-spec` and `bmad-architecture`, an `fr-arrow` review lens in
+`bmad-build`, two Pre-PR checklist bullets in `AGENTS.md`, the incident in
+`docs/reference/agent-instruction-notes.md`, and two team-memory captures.
+
+**One PR, one story per station.** As #2240 and #2319 did: each station's
+work is its own story on its own chain — atlas 41.1 (FR-15 ← the new CAP-72,
+minted from the Constraint; the cut bullets restored), marshal 108.1 (the
+five constraint arrows re-pointed, A-04/A-05/P-10/L-01 naming their
+Constraint, 76 titles and 137 placeholder bodies restored, the `_bmad/custom`
+layers), doctor 50.1 (CAP-92, the detector; FR-14 ← CAP-9, FR-15 ← CAP-93,
+FR-16's heading), herald 47.1, steward 111.1, warden 20.1 and mason 33.1
+(their Spec text restored), scribe 27.1 (the instruction surface); the NFR
+backfills (atlas 41.3, marshal 108.2, mason 33.2, warden 20.2) and the
+satellite renumber (atlas 41.2) minted `backlog` so the baseline has a named
+owner for every row it still carries.

@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: scribe
-source_fingerprint: 45f83318a5db1b88
-story_count: 48
+source_fingerprint: f904f42a533046b2
+story_count: 49
 test_file_count: 23
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-scribe`
-- **Stories parsed:** 48
-- **Epics parsed:** 26
+- **Stories parsed:** 49
+- **Epics parsed:** 27
 - **Test files inventoried:** 23 under `src/shared/packages/pyforge-scribe/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `45f83318a5db1b88`
+- **Source fingerprint:** `f904f42a533046b2`
 
 ## Risk Assessment
 
@@ -58,6 +58,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 24: Every session reads one derived picture of the BMAD estate (spec-pyforge-scribe CAP-32)
 - Epic 25: The estate catalog reads only in-tree skills (spec-pyforge-scribe CAP-32)
 - Epic 26: Phase 4+5 of the deferral burn-down: scribe's open medium and low deferrals
+- Epic 27: The instruction surface carries the requirement-arrow rule (spec-pyforge-scribe CAP-27, CAP-29; spec-one-chain-per-station CAP-5 amended)
 
 ### Low-risk epics
 
@@ -144,6 +145,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 24.3 | Every harness is pointed at the catalog once | none observed |
 | 25.1 | The estate catalog skips skill directories git ignores | none observed |
 | 26.1 | Recall breaks ties by recency, and scribe's other open deferrals close | none observed |
+| 27.1 | The instruction surface carries the requirement-arrow rule | none observed |
 
 ## Quality Gates
 

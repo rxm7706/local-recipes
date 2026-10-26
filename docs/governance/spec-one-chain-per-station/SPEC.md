@@ -10,7 +10,7 @@ status: ready   # 2026-09-16 — seeded `draft` the morning the token-savings fo
                 # because its Dream is guild-owned (chain.py `_expected_spec_dir`: guild ->
                 # docs/governance/spec-<slug>/) — the second instance of the 09-14 §5 shape.
 created: "2026-09-16"
-updated: "2026-09-29"
+updated: "2026-10-26"   # AMENDED 2026-10-26: CAP-5 (requirements cite defined CAPs only; the 2026-10-25 constraint-arrow rulings reversed by dated amendment, CHAIN-STANDARD section 12). Prior "2026-09-29"
 owner-dream: docs/dreams/one-chain-per-station.md
 surface: []     # Deliberately empty until the mechanism stories land: chain-sprawl-check and
                 # fr-without-cap will be doctor sources (declared here when they exist, the way
@@ -108,12 +108,30 @@ the PRD as the BMAD artifact it is, derived rather than duplicated.
     CAP. Mandatory before the marshal pilot's fold lands.
   - **success:** A marshal re-derive reads less than the whole log; entry
     count is preserved across the shard.
-- **CAP-5 — FRs derive from CAPs.**
-  - **intent:** Each PRD's frontmatter carries `fr-derivation-from: <date>`;
-    every FR minted after it cites its source CAP; the PRD is re-derived as a
-    step of each fold PR, never backfilled later; doctor `fr-without-cap`
-    flags a post-date FR with no CAP.
-  - **success:** Zero post-date FRs without a CAP fleet-wide.
+- **CAP-5 — FRs and NFRs derive from CAPs.** *(amended 2026-10-26: a
+  requirement cites defined CAPs only; the 2026-10-25 "cite the constraint"
+  rulings are reversed — CHAIN-STANDARD §12)*
+  - **intent:** Every requirement in a PRD (`FR-n`, `NFR-n`, or a lettered NFR
+    family `NFR-<L>n`) cites one or more *defined* capabilities — `← CAP-m`
+    against the station Spec's definition lines, or `← spec-<x> CAP-m` against
+    the named Spec's — and nothing else: never a Spec Constraint, a Charter
+    clause, an AD or a decision id. The arrow is traced from the CAP's intent
+    and success, never numbered in sequence. A Spec Constraint reaches code
+    through an AD that names it by its bolded lead; a Constraint that promises
+    a user- or operator-visible guarantee is minted as a CAP through
+    `bmad-spec` with the Constraint as provenance; a HOW-only PRD line is not a
+    requirement and lives in the PRD's Constraints and Guardrails section
+    naming its AD. Each PRD's frontmatter carries `fr-derivation-from: <date>`
+    and the PRD is re-derived as a step of each fold PR, never backfilled
+    later. Doctor `fr-without-cap` (doctor CAP-92) fails a post-date
+    requirement with no CAP, a non-CAP arrow, a cite that resolves to no
+    definition line, an unhyphenated, malformed or duplicate id and a counted run — on
+    new findings only, against `docs/governance/fr-baseline.json`, which only
+    shrinks.
+  - **success:** Zero non-CAP arrows and zero post-date requirements without a
+    CAP fleet-wide; the baseline's `projects` map is exactly the pre-rule
+    arrowless population and shrinks as each station's backfill story lands;
+    `fr-without-cap` green on `main`.
 - **CAP-6 — Living station tiers, with zero new vocabulary.**
   - **intent:** The eight `spec-pyforge-<s>` read **`ready`** — "the contract
     binds" — and stay there; `shipped` belongs to CAPs (`(Met <date>)`) and

@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: 471b4990c456a837
-story_count: 161
-test_file_count: 98
+source_fingerprint: becc445dbacfb5d3
+story_count: 162
+test_file_count: 99
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 161
-- **Epics parsed:** 49
-- **Test files inventoried:** 98 under `src/shared/packages/pyforge-doctor/tests/`
+- **Stories parsed:** 162
+- **Epics parsed:** 50
+- **Test files inventoried:** 99 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `471b4990c456a837`
+- **Source fingerprint:** `becc445dbacfb5d3`
 
 ## Risk Assessment
 
@@ -85,6 +85,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 47: The Detectors scripts lane finishes inside its timeout (spec-pyforge-doctor CAP-42, CAP-43)
 - Epic 48: One registry orders the whole Pages site, and a stale site tells on itself (spec-pyforge-doctor CAP-90, CAP-91)
 - Epic 49: The detector registry finds each detector's task by its path (spec-pyforge-doctor FR-15)
+- Epic 50: Every requirement arrow resolves to a defined capability (spec-pyforge-doctor CAP-92, CAP-93; FR-14..FR-16)
 
 ## Test Inventory
 
@@ -176,6 +177,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_marshal_story_status.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_one_chain.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_one_chain_fold_complete.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_sources_one_chain_fr_arrows.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_pages_liveness.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_pixi_currency.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_platform_policy.py` | unit | none observed |
@@ -354,6 +356,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 48.1 | One registry orders every section of the Pages site | none observed |
 | 48.2 | A Pages deploy more than a day behind its inputs is named in fleet-picture | none observed |
 | 49.1 | A detector's task is the one that runs its script | none observed |
+| 50.1 | fr-without-cap resolves every arrow against a defined capability and names a ... | none observed |
 
 ## Quality Gates
 

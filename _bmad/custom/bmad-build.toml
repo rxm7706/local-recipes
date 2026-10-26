@@ -13,6 +13,22 @@ persistent_facts = [
 ]
 
 [[workflow.review_layers]]
+id = "fr-arrow"
+name = "Requirement Arrow Trace"
+when = "The unified diff at `{diff_file}` adds or changes a line that defines a PRD requirement (`FR-n`, `NFR-n` or a lettered NFR id opening a heading, bullet or bold line under `_bmad-output/projects/pyforge-<s>/planning-artifacts/prds/`), or adds or changes a `← CAP-m` / `← spec-<x> CAP-m` arrow on one."
+instruction = """
+On a PRD requirement change, read the unified diff at `{diff_file}` and, for each added or changed requirement line, the station Spec `_bmad-output/projects/pyforge-<s>/planning-artifacts/specs/spec-pyforge-<s>/SPEC.md` (or the Spec a `spec-<x>` prefix names).
+
+Answer only from those sources, one bullet per requirement line:
+1. Does the line carry an arrow, and does every item after `←` name a capability (`CAP-m`, optionally `spec-<x> CAP-m`) and nothing else — no Constraint, Charter clause, AD or decision id?
+2. Is each cited CAP a *definition* line in the named Spec (`- **CAP-m —` / `### CAP-m`), not a mention?
+3. Does the requirement's title or body share its subject with the cited CAP's intent or success — is the arrow traced, not counted? A run of four or more consecutive requirements whose CAP numbers step with their ids, with no shared words, is counted.
+4. Is the id hyphenated and defined once in the PRD?
+
+Output a short Markdown list with yes/no and one line of evidence per question. If any answer is no, say what is missing and which CAP the intent/success text points at instead. If the diff touches no PRD requirement line, report zero findings and stop. Rule: spec-one-chain-per-station CAP-5 (amended 2026-10-26), `docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md` § 2 and § 12; the detector is doctor `fr-without-cap`.
+"""
+
+[[workflow.review_layers]]
 id = "flag-mandate"
 name = "Feature Flag Mandate"
 when = "The active story spec is `type: feature` and carries a `flag:` block (not `flag-exempt:`)."

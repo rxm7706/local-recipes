@@ -1233,6 +1233,7 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
         "src/shared/packages/pyforge-doctor/tests/unit/test_sources_live_proof_surfaces.py": _H["PLANNING"],
         "src/shared/packages/pyforge-doctor/tests/unit/test_sources_one_chain.py": _H["DOCTOR_CHAIN"],
         "src/shared/packages/pyforge-doctor/tests/unit/test_sources_one_chain_fold_complete.py": _H["DOCTOR_CHAIN"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_one_chain_fr_arrows.py": _H["DOCTOR_CHAIN"],
         "src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_consistency.py": _H["DOCTOR_CHAIN"],
         "src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_open_questions.py": _H["DOCTOR_CHAIN"],
         "src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_promissory.py": _H["DOCTOR_CHAIN"],
