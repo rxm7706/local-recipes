@@ -425,7 +425,6 @@ def test_pages_lanes_with_dependency_scheduler_avoid_write_overlap(tmp_path: Pat
     assert peak <= 2
 
 
-
 # ---- Story 99.8: the red-main banner is advisory ----------------------------------------------------
 
 
@@ -439,17 +438,31 @@ def _red_main_snapshot(root: Path, raw: bytes | None = None) -> None:
         return
     doc = {
         "fetched_at": datetime.now(tz=UTC).isoformat(),
-        "rows": [{"id": "kedro-viz-publish.vizro", "latest_main_run": {"conclusion": "failure", "created_at": None, "run_id": 5}}],
+        "rows": [
+            {
+                "id": "kedro-viz-publish.vizro",
+                "latest_main_run": {"conclusion": "failure", "created_at": None, "run_id": 5},
+            }
+        ],
     }
     path.write_text(json.dumps(doc), encoding="utf-8")
 
 
 @pytest.mark.parametrize(
     ("flag_on", "snapshot"),
-    [(True, None), (False, None), (True, b"\xff not json"), (True, b'{"fetched_at": "2026-10-25T00:00:00", "rows": [{"id": []}]}')],
+    [
+        (True, None),
+        (False, None),
+        (True, b"\xff not json"),
+        (True, b'{"fetched_at": "2026-10-25T00:00:00", "rows": [{"id": []}]}'),
+    ],
 )
 def test_the_red_main_banner_never_changes_the_run(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], flag_on: bool, snapshot: bytes | None
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    flag_on: bool,
+    snapshot: bytes | None,
 ) -> None:
     from pyforge.steward import preflight_ci
 
@@ -473,7 +486,9 @@ def test_the_red_main_banner_never_changes_the_run(
     err = capsys.readouterr().err
     assert code == preflight.EXIT_LANE_RED
     assert calls == ["a", "b"]
-    assert ("preflight: main is red on kedro-viz-publish.vizro: failure, run 5" in err) is (flag_on and snapshot is None)
+    assert ("preflight: main is red on kedro-viz-publish.vizro: failure, run 5" in err) is (
+        flag_on and snapshot is None
+    )
     assert ("main CI state unknown" in err) is (flag_on and snapshot is not None)
     if not flag_on:
         assert "main is red" not in err and "main CI state" not in err

@@ -352,10 +352,15 @@ def test_odd_rows_are_judged_without_raising(tmp_path: Path, capsys: pytest.Capt
     assert len(lines) == 4
 
 
-def test_the_banner_never_raises(tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_banner_never_raises(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
     def boom(_root: Path, *, now: datetime | None = None) -> tuple[list, str | None]:
         raise RuntimeError("unexpected")
 
     monkeypatch.setattr(preflight_ci, "red_main_runs", boom)
     preflight_ci.print_main_red_banner(tmp_path, now=_NOW_998)
-    assert capsys.readouterr().err == "preflight: main CI state unknown: the ci status snapshot could not be judged (RuntimeError)\n"
+    assert (
+        capsys.readouterr().err
+        == "preflight: main CI state unknown: the ci status snapshot could not be judged (RuntimeError)\n"
+    )
