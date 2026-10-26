@@ -2081,8 +2081,9 @@ Drift — orphaned between stations.
     so an atlas-only diff would journal the new lane as deferred.
   **What it looks like when fixed:** `pyforge-deps-test` is a `pr-preflight-lanes` leg and a step of the Detectors
   `scripts-suite` job, which runs on every PR, so the two land together (doctor's `test_preflight_mirrors_scripts_suite.py`
-  reds one without the other); a touched-scope run keeps it whenever a `pyforge-*` package's `pyproject.toml`,
-  `pixi.toml` or a Python file under its `src/` changed. **Constraints:** a fix under CAP-159, with no CAP and no flag;
+  reds one without the other); a touched-scope run keeps it whenever a path `tests/packaging` reads changed (a `pyforge-*`
+  package's `pyproject.toml`, `pixi.toml` or a Python file under its `src/`, the root `pixi.toml`, a root
+  `Containerfile*`). **Constraints:** a fix under CAP-159, with no CAP and no flag;
   no new job, workflow or ci-surfaces row; the task itself does not change. Operator direction 2026-10-25 ("want those
   steward ones done here too"). Owner `spec-pyforge-steward`. → Epic 71 / Story 71.14, specced 2026-10-25; it reopens
   Epic 71.
@@ -2099,8 +2100,8 @@ Drift — orphaned between stations.
     `preflight.py:1122`-`:1138`).
   **What it looks like when fixed:** each `ci status` row carries `latest_main_run` (the newest completed run of its
   workflow on `main`: its conclusion, time and id), an additive field of the frozen schema; `ci status` also writes the
-  envelope to the gitignored `.steward/ci-status.json`; and `pr-preflight` prints one advisory line per surface whose
-  latest `main` run did not succeed, from a snapshot under 24 hours old, under the same flag. Nothing blocks: a stale,
+  envelope to the gitignored `.steward/ci-status.json`; and `pr-preflight` prints one advisory line per red latest `main`
+  run (naming every surface that shares it), from a snapshot under 24 hours old, under the same flag. Nothing blocks: a stale,
   missing or unreadable snapshot says so in one line, and the verdict and exit code do not change. **Constraints:** a
   fix under CAP-166 ("visible in one place"), with no CAP and no flag (operator ruling 2026-10-25, "Fix, no flag
   (Recommended)"); the PR trigger option was declined ("Red-main banner (Recommended)"); no new GitHub call from the

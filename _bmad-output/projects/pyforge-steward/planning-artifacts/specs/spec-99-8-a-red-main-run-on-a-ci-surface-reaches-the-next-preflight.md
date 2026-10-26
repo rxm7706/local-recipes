@@ -2,10 +2,10 @@
 title: "99.8: A red main run on a CI surface reaches the next preflight"
 type: 'fix'
 created: '2026-10-25'
-status: 'ready-for-dev'
+status: 'in-review'
 baseline_revision: '529f06d52b6d6469b847519905c20bf528a60334'
 flag-exempt: detector-or-gate   # a fix needs no flag (spec-feature-flag-governance Q1; operator ruling 2026-10-25 "Fix, no flag (Recommended)"), and pr-preflight is a gate
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -40,12 +40,14 @@ declared_low_risk: false
   with `headBranch == "main"` and `status == "completed"`, as `{conclusion, created_at, run_id}`, or `null` when the
   listed runs hold none (and for a retired row). The schema gains that row property; the envelope stays frozen and
   additive (`additionalProperties: false` is kept by declaring it).
-- `run_status` writes the envelope it built to `.steward/ci-status.json` (gitignored), complete or partial, so any
-  `ci status`, including the one marshal's landing runs, refreshes it.
+- `run_status` writes the envelope it built to `.steward/ci-status.json` (gitignored), complete or partial and
+  atomically, so any `ci status`, including the one marshal's landing runs, refreshes it; a `.steward/` it cannot write
+  is named in the result's details and never costs the envelope.
 - `pr-preflight`, when the flag is on, reads that snapshot and prints `preflight: main is red on <id>: <conclusion>,
   run <run_id> (<created_at>)` for each row whose `latest_main_run` conclusion is not `success`, `skipped` or
-  `neutral`, one line per workflow run (rows of one workflow share it). A snapshot older than 24 hours, missing or
-  unreadable prints one line saying so. It is advisory only: lane selection, the verdict and the exit code never
+  `neutral` or `cancelled` (a run a newer push superseded says nothing about `main`), one line per workflow run (rows
+  of one workflow share it). A snapshot older than 24 hours, missing or
+  unreadable (or dated in the future) prints one line saying so, and the banner never raises. It is advisory only: lane selection, the verdict and the exit code never
   change, and the preflight makes no GitHub call.
 - A `fix` under CAP-166 ("visible in one place"): no CAP, no flag.
 
@@ -93,3 +95,33 @@ envelope field.
 
 - 2026-10-25: drafted from the Dream entry of 2026-10-25 and the 2026-10-25 atlas retro's candidate fix 3, at the
   operator's rulings "Red-main banner (Recommended)" and "Fix, no flag (Recommended)".
+- 2026-10-25: review round 1 FAIL on AC4, fixed: a call-site test (flag on and off, a red, an unreadable and an odd
+  snapshot: same lanes, same exit code), the banner never raises, the snapshot write is atomic and cannot cost the
+  envelope; `cancelled` is not red; a future `fetched_at` is not fresh; a boolean run id is not a run id. Moved to
+  `in-review`.
+
+## Run results
+
+2026-10-25, after the round-1 fixes:
+- `test_ci_status.py`, `test_preflight_ci.py`, `test_preflight.py`: pass. Mutations: removing the banner call, or
+  moving it outside the flag gate, fails `test_the_red_main_banner_never_changes_the_run` (AC4).
+- jsonschema (2020-12): the master-on fixture, a payload with the field, a row without it: valid; a malformed
+  `latest_main_run` is rejected (AC2).
+- `git check-ignore -v .steward/ci-status.json`: `.gitignore:1001` (AC3).
+- `pixi run -e pyforge-guild lint-types`: exit 0; `docs-currency` no longer warns on `pause-ci.md` (verified 2026-10-25).
+
+## Review Triage Log
+
+**Review 1 (independent, 2026-10-25): FAIL** — AC1-AC3 met, AC4 and AC5 partly. 2 must-fix, 3 should-fix, 12 nits.
+- must-fix: no test covered the call in `preflight.py`. Fixed: `test_the_red_main_banner_never_changes_the_run`.
+- must-fix: invalid UTF-8 or an unhashable row id raised out of the banner. Fixed: decode errors read as unreadable,
+  keys are strings, and `print_main_red_banner` catches anything else as one `main CI state unknown` line.
+- should-fix: an unwritable `.steward/` crashed `ci status`. Fixed: an atomic write whose `OSError` lands in
+  `details["status_snapshot_error"]`.
+- should-fix: `pause-ci.md` verified date stale. Bumped; the field, the flag gate, the rows without the field and the
+  dispatch gap are now stated.
+- should-fix (71.14's): see that spec.
+- nits fixed: `cancelled` not red; a future `fetched_at` not fresh; a boolean run id; `pull_request_target` pinned; the
+  epics `Then` and the Dream say one line per red run; the fixture is on the Surface line. Left: `--limit 20` without
+  `--branch main` (the field reads `null` for a workflow whose last 20 runs are all PR runs, as stated in the doc), and
+  a dispatched landing still skips `pr-preflight` (stated in the doc).

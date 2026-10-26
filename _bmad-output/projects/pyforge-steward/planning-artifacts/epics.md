@@ -5014,11 +5014,11 @@ So that an undeclared import, like atlas 37.7's `numpy`, is caught before it rea
 
 **Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-159 (FR-32) • reopens Epic 71 (doctor Story 41.5) • Dream 2026-10-25 (the dependency-completeness test runs on no PR) • retro-pyforge-atlas-2026-10-25 candidate fix 1 (`DW-atlas-retro-2026-10-15-4`)
 **Flag:** none (a fix, spec-feature-flag-governance Q1)
-**Surface:** `pixi.toml` (`pr-preflight-lanes`: one leg and its description note), `.github/workflows/detectors.yml` (`scripts-suite`: one step), `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_ci.py` (`touch_verdict`), its unit tests under `src/shared/packages/pyforge-steward/tests/unit/`
+**Surface:** `pixi.toml` (`pr-preflight-lanes`: one leg and its description note), `.github/workflows/detectors.yml` (`scripts-suite`: one step), `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_ci.py` (`touch_verdict`), `docs/how-to/pixi-tasks.md` (regenerated), its unit tests under `src/shared/packages/pyforge-steward/tests/unit/`
 **Spec:** `planning-artifacts/specs/spec-71-14-every-pr-runs-the-dependency-completeness-test.md`
 **Given** `529f06d52b`, where no `pr-preflight-lanes` leg and no workflow runs `pyforge-deps-test`, and `touch_verdict` maps `pyforge-ci` to no station package
 **When** a PR changes a `pyforge-*` package
-**Then** a full-scope `pr-preflight` runs `pyforge-deps-test` in `pyforge-ci`, the Detectors `scripts-suite` job runs the same task, and a touched-scope run keeps the lane when a package's `pyproject.toml`, `pixi.toml` or Python under its `src/` changed
+**Then** a full-scope `pr-preflight` runs `pyforge-deps-test` in `pyforge-ci`, the Detectors `scripts-suite` job runs the same task, and a touched-scope run keeps the lane when a path `tests/packaging` reads changed (a package's `pyproject.toml`, `pixi.toml` or Python under its `src/`, the root `pixi.toml`, a root `Containerfile*`)
 **And** doctor's `test_preflight_mirrors_scripts_suite.py` and steward's `test_pr_preflight_lanes_resolve_under_pixi.py` pass; a touched run over a diff with none of those paths still defers the lane; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
 **Status:** backlog
 
@@ -6433,11 +6433,11 @@ So that the next landing knows `main` is broken before it merges on top.
 
 **Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-166 (FR-39; "visible in one place") • reopens Epic 99 (doctor Story 41.5) • Dream 2026-10-25 (a red main run reaches no landing) • operator rulings 2026-10-25 ("Red-main banner (Recommended)", "Fix, no flag (Recommended)") • retro-pyforge-atlas-2026-10-25 candidate fix 3
 **Flag:** none (a fix, spec-feature-flag-governance Q1)
-**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/ci.py` (`_fetch_runs`, `_build_rows`, `run_status`), `src/shared/packages/pyforge-steward/src/pyforge/steward/data/ci-status-schema.json` (one additive row property), `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_ci.py` and `preflight.py` (the advisory banner), `.gitignore` (`.steward/ci-status.json`), `docs/how-to/pause-ci.md`, unit tests under `src/shared/packages/pyforge-steward/tests/unit/`
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/ci.py` (`_fetch_runs`, `_build_rows`, `run_status`), `src/shared/packages/pyforge-steward/src/pyforge/steward/data/ci-status-schema.json` (one additive row property), `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_ci.py` and `preflight.py` (the advisory banner), `.gitignore` (`.steward/ci-status.json`), `docs/how-to/pause-ci.md`, unit tests under `src/shared/packages/pyforge-steward/tests/unit/` and the checked-in `tests/fixtures/ci_status_master_on.json`
 **Spec:** `planning-artifacts/specs/spec-99-8-a-red-main-run-on-a-ci-surface-reaches-the-next-preflight.md`
 **Given** `529f06d52b`, where `ci status` reads each workflow's last 20 runs but reports only `last_green_run`, and `pr-preflight` shows pauses but nothing of `main`'s state
 **When** `steward ci status` has run in the last 24 hours and a registered surface's newest completed `main` run did not succeed
-**Then** that row's `latest_main_run` names the conclusion, time and run id, the envelope is saved to `.steward/ci-status.json`, and `pr-preflight` prints one advisory line per such surface
+**Then** that row's `latest_main_run` names the conclusion, time and run id, the envelope is saved to `.steward/ci-status.json`, and `pr-preflight` prints one advisory line per red run, naming every surface that shares it
 **And** the envelope still validates against the schema (fixtures included); a missing, stale or unreadable snapshot prints one line and nothing else; the verdict and exit code never change; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
 **Status:** backlog
 

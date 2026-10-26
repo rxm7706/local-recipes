@@ -2,10 +2,10 @@
 title: "71.14: Every PR runs the dependency-completeness test, locally and in CI"
 type: 'fix'
 created: '2026-10-25'
-status: 'ready-for-dev'
+status: 'in-review'
 baseline_revision: '529f06d52b6d6469b847519905c20bf528a60334'
 flag-exempt: detector-or-gate   # a fix needs no flag (spec-feature-flag-governance Q1), and pr-preflight is a gate, as 71.12 and 71.13 recorded
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -42,8 +42,9 @@ declared_low_risk: false
   and the same task as a step of the Detectors `scripts-suite` job (`detectors.yml:78`-`:116`, `on: pull_request`
   with no paths, `pyforge-ci` already installed). Doctor's `test_preflight_mirrors_scripts_suite.py` reds a step with no
   leg, so both land together.
-- `touch_verdict` keeps a lane whose task is `pyforge-deps-test` when a path under `src/shared/packages/pyforge-*/`
-  changed that is its `pyproject.toml`, its `pixi.toml` or a Python file under its `src/` (what the test reads).
+- `touch_verdict` keeps a lane whose task is `pyforge-deps-test` when a path `tests/packaging` reads changed: a
+  `pyforge-*` package's `pyproject.toml` or `pixi.toml`, a Python file under its `src/`, the root `pixi.toml` (three
+  of the eight files read it) or a root `Containerfile*` (two read those).
 - A `fix` under CAP-159: no CAP, no flag. No new job, workflow or ci-surfaces row; the task does not change.
 
 Ledger key: `71-14-every-pr-runs-the-dependency-completeness-test`. Type / Effort / Deps: fix / S / —.
@@ -55,11 +56,12 @@ Ledger key: `71-14-every-pr-runs-the-dependency-completeness-test`. Type / Effor
 - **AC2 — The CI step.** The Detectors `scripts-suite` job runs `pixi run --frozen -e pyforge-ci pyforge-deps-test`;
   doctor's `test_preflight_mirrors_scripts_suite.py` passes, and fails with the step and no leg.
 - **AC3 — The touched scope.** `touch_verdict` keeps the lane for a diff that changes
-  `src/shared/packages/pyforge-atlas/pyproject.toml`, a package `pixi.toml`, or a `.py` under a package's `src/`; it
-  defers the lane for a diff with none of those (a doc, a test outside `src/`, another package's README). Unit tests
-  pin each case and fail when the rule is removed.
+  `src/shared/packages/pyforge-atlas/pyproject.toml`, a package `pixi.toml`, a `.py` under a package's `src/`, the root
+  `pixi.toml` or a root `Containerfile*`; it defers the lane for a diff with none of those (a doc, a test outside
+  `src/`, another package's README, a nested Containerfile). Unit tests pin each case and fail when the rule is removed.
 - **AC4 — Nothing else moves.** Other lanes' verdicts are unchanged; `pixi run --frozen -e pyforge-steward
-  pyforge-steward-test` passes; `environment.yaml` does not change (`pyforge steward estate reconcile`).
+  pyforge-steward-test` passes; `environment.yaml` does not change (`pyforge steward estate reconcile`), and
+  `docs/how-to/pixi-tasks.md`, generated from `pixi.toml`, is regenerated.
 
 ## Boundaries & Constraints
 
@@ -86,3 +88,28 @@ touch rule.
 
 - 2026-10-25: drafted from the Dream entry of 2026-10-25 and the 2026-10-25 atlas retro's candidate fix 1, at the
   operator's direction "want those steward ones done here too".
+- 2026-10-25: review round 1: the touch rule widened to every path `tests/packaging` reads (the root `pixi.toml` and
+  root `Containerfile*` join; AC3 updated: the root `pixi.toml` now keeps the lane), and AC4 names the regenerated
+  `pixi-tasks.md`. Implemented in its own green commit (the selection oracle moved with the lane). Moved to `in-review`.
+
+## Run results
+
+2026-10-25, after the round-1 fixes:
+- `list_preflight_lanes` over the real `pixi.toml`: 38 lanes, `pyforge-deps-test@pyforge-ci` among them (AC1).
+- `test_pr_preflight_lanes_resolve_under_pixi.py` 10 passed; doctor's `test_preflight_mirrors_scripts_suite.py` 5
+  passed (AC2).
+- `test_preflight_scope.py` and `test_preflight_selection.py` pass; with the rule disabled, the kept cases fail (AC3).
+- `pyforge steward estate reconcile`: `environment.yaml` unchanged; `docs-pixi-tasks -- --check` current (AC4). Its
+  other rewrites (stamp churn on `docs/map.yaml` and `docs/reference/environments.md`, its journal, a doctor memlog line
+  and the unifying-strategy Dream's env matrix) were not this story's and were left out.
+- `pixi run -e pyforge-guild lint-types`: exit 0.
+
+## Review Triage Log
+
+**Review 1 (independent, 2026-10-25): PASS** with should-fixes; all fixed.
+- should-fix: `docs/how-to/pixi-tasks.md` stale after the `pixi.toml` edit. Regenerated.
+- should-fix: the 71.14 commit was red alone (the selection oracle gained the lane only in the 99.8 commit). The branch
+  was rebuilt so 71.14's commit carries its oracle and formatting.
+- should-fix: the touch rule modelled one of the eight files the task runs. Widened (root `pixi.toml`, root
+  `Containerfile*`).
+- nit: the Detectors step was named for one test; renamed `tests/packaging (pyforge-deps-test)`.
