@@ -188,7 +188,7 @@ def _fr_tree(tmp_path: Path) -> Path:
     root = tmp_path / "repo"
     _roster(root)
     d = _spec(root, "pyforge-marshal", "spec-pyforge-marshal", status="ready")
-    (d / "SPEC.md").write_text("---\nstatus: ready\n---\n- **CAP-1 — a.**\n- **CAP-2 — b.**\n")
+    (d / "SPEC.md").write_text("---\nstatus: ready\n---\n- **CAP-1 — the same line thing.**\n- **CAP-2 — b.**\n")
     d2 = _spec(root, "pyforge-marshal", "spec-closed", status="archived")
     (d2 / "SPEC.md").write_text("---\nstatus: archived\n---\n- **CAP-99 — gone.**\n")
     _prd(root, "pyforge-marshal", "## FR-1: old thing\nno citation, pre-rule\n")
@@ -289,11 +289,14 @@ def test_live_tree_chain_sprawl_has_no_fail_at_ruling_snapshot() -> None:
 
 
 def test_live_tree_fr_without_cap_has_no_fail_at_ruling_snapshot() -> None:
+    """No FAIL on this checkout: every structural finding the tree still
+    carries is keyed in fr-baseline.json `findings` (Story 50.1 ratchet)."""
     root = _live_root()
     findings = one_chain.gather_fr_without_cap(root)
     fails = [f for f in findings if f.status is DoctorStatus.FAIL]
     assert not fails, [f.message for f in fails]
     assert not any(f.check == "fr-without-cap-no-baseline" for f in findings)
+    assert not any(f.check == "fr-baseline-stale" for f in findings), "prune fr-baseline.json"
 
 
 def test_live_roster_declares_the_closed_list() -> None:
