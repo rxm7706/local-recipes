@@ -2121,6 +2121,37 @@ Drift — orphaned between stations.
   in one PR". Owner `spec-pyforge-steward`. → Epic 110 / Story 110.1, specced 2026-10-25. **Amended the same day (the
   independent review; operator ruling "Apply all (Recommended)"):** FR-8..FR-11 also cite CAP-168, whose intent
   names them as what its `pages` duty replaces.
+- **2026-10-25 (a landed workspace that holds a run journal never deletes) — Found: `clean --delete` reports a merged
+  workspace `not-merged` when its worktree holds Tier-3 files.** Found while cleaning up Stories 71.14 and 99.8's
+  landing workspace, `steward workspace start chain-steward-retro-fixes` (source `origin/main`). Its tip `b89f2bb1e0`
+  merged to `main` as `fd06415e4d` (#2318) and its tree was clean, yet `status` read `clean ahead=0 behind=1 merged`
+  and `clean chain-steward-retro-fixes --delete` printed `skipped chain-steward-retro-fixes (not-merged)`. Read at
+  `fd06415e4d` in `src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py`:
+  - **The two checks are not the same check.** `status`'s merged flag (`:690`) and `--delete`'s first landing check
+    (`:1471`) both ask `_branch_landed`, and both said yes. `--delete` then asks CAP-157's whole proof
+    (`_landed_note_body`, `:1473`) and reports every way that proof fails as `not-merged`.
+  - **The proof failed on Tier-3 work, not on a landing.** The proof refuses a real (not symlinked) git-ignored
+    path under `_bmad-output/` (`:1296`-`:1299`). The worktree held one:
+    `_bmad-output/projects/pyforge-steward/implementation-artifacts/runs/pyforge-steward-20261026T020019707Z-2912f28b/journal.jsonl`,
+    written at 21:00 local, after the merge, by `marshal dispatch_land_finalize` (the documented hand-landing step,
+    given the workspace's path). A steward workspace has no `implementation-artifacts` backlink (`start_workspace`
+    runs only `git worktree add`), so the journal made a real directory there. A dispatch worktree's backlink would
+    have sent it to the main checkout's shared store, beside that store's other `runs/`.
+  - **The other suspects are not the cause.** The pixi environments under the worktree's `.pixi/` are ignored but
+    are not under `_bmad-output/`, and `refs/remotes/origin/main` named `fd06415e4d`. In a scratch repository a
+    landed workspace with `.pixi/envs/` deletes, adding one ignored `implementation-artifacts/runs/<id>/journal.jsonl`
+    makes it `not-merged`, and removing that file makes it delete again.
+  So every workspace landed by hand and then finalized stays undeletable, and the reason it gives is wrong.
+  **What it looks like when fixed:** `--delete` moves the Tier-3 files it finds into the same paths in the main
+  checkout's shared Tier-3 store (the first worktree `git worktree list` names, when it is a checkout), where a
+  backlinked worktree would have written them, and then deletes the workspace. It never overwrites: when any file already exists there,
+  or there is no main checkout to receive it, the workspace is skipped with a reason that names the file. Every
+  other proof failure is reported by its own name (a submodule, a per-worktree ref, an unreadable HEAD, a listing
+  that fails); `not-merged` stays for a HEAD or branch that is not on a landing ref. **Constraints:** a fix under
+  CAP-107 and CAP-157, with no CAP and no flag. CAP-157's proof for the `.landed.txt` note does not change, nor do
+  the default `clean`, `--merged-only`, `status` and `ls`. The landing step and `start_workspace` do not change.
+  Found by the session that landed #2318. Owner `spec-pyforge-steward`. → Epic 13 / Story 13.7, specced 2026-10-25;
+  it reopens Epic 13.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

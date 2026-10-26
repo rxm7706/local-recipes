@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: fe46c86c3911f26a
-story_count: 394
-test_file_count: 141
+source_fingerprint: 29315a2a31d59187
+story_count: 395
+test_file_count: 142
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 394
+- **Stories parsed:** 395
 - **Epics parsed:** 109
-- **Test files inventoried:** 141 under `src/shared/packages/pyforge-steward/tests/`
+- **Test files inventoried:** 142 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `fe46c86c3911f26a`
+- **Source fingerprint:** `29315a2a31d59187`
 
 ## Risk Assessment
 
@@ -285,6 +285,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_upgrade_reconcile.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_clean_delete.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_workspace_delete_tier3.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_edges.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_full_refs.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_preserve_tag.py` | unit | none observed |
@@ -362,6 +363,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 13.4 | The set reports and tears down safely | none observed |
 | 13.5 | `workspace clean --delete` removes a gone or landed workspace without a promp... | none observed |
 | 13.6 | A workspace started from another branch is landed once its branch is on main | none observed |
+| 13.7 | A landed workspace that holds Tier-3 files deletes, and keeps the files | none observed |
 | 14.1 | The pre-flight diff retrodicts a real upgrade | none observed |
 | 14.2 | Apply is deliberate, branched, and never clobbers custom | none observed |
 | 14.3 | Clobbered custom surfaces are caught and re-applied | none observed |

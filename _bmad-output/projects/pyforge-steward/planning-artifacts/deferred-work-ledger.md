@@ -6638,3 +6638,14 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-10-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-steward-13-7: clean --delete drops a landed workspace's pre-push skip journal (.steward/preflight-skips.log) with the worktree, where the default clean copies its lines into the .landed.txt note; it needs a ruling on where a deleted workspace's skip lines belong (main checkout's journal, the clean output, or nowhere once CI ran).
+
+- source_spec: `planning-artifacts/specs/spec-13-7-a-landed-workspace-that-holds-tier-3-files-deletes-and-keeps-the-files.md`
+  summary: clean --delete drops a landed workspace's pre-push skip journal (.steward/preflight-skips.log) with the worktree, where the default clean copies its lines into the .landed.txt note; it needs a ruling on where a deleted workspace's skip lines belong (main checkout's journal, the clean output, or nowhere once CI ran).
+  evidence: Found at Story 13.7's review round 1 (pre-existing: fd06415e4d does the same; Story 13.5 ruled --delete leaves no note). A landed workspace's skipped pushes were arbitrated by CI on its merged PR, so the lines are audit history, not open debt; steward preflight verify-deferred reads the journal of the checkout it runs in.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
+  origin: spec-deferred d61af282ae99 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-25 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
