@@ -1697,6 +1697,25 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   `SPEC.md` by script from the memlog decision; no flag; no FR text change; no detector rule change. Operator ruling,
   2026-10-25: "Restore 4 marshal CAPs (Recommended)". Owner `spec-pyforge-marshal`. → Epic 106 / Story 106.2, specced
   2026-10-25.
+- **2026-10-25 (the refresh writes keys the ledger does not carry)** — **Found: `marshal refresh` fills every Tier-3
+  feed with second copies of finished stories.** Its `sync_status` step regenerates each station's shared
+  `implementation-artifacts/sprint-status.yaml` from `epics.md` through `sprint_plan.py generate`. That script's
+  `_slug` cuts a title at 60 characters and keeps `_` and non-ASCII letters; the tracked ledger's keys come from
+  doctor's `chain.slugify_title` (Ruling 12), which does neither. So every long or unusual title gets a second key at
+  `backlog` beside the ledger's `done` one. The 04:21 refresh on 2026-10-25 wrote 550 such keys across the eight
+  feeds (marshal 213, steward 122, doctor 83, mason 36, herald 33, warden 30, atlas 27, scribe 6). A `bmad-loop` spin
+  reads that feed, so it sees finished stories as actionable work. The post-merge `sprint-ledger-sync` of #2319 then
+  copied them into six tracked ledgers and knocked 179 epics back to `in-progress`. Nothing was committed; the feeds
+  were cleaned by hand. The 14 steward duplicates found on 2026-09-25 had the same shape. **What it looks like when
+  fixed:** `marshal refresh` brings the feed into step with the tracked ledger instead of re-deriving keys. Ledger keys
+  the feed lacks are added; the ledger's `done` and `blocked` values win; a story the feed has advanced keeps the
+  feed's value; a key whose story number the ledger carries under another slug is dropped and named. A bare sync drops
+  and names the same keys before it promotes, so a stale feed cannot add one to a tracked ledger. **Constraints:** a
+  fix under CAP-265 (the hand sync repairs feed drift itself) and CAP-132 / CAP-134 (the fleet refresh and its checked
+  steps), with no CAP and no flag. `sprint_plan.py` is installer-owned and stays unchanged. A story re-key still goes
+  through `--rekey`. **Kinships:** Story 54.1 (CAP-265), Story 15.1 (the refresh). Operator direction, 2026-10-25:
+  "Do this task here: Find what writes truncated slugs into Tier-3 feeds". Owner `spec-pyforge-marshal`. → Epic 107 /
+  Story 107.1, specced 2026-10-25.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint
