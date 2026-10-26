@@ -188,7 +188,7 @@ def _fr_tree(tmp_path: Path) -> Path:
     root = tmp_path / "repo"
     _roster(root)
     d = _spec(root, "pyforge-marshal", "spec-pyforge-marshal", status="ready")
-    (d / "SPEC.md").write_text("---\nstatus: ready\n---\n- **CAP-1 — the same line thing.**\n- **CAP-2 — b.**\n")
+    (d / "SPEC.md").write_text("---\nstatus: ready\n---\n- **CAP-1 — a.**\n- **CAP-2 — b.**\n")
     d2 = _spec(root, "pyforge-marshal", "spec-closed", status="archived")
     (d2 / "SPEC.md").write_text("---\nstatus: archived\n---\n- **CAP-99 — gone.**\n")
     _prd(root, "pyforge-marshal", "## FR-1: old thing\nno citation, pre-rule\n")
@@ -215,8 +215,10 @@ def test_fr_new_without_citation_fails(tmp_path: Path) -> None:
 def test_fr_new_with_resolving_citation_same_line_or_first_body_line(tmp_path: Path) -> None:
     root = _fr_tree(tmp_path)
     _prd(root, "pyforge-marshal", "## FR-1: old\n\n## FR-2: same line ← CAP-1\n\n- **FR-3** new\n  ← CAP-2\n")
-    (f,) = one_chain.gather_fr_without_cap(root)
+    by = _by_check(one_chain.gather_fr_without_cap(root))
+    (f,) = by["fr-without-cap"]  # the advisory no-title-overlap WARN rides beside it
     assert f.status is DoctorStatus.OK and f.evidence["new_frs"] == 2
+    assert not any(x.status is DoctorStatus.FAIL for xs in by.values() for x in xs)
 
 
 def test_fr_citation_to_closed_or_absent_cap_is_unresolved(tmp_path: Path) -> None:

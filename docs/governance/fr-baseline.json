@@ -3,10 +3,12 @@
     "fr-without-cap baseline (doctor Stories 25.2 and 50.1, spec-one-chain-per-station CAP-5).",
     "`projects`: per station, the FR/NFR ids whose definition carried NO citation when snapshotted --",
     "a missing arrow on an id listed here is never a finding; an id with an arrow is enforced forever,",
-    "so the list only shrinks (`--prune` drops ids that gained an arrow; `--project pyforge-<s>` re-snapshots",
-    "one station at its fold PR). `findings`: per station, the structural findings (`<check>:<FR-id>`)",
-    "present at `findings_sha` -- reported as fr-baselined, never FAIL; a key that stopped firing is WARN",
-    "fr-baseline-stale until `--prune` removes it. `--snapshot-findings` rewrites the map, never adds by hand."
+    "so the list only shrinks (`--project pyforge-<s>` re-snapshots one station at its fold PR).",
+    "`findings`: per station, the structural findings (`<check>:<FR-id>`) present at `findings_sha` --",
+    "reported as fr-baselined, never FAIL. Either entry that stopped applying is WARN fr-baseline-stale",
+    "until `--prune` (the only routine verb) removes it. `--snapshot-findings` is a one-time act: it is",
+    "refused once `findings` exists, and `--force` is for a review that names each ADDED key in its PR.",
+    "`owners`: hand-maintained -- the story that owns what each station still carries here."
   ],
   "ruling_sha": "e630e43330",
   "projects": {
@@ -118,7 +120,7 @@
     "pyforge-scribe": [],
     "pyforge-steward": [],
     "pyforge-warden": [
-      "FR9",
+      "FR30",
       "NFR-C1",
       "NFR-I1",
       "NFR-I2",
@@ -136,19 +138,46 @@
       "NFR-S8",
       "NFR-S9",
       "NFR-U1",
-      "NFR-U2"
+      "NFR-U2",
+      "FR-NEW-A",
+      "FR-NEW-B",
+      "FR-NEW-C",
+      "FR-NEW-D",
+      "FR-NEW-E",
+      "FR-NEW-F",
+      "NFR-P-cold",
+      "NFR-P-concurrency",
+      "NFR-P-warm",
+      "NFR-R3a",
+      "NFR-R3b"
     ]
   },
   "rebaselined": {
-    "pyforge-marshal": "92fa3edbbd6ccc0bab6b4d87af5a161a334b8b9a",
-    "pyforge-steward": "92fa3edbbd6ccc0bab6b4d87af5a161a334b8b9a",
-    "pyforge-atlas": "92fa3edbbd6ccc0bab6b4d87af5a161a334b8b9a",
-    "pyforge-doctor": "92fa3edbbd6ccc0bab6b4d87af5a161a334b8b9a",
-    "pyforge-scribe": "92fa3edbbd6ccc0bab6b4d87af5a161a334b8b9a",
-    "pyforge-herald": "92fa3edbbd6ccc0bab6b4d87af5a161a334b8b9a",
-    "pyforge-mason": "92fa3edbbd6ccc0bab6b4d87af5a161a334b8b9a",
-    "pyforge-warden": "92fa3edbbd6ccc0bab6b4d87af5a161a334b8b9a"
+    "pyforge-marshal": "c4292d3501f7c6200db214a7d1d635d23218a980",
+    "pyforge-steward": "c4292d3501f7c6200db214a7d1d635d23218a980",
+    "pyforge-atlas": "c4292d3501f7c6200db214a7d1d635d23218a980",
+    "pyforge-doctor": "c4292d3501f7c6200db214a7d1d635d23218a980",
+    "pyforge-scribe": "c4292d3501f7c6200db214a7d1d635d23218a980",
+    "pyforge-herald": "c4292d3501f7c6200db214a7d1d635d23218a980",
+    "pyforge-mason": "c4292d3501f7c6200db214a7d1d635d23218a980",
+    "pyforge-warden": "c4292d3501f7c6200db214a7d1d635d23218a980"
   },
+  "owners": {
+    "pyforge-atlas": [
+      "41.2 (fr-duplicate-id: the Unity and Wasm satellite sections re-define FR-1..FR-22)",
+      "41.3 (arrowless NFR lines and the satellites' first-defined FR-23..FR-60)"
+    ],
+    "pyforge-marshal": [
+      "108.2 (arrowless NFR lines)"
+    ],
+    "pyforge-mason": [
+      "33.2 (arrowless NFR lines)"
+    ],
+    "pyforge-warden": [
+      "20.2 (arrowless NFR lines; fr-id-unhyphenated and fr-id-malformed ids)"
+    ]
+  },
+  "findings_sha": "c4292d3501f7c6200db214a7d1d635d23218a980",
   "findings": {
     "pyforge-atlas": [
       "fr-duplicate-id:FR-1",
@@ -181,10 +210,20 @@
     "pyforge-scribe": [],
     "pyforge-steward": [],
     "pyforge-warden": [
+      "fr-id-malformed:FR-NEW-A",
+      "fr-id-malformed:FR-NEW-B",
+      "fr-id-malformed:FR-NEW-C",
+      "fr-id-malformed:FR-NEW-D",
+      "fr-id-malformed:FR-NEW-E",
+      "fr-id-malformed:FR-NEW-F",
+      "fr-id-malformed:NFR-P-cold",
+      "fr-id-malformed:NFR-P-concurrency",
+      "fr-id-malformed:NFR-P-warm",
+      "fr-id-malformed:NFR-R3a",
+      "fr-id-malformed:NFR-R3b",
+      "fr-id-unhyphenated:FR30",
       "fr-id-unhyphenated:FR33",
-      "fr-id-unhyphenated:FR35",
-      "fr-id-unhyphenated:FR9"
+      "fr-id-unhyphenated:FR35"
     ]
-  },
-  "findings_sha": "92fa3edbbd6ccc0bab6b4d87af5a161a334b8b9a"
+  }
 }
