@@ -116,6 +116,20 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
 
 ## Realization log
 
+- **2026-10-25 (the PRD's FR arrows were mapped by section, not traced) — Found: eight of the herald PRD's
+  `FR-n ← CAP-m` arrows name the wrong capability.** A fleet audit of every station PRD's arrows, run after marshal
+  Story 105.1 found marshal's arrows counted rather than traced, read all 48 herald arrows against their capabilities.
+  The 2026-09-17 fold (`4251c42229`) gave each feature group one capability. Three groups got the wrong one: the Moments
+  CLI (FR-1.1..FR-1.3) reads CAP-1, the deck CLI; the web surface (FR-2.1, FR-2.3) reads only CAP-3, the visual
+  identity; and evidence linking (FR-6.1..FR-6.3) reads CAP-11, whose success has no evidence clause. The 2026-10-10
+  PRD section had already corrected FR-7.1..FR-7.4 for the same cause. Doctor's `fr-without-cap` only checks that a
+  cited CAP exists, and herald's dotted FR ids are not read at all, so nothing noticed. **What it looks like when
+  fixed:** FR-1.1..FR-1.3 and FR-2.3 read CAP-11, CAP-12, CAP-13 (before the fold, the Spec's HER-11..HER-13
+  constraints said all three Moments integrate with the Herald CLI and web surface); FR-2.1 reads CAP-3 and those
+  three; FR-6.1..FR-6.3 read CAP-12 and CAP-13, whose successes require evidence links. **Constraints:** a chore under
+  `spec-one-chain-per-station` CAP-5 (FRs derive from CAPs) and CAP-3 (the station fold procedure); no CAP, no flag, no
+  `SPEC.md` change; no detector rule changes. Operator rulings, 2026-10-25: "Do rows 1-5 in one PR" and "CAP-11..13
+  (Recommended)" for FR-1.x and FR-2.x. Owner `spec-pyforge-herald`. → Epic 46 / Story 46.1, specced 2026-10-25.
 - **2026-10-16 (the built-site tests skip silently) — Found: herald's 25 built-site tests run only where
   `docs-site/node_modules` already happens to exist.** Steward Story 105.1 named it as residual risk. A diff that
   touches only herald does not fire `pages.yml`, so `pr-preflight` never selects `docs-site-install`. CI's herald job
