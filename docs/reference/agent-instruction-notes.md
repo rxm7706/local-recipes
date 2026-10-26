@@ -28,6 +28,28 @@ The bullet stays in `AGENTS.md` § *Team memory*; its evidence clause read:
      `CAP-1..4` nothing defined, no tracked story spec and no station memlog entry; the review
      folded it into `spec-pyforge-steward` CAP-146..149 / Epic 65 and archived the extra Dream.
 
+### Pre-PR checklist items 6 and 7: the FR-arrow incident (counted, not traced)
+
+   - Live incident (the 2026-09-16/17 one-chain folds, PRs #1382 and #1409–#1414): the PRD
+     `FR-n ← CAP-m` arrows were written by counting (`FR-n ← CAP-n` on atlas; one capability per
+     feature section on herald, mason and warden; none on steward's FR-1..FR-31 or marshal's
+     seed installer) instead of traced from each capability's intent and success. Found by the
+     2026-10-25 fleet audit after marshal Story 105.1 (#2314); re-traced by atlas 39.1 (#2316)
+     and the five-station PR #2319 (herald 46.1, mason 32.1, warden 19.1, steward 110.1,
+     marshal 106.1/106.2, atlas 40.1). The re-audit of 2026-10-26 then found eight requirements
+     citing a Spec Constraint or the Charter instead of a capability (allowed by the 2026-10-25
+     "cite the constraint" rulings), the folds' own damage to the Spec text the arrows point at
+     (167 placeholder titles, cut intent/success bullets), a detector that only checked that a
+     number existed, 82 NFR lines citing nothing, and atlas's satellite FR ids colliding with the
+     kernel's. Operator ruling 2026-10-26: "yes forbid it" — a requirement cites defined CAPs
+     only; a Constraint reaches code through an AD. The rule is `spec-one-chain-per-station`
+     CAP-5 as amended, CHAIN-STANDARD § 2, § 6 and § 12; the gate is doctor `fr-without-cap`
+     (CAP-92, Story 50.1); the harness layers are `_bmad/custom/bmad-prd.toml`,
+     `bmad-spec.toml`, `bmad-architecture.toml` (`persistent_facts`) and the `fr-arrow` review
+     lens in `bmad-build.toml`. Item 7's multi-station-PR bullet records the shape #2240 and
+     #2319 set: one PR, one story per station on its own chain, every key promoted inside the
+     PR, one merge subject.
+
 ### Dream-first workflow item 5: the incident
 
    the dev/review loop and retro triggers this repo relies on actually fire. Incident:

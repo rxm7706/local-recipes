@@ -99,26 +99,35 @@ serves.
   - **intent:** A team can turn findings into pull requests without the tool ever writing to their working tree.
   - **success:** `--open-fix-prs` runs strictly post-verdict with environment-supplied credentials, opening upgrade and removal pull requests through the forge API only; a failed PR-open never alters the verdict or exit code — it lands in the report's `actuation` section, outside status and exit composition; and `--fix-prs-dry-run` shares the real code path up to the egress seam while opening no sockets.
 - **CAP-13 — SourceContract + identity API** ← spec-package-inventory-eligibility CAP-1 (shipped 2026-08-22)
+  - **intent:** SourceContract adapters (fetch/parse/validate/ingest; feeds.py's proven shape generalized) + the identity API (inventory.py's Component identity exposed adapter-facing); CAP-2 eligibility-union with ProvenanceEntry trails and the NEW vocabulary (eligible-union/observed-in-use/flagged-for-review — distinct from Status verdicts); CAP-3 CycloneDX output via sbom.py + FABRIC's 13x6 manifest corpus adopted as fixtures (Apache-2.0, notices kept). Sibling org's same-name dream = pattern reference only (unlicensed)
+  - **success:** two heterogeneous sources ingest without touching the union core; `scikit_learn`/`sklearn` collapse to one identity.
 - **CAP-14 — eligibility-union + provenance** ← spec-package-inventory-eligibility CAP-2 (shipped 2026-08-22)
+  - **intent:** Union over required-authority sources; every result carries ProvenanceEntry trails (source + timestamp); the new vocabulary (`eligible-union`/`observed-in-use`/`flagged-for-review`) stays distinct from `models.py`'s Status rungs.
   - **success:** an answer is reproducible from its own provenance alone.
 - **CAP-15 — CycloneDX out + the corpus in** ← spec-package-inventory-eligibility CAP-3 (shipped 2026-08-22)
+  - **intent:** Output through `sbom.py`'s renderer + purl discipline; FABRIC's 13-archetype × 6-format manifest corpus adopted as fixtures (Apache-2.0, notices kept).
+  - **success:** deterministic CycloneDX; the corpus exercises every adapter.
 - **CAP-16 — the service skeleton** ← spec-compliance-factory-web-face CAP-1 (shipped 2026-08-22)
+  - **intent:** manifest upload (safe-loader validation), async Celery execution calling the EXISTING warden/atlas engines, keys-not-blobs; CAP-2 results: SBOM + vuln/license/currency reports rendered from engine output, derived progress (FABRIC _phase_guard pattern — no phase chooses its own number). FABRIC is the Apache-2.0 shape reference; engines never reimplemented
+  - **success:** an uploaded pixi.lock returns a job id and completes against the real engines.
 - **CAP-17 — results + derived progress** ← spec-compliance-factory-web-face CAP-2 (shipped 2026-08-22)
+  - **intent:** SBOM + vulnerability/license/currency reports rendered from engine output; progress derived from phase position (`_phase_guard` pattern — no phase chooses its own number).
+  - **success:** progress is monotonic by construction; reports match the CLI engines byte-for-byte on the same input.
 - **CAP-18 — environment-scoped lockfile extraction** ← spec-golden-path-conda-blind-spot CAP-1 (shipped 2026-09-09)
-  - **intent:** Warden extracts exactly the packages one named pixi environment
-  - **success:** scanning this repo's root `pixi.lock` scoped to
+  - **intent:** Warden extracts exactly the packages one named pixi environment resolves for one platform from a multi-environment `pixi.lock`, instead of the union of everything the file ever resolved.
+  - **success:** scanning this repo's root `pixi.lock` scoped to `python-agent-platform` /`linux-64` yields the same set as that environment's `packages.linux-64` list in the lock (count, names, versions), with no other environment's exclusive packages; the unscoped call (`environment=None`, `platform=None`) keeps today's union behaviour and emits a structured WARNING naming the environment count.
 - **CAP-19 — the promotion scans the shipped closure** ← spec-golden-path-conda-blind-spot CAP-2 (shipped 2026-09-09)
-  - **intent:** `golden-path-promotion` scans the resolved
-  - **success:** the promotion record's components equal the CAP-1 set, every
+  - **intent:** `golden-path-promotion` scans the resolved `python-agent-platform` environment out of the root `pixi.lock` — the thing built into the image — not a bare `pixi.toml` in a scratch dir.
+  - **success:** the promotion record's components equal the CAP-1 set, every component carries a locked version (no `NO_VERSION` from an unresolved manifest), and the scratch-dir staging is gone.
 - **CAP-20 — the offline OSV database is provisioned in CI** ← spec-golden-path-conda-blind-spot CAP-3 (shipped 2026-09-09)
-  - **intent:** the promotion job runs with a real, provenance-bearing offline
-  - **success:** `OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY` points at a populated
+  - **intent:** the promotion job runs with a real, provenance-bearing offline OSV database, provisioned by the mechanism the Story 1.4 decision record already accepted, so the vulnerability axis assesses every identity-resolved component.
+  - **success:** `OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY` points at a populated `<cache>/osv-scanner/PyPI/all.zip` with a recorded `snapshot_at`, provisioned by osv-native `--download-offline-databases` on the connected runner and held in an `actions/cache` keyed by the snapshot date; the record's vulnerability axis reports assessed > 0; a DB older than `db-max-age` (7 days, strict) or without provenance routes the verdict to `indeterminate`, never `clean`.
 - **CAP-21 — the verdict is honest and specific** ← spec-golden-path-conda-blind-spot CAP-4 (shipped 2026-09-09)
-  - **intent:** `warden_status` is `clean` only when the shipped closure's
-  - **success:** on a not-clean verdict the record names the unassessed
+  - **intent:** `warden_status` is `clean` only when the shipped closure's conda+pypi identity is scanned end to end; anything short of that is `indeterminate` /`warn` with a nameable gap, never a permanent architectural `indeterminate`.
+  - **success:** on a not-clean verdict the record names the unassessed components and the reason (`UNMAPPED_ECOSYSTEM`, stale DB, missing DB); a deliberately pinned vulnerable version in the environment flips the record to a failing rung that names the finding. Coverage is not a separate gate: no `--fail-under-coverage` floor is added, because an unassessed component cannot reach `clean` under this Spec's first Constraint.
 - **CAP-22 — deploy gates on the verdict (already true on main — preserve)** ← spec-golden-path-conda-blind-spot CAP-5 (shipped 2026-09-09)
-  - **intent:** `platform-deploy` promotes a digest only when its recorded
-  - **success:** the verifier refuses `indeterminate` / `warn` / `fail` and a
+  - **intent:** `platform-deploy` promotes a digest only when its recorded verdict is `clean` (shipped in `1016f4e763`; this spec keeps it).
+  - **success:** the verifier refuses `indeterminate` /`warn` /`fail` and a missing record, accepts `clean`, names the driver finding id, and a test fails if the `!= 'clean'` refusal is removed. `clean` is the only promotable rung — a `warn` is never promotable, waiver or not.
 - **CAP-23 — the TEA advisory reviews the diff from the remote-tracking ref** ← spec-pyforge-warden CAP-23 (ready 2026-09-27)
   - **intent:** `tea_advisory` passes `--base refs/remotes/origin/main` to TEA's `tea-test-review`,
     whose CLI diffs `<base>...HEAD`; a local branch or tag named `origin/main` at HEAD no longer

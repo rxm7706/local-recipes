@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: mason
-# stories: 179
+# stories: 183
 development_status:
   1-1-workspace-member-scaffold-and-dual-artifact-build: done
   1-10-configuration-surface-logging-and-child-output-streaming: done
@@ -111,6 +111,8 @@ development_status:
   30-1-recipes-that-import-playwright-depend-on-playwright-python: done
   31-1-the-fleet-picture-attention-test-stubs-the-ci-pause-probe: done
   32-1-every-mason-prd-fr-arrow-names-the-spec-capability-that-realizes-it: done
+  33-1-the-mason-spec-s-fold-cut-capability-text-is-restored: in-progress
+  33-2-every-mason-nfr-names-the-capabilities-it-bounds: backlog
   4-1-lock-engine-adapter-and-provenance: done
   4-2-manifest-discovery: done
   4-3-mason-environment-lock: done
@@ -181,6 +183,8 @@ development_status:
   epic-31-retrospective: optional
   epic-32: done
   epic-32-retrospective: optional
+  epic-33: in-progress
+  epic-33-retrospective: optional
   epic-4: done
   epic-4-retrospective: optional
   epic-5: done

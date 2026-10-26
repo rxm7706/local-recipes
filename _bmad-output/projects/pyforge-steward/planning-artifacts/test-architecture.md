@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 29315a2a31d59187
-story_count: 395
+source_fingerprint: 64e84d18c732af5e
+story_count: 396
 test_file_count: 142
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 395
-- **Epics parsed:** 109
+- **Stories parsed:** 396
+- **Epics parsed:** 110
 - **Test files inventoried:** 142 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `29315a2a31d59187`
+- **Source fingerprint:** `64e84d18c732af5e`
 
 ## Risk Assessment
 
@@ -135,6 +135,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 107: The preflight refuses a stranded lane, and its serial reference resolves under pixi (fix under spec-pyforge-steward CAP-159; no CAP)
 - Epic 108: `estate reconcile` and `ci status` report what happened (fixes under spec-pyforge-steward CAP-167 and CAP-166; no CAP)
 - Epic 110: The steward PRD's first 31 FRs name the capabilities the Spec carries
+- Epic 111: The steward Spec's capability text is whole again, and the foundry inherits the amended rule (spec-one-chain-per-station CAP-5 amended, CAP-7)
 
 ### Low-risk epics
 
@@ -692,6 +693,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 107.1 | A stranded preflight lane is refused, and pr-preflight-lanes resolves under pixi | none observed |
 | 108.1 | `estate reconcile` reds on a failed generator, and a retired CI row is never ... | none observed |
 | 110.1 | Every steward PRD FR arrow names the Spec capability that realizes it | none observed |
+| 111.1 | The steward Spec's fold-cut capability text is restored, and the foundry inhe... | none observed |
 
 ## Quality Gates
 

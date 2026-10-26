@@ -4,7 +4,7 @@
 # verified-in-foundry is a claim on a rebuild row (needs a 54.1 case-list id), not a mode.
 # Do not flip 44.1 or any Epic 44 blocked key.
 schema: pyforge.capability-ledger/v0
-updated: "2026-09-25"
+updated: "2026-10-26"
 source_sha: d81e55d288d7d997ee970ee89cce7c447db33be8
 extract: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-capability-ledger/extract.md
 modes:
@@ -5051,6 +5051,13 @@ capabilities:
     heading: "the vscode-kedro adopt-or-defer decision is recorded"
     mode: rebuild
     path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  # 2026-10-26 minted by atlas Story 41.1 from the Constraint "Conda-forge-only, pixi-managed, py3.14-floored provisioning" (operator ruling: a requirement cites capabilities only); FR-15 <- CAP-72
+  - id: pyforge-atlas:CAP-72
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "every atlas component provisions from conda-forge through pixi on the 3.14 floor, air-gapped"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
   - id: pyforge-mason:CAP-1
     spec: pyforge-mason
     station: pyforge-mason
@@ -5811,6 +5818,19 @@ capabilities:
     spec: pyforge-doctor
     station: pyforge-doctor
     heading: "a stalled Pages deploy is named within a day"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  # 2026-10-26 minted by doctor Story 50.1 (fr-without-cap upgraded; spec-one-chain-per-station CAP-5 as amended) and CAP-93 from PRD FR-15 (Doctor holds the verdict for every conformance detector; no capability carried it)
+  - id: pyforge-doctor:CAP-92
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "every requirement arrow resolves to a defined capability, and a counted run is named"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-93
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "Doctor holds the verdict for every conformance detector"
     mode: rebuild
     path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
   - id: pyforge-herald:CAP-1

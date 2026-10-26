@@ -1,0 +1,13 @@
+# Team override for bmad-prd — local-recipes / PyForge estate.
+# Personal overrides go in bmad-prd.user.toml (gitignored).
+#
+# Marshal Story 108.1 (spec-one-chain-per-station CAP-5 as amended 2026-10-26;
+# CHAIN-STANDARD § 2, § 6, § 12): the requirement-arrow mandate lives under
+# [workflow] persistent_facts, never in installer-owned SKILL.md — the same
+# placement marshal Story 74.3 gave the feature-flag mandate.
+
+[workflow]
+
+persistent_facts = [
+  "Requirement arrows (PRD author): every requirement this PRD mints or re-derives — `FR-n`, `NFR-n`, or a lettered NFR family such as `NFR-C2` — names the capability that realizes or bounds it as `← CAP-m` (or `← spec-<x> CAP-m` for another Spec's capability), and nothing else. Trace the arrow from that CAP's intent and success in the station Spec (`spec-pyforge-<s>/SPEC.md`); never number arrows in sequence, never cite a Spec Constraint, a Charter clause, an AD or a decision id. A Constraint that promises something a user or operator can see is first minted as a CAP through `bmad-spec`; a line that only says how something is built is not a requirement and goes in the PRD's Constraints and Guardrails section naming its AD. Ids are hyphenated (`FR-33`, never `FR33`) and defined once per PRD. Doctor `fr-without-cap` fails a non-CAP arrow, an unresolved cite, an unhyphenated or duplicate id and a counted run (`docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md` § 12).",
+]

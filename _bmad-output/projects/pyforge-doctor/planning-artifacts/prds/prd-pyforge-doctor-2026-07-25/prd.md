@@ -1,7 +1,7 @@
 ---
 title: Doctor (pyforge-doctor)
 created: 2026-07-25
-updated: '2026-10-24'   # RE-STAMPED 2026-10-24: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-24 entries (Story 30.4 minted and promoted done, a fix under FR-17 / CAP-84 and CAP-42: the docs, Dream and planning warn backlog); no FR registered. See § Currency reconciliation — 2026-10-24. Prior '2026-10-22'   # RE-STAMPED 2026-10-22: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-22 entries (Story 45.3 minted done, a test-only fix under FR-22 / CAP-89); no FR registered. See § Currency reconciliation — 2026-10-22. Prior '2026-10-17'   # RE-STAMPED 2026-10-17: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-14..17 entries (Story 49.1 minted, a fix under FR-15; co-governor surface reconciles); no FR registered. See § Currency reconciliation — 2026-10-17. Prior '2026-10-14'   # RE-STAMPED 2026-10-14 (Pages site): chain-currency cascade (spec -> PRD) for FR-23 / CAP-90 and FR-24 / CAP-91 (Epic 48, the Pages site registry and the pages-liveness source); FR-23 and FR-24 registered; § Currency reconciliation — 2026-10-14 (Pages site) appended. Prior '2026-10-14'   # RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for FR-22 / CAP-89 (Epic 45, the ci-pause-drift source, consuming spec-pyforge-steward:CAP-166); FR-22 registered; § Currency reconciliation — 2026-10-14 appended. Prior '2026-10-13'   # RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10..13 entries (Stories 42.1, 43.1, 44.1 and 46.1 minted and landed; co-governor surface reconciles); no FR registered. See § Currency reconciliation — 2026-10-13. Prior '2026-10-10'   # RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Stories 33.1 and 37.1's gates cleared, their keys flipped blocked -> backlog by operator ruling) and the 2026-10-07 mint of fix Stories 6.13 and 34.6; no FR registered; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 26 entries of 2026-10-04..07 (Stories 41.2, 41.3, 41.4, 41.6, 6.12, 40.2, 34.3 and 27.6, Story 41.5's review fixes, four co-governor regenerations, herald 28.1); no FR registered; § Currency reconciliation — 2026-10-07 appended. Prior: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for Story 41.5 (Epic 41), a fix under FR-15 / CAP-78; no FR registered; § Currency reconciliation — 2026-10-04 appended. Prior: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD) for FR-21 / CAP-88 (Epic 38); § Currency reconciliation — 2026-10-01 appended. Prior: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. Prior: RE-STAMPED 2026-09-27 (late): chain-currency cascade (spec -> PRD) for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. Prior: RE-STAMPED 2026-09-24: chain-currency sweep (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full — the .memlog''s 2026-09-24 entry moved spec ahead of this PRD past the 2-day feeds grace window); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-10-26'   # RE-STAMPED 2026-10-26 (Story 50.1): FR-14 <- CAP-9 and FR-15 <- CAP-93 (minted 2026-10-26; no capability carried FR-15) on the operator ruling of 2026-10-26 that a requirement cites defined capabilities only, never a Charter clause; FR-16 (the classifier recognizes a spike report, Story 6.11) gains the PRD heading it lacked, <- CAP-11, CAP-12; no FR renumbered or amended. See § Currency reconciliation — 2026-10-26 (Story 50.1). Prior '2026-10-24'   # RE-STAMPED 2026-10-24: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-24 entries (Story 30.4 minted and promoted done, a fix under FR-17 / CAP-84 and CAP-42: the docs, Dream and planning warn backlog); no FR registered. See § Currency reconciliation — 2026-10-24. Prior '2026-10-22'   # RE-STAMPED 2026-10-22: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-22 entries (Story 45.3 minted done, a test-only fix under FR-22 / CAP-89); no FR registered. See § Currency reconciliation — 2026-10-22. Prior '2026-10-17'   # RE-STAMPED 2026-10-17: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-14..17 entries (Story 49.1 minted, a fix under FR-15; co-governor surface reconciles); no FR registered. See § Currency reconciliation — 2026-10-17. Prior '2026-10-14'   # RE-STAMPED 2026-10-14 (Pages site): chain-currency cascade (spec -> PRD) for FR-23 / CAP-90 and FR-24 / CAP-91 (Epic 48, the Pages site registry and the pages-liveness source); FR-23 and FR-24 registered; § Currency reconciliation — 2026-10-14 (Pages site) appended. Prior '2026-10-14'   # RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for FR-22 / CAP-89 (Epic 45, the ci-pause-drift source, consuming spec-pyforge-steward:CAP-166); FR-22 registered; § Currency reconciliation — 2026-10-14 appended. Prior '2026-10-13'   # RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10..13 entries (Stories 42.1, 43.1, 44.1 and 46.1 minted and landed; co-governor surface reconciles); no FR registered. See § Currency reconciliation — 2026-10-13. Prior '2026-10-10'   # RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Stories 33.1 and 37.1's gates cleared, their keys flipped blocked -> backlog by operator ruling) and the 2026-10-07 mint of fix Stories 6.13 and 34.6; no FR registered; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 26 entries of 2026-10-04..07 (Stories 41.2, 41.3, 41.4, 41.6, 6.12, 40.2, 34.3 and 27.6, Story 41.5's review fixes, four co-governor regenerations, herald 28.1); no FR registered; § Currency reconciliation — 2026-10-07 appended. Prior: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for Story 41.5 (Epic 41), a fix under FR-15 / CAP-78; no FR registered; § Currency reconciliation — 2026-10-04 appended. Prior: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD) for FR-21 / CAP-88 (Epic 38); § Currency reconciliation — 2026-10-01 appended. Prior: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. Prior: RE-STAMPED 2026-09-27 (late): chain-currency cascade (spec -> PRD) for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. Prior: RE-STAMPED 2026-09-24: chain-currency sweep (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full — the .memlog''s 2026-09-24 entry moved spec ahead of this PRD past the 2-day feeds grace window); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 status: final
 currency_review: 'Reviewed 2026-09-24 — chain-currency sweep (doctor Story 30.3 landing).
   Story 30.2 (docs/map.yaml + the three docs-currency checks, hand-landed ''Merge
@@ -543,7 +543,7 @@ proves itself, per the Spec's own Assumptions.
    — the domain research treats it as a near-universal convention but it's not named
    in the Dream's CLI cadence examples.
 
-## FR-14 — Verdict on the Marshal's durability (Charter §6)
+## FR-14 — Verdict on the Marshal's durability (Charter §6) ← CAP-9
 
 Doctor reports whether every tracked sprint ledger still holds the completions it
 held at HEAD.
@@ -563,7 +563,7 @@ held at HEAD.
 across four stations and reported success. All three guards written in response live
 in Marshal's own surface, which §6 forbids as sufficient.*
 
-## FR-15 — Doctor holds the verdict for every conformance detector (Charter §6, generalized)
+## FR-15 — Doctor holds the verdict for every conformance detector (Charter §6, generalized) ← CAP-93
 
 Added 2026-08-08 (operator decision). FR-14 applied §6 to exactly one artifact — the
 sprint ledger. A detector-ownership audit the same day found the clause is violated
@@ -599,6 +599,23 @@ keeps refusing regressions; `--project` scoping stays. Two layers, not a transfe
 registry itself, emitting no finding. Doctor's `sources/marshal.py` — the fleet's only
 §6-compliant verdict — is not wired to any verb (Story 5.2, backlog), so an operator
 cannot currently reach it.*
+
+## FR-16 — The classifier recognizes a spike report ← CAP-11, CAP-12
+
+Added 2026-08-11 (Story 6.11; the heading was missing until 2026-10-26, the FR lived only in
+`epics.md`). `pyforge.doctor.sources.factory::classify()` recognizes a design-spike's PASS/FAIL
+report written to a project's `planning-artifacts/` root, so a legitimate, story-mandated
+artifact shape stops HARD-failing `detectors-ci` as `uncovered`.
+
+**Consequences (testable):**
+- A `spike-<n>-<slug>-report.md` at a project's `planning-artifacts/` root classifies as a known
+  shape; `check_coverage` emits no `uncovered` finding for it.
+- The rule is one dated, git-reviewed clause in `classify()` beside the earlier shape additions
+  (fourteen on 2026-07-28, eleven on 2026-08-08), and a fixture pins it.
+
+*Grounding: on 2026-08-11 (PR #427, Marshal Story 7.6) Marshal's own landing agent confirmed
+`_bmad-output/projects/pyforge-marshal/planning-artifacts/spike-0-copier-api-fit-report.md`
+tripped `check_coverage`'s `uncovered` HARD finding.*
 
 ## FR-17 — The documentation is right, and refreshing it is repeatable (spec-pyforge-doctor CAP-83, CAP-84)
 
@@ -1229,3 +1246,14 @@ the entries of 2026-10-14 to 2026-10-17, ending with Story 49.1's mint. `SPEC.md
 **The FR space: no FR registered.** The FR space stays FR-1..FR-24 (FR-25 is the next free id).
 
 **Content changed:** this section only. `updated:` bumped.
+
+## Currency reconciliation — 2026-10-26 (Story 50.1)
+
+*Trigger: the operator's ruling of 2026-10-26 on the FR-arrow re-audit — a requirement cites one or more defined capabilities and nothing else (`spec-one-chain-per-station` CAP-5 as amended; CHAIN-STANDARD § 12). Doctor's PRD had two headings citing the Charter's §6 and one requirement with no heading at all.*
+
+- **FR-14 (Verdict on the Marshal's durability) ← CAP-9.** The Charter clause stays in the heading as context; the arrow names the capability that realizes it (the verdict on the Marshal's own row).
+- **FR-15 (Doctor holds the verdict for every conformance detector) ← CAP-93.** No doctor capability stated FR-15's guarantee, so `spec-pyforge-doctor` mints CAP-93 from it (realized by Stories 6.2, 6.8, 6.9 and 49.1); the 2026-08-08 operator decision and its grounding stay on the PRD.
+- **FR-16 (The classifier recognizes a spike report) ← CAP-11, CAP-12.** Story 6.11 (2026-08-11) carried FR-16 in `epics.md` only; its heading now exists between FR-15 and FR-17, with the consequences the story stated.
+- **CAP-92 (fr-without-cap resolves every arrow against a defined capability, and a counted run is named)** is the detector this PRD's § FR-9..FR-13 lineage already covers (one_chain sources); Story 50.1 realizes it. No new FR: the requirement is the Guild's (`spec-one-chain-per-station` CAP-5), and Doctor is its mechanism Smith.
+
+**Content changed:** this section, FR-14's and FR-15's arrows, FR-16's new heading and body, and `updated:`. No FR renumbered or amended; the FR space stays FR-1..FR-24.

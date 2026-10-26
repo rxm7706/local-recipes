@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: e3ee0de99a9bf887
-story_count: 465
+source_fingerprint: 3f102857344b5001
+story_count: 467
 test_file_count: 270
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 465
-- **Epics parsed:** 105
+- **Stories parsed:** 467
+- **Epics parsed:** 106
 - **Test files inventoried:** 270 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `e3ee0de99a9bf887`
+- **Source fingerprint:** `3f102857344b5001`
 
 ## Risk Assessment
 
@@ -127,6 +127,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 105: The marshal PRD's FR arrows name the capabilities the Spec carries
 - Epic 106: The marshal PRD's remaining FR arrows name what realizes them
 - Epic 107: A loop-home refresh keeps the Tier-3 feed on the tracked ledger's keys
+- Epic 108: Every marshal requirement derives from a capability, and the harness carries the rule (spec-one-chain-per-station CAP-5 amended)
 
 ### Low-risk epics
 
@@ -886,6 +887,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 106.1 | Every marshal seed-installer FR names the capability that realizes it | none observed |
 | 106.2 | FR-144..FR-147 trace to the capabilities the fold dropped | none observed |
 | 107.1 | A refresh or a sync never carries a stale-slug story key | none observed |
+| 108.1 | Every marshal requirement cites a capability, the Spec's cut text is restored... | none observed |
+| 108.2 | Every marshal NFR names the capabilities it bounds | none observed |
 
 ## Quality Gates
 

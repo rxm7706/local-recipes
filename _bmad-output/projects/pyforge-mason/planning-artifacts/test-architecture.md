@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: 7611ab249d90da4a
-story_count: 115
+source_fingerprint: 7b29b8407b43e354
+story_count: 117
 test_file_count: 43
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 115
-- **Epics parsed:** 32
+- **Stories parsed:** 117
+- **Epics parsed:** 33
 - **Test files inventoried:** 43 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `7611ab249d90da4a`
+- **Source fingerprint:** `7b29b8407b43e354`
 
 ## Risk Assessment
 
@@ -65,6 +65,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 30: Recipes that import playwright depend on playwright-python (fix under spec-pyforge-mason CAP-18 and CAP-23)
 - Epic 31: CFE's fleet-picture ATTENTION test stubs the CI-pause probe (fix under spec-pyforge-mason CAP-23)
 - Epic 32: The mason PRD's FR arrows name the capabilities the Spec carries
+- Epic 33: The mason Spec's capability text is whole again, and its NFRs get an owner (spec-one-chain-per-station CAP-5 amended, CAP-3)
 
 ### Low-risk epics
 
@@ -237,6 +238,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 30.1 | Recipes that import playwright depend on playwright-python | none observed |
 | 31.1 | The fleet-picture ATTENTION test stubs the CI-pause probe | none observed |
 | 32.1 | Every mason PRD FR arrow names the Spec capability that realizes it | none observed |
+| 33.1 | The mason Spec's fold-cut capability text is restored | none observed |
+| 33.2 | Every mason NFR names the capabilities it bounds | none observed |
 
 ## Quality Gates
 

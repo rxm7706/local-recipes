@@ -3,7 +3,7 @@
 The framework-neutral contract for every agent and harness (§ *How each harness loads this file*).
 
 <!-- bmad:context -->
-<!-- Verified 2026-09-29 against 060c54fba4. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
+<!-- Verified 2026-10-26 against 92fa3edbbd. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
 
 ## local-recipes (PyForge)
 
@@ -42,7 +42,7 @@ This is A (`rxm7706/local-recipes`), the PyForge control plane and BMAD Agentic-
 - Architecture invariants and naming (station token, `python-<role>-<class>`, id prefixes, ledger keys): `_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md` under `pyforge-steward`; cite `canopy AD-n`, `pap:AD-n` for the host, and `fnd:AD-n` for the cutover ADs (folded into the steward spine 2026-09-08; the prefix remains the citation form).
 - Library availability and pins: `docs/reference/library-llms-full.md` before importing or proposing a dependency.
 - General documentation map: `docs/MAP.md` — Diátaxis-adapted index (`docs/tutorials/`, `docs/how-to/`, `docs/reference/`, `docs/explanation/`).
-- Governance: `docs/governance/`; Dream status vocabulary: `docs/dreams/README.md`; dates versus versions: § Dates below.
+- Governance: `docs/governance/`; the chain standard every station conforms to (ids, arrows, statuses, the fold checklist; § 12: a requirement cites defined CAPs only): `docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md`; Dream status vocabulary: `docs/dreams/README.md`; dates versus versions: § Dates below.
 - The incident behind a rule in this file, and the reference material `CLAUDE.md` used to carry: `docs/reference/agent-instruction-notes.md` (§ *Read on trigger* below names when).
 - pyforge-atlas subtree-exclusive rules (Kedro/Dagster/DuckDB internals — testing contract, AD-1 import boundaries, exit-code convention, code-grounded patterns): `src/shared/packages/pyforge-atlas/AGENTS.md`.
 - bmad-suite member wiring (which of the 13 members is adopted, its wielding station, its provisioning path): `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` § 2 is the one durable home (AD-2) — routing detail lives in each wielding station's own `bmad-agent-<station>` persona skill, never restated here.
@@ -78,7 +78,7 @@ This is A (`rxm7706/local-recipes`), the PyForge control plane and BMAD Agentic-
 - `bmad_loop`'s `DevPolicy.skill` (`[dev] skill = "bmad-dev-auto"`, the retired 6.x name, in the harness template and every loop-home `policy.toml`) is a permanent adapter discriminator, not the invoked skill name — never rename it or build a guard against its presence; `bmad_loop.policy` already refuses a bad value at render time (caught 2026-09-06: CAP-9's now-removed refuse-check assumed the opposite).
 - Only `implementation-artifacts/` is the backlinked Tier-3 store shared across a project's worktrees. `planning-artifacts/` — including `sprint-status-ledger.yaml`, `epics.md`, `specs/` — is an ordinary per-worktree tracked file; never point a ledger/status write at another worktree's copy or the primary checkout. Caught twice independently (2026-09-06/07, parallel `bmad-build-auto` dispatches): an agent told its own implementation subagent the ledger was backlinked, and the subagent wrote the status flip into the shared primary checkout instead of its own worktree.
 - `implementation-artifacts/` really is a symlink out of the worktree back to the primary checkout (verified: `readlink -f` resolves it there) — the Write/Edit tools refuse writes through it even from inside the correct worktree, since the target resolves outside the sandbox. This is a false positive for this one documented pattern, not a real problem: use Bash (`cat >`, a heredoc, `sed -i`) to write there instead, and expect an "Auto Mode Bypass" security flag on that step — it's expected here, not a sign anything went wrong (caught 2026-09-06/07, warden Story 11.1).
-
+- Run one full `pr-preflight` at a time per machine: every session's scribe lane (`pyforge-scribe-test`, and the coverage gates' scribe leg) talks to the one shared Postgres cluster on `127.0.0.1:5433`, so two preflights running together fail each other's scribe lane on the other run's rows and schema (`column "stale" does not exist`, PR #2319, 2026-10-25). When a scribe lane reds under a parallel run, re-run it alone (`pixi run -e pyforge-scribe pyforge-scribe-test`) before reading it as a real failure.
 <!-- /bmad:context -->
 
 ## Behavioural guidelines (every harness)
@@ -357,6 +357,10 @@ Before creating or pushing any PR touching `src/shared/packages/pyforge-<station
      imports (`spec-pyforge-core`, the testing kit), never a convenience for a feature that reads
      other stations' files. `chain-sprawl-check` reds an unexempted pair.
    - Qualify cross-project architecture citations using `canopy:AD-n` or `pap:AD-n`.
+   - A PRD requirement names the capability that realizes it — `FR-n ← CAP-m` (or `← spec-<x> CAP-m`),
+     traced from that CAP's intent and success, never numbered in sequence. A Spec Constraint reaches code
+     through an AD, never through a requirement's arrow
+     (`docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md` § 2; `fr-without-cap`).
 7. **Non-recipe PR mechanics** (the rules are in § Policy):
    - Any change outside `recipes/` → `gh pr edit <n> --repo rxm7706/local-recipes --add-label maintenance`.
    - `pixi.toml` or `pixi.lock` changed → run `pixi run -e pyforge-guild pyforge-station-tests`
@@ -364,6 +368,9 @@ Before creating or pushing any PR touching `src/shared/packages/pyforge-<station
      the station you touched.
    - A hand-landed story merges with `--subject "Merge <slug>/<key> into main"` so
      `landing_evidence` can read the key.
+   - One PR may carry stories from several stations (#2240, #2319): each story still lives in its own
+     station's `epics.md`, ledger and story spec; promote every key inside the PR; the merge subject names
+     one key; run `sprint-ledger-sync -- --project <s>` for each station after the merge.
 8. **Dream Registry & Doctor Hygiene Tests**:
    - When creating a new Tier-0 Dream in `docs/dreams/<slug>.md`, add its table row to `docs/dreams/README.md`.
    - Run `pixi run -e pyforge-doctor pyforge-doctor-test` to ensure `test_live_tree_dream_readme_missing_count` and `dreams-hygiene` pass.
