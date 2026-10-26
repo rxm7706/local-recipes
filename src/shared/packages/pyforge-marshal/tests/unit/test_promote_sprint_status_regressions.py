@@ -618,18 +618,40 @@ def test_a_stale_key_ahead_of_its_twin_key_is_kept_and_named(tmp_path, promote, 
     assert _PARSE(twin)["3-1-the-old-title"] == "in-progress"
 
 
-def test_split_stale_keys_drops_only_a_key_with_no_progress_to_lose(promote):
-    twin = {"1-1-a": "done", "2-1-b": "in-progress", "3-1-c": "review", "4-1-d": "backlog"}
+def test_split_stale_keys_keeps_only_a_key_ahead_of_its_story(promote):
+    """Review round 2: only a stale key further along than the best value its story has is
+    kept; behind, level, `blocked` and a `done` or `blocked` twin key all go."""
+    twin = {
+        "1-1-a": "done",
+        "2-1-b": "in-progress",
+        "3-1-c": "review",
+        "4-1-d": "backlog",
+        "5-1-e": "review",
+        "6-1-f": "in-progress",
+        "7-1-g": "backlog",
+        "8-1-h": "blocked",
+        "9-1-i": "backlog",
+        "10-1-j": "ready-for-dev",
+    }
     feed = {
         **twin,
-        "1-1-a-old": "in-progress",
-        "2-1-b-old": "backlog",
-        "3-1-c-old": "review",
-        "4-1-d-old": "done",
+        "9-1-i": "in-progress",  # the feed already advanced the twin's own key
+        "1-1-a-old": "in-progress",  # twin done
+        "2-1-b-old": "backlog",  # behind
+        "3-1-c-old": "review",  # level
+        "4-1-d-old": "done",  # ahead: kept
+        "5-1-e-old": "in-progress",  # behind
+        "6-1-f-old": "ready-for-dev",  # behind
+        "7-1-g-old": "blocked",  # blocked ranks lowest
+        "8-1-h-old": "in-progress",  # twin blocked
+        "9-1-i-old": "in-progress",  # level with the feed's own value for 9-1-i
+        "10-1-j-old": "review",  # ahead: kept
     }
     drop, keep = promote.split_stale_keys(feed, twin)
-    assert drop == [("1-1-a-old", "1-1-a"), ("2-1-b-old", "2-1-b"), ("3-1-c-old", "3-1-c")]
-    assert keep == [("4-1-d-old", "4-1-d")]
+    assert keep == [("10-1-j-old", "10-1-j"), ("4-1-d-old", "4-1-d")]
+    assert sorted(k for k, _ in drop) == sorted(
+        ["1-1-a-old", "2-1-b-old", "3-1-c-old", "5-1-e-old", "6-1-f-old", "7-1-g-old", "8-1-h-old", "9-1-i-old"]
+    )
 
 
 def test_a_repaired_key_is_named_once(tmp_path, promote, monkeypatch, capsys):

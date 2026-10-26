@@ -1710,8 +1710,9 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   fixed:** `marshal refresh` brings the feed into step with the tracked ledger instead of re-deriving keys. Ledger keys
   the feed lacks are added; the ledger's `done` and `blocked` values win; a story the feed has advanced keeps the
   feed's value; a key whose story number the ledger carries under another slug is dropped and named, unless it is
-  further along than the ledger's key, which is kept and named for a re-key. A bare sync and a landing drop the same
-  keys before they promote, so a stale feed cannot add one to a tracked ledger. **Constraints:** a
+  further along than the story's best value, which is kept and named for a re-key. A bare sync and a landing drop the
+  same keys before they promote, so a stale feed cannot add a key that carries no progress to a tracked ledger.
+  **Constraints:** a
   fix under CAP-265 (the hand sync repairs feed drift itself) and CAP-132 / CAP-134 (the fleet refresh and its checked
   steps), with no CAP and no flag. `sprint_plan.py` is installer-owned and stays unchanged. A story re-key still goes
   through `--rekey`. **Kinships:** Story 54.1 (CAP-265), Story 15.1 (the refresh). Operator direction, 2026-10-25:

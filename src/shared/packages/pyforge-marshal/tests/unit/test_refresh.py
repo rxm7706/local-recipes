@@ -367,7 +367,7 @@ def test_sync_status_step_names_a_stale_key_kept_ahead_of_the_ledger(tmp_path, m
     monkeypatch.setattr(PosixProcess, "run", _fake_run)
     result = refresh_mod._sync_status_step("acme", tmp_path, [])
     assert result.status == "done"
-    assert result.detail == "in sync, 1 stale-slug kept (ahead of the ledger; re-key with --rekey)"
+    assert result.detail == "1 stale-slug kept (ahead of the ledger; re-key with --rekey)"
 
 
 def test_sync_status_step_reports_a_skipped_feed_sync(tmp_path, monkeypatch):

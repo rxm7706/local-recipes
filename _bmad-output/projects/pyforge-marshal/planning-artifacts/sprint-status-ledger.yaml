@@ -42,7 +42,7 @@ development_status:
   105-1-every-marshal-prd-fr-arrow-names-the-spec-capability-that-realizes-it: done
   106-1-every-marshal-seed-installer-fr-names-the-capability-that-realizes-it: done
   106-2-fr-144-to-fr-147-trace-to-the-capabilities-the-fold-dropped: done
-  107-1-a-refresh-or-a-sync-never-carries-a-stale-slug-story-key: backlog
+  107-1-a-refresh-or-a-sync-never-carries-a-stale-slug-story-key: done
   11-1-neutral-contract-and-agent-adapter-fan-out: done
   11-2-projects-md-index-and-artifact-symlink-derivation: done
   11-3-migration-registry-and-runner: done
@@ -497,7 +497,7 @@ development_status:
   epic-105-retrospective: optional
   epic-106: done
   epic-106-retrospective: optional
-  epic-107: backlog
+  epic-107: done
   epic-107-retrospective: optional
   epic-11: done
   epic-11-retrospective: optional

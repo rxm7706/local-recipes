@@ -45,8 +45,8 @@ is a stale copy of that story: ``marshal refresh`` used to write one through
 ``sprint_plan.py generate``, whose slugs are cut at 60 characters and keep ``_`` and
 non-ASCII letters, beside the twin's ``chain.slugify_title`` key. A sync drops each such key
 from the feed and names it before it promotes, so it never lands in the twin as a duplicate.
-A stale key further along than the twin's key for its number (a run working a story under
-its old title) is kept and named instead, for a ``--rekey``. A feed key whose number the
+A stale key further along than the best value its story already has (a run working the
+story under its old title) is kept and named instead, for a ``--rekey``. A feed key whose number the
 twin lacks is not stale and is promoted as before.
 ``--feed-only`` runs the twin-to-feed half alone (drop the stale keys, then ``repair_feed``
 with the twin's full map), writes only the feed and prints one JSON report; it is the step
@@ -366,20 +366,28 @@ def stale_slug_keys(feed: dict[str, str], twin: dict[str, str]) -> list[tuple[st
 def split_stale_keys(
     feed: dict[str, str], twin: dict[str, str]
 ) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
-    """``stale_slug_keys`` split into ``(drop, keep)``. A stale key goes when it carries no
-    progress the twin's key lacks: the twin key is ``done``, the stale key is ``backlog``,
-    or both read the same. One further along (a run working the story under its old title
-    while the ledger moved to the new one) is kept, so its progress is never thrown away;
-    the caller names it for a ``--rekey``."""
+    """``stale_slug_keys`` split into ``(drop, keep)``. A stale key is kept only when it is
+    further along (``_STORY_PROGRESS_RANK``) than the best value the story already has --
+    the twin's value for its key, or the feed's own value for that key when the feed has
+    advanced it -- so a run working the story under its old title never loses its
+    progress; the caller names it for a ``--rekey``. Everything else goes, including a key
+    that is behind or level. A twin key at ``done`` or ``blocked`` keeps nothing: the
+    ledger already holds the story's outcome, and ``blocked`` is the operator's to lift.
+    A stale ``blocked`` (or any status outside the rank table) ranks lowest and goes."""
     drop: list[tuple[str, str]] = []
     keep: list[tuple[str, str]] = []
     for key, twin_key in stale_slug_keys(feed, twin):
-        feed_value, twin_value = feed[key], twin[twin_key]
-        if twin_value == "done" or feed_value == "backlog" or feed_value == twin_value:
-            drop.append((key, twin_key))
-        else:
+        twin_value = twin[twin_key]
+        best = max(_progress_rank(twin_value), _progress_rank(feed.get(twin_key)))
+        if twin_value not in ("done", "blocked") and _progress_rank(feed[key]) > best:
             keep.append((key, twin_key))
+        else:
+            drop.append((key, twin_key))
     return drop, keep
+
+
+def _progress_rank(status: str | None) -> int:
+    return _STORY_PROGRESS_RANK.get(status, -1) if status is not None else -1
 
 
 def drop_stale_feed_keys(

@@ -206,11 +206,11 @@ def _sync_status_step(slug: str, git_repo_root: Path, findings: list[Finding]) -
     dropped = report.get("dropped") or []
     kept = report.get("kept") or []
     repaired = report.get("repaired") or []
-    detail = f"{len(repaired)} repaired, {len(dropped)} stale-slug dropped" if dropped or repaired else "in sync"
+    parts = [f"{len(repaired)} repaired, {len(dropped)} stale-slug dropped"] if dropped or repaired else []
     if kept:
         # A stale key further along than the ledger's key is kept for a `--rekey` (Story 107.1).
-        detail += f", {len(kept)} stale-slug kept (ahead of the ledger; re-key with --rekey)"
-    return RefreshStep(STEP_SYNC_STATUS, "done", detail)
+        parts.append(f"{len(kept)} stale-slug kept (ahead of the ledger; re-key with --rekey)")
+    return RefreshStep(STEP_SYNC_STATUS, "done", ", ".join(parts) or "in sync")
 
 
 def _refresh_one_home(

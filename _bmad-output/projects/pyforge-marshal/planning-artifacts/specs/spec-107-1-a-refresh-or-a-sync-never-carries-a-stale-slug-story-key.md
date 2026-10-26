@@ -2,7 +2,7 @@
 title: "107.1: A refresh or a sync never carries a stale-slug story key"
 type: 'fix'
 created: '2026-10-25'
-status: 'in-review'
+status: 'done'
 followup_review_recommended: false
 baseline_revision: '48445a6b8d8b1869495f6f2618516eeb0161dfbb'
 review_loop_iteration: 0
@@ -59,10 +59,12 @@ numbers are at `48445a6b8d`.
 - **One rule for a stale key.** `scripts/promote_sprint_status.py` gains `stale_slug_keys(feed, twin)`: the story keys
   in the feed that the twin lacks while the twin carries the same epic number, story number and suffix (`_STORY_KEY_RE`)
   under another key. A feed key whose number the twin lacks is not stale: it may be a story not yet in the ledger.
-  `split_stale_keys` splits them: a stale key is dropped when it carries no progress the twin's key lacks (the twin
-  key is `done`, the stale key is `backlog`, or both read the same). One further along (a run working the story under
-  its old title while the ledger moved to the new one) is kept and named for a `--rekey`, so its progress is never
-  thrown away (review S2).
+  `split_stale_keys` splits them: a stale key is kept only when it is further along (`_STORY_PROGRESS_RANK`) than the
+  best value its story already has, the twin's value for its key or the feed's own value for that key, so a run
+  working the story under its old title never loses its progress; it is named for a `--rekey` (review S2). Everything
+  else is dropped, including a key that is behind or level. A twin key at `done` or `blocked` keeps nothing (the ledger
+  holds the outcome, and `blocked` is the operator's to lift); a stale `blocked`, or any status outside the rank table,
+  ranks lowest (review round 2).
 - **A bare sync drops them before it promotes.** In `main()`, after any `--rekey` translation (so a re-keyed row is
   judged through its map) and before the regression guard, the stale keys leave the feed and the map being promoted.
   The feed is rewritten by `_write_feed_development_status`, so its head and tail stay byte-for-byte. Stdout prints
@@ -123,9 +125,10 @@ Type / Effort / Deps: fix / S / —.
   sync`, `skipped` (no twin or no script), and `failed` with `MRS-REFRESH-008` for a non-zero exit, a non-JSON or
   not-ok report, a launch error and a timeout.
 - **AC6 — Once per key.** A `done` key the feed lacks appears once in the `REPAIRED` output.
-- **AC6a — Progress is never thrown away.** A stale key further along than its twin key (`in-progress` beside
-  `backlog`) survives `--feed-only` (listed under `kept`) and a bare sync (printed under `KEPT`, promoted as before);
-  the refresh detail names it.
+- **AC6a — Progress is never thrown away, and nothing else is kept.** A stale key further along than its story
+  (`in-progress` beside `backlog`) survives `--feed-only` (listed under `kept`) and a bare sync (printed under `KEPT`,
+  promoted as before); the refresh detail names it. A stale key behind or level with the twin's value or the feed's own
+  value for that key, a stale `blocked`, and any stale key beside a `done` or `blocked` twin key are dropped.
 - **AC6b — A feed with no map is rebuilt.** A zero-byte feed and one truncated before `development_status:` are
   rewritten from the twin by `--feed-only`, and a second run leaves the bytes unchanged.
 - **AC6c — The landing.** A landing whose feed carries a stale `backlog` copy of a `done` twin key publishes neither the
@@ -217,6 +220,8 @@ feed, and `sprint-ledger-sync -- --project <station>` reports `unchanged`.
 - 2026-10-25: review round 1 applied (see the triage log): the S2 keep rule (`split_stale_keys`), the rebuilt markerless
   feed, the landing path's filter, the real parser in the test stub, AC6a–AC6c, two residual risks and the
   after-landing order.
+- 2026-10-25: promoted to `done` in the landing PR after the independent review (this spec, its `epics.md` Status line
+  and its ledger keys); the merge subject names this story's key.
 
 ## Review Triage Log
 
@@ -232,3 +237,11 @@ feed, and `sprint-ledger-sync -- --project <station>` reports `unchanged`.
   - N1 (fixed): `--feed-only` with an unknown-number key, two `--project`s, `--rekey` or `--allow-regression` tested.
   - N2, N3 (recorded as residual risks); N4 (the `"107"` epic-surface comment corrected); N5 (`DROPPED` points at
     `--rekey`); N6 (promotion to `done` in the landing PR, as before).
+- **Round 2 (2026-10-25, the same reviewer over `ae997ccfd8..bb408ae6dc`): FAIL, 1 blocker, 2 nits.** S1, S3, S4, N1,
+  N4 and N5 confirmed fixed (the landing filter's test goes red with the filter removed).
+  - Blocker (fixed): the keep rule kept every stale key that was not `backlog`, level or beside a `done` twin key, so
+    keys behind their story (`in-progress` beside `review`, `blocked`, anything beside a `blocked` twin key, or level
+    with the feed's own advanced value) still reached the ledger as duplicates. `split_stale_keys` now keeps only a
+    key ranked above the best value its story has; the unit test covers ten cases.
+  - Nits (fixed): the Dream's "cannot add one to a tracked ledger" now says a key that carries no progress; the refresh
+    detail leads with the kept count instead of `in sync`.
