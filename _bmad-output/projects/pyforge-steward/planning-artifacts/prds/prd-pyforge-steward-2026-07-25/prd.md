@@ -2,7 +2,7 @@
 fr-derivation-from: "2026-09-17"
 title: Steward (pyforge-steward)
 created: 2026-07-25
-updated: "2026-10-23"   # RE-STAMPED 2026-10-23: chain-currency (spec -> PRD) for Story 71.12's decision and mint (a fix under CAP-159: every cancelled preflight lane names what stopped the run), then Stories 71.13 (CAP-159) and 13.6 (CAP-157 amended in place: the trunk joins a workspace's source as a landing ref); no CAP or FR added, no FR or AD amended; FR-32 holds as written. See § Currency reconciliation — 2026-10-23. Prior: RE-STAMPED 2026-10-17: chain-currency (spec -> PRD) for Story 108.1's mint (fixes under CAP-167 and CAP-166) and the memlog entries since 2026-10-14; no CAP, FR or AD added or amended; FR-40's consequence (the env matrix and the BMAD-estate catalog) is met as written; FR-32 and Story 103.6's touched scope recorded, not re-derived. See § Currency reconciliation — 2026-10-17. Prior: RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for CAP-168 (the Pages duct; operator rulings 2026-10-13); FR-41 registered; FR-8 and FR-11 move onto `steward pages build|status`, FR-9 and FR-10 retire with `deploy dashboard` (superseded in part, nothing renumbered); D6's no-new-workflow clause retired; SM-2 recorded as history. See § Currency reconciliation — 2026-10-14 (the Pages duct). Prior: RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for CAP-167 (estate refresh; the plan's recommended answers Q1-Q9 adopted as assumptions); FR-40 registered. See § Currency reconciliation — 2026-10-13 (estate refresh). Prior: RE-STAMPED 2026-10-12: chain-currency cascade (spec -> PRD) for CAP-166 (the CI pause control plane, operator rulings Q1-Q8); FR-39 registered. See § Currency reconciliation — 2026-10-12. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entries (Story 67.4 re-scoped repo-only under fnd:CAP-13; Stories 85.5 and 72.2 unblocked and index row 49.13 done; Story 86.1 minted, a fix under CAP-114); no CAP minted, no FR registered. See § Currency reconciliation — 2026-10-10.. Prior: RE-STAMPED 2026-10-07 (later): chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-04..07 entries (Stories 85.1-85.4 landed under FR-38; Story 74.2, the chart, under FR-36, and the flag on in dev and staging); no FR registered. See § Currency reconciliation — 2026-10-07 (later: Stories 85.1–85.4 and 74.2).. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec memlog -> PRD) for the independent review of the free-threading Dream entry (research/free-threading-readiness-dream-review-2026-10-07.md; four operator rulings); no CAP minted, no FR registered. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for CAP-165 (Epic 85, preserved-work refs; CAP-156 and CAP-157 amended); FR-38 registered. Earlier: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for the Phase 3 rulings (CAP-60 amended, Epic 84); no FR registered. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec memlog -> PRD) for Epic 78 (security hotfix; defects of CAP-99, CAP-86 and unifying CAP-12; no FR registered). Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-163 (Epic 74) and CAP-164 (Epic 75); FR-36 and FR-37 registered; the Guild's spec-feature-flag-governance CAP-5 routed to Epic 76 with no FR. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+updated: "2026-10-25"   # RE-STAMPED 2026-10-25 (Story 110.1): FR-1..FR-31, which the 2026-09-17 fold left without arrows, now name the capabilities that realize them (CAP-1..CAP-4, CAP-18..CAP-20, CAP-127..CAP-131, CAP-57..CAP-61); no FR text, number or NFR moves. See § Currency reconciliation — 2026-10-25 (Story 110.1). Prior "2026-10-23"   # RE-STAMPED 2026-10-23: chain-currency (spec -> PRD) for Story 71.12's decision and mint (a fix under CAP-159: every cancelled preflight lane names what stopped the run), then Stories 71.13 (CAP-159) and 13.6 (CAP-157 amended in place: the trunk joins a workspace's source as a landing ref); no CAP or FR added, no FR or AD amended; FR-32 holds as written. See § Currency reconciliation — 2026-10-23. Prior: RE-STAMPED 2026-10-17: chain-currency (spec -> PRD) for Story 108.1's mint (fixes under CAP-167 and CAP-166) and the memlog entries since 2026-10-14; no CAP, FR or AD added or amended; FR-40's consequence (the env matrix and the BMAD-estate catalog) is met as written; FR-32 and Story 103.6's touched scope recorded, not re-derived. See § Currency reconciliation — 2026-10-17. Prior: RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for CAP-168 (the Pages duct; operator rulings 2026-10-13); FR-41 registered; FR-8 and FR-11 move onto `steward pages build|status`, FR-9 and FR-10 retire with `deploy dashboard` (superseded in part, nothing renumbered); D6's no-new-workflow clause retired; SM-2 recorded as history. See § Currency reconciliation — 2026-10-14 (the Pages duct). Prior: RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for CAP-167 (estate refresh; the plan's recommended answers Q1-Q9 adopted as assumptions); FR-40 registered. See § Currency reconciliation — 2026-10-13 (estate refresh). Prior: RE-STAMPED 2026-10-12: chain-currency cascade (spec -> PRD) for CAP-166 (the CI pause control plane, operator rulings Q1-Q8); FR-39 registered. See § Currency reconciliation — 2026-10-12. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entries (Story 67.4 re-scoped repo-only under fnd:CAP-13; Stories 85.5 and 72.2 unblocked and index row 49.13 done; Story 86.1 minted, a fix under CAP-114); no CAP minted, no FR registered. See § Currency reconciliation — 2026-10-10.. Prior: RE-STAMPED 2026-10-07 (later): chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-04..07 entries (Stories 85.1-85.4 landed under FR-38; Story 74.2, the chart, under FR-36, and the flag on in dev and staging); no FR registered. See § Currency reconciliation — 2026-10-07 (later: Stories 85.1–85.4 and 74.2).. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec memlog -> PRD) for the independent review of the free-threading Dream entry (research/free-threading-readiness-dream-review-2026-10-07.md; four operator rulings); no CAP minted, no FR registered. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for CAP-165 (Epic 85, preserved-work refs; CAP-156 and CAP-157 amended); FR-38 registered. Earlier: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for the Phase 3 rulings (CAP-60 amended, Epic 84); no FR registered. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec memlog -> PRD) for Epic 78 (security hotfix; defects of CAP-99, CAP-86 and unifying CAP-12; no FR registered). Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-163 (Epic 74) and CAP-164 (Epic 75); FR-36 and FR-37 registered; the Guild's spec-feature-flag-governance CAP-5 routed to Epic 76 with no FR. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
 # 2026-09-28  # AMENDED 2026-09-28 (operator rulings): FR-34 amended in place -- CAP-5's size bound restated 1 GB -> 2 GB, the Guild's pixi does not move (spec-pyforge-mason:CAP-30); virtualenv 21 -> 20 accepted. See § Currency reconciliation — 2026-09-28 (operator rulings). Earlier: RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-162 (Epic 73); FR-35 registered; FR-34 gains a dated note (atlas stays out of the Guild; the Guild's cold install measured 1.5 GB). See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-160 / CAP-161 (Epic 72); FR-33 and FR-34 registered; § 4.13's 2026-08-26 mason clause marked superseded. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED 2026-09-27: chain-currency cascade (spec -> PRD) for CAP-159 (Epic 71); FR-32 registered, the first kernel FR minted under FR <- CAP. See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
@@ -61,7 +61,7 @@ There is no external customer and no second human operator. Steward is not desig
 
 **Functional Requirements:**
 
-#### FR-1: Host-scoped credential resolution
+#### FR-1: Host-scoped credential resolution ← CAP-1
 
 `steward keys` provides a resolver that any Steward-issued or Steward-audited credential attachment goes through, gating attachment by the request's destination host — equivalent in spirit to `_http.py`'s `skip_auth=True` guard.
 
@@ -69,7 +69,7 @@ There is no external customer and no second human operator. Steward is not desig
 - A credential declared with an explicit host allowlist is never attached to a request outside that allowlist, verified by a unit test constructing an out-of-allowlist URL.
 - The resolver is a thin wrapper importing/delegating to `_http.py`'s existing `auth_headers_for` pattern where applicable, not a parallel reimplementation.
 
-#### FR-2: At-rest secret encryption via `age`
+#### FR-2: At-rest secret encryption via `age` ← CAP-1
 
 `steward keys encrypt <file>` / `steward keys decrypt <file>` wrap the `age` CLI (X25519 identities) so secrets live encrypted in Git, never as committed plaintext.
 
@@ -79,7 +79,7 @@ There is no external customer and no second human operator. Steward is not desig
 
 **Out of Scope:** vendoring or reimplementing `age` itself — it is a required external pixi run-dependency, consistent with how `pyforge-warden` treats `deptry`/`osv-scanner` (Decision, technical research OQ2).
 
-#### FR-3: Key rotation
+#### FR-3: Key rotation ← CAP-1
 
 `steward keys rotate --scope <name>` generates a new `age` identity, re-encrypts every secret currently encrypted to the old identity's recipient, and marks the old identity retired in the inventory (FR-5).
 
@@ -87,7 +87,7 @@ There is no external customer and no second human operator. Steward is not desig
 - After rotation, every previously-encrypted secret decrypts correctly under the new identity and fails to decrypt under the old one.
 - Rotation is invocable on-demand (risk/compromise-triggered) — v1 does not ship a calendar-cron scheduler, per the 2026 NIST SP 800-63B Rev 4 shift away from blind time-based rotation (domain research § 4).
 
-#### FR-4: Credential audit / drift detection
+#### FR-4: Credential audit / drift detection ← CAP-1
 
 `steward keys audit --drift` scans this repo's tracked scripts/config for HTTP-credential-attachment code paths that are not host-scoped (the `JFROG_API_KEY`-class pattern) and reports each as a named finding.
 
@@ -95,20 +95,20 @@ There is no external customer and no second human operator. Steward is not desig
 - Run against a fixture containing a deliberately unconditional credential-injection pattern (mirroring the historical `_http.py` bug), the audit reports exactly that finding.
 - Run against the current, already-fixed `_http.py`, the audit reports clean.
 
-#### FR-5: Credential inventory
+#### FR-5: Credential inventory ← CAP-1
 
 `steward keys list` enumerates known credential identities (age recipients, named API-key env vars this repo depends on) with scope and last-rotated metadata, without ever printing a secret value.
 
 **Consequences (testable):**
 - Output never contains a raw secret value under any flag combination (enforced by a `meta/` test, mirroring `pyforge-warden`'s `test_socket_deny_alive.py`-style invariant test).
 
-#### FR-6: Revocation record
+#### FR-6: Revocation record ← CAP-1
 
 `steward keys revoke --scope <name>` marks an identity retired in the inventory and prints the manual remediation steps (e.g., "rotate the upstream JFrog token; this tool cannot call JFrog's revocation API").
 
 **Out of Scope:** calling third-party provider revocation APIs (JFrog, GitHub, Anthropic) directly — v1 is a record-and-guide tool, not an API integration; this is a deliberate v1 boundary (§5), not an oversight.
 
-#### FR-7: Remediation regression test
+#### FR-7: Remediation regression test ← CAP-1
 
 The `JFROG_API_KEY` cross-host leak pattern is closed as a named, automated regression test in Steward's own `tests/conformance/` suite (not just documentation) — this is the PRD's single highest-priority acceptance criterion, per the brief's Success Criteria.
 
@@ -126,11 +126,11 @@ The `JFROG_API_KEY` cross-host leak pattern is closed as a named, automated regr
 
 **Functional Requirements:**
 
-#### FR-8: Dashboard build
+#### FR-8: Dashboard build ← CAP-2
 
 `steward deploy dashboard --build` runs the existing `dashboard-gen` pixi task (no new build logic — wraps it).
 
-#### FR-9: Reconciled push
+#### FR-9: Reconciled push ← CAP-2
 
 `steward deploy dashboard` builds (FR-8), diffs the freshly generated `docs/dashboard/` output against the currently committed tree, and only commits + pushes when a real difference exists.
 
@@ -138,11 +138,11 @@ The `JFROG_API_KEY` cross-host leak pattern is closed as a named, automated regr
 - Running twice in a row with no source changes between runs results in zero commits on the second run.
 - A change to `pyforge.doctor.sources.fleet_scan`'s output is reflected in exactly one new commit.
 
-#### FR-10: Dry-run
+#### FR-10: Dry-run ← CAP-2
 
 `steward deploy dashboard --dry-run` performs the build and diff (FR-8, FR-9) and prints the diff without committing or pushing.
 
-#### FR-11: Deploy status
+#### FR-11: Deploy status ← CAP-2
 
 `steward deploy status` reports the last successful dashboard deploy (commit SHA, timestamp), read from Git history — no separate state store.
 
@@ -158,21 +158,21 @@ The `JFROG_API_KEY` cross-host leak pattern is closed as a named, automated regr
 
 **Functional Requirements:**
 
-#### FR-12: Environment materialization
+#### FR-12: Environment materialization ← CAP-3
 
 `steward provision --env <name>` resolves `<name>` against pixi.toml's `[environments]` table and runs `pixi install -e <name>`, or reports a clear error listing valid environment names if `<name>` doesn't exist.
 
-#### FR-13: Runner provisioning
+#### FR-13: Runner provisioning ← CAP-3
 
 `steward provision --runner bmad-loop --env <name>` wraps `scripts/bmad-loop-worktree` to materialize a loop worktree and its named pixi environment together, in one call.
 
 **Out of Scope:** reimplementing `bmad-loop-worktree`'s internals — Steward calls it, does not fork or own its logic.
 
-#### FR-14: Environment inventory
+#### FR-14: Environment inventory ← CAP-3
 
 `steward provision --list` enumerates every environment in pixi.toml's `[environments]` table with the features composing it (read-only introspection, no pixi TOML parsing reimplementation beyond what's needed to list names/features).
 
-#### FR-15: Sync-gate check
+#### FR-15: Sync-gate check ← CAP-3
 
 `steward provision --verify` wraps the existing `environment.yaml` ↔ `pixi.toml` sync-gate check (`pixi project export conda-environment -e build` comparison) and reports drift, rather than reimplementing the check logic that already backs the repo's CI gate (CLAUDE.md § "PR CI gates").
 
@@ -187,15 +187,15 @@ The `JFROG_API_KEY` cross-host leak pattern is closed as a named, automated regr
 
 **Functional Requirements:**
 
-#### FR-16: Ceiling declaration
+#### FR-16: Ceiling declaration ← CAP-4
 
 `steward budget set --cap <amount><currency>/<period>` (e.g. `1500usd/month`) records a machine-readable ceiling to a tracked config file under Steward's own config surface.
 
-#### FR-17: Ceiling display
+#### FR-17: Ceiling display ← CAP-4
 
 `steward budget show` prints the currently declared ceiling(s) in both human-readable and `--json` form.
 
-#### FR-18: Manual check (honest stub)
+#### FR-18: Manual check (honest stub) ← CAP-4
 
 `steward budget check` is an extension point that, in v1, has no live metered-spend source to check against, and explicitly reports "no metered spend source configured" rather than fabricating a number or silently passing.
 
@@ -303,42 +303,42 @@ re-owned under the build-line/estate seam), which is precisely why the gap was i
 *Sequencing: land before the container work — `provision --module` inside an image build
 only exists if the backend exists first.*
 
-#### FR-19: One-command module provisioning
+#### FR-19: One-command module provisioning ← CAP-18
 An operator materializes a named BMAD module without recalling its installer's syntax.
 **Consequences:** `provision --module <name>` succeeds for each supported module; an
 unknown name lists valid ones rather than surfacing the underlying tool's raw error;
 the implementation is a **subprocess wrap of the module's own installer** (AD-1), never
 a reimplementation.
 
-#### FR-20: Module discovery
+#### FR-20: Module discovery ← CAP-19
 An operator can ask what modules exist and which are installed before choosing.
 **Consequences:** `provision --list-modules` enumerates supported modules with installed
 state; state is **derived from the filesystem**, not from a hand-maintained declaration.
 
-#### FR-21: Partial state is named, never silent
+#### FR-21: Partial state is named, never silent ← CAP-20
 **Consequences:** an installer that exits non-zero, or succeeds while leaving the module
 unimportable, is reported as a named failure — never counted as provisioned.
 
 ### The one-container Guild — `spec-unified-container` (FR-22..FR-26)
 
-#### FR-22: One build, whole Guild
+#### FR-22: One build, whole Guild ← CAP-127
 **Consequences:** a single `Containerfile` produces an image carrying all eight station
 CLIs; each answers `--version` inside the container.
 
-#### FR-23: The image ships the repo at a fixed short path
+#### FR-23: The image ships the repo at a fixed short path ← CAP-128
 **Consequences:** the checkout lives at a path short enough to avoid the documented
 `pixi-build-python` path-length panic; the path is fixed and documented, not derived
 from the build host.
 
-#### FR-24: Credentials never enter image layers
+#### FR-24: Credentials never enter image layers ← CAP-129
 **Consequences:** no secret is present in any layer — asserted by a build-time scan;
 credentials arrive at run time only, through Steward's existing `keys` surface.
 
-#### FR-25: State outlives the container
+#### FR-25: State outlives the container ← CAP-130
 **Consequences:** loop homes, the Tier-3 store and mutable runtime caches resolve to
 mounted volumes; a container restart loses no durable state, proven by a round-trip test.
 
-#### FR-26: The image proves itself at build time
+#### FR-26: The image proves itself at build time ← CAP-131
 **Consequences:** the build runs a smoke gate that fails the build — not a later run —
 when any station CLI is missing, unimportable, or over its documented start-up budget.
 
@@ -350,23 +350,23 @@ in the Spec (authoritative side, Mode A vs B, Mode B's schema); **Q1/Q5 were res
 Epic 8 landed 2026-08-09..13 as Stories 8.1–8.7, extending FR-27..31 with the schedule
 trigger (8.4) and assignee/identity-link propagation (8.7).*
 
-#### FR-27: Bidirectional propagation
+#### FR-27: Bidirectional propagation ← CAP-57
 **Consequences:** a status/assignee/link change on either board reaches the other with no
 human action on the receiving side, demonstrated against a live pair.
 
-#### FR-28: Zero-loop guarantee
+#### FR-28: Zero-loop guarantee ← CAP-58
 **Consequences:** N round-trips of one human change produce **exactly one** propagation,
 not N — demonstrated by test, never asserted.
 
-#### FR-29: Idempotent update processing
+#### FR-29: Idempotent update processing ← CAP-59
 **Consequences:** delivering an identical payload twice leaves both systems byte-identical
 to delivering it once.
 
-#### FR-30: Fail loud, fail alone
+#### FR-30: Fail loud, fail alone ← CAP-60
 **Consequences:** an item missing its cross-system link emits a named, greppable error and
 does not stop the batch for every other item.
 
-#### FR-31: Explicit status-vocabulary translation
+#### FR-31: Explicit status-vocabulary translation ← CAP-61
 **Consequences:** every status crossing the boundary passes through a reviewable mapping;
 an unmapped value is a hard logged failure, never a pass-through that invents a state.
 
@@ -2846,3 +2846,26 @@ re-stamp; neither mints a CAP or registers an FR.*
 No FR is added, amended, renumbered or removed. **ONE kernel FR space stays FR-1..FR-41** (FR-42 = next free id).
 
 **Content changed:** this section added; `updated:` bumped.
+
+## Currency reconciliation — 2026-10-25 (Story 110.1)
+
+*Trigger: the 2026-09-17 steward fold (`97e0816ad2`) added no FR arrows, so FR-1..FR-31 never named the capability
+they derive from (`spec-one-chain-per-station` CAP-5 makes that a step of every fold). The fleet audit of 2026-10-25
+found the gap; Story 110.1 adds the arrows. Only arrow text is added.*
+
+Thirty-one requirement headings now name the capability that realizes them (the table is the 2026-10-25 decision entry
+in `spec-pyforge-steward`'s memlog):
+
+- § 4.1 Keys, FR-1..FR-7 ← CAP-1; § 4.2 Deploy, FR-8..FR-11 ← CAP-2; § 4.3 Provision, FR-12..FR-15 ← CAP-3; § 4.4
+  Budget, FR-16..FR-18 ← CAP-4. The Spec's CAP-1..CAP-4 carry placeholder titles from the fold, but their intent text
+  names exactly these four duties.
+- Module provisioning, FR-19..FR-21 ← CAP-18..CAP-20; the one-container Guild, FR-22..FR-26 ← CAP-127..CAP-131; two
+  boards, one truth, FR-27..FR-31 ← CAP-57..CAP-61. Each matches its capability title for title.
+
+FR-8..FR-11 cite CAP-2, the capability their text describes; the 2026-10-14 section above records how CAP-168 and
+Story 102.3 moved their surface.
+
+**ONE kernel FR space stays FR-1..FR-41** (FR-42 = next free id).
+
+**Content changed:** this section added; 31 FR arrows added in place. No FR title, body or number moved, and no FR was
+registered or removed. `updated:` bumped.
