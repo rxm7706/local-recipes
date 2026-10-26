@@ -752,6 +752,18 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   schema. Validation against the vendored copy still rejects a malformed `bot` block. The change lands in one
   `retro(cfe):` commit with a CHANGELOG PATCH bump (AD-15). It is a fix: no flag and no new CAP. Same class as Story
   26.1, under CAP-34. Owner: mason. → Epic 26 / Story 26.2, specced 2026-10-22.
+- **2026-10-25 (the PRD's section 4.7 arrows were mapped by section, not traced) — Found: three of the mason
+  PRD's FR arrows name the wrong capability.** A fleet audit of every station PRD's `FR-n ← CAP-m` arrows, run after
+  marshal Story 105.1 found marshal's counted rather than traced, read all 57 mason arrows. The 2026-09-17 fold
+  (`e062c19c9d`) gave every FR in § 4.7 "Seam enforcement" the arrow `← CAP-7`. That is right for FR-42..FR-47 and
+  wrong for FR-48 (the configuration surface), FR-49 (logging and child output) and FR-50 (rehearsal before an
+  irreversible publish), which PRD revision 2 added to that section. Doctor's `fr-without-cap` only checks that a cited
+  CAP exists, so nothing noticed. **What it looks like when fixed:** FR-48 reads CAP-5, CAP-1 (the CLI shell; the CFE
+  root, interpreter and timeout knobs); FR-49 reads CAP-5, CAP-2 (stdout carries one JSON document; a build streams its
+  child output); FR-50 reads CAP-3 (a rehearsal publish must pass before the irreversible one). **Constraints:** a
+  chore under `spec-one-chain-per-station` CAP-5 (FRs derive from CAPs) and CAP-3 (the station fold procedure); no CAP,
+  no flag, no `SPEC.md` change; no detector rule changes. Operator ruling, 2026-10-25: "Do rows 1-5 in one PR". Owner
+  `spec-pyforge-mason`. → Epic 32 / Story 32.1, specced 2026-10-25.
 
 ## One-chain fold — 2026-09-17
 

@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: 59ac88326329ce88
-story_count: 114
+source_fingerprint: 67958580192af6a3
+story_count: 115
 test_file_count: 43
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 114
-- **Epics parsed:** 31
+- **Stories parsed:** 115
+- **Epics parsed:** 32
 - **Test files inventoried:** 43 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `59ac88326329ce88`
+- **Source fingerprint:** `67958580192af6a3`
 
 ## Risk Assessment
 
@@ -64,6 +64,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 29: pwndbg's pip check holds: a local pwntools carries the upstream unicorn fix (fix under spec-pyforge-mason CAP-18 and CAP-23)
 - Epic 30: Recipes that import playwright depend on playwright-python (fix under spec-pyforge-mason CAP-18 and CAP-23)
 - Epic 31: CFE's fleet-picture ATTENTION test stubs the CI-pause probe (fix under spec-pyforge-mason CAP-23)
+- Epic 32: The mason PRD's FR arrows name the capabilities the Spec carries
 
 ### Low-risk epics
 
@@ -235,6 +236,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 29.1 | pwndbg passes pip check with a local pwntools that carries the upstream unico... | none observed |
 | 30.1 | Recipes that import playwright depend on playwright-python | none observed |
 | 31.1 | The fleet-picture ATTENTION test stubs the CI-pause probe | none observed |
+| 32.1 | Every mason PRD FR arrow names the Spec capability that realizes it | none observed |
 
 ## Quality Gates
 
