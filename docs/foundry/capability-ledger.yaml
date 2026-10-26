@@ -5038,6 +5038,19 @@ capabilities:
     heading: "the Vizro boards read the datasets the pipelines write"
     mode: rebuild
     path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  # 2026-10-25 restored by atlas Story 40.1 (DW-atlas-39-1): kedro-org Capabilities 1 and 3, which the fold dropped
+  - id: pyforge-atlas:CAP-70
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "kedro-skills guidance is adopted only after an audit against the architecture invariants"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-71
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "the vscode-kedro adopt-or-defer decision is recorded"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
   - id: pyforge-mason:CAP-1
     spec: pyforge-mason
     station: pyforge-mason
