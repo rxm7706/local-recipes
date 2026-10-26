@@ -94,6 +94,17 @@ MODULE_ALIASES: dict[str, frozenset[str]] = {
     "pptx": frozenset({"python-pptx"}),
 }
 
+# Conda package name -> the PyPI distribution name that ships the same module, where
+# the two differ after PEP 503 normalization. Only cases where both manifests declare
+# the dependency belong here (a conda-side split with no PyPI counterpart goes in
+# CONDA_ONLY_RUN_DEPS below).
+#
+# `brotli-python` is conda-forge's build of PyPI `Brotli` (the `brotli` conda package
+# is the C library alone); atlas declares it for the nixpkgs Tier-3 store (Story 34.13).
+CONDA_TO_PYPI: dict[str, str] = {
+    "brotli-python": "brotli",
+}
+
 # Conda run-deps with no `[project.dependencies]` counterpart, per package, and
 # why each is legitimate. Anything not listed here must appear in BOTH manifests.
 CONDA_ONLY_RUN_DEPS: dict[str, frozenset[str]] = {
@@ -291,11 +302,12 @@ def _run_dep_spec_str(spec: object) -> str:
 
 
 def _run_dependencies(package: str) -> dict[str, frozenset[str]]:
+    """Keyed by the PyPI distribution name, so both manifests compare by one name."""
     run_deps = _load(package, "pixi.toml").get("package", {}).get(
         "run-dependencies", {}
     )
     return {
-        _normalize(name): _pin_set(_run_dep_spec_str(spec))
+        CONDA_TO_PYPI.get(_normalize(name), _normalize(name)): _pin_set(_run_dep_spec_str(spec))
         for name, spec in run_deps.items()
     }
 
@@ -479,6 +491,20 @@ def test_conda_only_entries_are_still_conda_run_deps():
         "CONDA_ONLY_RUN_DEPS entries no longer describe a real conda run-dep:\n  "
         + "\n  ".join(stale)
         + "\n\nDelete them — an exemption for something that is not there suppresses nothing."
+    )
+
+
+def test_conda_to_pypi_entries_are_still_conda_run_deps():
+    """The same ratchet for `CONDA_TO_PYPI`: a renaming for a conda package no
+    package declares any more renames nothing and must not sit there."""
+    declared = {
+        _normalize(name)
+        for package in PACKAGES
+        for name in _load(package, "pixi.toml").get("package", {}).get("run-dependencies", {})
+    }
+    stale = sorted(set(CONDA_TO_PYPI) - declared)
+    assert not stale, (
+        f"CONDA_TO_PYPI names conda packages no pixi.toml [package.run-dependencies] declares: {stale}"
     )
 
 
