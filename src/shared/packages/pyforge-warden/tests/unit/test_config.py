@@ -493,7 +493,7 @@ def test_default_with_cli_overrides_rejects_invalid_fail_on():
         EffectiveConfig.default_with_cli_overrides(cli_fail_on="extreme")
 
 
-# --- ConfigLoader.load: allow-licenses/deny-licenses (Story 6.2, FR33) -------
+# --- ConfigLoader.load: allow-licenses/deny-licenses (Story 6.2, FR-33) -------
 
 
 def test_allow_deny_licenses_default_to_empty(tmp_path):
@@ -700,7 +700,7 @@ def test_license_policy_property_matches_module_default_table():
     assert EffectiveConfig().license_policy == dict(DEFAULT_LICENSE_POLICY)
 
 
-# --- ConfigLoader.load: max-lag/require-lts/fail-on-eol (Story 6.3, FR35) ---
+# --- ConfigLoader.load: max-lag/require-lts/fail-on-eol (Story 6.3, FR-35) ---
 
 
 def test_max_lag_require_lts_fail_on_eol_default(tmp_path):

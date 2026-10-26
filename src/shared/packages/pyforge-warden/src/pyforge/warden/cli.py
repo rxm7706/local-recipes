@@ -181,7 +181,7 @@ Ownership decisions recorded:
   (``Exception``, not just ``OSError``/``ValueError``) — an unrelated
   artifact's internal bug must degrade to a loud stderr line, never a
   silent report loss.
-* ``--allow-licenses``/``--deny-licenses`` (Story 6.2, FR33): threaded into
+* ``--allow-licenses``/``--deny-licenses`` (Story 6.2, FR-33): threaded into
   ``ConfigLoader().load(...)`` the SAME way ``--fail-on``/
   ``--fail-under-coverage`` already are (CLI wins over either TOML file),
   and into ``LicenseEngine(allow_licenses=..., deny_licenses=...)`` in the
@@ -193,7 +193,7 @@ Ownership decisions recorded:
   ``license_rung`` too, so a set flag now escalates the RUNG
   (denied->policy-violation / unknown->indeterminate) while
   ``license_findings`` output stays identical.
-* ``--max-lag``/``--require-lts``/``--fail-on-eol`` (Story 6.3, FR35) mirror
+* ``--max-lag``/``--require-lts``/``--fail-on-eol`` (Story 6.3, FR-35) mirror
   the license flags' treatment: threaded into ``ConfigLoader().load(...)``
   (CLI wins over either TOML file). ``config.currency_gating`` is threaded
   into ``assemble_report`` for the currency axis's own ``AxisCoverage.
@@ -524,7 +524,7 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
             "comma-separated SPDX license id allow-list; a resolved "
             "component license NOT in this list is denied (overrides any "
             "[tool.pyforge-warden] allow-licenses config value) -- "
-            "activates license-axis gating (FR33): a denied verdict composes "
+            "activates license-axis gating (FR-33): a denied verdict composes "
             "'policy-violation' (exit 1) and an unresolvable license composes "
             "'indeterminate' (Story 6.5)"
         ),
@@ -538,7 +538,7 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
             "component license IN this list is denied, taking priority "
             "over --allow-licenses (overrides any [tool.pyforge-warden] "
             "deny-licenses config value) -- activates license-axis gating "
-            "(FR33): a denied verdict composes 'policy-violation', an "
+            "(FR-33): a denied verdict composes 'policy-violation', an "
             "unresolvable license composes 'indeterminate' (Story 6.5)"
         ),
     )
@@ -551,7 +551,7 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
             "the currency-axis releases-behind-latest threshold, a "
             "non-negative integer (overrides any [tool.pyforge-warden] "
             "max-lag config value) -- activates currency-axis gating "
-            "(FR35). The gate now ENFORCES this threshold (Story 6.5): an "
+            "(FR-35). The gate now ENFORCES this threshold (Story 6.5): an "
             "over-lag finding whose lag EXCEEDS N composes 'policy-violation' "
             "(exit 1); an over-lag at or below N stays 'warn' (visible, not "
             "blocking). An 'eol' verdict blocks regardless of N; 'unknown' "
@@ -565,7 +565,7 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
         help=(
             "require an LTS-policy currency resolution where one exists "
             "(overrides any [tool.pyforge-warden] require-lts config "
-            "value) -- activates currency-axis gating (FR35): an 'eol' "
+            "value) -- activates currency-axis gating (FR-35): an 'eol' "
             "verdict composes 'policy-violation', 'unknown' composes "
             "'indeterminate' (Story 6.5). Note: this flag only ACTIVATES the "
             "generic gate; it performs no LTS-specific enforcement -- the "
@@ -581,7 +581,7 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
         help=(
             "block on an eol currency verdict (overrides any "
             "[tool.pyforge-warden] fail-on-eol config value) -- activates "
-            "currency-axis gating (FR35): an 'eol' verdict composes "
+            "currency-axis gating (FR-35): an 'eol' verdict composes "
             "'policy-violation' (exit 1) and 'unknown' composes "
             "'indeterminate' (Story 6.5)"
         ),
@@ -934,7 +934,7 @@ def _instantiate_and_run_engine(
     ``engines_to_run``'s own registration order, so error/rung/
     ``engine_results`` ordering (and ``_record_error``'s stderr diagnostic
     ordering) stays exactly as deterministic as the pre-5.2 sequential loop
-    did (NFR-R3b) — never completion order.
+    did (NFR-R3.2) — never completion order.
 
     Exactly one of the two return slots is populated: ``(EngineResult,
     None)`` on success, or ``(None, <_record_error kwargs>)`` on either a
@@ -1374,7 +1374,7 @@ def _run_scan(args: argparse.Namespace) -> int:
         else ()
     )
     if engines_to_run:
-        # Story 5.2 (NFR-P-concurrency): the 4-axis fan-out runs concurrently
+        # Story 5.2 (NFR-P4): the 4-axis fan-out runs concurrently
         # via a thread pool -- each worker's instantiate+run unit
         # (_instantiate_and_run_engine) touches NO shared state (it returns
         # its outcome rather than mutating errors/rungs/engine_results
@@ -1394,7 +1394,7 @@ def _run_scan(args: argparse.Namespace) -> int:
         # _record_error-driven stderr diagnostics) are reassembled in
         # deterministic registration order, never completion order (the
         # existing first-registration-order-wins dedupe convention and
-        # NFR-R3b both depend on this).
+        # NFR-R3.2 both depend on this).
         with ThreadPoolExecutor(max_workers=len(engines_to_run)) as pool:
             futures = [
                 pool.submit(_instantiate_and_run_engine, factory, config, target, inventory)

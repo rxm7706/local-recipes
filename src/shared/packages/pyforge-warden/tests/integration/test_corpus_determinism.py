@@ -1,4 +1,4 @@
-"""Corpus-scale ``--deterministic`` determinism proof (Story 5.2, NFR-R3b
+"""Corpus-scale ``--deterministic`` determinism proof (Story 5.2, NFR-R3.2
 at fleet scale) -- extends ``test_scan_harness.py``'s
 ``test_twice_run_stdout_is_byte_identical`` pattern to the FULL committed
 corpus directory as the scan target (~1,979 real ``recipe.yaml``/

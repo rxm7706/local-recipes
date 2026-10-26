@@ -1,5 +1,5 @@
 """Stubbed-engine orchestration/report overhead benchmark (Story 5.2,
-NFR-P-warm) -- ``architecture.md:350`` flagged this threshold as needing
+NFR-P2) -- ``architecture.md:350`` flagged this threshold as needing
 calibration once a reference corpus existed; this story IS that
 calibration point.
 
@@ -9,7 +9,7 @@ All 4 axis engines are replaced (not merely appended -- see
 pattern, so the measured wall-clock is orchestration/report cost only
 (config load, discovery, extraction, the ``ThreadPoolExecutor`` fan-out +
 join, policy evaluation, report assembly/render) -- NEVER real deptry/
-osv-scanner subprocess timing, per NFR-P-warm's "engines-stubbed"
+osv-scanner subprocess timing, per NFR-P2's "engines-stubbed"
 requirement.
 
 The scan target is ``tests/fixtures/corpus/recipes/types-lxml`` -- the

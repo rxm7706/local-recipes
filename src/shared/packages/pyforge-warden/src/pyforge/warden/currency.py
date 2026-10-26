@@ -197,7 +197,7 @@ _REGISTRY_MAX_AGE_DAYS = 180
 # A stable, deterministic identity for the bundled registry's own
 # FeedProvenance.source — NOT a filesystem path (which would vary by
 # install location/method), matching this module's own determinism
-# constraints (NFR-R3b).
+# constraints (NFR-R3.2).
 _REGISTRY_SOURCE = "pyforge.warden/data/lts-registry.yaml"
 
 # The default currency policy: CurrencyVerdict -> Status. The all-WARN

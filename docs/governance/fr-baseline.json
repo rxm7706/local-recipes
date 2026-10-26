@@ -119,38 +119,7 @@
     ],
     "pyforge-scribe": [],
     "pyforge-steward": [],
-    "pyforge-warden": [
-      "FR30",
-      "NFR-C1",
-      "NFR-I1",
-      "NFR-I2",
-      "NFR-I3",
-      "NFR-R1",
-      "NFR-R2",
-      "NFR-R5",
-      "NFR-S1",
-      "NFR-S2",
-      "NFR-S3",
-      "NFR-S4",
-      "NFR-S5",
-      "NFR-S6",
-      "NFR-S7",
-      "NFR-S8",
-      "NFR-S9",
-      "NFR-U1",
-      "NFR-U2",
-      "FR-NEW-A",
-      "FR-NEW-B",
-      "FR-NEW-C",
-      "FR-NEW-D",
-      "FR-NEW-E",
-      "FR-NEW-F",
-      "NFR-P-cold",
-      "NFR-P-concurrency",
-      "NFR-P-warm",
-      "NFR-R3a",
-      "NFR-R3b"
-    ]
+    "pyforge-warden": []
   },
   "rebaselined": {
     "pyforge-marshal": "c4292d3501f7c6200db214a7d1d635d23218a980",
@@ -172,9 +141,6 @@
     ],
     "pyforge-mason": [
       "33.2 (arrowless NFR lines)"
-    ],
-    "pyforge-warden": [
-      "20.2 (arrowless NFR lines; fr-id-unhyphenated and fr-id-malformed ids)"
     ]
   },
   "findings_sha": "c4292d3501f7c6200db214a7d1d635d23218a980",
@@ -209,21 +175,6 @@
     "pyforge-mason": [],
     "pyforge-scribe": [],
     "pyforge-steward": [],
-    "pyforge-warden": [
-      "fr-id-malformed:FR-NEW-A",
-      "fr-id-malformed:FR-NEW-B",
-      "fr-id-malformed:FR-NEW-C",
-      "fr-id-malformed:FR-NEW-D",
-      "fr-id-malformed:FR-NEW-E",
-      "fr-id-malformed:FR-NEW-F",
-      "fr-id-malformed:NFR-P-cold",
-      "fr-id-malformed:NFR-P-concurrency",
-      "fr-id-malformed:NFR-P-warm",
-      "fr-id-malformed:NFR-R3a",
-      "fr-id-malformed:NFR-R3b",
-      "fr-id-unhyphenated:FR30",
-      "fr-id-unhyphenated:FR33",
-      "fr-id-unhyphenated:FR35"
-    ]
+    "pyforge-warden": []
   }
 }
