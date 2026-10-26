@@ -21,7 +21,7 @@ deferred: []
 
 ## Intent
 
-**Problem:** two texts still count the pipelines atlas had before Stories 20.3 and 37.10. Line numbers are at
+**Problem:** two texts still count the pipelines atlas had before Stories 19.3 and 37.10. Line numbers are at
 `529f06d52b`.
 
 - `register_pipelines()` (`pipeline_registry.py`) registers twelve pipelines: core, vcs_health, pypi_intelligence,
@@ -30,7 +30,7 @@ deferred: []
   (`AFTER_RUN_PIPELINES`, :10, :23-25). `tests/unit/test_pipeline_inventory.py` pins the package README's "12".
 - AD-3 (spine :90-94) keeps the sealed seven, and its 2026-08-26 amendment names three as-built packages
   (`upstream_discovery`, `artifactory_downloads`, `query_plane_cache`) and says its rule "holds across all ten".
-  `semantic_packages` (Story 20.3) and `catalog_index` (Story 37.10) were never written in; the spine's 2026-10-25
+  `semantic_packages` (Story 19.3) and `catalog_index` (Story 37.10) were never written in; the spine's 2026-10-25
   currency section (:1626-1636) records the divergence.
 - The MCP face calls `PIPELINE_NAMES`' eight (`mcp/tools.py:97-106`) "the registered pipelines": the
   `list_atlas_pipelines` docstring (`mcp/server.py:106-108`), which the official SDK serves as the tool description;

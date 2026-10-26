@@ -5,8 +5,9 @@
   (conf/base/catalog.yml keys are the source of truth);
 - ``library-futures`` / ``add-handoff`` / the 4 seed-gap suggesters stay
   CLI-only and never appear in the audit;
-- the 4 pipeline-trigger tools match ``tools.PIPELINE_NAMES``, and that
-  static mirror matches the REAL registry (the 4 create_pipeline modules).
+- the pipeline-trigger tools match ``tools.PIPELINE_NAMES``, the eight
+  MCP-triggerable pipelines, and that static mirror matches the REAL registry
+  less ``NO_MCP_TRIGGER_PIPELINES`` (the four CLI-only by design).
 """
 
 from __future__ import annotations

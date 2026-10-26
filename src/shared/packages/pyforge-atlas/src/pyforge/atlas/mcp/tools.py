@@ -68,7 +68,7 @@ TOOL_SPECS: dict[str, dict[str, Any]] = {
         "cli": None,
     },
     "list_atlas_pipelines": {
-        "description": "List registered atlas pipeline names.",
+        "description": "List the MCP-triggerable atlas pipeline names.",
         "cli": None,
     },
     "list_atlas_datasets": {
@@ -85,11 +85,13 @@ TOOL_SPECS: dict[str, dict[str, Any]] = {
     },
 }
 
-# The authoritative registry mirror: the four registered pipelines from
-# B1/B2 (`find_pipelines()` discovers them from the pipelines/ package).
+# The MCP-triggerable pipelines: eight of the twelve `register_pipelines()`
+# registers (`find_pipelines()` discovers them from the pipelines/ package).
 # Kept STATIC — not computed from a live registry — so list_pipelines()
-# stays offline/thin; tests/mcp/test_audit_mapping.py pins this tuple
-# against the real registry (the 5 create_pipeline modules). B6 added
+# stays offline/thin; tests/unit/mcp/test_audit_mapping.py pins this tuple
+# against the real registry, less its NO_MCP_TRIGGER_PIPELINES (the four
+# CLI-only by design: artifactory_downloads, query_plane_cache,
+# semantic_packages, catalog_index). B6 added
 # `seed_gaps` (the four READ-ONLY seed-freshness report nodes). NB: this is
 # the generic per-PIPELINE trigger the registry-mirror invariant requires —
 # the four seed-gap SUGGESTERS themselves stay CLI-only (AD-7): no per-tool
@@ -120,8 +122,8 @@ def run_pipeline(
     extra_params: dict[str, Any] | None = None,
     env: str | None = None,
 ) -> dict[str, Any]:
-    """Trigger the named registered pipeline through the ONE execution
-    plane (AD-23): ``KedroSession.run(pipeline_name=...)``.
+    """Trigger the named MCP-triggerable pipeline (one of ``PIPELINE_NAMES``)
+    through the ONE execution plane (AD-23): ``KedroSession.run(pipeline_name=...)``.
 
     Returns a thin advisory + timestamped receipt (AD-17) — the OUTPUT
     NAMES only, never the raw data (reads go through ``read_dataset``).
@@ -243,9 +245,9 @@ def list_pipelines(
     project_path: Path | str | None = None,
     env: str | None = None,
 ) -> list[str]:
-    """The registered pipeline names — served from the static registry
-    mirror (see PIPELINE_NAMES) so this stays offline/thin; the mirror is
-    pinned against the real registry by test_audit_mapping."""
+    """The MCP-triggerable pipeline names — served from the static mirror
+    (see PIPELINE_NAMES) so this stays offline/thin; the mirror is pinned
+    against the real registry, less the CLI-only pipelines, by test_audit_mapping."""
     return sorted(PIPELINE_NAMES)
 
 

@@ -80,9 +80,9 @@ CLI accepts every registered Kedro pipeline. Kedro 1.6 deprecates the singular
 | Function | Purpose | Key params |
 |---|---|---|
 | `main` | Kedro CLI entry (`pyforge-atlas` / `python -m pyforge.atlas`) | argv / `--version` |
-| `run_pipeline` | Trigger one registered pipeline via KedroSession | `name` |
+| `run_pipeline` | Trigger one MCP-triggerable pipeline via KedroSession | `name` |
 | `read_dataset` | Load one catalog dataset with provenance envelope | dataset name |
-| `list_pipelines` | Offline registry mirror of pipeline names | — |
+| `list_pipelines` | Offline mirror of the eight MCP-triggerable pipeline names (the other four are CLI-only) | — |
 | `list_datasets` | Catalog keys from a bootstrapped session | — |
 | `query_vizro_ai` | NL field over BSL (MCP) | `query` |
 | `query_trending_candidates` | Read classified trending list (MCP) | filters |

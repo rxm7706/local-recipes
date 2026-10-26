@@ -750,9 +750,9 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   Operator ruling 2026-10-25 (AskUserQuestion, verbatim choice): "brotli + brotli-python (Recommended)". Owner
   `spec-pyforge-atlas` (CAP-64, no new CAP). → Epic 34 / Story 34.13, specced 2026-10-25.
 - **2026-10-25 (twelve pipelines, eight triggers)** — **Found: the spine and the MCP face still count the pipelines
-  the station had before Stories 20.3 and 37.10.** `register_pipelines()` registers twelve pipelines, eleven of them in
+  the station had before Stories 19.3 and 37.10.** `register_pipelines()` registers twelve pipelines, eleven of them in
   `__default__` (`catalog_index` runs after a build). AD-3's 2026-08-26 amendment names the sealed seven plus three
-  as-built packages and says its rule "holds across all ten"; `semantic_packages` (Story 20.3) and `catalog_index`
+  as-built packages and says its rule "holds across all ten"; `semantic_packages` (Story 19.3) and `catalog_index`
   (Story 37.10) were never written in. The MCP face calls its eight-name trigger set (`PIPELINE_NAMES`) "the registered
   pipelines": the `list_atlas_pipelines` tool's served description (`mcp/server.py`), `TOOL_SPECS`, a docstring and a
   comment in `mcp/tools.py`, the audit test's docstring and the station skill. The retro recorded both as divergences
