@@ -2,7 +2,7 @@
 title: '13.7: A landed workspace that holds Tier-3 files deletes, and keeps the files'
 type: 'fix'
 created: '2026-10-25'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'fd06415e4d1e1e3446ad6463f9e1149630d3311a'
 review_loop_iteration: 2
 followup_review_recommended: false
@@ -148,3 +148,5 @@ the listing-warning rule above, which only refuses); add a flag.
   `_bmad-output/`, such as an unreadable `.pixi/envs` entry, where the baseline deleted (now only a warning naming
   `_bmad-output/` refuses, quoted in the reason); the `_landed_note_text` docstring names the warning rule; a FIFO or
   socket is not moved. Tests: `test_workspace_delete_tier3.py` (18); each round-2 fix caught by a mutation.
+- 2026-10-25: promoted to `done` in the landing PR after its review round 2 fixes, with its ledger key (a worktree-local
+  feed and `sprint-ledger-sync`), so the merged story never sits at `backlog` on `main`.

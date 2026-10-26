@@ -1118,7 +1118,7 @@ So that a landed workspace is removed by the tool, never by hand, and a refusal 
 **When** `steward workspace clean <slug> --delete` runs over a clean, landed workspace whose worktree holds `_bmad-output/projects/<p>/implementation-artifacts/runs/<id>/journal.jsonl`
 **Then** the file is moved to the same path in the main checkout (the first worktree `git worktree list` names, when it is a checkout), unchanged, and the worktree, branch and record are deleted with no tarball, note or tag; the deleted row names the main checkout the files went to; when any such file already exists in the main checkout, there is no main checkout, or the worktree is locked, nothing moves, the workspace is skipped with a reason that names the file, and its worktree, branch and record stay
 **And** a submodule, a per-worktree ref, an unreadable HEAD or a failed ignored listing is skipped with its own reason, and `not-merged` stays for a HEAD or branch on no landing ref; the `.landed.txt` proof, the default `clean`, `--merged-only`, `status` and `ls` are unchanged; the new tests fail on `fd06415e4d`; the 13.1-13.6, 68.1, 69.1, 70.1 and 85.5 workspace tests pass; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 14: The BMAD core upgrades repeatably
 
