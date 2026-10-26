@@ -734,6 +734,36 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   Operator rulings 2026-10-25 (AskUserQuestion, verbatim choices): "Approve as proposed (Recommended)" (the 23-heading
   table), "Drop the arrow (Recommended)" (the `### FR-61..FR-68 delivered` summary heading), "Append a correction
   (Recommended)" (the fold-provenance line). Owner `spec-pyforge-atlas`. → Epic 39 / Story 39.1, specced 2026-10-25.
+- **2026-10-25 (the nixpkgs store decodes brotli by luck)** — **Found: atlas imports brotli without declaring it.**
+  The nixpkgs Tier-3 index is `packages.json.br`, and `datasets/tier3_sources.py` decodes it through a guarded
+  `importlib.import_module("brotli")` (`_brotli_decompress`, `NixpkgsPackagesDataset._frame`). The atlas env has the
+  module only because conda-forge's `urllib3` depends on `brotli-python`; PyPI's `urllib3` makes brotli an extra, so
+  a pip install of pyforge-atlas has none and the store marks itself stale (`DW-atlas-34-5-1`, Story 34.5's review).
+  The 2026-10-25 atlas retro lists it as candidate fix 2. **What it looks like when fixed:** both manifests declare it
+  at the floor the env already resolves, `brotli>=1.2` in `pyproject.toml` and `brotli-python = ">=1.2"` in the
+  package `pixi.toml`, as the `filelock` and `numpy` lines are declared; `pixi.lock` records the same string, so a
+  fresh pixi reads the lock as current; the dependency-parity test maps the PyPI name to the conda name, and the
+  library catalog lists it. **Constraints:**
+  - a fix under CAP-64 (Story 34.5's nixpkgs source), with no CAP and no flag; no new package enters the env;
+  - the import stays guarded, so a missing module still reads `stale` rather than raising.
+
+  Operator ruling 2026-10-25 (AskUserQuestion, verbatim choice): "brotli + brotli-python (Recommended)". Owner
+  `spec-pyforge-atlas` (CAP-64, no new CAP). → Epic 34 / Story 34.13, specced 2026-10-25.
+- **2026-10-25 (twelve pipelines, eight triggers)** — **Found: the spine and the MCP face still count the pipelines
+  the station had before Stories 20.3 and 37.10.** `register_pipelines()` registers twelve pipelines, eleven of them in
+  `__default__` (`catalog_index` runs after a build). AD-3's 2026-08-26 amendment names the sealed seven plus three
+  as-built packages and says its rule "holds across all ten"; `semantic_packages` (Story 20.3) and `catalog_index`
+  (Story 37.10) were never written in. The MCP face calls its eight-name trigger set (`PIPELINE_NAMES`) "the registered
+  pipelines": the `list_atlas_pipelines` tool's served description (`mcp/server.py`), `TOOL_SPECS`, a docstring and a
+  comment in `mcp/tools.py`, the audit test's docstring and the station skill. The retro recorded both as divergences
+  (Finding 7, candidate fixes 4 and 5). **What it looks like when fixed:** AD-3's amendment, edited in place as its
+  earlier amendments were, names all twelve and says which run in `__default__`; every MCP text names its eight as
+  the MCP-triggerable pipelines, and the four CLI-only pipelines stay CLI-only by design. **Constraints:**
+  - a fix under CAP-9 (agents trigger and read the pipeline natively), with no CAP and no flag;
+  - wording only: no pipeline, tool, trigger set or registry changes; no test assertion changes;
+  - the sealed seven stay sealed (AD-3's rule is unchanged; only its enumeration grows).
+
+  Owner `spec-pyforge-atlas` (CAP-9, AD-3, no new CAP). → Epic 33 / Story 33.2, specced 2026-10-25.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 
