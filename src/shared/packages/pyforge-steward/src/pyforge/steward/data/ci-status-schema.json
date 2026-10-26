@@ -58,6 +58,22 @@
         "review_days_left": { "type": ["integer", "null"] },
         "owner": { "type": ["string", "null"] },
         "last_green_run": { "type": ["string", "null"] },
+        "latest_main_run": {
+          "description": "The newest completed run of the row's workflow on main that a PR did not start, from the listed runs; null when none qualifies or the row is retired (Story 99.8). Optional: rows built before it, and the master and unregistered rows, carry none.",
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["conclusion", "created_at", "run_id"],
+              "properties": {
+                "conclusion": { "type": "string" },
+                "created_at": { "type": ["string", "null"] },
+                "run_id": { "type": ["integer", "null"] }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
         "verdict": {
           "enum": [
             "live",

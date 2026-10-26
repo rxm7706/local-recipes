@@ -1136,6 +1136,8 @@ def run_preflight(
         paused_lanes = list(banner_lines.values())
         if paused_lanes:
             preflight_ci.print_ci_pause_banner(repo_root, paused_lanes, resolution=resolution)
+        # Story 99.8: advisory only -- the lanes, the verdict and the exit code below never read it.
+        preflight_ci.print_main_red_banner(repo_root)
         paused_lanes = lane_paused
         paused_keys = {(entry.task, entry.environment) for entry in paused_lanes}
         run_lanes = [lane for lane in lanes if selection.is_selected(lane)]

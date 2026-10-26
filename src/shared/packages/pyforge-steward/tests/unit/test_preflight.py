@@ -423,3 +423,72 @@ def test_pages_lanes_with_dependency_scheduler_avoid_write_overlap(tmp_path: Pat
     )
     assert code == preflight.EXIT_OK
     assert peak <= 2
+
+
+# ---- Story 99.8: the red-main banner is advisory ----------------------------------------------------
+
+
+def _red_main_snapshot(root: Path, raw: bytes | None = None) -> None:
+    from datetime import UTC, datetime
+
+    path = root / ".steward" / "ci-status.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if raw is not None:
+        path.write_bytes(raw)
+        return
+    doc = {
+        "fetched_at": datetime.now(tz=UTC).isoformat(),
+        "rows": [
+            {
+                "id": "kedro-viz-publish.vizro",
+                "latest_main_run": {"conclusion": "failure", "created_at": None, "run_id": 5},
+            }
+        ],
+    }
+    path.write_text(json.dumps(doc), encoding="utf-8")
+
+
+@pytest.mark.parametrize(
+    ("flag_on", "snapshot"),
+    [
+        (True, None),
+        (False, None),
+        (True, b"\xff not json"),
+        (True, b'{"fetched_at": "2026-10-25T00:00:00", "rows": [{"id": []}]}'),
+    ],
+)
+def test_the_red_main_banner_never_changes_the_run(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    flag_on: bool,
+    snapshot: bytes | None,
+) -> None:
+    from pyforge.steward import preflight_ci
+
+    pixi_path = tmp_path / "pixi.toml"
+    pixi_path.write_text(
+        "[feature.guild-tasks.tasks.pr-preflight-lanes]\n"
+        'depends-on = ["a", "b"]\n'
+        "[feature.guild-tasks.tasks.a]\ncmd = 'true'\n"
+        "[feature.guild-tasks.tasks.b]\ncmd = 'true'\n",
+        encoding="utf-8",
+    )
+    _red_main_snapshot(tmp_path, snapshot)
+    monkeypatch.setattr(preflight_ci, "_flag_on", lambda _root: flag_on)
+    calls: list[str] = []
+
+    def fake_run(lane: preflight.Lane) -> int:
+        calls.append(lane.task)
+        return 1 if lane.task == "b" else 0
+
+    code = preflight.run_preflight(tmp_path, pixi_path=pixi_path, run_lane=fake_run, **_SERIAL)
+    err = capsys.readouterr().err
+    assert code == preflight.EXIT_LANE_RED
+    assert calls == ["a", "b"]
+    assert ("preflight: main is red on kedro-viz-publish.vizro: failure, run 5" in err) is (
+        flag_on and snapshot is None
+    )
+    assert ("main CI state unknown" in err) is (flag_on and snapshot is not None)
+    if not flag_on:
+        assert "main is red" not in err and "main CI state" not in err
