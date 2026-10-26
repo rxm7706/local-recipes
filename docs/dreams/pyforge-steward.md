@@ -2066,6 +2066,46 @@ Drift — orphaned between stations.
   recorded source; the proof's other conditions (clean tree, no hidden index entry, no gitlink, no per-worktree
   ref, no Tier-3 work) do not change. The operator's ask in chat, 2026-10-23. Owner `spec-pyforge-steward`. →
   Epic 13 / Story 13.6, specced 2026-10-23; it reopens Epic 13.
+- **2026-10-25 (the dependency-completeness test runs on no PR) — Found: an undeclared import can reach `main`, and
+  did.** Atlas Story 37.7 (#2294, 2026-10-23) imported `numpy` at module level without declaring it, and `main` stayed
+  red on `tests/packaging/test_dependency_completeness.py` until marshal Story 103.1 (#2307) declared it. The atlas
+  retro of 2026-10-25 names it Finding 2 and candidate fix 1 (`DW-atlas-retro-2026-10-15-4`, its third recurrence).
+  Read at `529f06d52b`:
+  - **No lane runs it.** The task is `pyforge-deps-test` (`pixi.toml:843`-`:845`, `-e pyforge-ci`, about 4 s).
+    `pr-preflight-lanes` (`pixi.toml:1668`, `depends-on` at `:1680`) expands to 37 lanes and none is this task; no
+    workflow under `.github/workflows/` names it. Only marshal's `verify_commands` (`marshal-policy.toml:96`) runs it,
+    and a hand-landed branch never reads `verify_commands`.
+  - **A touched-scope run would defer it anyway.** Under `PYFORGE_PREFLIGHT_SCOPE=touched` (the dev default)
+    `preflight_ci.touch_verdict` (`:1689`-`:1713`) keeps a lane only for its station package, a path its command
+    names (`tests/packaging`) or, for lint and types, Python under `src/`; `pyforge-ci` maps to no station package,
+    so an atlas-only diff would journal the new lane as deferred.
+  **What it looks like when fixed:** `pyforge-deps-test` is a `pr-preflight-lanes` leg and a step of the Detectors
+  `scripts-suite` job, which runs on every PR, so the two land together (doctor's `test_preflight_mirrors_scripts_suite.py`
+  reds one without the other); a touched-scope run keeps it whenever a `pyforge-*` package's `pyproject.toml`,
+  `pixi.toml` or a Python file under its `src/` changed. **Constraints:** a fix under CAP-159, with no CAP and no flag;
+  no new job, workflow or ci-surfaces row; the task itself does not change. Operator direction 2026-10-25 ("want those
+  steward ones done here too"). Owner `spec-pyforge-steward`. → Epic 71 / Story 71.14, specced 2026-10-25; it reopens
+  Epic 71.
+- **2026-10-25 (a red main run reaches no landing) — Found: a workflow that fails on `main` and gates no PR is red in
+  silence.** The atlas `kedro-viz-publish` workflow's `vizro` job failed on five consecutive merges to `main` on
+  2026-10-23 (a cwe.mitre.org outage), and 7 of its last 15 `main` runs failed, most within 17 minutes; each next
+  landing went ahead without knowing (the atlas retro's Finding 2, candidate fix 3). Read at `529f06d52b`:
+  - **The state exists and is not shown.** `steward ci status` lists each registered workflow's last 20 runs
+    (`ci.py:191`-`:216`, `--json databaseId,conclusion,status,createdAt,event`) and keeps only `last_green_run`
+    (`ci.py:327`); it never reads the branch or reports the newest `main` conclusion. Marshal reads the envelope once
+    per landing (`dispatch_land.py:117`-`:132`), for pauses only.
+  - **The preflight has the pattern.** It prints the ci-vars snapshot's pause lines from `.steward/ci-vars.json` when
+    the snapshot is under 24 hours old and `pyforge.steward.ci_pause_control` is on (`preflight_ci.py:584`-`:700`,
+    `preflight.py:1122`-`:1138`).
+  **What it looks like when fixed:** each `ci status` row carries `latest_main_run` (the newest completed run of its
+  workflow on `main`: its conclusion, time and id), an additive field of the frozen schema; `ci status` also writes the
+  envelope to the gitignored `.steward/ci-status.json`; and `pr-preflight` prints one advisory line per surface whose
+  latest `main` run did not succeed, from a snapshot under 24 hours old, under the same flag. Nothing blocks: a stale,
+  missing or unreadable snapshot says so in one line, and the verdict and exit code do not change. **Constraints:** a
+  fix under CAP-166 ("visible in one place"), with no CAP and no flag (operator ruling 2026-10-25, "Fix, no flag
+  (Recommended)"); the PR trigger option was declined ("Red-main banner (Recommended)"); no new GitHub call from the
+  preflight, and no change to which lanes run. Owner `spec-pyforge-steward`. → Epic 99 / Story 99.8, specced
+  2026-10-25; it reopens Epic 99.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
