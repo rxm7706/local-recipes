@@ -1,11 +1,11 @@
 ---
 spec: langflow-django-plugin
 status: absorbed
-owner-dream: docs/dreams/langflow-django-plugin.md
+owner-dream: archive/docs/dreams/langflow-django-plugin.md
 absorbed-into: spec-pyforge-unifying-strategy
 companions: []
 sources:
-  - ../../../../../../docs/dreams/langflow-django-plugin.md
+  - ../../../../../../archive/docs/dreams/langflow-django-plugin.md
 ---
 
 # SPEC — Langflow joins Django as a pluggable app (ABSORBED)

@@ -4,7 +4,7 @@ spec: pyforge-doctor-dependency-health
 status: absorbed
 absorbed-into: spec-pyforge-doctor
 updated: '2026-09-17'
-owner-dream: docs/dreams/pyforge-doctor-dependency-health.md
+owner-dream: archive/docs/dreams/pyforge-doctor-dependency-health.md
 ---
 
 # Absorbed into spec-pyforge-doctor

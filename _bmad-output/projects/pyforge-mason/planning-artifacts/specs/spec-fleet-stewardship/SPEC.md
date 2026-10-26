@@ -4,7 +4,7 @@ spec: fleet-stewardship
 status: absorbed
 absorbed-into: spec-pyforge-mason
 updated: "2026-09-17"
-owner-dream: docs/dreams/fleet-stewardship.md
+owner-dream: archive/docs/dreams/fleet-stewardship.md
 surface:
   - recipes/**
 surface-drift: exempt   # recipes are the product line — per-recipe governance is the CFE workflow, not spec re-derivation

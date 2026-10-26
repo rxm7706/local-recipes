@@ -4,7 +4,7 @@ spec: bmad-module-provisioning
 status: absorbed
 absorbed-into: spec-pyforge-steward
 updated: "2026-09-17"
-owner-dream: docs/dreams/bmad-module-provisioning.md
+owner-dream: archive/docs/dreams/bmad-module-provisioning.md
 ---
 
 # Absorbed into spec-pyforge-steward

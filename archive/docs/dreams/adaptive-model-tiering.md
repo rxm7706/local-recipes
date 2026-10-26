@@ -9,12 +9,6 @@ status: archived
 
 # FR-51's model tiering is fully wired and never turned on
 
-> **Consolidated into [[marshal-token-economy]] on 2026-09-16** (§ *Fold
-> (2026-09-16) — the token-savings Dreams come home*). This file is archived in
-> place: its **Spec stays live and remains the contract** — archiving the Dream
-> tier never retires the chain below it. Kept, not deleted, so the reasoning
-> that produced the Spec is still readable.
-
 ## The Dream
 
 Every `bmad-loop`-driven dev pass in every loop home runs on the SAME model,

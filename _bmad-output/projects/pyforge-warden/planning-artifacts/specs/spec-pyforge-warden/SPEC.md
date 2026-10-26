@@ -6,10 +6,10 @@ updated: "2026-09-28"
 owner-dream: docs/dreams/pyforge-warden.md
 covers-dreams:
   - docs/dreams/pyforge-warden.md
-  - docs/dreams/package-inventory-eligibility.md
-  - docs/dreams/compliance-factory-web-face.md
-  - docs/dreams/golden-path-conda-blind-spot.md
-  - docs/dreams/pyforge-warden-compliance-gates.md
+  - archive/docs/dreams/package-inventory-eligibility.md
+  - archive/docs/dreams/compliance-factory-web-face.md
+  - archive/docs/dreams/golden-path-conda-blind-spot.md
+  - archive/docs/dreams/pyforge-warden-compliance-gates.md
 surface:
   - src/shared/packages/pyforge-warden/**
 surface-drift-exclude:

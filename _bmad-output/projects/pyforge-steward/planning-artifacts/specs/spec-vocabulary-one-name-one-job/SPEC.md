@@ -4,7 +4,7 @@ spec: vocabulary-one-name-one-job
 status: absorbed
 absorbed-into: spec-pyforge-steward
 updated: "2026-09-17"
-owner-dream: docs/dreams/vocabulary-one-name-one-job.md
+owner-dream: archive/docs/dreams/vocabulary-one-name-one-job.md
 ---
 
 # Absorbed into spec-pyforge-steward

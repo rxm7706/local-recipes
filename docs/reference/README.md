@@ -20,7 +20,7 @@ contracts (`_bmad-output/*/planning-artifacts/`; legacy: `docs/specs/`).
 - `library-llms-full.md` — generated library catalog (detector: `pixi run -e pyforge-guild llms-full-check`). **Refresh needed** — regenerate via catalog header prompt.
 - `bmad-estate-llms-full.md` — generated picture of the BMAD estate: installed core/modules, skills by family, the suite roster with wielder + provisioning path, `bmad-*` pins, the marshal harness range, the release cadence (scribe Story 24.1, `spec-pyforge-scribe` CAP-32). Never hand-edited: regenerate with `pixi run -e pyforge-guild scribe catalog bmad-estate --write`; detector `pixi run -e pyforge-guild bmad-estate-check` (structured, prose exempt).
 - `github-workflows.md` — inventory of `.github/workflows/*.yml`. **Refresh needed as of 2026-08-15**: still lists 4 retired workflows and omits 4 that now exist — self-dated "Audited 2026-07-26."
-- `test-charter.md` — testing charter backing `docs/dreams/pyforge-testing-charter.md` / `spec-pyforge-testing-charter`.
+- `test-charter.md` — testing charter backing `archive/docs/dreams/pyforge-testing-charter.md` / `spec-pyforge-testing-charter`.
 - `station-verify-commands.md` — derived verify-command lookup for PyForge stations. **Refresh needed** — keep in sync with `marshal-policy.toml` files.
 - `sync-jira-github-workflow-templates/` — reusable GitHub Actions workflow templates for the (still-open) Jira↔GitHub Projects sync effort; see `archive/docs/intake/jira-github-projects-sync/` (archived 2026-09-19, doctor 23.4).
 

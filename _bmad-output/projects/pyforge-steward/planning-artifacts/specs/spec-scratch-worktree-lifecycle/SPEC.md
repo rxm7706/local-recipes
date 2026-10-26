@@ -4,7 +4,7 @@ spec: scratch-worktree-lifecycle
 status: absorbed
 absorbed-into: spec-pyforge-steward
 updated: "2026-09-17"
-owner-dream: docs/dreams/scratch-worktree-lifecycle.md
+owner-dream: archive/docs/dreams/scratch-worktree-lifecycle.md
 ---
 
 # Absorbed into spec-pyforge-steward

@@ -9,12 +9,6 @@ status: archived
 
 # The tier map names Cursor models Cursor can serve
 
-> **Consolidated into [[marshal-token-economy]] on 2026-09-16** (§ *Fold
-> (2026-09-16) — the token-savings Dreams come home*). This file is archived in
-> place: its **Spec stays live and remains the contract** — archiving the Dream
-> tier never retires the chain below it. Kept, not deleted, so the reasoning
-> that produced the Spec is still readable.
-
 ## The Dream
 
 The four-verb campaign runs in Cursor. Unattended `factory drain` must not

@@ -11,7 +11,7 @@ inputDocuments:
   - _bmad-output/projects/pyforge-scribe/planning-artifacts/briefs/brief-pyforge-scribe-2026-07-25/brief.md
   - docs/specs/claude-team-memory.md
 mode: headless-express — no interactive elicitation; epic/story structure drafted directly from the PRD's Wave 1/Wave 2 split and the architecture spine's module breakdown
-updated: "2026-10-26"   # AMENDED 2026-10-26 (one archive home): Epic 28 / Story 28.1 minted done under spec-one-chain-per-station CAP-11 (chore; no CAP, no FR, no flag): the station's 16 archived satellite Dreams left docs/dreams/ for archive/docs/dreams/, their bodies verbatim in the station Dream; keys 28-1, epic-28 (done) and epic-28-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync
+updated: "2026-10-26"   # AMENDED 2026-10-26 (one archive home): Epic 28 / Story 28.1 minted done under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 16 archived satellite Dreams left docs/dreams/ for archive/docs/dreams/, their bodies verbatim in the station Dream; keys 28-1, epic-28 (done) and epic-28-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync
 currency_review: "Reviewed 2026-09-17 (one-chain scribe fold) — INV-A window cites spec-pyforge-scribe CAP-1..26; epic numbers unchanged. No blocked keys flipped."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -954,9 +954,9 @@ So that an agent on any harness traces arrows instead of counting them, and the 
 **And** the scribe parity meta-test (`test_instruction_surface_parity.py`) and `governance-currency` stay green; no section is duplicated into a per-tool file; `pyforge-scribe-test` passes
 **Status:** done
 
-## Epic 28: The archived scribe Dreams live in one archive home (spec-one-chain-per-station CAP-11)
+## Epic 28: The archived scribe Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 
-Minted 2026-10-26 from `docs/governance/spec-one-chain-per-station/SPEC.md` CAP-11 (owner Dream
+Minted 2026-10-26 from `docs/governance/spec-one-chain-per-station/SPEC.md`, capability spec-one-chain-per-station:CAP-11 (owner Dream
 `docs/dreams/one-chain-per-station.md`, `owner: guild`) and that Dream's entry of the same date: a Dream is live in
 `docs/dreams/` or archived under `archive/docs/dreams/`, never both, and a folded satellite leaves the live tree only
 once its whole body sits verbatim in a dated section of its station Dream (CHAIN-STANDARD §11; doctor's
@@ -977,7 +977,7 @@ As a reader of `docs/dreams/`,
 I want scribe's 16 archived satellite Dreams to live under `archive/docs/dreams/<same name>`, each with its whole body verbatim in `docs/dreams/pyforge-scribe.md`,
 So that the live tree holds live Dreams only and nothing a satellite said is lost.
 
-**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-11 (CHAIN-STANDARD §11: one archive home; a fold is complete before the file moves; readers follow the move); no scribe CAP or FR
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-one-chain-per-station:CAP-11 (CHAIN-STANDARD §11: one archive home; a fold is complete before the file moves; readers follow the move); no scribe CAP or FR
 **Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
 **Surface:** `docs/dreams/pyforge-scribe.md` (16 dated 2026-10-26 sections, one per satellite whose long paragraphs were not all there: the body verbatim, headings demoted one level, the fold banner left out); `archive/docs/dreams/<slug>.md` × 16 (each moved with `git mv`, its banner stripped, its frontmatter unchanged); `docs/dreams/README.md` (the 16 interim rows leave with their files); `specs/spec-pyforge-scribe/SPEC.md` (`surface:` and `covers-dreams:` entries name the archive paths) and the 17 absorbed pointer Specs whose `owner-dream:` named a moved file; `.memlog.md` (the surface reconcile)
 **Spec:** `planning-artifacts/specs/spec-28-1-scribe-s-sixteen-archived-dreams-leave-the-live-tree.md`

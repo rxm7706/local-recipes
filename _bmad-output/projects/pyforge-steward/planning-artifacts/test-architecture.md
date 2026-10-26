@@ -5,7 +5,7 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: c5d0b9f2c98108ce
+source_fingerprint: b4b2a750ba1c82eb
 story_count: 398
 test_file_count: 142
 coverage_target_unit: ">=80%"
@@ -24,7 +24,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Test files inventoried:** 142 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `c5d0b9f2c98108ce`
+- **Source fingerprint:** `b4b2a750ba1c82eb`
 
 ## Risk Assessment
 
@@ -137,7 +137,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 110: The steward PRD's first 31 FRs name the capabilities the Spec carries
 - Epic 111: The steward Spec's capability text is whole again, and the foundry inherits the amended rule (spec-one-chain-per-station CAP-5 amended, CAP-7)
 - Epic 112: The Platform CI `test` job's budget covers a slow mirror (spec-pyforge-steward CAP-174 / FR-48)
-- Epic 115: The archived steward Dreams live in one archive home (spec-one-chain-per-station CAP-11)
+- Epic 115: The archived steward Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 
 ### Low-risk epics
 

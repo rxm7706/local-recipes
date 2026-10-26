@@ -4,7 +4,7 @@ spec: bmad-suite-metapackage
 status: absorbed
 absorbed-into: spec-pyforge-steward
 updated: "2026-09-17"
-owner-dream: docs/dreams/bmad-suite-metapackage.md
+owner-dream: archive/docs/dreams/bmad-suite-metapackage.md
 ---
 
 # Absorbed into spec-pyforge-steward

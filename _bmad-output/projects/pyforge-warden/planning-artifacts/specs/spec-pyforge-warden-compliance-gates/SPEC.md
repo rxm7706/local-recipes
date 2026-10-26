@@ -3,10 +3,10 @@ id: SPEC-pyforge-warden-compliance-gates
 spec: pyforge-warden-compliance-gates
 status: archived
 archived-reason: duplicate
-owner-dream: docs/dreams/pyforge-warden-compliance-gates.md
+owner-dream: archive/docs/dreams/pyforge-warden-compliance-gates.md
 surface: []          # archived — no live surface; see § What carries forward
 sources:
-  - ../../../../../../docs/dreams/pyforge-warden-compliance-gates.md
+  - ../../../../../../archive/docs/dreams/pyforge-warden-compliance-gates.md
 open_questions: []
 ---
 

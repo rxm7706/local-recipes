@@ -4,7 +4,7 @@ spec: package-inventory-eligibility
 status: absorbed
 absorbed-into: spec-pyforge-warden
 updated: "2026-09-17"
-owner-dream: docs/dreams/package-inventory-eligibility.md
+owner-dream: archive/docs/dreams/package-inventory-eligibility.md
 ---
 
 # Absorbed into spec-pyforge-warden

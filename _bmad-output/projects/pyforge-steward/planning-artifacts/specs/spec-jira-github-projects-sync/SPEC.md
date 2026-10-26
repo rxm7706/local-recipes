@@ -4,7 +4,7 @@ spec: jira-github-projects-sync
 status: absorbed
 absorbed-into: spec-pyforge-steward
 updated: "2026-09-17"
-owner-dream: docs/dreams/jira-github-projects-sync.md
+owner-dream: archive/docs/dreams/jira-github-projects-sync.md
 ---
 
 # Absorbed into spec-pyforge-steward

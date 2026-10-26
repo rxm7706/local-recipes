@@ -4,7 +4,7 @@ spec: enterprise-airgap
 status: absorbed
 absorbed-into: spec-pyforge-steward
 updated: "2026-09-17"
-owner-dream: docs/dreams/enterprise-airgap.md
+owner-dream: archive/docs/dreams/enterprise-airgap.md
 ---
 
 # Absorbed into spec-pyforge-steward

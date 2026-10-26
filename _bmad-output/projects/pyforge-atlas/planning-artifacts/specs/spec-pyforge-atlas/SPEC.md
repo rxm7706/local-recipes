@@ -6,18 +6,18 @@ updated: "2026-10-26"   # AMENDED 2026-10-26 (every requirement derives from a c
 owner-dream: docs/dreams/pyforge-atlas.md
 covers-dreams:
   - docs/dreams/pyforge-atlas.md
-  - docs/dreams/artifactory-download-intelligence.md
-  - docs/dreams/atlas-kedro-catalog-expansion.md
-  - docs/dreams/atlas-query-dashboards.md
-  - docs/dreams/conda-forge-packaging-inventory-operations.md
-  - docs/dreams/enterprise-data-models-and-apis.md
-  - docs/dreams/kedro-org-tooling-adoption.md
-  - docs/dreams/microsoft-org-sweep.md
-  - docs/dreams/pyforge-atlas-intelligence-platform.md
-  - docs/dreams/unity-data-stack.md
-  - docs/dreams/upstream-discovery.md
-  - docs/dreams/wagtail-corporate-brain.md
-  - docs/dreams/wasm-analytics-stack.md
+  - archive/docs/dreams/artifactory-download-intelligence.md
+  - archive/docs/dreams/atlas-kedro-catalog-expansion.md
+  - archive/docs/dreams/atlas-query-dashboards.md
+  - archive/docs/dreams/conda-forge-packaging-inventory-operations.md
+  - archive/docs/dreams/enterprise-data-models-and-apis.md
+  - archive/docs/dreams/kedro-org-tooling-adoption.md
+  - archive/docs/dreams/microsoft-org-sweep.md
+  - archive/docs/dreams/pyforge-atlas-intelligence-platform.md
+  - archive/docs/dreams/unity-data-stack.md
+  - archive/docs/dreams/upstream-discovery.md
+  - archive/docs/dreams/wagtail-corporate-brain.md
+  - archive/docs/dreams/wasm-analytics-stack.md
 surface:
   - src/shared/packages/pyforge-atlas/**
   - src/prototype/packages/pyforge-atlas-kedro-viz/**

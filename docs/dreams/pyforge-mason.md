@@ -94,7 +94,7 @@ consolidated into this station's own single planning-chain documents (each
 carries a "Satellite: Presenton" section) per explicit user override of the
 earlier separation decision; the Dream itself, its epics, and its
 blocked-status were deliberately left untouched. See
-`docs/dreams/presenton-pixi-image.md` for the full account.
+`archive/docs/dreams/presenton-pixi-image.md` for the full account.
 
 ## The frontier
 

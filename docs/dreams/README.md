@@ -116,7 +116,7 @@ contract; the Dream is the "why" behind it.
   downstream row (Fleet, Backlog, In Build, Realized, Pitch, Archived). Owning
   **is** becoming — at the planning tier — but **the planning home is not the
   package name**, so Atlas owning
-  [`unity-data-stack.md`](unity-data-stack.md) does not mean it ships as
+  [`unity-data-stack.md`](../../archive/docs/dreams/unity-data-stack.md) does not mean it ships as
   `pyforge-atlas`. *(Corrected 2026-09-14 on two counts: "owning is **not**
   becoming" was superseded by the Charter's 2026-07-28 §5 amendment, and the
   clause borrowed §5's other formula — "the station is the post, not the
@@ -144,7 +144,7 @@ contract; the Dream is the "why" behind it.
 
 - Keep it aspirational and readable — a Dream is a narrative, not a task list.
 - **`realized` is not exempt from the chain.** Per
-  [`regenerable-factory.md`](regenerable-factory.md), a Dream that shipped
+  [`regenerable-factory.md`](../../archive/docs/dreams/regenerable-factory.md), a Dream that shipped
   before the model existed gets its PRD/spec **backfilled** (BMAD brownfield
   flow), so future change flows idea → spec → BMAD and drift checks can bind
   the code to its contract. The Realization log records the evidence either way.

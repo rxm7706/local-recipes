@@ -4,7 +4,7 @@ spec: bmad-eval-quality
 status: absorbed
 absorbed-into: spec-pyforge-steward
 updated: "2026-09-17"
-owner-dream: docs/dreams/bmad-eval-quality.md
+owner-dream: archive/docs/dreams/bmad-eval-quality.md
 ---
 
 # Absorbed into spec-pyforge-steward

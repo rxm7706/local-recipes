@@ -8,7 +8,7 @@ inputDocuments:
 project: pyforge-atlas
 status: final
 created: 2026-07-17
-updated: "2026-10-26"   # AMENDED 2026-10-26 (one archive home): Epic 44 / Story 44.1 minted done under spec-one-chain-per-station CAP-11 (chore; no CAP, no FR, no flag): the station's 12 archived satellite Dreams left docs/dreams/ for archive/docs/dreams/, their bodies verbatim in the station Dream; keys 44-1, epic-44 (done) and epic-44-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync
+updated: "2026-10-26"   # AMENDED 2026-10-26 (one archive home): Epic 44 / Story 44.1 minted done under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 12 archived satellite Dreams left docs/dreams/ for archive/docs/dreams/, their bodies verbatim in the station Dream; keys 44-1, epic-44 (done) and epic-44-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync
 currency_review: "Reviewed 2026-09-06 (Epic 24 added: spec-bmad-suite-lifecycle atlas relay — mcp-builder for the MCP face, Story 24.1). Reviewed 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02. Validated 2026-08-26 against the re-cut architecture spine — no heading or status changed; see the dated validation note at end of file. 2026-08-27: Epic 20 appended (spec-atlas-query-dashboards CAP-5..7 reconcile against the 2026-08-26 query-plane rulings); no existing heading or status changed."
 generatedBy: bmad-create-epics-and-stories (unattended Tier-2 stage 3)
 # The single canonical story source for this station: every `### Story` heading
@@ -3073,9 +3073,9 @@ So that the NFR tier derives from capabilities the way the FR tier now does, and
 **And** `scripts/fr_baseline.py --prune` drops the ten ids from the baseline; `fr-without-cap` stays green
 **Status:** backlog
 
-## Epic 44: The archived atlas Dreams live in one archive home (spec-one-chain-per-station CAP-11)
+## Epic 44: The archived atlas Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 
-Minted 2026-10-26 from `docs/governance/spec-one-chain-per-station/SPEC.md` CAP-11 (owner Dream
+Minted 2026-10-26 from `docs/governance/spec-one-chain-per-station/SPEC.md`, capability spec-one-chain-per-station:CAP-11 (owner Dream
 `docs/dreams/one-chain-per-station.md`, `owner: guild`) and that Dream's entry of the same date: a Dream is live in
 `docs/dreams/` or archived under `archive/docs/dreams/`, never both, and a folded satellite leaves the live tree only
 once its whole body sits verbatim in a dated section of its station Dream (CHAIN-STANDARD §11; doctor's
@@ -3096,7 +3096,7 @@ As a reader of `docs/dreams/`,
 I want atlas's 12 archived satellite Dreams to live under `archive/docs/dreams/<same name>`, each with its whole body verbatim in `docs/dreams/pyforge-atlas.md`,
 So that the live tree holds live Dreams only and nothing a satellite said is lost.
 
-**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-11 (CHAIN-STANDARD §11: one archive home; a fold is complete before the file moves; readers follow the move); no atlas CAP or FR
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-one-chain-per-station:CAP-11 (CHAIN-STANDARD §11: one archive home; a fold is complete before the file moves; readers follow the move); no atlas CAP or FR
 **Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
 **Surface:** `docs/dreams/pyforge-atlas.md` (12 dated 2026-10-26 sections, one per satellite whose long paragraphs were not all there: the body verbatim, headings demoted one level, the fold banner left out); `archive/docs/dreams/<slug>.md` × 12 (each moved with `git mv`, its banner stripped, its frontmatter unchanged); `docs/dreams/README.md` (the 12 interim rows leave with their files); `specs/spec-pyforge-atlas/SPEC.md` (`surface:` and `covers-dreams:` entries name the archive paths) and the 1 absorbed pointer Spec whose `owner-dream:` named a moved file; `.memlog.md` (the surface reconcile)
 **Spec:** `planning-artifacts/specs/spec-44-1-atlas-s-twelve-archived-dreams-leave-the-live-tree.md`

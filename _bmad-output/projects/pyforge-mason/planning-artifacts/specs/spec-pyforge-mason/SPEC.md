@@ -6,18 +6,18 @@ updated: "2026-09-29"
 owner-dream: docs/dreams/pyforge-mason.md
 covers-dreams:
   - docs/dreams/pyforge-mason.md
-  - docs/dreams/packaging-factory.md
-  - docs/dreams/conda-forge-expert-rebuild.md
-  - docs/dreams/copilot-cli-packaging.md
-  - docs/dreams/db-gpt-packaging.md
-  - docs/dreams/django-accelerator-framework.md
-  - docs/dreams/fleet-stewardship.md
-  - docs/dreams/machine-checked-recipe-knowledge.md
-  - docs/dreams/miniforge-installer.md
-  - docs/dreams/pixi-container-image.md
-  - docs/dreams/presenton-pixi-image.md
-  - docs/dreams/pyforge-mason-recipe-validator.md
-  - docs/dreams/reusable-cicd-workflows.md
+  - archive/docs/dreams/packaging-factory.md
+  - archive/docs/dreams/conda-forge-expert-rebuild.md
+  - archive/docs/dreams/copilot-cli-packaging.md
+  - archive/docs/dreams/db-gpt-packaging.md
+  - archive/docs/dreams/django-accelerator-framework.md
+  - archive/docs/dreams/fleet-stewardship.md
+  - archive/docs/dreams/machine-checked-recipe-knowledge.md
+  - archive/docs/dreams/miniforge-installer.md
+  - archive/docs/dreams/pixi-container-image.md
+  - archive/docs/dreams/presenton-pixi-image.md
+  - archive/docs/dreams/pyforge-mason-recipe-validator.md
+  - archive/docs/dreams/reusable-cicd-workflows.md
 surface:
   - src/shared/packages/pyforge-mason/**    # the CLI this Spec builds — as-built and shipped (fleet ledger: complete 2026-08-21)
 companions:
@@ -28,7 +28,7 @@ companions:
   - ../spec-packaging-factory/SPEC.md # adopted: the Spec governing the CFE surface Mason wraps — authoritative over Mason (Rule 1)
   - feedstock-refresh.md # adopted: legacy intake spec carried from docs/specs/ (Story 37.1)
 sources:
-  - ../../../../../../docs/dreams/packaging-factory.md
+  - ../../../../../../archive/docs/dreams/packaging-factory.md
   - ../../briefs/brief-pyforge-mason-2026-07-25/brief.md
   - ../../briefs/brief-pyforge-mason-2026-07-25/addendum.md
   - ../../prds/prd-pyforge-mason-2026-07-25/review-adversarial.md   # absorbed: findings applied in PRD revision 2 (FR-47..FR-50, D-10..D-13)

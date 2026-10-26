@@ -4,7 +4,7 @@ spec: pixi-container-image
 status: absorbed
 absorbed-into: spec-pyforge-mason
 updated: "2026-09-17"
-owner-dream: docs/dreams/pixi-container-image.md
+owner-dream: archive/docs/dreams/pixi-container-image.md
 surface: []
 companions: []
 ---

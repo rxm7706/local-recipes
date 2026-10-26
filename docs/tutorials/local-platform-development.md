@@ -6,7 +6,7 @@ sources:
   - src/platform/config/urls.py
   - src/platform/config/local_dev/mint.py
   - .github/workflows/platform-ci.yml
-  - docs/dreams/platform-dev-boots-local.md
+  - archive/docs/dreams/platform-dev-boots-local.md
 verified: 2026-10-24
 ---
 

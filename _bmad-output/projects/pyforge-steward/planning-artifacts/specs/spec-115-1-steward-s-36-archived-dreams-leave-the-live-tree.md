@@ -22,7 +22,7 @@ deferred: []
 
 ## Intent
 
-**Problem:** `spec-one-chain-per-station` CAP-11 (operator ruling 2026-09-29; CHAIN-STANDARD §11) says a Dream is live in
+**Problem:** `spec-one-chain-per-station:CAP-11` (operator ruling 2026-09-29; CHAIN-STANDARD §11) says a Dream is live in
 `docs/dreams/` or archived under `archive/docs/dreams/`, never both, and that a folded satellite leaves the live tree only
 once its whole body sits verbatim in a dated section of its station Dream. The readers landed on 2026-09-29/30 (doctor
 36.1 and 36.2, marshal 75.1, herald 33.1) and no fold PR followed: at `97c8211773` (2026-10-26) 36 steward Dreams under
@@ -49,7 +49,7 @@ Type / Effort / Deps: chore / S / —.
 
 ### Living CAP citations
 
-- `spec-one-chain-per-station` CAP-11 (the Guild's; Steward mints no CAP and no FR, the relay shape of doctor Epic 36, marshal
+- `spec-one-chain-per-station:CAP-11` (the Guild's; Steward mints no CAP and no FR, the relay shape of doctor Epic 36, marshal
   Epic 75 and herald Epic 33); CHAIN-STANDARD §11.
 - `spec-feature-flag-governance` Q1: a `chore` needs no flag.
 - Siblings: the other seven station stories of the 2026-10-26 one-PR move (atlas 44.1, doctor 53.1, herald 48.1, marshal
@@ -97,7 +97,7 @@ Type / Effort / Deps: chore / S / —.
 
 ## Binding
 
-Parent capability: `spec-one-chain-per-station` CAP-11 (Guild relay; no steward CAP or FR).
+Parent capability: `spec-one-chain-per-station:CAP-11` (Guild relay; no steward CAP or FR).
 Dream: `docs/dreams/one-chain-per-station.md` → § *2026-10-26 — The archived Dreams leave the live tree*.
 Ledger key: `115-1-steward-s-36-archived-dreams-leave-the-live-tree`.
 Ledger status at mint: `done` (built in the same PR, the #2322 shape).
@@ -118,7 +118,18 @@ Flag: none. This is a `chore` (`spec-feature-flag-governance` Q1).
 
 ## Review Triage Log
 
-- No independent review has run yet (implementation and review stay separate).
+### 2026-10-26 — Independent review (fresh reviewer, diff `97c8211773..5e7549297e`, every check scripted over the whole set)
+- verdicts: 8 findings — high 0, medium 3, low 5
+- findings:
+  - `[medium]` `[patch]` 13 archived marshal Dreams kept a second `Consolidated into` blockquote (the 2026-08-08 and 2026-09-16 sub-fold banners that sat after the H1) and their pasted sections carried it — stripped from the 13 files and from the 13 fold sections; `fold-complete` still reads 159/159.
+  - `[medium]` `[patch]` two README prose links (`unity-data-stack.md`, `regenerable-factory.md`) pointed at moved files — re-pointed to `../../archive/docs/dreams/`.
+  - `[medium]` `[patch]` 25 live pointers the first pass missed (three deck READMEs, `docs/MAP.md`, `docs/reference/README.md`, `docs/reference/container-base-layer-convention.md`, `docs/tutorials/local-platform-development.md`, `docs/foundry/guards/README.md`, doctor's `CHAIN-CURRENCY-RUNBOOK.md`, six `scripts/*.py` docstrings and one runtime message, herald's and steward's `marshal-policy.toml` path lists, Kinship lines in four live Dreams) — re-pointed. Two docstrings under `.claude/skills/conda-forge-expert/tests/meta/` are left for the next CFE retro: a commit touching the skill tree needs the `retro(cfe):` form and a CHANGELOG move.
+  - `[low]` `[reject]` relative `[x.md](x.md)` links inside the 2026-09-16 fold sections of `pyforge-marshal.md` — a dated record, left as written.
+  - `[low]` `[patch]` spec-surface not yet reconciled at review time — the memlog-first render and the scoped stamps follow in the same PR.
+  - `[low]` `[reject]` the satellite's H1 demotes to an H2 beside the dated heading — the 2026-10-11 precedent's shape; literal §11.
+  - `[low]` `[reject]` epic numbers skip two in five stations — deliberate, for two sibling sessions cut from the same main (the Guild memlog's correction of 2026-10-26).
+  - `[low]` `[patch]` a historical docstring in `test_sources_status_body_promissory.py` had been re-pointed against the diff's own rule — reverted; the vacuous live assertion in `test_sources_status_body_status_comment.py` is annotated.
+- clean passes the reviewer measured: 158/158 moved files with byte-identical frontmatter, 148 differing by the one banner only; all 113 folds verbatim, every heading demoted by exactly one level, none inside a code fence; 605 wikilinks to moved slugs in live Dreams, 0 dead; chain artifacts consistent (headings, keys, Status lines, spec paths); fold-complete, dreams-hygiene, chain-sprawl, chain-completeness, story-status, governance-currency and dream-chain exit 0.
 
 ## Auto Run Result
 

@@ -6360,12 +6360,6 @@ ask their agent "trace how X works in this app".
 
 ## FR-51's model tiering is fully wired and never turned on
 
-> **Consolidated into [[marshal-token-economy]] on 2026-09-16** (§ *Fold
-> (2026-09-16) — the token-savings Dreams come home*). This file is archived in
-> place: its **Spec stays live and remains the contract** — archiving the Dream
-> tier never retires the chain below it. Kept, not deleted, so the reasoning
-> that produced the Spec is still readable.
-
 ### The Dream
 
 Every `bmad-loop`-driven dev pass in every loop home runs on the SAME model,
@@ -7283,12 +7277,6 @@ the suite side of the same era shift; its roster moved 2026-09-05).
 
 ## BMAD from inside Cursor's own chat — interactive routing, not just headless dispatch
 
-> **Consolidated into [[marshal-token-economy]] on 2026-09-16** (§ *Fold
-> (2026-09-16) — the token-savings Dreams come home*). This file is archived in
-> place: its **Spec stays live and remains the contract** — archiving the Dream
-> tier never retires the chain below it. Kept, not deleted, so the reasoning
-> that produced the Spec is still readable.
-
 ### The Dream
 
 "Portable to Cursor" is already solved for exactly one shape: headless, unattended dispatch.
@@ -7687,11 +7675,6 @@ recorded during the 2026-08-14 recovery of 8.1-9.5, 9.6, and — via the mason p
 
 ## bmad-loop can't see a story's own documented dependency
 
-> **Consolidated into [[pyforge-marshal]] on 2026-08-08** (§ *Eight more, consolidated
-> here*). This file is archived in place: its **Spec stays live and remains the
-> contract** — archiving the Dream tier never retires the chain below it. Kept, not
-> deleted, so the reasoning that produced the Spec is still readable.
-
 ### The Dream
 
 `bmad-loop`'s picker (`next_actionable` in `bmad_loop/sprintstatus.py`, called
@@ -7972,11 +7955,6 @@ and-resume`'s `deferred-work.md` entry (names the missing liveness primitive as 
 *Folded 2026-10-26 under spec-one-chain-per-station CAP-11 (Story 111.1). The body below is `docs/dreams/bmad-output-hygiene.md`, verbatim, with its headings demoted one level; the file moved to `archive/docs/dreams/bmad-output-hygiene.md`.*
 
 ## One fabricated commit, eight stations of debris
-
-> **Consolidated into [[pyforge-marshal]] on 2026-08-08** (§ *Eight more, consolidated
-> here*). This file is archived in place: its **Spec stays live and remains the
-> contract** — archiving the Dream tier never retires the chain below it. Kept, not
-> deleted, so the reasoning that produced the Spec is still readable.
 
 ### The Dream
 
@@ -8333,12 +8311,6 @@ kinship, not a merge)
 
 ## The tier map names Cursor models Cursor can serve
 
-> **Consolidated into [[marshal-token-economy]] on 2026-09-16** (§ *Fold
-> (2026-09-16) — the token-savings Dreams come home*). This file is archived in
-> place: its **Spec stays live and remains the contract** — archiving the Dream
-> tier never retires the chain below it. Kept, not deleted, so the reasoning
-> that produced the Spec is still readable.
-
 ### The Dream
 
 The four-verb campaign runs in Cursor. Unattended `factory drain` must not
@@ -8381,11 +8353,6 @@ Dream.
 *Folded 2026-10-26 under spec-one-chain-per-station CAP-11 (Story 111.1). The body below is `docs/dreams/dashboard-project-path-derivation.md`, verbatim, with its headings demoted one level; the file moved to `archive/docs/dreams/dashboard-project-path-derivation.md`.*
 
 ## The dashboard assumes slug == project directory — it isn't, and won't stay
-
-> **Consolidated into [[pyforge-marshal]] on 2026-08-08** (§ *Eight more, consolidated
-> here*). This file is archived in place: its **Spec stays live and remains the
-> contract** — archiving the Dream tier never retires the chain below it. Kept, not
-> deleted, so the reasoning that produced the Spec is still readable.
 
 ### The Dream
 
@@ -8454,12 +8421,6 @@ site — so a future dissolution is a one-line addition, not a hunt through
 *Folded 2026-10-26 under spec-one-chain-per-station CAP-11 (Story 111.1). The body below is `docs/dreams/dispatch-tier-routing-fails-safe.md`, verbatim, with its headings demoted one level and its 2026-09-16 fold banner left out; the file moved to `archive/docs/dreams/dispatch-tier-routing-fails-safe.md`.*
 
 ## A cost-tier dispatch override that cannot resolve its harness must never launch
-
-> **Consolidated into [[marshal-token-economy]] on 2026-09-16** (§ *Fold
-> (2026-09-16) — the token-savings Dreams come home*). This file is archived in
-> place: its **Spec stays live and remains the contract** — archiving the Dream
-> tier never retires the chain below it. Kept, not deleted, so the reasoning
-> that produced the Spec is still readable.
 
 ### The Dream
 
@@ -8596,11 +8557,6 @@ with a new, narrowly-scoped Dream rather than reopening a shipped one).
 *Folded 2026-10-26 under spec-one-chain-per-station CAP-11 (Story 111.1). The body below is `docs/dreams/dream-to-code-model-self-verification.md`, verbatim, with its headings demoted one level; the file moved to `archive/docs/dreams/dream-to-code-model-self-verification.md`.*
 
 ## The Dream-to-Code model has never verified itself
-
-> **Consolidated into [[pyforge-marshal]] on 2026-08-08** (§ *Eight more, consolidated
-> here*). This file is archived in place: its **Spec stays live and remains the
-> contract** — archiving the Dream tier never retires the chain below it. Kept, not
-> deleted, so the reasoning that produced the Spec is still readable.
 
 ### The Dream
 
@@ -9277,11 +9233,6 @@ When running the workflow, specify:
 
 ## Retire genesis-installer — one marshal CLI, one PRD/architecture/epics chain
 
-> **Consolidated into [[pyforge-marshal]] on 2026-08-08** (§ *Eight more, consolidated
-> here*). This file is archived in place: its **Spec stays live and remains the
-> contract** — archiving the Dream tier never retires the chain below it. Kept, not
-> deleted, so the reasoning that produced the Spec is still readable.
-
 ### The Dream
 
 The 2026-07-28 Charter §5 split carved `genesis-installer` out of `pyforge-genesis` as
@@ -9625,11 +9576,6 @@ verb, made real.
 *Folded 2026-10-26 under spec-one-chain-per-station CAP-11 (Story 111.1). The body below is `docs/dreams/loop-home-fleet-refresh.md`, verbatim, with its headings demoted one level; the file moved to `archive/docs/dreams/loop-home-fleet-refresh.md`.*
 
 ## Refreshing every loop-home from main is a hand-run ritual
-
-> **Consolidated into [[pyforge-marshal]] on 2026-08-08** (§ *Eight more, consolidated
-> here*). This file is archived in place: its **Spec stays live and remains the
-> contract** — archiving the Dream tier never retires the chain below it. Kept, not
-> deleted, so the reasoning that produced the Spec is still readable.
 
 ### The Dream
 
@@ -12276,11 +12222,6 @@ today's advisory CI is why "merged green" and "actually green" can differ) ·
 
 ## One primitive, one home — the shared floor under eight stations
 
-> **Consolidated into [[pyforge-marshal]] on 2026-08-08** (§ *Eight more, consolidated
-> here*). This file is archived in place: its **Spec stays live and remains the
-> contract** — archiving the Dream tier never retires the chain below it. Kept, not
-> deleted, so the reasoning that produced the Spec is still readable.
-
 ### The Dream
 
 Eight stations, one namespace, and the same five primitives written eight times.
@@ -13219,11 +13160,6 @@ store and the deployed proof).
 
 ## The dashboard goes stale because promotion is a remembered step
 
-> **Consolidated into [[pyforge-marshal]] on 2026-08-08** (§ *Eight more, consolidated
-> here*). This file is archived in place: its **Spec stays live and remains the
-> contract** — archiving the Dream tier never retires the chain below it. Kept, not
-> deleted, so the reasoning that produced the Spec is still readable.
-
 ### The Dream
 
 A story landing on a loop-home's branch does not, by itself, make the
@@ -13579,14 +13515,6 @@ correct — a number that hardens into terrain. Measured rather than estimated:
 *Folded 2026-10-26 under spec-one-chain-per-station CAP-11 (Story 111.1). The body below is `docs/dreams/token-economy-claude-session-path.md`, verbatim, with its headings demoted one level and its 2026-09-16 fold banner left out; the file moved to `archive/docs/dreams/token-economy-claude-session-path.md`.*
 
 ## Claude spends the tokens the factory already learned to save
-
-> **Consolidated into [[marshal-token-economy]] on 2026-09-16** (§ *Fold
-> (2026-09-16) — the token-savings Dreams come home*). This file is archived in
-> place. Its Spec folded too (operator ruling: no satellite Specs) —
-> `spec-token-economy-claude-session-path` is `superseded`, its capabilities
-> re-minted as `spec-marshal-token-economy` **CAP-19..CAP-24**, dispatch home
-> marshal Epic 46; the superseded folder keeps the eleven-entry decision
-> memlog. Kept, not deleted, so the reasoning stays readable.
 
 ### The Dream
 

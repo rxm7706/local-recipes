@@ -114,7 +114,7 @@ def test_gather_live_herald_pair_and_zero_false_positives():
 
     Re-measured again 2026-09-19: the live scan is now fully clean -- the last
     non-promissory finding (an `unparseable` WARN for the unquoted `title:`
-    in `archive/docs/dreams/pyforge-mason-recipe-validator.md`) was reconciled by PR
+    in `docs/dreams/pyforge-mason-recipe-validator.md`) was reconciled by PR
     #1493 -- so `gather_promissory_language` emits its clean-state OK summary
     (same `check`, `status: OK`, see `test_gather_measured_and_rejected_when_
     not_accepted` for the shape). That summary is the *absence* of a hit, so

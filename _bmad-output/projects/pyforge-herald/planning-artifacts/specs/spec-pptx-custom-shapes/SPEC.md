@@ -4,7 +4,7 @@ spec: pptx-custom-shapes
 status: absorbed
 absorbed-into: spec-pyforge-herald
 updated: '2026-09-17'
-owner-dream: docs/dreams/pptx-custom-shapes.md
+owner-dream: archive/docs/dreams/pptx-custom-shapes.md
 ---
 
 # Absorbed into spec-pyforge-herald

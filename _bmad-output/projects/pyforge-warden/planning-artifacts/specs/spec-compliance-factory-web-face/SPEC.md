@@ -4,7 +4,7 @@ spec: compliance-factory-web-face
 status: absorbed
 absorbed-into: spec-pyforge-warden
 updated: "2026-09-17"
-owner-dream: docs/dreams/compliance-factory-web-face.md
+owner-dream: archive/docs/dreams/compliance-factory-web-face.md
 ---
 
 # Absorbed into spec-pyforge-warden

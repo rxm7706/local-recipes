@@ -5,7 +5,7 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: 9040b330094b6052
+source_fingerprint: 7f8474468d837cc9
 story_count: 152
 test_file_count: 187
 coverage_target_unit: ">=80%"
@@ -24,7 +24,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Test files inventoried:** 187 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `9040b330094b6052`
+- **Source fingerprint:** `7f8474468d837cc9`
 
 ## Risk Assessment
 
@@ -73,7 +73,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 39: The atlas PRD's FR arrows name the capabilities the Spec carries
 - Epic 40: FR-15, FR-61 and FR-63 name what realizes them (spec-pyforge-atlas CAP-70, CAP-71)
 - Epic 41: Every atlas requirement derives from a capability (spec-pyforge-atlas CAP-72; spec-one-chain-per-station CAP-5 amended)
-- Epic 44: The archived atlas Dreams live in one archive home (spec-one-chain-per-station CAP-11)
+- Epic 44: The archived atlas Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 
 ### Low-risk epics
 

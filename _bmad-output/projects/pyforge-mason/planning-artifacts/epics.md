@@ -18,7 +18,7 @@ frCount: 50
 status: complete
 revision: 2
 revisionNote: "r2 tracks PRD revision 2 (adversarial-review fixes). Added S-1.10 (config+logging), S-3.9 (ship verb + TestPyPI rehearsal), S-5.6 removed in favour of folding FR-47 into S-5.5; corrected S-3.6, S-5.1, S-5.2, S-2.2 for the D-10/D-12/FR-44/FR-45 resolutions."
-updated: "2026-10-26"   # AMENDED 2026-10-26 (one archive home): Epic 35 / Story 35.1 minted done under spec-one-chain-per-station CAP-11 (chore; no CAP, no FR, no flag): the station's 12 archived satellite Dreams left docs/dreams/ for archive/docs/dreams/, their bodies verbatim in the station Dream; keys 35-1, epic-35 (done) and epic-35-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync
+updated: "2026-10-26"   # AMENDED 2026-10-26 (one archive home): Epic 35 / Story 35.1 minted done under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 12 archived satellite Dreams left docs/dreams/ for archive/docs/dreams/, their bodies verbatim in the station Dream; keys 35-1, epic-35 (done) and epic-35-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync
 currency_review: "Reviewed 2026-09-14 (chain-currency sweep cascade, arch->epics edge) — validation note appended at end of file (§ Validation note — 2026-09-14): ledger re-measured with the real parser at 70/70 stories done across 17/17 epics; Epic 16's two realization-gate stories confirmed landed against live evidence (the pyforge-mason-recipe-build-smoke pixi task is wired into pyforge-station-tests.yml:228); the PRD's new FR-14 as-built divergence is recorded as owing a Dream/Spec, NOT minted as a story here. No epic or story restructured. Reviewed 2026-09-06 (Epic 14 added: spec-bmad-suite-lifecycle mason relay — bmad-eval-quality __win variant, Story 14.1; CFE Rule 1 + Rule 2 apply). Reviewed 2026-08-26 — validated against the ARCHITECTURE-SPINE as truth-upped the same day and the as-built code: all 50 stories across 11 epics are done in the tracked ledger (station complete per fleet ledger 2026-08-21). Counts corrected 6/42 -> 11/50 (Epics 6-11 had grown past the r2 snapshot). No story headings or statuses changed; see the appended Validation note. Prior review 2026-08-02 (AD binding check)."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -3693,9 +3693,9 @@ records
 - `pixi run --frozen -e pyforge-mason pyforge-mason-test` is green.
 **Status:** done
 
-## Epic 35: The archived mason Dreams live in one archive home (spec-one-chain-per-station CAP-11)
+## Epic 35: The archived mason Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 
-Minted 2026-10-26 from `docs/governance/spec-one-chain-per-station/SPEC.md` CAP-11 (owner Dream
+Minted 2026-10-26 from `docs/governance/spec-one-chain-per-station/SPEC.md`, capability spec-one-chain-per-station:CAP-11 (owner Dream
 `docs/dreams/one-chain-per-station.md`, `owner: guild`) and that Dream's entry of the same date: a Dream is live in
 `docs/dreams/` or archived under `archive/docs/dreams/`, never both, and a folded satellite leaves the live tree only
 once its whole body sits verbatim in a dated section of its station Dream (CHAIN-STANDARD §11; doctor's
@@ -3716,7 +3716,7 @@ As a reader of `docs/dreams/`,
 I want mason's 12 archived satellite Dreams to live under `archive/docs/dreams/<same name>`, each with its whole body verbatim in `docs/dreams/pyforge-mason.md`,
 So that the live tree holds live Dreams only and nothing a satellite said is lost.
 
-**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-11 (CHAIN-STANDARD §11: one archive home; a fold is complete before the file moves; readers follow the move); no mason CAP or FR
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-one-chain-per-station:CAP-11 (CHAIN-STANDARD §11: one archive home; a fold is complete before the file moves; readers follow the move); no mason CAP or FR
 **Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
 **Surface:** `docs/dreams/pyforge-mason.md` (12 dated 2026-10-26 sections, one per satellite whose long paragraphs were not all there: the body verbatim, headings demoted one level, the fold banner left out); `archive/docs/dreams/<slug>.md` × 12 (each moved with `git mv`, its banner stripped, its frontmatter unchanged); `docs/dreams/README.md` (the 12 interim rows leave with their files); `specs/spec-pyforge-mason/SPEC.md` (`surface:` and `covers-dreams:` entries name the archive paths) and the 12 absorbed pointer Specs whose `owner-dream:` named a moved file; `.memlog.md` (the surface reconcile); `prds/prd-pyforge-mason-2026-07-25/prd.md` frontmatter (`dream:` names the archive copy of `packaging-factory`), `src/shared/packages/pyforge-mason/README.md` (the practice line)
 **Spec:** `planning-artifacts/specs/spec-35-1-mason-s-twelve-archived-dreams-leave-the-live-tree.md`

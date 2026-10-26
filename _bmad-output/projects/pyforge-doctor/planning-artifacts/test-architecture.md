@@ -5,7 +5,7 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: 849b0365c07f69a2
+source_fingerprint: 6229fe2ac707b5d2
 story_count: 163
 test_file_count: 99
 coverage_target_unit: ">=80%"
@@ -24,7 +24,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Test files inventoried:** 99 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `849b0365c07f69a2`
+- **Source fingerprint:** `6229fe2ac707b5d2`
 
 ## Risk Assessment
 
@@ -86,7 +86,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 48: One registry orders the whole Pages site, and a stale site tells on itself (spec-pyforge-doctor CAP-90, CAP-91)
 - Epic 49: The detector registry finds each detector's task by its path (spec-pyforge-doctor FR-15)
 - Epic 50: Every requirement arrow resolves to a defined capability (spec-pyforge-doctor CAP-92, CAP-93; FR-14..FR-16)
-- Epic 53: The archived doctor Dreams live in one archive home (spec-one-chain-per-station CAP-11)
+- Epic 53: The archived doctor Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 
 ## Test Inventory
 

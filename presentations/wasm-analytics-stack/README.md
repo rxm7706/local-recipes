@@ -4,7 +4,7 @@
 corrupted at the source (see Ledger below); the standalone poster has been rewritten with real
 content and re-pushed to Design, byte-exact, overwriting the corrupted copy.** Engine + glue copied
 **verbatim** from `presentations/pyforge-steward/` (Archivo / Modernist system). A **platform
-product** deck (not a persona chapter); Dream: `docs/dreams/wasm-analytics-stack.md`. Spec:
+product** deck (not a persona chapter); Dream: `archive/docs/dreams/wasm-analytics-stack.md`. Spec:
 `_bmad-output/projects/wasm-analytics-stack/planning-artifacts/specs/spec-wasm-analytics-stack/SPEC.md`.
 
 Sandboxed analytical pipelines for the hardened enterprise — a WASI Preview 2 upload-validation

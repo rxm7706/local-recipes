@@ -2,10 +2,10 @@
 spec: htap-query-plane
 status: archived
 archived-reason: absorbed
-owner-dream: docs/dreams/htap-query-plane.md
+owner-dream: archive/docs/dreams/htap-query-plane.md
 surface: []          # archived — no live surface; see § What carries forward
 sources:
-  - ../../../../../../docs/dreams/htap-query-plane.md
+  - ../../../../../../archive/docs/dreams/htap-query-plane.md
 open_questions: []
 ---
 

@@ -4,7 +4,7 @@ spec: bmad-drift-new-artifact-shape
 status: absorbed
 absorbed-into: spec-pyforge-doctor
 updated: '2026-09-17'
-owner-dream: docs/dreams/bmad-drift-new-artifact-shape.md
+owner-dream: archive/docs/dreams/bmad-drift-new-artifact-shape.md
 ---
 
 # Absorbed into spec-pyforge-doctor

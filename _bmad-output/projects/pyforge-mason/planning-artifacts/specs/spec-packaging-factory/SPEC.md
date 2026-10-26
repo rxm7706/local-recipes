@@ -4,7 +4,7 @@ spec: packaging-factory
 status: absorbed
 absorbed-into: spec-pyforge-mason
 updated: "2026-09-17"
-owner-dream: docs/dreams/packaging-factory.md
+owner-dream: archive/docs/dreams/packaging-factory.md
 surface:
   - .claude/skills/conda-forge-expert/**
   - .claude/scripts/conda-forge-expert/**

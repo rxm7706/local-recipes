@@ -5,7 +5,7 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: scribe
-source_fingerprint: 8b5bfa8c5842f597
+source_fingerprint: 6da92de7d86a8696
 story_count: 50
 test_file_count: 23
 coverage_target_unit: ">=80%"
@@ -24,7 +24,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Test files inventoried:** 23 under `src/shared/packages/pyforge-scribe/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `8b5bfa8c5842f597`
+- **Source fingerprint:** `6da92de7d86a8696`
 
 ## Risk Assessment
 
@@ -59,7 +59,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 25: The estate catalog reads only in-tree skills (spec-pyforge-scribe CAP-32)
 - Epic 26: Phase 4+5 of the deferral burn-down: scribe's open medium and low deferrals
 - Epic 27: The instruction surface carries the requirement-arrow rule (spec-pyforge-scribe CAP-27, CAP-29; spec-one-chain-per-station CAP-5 amended)
-- Epic 28: The archived scribe Dreams live in one archive home (spec-one-chain-per-station CAP-11)
+- Epic 28: The archived scribe Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 
 ### Low-risk epics
 

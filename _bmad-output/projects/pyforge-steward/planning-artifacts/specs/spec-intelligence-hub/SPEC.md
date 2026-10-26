@@ -4,7 +4,7 @@ spec: intelligence-hub
 status: absorbed
 absorbed-into: spec-pyforge-steward
 updated: "2026-09-17"
-owner-dream: docs/dreams/intelligence-hub.md
+owner-dream: archive/docs/dreams/intelligence-hub.md
 ---
 
 # Absorbed into spec-pyforge-steward

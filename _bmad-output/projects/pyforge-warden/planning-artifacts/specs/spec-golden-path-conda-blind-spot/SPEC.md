@@ -4,7 +4,7 @@ spec: golden-path-conda-blind-spot
 status: absorbed
 absorbed-into: spec-pyforge-warden
 updated: "2026-09-17"
-owner-dream: docs/dreams/golden-path-conda-blind-spot.md
+owner-dream: archive/docs/dreams/golden-path-conda-blind-spot.md
 companions:
   - brownfield.md
   - ../../osv-db-offline-provisioning-decision.md

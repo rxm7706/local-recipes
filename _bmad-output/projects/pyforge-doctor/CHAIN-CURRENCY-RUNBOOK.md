@@ -1,6 +1,6 @@
 # Chain-Currency Runbook — the planning-spine reconciler sweep
 
-Dream: `docs/dreams/chain-currency-sweep.md` (owner: doctor). Detector side: the
+Dream: `archive/docs/dreams/chain-currency-sweep.md` (owner: doctor). Detector side: the
 chain-layers audit (`pixi run -e local-recipes chain-layers-audit-check -- --project
 <slug>`, Stories 17-3/21-1, FR-150/FR-192 CAP-3). This runbook is the reconciler side —
 the marshal `SYNC-RUNBOOK.md` two-layer pattern generalized to the fleet's planning

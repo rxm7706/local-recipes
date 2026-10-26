@@ -4,7 +4,7 @@ spec: bmad-method-core-upgrade
 status: absorbed
 absorbed-into: spec-pyforge-steward
 updated: "2026-09-17"
-owner-dream: docs/dreams/bmad-method-core-upgrade.md
+owner-dream: archive/docs/dreams/bmad-method-core-upgrade.md
 ---
 
 # Absorbed into spec-pyforge-steward

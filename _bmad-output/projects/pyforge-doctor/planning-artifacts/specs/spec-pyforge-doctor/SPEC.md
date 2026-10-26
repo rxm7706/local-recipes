@@ -37,21 +37,21 @@ sources:
 spec: pyforge-doctor
 updated: '2026-10-26'   # AMENDED 2026-10-26 (every requirement derives from a capability): CAP-92 (fr-without-cap resolves arrows against definitions, fails a non-CAP arrow, names a counted run; Story 50.1) and CAP-93 (Doctor holds the verdict for every conformance detector; FR-15's capability, minted because none carried it) added after CAP-91; FR-14 <- CAP-9, FR-15 <- CAP-93, FR-16 heading added in the PRD. Prior '2026-10-14'
 covers-dreams:
-  - docs/dreams/bmad-drift-new-artifact-shape.md
-  - docs/dreams/bmad-method-version-drift.md
-  - docs/dreams/capability-effect-check.md
-  - docs/dreams/chain-currency-sweep.md
-  - docs/dreams/deferred-work-audit-completeness.md
-  - docs/dreams/deferred-work-resolution-sweep.md
-  - docs/dreams/deferred-work-visibility.md
-  - docs/dreams/docs-shelf-alignment.md
-  - docs/dreams/fleet-hygiene-verification-exemplar-program.md
-  - docs/dreams/general-docs-consistency.md
-  - docs/dreams/pixi-candidate-currency.md
-  - docs/dreams/pyforge-doctor-dependency-health.md
+  - archive/docs/dreams/bmad-drift-new-artifact-shape.md
+  - archive/docs/dreams/bmad-method-version-drift.md
+  - archive/docs/dreams/capability-effect-check.md
+  - archive/docs/dreams/chain-currency-sweep.md
+  - archive/docs/dreams/deferred-work-audit-completeness.md
+  - archive/docs/dreams/deferred-work-resolution-sweep.md
+  - archive/docs/dreams/deferred-work-visibility.md
+  - archive/docs/dreams/docs-shelf-alignment.md
+  - archive/docs/dreams/fleet-hygiene-verification-exemplar-program.md
+  - archive/docs/dreams/general-docs-consistency.md
+  - archive/docs/dreams/pixi-candidate-currency.md
+  - archive/docs/dreams/pyforge-doctor-dependency-health.md
   - docs/dreams/pyforge-doctor.md
-  - docs/dreams/sibling-dreams-drift.md
-  - docs/dreams/status-body-consistency.md
+  - archive/docs/dreams/sibling-dreams-drift.md
+  - archive/docs/dreams/status-body-consistency.md
 ---
 
 > **Canonical contract.** Derived from `.memlog.md` and the folded Specs on 2026-09-17 (one-chain-per-station CAP-3 / doctor fold). Companions of absorbed folders stay as record (CHAIN-STANDARD §7 item 3). Do not hand-edit — append the memlog and re-derive.

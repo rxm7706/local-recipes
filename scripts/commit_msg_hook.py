@@ -4,7 +4,7 @@ and no AI-attribution trailer (steward Story 66.2, ``spec-pyforge-steward``
 CAP-154 -- the AGENTS.md policy line, enforced instead of stated).
 
 Also WARNS (never refuses) on Story 59.6 / CAP-137's commit-subject shape
-(Ruling 17, ``docs/dreams/vocabulary-one-name-one-job.md``): a Capitalized
+(Ruling 17, ``archive/docs/dreams/vocabulary-one-name-one-job.md``): a Capitalized
 sentence, no trailing period, conventional ``type(scope):`` allowed only
 under ``recipes/`` and the CFE changelog. Ruling 17 calls this "the one
 shape a commit hook can enforce", but several already-live machine commit

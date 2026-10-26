@@ -4,7 +4,7 @@ spec: sibling-dreams-drift
 status: absorbed
 absorbed-into: spec-pyforge-doctor
 updated: '2026-09-17'
-owner-dream: docs/dreams/sibling-dreams-drift.md
+owner-dream: archive/docs/dreams/sibling-dreams-drift.md
 ---
 
 # Absorbed into spec-pyforge-doctor

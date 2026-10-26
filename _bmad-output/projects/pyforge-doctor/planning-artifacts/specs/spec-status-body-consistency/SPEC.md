@@ -4,7 +4,7 @@ spec: status-body-consistency
 status: absorbed
 absorbed-into: spec-pyforge-doctor
 updated: '2026-09-17'
-owner-dream: docs/dreams/status-body-consistency.md
+owner-dream: archive/docs/dreams/status-body-consistency.md
 ---
 
 # Absorbed into spec-pyforge-doctor

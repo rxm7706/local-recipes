@@ -5,7 +5,7 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: f542a1e8ab338b5a
+source_fingerprint: 0fdfa2cb2813b4f0
 story_count: 468
 test_file_count: 270
 coverage_target_unit: ">=80%"
@@ -24,7 +24,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Test files inventoried:** 270 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `f542a1e8ab338b5a`
+- **Source fingerprint:** `0fdfa2cb2813b4f0`
 
 ## Risk Assessment
 
@@ -128,7 +128,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 106: The marshal PRD's remaining FR arrows name what realizes them
 - Epic 107: A loop-home refresh keeps the Tier-3 feed on the tracked ledger's keys
 - Epic 108: Every marshal requirement derives from a capability, and the harness carries the rule (spec-one-chain-per-station CAP-5 amended; spec-pyforge-marshal CAP-297)
-- Epic 111: The archived marshal Dreams live in one archive home (spec-one-chain-per-station CAP-11)
+- Epic 111: The archived marshal Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 
 ### Low-risk epics
 

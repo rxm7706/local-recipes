@@ -5,7 +5,7 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: warden
-source_fingerprint: e9314acaa6415864
+source_fingerprint: 47584bf395e0a5fd
 story_count: 66
 test_file_count: 80
 coverage_target_unit: ">=80%"
@@ -24,7 +24,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Test files inventoried:** 80 under `src/shared/packages/pyforge-warden/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `e9314acaa6415864`
+- **Source fingerprint:** `47584bf395e0a5fd`
 
 ## Risk Assessment
 
@@ -54,7 +54,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 18: The leak guard keeps the fleet target private, not the organisation's public name (fix under spec-pyforge-warden CAP-26)
 - Epic 19: The warden PRD's FR arrows name the capabilities the Spec carries
 - Epic 20: The warden Spec's capability text is whole again, and its NFRs get an owner (spec-one-chain-per-station CAP-5 amended, CAP-3)
-- Epic 23: The archived warden Dreams live in one archive home (spec-one-chain-per-station CAP-11)
+- Epic 23: The archived warden Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 
 ### Low-risk epics
 

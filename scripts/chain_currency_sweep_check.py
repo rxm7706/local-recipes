@@ -5,7 +5,7 @@ The currency axis of the per-project CAP-3 chain audit, swept across every stati
 one run. `chain-layers-audit-check` audits ONE project across ALL FOUR checkpoints
 (layers, coherence, staleness, orphans); this sweep deliberately narrows to the two
 checkpoints the chain-currency reconciler owns (Dream:
-docs/dreams/chain-currency-sweep.md; runbook:
+archive/docs/dreams/chain-currency-sweep.md; runbook:
 _bmad-output/projects/pyforge-doctor/CHAIN-CURRENCY-RUNBOOK.md):
 
 * **staleness** — a feeds edge fired (research newer than brief, spec newer than PRD,

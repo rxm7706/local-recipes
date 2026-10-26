@@ -4,7 +4,7 @@ spec: deferred-work-resolution-sweep
 status: absorbed
 absorbed-into: spec-pyforge-doctor
 updated: '2026-09-17'
-owner-dream: docs/dreams/deferred-work-resolution-sweep.md
+owner-dream: archive/docs/dreams/deferred-work-resolution-sweep.md
 companions:
   - precedent-2026-07-30-campaign.md
   - implementation-precedents.md

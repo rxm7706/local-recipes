@@ -4,7 +4,7 @@ spec: conda-forge-expert-rebuild
 status: absorbed
 absorbed-into: spec-pyforge-mason
 updated: "2026-09-17"
-owner-dream: docs/dreams/conda-forge-expert-rebuild.md
+owner-dream: archive/docs/dreams/conda-forge-expert-rebuild.md
 surface:
   - .claude/skills/conda-forge-expert/**      # the skill being rebuilt slice by slice (parallel-run target; flips at the end cutover)
   - .claude/scripts/conda-forge-expert/**     # CLI wrapper layer — each slice redirects its wrappers

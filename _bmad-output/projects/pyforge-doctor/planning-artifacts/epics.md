@@ -8,7 +8,7 @@ inputDocuments:
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
-updated: '2026-10-26'   # AMENDED 2026-10-26 (one archive home): Epic 53 / Story 53.1 minted done under spec-one-chain-per-station CAP-11 (chore; no CAP, no FR, no flag): the station's 14 archived satellite Dreams left docs/dreams/ for archive/docs/dreams/, their bodies verbatim in the station Dream; keys 53-1, epic-53 (done) and epic-53-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync
+updated: '2026-10-26'   # AMENDED 2026-10-26 (one archive home): Epic 53 / Story 53.1 minted done under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 14 archived satellite Dreams left docs/dreams/ for archive/docs/dreams/, their bodies verbatim in the station Dream; keys 53-1, epic-53 (done) and epic-53-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync
 currency_review: 'Reviewed 2026-09-24 — arch→epics cascade (doctor Story 30.3 landing;
   the spine re-dated 2026-09-24 reconciling against the PRD''s same-day bump). No
   epic, story or AD content changed — Story 30.3''s own text already matches its
@@ -3465,9 +3465,9 @@ So that an arrow written by counting, or pointed at a Constraint, is a red PR in
 **And** the honest lockstep runs steward FR-32..FR-41, atlas FR-69..FR-77 and doctor FR-9..FR-13 stay quiet; a wrapped prose line or a column-0 sentence never defines; the title-overlap score is WARN only; `scripts/fr_baseline.py --prune` only removes; `pyforge-doctor-test` and its coverage floors, `lint-types` (doctor) and `detectors-ci` are green; `doctor check` stays inside its five-second CPU budget
 **Status:** done
 
-## Epic 53: The archived doctor Dreams live in one archive home (spec-one-chain-per-station CAP-11)
+## Epic 53: The archived doctor Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 
-Minted 2026-10-26 from `docs/governance/spec-one-chain-per-station/SPEC.md` CAP-11 (owner Dream
+Minted 2026-10-26 from `docs/governance/spec-one-chain-per-station/SPEC.md`, capability spec-one-chain-per-station:CAP-11 (owner Dream
 `docs/dreams/one-chain-per-station.md`, `owner: guild`) and that Dream's entry of the same date: a Dream is live in
 `docs/dreams/` or archived under `archive/docs/dreams/`, never both, and a folded satellite leaves the live tree only
 once its whole body sits verbatim in a dated section of its station Dream (CHAIN-STANDARD §11; doctor's
@@ -3488,7 +3488,7 @@ As a reader of `docs/dreams/`,
 I want doctor's 14 archived satellite Dreams to live under `archive/docs/dreams/<same name>`, each with its whole body verbatim in `docs/dreams/pyforge-doctor.md`,
 So that the live tree holds live Dreams only and nothing a satellite said is lost.
 
-**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-11 (CHAIN-STANDARD §11: one archive home; a fold is complete before the file moves; readers follow the move); no doctor CAP or FR
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-one-chain-per-station:CAP-11 (CHAIN-STANDARD §11: one archive home; a fold is complete before the file moves; readers follow the move); no doctor CAP or FR
 **Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
 **Surface:** `docs/dreams/pyforge-doctor.md` (14 dated 2026-10-26 sections, one per satellite whose long paragraphs were not all there: the body verbatim, headings demoted one level, the fold banner left out); `archive/docs/dreams/<slug>.md` × 14 (each moved with `git mv`, its banner stripped, its frontmatter unchanged); `docs/dreams/README.md` (the 14 interim rows leave with their files); `specs/spec-pyforge-doctor/SPEC.md` (`surface:` and `covers-dreams:` entries name the archive paths) and the 15 absorbed pointer Specs whose `owner-dream:` named a moved file; `.memlog.md` (the surface reconcile); `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py` (`dreams-hygiene` resolves a Kinship wikilink under `archive/docs/dreams/` too — `_archived_dream_slugs`, read by the wikilink check alone; the README-row and roster checks still walk `docs/dreams/` only), `sources/pixi_currency.py` (`_DREAM_REL` names the archive copy of `pixi-candidate-currency.md`, the ledger it dates through `git log -L`; the section clocks restart at the move commit), `sources/deps.py` (docstring), `tests/unit/test_sources_chain_dreams_hygiene.py` (two fixture tests; the live-tree count's note), `tests/unit/test_sources_pixi_currency.py` (fixtures under the archive), `tests/unit/test_sources_status_body_promissory.py` (docstring)
 **Spec:** `planning-artifacts/specs/spec-53-1-doctor-s-fourteen-archived-dreams-leave-the-live-tree-and-a-kinship-wikilink-resolves-under-the-archive.md`

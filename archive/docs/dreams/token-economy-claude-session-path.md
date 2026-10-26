@@ -11,14 +11,6 @@ status: archived
 
 # Claude spends the tokens the factory already learned to save
 
-> **Consolidated into [[marshal-token-economy]] on 2026-09-16** (§ *Fold
-> (2026-09-16) — the token-savings Dreams come home*). This file is archived in
-> place. Its Spec folded too (operator ruling: no satellite Specs) —
-> `spec-token-economy-claude-session-path` is `superseded`, its capabilities
-> re-minted as `spec-marshal-token-economy` **CAP-19..CAP-24**, dispatch home
-> marshal Epic 46; the superseded folder keeps the eleven-entry decision
-> memlog. Kept, not deleted, so the reasoning stays readable.
-
 ## The Dream
 
 The factory already knows how to make an iteration cheap. Five instruments

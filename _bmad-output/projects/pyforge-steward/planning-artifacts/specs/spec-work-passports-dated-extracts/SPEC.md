@@ -4,7 +4,7 @@ spec: work-passports-dated-extracts
 status: absorbed
 absorbed-into: spec-pyforge-steward
 updated: "2026-09-17"
-owner-dream: docs/dreams/work-passports-dated-extracts.md
+owner-dream: archive/docs/dreams/work-passports-dated-extracts.md
 ---
 
 # Absorbed into spec-pyforge-steward

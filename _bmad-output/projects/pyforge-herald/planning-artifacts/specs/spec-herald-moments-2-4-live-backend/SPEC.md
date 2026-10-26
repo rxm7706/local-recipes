@@ -4,7 +4,7 @@ spec: herald-moments-2-4-live-backend
 status: absorbed
 absorbed-into: spec-pyforge-herald
 updated: '2026-09-17'
-owner-dream: docs/dreams/herald-moments-2-4-live-backend.md
+owner-dream: archive/docs/dreams/herald-moments-2-4-live-backend.md
 companions:
   - ../../../../pyforge-steward/planning-artifacts/specs/spec-secure-live-dashboards/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md

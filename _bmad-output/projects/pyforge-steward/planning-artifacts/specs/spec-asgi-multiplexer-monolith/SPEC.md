@@ -1,11 +1,11 @@
 ---
 spec: asgi-multiplexer-monolith
 status: absorbed
-owner-dream: docs/dreams/asgi-multiplexer-monolith.md
+owner-dream: archive/docs/dreams/asgi-multiplexer-monolith.md
 absorbed-into: spec-pyforge-unifying-strategy
 companions: []
 sources:
-  - ../../../../../../docs/dreams/asgi-multiplexer-monolith.md
+  - ../../../../../../archive/docs/dreams/asgi-multiplexer-monolith.md
 ---
 
 # SPEC — Django, Langflow, and DB-GPT co-locate in one ASGI process (ABSORBED)

@@ -14,7 +14,7 @@ replan:
   story: "0.1"
   note: "Story-0.1 replan executed: Epic 6 (multi-axis expansion) added from the spec's v1 tier; the spec (docs/specs/pyforge-warden.md) is upstream and wins conflicts."
   rebaseline: "2026-07-16 (D12 + reviewer gates): v1 absorbs the axis gates (flag-activated), EPSS, baseline & grandfathering, fix-PR actuator — Epic 6 = stories 6.1-6.10 (FR32-FR40); story 2.6 split from 2.1; 31 stories total."
-updated: '2026-10-26'   # AMENDED 2026-10-26 (one archive home): Epic 23 / Story 23.1 minted done under spec-one-chain-per-station CAP-11 (chore; no CAP, no FR, no flag): the station's 4 archived satellite Dreams left docs/dreams/ for archive/docs/dreams/, their bodies verbatim in the station Dream; keys 23-1, epic-23 (done) and epic-23-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync
+updated: '2026-10-26'   # AMENDED 2026-10-26 (one archive home): Epic 23 / Story 23.1 minted done under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 4 archived satellite Dreams left docs/dreams/ for archive/docs/dreams/, their bodies verbatim in the station Dream; keys 23-1, epic-23 (done) and epic-23-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync
 currency_review: "Reviewed 2026-09-14 (chain-currency sweep cascade, arch->epics edge, fired by the spine's 2026-09-14 re-stamp) — validation note appended at end of file (§ Currency validation — 2026-09-14): ledger re-measured with the real parser at 49/49 stories done across 12/12 epics, which supersedes the Spec's own dated 43-key/11-epic snapshot; the PRD's newly recorded `review_required` gap is deliberately NOT minted as a story here because it is a schema/behaviour change owing a Dream/Spec; the station's coherence checkpoint stays red on three operator-owned open questions. No epic or story restructured. Prior: Reviewed 2026-09-09 (Epic 12 added: spec-golden-path-conda-blind-spot CAP-1..5 decomposed after the operator answered its five open questions in the fleet readiness decision batch, plus Story 12.1 minted FIRST as the missing regression guard on the deploy verifier's clean-only refusal; gate verdict invariant unchanged — Warden stays the sole verdict). Reviewed 2026-09-06 (Epic 11 added: spec-bmad-suite-lifecycle warden relays — two advisory lenses, Stories 11.1–11.2; gate verdict invariant unchanged). Reviewed 2026-08-26 — validated against the architecture's 2026-08-26 reconciliation (post-v1 surfaces + as-built divergences). Epics 1-10 / 41 stories confirmed 1:1 with sprint-status-ledger.yaml, all done; Canopy/operating-model obligation sections re-verified as landed. Validation note appended; no story headings or statuses changed."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -1117,9 +1117,9 @@ So that the NFR tier derives from capabilities the way the FR tier does, and the
 **And** `scripts/fr_baseline.py --prune` drops the ids from the baseline; `fr-without-cap` stays green
 **Status:** done
 
-## Epic 23: The archived warden Dreams live in one archive home (spec-one-chain-per-station CAP-11)
+## Epic 23: The archived warden Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 
-Minted 2026-10-26 from `docs/governance/spec-one-chain-per-station/SPEC.md` CAP-11 (owner Dream
+Minted 2026-10-26 from `docs/governance/spec-one-chain-per-station/SPEC.md`, capability spec-one-chain-per-station:CAP-11 (owner Dream
 `docs/dreams/one-chain-per-station.md`, `owner: guild`) and that Dream's entry of the same date: a Dream is live in
 `docs/dreams/` or archived under `archive/docs/dreams/`, never both, and a folded satellite leaves the live tree only
 once its whole body sits verbatim in a dated section of its station Dream (CHAIN-STANDARD §11; doctor's
@@ -1140,7 +1140,7 @@ As a reader of `docs/dreams/`,
 I want warden's 4 archived satellite Dreams to live under `archive/docs/dreams/<same name>`, each with its whole body verbatim in `docs/dreams/pyforge-warden.md`,
 So that the live tree holds live Dreams only and nothing a satellite said is lost.
 
-**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-11 (CHAIN-STANDARD §11: one archive home; a fold is complete before the file moves; readers follow the move); no warden CAP or FR
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-one-chain-per-station:CAP-11 (CHAIN-STANDARD §11: one archive home; a fold is complete before the file moves; readers follow the move); no warden CAP or FR
 **Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
 **Surface:** `docs/dreams/pyforge-warden.md` (4 dated 2026-10-26 sections, one per satellite whose long paragraphs were not all there: the body verbatim, headings demoted one level, the fold banner left out); `archive/docs/dreams/<slug>.md` × 4 (each moved with `git mv`, its banner stripped, its frontmatter unchanged); `docs/dreams/README.md` (the 4 interim rows leave with their files); `specs/spec-pyforge-warden/SPEC.md` (`surface:` and `covers-dreams:` entries name the archive paths) and the 5 absorbed pointer Specs whose `owner-dream:` named a moved file; `.memlog.md` (the surface reconcile)
 **Spec:** `planning-artifacts/specs/spec-23-1-warden-s-four-archived-dreams-leave-the-live-tree.md`
