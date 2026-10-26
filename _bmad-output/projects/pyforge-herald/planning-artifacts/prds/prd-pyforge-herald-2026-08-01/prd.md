@@ -4,7 +4,7 @@ title: Herald's Pitch Deck Family Expansion — PRD
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-10-14"   # RE-STAMPED 2026-10-14 (later): chain-currency cascade (spec -> PRD) for CAP-60 and CAP-61 (Epics 42-43; Epic 41 a fix): Feature Group 12 opened, FR-12.1..FR-12.5 registered (the Pages site, redesigned). See § Currency reconciliation — 2026-10-14 (later). Prior: RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for CAP-59 (Epic 39): Feature Group 11 opened, FR-11.1 registered (the dossier's CI surfaces tile, read from steward's `ci status --json` through a committed snapshot). See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-12: chain-currency cascade (spec -> PRD) for CAP-58 (Epic 40): FR-8.6 added to Feature Group 8 (the documentation site). See § Currency reconciliation — 2026-10-12. Prior: RE-STAMPED 2026-10-11: code->prd currency after herald Stories 19.2 (PR #2123) and 36.1 (PR #2128) landed and Story 37.1 was minted (PR #2126); no FR, CAP or AD added, amended or removed. Prior: RE-STAMPED 2026-10-10: Story 19.2 re-scoped to the local host by the operator ruling of 2026-10-10 (spec-pyforge-herald memlog decision); the 2026-09-14 "no perimeter to host a persistent listener on" premise is superseded; FR-7.1..FR-7.4 source-capability arrows corrected in place (they were shifted against the 2026-09-17 remint); one residual recorded (FR-7.1 CI-notifies half stays open on a loopback host). No FR added, renumbered or removed. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-08: chain-currency behind-code (code -> PRD) for Story 32.1 as built (CAP-57, FR-10.6, flag pyforge.herald.deck_export_native) on dispatch/pyforge-herald/32.1; FR-10.6 corrected in place (the pptxgenjs-plus pin is 4.2.1.* channel-pinned to SelfExplainML; the flag gate; no slide is rendered as an image); no FR registered; one FR-10.6 divergence recorded (multi-line speaker notes and paragraph text are not carried). See § Currency reconciliation — 2026-10-08. Earlier: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-03..07 entries (Stories 35.1-35.2 records, the marshal 86.8 co-governor edit, Story 27.1 and its surface decision, Story 28.1 / CAP-53); no FR registered; one FR-8.1 divergence recorded. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 35, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-54..CAP-57 (Epics 29-32): Feature Group 10, FR-10.1..FR-10.6 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+updated: "2026-10-25"   # RE-STAMPED 2026-10-25 (Story 46.1): eleven FR arrows the 2026-09-17 fold mapped by section are re-pointed at the capabilities that realize them (FR-1.1..FR-1.3 and FR-2.3 to CAP-11..CAP-13, FR-2.1 adds them beside CAP-3, FR-6.1..FR-6.3 to CAP-12 and CAP-13, and, on the independent review, FR-3.2, FR-4.2, FR-4.5 and FR-6.2 gain the live-backend CAP-38 or CAP-39); no FR text, number or NFR moves. See § Currency reconciliation — 2026-10-25 (Story 46.1). Prior "2026-10-14"   # RE-STAMPED 2026-10-14 (later): chain-currency cascade (spec -> PRD) for CAP-60 and CAP-61 (Epics 42-43; Epic 41 a fix): Feature Group 12 opened, FR-12.1..FR-12.5 registered (the Pages site, redesigned). See § Currency reconciliation — 2026-10-14 (later). Prior: RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for CAP-59 (Epic 39): Feature Group 11 opened, FR-11.1 registered (the dossier's CI surfaces tile, read from steward's `ci status --json` through a committed snapshot). See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-12: chain-currency cascade (spec -> PRD) for CAP-58 (Epic 40): FR-8.6 added to Feature Group 8 (the documentation site). See § Currency reconciliation — 2026-10-12. Prior: RE-STAMPED 2026-10-11: code->prd currency after herald Stories 19.2 (PR #2123) and 36.1 (PR #2128) landed and Story 37.1 was minted (PR #2126); no FR, CAP or AD added, amended or removed. Prior: RE-STAMPED 2026-10-10: Story 19.2 re-scoped to the local host by the operator ruling of 2026-10-10 (spec-pyforge-herald memlog decision); the 2026-09-14 "no perimeter to host a persistent listener on" premise is superseded; FR-7.1..FR-7.4 source-capability arrows corrected in place (they were shifted against the 2026-09-17 remint); one residual recorded (FR-7.1 CI-notifies half stays open on a loopback host). No FR added, renumbered or removed. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-08: chain-currency behind-code (code -> PRD) for Story 32.1 as built (CAP-57, FR-10.6, flag pyforge.herald.deck_export_native) on dispatch/pyforge-herald/32.1; FR-10.6 corrected in place (the pptxgenjs-plus pin is 4.2.1.* channel-pinned to SelfExplainML; the flag gate; no slide is rendered as an image); no FR registered; one FR-10.6 divergence recorded (multi-line speaker notes and paragraph text are not carried). See § Currency reconciliation — 2026-10-08. Earlier: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-03..07 entries (Stories 35.1-35.2 records, the marshal 86.8 co-governor edit, Story 27.1 and its surface decision, Story 28.1 / CAP-53); no FR registered; one FR-8.1 divergence recorded. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 35, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-54..CAP-57 (Epics 29-32): Feature Group 10, FR-10.1..FR-10.6 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED: chain-currency cascade (spec -> PRD) for CAP-53 (Epic 28): Feature Group 9, FR-9.1..FR-9.2 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED: chain-currency cascade (spec -> PRD) for CAP-52 (Epic 27): Feature Group 8, FR-8.1..FR-8.5 registered (FR-8.2 amended and FR-8.5 added the same day for the operator rulings D7/D8). See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency (spec->prd) — spec-pyforge-herald memlog moved 2026-09-25T04:02 (steward 59.6 surface reconcile); no FR change. Prior 2026-09-20
@@ -574,20 +574,20 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
 
 ### Feature Group 1: Herald CLI Architecture
 
-**FR-1.1: Unified Command Dispatcher** ← CAP-1
+**FR-1.1: Unified Command Dispatcher** ← CAP-11, CAP-12, CAP-13
 - Single entry point: `herald <subcommand> [--help | --json | --date-range <start>..<end>]`
 - Subcommands: `progress`, `success`, `notice`
 - Help text comprehensive and discoverable (`herald --help`, `herald <subcommand> --help`)
 - Argument parsing handles: JSON output mode, date filtering, station/project filtering
 - Extensible for future Moments (not hardcoded to 3)
 
-**FR-1.2: Shared Argument Conventions** ← CAP-1
+**FR-1.2: Shared Argument Conventions** ← CAP-11, CAP-12, CAP-13
 - All subcommands support `--json` (machine-readable output)
 - All subcommands support `--date-range YYYY-MM-DD..YYYY-MM-DD` or `--week recent|last-N` patterns
 - All subcommands support station/project filtering where applicable
 - Error messages consistent and actionable
 
-**FR-1.3: CLI Authentication & Authorization** ← CAP-1
+**FR-1.3: CLI Authentication & Authorization** ← CAP-11, CAP-12, CAP-13
 - [ASSUMPTION: Herald CLI reads from Herald web service with implicit auth (same session)] Confirm with ops team
 - Write operations (publish, author) require operator role confirmation
 - Read operations (progress, list, archive) are public
@@ -596,7 +596,7 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
 
 ### Feature Group 2: Herald Web Surface
 
-**FR-2.1: Unified Navigation & Layout** ← CAP-3
+**FR-2.1: Unified Navigation & Layout** ← CAP-3, CAP-11, CAP-12, CAP-13
 - Header nav with 4 tabs: **Pitch** (link to Moment 1 deck family), **Progress**, **Success**, **Operations**
 - Unified color scheme and typography (Modernist design system from Moment 1)
 - Sidebar: station filter (Warden, Atlas, Marshal, etc.), date range selector, search box
@@ -606,7 +606,7 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
 - Header: Herald branding, Moment tab nav, user profile (if applicable)
 - Footer: snapshot timestamp, last-updated indicators per section
 
-**FR-2.3: Surface Integration** ← CAP-3
+**FR-2.3: Surface Integration** ← CAP-11, CAP-12, CAP-13
 - All three Moments visible in unified web surface (no separate apps or domains)
 - Consistent pagination, sorting, and filtering across all tabs
 - Cross-moment linking: Moment 3 success claim can link to Moment 4 notice (bidirectional)
@@ -620,7 +620,7 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
 - **Cost metrics**: derived from sprint-status ledger + bmad-loop journal timestamps
 - **Unblock narrative**: operator-authored (auto-suggested from downstream PRs if available)
 
-**FR-3.2: Progress Automation** ← CAP-11
+**FR-3.2: Progress Automation** ← CAP-11, CAP-38, CAP-39
 - **Trigger 1**: On-ship event (webhook from CI when PR merges to main)
   - Auto-creates progress record with cost + shipped capabilities extracted from journal
   - Operator authors unblock narrative (prompted)
@@ -651,7 +651,7 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
   - `adoption`: downstream PR URL (proves dependent projects use it)
   - `other`: freeform URL (any supporting proof)
 
-**FR-4.2: Success Auto-Extract** ← CAP-12
+**FR-4.2: Success Auto-Extract** ← CAP-12, CAP-38
 - **Trigger**: On PR close to main + passing gate-suite
   - Herald webhook receives: PR URL, commit SHA, test job URL, merged-at timestamp
   - Herald auto-extracts: project name (from PR title/labels), test results (CI job)
@@ -675,7 +675,7 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
 - Sidebar filters: date range, evidence status
 - Search box: project name, thesis keyword
 
-**FR-4.5: Evidence Integrity** ← CAP-12
+**FR-4.5: Evidence Integrity** ← CAP-12, CAP-39
 - All evidence links validated at publish time (404 detection, redirect resolution)
 - Dead links surface error before publish (operator fixes or removes)
 - Evidence links re-validated weekly (stale links flagged in operator dashboard)
@@ -726,17 +726,17 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
 
 ### Feature Group 6: Evidence-Linking Framework
 
-**FR-6.1: Shared Evidence Link Protocol** ← CAP-11
+**FR-6.1: Shared Evidence Link Protocol** ← CAP-12, CAP-13
 - All evidence links follow schema: `{ type: "test_results|metrics|adoption|other", url: "https://...", label: "CI job #123" }`
 - Protocol supports: HTTP/HTTPS, link validation (404 detection), redirect resolution
 - Links can be bidirectional: success claim links to notice, notice links back to success claim
 
-**FR-6.2: Evidence Validation** ← CAP-11
+**FR-6.2: Evidence Validation** ← CAP-12, CAP-13, CAP-39
 - Sync validation: test at publish time (404 → error)
 - Async validation: weekly check of all links (stale links → operator alert)
 - Redirect handling: follow redirects up to 3 hops; warn on redirect chains
 
-**FR-6.3: Evidence Retrieval** ← CAP-11
+**FR-6.3: Evidence Retrieval** ← CAP-12, CAP-13
 - Evidence links always retrievable by claim ID + link ID
 - Evidence can be unlinked (operator removes broken link)
 - Evidence link audit trail: who added, when, any edits
@@ -1581,3 +1581,33 @@ doctor's (`pyforge-doctor:CAP-90`, pyforge-doctor:CAP-91; Epic 48). Herald's sha
 amended by FR-12.3 (no flag; the origin rule stands). The architecture amends AD-21 (the placement rule, the duct's
 owner, one registry) and adds AD-23 (one generator; other stations' output is data); see the spine's § Currency
 reconciliation — 2026-10-14 (later). `updated:` bumped.
+
+## Currency reconciliation — 2026-10-25 (Story 46.1)
+
+*Trigger: the 2026-09-17 one-chain fold (`4251c42229`) mapped this PRD's feature groups to capabilities by section, and
+three of those groups name the wrong one. The fleet audit of 2026-10-25 found it, the operator ruled the contested rows
+the same day, and Story 46.1 corrects the arrows. Only the arrow text moves.*
+
+Eleven requirement arrows now name the capabilities that realize them (the approved table is the 2026-10-25 decision
+entry in `spec-pyforge-herald`'s memlog):
+
+- Feature Group 1 (the Moments CLI: `herald progress`, `herald success`, `herald notice`): FR-1.1, FR-1.2 and FR-1.3
+  read CAP-1, whose "CLI foundation" is the deck CLI (`seed`, `pull`, `status`, `watch`). They now read CAP-11, CAP-12,
+  CAP-13. Before the fold, the Spec's HER-11..HER-13 constraints said "All three Moments must integrate with Herald CLI
+  and Herald web surface", and each Moment's own text names its CLI verb.
+- Feature Group 2 (the web surface): FR-2.1 keeps CAP-3 for its Modernist colour and typography clause and gains
+  CAP-11, CAP-12 and CAP-13 for the three Moment tabs it lays out. FR-2.3 (all three Moments in one surface,
+  cross-moment linking) now reads CAP-11, CAP-12, CAP-13. FR-2.2 (header and footer) keeps CAP-3.
+- Feature Group 6 (evidence linking): FR-6.1, FR-6.2 and FR-6.3 read CAP-11, whose success has no evidence clause. They
+  now read CAP-12 ("every closed project has a success claim with ≥1 evidence link") and CAP-13 ("every notice links to
+  proof/reason").
+- Automation clauses, added on the independent review the same day: FR-3.2 (progress automation) now reads CAP-11,
+  CAP-38, CAP-39; FR-4.2 (success auto-extract) CAP-12, CAP-38; FR-4.5 (evidence integrity) CAP-12, CAP-39; and FR-6.2
+  (evidence validation) adds CAP-39. CAP-38 is the webhook and CAP-39 the cron and the 7-day link re-validation, the
+  mapping the 2026-10-10 section used for FR-7.x.
+
+This is the same defect the 2026-10-10 section corrected for FR-7.1..FR-7.4, found again by reading every arrow against
+its capability. The other 37 arrows were checked the same way and stand.
+
+**Content changed:** this section added; eleven FR arrows rewritten in place. No FR title, body or number moved, and no
+FR was registered or removed. `updated:` bumped.

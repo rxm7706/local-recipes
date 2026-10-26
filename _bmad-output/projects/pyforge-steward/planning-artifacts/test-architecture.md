@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: af33302e8b81f18f
-story_count: 394
+source_fingerprint: 29315a2a31d59187
+story_count: 395
 test_file_count: 142
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 394
-- **Epics parsed:** 108
+- **Stories parsed:** 395
+- **Epics parsed:** 109
 - **Test files inventoried:** 142 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `af33302e8b81f18f`
+- **Source fingerprint:** `29315a2a31d59187`
 
 ## Risk Assessment
 
@@ -134,6 +134,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 106: The two `mypy` lanes keep separate caches (fix under spec-pyforge-steward CAP-159; no CAP)
 - Epic 107: The preflight refuses a stranded lane, and its serial reference resolves under pixi (fix under spec-pyforge-steward CAP-159; no CAP)
 - Epic 108: `estate reconcile` and `ci status` report what happened (fixes under spec-pyforge-steward CAP-167 and CAP-166; no CAP)
+- Epic 110: The steward PRD's first 31 FRs name the capabilities the Spec carries
 
 ### Low-risk epics
 
@@ -690,6 +691,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 106.1 | The two `mypy` lanes keep separate caches | none observed |
 | 107.1 | A stranded preflight lane is refused, and pr-preflight-lanes resolves under pixi | none observed |
 | 108.1 | `estate reconcile` reds on a failed generator, and a retired CI row is never ... | none observed |
+| 110.1 | Every steward PRD FR arrow names the Spec capability that realizes it | none observed |
 
 ## Quality Gates
 

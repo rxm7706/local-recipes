@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: dad3a6cd45aeab34
-story_count: 147
+source_fingerprint: e21e14490be4e4d8
+story_count: 148
 test_file_count: 187
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 147
-- **Epics parsed:** 39
+- **Stories parsed:** 148
+- **Epics parsed:** 40
 - **Test files inventoried:** 187 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `dad3a6cd45aeab34`
+- **Source fingerprint:** `e21e14490be4e4d8`
 
 ## Risk Assessment
 
@@ -71,6 +71,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 37: The Vizro boards read what the pipelines write, on Pages too (spec-pyforge-atlas CAP-63 amended, CAP-69, FR-71, FR-77)
 - Epic 38: The semantic store has its upload times and archived flag (spec-pyforge-atlas CAP-69, FR-77)
 - Epic 39: The atlas PRD's FR arrows name the capabilities the Spec carries
+- Epic 40: FR-15, FR-61 and FR-63 name what realizes them (spec-pyforge-atlas CAP-70, CAP-71)
 
 ### Low-risk epics
 
@@ -419,6 +420,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 37.13 | The cve-watcher marks an earlier run's diff stale | none observed |
 | 38.1 | The semantic store reads its upload times and archived flag | none observed |
 | 39.1 | Every atlas PRD FR arrow names the Spec capability that realizes it | none observed |
+| 40.1 | FR-15, FR-61 and FR-63 name what realizes them | none observed |
 
 ## Quality Gates
 

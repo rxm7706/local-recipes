@@ -5277,4 +5277,5 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 9588d5cf96f1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-10-25 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  resolved: 2026-10-25 (Story 40.1, operator rulings "Restore 2 atlas CAPs (Recommended)" and "Cite the constraint (Recommended)": spec-pyforge-atlas CAP-70 and CAP-71 restore spec-kedro-org-tooling-adoption's Capabilities 1 and 3, shipped; FR-61 cites CAP-70 and FR-63 cites CAP-71; FR-15 cites the Spec constraint "Conda-forge-only, pixi-managed, py3.14-floored provisioning"; PRD § Currency reconciliation — 2026-10-25 (Story 40.1))
+  status: closed

@@ -3350,6 +3350,31 @@ capabilities:
     heading: "a dispatch landing records which CI surfaces were paused when it merged"
     mode: rebuild
     path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  # 2026-10-25 restored by marshal Story 106.2 (DW-marshal-105-1): the four detector self-verification capabilities the fold dropped
+  - id: pyforge-marshal:CAP-293
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "the Dream-chain detector is proven by fixtures with known answers"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-294
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "the drift detector is proven by fixtures with known answers"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-295
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "every wrong detector answer is logged with the fixture that pins it"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-296
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "the Dream hygiene mode exists, distinct from chain completeness"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   # 2026-09-19 spec-pyforge-core draft→ready (Epic 14 realized CAP-1..7 in August; CAP-8/9 minted for Epic 52)
   - id: pyforge-core:CAP-1
     spec: pyforge-core
@@ -5011,6 +5036,19 @@ capabilities:
     spec: pyforge-atlas
     station: pyforge-atlas
     heading: "the Vizro boards read the datasets the pipelines write"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  # 2026-10-25 restored by atlas Story 40.1 (DW-atlas-39-1): kedro-org Capabilities 1 and 3, which the fold dropped
+  - id: pyforge-atlas:CAP-70
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "kedro-skills guidance is adopted only after an audit against the architecture invariants"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-71
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "the vscode-kedro adopt-or-defer decision is recorded"
     mode: rebuild
     path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
   - id: pyforge-mason:CAP-1

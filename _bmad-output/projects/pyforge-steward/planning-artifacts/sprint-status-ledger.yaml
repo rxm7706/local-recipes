@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 610
+# stories: 613
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -55,6 +55,7 @@ development_status:
   11-2-db-gpt-joins-via-its-configured-integration-pattern: done
   11-3-async-work-never-blocks-django: done
   11-4-isolation-and-statelessness-proven: done
+  110-1-every-steward-prd-fr-arrow-names-the-spec-capability-that-realizes-it: done
   12-1-the-vanilla-chart-with-an-ocp-overlay: done
   12-2-gke-as-a-portability-profile: done
   12-3-air-gap-parity-is-a-failing-check: done
@@ -432,6 +433,8 @@ development_status:
   epic-108-retrospective: optional
   epic-11: done
   epic-11-retrospective: optional
+  epic-110: done
+  epic-110-retrospective: optional
   epic-12: done
   epic-12-retrospective: optional
   epic-13: done

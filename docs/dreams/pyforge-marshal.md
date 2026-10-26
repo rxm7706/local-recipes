@@ -1670,6 +1670,54 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   no CAP, no flag, no `SPEC.md` change; no detector rule changes. Operator ruling, 2026-10-25: "Apply the PRD FR→CAP
   re-map as proposed: 71 headings through a chore story chain, and leave FR-144..FR-147 unchanged with a note that they
   need a source-capability decision." Owner `spec-pyforge-marshal`. → Epic 105 / Story 105.1, specced 2026-10-25.
+- **2026-10-25 (the seed installer's FRs never got their arrows)** — **Found: § 15's 62 requirements name no
+  capability.** The fleet audit that followed Story 105.1 measured 62 marshal FRs no arrow cites, FR-66..FR-127, the
+  seed installer. They came from the genesis installer's satellite PRD (renumbered into this FR space on 2026-08-08),
+  whose nine capabilities were folded into this Spec on 2026-08-02 as CAP-10..CAP-18; the 2026-09-16 fold wrote no
+  arrow on these bullets, and all 62 are baseline-exempt, so `fr-without-cap` never read them. **What it looks like
+  when fixed:** every bullet names what realizes it, traced per requirement: the manifest CAP-10, init CAP-14, adopt
+  CAP-12, check CAP-13, update CAP-15, the state file CAP-17, managed regions CAP-11, adapters CAP-16, templates CAP-18,
+  the distribution CAP-8. Five requirements no capability states (Copier's public API, `--unsafe`, `--force`, the two
+  version clocks, distinct exit codes) cite the Spec constraint that states them. **Constraints:** a chore under
+  `spec-one-chain-per-station` CAP-5 (FRs derive from CAPs) and CAP-8 (the marshal pilot); no CAP, no flag, no
+  `SPEC.md` change; no detector rule changes. Operator rulings, 2026-10-25: "Do rows 1-5 in one PR" and "Cite the
+  constraint (Recommended)". Owner `spec-pyforge-marshal`. → Epic 106 / Story 106.1, specced 2026-10-25. **Amended the
+  same day (the independent review; operator rulings "Apply all (Recommended)" and "CAP-15 + constraint
+  (Recommended)"):** FR-116 also cites CAP-17 and CAP-12, FR-96 CAP-17, and FR-101 cites CAP-15 beside its
+  constraint, so four requirements cite a constraint alone.
+- **2026-10-25 (FR-144..FR-147's capabilities were dropped by the fold)** — **Ruled: restore them.** Story 105.1 left
+  FR-144..FR-147 (detector self-verification) on the fold's counted arrows CAP-102..CAP-105 and opened
+  `DW-marshal-105-1`: their source, `spec-dream-to-code-model-self-verification`, listed its four capabilities as a
+  plain numbered list, the 2026-09-16 fold minted CAPs only from `CAP-n` lines, and so nothing carries them while
+  Stories 17.1 and 17.2, which delivered them, stay done. No doctor capability carries them either, although the
+  detectors now run as `pyforge-doctor` sources. **What it looks like when fixed:** `spec-pyforge-marshal` declares
+  the four as shipped CAP-293..CAP-296 (the Dream-chain detector's fixtures, the drift detector's fixtures, the
+  detector-incident log, the Dream hygiene mode), with that Spec as their provenance, and FR-144..FR-147 cite them one to
+  one. **Constraints:** a chore under `spec-one-chain-per-station` CAP-5 and CAP-8; four CAPs restored, rendered into
+  `SPEC.md` by script from the memlog decision; no flag; no FR text change; no detector rule change. Operator ruling,
+  2026-10-25: "Restore 4 marshal CAPs (Recommended)". Owner `spec-pyforge-marshal`. → Epic 106 / Story 106.2, specced
+  2026-10-25.
+- **2026-10-25 (the refresh writes keys the ledger does not carry)** — **Found: `marshal refresh` fills every Tier-3
+  feed with second copies of finished stories.** Its `sync_status` step regenerates each station's shared
+  `implementation-artifacts/sprint-status.yaml` from `epics.md` through `sprint_plan.py generate`. That script's
+  `_slug` cuts a title at 60 characters and keeps `_` and non-ASCII letters; the tracked ledger's keys come from
+  doctor's `chain.slugify_title` (Ruling 12), which does neither. So every long or unusual title gets a second key at
+  `backlog` beside the ledger's `done` one. The 04:21 refresh on 2026-10-25 wrote 550 such keys across the eight
+  feeds (marshal 213, steward 122, doctor 83, mason 36, herald 33, warden 30, atlas 27, scribe 6). A `bmad-loop` spin
+  reads that feed, so it sees finished stories as actionable work. The post-merge `sprint-ledger-sync` of #2319 then
+  copied them into six tracked ledgers and knocked 179 epics back to `in-progress`. Nothing was committed; the feeds
+  were cleaned by hand. The 14 steward duplicates found on 2026-09-25 had the same shape. **What it looks like when
+  fixed:** `marshal refresh` brings the feed into step with the tracked ledger instead of re-deriving keys. Ledger keys
+  the feed lacks are added; the ledger's `done` and `blocked` values win; a story the feed has advanced keeps the
+  feed's value; a key whose story number the ledger carries under another slug is dropped and named, unless it is
+  further along than the story's best value, which is kept and named for a re-key. A bare sync and a landing drop the
+  same keys before they promote, so a stale feed cannot add a key that carries no progress to a tracked ledger.
+  **Constraints:** a
+  fix under CAP-265 (the hand sync repairs feed drift itself) and CAP-132 / CAP-134 (the fleet refresh and its checked
+  steps), with no CAP and no flag. `sprint_plan.py` is installer-owned and stays unchanged. A story re-key still goes
+  through `--rekey`. **Kinships:** Story 54.1 (CAP-265), Story 15.1 (the refresh). Operator direction, 2026-10-25:
+  "Do this task here: Find what writes truncated slugs into Tier-3 feeds". Owner `spec-pyforge-marshal`. → Epic 107 /
+  Story 107.1, specced 2026-10-25.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint
