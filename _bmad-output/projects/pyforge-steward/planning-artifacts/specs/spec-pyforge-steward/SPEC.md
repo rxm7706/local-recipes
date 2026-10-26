@@ -2,7 +2,7 @@
 id: SPEC-steward
 spec: pyforge-steward
 status: ready
-updated: "2026-10-23"
+updated: "2026-10-26"
 owner-dream: docs/dreams/pyforge-steward.md
 covers-dreams:
   - docs/dreams/pyforge-steward.md
@@ -836,6 +836,20 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
     step, the how-to has no flag step and names the zip, and `pages-site.zip` exists after a deploy;
     `scripts/ci_surface_gates.py --check` exits 0 with the renamed rows; `pixi run --frozen -e pyforge-steward
     pyforge-steward-test`, `flag-gate-check` and `detectors-ci` are green.
+- **CAP-174 — the Platform CI test job's time budget covers what it does on a slow runner, and it installs only what its runner image lacks** ← spec-pyforge-steward CAP-174 (ready 2026-10-26; works with CAP-166)
+  - **intent:** the `test` job in `.github/workflows/platform-ci.yml` installs the Playwright Chromium browser for the
+    herald deck viewer check and pulls the browser's system packages through apt only when the browser does not
+    launch on the runner image, saying so with a warning. Its `timeout-minutes` is sized from measured step times:
+    the slowest path the job can still take (that fallback on the slowest apt mirror measured, plus the worst of every
+    other step) with headroom, and the figures are written beside the number. A slow mirror or runner then reads as a
+    slower green run, never a cancellation, and the lane is never paused, disabled or set `continue-on-error` to hide
+    one. (Three cancellations at the 15-minute ceiling, 2026-10-23 and 2026-10-26, each spent 636–668 s in
+    `playwright install --with-deps chromium`'s apt download at about 41 kB/s while the runner image already carried
+    every library the browser links; sizing in `.memlog.md`, 2026-10-26.)
+  - **success:** on a PR run that installs the browser from scratch, the `test` job completes inside its budget, the
+    browser check `test_playwright_records_zero_foreign_origin_requests` passes (not skips), and the log shows the
+    launch succeeding with no apt download; the budget comment names the measured figures;
+    `scripts/ci_surface_gates.py --check` and `detectors-ci` exit 0; the `platform-ci.test` registry row is unchanged.
 
 ## Constraints
 
@@ -914,6 +928,9 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
   reusable `workflow_call` until a second lane needs Pages; no PR comment bot and no per-PR preview environment
   (Pages has none; the PR artifact is the review surface); no change to `steward deploy perimeter|static`; no
   python-foundry surface (ledger mode `rebuild`).
+- No pause, disable or `continue-on-error` for the Platform CI `test` job, no change to other workflows' Chromium
+  steps, to `.github/actions/platform-test-setup` or the `platform-ci-test` environment, and no change to the suite
+  (CAP-174).
 
 ## Success signal
 
@@ -940,6 +957,9 @@ The `JFROG_API_KEY` cross-host leak pattern has a passing, named regression test
   (documented, not testable from this repository); the live `<SITE_URL>/build.json` is served within seconds of
   `deploy-pages` reporting success; nothing in `pages-check` reads git history once `presentations/*/src/pptx` is
   out of the checkout (Story 102.1's first check) — CAP-168.
+- The `ubuntu-latest` image keeps shipping the libraries the Playwright headless shell links (apt reported each one
+  already the newest version on 2026-10-23 and 2026-10-26); when an image drops one, the launch fails, the step warns
+  and runs `playwright install-deps chromium`, and CAP-174's budget covers that path on the slowest mirror measured.
 
 ## Open Questions
 
@@ -955,3 +975,6 @@ The `JFROG_API_KEY` cross-host leak pattern has a passing, named regression test
   pre-release then retire? And if a `PAUSE_DASHBOARD` variable is set live when Story 102.2 lands, does the
   operator move it to `PAUSE_PAGES` through `steward ci pause|resume --yes` (the only write path) or delete it?
   Both are the operator's (CAP-168).
+- Should the atlas job in `pyforge-station-tests.yml`, which runs `playwright install --with-deps chromium`
+  unconditionally and so takes the same apt mirror, take CAP-174's launch-then-fallback step? Another workflow, out
+  of CAP-174's scope; the operator's.

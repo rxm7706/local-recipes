@@ -2152,6 +2152,35 @@ Drift — orphaned between stations.
   the default `clean`, `--merged-only`, `status` and `ls`. The landing step and `start_workspace` do not change.
   Found by the session that landed #2318. Owner `spec-pyforge-steward`. → Epic 13 / Story 13.7, specced 2026-10-25;
   it reopens Epic 13.
+- **2026-10-26 (the Platform CI test job's budget is sized for a fast mirror) — Found: the `test` job in
+  `platform-ci.yml` hit its 15-minute ceiling three times, and each time the apt mirror was slow, not the work.**
+  Runs 39925508594 (2026-10-23), 40306113110 (2026-10-26, `main`'s own push run) and 40351088193 (attempt 1, PR
+  #2322) were cancelled at 909–919 s. Read from the Actions API's step timings of the last 200 `test` jobs
+  (2026-10-11..26):
+  - **The time is one step.** `Install Chromium for the herald deck viewer browser check` (`python -m playwright
+    install --with-deps chromium`) took 636–668 s on the three cancelled runs and 23 s at the median. Its apt
+    download, 25.9 MB from `azure.archive.ubuntu.com`, ran at about 41 kB/s (10 min 7 s and 10 min 35 s). The
+    browser itself comes from Playwright's CDN in 8–11 s either way.
+  - **The apt download buys nothing the check needs.** apt reported every library the headless shell links
+    (`libnss3`, `libgbm1`, `libatk-bridge2.0-0t64`, `libxkbcommon0`, `libasound2t64` and the rest) as already the
+    newest version on the `ubuntu-latest` image. It installed nine font packages (CJK, Thai, Unifont, X fonts) and
+    eight upgrades. The check, `test_playwright_records_zero_foreign_origin_requests`, counts request origins.
+  - **The rest of the job is not slow.** The pixi install is 15 s at the median and 26–32 s on a cache miss (`main`
+    runs 40229905972, 40231618468 and 40254324378 read `Cache miss`). The full suite is 197 s at the median and
+    243 s at worst; on the cancelled runs it kept the fast run's pace (69 % at the 151 s cut). Everything but the
+    Chromium step sums to 365 s at worst over 178 green jobs.
+  - **Nothing gates on it, so nothing said so.** `main` has no required status check; PR #2322 merged past the
+    cancelled attempt, which passed on attempt 2 in 4 min 25 s.
+  **What it looks like when fixed:** the job installs the browser alone, launches it once, and runs `playwright
+  install-deps chromium` only when that launch fails, with a warning that names the fallback. `timeout-minutes`
+  covers the slowest path the job can still take, the fallback on the slowest mirror measured (668 s) plus the
+  worst of the rest (365 s), with headroom: 25 minutes, the figures named beside it. A slow mirror then reads as a
+  slower green run. **Constraints:** the lane is never paused, disabled or set `continue-on-error`; no apt cache
+  (its archive is root-owned and follows the mirror's day); no browser cache (the CDN download is 8–11 s); the
+  setup action, the suite and the other workflows' Chromium steps do not change. Direction 2026-10-26 from the
+  session that landed PR #2322: mint a CAP through `bmad-spec`. Owner `spec-pyforge-steward` (CI surfaces are
+  steward's, CAP-166). CAP-169..CAP-173, FR-42..FR-47 and Epic 109 are claimed by draft PR #2274. → CAP-174 /
+  FR-48, Epic 112 / Story 112.1, specced 2026-10-26.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
