@@ -42,6 +42,20 @@ def _parse_status_file(path: Path) -> dict[str, str]:
     return out
 
 
+def _real_parse_sprint_status():
+    """``fleet_scan.parse_sprint_status``, the parser ``main()`` really uses: it stops at
+    the first unindented line, so a feed's trailing metadata is never read as entries."""
+    path = _REPO_ROOT / "scripts" / "fleet_scan.py"
+    spec = importlib.util.spec_from_file_location("_fleet_scan_promote_test", path)
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.parse_sprint_status
+
+
+_PARSE = _real_parse_sprint_status()
+
+
 def _make_generate_stub(feed_rel: str, slug: str):
     class _StubGenerate:
         PROJECT_SOURCES = {"acme": feed_rel}
@@ -49,7 +63,7 @@ def _make_generate_stub(feed_rel: str, slug: str):
 
         @staticmethod
         def parse_sprint_status(path: Path) -> dict[str, str]:
-            return _parse_status_file(Path(path))
+            return _PARSE(Path(path))
 
     return _StubGenerate
 
@@ -469,9 +483,9 @@ def test_main_drops_stale_slug_keys_before_it_promotes(tmp_path, promote, monkey
     assert not set(_STALE) & set(_parse_status_file(feed))
     out = capsys.readouterr().out
     assert "DROPPED   acme: 3 stale-slug key(s)" in out
-    assert f"{_FEED_LONG}: feed backlog (the twin carries it as {_TWIN_LONG})" in out
-    assert f"{_FEED_NON_ASCII}: feed backlog (the twin carries it as {_TWIN_NON_ASCII})" in out
-    assert f"{_FEED_UNDERSCORE}: feed backlog (the twin carries it as {_TWIN_UNDERSCORE})" in out
+    assert f"{_FEED_LONG}: feed backlog (the twin carries it as {_TWIN_LONG}: done)" in out
+    assert f"{_FEED_NON_ASCII}: feed backlog (the twin carries it as {_TWIN_NON_ASCII}: done)" in out
+    assert f"{_FEED_UNDERSCORE}: feed backlog (the twin carries it as {_TWIN_UNDERSCORE}: done)" in out
 
 
 def test_main_drops_stale_slug_keys_under_allow_regression(tmp_path, promote, monkeypatch):
@@ -507,19 +521,16 @@ def test_feed_only_brings_the_feed_into_step_and_never_writes_the_twin(tmp_path,
     assert rc == 0
     assert twin.read_bytes() == twin_before
     text = feed.read_text(encoding="utf-8")
-    assert text.startswith("# header kept\ndevelopment_status:\n")
-    assert text.endswith(tail)
-    after = _parse_status_file(feed)
-    assert not set(_STALE) & set(after)
-    assert after[_TWIN_LONG] == "done"
-    assert after["4-1-twin-only"] == "backlog"
-    assert after["3-1-in-flight"] == "in-progress"
+    expected = {**twin_map, "3-1-in-flight": "in-progress"}
+    expected_body = "".join(f"  {k}: {v}\n" for k, v in sorted(expected.items()))
+    assert text == "# header kept\ndevelopment_status:\n" + expected_body + tail
     report = json.loads(capsys.readouterr().out)
     assert report == {
         "ok": True,
         "project": "acme",
         "feed": "feed.yaml",
         "dropped": _STALE,
+        "kept": [],
         "repaired": sorted([_TWIN_LONG, "4-1-twin-only"]),
     }
 
@@ -551,9 +562,74 @@ def test_feed_only_skips_without_a_tracked_twin(tmp_path, promote, monkeypatch, 
     assert report["ok"] is True and "no tracked twin" in report["skipped"]
 
 
-def test_feed_only_needs_exactly_one_project(promote, capsys):
-    assert promote.main(["--feed-only"]) == 2
+@pytest.mark.parametrize(
+    "extra",
+    [
+        [],
+        ["--project", "acme", "--project", "acme"],
+        ["--project", "acme", "--rekey", "map.md"],
+        ["--project", "acme", "--allow-regression"],
+    ],
+)
+def test_feed_only_needs_exactly_one_project_and_no_other_mode(promote, capsys, extra):
+    assert promote.main(["--feed-only", *extra]) == 2
     assert json.loads(capsys.readouterr().out)["ok"] is False
+
+
+def test_feed_only_keeps_a_key_whose_number_the_twin_lacks(tmp_path, promote, monkeypatch, capsys):
+    feed_map = _replay_feed()
+    feed_map["5-1-a-story-the-twin-lacks"] = "ready-for-dev"
+    feed, _twin = _sandbox(tmp_path, promote, monkeypatch, feed_map, _replay_twin())
+
+    assert promote.main(["--project", "acme", "--feed-only"]) == 0
+    assert _PARSE(feed)["5-1-a-story-the-twin-lacks"] == "ready-for-dev"
+    assert "5-1-a-story-the-twin-lacks" not in json.loads(capsys.readouterr().out)["dropped"]
+
+
+@pytest.mark.parametrize("content", ["", "# truncated before its map\nproject: pyforge-acme\n"])
+def test_feed_only_rebuilds_a_feed_with_no_map_and_stays_idempotent(tmp_path, promote, monkeypatch, content):
+    feed, _twin = _sandbox(tmp_path, promote, monkeypatch, None, _replay_twin())
+    feed.write_text(content, encoding="utf-8")
+
+    assert promote.main(["--project", "acme", "--feed-only"]) == 0
+    first = feed.read_text(encoding="utf-8")
+    assert promote.main(["--project", "acme", "--feed-only"]) == 0
+    assert feed.read_text(encoding="utf-8") == first
+    assert first.count("development_status:") == 1
+    assert _PARSE(feed) == _replay_twin()
+
+
+def test_a_stale_key_ahead_of_its_twin_key_is_kept_and_named(tmp_path, promote, monkeypatch, capsys):
+    """Review S2: a run working story 3.1 under its old title, while the ledger moved to the
+    new one, must not lose that progress; the key is kept and named for a --rekey."""
+    twin_map = {"3-1-the-new-title": "backlog", "epic-3": "backlog"}
+    feed_map = {**twin_map, "3-1-the-old-title": "in-progress"}
+    feed, twin = _sandbox(tmp_path, promote, monkeypatch, feed_map, twin_map)
+
+    assert promote.main(["--project", "acme", "--feed-only"]) == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["kept"] == ["3-1-the-old-title"] and report["dropped"] == []
+    assert _PARSE(feed)["3-1-the-old-title"] == "in-progress"
+
+    assert promote.main(["--project", "acme"]) == 0
+    out = capsys.readouterr().out
+    assert "KEPT      acme: 1 stale-slug key(s)" in out
+    assert "3-1-the-old-title: feed in-progress (the twin carries it as 3-1-the-new-title: backlog)" in out
+    assert _PARSE(twin)["3-1-the-old-title"] == "in-progress"
+
+
+def test_split_stale_keys_drops_only_a_key_with_no_progress_to_lose(promote):
+    twin = {"1-1-a": "done", "2-1-b": "in-progress", "3-1-c": "review", "4-1-d": "backlog"}
+    feed = {
+        **twin,
+        "1-1-a-old": "in-progress",
+        "2-1-b-old": "backlog",
+        "3-1-c-old": "review",
+        "4-1-d-old": "done",
+    }
+    drop, keep = promote.split_stale_keys(feed, twin)
+    assert drop == [("1-1-a-old", "1-1-a"), ("2-1-b-old", "2-1-b"), ("3-1-c-old", "3-1-c")]
+    assert keep == [("4-1-d-old", "4-1-d")]
 
 
 def test_a_repaired_key_is_named_once(tmp_path, promote, monkeypatch, capsys):

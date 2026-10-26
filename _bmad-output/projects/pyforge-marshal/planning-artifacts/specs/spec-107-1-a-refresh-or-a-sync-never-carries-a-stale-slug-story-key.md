@@ -15,9 +15,11 @@ context:
   - scripts/promote_sprint_status.py
   - scripts/fleet_scan.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/refresh.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/land.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/refresh.py
   - src/shared/packages/pyforge-marshal/tests/unit/test_promote_sprint_status_regressions.py
   - src/shared/packages/pyforge-marshal/tests/unit/test_refresh.py
+  - src/shared/packages/pyforge-marshal/tests/unit/test_land_epic_rollups.py
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py
   - .claude/skills/bmad-sprint-planning/scripts/sprint_plan.py
 declared_low_risk: false
@@ -57,17 +59,24 @@ numbers are at `48445a6b8d`.
 - **One rule for a stale key.** `scripts/promote_sprint_status.py` gains `stale_slug_keys(feed, twin)`: the story keys
   in the feed that the twin lacks while the twin carries the same epic number, story number and suffix (`_STORY_KEY_RE`)
   under another key. A feed key whose number the twin lacks is not stale: it may be a story not yet in the ledger.
+  `split_stale_keys` splits them: a stale key is dropped when it carries no progress the twin's key lacks (the twin
+  key is `done`, the stale key is `backlog`, or both read the same). One further along (a run working the story under
+  its old title while the ledger moved to the new one) is kept and named for a `--rekey`, so its progress is never
+  thrown away (review S2).
 - **A bare sync drops them before it promotes.** In `main()`, after any `--rekey` translation (so a re-keyed row is
   judged through its map) and before the regression guard, the stale keys leave the feed and the map being promoted.
   The feed is rewritten by `_write_feed_development_status`, so its head and tail stay byte-for-byte. Stdout prints
-  `DROPPED`, the count, and each key with the twin key that carries its number. It applies under
-  `--allow-regression` as well: the twin already carries that story, so nothing regresses.
+  `DROPPED`, the count, and each key with the twin key (and its value) that carries its number, pointing at
+  `--rekey`; a kept-ahead key prints under `KEPT` and is promoted as before. It applies under `--allow-regression` as
+  well: the twin already carries that story, so nothing regresses.
 - **`--feed-only`: the twin-to-feed half alone.** A new flag, with exactly one `--project`: drop the stale keys, then
   run `repair_feed` with the twin's full map (its `done` and story `blocked` values win, and twin keys the feed lacks
   are added; a value the feed has advanced is kept), write only the feed, and print one JSON object on stdout:
-  `{"ok", "project", "feed", "dropped", "repaired"}`. It never writes the twin. With no feed it writes one from the
-  twin under the header fields `sprint_plan.py` writes (`generated`, `last_updated`, `project`, `project_key`,
-  `tracking_system`, `story_location`, `development_status`). With no twin it reports `{"ok": true, "skipped": ...}`.
+  `{"ok", "project", "feed", "dropped", "kept", "repaired"}`. It never writes the twin. With no feed, or a feed with no
+  `development_status:` line (empty or truncated; nothing in it parses), it writes one from the twin under the header
+  fields `sprint_plan.py` writes (`generated`, `last_updated`, `project`, `project_key`, `tracking_system`,
+  `story_location`, `development_status`), so a second run is byte-identical (review S1). With no twin it reports
+  `{"ok": true, "skipped": ...}`.
   An unknown key reports `{"ok": false, "error": ...}` and exits 2.
 - **The refresh step calls it.** `_sync_status_step` runs `[sys.executable, <root>/scripts/promote_sprint_status.py,
   "--project", <slug without "pyforge-">, "--feed-only"]` through the same `PosixProcess` seam, timeout and
@@ -75,6 +84,9 @@ numbers are at `48445a6b8d`.
   dropped and repaired counts, or reads `in sync`. `sprint_plan.py` is neither called nor changed: it is
   installer-owned. `core/refresh.py`'s docstring and `cli/refresh.py`'s module docstring say the step syncs the feed
   from the tracked twin.
+- **The landing path too.** `cli/land.py::_promote_sprint_ledger` renders the twin from the shared feed when a story
+  lands. It drops the same `split_stale_keys` before its refusal check, so a landing cannot publish a stale key either
+  (review S3).
 - **The double print.** `_print_repaired_keys` names each key once; the `REPAIRED` line counts distinct keys.
 - **`type: fix`, no flag.** The refresh step exists to keep the feed in step with the tracked ledger (`core/refresh.py`
   docstring, the 2026-09-10 incident), and CAP-265's sync must never add a duplicate to the twin. This restores both.
@@ -111,7 +123,15 @@ Type / Effort / Deps: fix / S / —.
   sync`, `skipped` (no twin or no script), and `failed` with `MRS-REFRESH-008` for a non-zero exit, a non-JSON or
   not-ok report, a launch error and a timeout.
 - **AC6 — Once per key.** A `done` key the feed lacks appears once in the `REPAIRED` output.
-- **AC7 — Mutation.** Making `stale_slug_keys` return nothing fails AC1's and AC3's tests. Restore it.
+- **AC6a — Progress is never thrown away.** A stale key further along than its twin key (`in-progress` beside
+  `backlog`) survives `--feed-only` (listed under `kept`) and a bare sync (printed under `KEPT`, promoted as before);
+  the refresh detail names it.
+- **AC6b — A feed with no map is rebuilt.** A zero-byte feed and one truncated before `development_status:` are
+  rewritten from the twin by `--feed-only`, and a second run leaves the bytes unchanged.
+- **AC6c — The landing.** A landing whose feed carries a stale `backlog` copy of a `done` twin key publishes neither the
+  copy nor an epic rolled back by it (`test_land_epic_rollups.py`).
+- **AC7 — Mutation.** Making `stale_slug_keys` return nothing fails AC1's and AC3's tests; making `split_stale_keys`
+  drop every stale key fails AC6a's; removing the landing filter fails AC6c's. Restore each.
 - **AC8 — The suites.** `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` and `pixi run --frozen -e pyforge-ci
   pyforge-deps-test` are green.
 
@@ -136,6 +156,11 @@ Type / Effort / Deps: fix / S / —.
   this is unchanged.
 - A retitled story whose new key reaches only the feed is dropped by a sync until the twin carries it; a re-key goes
   through `--rekey` (doctor Story 25.3), which translates first.
+- The refresh runs the primary checkout's copy of `promote_sprint_status.py`. Until that checkout fast-forwards past
+  this story, a newer `marshal` run against it gets argparse exit 2 on `--feed-only`, and every home's `sync_status`
+  reports `failed` (`MRS-REFRESH-008`, WARN) without writing anything (review N2).
+- A project with a tracked ledger but no board key (no `epics.md`) reports `failed` (`unknown --project key`) where
+  it used to report `skipped`. Every loop home today has both (review N3).
 
 ## I/O & Edge-Case Matrix
 
@@ -148,6 +173,9 @@ Type / Effort / Deps: fix / S / —.
 | feed advanced a key past the twin | kept | kept (unchanged) |
 | `--rekey` sync | translated, then judged | translated, stale keys judged through the map, then judged |
 | refresh, no tracked twin | ran `generate` if `epics.md` existed | `skipped` |
+| stale key ahead of its twin key | promoted as a duplicate | kept, named for `--rekey`, promoted as before |
+| feed empty or truncated before its map | `generate` rebuilt it | rebuilt from the twin |
+| landing, feed holds a stale key | published into the twin | left out |
 
 </intent-contract>
 
@@ -177,13 +205,30 @@ Type / Effort / Deps: fix / S / —.
 - `pixi run --frozen -e pyforge-guild spec-surface-check` — expected: exit 0 after the memlog entries and the scoped stamps.
 - `PYFORGE_PREFLIGHT_SCOPE=full pixi run -e pyforge-guild pr-preflight` — expected: exit 0.
 
-**After landing (not a gate):** `marshal refresh --project <slug>` against one home reports `sync_status` `in sync` on a
-clean feed, and `sprint-ledger-sync -- --project <station>` reports `unchanged`.
+**After landing (not a gate):** fast-forward the primary checkout to the merge first (its copy of the script is the one
+the refresh runs). Then `marshal refresh --project <slug>` against one home reports `sync_status` `in sync` on a clean
+feed, and `sprint-ledger-sync -- --project <station>` reports `unchanged`.
 
 ## Spec Change Log
 
 - 2026-10-25: minted from the Dream entry of 2026-10-25 (the refresh writes keys the ledger does not carry) at the
   operator's direction "Do this task here: Find what writes truncated slugs into Tier-3 feeds". `type: fix`, no flag,
   no CAP.
+- 2026-10-25: review round 1 applied (see the triage log): the S2 keep rule (`split_stale_keys`), the rebuilt markerless
+  feed, the landing path's filter, the real parser in the test stub, AC6a–AC6c, two residual risks and the
+  after-landing order.
 
 ## Review Triage Log
+
+- **Round 1 (2026-10-25, an independent reviewer over `48445a6b8d..ae997ccfd8`): PASS, 0 blockers, 4 should-fix, 6
+  nits.** Checked: AC1–AC8 as written; 1488 land/deploy/ledger/sync/refresh/promote unit tests; the AC7 mutation; all
+  eight live feeds (0 stale keys, no twin with one number under two keys); a `_new_feed_text` feed loads in bmad-loop's
+  `sprintstatus.load`; the planning counts (675 keys, 465 stories, 105 epics).
+  - S1 (fixed): `--feed-only` appended entries under no marker to an empty or truncated feed, growing it each run.
+  - S2 (fixed): a stale key further along than its twin key was dropped with its progress; now kept and named.
+  - S3 (fixed): `cli/land.py::_promote_sprint_ledger` still published stale keys from the feed.
+  - S4 (fixed): the test stub's parser read the feed tail as entries; it now delegates to `fleet_scan`, and AC3
+    asserts the exact feed.
+  - N1 (fixed): `--feed-only` with an unknown-number key, two `--project`s, `--rekey` or `--allow-regression` tested.
+  - N2, N3 (recorded as residual risks); N4 (the `"107"` epic-surface comment corrected); N5 (`DROPPED` points at
+    `--rekey`); N6 (promotion to `done` in the landing PR, as before).

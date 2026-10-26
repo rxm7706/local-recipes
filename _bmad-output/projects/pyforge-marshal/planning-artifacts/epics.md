@@ -10226,11 +10226,11 @@ So that no spin sees a finished story as actionable and no sync adds a duplicate
 
 **Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-265 (the hand sync repairs feed drift itself), CAP-132 and CAP-134 (← spec-loop-home-fleet-refresh CAP-1 and CAP-3, FR-133..FR-135); AD-21 • Dream 2026-10-25 (the refresh writes keys the ledger does not carry) • operator direction 2026-10-25
 **Flag:** none (`spec-feature-flag-governance` Q1, a fix)
-**Surface:** `scripts/promote_sprint_status.py`; `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/refresh.py`; `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/refresh.py` (docstring); `tests/unit/test_promote_sprint_status_regressions.py` and `tests/unit/test_refresh.py`
+**Surface:** `scripts/promote_sprint_status.py`; `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/refresh.py`; `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/land.py` (the landing's feed sync, review round 1); `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/refresh.py` (docstring); `tests/unit/test_promote_sprint_status_regressions.py`, `tests/unit/test_refresh.py` and `tests/unit/test_land_epic_rollups.py`
 **Spec:** `planning-artifacts/specs/spec-107-1-a-refresh-or-a-sync-never-carries-a-stale-slug-story-key.md`
 **Given** `48445a6b8d`, where `_sync_status_step` runs `sprint_plan.py generate` into the shared feed and a bare sync promotes every feed key the twin lacks
 **When** the story lands
-**Then** `marshal refresh`'s `sync_status` step runs `promote_sprint_status.py --feed-only`, which drops and names each stale-slug key, repairs the feed from the twin and never writes the twin; a bare sync drops and names the same keys before it promotes; a key whose story number the twin lacks survives both
+**Then** `marshal refresh`'s `sync_status` step runs `promote_sprint_status.py --feed-only`, which drops and names each stale-slug key, repairs the feed from the twin and never writes the twin; a bare sync and a landing drop the same keys before they promote; a key whose story number the twin lacks survives, and a stale key further along than its twin key is kept and named for a `--rekey`
 **And** replaying the 2026-10-25 herald feed leaves zero stale-slug keys and the twin unchanged; `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
 **Status:** backlog
 

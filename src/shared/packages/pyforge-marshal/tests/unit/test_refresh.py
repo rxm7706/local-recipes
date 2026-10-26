@@ -356,6 +356,20 @@ def test_sync_status_step_syncs_the_feed_from_the_tracked_ledger(tmp_path, monke
     assert timeout_s == refresh_mod._SYNC_STATUS_TIMEOUT_S
 
 
+def test_sync_status_step_names_a_stale_key_kept_ahead_of_the_ledger(tmp_path, monkeypatch):
+    _seed_ledger_and_script(tmp_path)
+
+    def _fake_run(self, argv, *, cwd, timeout_s=None):
+        return ProcessResult(
+            returncode=0, stdout=json.dumps({"ok": True, "dropped": [], "kept": ["3-1-old"], "repaired": []}), stderr=""
+        )
+
+    monkeypatch.setattr(PosixProcess, "run", _fake_run)
+    result = refresh_mod._sync_status_step("acme", tmp_path, [])
+    assert result.status == "done"
+    assert result.detail == "in sync, 1 stale-slug kept (ahead of the ledger; re-key with --rekey)"
+
+
 def test_sync_status_step_reports_a_skipped_feed_sync(tmp_path, monkeypatch):
     _seed_ledger_and_script(tmp_path)
 

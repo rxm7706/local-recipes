@@ -751,9 +751,10 @@ verify_commands = [
   "scripts/.spec-surface-baseline.json",
 ]
 "107" = [  # a refresh or a sync never carries a stale-slug story key (a fix under spec-pyforge-marshal CAP-265,
-  # CAP-132 and CAP-134, no CAP; Story 107.1), added 2026-10-25. The default surface, restated because a declared entry
-  # replaces it outright; its package glob covers cli/refresh.py, core/refresh.py and their tests. Plus the root
-  # script the hand sync and the refresh share, and every Spec memlog (marshal's src/ is co-governed by spec-pyforge-core).
+  # CAP-132 and CAP-134, no CAP; Story 107.1), added 2026-10-25. Narrower than the default surface on purpose: the
+  # marshal package (cli/refresh.py, core/refresh.py, cli/land.py and their tests), its specs, the root script the
+  # hand sync, the refresh and the landing share, and every Spec memlog (marshal's src/ is co-governed by
+  # spec-pyforge-core). The story touches no pixi file and no .gitignore.
   "src/shared/packages/pyforge-marshal/**",
   "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
   "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
