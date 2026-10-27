@@ -6583,7 +6583,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_budget.py": "77054e38e3a62882953bc550ea260ab7d54cc019",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_ci.py": "4c70526b12ec28162854fb21f643bdc4e32b034a",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py": "7e928bdd3cac428b3b3e55eb03b3368c8c960b0f",
-   "src/shared/packages/pyforge-steward/tests/unit/test_preflight_docs_site_mutex.py": "98d2f3964a653e6b7cc1f704df3c4589f8a14131",
+   "src/shared/packages/pyforge-steward/tests/unit/test_preflight_docs_site_mutex.py": "69e70c21d8b44e7f348745fc8caab70f893377bc",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_inherited_pytest_addopts.py": "c08ecc5a871c1ffdd122a2b76125ab9c625663bc",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_lane_identity.py": "10eae2417cdcc2bf049ffd2354f9d331f41fe509",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_scope.py": "358536e268761f50b765944874b39d2330fcd791",
@@ -6592,7 +6592,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_stranded_lane.py": "c8d0a6eadd39600822e665d11b06ed2392fd10a1",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_suite_reduction.py": "f730ff6721f7b3ffafc957ef435d7021ef6f62dd",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_verify_deferred.py": "5418037ca21b8c029ae515f6f0c1ad74f9810f05",
-   "src/shared/packages/pyforge-steward/tests/unit/test_preflight_workers.py": "9b710d5a8031264d1085d13296db7eb0a5015f47",
+   "src/shared/packages/pyforge-steward/tests/unit/test_preflight_workers.py": "baff56d177fd6b0af1f5e4d808642f12b7f34706",
    "src/shared/packages/pyforge-steward/tests/unit/test_provision_env.py": "aa784c2b6f990a06332c2ebcd2a7cd8a624fe0cd",
    "src/shared/packages/pyforge-steward/tests/unit/test_provision_install_class_playbook.py": "b0542879ea7a78945914f8c4330fa61e52e50b45",
    "src/shared/packages/pyforge-steward/tests/unit/test_provision_list.py": "efe8390ccf5eaaf7f6044ff8756ce28191cc5612",
@@ -6647,7 +6647,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "a71bb4403d2e18e02a0c9a4b970a7851d8205606"
+  "memlog": "c26b3943cb6cdca67a6704f0c622c43ceda0eb35"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
