@@ -2,7 +2,7 @@
 title: '109.5: Contribution lanes wait on a desk test and a Wizard-of-Oz pilot'
 type: 'docs'
 created: '2026-10-21'
-status: 'ready-for-dev'
+status: 'backlog'
 baseline_revision: '53aed16fe1957ab340c6146cb7bf0c3f810c1746'
 flag-exempt: docs-only
 review_loop_iteration: 0
