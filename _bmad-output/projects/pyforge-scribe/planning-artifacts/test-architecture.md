@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: scribe
-source_fingerprint: d62a2533e441e532
-story_count: 49
-test_file_count: 23
+source_fingerprint: 2d907bb116f88d59
+story_count: 51
+test_file_count: 24
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-scribe`
-- **Stories parsed:** 49
-- **Epics parsed:** 27
-- **Test files inventoried:** 23 under `src/shared/packages/pyforge-scribe/tests/`
+- **Stories parsed:** 51
+- **Epics parsed:** 28
+- **Test files inventoried:** 24 under `src/shared/packages/pyforge-scribe/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `d62a2533e441e532`
+- **Source fingerprint:** `2d907bb116f88d59`
 
 ## Risk Assessment
 
@@ -59,6 +59,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 25: The estate catalog reads only in-tree skills (spec-pyforge-scribe CAP-32)
 - Epic 26: Phase 4+5 of the deferral burn-down: scribe's open medium and low deferrals
 - Epic 27: The instruction surface carries the requirement-arrow rule (spec-pyforge-scribe CAP-27, CAP-29; spec-one-chain-per-station CAP-5 amended)
+- Epic 29: Every pre-rule scribe runtime capability sits behind a kill switch (1 flags, one per CAP; the Guild flag rule's retrofit capability, Q6)
 
 ### Low-risk epics
 
@@ -90,6 +91,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-scribe/tests/unit/test_promote.py` | unit | none observed |
 | `src/shared/packages/pyforge-scribe/tests/unit/test_recall.py` | unit | none observed |
 | `src/shared/packages/pyforge-scribe/tests/unit/test_recall_semantic.py` | unit | none observed |
+| `src/shared/packages/pyforge-scribe/tests/unit/test_retrofit_flags.py` | unit | none observed |
 | `src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py` | unit | none observed |
 | `src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py` | unit | none observed |
 
@@ -146,6 +148,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 25.1 | The estate catalog skips skill directories git ignores | none observed |
 | 26.1 | Recall breaks ties by recency, and scribe's other open deferrals close | none observed |
 | 27.1 | The instruction surface carries the requirement-arrow rule | none observed |
+| 29.1 | every session reads one derived picture of the BMAD estate sits behind a kill... | none observed |
+| 29.2 | the retrofit kill switch retires on its cleanup date | none observed |
 
 ## Quality Gates
 

@@ -10325,7 +10325,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.front_door_environment` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `pyforge.core.dispatch.dispatch_argv`: the `station is not installed in this environment` refusal through `pyforge.core.flags`; OFF: an uninstalled roster station token reads `unknown station`, as before spec-pyforge-core CAP-11
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.2: loop homes and isolation sits behind a kill switch
 
@@ -10341,7 +10341,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.loop_homes` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal factory spin` through `pyforge.core.flags`; OFF: `marshal factory spin` is listed disabled and refuses with usage code 2
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.3: supervised unattended runs sits behind a kill switch
 
@@ -10357,7 +10357,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.supervised_runs` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal factory attach`, `marshal factory resume`, `marshal factory checkpoint` through `pyforge.core.flags`; OFF: `marshal factory attach|resume|checkpoint` are listed disabled and refuse with usage code 2
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.4: gates you can run sits behind a kill switch
 
@@ -10373,7 +10373,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.gate_evaluate` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal gate evaluate` through `pyforge.core.flags`; OFF: `marshal gate evaluate` is listed disabled and refuses with usage code 2
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.5: fleet visibility sits behind a kill switch
 
@@ -10389,7 +10389,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.fleet_status` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal status` through `pyforge.core.flags`; OFF: `marshal status` is listed disabled and refuses with usage code 2
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.6: policy composition sits behind a kill switch
 
@@ -10405,7 +10405,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.policy_composition` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal init`, `marshal preflight`, `marshal homes`, `marshal teardown` through `pyforge.core.flags`; OFF: `marshal init|preflight|homes|teardown` refuse with usage code 2; no policy is ever composed from a second site
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.7: operating model as data sits behind a kill switch
 
@@ -10421,7 +10421,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.seed_explain` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal seed explain` through `pyforge.core.flags`; OFF: `marshal seed explain` is listed disabled and refuses with usage code 2
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.8: managed-region upgrades sits behind a kill switch
 
@@ -10437,7 +10437,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.managed_regions` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal seed update` through `pyforge.core.flags`; OFF: `marshal seed update` is listed disabled and refuses with usage code 2
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.9: adopt onto a living repo sits behind a kill switch
 
@@ -10453,7 +10453,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.seed_adopt` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal seed adopt` through `pyforge.core.flags`; OFF: `marshal seed adopt` is listed disabled and refuses with usage code 2
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.10: seed check in CI sits behind a kill switch
 
@@ -10469,7 +10469,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.seed_check` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal seed check` through `pyforge.core.flags`; OFF: `marshal seed check` is listed disabled and refuses with usage code 2
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.11: adapters from one contract sits behind a kill switch
 
@@ -10485,7 +10485,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.adapter_fanout` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `seed/verbs/adopt.py`: the adapter fan-out (`derive_adapters.render_adapter`) during `seed adopt` through `pyforge.core.flags`; OFF: `seed adopt` renders no per-tool adapter file; existing adapter files are left untouched
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.12: genesis-owned state file sits behind a kill switch
 
@@ -10501,7 +10501,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.genesis_state_file` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal seed init`, `marshal seed adopt`, `marshal seed update` through `pyforge.core.flags`; OFF: `marshal seed init|adopt|update` refuse with usage code 2: the state file is load-bearing and is never skipped
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.13: Supervisor finalizes when the harness cannot run shell sits behind a kill switch
 
@@ -10517,7 +10517,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.supervisor_shell_finalize` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `dispatch_supervisor/__main__.py`: the `supervisor_should_finalize_harness_work` decision through `pyforge.core.flags`; OFF: the supervisor leaves a shell-less session's leftover for the operator (`MRS-DISP-036`), as before
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.14: `marshal watch` reports what changed and a recommended delay sits behind a kill switch
 
@@ -10533,7 +10533,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.watch` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal watch` through `pyforge.core.flags`; OFF: `marshal watch` is listed disabled and refuses with usage code 2
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.15: completion is judged from git and process facts, never self-reports sits behind a kill switch
 
@@ -10549,7 +10549,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.completion_from_facts` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal factory dispatch`, `marshal factory dispatch-attach`, `marshal factory dispatch-resume`, `marshal factory drain` through `pyforge.core.flags`; OFF: the dispatch verbs refuse with usage code 2; completion is never judged from a self-report
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.16: a session's self-report is input to verification, never the verdict sits behind a kill switch
 
@@ -10565,7 +10565,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.verify_before_landing` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal factory dispatch`, `marshal factory dispatch-attach`, `marshal factory dispatch-resume`, `marshal factory drain`, `marshal land`, `marshal deploy land-story` through `pyforge.core.flags`; OFF: the dispatch verbs, `marshal land` and `marshal deploy land-story` refuse with usage code 2; nothing lands on a self-report
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.17: dispatch lands through existing landing machinery, never a second path sits behind a kill switch
 
@@ -10581,7 +10581,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.dispatch_lands_via_land` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal factory dispatch`, `marshal factory dispatch-attach`, `marshal factory dispatch-resume`, `marshal factory drain` through `pyforge.core.flags`; OFF: the dispatch verbs refuse with usage code 2; no second landing path exists
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.18: one story in flight per station, cross-station dispatches run concurrently sits behind a kill switch
 
@@ -10597,7 +10597,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.one_in_flight_per_station` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `cli/dispatch.py`: the `MRS-DISP-021` in-flight refusal in the dispatch preflight through `pyforge.core.flags`; OFF: a second dispatch onto a busy station is not refused (`MRS-DISP-021` is never raised); the dependency and surface-overlap checks still run
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.19: `branch_merged` is never true on ancestry alone sits behind a kill switch
 
@@ -10613,7 +10613,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.branch_merged_divergence` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal factory dispatch`, `marshal factory dispatch-attach`, `marshal factory dispatch-resume`, `marshal factory drain` through `pyforge.core.flags`; OFF: the dispatch verbs refuse with usage code 2; ancestry alone never reads as merged
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.20: after harness exit, at most one follow-up review, then land sits behind a kill switch
 
@@ -10629,7 +10629,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.single_followup_review` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal factory dispatch`, `marshal factory dispatch-attach`, `marshal factory dispatch-resume`, `marshal factory drain` through `pyforge.core.flags`; OFF: the dispatch verbs refuse with usage code 2; a second review pass never starts
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.21: declared context pipeline sits behind a kill switch
 
@@ -10645,7 +10645,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.context_pipeline` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `core/policy.py::resolve_context_layers`, the one composition site both engines read through `pyforge.core.flags`; OFF: every `[context]` layer resolves off, exactly as a policy with no declared block (the CAP's own fallback); the launch surfaces, and `marshal seed check` and `seed kit`, which read the same composition, judge a repo as if it declared no layer
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.22: promotion runs on landing, not on memory sits behind a kill switch
 
@@ -10661,7 +10661,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.promotion_on_landing` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal land`, `marshal deploy land-story` through `pyforge.core.flags`; OFF: `marshal land` and `marshal deploy land-story` refuse with usage code 2; a promotion is never run from memory
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.23: a dispatch-only checkout still has fleet rows sits behind a kill switch
 
@@ -10677,7 +10677,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.dispatch_only_fleet_rows` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `cli/status.py`: the placeholder row for a station with Tier-3 dispatch runs and no loop home through `pyforge.core.flags`; OFF: `marshal status` lists loop homes only; a dispatch-only station has no row, as before Story 51.12
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.24: marshal's shell-outs name the Guild env sits behind a kill switch
 
@@ -10693,7 +10693,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.guild_env_shellouts` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal watch`, `marshal gate evaluate` through `pyforge.core.flags`; OFF: `marshal watch` and `marshal gate evaluate` refuse with usage code 2; no shell-out ever names another env
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.25: a loop-home refresh sends its proven fast-forward past the pre-push preflight, journaled sits behind a kill switch
 
@@ -10709,7 +10709,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.refresh_proven_push` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `cli/refresh.py`: the `proven_on_main_sha` handed to `VcsPort.push` through `pyforge.core.flags`; OFF: a refresh pushes without the opt-out, so the pre-push preflight runs, as before Story 57.1
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.26: a follow-up review a landed story recommends is carried into the deferred-work ledger, never dropped sits behind a kill switch
 
@@ -10725,7 +10725,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.followup_review_to_ledger` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `dispatch_land_finalize/__main__.py`: the `_run_deferred_work_intake` call through `pyforge.core.flags`; OFF: finalize adds no `DW-FRR` row and closes none; the recommendation stays in the story spec only
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.27: a landing's ledger promotion reaches origin/main, and a failed one is never silent sits behind a kill switch
 
@@ -10741,7 +10741,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.ledger_promotion_to_origin` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal land`, `marshal deploy land-story` through `pyforge.core.flags`; OFF: `marshal land` and `marshal deploy land-story` refuse with usage code 2; a failed promotion is never silent
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.28: the switch script runs where it is documented to run, or says in one line why it cannot sits behind a kill switch
 
@@ -10757,7 +10757,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.switch_script_placement` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal land`, `marshal deploy land-story` through `pyforge.core.flags`; OFF: `marshal land` and `marshal deploy land-story` refuse with usage code 2
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.29: `marshal seed check` judges the paths the manifest means, never its unrendered placeholders sits behind a kill switch
 
@@ -10773,7 +10773,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.seed_check_rendered_paths` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal seed check` through `pyforge.core.flags`; OFF: `marshal seed check` refuses with usage code 2; an unrendered placeholder is never judged
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.30: a drain runs the follow-up review a landed story recommended, gated by its deferred-work row, never by the ledger sits behind a kill switch
 
@@ -10789,7 +10789,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.drain_followup_review` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal factory drain` through `pyforge.core.flags`; OFF: `marshal factory drain` refuses with usage code 2; a follow-up review is never gated by the ledger
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.31: every dispatch session opens on the shared codegraph index sits behind a kill switch
 
@@ -10805,7 +10805,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.dispatch_codegraph_index` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `cli/dispatch.py::_seed_dispatch_structure_graph`, the layer-off shape through `pyforge.core.flags`; OFF: nothing is copied or run; the dispatch-launch journal's `structure_graph` payload reads `skipped` with reason `flag off`
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.32: a landing unions append-only memlogs instead of refusing sits behind a kill switch
 
@@ -10821,7 +10821,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.landing_memlog_union` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal land`, `marshal deploy land-story` through `pyforge.core.flags`; OFF: `marshal land` and `marshal deploy land-story` refuse with usage code 2
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.33: an operator-run refresh reads every harness's live model list and reports drift sits behind a kill switch
 
@@ -10837,7 +10837,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.model_list_refresh` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal adapters models` through `pyforge.core.flags`; OFF: `marshal adapters models` is listed disabled and refuses with usage code 2
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.34: a dev pass receives relevant team-memory feedback before it starts sits behind a kill switch
 
@@ -10853,7 +10853,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.recall_dev_pass` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `core/recall_feedback.py::layer_enabled`, the one gate both engines consult through `pyforge.core.flags`; OFF: the `[context.recall]` layer reads off: no query runs and nothing is injected before the dev pass
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.35: a review pass sees the same feedback the dev pass saw sits behind a kill switch
 
@@ -10869,7 +10869,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.recall_review_pass` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `core/recall_feedback.py::layer_enabled` through `pyforge.core.flags`; OFF: the `[context.recall]` layer reads off: the review prompt carries no block
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.36: the recall injection is its own [context] layer sits behind a kill switch
 
@@ -10885,7 +10885,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.recall_context_layer` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `core/recall_feedback.py::layer_enabled` through `pyforge.core.flags`; OFF: the `[context.recall]` layer resolves as absent: `enabled = false` on both engines
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.37: a recall miss or failure injects nothing sits behind a kill switch
 
@@ -10901,7 +10901,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.marshal.recall_miss_injects_nothing` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `core/recall_feedback.py::layer_enabled` through `pyforge.core.flags`; OFF: recall is disabled entirely (the layer reads off), so a miss or failure can inject nothing
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 110.38: the retrofit kill switches retire on their cleanup date
 

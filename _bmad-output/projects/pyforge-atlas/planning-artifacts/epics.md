@@ -3095,7 +3095,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.atlas.agent_pipeline_tools` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `mcp/tools.py::run_pipeline` and `read_dataset`; `pyforge atlas run` in `__main__.py` through `pyforge.core.flags`; OFF: the MCP trigger and read tools raise `AtlasMCPError` naming the flag; `pyforge atlas run` is listed disabled and refuses with exit 2 (the frozen domain `{0,1,2,130}` holds)
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 42.2: any manifest becomes one comparable inventory, behind one exit code sits behind a kill switch
 
@@ -3111,7 +3111,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.atlas.manifest_inventory` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `mcp/tools.py::run_pipeline` for `universal_sbom`; `pyforge atlas run --pipeline universal_sbom` through `pyforge.core.flags`; OFF: the `universal_sbom` trigger raises `AtlasMCPError` naming the flag; the CLI run refuses with exit 2
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 42.3: A developer runs one command that executes every check CI executes sits behind a kill switch
 
@@ -3127,7 +3127,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** the retrofit story is `flag-exempt: detector-or-gate` and cites spec-pyforge-atlas CAP-20, and the inventory reads the row as covered under the roster's `flag_retrofit_cover_exemptions`
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 42.4: the retrofit kill switches retire on their cleanup date
 

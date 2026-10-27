@@ -976,7 +976,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.scribe.bmad_estate_catalog` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `scribe catalog bmad-estate` through `pyforge.core.flags`; OFF: `scribe catalog bmad-estate` is listed disabled and refuses with exit 2; the committed catalog stays readable
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 29.2: the retrofit kill switch retires on its cleanup date
 

@@ -2,7 +2,7 @@
 title: "110.22: promotion runs on landing, not on memory sits behind a kill switch"
 type: 'feature'
 created: '2026-10-26'
-status: 'in-progress'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: true
@@ -85,7 +85,9 @@ Parent: `spec-pyforge-marshal` CAP-229
 
 ## Auto Run Result
 
-Status: in-progress (hand-built in the retrofit PR).
+Status: done
+
+Summary: built and reviewed in the CAP-7 retrofit PR (2026-10-26).
 
 ## Spec Change Log
 

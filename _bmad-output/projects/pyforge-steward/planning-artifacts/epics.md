@@ -7191,7 +7191,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.steward.budget` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `steward budget` through `pyforge.core.flags`; OFF: `steward budget` is listed disabled and refuses with usage code 2
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 114.2: Frame draft re-grounding: the estate claims conformance the way the draft now asks sits behind a kill switch
 
@@ -7207,7 +7207,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.steward.frame_upstream_check` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `python -m pyforge.steward.frames --upstream-check` (the `frame-upstream-check` task) through `pyforge.core.flags`; OFF: the opt-in upstream check refuses with usage code 2 and names the flag; `frame-preflight` is untouched
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 114.3: `workspace clean` removes merged worktrees, archived rather than deleted sits behind a kill switch
 
@@ -7223,7 +7223,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.steward.workspace_clean` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `steward workspace clean` through `pyforge.core.flags`; OFF: `steward workspace clean` is listed disabled and refuses with usage code 2
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 114.4: only the worktrees it created; Marshal's loop-homes stay invisible sits behind a kill switch
 
@@ -7239,7 +7239,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.steward.workspace_own_worktrees_only` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `steward workspace clean` through `pyforge.core.flags`; OFF: `steward workspace clean` refuses with usage code 2; a loop home is never touched
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 114.5: the deployment perimeter ships with the pattern sits behind a kill switch
 
@@ -7255,7 +7255,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.steward.deploy_perimeter` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `steward deploy perimeter` through `pyforge.core.flags`; OFF: `steward deploy perimeter` is listed disabled and refuses with usage code 2
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 114.6: the pre-commit set: attribution lines and un-preflighted pushes are refused by hooks, not prose sits behind a kill switch
 
@@ -7271,7 +7271,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.steward.setup_hooks` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `steward setup` through `pyforge.core.flags`; OFF: `steward setup` refuses with usage code 2; a machine is never bootstrapped with fewer hooks
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 114.7: steward reads `origin/main` and its own branches by their full refs sits behind a kill switch
 
@@ -7287,7 +7287,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **When** the retrofit lands
 **Then** `pyforge.steward.workspace_full_refs` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `steward workspace start`, `steward workspace status`, `steward workspace clean` through `pyforge.core.flags`; OFF: `steward workspace start|status|clean` refuse with usage code 2; a short ref is never read
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**Status:** done
 
 ### Story 114.8: One client, carrying identity sits behind a kill switch
 
@@ -7297,13 +7297,13 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 
 **Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-unifying-strategy CAP-6 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
 **Flag:** `pyforge.steward.station_client_identity` (default ON in dev, staging and production: a kill switch; an invariant switch)
-**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-steward/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-steward.md` (regenerated)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/django-pyforge/src/django_pyforge/station_client.py`, `src/platform/tests/test_retrofit_station_client_flag.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-steward.md` (regenerated)
 **Spec:** `planning-artifacts/specs/spec-114-8-one-client-carrying-identity-sits-behind-a-kill-switch.md`
 **Given** the capability reaches a user through `django_pyforge.station_client.StationHttpClient`, read through `django_pyforge.flags.evaluate_boolean` though the inventory's join does not read it as `runtime` (outside R1's measured population)
 **When** the retrofit lands
 **Then** `pyforge.steward.station_client_identity` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `django_pyforge.station_client.StationHttpClient`, read through `django_pyforge.flags.evaluate_boolean` through `pyforge.core.flags` or `django_pyforge.flags`; OFF: the shared client refuses to make a station call; no portal falls back to a raw HTTP request
-**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
-**Status:** in-progress
+**And** one test runs both states; no exit code changes (OFF raises the client's existing `StationClientError`, naming the flag)
+**Status:** done
 
 ### Story 114.9: the retrofit kill switches retire on their cleanup date
 

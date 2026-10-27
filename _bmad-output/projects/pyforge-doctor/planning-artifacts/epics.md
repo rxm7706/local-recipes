@@ -3486,7 +3486,7 @@ So that a later chore citing a CAP range cannot hide a runtime row, a blocked st
 **When** the join reads landed stories only and keeps the best class, the warning narrows to live specs, and the roster names `flag-infrastructure` as the one cover value
 **Then** the regenerated inventories read every runtime row from a landed story, each CAP attributed to the Spec it sits beside (steward CAP-5 and cutover CAP-6 and CAP-10 stop reading `runtime`), the gate warns on the 13 live pre-rule specs only, a cover comes only from a `flag-infrastructure` story's `Parent:` line, and the inventory exits 2 naming the ledger when a project with an `epics.md` has none
 **And** `detectors-ci`, the scripts suite and `pyforge-doctor-test` stay green; the caller-reach detector's own last-wins join is unchanged
-**Status:** in-progress
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

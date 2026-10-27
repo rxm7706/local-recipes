@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 7b72f876e7661409
-story_count: 398
-test_file_count: 142
+source_fingerprint: 3c30865d64ea42d7
+story_count: 407
+test_file_count: 143
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 398
-- **Epics parsed:** 112
-- **Test files inventoried:** 142 under `src/shared/packages/pyforge-steward/tests/`
+- **Stories parsed:** 407
+- **Epics parsed:** 113
+- **Test files inventoried:** 143 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `7b72f876e7661409`
+- **Source fingerprint:** `3c30865d64ea42d7`
 
 ## Risk Assessment
 
@@ -138,6 +138,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 111: The steward Spec's capability text is whole again, and the foundry inherits the amended rule (spec-one-chain-per-station CAP-5 amended, CAP-7)
 - Epic 112: The Platform CI `test` job's budget covers a slow mirror (spec-pyforge-steward CAP-174 / FR-48)
 - Epic 113: Steward's planning artifacts fit the one-chain shape (spec-one-chain-per-station CAP-11)
+- Epic 114: Every pre-rule steward runtime capability sits behind a kill switch (8 flags, one per CAP; the Guild flag rule's retrofit capability, Q6)
 
 ### Low-risk epics
 
@@ -264,6 +265,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_provision_verify.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_quarantine.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_restore_duty.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_retrofit_flags.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_revoke_duty.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_session.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_sprint_ledger_query.py` | unit | none observed |
@@ -698,6 +700,15 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 111.1 | The steward Spec's fold-cut capability text is restored, and the foundry inhe... | none observed |
 | 112.1 | The Platform CI `test` job installs only what its runner image lacks, and its... | none observed |
 | 113.1 | Steward's archived Spec folders and its superseded preparatory spec move to t... | none observed |
+| 114.1 | `steward budget`: a declared ceiling and an honest spend signal sits behind a... | none observed |
+| 114.2 | Frame draft re-grounding: the estate claims conformance the way the draft now... | none observed |
+| 114.3 | `workspace clean` removes merged worktrees, archived rather than deleted sits... | none observed |
+| 114.4 | only the worktrees it created; Marshal's loop-homes stay invisible sits behin... | none observed |
+| 114.5 | the deployment perimeter ships with the pattern sits behind a kill switch | none observed |
+| 114.6 | the pre-commit set: attribution lines and un-preflighted pushes are refused b... | none observed |
+| 114.7 | steward reads `origin/main` and its own branches by their full refs sits behi... | none observed |
+| 114.8 | One client, carrying identity sits behind a kill switch | none observed |
+| 114.9 | the retrofit kill switches retire on their cleanup date | none observed |
 
 ## Quality Gates
 

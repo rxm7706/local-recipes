@@ -2,7 +2,7 @@
 title: "114.8: One client, carrying identity sits behind a kill switch"
 type: 'feature'
 created: '2026-10-26'
-status: 'in-progress'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: true
@@ -47,8 +47,8 @@ Type / Effort / Deps: feature / XS / none.
 - **AC1 — The key.** `pyforge.steward.station_client_identity` is in `src/platform/config/flags.json` (`defaultVariant: on`) and in every environment of `flag-overlays.json` (`on`), with `owner`, `story`, `created` 2026-10-26, `on_everywhere` 2026-10-26 and `cleanup_by` 2027-01-24; `_SHIPPED_CLOCKS`, `per_environment` and `_SHIPPED_BOOLEANS` carry it.
 - **AC2 — ON.** The key is read at `django_pyforge.station_client.StationHttpClient`, read through `django_pyforge.flags.evaluate_boolean`, spelled literally, through `pyforge.core.flags` (or `django_pyforge.flags` on the host); ON keeps today's behaviour byte-identical.
 - **AC3 — OFF.** the shared client refuses to make a station call; no portal falls back to a raw HTTP request.
-- **AC4 — Both states.** One test runs the key ON and OFF (`src/shared/packages/pyforge-steward/tests/unit/test_retrofit_flags.py`).
-- **AC5 — The domain.** The station's frozen exit-code domain is unchanged: a refusal is the usage code 2.
+- **AC4 — Both states.** One test file runs the key ON and OFF through two flagd trees, one `"on"` and one `"off"` (`src/platform/tests/test_retrofit_station_client_flag.py`; the read site is on the host, so the test lives with the host's suite).
+- **AC5 — The domain.** No exit code changes: OFF raises the client's existing `StationClientError`, naming the flag.
 
 ## Boundaries & Constraints
 
@@ -77,15 +77,18 @@ Parent: `spec-pyforge-unifying-strategy` CAP-6
 
 **Commands:**
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`).
+- `pixi run -e pyforge-guild platform-ci-local -- --test` — expected: pass (the host's suite, which carries the two-state test).
 
 **Run before the push:**
-- Two-state flag coverage (the testing kit's `flag_states`): `src/shared/packages/pyforge-steward/tests/unit/test_retrofit_flags.py` — `@flag_states("pyforge.steward.station_client_identity")`, `test_pyforge_steward_station_client_identity`.
+- Two-state flag coverage (two flagd trees, one `"on"` and one `"off"`): `src/platform/tests/test_retrofit_station_client_flag.py` — `test_on_builds_the_identity_carrying_client`, `test_off_refuses_every_station_call_naming_the_flag`.
 - `pixi run --frozen -e pyforge-guild flag-gate-check` — expected: exit 0.
 - `pixi run --frozen -e pyforge-guild flag-inventory` — expected: exit 0; the row names this story's key.
 
 ## Auto Run Result
 
-Status: in-progress (hand-built in the retrofit PR).
+Status: done
+
+Summary: built and reviewed in the CAP-7 retrofit PR (2026-10-26).
 
 ## Spec Change Log
 

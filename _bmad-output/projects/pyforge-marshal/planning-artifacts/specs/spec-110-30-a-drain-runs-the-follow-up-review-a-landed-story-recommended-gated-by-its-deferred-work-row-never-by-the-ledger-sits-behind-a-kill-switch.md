@@ -2,7 +2,7 @@
 title: "110.30: a drain runs the follow-up review a landed story recommended, gated by its deferred-work row, never by the ledger sits behind a kill switch"
 type: 'feature'
 created: '2026-10-26'
-status: 'in-progress'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: true
@@ -85,7 +85,9 @@ Parent: `spec-pyforge-marshal` CAP-281
 
 ## Auto Run Result
 
-Status: in-progress (hand-built in the retrofit PR).
+Status: done
+
+Summary: built and reviewed in the CAP-7 retrofit PR (2026-10-26).
 
 ## Spec Change Log
 
