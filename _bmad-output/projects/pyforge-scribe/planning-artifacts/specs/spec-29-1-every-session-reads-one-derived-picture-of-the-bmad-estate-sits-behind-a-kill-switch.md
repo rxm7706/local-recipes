@@ -65,6 +65,7 @@ Type / Effort / Deps: feature / XS / none.
 - Parent capability: `spec-pyforge-scribe` CAP-32.
 
 Parent: `spec-pyforge-scribe` CAP-32
+
 - Dream: `docs/dreams/pyforge-scribe.md` § *Realization log*, the 2026-10-26 (every pre-rule runtime capability sits behind a kill switch) entry.
 - Epic: Epic 29, minted with this story.
 - Ledger key: `29-1-every-session-reads-one-derived-picture-of-the-bmad-estate-sits-behind-a-kill-switch`.

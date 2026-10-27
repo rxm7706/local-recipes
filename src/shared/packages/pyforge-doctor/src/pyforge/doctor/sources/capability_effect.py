@@ -17,7 +17,7 @@ never authors a ``verified:`` line (doctor NFR-1).
 from __future__ import annotations
 
 import re
-from collections.abc import Iterator
+from collections.abc import Collection, Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -575,9 +575,13 @@ class StorySurfaceCitation:
 # A Spec mention on a line: ``spec-<name>`` anywhere, or an open Spec's bare name (``pyforge-steward``) as a
 # whole token that is not a path component (``.../pyforge-steward.md`` names a file, not the Spec).
 _SPEC_MENTION_RE = re.compile(r"(?<![A-Za-z0-9-])spec-[a-z0-9](?:[a-z0-9-]*[a-z0-9])?")
+# An epic (or any ``## ``) heading ends a story block in the citations join.
+_SECTION_HEADING_RE = re.compile(r"^## ", re.MULTILINE)
 
 
-def _caps_attributed_on_line(text: str, spec_slugs: list[str]) -> dict[str, set[int]]:
+def _caps_attributed_on_line(
+    text: str, spec_slugs: list[str], known_specs: Collection[str] | None = None
+) -> dict[str, set[int]]:
     """``slug -> CAP ids`` the text cites, each CAP token attributed to the nearest Spec mention on its left.
 
     Doctor Story 51.1: :func:`_caps_cited_on_spec_line` gives every CAP on a line to every Spec the line names,
@@ -586,9 +590,15 @@ def _caps_attributed_on_line(text: str, spec_slugs: list[str]) -> dict[str, set[
     cutover CAP-6 and CAP-10. Here a CAP token belongs to the last Spec mention before it (else the first after
     it), a mention inside a parenthetical speaks only until the group closes, and a mention of a Spec outside
     ``spec_slugs`` (an absorbed or foreign Spec) keeps its CAPs out of every open Spec. Ranges (``CAP-17..19``, ``CAP-17-CAP-19``) and slash groups expand as the other joins
-    expand them. Used by the flag inventory's citations join only; the caller-reach detector is unchanged.
+    expand them. ``known_specs`` (every Spec folder name, open or ended) limits a ``spec-<name>`` mention to a
+    real Spec: a tool name (``spec-surface-check``) or a story-spec file (``spec-21-4``) is no mention. Used by
+    the flag inventory's citations join only; the caller-reach detector is unchanged.
     """
-    mentions: list[tuple[int, str]] = [(m.start(), m.group(0)) for m in _SPEC_MENTION_RE.finditer(text)]
+    mentions: list[tuple[int, str]] = [
+        (m.start(), m.group(0))
+        for m in _SPEC_MENTION_RE.finditer(text)
+        if known_specs is None or m.group(0) in known_specs or m.group(0) in spec_slugs
+    ]
     for slug in spec_slugs:
         bare = slug.removeprefix("spec-")
         if bare == slug:
@@ -630,23 +640,33 @@ def _caps_attributed_on_line(text: str, spec_slugs: list[str]) -> dict[str, set[
 
 
 def _iter_epics_story_citations(
-    epics_text: str, spec_slugs: list[str], *, attributed: bool = False
+    epics_text: str,
+    spec_slugs: list[str],
+    *,
+    attributed: bool = False,
+    known_specs: Collection[str] | None = None,
 ) -> Iterator[tuple[tuple[str, int], StorySurfaceCitation]]:
     """Every ``(spec-slug, CAP-N)`` an ``epics.md`` story block cites on a line naming the Spec, in file order.
 
     ``attributed`` (the citations join) gives each CAP token to its nearest Spec mention
-    (:func:`_caps_attributed_on_line`); off (the last-wins join) keeps the line-level reading.
+    (:func:`_caps_attributed_on_line`, limited to ``known_specs``) and ends a story block at the next ``## ``
+    heading too, so an epic heading and intro never join the story above them; off (the last-wins join) keeps
+    the line-level reading and the block that runs to the next story heading.
     """
     headings = list(STORY_HEADING_RE.finditer(epics_text))
     for idx, match in enumerate(headings):
         block_end = headings[idx + 1].start() if idx + 1 < len(headings) else len(epics_text)
+        if attributed:
+            section = _SECTION_HEADING_RE.search(epics_text, match.end(), block_end)
+            if section is not None:
+                block_end = section.start()
         block = epics_text[match.start() : block_end]
         surface = _surface_field(block)
         story = f"{match.group('pe')}.{match.group('pn')}"
         cited_caps: dict[str, set[int]] = {slug: set() for slug in spec_slugs}
         for line in block.splitlines():
             if attributed:
-                for slug, caps in _caps_attributed_on_line(line, spec_slugs).items():
+                for slug, caps in _caps_attributed_on_line(line, spec_slugs, known_specs).items():
                     cited_caps[slug].update(caps)
                 continue
             for slug in spec_slugs:
@@ -686,6 +706,7 @@ def _story_surface_citations_by_cap(
     spec_slugs: list[str],
     *,
     story_specs_dir: Path | None = None,
+    known_specs: Collection[str] | None = None,
 ) -> dict[tuple[str, int], list[StorySurfaceCitation]]:
     """Every citing story of each ``(spec-slug, CAP-N)``: ``epics.md`` blocks in file order, then story specs.
 
@@ -697,12 +718,12 @@ def _story_surface_citations_by_cap(
     path), as the gap-filling join does.
     """
     out: dict[tuple[str, int], list[StorySurfaceCitation]] = {}
-    for key, citation in _iter_epics_story_citations(epics_text, spec_slugs, attributed=True):
+    for key, citation in _iter_epics_story_citations(epics_text, spec_slugs, attributed=True, known_specs=known_specs):
         out.setdefault(key, []).append(citation)
     if story_specs_dir is not None:
         for path, parent, surface in _iter_story_spec_citations(story_specs_dir):
             # Each CAP token belongs to its nearest Spec mention (Story 51.1).
-            for slug, caps in _caps_attributed_on_line(parent, spec_slugs).items():
+            for slug, caps in _caps_attributed_on_line(parent, spec_slugs, known_specs).items():
                 for cap_n in sorted(caps):
                     out.setdefault((slug, cap_n), []).append(StorySurfaceCitation(path.name, surface))
     return out

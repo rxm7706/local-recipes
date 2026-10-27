@@ -21,7 +21,7 @@ from pathlib import Path
 import typer
 from pyforge.core.atomic_write import atomic_write_text
 from pyforge.core.cutover_root import resolve_flags_path
-from pyforge.core.flags import disabled_help, read_boolean
+from pyforge.core.flags import disabled_help, kill_switch_on
 
 from pyforge.scribe import __version__
 from pyforge.scribe import catalog as estate_catalog
@@ -655,7 +655,7 @@ def _bmad_estate_switch_on() -> bool | None:
     tree = resolve_flags_path()
     if tree is None:
         return None
-    return read_boolean(BMAD_ESTATE_CATALOG_FLAG_KEY, default=RETROFIT_DEFAULT, flags_path=tree)
+    return kill_switch_on(BMAD_ESTATE_CATALOG_FLAG_KEY, flags_path=tree)
 
 
 def mark_retrofit_help() -> None:

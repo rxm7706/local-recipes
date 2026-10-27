@@ -359,6 +359,7 @@ def test_a_cap_in_another_specs_provenance_is_not_this_specs(tmp_path: Path, cap
     """Review finding 4/5 (Story 51.1 AC8): `spec-alpha CAP-1 (<- spec-old CAP-2), CAP-3` cites alpha CAP-1 and CAP-3."""
     root = _fixture(tmp_path)
     _spec(root, caps=(1, 2, 3))
+    _spec(root, caps=(2,), slug="spec-old", status="absorbed")  # an ended Spec is still a Spec mention
     _code(root, "cli.py", 'sub.add_parser("frobnicate")\n')
     _epics(root, (f"CAP-1 (<- `spec-old` CAP-2), CAP-3", "`cli.py`"))
 
@@ -373,6 +374,7 @@ def test_a_flag_story_for_another_spec_never_gates_this_specs_cap(tmp_path: Path
     """Review finding 5: a story for `spec-beta` CAP-1 whose line also names this station's inventory file gates beta only."""
     root = _fixture(tmp_path, tree_keys=(KEY,))
     _spec(root)
+    _spec(root, caps=(1,), slug="spec-beta", status="absorbed")  # a mention, not an inventoried Spec
     _code(root, "cli.py", 'sub.add_parser("frobnicate")\n')
     _epics(root, ("CAP-1", "`cli.py`"))
     _story_spec(
@@ -383,6 +385,42 @@ def test_a_flag_story_for_another_spec_never_gates_this_specs_cap(tmp_path: Path
     report = _report(root, tmp_path, capsys)
 
     assert _row(report, 1).endswith("| none |")
+
+
+def test_a_tool_name_that_looks_like_a_spec_is_no_spec_mention(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    """Re-review finding 6: `spec-surface-check` is a tool, not a Spec, so the CAP after it stays the line's Spec's."""
+    root = _fixture(tmp_path)
+    _spec(root, caps=(1, 2))
+    _code(root, "cli.py", 'sub.add_parser("frobnicate")\n')
+    _epics(root, ("CAP-1, and `spec-surface-check` reads CAP-2", "`cli.py`"))
+
+    report = _report(root, tmp_path, capsys)
+
+    assert "| runtime |" in _row(report, 2)
+
+
+def test_an_epic_heading_ends_the_story_block_above_it(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    """Re-review finding 3: an epic heading and intro never join the story that precedes them."""
+    root = _fixture(tmp_path)
+    _spec(root, caps=(1, 2))
+    _code(root, "cli.py", 'sub.add_parser("frobnicate")\n')
+    epics = (
+        "# Epics\n\n## Epic 1\n\n"
+        f"### Story 1.1: one\n\nLiving CAP citations: `{SLUG}` CAP-1.\n**Surface:** `cli.py`\n\n"
+        f"## Epic 2: a later epic (`{SLUG}` CAP-2)\n\nIntro naming `{SLUG}` CAP-2.\n\n"
+        "### Story 2.1: two\n\nno citation\n"
+    )
+    _write(root, "_bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md", epics)
+    _write(
+        root,
+        "_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml",
+        "development_status:\n  1-1-one: done\n  2-1-two: done\n",
+    )
+
+    report = _report(root, tmp_path, capsys)
+
+    assert "| runtime |" in _row(report, 1)
+    assert "| unresolved |" in _row(report, 2)
 
 
 def test_an_exempt_story_under_any_other_value_covers_nothing(tmp_path: Path, capsys: pytest.CaptureFixture[str]):

@@ -46,8 +46,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pyforge.core.cutover_root import resolve_flags_path
-from pyforge.core.flags import read_boolean
+from pyforge.core.flags import kill_switch_on
 
 # Story 114.2 (spec-feature-flag-governance CAP-7): the kill switch for CAP-6 (c), spelled literally.
 FRAME_UPSTREAM_CHECK_FLAG_KEY = "pyforge.steward.frame_upstream_check"
@@ -475,8 +474,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         # Story 114.2 (spec-feature-flag-governance CAP-7; spec-pyforge-steward CAP-6 (c)): the kill switch
         # for the opt-in upstream check. OFF refuses with steward's usage code and names the flag; the in-repo
         # ``frame-preflight`` is untouched. No tree reads the switch ON.
-        tree = resolve_flags_path()
-        if tree is not None and not read_boolean(FRAME_UPSTREAM_CHECK_FLAG_KEY, default=True, flags_path=tree):
+        if not kill_switch_on(FRAME_UPSTREAM_CHECK_FLAG_KEY):
             print(f"frame-upstream-check: flag {FRAME_UPSTREAM_CHECK_FLAG_KEY} is off", file=sys.stderr)
             return EXIT_USAGE
         code, text = upstream_check(repo_root)

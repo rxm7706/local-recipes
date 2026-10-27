@@ -65,6 +65,7 @@ Type / Effort / Deps: feature / XS / none.
 - Parent capability: `spec-pyforge-marshal` CAP-275.
 
 Parent: `spec-pyforge-marshal` CAP-275
+
 - Dream: `docs/dreams/pyforge-marshal.md` § *Realization log*, the 2026-10-26 (every pre-rule runtime capability sits behind a kill switch) entry.
 - Epic: Epic 110, minted with this story.
 - Ledger key: `110-26-a-follow-up-review-a-landed-story-recommends-is-carried-into-the-deferred-work-ledger-never-dropped-sits-behind-a-kill-switch`.

@@ -65,6 +65,7 @@ Type / Effort / Deps: feature / XS / none.
 - Parent capability: `spec-pyforge-marshal` CAP-281.
 
 Parent: `spec-pyforge-marshal` CAP-281
+
 - Dream: `docs/dreams/pyforge-marshal.md` § *Realization log*, the 2026-10-26 (every pre-rule runtime capability sits behind a kill switch) entry.
 - Epic: Epic 110, minted with this story.
 - Ledger key: `110-30-a-drain-runs-the-follow-up-review-a-landed-story-recommended-gated-by-its-deferred-work-row-never-by-the-ledger-sits-behind-a-kill-switch`.

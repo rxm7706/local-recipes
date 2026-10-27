@@ -65,6 +65,7 @@ Type / Effort / Deps: feature / XS / none.
 - Parent capability: `spec-pyforge-steward` CAP-114.
 
 Parent: `spec-pyforge-steward` CAP-114
+
 - Dream: `docs/dreams/pyforge-steward.md` § *Realization log*, the 2026-10-26 (every pre-rule runtime capability sits behind a kill switch) entry.
 - Epic: Epic 114, minted with this story.
 - Ledger key: `114-5-the-deployment-perimeter-ships-with-the-pattern-sits-behind-a-kill-switch`.

@@ -65,6 +65,7 @@ Type / Effort / Deps: feature / XS / none.
 - Parent capability: `spec-pyforge-steward` CAP-107.
 
 Parent: `spec-pyforge-steward` CAP-107
+
 - Dream: `docs/dreams/pyforge-steward.md` § *Realization log*, the 2026-10-26 (every pre-rule runtime capability sits behind a kill switch) entry.
 - Epic: Epic 114, minted with this story.
 - Ledger key: `114-3-workspace-clean-removes-merged-worktrees-archived-rather-than-deleted-sits-behind-a-kill-switch`.

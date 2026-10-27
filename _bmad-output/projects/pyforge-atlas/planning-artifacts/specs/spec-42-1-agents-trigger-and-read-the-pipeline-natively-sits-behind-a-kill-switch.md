@@ -65,6 +65,7 @@ Type / Effort / Deps: feature / XS / none.
 - Parent capability: `spec-pyforge-atlas` CAP-9.
 
 Parent: `spec-pyforge-atlas` CAP-9
+
 - Dream: `docs/dreams/pyforge-atlas.md` § *Realization log*, the 2026-10-26 (every pre-rule runtime capability sits behind a kill switch) entry.
 - Epic: Epic 42, minted with this story.
 - Ledger key: `42-1-agents-trigger-and-read-the-pipeline-natively-sits-behind-a-kill-switch`.

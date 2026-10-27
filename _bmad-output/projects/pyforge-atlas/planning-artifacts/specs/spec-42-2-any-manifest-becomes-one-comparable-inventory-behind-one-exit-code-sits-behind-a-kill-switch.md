@@ -27,7 +27,7 @@ context:
 
 ## Intent
 
-**Problem:** `spec-pyforge-atlas` CAP-13 (any manifest becomes one comparable inventory, behind one exit code) was minted before the rule date of 2026-09-28 and reaches a user at runtime through `mcp/tools.py::run_pipeline` for `universal_sbom`; `pyforge atlas run --pipeline universal_sbom`. Doctor's flag inventory (`docs/governance/flag-inventory/pyforge-atlas.md`) lists it as a `runtime` row with no flag. The operator ruled on 2026-09-28 that every capability sits behind a flag, with one retrofit flag per capability defaulting ON (Q6), and on 2026-10-26 approved the retrofit sheet as recommended (R1–R8): this row is a verb switch.
+**Problem:** `spec-pyforge-atlas` CAP-13 (any manifest becomes one comparable inventory, behind one exit code) was minted before the rule date of 2026-09-28 and reaches a user at runtime through `mcp/tools.py::run_pipeline` for `universal_sbom`; `pyforge atlas run --pipeline universal_sbom`. Doctor's flag inventory (`docs/governance/flag-inventory/pyforge-atlas.md`) does not read it as `runtime`: no landed citing story's `Surface:` names the entry point it is reached through, so it sits outside the population R1 measured. It is a pre-rule runtime capability all the same, so it takes the same kill switch (recorded on the Guild Spec's memlog, 2026-10-26). The operator ruled on 2026-09-28 that every capability sits behind a flag, with one retrofit flag per capability defaulting ON (Q6), and on 2026-10-26 approved the retrofit sheet as recommended (R1–R8): this row is a verb switch.
 
 **Approach:**
 - The key `pyforge.atlas.manifest_inventory` joins the one tree ON in every environment, with the five flagd metadata fields (steward Story 76.2); the clock runs from 2026-10-26 and Story 42.4 owns its retirement on 2027-01-24.
@@ -65,6 +65,7 @@ Type / Effort / Deps: feature / XS / none.
 - Parent capability: `spec-pyforge-atlas` CAP-13.
 
 Parent: `spec-pyforge-atlas` CAP-13
+
 - Dream: `docs/dreams/pyforge-atlas.md` § *Realization log*, the 2026-10-26 (every pre-rule runtime capability sits behind a kill switch) entry.
 - Epic: Epic 42, minted with this story.
 - Ledger key: `42-2-any-manifest-becomes-one-comparable-inventory-behind-one-exit-code-sits-behind-a-kill-switch`.

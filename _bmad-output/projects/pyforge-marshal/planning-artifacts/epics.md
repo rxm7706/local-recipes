@@ -10305,7 +10305,7 @@ So that the directory shows the one-chain shape and each retired record is found
 
 ## Epic 110: Every pre-rule marshal runtime capability sits behind a kill switch (37 flags, one per CAP; the Guild flag rule's retrofit capability, Q6)
 
-Minted 2026-10-26 from the station Dream's entry of the same date and the operator's approval of the CAP-7 retrofit sheet (R1–R8): every capability the flag inventory reads as reachable at runtime and minted before the rule date sits behind one flag that defaults ON in every environment, a kill switch (spec-feature-flag-governance CAP-7; Q6 one flag per CAP; Q3 a flag-off verb stays listed and refuses with the usage code). Three shapes: a verb switch, an invariant switch (the dependent verb refuses, the defect never reopens; ruling R3) and a behaviour switch (the pre-rule behaviour at one read site). Each key carries its clock from 2026-10-26; Story 110.38 (backlog) retires them on 2027-01-24 (Q4; ruling R5). Rows: spec-pyforge-core CAP-11, CAP-1, CAP-2, CAP-3, CAP-5, CAP-7, CAP-10, CAP-11, CAP-12, CAP-13, CAP-16, CAP-17, CAP-141, CAP-154, CAP-160, CAP-161, CAP-162, CAP-163, CAP-167, CAP-169, CAP-174, CAP-229, CAP-259, CAP-263, CAP-267, CAP-275, CAP-277, CAP-278, CAP-279, CAP-281, CAP-282, CAP-283, CAP-285, CAP-288, CAP-289, CAP-290, CAP-291.
+Minted 2026-10-26 from the station Dream's entry of the same date and the operator's approval of the CAP-7 retrofit sheet (R1–R8): every capability the flag inventory reads as reachable at runtime and minted before the rule date sits behind one flag that defaults ON in every environment, a kill switch (spec-feature-flag-governance CAP-7; Q6 one flag per CAP; Q3 a flag-off verb stays listed and refuses with the usage code). Three shapes: a verb switch, an invariant switch (the dependent verb refuses, the defect never reopens; ruling R3) and a behaviour switch (the pre-rule behaviour at one read site). Each key carries its clock from 2026-10-26; Story 110.38 (backlog) retires them on 2027-01-24 (Q4; ruling R5). Rows: `spec-pyforge-core` CAP-11; `spec-pyforge-marshal` CAP-1, CAP-2, CAP-3, CAP-5, CAP-7, CAP-10, CAP-11, CAP-12, CAP-13, CAP-16, CAP-17, CAP-141, CAP-154, CAP-160, CAP-161, CAP-162, CAP-163, CAP-167, CAP-169, CAP-174, CAP-229, CAP-259, CAP-263, CAP-267, CAP-275, CAP-277, CAP-278, CAP-279, CAP-281, CAP-282, CAP-283, CAP-285, CAP-288, CAP-289, CAP-290, CAP-291.
 **HARD boundaries:**
 - Keys are read only through `pyforge.core.flags` or `django_pyforge.flags`, spelled literally; one tree, no second reader.
 - No station exit code changes: a refusal is the usage code 2.
@@ -10321,7 +10321,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **Flag:** `pyforge.marshal.front_door_environment` (default ON in dev, staging and production: a kill switch; a behaviour switch)
 **Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
 **Spec:** `planning-artifacts/specs/spec-110-1-the-front-door-names-the-environment-a-roster-station-runs-in-sits-behind-a-kill-switch.md`
-**Given** the capability reaches a user through `pyforge.core.dispatch.dispatch_argv`: the `station is not installed in this environment` refusal and the inventory lists it with no flag
+**Given** the capability reaches a user through `pyforge.core.dispatch.dispatch_argv`: the `station is not installed in this environment` refusal though the inventory's join does not read it as `runtime` (outside R1's measured population)
 **When** the retrofit lands
 **Then** `pyforge.marshal.front_door_environment` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `pyforge.core.dispatch.dispatch_argv`: the `station is not installed in this environment` refusal through `pyforge.core.flags`; OFF: an uninstalled roster station token reads `unknown station`, as before spec-pyforge-core CAP-11
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
@@ -10337,7 +10337,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **Flag:** `pyforge.marshal.loop_homes` (default ON in dev, staging and production: a kill switch; a verb switch)
 **Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
 **Spec:** `planning-artifacts/specs/spec-110-2-loop-homes-and-isolation-sits-behind-a-kill-switch.md`
-**Given** the capability reaches a user through `marshal factory spin` and the inventory lists it with no flag
+**Given** the capability reaches a user through `marshal factory spin` though the inventory's join does not read it as `runtime` (outside R1's measured population)
 **When** the retrofit lands
 **Then** `pyforge.marshal.loop_homes` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal factory spin` through `pyforge.core.flags`; OFF: `marshal factory spin` is listed disabled and refuses with usage code 2
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
@@ -10353,7 +10353,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **Flag:** `pyforge.marshal.supervised_runs` (default ON in dev, staging and production: a kill switch; a verb switch)
 **Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
 **Spec:** `planning-artifacts/specs/spec-110-3-supervised-unattended-runs-sits-behind-a-kill-switch.md`
-**Given** the capability reaches a user through `marshal factory attach`, `marshal factory resume`, `marshal factory checkpoint` and the inventory lists it with no flag
+**Given** the capability reaches a user through `marshal factory attach`, `marshal factory resume`, `marshal factory checkpoint` though the inventory's join does not read it as `runtime` (outside R1's measured population)
 **When** the retrofit lands
 **Then** `pyforge.marshal.supervised_runs` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal factory attach`, `marshal factory resume`, `marshal factory checkpoint` through `pyforge.core.flags`; OFF: `marshal factory attach|resume|checkpoint` are listed disabled and refuse with usage code 2
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
@@ -10369,7 +10369,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **Flag:** `pyforge.marshal.gate_evaluate` (default ON in dev, staging and production: a kill switch; a verb switch)
 **Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
 **Spec:** `planning-artifacts/specs/spec-110-4-gates-you-can-run-sits-behind-a-kill-switch.md`
-**Given** the capability reaches a user through `marshal gate evaluate` and the inventory lists it with no flag
+**Given** the capability reaches a user through `marshal gate evaluate` though the inventory's join does not read it as `runtime` (outside R1's measured population)
 **When** the retrofit lands
 **Then** `pyforge.marshal.gate_evaluate` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal gate evaluate` through `pyforge.core.flags`; OFF: `marshal gate evaluate` is listed disabled and refuses with usage code 2
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
@@ -10401,7 +10401,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **Flag:** `pyforge.marshal.policy_composition` (default ON in dev, staging and production: a kill switch; an invariant switch)
 **Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
 **Spec:** `planning-artifacts/specs/spec-110-6-policy-composition-sits-behind-a-kill-switch.md`
-**Given** the capability reaches a user through `marshal init`, `marshal preflight`, `marshal homes`, `marshal teardown` and the inventory lists it with no flag
+**Given** the capability reaches a user through `marshal init`, `marshal preflight`, `marshal homes`, `marshal teardown` though the inventory's join does not read it as `runtime` (outside R1's measured population)
 **When** the retrofit lands
 **Then** `pyforge.marshal.policy_composition` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal init`, `marshal preflight`, `marshal homes`, `marshal teardown` through `pyforge.core.flags`; OFF: `marshal init|preflight|homes|teardown` refuse with usage code 2; no policy is ever composed from a second site
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
@@ -10529,7 +10529,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **Flag:** `pyforge.marshal.watch` (default ON in dev, staging and production: a kill switch; a verb switch)
 **Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
 **Spec:** `planning-artifacts/specs/spec-110-14-marshal-watch-reports-what-changed-and-a-recommended-delay-sits-behind-a-kill-switch.md`
-**Given** the capability reaches a user through `marshal watch` and the inventory lists it with no flag
+**Given** the capability reaches a user through `marshal watch` though the inventory's join does not read it as `runtime` (outside R1's measured population)
 **When** the retrofit lands
 **Then** `pyforge.marshal.watch` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal watch` through `pyforge.core.flags`; OFF: `marshal watch` is listed disabled and refuses with usage code 2
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
@@ -10753,7 +10753,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **Flag:** `pyforge.marshal.switch_script_placement` (default ON in dev, staging and production: a kill switch; an invariant switch)
 **Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
 **Spec:** `planning-artifacts/specs/spec-110-28-the-switch-script-runs-where-it-is-documented-to-run-or-says-in-one-line-why-it-cannot-sits-behind-a-kill-switch.md`
-**Given** the capability reaches a user through `marshal land`, `marshal deploy land-story` and the inventory lists it with no flag
+**Given** the capability reaches a user through `marshal land`, `marshal deploy land-story` though the inventory's join does not read it as `runtime` (outside R1's measured population)
 **When** the retrofit lands
 **Then** `pyforge.marshal.switch_script_placement` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal land`, `marshal deploy land-story` through `pyforge.core.flags`; OFF: `marshal land` and `marshal deploy land-story` refuse with usage code 2
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
@@ -10817,7 +10817,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **Flag:** `pyforge.marshal.landing_memlog_union` (default ON in dev, staging and production: a kill switch; an invariant switch)
 **Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
 **Spec:** `planning-artifacts/specs/spec-110-32-a-landing-unions-append-only-memlogs-instead-of-refusing-sits-behind-a-kill-switch.md`
-**Given** the capability reaches a user through `marshal land`, `marshal deploy land-story` and the inventory lists it with no flag
+**Given** the capability reaches a user through `marshal land`, `marshal deploy land-story` though the inventory's join does not read it as `runtime` (outside R1's measured population)
 **When** the retrofit lands
 **Then** `pyforge.marshal.landing_memlog_union` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal land`, `marshal deploy land-story` through `pyforge.core.flags`; OFF: `marshal land` and `marshal deploy land-story` refuse with usage code 2
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
@@ -10881,7 +10881,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **Flag:** `pyforge.marshal.recall_context_layer` (default ON in dev, staging and production: a kill switch; a behaviour switch)
 **Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
 **Spec:** `planning-artifacts/specs/spec-110-36-the-recall-injection-is-its-own-context-layer-sits-behind-a-kill-switch.md`
-**Given** the capability reaches a user through `core/recall_feedback.py::layer_enabled` and the inventory lists it with no flag
+**Given** the capability reaches a user through `core/recall_feedback.py::layer_enabled` though the inventory's join does not read it as `runtime` (outside R1's measured population)
 **When** the retrofit lands
 **Then** `pyforge.marshal.recall_context_layer` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `core/recall_feedback.py::layer_enabled` through `pyforge.core.flags`; OFF: the `[context.recall]` layer resolves as absent: `enabled = false` on both engines
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
@@ -10897,7 +10897,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **Flag:** `pyforge.marshal.recall_miss_injects_nothing` (default ON in dev, staging and production: a kill switch; an invariant switch)
 **Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
 **Spec:** `planning-artifacts/specs/spec-110-37-a-recall-miss-or-failure-injects-nothing-sits-behind-a-kill-switch.md`
-**Given** the capability reaches a user through `core/recall_feedback.py::layer_enabled` and the inventory lists it with no flag
+**Given** the capability reaches a user through `core/recall_feedback.py::layer_enabled` though the inventory's join does not read it as `runtime` (outside R1's measured population)
 **When** the retrofit lands
 **Then** `pyforge.marshal.recall_miss_injects_nothing` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `core/recall_feedback.py::layer_enabled` through `pyforge.core.flags`; OFF: recall is disabled entirely (the layer reads off), so a miss or failure can inject nothing
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)

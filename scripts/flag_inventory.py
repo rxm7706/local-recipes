@@ -549,7 +549,13 @@ def _exempt_value(frontmatter: Mapping[str, Any] | None) -> str:
 
 
 def _cited_caps(
-    join: Join, root: Path, story: Story, slugs: Sequence[str], *, parent_only: bool = False
+    join: Join,
+    root: Path,
+    story: Story,
+    slugs: Sequence[str],
+    *,
+    parent_only: bool = False,
+    known_specs: Collection[str] | None = None,
 ) -> set[tuple[str, int]]:
     """Every ``(spec slug, CAP-N)`` the story spec's text cites, each CAP given to its nearest Spec mention.
 
@@ -564,26 +570,35 @@ def _cited_caps(
     lines = [join.parent_text(text)] if parent_only else text.splitlines()
     cited: set[tuple[str, int]] = set()
     for line in lines:
-        for slug, caps in join.caps_attributed_on_line(line, list(slugs)).items():
+        for slug, caps in join.caps_attributed_on_line(line, list(slugs), known_specs).items():
             cited.update((slug, cap) for cap in caps)
     return cited
 
 
 def _gating_flags(
-    join: Join, root: Path, stories: Sequence[Story], slugs: Sequence[str]
+    join: Join,
+    root: Path,
+    stories: Sequence[Story],
+    slugs: Sequence[str],
+    known_specs: Collection[str] | None = None,
 ) -> dict[tuple[str, int], set[str]]:
     """``(spec slug, CAP-N)`` -> the keys of the station's flagged story specs whose text cites that Spec and CAP."""
     cited: dict[tuple[str, int], set[str]] = {}
     for story in stories:
         if not story.flag_key:
             continue
-        for key in _cited_caps(join, root, story, slugs):
+        for key in _cited_caps(join, root, story, slugs, known_specs=known_specs):
             cited.setdefault(key, set()).add(story.flag_key)
     return cited
 
 
 def _exempt_covers(
-    join: Join, root: Path, stories: Sequence[Story], slugs: Sequence[str], cover_exemptions: Collection[str]
+    join: Join,
+    root: Path,
+    stories: Sequence[Story],
+    slugs: Sequence[str],
+    cover_exemptions: Collection[str],
+    known_specs: Collection[str] | None = None,
 ) -> dict[tuple[str, int], set[tuple[str, str]]]:
     """``(spec slug, CAP-N)`` -> ``(exempt value, story key)`` of each exempt retrofit story that covers it (Story 51.1).
 
@@ -595,7 +610,7 @@ def _exempt_covers(
     for story in stories:
         if not story.exempt or story.exempt not in cover_exemptions:
             continue
-        for key in _cited_caps(join, root, story, slugs, parent_only=True):
+        for key in _cited_caps(join, root, story, slugs, parent_only=True, known_specs=known_specs):
             covers.setdefault(key, set()).add((story.exempt, story_key(story.rel)))
     return covers
 
@@ -643,6 +658,7 @@ def build_station(
     stories: Sequence[Story],
     warned: Sequence[Warned],
     sha: str,
+    known_specs: Collection[str] | None = None,
 ) -> StationInventory:
     project = f"pyforge-{station}"
     project_dir = root / "_bmad-output" / "projects" / project
@@ -667,7 +683,7 @@ def build_station(
             )
         if epics is not None:
             citations = join.story_surface_citations_by_cap(
-                _read_text(epics, root, "epics"), slugs, story_specs_dir=planning / "specs"
+                _read_text(epics, root, "epics"), slugs, story_specs_dir=planning / "specs", known_specs=known_specs
             )
             landed_epics = landed_stories(planning, root)
     spec_status = {PurePosixPath(s.rel).name: s.status for s in stories}
@@ -678,8 +694,8 @@ def build_station(
             return spec_status.get(story) == LANDED_STATUS
         return story in landed_epics
 
-    gating = _gating_flags(join, root, stories, slugs) if open_specs else {}
-    covers = _exempt_covers(join, root, stories, slugs, roster.cover_exemptions) if open_specs else {}
+    gating = _gating_flags(join, root, stories, slugs, known_specs) if open_specs else {}
+    covers = _exempt_covers(join, root, stories, slugs, roster.cover_exemptions, known_specs) if open_specs else {}
 
     blocks: list[SpecBlock] = []
     for slug, status, text in open_specs:
@@ -767,6 +783,21 @@ def render_station(inv: StationInventory) -> str:
 # --- the run --------------------------------------------------------------------------------------
 
 
+def spec_folder_names(root: Path) -> frozenset[str]:
+    """Every Spec folder's name (``spec-<slug>``), open or ended, read from the tracked ``SPEC.md`` files (Story 51.1).
+
+    A ``spec-<name>`` token that names none (a tool such as ``spec-surface-check``, a story-spec file) is no Spec
+    mention when the join attributes CAPs.
+    """
+    rels = flag_gate_check._list_files(root, ("_bmad-output", "docs", "archive"))
+    names: set[str] = set()
+    for rel in rels:
+        parts = PurePosixPath(rel).parts
+        if len(parts) >= 2 and parts[-1] == "SPEC.md" and parts[-2].startswith("spec-"):
+            names.add(parts[-2])
+    return frozenset(names)
+
+
 def build_reports(root: Path) -> dict[str, str]:
     """``pyforge-<station>.md`` -> its text, for every roster station. Raises InventoryError / FlagRuleError."""
     inputs = flag_gate_check.load_inputs(root)  # roster exemptions, baseline, tree -- in that order
@@ -776,6 +807,7 @@ def build_reports(root: Path) -> dict[str, str]:
 
     stories: dict[str, list[Story]] = {}
     warned: dict[str, list[Warned]] = {}
+    known_specs = spec_folder_names(root)
     spec_rels = flag_gate_check.story_specs(root)
     env_targets = flag_gate_check.env_default_judge_targets(root, inputs.exemptions, spec_rels)
     for rel in spec_rels:
@@ -793,7 +825,7 @@ def build_reports(root: Path) -> dict[str, str]:
     for station in roster.stations:
         project = f"pyforge-{station}"
         inventory = build_station(
-            join, root, roster, inputs, station, stories.get(project, []), warned.get(project, []), sha
+            join, root, roster, inputs, station, stories.get(project, []), warned.get(project, []), sha, known_specs
         )
         reports[f"{project}.md"] = render_station(inventory)
     return reports

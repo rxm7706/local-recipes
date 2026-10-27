@@ -27,7 +27,7 @@ context:
 
 ## Intent
 
-**Problem:** `spec-pyforge-marshal` CAP-3 (gates you can run) was minted before the rule date of 2026-09-28 and reaches a user at runtime through `marshal gate evaluate`. Doctor's flag inventory (`docs/governance/flag-inventory/pyforge-marshal.md`) lists it as a `runtime` row with no flag. The operator ruled on 2026-09-28 that every capability sits behind a flag, with one retrofit flag per capability defaulting ON (Q6), and on 2026-10-26 approved the retrofit sheet as recommended (R1–R8): this row is a verb switch.
+**Problem:** `spec-pyforge-marshal` CAP-3 (gates you can run) was minted before the rule date of 2026-09-28 and reaches a user at runtime through `marshal gate evaluate`. Doctor's flag inventory (`docs/governance/flag-inventory/pyforge-marshal.md`) does not read it as `runtime`: no landed citing story's `Surface:` names the entry point it is reached through, so it sits outside the population R1 measured. It is a pre-rule runtime capability all the same, so it takes the same kill switch (recorded on the Guild Spec's memlog, 2026-10-26). The operator ruled on 2026-09-28 that every capability sits behind a flag, with one retrofit flag per capability defaulting ON (Q6), and on 2026-10-26 approved the retrofit sheet as recommended (R1–R8): this row is a verb switch.
 
 **Approach:**
 - The key `pyforge.marshal.gate_evaluate` joins the one tree ON in every environment, with the five flagd metadata fields (steward Story 76.2); the clock runs from 2026-10-26 and Story 110.38 owns its retirement on 2027-01-24.
@@ -65,6 +65,7 @@ Type / Effort / Deps: feature / XS / none.
 - Parent capability: `spec-pyforge-marshal` CAP-3.
 
 Parent: `spec-pyforge-marshal` CAP-3
+
 - Dream: `docs/dreams/pyforge-marshal.md` § *Realization log*, the 2026-10-26 (every pre-rule runtime capability sits behind a kill switch) entry.
 - Epic: Epic 110, minted with this story.
 - Ledger key: `110-4-gates-you-can-run-sits-behind-a-kill-switch`.

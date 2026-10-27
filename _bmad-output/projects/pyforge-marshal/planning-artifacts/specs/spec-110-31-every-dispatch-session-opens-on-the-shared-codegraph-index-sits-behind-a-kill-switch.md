@@ -65,6 +65,7 @@ Type / Effort / Deps: feature / XS / none.
 - Parent capability: `spec-pyforge-marshal` CAP-282.
 
 Parent: `spec-pyforge-marshal` CAP-282
+
 - Dream: `docs/dreams/pyforge-marshal.md` § *Realization log*, the 2026-10-26 (every pre-rule runtime capability sits behind a kill switch) entry.
 - Epic: Epic 110, minted with this story.
 - Ledger key: `110-31-every-dispatch-session-opens-on-the-shared-codegraph-index-sits-behind-a-kill-switch`.

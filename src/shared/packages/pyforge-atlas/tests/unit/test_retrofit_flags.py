@@ -97,6 +97,26 @@ def test_python_dash_m_exits_with_the_refusal_code() -> None:
     assert source.rstrip().endswith("raise SystemExit(main())")
 
 
+@flag_states("pyforge.atlas.manifest_inventory")
+def test_the_manifest_inventory_switch_unregisters_its_pipeline(
+    flag_provider: dict[str, bool], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Re-review finding 4: OFF, `universal_sbom` leaves the registry, so `__default__` (a bare `run`), `--nodes`
+    and a direct `kedro run --pipeline universal_sbom` cannot reach its gate; ON, the registry is unchanged."""
+    from pyforge.atlas import pipeline_registry
+
+    on = flag_provider["pyforge.atlas.manifest_inventory"]
+    _tree(tmp_path, monkeypatch, "pyforge.atlas.manifest_inventory", on)
+    registered = pipeline_registry.register_pipelines()
+    default_nodes = {node.name for node in registered["__default__"].nodes}
+    if on:
+        sbom_nodes = {node.name for node in registered["universal_sbom"].nodes}
+        assert sbom_nodes and sbom_nodes <= default_nodes
+    else:
+        assert "universal_sbom" not in registered
+        assert not any("normalize_intake_to_cyclonedx" in name for name in default_nodes)
+
+
 def test_the_cli_and_the_mcp_face_read_the_same_keys() -> None:
     assert atlas_main.AGENT_PIPELINE_TOOLS_FLAG_KEY == tools.AGENT_PIPELINE_TOOLS_FLAG_KEY
     assert atlas_main.MANIFEST_INVENTORY_FLAG_KEY == tools.MANIFEST_INVENTORY_FLAG_KEY

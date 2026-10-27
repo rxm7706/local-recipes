@@ -29,7 +29,9 @@ context:
 
 **Approach:**
 - Doctor gains `_story_surface_citations_by_cap`: every citing story of each CAP, `epics.md` order then story specs, deciding nothing. The caller-reach detector keeps `_story_surface_by_cap` (last-wins) unchanged.
-- Doctor gains `_caps_attributed_on_line`: each CAP token belongs to the nearest Spec mention on its left (else the first on its right); a mention inside a parenthetical speaks until the group closes; a mention of a Spec that is not open keeps its CAPs out of every open Spec; an open Spec's bare name inside a path (`.../pyforge-steward.md`) is not a mention. The citations join and the inventory's flag and cover reads use it.
+- Doctor gains `_caps_attributed_on_line`: each CAP token belongs to the nearest Spec mention on its left (else the first on its right); a mention inside a parenthetical speaks until the group closes; a mention of a Spec that is not open keeps its CAPs out of every open Spec; an open Spec's bare name inside a path (`.../pyforge-steward.md`) is not a mention. A `spec-<name>` token counts as a mention only when it names a tracked Spec folder, open or ended (`spec-surface-check` is a tool, `spec-21-4` a story file). The citations join and the inventory's flag and cover reads use it.
+- In the citations join a story block also ends at the next `## ` heading, so an epic heading and its intro never join the story above them (the last-wins join keeps its reading).
+- Measured and not adopted: dropping `type: fix` stories from a CAP's runtime reach would leave 35 runtime rows with no evidence (marshal `status`, `watch`, steward `workspace clean` among them), so a fix story's code `Surface:` still counts.
 - The inventory joins through landed stories only (an `epics.md` story whose ledger key reads `done` in the tracked `sprint-status-ledger.yaml`; a story spec with `status: done`) and keeps the best-classified Surface (runtime over module over planning over unresolved; a tie keeps the earliest). A project with an `epics.md` and no readable ledger is exit 2.
 - The gate's `flag-pre-rule` warns only on a spec whose status is not in `ENDED_STORY_STATUSES` (`done`, `superseded`); the inventory's warned list follows, so report and gate cannot disagree.
 - The roster gains `flag_retrofit_cover_exemptions` (`["flag-infrastructure"]`, the one value R4 admits, a governance act with its `$comment`); the inventory reads an exempt story under that value whose `Parent:` line cites the Spec and CAP as the CAP's cover (`exempt: <value> (<story key>)`), never counted unflagged. A prose citation covers nothing. The script holds no copy of the value.
@@ -50,7 +52,8 @@ Type / Effort / Deps: fix / M / none.
 - **AC3 — Best class wins.** Among landed citations ordered module, none, runtime, the row reads `runtime`.
 - **AC4 — The warning.** A pre-rule feature spec at `done` or `superseded` is not warned; at `blocked` it is.
 - **AC5 — The cover.** An exempt story under `flag-infrastructure` whose `Parent:` line cites the CAP reads `exempt: flag-infrastructure (<key>)` and is not counted; the same story citing the CAP only in prose covers nothing; `docs-only` covers nothing; a tree key is named before a cover.
-- **AC8 — Attribution.** On `spec-a CAP-1 (<- spec-x CAP-2), CAP-3`, spec-a holds CAP-1 and CAP-3 and nothing holds CAP-2; on `spec-a CAP-1 ... spec-b`, spec-b holds nothing; a bare name in a path is not a mention.
+- **AC8 — Attribution.** On `spec-a CAP-1 (<- spec-x CAP-2), CAP-3`, spec-a holds CAP-1 and CAP-3 and nothing holds CAP-2; on `spec-a CAP-1 ... spec-b`, spec-b holds nothing; a bare name in a path is not a mention; `spec-surface-check` is no mention.
+- **AC9 — Block boundary.** An epic heading and intro that cite a CAP never join the story that precedes them in the citations join.
 - **AC6 — No ledger is exit 2** naming `sprint-status-ledger.yaml`, nothing written.
 - **AC7 — The scripts suite's import pin holds** (no new stdlib import in `flag_inventory.py`); the inventory names no exemption value.
 

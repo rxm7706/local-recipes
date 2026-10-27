@@ -7171,7 +7171,7 @@ So that the directory shows the one-chain shape and a retired record is found wh
 
 ## Epic 114: Every pre-rule steward runtime capability sits behind a kill switch (8 flags, one per CAP; the Guild flag rule's retrofit capability, Q6)
 
-Minted 2026-10-26 from the station Dream's entry of the same date and the operator's approval of the CAP-7 retrofit sheet (R1–R8): every capability the flag inventory reads as reachable at runtime and minted before the rule date sits behind one flag that defaults ON in every environment, a kill switch (spec-feature-flag-governance CAP-7; Q6 one flag per CAP; Q3 a flag-off verb stays listed and refuses with the usage code). Three shapes: a verb switch, an invariant switch (the dependent verb refuses, the defect never reopens; ruling R3) and a behaviour switch (the pre-rule behaviour at one read site). Each key carries its clock from 2026-10-26; Story 114.9 (backlog) retires them on 2027-01-24 (Q4; ruling R5). Rows: CAP-4, CAP-6, CAP-107, CAP-108, CAP-114, CAP-154, CAP-158, spec-pyforge-unifying-strategy CAP-6.
+Minted 2026-10-26 from the station Dream's entry of the same date and the operator's approval of the CAP-7 retrofit sheet (R1–R8): every capability the flag inventory reads as reachable at runtime and minted before the rule date sits behind one flag that defaults ON in every environment, a kill switch (spec-feature-flag-governance CAP-7; Q6 one flag per CAP; Q3 a flag-off verb stays listed and refuses with the usage code). Three shapes: a verb switch, an invariant switch (the dependent verb refuses, the defect never reopens; ruling R3) and a behaviour switch (the pre-rule behaviour at one read site). Each key carries its clock from 2026-10-26; Story 114.9 (backlog) retires them on 2027-01-24 (Q4; ruling R5). Rows: `spec-pyforge-steward` CAP-4, CAP-6, CAP-107, CAP-108, CAP-114, CAP-154, CAP-158; `spec-pyforge-unifying-strategy` CAP-6.
 **HARD boundaries:**
 - Keys are read only through `pyforge.core.flags` or `django_pyforge.flags`, spelled literally; one tree, no second reader.
 - No station exit code changes: a refusal is the usage code 2.
@@ -7187,7 +7187,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **Flag:** `pyforge.steward.budget` (default ON in dev, staging and production: a kill switch; a verb switch)
 **Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-steward/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-steward.md` (regenerated)
 **Spec:** `planning-artifacts/specs/spec-114-1-steward-budget-a-declared-ceiling-and-an-honest-spend-signal-sits-behind-a-kill-switch.md`
-**Given** the capability reaches a user through `steward budget` and the inventory lists it with no flag
+**Given** the capability reaches a user through `steward budget` though the inventory's join does not read it as `runtime` (outside R1's measured population)
 **When** the retrofit lands
 **Then** `pyforge.steward.budget` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `steward budget` through `pyforge.core.flags`; OFF: `steward budget` is listed disabled and refuses with usage code 2
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
@@ -7203,7 +7203,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **Flag:** `pyforge.steward.frame_upstream_check` (default ON in dev, staging and production: a kill switch; a verb switch)
 **Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-steward/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-steward.md` (regenerated)
 **Spec:** `planning-artifacts/specs/spec-114-2-frame-draft-re-grounding-the-estate-claims-conformance-the-way-the-draft-now-asks-sits-behind-a-kill-switch.md`
-**Given** the capability reaches a user through `python -m pyforge.steward.frames --upstream-check` (the `frame-upstream-check` task) and the inventory lists it with no flag
+**Given** the capability reaches a user through `python -m pyforge.steward.frames --upstream-check` (the `frame-upstream-check` task) though the inventory's join does not read it as `runtime` (outside R1's measured population)
 **When** the retrofit lands
 **Then** `pyforge.steward.frame_upstream_check` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `python -m pyforge.steward.frames --upstream-check` (the `frame-upstream-check` task) through `pyforge.core.flags`; OFF: the opt-in upstream check refuses with usage code 2 and names the flag; `frame-preflight` is untouched
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
@@ -7299,7 +7299,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **Flag:** `pyforge.steward.station_client_identity` (default ON in dev, staging and production: a kill switch; an invariant switch)
 **Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-steward/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-steward.md` (regenerated)
 **Spec:** `planning-artifacts/specs/spec-114-8-one-client-carrying-identity-sits-behind-a-kill-switch.md`
-**Given** the capability reaches a user through `django_pyforge.station_client.StationHttpClient`, read through `django_pyforge.flags.evaluate_boolean` and the inventory lists it with no flag
+**Given** the capability reaches a user through `django_pyforge.station_client.StationHttpClient`, read through `django_pyforge.flags.evaluate_boolean` though the inventory's join does not read it as `runtime` (outside R1's measured population)
 **When** the retrofit lands
 **Then** `pyforge.steward.station_client_identity` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `django_pyforge.station_client.StationHttpClient`, read through `django_pyforge.flags.evaluate_boolean` through `pyforge.core.flags` or `django_pyforge.flags`; OFF: the shared client refuses to make a station call; no portal falls back to a raw HTTP request
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
