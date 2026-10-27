@@ -65,11 +65,36 @@ def test_pyforge_atlas_manifest_inventory(
         return
     with pytest.raises(tools.AtlasMCPError, match="flag pyforge.atlas.manifest_inventory is off"):
         tools.run_pipeline(tools.MANIFEST_INVENTORY_PIPELINE, project_path=tmp_path)
-    result = invoke_cli(atlas_main.main, ["run", "--pipeline", tools.MANIFEST_INVENTORY_PIPELINE])
-    assert result.exit_code == EXIT_USAGE
-    assert "pyforge-atlas: flag pyforge.atlas.manifest_inventory is off" in result.output
+    for argv in (
+        ["run", "--pipeline", tools.MANIFEST_INVENTORY_PIPELINE],
+        ["run", f"--pipeline={tools.MANIFEST_INVENTORY_PIPELINE}"],
+        ["run", f"--pipelines=core,{tools.MANIFEST_INVENTORY_PIPELINE}"],
+    ):
+        result = invoke_cli(atlas_main.main, argv)
+        assert result.exit_code == EXIT_USAGE, argv
+        assert "pyforge-atlas: flag pyforge.atlas.manifest_inventory is off" in result.output, argv
     listing = " ".join(invoke_cli(atlas_main.main, ["--help"]).output.split())
     assert "[disabled: flag pyforge.atlas.manifest_inventory is off]" in listing
+
+
+def test_run_short_help_is_recomputed_each_call_and_never_sticks(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An OFF listing marks `run` once; an ON listing in the same process reads it unmarked again."""
+    key = "pyforge.atlas.agent_pipeline_tools"
+    _tree(tmp_path, monkeypatch, key, False)
+    invoke_cli(atlas_main.main, ["--help"])
+    off = " ".join(invoke_cli(atlas_main.main, ["--help"]).output.split())
+    assert off.count(f"[disabled: flag {key} is off]") == 1
+    _tree(tmp_path, monkeypatch, key, True)
+    on = " ".join(invoke_cli(atlas_main.main, ["--help"]).output.split())
+    assert f"flag {key} is off" not in on
+
+
+def test_python_dash_m_exits_with_the_refusal_code() -> None:
+    """`python -m pyforge.atlas` raises SystemExit(main()), so a refusal's 2 reaches the shell."""
+    source = Path(atlas_main.__file__).read_text(encoding="utf-8")
+    assert source.rstrip().endswith("raise SystemExit(main())")
 
 
 def test_the_cli_and_the_mcp_face_read_the_same_keys() -> None:

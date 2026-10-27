@@ -97,17 +97,19 @@ class InventoryError(flag_rule.FlagRuleError):
 
 
 class JoinUnavailable(InventoryError):
-    """Doctor's capability join cannot be loaded (the module or one of its eight names is gone)."""
+    """Doctor's capability join cannot be loaded (the module or one of its ten names is gone)."""
 
 
 # --- Doctor's join: the one station-side import ---------------------------------------------------
 
-# The eight names of the join, as Doctor spells them. They are underscore-private in Doctor and no script
+# The ten names of the join, as Doctor spells them. They are underscore-private in Doctor and no script
 # imports one today, so they load through this one seam, and a test pins that they all exist.
 JOIN_NAMES: Mapping[str, Mapping[str, str]] = {
     "pyforge.doctor.sources.capability_effect": {
         "story_surface_citations_by_cap": "_story_surface_citations_by_cap",
         "caps_cited_on_spec_line": "_caps_cited_on_spec_line",
+        "caps_attributed_on_line": "_caps_attributed_on_line",
+        "parent_text": "_parent_text",
         "split_surface_fragments": "_split_surface_fragments",
         "is_document_surface_fragment": "_is_document_surface_fragment",
         "strip_surface_annotation": "_strip_surface_annotation",
@@ -124,6 +126,8 @@ JOIN_NAMES: Mapping[str, Mapping[str, str]] = {
 class Join:
     story_surface_citations_by_cap: Callable[..., dict[tuple[str, int], list[Any]]]
     caps_cited_on_spec_line: Callable[[str, str], set[int]]
+    caps_attributed_on_line: Callable[[str, list[str]], dict[str, set[int]]]
+    parent_text: Callable[[str], str]
     split_surface_fragments: Callable[[str], list[str]]
     is_document_surface_fragment: Callable[[str], bool]
     strip_surface_annotation: Callable[[str], str]
@@ -142,7 +146,7 @@ def _import_join() -> Join:
 
 
 def _load_join() -> Join:
-    """Doctor's eight join names. An ImportError (or a renamed name) is exit 2: the join is not re-implemented.
+    """Doctor's ten join names. An ImportError (or a renamed name) is exit 2: the join is not re-implemented.
 
     Doctor is not installed in every environment that runs the scripts suite, so a failed import
     retries once with Doctor's source tree of THIS checkout on ``sys.path`` -- the way ``scripts/detectors.py``
@@ -544,17 +548,24 @@ def _exempt_value(frontmatter: Mapping[str, Any] | None) -> str:
     return value.strip() if isinstance(value, str) else ""
 
 
-def _cited_caps(join: Join, root: Path, story: Story, slugs: Sequence[str]) -> set[tuple[str, int]]:
-    """Every ``(spec slug, CAP-N)`` the story spec's text cites on a line naming the Spec."""
+def _cited_caps(
+    join: Join, root: Path, story: Story, slugs: Sequence[str], *, parent_only: bool = False
+) -> set[tuple[str, int]]:
+    """Every ``(spec slug, CAP-N)`` the story spec's text cites, each CAP given to its nearest Spec mention.
+
+    Story 51.1: a line that names two Specs (a story for ``spec-pyforge-core`` CAP-11 that also names the
+    station's inventory file) cites each CAP for the Spec it sits beside, never for every Spec on the line.
+    ``parent_only`` reads the story spec's ``Parent:`` line alone: a cover is the CAP's own retrofit story.
+    """
     try:
         text = (root / story.rel).read_text(encoding="utf-8")
     except OSError, UnicodeDecodeError:
         return set()  # the gate read this spec's frontmatter a moment ago; a vanished file gates nothing
+    lines = [join.parent_text(text)] if parent_only else text.splitlines()
     cited: set[tuple[str, int]] = set()
-    for line in text.splitlines():
-        for slug in slugs:
-            for cap in join.caps_cited_on_spec_line(line, slug):
-                cited.add((slug, cap))
+    for line in lines:
+        for slug, caps in join.caps_attributed_on_line(line, list(slugs)).items():
+            cited.update((slug, cap) for cap in caps)
     return cited
 
 
@@ -576,13 +587,15 @@ def _exempt_covers(
 ) -> dict[tuple[str, int], set[tuple[str, str]]]:
     """``(spec slug, CAP-N)`` -> ``(exempt value, story key)`` of each exempt retrofit story that covers it (Story 51.1).
 
-    Only a value in the roster's ``flag_retrofit_cover_exemptions`` covers; every other exemption covers nothing.
+    Only a value in the roster's ``flag_retrofit_cover_exemptions`` covers, and only for the CAPs the story's
+    ``Parent:`` line names (the CAP's own retrofit story; a prose citation covers nothing). Every other
+    exemption covers nothing.
     """
     covers: dict[tuple[str, int], set[tuple[str, str]]] = {}
     for story in stories:
         if not story.exempt or story.exempt not in cover_exemptions:
             continue
-        for key in _cited_caps(join, root, story, slugs):
+        for key in _cited_caps(join, root, story, slugs, parent_only=True):
             covers.setdefault(key, set()).add((story.exempt, story_key(story.rel)))
     return covers
 

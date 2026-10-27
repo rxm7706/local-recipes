@@ -38,7 +38,7 @@ import json
 import sys
 from pathlib import Path
 
-from pyforge.core.flags import read_boolean
+from pyforge.core.flags import kill_switch_on
 from pyforge.core.process import PosixProcess, ProcessError
 
 from ..adapters.harness_bmadloop import HarnessPolicyWriteError, write_policy_toml
@@ -84,7 +84,7 @@ REFRESH_PROVEN_PUSH_FLAG_KEY = "pyforge.marshal.refresh_proven_push"
 
 def refresh_proven_push_enabled() -> bool:
     """Whether a proven fast-forward is pushed past the pre-push preflight (CAP-267's kill switch, ON by default)."""
-    return read_boolean(REFRESH_PROVEN_PUSH_FLAG_KEY, default=True)
+    return kill_switch_on(REFRESH_PROVEN_PUSH_FLAG_KEY)
 
 
 def add_refresh_subparser(subparsers: argparse._SubParsersAction) -> None:

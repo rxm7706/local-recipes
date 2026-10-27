@@ -30,6 +30,11 @@ from pyforge.core.flags import disabled_help, require
 
 RETROFIT_DEFAULT = True  # a kill switch: ON until the operator turns it off
 
+# The landing invariants gate every verb that lands a story by hand: `land` and `deploy land-story` (finding 15
+# of the retrofit review). A supervisor or finalize process already running is not stopped: a switch turned OFF
+# refuses the next landing, never one in flight.
+_LANDING_VERBS: tuple[tuple[str, ...], ...] = (("land",), ("deploy", "land-story"))
+
 _DISPATCH_VERBS: tuple[tuple[str, ...], ...] = (
     ("factory", "dispatch"),
     ("factory", "dispatch-attach"),
@@ -55,17 +60,17 @@ KEY_VERBS: Mapping[str, tuple[tuple[str, ...], ...]] = {
     "pyforge.marshal.genesis_state_file": (("seed", "init"), ("seed", "adopt"), ("seed", "update")),  # CAP-17
     "pyforge.marshal.watch": (("watch",),),  # CAP-154
     "pyforge.marshal.completion_from_facts": _DISPATCH_VERBS,  # CAP-160
-    "pyforge.marshal.verify_before_landing": (*_DISPATCH_VERBS, ("land",)),  # CAP-161
+    "pyforge.marshal.verify_before_landing": (*_DISPATCH_VERBS, *_LANDING_VERBS),  # CAP-161
     "pyforge.marshal.dispatch_lands_via_land": _DISPATCH_VERBS,  # CAP-162
     "pyforge.marshal.branch_merged_divergence": _DISPATCH_VERBS,  # CAP-167
     "pyforge.marshal.single_followup_review": _DISPATCH_VERBS,  # CAP-169
-    "pyforge.marshal.promotion_on_landing": (("land",),),  # CAP-229
+    "pyforge.marshal.promotion_on_landing": _LANDING_VERBS,  # CAP-229
     "pyforge.marshal.guild_env_shellouts": (("watch",), ("gate", "evaluate")),  # CAP-263
-    "pyforge.marshal.ledger_promotion_to_origin": (("land",),),  # CAP-277
-    "pyforge.marshal.switch_script_placement": (("land",),),  # CAP-278
+    "pyforge.marshal.ledger_promotion_to_origin": _LANDING_VERBS,  # CAP-277
+    "pyforge.marshal.switch_script_placement": _LANDING_VERBS,  # CAP-278
     "pyforge.marshal.seed_check_rendered_paths": (("seed", "check"),),  # CAP-279
     "pyforge.marshal.drain_followup_review": (("factory", "drain"),),  # CAP-281
-    "pyforge.marshal.landing_memlog_union": (("land",),),  # CAP-283
+    "pyforge.marshal.landing_memlog_union": _LANDING_VERBS,  # CAP-283
     "pyforge.marshal.model_list_refresh": (("adapters", "models"),),  # CAP-285
 }
 

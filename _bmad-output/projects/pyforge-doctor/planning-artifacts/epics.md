@@ -3484,7 +3484,7 @@ So that a later chore citing a CAP range cannot hide a runtime row, a blocked st
 **Spec:** `planning-artifacts/specs/spec-51-1-the-flag-inventory-and-the-gate-measure-the-retrofit-as-ruled.md`
 **Given** at `97c8211773` the inventory read 30 runtime rows while the checked-in reports said 49, because steward Story 111.1's one-line citation of `CAP-1..CAP-168` with a planning Surface won the last-wins join, and the gate warned on 840 specs of which 826 are done
 **When** the join reads landed stories only and keeps the best class, the warning narrows to live specs, and the roster names `flag-infrastructure` as the one cover value
-**Then** the regenerated inventories read every runtime row from a landed story, the gate warns on the 13 live pre-rule specs only, steward CAP-5 reads `exempt: flag-infrastructure (76-2-…)`, and the inventory exits 2 naming the ledger when a project with an `epics.md` has none
+**Then** the regenerated inventories read every runtime row from a landed story, each CAP attributed to the Spec it sits beside (steward CAP-5 and cutover CAP-6 and CAP-10 stop reading `runtime`), the gate warns on the 13 live pre-rule specs only, a cover comes only from a `flag-infrastructure` story's `Parent:` line, and the inventory exits 2 naming the ledger when a project with an `epics.md` has none
 **And** `detectors-ci`, the scripts suite and `pyforge-doctor-test` stay green; the caller-reach detector's own last-wins join is unchanged
 **Status:** in-progress
 

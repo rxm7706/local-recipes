@@ -258,8 +258,6 @@ RETROFIT_KEY_VERBS: dict[str, tuple[tuple[str, ...], ...]] = {
         ("workspace", "status"),
         ("workspace", "clean"),
     ),
-    "pyforge.steward.cutover_mason_submit": (("cutover", "apply"), ("cutover", "flip")),  # fnd:CAP-6, Story 114.9
-    "pyforge.steward.minutes_metering": (("budget",),),  # fnd:CAP-10, Story 114.10
 }
 
 
@@ -274,9 +272,20 @@ def _retrofit_verb_flags() -> dict[tuple[str, ...], tuple[str, ...]]:
 RETROFIT_VERB_FLAGS: dict[tuple[str, ...], tuple[str, ...]] = _retrofit_verb_flags()
 
 
-# Set by ``build_parser`` for one build: the switches are read for the listing only when help is asked for, so an
-# ordinary invocation reads only its own duty's keys (and a test tree that lacks a key warns once, not per duty).
+# Set by ``main`` around one ``build_parser`` call: the switches are read for the listing only when help is asked
+# for, so an ordinary invocation reads only its own duty's keys. Any other caller of ``build_parser`` (the docs
+# generator) gets the unmarked listing.
 _MARK_RETROFIT_HELP = False
+
+
+def _build_parser_for(tokens: Sequence[str]) -> argparse.ArgumentParser:
+    """``build_parser()`` with the Q3 listing marked when ``tokens`` ask for help (Epic 114)."""
+    global _MARK_RETROFIT_HELP  # noqa: PLW0603 -- one build's listing mode
+    _MARK_RETROFIT_HELP = any(token in {"-h", "--help"} for token in tokens)
+    try:
+        return build_parser()
+    finally:
+        _MARK_RETROFIT_HELP = False
 
 
 def retrofit_help(path: tuple[str, ...], text: str) -> str:
@@ -315,9 +324,7 @@ def require_retrofit_flags(ns: argparse.Namespace) -> None:
         require(key, RETROFIT_DEFAULT, flags_path=tree)
 
 
-def build_parser(*, mark_retrofit_help: bool = False) -> argparse.ArgumentParser:
-    global _MARK_RETROFIT_HELP  # noqa: PLW0603 -- one build's listing mode (Epic 114, Q3)
-    _MARK_RETROFIT_HELP = mark_retrofit_help
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="steward",
         description="Steward — the Provisioner's station.",
@@ -495,7 +502,13 @@ def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
     )
 
     # Story 75.1 / Q3: the verb stays listed in --help, marked disabled, while its flag is off.
-    exec_help = disabled_help(_KEYS_EXEC_HELP, _KEYS_EXEC_FLAG)
+    # With no tree in reach the flag reads its default (off): mark it without a read, so `steward --help` outside a
+    # checkout prints no WARN (marshal's `preserve` listing does the same).
+    exec_help = (
+        disabled_help(_KEYS_EXEC_HELP, _KEYS_EXEC_FLAG)
+        if resolve_flags_path() is not None
+        else f"{_KEYS_EXEC_HELP} [disabled: flag {_KEYS_EXEC_FLAG} is off]"
+    )
     exec_ = keys_subs.add_parser("exec", help=exec_help, description=exec_help)
     exec_.add_argument(
         "--scope",
@@ -1927,7 +1940,7 @@ def resolve_duty(name: str) -> Duty:
 def main(argv: Sequence[str] | None = None) -> int:
     try:
         tokens = sys.argv[1:] if argv is None else list(argv)
-        parser = build_parser(mark_retrofit_help=any(token in {"-h", "--help"} for token in tokens))
+        parser = _build_parser_for(tokens)
         ns = parser.parse_args(argv)
         if not ns.duty:
             parser.print_help()

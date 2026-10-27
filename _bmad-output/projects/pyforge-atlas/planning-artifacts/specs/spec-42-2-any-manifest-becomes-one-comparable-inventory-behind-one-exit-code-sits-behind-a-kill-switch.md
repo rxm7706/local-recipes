@@ -63,12 +63,14 @@ Type / Effort / Deps: feature / XS / none.
 ## Binding
 
 - Parent capability: `spec-pyforge-atlas` CAP-13.
+
+Parent: `spec-pyforge-atlas` CAP-13
 - Dream: `docs/dreams/pyforge-atlas.md` § *Realization log*, the 2026-10-26 (every pre-rule runtime capability sits behind a kill switch) entry.
 - Epic: Epic 42, minted with this story.
 - Ledger key: `42-2-any-manifest-becomes-one-comparable-inventory-behind-one-exit-code-sits-behind-a-kill-switch`.
 - Deps: none.
 - Surface: `marshal-policy.toml` `[epic_surfaces]."42"`.
-- Minted 2026-10-26 in one chain commit; built in the same PR (the CAP-7 retrofit effort: marshal Epic 109, steward Epic 113, atlas Epic 42, scribe Epic 28, doctor Epic 51).
+- Minted 2026-10-26 in one chain commit; built in the same PR (the CAP-7 retrofit effort: marshal Epic 110, steward Epic 114, atlas Epic 42, scribe Epic 29, doctor Epic 51).
 
 ## Verification
 

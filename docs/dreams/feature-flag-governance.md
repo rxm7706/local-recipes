@@ -217,15 +217,19 @@ These parts do not transfer to this estate:
 - **2026-10-26** — The retrofit (CAP-7) is built. The operator approved the ruling sheet of this
   date as recommended (R1–R8; Spec memlog 67): the inventory's unflagged runtime rows get one key
   per CAP, an invariant's switch makes the dependent verb refuse rather than re-open the defect,
-  the flag platform's own capability is covered by an exempt `flag-infrastructure` story the
-  inventory reads under the roster's `flag_retrofit_cover_exemptions`, the 90-day clock stands
-  and each station mints its retirement story now (due 2027-01-24), and the gate's `flag-pre-rule`
-  warning covers live pre-rule specs only. Two findings drove the shape: Doctor's join let the
-  last citing story win (steward Story 111.1's `CAP-1..CAP-168` citation hid twelve runtime rows)
-  and admitted blocked stories, so doctor Epic 51 / Story 51.1 fixes the measure first; and a
+  the flag platform's own capability may be covered by an exempt `flag-infrastructure` story the
+  inventory reads from its `Parent:` line (the roster's `flag_retrofit_cover_exemptions`, one
+  value), the 90-day clock stands and each station mints its retirement story now (due
+  2027-01-24), and the gate's `flag-pre-rule` warning covers live pre-rule specs only. Three
+  findings drove the shape. Doctor's join let the last citing story win (steward Story 111.1's
+  `CAP-1..CAP-168` citation hid twelve runtime rows); it admitted blocked stories; and it gave
+  every CAP on a line to every Spec the line named, which made steward CAP-5 and two unbuilt
+  cutover capabilities read runtime. Doctor Epic 51 / Story 51.1 fixes the measure first. A
   default-ON flag is ON everywhere on mint day, so every retrofit key carries `on_everywhere`
-  2026-10-26 and `cleanup_by` 2027-01-24. Fifty keys: marshal Epic 110 (37), steward Epic 114
-  (10), atlas Epic 42 (2, plus CAP-20 as a `detector-or-gate` cover), scribe Epic 29 (1); the 13
-  live pre-rule specs carry a block or an exemption; `flag-gate-check` reads 0 fail, 0 warn.
-  Status: the Dream stays `specified`; CAP-7's retrofit half is realized, its retirement half
-  waits on the four backlog retirement stories.
+  2026-10-26 and `cleanup_by` 2027-01-24. Forty-eight keys: marshal Epic 110 (37), steward Epic
+  114 (8), atlas Epic 42 (2), scribe Epic 29 (1), every one read through
+  `pyforge.core.flags.kill_switch_on` (or `django_pyforge.flags` on the host); the 13 live
+  pre-rule specs carry a block or an exemption; `flag-gate-check` reads 0 fail, 0 warn. Atlas
+  CAP-20 (the local CI check-set, a gate with no entry point to switch) waits on an operator
+  ruling. Status: the Dream stays `specified`; CAP-7's retrofit half is realized, its retirement
+  half waits on the four backlog retirement stories.

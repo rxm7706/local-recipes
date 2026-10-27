@@ -1320,36 +1320,6 @@
         "cleanup_by": "2027-01-24"
       }
     },
-    "pyforge.steward.cutover_mason_submit": {
-      "state": "ENABLED",
-      "variants": {
-        "on": true,
-        "off": false
-      },
-      "defaultVariant": "on",
-      "metadata": {
-        "owner": "steward",
-        "story": "114-9-mason-talks-to-conda-forge-phase-5-sits-behind-a-kill-switch",
-        "created": "2026-10-26",
-        "on_everywhere": "2026-10-26",
-        "cleanup_by": "2027-01-24"
-      }
-    },
-    "pyforge.steward.minutes_metering": {
-      "state": "ENABLED",
-      "variants": {
-        "on": true,
-        "off": false
-      },
-      "defaultVariant": "on",
-      "metadata": {
-        "owner": "steward",
-        "story": "114-10-metered-minutes-budget-sits-behind-a-kill-switch",
-        "created": "2026-10-26",
-        "on_everywhere": "2026-10-26",
-        "cleanup_by": "2027-01-24"
-      }
-    },
     "pyforge.atlas.agent_pipeline_tools": {
       "state": "ENABLED",
       "variants": {

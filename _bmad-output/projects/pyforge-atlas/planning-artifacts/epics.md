@@ -3129,7 +3129,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
 **Status:** in-progress
 
-### Story 42.4: the 2 retrofit kill switches retire on their cleanup date
+### Story 42.4: the retrofit kill switches retire on their cleanup date
 
 As the operator who turned none of the 2 retrofit kill switches off in their 90-day window,
 I want each key removed from the tree, its reader and its two-state test on 2027-01-24 (the Q4 clock, `on_everywhere` 2026-10-26 plus 90 days), declared with `retires-flag:` by this station,
@@ -3138,7 +3138,7 @@ So that the gate's `flag-clock-overdue` never reds `detectors-ci`, no reader is 
 **Type:** feature • **Effort:** M • **Deps:** 42.1 • **FR/AD:** the retirement path of the Guild flag rule (spec-feature-flag-governance, the gate capability as amended 2026-10-15; Q4)
 **Flag:** `flag-exempt: flag-infrastructure`; `retires-flag:` `pyforge.atlas.agent_pipeline_tools`, `pyforge.atlas.manifest_inventory`
 **Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, the read sites and the two-state tests the Epic 42 stories name, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-atlas.md` (regenerated)
-**Spec:** `planning-artifacts/specs/spec-42-4-the-2-retrofit-kill-switches-retire-on-their-cleanup-date.md`
+**Spec:** `planning-artifacts/specs/spec-42-4-the-retrofit-kill-switches-retire-on-their-cleanup-date.md`
 **Given** the 2 keys read ON in every environment since 2026-10-26 with `cleanup_by` 2027-01-24
 **When** the cleanup date arrives and the operator has turned none of them off
 **Then** this story removes each key from the tree and the overlays, its read site and its test, declares every key under `retires-flag:`, and the inventory reads each row as `retired by 42-4`

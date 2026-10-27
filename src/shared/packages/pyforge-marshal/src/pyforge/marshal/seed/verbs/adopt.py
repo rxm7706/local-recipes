@@ -276,7 +276,7 @@ from importlib import resources
 from pathlib import Path
 from typing import Any
 
-from pyforge.core.flags import read_boolean
+from pyforge.core.flags import kill_switch_on
 from pyforge.core.process import PosixProcess, ProcessError
 
 from .. import fs
@@ -328,7 +328,32 @@ ADAPTER_FANOUT_FLAG_KEY = "pyforge.marshal.adapter_fanout"
 
 def adapter_fanout_enabled() -> bool:
     """Whether `seed adopt` renders the per-tool adapter files (CAP-16's kill switch, ON by default)."""
-    return read_boolean(ADAPTER_FANOUT_FLAG_KEY, default=True)
+    return kill_switch_on(ADAPTER_FANOUT_FLAG_KEY)
+
+
+def _without_adapter_fanout(plan: Plan, manifest: Manifest) -> Plan:
+    """``plan`` without its per-tool adapter actions while CAP-16's kill switch reads OFF (Story 110.11).
+
+    Dropped before ``write_plan``, so no adapter file is rendered, an existing one is left untouched, and the
+    state this run writes records no adapter it did not render (an earlier run's record is kept as it was).
+    """
+    if adapter_fanout_enabled():
+        return plan
+    entries_by_id = {entry.id: entry for entry in manifest.entries}
+    dropped = {
+        action.artifact_id
+        for action in plan.actions
+        if action.artifact_id in derive_adapters.ADAPTER_COMPOSITION
+        and (entry := entries_by_id.get(action.artifact_id)) is not None
+        and entry.artifact_class is ArtifactClass.GENERATED_DERIVED
+    }
+    if not dropped:
+        return plan
+    # `apply.run.fingerprint_drift` cross-checks `actions` against `artifact_hashes` both ways: drop the pair too.
+    kept = tuple(action for action in plan.actions if action.artifact_id not in dropped)
+    hashes = tuple(pair for pair in plan.repo_fingerprint.artifact_hashes if pair[0] not in dropped)
+    fingerprint = dataclasses.replace(plan.repo_fingerprint, artifact_hashes=hashes)
+    return dataclasses.replace(plan, actions=kept, repo_fingerprint=fingerprint)
 
 
 # The classes FR-83's first-claim augmentation ever fires for -- the epics
@@ -939,15 +964,6 @@ def _default_commit(
                     never_write=never_write,
                 )
         elif (
-            entry.id in derive_adapters.ADAPTER_COMPOSITION
-            and entry.artifact_class is ArtifactClass.GENERATED_DERIVED
-            and not adapter_fanout_enabled()
-        ):
-            # Story 110.11 (spec-feature-flag-governance CAP-7; CAP-16): the kill
-            # switch for the adapter fan-out. OFF renders no per-tool adapter file
-            # and leaves an existing one untouched.
-            return
-        elif (
             entry.id in derive_adapters.ADAPTER_COMPOSITION and entry.artifact_class is ArtifactClass.GENERATED_DERIVED
         ):
             # Story 11.1: the three whole-file agent-adapter ids
@@ -1279,6 +1295,7 @@ def run_adopt(
     # honoured on every subsequent run; Story 86.1, DW-FU-11-4).
     skip_patterns = with_recorded_skips(state.skips if state is not None else (), skip)
     plan = apply_skips(plan, skip_patterns)
+    plan = _without_adapter_fanout(plan, filtered_manifest)
 
     never_write = fs.NeverWrite(
         patterns=tuple(sorted(effective_never_write(filtered_manifest, inventory))),

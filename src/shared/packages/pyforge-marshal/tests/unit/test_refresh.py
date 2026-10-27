@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
+from pyforge.testing_kit.flags import flag_states, flagd_tree
 
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli import refresh as refresh_mod
@@ -228,6 +229,31 @@ def test_a_fast_forward_to_origin_main_pushes_with_the_journaled_preflight_opt_o
     capsys.readouterr()
     assert vcs.ff_calls == [(home, "refs/remotes/origin/main")]
     assert vcs.push_proven == ["newsha1234567890"]
+
+
+def _kill_switch_tree(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, key: str, on: bool) -> None:
+    """A flagd tree holding one retrofit kill switch in the given state (Epic 110, CAP-7)."""
+    folder = tmp_path / "flag-tree-110-25"
+    folder.mkdir(exist_ok=True)
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(flagd_tree(folder, {key: "on" if on else "off"})))
+
+
+@flag_states("pyforge.marshal.refresh_proven_push")
+def test_the_proven_push_kill_switch_sends_the_push_through_the_preflight(
+    flag_provider: dict[str, bool], tmp_path: Path, capsys, monkeypatch
+) -> None:
+    """Story 110.25 (spec-feature-flag-governance CAP-7; CAP-267): ON hands the push the sha refresh
+    fast-forwarded to (the test above); OFF hands it none, so the pre-push preflight runs, as before Story 57.1."""
+    on = flag_provider["pyforge.marshal.refresh_proven_push"]
+    _kill_switch_tree(tmp_path, monkeypatch, "pyforge.marshal.refresh_proven_push", on)
+    monkeypatch.chdir(tmp_path)
+    home = tmp_path / "acme"
+    home.mkdir()
+    vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),), behind={"acme": 2})
+    run_refresh(_ns(), vcs=vcs)
+    capsys.readouterr()
+    assert vcs.ff_calls == [(home, "refs/remotes/origin/main")]
+    assert vcs.push_proven == (["newsha1234567890"] if on else [None])
 
 
 def test_a_fast_forward_to_another_base_pushes_through_the_preflight(tmp_path, capsys, monkeypatch):

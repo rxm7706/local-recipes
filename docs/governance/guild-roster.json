@@ -136,13 +136,11 @@
     "spec-pyforge-unifying-strategy CAP-13 is `flag-exempt: flag-infrastructure` and cites the CAP, and the",
     "inventory reads that story as the CAP's cover (`exempt: flag-infrastructure (<story key>)`), never as an",
     "unflagged runtime row. scripts/flag_inventory.py reads THIS list and nothing else; it holds no copy.",
-    "detector-or-gate covers too: the Spec's fidelity Constraint says a gated gate is a silent green, so a",
-    "pre-rule capability that IS a gate (atlas CAP-20, the local CI check-set and its parity gate) is covered",
-    "by its exempt detector-or-gate retrofit story. Every other exemption value covers nothing: a docs-only",
-    "story that cites a CAP leaves that CAP unflagged. Adding a value here is a governance act, never a",
-    "code change."
+    "The story covers only the CAPs its Parent: line names. Every other exemption value covers nothing: a",
+    "docs-only or detector-or-gate story that cites a CAP leaves that CAP unflagged. Adding a value here is a",
+    "governance act, never a code change."
   ],
-  "flag_retrofit_cover_exemptions": ["flag-infrastructure", "detector-or-gate"],
+  "flag_retrofit_cover_exemptions": ["flag-infrastructure"],
   "$comment_dream_statuses": [
     "The Dream lifecycle -- each state names the ACT THAT COMPLETED. There is",
     "deliberately no `building` state: status declares what EXISTS (stable,",

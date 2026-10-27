@@ -152,7 +152,7 @@ development_status:
   42-1-agents-trigger-and-read-the-pipeline-natively-sits-behind-a-kill-switch: in-progress
   42-2-any-manifest-becomes-one-comparable-inventory-behind-one-exit-code-sits-behind-a-kill-switch: in-progress
   42-3-a-developer-runs-one-command-that-executes-every-check-ci-executes-sits-behind-a-kill-switch: in-progress
-  42-4-the-2-retrofit-kill-switches-retire-on-their-cleanup-date: backlog
+  42-4-the-retrofit-kill-switches-retire-on-their-cleanup-date: backlog
   5-1-define-the-boring-semantic-layer-bsl-models: done
   5-2-build-the-vizro-dashboard-port-the-28-clis-to-pages: done
   5-3-integrate-vizro-ai-expose-the-nl-interface-as-an-mcp-tool: done

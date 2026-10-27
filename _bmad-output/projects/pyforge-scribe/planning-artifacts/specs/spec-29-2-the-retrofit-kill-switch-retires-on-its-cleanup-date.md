@@ -1,5 +1,5 @@
 ---
-title: "29.2: the 1 retrofit kill switches retire on their cleanup date"
+title: "29.2: the retrofit kill switch retires on its cleanup date"
 type: 'feature'
 created: '2026-10-26'
 status: 'backlog'
@@ -25,11 +25,11 @@ context:
 
 **Approach:**
 - On the cleanup date, for every key the operator has not turned off: remove the tree entry and its three overlay values, the read site (the verb table row or the behaviour helper) and the two-state test, and extend nothing else.
-- Declare every removed key under `retires-flag:` here (the owner's declaration; another station's never counts), so a `done` Epic 29 spec naming the key reads as history and the inventory reads the row as `retired by 29-2-the-1-retrofit-kill-switches-retire-on-their-cleanup-date`.
+- Declare every removed key under `retires-flag:` here (the owner's declaration; another station's never counts), so a `done` Epic 29 spec naming the key reads as history and the inventory reads the row as `retired by 29-2-the-retrofit-kill-switch-retires-on-its-cleanup-date`.
 - Run the gate: `flag-retired-still-read` must name no file (the checklist in `docs/reference/story-spec-flag-block.md`: no environment stand-in, no key built from parts, no reader in a class the gate never reads).
 - A key the operator turned OFF in any environment stays in the tree: its capability's removal is a story of its own, and this story records which keys it left.
 
-Ledger key: `29-2-the-1-retrofit-kill-switches-retire-on-their-cleanup-date`.
+Ledger key: `29-2-the-retrofit-kill-switch-retires-on-its-cleanup-date`.
 Type / Effort / Deps: feature / M / 29.1.
 
 ### Living CAP citations
@@ -40,7 +40,7 @@ Type / Effort / Deps: feature / M / 29.1.
 
 - **AC1 — Every key gone or kept on purpose.** Each of the 1 keys is either removed (tree, overlays, reader, test) and listed under `retires-flag:`, or kept with the environment the operator turned it off in named in this spec.
 - **AC2 — No reader left.** `flag-gate-check` reports no `flag-retired-still-read` and no `flag-clock-overdue`.
-- **AC3 — The inventory.** `docs/governance/flag-inventory/pyforge-scribe.md` reads each retired row as `retired by 29-2-the-1-retrofit-kill-switches-retire-on-their-cleanup-date`.
+- **AC3 — The inventory.** `docs/governance/flag-inventory/pyforge-scribe.md` reads each retired row as `retired by 29-2-the-retrofit-kill-switch-retires-on-its-cleanup-date`.
 - **AC4 — The contracts.** `_SHIPPED_CLOCKS` and `_SHIPPED_BOOLEANS` lose the removed keys; the station suite passes.
 
 ## Boundaries & Constraints
@@ -58,7 +58,7 @@ Type / Effort / Deps: feature / M / 29.1.
 - Parent capability: `spec-feature-flag-governance` CAP-7 (the retrofit) and CAP-2 (the retirement path); no station CAP is minted.
 - Dream: `docs/dreams/pyforge-scribe.md` § *Realization log*, the 2026-10-26 (every pre-rule runtime capability sits behind a kill switch) entry.
 - Epic: Epic 29, minted with the retrofit stories.
-- Ledger key: `29-2-the-1-retrofit-kill-switches-retire-on-their-cleanup-date`.
+- Ledger key: `29-2-the-retrofit-kill-switch-retires-on-its-cleanup-date`.
 - Ledger status at mint: `backlog` (due 2027-01-24).
 - Deps: 29.1.
 - Minted 2026-10-26 in one chain commit.

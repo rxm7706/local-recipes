@@ -336,6 +336,55 @@ def test_a_retrofit_story_exempt_under_the_cover_value_reads_as_the_caps_cover_a
     assert _header(report, "Runtime CAPs with no flag") == 0
 
 
+def test_a_cover_value_story_that_cites_the_cap_only_in_prose_covers_nothing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """Review finding 1: a cover is the CAP's own retrofit story, read from its Parent: line, never a prose citation."""
+    root = _fixture(tmp_path)
+    _spec(root)
+    _code(root, "cli.py", 'sub.add_parser("frobnicate")\n')
+    _epics(root, ("CAP-1", "`cli.py`"))
+    _story_spec(
+        root, "spec-2-1-mentions.md", "flag-exempt: flag-infra\n", status="done",
+        body=f"This story reads `{SLUG}` CAP-1 in passing.\n",
+    )
+
+    report = _report(root, tmp_path, capsys)
+
+    assert _row(report, 1).endswith("| none |")
+    assert _header(report, "Runtime CAPs with no flag") == 1
+
+
+def test_a_cap_in_another_specs_provenance_is_not_this_specs(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    """Review finding 4/5 (Story 51.1 AC8): `spec-alpha CAP-1 (<- spec-old CAP-2), CAP-3` cites alpha CAP-1 and CAP-3."""
+    root = _fixture(tmp_path)
+    _spec(root, caps=(1, 2, 3))
+    _code(root, "cli.py", 'sub.add_parser("frobnicate")\n')
+    _epics(root, (f"CAP-1 (<- `spec-old` CAP-2), CAP-3", "`cli.py`"))
+
+    report = _report(root, tmp_path, capsys)
+
+    assert "| runtime |" in _row(report, 1)
+    assert "| unresolved |" in _row(report, 2)
+    assert "| runtime |" in _row(report, 3)
+
+
+def test_a_flag_story_for_another_spec_never_gates_this_specs_cap(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    """Review finding 5: a story for `spec-beta` CAP-1 whose line also names this station's inventory file gates beta only."""
+    root = _fixture(tmp_path, tree_keys=(KEY,))
+    _spec(root)
+    _code(root, "cli.py", 'sub.add_parser("frobnicate")\n')
+    _epics(root, ("CAP-1", "`cli.py`"))
+    _story_spec(
+        root, "spec-2-1-beta.md", FLAG_BLOCK.format(key=KEY), status="done",
+        body="Problem: `spec-beta` CAP-1 is listed in `docs/governance/flag-inventory/alpha.md` with no flag.\n",
+    )
+
+    report = _report(root, tmp_path, capsys)
+
+    assert _row(report, 1).endswith("| none |")
+
+
 def test_an_exempt_story_under_any_other_value_covers_nothing(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
     root = _fixture(tmp_path)
     _spec(root)
@@ -1130,11 +1179,11 @@ def test_a_crash_is_unknown_exit_2_never_a_partial_report(
 # --- Doctor's join: the one station-side import ----------------------------------------------
 
 
-def test_the_seam_finds_all_eight_names_of_doctors_join():
+def test_the_seam_finds_all_ten_names_of_doctors_join():
     join = flag_inventory._load_join()
 
     expected = {name for names in flag_inventory.JOIN_NAMES.values() for name in names}
-    assert len(expected) == 8
+    assert len(expected) == 10
     assert set(vars(join)) == expected
     assert all(callable(getattr(join, name)) for name in expected)
     assert {module for module in flag_inventory.JOIN_NAMES} == {
@@ -1194,7 +1243,7 @@ def test_the_join_loads_from_this_checkouts_source_tree_in_an_interpreter_that_h
     proc = subprocess.run([sys.executable, "-S", "-c", script], capture_output=True, text=True, check=False)
 
     assert proc.returncode == 0, proc.stderr
-    assert proc.stdout.split() == ["Join", "8"]
+    assert proc.stdout.split() == ["Join", "10"]
 
 
 def test_a_doctor_that_cannot_be_imported_at_all_is_a_named_unavailable_error_never_a_traceback():

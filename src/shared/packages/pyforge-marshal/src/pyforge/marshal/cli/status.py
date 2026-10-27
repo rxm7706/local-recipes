@@ -124,7 +124,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from pyforge.core import preserve_refs as core_preserve_refs
-from pyforge.core.flags import read_boolean
+from pyforge.core.flags import kill_switch_on
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from ..adapters.clock_system import SystemClock
@@ -205,7 +205,7 @@ DISPATCH_ONLY_FLEET_ROWS_FLAG_KEY = "pyforge.marshal.dispatch_only_fleet_rows"
 
 def dispatch_only_fleet_rows_enabled() -> bool:
     """Whether a dispatch-only station gets a placeholder fleet row (CAP-259's kill switch, ON by default)."""
-    return read_boolean(DISPATCH_ONLY_FLEET_ROWS_FLAG_KEY, default=True)
+    return kill_switch_on(DISPATCH_ONLY_FLEET_ROWS_FLAG_KEY)
 
 
 def _format_dollar_estimate(amount: float | None) -> str:

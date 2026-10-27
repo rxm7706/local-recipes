@@ -12,7 +12,7 @@ flag:
   default: {production: on, staging: on, dev: on}
   scope: global
   fallback: "`steward workspace start|status|clean` refuse with usage code 2; a short ref is never read"
-  cleanup: "90 days after ON in every environment (Q4): 2027-01-24, Story 114.11"
+  cleanup: "90 days after ON in every environment (Q4): 2027-01-24, Story 114.9"
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
@@ -30,7 +30,7 @@ context:
 **Problem:** `spec-pyforge-steward` CAP-158 (steward reads `origin/main` and its own branches by their full refs) was minted before the rule date of 2026-09-28 and reaches a user at runtime through `steward workspace start`, `steward workspace status`, `steward workspace clean`. Doctor's flag inventory (`docs/governance/flag-inventory/pyforge-steward.md`) lists it as a `runtime` row with no flag. The operator ruled on 2026-09-28 that every capability sits behind a flag, with one retrofit flag per capability defaulting ON (Q6), and on 2026-10-26 approved the retrofit sheet as recommended (R1–R8): this row is an invariant switch.
 
 **Approach:**
-- The key `pyforge.steward.workspace_full_refs` joins the one tree ON in every environment, with the five flagd metadata fields (steward Story 76.2); the clock runs from 2026-10-26 and Story 114.11 owns its retirement on 2027-01-24.
+- The key `pyforge.steward.workspace_full_refs` joins the one tree ON in every environment, with the five flagd metadata fields (steward Story 76.2); the clock runs from 2026-10-26 and Story 114.9 owns its retirement on 2027-01-24.
 - Read site: `steward workspace start`, `steward workspace status`, `steward workspace clean`. With the key OFF: `steward workspace start|status|clean` refuse with usage code 2; a short ref is never read.
 - The verb stays listed in `--help` marked disabled and refuses with the station's usage code (Q3); no new exit code.
 
@@ -63,12 +63,14 @@ Type / Effort / Deps: feature / XS / none.
 ## Binding
 
 - Parent capability: `spec-pyforge-steward` CAP-158.
+
+Parent: `spec-pyforge-steward` CAP-158
 - Dream: `docs/dreams/pyforge-steward.md` § *Realization log*, the 2026-10-26 (every pre-rule runtime capability sits behind a kill switch) entry.
 - Epic: Epic 114, minted with this story.
 - Ledger key: `114-7-steward-reads-origin-main-and-its-own-branches-by-their-full-refs-sits-behind-a-kill-switch`.
 - Deps: none.
 - Surface: `marshal-policy.toml` `[epic_surfaces]."114"`.
-- Minted 2026-10-26 in one chain commit; built in the same PR (the CAP-7 retrofit effort: marshal Epic 109, steward Epic 114, atlas Epic 42, scribe Epic 28, doctor Epic 51).
+- Minted 2026-10-26 in one chain commit; built in the same PR (the CAP-7 retrofit effort: marshal Epic 110, steward Epic 114, atlas Epic 42, scribe Epic 29, doctor Epic 51).
 
 ## Verification
 

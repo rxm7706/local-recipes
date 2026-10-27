@@ -24,6 +24,7 @@ from django_pyforge.flags import configure_file_provider
 from django_pyforge.flags import wait_until_ready
 from django_pyforge.station_client import STATION_CLIENT_IDENTITY_FLAG_KEY
 from django_pyforge.station_client import StationHttpClient
+from openfeature import api
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -34,6 +35,21 @@ PyForgeStationClient = station_client.PyForgeStationClient
 StationClientError = station_client.StationClientError
 
 _KEY = "pyforge.steward.station_client_identity"
+_FLAG_ENV_KEYS = ("FLAGD_OFFLINE_FLAG_SOURCE_PATH", "PYFORGE_FLAGS_PATH")
+
+
+@pytest.fixture(autouse=True)
+def _isolate_the_provider(monkeypatch: pytest.MonkeyPatch):
+    """`configure_file_provider` sets a process-wide provider and two env keys.
+
+    Both go back after each test: the provider is cleared (``test_stations_index``'s
+    ``_clear_flag_providers`` shape) so a later module's ``StationHttpClient`` call
+    never reads this file's OFF tree, and monkeypatch restores the env keys.
+    """
+    for name in _FLAG_ENV_KEYS:
+        monkeypatch.delenv(name, raising=False)
+    yield
+    api.clear_providers()
 
 
 class _FakePortal:

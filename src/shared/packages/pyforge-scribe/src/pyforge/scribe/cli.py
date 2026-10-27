@@ -15,13 +15,13 @@ importing internal modules directly (AD-7).
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import typer
 from pyforge.core.atomic_write import atomic_write_text
 from pyforge.core.cutover_root import resolve_flags_path
 from pyforge.core.flags import disabled_help, read_boolean
-from rich import markup as rich_markup
 
 from pyforge.scribe import __version__
 from pyforge.scribe import catalog as estate_catalog
@@ -337,7 +337,7 @@ def recall_cmd(
             "(_bmad-output/projects/<scope>/) plus that slug's Herald "
             "fact ledger (presentations/<scope>/facts.yaml). Lexical "
             "token-overlap alone has no notion of project (marshal "
-            "Story 29.27; scribe Story 9.1)."
+            "Story 28.27; scribe Story 9.1)."
         ),
     ),
     kind: list[str] = typer.Option(
@@ -501,7 +501,7 @@ def index_refresh(target: Path | None = _TARGET_OPTION, declare: Path | None = _
     -- both artifacts recomputed every time, no fingerprint index read or
     written (AC1).
 
-    `--declare <manifest>` (marshal Story 29.28/CAP-5) bypasses both of the
+    `--declare <manifest>` (marshal Story 28.28/CAP-5) bypasses both of the
     above entirely -- a caller hands its OWN "sources -> artifact"
     registrations instead of scribe's built-in two. Explicit invocation is
     already the opt-in (`cocoindex_extra_enabled`'s own contract), so this
@@ -665,7 +665,8 @@ def mark_retrofit_help() -> None:
     if tree is not None:
         marked = disabled_help(text, BMAD_ESTATE_CATALOG_FLAG_KEY, RETROFIT_DEFAULT, flags_path=tree)
         # typer renders help as rich markup, where `[disabled: ...]` would read as a style tag and vanish.
-        text = text + rich_markup.escape(marked[len(text) :])
+        # typer renders help as rich markup, where `[disabled: ...]` would read as a style tag: escape the bracket.
+        text = text + marked[len(text) :].replace("[", "\\[")
     catalog_bmad_estate.__doc__ = text + "." + _BMAD_ESTATE_DOC_BODY
 
 
@@ -723,8 +724,13 @@ _BMAD_ESTATE_DOC_BODY = "\n" + _BMAD_ESTATE_DOC_BODY if _BMAD_ESTATE_DOC_BODY el
 
 
 def main(argv: list[str] | None = None) -> int | None:
-    """Run the CLI on ``argv`` (``sys.argv[1:]`` when None); Click exits through ``SystemExit`` as before."""
-    mark_retrofit_help()
+    """Run the CLI on ``argv`` (``sys.argv[1:]`` when None); Click exits through ``SystemExit`` as before.
+
+    The listing is marked only when help is asked for, so an ordinary command reads no flag it does not need.
+    """
+    tokens = sys.argv[1:] if argv is None else argv
+    if any(token in {"-h", "--help"} for token in tokens):
+        mark_retrofit_help()
     return app(args=argv)
 
 

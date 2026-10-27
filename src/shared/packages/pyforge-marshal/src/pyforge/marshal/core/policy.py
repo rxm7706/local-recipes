@@ -218,7 +218,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from types import MappingProxyType
 
-from pyforge.core.flags import read_boolean
+from pyforge.core.flags import kill_switch_on
 
 from . import protected_refs
 from .landing import LandingRule, landing_rule_to_dict
@@ -742,7 +742,7 @@ CONTEXT_PIPELINE_FLAG_KEY = "pyforge.marshal.context_pipeline"
 
 def context_pipeline_enabled() -> bool:
     """Whether the declared `[context]` block is honoured (CAP-174's kill switch, ON by default)."""
-    return read_boolean(CONTEXT_PIPELINE_FLAG_KEY, default=True)
+    return kill_switch_on(CONTEXT_PIPELINE_FLAG_KEY)
 
 
 class PolicyLayer(StrEnum):

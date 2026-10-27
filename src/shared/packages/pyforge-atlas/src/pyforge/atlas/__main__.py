@@ -39,32 +39,52 @@ EXIT_USAGE = 2  # Click's own usage code: the frozen atlas domain holds, nothing
 RETROFIT_DEFAULT = True
 
 
+# `run`'s own short help, read once: the listing is recomputed from it on every call, so a marker never sticks
+# to Kedro's module-level command after its switch reads ON again, and never doubles.
+_RUN_SHORT_HELP: dict[int, str] = {}
+
+
+def _names_manifest_pipeline(cli_args: list[str]) -> bool:
+    """Whether the invocation names the `universal_sbom` pipeline, in any spelling Click accepts.
+
+    ``--pipeline universal_sbom``, ``--pipeline=universal_sbom`` and comma lists (``--pipelines=a,universal_sbom``).
+    """
+    for token in cli_args:
+        for piece in token.replace("=", ",").split(","):
+            if piece.strip() == MANIFEST_INVENTORY_PIPELINE:
+                return True
+    return False
+
+
 def _retrofit_refusal(cli_args: list[str], project_group: Any) -> str | None:
     """The flag-off message for this invocation, or None; marks `run`'s help when a switch is OFF.
 
     No tree (``resolve_flags_path`` finds none) reads every switch ON with no read.
     """
     from pyforge.core.cutover_root import resolve_flags_path
-    from pyforge.core.flags import disabled_help, read_boolean
+    from pyforge.core.flags import disabled_help, kill_switch_on
 
     tree = resolve_flags_path()
+    run_command = project_group.commands.get("run")
+    if run_command is not None:
+        original = _RUN_SHORT_HELP.setdefault(id(run_command), run_command.get_short_help_str())
+        run_command.short_help = original
     if tree is None:
         return None
     wants_help = any(token in {"-h", "--help"} for token in cli_args)
-    run_command = project_group.commands.get("run")
-    keys = [AGENT_PIPELINE_TOOLS_FLAG_KEY]
-    if MANIFEST_INVENTORY_PIPELINE in cli_args:
-        keys.append(MANIFEST_INVENTORY_FLAG_KEY)
     if wants_help and run_command is not None:
-        text = run_command.get_short_help_str()
+        text = _RUN_SHORT_HELP[id(run_command)]
         for key in (AGENT_PIPELINE_TOOLS_FLAG_KEY, MANIFEST_INVENTORY_FLAG_KEY):
             text = disabled_help(text, key, RETROFIT_DEFAULT, flags_path=tree)
         run_command.short_help = text
         return None
     if cli_args[:1] != ["run"]:
         return None
+    keys = [AGENT_PIPELINE_TOOLS_FLAG_KEY]
+    if _names_manifest_pipeline(cli_args[1:]):
+        keys.append(MANIFEST_INVENTORY_FLAG_KEY)
     for key in keys:
-        if not read_boolean(key, default=RETROFIT_DEFAULT, flags_path=tree):
+        if not kill_switch_on(key, flags_path=tree):
             return f"flag {key} is off"
     return None
 
@@ -151,4 +171,5 @@ def main(*args, **kwargs) -> Any:
 
 
 if __name__ == "__main__":
-    main()
+    # `python -m pyforge.atlas`: the refusal's usage code reaches the shell (a bare call would exit 0).
+    raise SystemExit(main())

@@ -83,7 +83,7 @@ development_status:
   110-35-a-review-pass-sees-the-same-feedback-the-dev-pass-saw-sits-behind-a-kill-switch: in-progress
   110-36-the-recall-injection-is-its-own-context-layer-sits-behind-a-kill-switch: in-progress
   110-37-a-recall-miss-or-failure-injects-nothing-sits-behind-a-kill-switch: in-progress
-  110-38-the-37-retrofit-kill-switches-retire-on-their-cleanup-date: backlog
+  110-38-the-retrofit-kill-switches-retire-on-their-cleanup-date: backlog
   110-4-gates-you-can-run-sits-behind-a-kill-switch: in-progress
   110-5-fleet-visibility-sits-behind-a-kill-switch: in-progress
   110-6-policy-composition-sits-behind-a-kill-switch: in-progress

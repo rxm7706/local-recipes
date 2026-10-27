@@ -11,7 +11,7 @@ flag:
   provider: openfeature-file
   default: {production: on, staging: on, dev: on}
   scope: global
-  fallback: "`marshal land` refuses with usage code 2"
+  fallback: "`marshal land` and `marshal deploy land-story` refuse with usage code 2"
   cleanup: "90 days after ON in every environment (Q4): 2027-01-24, Story 110.38"
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
@@ -27,11 +27,11 @@ context:
 
 ## Intent
 
-**Problem:** `spec-pyforge-marshal` CAP-283 (a landing unions append-only memlogs instead of refusing) was minted before the rule date of 2026-09-28 and reaches a user at runtime through `marshal land`. Doctor's flag inventory (`docs/governance/flag-inventory/pyforge-marshal.md`) lists it as a `runtime` row with no flag. The operator ruled on 2026-09-28 that every capability sits behind a flag, with one retrofit flag per capability defaulting ON (Q6), and on 2026-10-26 approved the retrofit sheet as recommended (R1–R8): this row is an invariant switch.
+**Problem:** `spec-pyforge-marshal` CAP-283 (a landing unions append-only memlogs instead of refusing) was minted before the rule date of 2026-09-28 and reaches a user at runtime through `marshal land`, `marshal deploy land-story`. Doctor's flag inventory (`docs/governance/flag-inventory/pyforge-marshal.md`) lists it as a `runtime` row with no flag. The operator ruled on 2026-09-28 that every capability sits behind a flag, with one retrofit flag per capability defaulting ON (Q6), and on 2026-10-26 approved the retrofit sheet as recommended (R1–R8): this row is an invariant switch.
 
 **Approach:**
 - The key `pyforge.marshal.landing_memlog_union` joins the one tree ON in every environment, with the five flagd metadata fields (steward Story 76.2); the clock runs from 2026-10-26 and Story 110.38 owns its retirement on 2027-01-24.
-- Read site: `marshal land`. With the key OFF: `marshal land` refuses with usage code 2.
+- Read site: `marshal land`, `marshal deploy land-story`. With the key OFF: `marshal land` and `marshal deploy land-story` refuse with usage code 2.
 - The verb stays listed in `--help` marked disabled and refuses with the station's usage code (Q3); no new exit code.
 
 Ledger key: `110-32-a-landing-unions-append-only-memlogs-instead-of-refusing-sits-behind-a-kill-switch`.
@@ -45,8 +45,8 @@ Type / Effort / Deps: feature / XS / none.
 ## Acceptance Criteria
 
 - **AC1 — The key.** `pyforge.marshal.landing_memlog_union` is in `src/platform/config/flags.json` (`defaultVariant: on`) and in every environment of `flag-overlays.json` (`on`), with `owner`, `story`, `created` 2026-10-26, `on_everywhere` 2026-10-26 and `cleanup_by` 2027-01-24; `_SHIPPED_CLOCKS`, `per_environment` and `_SHIPPED_BOOLEANS` carry it.
-- **AC2 — ON.** The key is read at `marshal land`, spelled literally, through `pyforge.core.flags` (or `django_pyforge.flags` on the host); ON keeps today's behaviour byte-identical.
-- **AC3 — OFF.** `marshal land` refuses with usage code 2.
+- **AC2 — ON.** The key is read at `marshal land`, `marshal deploy land-story`, spelled literally, through `pyforge.core.flags` (or `django_pyforge.flags` on the host); ON keeps today's behaviour byte-identical.
+- **AC3 — OFF.** `marshal land` and `marshal deploy land-story` refuse with usage code 2.
 - **AC4 — Both states.** One test runs the key ON and OFF (`src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`).
 - **AC5 — The domain.** The station's frozen exit-code domain is unchanged: a refusal is the usage code 2.
 
@@ -63,12 +63,14 @@ Type / Effort / Deps: feature / XS / none.
 ## Binding
 
 - Parent capability: `spec-pyforge-marshal` CAP-283.
+
+Parent: `spec-pyforge-marshal` CAP-283
 - Dream: `docs/dreams/pyforge-marshal.md` § *Realization log*, the 2026-10-26 (every pre-rule runtime capability sits behind a kill switch) entry.
 - Epic: Epic 110, minted with this story.
 - Ledger key: `110-32-a-landing-unions-append-only-memlogs-instead-of-refusing-sits-behind-a-kill-switch`.
 - Deps: none.
 - Surface: `marshal-policy.toml` `[epic_surfaces]."110"`.
-- Minted 2026-10-26 in one chain commit; built in the same PR (the CAP-7 retrofit effort: marshal Epic 110, steward Epic 113, atlas Epic 42, scribe Epic 28, doctor Epic 51).
+- Minted 2026-10-26 in one chain commit; built in the same PR (the CAP-7 retrofit effort: marshal Epic 110, steward Epic 114, atlas Epic 42, scribe Epic 29, doctor Epic 51).
 
 ## Verification
 

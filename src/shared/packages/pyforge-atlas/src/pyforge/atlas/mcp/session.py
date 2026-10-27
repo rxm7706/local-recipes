@@ -19,7 +19,7 @@ from typing import Any, Iterator
 
 from kedro.framework.session import KedroSession
 from kedro.framework.startup import bootstrap_project
-from pyforge.core.flags import read_boolean
+from pyforge.core.flags import kill_switch_on
 
 # The member dir (the Kedro project root):
 # .../pyforge-atlas/src/pyforge/atlas/mcp/session.py
@@ -51,13 +51,13 @@ def _flag_off_error(key: str) -> Exception:
 
 def require_agent_pipeline_tools() -> None:
     """Raise ``AtlasMCPError`` when the CAP-9 switch reads OFF (a trigger or a read); return when ON."""
-    if not read_boolean(AGENT_PIPELINE_TOOLS_FLAG_KEY, default=True):
+    if not kill_switch_on(AGENT_PIPELINE_TOOLS_FLAG_KEY):
         raise _flag_off_error(AGENT_PIPELINE_TOOLS_FLAG_KEY)
 
 
 def require_manifest_inventory() -> None:
     """Raise ``AtlasMCPError`` when the CAP-13 switch reads OFF (the ``universal_sbom`` trigger); return when ON."""
-    if not read_boolean(MANIFEST_INVENTORY_FLAG_KEY, default=True):
+    if not kill_switch_on(MANIFEST_INVENTORY_FLAG_KEY):
         raise _flag_off_error(MANIFEST_INVENTORY_FLAG_KEY)
 
 

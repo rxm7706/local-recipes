@@ -172,9 +172,10 @@ Retirement (memlog, 2026-10-15):
     - Every pre-rule-date backlog story gains a block or an exemption.
   - *success:* The inventory is a checked-in report per station, joined through landed stories only
     (a later chore citing a CAP range never hides a runtime row; a blocked story never makes an
-    unbuilt capability runtime). Every `runtime` row names a flag key, or the exempt retrofit story
-    that covers it under the roster's `flag_retrofit_cover_exemptions` (the flag platform's own
-    capability; a capability that is a gate). The CAP-2 warnings on live pre-rule specs reach zero
+    unbuilt capability runtime; each CAP is attributed to the Spec it sits beside). Every `runtime`
+    row names a flag key, or the exempt retrofit story that covers it from its `Parent:` line under
+    the roster's `flag_retrofit_cover_exemptions` (the flag platform's own capability). The CAP-2
+    warnings on live pre-rule specs reach zero
     (a done story's capability is retrofitted at the CAP; its spec is never rewritten). No station's
     exit-code domain changes. An invariant's switch makes the dependent verb refuse, never re-opens
     the defect. A retrofit key is ON everywhere on mint day, so its Q4 clock runs from that day and

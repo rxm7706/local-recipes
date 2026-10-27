@@ -669,8 +669,6 @@ _SHIPPED_BOOLEANS = {
     "pyforge.steward.setup_hooks": True,
     "pyforge.steward.workspace_full_refs": True,
     "pyforge.steward.station_client_identity": True,
-    "pyforge.steward.cutover_mason_submit": True,
-    "pyforge.steward.minutes_metering": True,
     "pyforge.atlas.agent_pipeline_tools": True,
     "pyforge.atlas.manifest_inventory": True,
     "pyforge.scribe.bmad_estate_catalog": True,

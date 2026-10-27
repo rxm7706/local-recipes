@@ -63,12 +63,14 @@ Type / Effort / Deps: feature / XS / none.
 ## Binding
 
 - Parent capability: `spec-pyforge-marshal` CAP-267.
+
+Parent: `spec-pyforge-marshal` CAP-267
 - Dream: `docs/dreams/pyforge-marshal.md` § *Realization log*, the 2026-10-26 (every pre-rule runtime capability sits behind a kill switch) entry.
 - Epic: Epic 110, minted with this story.
 - Ledger key: `110-25-a-loop-home-refresh-sends-its-proven-fast-forward-past-the-pre-push-preflight-journaled-sits-behind-a-kill-switch`.
 - Deps: none.
 - Surface: `marshal-policy.toml` `[epic_surfaces]."110"`.
-- Minted 2026-10-26 in one chain commit; built in the same PR (the CAP-7 retrofit effort: marshal Epic 110, steward Epic 113, atlas Epic 42, scribe Epic 28, doctor Epic 51).
+- Minted 2026-10-26 in one chain commit; built in the same PR (the CAP-7 retrofit effort: marshal Epic 110, steward Epic 114, atlas Epic 42, scribe Epic 29, doctor Epic 51).
 
 ## Verification
 
@@ -77,6 +79,7 @@ Type / Effort / Deps: feature / XS / none.
 
 **Run before the push:**
 - Two-state flag coverage (the testing kit's `flag_states`): `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py` — `@flag_states("pyforge.marshal.refresh_proven_push")`, `test_pyforge_marshal_refresh_proven_push`.
+- The fallback through its real call site, both states: `src/shared/packages/pyforge-marshal/tests/unit/test_refresh.py` — `@flag_states("pyforge.marshal.refresh_proven_push")`.
 - `pixi run --frozen -e pyforge-guild flag-gate-check` — expected: exit 0.
 - `pixi run --frozen -e pyforge-guild flag-inventory` — expected: exit 0; the row names this story's key.
 

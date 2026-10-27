@@ -63,12 +63,14 @@ Type / Effort / Deps: feature / XS / none.
 ## Binding
 
 - Parent capability: `spec-pyforge-scribe` CAP-32.
+
+Parent: `spec-pyforge-scribe` CAP-32
 - Dream: `docs/dreams/pyforge-scribe.md` § *Realization log*, the 2026-10-26 (every pre-rule runtime capability sits behind a kill switch) entry.
 - Epic: Epic 29, minted with this story.
 - Ledger key: `29-1-every-session-reads-one-derived-picture-of-the-bmad-estate-sits-behind-a-kill-switch`.
 - Deps: none.
 - Surface: `marshal-policy.toml` `[epic_surfaces]."29"`.
-- Minted 2026-10-26 in one chain commit; built in the same PR (the CAP-7 retrofit effort: marshal Epic 109, steward Epic 113, atlas Epic 42, scribe Epic 29, doctor Epic 51).
+- Minted 2026-10-26 in one chain commit; built in the same PR (the CAP-7 retrofit effort: marshal Epic 110, steward Epic 114, atlas Epic 42, scribe Epic 29, doctor Epic 51).
 
 ## Verification
 

@@ -18,6 +18,7 @@ import jsonschema
 import pytest
 from pyforge.core.process import ProcessError, ProcessResult
 from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
+from pyforge.testing_kit.flags import flag_states, flagd_tree
 
 from pyforge.marshal.adapters.fs_local import LocalFs
 from pyforge.marshal.adapters.harness_bmadloop import HarnessError
@@ -6351,6 +6352,40 @@ class TestDispatchOnlyCheckoutRows:
         assert [h["slug"] for h in homes] == ["acme"]
         assert homes[0]["dispatch_run_id"] == "acme-20260920T000000000Z-deadbeef"
         assert homes[0]["branch"] == "loop/acme"
+        assert exit_code == 0
+
+    @flag_states("pyforge.marshal.dispatch_only_fleet_rows")
+    def test_the_dispatch_only_rows_kill_switch_lists_loop_homes_only(
+        self, flag_provider, tmp_path, capsys, monkeypatch
+    ):
+        """Story 110.23 (spec-feature-flag-governance CAP-7; CAP-259): ON, a dispatch-only station gets its row (the
+        test above); OFF, `marshal status` lists loop homes only, as before Story 51.12."""
+        on = flag_provider["pyforge.marshal.dispatch_only_fleet_rows"]
+        folder = tmp_path.parent / f"{tmp_path.name}-flag-tree-110-23"
+        folder.mkdir(exist_ok=True)
+        monkeypatch.setenv(
+            "PYFORGE_FLAGS_PATH",
+            str(flagd_tree(folder, {"pyforge.marshal.dispatch_only_fleet_rows": "on" if on else "off"})),
+        )
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        vcs = _FakeVcs(repo_root_value=tmp_path, worktrees=())
+        _write_dispatch_run_journal(
+            tmp_path,
+            "acme",
+            "acme-20260920T000000000Z-deadbeef",
+            harness_profile="claude",
+            layer_savings={},
+        )
+        exit_code = status_cli.run_status(
+            _args(project="acme"),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        homes = _payload(capsys)["data"]["homes"]
+        assert [h["slug"] for h in homes] == (["acme"] if on else [])
         assert exit_code == 0
 
     def test_dispatch_only_station_is_scoped_by_project_and_never_duplicates_a_loop_home(

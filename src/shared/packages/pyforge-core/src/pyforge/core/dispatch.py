@@ -16,7 +16,7 @@ from pathlib import Path
 
 from pyforge.core import roster
 from pyforge.core.errors import PyforgeError
-from pyforge.core.flags import read_boolean
+from pyforge.core.flags import kill_switch_on
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 EXIT_USAGE = 2
@@ -176,7 +176,7 @@ def dispatch_argv(
             return [aliased, *list(argv[1:])]
     # marshal Story 110.1 (spec-feature-flag-governance CAP-7; spec-pyforge-core CAP-11): the kill switch for
     # the environment-naming refusal. OFF reads an uninstalled roster station as unknown, as before CAP-11.
-    if station in roster.STATIONS and read_boolean(FRONT_DOOR_ENVIRONMENT_FLAG_KEY, default=True):
+    if station in roster.STATIONS and kill_switch_on(FRONT_DOOR_ENVIRONMENT_FLAG_KEY):
         raise DispatchError(_not_installed_message(station))
     known = ", ".join(sorted(mapping)) or "(none installed)"
     raise DispatchError(f"unknown station {station!r}; known: {known}")

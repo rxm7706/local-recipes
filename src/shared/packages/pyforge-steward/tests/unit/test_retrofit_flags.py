@@ -139,29 +139,6 @@ def test_pyforge_steward_workspace_full_refs(
     )
 
 
-@flag_states("pyforge.steward.cutover_mason_submit")
-def test_pyforge_steward_cutover_mason_submit(
-    flag_provider: dict[str, bool], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Mason talks to conda-forge (Phase 5) (spec-python-foundry-cutover CAP-6, Story 114.9): `steward cutover apply|flip` refuse with usage code 2; the Phase 5 path never opens while the switch is off."""
-    _assert_duty_switch(
-        "pyforge.steward.cutover_mason_submit",
-        flag_provider["pyforge.steward.cutover_mason_submit"],
-        tmp_path,
-        monkeypatch,
-    )
-
-
-@flag_states("pyforge.steward.minutes_metering")
-def test_pyforge_steward_minutes_metering(
-    flag_provider: dict[str, bool], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Metered minutes budget (spec-python-foundry-cutover CAP-10, Story 114.10): `steward budget` refuses with usage code 2; minutes are never metered by a second path."""
-    _assert_duty_switch(
-        "pyforge.steward.minutes_metering", flag_provider["pyforge.steward.minutes_metering"], tmp_path, monkeypatch
-    )
-
-
 @flag_states("pyforge.steward.frame_upstream_check")
 def test_pyforge_steward_frame_upstream_check(
     flag_provider: dict[str, bool], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -184,22 +161,39 @@ def test_main_projects_a_flag_off_duty_to_the_usage_code_with_the_message(
 ) -> None:
     on = flag_provider["pyforge.steward.budget"]
     _tree(tmp_path, monkeypatch, "pyforge.steward.budget", on)
-    if on:
-        pytest.skip("covered by the flag-off half")
     monkeypatch.chdir(tmp_path)
     result = invoke_cli(main, ["budget", "show"])
+    if on:
+        assert "is off" not in result.output
+        assert result.exit_code != EXIT_USAGE
+        return
     assert result.exit_code == EXIT_USAGE
     assert "steward: flag pyforge.steward.budget is off" in result.output
 
 
-def test_no_tree_reads_every_switch_on_without_a_read(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_no_tree_reads_every_switch_on_without_a_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     monkeypatch.delenv("PYFORGE_FLAGS_PATH", raising=False)
     monkeypatch.chdir(tmp_path)
     for path in cli.RETROFIT_VERB_FLAGS:
         cli.require_retrofit_flags(_namespace(path))
+    assert "WARN" not in capsys.readouterr().err
     listing = " ".join(invoke_cli(main, ["--help"]).output.split())
     for key in cli.RETROFIT_KEY_VERBS:
         assert f"flag {key} is off" not in listing, key
+    assert "WARN" not in listing
+
+
+def test_an_ordinary_invocation_reads_no_switch_for_the_listing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The listing is marked only under --help: a tree lacking every key warns for the invoked duty's keys only."""
+    _tree(tmp_path, monkeypatch, "pyforge.steward.unrelated", True)
+    monkeypatch.chdir(tmp_path)
+    result = invoke_cli(main, ["budget", "show"])
+    warned = {key for key in cli.RETROFIT_KEY_VERBS if f"WARN flag {key}:" in result.output}
+    assert warned == {key for key in cli.RETROFIT_VERB_FLAGS.get(("budget",), ())}
 
 
 def test_every_gated_duty_exists_on_the_parser() -> None:

@@ -46,7 +46,7 @@ from typing import TYPE_CHECKING, Any
 
 import yaml
 from pyforge.core.errors import PyforgeError
-from pyforge.core.flags import read_boolean
+from pyforge.core.flags import kill_switch_on
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort, ProcessResult
 
 from ..adapters.fs_local import FsError, LocalFs
@@ -344,12 +344,12 @@ DISPATCH_CODEGRAPH_INDEX_FLAG_KEY = "pyforge.marshal.dispatch_codegraph_index"  
 
 def one_in_flight_enabled() -> bool:
     """Whether a second dispatch onto a busy station is refused (CAP-163's kill switch, ON by default)."""
-    return read_boolean(ONE_IN_FLIGHT_FLAG_KEY, default=True)
+    return kill_switch_on(ONE_IN_FLIGHT_FLAG_KEY)
 
 
 def dispatch_codegraph_index_enabled() -> bool:
     """Whether a dispatch worktree is given a codegraph index (CAP-282's kill switch, ON by default)."""
-    return read_boolean(DISPATCH_CODEGRAPH_INDEX_FLAG_KEY, default=True)
+    return kill_switch_on(DISPATCH_CODEGRAPH_INDEX_FLAG_KEY)
 
 
 @dataclass(frozen=True)

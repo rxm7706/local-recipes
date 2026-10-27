@@ -230,6 +230,27 @@ def test_require_honors_a_retrofit_default_true(tmp_path, capsys):
         require(KEY, True, flags_path=_tree(tmp_path, _bool_entry("on", state="DISABLED")))
 
 
+def test_kill_switch_on_reads_on_with_no_tree_and_no_warn(tmp_path, monkeypatch, capsys):
+    """spec-feature-flag-governance CAP-7: a retrofit kill switch outside the estate reads ON silently."""
+    monkeypatch.delenv("PYFORGE_FLAGS_PATH", raising=False)
+    monkeypatch.chdir(tmp_path)
+    assert flags.kill_switch_on("pyforge.x.retrofit") is True
+    assert capsys.readouterr().err == ""
+
+
+def test_kill_switch_on_reads_the_tree_when_there_is_one(tmp_path, capsys):
+    tree = tmp_path / "flags.json"
+    tree.write_text(
+        json.dumps({"flags": {"pyforge.x.on": _bool_entry("on"), "pyforge.x.off": _bool_entry("off")}}),
+        encoding="utf-8",
+    )
+    assert flags.kill_switch_on("pyforge.x.on", flags_path=tree) is True
+    assert flags.kill_switch_on("pyforge.x.off", flags_path=tree) is False
+    capsys.readouterr()
+    assert flags.kill_switch_on("pyforge.x.absent", flags_path=tree) is True
+    assert "WARN flag pyforge.x.absent" in capsys.readouterr().err
+
+
 def test_disabled_help_marks_an_off_flag_and_leaves_an_on_flag_unchanged(tmp_path):
     off = _tree(tmp_path, _bool_entry("off"), name="off.json")
     on = _tree(tmp_path, _bool_entry("on"), name="on.json")
@@ -873,7 +894,7 @@ def test_a_rendered_tree_carries_the_metadata_through_unchanged(tmp_path):
 _SHIPPED_CLOCKS = {
     # spec-feature-flag-governance CAP-7, the retrofit (operator ruling 2026-10-26): one kill switch per pre-rule
     # runtime capability, ON in every environment on mint day, so each clock runs from 2026-10-26 and the owning
-    # station's retirement story is due 2027-01-24 (Q4: 90 days). Epics marshal 109, steward 113, atlas 42, scribe 28.
+    # station's retirement story is due 2027-01-24 (Q4: 90 days). Epics marshal 110, steward 114, atlas 42, scribe 29.
     "pyforge.marshal.front_door_environment": ("marshal", "110-1-", "2026-10-26", "2026-10-26", "2027-01-24"),
     "pyforge.marshal.loop_homes": ("marshal", "110-2-", "2026-10-26", "2026-10-26", "2027-01-24"),
     "pyforge.marshal.supervised_runs": ("marshal", "110-3-", "2026-10-26", "2026-10-26", "2027-01-24"),
@@ -919,8 +940,6 @@ _SHIPPED_CLOCKS = {
     "pyforge.steward.setup_hooks": ("steward", "114-6-", "2026-10-26", "2026-10-26", "2027-01-24"),
     "pyforge.steward.workspace_full_refs": ("steward", "114-7-", "2026-10-26", "2026-10-26", "2027-01-24"),
     "pyforge.steward.station_client_identity": ("steward", "114-8-", "2026-10-26", "2026-10-26", "2027-01-24"),
-    "pyforge.steward.cutover_mason_submit": ("steward", "114-9-", "2026-10-26", "2026-10-26", "2027-01-24"),
-    "pyforge.steward.minutes_metering": ("steward", "114-10-", "2026-10-26", "2026-10-26", "2027-01-24"),
     "pyforge.atlas.agent_pipeline_tools": ("atlas", "42-1-", "2026-10-26", "2026-10-26", "2027-01-24"),
     "pyforge.atlas.manifest_inventory": ("atlas", "42-2-", "2026-10-26", "2026-10-26", "2027-01-24"),
     "pyforge.scribe.bmad_estate_catalog": ("scribe", "29-1-", "2026-10-26", "2026-10-26", "2027-01-24"),
@@ -1107,7 +1126,7 @@ def test_the_only_running_cleanup_clocks_are_the_cap_7_retrofit_kill_switches():
     running = {k: e["metadata"]["cleanup_by"] for k, e in payload["flags"].items() if e["metadata"]["cleanup_by"]}
     assert set(running) == _RETROFIT_KILL_SWITCHES
     assert set(running.values()) == {"2027-01-24"}
-    assert len(_RETROFIT_KILL_SWITCHES) == 50
+    assert len(_RETROFIT_KILL_SWITCHES) == 48
 
 
 def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_the_metadata(monkeypatch):
@@ -1173,8 +1192,6 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.steward.setup_hooks": {"dev": True, "staging": True, "production": True},
         "pyforge.steward.workspace_full_refs": {"dev": True, "staging": True, "production": True},
         "pyforge.steward.station_client_identity": {"dev": True, "staging": True, "production": True},
-        "pyforge.steward.cutover_mason_submit": {"dev": True, "staging": True, "production": True},
-        "pyforge.steward.minutes_metering": {"dev": True, "staging": True, "production": True},
         "pyforge.atlas.agent_pipeline_tools": {"dev": True, "staging": True, "production": True},
         "pyforge.atlas.manifest_inventory": {"dev": True, "staging": True, "production": True},
         "pyforge.scribe.bmad_estate_catalog": {"dev": True, "staging": True, "production": True},

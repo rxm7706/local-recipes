@@ -10555,15 +10555,15 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 
 As the operator who can turn any capability off without a redeploy,
 I want spec-pyforge-marshal CAP-161 (a session's self-report is input to verification, never the verdict) behind one flag that defaults ON,
-So that the capability keeps today's behaviour until the switch is turned, and turning it reads as the dispatch verbs and `marshal land` refuse with usage code 2; nothing lands on a self-report.
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as the dispatch verbs, `marshal land` and `marshal deploy land-story` refuse with usage code 2; nothing lands on a self-report.
 
 **Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-161 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
 **Flag:** `pyforge.marshal.verify_before_landing` (default ON in dev, staging and production: a kill switch; an invariant switch)
 **Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
 **Spec:** `planning-artifacts/specs/spec-110-16-a-session-s-self-report-is-input-to-verification-never-the-verdict-sits-behind-a-kill-switch.md`
-**Given** the capability reaches a user through `marshal factory dispatch`, `marshal factory dispatch-attach`, `marshal factory dispatch-resume`, `marshal factory drain`, `marshal land` and the inventory lists it with no flag
+**Given** the capability reaches a user through `marshal factory dispatch`, `marshal factory dispatch-attach`, `marshal factory dispatch-resume`, `marshal factory drain`, `marshal land`, `marshal deploy land-story` and the inventory lists it with no flag
 **When** the retrofit lands
-**Then** `pyforge.marshal.verify_before_landing` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal factory dispatch`, `marshal factory dispatch-attach`, `marshal factory dispatch-resume`, `marshal factory drain`, `marshal land` through `pyforge.core.flags`; OFF: the dispatch verbs and `marshal land` refuse with usage code 2; nothing lands on a self-report
+**Then** `pyforge.marshal.verify_before_landing` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal factory dispatch`, `marshal factory dispatch-attach`, `marshal factory dispatch-resume`, `marshal factory drain`, `marshal land`, `marshal deploy land-story` through `pyforge.core.flags`; OFF: the dispatch verbs, `marshal land` and `marshal deploy land-story` refuse with usage code 2; nothing lands on a self-report
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
 **Status:** in-progress
 
@@ -10635,7 +10635,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 
 As the operator who can turn any capability off without a redeploy,
 I want spec-pyforge-marshal CAP-174 (declared context pipeline) behind one flag that defaults ON,
-So that the capability keeps today's behaviour until the switch is turned, and turning it reads as every `[context]` layer resolves off, exactly as a policy with no declared block (the CAP's own fallback).
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as every `[context]` layer resolves off, exactly as a policy with no declared block (the CAP's own fallback); the launch surfaces, and `marshal seed check` and `seed kit`, which read the same composition, judge a repo as if it declared no layer.
 
 **Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-174 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
 **Flag:** `pyforge.marshal.context_pipeline` (default ON in dev, staging and production: a kill switch; a behaviour switch)
@@ -10643,7 +10643,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **Spec:** `planning-artifacts/specs/spec-110-21-declared-context-pipeline-sits-behind-a-kill-switch.md`
 **Given** the capability reaches a user through `core/policy.py::resolve_context_layers`, the one composition site both engines read and the inventory lists it with no flag
 **When** the retrofit lands
-**Then** `pyforge.marshal.context_pipeline` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `core/policy.py::resolve_context_layers`, the one composition site both engines read through `pyforge.core.flags`; OFF: every `[context]` layer resolves off, exactly as a policy with no declared block (the CAP's own fallback)
+**Then** `pyforge.marshal.context_pipeline` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `core/policy.py::resolve_context_layers`, the one composition site both engines read through `pyforge.core.flags`; OFF: every `[context]` layer resolves off, exactly as a policy with no declared block (the CAP's own fallback); the launch surfaces, and `marshal seed check` and `seed kit`, which read the same composition, judge a repo as if it declared no layer
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
 **Status:** in-progress
 
@@ -10651,15 +10651,15 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 
 As the operator who can turn any capability off without a redeploy,
 I want spec-pyforge-marshal CAP-229 (promotion runs on landing, not on memory) behind one flag that defaults ON,
-So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal land` refuses with usage code 2; a promotion is never run from memory.
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal land` and `marshal deploy land-story` refuse with usage code 2; a promotion is never run from memory.
 
 **Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-229 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
 **Flag:** `pyforge.marshal.promotion_on_landing` (default ON in dev, staging and production: a kill switch; an invariant switch)
 **Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
 **Spec:** `planning-artifacts/specs/spec-110-22-promotion-runs-on-landing-not-on-memory-sits-behind-a-kill-switch.md`
-**Given** the capability reaches a user through `marshal land` and the inventory lists it with no flag
+**Given** the capability reaches a user through `marshal land`, `marshal deploy land-story` and the inventory lists it with no flag
 **When** the retrofit lands
-**Then** `pyforge.marshal.promotion_on_landing` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal land` through `pyforge.core.flags`; OFF: `marshal land` refuses with usage code 2; a promotion is never run from memory
+**Then** `pyforge.marshal.promotion_on_landing` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal land`, `marshal deploy land-story` through `pyforge.core.flags`; OFF: `marshal land` and `marshal deploy land-story` refuse with usage code 2; a promotion is never run from memory
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
 **Status:** in-progress
 
@@ -10731,15 +10731,15 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 
 As the operator who can turn any capability off without a redeploy,
 I want spec-pyforge-marshal CAP-277 (a landing's ledger promotion reaches origin/main, and a failed one is never silent) behind one flag that defaults ON,
-So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal land` refuses with usage code 2; a failed promotion is never silent.
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal land` and `marshal deploy land-story` refuse with usage code 2; a failed promotion is never silent.
 
 **Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-277 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
 **Flag:** `pyforge.marshal.ledger_promotion_to_origin` (default ON in dev, staging and production: a kill switch; an invariant switch)
 **Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
 **Spec:** `planning-artifacts/specs/spec-110-27-a-landing-s-ledger-promotion-reaches-origin-main-and-a-failed-one-is-never-silent-sits-behind-a-kill-switch.md`
-**Given** the capability reaches a user through `marshal land` and the inventory lists it with no flag
+**Given** the capability reaches a user through `marshal land`, `marshal deploy land-story` and the inventory lists it with no flag
 **When** the retrofit lands
-**Then** `pyforge.marshal.ledger_promotion_to_origin` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal land` through `pyforge.core.flags`; OFF: `marshal land` refuses with usage code 2; a failed promotion is never silent
+**Then** `pyforge.marshal.ledger_promotion_to_origin` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal land`, `marshal deploy land-story` through `pyforge.core.flags`; OFF: `marshal land` and `marshal deploy land-story` refuse with usage code 2; a failed promotion is never silent
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
 **Status:** in-progress
 
@@ -10747,15 +10747,15 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 
 As the operator who can turn any capability off without a redeploy,
 I want spec-pyforge-marshal CAP-278 (the switch script runs where it is documented to run, or says in one line why it cannot) behind one flag that defaults ON,
-So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal land` refuses with usage code 2.
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal land` and `marshal deploy land-story` refuse with usage code 2.
 
 **Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-278 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
 **Flag:** `pyforge.marshal.switch_script_placement` (default ON in dev, staging and production: a kill switch; an invariant switch)
 **Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
 **Spec:** `planning-artifacts/specs/spec-110-28-the-switch-script-runs-where-it-is-documented-to-run-or-says-in-one-line-why-it-cannot-sits-behind-a-kill-switch.md`
-**Given** the capability reaches a user through `marshal land` and the inventory lists it with no flag
+**Given** the capability reaches a user through `marshal land`, `marshal deploy land-story` and the inventory lists it with no flag
 **When** the retrofit lands
-**Then** `pyforge.marshal.switch_script_placement` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal land` through `pyforge.core.flags`; OFF: `marshal land` refuses with usage code 2
+**Then** `pyforge.marshal.switch_script_placement` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal land`, `marshal deploy land-story` through `pyforge.core.flags`; OFF: `marshal land` and `marshal deploy land-story` refuse with usage code 2
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
 **Status:** in-progress
 
@@ -10811,15 +10811,15 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 
 As the operator who can turn any capability off without a redeploy,
 I want spec-pyforge-marshal CAP-283 (a landing unions append-only memlogs instead of refusing) behind one flag that defaults ON,
-So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal land` refuses with usage code 2.
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal land` and `marshal deploy land-story` refuse with usage code 2.
 
 **Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-283 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
 **Flag:** `pyforge.marshal.landing_memlog_union` (default ON in dev, staging and production: a kill switch; an invariant switch)
 **Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
 **Spec:** `planning-artifacts/specs/spec-110-32-a-landing-unions-append-only-memlogs-instead-of-refusing-sits-behind-a-kill-switch.md`
-**Given** the capability reaches a user through `marshal land` and the inventory lists it with no flag
+**Given** the capability reaches a user through `marshal land`, `marshal deploy land-story` and the inventory lists it with no flag
 **When** the retrofit lands
-**Then** `pyforge.marshal.landing_memlog_union` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal land` through `pyforge.core.flags`; OFF: `marshal land` refuses with usage code 2
+**Then** `pyforge.marshal.landing_memlog_union` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal land`, `marshal deploy land-story` through `pyforge.core.flags`; OFF: `marshal land` and `marshal deploy land-story` refuse with usage code 2
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
 **Status:** in-progress
 
@@ -10903,7 +10903,7 @@ So that the capability keeps today's behaviour until the switch is turned, and t
 **And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
 **Status:** in-progress
 
-### Story 110.38: the 37 retrofit kill switches retire on their cleanup date
+### Story 110.38: the retrofit kill switches retire on their cleanup date
 
 As the operator who turned none of the 37 retrofit kill switches off in their 90-day window,
 I want each key removed from the tree, its reader and its two-state test on 2027-01-24 (the Q4 clock, `on_everywhere` 2026-10-26 plus 90 days), declared with `retires-flag:` by this station,
@@ -10912,10 +10912,10 @@ So that the gate's `flag-clock-overdue` never reds `detectors-ci`, no reader is 
 **Type:** feature • **Effort:** M • **Deps:** 110.1 • **FR/AD:** the retirement path of the Guild flag rule (spec-feature-flag-governance, the gate capability as amended 2026-10-15; Q4)
 **Flag:** `flag-exempt: flag-infrastructure`; `retires-flag:` `pyforge.marshal.front_door_environment`, `pyforge.marshal.loop_homes`, `pyforge.marshal.supervised_runs`, `pyforge.marshal.gate_evaluate`, `pyforge.marshal.fleet_status`, `pyforge.marshal.policy_composition`, `pyforge.marshal.seed_explain`, `pyforge.marshal.managed_regions`, `pyforge.marshal.seed_adopt`, `pyforge.marshal.seed_check`, `pyforge.marshal.adapter_fanout`, `pyforge.marshal.genesis_state_file`, `pyforge.marshal.supervisor_shell_finalize`, `pyforge.marshal.watch`, `pyforge.marshal.completion_from_facts`, `pyforge.marshal.verify_before_landing`, `pyforge.marshal.dispatch_lands_via_land`, `pyforge.marshal.one_in_flight_per_station`, `pyforge.marshal.branch_merged_divergence`, `pyforge.marshal.single_followup_review`, `pyforge.marshal.context_pipeline`, `pyforge.marshal.promotion_on_landing`, `pyforge.marshal.dispatch_only_fleet_rows`, `pyforge.marshal.guild_env_shellouts`, `pyforge.marshal.refresh_proven_push`, `pyforge.marshal.followup_review_to_ledger`, `pyforge.marshal.ledger_promotion_to_origin`, `pyforge.marshal.switch_script_placement`, `pyforge.marshal.seed_check_rendered_paths`, `pyforge.marshal.drain_followup_review`, `pyforge.marshal.dispatch_codegraph_index`, `pyforge.marshal.landing_memlog_union`, `pyforge.marshal.model_list_refresh`, `pyforge.marshal.recall_dev_pass`, `pyforge.marshal.recall_review_pass`, `pyforge.marshal.recall_context_layer`, `pyforge.marshal.recall_miss_injects_nothing`
 **Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, the read sites and the two-state tests the Epic 110 stories name, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
-**Spec:** `planning-artifacts/specs/spec-110-38-the-37-retrofit-kill-switches-retire-on-their-cleanup-date.md`
+**Spec:** `planning-artifacts/specs/spec-110-38-the-retrofit-kill-switches-retire-on-their-cleanup-date.md`
 **Given** the 37 keys read ON in every environment since 2026-10-26 with `cleanup_by` 2027-01-24
 **When** the cleanup date arrives and the operator has turned none of them off
-**Then** this story removes each key from the tree and the overlays, its read site and its test, declares every key under `retires-flag:`, and the inventory reads each row as `retired by 109-38`
+**Then** this story removes each key from the tree and the overlays, its read site and its test, declares every key under `retires-flag:`, and the inventory reads each row as `retired by 110-38`
 **And** `flag-gate-check` reports no `flag-retired-still-read` and no `flag-clock-overdue`; a key the operator turned off stays, and its capability's removal is a story of its own
 **Status:** backlog
 

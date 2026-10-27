@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 from dispatch_spec_fixtures import BINDING_VERIFICATION_TAIL as _BV
 from pyforge.core.process import ProcessResult
+from pyforge.testing_kit.flags import flag_states, flagd_tree
 from scope_triangle import point_scope_triangle
 
 from pyforge.marshal.adapters.fs_local import FsError
@@ -325,6 +326,55 @@ def test_serial_mode_still_refuses_unrelated_live_story(tmp_path: Path) -> None:
     )
     assert conflict is not None
     assert conflict.code == "MRS-DISP-021"
+
+
+def _kill_switch_tree(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, key: str, on: bool) -> None:
+    """A flagd tree holding one retrofit kill switch in the given state (Epic 110, CAP-7)."""
+    folder = tmp_path / "flag-tree-110-18"
+    folder.mkdir(exist_ok=True)
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(flagd_tree(folder, {key: "on" if on else "off"})))
+
+
+@flag_states("pyforge.marshal.one_in_flight_per_station")
+def test_the_one_in_flight_kill_switch_drops_only_the_busy_station_refusal(
+    flag_provider: dict[str, bool], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 110.18 (spec-feature-flag-governance CAP-7; CAP-163): ON, a live unrelated story refuses with
+    MRS-DISP-021 (the serial-mode test above); OFF, the same station accepts the second dispatch."""
+    from pyforge.marshal.cli.dispatch import _compose_policy
+
+    on = flag_provider["pyforge.marshal.one_in_flight_per_station"]
+    _kill_switch_tree(tmp_path, monkeypatch, "pyforge.marshal.one_in_flight_per_station", on)
+    slug = "pyforge-marshal"
+    fs = FakeFs()
+    _seed_live_dispatch_journal(tmp_path, fs, slug=slug, run_id="run-live", story_key="22.1")
+
+    class LiveVcs(FakeVcs):
+        def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
+            return ("src/changed.py",)
+
+        def is_branch_merged(self, repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
+            return False
+
+        def commit_subjects(self, repo_root: Path, ref: str):
+            return ()
+
+        def worktree_head_sha(self, worktree_path: Path) -> str:
+            return "bbb222"
+
+    conflict = station_in_flight_conflict(
+        fs=fs,
+        vcs=LiveVcs(tmp_path),
+        process=FakeProcess(alive=True),
+        repo_root=tmp_path,
+        slug=slug,
+        story_key="22-5-one-story-in-flight",
+        effective_policy=_compose_policy(slug),
+    )
+    if on:
+        assert conflict is not None and conflict.code == "MRS-DISP-021"
+    else:
+        assert conflict is None or conflict.code != "MRS-DISP-021"
 
 
 def test_unrelated_live_story_allowed_without_surface_data(

@@ -24,7 +24,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
-from pyforge.core.flags import read_boolean
+from pyforge.core.flags import kill_switch_on
 
 from .derived_context import implementation_artifacts_relpath
 
@@ -76,7 +76,7 @@ def layer_enabled(layer: Mapping[str, object] | None) -> bool:
     """Whether the declared ``recall`` context layer is on -- and every recall kill switch reads ON."""
     if not bool((layer or {}).get("enabled", False)):
         return False
-    return all(read_boolean(key, default=True) for key in RECALL_FLAG_KEYS)
+    return all(kill_switch_on(key) for key in RECALL_FLAG_KEYS)
 
 
 def build_recall_query(station_slug: str) -> str:

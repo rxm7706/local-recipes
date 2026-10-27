@@ -551,23 +551,33 @@ def test_main_projects_a_flag_off_verb_to_the_usage_code_with_the_message(
 ) -> None:
     on = flag_provider["pyforge.marshal.fleet_status"]
     _tree(tmp_path, monkeypatch, "pyforge.marshal.fleet_status", on)
-    if on:
-        pytest.skip("covered by the flag-off half")
     monkeypatch.chdir(tmp_path)
     result = invoke_cli(main, ["status"])
+    if on:
+        # ON: the verb runs (whatever it then reports about this empty checkout); no flag refusal.
+        assert "is off" not in result.output
+        return
     assert result.exit_code == USAGE
     assert "marshal: flag pyforge.marshal.fleet_status is off" in result.output
 
 
-def test_no_tree_reads_every_switch_on_without_a_read(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_no_tree_reads_every_switch_on_without_a_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     """A checkout with no tree (no PYFORGE_FLAGS_PATH, no flags.json above cwd) never refuses and never warns."""
     monkeypatch.delenv("PYFORGE_FLAGS_PATH", raising=False)
     monkeypatch.chdir(tmp_path)
     for path in retrofit_flags.VERB_FLAGS:
         retrofit_flags.require_verb_flags(_namespace(path))
+    assert policy.context_pipeline_enabled() is True
+    assert dispatch_cli.one_in_flight_enabled() is True
+    assert recall_feedback.layer_enabled({"enabled": True}) is True
+    assert adopt_verb.adapter_fanout_enabled() is True
+    assert "WARN" not in capsys.readouterr().err
     listing = " ".join(invoke_cli(main, ["--help"]).output.split())
     for key in retrofit_flags.KEY_VERBS:
         assert f"flag {key} is off" not in listing, key
+    assert "WARN" not in listing
 
 
 def test_every_manifest_key_gates_a_verb_or_is_a_behaviour_switch() -> None:

@@ -11,7 +11,7 @@ flag:
   provider: openfeature-file
   default: {production: on, staging: on, dev: on}
   scope: global
-  fallback: "every `[context]` layer resolves off, exactly as a policy with no declared block (the CAP's own fallback)"
+  fallback: "every `[context]` layer resolves off, exactly as a policy with no declared block (the CAP's own fallback); the launch surfaces, and `marshal seed check` and `seed kit`, which read the same composition, judge a repo as if it declared no layer"
   cleanup: "90 days after ON in every environment (Q4): 2027-01-24, Story 110.38"
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
@@ -31,7 +31,7 @@ context:
 
 **Approach:**
 - The key `pyforge.marshal.context_pipeline` joins the one tree ON in every environment, with the five flagd metadata fields (steward Story 76.2); the clock runs from 2026-10-26 and Story 110.38 owns its retirement on 2027-01-24.
-- Read site: `core/policy.py::resolve_context_layers`, the one composition site both engines read. With the key OFF: every `[context]` layer resolves off, exactly as a policy with no declared block (the CAP's own fallback).
+- Read site: `core/policy.py::resolve_context_layers`, the one composition site both engines read. With the key OFF: every `[context]` layer resolves off, exactly as a policy with no declared block (the CAP's own fallback); the launch surfaces, and `marshal seed check` and `seed kit`, which read the same composition, judge a repo as if it declared no layer.
 - The fallback is the capability's pre-rule behaviour, read at one helper the test exercises in both states.
 
 Ledger key: `110-21-declared-context-pipeline-sits-behind-a-kill-switch`.
@@ -46,7 +46,7 @@ Type / Effort / Deps: feature / XS / none.
 
 - **AC1 — The key.** `pyforge.marshal.context_pipeline` is in `src/platform/config/flags.json` (`defaultVariant: on`) and in every environment of `flag-overlays.json` (`on`), with `owner`, `story`, `created` 2026-10-26, `on_everywhere` 2026-10-26 and `cleanup_by` 2027-01-24; `_SHIPPED_CLOCKS`, `per_environment` and `_SHIPPED_BOOLEANS` carry it.
 - **AC2 — ON.** The key is read at `core/policy.py::resolve_context_layers`, the one composition site both engines read, spelled literally, through `pyforge.core.flags` (or `django_pyforge.flags` on the host); ON keeps today's behaviour byte-identical.
-- **AC3 — OFF.** every `[context]` layer resolves off, exactly as a policy with no declared block (the CAP's own fallback).
+- **AC3 — OFF.** every `[context]` layer resolves off, exactly as a policy with no declared block (the CAP's own fallback); the launch surfaces, and `marshal seed check` and `seed kit`, which read the same composition, judge a repo as if it declared no layer.
 - **AC4 — Both states.** One test runs the key ON and OFF (`src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`).
 - **AC5 — The domain.** The station's frozen exit-code domain is unchanged: a refusal is the usage code 2.
 
@@ -63,12 +63,14 @@ Type / Effort / Deps: feature / XS / none.
 ## Binding
 
 - Parent capability: `spec-pyforge-marshal` CAP-174.
+
+Parent: `spec-pyforge-marshal` CAP-174
 - Dream: `docs/dreams/pyforge-marshal.md` § *Realization log*, the 2026-10-26 (every pre-rule runtime capability sits behind a kill switch) entry.
 - Epic: Epic 110, minted with this story.
 - Ledger key: `110-21-declared-context-pipeline-sits-behind-a-kill-switch`.
 - Deps: none.
 - Surface: `marshal-policy.toml` `[epic_surfaces]."110"`.
-- Minted 2026-10-26 in one chain commit; built in the same PR (the CAP-7 retrofit effort: marshal Epic 110, steward Epic 113, atlas Epic 42, scribe Epic 28, doctor Epic 51).
+- Minted 2026-10-26 in one chain commit; built in the same PR (the CAP-7 retrofit effort: marshal Epic 110, steward Epic 114, atlas Epic 42, scribe Epic 29, doctor Epic 51).
 
 ## Verification
 

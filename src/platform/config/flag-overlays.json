@@ -88,8 +88,6 @@
     "pyforge.steward.setup_hooks": "on",
     "pyforge.steward.workspace_full_refs": "on",
     "pyforge.steward.station_client_identity": "on",
-    "pyforge.steward.cutover_mason_submit": "on",
-    "pyforge.steward.minutes_metering": "on",
     "pyforge.atlas.agent_pipeline_tools": "on",
     "pyforge.atlas.manifest_inventory": "on",
     "pyforge.scribe.bmad_estate_catalog": "on"
@@ -183,8 +181,6 @@
     "pyforge.steward.setup_hooks": "on",
     "pyforge.steward.workspace_full_refs": "on",
     "pyforge.steward.station_client_identity": "on",
-    "pyforge.steward.cutover_mason_submit": "on",
-    "pyforge.steward.minutes_metering": "on",
     "pyforge.atlas.agent_pipeline_tools": "on",
     "pyforge.atlas.manifest_inventory": "on",
     "pyforge.scribe.bmad_estate_catalog": "on"
@@ -278,8 +274,6 @@
     "pyforge.steward.setup_hooks": "on",
     "pyforge.steward.workspace_full_refs": "on",
     "pyforge.steward.station_client_identity": "on",
-    "pyforge.steward.cutover_mason_submit": "on",
-    "pyforge.steward.minutes_metering": "on",
     "pyforge.atlas.agent_pipeline_tools": "on",
     "pyforge.atlas.manifest_inventory": "on",
     "pyforge.scribe.bmad_estate_catalog": "on"

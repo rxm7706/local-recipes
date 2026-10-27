@@ -676,6 +676,21 @@ def test_story_surface_citations_keep_every_citing_story_in_order(tmp_path: Path
     assert last[("spec-demo", 2)] == "`planning-artifacts/specs/spec-demo/SPEC.md`"
 
 
+def test_caps_are_attributed_to_the_nearest_spec_mention() -> None:
+    """Story 51.1 AC8: each CAP token belongs to the Spec it sits beside."""
+    f = capability_effect._caps_attributed_on_line
+    slugs = ["spec-a", "spec-b"]
+    assert f("spec-a CAP-1 (<- spec-x CAP-2, CAP-3; note), CAP-4", slugs) == {"spec-a": {1, 4}, "spec-b": set()}
+    assert f("`spec-a` CAP-10 over the CAP-6 seam, and the env of `spec-b`", slugs) == {
+        "spec-a": {6, 10},
+        "spec-b": set(),
+    }
+    assert f("CAP-5 of spec-b", slugs) == {"spec-a": set(), "spec-b": {5}}
+    assert f("spec-b CAP-1..3 and CAP-7-CAP-8", slugs) == {"spec-a": set(), "spec-b": {1, 2, 3, 7, 8}}
+    assert f("spec-b CAP-1 listed in docs/inventory/a.md", ["spec-a", "spec-b"])["spec-a"] == set()
+    assert f("no spec here CAP-1", slugs) == {"spec-a": set(), "spec-b": set()}
+
+
 def test_story_surface_citations_missing_dir_and_empty_epics_are_empty(tmp_path: Path) -> None:
     assert capability_effect._story_surface_citations_by_cap("", ["spec-demo"], story_specs_dir=tmp_path / "nope") == {}
     assert capability_effect._story_surface_citations_by_cap("", ["spec-demo"]) == {}
