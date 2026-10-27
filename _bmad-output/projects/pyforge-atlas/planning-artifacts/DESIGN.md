@@ -27,7 +27,7 @@ spine built on a fuzzy count would fail the AC's "a partial spine that skips pag
 satisfy the AC" bar.
 
 **Divergent inventory (Carson).** The 28-CLI surface is three buckets (§ 3.3 of
-`spec-archive/ATLAS-BMAD-SPECS-CONSOLIDATED.md`):
+`archive/_bmad-output/projects/pyforge-atlas/spec-archive/ATLAS-BMAD-SPECS-CONSOLIDATED.md`):
 
 - **17 atlas read CLIs** (canonical scripts under `.claude/skills/conda-forge-expert/scripts/`):
   `detail_cf_atlas`, `staleness_report`, `feedstock_health`, `whodepends`, `behind_upstream`,

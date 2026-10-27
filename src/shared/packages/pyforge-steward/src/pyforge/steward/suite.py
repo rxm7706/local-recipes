@@ -91,11 +91,10 @@ _PYFORGE_STUDIO_ROOT_ENV = "PYFORGE_STUDIO_ROOT"
 _PYFORGE_STUDIO_ROOT_DEFAULT = "~/pyforge-studio"
 
 INSTALL_CLASS_PLAYBOOK_REL = (
-    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/"
-    "spec-bmad-suite-install-class-wiring/install-class-playbook.md"
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/install-class-playbook.md"
 )
 INSTALL_MATRIX_REL = (
-    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-channel-product/install-matrix.md"
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/install-matrix.md"
 )
 
 # Values that are class-correct "not unwired" — not a module census miss.

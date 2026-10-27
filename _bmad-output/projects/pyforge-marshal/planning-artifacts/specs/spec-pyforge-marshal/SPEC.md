@@ -186,8 +186,6 @@ surface-drift-exclude:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/publisher_host.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/publish.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/publisher.py
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/model_cost.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/tier_routing.py
@@ -214,6 +212,7 @@ companions:
   - ../../prds/prd-pyforge-marshal-2026-07-25/prd.md
   - ../../architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md
   - ../../epics.md
+  - integration-layers.md   # live companion carried 2026-10-27 from spec-marshal-token-economy (spec-one-chain-per-station:CAP-11)
 sources:
   - ../../../../../../docs/dreams/pyforge-marshal.md
 open_questions: []

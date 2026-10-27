@@ -263,7 +263,7 @@ jobs:
             .gitignore
             AGENTS.md
             CLAUDE.md
-            _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md
+            _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/adoption-register.md
             _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-regenerate-not-fold/case-list.md
             _bmad/scripts/resolve_customization.py
             _bmad/skf
@@ -382,6 +382,7 @@ jobs:
             _bmad
             '_bmad-output/projects/*/README.md'
             '_bmad-output/projects/*/planning-artifacts/*'
+            archive/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/SPEC.md
             archive/docs/dreams/build-league-scorecard.md
             docs-site/scripts
             docs-site/src/lib

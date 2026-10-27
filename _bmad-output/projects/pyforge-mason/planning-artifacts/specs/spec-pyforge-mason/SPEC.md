@@ -20,13 +20,18 @@ covers-dreams:
   - archive/docs/dreams/reusable-cicd-workflows.md
 surface:
   - src/shared/packages/pyforge-mason/**    # the CLI this Spec builds — as-built and shipped (fleet ledger: complete 2026-08-21)
+  - scripts/failure_catalog_check.py   # governance carried 2026-10-27 from the absorbed spec-machine-checked-recipe-knowledge (spec-one-chain-per-station:CAP-11)
+  - .claude/skills/conda-forge-expert/**   # governance carried 2026-10-27 from the absorbed spec-packaging-factory and spec-conda-forge-expert-rebuild; normal drift by operator ruling 2026-10-27 (spec-one-chain-per-station:CAP-11)
+  - .claude/scripts/conda-forge-expert/**   # governance carried 2026-10-27 from the absorbed spec-packaging-factory and spec-conda-forge-expert-rebuild; normal drift by operator ruling 2026-10-27 (spec-one-chain-per-station:CAP-11)
+  - .claude/tools/conda_forge_server.py   # governance carried 2026-10-27 from the absorbed spec-packaging-factory and spec-conda-forge-expert-rebuild; normal drift by operator ruling 2026-10-27 (spec-one-chain-per-station:CAP-11)
 companions:
   - glossary.md                                                                      # spec-authored: the vocabulary the chain requires verbatim
   - ../../prds/prd-pyforge-mason-2026-07-25/prd.md                                   # adopted (chain): FR-1..FR-50 / NFR-1..NFR-16 / D-1..D-13
   - ../../architecture/architecture-pyforge-mason-2026-07-25/ARCHITECTURE-SPINE.md   # adopted (chain): the ADs (AD-1..AD-16 + AD-25/AD-26; Presenton AD-17..AD-24), structural seed, stack, diagrams
   - ../../epics.md                                                                   # adopted (chain): 11 epics / 50 stories as-built (was 5/38 at authoring; see § Currency reconciliation)
-  - ../spec-packaging-factory/SPEC.md # adopted: the Spec governing the CFE surface Mason wraps — authoritative over Mason (Rule 1)
+  - ../../../../../../archive/_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-packaging-factory/SPEC.md # adopted: the Spec governing the CFE surface Mason wraps — authoritative over Mason (Rule 1)
   - feedstock-refresh.md # adopted: legacy intake spec carried from docs/specs/ (Story 37.1)
+  - campaign-state.yaml # live companion carried 2026-10-27 from spec-conda-forge-expert-rebuild (spec-one-chain-per-station:CAP-11)
 sources:
   - ../../../../../../archive/docs/dreams/packaging-factory.md
   - ../../briefs/brief-pyforge-mason-2026-07-25/brief.md

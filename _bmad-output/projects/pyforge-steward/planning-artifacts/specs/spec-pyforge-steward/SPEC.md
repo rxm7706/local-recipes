@@ -65,7 +65,7 @@ surface:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/fresh_clone.py
   - src/shared/packages/pyforge-steward/tests/unit/test_fresh_clone_class_path.py
   - .github/workflows/pyforge-pip-install.yml
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-install-class-wiring/install-class-playbook.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/install-class-playbook.md
   - recipes/bmad-suite/recipe.yaml
   - recipes/bmad-suite/suite-members.yaml
   - .claude/skills/conda-forge-expert/scripts/bmad_suite_metapackage.py
@@ -110,7 +110,7 @@ surface:
   - docs/how-to/track-upstream-todos.md
   - scripts/pixi_env_matrix.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
-  - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/adoption-register.md
   - recipes/mybmad-dashboard/wrapper/src/mybmad_dashboard/launcher.py
   - Containerfile
   - .dockerignore
@@ -138,6 +138,7 @@ surface:
   - scripts/realization_register_lib.py
   - tests/scripts/test_realization_register_check.py
   - .github/workflows/pages.yml
+  - pixi.lock   # governance carried 2026-10-27 from the absorbed spec-platform-image-one-pixi-env and spec-pixi-candidate-currency (spec-one-chain-per-station:CAP-11)
 surface-drift-exclude:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/asgi.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/consumers.py
@@ -146,6 +147,15 @@ surface-drift-exclude:
   - src/platform/config/asgi.py
 companions:
   - ../../architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
+  - install-matrix.md         # live companion carried 2026-10-27 from spec-bmad-suite-channel-product (spec-one-chain-per-station:CAP-11)
+  - adoption-register.md      # live companion carried 2026-10-27 from spec-bmad-suite-lifecycle (spec-one-chain-per-station:CAP-11)
+  - release-cadence.md        # live companion carried 2026-10-27 from spec-bmad-suite-lifecycle (spec-one-chain-per-station:CAP-11)
+  - install-class-playbook.md # live companion carried 2026-10-27 from spec-bmad-suite-install-class-wiring (spec-one-chain-per-station:CAP-11)
+  - ARCHITECTURE-SPINE.md     # the pap host spine (pap:AD-n), carried 2026-10-27 from spec-python-agent-platform, whose archived SPEC.md it still binds (spec-one-chain-per-station:CAP-11)
+  - measure-catalog.md        # live companion carried 2026-10-27 from spec-build-league-scorecard (spec-one-chain-per-station:CAP-11)
+  - vocabulary-map.md         # live companion carried 2026-10-27 from spec-intelligence-hub (spec-one-chain-per-station:CAP-11)
+  - failure-modes.md          # live companion carried 2026-10-27 from spec-bmad-method-core-upgrade (spec-one-chain-per-station:CAP-11)
+  - cluster-bringup-facts.md  # live companion carried 2026-10-27 from spec-local-ocp-hybrid-environment (spec-one-chain-per-station:CAP-11)
 sources:
   - ../../../../../../docs/dreams/pyforge-steward.md
 ---

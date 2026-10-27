@@ -85,8 +85,8 @@ a deck about the deck engine.
    check it against the infographic standard's floors (six act bands, ≥ 18 sections, ≥ 3 inline
    SVGs, ≥ 90 KB, every fact a `facts.yaml` row) and render it headless to a full-page PNG you
    actually look at — the standard and its README ledger entry live in
-   `spec-deck-family-currency/infographic-standard.md` (see § *Artifact dependency tree*).
-   Derive the ledger and check every marked surface against it with `pixi run -e pyforge-guild deck-facts <slug> [--check]` (the poster, plus the head/Infographic Deck/exec summary/marp sources once marked — herald Story 21.3; advisory, exit 0; shape in `spec-deck-family-currency/facts-ledger.md`); after a tracked source moves, `deck-facts <slug> --refresh` rewrites every stale `data-fact` literal on every walked surface from the fresh ledger, keeping its shape (`N/M` vs `N of M`, a leading `v`) and skipping nested or row-less marks.
+   `spec-pyforge-herald/infographic-standard.md` (see § *Artifact dependency tree*).
+   Derive the ledger and check every marked surface against it with `pixi run -e pyforge-guild deck-facts <slug> [--check]` (the poster, plus the head/Infographic Deck/exec summary/marp sources once marked — herald Story 21.3; advisory, exit 0; shape in `spec-pyforge-herald/facts-ledger.md`); after a tracked source moves, `deck-facts <slug> --refresh` rewrites every stale `data-fact` literal on every walked surface from the fresh ledger, keeping its shape (`N/M` vs `N of M`, a leading `v`) and skipping nested or row-less marks.
 6. **Verify** against [Acceptance criteria](#acceptance-criteria).
 7. **Append a new Worked Example** recording the concrete parameters, slide
    count, act structure, and the PR/commit refs. That becomes a permanent record.
@@ -326,7 +326,7 @@ archive of record** — every Design-side edit session ends with a byte-exact
 pull to `presentations/<slug>/project/` and a commit (per-deck README ledgers
 track etags). **The infographic standard** — floors, act arc, section set, diagram set,
 authoring template and the README ledger entry — has one home:
-`_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-currency/infographic-standard.md`
+`_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/infographic-standard.md`
 (`spec-deck-family-currency` CAP-1). Unifying Strategy is the structure, acts and length
 reference; Warden is the density and visual-form reference (its designated-best
 `Warden Infographic standalone.html` is copied into every deck project as `reference/` for

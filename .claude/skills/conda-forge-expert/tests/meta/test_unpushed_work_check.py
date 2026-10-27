@@ -1,7 +1,7 @@
 """Meta-test: `unpushed-work-check` measures durability by TIP, not by name.
 
-Story 3.10 / FR-171 (`docs/dreams/durable-runs.md`). `find_unpushed` used to
-skip any local branch whose NAME existed on origin:
+Story 3.10 / FR-171 (`archive/docs/dreams/durable-runs.md`). `find_unpushed`
+used to skip any local branch whose NAME existed on origin:
 
     if not br or br in remote:
         continue

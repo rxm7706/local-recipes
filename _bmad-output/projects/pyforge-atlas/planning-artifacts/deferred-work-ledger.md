@@ -22,13 +22,13 @@ entries** — it stops dead after `DW-B2-5`, collateral of the 2026-07-19 copy
 failure — and that directory is **gitignored**, so it carries no durable copy.
 
 It was briefly believed the other 45 were lost. **They were not.** They survive
-with full bodies in `../spec-archive/ATLAS-BMAD-SPECS-CONSOLIDATED.md`, which is
+with full bodies in `archive/_bmad-output/projects/pyforge-atlas/spec-archive/ATLAS-BMAD-SPECS-CONSOLIDATED.md`, which is
 git-tracked. This file consolidates both sources into one durable ledger in
 Tier-2 `planning-artifacts/`, where it cannot be lost to a Tier-3 accident again.
 
 ## Provenance
 
-- 43 entries recovered from `../spec-archive/ATLAS-BMAD-SPECS-CONSOLIDATED.md`
+- 43 entries recovered from `archive/_bmad-output/projects/pyforge-atlas/spec-archive/ATLAS-BMAD-SPECS-CONSOLIDATED.md`
 - 9 entries from the surviving `implementation-artifacts/deferred-work.md`
   (where both had an entry, the longer body won)
 - **0 lost.** `DW-A2-P4` and `DW-D2` were previously recorded here as "the only
@@ -3831,7 +3831,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   closed_by: Story 27.4
   resolution: Story 27.4
 
-  verified: 2026-10-04 — closed — Story 27.4; verified: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/catalog-sources.md:39
+  verified: 2026-10-04 — closed — Story 27.4; verified: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/catalog-sources.md:39
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4533,7 +4533,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   closed_by: Story 27.4
   resolution: Story 27.4
 
-  verified: 2026-10-04 — closed — Story 27.4; verified: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/catalog-sources.md:39
+  verified: 2026-10-04 — closed — Story 27.4; verified: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/catalog-sources.md:39
 
   verified: 2026-09-08 — still-open — CONFIRMED as a doc-vs-code divergence, with the code side being correct. `catalog-sources.md`'s Tier 2 table still names `artifactory_downloads_raw` under `artifactory_downloads`, while what shipped is `enterprise_jfrog_names` bucketed under `upstream_discovery` in `PREFIX_TO_PIPELINE`. The diff correctly implements the intent-contract; the companion planning doc was never reconciled and remains stale.
 

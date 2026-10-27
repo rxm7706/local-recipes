@@ -135,7 +135,7 @@ authoritative. Build-target mermaid only in the living file.
 Historical 10-layer / `services/` / `:800x` illustration, sizing, station
 reviews, extended Grounding (2026-08-30), fleet evidence, and realization
 entries through 2026-08-24:
-[`archive/pyforge-unifying-strategy-2026-08-23-topology.md`](archive/pyforge-unifying-strategy-2026-08-23-topology.md).
+[`archive/docs/dreams/pyforge-unifying-strategy-2026-08-23-topology.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/pyforge-unifying-strategy-2026-08-23-topology.md>).
 
 ## The Dream
 
@@ -512,12 +512,12 @@ Measured from ``pixi.lock`` (not a cross-minor solver benchmark). Regenerate wit
 ## Fleet conventions (one vocabulary)
 
 Contract is Grounding (2026-08-30). Ten-row evidence table:
-[archive § Fleet conventions](archive/pyforge-unifying-strategy-2026-08-23-topology.md).
+[archive § Fleet conventions](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/pyforge-unifying-strategy-2026-08-23-topology.md>).
 
 ## Living names (`python-<role>-<class>`)
 
 Formula: `python-<role>-<class>`. Full map:
-[archive § Living names](archive/pyforge-unifying-strategy-2026-08-23-topology.md).
+[archive § Living names](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/pyforge-unifying-strategy-2026-08-23-topology.md>).
 Destination: **`python-foundry`**; mount **`src/platform/`**; eight stations.
 
 ## Cutover to `python-foundry` (build target, 2026-09-04)
@@ -929,7 +929,7 @@ list is their decomposition input. None of this waits on B, and none of it flips
 
 ## Realization log
 
-Entries through 2026-08-31: [archive § Realization log (historical)](archive/pyforge-unifying-strategy-2026-08-23-topology.md).
+Entries through 2026-08-31: [archive § Realization log (historical)](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/pyforge-unifying-strategy-2026-08-23-topology.md>).
 
 - **2026-09-01** — Folded `pyforge-target-monorepo` (tree + phases 0–6) and
   `pyforge-foundry-unifying-architecture` (`python-<role>-<class>`) into this

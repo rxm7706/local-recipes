@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 725
+# stories: 728
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -91,6 +91,7 @@ development_status:
   110-8-managed-region-upgrades-sits-behind-a-kill-switch: done
   110-9-adopt-onto-a-living-repo-sits-behind-a-kill-switch: done
   111-1-marshal-s-54-archived-dreams-leave-the-live-tree: done
+  112-1-marshal-s-absorbed-spec-folders-move-to-the-archive-home: done
   12-1-full-pixi-wiring-distribution-and-repo-gate-compliance: done
   12-2-the-local-recipes-empty-plan-oracle-critical: done
   12-3-offline-operation-and-the-egress-counter: done
@@ -551,6 +552,8 @@ development_status:
   epic-110-retrospective: optional
   epic-111: done
   epic-111-retrospective: optional
+  epic-112: done
+  epic-112-retrospective: optional
   epic-12: done
   epic-12-retrospective: optional
   epic-13: done

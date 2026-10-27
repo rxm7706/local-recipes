@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: warden
-source_fingerprint: e87f8a243cbd6017
-story_count: 67
+source_fingerprint: 5af67278e8192695
+story_count: 68
 test_file_count: 80
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-warden`
-- **Stories parsed:** 67
-- **Epics parsed:** 22
+- **Stories parsed:** 68
+- **Epics parsed:** 23
 - **Test files inventoried:** 80 under `src/shared/packages/pyforge-warden/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `e87f8a243cbd6017`
+- **Source fingerprint:** `5af67278e8192695`
 
 ## Risk Assessment
 
@@ -56,6 +56,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 20: The warden Spec's capability text is whole again, and its NFRs get an owner (spec-one-chain-per-station CAP-5 amended, CAP-3)
 - Epic 21: Warden's planning artifacts fit the one-chain shape (spec-one-chain-per-station CAP-11)
 - Epic 23: The archived warden Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
+- Epic 24: The absorbed warden Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
 
 ### Low-risk epics
 
@@ -217,6 +218,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 20.2 | Every warden NFR names the capabilities it bounds | none observed |
 | 21.1 | Warden's archived compliance-gates Spec folder moves to the archive home | none observed |
 | 23.1 | Warden's four archived Dreams leave the live tree | none observed |
+| 24.1 | Warden's absorbed Spec folders move to the archive home | none observed |
 
 ## Quality Gates
 

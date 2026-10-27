@@ -436,3 +436,135 @@ archived Spec folders (each moving with its memlog and companions);
 split-off snapshot rather than a fold (steward Story 43.1), which
 `fold-complete` has nothing to prove for and which moves with its own
 reader check; and step 3, `docs/intake/`'s routed items and `docs/specs/`.
+
+## 2026-10-27 — The absorbed Spec folders and the last side archives leave the live tree
+
+**What was found.** PR #2328 moved the archived Dreams on 2026-10-26 and
+named what was left of CAP-11. Measured on `main` at `9dd0a8f1f9`:
+
+- **Absorbed Spec folders.** 154 `status: absorbed` Spec folders still sit
+  under the station `specs/` directories: marshal 56, steward 35, scribe
+  16, doctor 14, mason 11, atlas 10, herald 9 and warden 3. No folder reads
+  `archived` any more, because steward 113.1 and warden 21.1 moved theirs.
+  The 154 folders hold 379 files: each pointer `SPEC.md`, its `.memlog.md`,
+  and 71 companions.
+- **Live companions.** Twelve of the 71 companions are not records.
+  Either a program, a test or a workflow opens the file, or an instruction
+  surface names it as the current home of something:
+  - herald's deck facts catalog and infographic standard
+    (`spec-deck-family-currency/facts-ledger.md`, `infographic-standard.md`);
+  - steward's bmad-suite install matrix, adoption register, release
+    cadence and install-class playbook;
+  - the pap host spine (`spec-python-agent-platform/ARCHITECTURE-SPINE.md`,
+    cited as `pap:AD-n`), which `ad-citation` reads through its
+    `specs/*/ARCHITECTURE-SPINE.md` glob;
+  - the build-league measure catalog that `pyforge.core.league_measure`
+    reads;
+  - the intelligence-hub vocabulary map, which the Charter names as the
+    home of the inventories;
+  - atlas's catalog-sources list, which its planning-record meta-test
+    reads;
+  - mason's CFE-rebuild `campaign-state.yaml`, which
+    `cfe_rebuild_guard_check` reads;
+  - marshal's token-economy `integration-layers.md`, which the
+    structure-graph benchmark measures.
+- **`docs/intake/`.** It holds its README and two drops. Both drops are
+  routed and their appends have landed: `estate-refresh/` went to steward
+  Epic 100 (`spec-pyforge-steward:CAP-167`), and `ci-pause-control-plane/` went to steward Epic 99
+  (`spec-pyforge-steward:CAP-166`).
+- **`docs/specs/`.** It has been empty since doctor Story 37.1
+  (2026-10-10), which also retired `check_spec_indexed`.
+- **The side archives.** `docs/dreams/archive/` still holds the 2026-08-23
+  topology snapshot (steward Story 43.1). Atlas's `spec-archive/` still
+  holds 29 files.
+- **CFE docstrings.** Two conda-forge-expert meta-test docstrings still
+  name a moved Dream by its old path.
+
+**Ruled (operator, 2026-10-27).**
+
+1. **One PR closes CAP-11.**
+2. **Live companions are carried, not archived.** Before its absorbed
+   folder moves, a live companion is carried with `git mv` into its
+   station Spec folder (`specs/spec-pyforge-<station>/<same name>`), and
+   its readers follow it there. The archive holds retired things only.
+   This is a recorded deviation from §11 step 2's "every companion": a
+   live companion leaves its absorbed folder before the folder moves.
+3. **The `SPEC.md` lines are script-rendered.** Lines that name a moved
+   folder or a carried companion are rendered by the memlog-first,
+   anchor-asserting script this Spec's CAP-3 fold procedure uses, with
+   both self-validate passes logged.
+
+**What it looks like when fixed.**
+
+- **Absorbed folders.** No station `specs/` directory holds a
+  `status: absorbed` folder. Each of the 154 sits at `archive/<original
+  path>` with its pointer `SPEC.md`, its memlog and its record companions.
+  Each memlog whose folder gave up a companion says where it went.
+- **Intake and side archives.** `docs/intake/` holds only its README, and
+  its two drops sit under `archive/docs/intake/`. `docs/dreams/archive/`
+  and atlas's `spec-archive/` are gone. Atlas's files sit under `archive/`
+  at their original paths. The topology snapshot folds into the Dream
+  archive at `archive/docs/dreams/<same name>`, the path doctor's
+  `fold-complete` baseline already names.
+- **Pointers follow, records do not.** Every live pointer follows its
+  file: the code, the tests, the workflows, `AGENTS.md`, the how-tos, the
+  deck fact headers, the capability ledger's source paths and the station
+  Specs. Dated records keep the path they were written with.
+- **Detector baselines.** `chain-sprawl`'s baseline drops the entries of
+  the moved folders.
+- **CFE docstrings.** The two docstrings name the archive path, landed with
+  a conda-forge-expert retro.
+
+**Constraints.**
+
+- Every move is a `git mv`, and nothing is deleted.
+- A moved file's text is unchanged, with one exception: the absorbed
+  memlog event appended before the move.
+- No CAP, no FR and no AD is minted. The CAP is this Spec's CAP-11. Each
+  station whose folders move gets one relay story: atlas 45.1, doctor
+  54.1, herald 49.1, marshal 112.1, mason 36.1, scribe 30.1, steward 116.1
+  and warden 24.1.
+- `SPEC.md` is never hand-edited.
+
+**After the independent review (2026-10-27).** An independent review of
+the diff found four gaps. They are fixed in the same PR.
+
+- **Lost drift governance.** Two absorbed Specs, `spec-packaging-factory`
+  and `spec-conda-forge-expert-rebuild`, were still the only drift
+  governors of the 412 conda-forge-expert files, under a CHANGELOG
+  sentinel. Moving them left those files with no drift check.
+
+  **Ruled (operator, 2026-10-27): "Mason governs, normal drift".**
+  `spec-pyforge-mason` now governs the CFE surface. A CFE edit needs a
+  mason memlog line naming each changed path, and a scoped stamp, besides
+  the CFE CHANGELOG.
+
+  The review flagged three more files. Re-checked against each absorbed
+  Spec's frontmatter, none of them had a drift owner on `main` either:
+  - `scripts/bmad_drift_check.py` and `scripts/spec_surface_check.py`
+    stay on the allowlist, by design.
+  - Marshal's `adapters/harness_bmadloop.py` and `cli/dispatch.py` now
+    have `spec-pyforge-marshal` as their drift owner.
+- **Two more live companions.** The review found two more companions that
+  fit ruling 2. Both are carried into `spec-pyforge-steward/`:
+  - `failure-modes.md`: the release cadence appends traps to it, and
+    steward's upgrade code cites them.
+  - `cluster-bringup-facts.md`: the OCP how-to calls it the ground truth.
+
+  That makes fourteen live companions. Atlas's kedro skills audit report
+  and VS Code decision record are dated records that atlas's Spec cites as
+  evidence. They stay in the archive.
+- **Missed pointers.** The rewrite rule missed some pointers. It did not
+  match paths split across two lines, nor relative `../../spec-archive/`
+  links. It also mechanically re-pointed three marshal `index.md` rows into
+  the wrong station. These now resolve.
+- **Wrong claims.** The carried spine is the pap host spine, not the canopy
+  spine. A dated note in the spine says its `SPEC.md` is the archived
+  python-agent-platform Spec. Three edits break the "moved text is
+  unchanged" claim:
+  - A carried companion's relative links and paths were re-pointed inside
+    the file (`install-class-playbook.md`, `campaign-state.yaml`, the
+    spine's frontmatter).
+  - Two closed atlas deferred-work entries had `verified:` citations of
+    `catalog-sources.md:39`. They now name the carried file, because
+    atlas's planning-record test resolves every cited line.

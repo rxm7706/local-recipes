@@ -30,7 +30,7 @@ def _playbook() -> Path:
     return (
         _repo_root()
         / "_bmad-output/projects/pyforge-steward/planning-artifacts/specs"
-        / "spec-bmad-suite-install-class-wiring/install-class-playbook.md"
+        / "spec-pyforge-steward/install-class-playbook.md"
     )
 
 
@@ -38,7 +38,7 @@ def _matrix() -> Path:
     return (
         _repo_root()
         / "_bmad-output/projects/pyforge-steward/planning-artifacts/specs"
-        / "spec-bmad-suite-channel-product/install-matrix.md"
+        / "spec-pyforge-steward/install-matrix.md"
     )
 
 
@@ -132,7 +132,7 @@ def _dashboard_repo(tmp_path: Path, *, task: bool = True, upload: str | None = "
     playbook = (
         tmp_path
         / "_bmad-output/projects/pyforge-steward/planning-artifacts/specs"
-        / "spec-bmad-suite-install-class-wiring/install-class-playbook.md"
+        / "spec-pyforge-steward/install-class-playbook.md"
     )
     playbook.parent.mkdir(parents=True)
     playbook.write_text("Kedro-Viz: `viz-publish-stage`, `kedro-viz-export`; Lane 1 `/console/`.\n", encoding="utf-8")
@@ -185,15 +185,15 @@ def test_prove_fails_when_playbook_improvises_installer(tmp_path: Path):
     playbook = (
         tmp_path
         / "_bmad-output/projects/pyforge-steward/planning-artifacts/specs"
-        / "spec-bmad-suite-install-class-wiring/install-class-playbook.md"
+        / "spec-pyforge-steward/install-class-playbook.md"
     )
     playbook.parent.mkdir(parents=True)
     matrix = (
         tmp_path
         / "_bmad-output/projects/pyforge-steward/planning-artifacts/specs"
-        / "spec-bmad-suite-channel-product/install-matrix.md"
+        / "spec-pyforge-steward/install-matrix.md"
     )
-    matrix.parent.mkdir(parents=True)
+    matrix.parent.mkdir(parents=True, exist_ok=True)  # same folder as the playbook since CAP-11
     matrix.write_text("npx bmad-method install\n", encoding="utf-8")
     playbook.write_text(
         "## Fresh-clone class-path (CAP-3)\n\nDrive `new Installer()` from the transcript.\n",

@@ -13,7 +13,7 @@ companions:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 sources:
   - ../../../../../../docs/dreams/pyforge-unifying-strategy.md
-  - ../../../../../../docs/dreams/archive/pyforge-unifying-strategy-2026-08-23-topology.md
+  - ../../../../../../archive/docs/dreams/pyforge-unifying-strategy-2026-08-23-topology.md
   - ../../research/technical-pyforge-unifying-strategy-bmad-method-whitepaper-2026-09-25.md
 open_questions: []
 ---

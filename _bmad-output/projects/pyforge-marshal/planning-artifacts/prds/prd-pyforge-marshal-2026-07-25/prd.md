@@ -29,8 +29,8 @@ inputs:
   - docs/dreams/ecosystem-crew.md
   - archive/docs/dreams/agent-portability.md
   - archive/docs/dreams/agentic-sdlc-autonomy.md
-  - _bmad-output/projects/local-recipes/planning-artifacts/specs/spec-bmad-loop-governance/SPEC.md
-  - _bmad-output/projects/local-recipes/planning-artifacts/specs/spec-multi-loop-isolation/SPEC.md
+  - archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-governance/SPEC.md
+  - archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-multi-loop-isolation/SPEC.md
   - docs/specs/bmad-loop-adoption.md
   - docs/specs/copilot-bridge-vscode-extension.md
   - docs/specs/bmad-copilot-adapter-upstream.md

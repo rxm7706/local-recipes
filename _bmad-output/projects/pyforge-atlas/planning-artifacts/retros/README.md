@@ -19,9 +19,9 @@ Atlas ran through an **in-session agent loop**, not `bmad-loop`, so no
 `.bmad-loop/runs/` journals exist. These retros are reconstructed from
 **tracked** evidence only:
 
-- `../../spec-archive/pyforge-atlas-effort-run-log.md` — per-wave narrative, PR
+- `archive/_bmad-output/projects/pyforge-atlas/spec-archive/pyforge-atlas-effort-run-log.md` — per-wave narrative, PR
   numbers, per-story review findings, the 54-deferral index
-- `../../spec-archive/retro-story-files/` — 20 reconstructed story files with Dev
+- `archive/_bmad-output/projects/pyforge-atlas/spec-archive/retro-story-files/` — 20 reconstructed story files with Dev
   Agent Record / Completion Notes / File List / Review Triage Log
 - `../epics.md` — intent + acceptance criteria
 - merged PRs **#58–#105** and the `main` commit log

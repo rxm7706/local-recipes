@@ -633,7 +633,7 @@ _FACTS_METHOD = (
 
 
 class HeraldFactsFormatter(QueryFormatterPlugin):
-    """Herald's facts-ledger shape (`spec-deck-family-currency/facts-ledger.md`):
+    """Herald's facts-ledger shape (`spec-pyforge-herald/facts-ledger.md`):
     `deck` / `persona` / `derived_at` / `tree` / `facts[{id, value, source, method,
     shown_as}]`. `deck`, `persona` and `tree` come from kwargs (Herald's own
     `deck-facts` derives `tree` from HEAD; this export does not run git)."""

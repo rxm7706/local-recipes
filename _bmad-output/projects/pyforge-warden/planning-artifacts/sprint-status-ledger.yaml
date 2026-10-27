@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: warden
-# stories: 111
+# stories: 114
 development_status:
   1-1-frozen-contract-verdict-lattice-projection-safety: done
   1-2-interfaces-null-engine-regression-harness-socket-deny: done
@@ -57,6 +57,7 @@ development_status:
   20-2-every-warden-nfr-names-the-capabilities-it-bounds: done
   21-1-warden-s-archived-compliance-gates-spec-folder-moves-to-the-archive-home: done
   23-1-warden-s-four-archived-dreams-leave-the-live-tree: done
+  24-1-warden-s-absorbed-spec-folders-move-to-the-archive-home: done
   3-1-configurable-policy: done
   3-2-auditable-expiring-waivers: done
   3-3-waiver-expiry-warn-only-adoption-on-ramp: done
@@ -111,6 +112,8 @@ development_status:
   epic-21-retrospective: optional
   epic-23: done
   epic-23-retrospective: optional
+  epic-24: done
+  epic-24-retrospective: optional
   epic-3: done
   epic-3-retrospective: done
   epic-4: done

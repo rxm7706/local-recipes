@@ -1,6 +1,6 @@
 # GitHub Projects V2 → `github_metrics` (Story 12.8)
 
-Read-only dlt ingest kin to [`spec-jira-github-projects-sync`](../../../../_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-jira-github-projects-sync/SPEC.md) Mode B — **not** a second sync engine and never calls Jira or `steward sync reconcile`.
+Read-only dlt ingest kin to [`spec-jira-github-projects-sync`](../../../../archive/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-jira-github-projects-sync/SPEC.md) Mode B — **not** a second sync engine and never calls Jira or `steward sync reconcile`.
 
 ## Prerequisites
 

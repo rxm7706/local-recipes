@@ -34,7 +34,7 @@ git history, or on disk. **There is nothing to recover — only to honestly reco
 1. **In each tracked spec** (this dir) — the `## Dev narrative — recovered from the merged record`
    section: the story's PR body (#82–#102, the real dev summary) + its `main` commit log (the
    review-fix commits are the review-triage trail for B10 / E1 / F3 / G2).
-2. **`../../spec-archive/`** (the operator's web-session archive) — the richer BMAD-story-format
+2. **`archive/_bmad-output/projects/pyforge-atlas/spec-archive/`** (the operator's web-session archive) — the richer BMAD-story-format
    reconstruction: `retro-story-files/<epic>-<story>-<id>.md` (Story / AC / Tasks / Dev Notes /
    Dev Agent Record / File List / Review Triage Log, built from the agent-loop transcripts), plus
    `ATLAS-B9-H4-SPECS-WITH-PR-EVIDENCE.md`, `ATLAS-BMAD-SPECS-CONSOLIDATED.md` (the dump the 12 were
@@ -44,7 +44,7 @@ git history, or on disk. **There is nothing to recover — only to honestly reco
 ## How each class was recovered
 
 - **The 12 full originals** — from `ATLAS-BMAD-SPECS-CONSOLIDATED.md` (operator-provided, session
-  `01FYyQvBJuXwySiaMUUYCqBZ`; tracked in `../../spec-archive/`). The only source that preserved
+  `01FYyQvBJuXwySiaMUUYCqBZ`; tracked in `archive/_bmad-output/projects/pyforge-atlas/spec-archive/`). The only source that preserved
   them: atlas dev sessions ran on `claude.ai/code` (web), so their transcripts are not in the local
   `~/.claude/projects/` store, and no run-worktree snapshots or git history held them either
   (confirmed by a full scan of 448 local transcripts, all refs, reflog, 123 dangling objects, and

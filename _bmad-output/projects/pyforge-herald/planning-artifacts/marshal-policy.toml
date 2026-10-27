@@ -306,7 +306,7 @@ verify_commands = [
   "docs/reference/**",
   "docs/explanation/**",
   "docs/dreams/README.md",
-  "docs/dreams/archive/pyforge-unifying-strategy-2026-08-23-topology.md",
+  "archive/docs/dreams/pyforge-unifying-strategy-2026-08-23-topology.md",
   ".github/workflows/dashboard.yml",
   ".github/workflows/docsite-check.yml",
   "scripts/pixi_version_registry.py",

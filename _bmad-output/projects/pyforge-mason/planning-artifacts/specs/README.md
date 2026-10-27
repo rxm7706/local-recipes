@@ -13,9 +13,12 @@ claim of "no promotion gap" was false: specs 1-5..1-10 lived only in
 gitignored Tier-3 and were promoted by the audit (the warden-loss failure
 mode, caught before a teardown could eat them).
 
-This directory also holds a Dream-level Spec for a Mason-owned satellite
+This directory held a Dream-level Spec for a Mason-owned satellite
 Dream (`spec-conda-forge-expert-rebuild/SPEC.md`, distinct from the
-per-story `spec-<epic>-<story>-...md` files above) — `status: in-progress`
+per-story `spec-<epic>-<story>-...md` files above; absorbed, it moved to
+`archive/_bmad-output/projects/pyforge-mason/planning-artifacts/specs/` on 2026-10-27 with the other
+absorbed pointer Specs, Story 36.1, spec-one-chain-per-station:CAP-11, and its live
+`campaign-state.yaml` was carried into `spec-pyforge-mason/`) — `status: in-progress`
 as of 2026-08-27 (was `draft` at the 2026-08-08 triage, `ready` from
 2026-08-10): decomposed into Epic 6 (done) and Epic 12 (backlog); see its
 own § Decomposition record. Historical pointer:

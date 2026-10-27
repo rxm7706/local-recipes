@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.102.0
+version: 8.102.1
 allowed-tools: [conda_forge_server]
 ---
 
@@ -4629,6 +4629,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.102.1** (Oct 27, 2026) — **mason Story 36.1 Rule-2 retro: three meta-test docstrings name the archived paths they cite. `spec-pyforge-mason` now governs this skill's surface with normal drift, so a CFE edit needs a mason memlog line and a scoped stamp (PATCH; docstrings only).** See `CHANGELOG.md`.
 - **v8.102.0** (Oct 26, 2026) — **mason Story 34.1 Rule-2 retro: the atlas reads the conda-forge bot's split graph repos; G123 (a redirected repo serves another repo's archive) (MINOR).** See `CHANGELOG.md`.
 - **v8.101.4** (Oct 22, 2026) — **mason Story 26.2 Rule-2 retro: CFE's tests never fetch conda-smithy's remote lint data (PATCH; tests only).** See `CHANGELOG.md`.
 - **v8.101.3** (Oct 22, 2026) — **doctor Story 45.3 Rule-2 retro: the fleet-picture ATTENTION test names any probe `main()` calls that it does not stub (PATCH; tests only).** See `CHANGELOG.md`.

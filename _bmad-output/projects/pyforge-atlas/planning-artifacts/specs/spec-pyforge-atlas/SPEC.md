@@ -86,6 +86,7 @@ companions:
   - gate-contract.md         # the 7 gates, what each proves and what they refuse to do
   - constitution-provenance.md  # [Unity satellite, folded in 2026-08-02] the 14-Article Constitution map + the 8 required amendments
   - live-sources.md          # CAP-64..CAP-68: each live source, the datasets it fills, its legacy phase, parity measure, credential, story
+  - catalog-sources.md       # live companion carried 2026-10-27 from spec-atlas-kedro-catalog-expansion (spec-one-chain-per-station:CAP-11)
 sources:
   - ../../../../../../docs/dreams/pyforge-atlas.md
 open_questions: []

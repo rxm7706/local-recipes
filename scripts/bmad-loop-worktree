@@ -8,7 +8,7 @@ also fight over the tree's HEAD. bmad-loop already isolates each *story* in a
 worktree; this script adds the missing layer — one worktree per *loop home* —
 so loops for different BMAD projects run concurrently on one machine.
 
-Spec: _bmad-output/projects/local-recipes/planning-artifacts/specs/spec-multi-loop-isolation/
+Spec: archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-multi-loop-isolation/
 Owner Dream: docs/dreams/pyforge-marshal.md (regenerable-factory Wave 0).
 
 What provisioning does:

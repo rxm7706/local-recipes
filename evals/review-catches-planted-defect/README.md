@@ -41,5 +41,5 @@ The clean arm is a reproducible false-positive source in live testing: `edge-cas
 exhaustive-enumeration methodology reliably finds a *different* real boundary concern (float
 rounding, NaN handling, etc.) at the same `pkg/discount.py:17`, which the `covers-by-key` oracle's
 file:line-only matching cannot distinguish from a true catch. See
-`_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-eval-quality/.memlog.md`
+`archive/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-eval-quality/.memlog.md`
 for the full empirical record.

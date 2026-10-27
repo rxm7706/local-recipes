@@ -10,14 +10,14 @@
 > from steward's adoption register (AD-2), and a version the sources disagree on is shown
 > as a disagreement, never resolved here.
 >
-> Generated: 2026-10-25. Regenerate: `pixi run -e pyforge-guild scribe catalog bmad-estate --write`.
+> Generated: 2026-10-27. Regenerate: `pixi run -e pyforge-guild scribe catalog bmad-estate --write`.
 > Drift detector: `pixi run -e pyforge-guild bmad-estate-check` (structured: a section reds when
 > its derived facts move, prose is exempt).
 
 <!-- bmad-estate-digest: installed=2a8aac8d7467 -->
 <!-- bmad-estate-digest: skills=781de936eb78 -->
 <!-- bmad-estate-digest: phases=b74a30513e46 -->
-<!-- bmad-estate-digest: suite=03ee22708ed5 -->
+<!-- bmad-estate-digest: suite=864b88633031 -->
 <!-- bmad-estate-digest: pins=a16daebabc88 -->
 <!-- bmad-estate-digest: harness=c35ae088e6fe -->
 <!-- bmad-estate-digest: cadence=bd38c415273d -->
@@ -296,7 +296,7 @@ Module docs — Core: <https://docs.bmad-method.org/>.
 ## 4. The bmad-suite roster
 
 Source: `recipes/bmad-suite/suite-members.yaml` (the population) joined with
-`_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` § 1 (verdict, wielder, provisioning path, hazards — quoted,
+`_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/adoption-register.md` § 1 (verdict, wielder, provisioning path, hazards — quoted,
 never re-decided) and each member's `recipes/<member>/recipe.yaml`. 13 active members.
 
 | Member | Register version | Install class | Verdict | Wielder | Provisioning path | Hazards | Local recipe |
@@ -321,15 +321,15 @@ Deprecated catalog rows (kept for drift completeness, never a metapackage run-de
 
 | Member | Source | Source | Source |
 |---|---|---|---|
-| `bmad-method` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 6.12.0 | `pixi.toml` → 6.12.2 | `recipes/bmad-method/recipe.yaml` → 6.12.1 |
-| `bmad-loop` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 0.11.1 | `pixi.toml` → 0.12.0 | `recipes/bmad-loop/recipe.yaml` → 0.12.0 |
-| `bmad-method-test-architecture-enterprise` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 1.24.0 | `pixi.toml` → 1.27.2 | `recipes/bmad-method-test-architecture-enterprise/recipe.yaml` → 1.27.2 |
-| `bmad-module-skill-forge` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 2.1.0 | `pixi.toml` → 3.0.0 | `recipes/bmad-module-skill-forge/recipe.yaml` → 2.2.0 |
-| `bmad-eval-quality` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 0.2.0.dev0 @3172162f | `pixi.toml` → 4.3.0 | `recipes/bmad-eval-quality/recipe.yaml` → 4.3.0 |
-| `bmad-utility-skills` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 2.0.0 @HEAD | `pixi.toml` → 2.0.0 | `recipes/bmad-utility-skills/recipe.yaml` → 2.0.0 |
-| `bmad-labs-skills` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 1.0.0.dev0 @HEAD | `pixi.toml` → 1.0.0.dev0 | `recipes/bmad-labs-skills/recipe.yaml` → 1.0.0.dev0 |
-| `bmad-module-template` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 0.1.0 @HEAD | `pixi.toml` → 0.1.0 | `recipes/bmad-module-template/recipe.yaml` → 0.1.0 |
-| `bmad-manticore` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 3.1.0.dev0 @c9bcf759 | `pixi.toml` → 3.1.0.dev0 | `recipes/bmad-manticore/recipe.yaml` → 3.1.0.dev0 |
+| `bmad-method` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/adoption-register.md` → 6.12.0 | `pixi.toml` → 6.12.2 | `recipes/bmad-method/recipe.yaml` → 6.12.1 |
+| `bmad-loop` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/adoption-register.md` → 0.11.1 | `pixi.toml` → 0.12.0 | `recipes/bmad-loop/recipe.yaml` → 0.12.0 |
+| `bmad-method-test-architecture-enterprise` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/adoption-register.md` → 1.24.0 | `pixi.toml` → 1.27.2 | `recipes/bmad-method-test-architecture-enterprise/recipe.yaml` → 1.27.2 |
+| `bmad-module-skill-forge` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/adoption-register.md` → 2.1.0 | `pixi.toml` → 3.0.0 | `recipes/bmad-module-skill-forge/recipe.yaml` → 2.2.0 |
+| `bmad-eval-quality` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/adoption-register.md` → 0.2.0.dev0 @3172162f | `pixi.toml` → 4.3.0 | `recipes/bmad-eval-quality/recipe.yaml` → 4.3.0 |
+| `bmad-utility-skills` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/adoption-register.md` → 2.0.0 @HEAD | `pixi.toml` → 2.0.0 | `recipes/bmad-utility-skills/recipe.yaml` → 2.0.0 |
+| `bmad-labs-skills` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/adoption-register.md` → 1.0.0.dev0 @HEAD | `pixi.toml` → 1.0.0.dev0 | `recipes/bmad-labs-skills/recipe.yaml` → 1.0.0.dev0 |
+| `bmad-module-template` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/adoption-register.md` → 0.1.0 @HEAD | `pixi.toml` → 0.1.0 | `recipes/bmad-module-template/recipe.yaml` → 0.1.0 |
+| `bmad-manticore` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/adoption-register.md` → 3.1.0.dev0 @c9bcf759 | `pixi.toml` → 3.1.0.dev0 | `recipes/bmad-manticore/recipe.yaml` → 3.1.0.dev0 |
 
 Rendered as read; the reconcile is steward's (a deferred-work row), never this generator's.
 
@@ -400,7 +400,7 @@ Source: `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harnes
 
 ## 7. The release cadence
 
-Source: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/release-cadence.md` (the numbered step titles; owner → verb).
+Source: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/release-cadence.md` (the numbered step titles; owner → verb).
 
 - 1. Doctor — detect.
 - 2. Steward — catalog.

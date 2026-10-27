@@ -1596,7 +1596,9 @@ def test_derive_story_key_falls_back_to_parent_dir_for_generic_stem_real_excerpt
     own worked fallback-slug example ("a fallback slug
     (`deferred-work-visibility`, whose trailing segment is not an
     integer)")."""
-    real = "`_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md`"
+    real = (
+        "`archive/_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md`"
+    )
     assert chain._derive_story_key(real) == "deferred-work-visibility"
 
 
@@ -2288,19 +2290,19 @@ def test_derive_story_key_generic_stems_are_case_insensitive() -> None:
     (wrong) story key."""
     assert (
         chain._derive_story_key(
-            "`_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/Spec.md`"
+            "`archive/_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/Spec.md`"
         )
         == "deferred-work-visibility"
     )
     assert (
         chain._derive_story_key(
-            "`_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/Readme.md`"
+            "`archive/_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/Readme.md`"
         )
         == "deferred-work-visibility"
     )
     assert (
         chain._derive_story_key(
-            "`_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/INDEX.md`"
+            "`archive/_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/INDEX.md`"
         )
         == "deferred-work-visibility"
     )

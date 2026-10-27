@@ -1,9 +1,10 @@
 """Meta-test: `loop_home_staleness()` in fleet_picture.py.
 
-Story 9.4 (`docs/dreams/bmad-loop-baseline-drift.md` incident, 2026-08-15): all
-four active stations' loop homes were found 55-60 commits behind `origin/main`
-with nobody noticing, which is how three stations independently rediscovered
-the same already-fixed bug before their branches caught up. This function
+Story 9.4 (`archive/docs/dreams/bmad-loop-baseline-drift.md` incident,
+2026-08-15): all four active stations' loop homes were found 55-60 commits
+behind `origin/main` with nobody noticing, which is how three stations
+independently rediscovered the same already-fixed bug before their branches
+caught up. This function
 live-fetches `origin main` for each `~/.bmad-loops/pyforge-<slug>` home and
 reports any branch `threshold`+ commits behind, feeding one line per stale
 home into `fleet_picture.py`'s ATTENTION block.

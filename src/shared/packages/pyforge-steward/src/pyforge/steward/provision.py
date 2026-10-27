@@ -485,7 +485,7 @@ _TEMPLATE_AUTHORING_ONLY = (
 _SKIPPED_MODULES: dict[str, str] = {
     "wds": (
         "WDS (bmad-method-wds-expansion) is skip-decided: deprecated upstream "
-        "(spec-bmad-suite-channel-product/install-matrix.md; Dream "
+        "(spec-pyforge-steward/install-matrix.md; Dream "
         "bmad-suite-channel-product — absorbing into bmad-ux). Not in "
         "_SUPPORTED_MODULES."
     ),

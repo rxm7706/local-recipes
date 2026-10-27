@@ -10,7 +10,7 @@ gates: "canopy:FR-7 (removal of the old build path) — this artifact is its pre
 inputs:
   - "pyforge.doctor.sources.fleet_scan"
   - "docs/dashboard/index.html"
-  - "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-factory-console/SPEC.md"
+  - "archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-factory-console/SPEC.md"
 ---
 
 # Console parity inventory

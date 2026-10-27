@@ -1,8 +1,8 @@
 # OpenShift Local cluster bring-up (Story 12.4 / CAP-1)
 
 Reproducible bring-up for the local OCP hybrid environment. Ground truth:
-`cluster-bringup-facts.md` in the steward spec companions folder
-(`_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-local-ocp-hybrid-environment/`).
+`cluster-bringup-facts.md` in the steward station Spec folder
+(`_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/`).
 
 **Baseline:** CRC **2.63.0** bundling OpenShift **4.22.7** (verified 2026-08-22).
 

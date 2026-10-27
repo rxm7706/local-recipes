@@ -229,8 +229,7 @@ _HELP = {
 # the six non-module suite pieces. Cited from install-class-playbook.md;
 # native commands live there (and in install-matrix.md), never invented here.
 INSTALL_CLASS_PLAYBOOK = (
-    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/"
-    "spec-bmad-suite-install-class-wiring/install-class-playbook.md"
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/install-class-playbook.md"
 )
 _PROVISION_PLAYBOOK_EPILOG = (
     "Non-module suite pieces (bmad-method, bmad-loop, skill-forge, labs, "

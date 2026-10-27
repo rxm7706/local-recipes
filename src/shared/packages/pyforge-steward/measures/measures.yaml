@@ -3,7 +3,7 @@
 
 catalog:
   name: build-league-measures
-  companion: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-build-league-scorecard/measure-catalog.md
+  companion: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/measure-catalog.md
 
 # Ids retired and removed from `measures` stay listed here so the id can never be reused.
 archived_ids: []
