@@ -43,7 +43,6 @@ gate_mode = "none"
 # the claude map) when the operator says so.
 harness_preference = ["cursor"]
 
-
 # verify_commands: THIS station's own suite. Every home except atlas and warden was
 # cloned from warden's and inherited `pyforge-warden-test`, so a story here would have
 # gone green on warden's tests while this station's own never ran.
@@ -59,19 +58,6 @@ verify_commands = [
 # no wildcard/default key support). This station had no [epic_surfaces] block
 # at all until now. Same stopgap pattern as pyforge-atlas/-marshal/-scribe.
 
-"114" = [  # the CAP-7 retrofit: every pre-rule steward runtime capability sits behind a kill switch (spec-feature-flag-governance CAP-7), added 2026-10-26.
-  "src/shared/packages/pyforge-steward/**",
-  "src/shared/packages/django-pyforge/**",
-  "_bmad-output/projects/pyforge-steward/planning-artifacts/**",
-  "src/platform/config/flags.json",
-  "src/platform/config/flag-overlays.json",
-  "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
-  "src/platform/tests/**",
-  "docs/governance/flag-inventory/pyforge-steward.md",
-  "docs/dreams/pyforge-steward.md",
-  "_bmad-output/projects/*/planning-artifacts/specs/*/.memlog.md",
-  "docs/governance/spec-feature-flag-governance/**",
-]
 
 [epic_surfaces]
 "1" = [
@@ -1524,6 +1510,20 @@ verify_commands = [
 # three times hit the default cap: Story 100.3's fix session was killed at 900 s (MRS-DISP-059) with its edits complete
 # but uncommitted (operator direction 2026-10-13: "adjust the supervisor"). max_parallel restates the default because a
 # declared block replaces the default block whole.
+"114" = [  # the CAP-7 retrofit: every pre-rule steward runtime capability sits behind a kill switch (spec-feature-flag-governance CAP-7), added 2026-10-26.
+  "src/shared/packages/pyforge-steward/**",
+  "src/shared/packages/django-pyforge/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/**",
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
+  "src/platform/tests/**",
+  "docs/governance/flag-inventory/pyforge-steward.md",
+  "docs/dreams/pyforge-steward.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/*/.memlog.md",
+  "docs/governance/spec-feature-flag-governance/**",
+]
+
 [dispatch]
 max_parallel = 1
 verify_fix_wall_clock_minutes = 45
