@@ -1518,6 +1518,27 @@ verify_commands = [
   "docs/governance/spec-feature-flag-governance/**",
 ]
 
+"117" = [  # CAP-175: the preflight and a PR's CI answer within a measured budget; each station suite runs as two halves, added 2026-10-27.
+  "src/shared/packages/pyforge-steward/**",
+  "scripts/coverage_gates_ci.py",
+  "scripts/station_suite_ci.py",
+  "scripts/pre_push_preflight.sh",
+  "scripts/ci_surface_gates.py",
+  "scripts/guild_image_ci.sh",
+  ".github/workflows/**",
+  "docs/governance/ci-surfaces.yaml",
+  "docs/governance/preflight-budgets.toml",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "tests/scripts/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/**",
+  "docs/dreams/pyforge-steward.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/*/.memlog.md",
+]
+
 # dispatch (Story 85.1 / CAP-286 knobs), added 2026-10-13: steward's verify-fix turn gets 45 minutes, not the
 # 15-minute default. pyforge-steward-test alone runs ~4 minutes (2482 tests), so a fix turn that must re-run it two or
 # three times hit the default cap: Story 100.3's fix session was killed at 900 s (MRS-DISP-059) with its edits complete

@@ -465,7 +465,7 @@ Station APIs live at ``/stations/<name>/api/v<N>/`` (not bare ``/api/v1``). Exam
 
 ## Pixi environment matrix (measured)
 
-<!-- pixi-env-matrix:begin lock-sha256=a744d1693aaa533c -->
+<!-- pixi-env-matrix:begin lock-sha256=aad60657205e2505 -->
 
 Measured from ``pixi.lock`` (not a cross-minor solver benchmark). Regenerate with ``python scripts/pixi_env_matrix.py --update --dream docs/dreams/pyforge-unifying-strategy.md`` after lock changes.
 
@@ -500,7 +500,7 @@ Measured from ``pixi.lock`` (not a cross-minor solver benchmark). Regenerate wit
 | ``pyforge-mason`` | ``3.14.*`` | 140 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-scribe`` | ``3.14.*`` | 118 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-scribe-pg`` | ``3.14.*`` | 126 | ``linux-64``, ``osx-arm64-min`` |
-| ``pyforge-steward`` | ``3.14.*`` | 112 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-steward`` | ``3.14.*`` | 114 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-testing-kit`` | ``3.14.*`` | 53 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-warden`` | ``3.14.*`` | 170 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``python-agent-platform`` | ``3.14.*`` | 583 | ``linux-64``, ``osx-arm64-min`` |

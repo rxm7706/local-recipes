@@ -375,3 +375,28 @@ def test_steward_s_job_fires_on_every_docs_site_file_this_test_reads() -> None:
     assert any(path.startswith("docs-site/src/lib/") for path in read)  # a blindness guard: imports were followed
     missing = sorted(path for path in read if not _covered(path, pathspecs))
     assert not missing, f"steward's station-tests job does not fire on files this test reads: {missing}"
+
+
+def test_a_non_docs_dependent_never_hands_the_docs_turn_to_its_dependency() -> None:
+    """Story 117.2: a station's coverage gate depends on its suite. herald's suite is a docs-site lane, but the gate is
+    not, so at the next docs-site turn the install -- the lane other docs-site lanes read -- still goes first."""
+    install = preflight.Lane(task="docs-site-install", environment="site")
+    herald = preflight.Lane(task="pyforge-herald-test", environment="pyforge-herald")
+    gate = preflight.Lane(
+        task="pyforge-herald-coverage-gate",
+        environment="pyforge-herald",
+        depends_on=(("pyforge-herald-test", "pyforge-herald"),),
+    )
+    build = preflight.Lane(task="pages-build", environment="site", depends_on=(("docs-site-install", "site"),))
+    lanes = [install, herald, gate, build]
+    pending = {preflight._lane_key(lane): lane for lane in lanes}
+    assert preflight.DOCS_SITE_TASKS >= {"docs-site-install", "pyforge-herald-test", "pages-build"}
+    assert preflight._next_lane([install, herald], lanes, pending, docs_turn=0) is install
+    # even when nothing pending depends on the install and the gate (a docs-site lane) depends on herald's suite,
+    # the install -- the lane every docs-site lane reads -- takes the turn first
+    del pending[preflight._lane_key(build)]
+    assert preflight._next_lane([install, herald], lanes, pending, docs_turn=0) is install
+    assert preflight._next_lane([herald, install], lanes, pending, docs_turn=0) is install
+    # with the install done, the docs-site lane a pending docs-site lane depends on goes before the first declared one
+    del pending[preflight._lane_key(install)]
+    assert preflight._next_lane([build, herald], lanes, pending, docs_turn=1) is herald

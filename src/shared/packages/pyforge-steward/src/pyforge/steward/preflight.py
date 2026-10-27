@@ -969,15 +969,26 @@ def _next_lane(
 
     Every lane outside :data:`DOCS_SITE_TASKS` keeps its declared turn, its index in ``lanes``. The docs-site lanes,
     which run one at a time, trade turns among themselves only: the next docs-site turn (``docs_turn``, the declared
-    index of the next docs-site lane in declaration order) goes to the ready docs-site lane that pending lanes depend
-    on, else the first one declared. So ``docs-site-install``, then ``pages-build``, take the turns of the docs-site
+    index of the next docs-site lane in declaration order) goes to ``docs-site-install`` when it is ready, else to the
+    ready docs-site lane that pending lanes depend on, else the first one declared. So ``docs-site-install``, then ``pages-build``, take the turns of the docs-site
     lanes declared before them, and herald's built-site tests read this run's install, never a stale one or none at
     all (a fresh worktree). At ``--jobs 1`` every other lane runs at its declared position.
     """
     turns = [(lanes.index(lane), lane) for lane in ready if lane.task not in DOCS_SITE_TASKS]
     docs = [lane for lane in ready if lane.task in DOCS_SITE_TASKS]
     if docs:
-        first = min(docs, key=lambda lane: (not _needed_by_pending_dependent(lane, pending), lanes.index(lane)))
+        # The install every other docs-site lane reads goes first whenever it is ready (herald Story 45.1); then the
+        # lane pending docs-site lanes depend on; then declared order. Story 117.2 made the order explicit: the
+        # station coverage gates depend on their suites, and herald's suite is itself a docs-site lane, so
+        # 'needed by a pending dependent' alone would hand the turn to the suite before the install it reads.
+        first = min(
+            docs,
+            key=lambda lane: (
+                lane.task != DOCS_SITE_INSTALL_TASK,
+                not _needed_by_pending_dependent(lane, pending),
+                lanes.index(lane),
+            ),
+        )
         turns.append((lanes.index(first) if docs_turn is None else docs_turn, first))
     return min(turns, key=lambda turn: turn[0])[1]
 

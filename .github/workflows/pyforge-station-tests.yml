@@ -542,6 +542,8 @@ jobs:
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # Story 117.2: the coverage gate diffs refs/remotes/origin/main...HEAD
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           environments: pyforge-atlas
@@ -554,8 +556,30 @@ jobs:
       # httpfs extension, and test_wasm_smoke.py's WASM_SMOKE_REQUIRED path
       # needs the built WASM artifact. All three provisioned here so a fresh
       # runner has what a maintainer's already-provisioned machine has.
+      # Story 117.7 (spec-pyforge-steward CAP-175; the CAP-174 shape): install the browser alone, launch it
+      # once, and pull its system packages through apt only when it does not launch on the runner image --
+      # the apt download was 636-668 s on a slow mirror for libraries the image already carries.
       - name: Install Chromium for the dashboard E2E + WASM smoke gates
-        run: pixi run --frozen -e pyforge-atlas python -m playwright install --with-deps chromium
+        run: |
+          probe() {
+            pixi run --frozen -e pyforge-atlas python - <<'PY'
+          from playwright.sync_api import sync_playwright
+
+          with sync_playwright() as playwright:
+              playwright.chromium.launch().close()
+          PY
+          }
+          pixi run --frozen -e pyforge-atlas python -m playwright install chromium
+          if probe; then
+            echo "Chromium launches on this runner image; no system packages installed."
+          else
+            echo "::warning::Chromium does not launch on this runner image; installing its system packages through apt (playwright install-deps chromium)."
+            pixi run --frozen -e pyforge-atlas python -m playwright install-deps chromium
+            if ! probe; then
+              echo "::error::Chromium still does not launch after playwright install-deps chromium."
+              exit 1
+            fi
+          fi
       - name: Provision the DuckDB httpfs extension
         run: pixi run --frozen -e pyforge-atlas python -c "import duckdb; duckdb.connect().execute('INSTALL httpfs')"
       - uses: actions/setup-node@v7
@@ -565,6 +589,20 @@ jobs:
         run: pixi run --frozen -e pyforge-atlas python src/shared/packages/pyforge-atlas/wasm/build.py
       - run: pixi run --frozen -e pyforge-atlas kedro-test
       - run: pixi run --frozen -e pyforge-atlas kedro-catalog-check
+      # Story 117.2 (spec-pyforge-steward CAP-175, ruling D2): the floor is judged from the JSON the suite step
+      # above wrote (.steward/coverage/atlas-unit.json); the gate never re-runs the suite. coverage-gates.yml retired.
+      - name: Coverage gate for atlas (reads the suite's own report)
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
+          COVERAGE_GATES_STATIONS: atlas
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="refs/remotes/origin/${GITHUB_BASE_REF}"  # CAP-4: never a name a local ref or tag can wear
+          else
+            BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
+          fi
+          pixi run --frozen -e pyforge-atlas python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report .steward/coverage/atlas-unit.json
 
   doctor-test:
     # ci-surfaces: pyforge-station-tests.doctor-test
@@ -575,11 +613,27 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # Story 117.2: the coverage gate diffs refs/remotes/origin/main...HEAD
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           environments: pyforge-doctor
           cache: true
       - run: pixi run --frozen -e pyforge-doctor pyforge-doctor-test
+      # Story 117.2 (spec-pyforge-steward CAP-175, ruling D2): the floor is judged from the JSON the suite step
+      # above wrote (.steward/coverage/doctor-unit.json); the gate never re-runs the suite. coverage-gates.yml retired.
+      - name: Coverage gate for doctor (reads the suite's own report)
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
+          COVERAGE_GATES_STATIONS: doctor
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="refs/remotes/origin/${GITHUB_BASE_REF}"  # CAP-4: never a name a local ref or tag can wear
+          else
+            BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
+          fi
+          pixi run --frozen -e pyforge-doctor python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report .steward/coverage/doctor-unit.json
 
   herald-test:
     # ci-surfaces: pyforge-station-tests.herald-test
@@ -590,6 +644,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # Story 117.2: the coverage gate diffs refs/remotes/origin/main...HEAD
       # Herald Story 45.1: the last step runs pyforge-herald-test-built, docs-site-install (npm ci in the site env)
       # then herald's suite, so its built-site tests build Astro here instead of skipping; setting up `site` beside
       # herald caches that env. pyforge-herald-test itself stays npm-free for the SBOM laptop gate (fnd:CAP-13).
@@ -612,6 +668,20 @@ jobs:
       - run: pixi run --frozen -e pyforge-herald pyforge-herald-test-built
         env:
           HERALD_DOCS_SITE_REQUIRED: "1"
+      # Story 117.2 (spec-pyforge-steward CAP-175, ruling D2): the floor is judged from the JSON the suite step
+      # above wrote (.steward/coverage/herald-unit.json); the gate never re-runs the suite. coverage-gates.yml retired.
+      - name: Coverage gate for herald (reads the suite's own report)
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
+          COVERAGE_GATES_STATIONS: herald
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="refs/remotes/origin/${GITHUB_BASE_REF}"  # CAP-4: never a name a local ref or tag can wear
+          else
+            BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
+          fi
+          pixi run --frozen -e pyforge-herald python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report .steward/coverage/herald-unit.json
 
   marshal-test:
     # ci-surfaces: pyforge-station-tests.marshal-test
@@ -622,6 +692,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # Story 117.2: the coverage gate diffs refs/remotes/origin/main...HEAD
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           environments: pyforge-marshal
@@ -632,6 +704,20 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
       - run: pixi run --frozen -e pyforge-marshal pyforge-marshal-test
+      # Story 117.2 (spec-pyforge-steward CAP-175, ruling D2): the floor is judged from the JSON the suite step
+      # above wrote (.steward/coverage/marshal-unit.json); the gate never re-runs the suite. coverage-gates.yml retired.
+      - name: Coverage gate for marshal (reads the suite's own report)
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
+          COVERAGE_GATES_STATIONS: marshal
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="refs/remotes/origin/${GITHUB_BASE_REF}"  # CAP-4: never a name a local ref or tag can wear
+          else
+            BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
+          fi
+          pixi run --frozen -e pyforge-marshal python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report .steward/coverage/marshal-unit.json
 
   mason-test:
     # ci-surfaces: pyforge-station-tests.mason-test
@@ -642,11 +728,27 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # Story 117.2: the coverage gate diffs refs/remotes/origin/main...HEAD
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           environments: pyforge-mason
           cache: true
       - run: pixi run --frozen -e pyforge-mason pyforge-mason-test
+      # Story 117.2 (spec-pyforge-steward CAP-175, ruling D2): the floor is judged from the JSON the suite step
+      # above wrote (.steward/coverage/mason-unit.json); the gate never re-runs the suite. coverage-gates.yml retired.
+      - name: Coverage gate for mason (reads the suite's own report)
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
+          COVERAGE_GATES_STATIONS: mason
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="refs/remotes/origin/${GITHUB_BASE_REF}"  # CAP-4: never a name a local ref or tag can wear
+          else
+            BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
+          fi
+          pixi run --frozen -e pyforge-mason python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report .steward/coverage/mason-unit.json
       # Story 16.2: the first real estate caller of `mason recipe build` --
       # runs on every execution of this already-existing lane (not only on
       # demand), against mason's own env, so `mason doctor`'s post-16.1
@@ -683,6 +785,8 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # Story 117.2: the coverage gate diffs refs/remotes/origin/main...HEAD
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           environments: pyforge-scribe
@@ -692,6 +796,20 @@ jobs:
           PGPASSWORD: scribe
         run: psql -h 127.0.0.1 -p 5433 -U postgres -d scribe_graph -c "CREATE EXTENSION IF NOT EXISTS vector;"
       - run: pixi run --frozen -e pyforge-scribe pyforge-scribe-test
+      # Story 117.2 (spec-pyforge-steward CAP-175, ruling D2): the floor is judged from the JSON the suite step
+      # above wrote (.steward/coverage/scribe-unit.json); the gate never re-runs the suite. coverage-gates.yml retired.
+      - name: Coverage gate for scribe (reads the suite's own report)
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
+          COVERAGE_GATES_STATIONS: scribe
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="refs/remotes/origin/${GITHUB_BASE_REF}"  # CAP-4: never a name a local ref or tag can wear
+          else
+            BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
+          fi
+          pixi run --frozen -e pyforge-scribe python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report .steward/coverage/scribe-unit.json
 
   steward-test:
     # ci-surfaces: pyforge-station-tests.steward-test
@@ -702,11 +820,27 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # Story 117.2: the coverage gate diffs refs/remotes/origin/main...HEAD
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           environments: pyforge-steward
           cache: true
       - run: pixi run --frozen -e pyforge-steward pyforge-steward-test
+      # Story 117.2 (spec-pyforge-steward CAP-175, ruling D2): the floor is judged from the JSON the suite step
+      # above wrote (.steward/coverage/steward-unit.json); the gate never re-runs the suite. coverage-gates.yml retired.
+      - name: Coverage gate for steward (reads the suite's own report)
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
+          COVERAGE_GATES_STATIONS: steward
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="refs/remotes/origin/${GITHUB_BASE_REF}"  # CAP-4: never a name a local ref or tag can wear
+          else
+            BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
+          fi
+          pixi run --frozen -e pyforge-steward python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report .steward/coverage/steward-unit.json
 
   warden-test:
     # ci-surfaces: pyforge-station-tests.warden-test
@@ -717,11 +851,27 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # Story 117.2: the coverage gate diffs refs/remotes/origin/main...HEAD
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           environments: pyforge-warden
           cache: true
       - run: pixi run --frozen -e pyforge-warden pyforge-warden-test
+      # Story 117.2 (spec-pyforge-steward CAP-175, ruling D2): the floor is judged from the JSON the suite step
+      # above wrote (.steward/coverage/warden-unit.json); the gate never re-runs the suite. coverage-gates.yml retired.
+      - name: Coverage gate for warden (reads the suite's own report)
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
+          COVERAGE_GATES_STATIONS: warden
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="refs/remotes/origin/${GITHUB_BASE_REF}"  # CAP-4: never a name a local ref or tag can wear
+          else
+            BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
+          fi
+          pixi run --frozen -e pyforge-warden python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report .steward/coverage/warden-unit.json
 
   # Story 48.10: CAP-5 needs a build time — the root Containerfile was
   # referenced by no workflow until this job. Mirrors platform-ci.yml's

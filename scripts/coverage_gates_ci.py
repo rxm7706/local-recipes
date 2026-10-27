@@ -26,7 +26,7 @@ import subprocess
 import sys
 import tempfile
 import tomllib
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -42,9 +42,9 @@ if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from coverage_gate import (
-    format_only_paths,
     STATIONS,
     evaluate_coverage_payload,
+    format_only_paths,
     package_root,
     package_src,
     thresholds_for,
@@ -105,24 +105,45 @@ def _git_diff_names(base: str, head: str) -> list[str]:
 
 
 def _git_show(rev: str, path: str) -> str | None:
-    proc = subprocess.run(["git", "show", f"{rev}:{path}"], cwd=REPO, check=False, capture_output=True, text=True)
+    proc = subprocess.run(
+        ["git", "show", f"{rev}:{path}"],
+        cwd=REPO,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
     return proc.stdout if proc.returncode == 0 else None
 
 
-def _drop_format_only(paths: list[str], base: str, head: str, *, quiet: bool = False) -> list[str]:
+def _drop_format_only(
+    paths: list[str], base: str, head: str, *, quiet: bool = False
+) -> list[str]:
     """Remove station source files whose AST did not change between ``base``
     and ``head`` (steward Story 66.1, 2026-09-20): a formatting-only edit is
     not a touched module, so the floor measures code changes, not the
     formatter. Diffs against the merge-base, the same three-dot semantics as
     ``_git_diff_names``. Added / deleted / unparseable files stay touched.
     """
-    proc = subprocess.run(["git", "merge-base", base, head], cwd=REPO, check=False, capture_output=True, text=True)
-    merge_base = proc.stdout.strip() if proc.returncode == 0 and proc.stdout.strip() else base
-    candidates = [p for p in paths if p.endswith(".py") and "/src/shared/packages/" in f"/{p}"]
+    proc = subprocess.run(
+        ["git", "merge-base", base, head],
+        cwd=REPO,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    merge_base = (
+        proc.stdout.strip() if proc.returncode == 0 and proc.stdout.strip() else base
+    )
+    candidates = [
+        p for p in paths if p.endswith(".py") and "/src/shared/packages/" in f"/{p}"
+    ]
     pairs = {p: (_git_show(merge_base, p), _git_show(head, p)) for p in candidates}
     skipped = format_only_paths(pairs)
     if skipped and not quiet:
-        print(f"format-only (AST unchanged), not counted as touched: {len(skipped)} file(s)", flush=True)
+        print(
+            f"format-only (AST unchanged), not counted as touched: {len(skipped)} file(s)",
+            flush=True,
+        )
     return [p for p in paths if p not in skipped]
 
 
@@ -359,7 +380,9 @@ def _under_any(argv: list[str], test_paths: list[Path]) -> bool:
     """True when every path in ``argv`` lies under one of this suite's test directories."""
     roots = [tp.resolve() for tp in test_paths]
     paths = [(REPO / tok).resolve() for tok in argv if not tok.startswith("-")]
-    return bool(paths) and all(any(p == r or r in p.parents for r in roots) for p in paths)
+    return bool(paths) and all(
+        any(p == r or r in p.parents for r in roots) for p in paths
+    )
 
 
 def _resolve_changed_paths(
@@ -387,8 +410,12 @@ def build_coverage_plan(
     """JSON-serializable plan of pytest runs the driver would make (Story 71.4)."""
     paths = _resolve_changed_paths(base, head, paths_file, quiet_format_only=True)
     stations = sorted(touched_stations(paths))
-    allow_raw = (coverage_gates_stations or os.environ.get("COVERAGE_GATES_STATIONS", "")).strip()
-    allow = {s.strip() for s in allow_raw.split(",") if s.strip()} if allow_raw else None
+    allow_raw = (
+        coverage_gates_stations or os.environ.get("COVERAGE_GATES_STATIONS", "")
+    ).strip()
+    allow = (
+        {s.strip() for s in allow_raw.split(",") if s.strip()} if allow_raw else None
+    )
     runs: list[dict[str, object]] = []
     for station in stations:
         if station not in STATIONS:
@@ -419,6 +446,12 @@ def build_coverage_plan(
     }
 
 
+def allow_for_report(environ: Mapping[str, str]) -> set[str]:
+    """The stations ``COVERAGE_GATES_STATIONS`` names (Story 117.2: ``--report`` wants exactly one)."""
+    raw = environ.get("COVERAGE_GATES_STATIONS", "").strip()
+    return {s.strip() for s in raw.split(",") if s.strip()} if raw else set()
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -445,6 +478,15 @@ def main(argv: list[str] | None = None) -> int:
         help="Comma-separated suites to gate (default: unit,integration)",
     )
     parser.add_argument(
+        "--report",
+        default=None,
+        help=(
+            "Story 117.2: the coverage JSON the station suite's own run wrote; judge it instead of "
+            "running pytest-cov again. When the file is absent, run the coverage pass as before and "
+            "write it there. One station (COVERAGE_GATES_STATIONS) and --suites unit only."
+        ),
+    )
+    parser.add_argument(
         "--plan",
         action="store_true",
         help="Print the stations and suites that would run as JSON; do not invoke pytest",
@@ -460,6 +502,12 @@ def main(argv: list[str] | None = None) -> int:
         if suite not in ("unit", "integration"):
             print(f"unknown suite {suite!r}; expected unit|integration", flush=True)
             return 2
+    if args.report and (suites != ["unit"] or len(allow_for_report(os.environ)) != 1):
+        print(
+            "--report takes --suites unit and exactly one COVERAGE_GATES_STATIONS station",
+            flush=True,
+        )
+        return 2
 
     if args.plan:
         plan = build_coverage_plan(
@@ -480,7 +528,9 @@ def main(argv: list[str] | None = None) -> int:
 
     # Optional allow-list (CI home env often only installs one station).
     allow_raw = os.environ.get("COVERAGE_GATES_STATIONS", "").strip()
-    allow = {s.strip() for s in allow_raw.split(",") if s.strip()} if allow_raw else None
+    allow = (
+        {s.strip() for s in allow_raw.split(",") if s.strip()} if allow_raw else None
+    )
     rc = 0
     with tempfile.TemporaryDirectory(prefix="coverage-gates-") as tmp:
         tmp_path = Path(tmp)
@@ -496,12 +546,27 @@ def main(argv: list[str] | None = None) -> int:
                 continue
             for suite in suites:
                 if suite not in ("unit", "integration"):
-                    print(f"unknown suite {suite!r}; expected unit|integration", flush=True)
+                    print(
+                        f"unknown suite {suite!r}; expected unit|integration",
+                        flush=True,
+                    )
                     return 2
                 report = tmp_path / f"{station}-{suite}.json"
-                status, pytest_rc = _run_pytest_cov(
-                    station=station, suite=suite, report=report
-                )
+                if args.report:
+                    report = Path(args.report)
+                if args.report and report.is_file():
+                    # Story 117.2: the suite's own run wrote this report; judge it, never re-run.
+                    print(
+                        f"coverage gate: judging pyforge-{station} {suite} from {report}",
+                        flush=True,
+                    )
+                    status, pytest_rc = "ran", 0
+                else:
+                    if args.report:
+                        report.parent.mkdir(parents=True, exist_ok=True)
+                    status, pytest_rc = _run_pytest_cov(
+                        station=station, suite=suite, report=report
+                    )
                 if status == "skipped":
                     # N/A suite (e.g. no tests/integration) — never zero-fill.
                     continue

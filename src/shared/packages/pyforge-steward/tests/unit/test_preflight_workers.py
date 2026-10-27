@@ -114,7 +114,10 @@ cmd = "pytest pkg/tests -q -n auto --dist loadgroup"
     assert all(v >= 1 for v in mapping.values())
 
 
-def test_lane_without_n_auto_gets_no_worker_cap(tmp_path) -> None:
+def test_lane_without_n_auto_gets_no_worker_cap(tmp_path, monkeypatch) -> None:
+    # Under pr-preflight this suite itself runs as an xdist lane, so the parent process carries the variable the
+    # test asserts the preflight does not set; a lane's env starts from the caller's (steward Story 117.1).
+    monkeypatch.delenv("PYTEST_XDIST_AUTO_NUM_WORKERS", raising=False)
     repo = tmp_path / "repo"
     repo.mkdir()
     (repo / "pixi.toml").write_text(
