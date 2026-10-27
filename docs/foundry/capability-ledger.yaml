@@ -4,7 +4,7 @@
 # verified-in-foundry is a claim on a rebuild row (needs a 54.1 case-list id), not a mode.
 # Do not flip 44.1 or any Epic 44 blocked key.
 schema: pyforge.capability-ledger/v0
-updated: "2026-10-26"
+updated: "2026-10-27"
 source_sha: d81e55d288d7d997ee970ee89cce7c447db33be8
 extract: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-capability-ledger/extract.md
 modes:
@@ -4466,6 +4466,13 @@ capabilities:
     spec: pyforge-steward
     station: pyforge-steward
     heading: "the Platform CI test job's time budget covers what it does on a slow runner, and it installs only what its runner image lacks"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  # 2026-10-27 preflight and CI within budget (Epic 117): B rebuilds the preflight scheduler, the one coverage run and the two-halves suites under its own CI
+  - id: pyforge-steward:CAP-175
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the preflight and a PR's CI answer within a measured budget, and a station suite runs once, as its package-local and live-tree halves"
     mode: rebuild
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - id: pyforge-warden:CAP-1

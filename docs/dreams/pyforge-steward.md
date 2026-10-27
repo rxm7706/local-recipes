@@ -2184,6 +2184,48 @@ Drift — orphaned between stations.
   steward's, CAP-166). Steward capability ids 169-173, FR-42..FR-47 and Epic 109 are claimed by draft PR #2274. → CAP-174 /
   FR-48, Epic 112 / Story 112.1, specced 2026-10-26.
 
+- **2026-10-27 (the preflight answers in eleven minutes, a PR's CI in thirteen) — Found: the gate Epic 71 brought
+  under a minute has grown back, and nothing said so.** Measured from the journals every worktree keeps
+  (`.steward/preflight-runs.jsonl`, 132 runs) and the Actions API (the last 400 runs; job and step timings of the
+  latest PR head), 2026-10-27:
+  - **The preflight.** 52 green full runs: median 670 s, p90 1197 s, max 1950 s (38 lanes); touched scope 98 s; a
+    steward-only touched run 486 s. Lanes run concurrently (Story 71.3), but 32–38 lanes share 16 slots, so one lane
+    started at +1099 s. The wall is the longest lane: `test-ci` 986 s (serial, 1759 tests), `pyforge-steward-test`
+    698 s (serial; 19 s on 2026-09-27), `pyforge-doctor-test` 487 s (xdist pinned to 4 workers inside its own cmd),
+    `detectors-ci` 481 s, `pyforge-herald-test` 378 s. Nine suites still run as one process; `pytest-xdist` is
+    declared only in the marshal, warden, atlas, doctor, pyforge-ci and local-recipes features. `preflight-budget`
+    (Story 71.7) reports and never reds.
+  - **CI.** One PR head: 12–13 min of wall (the slowest of nine workflows) and ~126 runner-minutes. Platform CI 754 s
+    (three image builds and a 179 s "free runner disk" step), CFE regression net 716 s (a serial 564 s suite in the
+    9.8 GB `local-recipes` env), station tests 672 s (`steward-test` 547 s serial; `guild-container` ×2 with no
+    `needs: changes` and no layer cache), coverage gates 417 s of wall and 1849 runner-s re-running every touched suite
+    under `--cov`, detectors 363 s (48 detectors with no `--jobs auto`; `bmad-output-hygiene` 190 s is ~238 full-tree
+    `git grep`s in `_has_inbound_references`, `chain_currency_sweep` 49 s is eight serial subprocesses). No status
+    check is required; `detectors-ci` gates by convention.
+  - **The fan-out is by design, not by accident.** Five recent PRs (#2323–#2327) each ran 8–10 of the 10 suite jobs.
+    The `*_paths` arrays in `pyforge-station-tests.yml` are what each suite's tests read (Story 98.1; the 2026-10-12
+    rulings "Trigger on planning too" and "In steward"), derived and ratcheted by
+    `test_station_tests_trigger_map.py`: doctor's `src` is `test_checks_env_hygiene.py` and ten more files, atlas's
+    `src/shared/packages` is `test_duckdb_boundary.py` and three more, herald's `docs` is eight, and `src/platform`
+    and `.claude/skills` fire seven stations. Narrowing the arrays would red `steward-test` and reverse the ruling.
+  **What it looks like when fixed:** on a single-station branch the pre-push preflight answers in about 90 s and the
+  full estate in about three minutes; a PR's CI answers in about four minutes of wall and 13–15 runner-minutes; and
+  nothing is checked less — every read still fires a job, coverage is still measured once, image builds and the CFE
+  net still run on every `main` commit and nightly. Each station suite runs once per PR, as its package-local half
+  (fires on the package and the shared surface) and its live-tree half (fires on exactly what it reads). A lane that
+  grows past its budget is named the day it grows. **Constraints:** a lane is skipped only where CI's own rule skips
+  it; verdicts are read from exit codes; `PYFORGE_PREFLIGHT_SKIP=1` stays the one opt-out; the not-covered list does
+  not grow; a `pixi.toml` edit regenerates `environment.yaml` in the same PR; the CFE suite task changes only through
+  the `conda-forge-expert` skill and its retro. **Operator rulings 2026-10-27:** (D1) image builds and the CFE
+  regression net leave the PR path for push-to-main plus the nightly canary, and the PR keeps the CFE `tests/meta`;
+  (D2) coverage gates merge into the station test job and `coverage-gates.yml` retires; (D3) `preflight-budget`
+  stays warn-only; (D4) fan-out shrinks by splitting live-tree readers into `pyforge-<s>-live-test`, never by
+  narrowing the arrays. Kinships: CAP-159 (Epic 71), CAP-166 (the CI surfaces registry), CAP-174 (the Platform CI
+  budget), `spec-pyforge-core` CAP-8 (the shared-surface rule), `spec-coverage-gate-independence`; doctor
+  (`detectors-ci`, the hygiene source, `pyforge-doctor-test`), herald, mason (`test-ci`), atlas, scribe and warden
+  take their halves on their own chains. Owner: steward. → CAP-175 / FR-49, Epic 117 / Stories 117.1–117.8,
+  specced 2026-10-27.
+
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
 Steward rebases to one Dream, one Spec, one PRD, one spine, one epic chain. Folded topic Dreams are archived in place with `Consolidated into [[pyforge-steward]]` banners. Exempted chains (Guild unifying-strategy; foundry regenerate / capability-ledger / cutover) keep their folders with `fold-exemption`.

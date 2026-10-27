@@ -1,0 +1,8 @@
+---
+name: "2026-10-27-operator-rulings-preflight-and-ci-speed-plan-appr"
+description: "2026-10-27 operator rulings, preflight and CI speed (plan approved, execution deferred to a new session). Measured: ful…"
+metadata:
+  type: project
+---
+
+2026-10-27 operator rulings, preflight and CI speed (plan approved, execution deferred to a new session). Measured: full pr-preflight median 670 s (p90 20 min, max 32 min over 52 green worktree-journal runs), touched 98 s; one PR's CI 12-13 min wall and ~126 runner-minutes. Hot spots: pyforge-steward-test runs serial (698 s local, 547 s CI; 19 s on 2026-09-27), test-ci CFE serial 986 s, detectors-ci 481 s (bmad-output-hygiene 190 s = about 238 full-tree git greps in _has_inbound_references; chain_currency_sweep 49 s = 8 serial subprocesses), coverage gates re-run every touched suite, image builds ~1400 runner-s per PR, detectors.yml runs without --jobs auto. Rulings: (D1) image builds AND the CFE regression net leave the PR path to push-to-main plus nightly canary, PR keeps CFE tests/meta; (D2) coverage gates merge into the station test job and coverage-gates.yml retires; (D3) preflight-budget stays warn-only; (D4) station fan-out is cut by splitting live-tree readers into pyforge-<s>-live-test tasks and jobs per station, never by narrowing the pyforge-station-tests.yml arrays, which Story 98.1 derives from what each suite's tests read and test_station_tests_trigger_map.py ratchets. Sequencing: steward Dream append -> bmad-spec CAP-175 -> Epic 115 -> ledger -> story specs, then one chain per other station (doctor D.1 hygiene greps and D.2 chain-currency first), then Wave 1 stories (xdist for steward, coverage once, detectors --jobs auto).

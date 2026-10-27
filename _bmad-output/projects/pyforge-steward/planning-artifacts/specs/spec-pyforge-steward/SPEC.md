@@ -2,7 +2,7 @@
 id: SPEC-steward
 spec: pyforge-steward
 status: ready
-updated: "2026-10-26"
+updated: "2026-10-27"
 owner-dream: docs/dreams/pyforge-steward.md
 covers-dreams:
   - docs/dreams/pyforge-steward.md
@@ -863,6 +863,30 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
     launch succeeding with no apt download; the budget comment names the measured figures;
     `scripts/ci_surface_gates.py --check` and `detectors-ci` exit 0; the `platform-ci.test` registry row is unchanged.
 
+- **CAP-175 — the preflight and a PR's CI answer within a measured budget, and a station suite runs once, as its package-local and live-tree halves** ← spec-pyforge-steward CAP-175 (ready 2026-10-27; extends CAP-159, CAP-166; works with CAP-174, spec-pyforge-core CAP-8, spec-coverage-gate-independence)
+  - **intent:** every pytest lane the preflight and CI run goes under `pytest-xdist` where its tests allow, with the
+    serial remainder named in the task and run alone after it; a station's coverage floor is judged from the JSON its
+    own suite run wrote (one driver, `scripts/station_suite_ci.py`, locally and in CI alike), so no suite runs twice
+    and `coverage-gates.yml` retires in the CI surfaces registry; the preflight admits lanes longest-first by the
+    expected seconds and core weight it reads from its own journal, so the wall is the longest lane and never a queue;
+    each station suite is two tasks and two CI jobs — `pyforge-<s>-test`, whose tests read nothing outside the
+    package and which fires on the package and the shared surface, and `pyforge-<s>-live-test`, the live-tree readers,
+    which fires on exactly what they read, derived and ratcheted as Story 98.1 derives it — so every read still fires a
+    job while a planning edit no longer runs eight unit suites; image builds and the CFE regression net run on
+    push-to-main and the nightly canary, declared in `docs/governance/ci-surfaces.yaml`, and a PR keeps the CFE
+    `tests/meta`; `preflight-budget` names each lane over its journal-derived budget and never changes the exit code.
+    (Measured 2026-10-27: a full preflight 670 s at the median and 1950 s at worst over 52 green runs where Epic 71 had
+    it under a minute; a PR head 12–13 min of wall and ~126 runner-minutes; `pyforge-steward-test` 698 s serial where
+    Epic 71 measured 19 s; five PRs each ran 8–10 of the 10 suite jobs by Story 98.1's own rule. Operator rulings
+    D1–D4 in `.memlog.md`, 2026-10-27.)
+  - **success:** on a single-station branch `pixi run -e pyforge-guild pr-preflight` journals `total_seconds` ≤ 90 at
+    the median of its last ten green runs and a full-estate run ≤ 240; a single-station PR's slowest workflow finishes
+    in ≤ 5 min of wall and the head's jobs sum to ≤ 20 runner-minutes (read from `gh api
+    repos/rxm7706/local-recipes/actions/runs/<id>/jobs`); every read `test_station_tests_trigger_map.py` derives still
+    fires a job, and a package-suite test that gains an outside read reds `steward-test`; `coverage-gates.yml` reads
+    `state: retired` and each station's floor is still judged from its own run's JSON; `ci_surface_gates.py --check`,
+    `detectors-ci`, `flag-gate-check` and `preflight-budget` exit 0.
+
 ## Constraints
 
 - **Folded from spec-sprint-ledger-query-module (2026-09-19):** steward never imports vizro (canopy:AD-13 / canopy:AD-23); exporters never write into another station's tree by default (flag + explicit `--output` only); the minted UUID is identity and tracker keys are aliases (CAP-140's rule); reads come from TRACKED ledgers only and `fleet_scan.parse_sprint_status` stays the reader of record; stdout carries payload only.
@@ -943,6 +967,10 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
 - No pause, disable or `continue-on-error` for the Platform CI `test` job, no change to other workflows' Chromium
   steps, to `.github/actions/platform-test-setup` or the `platform-ci-test` environment, and no change to the suite
   (CAP-174).
+
+- No lane is skipped where CI's own rule would run it, no suite is cut to make a budget, `PYFORGE_PREFLIGHT_SKIP=1`
+  stays the one journaled opt-out, and the not-covered list (container, atlas's Chromium/DuckDB/WASM, herald's browser
+  check, scribe's Postgres) does not grow; the station-tests arrays are never narrowed by hand (CAP-175, Story 98.1).
 
 ## Success signal
 
