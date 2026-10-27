@@ -1,0 +1,8 @@
+---
+name: "2026-10-27-wave-2-of-spec-pyforge-steward-cap-175-landed-pr"
+description: "2026-10-27 Wave 2 of spec-pyforge-steward:CAP-175 LANDED: PR #2332 merged as 0101b8a55303 ('Merge pyforge-steward/117-4…"
+metadata:
+  type: project
+---
+
+2026-10-27 Wave 2 of spec-pyforge-steward:CAP-175 LANDED: PR #2332 merged as 0101b8a55303 ('Merge pyforge-steward/117-4 into main'), after Wave 1's #2331 (3b4c04d058). Steward 117.3 (critical-path lane admission: journal medians, longest-first order, core-budget admission with per-admission xdist shares, kill switch pyforge.steward.preflight_critical_path ON everywhere, cleanup 2027-01-25), steward 117.4 and doctor 55.4 (live-tree halves: the live_tree pytest marker on 68 steward and 43 doctor modules; pyforge-<s>-test collects 'not slow and not live_tree', pyforge-<s>-live-test 'live_tree and not slow'; the gate merges both coverage reports; <s>-live-test and <s>-gate CI jobs; the trigger map keys both jobs and names the unsplit readers atlas/herald/scribe/marshal) are done; epic-55 done. Measured on 16 cores: doctor 12 s + 47 s (1213 + 2676 tests), steward 62 s + 108 s (1623 + 1446); a full-scope pr-preflight is 772 s for 40 lanes with the longest lane test-ci 768 s -- the wall is now the longest lane, and the CFE serial suite (mason M.1) is the floor. Next: herald H.1/H.2, mason M.1/M.2/M.3, atlas A.1/A.2, scribe S.2, warden W.1 split and xdist chains; steward 117.5 (budget warnings), 117.6 + 117.8 (ruling D1: image builds and the CFE net off the PR path), 117.9 (steward test-level fixes). Operator step still open: delete the PAUSE_COVERAGE_GATES repository variable.
