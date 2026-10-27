@@ -796,6 +796,8 @@ def _build_rows(registry: dict[str, Any], snap: _GhSnapshot, deps: CiDeps) -> li
             "review_by": review_s,
             "review_days_left": days_left,
             "owner": row.get("owner"),
+            # Story 117.6 (CAP-175, ruling D1): `main` names a surface that never runs on a pull_request.
+            "trigger": row.get("trigger"),
             "last_green_run": last_green,
             "latest_main_run": None if retired else _latest_main_run(runs),
             "verdict": verdict,

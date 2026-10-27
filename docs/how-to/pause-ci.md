@@ -113,11 +113,14 @@ instead; run `pyforge steward ci status` to refresh it (marshal's landing runs i
 or fails a lane, never raises, and makes no GitHub call. A `dispatch/*` branch skips `pr-preflight`, so a dispatched
 landing does not see the banner.
 
-## Weekly canary
+## Nightly canary
 
-`.github/workflows/ci-canary.yml` builds each paused `cost: high` surface once per week (and on
-`workflow_dispatch`), gated by `PAUSE_CI_CANARY` like other workflows. `steward ci status` uses the
-canary's last green run when judging paused expensive jobs.
+`.github/workflows/ci-canary.yml` builds each paused `cost: high` surface, and each `cost: high` surface
+whose registry row says `trigger: main` (it never runs on a pull request — the image builds since
+steward Story 117.6, CAP-175 ruling D1), once a night at 04:00 UTC and on `workflow_dispatch`, gated by
+`PAUSE_CI_CANARY` like other workflows. `steward ci status` uses the canary's last green run when judging
+paused expensive jobs. A `trigger: main` row runs on push-to-main as well; the pull request never waits
+on it.
 
 ## Related checks
 

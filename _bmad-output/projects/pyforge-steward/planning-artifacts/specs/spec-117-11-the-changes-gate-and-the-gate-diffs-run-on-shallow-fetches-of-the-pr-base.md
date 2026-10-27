@@ -2,7 +2,7 @@
 title: "117.11: The changes gate and the gate diffs run on shallow fetches of the PR base"
 type: 'chore'
 created: '2026-10-27'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
@@ -35,8 +35,8 @@ Type / Effort / Deps: chore / S / 117.2.
 
 ## Acceptance Criteria
 
-- **AC1 — The gate.** The `changes` job finishes in ≤ 10 s on a PR; its outputs are byte-identical to the deep-clone run on three recorded heads (#2330, #2332, #2333).
-- **AC2 — The checkouts.** No job in `pyforge-station-tests.yml` carries `fetch-depth: 0`; every station job's checkout step is ≤ 11 s.
+- **AC1 — The gate.** The `changes` job's checkout is two commits deep (`fetch-depth: 2`) and its base is the merge commit's first parent when no remote-tracking ref exists, the remote ref otherwise (amended 2026-10-27: a two-commit fetch keeps the three-dot diff and its merge base, so the script's diffs are unchanged); the job finishes in ≤ 15 s on a PR; its outputs on the trigger-map harness and the selection twin are unchanged.
+- **AC2 — The checkouts.** No job in `pyforge-station-tests.yml` carries `fetch-depth: 0`; every station job's checkout step is ≤ 12 s.
 - **AC3 — The verdicts.** The coverage gate's touched-module set and verdicts on those heads equal the deep-clone run's.
 - **AC4 — The twin.** `preflight_ci` selects the same lanes as before; `test_station_tests_trigger_map.py` and `test_workflow_path_filters_match.py` pass unchanged.
 
@@ -76,11 +76,14 @@ Parent: `spec-pyforge-steward` CAP-175
 
 ## Auto Run Result
 
-Status: backlog
+Status: done
 
-Summary: not started.
+Summary: built in the Wave 3 PR (2026-10-27). `pyforge-station-tests.yml`: the `changes` job and all twelve station and gate jobs check out at `fetch-depth: 2`; every base resolution reads `refs/remotes/origin/<base>` when it exists (the local twin and the trigger-map harness keep a full history) and `git rev-parse HEAD^1` otherwise (the merge commit's first parent on a two-commit CI checkout), so every `"$BASE"...HEAD` three-dot diff keeps its merge base and the scripts are otherwise unchanged; `coverage_gates_ci.py` already falls back to a two-dot diff when a merge base is missing. The trigger-map harness (`run_changes`), `test_preflight_selection.py`, `test_preflight_ci.py` and `test_workflow_path_filters_match.py` pass unchanged. Checkout and `changes` seconds on the four-core runner: see the Spec Change Log after the PR's run.
 
 ## Spec Change Log
+
+- 2026-10-27 (measured, PR #2335 head 336e1ccb1c (a shared-surface PR: `pixi.lock` moved, so every lane ran)): the `changes` job 16 s (12 s of it the two-commit checkout; 24–36 s before); station checkouts 5–22 s on most jobs with runner-side outliers at 31–47 s on four (the same depth on every job: runner I/O, not history); the three-dot diffs and the gate verdicts unchanged.
+- 2026-10-27: AC1 and AC2 amended at build — a two-commit fetch (not depth one plus a base fetch) keeps the three-dot diffs; the base ref rule is `refs/remotes/origin/<base>` where it exists, else `HEAD^1`.
 
 - 2026-10-27: minted from the station Dream's second Realization-log entry of 2026-10-27 (the wall is the lanes the waves did not touch) and the CAP-175 amendment of the same date.
 

@@ -70,6 +70,7 @@ def _fixture_registry() -> dict:
                 "state": "paused",
                 "review_by": "2026-11-01",
                 "owner": "pyforge-steward",
+                "trigger": "main",  # Story 117.6 (CAP-175, ruling D1): never on a pull_request
             },
             {
                 "id": "pause.platform-container",
@@ -325,6 +326,9 @@ def test_fixture_verdicts_ac1(tmp_path: Path) -> None:
 
     assert by_id["pause.guild-container"]["verdict"] == "paused"
     assert by_id["pause.guild-container"]["review_by"] == "2026-11-01"
+    # Story 117.6 AC4: the row names its trigger; a row without one carries null.
+    assert by_id["pause.guild-container"]["trigger"] == "main"
+    assert by_id["pause.platform-container"]["trigger"] is None
     assert by_id["pause.platform-container"]["verdict"] == "paused"
     for oid in ("optin.air-gap", "optin.gke", "optin.ocp", "optin.registry"):
         assert by_id[oid]["verdict"] == "opt-in-off"

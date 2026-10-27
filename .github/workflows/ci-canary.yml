@@ -1,11 +1,12 @@
 name: CI Canary
 
-# Weekly build of every paused cost:high CI surface (Story 99.6 / CAP-166 FR-39).
+# Nightly build of every paused cost:high CI surface (Story 99.6 / CAP-166 FR-39) and of every cost:high surface
+# that never runs on a pull_request (`trigger: main`; Story 117.6 / CAP-175, ruling D1).
 # Builds only — no deploy, publish, or registry push (AD-4).
 
 on:
   schedule:
-    - cron: '0 4 * * 0'
+    - cron: '0 4 * * *'  # nightly since Story 117.6 (CAP-175, ruling D1): the image builds left the PR path and are built here every day
   workflow_dispatch:
 
 jobs:

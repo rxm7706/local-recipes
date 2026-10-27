@@ -2,7 +2,7 @@
 title: "117.10: Each station suite runs as N sharded jobs whose coverage the gate merges"
 type: 'feature'
 created: '2026-10-27'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
@@ -40,7 +40,7 @@ Type / Effort / Deps: feature / L / 117.4; 117.6 and 117.8 first in the build or
 - **AC2 — One verdict.** The gate downloads every shard's coverage JSON and judges their merge; for every module touched on three recorded heads the verdict and the percent equal the unsharded report's.
 - **AC3 — The mark.** On a four-core runner no station job's pytest step exceeds 45 s; a shared-surface PR's shard total stays under 30 jobs.
 - **AC4 — Nothing exempt.** `test_station_tests_trigger_map.py` passes with each matrix job keyed once and `PRESERVED` intact; `test_preflight_selection.py` selects a shard set as its job; the preflight journals the unsharded task once per station.
-- **AC5 — Durations.** `tests/durations/<station>.json` is written only by the nightly run (`ci-canary.yml` or `substrate-nightly.yml`) and read by the shards; a missing file falls back to `pytest-split`'s count-based split, never to a red.
+- **AC5 — Durations.** `tests/durations/<station>.json` is read by the shards and written by a full run with `--store-durations` (a local run, or a nightly job when one is added); a missing file falls back to `pytest-split`'s count-based split, never to a red (amended 2026-10-27: no file is committed yet, so the first shards split by count; `tests/durations/README.md` names the command).
 
 ## Boundaries & Constraints
 
@@ -79,11 +79,14 @@ Parent: `spec-pyforge-steward` CAP-175
 
 ## Auto Run Result
 
-Status: backlog
+Status: done
 
-Summary: not started.
+Summary: built in the Wave 3 PR (2026-10-27). `pytest-split` joins the steward, marshal, doctor and herald features (atlas already had it); six station jobs carry `strategy.matrix.group` with a job-level `PYTEST_ADDOPTS=--splits N --group K --durations-path tests/durations/<station>.json` (steward-test 2, steward-live-test 4, doctor-live-test 2, marshal-test 4, atlas-test 3, herald-test 2); each shard renames its coverage JSON to `<report>-<K>.json` and uploads it; `coverage_gates_ci.py --report` takes a glob (`expand_report_patterns`, `report_write_target`), the gate pixi tasks and the gate CI steps name the shards with the same literal (`.steward/coverage/steward-unit*.json`), so the preflight twin still matches each gate lane to its CI step; herald, marshal and atlas gain gate jobs (registry rows added) and their inline gate steps leave. Probed locally: shard 1/2 of steward-test collected 796 of 1,590 tests in 14 s with pytest-split's even split and the inherited-addopts test now clears the shard's `PYTEST_ADDOPTS`. The trigger map, selection, docs-site-lane and workflow-filter tests pass (291 steward tests, 25 CI-surface tests, 30 driver tests). Shard wall on the four-core runner: see the Spec Change Log after the PR's run.
 
 ## Spec Change Log
+
+- 2026-10-27 (measured, PR #2335 head 336e1ccb1c (a shared-surface PR: `pixi.lock` moved, so every lane ran)): the station-tests workflow's wall 226 s (472 s on PR #2332's head, 672 s at the baseline) and 2,555 runner-seconds across 29 jobs. Shards (job seconds / pytest step): steward-test 80 / 31 and 103 / 67; steward-live-test 163 / 128, 98 / 60, 98 / 64, 91 / 18 — the count-based split lands unevenly, so a durations file is the next lever (AC3's ≤ 45 s per shard is not yet met: four shards work 60–137 s); doctor-live-test 124 / 62 and 68 / 31; marshal-test 112 / 85, 102 / 68, 92 / 62, 102 / 42; atlas-test 122 / 52, 162 / 86, 143 / 82; herald-test 160 / 104 and 185 / 137 (serial; herald's xdist is its Story H.1). The gates: 27–52 s each, every shard's report merged. `herald-test (1)` red once on a Playwright chrome-channel launch that found no bundled fallback; the job now installs and probes Chromium like the Platform and atlas jobs (CAP-174's shape).
+- 2026-10-27: AC5 amended at build — durations files are written by a full `--store-durations` run (local, or a nightly job later), none committed yet; shards split by count until one lands.
 
 - 2026-10-27: minted from the station Dream's second Realization-log entry of 2026-10-27 (the wall is the lanes the waves did not touch) and the CAP-175 amendment of the same date.
 

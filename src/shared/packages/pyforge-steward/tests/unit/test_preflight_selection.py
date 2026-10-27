@@ -335,8 +335,8 @@ def test_marshal_selection_journals_the_workflow_and_rule_that_skipped_each_lane
     assert (
         skipped[gate("warden")]["workflow"] == "pyforge-station-tests.yml"
     )  # Story 117.2: the gate rides its suite's job
-    assert skipped["test-ci"]["workflow"] == "cfe-regression-net.yml"
-    assert "on.pull_request.paths" in skipped["test-ci"]["rule"]
+    assert skipped["test-ci-meta"]["workflow"] == "cfe-regression-net.yml"
+    assert "on.pull_request.paths" in skipped["test-ci-meta"]["rule"]
     assert skipped["pyforge-testing-kit-test"]["workflow"] == "pyforge-station-tests.yml"
     assert {e["lane"] for e in journal["selected"]} >= {"docs-map-render-test", "docs-gen-test"}
     assert "no CI counterpart" in next(e for e in journal["selected"] if e["lane"] == "docs-gen-test")["reason"]
@@ -385,7 +385,7 @@ def test_dream_only_branch_selects_the_always_on_lanes(tmp_path: Path) -> None:
         | _spurious_lint_tasks_from_station_tests_changes(repo)
     )
     assert not (chosen & LINT - _spurious_lint_tasks_from_station_tests_changes(repo))
-    assert "test-ci" not in chosen and chosen & GATES == gates_of(chosen)
+    assert "test-ci-meta" not in chosen and chosen & GATES == gates_of(chosen)
 
 
 def test_pages_check_leaves_carry_dependency_edges_from_pixi() -> None:
@@ -532,7 +532,7 @@ def oracle_selection(repo: Path, tmp_path: Path) -> set[str]:
         "pyforge-deps-test",
     }  # no paths filter
     if _oracle_fires(repo, "cfe-regression-net.yml", changed):
-        chosen.add("test-ci")
+        chosen.add("test-ci-meta")  # Story 117.8 (ruling D1): the PR runs the CFE meta lane; the full net runs on main
     if _oracle_fires(repo, "pages.yml", changed):
         chosen |= DOCS_SITE_VALIDATE | PAGES_CHECK_LEAVES
     if _oracle_fires(repo, "pyforge-station-tests.yml", changed):
@@ -621,9 +621,9 @@ def test_unrecognised_paths_ignore_runs_that_workflows_lane_and_names_the_rule(t
         edits=[("cfe-regression-net.yml", "  pull_request:\n    paths:\n", "  pull_request:\n    paths-ignore:\n")],
     )
     selection = select(repo)
-    assert "test-ci" in selected_tasks(selection)
-    assert "paths-ignore" in verdict(selection, "test-ci").reason
-    assert "cfe-regression-net.yml" in verdict(selection, "test-ci").reason
+    assert "test-ci-meta" in selected_tasks(selection)
+    assert "paths-ignore" in verdict(selection, "test-ci-meta").reason
+    assert "cfe-regression-net.yml" in verdict(selection, "test-ci-meta").reason
 
 
 def test_unrecognised_job_if_runs_that_job_s_lane_and_names_the_rule(tmp_path: Path) -> None:
@@ -674,7 +674,7 @@ def test_a_failing_changes_step_runs_its_workflow_s_lanes(tmp_path: Path) -> Non
     assert station_lanes <= selected_tasks(selection)
     assert "exited 3" in verdict(selection, suite("atlas")).reason
     # Another workflow's lanes are still decided by their own rules.
-    assert "test-ci" not in selected_tasks(selection)
+    assert "test-ci-meta" not in selected_tasks(selection)
     # Story 117.2: every gate rides its suite's job, so a failing `changes` step runs every gate with every suite.
     assert GATES <= selected_tasks(selection)
 

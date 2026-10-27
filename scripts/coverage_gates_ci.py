@@ -18,6 +18,7 @@ Full package-wide evaluate (every module) remains available via the pixi
 from __future__ import annotations
 
 import argparse
+import glob
 import json
 import os
 import re
@@ -536,6 +537,29 @@ def merge_coverage_reports(paths: Sequence[Path]) -> dict[str, object]:
     }
 
 
+def expand_report_patterns(values: Sequence[str]) -> list[Path]:
+    """The coverage JSONs ``--report`` names, in order, each value a path or a glob (Story 117.10).
+
+    A sharded CI job uploads one report per shard (``steward-unit-1.json`` … ``-4.json``); the gate names them as
+    ``.steward/coverage/steward-unit*.json`` -- the same literal in the pixi task and in the workflow step, so the
+    preflight twin still matches the lane to its CI step by that flag. An unsharded run's ``steward-unit.json``
+    matches the same pattern. Values that match nothing are left out; the caller then runs the pass itself.
+    """
+    out: list[Path] = []
+    for value in values:
+        if any(ch in value for ch in "*?["):
+            out.extend(Path(m) for m in sorted(glob.glob(value)) if Path(m).is_file())
+        elif Path(value).is_file():
+            out.append(Path(value))
+    return out
+
+
+def report_write_target(value: str) -> Path:
+    """Where the driver writes the report it has to produce itself: the first ``--report`` value, its glob
+    characters dropped (``steward-unit*.json`` -> ``steward-unit.json``)."""
+    return Path(re.sub(r"[*?\[\]]", "", value))
+
+
 def allow_for_report(environ: Mapping[str, str]) -> set[str]:
     """The stations ``COVERAGE_GATES_STATIONS`` names (Story 117.2: ``--report`` wants exactly one)."""
     raw = environ.get("COVERAGE_GATES_STATIONS", "").strip()
@@ -645,7 +669,7 @@ def main(argv: list[str] | None = None) -> int:
                     )
                     return 2
                 report = tmp_path / f"{station}-{suite}.json"
-                present = [Path(r) for r in (args.report or []) if Path(r).is_file()]
+                present = expand_report_patterns(args.report or [])
                 if present:
                     # Story 117.2 / 117.4: the suite's own run(s) wrote these reports; judge their union, never re-run.
                     print(
@@ -664,7 +688,7 @@ def main(argv: list[str] | None = None) -> int:
                     status, pytest_rc = "ran", 0
                 else:
                     if args.report:
-                        report = Path(args.report[0])
+                        report = report_write_target(args.report[0])
                         report.parent.mkdir(parents=True, exist_ok=True)
                     status, pytest_rc = _run_pytest_cov(
                         station=station, suite=suite, report=report

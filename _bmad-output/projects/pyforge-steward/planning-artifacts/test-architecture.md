@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 561af39b056ec29a
+source_fingerprint: 757139f973eebb4d
 story_count: 421
-test_file_count: 144
+test_file_count: 145
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -21,10 +21,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Station:** `pyforge-steward`
 - **Stories parsed:** 421
 - **Epics parsed:** 116
-- **Test files inventoried:** 144 under `src/shared/packages/pyforge-steward/tests/`
+- **Test files inventoried:** 145 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `561af39b056ec29a`
+- **Source fingerprint:** `757139f973eebb4d`
 
 ## Risk Assessment
 
@@ -171,6 +171,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/meta/test_pages_workflow.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_pr_preflight_lanes_resolve_under_pixi.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_preflight_docs_site_lanes.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_pull_request_exempt_surfaces.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_release_cadence_runbook.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_session_check_entry_points.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_skf_domain_skills.py` | meta | none observed |
