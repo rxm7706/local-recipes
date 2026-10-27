@@ -579,13 +579,12 @@ jobs:
       matrix:
         group: [1, 2, 3]
     env:
-      PYTEST_ADDOPTS: --splits 3 --group ${{ matrix.group }} --durations-path tests/durations/pyforge-atlas.json
-    env:
       # test_wasm_smoke.py's _chromium_executable() reads this var itself
       # (falling back to a hardcoded /opt/pw-browsers otherwise, which this
       # runner does not have) -- set once, at job level, so the install step
       # and the test run resolve the identical browser.
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
+      PYTEST_ADDOPTS: --splits 3 --group ${{ matrix.group }} --durations-path tests/durations/pyforge-atlas.json
     steps:
       - uses: actions/checkout@v7
         with:

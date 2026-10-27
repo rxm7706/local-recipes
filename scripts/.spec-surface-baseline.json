@@ -6518,6 +6518,7 @@
    "src/shared/packages/pyforge-steward/tests/meta/test_steward_persona.py": "fcee4239147a97bdd4525492e568587e42f8a815",
    "src/shared/packages/pyforge-steward/tests/meta/test_steward_single_flag_tree.py": "5d8d08af8b2208cfa79006a39233a49a91a090f6",
    "src/shared/packages/pyforge-steward/tests/meta/test_workflow_path_filters_match.py": "a5948609cce742745ecc8d403b56dd3a5527dd7d",
+   "src/shared/packages/pyforge-steward/tests/meta/test_workflows_have_no_duplicate_keys.py": "983563030e135122ae3d0caa322a3bbe44a3d245",
    "src/shared/packages/pyforge-steward/tests/unit/test_bootstrap.py": "38970fcacbef29e6f45440c88a23ef795ea5a0a1",
    "src/shared/packages/pyforge-steward/tests/unit/test_bootstrap_remedies.py": "9e857ee76b661874d9a1510f560f6fc9d4fc09db",
    "src/shared/packages/pyforge-steward/tests/unit/test_bootstrap_setup.py": "f033aae0d49b64fcf6918a1d1622d6be5adc4a96",
@@ -6649,7 +6650,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "75a3f6b8b74b73bd5b717bcb321838b2a5ecf0dd"
+  "memlog": "37a8466fc83b5132c5ca0ac9c91e3dc0d4993fa0"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
