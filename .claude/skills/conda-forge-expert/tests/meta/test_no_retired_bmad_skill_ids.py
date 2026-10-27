@@ -4,7 +4,7 @@ The 2026-08-21/22 upgrade to BMAD 6.11.0 retired 20 v6 skill names. Each
 survives today only as a deprecated forwarder shim, and upstream's
 `v6-shims/README.md` commits to exactly one breakage: "Removal rides the v7
 cut -- never a 6.x minor". The 2026-08-22 alignment inventory
-(`_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/
+(`archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/
 spec-bmad-611-era-alignment/alignment-inventory.md`, findings #2 and #3)
 found the retired names still living in exactly the places that hurt:
 
