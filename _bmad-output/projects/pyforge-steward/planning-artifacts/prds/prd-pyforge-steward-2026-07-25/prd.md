@@ -2,7 +2,8 @@
 fr-derivation-from: "2026-09-17"
 title: Steward (pyforge-steward)
 created: 2026-07-25
-updated: "2026-10-23"   # RE-STAMPED 2026-10-23: chain-currency (spec -> PRD) for Story 71.12's decision and mint (a fix under CAP-159: every cancelled preflight lane names what stopped the run), then Stories 71.13 (CAP-159) and 13.6 (CAP-157 amended in place: the trunk joins a workspace's source as a landing ref); no CAP or FR added, no FR or AD amended; FR-32 holds as written. See § Currency reconciliation — 2026-10-23 Prior: RE-STAMPED 2026-10-21: chain-currency (spec -> PRD) for CAP-169..CAP-173 (BMAD marketplace reset; Epic 109). FR-42..FR-46 registered. See § Currency reconciliation — 2026-10-21. Prior:. Prior: RE-STAMPED 2026-10-17: chain-currency (spec -> PRD) for Story 108.1's mint (fixes under CAP-167 and CAP-166) and the memlog entries since 2026-10-14; no CAP, FR or AD added or amended; FR-40's consequence (the env matrix and the BMAD-estate catalog) is met as written; FR-32 and Story 103.6's touched scope recorded, not re-derived. See § Currency reconciliation — 2026-10-17. Prior: RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for CAP-168 (the Pages duct; operator rulings 2026-10-13); FR-41 registered; FR-8 and FR-11 move onto `steward pages build|status`, FR-9 and FR-10 retire with `deploy dashboard` (superseded in part, nothing renumbered); D6's no-new-workflow clause retired; SM-2 recorded as history. See § Currency reconciliation — 2026-10-14 (the Pages duct). Prior: RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for CAP-167 (estate refresh; the plan's recommended answers Q1-Q9 adopted as assumptions); FR-40 registered. See § Currency reconciliation — 2026-10-13 (estate refresh). Prior: RE-STAMPED 2026-10-12: chain-currency cascade (spec -> PRD) for CAP-166 (the CI pause control plane, operator rulings Q1-Q8); FR-39 registered. See § Currency reconciliation — 2026-10-12. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entries (Story 67.4 re-scoped repo-only under fnd:CAP-13; Stories 85.5 and 72.2 unblocked and index row 49.13 done; Story 86.1 minted, a fix under CAP-114); no CAP minted, no FR registered. See § Currency reconciliation — 2026-10-10.. Prior: RE-STAMPED 2026-10-07 (later): chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-04..07 entries (Stories 85.1-85.4 landed under FR-38; Story 74.2, the chart, under FR-36, and the flag on in dev and staging); no FR registered. See § Currency reconciliation — 2026-10-07 (later: Stories 85.1–85.4 and 74.2).. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec memlog -> PRD) for the independent review of the free-threading Dream entry (research/free-threading-readiness-dream-review-2026-10-07.md; four operator rulings); no CAP minted, no FR registered. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for CAP-165 (Epic 85, preserved-work refs; CAP-156 and CAP-157 amended); FR-38 registered. Earlier: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for the Phase 3 rulings (CAP-60 amended, Epic 84); no FR registered. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec memlog -> PRD) for Epic 78 (security hotfix; defects of CAP-99, CAP-86 and unifying CAP-12; no FR registered). Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-163 (Epic 74) and CAP-164 (Epic 75); FR-36 and FR-37 registered; the Guild's spec-feature-flag-governance CAP-5 routed to Epic 76 with no FR. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+updated: "2026-10-27"   # RE-STAMPED 2026-10-27 (CAP-175): chain-currency cascade (spec -> PRD) for CAP-175 (the preflight and a PR's CI answer within a measured budget, and a station suite runs once, as its package-local and live-tree halves); FR-49 registered, derived from the CAP. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (CAP-7 retrofit, Epic 114): the station memlog gained the retrofit decision; no requirement changes. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (CAP-174): chain-currency cascade (spec -> PRD) for CAP-174 (the Platform CI test job's budget and its browser install); FR-48 registered (FR-42..FR-47 are claimed by draft PR #2274). See § Currency reconciliation — 2026-10-26 (CAP-174). Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 111.1): chain-currency cascade (spec -> PRD) after the Spec's capability text was restored from the pre-fold source (titles, intents, successes; no CAP added or moved); no FR, NFR or arrow changes. See § Currency reconciliation — 2026-10-26 (Story 111.1). Prior "2026-10-25"   # RE-STAMPED 2026-10-25 (Story 110.1): FR-1..FR-31, which the 2026-09-17 fold left without arrows, now name the capabilities that realize them (CAP-1..CAP-4, CAP-18..CAP-20, CAP-127..CAP-131, CAP-57..CAP-61; FR-8..FR-11 also CAP-168); no FR text, number or NFR moves. See § Currency reconciliation — 2026-10-25 (Story 110.1). Prior "2026-10-23"   # RE-STAMPED 2026-10-23: chain-currency (spec -> PRD) for Story 71.12's decision and mint (a fix under CAP-159: every cancelled preflight lane names what stopped the run), then Stories 71.13 (CAP-159) and 13.6 (CAP-157 amended in place: the trunk joins a workspace's source as a landing ref); no CAP or FR added, no FR or AD amended; FR-32 holds as written. See § Currency reconciliation — 2026-10-23. Prior: RE-STAMPED 2026-10-21: chain-currency (spec -> PRD) for CAP-169..CAP-173 (BMAD marketplace reset; Epic 109). FR-42..FR-46 registered. See § Currency reconciliation — 2026-10-21. Prior: RE-STAMPED 2026-10-17: chain-currency (spec -> PRD) for Story 108.1's mint (fixes under CAP-167 and CAP-166) and the memlog entries since 2026-10-14; no CAP, FR or AD added or amended; FR-40's consequence (the env matrix and the BMAD-estate catalog) is met as written; FR-32 and Story 103.6's touched scope recorded, not re-derived. See § Currency reconciliation — 2026-10-17. Prior: RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for CAP-168 (the Pages duct; operator rulings 2026-10-13); FR-41 registered; FR-8 and FR-11 move onto `steward pages build|status`, FR-9 and FR-10 retire with `deploy dashboard` (superseded in part, nothing renumbered); D6's no-new-workflow clause retired; SM-2 recorded as history. See § Currency reconciliation — 2026-10-14 (the Pages duct). Prior: RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for CAP-167 (estate refresh; the plan's recommended answers Q1-Q9 adopted as assumptions); FR-40 registered. See § Currency reconciliation — 2026-10-13 (estate refresh). Prior: RE-STAMPED 2026-10-12: chain-currency cascade (spec -> PRD) for CAP-166 (the CI pause control plane, operator rulings Q1-Q8); FR-39 registered. See § Currency reconciliation — 2026-10-12. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entries (Story 67.4 re-scoped repo-only under fnd:CAP-13; Stories 85.5 and 72.2 unblocked and index row 49.13 done; Story 86.1 minted, a fix under CAP-114); no CAP minted, no FR registered. See § Currency reconciliation — 2026-10-10.. Prior: RE-STAMPED 2026-10-07 (later): chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-04..07 entries (Stories 85.1-85.4 landed under FR-38; Story 74.2, the chart, under FR-36, and the flag on in dev and staging); no FR registered. See § Currency reconciliation — 2026-10-07 (later: Stories 85.1–85.4 and 74.2).. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec memlog -> PRD) for the independent review of the free-threading Dream entry (research/free-threading-readiness-dream-review-2026-10-07.md; four operator rulings); no CAP minted, no FR registered. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for CAP-165 (Epic 85, preserved-work refs; CAP-156 and CAP-157 amended); FR-38 registered. Earlier: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for the Phase 3 rulings (CAP-60 amended, Epic 84); no FR registered. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec memlog -> PRD) for Epic 78 (security hotfix; defects of CAP-99, CAP-86 and unifying CAP-12; no FR registered). Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-163 (Epic 74) and CAP-164 (Epic 75); FR-36 and FR-37 registered; the Guild's spec-feature-flag-governance CAP-5 routed to Epic 76 with no FR. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+# 2026-10-25  # RE-STAMPED 2026-10-25: chain-currency (spec -> PRD) for Stories 71.14 and 99.8 (fixes under CAP-159 and CAP-166) and Story 13.7 (a fix under CAP-107 and CAP-157: clean --delete moves a landed workspace's Tier-3 files to the main checkout and names every refusal); no CAP or FR added, no FR or AD amended. See § Currency reconciliation — 2026-10-25 (Stories 71.14, 99.8 and 13.7).
 # 2026-09-28  # AMENDED 2026-09-28 (operator rulings): FR-34 amended in place -- CAP-5's size bound restated 1 GB -> 2 GB, the Guild's pixi does not move (spec-pyforge-mason:CAP-30); virtualenv 21 -> 20 accepted. See § Currency reconciliation — 2026-09-28 (operator rulings). Earlier: RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-162 (Epic 73); FR-35 registered; FR-34 gains a dated note (atlas stays out of the Guild; the Guild's cold install measured 1.5 GB). See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-160 / CAP-161 (Epic 72); FR-33 and FR-34 registered; § 4.13's 2026-08-26 mason clause marked superseded. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED 2026-09-27: chain-currency cascade (spec -> PRD) for CAP-159 (Epic 71); FR-32 registered, the first kernel FR minted under FR <- CAP. See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
@@ -61,7 +62,7 @@ There is no external customer and no second human operator. Steward is not desig
 
 **Functional Requirements:**
 
-#### FR-1: Host-scoped credential resolution
+#### FR-1: Host-scoped credential resolution ← CAP-1
 
 `steward keys` provides a resolver that any Steward-issued or Steward-audited credential attachment goes through, gating attachment by the request's destination host — equivalent in spirit to `_http.py`'s `skip_auth=True` guard.
 
@@ -69,7 +70,7 @@ There is no external customer and no second human operator. Steward is not desig
 - A credential declared with an explicit host allowlist is never attached to a request outside that allowlist, verified by a unit test constructing an out-of-allowlist URL.
 - The resolver is a thin wrapper importing/delegating to `_http.py`'s existing `auth_headers_for` pattern where applicable, not a parallel reimplementation.
 
-#### FR-2: At-rest secret encryption via `age`
+#### FR-2: At-rest secret encryption via `age` ← CAP-1
 
 `steward keys encrypt <file>` / `steward keys decrypt <file>` wrap the `age` CLI (X25519 identities) so secrets live encrypted in Git, never as committed plaintext.
 
@@ -79,7 +80,7 @@ There is no external customer and no second human operator. Steward is not desig
 
 **Out of Scope:** vendoring or reimplementing `age` itself — it is a required external pixi run-dependency, consistent with how `pyforge-warden` treats `deptry`/`osv-scanner` (Decision, technical research OQ2).
 
-#### FR-3: Key rotation
+#### FR-3: Key rotation ← CAP-1
 
 `steward keys rotate --scope <name>` generates a new `age` identity, re-encrypts every secret currently encrypted to the old identity's recipient, and marks the old identity retired in the inventory (FR-5).
 
@@ -87,7 +88,7 @@ There is no external customer and no second human operator. Steward is not desig
 - After rotation, every previously-encrypted secret decrypts correctly under the new identity and fails to decrypt under the old one.
 - Rotation is invocable on-demand (risk/compromise-triggered) — v1 does not ship a calendar-cron scheduler, per the 2026 NIST SP 800-63B Rev 4 shift away from blind time-based rotation (domain research § 4).
 
-#### FR-4: Credential audit / drift detection
+#### FR-4: Credential audit / drift detection ← CAP-1
 
 `steward keys audit --drift` scans this repo's tracked scripts/config for HTTP-credential-attachment code paths that are not host-scoped (the `JFROG_API_KEY`-class pattern) and reports each as a named finding.
 
@@ -95,20 +96,20 @@ There is no external customer and no second human operator. Steward is not desig
 - Run against a fixture containing a deliberately unconditional credential-injection pattern (mirroring the historical `_http.py` bug), the audit reports exactly that finding.
 - Run against the current, already-fixed `_http.py`, the audit reports clean.
 
-#### FR-5: Credential inventory
+#### FR-5: Credential inventory ← CAP-1
 
 `steward keys list` enumerates known credential identities (age recipients, named API-key env vars this repo depends on) with scope and last-rotated metadata, without ever printing a secret value.
 
 **Consequences (testable):**
 - Output never contains a raw secret value under any flag combination (enforced by a `meta/` test, mirroring `pyforge-warden`'s `test_socket_deny_alive.py`-style invariant test).
 
-#### FR-6: Revocation record
+#### FR-6: Revocation record ← CAP-1
 
 `steward keys revoke --scope <name>` marks an identity retired in the inventory and prints the manual remediation steps (e.g., "rotate the upstream JFrog token; this tool cannot call JFrog's revocation API").
 
 **Out of Scope:** calling third-party provider revocation APIs (JFrog, GitHub, Anthropic) directly — v1 is a record-and-guide tool, not an API integration; this is a deliberate v1 boundary (§5), not an oversight.
 
-#### FR-7: Remediation regression test
+#### FR-7: Remediation regression test ← CAP-1
 
 The `JFROG_API_KEY` cross-host leak pattern is closed as a named, automated regression test in Steward's own `tests/conformance/` suite (not just documentation) — this is the PRD's single highest-priority acceptance criterion, per the brief's Success Criteria.
 
@@ -126,11 +127,11 @@ The `JFROG_API_KEY` cross-host leak pattern is closed as a named, automated regr
 
 **Functional Requirements:**
 
-#### FR-8: Dashboard build
+#### FR-8: Dashboard build ← CAP-2, CAP-168
 
 `steward deploy dashboard --build` runs the existing `dashboard-gen` pixi task (no new build logic — wraps it).
 
-#### FR-9: Reconciled push
+#### FR-9: Reconciled push ← CAP-2, CAP-168
 
 `steward deploy dashboard` builds (FR-8), diffs the freshly generated `docs/dashboard/` output against the currently committed tree, and only commits + pushes when a real difference exists.
 
@@ -138,11 +139,11 @@ The `JFROG_API_KEY` cross-host leak pattern is closed as a named, automated regr
 - Running twice in a row with no source changes between runs results in zero commits on the second run.
 - A change to `pyforge.doctor.sources.fleet_scan`'s output is reflected in exactly one new commit.
 
-#### FR-10: Dry-run
+#### FR-10: Dry-run ← CAP-2, CAP-168
 
 `steward deploy dashboard --dry-run` performs the build and diff (FR-8, FR-9) and prints the diff without committing or pushing.
 
-#### FR-11: Deploy status
+#### FR-11: Deploy status ← CAP-2, CAP-168
 
 `steward deploy status` reports the last successful dashboard deploy (commit SHA, timestamp), read from Git history — no separate state store.
 
@@ -158,21 +159,21 @@ The `JFROG_API_KEY` cross-host leak pattern is closed as a named, automated regr
 
 **Functional Requirements:**
 
-#### FR-12: Environment materialization
+#### FR-12: Environment materialization ← CAP-3
 
 `steward provision --env <name>` resolves `<name>` against pixi.toml's `[environments]` table and runs `pixi install -e <name>`, or reports a clear error listing valid environment names if `<name>` doesn't exist.
 
-#### FR-13: Runner provisioning
+#### FR-13: Runner provisioning ← CAP-3
 
 `steward provision --runner bmad-loop --env <name>` wraps `scripts/bmad-loop-worktree` to materialize a loop worktree and its named pixi environment together, in one call.
 
 **Out of Scope:** reimplementing `bmad-loop-worktree`'s internals — Steward calls it, does not fork or own its logic.
 
-#### FR-14: Environment inventory
+#### FR-14: Environment inventory ← CAP-3
 
 `steward provision --list` enumerates every environment in pixi.toml's `[environments]` table with the features composing it (read-only introspection, no pixi TOML parsing reimplementation beyond what's needed to list names/features).
 
-#### FR-15: Sync-gate check
+#### FR-15: Sync-gate check ← CAP-3
 
 `steward provision --verify` wraps the existing `environment.yaml` ↔ `pixi.toml` sync-gate check (`pixi project export conda-environment -e build` comparison) and reports drift, rather than reimplementing the check logic that already backs the repo's CI gate (CLAUDE.md § "PR CI gates").
 
@@ -187,15 +188,15 @@ The `JFROG_API_KEY` cross-host leak pattern is closed as a named, automated regr
 
 **Functional Requirements:**
 
-#### FR-16: Ceiling declaration
+#### FR-16: Ceiling declaration ← CAP-4
 
 `steward budget set --cap <amount><currency>/<period>` (e.g. `1500usd/month`) records a machine-readable ceiling to a tracked config file under Steward's own config surface.
 
-#### FR-17: Ceiling display
+#### FR-17: Ceiling display ← CAP-4
 
 `steward budget show` prints the currently declared ceiling(s) in both human-readable and `--json` form.
 
-#### FR-18: Manual check (honest stub)
+#### FR-18: Manual check (honest stub) ← CAP-4
 
 `steward budget check` is an extension point that, in v1, has no live metered-spend source to check against, and explicitly reports "no metered spend source configured" rather than fabricating a number or silently passing.
 
@@ -303,42 +304,42 @@ re-owned under the build-line/estate seam), which is precisely why the gap was i
 *Sequencing: land before the container work — `provision --module` inside an image build
 only exists if the backend exists first.*
 
-#### FR-19: One-command module provisioning
+#### FR-19: One-command module provisioning ← CAP-18
 An operator materializes a named BMAD module without recalling its installer's syntax.
 **Consequences:** `provision --module <name>` succeeds for each supported module; an
 unknown name lists valid ones rather than surfacing the underlying tool's raw error;
 the implementation is a **subprocess wrap of the module's own installer** (AD-1), never
 a reimplementation.
 
-#### FR-20: Module discovery
+#### FR-20: Module discovery ← CAP-19
 An operator can ask what modules exist and which are installed before choosing.
 **Consequences:** `provision --list-modules` enumerates supported modules with installed
 state; state is **derived from the filesystem**, not from a hand-maintained declaration.
 
-#### FR-21: Partial state is named, never silent
+#### FR-21: Partial state is named, never silent ← CAP-20
 **Consequences:** an installer that exits non-zero, or succeeds while leaving the module
 unimportable, is reported as a named failure — never counted as provisioned.
 
 ### The one-container Guild — `spec-unified-container` (FR-22..FR-26)
 
-#### FR-22: One build, whole Guild
+#### FR-22: One build, whole Guild ← CAP-127
 **Consequences:** a single `Containerfile` produces an image carrying all eight station
 CLIs; each answers `--version` inside the container.
 
-#### FR-23: The image ships the repo at a fixed short path
+#### FR-23: The image ships the repo at a fixed short path ← CAP-128
 **Consequences:** the checkout lives at a path short enough to avoid the documented
 `pixi-build-python` path-length panic; the path is fixed and documented, not derived
 from the build host.
 
-#### FR-24: Credentials never enter image layers
+#### FR-24: Credentials never enter image layers ← CAP-129
 **Consequences:** no secret is present in any layer — asserted by a build-time scan;
 credentials arrive at run time only, through Steward's existing `keys` surface.
 
-#### FR-25: State outlives the container
+#### FR-25: State outlives the container ← CAP-130
 **Consequences:** loop homes, the Tier-3 store and mutable runtime caches resolve to
 mounted volumes; a container restart loses no durable state, proven by a round-trip test.
 
-#### FR-26: The image proves itself at build time
+#### FR-26: The image proves itself at build time ← CAP-131
 **Consequences:** the build runs a smoke gate that fails the build — not a later run —
 when any station CLI is missing, unimportable, or over its documented start-up budget.
 
@@ -350,23 +351,23 @@ in the Spec (authoritative side, Mode A vs B, Mode B's schema); **Q1/Q5 were res
 Epic 8 landed 2026-08-09..13 as Stories 8.1–8.7, extending FR-27..31 with the schedule
 trigger (8.4) and assignee/identity-link propagation (8.7).*
 
-#### FR-27: Bidirectional propagation
+#### FR-27: Bidirectional propagation ← CAP-57
 **Consequences:** a status/assignee/link change on either board reaches the other with no
 human action on the receiving side, demonstrated against a live pair.
 
-#### FR-28: Zero-loop guarantee
+#### FR-28: Zero-loop guarantee ← CAP-58
 **Consequences:** N round-trips of one human change produce **exactly one** propagation,
 not N — demonstrated by test, never asserted.
 
-#### FR-29: Idempotent update processing
+#### FR-29: Idempotent update processing ← CAP-59
 **Consequences:** delivering an identical payload twice leaves both systems byte-identical
 to delivering it once.
 
-#### FR-30: Fail loud, fail alone
+#### FR-30: Fail loud, fail alone ← CAP-60
 **Consequences:** an item missing its cross-system link emits a named, greppable error and
 does not stop the batch for every other item.
 
-#### FR-31: Explicit status-vocabulary translation
+#### FR-31: Explicit status-vocabulary translation ← CAP-61
 **Consequences:** every status crossing the boundary passes through a reviewable mapping;
 an unmapped value is a hard logged failure, never a pass-through that invents a state.
 
@@ -2874,3 +2875,134 @@ re-stamp; neither mints a CAP or registers an FR.*
 The 2026-10-23 stories add no FR. The 2026-10-21 marketplace reset already registered FR-42..FR-46, so they are not free. **ONE kernel FR space is FR-1..FR-46** (FR-47 = next free id).
 
 **Content changed:** this section added; `updated:` bumped.
+
+## Currency reconciliation — 2026-10-25 (Story 110.1)
+
+*Trigger: the 2026-09-17 steward fold (`97e0816ad2`) added no FR arrows, so FR-1..FR-31 never named the capability
+they derive from (`spec-one-chain-per-station` CAP-5 makes that a step of every fold). The fleet audit of 2026-10-25
+found the gap; Story 110.1 adds the arrows. Only arrow text is added.*
+
+Thirty-one requirement headings now name the capability that realizes them (the table is the 2026-10-25 decision entry
+in `spec-pyforge-steward`'s memlog):
+
+- § 4.1 Keys, FR-1..FR-7 ← CAP-1; § 4.2 Deploy, FR-8..FR-11 ← CAP-2, CAP-168; § 4.3 Provision, FR-12..FR-15 ← CAP-3; § 4.4
+  Budget, FR-16..FR-18 ← CAP-4. The Spec's CAP-1..CAP-4 carry placeholder titles from the fold, but their intent text
+  names exactly these four duties.
+- Module provisioning, FR-19..FR-21 ← CAP-18..CAP-20; the one-container Guild, FR-22..FR-26 ← CAP-127..CAP-131; two
+  boards, one truth, FR-27..FR-31 ← CAP-57..CAP-61. Each matches its capability title for title.
+
+FR-8..FR-11 cite CAP-2, the capability their text describes, and CAP-168, whose intent names them as what its `pages`
+duty replaces (added on the independent review the same day; the 2026-10-14 section above records the move).
+
+**ONE kernel FR space stays FR-1..FR-41** (FR-42 = next free id).
+
+**Content changed:** this section added; 31 FR arrows added in place. No FR title, body or number moved, and no FR was
+registered or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-10-25 (Stories 71.14, 99.8 and 13.7)
+
+*Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-steward`'s memlog moved on 2026-10-25 (its later
+entries carry 2026-10-26 commit dates in UTC) with the decision, mint and review entries of Stories 71.14, 99.8 and
+13.7, while this PRD sat at 2026-10-23. None mints a CAP or registers an FR.*
+
+- **Folded:** Story 71.14 (Epic 71), a fix under CAP-159: `pyforge-deps-test` runs in `pr-preflight` and in the
+  Detectors `scripts-suite` job on every PR. Story 99.8 (Epic 99), a fix under CAP-166: `ci status` reports each
+  surface's latest `main` run and `pr-preflight` prints one advisory line per red one.
+- **Folded:** Story 13.7 (Epic 13, reopened and closed), a fix under CAP-107 and CAP-157. `workspace clean --delete`
+  moves a landed workspace's Tier-3 files (such as the run journal `dispatch_land_finalize` writes into it) to the
+  same paths in the main checkout, never over an existing file, before it deletes the workspace; every refusal names
+  its cause, and `not-merged` is kept for a HEAD or branch on no landing ref. CAP-157's note proof also treats a
+  git-ignored listing that warns about a path under `_bmad-output/` as no proof. No FR names the clean verbs'
+  refusal reasons or the landed proof, so no FR text changes.
+- **FR-32 (← CAP-159), as written.** The new lane and the advisory banner leave every lane's exit code and verdict
+  as they were.
+
+No FR is added, amended, renumbered or removed. **ONE kernel FR space stays FR-1..FR-41** (FR-42 = next free id).
+
+**Content changed:** this section added; `updated:` bumped.
+
+## Currency reconciliation — 2026-10-26 (Story 111.1)
+
+*`spec→prd` cascade.* `spec-pyforge-steward`'s capability text was restored on 2026-10-26 (23 placeholder titles, 29 'See absorbed Spec memlog' bullets, 147 cut bullets and 15 joined `verified:` lines, from the pre-fold source at `97e0816ad2^`; memlog correction and decision entries of that date). Every arrow this PRD carries still names the same capability ids, which now read as what they are. Under the 2026-10-26 ruling that a requirement cites defined capabilities only (CHAIN-STANDARD § 12), this PRD already complies: Story 110.1 traced FR-1..FR-31 and no steward requirement cites a Constraint or a Charter clause. **Content changed:** this section and `updated:`. No FR, NFR or arrow moves.
+
+## Currency reconciliation — 2026-10-26 (CAP-174)
+
+*Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-steward` gained CAP-174 on 2026-10-26 from the
+Realization-log entry of that date (the Platform CI test job's budget is sized for a fast mirror). Same-day reconcile;
+the FR is derived from its CAP. Steward capability ids 169-173 and FR-42..FR-47 are claimed by draft PR #2274, so this FR takes the
+next id free of it.*
+
+### The FR space: FR-48 registered
+
+#### FR-48: The Platform CI test job's time budget covers what it does on a slow runner, and it installs only what its runner image lacks ← CAP-174
+
+The Platform CI `test` job was cancelled at its 15-minute ceiling three times (2026-10-23, and twice on 2026-10-26,
+two of the three on `main`'s own push runs). Each time one step took 636–668 s: `playwright install --with-deps
+chromium`, nearly all of it an apt download at 38–43 kB/s while the runner image already carried every library the
+browser links. The rest of the job sums to 365 s at worst. With no required status check on `main`, the cancellations
+went unseen. The
+job now installs only what the image lacks and its budget is sized from what it measurably does, so a slow mirror reads
+as a slower green run.
+**Consequences (testable):**
+- The job installs the Chromium browser alone, launches it once, and runs `playwright install-deps chromium` only when
+  that launch fails, with a warning naming the fallback, then launches it again and fails the step with an error if it
+  still does not launch; on today's image the log shows the launch succeeding and no apt download.
+- `timeout-minutes` is 25: the fallback on the slowest mirror measured (668 s) plus the worst of the other steps
+  (365 s) is 1,033 s, and 1,500 s leaves 45 % headroom; the comment beside it names those figures.
+- On a PR run that installs the browser from scratch, the job completes inside the budget and the herald deck viewer
+  check passes rather than skips.
+- The lane is never paused, disabled or set `continue-on-error`; its `platform-ci.test` registry row is unchanged, and
+  `ci_surface_gates.py --check` and `detectors-ci` exit 0.
+
+No flag: a CI job's install step and budget are `detector-or-gate` exempt. Decomposes into **Epic 112** (Story 112.1).
+
+**ONE kernel FR space now FR-1..FR-41 and FR-48** (FR-42..FR-47 claimed by draft PR #2274; FR-49 = next free id).
+
+**Content changed:** this section added (FR-48 registered). No FR renumbered or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-10-26 (CAP-7 retrofit, Epic 114)
+
+Trigger: the station Spec's `.memlog.md` gained the 2026-10-26 decision (the Guild flag rule's retrofit, operator rulings R1–R8). No requirement, arrow or capability changes: every pre-rule runtime capability gains a kill switch under the Guild rule; the station Spec mints no CAP. `updated:` bumped so the chain reads current.
+
+## Currency reconciliation — 2026-10-27 (CAP-175)
+
+*Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-steward` gained CAP-175 on 2026-10-27 from the Realization-log
+entry of that date (the preflight answers in eleven minutes, a PR's CI in thirteen). Same-day reconcile; the FR is
+derived from its CAP. FR-42..FR-47 stay claimed by draft PR #2274, so this FR takes the next id free of it after FR-48.*
+
+### The FR space: FR-49 registered
+
+#### FR-49: The preflight and a PR's CI answer within a measured budget, and a station suite runs once, as its package-local and live-tree halves ← CAP-175
+
+Epic 71 (CAP-159) brought the pre-push preflight under a minute on 2026-09-27; by 2026-10-27 a full run is 670 s at the median
+and 1950 s at worst (52 green runs across the worktree journals), and one PR head takes 12–13 min of wall and ~126
+runner-minutes. The suites grew 10–35× (`pyforge-steward-test` 19 s → 698 s, serial), nothing enforced the budget,
+each touched suite runs twice (its coverage gate re-runs it), image builds run on every PR with no cache or gate,
+detectors run serially in CI, and a planning edit runs eight unit suites because Story 98.1's arrays are what each
+suite's tests read. The operator ruled on 2026-10-27: (D1) image builds and the CFE regression net leave the PR path for
+push-to-main plus the nightly canary, the PR keeps the CFE `tests/meta`; (D2) coverage gates merge into the station
+test job and `coverage-gates.yml` retires; (D3) `preflight-budget` stays warn-only; (D4) fan-out shrinks by splitting
+live-tree readers from package suites, never by narrowing the arrays.
+**Consequences (testable):**
+- Every pytest lane runs under `pytest-xdist` where its tests allow, with the serial remainder named in the task and run
+  alone; no test is deleted, skipped or re-marked to meet a budget.
+- A station's coverage floor is judged from the JSON its own suite run wrote (`scripts/station_suite_ci.py`), locally
+  and in CI alike; `coverage-gates.yml` reads `state: retired` in `docs/governance/ci-surfaces.yaml`.
+- The preflight admits lanes longest-first by the expected seconds and core weight it reads from its own journal; a
+  full run's `total_seconds` is within 10 % of its longest lane.
+- Each station suite is two tasks and two CI jobs, `pyforge-<s>-test` (reads nothing outside the package; fires on the
+  package and the shared surface) and `pyforge-<s>-live-test` (the live-tree readers; fires on exactly what they read,
+  derived as Story 98.1 derives it); `test_station_tests_trigger_map.py` keys both and `PRESERVED` holds.
+- Image builds and the CFE regression net run on push-to-main and the nightly canary, declared in the registry; a PR
+  that touches no image input runs no image build; a CFE PR runs the `tests/meta` subset.
+- `preflight-budget` names each lane over its journal-derived budget and never changes an exit code.
+- On a single-station branch `pr-preflight` journals ≤ 90 s at the median of its last ten green runs (full estate
+  ≤ 240 s); a single-station PR's slowest workflow is ≤ 5 min and its jobs sum to ≤ 20 runner-minutes.
+
+Flags: the gate-shaped stories are `detector-or-gate` exempt; the preflight scheduler (Story 117.3) sits behind
+`pyforge.steward.preflight_critical_path` as a kill switch. Decomposes into **Epic 117** (Stories 117.1–117.8); doctor,
+herald, mason, atlas, scribe and warden take their halves on their own chains.
+
+**ONE kernel FR space now FR-1..FR-41, FR-48 and FR-49** (FR-42..FR-47 claimed by draft PR #2274; FR-50 = next free id).
+
+**Content changed:** this section added (FR-49 registered). No FR renumbered or removed. `updated:` bumped.

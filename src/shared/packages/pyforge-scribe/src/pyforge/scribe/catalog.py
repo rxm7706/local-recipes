@@ -64,7 +64,7 @@ REGISTER_RELPATH = (
     / "pyforge-steward"
     / "planning-artifacts"
     / "specs"
-    / "spec-bmad-suite-lifecycle"
+    / "spec-pyforge-steward"
     / "adoption-register.md"
 )
 CADENCE_RELPATH = REGISTER_RELPATH.with_name("release-cadence.md")

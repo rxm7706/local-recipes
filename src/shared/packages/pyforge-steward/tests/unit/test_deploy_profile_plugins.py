@@ -33,6 +33,10 @@ from pyforge.steward.deploy_profiles import (
     select_deploy_profile_plugin,
 )
 
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 _PKG_ROOT = Path(__file__).resolve().parents[2]
 _PYPROJECT = _PKG_ROOT / "pyproject.toml"
 _PROFILES_SRC = _PKG_ROOT / "src" / "pyforge" / "steward" / "deploy_profiles.py"

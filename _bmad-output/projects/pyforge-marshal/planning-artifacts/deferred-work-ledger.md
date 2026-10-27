@@ -9140,3 +9140,26 @@ status: open
   severity: low
   promoted: 2026-10-15 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-marshal-105-1: Marshal PRD FR-144..FR-147 (section 16.5, detector self-verification) have no realizing capability: they keep the fold's counted arrows CAP-102..CAP-105 until the operator picks their source.
+
+- source_spec: `planning-artifacts/specs/spec-105-1-every-marshal-prd-fr-arrow-names-the-spec-capability-that-realizes-it.md`
+  summary: Marshal PRD FR-144..FR-147 (section 16.5, detector self-verification) have no realizing capability: they keep the fold's counted arrows CAP-102..CAP-105 until the operator picks their source.
+  evidence: Story 105.1 (2026-10-25) re-mapped the fold's counted FR arrows from evidence, and the operator ruled to leave these four unchanged pending a source-capability decision. Their PRD section names spec-dream-to-code-model-self-verification. Before the 2026-09-16 fold (1e845b55fc^) that Spec's "Scope (capabilities)" list held exactly these four: fixture meta-tests for dream_chain_check.py, fixture meta-tests for bmad_drift_check.py, a detector-incident log and the --dreams hygiene mode. The fold minted no spec-pyforge-marshal CAP from them (no CAP carries that provenance, and the Spec is now an absorbed stub), so the capabilities were dropped while their stories (marshal 17.1, 17.2) stayed done. Their current arrows point at CAP-102..CAP-105, which are fleet-chain-completeness capabilities. Options: restore the four capabilities the fold dropped as spec-pyforge-marshal CAPs (through bmad-spec) and point the FRs at them; or re-point them at the station that now owns detector self-verification; or retire the FRs.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/prds/prd-pyforge-marshal-2026-07-25/prd.md (FR-144..FR-147)
+  origin: spec-deferred 34ffbcae964e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-25 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  resolved: 2026-10-25 (Story 106.2, operator ruling "Restore 4 marshal CAPs (Recommended)": spec-pyforge-marshal CAP-293..CAP-296 restore the four detector self-verification capabilities the 2026-09-16 fold dropped, shipped, with spec-dream-to-code-model-self-verification as their provenance; FR-144..FR-147 cite them one to one; PRD § 46)
+  status: closed
+
+### DW-marshal-110-1-1: 231 capabilities of the marshal flag inventory stay `unresolved`: the join cannot reach their code, so the CAP-7 retrofit cannot judge whether they are reachable at runtime.
+
+- source_spec: `planning-artifacts/specs/spec-110-1-the-front-door-names-the-environment-a-roster-station-runs-in-sits-behind-a-kill-switch.md`
+  summary: 231 rows of `docs/governance/flag-inventory/pyforge-marshal.md` read `unresolved` after the join fix (doctor Story 51.1): 198 CAPs no story cites on a line naming the Spec, 23 whose Surface paths no longer exist, 10 citing stories with no Surface line. They are not the retrofit's debt (operator ruling R7 of 2026-10-26): a row the join cannot classify is a planning gap, not a capability known to be reachable.
+  evidence: Regenerated 2026-10-26 on the fixed join (landed stories only, best class across citing stories). The residue is the inventory's blind spot by construction: a CAP joins only through a citing story's `Surface:` line in `epics.md` or a story spec's `Parent:` line. The follow-up shape is Doctor's: let the join also read each capability's own `verified:` sub-bullet citations (they name `file:line`), then re-measure; a station backfills `Surface:` lines only where a capability turns out runtime.
+  location: docs/governance/flag-inventory/pyforge-marshal.md
+  origin: spec-deferred — recorded by hand in the CAP-7 retrofit PR (operator ruling R7, 2026-10-26)
+  severity: low
+  promoted: 2026-10-26 — the retrofit chain commit
+  status: open

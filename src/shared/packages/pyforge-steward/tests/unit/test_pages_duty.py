@@ -34,6 +34,10 @@ from pyforge.steward.pages_duty import (
     run_status,
 )
 
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 _NOW = datetime(2026, 10, 15, 12, 0, tzinfo=timezone.utc)
 _SITE = "https://rxm7706.github.io/local-recipes/"
 

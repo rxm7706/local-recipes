@@ -2,7 +2,7 @@
 
 Exercises CAP-6 pixi-bin PATH fallback, CAP-8 single-conflict path, and CAP-7 skf
 restore together in the invocation shape documented in
-``spec-bmad-suite-lifecycle/release-cadence.md`` § The ``@next`` rehearsal.
+``spec-pyforge-steward/release-cadence.md`` § The ``@next`` rehearsal.
 
 No live ``npx bmad-method@next`` call — ``tmp_path`` stands in for the throwaway
 worktree.
@@ -25,6 +25,10 @@ from pyforge.steward.upgrade import (
     build_preflight_report,
     format_apply,
 )
+
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
 
 # Verbatim argv shape for Story 46.10 cross-check against release-cadence.md.
 # Placeholders stand in for paths resolved at runtime in a live rehearsal.

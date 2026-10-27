@@ -170,7 +170,14 @@ jobs:
     # render: python scripts/ci_surface_gates.py --render
     if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && (github.event_name != 'workflow_dispatch' || inputs.jobs == 'all')) }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # 25, not 15 (steward Story 112.1 / CAP-174), sized from the step times of
+    # the last 200 test jobs (2026-10-11..26). Every step but the Chromium
+    # install sums to 365 s at worst (pixi 26-32 s on a cache miss, the suite
+    # 243 s). The apt path of that install took 668 s on the slowest mirror
+    # seen (runs 39925508594, 40306113110, 40351088193 attempt 1, all
+    # cancelled at 15). 668 + 365 = 1,033 s; 25 min (1,500 s) leaves about
+    # 45 % headroom. Without the apt fallback below the job runs about 6 min.
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: src/platform
@@ -229,9 +236,90 @@ jobs:
 
       # Herald Story 30.2: the deck viewer's zero-foreign-origin check drives a
       # real browser. The runner has no Playwright-managed Chromium, so install
-      # it the way pyforge-station-tests' atlas and herald jobs do.
+      # one. Steward Story 112.1 / CAP-174: install the browser alone, launch it
+      # once, and pull its system packages through apt only when that launch
+      # fails. The image already ships every library the headless shell links;
+      # installing with deps added only fonts and upgrades, from an apt mirror
+      # that ran at 38-43 kB/s; the step took 636-668 s on the three cancelled
+      # runs named above the job's timeout. After the fallback the browser is
+      # launched again, so a failure reds this step, beside its cause.
       - name: Install Chromium for the herald deck viewer browser check
-        run: python -m playwright install --with-deps chromium
+        run: |
+          probe() {
+            python - <<'PY'
+          from playwright.sync_api import sync_playwright
+
+          with sync_playwright() as playwright:
+              playwright.chromium.launch().close()
+          PY
+          }
+          python -m playwright install chromium
+          if probe; then
+            echo "Chromium launches on this runner image; no system packages installed."
+          else
+            echo "::warning::Chromium does not launch on this runner image; installing its system packages through apt (playwright install-deps chromium)."
+            python -m playwright install-deps chromium
+            if ! probe; then
+              echo "::error::Chromium still does not launch after playwright install-deps chromium."
+              exit 1
+            fi
+          fi
+
+      # Story 117.12 (spec-pyforge-steward CAP-175): the system checks, ruff, mypy, the policy suite and the
+      # sqlmigrate extraction run in the `checks` job beside this one; this job is the suite alone, under
+      # pytest-xdist on the runner's four cores (pytest-django gives each worker its own test database).
+      - name: Full test suite (platformapp app tests, the ASGI seam, and the import boundary)
+        run: python -m pytest -v -n 4 --dist loadgroup
+
+  checks:
+    # ci-surfaces: platform-ci.checks
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && (github.event_name != 'workflow_dispatch' || inputs.jobs == 'all')) }}
+    runs-on: ubuntu-latest
+    # Story 117.12 (spec-pyforge-steward CAP-175): the checks that ran inside `test` before — the Django system
+    # checks, ruff, ruff format, mypy, the policy suite and the sqlmigrate extraction — in a job beside the suite,
+    # so neither waits for the other. Same services (PostgreSQL + Redis, nothing else) and the same slim env.
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: src/platform
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: platform
+          POSTGRES_DB: platform
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://postgres:platform@localhost:5432/platform
+      REDIS_URL: redis://localhost:6379/0
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Verify src/platform exists on this ref
+        working-directory: .
+        run: test -d src/platform || { echo "::error::src/platform does not exist on this ref"; exit 1; }
+
+      - name: Install test dependencies
+        uses: ./.github/actions/platform-test-setup
 
       - name: Django system checks (PostgreSQL + Redis, no other backing service)
         run: python manage.py check
@@ -247,7 +335,7 @@ jobs:
 
       # Steward 16.4 / CAP-4: named lane for the executable policy suite
       # (dependency / credential-surface / typing / coverage). Also collected
-      # by the full pytest step below; this step keeps the suite visible as
+      # by the full pytest step in `test`; this step keeps the suite visible as
       # its own CI gate rather than an accidental collect.
       - name: Policy suite
         run: python -m pytest tests/policy -v
@@ -257,9 +345,6 @@ jobs:
       # changeset fails CI and names the missing distribution:seq id.
       - name: sqlmigrate extraction
         run: python -m db.sqlmigrate_extraction
-
-      - name: Full test suite (platformapp app tests, the ASGI seam, and the import boundary)
-        run: python -m pytest -v
 
   # P1 fan-in: one Docker build exported for gke-portability-smoke,
   # ocp-portability-smoke, and air-gap-parity only. container runs
@@ -327,7 +412,7 @@ jobs:
   container:
     # ci-surfaces: platform-ci.container
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && ((github.event_name == 'workflow_dispatch' && inputs.jobs == 'all') || (github.event_name != 'workflow_dispatch' && vars.PAUSE_PLATFORM_CONTAINER_BUILDS != 'true'))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && ((github.event_name == 'workflow_dispatch' && inputs.jobs == 'all') || (github.event_name == 'push' && vars.PAUSE_PLATFORM_CONTAINER_BUILDS != 'true'))) }}
     strategy:
       fail-fast: false
       matrix:
@@ -731,7 +816,9 @@ jobs:
   golden-path-promotion:
     # ci-surfaces: platform-ci.golden-path-promotion
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && (github.event_name != 'workflow_dispatch' || inputs.jobs == 'all')) }}
+    # Story 117.6 (CAP-175, ruling D1): with its container builds off the pull_request path, the promotion that
+    # needs them runs on push-to-main (and workflow_dispatch); registry row platform-ci.golden-path-promotion, trigger: main.
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.jobs == 'all'))) }}
     needs: container
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -838,7 +925,7 @@ jobs:
   container-dbgpt:
     # ci-surfaces: platform-ci.container-dbgpt
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && ((github.event_name == 'workflow_dispatch' && inputs.jobs == 'all') || (github.event_name != 'workflow_dispatch' && vars.PAUSE_PLATFORM_CONTAINER_BUILDS != 'true'))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && ((github.event_name == 'workflow_dispatch' && inputs.jobs == 'all') || (github.event_name == 'push' && vars.PAUSE_PLATFORM_CONTAINER_BUILDS != 'true'))) }}
     strategy:
       fail-fast: false
       matrix:

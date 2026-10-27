@@ -2,64 +2,64 @@
 id: SPEC-pyforge-marshal
 spec: pyforge-marshal
 status: ready
-updated: "2026-10-14"
+updated: "2026-10-26"   # AMENDED 2026-10-26 (every requirement derives from a capability, Story 108.1): CAP-297 minted from the Constraint "Two clocks" (seed version reports both clocks; FR-125 <- CAP-297, CAP-17), CAP-13 success gains the exit-code clause FR-126 relies on, 124 placeholder and 11 one-letter titles and 418 cut or placeholder bullets restored from the pilot fold's source. Prior "2026-10-25"
 owner-dream: docs/dreams/pyforge-marshal.md
 covers-dreams:
   - docs/dreams/pyforge-marshal.md
-  - docs/dreams/adaptive-model-tiering.md
-  - docs/dreams/agent-portability.md
-  - docs/dreams/agent-tool-surface.md
-  - docs/dreams/agentic-sdlc-autonomy.md
-  - docs/dreams/artifact-chain-reconciliation.md
-  - docs/dreams/artifact-console.md
-  - docs/dreams/bmad-611-era-alignment.md
-  - docs/dreams/bmad-cursor-interactive-routing.md
-  - docs/dreams/bmad-loop-baseline-drift.md
-  - docs/dreams/bmad-loop-forward-dependency-blindness.md
-  - docs/dreams/bmad-loop-intent-gap-work-preservation.md
-  - docs/dreams/bmad-loop-liveness-footgun.md
-  - docs/dreams/bmad-output-hygiene.md
-  - docs/dreams/bmad-switch-scope-enforcement.md
-  - docs/dreams/cursor-native-tier-map.md
-  - docs/dreams/dashboard-project-path-derivation.md
-  - docs/dreams/dashboard-velocity-captures-hand-driven-work.md
-  - docs/dreams/dispatch-tier-routing-fails-safe.md
-  - docs/dreams/dream-to-code-model-self-verification.md
-  - docs/dreams/durable-runs.md
-  - docs/dreams/factory-console.md
-  - docs/dreams/fidelity-enforcement.md
-  - docs/dreams/fleet-chain-completeness.md
-  - docs/dreams/fleet-status-supervisor-fallback.md
-  - docs/dreams/genesis-installer-name-retirement.md
-  - docs/dreams/genesis-installer.md
-  - docs/dreams/horizontal-run-concurrency.md
-  - docs/dreams/landing-evidence-grammar.md
-  - docs/dreams/library-catalog-manifest-sync.md
-  - docs/dreams/loop-home-fleet-refresh.md
-  - docs/dreams/marshal-dependency-aware-dispatch.md
-  - docs/dreams/marshal-drain-self-resolution.md
-  - docs/dreams/marshal-land-cross-project-story-key-collision.md
-  - docs/dreams/marshal-land-merge-subject.md
-  - docs/dreams/marshal-launch-environment-integrity.md
-  - docs/dreams/marshal-parallel-dispatch-fanout.md
-  - docs/dreams/marshal-run-watch.md
-  - docs/dreams/marshal-single-story-dispatch.md
-  - docs/dreams/marshal-status-harness-run-id-poisoning.md
-  - docs/dreams/marshal-templated-merge-subject-cross-project-collision.md
-  - docs/dreams/marshal-token-economy.md
-  - docs/dreams/one-front-door.md
-  - docs/dreams/pr-lifecycle.md
-  - docs/dreams/pyforge-core.md
-  - docs/dreams/pyforge-marshal-loop-orchestrator.md
-  - docs/dreams/pyforge-testing-charter.md
-  - docs/dreams/quick-dev-reconciliation.md
-  - docs/dreams/regenerable-factory.md
-  - docs/dreams/risk-tiered-review-depth.md
-  - docs/dreams/run-state-one-publisher.md
-  - docs/dreams/spec-surface-overlap-tolerance.md
-  - docs/dreams/sprint-status-auto-promote.md
-  - docs/dreams/surface-drift-reconciliation.md
-  - docs/dreams/token-economy-claude-session-path.md
+  - archive/docs/dreams/adaptive-model-tiering.md
+  - archive/docs/dreams/agent-portability.md
+  - archive/docs/dreams/agent-tool-surface.md
+  - archive/docs/dreams/agentic-sdlc-autonomy.md
+  - archive/docs/dreams/artifact-chain-reconciliation.md
+  - archive/docs/dreams/artifact-console.md
+  - archive/docs/dreams/bmad-611-era-alignment.md
+  - archive/docs/dreams/bmad-cursor-interactive-routing.md
+  - archive/docs/dreams/bmad-loop-baseline-drift.md
+  - archive/docs/dreams/bmad-loop-forward-dependency-blindness.md
+  - archive/docs/dreams/bmad-loop-intent-gap-work-preservation.md
+  - archive/docs/dreams/bmad-loop-liveness-footgun.md
+  - archive/docs/dreams/bmad-output-hygiene.md
+  - archive/docs/dreams/bmad-switch-scope-enforcement.md
+  - archive/docs/dreams/cursor-native-tier-map.md
+  - archive/docs/dreams/dashboard-project-path-derivation.md
+  - archive/docs/dreams/dashboard-velocity-captures-hand-driven-work.md
+  - archive/docs/dreams/dispatch-tier-routing-fails-safe.md
+  - archive/docs/dreams/dream-to-code-model-self-verification.md
+  - archive/docs/dreams/durable-runs.md
+  - archive/docs/dreams/factory-console.md
+  - archive/docs/dreams/fidelity-enforcement.md
+  - archive/docs/dreams/fleet-chain-completeness.md
+  - archive/docs/dreams/fleet-status-supervisor-fallback.md
+  - archive/docs/dreams/genesis-installer-name-retirement.md
+  - archive/docs/dreams/genesis-installer.md
+  - archive/docs/dreams/horizontal-run-concurrency.md
+  - archive/docs/dreams/landing-evidence-grammar.md
+  - archive/docs/dreams/library-catalog-manifest-sync.md
+  - archive/docs/dreams/loop-home-fleet-refresh.md
+  - archive/docs/dreams/marshal-dependency-aware-dispatch.md
+  - archive/docs/dreams/marshal-drain-self-resolution.md
+  - archive/docs/dreams/marshal-land-cross-project-story-key-collision.md
+  - archive/docs/dreams/marshal-land-merge-subject.md
+  - archive/docs/dreams/marshal-launch-environment-integrity.md
+  - archive/docs/dreams/marshal-parallel-dispatch-fanout.md
+  - archive/docs/dreams/marshal-run-watch.md
+  - archive/docs/dreams/marshal-single-story-dispatch.md
+  - archive/docs/dreams/marshal-status-harness-run-id-poisoning.md
+  - archive/docs/dreams/marshal-templated-merge-subject-cross-project-collision.md
+  - archive/docs/dreams/marshal-token-economy.md
+  - archive/docs/dreams/one-front-door.md
+  - archive/docs/dreams/pr-lifecycle.md
+  - archive/docs/dreams/pyforge-core.md
+  - archive/docs/dreams/pyforge-marshal-loop-orchestrator.md
+  - archive/docs/dreams/pyforge-testing-charter.md
+  - archive/docs/dreams/quick-dev-reconciliation.md
+  - archive/docs/dreams/regenerable-factory.md
+  - archive/docs/dreams/risk-tiered-review-depth.md
+  - archive/docs/dreams/run-state-one-publisher.md
+  - archive/docs/dreams/spec-surface-overlap-tolerance.md
+  - archive/docs/dreams/sprint-status-auto-promote.md
+  - archive/docs/dreams/surface-drift-reconciliation.md
+  - archive/docs/dreams/token-economy-claude-session-path.md
   - archive/docs/dreams/marshal-recall-in-the-loop.md
 surface:
   - src/shared/packages/pyforge-marshal/**
@@ -78,12 +78,12 @@ surface:
   - tests/scripts/test_tea_playwright_check.py
   - pixi.toml
   - scripts/bmad_loop_baseline_drift_check.py
-  - docs/dreams/bmad-loop-baseline-drift.md
+  - archive/docs/dreams/bmad-loop-baseline-drift.md
   - .bmad-loop/**
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/supervisor/
   - scripts/missing_preserve_check.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/harness.py
-  - docs/dreams/bmad-loop-liveness-footgun.md
+  - archive/docs/dreams/bmad-loop-liveness-footgun.md
   - scripts/bmad-switch
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py
   - _bmad-output/projects/pyforge-herald/planning-artifacts/marshal-policy.toml
@@ -186,8 +186,6 @@ surface-drift-exclude:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/publisher_host.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/publish.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/publisher.py
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/model_cost.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/tier_routing.py
@@ -214,6 +212,7 @@ companions:
   - ../../prds/prd-pyforge-marshal-2026-07-25/prd.md
   - ../../architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md
   - ../../epics.md
+  - integration-layers.md   # live companion carried 2026-10-27 from spec-marshal-token-economy (spec-one-chain-per-station:CAP-11)
 sources:
   - ../../../../../../docs/dreams/pyforge-marshal.md
 open_questions: []
@@ -267,7 +266,7 @@ A pain to solve and an opportunity to capture, on the same clock. The capability
   - **success:** `marshal seed adopt` runs detect → plan → confirm → apply, dry-run by default and completing in under 10 seconds on a `local-recipes`-sized repo, emitting a machine-readable plan naming each artifact's path, class, detected state, proposed action, and rationale; against `local-recipes` at the shipped model version the plan is **empty**; a second run on an unchanged repo is likewise empty and writes nothing; it refuses on a hand-edited managed artifact and on a dirty git worktree; a `present-legacy` artifact is recorded and preserved, never modified or deleted; and paths passed to `--skip` are recorded and honored on every later run.
 - **CAP-13 — seed check in CI** ← spec-pyforge-marshal CAP-13 (shipped 2026-09-09)
   - **intent:** An installed repo can prove in CI that it still conforms to the model.
-  - **success:** `marshal seed check` is read-only with writes structurally unreachable, exits non-zero on any HARD finding, emits typed stable findings each carrying a documented remedy, supports `--json` for CI annotation, reports the repo's model version against the bundled one, and completes offline in under 5 seconds on a `local-recipes`-sized repo.
+  - **success:** `marshal seed check` is read-only with writes structurally unreachable, exits non-zero on any HARD finding, emits typed stable findings each carrying a documented remedy, supports `--json` for CI annotation, reports the repo's model version against the bundled one, and completes offline in under 5 seconds on a `local-recipes`-sized repo; non-zero exit codes are distinct and documented per failure mode (conformance failure, precondition failure, internal error) *(amended 2026-10-26, Story 108.1 review: the clause FR-126 relies on)*.
 - **CAP-14 — seed init a Dream-first repo** ← spec-pyforge-marshal CAP-14 (shipped 2026-09-09)
   - **intent:** A maintainer can create a new repository already born Dream-first, rather than assembling the model by hand.
   - **success:** `marshal seed init <path>` yields a tree with the tier layout, one seeded Dream conforming to the Tier-0 frontmatter contract, the BMAD multi-project subtree and its `PROJECTS.md` row, the `.gitignore` model region, the selected agent adapters, and the detector wired into CI — after which `marshal seed check` is green, offline, with zero network calls, in under five minutes wall-clock; `init` refuses a non-empty directory without `--force`, directing the operator to `adopt`.
@@ -283,270 +282,270 @@ A pain to solve and an opportunity to capture, on the same clock. The capability
 - **CAP-18 — air-gap by construction** ← spec-pyforge-marshal CAP-18 (shipped 2026-09-09)
   - **intent:** An air-gapped or firewalled team can install and operate the model with no egress.
   - **success:** An egress-counter test asserts zero network calls across `init`, `adopt --dry-run`, `adopt --apply`, and `check`; the only reachable network path is an explicit `--template <url>`; every runtime dependency resolves from conda-forge or an internal mirror.
-- **CAP-19 — from spec-adaptive-model-tiering** ← spec-adaptive-model-tiering CAP-1 (shipped 2026-09-16)
-  - **intent:** A project's `model_tier_map`, once populated with real `{difficulty:
-  - **success:** Given a project with a populated `model_tier_map` and an in-scope story
-- **CAP-20 — from spec-adaptive-model-tiering** ← spec-adaptive-model-tiering CAP-2 (shipped 2026-09-16)
-  - **intent:** A story showing it is genuinely struggling (repeated dev attempts, repeated
-  - **success:** Given a story that exhausts an attempt/cycle threshold, its next attempt runs
+- **CAP-19 — a declared story difficulty selects the model through `model_tier_map`** ← spec-adaptive-model-tiering CAP-1 (shipped 2026-09-16)
+  - **intent:** A project's `model_tier_map`, once populated with real `{difficulty: {stage: model}}` entries, and a story that declares a real `difficulty:` value, together determine the model `render_policy_toml` writes for that launch.
+  - **success:** Given a project with a populated `model_tier_map` and an in-scope story declaring a difficulty present in that map, the rendered `policy.toml` differs from the undeclared baseline in exactly the mapped stages — provable by diffing rendered output with and without the declaration.
+- **CAP-20 — a struggling story gets a floor-raised model without relaunching** ← spec-adaptive-model-tiering CAP-2 (shipped 2026-09-16)
+  - **intent:** A story showing it is genuinely struggling (repeated dev attempts, repeated review cycles) gets a floor-raised model without an operator hand-editing `policy.toml` and relaunching.
+  - **success:** Given a story that exhausts an attempt/cycle threshold, its next attempt runs under a model at least as strong as its declared tier (or the baseline, if undeclared) — and the change is journaled with the same intent/outcome discipline every other supervisor action uses.
 - **CAP-21 — one governed surface** ← spec-agent-tool-surface CAP-1
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** an agent reaches any craft through a named, typed tool.
+  - **success:** 46 tools on `conda_forge_server` + 11 on the pyforge-atlas server are callable; each is a thin wrapper over a Tier-1 script so the CLI and the tool surface cannot diverge.
 - **CAP-22 — the surface survives a clone** ← spec-agent-tool-surface CAP-2
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** a fresh checkout has working tools without hand-editing a machine-global file.
+  - **success:** registration is repo-tracked and path-relative; a clone on a new machine reaches the tools with no manual step.
 - **CAP-23 — CLI ⇄ tool parity is gated, not reviewed** ← spec-agent-tool-surface CAP-3
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** the thin-wrapper property is mechanically enforced.
+  - **success:** a typed contract test asserts every tool maps to its script and its signature matches; adding a tool without its script fails.
 - **CAP-24 — coverage is measured, not assumed** ← spec-agent-tool-surface CAP-4
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
-- **CAP-25 — from spec-artifact-chain-reconciliation** ← spec-artifact-chain-reconciliation CAP-1 (shipped 2026-09-09)
-  - **intent:** Operator can start the judgment audit on a mechanically clean
-  - **success:** Six detectors + meta-suite green; zero `[drift-presumed]`
-- **CAP-26 — from spec-artifact-chain-reconciliation** ← spec-artifact-chain-reconciliation CAP-2 (shipped 2026-09-09)
-  - **intent:** Every one of the 68 remaining stories (steward 4 → mason 28 →
-  - **success:** 68/68 verdict rows, each with `file:line` or command-output
-- **CAP-27 — from spec-artifact-chain-reconciliation** ← spec-artifact-chain-reconciliation CAP-3 (shipped 2026-09-09)
-  - **intent:** All five completed stations (atlas, doctor, herald, scribe,
-  - **success:** Per-station gate report; every chain column verified or
-- **CAP-28 — from spec-artifact-chain-reconciliation** ← spec-artifact-chain-reconciliation CAP-4 (shipped 2026-09-09)
-  - **intent:** The TEA column is refreshed by measurement: per-epic
+  - **intent:** "every capability is reachable" is a checkable claim.
+  - **success:** a check reports, per station, which realized capabilities are on the surface — and the number is published rather than asserted.
+- **CAP-25 — mechanical-debt-zero** ← spec-artifact-chain-reconciliation CAP-1 (shipped 2026-09-09)
+  - **intent:** Operator can start the judgment audit on a mechanically clean fleet: full detector sweep as baseline, the 51 `[drift-presumed]` warns closed (atlas 24 name-then-stamp; mason 1; marshal 26 regenerate → verify outputs match → judge → scoped stamp), dangling commits dispositioned.
+  - **success:** Six detectors + meta-suite green; zero `[drift-presumed]` fleet-wide.
+- **CAP-26 — backlog-truth audit** ← spec-artifact-chain-reconciliation CAP-2 (shipped 2026-09-09)
+  - **intent:** Every one of the 68 remaining stories (steward 4 → mason 28 → marshal 35 + blocked 8-5) carries a cited verdict — `STILL-VALID` / `ALREADY-DONE` / `CONTRADICTED` / `NEEDS-RESPEC` / `DROP` — in a traceability-matrix gate report.
+  - **success:** 68/68 verdict rows, each with `file:line` or command-output evidence; one gate report landed per unfinished station.
+- **CAP-27 — completed-station audit at equal rigor** ← spec-artifact-chain-reconciliation CAP-3 (shipped 2026-09-09)
+  - **intent:** All five completed stations (atlas, doctor, herald, scribe, warden) audited at equal rigor: done-claims sampled per epic against code, every chain column reconciled (Spec status, retro promises, story-spec sets, board rows), statuses corrected to earned values.
+  - **success:** Per-station gate report; every chain column verified or carries a dispositioned finding; Spec statuses match evidence.
+- **CAP-28 — TEA/coverage refresh** ← spec-artifact-chain-reconciliation CAP-4 (shipped 2026-09-09)
+  - **intent:** The TEA column is refreshed by measurement: per-epic AC → covering-test map across all 8 stations; an AC with no test becomes a visible, non-gating coverage-debt row for operator disposition.
   - **success:** Coverage table present per epic in the gate reports.
-- **CAP-29 — from spec-artifact-chain-reconciliation** ← spec-artifact-chain-reconciliation CAP-5 (shipped 2026-09-09)
-  - **intent:** Audit verdicts become repairs in both directions: artifact
-  - **success:** Every fix traceable to a verdict row and an owning-skill or
-- **CAP-30 — from spec-artifact-chain-reconciliation** ← spec-artifact-chain-reconciliation CAP-6 (shipped 2026-09-09)
-  - **intent:** Each of the four queued decomposition chains (atlas → herald →
-  - **success:** Every decomposition PR cites the landed gate report it builds
-- **CAP-31 — from spec-artifact-chain-reconciliation** ← spec-artifact-chain-reconciliation CAP-7 (shipped 2026-09-09)
-  - **intent:** Operator can make the resume decision on measured artifacts:
-  - **success:** Baseline stamped; board matches ledger; the 68-story
-- **CAP-32 — from spec-artifact-chain-reconciliation** ← spec-artifact-chain-reconciliation CAP-8 (shipped 2026-09-09)
-  - **intent:** The non-station estate is audited too: every Dream in
+- **CAP-29 — repair through owning skills** ← spec-artifact-chain-reconciliation CAP-5 (shipped 2026-09-09)
+  - **intent:** Audit verdicts become repairs in both directions: artifact diverged from code → artifact rebuilt through the owning skills (`bmad-correct-course`, `bmad-sprint-planning` + `sprint-ledger-sync`, `bmad-document-project`, `bmad-generate-project-context`, `dashboard-gen`), each landing with a memlog entry naming its paths and a scoped stamp; code diverged from a still-valid contract → code corrected via quick-dev with tests; decisions corrected via `bmad-correct-course`, recorded.
+  - **success:** Every fix traceable to a verdict row and an owning-skill or tested-code landing; detectors green after each landing PR.
+- **CAP-30 — decomposition gate** ← spec-artifact-chain-reconciliation CAP-6 (shipped 2026-09-09)
+  - **intent:** Each of the four queued decomposition chains (atlas → herald → doctor → steward) starts only after its owning station's audit gate report has landed.
+  - **success:** Every decomposition PR cites the landed gate report it builds on.
+- **CAP-31 — re-baseline + resume package** ← spec-artifact-chain-reconciliation CAP-7 (shipped 2026-09-09)
+  - **intent:** Operator can make the resume decision on measured artifacts: final baseline re-stamp, board regeneration, fleet-picture, and a per-station go/no-go summary.
+  - **success:** Baseline stamped; board matches ledger; the 68-story projection is backed by verdict rows rather than presumption.
+- **CAP-32 — full-inventory audit** ← spec-artifact-chain-reconciliation CAP-8 (shipped 2026-09-09)
+  - **intent:** The non-station estate is audited too: every Dream in `docs/dreams/` gets a verdict row — status truth against the README state definitions, chain completeness, satellite-consolidation correctness, stranded artifacts.
   - **success:** 61/61 Dreams dispositioned in an inventory gate report.
 - **CAP-33 — Retired-ID purge + regression guard** ← spec-bmad-611-era-alignment CAP-1
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** no retired skill ID (the published 20-shim list) survives in live docs, seed templates, memory, or code, and a meta-test reds any reintroduction between now and the v7 cut.
+  - **success:** the sweep (6 planning artifacts, `dream-first-workflow.md.j2`, AGENTS.md, 3 auto-memory entries) lands; the guard passes on a clean tree and fails when a retired ID is planted.
 - **CAP-34 — bmad-loop skill refresh** ← spec-bmad-611-era-alignment CAP-2
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** `.claude/skills/bmad-loop-{setup,resolve,sweep}` match the installed package's canon (`bmad_loop/data/skills/`; today 217/134/7 diff lines stale).
+  - **success:** diff-reviewed refresh lands; `bmad-loop validate` stays clean across all 8 homes.
 - **CAP-35 — Memlog-format migration** ← spec-bmad-611-era-alignment CAP-3
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** every spec folder accepts a 6.11 `bmad-spec` update.
+  - **success:** the 8 frontmatter-less memlogs gain frontmatter, the 14 memlog-less folders gain a genesis-baseline `.memlog.md` (the marshal S-13.7 bootstrap pattern), and `memlog.py append` succeeds against all 22.
 - **CAP-36 — Policy-surface parity** ← spec-bmad-611-era-alignment CAP-4
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** the five bmad-loop 0.10/0.11 knobs (`review.on_timeout`, `review.on_status_contradiction`, `limits.dev_contract_nudge`, `operator.enabled`, `verify.stream_capture_kb`) are governable through the AD-16 defaults→project→flags chain with deliberate repo defaults.
+  - **success:** policy composition + render pipeline expose them with exact TOML scalar types (0.11 rejects coercible mismatches); rendered policies pass `bmad-loop validate`; marshal suite green.
 - **CAP-37 — 0.11 status vocabulary** ← spec-bmad-611-era-alignment CAP-5
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** `awaiting-operator`, `confirm`, `preserve_ref`, and `sweeps_refused` are visible wherever an operator looks (`marshal status`, fleet-picture); a parked run is named `awaiting-operator (run bmad-loop confirm)` — absorbing DW-BL011-1 — and `preserve_ref` feeds the escalation-preservation flow (the fleet's standing non-destructive policy, now upstream-native).
+  - **success:** fixture-driven status tests; the stall-check reports parked runs distinctly.
 - **CAP-38 — Deferred-work intake reads both sources** ← spec-bmad-611-era-alignment CAP-6
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** a hand-driven build-auto run's spec-frontmatter `deferred:` list reaches the tracked ledger without a human relay. Loop-driven runs are already bridged upstream (`Engine._harvest_spec_deferrals`, since 0.9.1) — the scope is the hand-driven gap plus our scripts' intake.
+  - **success:** a fixture in the shape of the 2026-08-22 canary's DW-14-1-1 is ingested from frontmatter; DW-BL011-2 closes.
 - **CAP-39 — Living factory docs re-grounded, with a named owner** ← spec-bmad-611-era-alignment CAP-7
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** `architecture-bmad-infra.md` describes the 6.11 infra (render pipeline, TOML layers, current skill set) and the 8 per-station `project-context.md` rulebooks are refreshed — via plain re-grounding agents per SYNC-RUNBOOK, not by waiting on upstream's zero-signal successor capability — with recurrence owned.
+  - **success:** docs re-grounded with bumped `source_pin`s; SYNC-RUNBOOK names the owner and cadence. *(Owner decided 2026-08-24: marshal; the 6.12 round moves the rulebook half to CAP-9.)* **Round 6.12 — CAP-8..11 added 2026-09-05 (marshal Epic 30, Stories 30.1–30.4); CAP-12..13 added 2026-09-06 (Story 30.5, Epic 31).**
 - **CAP-40 — 6.12 retired-ID roster** ← spec-bmad-611-era-alignment CAP-8
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** the guard follows the installed era's shim list: `bmad-checkpoint-preview` (a new shim forwarding to `bmad-walkthrough`) joins the tuple; `bmad-generate-project-context` stays guarded although it is neither a 6.12 shim nor a `removals.txt` entry — an update orphans its 6.11 directory, so the apply must delete it; the two living docs naming checkpoint-preview bare (`architecture-bmad-infra.md`, `development-guide.md`) are renamed or glossed.
+  - **success:** the guard passes on the swept tree with the 6.12 list and fails on a planted `bmad-checkpoint-preview`; no orphaned shim directory survives the apply.
 - **CAP-41 — Project-context surface follows 6.12** ← spec-bmad-611-era-alignment CAP-9
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** `persistent_facts` ships empty and stays empty (D1); the eight station `project-context.md` rulebooks retire with every consumer migrated first — doctor `sources/factory.py` classification and its `pin-behind (context)` row, `scripts/fleet_scan.py`, `scripts/bmad_drift_check.py`, SYNC-RUNBOOK's living-doc cadence (rows 7–9 / 45–49 / 83–85) — and `bmad-project-context audit` becomes the post-upgrade step.
+  - **success:** `bmad-drift-check` and the detectors are green with zero `project-context.md` rows; SYNC-RUNBOOK's cadence names `architecture-bmad-infra.md` + the AGENTS.md block only; no `pin-missing` HARD finding is left behind.
 - **CAP-42 — Documentation pointers follow 6.12** ← spec-bmad-611-era-alignment CAP-10
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** `llms.txt` / `llms-full.txt` are discontinued, so CLAUDE.md § BMAD Method Documentation re-points (local copy = the last snapshot, generated 2026-08-17, 6.11-era, frozen; live = the task-organized docs site + the package CHANGELOG); `bmad-checkpoint-preview` → `bmad-walkthrough` in living docs; `architecture-bmad-infra.md` re-grounded to 6.12 after the apply (CAP-7's cadence: once per core minor).
+  - **success:** no live doc cites the dead URL; `source_pin` reads BMAD 6.12.0.
 - **CAP-43 — bmad-loop 0.11.1 parity, durable** ← spec-bmad-611-era-alignment CAP-11
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** refresh `.claude/skills/bmad-loop-setup` (`module_version` 0.11.0 → 0.11.1; `-resolve` / `-sweep` already identical) and add a meta-test that diffs the three repo skills against the installed `bmad_loop/data/skills` so CAP-2 holds by test, not memory.
+  - **success:** the diff is empty; `bmad-loop validate` is clean across all 8 homes; the test reds a planted one-line divergence.
 - **CAP-44 — Every live caller follows the shim retirement** ← spec-bmad-611-era-alignment CAP-12
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** every live caller leads with the live skill id, `bmad-build-auto` (history glossed, never rewritten).
+  - **success:** the two dead file-path citations (doctor `chain.py`, marshal's own `marshal-policy.toml`) resolve to real files; the present-tense docstring/prose hits (`cli/spin.py` + its test mirror, `docs/dreams/README.md`) lead with `bmad-build-auto` (Story 30.5). **Correction (2026-09-06, found during Story 30.5):** the original Intent also called for renaming the marshal harness template's vendored `[dev] skill = "bmad-dev-auto"` literal to `"bmad-build-auto"`, widening the retired-ID guard to scan the harness template, and re-rendering all 8 loop-home policies — this premise is FALSE. The installed `bmad_loop` 0.11.1 package hard-validates `DevPolicy.skill` as a PERMANENT internal adapter discriminator (`DEV_SKILLS = {"bmad-dev-auto"}`); it must never be renamed, and the skill actually invoked is resolved separately from disk at runtime, independent of this field. Renaming it throws `PolicyError` and would break `bmad-loop validate` on all 8 real loop-homes. The harness-template rename, its render-test update, the guard-widening, and the 8-home re-render are all REMOVED from this capability's scope — none of them should happen. See `spec-bmad-method-core-upgrade` CAP-9's matching correction (steward-owned): the `--no-shims` refusal that depended on this same false premise is also removed there.
 - **CAP-45 — TEA adoption is marshal Epic 31 (relay)** ← spec-bmad-611-era-alignment CAP-13
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** TEA's `bmad-testarch-*` workflows produce every station's `test-architecture.md`, `tea-test-review` is a review lens, the generator + its two meta-tests + two pixi tasks retire behind an equivalence check whose predicate survives as a meta-test, and the seven in-place-edited installer-owned files are governed.
+  - **success:** Stories 31.1–31.4 done; the equivalence report on disk; spec-surface reports zero `uncovered` for the seven. **Outcome (2026-09-07, Stories 31.1–31.3 — 31.4 not yet landed):** 31.3 added `_bmad/custom/bmad-review.toml`'s `tea-test-review` lens (beside `edge-case-hunter`; refused when the AD-9 roster lacks `tea`) and `core/policy.py`'s new `review_min_score` SEED key (33rd key, default 80 per spec-bmad-suite-lifecycle's own open question 2 — upstream's example value; calibration plan against the first ten PRs recorded in this spec's `.memlog.md`), rendered into all 8 loop-home `policy.toml` files and confirmed harmless to `bmad_loop` 0.11's own lenient `[review]` parser (verified against the installed package; `policy: OK` on all 8 via `bmad-loop validate`). 31.1 ran `bmad-testarch-test-design` for real against all 8 stations (Contract: `spec-bmad-suite-lifecycle` CAP-4 / AD-5, AD-9, AD-10); `bmad-testarch-framework` was applicability-checked, not run live (no Playwright/Cypress surface anywhere in the repo). Equivalence narrowed for all 8 stations (0/8 full pass) — TEA's risk-tiered templates cannot enumerate every story id / test path the generator's Story Coverage Matrix does; full per-station figures, the two disputed baselines (herald, doctor), and the 7 disclosed `owner: TBD` occurrences (atlas, herald — a legitimate template convention, not a content gap) are in `planning-artifacts/reviews/tea-equivalence-2026-09-07.md` and this spec's own `.memlog.md`, not restated here. Per AD-5's escape hatch, 31.2 is refused in full: the generator, its two meta-tests, and its two pixi tasks are verified byte-identical to before this pass — the "Given 31.1's equivalence report passes 8/8" precondition for deletion never held. This is a sanctioned, recorded outcome for both stories, not a stall — but it is not yet CAP-13's full Success bar: the third clause ("spec-surface reports zero `uncovered` for the seven") is Story 31.4's job, still open.
 - **CAP-46 — The live subagent probe** ← spec-bmad-cursor-interactive-routing CAP-1
-  - **intent:** settle, empirically, whether Cursor's interactive IDE chat surface (not the
-  - **success:** a dated, reproducible probe result recorded in this Spec's memlog — pass or fail,
+  - **intent:** settle, empirically, whether Cursor's interactive IDE chat surface (not the headless CLI) can invoke a genuine context-free subagent and get a synchronous result back in the same turn. A cheap probe modeled on the Blind Hunter prompt shape (fixed diff in, "launch a context-free subagent that reviews CONTENT" instruction, real output back) is enough.
+  - **success:** a dated, reproducible probe result recorded in this Spec's memlog — pass or fail, either answer closes CAP-1.
 - **CAP-47 — `.mdc` routing layer** ← spec-bmad-cursor-interactive-routing CAP-2
-  - **intent:** a `.cursor/rules/*.mdc` file per BMAD skill (or one generated router), mechanically
-  - **success:** a request typed into Cursor's interactive chat surfaces and runs the identical
+  - **intent:** a `.cursor/rules/*.mdc` file per BMAD skill (or one generated router), mechanically derived from `.claude/skills/bmad-*/SKILL.md`'s frontmatter (`name`, `description`) and its two-step trigger body, so an equivalent request typed into Cursor's chat runs the same `render_skill.py → workflow.md` path Claude Code runs.
+  - **success:** a request typed into Cursor's interactive chat surfaces and runs the identical `workflow.md` a Claude Code session would, for at least the `bmad-build` / `bmad-build-auto` pilot pair; generation stays mechanical (never a hand-maintained fork of `SKILL.md`). Maintained pixi task plus a drift detector (OQ-3). Reviewer steps use the Task tool when it is available.
 - **CAP-48 — The honest fallback** ← spec-bmad-cursor-interactive-routing CAP-3
-  - **intent:** `bmad-build-auto`'s workflow HALTs `blocked`/`no subagents` exactly as designed
+  - **intent:** `bmad-build-auto`'s workflow HALTs `blocked`/`no subagents` exactly as designed rather than silently skipping the review it depends on. CAP-3b (restrict Cursor-interactive routing / keep the HALT) applies when the running surface has no model-invoked Task tool. CAP-3a (route the review step through headless `cursor-agent -p`) stays a later empty follow-on — no story in Epic 45.
   - **success:** no skill silently degrades its review discipline inside Cursor chat.
 - **CAP-49 — Team-memory reachability** ← spec-bmad-cursor-interactive-routing CAP-4
-  - **intent:** `.claude/memory/` content reachable from Cursor chat via whatever reference
-  - **success:** `Read` of `.claude/memory/MEMORY.md` works. There is no Claude Code `@path`
-- **CAP-50 — from spec-bmad-loop-baseline-drift** ← spec-bmad-loop-baseline-drift CAP-1 (shipped 2026-09-09)
-  - **intent:** A Marshal-side detector at the adapter seam — reading only feeds `bmad_loop`
-  - **success:** Replaying run `20260813-094919-bfcb`'s journal (story 9-6) fires the detector
-- **CAP-51 — from spec-bmad-loop-baseline-drift** ← spec-bmad-loop-baseline-drift CAP-2 (shipped 2026-09-09)
-  - **intent:** This defer reason can no longer pass silently — loud-defer containment. The
-  - **success:** A future occurrence is surfaced by the containment within its watch window with
-- **CAP-52 — from spec-bmad-loop-baseline-drift** ← spec-bmad-loop-baseline-drift CAP-3 (shipped 2026-09-09)
-  - **intent:** The drafted upstream issue already in the Dream (lines ~125–201: journal timeline,
-  - **success:** Both gates recorded as checked; then either the issue is filed (URL appended to
+  - **intent:** `.claude/memory/` content reachable from Cursor chat via whatever reference mechanism Cursor actually resolves at load time — verified, not assumed.
+  - **success:** `Read` of `.claude/memory/MEMORY.md` works. There is no Claude Code `@path` inline-import analog. `.cursor/rules/specs.mdc` is `alwaysApply: true` and points at `AGENTS.md`; it does not inline `MEMORY.md`. Carry team memory by `alwaysApply` pointer plus explicit `@file` / Read (a tool call, skippable).
+- **CAP-50 — a seam-side detector recognizes the baseline-drift signature from bmad-loop feeds** ← spec-bmad-loop-baseline-drift CAP-1 (shipped 2026-09-09)
+  - **intent:** A Marshal-side detector at the adapter seam — reading only feeds `bmad_loop` itself writes (`journal.jsonl`, `state.json`, `attempt-preserve/*` refs, `failed/*/changes.patch`), never importing or editing the package — recognizes the baseline-drift signature: a defer whose reason matches `spec baseline ... does not match orchestrator-recorded baseline`, and/or a recorded `task.baseline_commit` that is not the basis encoded in the story's own preserve-ref/worktree.
+  - **success:** Replaying run `20260813-094919-bfcb`'s journal (story 9-6) fires the detector naming the story, both baselines (`523e938c7978` real vs `26102ea12c6d` drifted), and preserve ref `attempt-preserve/20260813-094919-bfcb-523e938c`; a clean run's feeds yield no finding.
+- **CAP-51 — a baseline-drift defer is loud and names its recovery inputs** ← spec-bmad-loop-baseline-drift CAP-2 (shipped 2026-09-09)
+  - **intent:** This defer reason can no longer pass silently — loud-defer containment. The detector exits non-zero and the finding surfaces where the operator already looks (`fleet-picture`'s ATTENTION block or equivalent), stating the recovery inputs: story, run, preserved ref/patch, drifted-vs-real baselines — recovery becomes a named next action, not a per-occurrence archaeology session. Extending `allow_ancestor_baseline`'s carve-out to the plain-retry path is upstream's to land (runs.py's resolve-path re-stamp proves the shape); the local analog is detection + loud defer, never a quiet auto-land.
+  - **success:** A future occurrence is surfaced by the containment within its watch window with recovery inputs named — not discovered via a dashboard-accuracy audit, the way this Dream was found; a run carrying such a defer cannot read healthy in the containment's output.
+- **CAP-52 — the drafted upstream issue is filed once both gates clear** ← spec-bmad-loop-baseline-drift CAP-3 (shipped 2026-09-09)
+  - **intent:** The drafted upstream issue already in the Dream (lines ~125–201: journal timeline, `engine.py:1707` / `runs.py:872-908` / `verify.py:1220-1235` citations, impact) is filed against `bmad-code-org/bmad-loop` — strictly gated on the Dream's two backlog preconditions: (1) confirm repo access / org relationship (issue vs PR vs discussion); (2) duplicate-search first, since the resolve-path comments suggest maintainer awareness of an adjacent shape.
+  - **success:** Both gates recorded as checked; then either the issue is filed (URL appended to the Dream's Realization log) or a duplicate found and linked instead — either outcome recorded. Until the gates clear, the draft stays unfiled by design.
 - **CAP-53 — every station's structured epics doc is swept for forward-epic `** ← spec-bmad-loop-forward-dependency-blindness CAP-1 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** find every story whose documented dependency lives in a later epic than the story itself.
+  - **success:** a full sweep of all 8 stations' epics docs, confirming Marshal's three forward dependencies are the only real ones across the fleet, and that Atlas and Mason's presenton-pixi-image satellite (both structured enough to carry a mechanical Deps field) are otherwise clean. > **CORRECTED 2026-08-08 — the parenthetical claim was false.** Measured with the detector > itself: **Mason** carries 30 dependency declarations of which **zero** are machine-readable > (`'Story 1.4 (informs cost of …)'`, `'none (runs manually, …)'`), and **Atlas** carries 43 > of which only 5 are (`'A1, A2.'`, `'B1 (Core pipeline datasets).'`, `'Epic 3 complete'`). > Neither was "structured enough to carry a mechanical Deps field." Mason nonetheless reported > MEASURED-and-clean from the day this shipped, because the coverage gate asked whether any > Deps *text* existed rather than whether any *reference parsed* — a false green in the > detector's own bookkeeping. Atlas reported UNMEASURED for an unrelated reason: its > alias-first headings (`### Story A1 (2.1):`) never matched `STORY_HEADING_RE`, so none of its > 46 stories parsed at all. Both are fixed; see § Refinements.
 - **CAP-54 — a found forward-dependent story is set to a non-actionable status** ← spec-bmad-loop-forward-dependency-blindness CAP-2 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** make the engine structurally unable to dispatch the story early.
+  - **success:** status `blocked` in both the loop-home's live Tier-3 feed and the tracked `sprint-status-ledger.yaml` twin; `ACTIONABLE_STATUSES = {"backlog", "ready-for-dev"}` naturally excludes it since `bmad_loop.sprintstatus.load()` does not validate `status` against its own declared `STORY_STATUSES` enum (the same mechanism the pre-existing `optional` retrospective status already relies on) — confirmed directly: `next_actionable(epic=2)` now correctly returns 2.4, skipping both Epic-2 findings.
 - **CAP-55 — a permanent detector prevents recurrence** ← spec-bmad-loop-forward-dependency-blindness CAP-3 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** a new story added later with an unmarked forward dependency is caught in CI, not discovered by a run burning compute on it.
+  - **success:** `scripts/forward_dependency_check.py`, self-registered via `scripts/detectors.py`, scans every station's structured epics doc for forward-epic `**Deps:**`, cross-checks each against the tracked ledger, and fails if a forward-dependent story is still `backlog`/`ready-for-dev`.
 - **CAP-56 — an unparseable epics format is reported honestly, never silently passed** ← spec-bmad-loop-forward-dependency-blindness CAP-4 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** this repo's fidelity-enforcement doctrine (never claim green you didn't measure) applies to the detector itself.
+  - **success:** stations whose `epics.md` uses an older narrative format with no structured `**Deps:**` field (confirmed: `pyforge-warden`) are reported as **not determinable from this format**, not as clean.
 - **CAP-57 — gated story loops** ← spec-bmad-loop-governance CAP-1 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** bmad-loop + bmad-dev-auto drive each story dev → multi-lens review → verify → merge under `per-story-spec-approval` gates, with escalation pausing the run.
+  - **success:** stories merge with the `Merge bmad-loop/<run>/<story>` subject only after an approved spec and a green deterministic verify; escalations pause rather than proceed (proven across atlas 32/32, warden 26+ stories incl. today's 6.3/6.5).
 - **CAP-58 — concurrent loop homes** ← spec-bmad-loop-governance CAP-2 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** loops for different projects run simultaneously via per-loop worktrees with single-sourced Tier-3 state (the adopted multi-loop-isolation kernel).
+  - **success:** its CAP-3 isolation check; live proof = the warden wave running beside main-checkout work today.
 - **CAP-59 — model tiering as policy** ← spec-bmad-loop-governance CAP-3 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** `.bmad-loop/policy.toml` `[adapter.*]` selects the model per role — mechanical default (sonnet), deliberate flips to opus for HARD stories, committed on the loop branch as paper trail.
+  - **success:** each flip is a loop-branch commit naming the story class; verify commands stay project-scoped.
 - **CAP-60 — every run visible** ← spec-bmad-loop-governance CAP-4 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
-- **CAP-61 — from spec-bmad-loop-intent-gap-work-preservation** ← spec-bmad-loop-intent-gap-work-preservation CAP-1 (shipped 2026-09-09)
-  - **intent:** Preservation symmetry -- before/around an intent-gap revert discards tracked
-  - **success:** After an intent-gap halt on a story with tracked changes, a preserve artifact
-- **CAP-62 — from spec-bmad-loop-intent-gap-work-preservation** ← spec-bmad-loop-intent-gap-work-preservation CAP-2 (shipped 2026-09-09)
-  - **intent:** The escalation surface names the artifact -- the "Auto Run Result" / escalation
-  - **success:** Given only the escalation text of a post-fix intent-gap halt, `bmad-loop
-- **CAP-63 — from spec-bmad-loop-intent-gap-work-preservation** ← spec-bmad-loop-intent-gap-work-preservation CAP-3 (shipped 2026-09-09)
-  - **intent:** A post-hoc detector makes any residual gap loud -- an intent-gap halt whose
-  - **success:** Simulating an intent-gap halt with no preserve artifact trips the detector;
+  - **intent:** run journals + sprint feeds + merge-subject conventions feed the program console (factory-console kernel), so progress is derivable from ledgers, never hand-trusted.
+  - **success:** the console's per-project done-detection keys on the loop's merge subjects; sprint feeds flip from journal events.
+- **CAP-61 — an intent-gap revert parks the attempt before discarding it** ← spec-bmad-loop-intent-gap-work-preservation CAP-1 (shipped 2026-09-09)
+  - **intent:** Preservation symmetry -- before/around an intent-gap revert discards tracked changes, Marshal-side compensation at the adapter seam parks the attempt exactly the way the deferred-story path already does: an `attempt-preserve/*` branch when there are real commits, a `failed/<story>/changes.patch` when there aren't. No edit to `bmad_loop` itself.
+  - **success:** After an intent-gap halt on a story with tracked changes, a preserve artifact exists in the loop home's git (branch or patch) whose content matches the reverted attempt; the worktree is still reverted clean per protocol.
+- **CAP-62 — the escalation text names the preserve ref or patch path** ← spec-bmad-loop-intent-gap-work-preservation CAP-2 (shipped 2026-09-09)
+  - **intent:** The escalation surface names the artifact -- the "Auto Run Result" / escalation text, which already spells out the recommended contract fix in detail, ALSO names the exact preserve ref or patch path, so a human or a `bmad-loop resolve --restore-patch` re-drive finds it directly, without archaeology.
+  - **success:** Given only the escalation text of a post-fix intent-gap halt, `bmad-loop resolve --restore-patch` (or a human following the named ref) restores the reverted attempt with zero session-transcript access.
+- **CAP-63 — an intent-gap halt with no preserve artifact is a finding** ← spec-bmad-loop-intent-gap-work-preservation CAP-3 (shipped 2026-09-09)
+  - **intent:** A post-hoc detector makes any residual gap loud -- an intent-gap halt whose preserve artifact is missing (seam bypassed, upstream behavior shifted) is flagged as a finding rather than passing silently, following the `story-status-check` / `loop-stall-check` precedent of local detectors containing an upstream bmad-loop blind spot.
+  - **success:** Simulating an intent-gap halt with no preserve artifact trips the detector; a halt with its artifact present passes clean.
 - **CAP-64 — Marshal gains the missing liveness primitive** ← spec-bmad-loop-liveness-footgun CAP-1
-  - **intent:** A Marshal-side primitive answers "is run X's engine alive?" by consuming
-  - **success:** Given a live run, a stopped run, and an absent/unreadable run directory,
+  - **intent:** A Marshal-side primitive answers "is run X's engine alive?" by consuming `bmad-loop status <run_id> --json` (the supported, versioned surface) — never by parsing `engine.pid`, never by importing `bmad_loop.runs` internals. It preserves the tri-state honestly: `alive` / `dead` / `unknown`, with `unknown` reported as `unknown` — not coerced to either verdict. This is exactly the "no `HarnessPort` counterpart and no Marshal-side primitive" blocker spec-3-7's deferred entry names; this Spec ships the primitive, spec-3-7's own deferred fix then consumes it (see Non-goals).
+  - **success:** Given a live run, a stopped run, and an absent/unreadable run directory, the primitive returns `alive`, `dead`, and `unknown` respectively — with zero reads of `engine.pid` and zero `bmad_loop` imports (assertable in its tests); spec-3-7's deferred-work entry can be updated to name the primitive as existing.
 - **CAP-65 — The operator answer is one command** ← spec-bmad-loop-liveness-footgun CAP-2
-  - **intent:** The operating instructions this repo hands out (the fleet landing-pass
-  - **success:** No tracked operator instruction prescribes `cat engine.pid` /
+  - **intent:** The operating instructions this repo hands out (the fleet landing-pass liveness-verification step and its team/auto-memory carriers) prescribe the supported one-command check as the primary answer, replacing hand-parsed `engine.pid` and the `ps`-grep workaround. Where a raw process check survives as *corroboration*, it must match all three engine argv forms — `bmad-loop (run|resume|resolve)` — so a supervisor-resumed or resolve-resumed engine never again reads as dead.
+  - **success:** No tracked operator instruction prescribes `cat engine.pid` / `ps -p $(cat engine.pid)` or a bare `grep 'bmad-loop run'` as the liveness answer; the 2026-08-14 mason scenario (engine live under `bmad-loop resume`) answers correctly by following the documented steps alone, no source-reading required.
 - **CAP-66 — An UNSUPERVISED row has a cheap double-check** ← spec-bmad-loop-liveness-footgun CAP-3
-  - **intent:** For a run Marshal did not spawn (a raw `bmad-loop run`/`resume` with no
-  - **success:** Reproducing the Dream's 2026-08-15 scenario (raw `bmad-loop run`, no
+  - **intent:** For a run Marshal did not spawn (a raw `bmad-loop run`/`resume` with no supervisor sidecar — correctly reported `UNSUPERVISED` today), the operator's next question, "but is the engine actually alive?", is answered by the CAP-1 primitive /CAP-2 command as the documented follow-up — not by raw `ps`/`tmux` archaeology. This binds the diagnosis path; it does not alter `derive_home_state`'s row derivation (Story 5.8's territory — see `convergence.md`).
+  - **success:** Reproducing the Dream's 2026-08-15 scenario (raw `bmad-loop run`, no sidecar), the documented UNSUPERVISED follow-up resolves engine liveness in one command; fleet-status output/docs name that follow-up wherever UNSUPERVISED is explained.
 - **CAP-67 — dead test-scaffolding archival** ← spec-bmad-output-hygiene CAP-1 (shipped 2026-09-16)
-  - **intent:** `git mv` `tests/`, `pytest.ini`, and `playwright.config.ts` out
-  - **success:** None of the 7 station roots contain these paths; each exists
+  - **intent:** `git mv` `tests/`, `pytest.ini`, and `playwright.config.ts` out of the 7 station roots that carry them with zero real tests (atlas, doctor, marshal, mason, scribe, steward, warden) into the mirrored `archive/_bmad-output/projects/<station>/...` path (the existing consolidation convention) — never delete outright. The real, wired suites live at `src/shared/packages/pyforge-<station>/tests/` and are untouched.
+  - **success:** None of the 7 station roots contain these paths; each exists under its mirrored `archive/` path; no test runner or CI config anywhere in the repo referenced the original paths (verified before moving).
 - **CAP-68 — hollow `sprint-status.yaml` archival** ← spec-bmad-output-hygiene CAP-2 (shipped 2026-09-16)
-  - **intent:** `git mv` the dead, identical-shape `planning-artifacts/sprint-status.yaml`
-  - **success:** File absent from its original path in all 9 projects, present
+  - **intent:** `git mv` the dead, identical-shape `planning-artifacts/sprint-status.yaml` stub (`0%`, empty arrays) out of all 9 `pyforge-*` projects into the mirrored `archive/` path; `sprint-status-ledger.yaml` is the live, tracked twin already read by dashboard tooling and is untouched.
+  - **success:** File absent from its original path in all 9 projects, present under its mirrored `archive/` path; `dashboard_drift_check.py` and `bmad_drift_check.py` still exit 0 afterward.
 - **CAP-69 — Genesis `test-architecture.md` fix** ← spec-bmad-output-hygiene CAP-3 (shipped 2026-09-16)
-  - **intent:** Regenerate Genesis's `test-architecture.md` — the one station the
-  - **success:** The file makes no claim contradicted by Genesis's own current
+  - **intent:** Regenerate Genesis's `test-architecture.md` — the one station the 2026-08-02 follow-up fix (`2957718d4c`) missed — so it describes Genesis's real, current, constitutive scope instead of the stale pre-split `src/pyforge_genesis` installer narrative.
+  - **success:** The file makes no claim contradicted by Genesis's own current PRD/architecture.
 - **CAP-70 — README placeholder fill** ← spec-bmad-output-hygiene CAP-4 (shipped 2026-09-16)
-  - **intent:** The literal `[role]`/`[responsibilities]` placeholders actually
-  - **success:** No station README contains a literal `[role]` or
+  - **intent:** The literal `[role]`/`[responsibilities]` placeholders actually live in each station's project-root `README.md` (not planning-artifacts, as originally assumed) — an identical template across 8 of 9 stations (all but atlas, which has none), also referencing the CAP-1-archived `tests/`/`pytest.ini`/`playwright.config.ts` as if real. Replace the placeholder sentence with a real per-station role description in all 8, and correct the Structure/Testing sections to point at the real suites under `src/shared/packages/pyforge-<station>/tests/`. Also replace the 6 generic-but-not-literally-placeholder `planning-artifacts/README.md` boilerplate (marshal, genesis, doctor, mason, scribe, steward — byte-identical 3-line stub) with real content, matching the Dream's spirit even though its exact bracket-token wording didn't match what was on disk.
+  - **success:** No station README contains a literal `[role]` or `[responsibilities]` token; no README describes archived scaffolding as live.
 - **CAP-71 — orphaned single-file archival** ← spec-bmad-output-hygiene CAP-5 (shipped 2026-09-16)
-  - **intent:** `git mv` Atlas's `RESUME-EPIC-10.md` and Herald's
-  - **success:** Both files exist under their mirrored `archive/` path, are
+  - **intent:** `git mv` Atlas's `RESUME-EPIC-10.md` and Herald's `intake-video-scripts-manticore-2026-07-31.md` into the mirrored `archive/` path, matching the convention already used by the same-day satellite-Dream consolidations. Never a hard delete.
+  - **success:** Both files exist under their mirrored `archive/` path, are absent from their original path, and have zero remaining repo references to the original path.
 - **CAP-72 — `project-context.md` drift fix** ← spec-bmad-output-hygiene CAP-6 (shipped 2026-09-16)
-  - **intent:** Regenerate Mason's and Herald's `project-context.md` in place
-  - **success:** Both files' claimed counts match `sprint-status-ledger.yaml`;
+  - **intent:** Regenerate Mason's and Herald's `project-context.md` in place (each is the sole copy at its path). Live re-check at execution time found the Dream's cited "real" counts (Mason 4/38, Herald 4/17) had themselves gone stale — the ledgers now show Mason 4/48 and Herald 4/27 (story inventories grew after the Dream's 2026-08-02 audit). Both files were also fabricated beyond the count: a generic "Choreography & Story Executor" /"Presentation Deck & Infographic Layer" role label, and reference paths pointing at a `SPEC.md`/`architecture.md` that don't exist at those locations. Regenerated both with accurate role descriptions, live counts from `sprint-status-ledger.yaml`, and correct file paths.
+  - **success:** Both files' claimed counts match `sprint-status-ledger.yaml`; all referenced paths exist.
 - **CAP-73 — `PROJECTS.md` Dream-pointer fix** ← spec-bmad-output-hygiene CAP-7 (shipped 2026-09-16)
-  - **intent:** In `_bmad-output/PROJECTS.md`'s Projects table, repoint mason's
-  - **success:** Both pointers resolve to an existing `type: dream` file that is
+  - **intent:** In `_bmad-output/PROJECTS.md`'s Projects table, repoint mason's `Dream:` from `docs/dreams/packaging-factory.md` (a `type: practice` satellite that scope-noted itself out of the station chain 2026-07-25) to `docs/dreams/pyforge-mason.md`; repoint herald's `Dream:` from `docs/dreams/design-code-bridge.md` (no longer exists) to `docs/dreams/pyforge-herald.md`.
+  - **success:** Both pointers resolve to an existing `type: dream` file that is each station's actual charter.
 - **CAP-74 — marshal-brief layout fix** ← spec-bmad-output-hygiene CAP-9 (shipped 2026-09-16)
-  - **intent:** `product-brief-pyforge-marshal.md` is marshal's genuine, sole
-  - **success:** File lives at the sharded path; no remaining reference to the
-- **CAP-75 — from spec-bmad-switch-scope-enforcement** ← spec-bmad-switch-scope-enforcement CAP-1
-  - **intent:** One shared verification primitive — `verify_scope(root, expected_slug) -> None |
-  - **success:** With marker and both symlinks all pointing at slug B, `verify_scope(root, "A")`
-- **CAP-76 — from spec-bmad-switch-scope-enforcement** ← spec-bmad-switch-scope-enforcement CAP-2
-  - **intent:** BOTH existing guards are replaced by consumption of the primitive —
-  - **success:** Exactly one implementation of the triangle check exists in the repo; both callers
-- **CAP-77 — from spec-bmad-switch-scope-enforcement** ← spec-bmad-switch-scope-enforcement CAP-3
-  - **intent:** Drift is a hard failure everywhere. `bmad-switch --current` exits non-zero on
-  - **success:** On a deliberately desynced tree, `scripts/bmad-switch --current` exits non-zero
-- **CAP-78 — from spec-cursor-native-tier-map** ← spec-cursor-native-tier-map CAP-1
-  - **intent:** All eight stations' `model_tier_map` easy/medium/heavy
-  - **success:** `parse_stage_entry` on each stage yields
-- **CAP-79 — from spec-cursor-native-tier-map** ← spec-cursor-native-tier-map CAP-2
-  - **intent:** The fail-safe stays: a Cursor-catalogued model is never
+  - **intent:** `product-brief-pyforge-marshal.md` is marshal's genuine, sole brief (cited as a fully-absorbed input by both the canonical `prd.md` and `architecture.md`) — just unsharded. `git mv` it to `briefs/brief-pyforge-marshal-2026-07-25/brief.md`, matching its own `created: 2026-07-25` and every other station's `briefs/brief-<slug>-<date>/brief.md` shape.
+  - **success:** File lives at the sharded path; no remaining reference to the old loose path.
+- **CAP-75 — one `verify_scope` primitive checks the whole scope triangle** ← spec-bmad-switch-scope-enforcement CAP-1
+  - **intent:** One shared verification primitive — `verify_scope(root, expected_slug) -> None | ScopeDrift` — checks the whole triangle in a single pass: the `.active-project` marker, both symlink targets, and the caller's `expected_slug`. Three file reads, string compares, no subprocess. A home internally consistent on the wrong project is a drift, not a pass; an unrecognized symlink-target shape (absolute path, foreign tooling) is reported as "unrecognized," never silently treated as agreement.
+  - **success:** With marker and both symlinks all pointing at slug B, `verify_scope(root, "A")` returns a `ScopeDrift` naming found-vs-expected; with a symlink target that matches no recognized shape, it returns a drift reporting "unrecognized" — closing DW-1-4-2's blind spots (2) and (1) respectively. The all-agree happy path returns `None`.
+- **CAP-76 — both scope guards consume the one primitive, never two copies** ← spec-bmad-switch-scope-enforcement CAP-2
+  - **intent:** BOTH existing guards are replaced by consumption of the primitive — `scripts/bmad-switch` (including `--current`) and `cli/init.py`'s `MRS-INIT-003` call the SAME logic. Never two parallel copies: the divergent-pair failure mode this work exists to kill is not reintroduced as an implementation detail.
+  - **success:** Exactly one implementation of the triangle check exists in the repo; both callers resolve to it; the retired per-caller check bodies are gone, not shadowed.
+- **CAP-77 — drift is a hard failure everywhere, never an advisory** ← spec-bmad-switch-scope-enforcement CAP-3
+  - **intent:** Drift is a hard failure everywhere. `bmad-switch --current` exits non-zero on drift — no more advisory stderr at exit 0 — and `marshal init` keeps its hard-fail posture, now against the caller's requested slug too. A scripted caller or parallel agent gets a real exit-code signal instead of parsing warning text.
+  - **success:** On a deliberately desynced tree, `scripts/bmad-switch --current` exits non-zero with the drift named; `marshal init` for a home whose marker/symlinks agree on a different project than requested refuses instead of silently reconciling it onto the new target.
+- **CAP-78 — every station's `model_tier_map` names Cursor-catalogued models with their harness** ← spec-cursor-native-tier-map CAP-1
+  - **intent:** All eight stations' `model_tier_map` easy/medium/heavy stages name Cursor-catalogued models as inline tables with `harness = "cursor"`.
+  - **success:** `parse_stage_entry` on each stage yields `StageCandidate(harness="cursor", model=…)` where `model` is one of `composer-2.5`, `composer-2.5-fast`, `grok-4.6`. No bare Cursor model string remains in those maps.
+- **CAP-79 — a Cursor-catalogued model is never written onto a `claude` adapter** ← spec-cursor-native-tier-map CAP-2
+  - **intent:** The fail-safe stays: a Cursor-catalogued model is never written onto a `claude` adapter.
   - **success:** Existing provider-mismatch tests remain green.
 - **CAP-80 — one resolver, one override table** ← spec-dashboard-project-path-derivation CAP-1
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** a single Python-side function maps a dashboard/roster slug to its resolution — real project directory, planning-artifacts paths (epics/PRD/architecture), sprint-status.yaml path, or an explicit **no-project-dir** marker — fed by one data table that subsumes `_KEY_SLUG_OVERRIDE`, `CAMPAIGN_PROJECT_OVERRIDE`, and `IMPL_CAMPAIGN`'s `epics_path` entries.
+  - **success:** those three override surfaces are gone as independent dicts; a future dissolution or absorption is a one-line addition to the table.
 - **CAP-81 — `PROJECT_SOURCES` is derived, not declared** ← spec-dashboard-project-path-derivation CAP-2
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** the project→ sprint-status.yaml mapping is discovered from `_bmad-output/projects/*/` structure through the CAP-1 resolver instead of the hardcoded dict, so a new station appears without an edit and a slug/directory divergence can't silently go unread.
+  - **success:** the `TODO` at generate.py:42 is closed; a freshly-added project with the standard layout is picked up by `apply_sprint_status()` with zero generate.py edits; `snapshot_running()`'s hand-landed attribution vocabulary derives from the same source.
 - **CAP-82 — resolution ships in `data.js`; the JS never re-derives** ← spec-dashboard-project-path-derivation CAP-3
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** the generated data carries the resolved real project slug (or the explicit no-project marker) so `index.html` builds links from data, never by gluing paths itself.
+  - **success:** the `r.slug === "pyforge-genesis"` inline redirect check is replaced by data the resolver emitted; no path-construction logic remains duplicated between Python and JS.
 - **CAP-83 — an unresolvable slug fails loud** ← spec-dashboard-project-path-derivation CAP-4
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** the existing detectors (`scripts/dashboard_drift_check.py`, coverage warnings in generate.py) catch a slug missing from the table — or a project directory no resolver output covers — before a dead link or a false "nothing landed" ships.
+  - **success:** deleting a project dir, or adding a roster slug with no resolution, produces a warning/failure on the next generate or drift-check run, not a silently wrong board.
 - **CAP-84 — wall-clock fallback derivation** ← spec-dashboard-velocity-captures-hand-driven-work CAP-1 (shipped 2026-09-09)
-  - **intent:** The dashboard generator derives a wall-clock duration for every `done` story
-  - **success:** After a local generate, doctor's 8.1–8.4 carry timing marks derived from
+  - **intent:** The dashboard generator derives a wall-clock duration for every `done` story that has a tracked/promoted story spec carrying resolvable `baseline_revision` and `final_revision` frontmatter (written by `bmad-dev-auto` steps 03/04, preserved verbatim by spec promotion) and zero closed bmad-loop journal sessions — offline, from local git commit timestamps only.
+  - **success:** After a local generate, doctor's 8.1–8.4 carry timing marks derived from their promoted specs' revision fields; a re-run refreshes (never permanently freezes) the derived values, matching the existing `derived: true` discipline.
 - **CAP-85 — fidelity is visible, never blended** ← spec-dashboard-velocity-captures-hand-driven-work CAP-2 (shipped 2026-09-09)
-  - **intent:** A wall-clock-derived mark is visually and textually distinguished from
-  - **success:** On a line mixing both classes, a reader can tell each story's metric class
+  - **intent:** A wall-clock-derived mark is visually and textually distinguished from journal-derived active agent-compute wherever both render — wall-clock measures a different thing (includes waits; excludes nothing), and `scan_timing`'s own comments already forbid sharing the active-compute axis undistinguished (the atlas precedent).
+  - **success:** On a line mixing both classes, a reader can tell each story's metric class from the rendered chart/caption alone; no wall-clock number appears as if it were active-compute.
 - **CAP-86 — the coverage caption partitions by true reason** ← spec-dashboard-velocity-captures-hand-driven-work CAP-3 (shipped 2026-09-09)
-  - **intent:** The coverage statement stops lumping every unmeasured story under "predates
-  - **success:** For a line containing hand-driven stories, the rendered caption names each
-- **CAP-87 — from spec-dispatch-tier-routing-fails-safe** ← spec-dispatch-tier-routing-fails-safe CAP-1 (shipped 2026-09-12)
-  - **intent:** The tier-routing resolver never writes a dev/review stage model override
-  - **success:** A synthetic fixture whose `model_tier_map` stage candidate names a model
-- **CAP-88 — from spec-dispatch-tier-routing-fails-safe** ← spec-dispatch-tier-routing-fails-safe CAP-2 (shipped 2026-09-12)
-  - **intent:** Fleet-wide, `model_tier_map`'s heavy/medium/easy `dev`/`review` entries
-  - **success:** Re-running the same direct `resolve_tier_launch` / `render_policy_toml`
-- **CAP-89 — from spec-durable-runs** ← spec-durable-runs CAP-1 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
-- **CAP-90 — from spec-durable-runs** ← spec-durable-runs CAP-3 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
-- **CAP-91 — from spec-durable-runs** ← spec-durable-runs CAP-5 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
-- **CAP-92 — from spec-durable-runs** ← spec-durable-runs CAP-6 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** The coverage statement stops lumping every unmeasured story under "predates loop instrumentation" and instead states the real classes: journal-measured, wall-clock-derived, spec-without-revision-fields, and no-spec-at-all (the only class that stays absent).
+  - **success:** For a line containing hand-driven stories, the rendered caption names each absence class accurately; no caption claims "predates instrumentation" for a story whose spec carries revision fields.
+- **CAP-87 — fail-safe tier resolution** ← spec-dispatch-tier-routing-fails-safe CAP-1 (shipped 2026-09-12)
+  - **intent:** The tier-routing resolver never writes a dev/review stage model override unless that model's harness is genuinely dispatchable in the current loop home — an unresolvable or non-dispatchable harness must fall through to the full baseline (`[adapter]`/`[adapter.review]`) rather than partially apply.
+  - **success:** A synthetic fixture whose `model_tier_map` stage candidate names a model with no resolvable harness (or a harness whose `adapter_binary` check fails) produces either the full, unmodified baseline `[adapter]`/`[adapter.review]` config with zero stage-level override written, or a distinct, loud finding — never a written `[adapter.<stage>].model` that does not belong to the adapter that will actually launch.
+- **CAP-88 — fleet-wide sane defaults** ← spec-dispatch-tier-routing-fails-safe CAP-2 (shipped 2026-09-12)
+  - **intent:** Fleet-wide, `model_tier_map`'s heavy/medium/easy `dev`/`review` entries resolve to the same models the plain baseline already uses, so no story's dispatch is silently routed through a harness (Cursor) that cannot work headlessly.
+  - **success:** Re-running the same direct `resolve_tier_launch` / `render_policy_toml` probe that found the bug, against all eight stations, shows every governing difficulty (heavy, medium, easy) launching with the exact same adapter and model an untagged (unmapped-difficulty) story already uses today.
+- **CAP-89 — unpushed-work detection** ← spec-durable-runs CAP-1 (shipped 2026-09-16)
+  - **intent:** a runtime-scope detector finds local branches carrying unique content on no remote, plus dangling commits holding real work git gc may collect, and reports unknown rather than green where it cannot run (CI has no local branches/dangling objects).
+  - **success:** scripts/unpushed_work_check.py (pixi task unpushed-work-check) flags every such branch/commit; vacuous-pass avoided by scope=runtime exclusion from CI.
+- **CAP-90 — stage-boundary push** ← spec-durable-runs CAP-3 (shipped 2026-09-16)
+  - **intent:** the durable fix — bmad-loop's supervisor (owned by Marshal, since bmad-loop itself is a git-pinned external dependency) pushes after each stage boundary of a run: after the dev commit, after the review verdict, after the merge — so loss is bounded by a stage, not a timer.
+  - **success:** a killed session between two stage boundaries loses at most the incomplete stage; loop-push-watch's interval window is no longer the binding bound.
+- **CAP-91 — durability reported as a run/console property** ← spec-durable-runs CAP-5 (shipped 2026-09-16)
+  - **intent:** a run whose work is not on a remote is not green — the fleet console (factory-console / Guildhall) refuses to report a row clean when its branches are unpushed, the same refusal discipline it already applies to an unowned Dream row.
+  - **success:** the dashboard surfaces an unpushed-work finding on the owning chain's row rather than only in a separate detector's CLI output.
+- **CAP-92 — branch retirement, patch-id verified against main** ← spec-durable-runs CAP-6 (shipped 2026-09-16)
+  - **intent:** the inverse of CAP-1 — derive which station/story branches may be released: content in main BY PATCH-ID (not a diff heuristic; three-dot mismeasures squash-merges, two-dot mismeasures branches main has moved past), the branch's run concluded, and its story done with a merge sha. loop/* branches and rescue/* tags are never candidates (loop/* is how the fleet works; rescue/* tags are the only reachability for commits git gc would otherwise collect).
+  - **success:** a pruning run proposes retirements only where it can name the evidence (merge sha + patch-id match + concluded run) per branch, dry-run by default like adopt, refuses rather than defaults to delete on anything unproven.
 - **CAP-93 — local status sync** ← spec-factory-console CAP-1 (shipped 2026-09-09)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** refresh each project's per-story status in `data.js` from its Tier-3 `sprint-status.yaml` (full fidelity: done/active/gated/pending; may downgrade).
+  - **success:** every mapped story reflects its sprint file; unmatched ids are reported, never silently dropped.
 - **CAP-94 — hands-off CI refresh** ← spec-factory-console CAP-2 (shipped 2026-09-09)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** derive DONE-only story upgrades from `main`'s commit subjects at Pages deploy time (no bot commit-back); committed `data.js` is the floor — never downgraded.
+  - **success:** a story flips done on the live site once its merge/story commit lands on `main`.
 - **CAP-95 — Dreamscape scan** ← spec-factory-console CAP-3 (shipped 2026-09-09)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** rescan `docs/dreams/*.md` frontmatter (title/status/owner) into the data on every run, warning on unknown status or missing owner (the de-facto Dream frontmatter detector).
+  - **success:** the board always shows all Dreams; a bad frontmatter edit is named in the run output.
 - **CAP-96 — stable data contract** ← spec-factory-console CAP-4 (shipped 2026-09-09)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
-- **CAP-97 — from spec-fidelity-enforcement** ← spec-fidelity-enforcement CAP-1 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
-- **CAP-98 — from spec-fidelity-enforcement** ← spec-fidelity-enforcement CAP-3 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
-- **CAP-99 — from spec-fidelity-enforcement** ← spec-fidelity-enforcement CAP-4 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
-- **CAP-100 — from spec-fidelity-enforcement** ← spec-fidelity-enforcement CAP-6 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
-- **CAP-101 — from spec-fidelity-enforcement** ← spec-fidelity-enforcement CAP-9 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** `data.js` carries hand-curated narrative plus generated state; the generator mutates ONLY story statuses, the dreams list, and the snapshot timestamp.
+  - **success:** any other field survives a regeneration byte-identical.
+- **CAP-97 — detector trigger, advisory** ← spec-fidelity-enforcement CAP-1 (shipped 2026-09-16)
+  - **intent:** every repo-scope detector runs on every PR and push to main via a derived registry that fails on its own gaps (a detector script with no pixi task, or vice versa, is itself a finding) rather than a hand-written list.
+  - **success:** .github/workflows/detectors.yml invokes scripts/detectors.py --scope repo; findings post as warning annotations (advisory, non-blocking per the 2026-07-31 amendment) rather than failing silently or not running at all. Nine detector scripts confirmed present: bmad_drift_check, spec_surface_check, dream_chain_check, deferred_work_check, dashboard_drift_check, story_status_check, loop_stall_check, llms_full_check, unpushed_work_check.
+- **CAP-98 — automatic Tier-2 promotion** ← spec-fidelity-enforcement CAP-3 (shipped 2026-09-16)
+  - **intent:** bmad-loop's own completion path writes a finished story's spec directly to the tracked planning-artifacts/specs/ location, rather than leaving it in gitignored Tier-3 for a human to remember to promote after merge -- the ~52-story fleet gap is the proof a manual step does not hold.
+  - **success:** a story that reaches done in the loop has its tracked spec on main in the same merge, with no separate human promotion step required.
+- **CAP-99 — reverse gate: Success signal bound to verify command** ← spec-fidelity-enforcement CAP-4 (shipped 2026-09-16)
+  - **intent:** a promoted story spec's stated Success criterion binds to the verify command that gated its story, so a later change deleting or weakening that test is visible as a contract breach rather than a silently passing suite.
+  - **success:** removing or defanging a story's verify command trips a finding naming the story spec whose Success signal it backed.
+- **CAP-100 — the actor-attributed event record (Scribe records; Marshal and Doctor are emission points)** ← spec-fidelity-enforcement CAP-6 (shipped 2026-09-16)
+  - **intent:** every act an agent or human makes or does is recorded with five fields -- who (actor class human/agent + identity), what, when, how (skill/tool/command/direct-edit), why (story key, Spec capability, or override justification) -- durably, outliving the worktree that wrote it. Captures three cases a naive design drops: a judging run that never happened (recorded as not-run, never as silent absence), an override (who bypassed which gate, on what authority), and an act that produced nothing (crash/timeout/abandoned branch). Governing rule: an absent record and a clean record must never look the same.
+  - **success:** journal.jsonl's existing {ts, kind, run_id, story_key, adapter_dev, adapter_review} schema gains actor class + authority fields and is promoted out of Tier-3 (.gitignore:750) into a durable store queryable via the existing duckdb dependency and pyforge-scribe's capture seam.
+- **CAP-101 — install the judge -- Doctor holds the verdict on Marshal's own rows** ← spec-fidelity-enforcement CAP-9 (shipped 2026-09-16)
+  - **intent:** (a) a check fires when a threshold, skip-list, or disable flag in a Marshal-owned detector moves without a Doctor-side approval marker; (b) structurally, checks that judge Marshal's own conformance live in Doctor's package with no Marshal write path. This is the control that makes every other capability in this Spec trustworthy -- CAP-2 (INV-4) is a check Marshal would otherwise build, set the threshold for, and be the biggest finding against, self-graded.
+  - **success:** a Marshal-authored change to a Doctor-judging check's threshold/skip-list/disable-flag is blocked or flagged without Doctor-side sign-off; until (a) or (b) ships, every verdict this Spec produces about Marshal is self-graded and the Dream says so on the board.
 - **CAP-102 — orchestrated chain regeneration** ← spec-fleet-chain-completeness CAP-1
-  - **intent:** From a consolidated Dream, run the full planning chain in sequence via
-  - **success:** a single invocation against a consolidated Dream produces a coherent
+  - **intent:** From a consolidated Dream, run the full planning chain in sequence via `marshal planning chain-regenerate` — each phase's output feeding the next, without a human hand-carrying files between skill invocations. **Default mode: Full** (all eight Dream phases). **Minimal mode** (`--minimal`): skips Research and Brief (phases 2–3) for drift repair on stations without research history.
+  - **success:** a single invocation against a consolidated Dream produces a coherent eight-layer planning chain with no manual hand-off required between phases.
 - **CAP-103 — code-status preservation** ← spec-fleet-chain-completeness CAP-2
-  - **intent:** Regenerating the planning chain does not clobber existing Code implementation
-  - **success:** re-running the workflow against an already-partially-implemented project
+  - **intent:** Regenerating the planning chain does not clobber existing Code implementation status (shipped versions, story completion state) recorded in `epics.md`.
+  - **success:** re-running the workflow against an already-partially-implemented project leaves every story's done/in-progress/backlog status exactly as it was before the run.
 - **CAP-104 — chain-completeness audit mode** ← spec-fleet-chain-completeness CAP-3
-  - **intent:** A verify-only pass, independent of regeneration, answers whether a project's
-  - **success:** run in audit mode against any of the 8 PyForge stations and get a pass/fail
+  - **intent:** A verify-only pass, independent of regeneration, answers whether a project's 8-layer chain is complete, coherent, and free of orphaned or stale artifacts, without generating or changing anything, and that verdict is visible on the fleet dashboard, not only in the operator's terminal.
+  - **success:** run in audit mode against any of the 8 PyForge stations and get a pass/fail per contract checkpoint, matching what a manual read of the chain plus `dream_chain_check` would find, with the dashboard reflecting each audited station as chain-complete or naming its gap. In **Minimal** regeneration mode, Research/Brief checkpoints pass when those layers were intentionally skipped and never existed for the station.
 - **CAP-105 — orphan detection with review-gated cleanup** ← spec-fleet-chain-completeness CAP-4
-  - **intent:** Identify artifacts the regenerated chain no longer references — old spec
-  - **success:** after a consolidation run, the operator sees a named orphan manifest
+  - **intent:** Identify artifacts the regenerated chain no longer references — old spec folders, epics from replaced specs, dream-deleted references — and surface them for human review. Never delete, commit, or push unattended.
+  - **success:** after a consolidation run, the operator sees a named orphan manifest (`orphans.json` + `orphans.md` under the run folder) and an unstaged working-tree diff; optional `--stage` stages regenerated paths and orphan deletions without commit; `--apply-orphans` performs disk deletes only on explicit operator action; nothing is committed without their explicit action.
 - **CAP-106 — configurable per-project invocation** ← spec-fleet-chain-completeness CAP-5
-  - **intent:** `project_slug`, `dream_path`, `chain_mode` (`full` default | `minimal`),
-  - **success:** the same workflow definition runs unmodified against any of the 8 stations by
+  - **intent:** `project_slug`, `dream_path`, `chain_mode` (`full` default | `minimal`), `preserve_code_status` (default true), `stage` (default false), `apply_orphans` (default false), and `resume` (continue from last checkpoint) are parameters, not hardcoded per station. `auto_commit` remains false and is not offered.
+  - **success:** the same workflow definition runs unmodified against any of the 8 stations by varying only its parameters.
 - **CAP-107 — The operating-model standard is 6.12-accurate, and derives what it can** ← spec-fleet-consistency-standard CAP-1 (shipped 2026-09-09)
   - **intent:** A reader of the standard can trust every skill name, script path and file reference in it, and the parts that restate machine-readable facts are gone rather than maintained by hand.
   - **success:** `EXEMPLAR-STANDARD.md` names no skill, script or path that does not resolve on disk; its 16-stage skill-mapping table and its dated conformance-status snapshots are removed (the first restates BMAD's own skill set, the second is a hand-derived measurement a detector produces); INV-0..INV-5, the eleven-row conformance table, the kernel/companion rule and the provenance rules survive intact; the file keeps its path, because `pixi.toml`'s `dream-chain` detector names it as its `Contract:`.
@@ -565,399 +564,399 @@ A pain to solve and an opportunity to capture, on the same clock. The capability
 - **CAP-112 — Governance docs cannot go stale silently** ← spec-fleet-consistency-standard CAP-6 (shipped 2026-09-09)
   - **intent:** When a skill is renamed, a script retired or a path moved, the governance documents that reference it fail a check instead of quietly misleading readers for months.
   - **success:** A detector resolves every `bmad-*` skill name, script path and file reference in `EXEMPLAR-STANDARD.md`, `AGENTS.md`, `CLAUDE.md` and `docs/reference/test-charter.md`, and exits non-zero naming each reference that no longer resolves; it is discovered by `scripts/detectors.py` and has its own pixi task; run against the pre-CAP-1 standard it reports all seven of this session's staleness findings.
-- **CAP-113 — from spec-fleet-status-supervisor-fallback** ← spec-fleet-status-supervisor-fallback CAP-1 (shipped 2026-09-16)
-  - **intent:** When `supervisor_alive is False`, `derive_home_state`'s caller consults a
-  - **success:** Reproducing the 2026-08-11 scenario (a run resumed with no supervisor
-- **CAP-114 — from spec-fleet-status-supervisor-fallback** ← spec-fleet-status-supervisor-fallback CAP-2 (shipped 2026-09-16)
-  - **intent:** The two failure shapes (sidecar-dead-engine-alive vs. sidecar-dead-engine-dead)
-  - **success:** An operator or an automated `fleet-picture` consumer can tell the two cases
-- **CAP-115 — from spec-genesis-installer-name-retirement** ← spec-genesis-installer-name-retirement CAP-1 (shipped 2026-09-16)
-  - **intent:** Merge `epics-genesis-installer.md`'s content into one combined
-  - **success:** Single `epics.md` file; `epics-genesis-installer.md` archived
-- **CAP-116 — from spec-genesis-installer-name-retirement** ← spec-genesis-installer-name-retirement CAP-2 (shipped 2026-09-16)
-  - **intent:** Produce one contiguous functional-requirement numbering space via
-  - **success:** Every FR in the regenerated PRD uses the dashed `FR-N` form,
-- **CAP-117 — from spec-genesis-installer-name-retirement** ← spec-genesis-installer-name-retirement CAP-3 (shipped 2026-09-16)
-  - **intent:** Decide what happens to each installer-only namespace —
-  - **success:** `grep` for the old bare forms across live planning-artifacts
-- **CAP-118 — from spec-genesis-installer-name-retirement** ← spec-genesis-installer-name-retirement CAP-4 (shipped 2026-09-16)
-  - **intent:** Decide the CLI-framework contradiction instead of carrying it
-  - **success:** The regenerated architecture states which framework the unified
-- **CAP-119 — from spec-genesis-installer-name-retirement** ← spec-genesis-installer-name-retirement CAP-5 (shipped 2026-09-16)
-  - **intent:** Resolve the `init`/`check` verb collisions between Marshal's
-  - **success:** The regenerated PRD names one verb surface — either one verb
-- **CAP-120 — from spec-genesis-installer-name-retirement** ← spec-genesis-installer-name-retirement CAP-6 (shipped 2026-09-16)
-  - **intent:** Remove every "Satellite: Genesis Installer PRD/Architecture"
-  - **success:** `grep -i "genesis.installer"` across the regenerated
-- **CAP-121 — from spec-genesis-installer-name-retirement** ← spec-genesis-installer-name-retirement CAP-7 (shipped 2026-09-16)
-  - **intent:** Update the dashboard so the build-campaign section shows exactly
-  - **success:** `pyforge.doctor.sources.fleet_scan`'s `IMPL_CAMPAIGN` has one marshal
-- **CAP-122 — from spec-genesis-installer-name-retirement** ← spec-genesis-installer-name-retirement CAP-8 (shipped 2026-09-16)
-  - **intent:** Preserve already-landed story identity through the rewrite —
-  - **success:** Every story key with `status=done` before the rewrite has the
-- **CAP-123 — from spec-horizontal-run-concurrency** ← spec-horizontal-run-concurrency CAP-1 (shipped 2026-09-16)
-  - **intent:** An operator who requests `scm.max_parallel > 1` is told the request is inert,
-  - **success:** Setting `max_parallel > 1` in a project's policy produces a registered
-- **CAP-124 — from spec-horizontal-run-concurrency** ← spec-horizontal-run-concurrency CAP-2 (shipped 2026-09-16)
-  - **intent:** The `bmad_loop` parallel-fan-out gap is tracked in the same upstream-contribution
-  - **success:** `upstream-register.json` carries an entry for this gap (id, gap description,
-- **CAP-125 — from spec-horizontal-run-concurrency** ← spec-horizontal-run-concurrency CAP-3 (shipped 2026-09-16)
-  - **intent:** Marshal's own readiness for N-stories-in-flight — worktree isolation, the shared
-  - **success:** A written readiness assessment exists, naming what already holds (e.g.
-- **CAP-126 — from spec-landing-evidence-grammar** ← spec-landing-evidence-grammar CAP-1 (shipped 2026-09-09)
-  - **intent:** ONE shared grammar of landing-evidence shapes — merge-subject templates,
-  - **success:** The grammar recognizes, as written (or via the one-time reviewed allowlist of the
-- **CAP-127 — from spec-landing-evidence-grammar** ← spec-landing-evidence-grammar CAP-2 (shipped 2026-09-09)
-  - **intent:** Doctor-side adoption — `story-status`'s evidence routes (`sources/marshal.py:
-  - **success:** On the live repo, the three standing `story-status` false positives (marshal 8-2,
-- **CAP-128 — from spec-landing-evidence-grammar** ← spec-landing-evidence-grammar CAP-3 (shipped 2026-09-09)
-  - **intent:** Marshal-side adoption — the promotion classifiers (`core/promotion.py:93-107`),
-  - **success:** MRS-STATUS-010's UNCONFIRMED pile shrinks from 26 to only genuinely-unlanded
-- **CAP-129 — from spec-landing-evidence-grammar** ← spec-landing-evidence-grammar CAP-4 (shipped 2026-09-09)
-  - **intent:** Story 20.9's own doctor-side adoption of the grammar was incomplete in two ways,
-  - **success:** All 25 standing false positives (doctor 6 stories, marshal 10, mason 7, steward 2
-- **CAP-130 — from spec-library-catalog-manifest-sync** ← spec-library-catalog-manifest-sync CAP-1 (shipped 2026-09-12)
-  - **intent:** Root `pixi.toml` and `docs/reference/library-llms-full.md` document the seven
-  - **success:** `pixi run -e local-recipes llms-full-check` exits 0; each of the seven appears
-- **CAP-131 — from spec-library-catalog-manifest-sync** ← spec-library-catalog-manifest-sync CAP-2 (shipped 2026-09-12)
-  - **intent:** `scripts/llms_full_check.py`'s dependency walk also covers every
-  - **success:** A synthetic station-manifest entry that is not mirrored in root `pixi.toml` or
+- **CAP-113 — a dead sidecar behind a live engine is not `unsupervised`** ← spec-fleet-status-supervisor-fallback CAP-1 (shipped 2026-09-16)
+  - **intent:** When `supervisor_alive is False`, `derive_home_state`'s caller consults a second, independent liveness signal for the run's engine before settling on `"unsupervised"`, so a dead sidecar behind a demonstrably live engine is distinguishable from a run that actually needs a re-spin.
+  - **success:** Reproducing the 2026-08-11 scenario (a run resumed with no supervisor sidecar, engine still active) no longer reports `"unsupervised"` on an active run; a run whose engine is also gone still does.
+- **CAP-114 — both sidecar-dead shapes are distinguishable from the fleet report alone** ← spec-fleet-status-supervisor-fallback CAP-2 (shipped 2026-09-16)
+  - **intent:** The two failure shapes (sidecar-dead-engine-alive vs. sidecar-dead-engine-dead) are distinguishable from the fleet report itself.
+  - **success:** An operator or an automated `fleet-picture` consumer can tell the two cases apart by reading the report -- never by running `ps` / `tmux ls` / `state.json` by hand.
+- **CAP-115 — One combined epics.md (Epic 1-12), no separate epics-genesis-installer.md** ← spec-genesis-installer-name-retirement CAP-1 (shipped 2026-09-16)
+  - **intent:** Merge `epics-genesis-installer.md`'s content into one combined `epics.md` (Epic 1 through Epic 12) so no reader or tool has to know two documents used to exist.
+  - **success:** Single `epics.md` file; `epics-genesis-installer.md` archived (not deleted) under `archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/`.
+- **CAP-116 — One contiguous FR space produced by the chain rewrite (not hand-renumbered)** ← spec-genesis-installer-name-retirement CAP-2 (shipped 2026-09-16)
+  - **intent:** Produce one contiguous functional-requirement numbering space via the chain rewrite, not a hand-renumber of the existing satellite section. `citation-map.md` confirms `FR1..FR62 → FR-66..FR-127` is a valid, gap-free, duplicate-free starting map if the rewrite preserves append order; the rewrite may reorder by topic instead.
+  - **success:** Every FR in the regenerated PRD uses the dashed `FR-N` form, sequential, no gaps or duplicates, no surviving bare-digit `FR62`-style form.
+- **CAP-117 — Installer-only namespaces (NFR-O1, SC-01..10, OQ-1..9, K-01..03) folded into or reconciled against Marshal's own equivalent sequences (NFR-1..14, however Marshal's PRD labels success criteria, Q-1..17)** ← spec-genesis-installer-name-retirement CAP-3 (shipped 2026-09-16)
+  - **intent:** Decide what happens to each installer-only namespace — `NFR-O1` (likely redundant with Marshal's own `NFR-12`, near-identical substance), `SC-01..SC-10` and `K-01..K-03` (Marshal has **no** existing `SC-` or kill-criteria namespace to fold into — `citation-map.md` confirms this; adopt wholesale or map differently, but the rewrite must choose), and `OQ-1..OQ-9` (Marshal's own Open Questions run `Q-1..Q-16` only — **`Q-17` does not exist**, and no `OQ-*` item is actually cross-referenced into it anywhere live; this corrects the governing Dream's original premise).
+  - **success:** `grep` for the old bare forms across live planning-artifacts returns zero hits outside `archive/` and `.memlog.md` files, and every namespace's fate (adopted / merged / retired-as-duplicate) is stated explicitly in the regenerated PRD rather than left implicit.
+- **CAP-118 — The CLI framework contradiction is decided, not carried forward** ← spec-genesis-installer-name-retirement CAP-4 (shipped 2026-09-16)
+  - **intent:** Decide the CLI-framework contradiction instead of carrying it forward — one framework for the one binary both the shipped Marshal CLI and the unbuilt installer verbs live in.
+  - **success:** The regenerated architecture states which framework the unified CLI uses and why; no "flagged, not resolved" language remains on this point.
+- **CAP-119 — The init/check verb collisions are resolved** ← spec-genesis-installer-name-retirement CAP-5 (shipped 2026-09-16)
+  - **intent:** Resolve the `init`/`check` verb collisions between Marshal's shipped verbs and the installer's own verbs of the same name but different scope.
+  - **success:** The regenerated PRD names one verb surface — either one verb doing both jobs, or two distinctly-named verbs — with the installer's distinct question ("does an externally-installed repo still conform?") given a real verb name if it isn't `check`.
+- **CAP-120 — Every 'Satellite: Genesis Installer PRD/Architecture' section header and prose mention of genesis-installer as a separate thing is gone from the regenerated PRD, architecture, Spec, and brief** ← spec-genesis-installer-name-retirement CAP-6 (shipped 2026-09-16)
+  - **intent:** Remove every "Satellite: Genesis Installer PRD/Architecture" section header and every prose mention of `genesis-installer` as if it names a separate thing, from the regenerated PRD, architecture, Spec, and brief — the content survives as ordinary Marshal capability, only the separate- sounding name retires.
+  - **success:** `grep -i "genesis.installer"` across the regenerated `planning-artifacts/{prds,architecture,specs,briefs}` returns zero hits outside `archive/` and `.memlog.md`.
+- **CAP-121 — Dashboard build-campaign section shows exactly one pyforge-marshal row (total stories = Epics 1-12 combined), no second genesis-installer row, and generate.py/index.html/IMPL_CAMPAIGN_LEDGER no longer reference genesis-installer** ← spec-genesis-installer-name-retirement CAP-7 (shipped 2026-09-16)
+  - **intent:** Update the dashboard so the build-campaign section shows exactly one `pyforge-marshal` row (all 12 epics combined), with no second `genesis-installer` row and no remaining code reference to the retired name.
+  - **success:** `pyforge.doctor.sources.fleet_scan`'s `IMPL_CAMPAIGN` has one marshal entry, `IMPL_CAMPAIGN_LEDGER` drops the `genesis-installer` key, and `scripts/dashboard_drift_check.py` stays clean.
+- **CAP-122 — Already-landed story identity survives the rewrite** ← spec-genesis-installer-name-retirement CAP-8 (shipped 2026-09-16)
+  - **intent:** Preserve already-landed story identity through the rewrite — Epic 1's 10 done stories, plus whatever Story 2.1 lands as by the time this runs, must keep their exact `sprint-status-ledger.yaml` keys.
+  - **success:** Every story key with `status=done` before the rewrite has the identical key after it; only backlog-only epics (currently 2-12) are free to be restructured.
+- **CAP-123 — an inert `max_parallel` request is named, never silently floored** ← spec-horizontal-run-concurrency CAP-1 (shipped 2026-09-16)
+  - **intent:** An operator who requests `scm.max_parallel > 1` is told the request is inert, instead of it being silently floored to 1 with no signal.
+  - **success:** Setting `max_parallel > 1` in a project's policy produces a registered finding/advisory naming the clamp and its cause, visible via the same surfaces (preflight, `marshal config`) other policy-shape findings already use.
+- **CAP-124 — the parallel-fan-out gap is tracked in the upstream register** ← spec-horizontal-run-concurrency CAP-2 (shipped 2026-09-16)
+  - **intent:** The `bmad_loop` parallel-fan-out gap is tracked in the same upstream-contribution register Story 6.8 already maintains.
+  - **success:** `upstream-register.json` carries an entry for this gap (id, gap description, workaround/status) in the same shape as its existing 8 entries, and `marshal upstream` surfaces it.
+- **CAP-125 — marshal's readiness for concurrent dispatch is assessed and recorded** ← spec-horizontal-run-concurrency CAP-3 (shipped 2026-09-16)
+  - **intent:** Marshal's own readiness for N-stories-in-flight — worktree isolation, the shared journal, the supervisor's idle/budget ladder, and the landing path — is assessed against what true concurrent dispatch would require, and the findings are recorded.
+  - **success:** A written readiness assessment exists, naming what already holds (e.g. worktree-per-story isolation) and what is unverified or would need to change, so a future story adopting an upstream Phase 5 scheduler starts from a scoped list rather than a fresh investigation.
+- **CAP-126 — one shared grammar of landing-evidence shapes, defined once** ← spec-landing-evidence-grammar CAP-1 (shipped 2026-09-09)
+  - **intent:** ONE shared grammar of landing-evidence shapes — merge-subject templates, branch-name grammars (`land/<station>-<story>…`, `bmad-loop/<run>/<story>`), and a documented recovery-commit convention — defined once as a contract/data/pyforge-core artifact (home is this capability's own design decision, bounded by the Constraints), consumed by everything that classifies landings. The recovery-landing convention is part of the grammar: the *next* manual recovery is born recognizable instead of born invisible.
+  - **success:** The grammar recognizes, as written (or via the one-time reviewed allowlist of the open question), the three live recovery commits `accc097e6a` / `5290c9bcd2` / `03d8fc8c86` that today each fail a different predicate — alongside bmad-loop's native `/{key} into` shape, the FR-187 templated subject, and the `land/…` branch grammars — and a cross-package conformance surface exists that both doctor and marshal test against without doctor importing `pyforge.marshal`.
+- **CAP-127 — doctor's `story-status` routes consume the shared grammar** ← spec-landing-evidence-grammar CAP-2 (shipped 2026-09-09)
+  - **intent:** Doctor-side adoption — `story-status`'s evidence routes (`sources/marshal.py: 479-517`) consume the shared grammar instead of route 2/route 3's private dialects, widening what is *recognizable* while leaving the hedged treatment of absence-of-match untouched.
+  - **success:** On the live repo, the three standing `story-status` false positives (marshal 8-2, marshal 10-1, mason 3-7) go green with **no per-story whitelist**; a genuinely-unlanded story still fails exactly as today.
+- **CAP-128 — marshal's promotion, status and retire classifiers consume the same grammar** ← spec-landing-evidence-grammar CAP-3 (shipped 2026-09-09)
+  - **intent:** Marshal-side adoption — the promotion classifiers (`core/promotion.py:93-107`), MRS-STATUS-010's failed-patch classifier, and `marshal retire`'s patch-id matching consume the same grammar, so a recovery landing confirmed by one classifier is confirmed by all of them.
+  - **success:** MRS-STATUS-010's UNCONFIRMED pile shrinks from 26 to only genuinely-unlanded patches (its honest "UNCONFIRMED, not proof it never landed" wording at `core/status.py: 836-861` retained); `marshal retire` proposes real retirements again on the live tree, where recovered branches are demonstrably merged.
+- **CAP-129 — doctor gains the branch-name fallback and a loose fourth route** ← spec-landing-evidence-grammar CAP-4 (shipped 2026-09-09)
+  - **intent:** Story 20.9's own doctor-side adoption of the grammar was incomplete in two ways, both closed here without touching the grammar itself: (a) `sources/marshal.py`'s Routes 2/3 never tried `classify_branch_name`'s `land/<station>-<epic>-<seq>` / `bmad-loop/<run>/<key>` branch-name grammars when a captured GitHub-PR branch didn't carry a station/dispatch prefix — `core/promotion.py::_classify_merge_subject` (CAP-3's own implementation) already had this exact fallback; doctor's port never picked it up. (b) A residual class of real, hand-authored landing commits (`"<station>: promote story <e>.<s> to done..."`, `"land <station> <e1>.<s1>+<e2>.<s2> (N stories): ..."`, etc.) matches no anchored grammar shape at all and never will — scoped to doctor's own advisory detector only (never the shared grammar, never anything marshal's actual gating logic reads), a fourth, deliberately loose "station + exact numeric key co-occur anywhere" route closes this without loosening any safety-critical consumer.
+  - **success:** All 25 standing false positives (doctor 6 stories, marshal 10, mason 7, steward 2 — see this capability's own story for the full list) go green with no per-story whitelist, same bar CAP-2 itself set; a genuinely-unlanded story (wrong station, or a longer numeric key like "11.10" for a "11-1" search) still fails exactly as today, pinned by dedicated negative tests; zero changes to `pyforge.core.landing_evidence` or `pyforge.marshal.core.promotion`.
+- **CAP-130 — the seven station-imported libraries are declared at root and catalogued** ← spec-library-catalog-manifest-sync CAP-1 (shipped 2026-09-12)
+  - **intent:** Root `pixi.toml` and `docs/reference/library-llms-full.md` document the seven libraries every affected station's own nested manifest already declares and its source already imports directly: `packaging` (marshal, mason, warden), `jsonschema` (doctor, marshal, warden), `psutil` (marshal), `attrs` (atlas), `packageurl-python` — imports as `packageurl` (warden), `license-expression` — imports as `license_expression` (warden).
+  - **success:** `pixi run -e local-recipes llms-full-check` exits 0; each of the seven appears as a versioned floor (`>=` its conda-resolved version: `packaging` 26.3, `jsonschema` 4.26.0, `psutil` 7.2.2, `attrs` 26.1.0, `packageurl-python` 0.17.6, `license-expression` 30.4.4) in both root `pixi.toml` — `[feature.local-recipes.dependencies]` plus each owning station's own `[feature.pyforge-<station>.dependencies]` block — and the catalog; `environment.yaml` regenerated if the `build` env's closure changed; the catalog's existing `pydantic` note is sharpened to also name pyforge-atlas's and pyforge-scribe's direct declarations (not a new pin — `pydantic` already resolves and is already documented).
+- **CAP-131 — `llms_full_check`'s dependency walk also covers every station manifest** ← spec-library-catalog-manifest-sync CAP-2 (shipped 2026-09-12)
+  - **intent:** `scripts/llms_full_check.py`'s dependency walk also covers every `src/shared/packages/pyforge-*/pixi.toml`'s `[package.run-dependencies]` table, merged into the same active-dependency set the root-`pixi.toml` walk already builds, so a station declaring a real run-dep in its own manifest without mirroring or documenting it fails the check the same way an undocumented root-`pixi.toml` dep does today.
+  - **success:** A synthetic station-manifest entry that is not mirrored in root `pixi.toml` or documented in the catalog is caught as `undocumented-dep` by `llms-full-check` (exercised by a unit/meta test covering the new code path); the existing exit-code contract (0 clean / 1 drift / 2 missing input) and the "commented-out deps are out of scope" rule hold unchanged for both the pre-existing root-`pixi.toml`-only checks and the new station-manifest checks.
 - **CAP-132 — fleet-wide staleness detection** ← spec-loop-home-fleet-refresh CAP-1
-  - **intent:** For every discovered loop-home (derived from the filesystem/`marshal homes`
-  - **success:** run against today's fleet state (all homes pinned 227 commits back) and every
+  - **intent:** For every discovered loop-home (derived from the filesystem/`marshal homes` enumeration, never a hardcoded station list), report commits-behind `origin/main` on its `loop/pyforge-<slug>` root checkout, plus whether its `.bmad-loop/policy.toml` is missing or stale — one row per home, readable at a glance.
+  - **success:** run against today's fleet state (all homes pinned 227 commits back) and every home is reported stale with its exact commits-behind count; run again after a refresh and every home reports clean. A home added to the fleet tomorrow appears without a code change.
 - **CAP-133 — automated fast-forward and push, with a clean-worktree safety check** ← spec-loop-home-fleet-refresh CAP-2
-  - **intent:** For each stale home whose root checkout passes the safety checks (working tree
-  - **success:** run against 9 clean-but-stale homes and all 9 end fast-forwarded and pushed,
+  - **intent:** For each stale home whose root checkout passes the safety checks (working tree clean per `git status --short`, no live run on that root checkout), perform exactly the manual sequence: fetch `origin/main`, `git merge --ff-only origin/main`, push the updated `loop/pyforge-<slug>` branch to origin. Homes that fail a check are **reported, never touched**, per the Dream's three-case taxonomy: live session → skipped and named; genuine divergence (unique commits not reachable from `main`) → reported, left alone; stale/redundant divergence (unique commits already squash-merged onto `main`) → reported with evidence (which commit, which PR it matches), force-push left to the human.
+  - **success:** run against 9 clean-but-stale homes and all 9 end fast-forwarded and pushed, matching the 2026-08-08 manual pass byte-for-byte; run against a home with uncommitted changes, a diverged home, or a home with an active run, and that home is untouched with the reason named in the output.
 - **CAP-134 — policy re-render as a checked step of the same refresh** ← spec-loop-home-fleet-refresh CAP-3
-  - **intent:** After a home's fast-forward (or when CAP-1 flags its policy file
-  - **success:** delete a home's `policy.toml` and run the refresh: the file is back and
+  - **intent:** After a home's fast-forward (or when CAP-1 flags its policy file missing/stale), re-render `.bmad-loop/policy.toml` via the existing composition path (`marshal config --project <slug> --write-harness-policy <dir>`) — never a reimplemented renderer. The refresh does not report a home as clean while its policy file is absent or behind the composed policy sources.
+  - **success:** delete a home's `policy.toml` and run the refresh: the file is back and matches what `marshal config` composes for that station; a home refreshed by CAP-2 never ends the run with a missing or stale policy file.
 - **CAP-135 — Re-preflight when the refuse predicate can change** ← spec-marshal-drain-self-resolution CAP-1 (shipped 2026-09-09)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** Live fleet supervisor re-evaluates a refused backlog head when the refuse depends on disk/API state. Identical refuse is rate-limited, not a permanent `MRS-DRAIN-005` for the campaign.
+  - **success:** After `spec-39-4-*.md` appears, the next eligible tick dispatches 39.4 without bare `factory dispatch`.
 - **CAP-136 — Missing-spec escalates; never idle-with-backlog** ← spec-marshal-drain-self-resolution CAP-2 (shipped 2026-09-09)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** `MRS-DISP-005` sets the station `awaiting-operator` (or equivalent fleet-picture ATTENTION) with a one-line remedy naming the expected `spec-<e>-<n>-*.md` path. Remaining > 0 + idle is a finding.
+  - **success:** Fixture: ledger key + epics.md + empty specs glob → escalate, not silent idle.
 - **CAP-137 — Mechanical land-conflict union + local-clean when DIRTY** ← spec-marshal-drain-self-resolution CAP-3 (shipped 2026-09-09)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** CAP-4, on conflicts only in `sprint-status-ledger.yaml` (and optionally spec `status:` ready/done), unions keys (`done` beats `backlog`), commits, pushes, retries. If git is clean and GitHub `mergeable` is false, advance `main`, retire the PR, resync ledger (PR #985 path). Unknown conflicts escalate with paths named.
+  - **success:** Replay #985 → land without chat.
 - **CAP-138 — Push the dispatch branch before verify can strand it** ← spec-marshal-drain-self-resolution CAP-4 (shipped 2026-09-09)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** `origin/dispatch/<slug>/<story>` exists once the session has a commitable result. Verify refuse must not be the only thing between work and a reachable ref.
+  - **success:** After a worktree commit, `git ls-remote` shows the branch even if verify later refuses.
 - **CAP-139 — Verify blast radius (`pre-existing-gate`)** ← spec-marshal-drain-self-resolution CAP-5 (shipped 2026-09-09)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** A `verify_commands` failure whose failing files/imports are outside the story diff and effective surface is WARN, not `MRS-GATE-001` story-refuse. Transient redispatch into the same unrelated red command is forbidden.
+  - **success:** 28.13-shaped diff + packaging pandas collection error → no story-refuse; `pyforge-marshal-test` still gates marshal diffs.
 - **CAP-140 — Terminal overlay + stranded-work signal** ← spec-marshal-drain-self-resolution CAP-6 (shipped 2026-09-09)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** `derive_dispatch_phase` is `None` when completion is `failed` / `stopped_externally` and the tail is dead (partial: `20e88e8b0f`). fleet-picture STUCK only for live refuse. Unpushed dispatch branch or open unmerged PR is named in ATTENTION.
+  - **success:** Dead+failed → not STUCK; unpushed 28.13-shaped ref → ATTENTION.
 - **CAP-141 — Supervisor finalizes when the harness cannot run shell** ← spec-marshal-drain-self-resolution CAP-7 (shipped 2026-09-09)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** A session that claims done (or leaves a commitable dirty worktree) but cannot invoke `git` / `pixi` is not a story refuse. The dispatch supervisor commits the leftover, pushes (CAP-4 / 28.21), and runs `verify_commands`. Redispatch over `MRS-DISP-036` dirt without that attempt is forbidden. If supervisor shell fails, `awaiting-operator` names the worktree — not idle, not another Cursor session.
+  - **success:** Replay 28.18 pass-41 dirty tree + “shell unavailable” → commit + `origin/dispatch/…` without chat; #1000-shaped land.
 - **CAP-142 — the GitHub PR-merge pattern is scoped to `project_slug`** ← spec-marshal-land-cross-project-story-key-collision CAP-1 (shipped 2026-09-09)
-  - **intent:** `extract_story_key_from_github_merge_subject`'s branch-segment
-  - **success:** `merged_story_keys(subjects_from_main, template, 'mason')`
-- **CAP-143 — from spec-marshal-land-merge-subject** ← spec-marshal-land-merge-subject CAP-1 (shipped 2026-09-16)
+  - **intent:** `extract_story_key_from_github_merge_subject`'s branch-segment match only returns a `StoryKey` when the branch actually belongs to the project being queried, the same way the bmad-loop pattern already scopes itself — a same-numbered story from a different project's branch history can never be mistaken for this project's own.
+  - **success:** `merged_story_keys(subjects_from_main, template, 'mason')` no longer returns `4.2` for PR #274's real subject (`Merge pull request #274 from rxm7706/marshal/4-2-teardown-reachability-spec-recovery`) — a regression test pins this exact real subject against `project_slug='mason'` and asserts no key is returned, and against `project_slug='marshal'` and asserts `StoryKey(4, 2)` is still returned.
+- **CAP-143 — `marshal land` applies the templated merge subject on GitHub** ← spec-marshal-land-merge-subject CAP-1 (shipped 2026-09-16)
   - **intent:** `marshal land` renders the same templated merge subject `deploy land-story` already does (`identity.render_merge_subject(story_key, template)`, AD-24) and applies it to the GitHub merge, instead of leaving GitHub to auto-generate one.
   - **success:** `marshal_native_merged_keys(subjects, template, project_slug)`, given a real subject string from a `marshal land`-driven merge, classifies it as native — the same outcome it already produces for a `deploy land-story` merge.
-- **CAP-144 — `** ← spec-marshal-launch-environment-integrity CAP-1 (shipped 2026-09-11)
-  - **intent:** Reuse `cli/dispatch.py`'s `station_in_flight_conflict` check (a narrowed call,
-  - **success:** A fixture reproduces the exact 2026-09-10 race (two spin calls six seconds
-- **CAP-145 — A** ← spec-marshal-launch-environment-integrity CAP-2 (shipped 2026-09-11)
-  - **intent:** The supervisor's own poll loop commits a local-only `wip: <story>
-  - **success:** A fixture simulating a mid-session crash after the checkpoint fires asserts the
-- **CAP-146 — `** ← spec-marshal-launch-environment-integrity CAP-3 (shipped 2026-09-11)
-  - **intent:** A blocked story whose last recorded verdict shows zero git progress and zero
-  - **success:** A fixture reproduces one of each (a crashed-before-any-progress run, a real
-- **CAP-147 — T** ← spec-marshal-launch-environment-integrity CAP-4 (shipped 2026-09-11)
-  - **intent:** A dedicated fixture pins `fleet_picture.py`'s `main()` ATTENTION-block branch
-  - **success:** A station with `dispatch_phase` set and a `refused` verdict produces the
-- **CAP-148 — from spec-marshal-parallel-dispatch-fanout** ← spec-marshal-parallel-dispatch-fanout CAP-1 (shipped 2026-09-09)
-  - **intent:** A **wave scheduler** on `factory drain` / fleet-supervisor ticks:
-  - **success:** With `max_parallel=2` and two ready stories whose surfaces are
-- **CAP-149 — from spec-marshal-parallel-dispatch-fanout** ← spec-marshal-parallel-dispatch-fanout CAP-2 (shipped 2026-09-09)
-  - **intent:** **Narrow `station_in_flight_conflict()`** (22.5 refinement): refuse
-  - **success:** Story A with git-fact LIVE blocks story B only when B depends on
-- **CAP-150 — from spec-marshal-parallel-dispatch-fanout** ← spec-marshal-parallel-dispatch-fanout CAP-3 (shipped 2026-09-09)
-  - **intent:** **`dispatch-wave` journal observability**: each wave records wave
-  - **success:** A two-member wave produces one journal intent with both keys;
-- **CAP-151 — from spec-marshal-parallel-dispatch-fanout** ← spec-marshal-parallel-dispatch-fanout CAP-4 (shipped 2026-09-09)
-  - **intent:** **Explicit cap, default serial:** `dispatch.max_parallel` in
-  - **success:** Absent policy key and flag → serial. Policy `max_parallel=3`
-- **CAP-152 — from spec-marshal-parallel-dispatch-fanout** ← spec-marshal-parallel-dispatch-fanout CAP-5 (shipped 2026-09-09)
-  - **intent:** **Compose with 28.12, do not duplicate:** ready-set and
-  - **success:** Ready-set computation is imported/shared with 28.12 tests; no
-- **CAP-153 — from spec-marshal-parallel-dispatch-fanout** ← spec-marshal-parallel-dispatch-fanout CAP-6 (shipped 2026-09-09)
-  - **intent:** Factory fan-out gets its **own `dispatch.max_parallel` policy key**, resolved
-  - **success:** A station declaring `dispatch.max_parallel = N` forms waves of up to N with no
-- **CAP-154 — from spec-marshal-run-watch** ← spec-marshal-run-watch CAP-1
-  - **intent:** An operator (or any caller of marshal's CLI) can run `marshal watch` against one
-  - **success:** `marshal watch --project <slug> --run <run_id>` (bmad-loop pattern) and `marshal
-- **CAP-155 — from spec-marshal-run-watch** ← spec-marshal-run-watch CAP-2
-  - **intent:** `marshal watch` never conflates a live `bmad-loop` run's per-story ground truth
-  - **success:** A test fixture where `marshal status --project <slug>`'s `dispatch_*` fields
-- **CAP-156 — from spec-marshal-run-watch** ← spec-marshal-run-watch CAP-3
-  - **intent:** `marshal watch`'s report is reachable over `POST /stations/marshal/mcp` as a
-  - **success:** A new `@server.tool(...)`-registered tool in `django_marshal_portal/mcp_asgi.py`
-- **CAP-157 — from spec-marshal-run-watch** ← spec-marshal-run-watch CAP-4
-  - **intent:** The `bmad-agent-marshal` persona can offer "watch a run" as a named menu action
-  - **success:** A menu entry exists in the persona's resolved `agent.menu` that, when selected,
-- **CAP-158 — from spec-marshal-run-watch** ← spec-marshal-run-watch CAP-5
-  - **intent:** The report CAP-1 produces is viewable in the `django-marshal` browser portal,
-  - **success:** A new view + URL route in `django_marshal_portal` renders CAP-1's report for a
-- **CAP-159 — from spec-marshal-single-story-dispatch** ← spec-marshal-single-story-dispatch CAP-1
-  - **intent:** An operator (or a fleet driver acting for one) can launch exactly one story
-  - **success:** Dispatching a backlog story provisions a fresh isolated worktree, launches
-- **CAP-160 — from spec-marshal-single-story-dispatch** ← spec-marshal-single-story-dispatch CAP-2
-  - **intent:** The driver judges a dispatched session's completion or failure from git facts
-  - **success:** Two motivating traps are regression-pinned: (a) the driver awaiting a
-- **CAP-161 — from spec-marshal-single-story-dispatch** ← spec-marshal-single-story-dispatch CAP-3
-  - **intent:** Verification is the product: before any landing, the driver itself runs the
-  - **success:** A story whose session self-reports shipped but whose gates fail or whose
-- **CAP-162 — from spec-marshal-single-story-dispatch** ← spec-marshal-single-story-dispatch CAP-4
-  - **intent:** A verified story lands through the existing Epic 4 machinery — `marshal
-  - **success:** A dispatch-landed story is classified marshal-native by
-- **CAP-163 — from spec-marshal-single-story-dispatch** ← spec-marshal-single-story-dispatch CAP-5
-  - **intent:** One story in flight per station, enforced: the driver refuses a second
-  - **success:** A second dispatch to a busy station is refused naming the in-flight story;
-- **CAP-164 — from spec-marshal-single-story-dispatch** ← spec-marshal-single-story-dispatch CAP-6
-  - **intent:** The dispatched run survives its operator: detached-by-default (AD-22
-  - **success:** Killing the terminal that issued the dispatch leaves the session running; a
-- **CAP-165 — from spec-marshal-single-story-dispatch** ← spec-marshal-single-story-dispatch CAP-8
-  - **intent:** The session-harness layer is adapter-plural and profile-driven: an ordered
-  - **success:** With cursor unauthenticated and claude authenticated, a dispatch launches
-- **CAP-166 — from spec-marshal-single-story-dispatch** ← spec-marshal-single-story-dispatch CAP-7
-  - **intent:** Fleet-wide drain across all eight pyforge stations is a marshal-orchestrated
-  - **success:** An operator runs one documented command (provisional: `marshal factory
-- **CAP-167 — from spec-marshal-single-story-dispatch** ← spec-marshal-single-story-dispatch CAP-9
-  - **intent:** CAP-2's `branch_merged` git fact is never true on ancestry alone.
-  - **success:** A dispatch's `branch_merged` fact reads `false` for as long as
-- **CAP-168 — from spec-marshal-single-story-dispatch** ← spec-marshal-single-story-dispatch CAP-10
-  - **intent:** Station-scoped and sequence-scoped dispatch, both handed as an override to
-  - **success:** `--station` scopes one drain cycle to that station's next backlog story
-- **CAP-169 — from spec-marshal-single-story-dispatch** ← spec-marshal-single-story-dispatch CAP-11
-  - **intent:** A story whose spec is `status: done` must not enter another
-  - **success:** Replaying the 41.2 / 13.2 fixtures (spec already `done`,
-- **CAP-170 — from spec-marshal-single-story-dispatch** ← spec-marshal-single-story-dispatch CAP-12
-  - **intent:** CAP-3's bound verify command is a floor, not a ceiling: it
-  - **success:** A story whose diff touches only its own station's package
+- **CAP-144 — `factory spin` refuses a second launch on a live slug** ← spec-marshal-launch-environment-integrity CAP-1 (shipped 2026-09-11)
+  - **intent:** Reuse `cli/dispatch.py`'s `station_in_flight_conflict` check (a narrowed call, never a re-derived guard) so a second `factory spin <slug>` refuses before launching anything while a prior spin run for that slug is still live, naming the live run's id/pid.
+  - **success:** A fixture reproduces the exact 2026-09-10 race (two spin calls six seconds apart) and asserts the second refuses. (Story 34.1.)
+- **CAP-145 — the supervisor checkpoints idle uncommitted changes as a local-only commit** ← spec-marshal-launch-environment-integrity CAP-2 (shipped 2026-09-11)
+  - **intent:** The supervisor's own poll loop commits a local-only `wip: <story> (auto-checkpoint)` commit — never pushed, never opens a PR — when uncommitted changes sit past an idle threshold, or on an explicit `factory checkpoint <slug>` call.
+  - **success:** A fixture simulating a mid-session crash after the checkpoint fires asserts the worktree's uncommitted changes survive as a commit, not working-tree state a `git worktree remove --force` could destroy. (Story 34.2.)
+- **CAP-146 — `factory drain` retries an environment-classified block, never a genuine failure** ← spec-marshal-launch-environment-integrity CAP-3 (shipped 2026-09-11)
+  - **intent:** A blocked story whose last recorded verdict shows zero git progress and zero review/verify-cycle evidence classifies as **environment** rather than **story**; a sanctioned retry path clears only environment-classified blocks, never weakening `factory drain`'s existing never-auto-retried/never-forced-past guarantee for a genuine failure.
+  - **success:** A fixture reproduces one of each (a crashed-before-any-progress run, a real verify failure) and asserts only the crashed one is eligible for the new retry path. (Story 34.3.)
+- **CAP-147 — the ATTENTION-block refused-verdict branch is pinned by its own fixture** ← spec-marshal-launch-environment-integrity CAP-4 (shipped 2026-09-11)
+  - **intent:** A dedicated fixture pins `fleet_picture.py`'s `main()` ATTENTION-block branch (mocking `subprocess.run` for the `marshal status --format json` call), matching the coverage `station_state()`'s own `fix/fleet-picture-stale-dispatch-verdict` fix already has.
+  - **success:** A station with `dispatch_phase` set and a `refused` verdict produces the `dispatch verify REFUSED` ATTENTION line; the same refused verdict with `dispatch_phase=None` (a different engine live) produces no such line — the exact regression the fix guards against. Test-coverage-only, no behavior change. (Story 34.4.)
+- **CAP-148 — `factory drain` launches disjoint-surface ready stories in waves** ← spec-marshal-parallel-dispatch-fanout CAP-1 (shipped 2026-09-09)
+  - **intent:** A **wave scheduler** on `factory drain` / fleet-supervisor ticks: among backlog stories whose dependencies are satisfied on the tracked ledger (same ready-set hook as 28.12), launch up to `dispatch.max_parallel` members per wave when every pair in the batch has **pairwise disjoint effective frozen surfaces** (AD-27 intersection machinery). Between waves, wait until every launched member reaches a **terminal dispatch outcome** before computing the next batch. Dependents never start in the same wave as an unfinished dependency.
+  - **success:** With `max_parallel=2` and two ready stories whose surfaces are provably disjoint, both dispatch in one wave on separate worktrees/branches; with `max_parallel` unset or `1`, behavior is byte-identical to today's serial drain. A fixture pins two disjoint pyforge-marshal stories landing in one wave while a third overlapping story is refused with `surface-overlap`.
+- **CAP-149 — `station_in_flight_conflict` refuses on dependency, intersecting surfaces or same key** ← spec-marshal-parallel-dispatch-fanout CAP-2 (shipped 2026-09-09)
+  - **intent:** **Narrow `station_in_flight_conflict()`** (22.5 refinement): refuse story Y on station S only when an in-flight story X satisfies **any** of: (a) Y depends on X (transitive over declared `Deps:`), (b) effective surfaces of X and Y intersect, (c) same story key redispatch (`MRS-DISP-011`). Refuse **not** merely because X is `LIVE`. **`judge_dispatch_completion()` unchanged:** `LIVE := session_alive OR has_git_progress` per story worktree.
+  - **success:** Story A with git-fact LIVE blocks story B only when B depends on A or surfaces overlap; unrelated story C with disjoint surface dispatches while A remains LIVE. Same-key redispatch and dependency edges still refuse. Regression tests cover the 2026-09-01 zombie shape (A live by git facts, C unrelated and disjoint → C allowed).
+- **CAP-150 — each wave journals its id, members, cap and refused candidates** ← spec-marshal-parallel-dispatch-fanout CAP-3 (shipped 2026-09-09)
+  - **intent:** **`dispatch-wave` journal observability**: each wave records wave id, member story keys, applied cap, pairwise disjointness evidence (effective surface path sets or stable hashes), and refused candidates with reason (`dep-unmet`, `surface-overlap`, `cap`, `unknown-surface`). `marshal status` and `fleet-picture` show in-flight count per station and active wave id — not a flat single story key hiding concurrency.
+  - **success:** A two-member wave produces one journal intent with both keys; status output names both in-flight stories and the wave id; a refused candidate names `surface-overlap` with the intersecting paths.
+- **CAP-151 — `dispatch.max_parallel` is explicit per station and defaults to serial** ← spec-marshal-parallel-dispatch-fanout CAP-4 (shipped 2026-09-09)
+  - **intent:** **Explicit cap, default serial:** `dispatch.max_parallel` in `marshal-policy.toml` (per station, default `1`) and optional CLI override (`--max-in-flight`, exact flag name at implementation). No silent raise; `fleet-picture` calls out when a station runs `>1`. `--stories` with parallel mode re-validates surfaces and refuses overlapping pairs even when the operator listed them — list is intent, not a safety waiver.
+  - **success:** Absent policy key and flag → serial. Policy `max_parallel=3` with only two disjoint ready stories launches two. Attempt to set cap without journaling the effective value fails review — cap must be visible in wave journal and status.
+- **CAP-152 — fan-out reuses the shared dependency-graph helper, never a second topo-sort** ← spec-marshal-parallel-dispatch-fanout CAP-5 (shipped 2026-09-09)
+  - **intent:** **Compose with 28.12, do not duplicate:** ready-set and ledger-order tie-break come from the shared dependency-graph helper introduced for Story 28.12 (CAP-14). This spec adds batch selection and parallel launch only; it does not introduce a second topo-sort or reorder in-flight campaigns retroactively.
+  - **success:** Ready-set computation is imported/shared with 28.12 tests; no second ordering module. Stories with **empty or unknown** effective surface never fan out with others (conservative default — serial until surface is declared).
+- **CAP-153 — fan-out has its own `dispatch.max_parallel` key, independent of bmad-loop's** ← spec-marshal-parallel-dispatch-fanout CAP-6 (shipped 2026-09-09)
+  - **intent:** Factory fan-out gets its **own `dispatch.max_parallel` policy key**, resolved by `cli/dispatch.py:893-902` independently of bmad-loop's `scm.max_parallel` (`core/policy.py:513`), which it falls back to today. One knob stops governing two unrelated concurrency models, and raising the dispatch cap stops firing `_max_parallel_clamp_finding` (`core/policy.py:1537-1551`) — whose message names `bmad_loop 0.9.0`, a false-context warn on the dispatch path.
+  - **success:** A station declaring `dispatch.max_parallel = N` forms waves of up to N with no bmad-loop clamp advisory; a station declaring nothing behaves exactly as today (`1`); the bmad-loop knob continues to govern the spin engine alone.
+- **CAP-154 — `marshal watch` reports what changed and a recommended delay** ← spec-marshal-run-watch CAP-1
+  - **intent:** An operator (or any caller of marshal's CLI) can run `marshal watch` against one pinned run, one station's current run, or the whole fleet, and receive a report that gathers ground truth, diffs it against the immediately-prior observation, and states only what changed (or that nothing did) plus a recommended delay before checking again — for both the `bmad-loop` orchestrator pattern and the `bmad-build-auto` single-dispatch pattern.
+  - **success:** `marshal watch --project <slug> --run <run_id>` (bmad-loop pattern) and `marshal watch --project <slug>` with no run pinned (auto-detects the station's current run, bmad-build-auto or bmad-loop) each produce a report matching the five-section shape (completions / delta / currently-running / up-next / user-action-required) the hand-driven skill produced against the live pyforge-herald run; `marshal watch --fleet` produces the compact per-project snapshot the skill's fleet mode produces, escalated/paused projects sorted first. A second invocation with no intervening change reports "nothing changed," not a repeated full report. Every code path is covered by a test that does not require a live bmad-loop process (fixture journals/state fed to the same diff+report logic).
+- **CAP-155 — `marshal watch` never conflates loop truth with a stale dispatch** ← spec-marshal-run-watch CAP-2
+  - **intent:** `marshal watch` never conflates a live `bmad-loop` run's per-story ground truth with an unrelated, stale `bmad-build-auto` dispatch record that `marshal status` may also be holding for the same project slug.
+  - **success:** A test fixture where `marshal status --project <slug>`'s `dispatch_*` fields describe a DIFFERENT, older run than the live `bmad-loop status <run_id>` result proves `marshal watch`'s report uses only the `bmad-loop` result for that pattern's per-story detail, and states plainly (as the hand-driven reports did) that a stale unrelated dispatch record was present and ignored.
+- **CAP-156 — `marshal watch`'s report is reachable as a named MCP tool** ← spec-marshal-run-watch CAP-3
+  - **intent:** `marshal watch`'s report is reachable over `POST /stations/marshal/mcp` as a named tool, the way `django-marshal`'s existing `publish_loop_run` / `heartbeat_loop_run` / `complete_loop_run` / `list_loop_story_tasks` tools are registered in `mcp_asgi.py`.
+  - **success:** A new `@server.tool(...)`-registered tool in `django_marshal_portal/mcp_asgi.py` returns the same report shape CAP-1 produces, callable by the `bmad-agent-marshal` persona's `mcp` action kind.
+- **CAP-157 — the marshal persona offers "watch a run" as a menu action** ← spec-marshal-run-watch CAP-4
+  - **intent:** The `bmad-agent-marshal` persona can offer "watch a run" as a named menu action that dispatches `pyforge marshal watch ...` grammar.
+  - **success:** A menu entry exists in the persona's resolved `agent.menu` that, when selected, issues a `grammar` action kind starting `pyforge marshal watch` — no forbidden-action violation (no direct filesystem, no ad-hoc HTTP) in the transcript.
+- **CAP-158 — the watch report is viewable in the `django-marshal` portal** ← spec-marshal-run-watch CAP-5
+  - **intent:** The report CAP-1 produces is viewable in the `django-marshal` browser portal, alongside its existing `chrome_home` view.
+  - **success:** A new view + URL route in `django_marshal_portal` renders CAP-1's report for a project/run selected in the portal, without requiring a terminal.
+- **CAP-159 — dispatch verb** ← spec-marshal-single-story-dispatch CAP-1
+  - **intent:** An operator (or a fleet driver acting for one) can launch exactly one story on a station as a fresh, worktree-isolated `bmad-dev-auto` session under marshal governance: policy-composed budget ceilings and model tier, `BMAD_ACTIVE_PROJECT` passed per-invocation with physical artifact paths (never `bmad-switch`), and a journaled launch with intent/outcome discipline (AD-25/AD-28/AD-30).
+  - **success:** Dispatching a backlog story provisions a fresh isolated worktree, launches the session detached, journals the launch, and the run appears in `marshal status` / `fleet-picture`; the launched session demonstrably receives the pinned project scope and the policy-resolved model/budget parameters.
+- **CAP-160 — completion is judged from git and process facts, never self-reports** ← spec-marshal-single-story-dispatch CAP-2
+  - **intent:** The driver judges a dispatched session's completion or failure from git facts (AD-33: commits on the story branch, merge refs) plus running-process facts — never from harness notifications, session self-reports, or busy-wait polling filler.
+  - **success:** Two motivating traps are regression-pinned: (a) the driver awaiting a long-running nested review is never watchdog-killed, because no foreground path busy-waits — awaiting is a detached supervisor's job (Story 3.4 precedent); (b) a session that emits a killed/failed notification while git facts show live progress is treated as live: a redispatch of the same story is refused, naming the evidence — the observed near-duplicate ("dead" agent landed two stories after its failure notification) cannot recur.
+- **CAP-161 — a session's self-report is input to verification, never the verdict** ← spec-marshal-single-story-dispatch CAP-3
+  - **intent:** Verification is the product: before any landing, the driver itself runs the story's real verify commands via Epic 2's standalone gate objects and reads the diff surface against the story's frozen surface — the session's self-report is input, never the verdict (never-false-green lattice; unevaluable ≠ pass).
+  - **success:** A story whose session self-reports shipped but whose gates fail or whose diff exceeds its frozen surface ends in a loud non-landing verdict naming the failed gate — the doctor-12.3 shape (self-marked shipped, two live-reproducible leaks) is the canonical refusal fixture; no landing occurs on self-report alone in any test path.
+- **CAP-162 — dispatch lands through existing landing machinery, never a second path** ← spec-marshal-single-story-dispatch CAP-4
+  - **intent:** A verified story lands through the existing Epic 4 machinery — `marshal land`/`deploy land-story` semantics, FR-187's detectable merge subject, Story 4.1 spec promotion, Epic 15's ledger promotion — composition of shipped verbs, never a second landing/promotion path. **Merge-in-agent (2026-08-23):** the dispatch driver (or coordinating finalize step) merges with `gh pr merge --merge` when CI is green, then scoped `sprint-ledger-sync --project <station>` and spec promotion — never `--squash`.
+  - **success:** A dispatch-landed story is classified marshal-native by `marshal_native_merged_keys` (it never falls into FR-186's `not-loop-native` bucket), its spec is durably promoted, and its ledger key advances — with zero new landing or promotion code paths introduced.
+- **CAP-163 — one story in flight per station, cross-station dispatches run concurrently** ← spec-marshal-single-story-dispatch CAP-5
+  - **intent:** One story in flight per station, enforced: the driver refuses a second dispatch onto a station whose in-flight story (judged by CAP-2's facts) has not completed. Dispatches onto different stations may run concurrently — the cross-project plane spec-horizontal-run-concurrency explicitly excludes from FR-184's in-loop `max_parallel` clamp. Cross-station surface disjointness is advisory: a detectable overlap between in-flight stories' declared frozen surfaces is reported loudly, never silently, but the operator is trusted to proceed.
+  - **success:** A second dispatch to a busy station is refused naming the in-flight story; dispatches to two stations proceed concurrently; an overlap between two in-flight declared surfaces produces the advisory; FR-184's clamp posture is untouched by any of it.
+- **CAP-164 — the dispatched run survives its operator, detached and resumable** ← spec-marshal-single-story-dispatch CAP-6
+  - **intent:** The dispatched run survives its operator: detached-by-default (AD-22 precedent), its own journal, and an attach/resume path. Death of the driver, the terminal, or the operating session orphans nothing invisibly; a failed or abandoned session's worktree and diff survive for recovery (Epic 1's teardown-refuses-to-destroy- work discipline — the `changes.patch`-analog the hand-run pattern lacked); and the per-story session record (start/end, baseline→final revisions) makes dispatch the natural producer of the per-story effort signal the dashboard-velocity Dream consumes.
+  - **success:** Killing the terminal that issued the dispatch leaves the session running; a fresh `marshal status` reports it from journal + process facts alone; attach/resume recovers supervision; a story that completed while unsupervised is reconciled from git facts rather than lost; the journal carries per-story timing a downstream consumer can read without new instrumentation.
+- **CAP-165 — one `harness_preference` resolves a CLI profile for both engines** ← spec-marshal-single-story-dispatch CAP-8
+  - **intent:** The session-harness layer is adapter-plural and profile-driven: an ordered `harness_preference` policy key (4-layer composable, machine preference expressible in `_bmad-output/policy-defaults.toml`) selects among declarative marshal-owned CLI profiles (`claude`, `cursor`, `gemini`, `copilot`, `devin`, extensible via a repo overlay) — each declaring binary, argv template (worktree/prompt/trust-flag shape), per-CLI model-flag spelling, and a cheap non-interactive authcheck (or a documented reason none exists). Resolution takes the first profile whose binary resolves AND whose authcheck passes; every skipped candidate is a structured finding, never silent. The ONE policy preference drives BOTH engines: `marshal factory dispatch` launches the resolved profile directly, and bmad-loop's rendered `policy.toml` derives `[adapter].name` from the same preference (translated to bmad-loop's own adapter names; a preference with no bmad-loop counterpart renders the default and reports it). Mirrors bmad-loop's declarative-profile pattern in marshal's own code — AD-3 stands (no `bmad_loop` import outside `harness_bmadloop.py`), and FR-52's single-seam discipline stands (binary invocation stays confined to the adapter module).
+  - **success:** With cursor unauthenticated and claude authenticated, a dispatch launches under the claude profile and reports the cursor skip by name; with nothing dispatchable the refusal names every candidate tried and why; the cursor profile preserves the previously-hardcoded invocation shape; `render_policy_toml` derives `[adapter].name` from the same preference with byte-identical default output; the empirical argv shapes for claude/cursor/gemini/copilot are smoke-verified against the real CLIs.
+- **CAP-166 — fleet-wide drain is a marshal-orchestrated mode across eight stations** ← spec-marshal-single-story-dispatch CAP-7
+  - **intent:** Fleet-wide drain across all eight pyforge stations is a marshal-orchestrated mode: read per-station ordered backlogs (from tracked ledgers + optional overrides), apply campaign mode (`drain_to_zero`, `leave_one`, `skip_on_blocked` policies), preflight each dispatch (CAP-2 zombie refusal), launch one story per station in parallel (CAP-5), and chain the next story when merge-through-finalize completes (CAP-4 with merge-in-agent: merge when CI green, scoped `sprint-ledger-sync`, spec promotion, queue regen).
+  - **success:** An operator runs one documented command (provisional: `marshal factory dispatch --fleet` or `marshal drain`) and the eight-station 2026-08-22/23 hand ritual replays without session discipline; interim acceptance oracle is `fleet-drain-playbook.md` + `.cursor/pyforge-fleet-drain/` until the verb ships.
+- **CAP-167 — `branch_merged` is never true on ancestry alone** ← spec-marshal-single-story-dispatch CAP-9
+  - **intent:** CAP-2's `branch_merged` git fact is never true on ancestry alone. `is_branch_merged` shells `git merge-base --is-ancestor branch into`, which answers "yes" the instant a dispatch branch is forked from `into`'s own current tip — true of every fresh dispatch at launch, before any commit exists, and not evidence of anything having been merged. `gather_dispatch_git_facts` must gate that ancestry answer on the branch having actually diverged from its own launch `baseline_head_sha` before treating it as completion evidence.
+  - **success:** A dispatch's `branch_merged` fact reads `false` for as long as `current_head_sha == baseline_head_sha`, regardless of what `is_branch_merged` answers — closing the false-positive that otherwise poisons `resolve_dispatch_session_verdict`'s journal short-circuit (`completion_verdict in {COMPLETED, FAILED}`) for the run's entire lifetime, making `marshal factory dispatch-resume`/`dispatch-attach` permanently unable to recover a dead supervisor even while the dispatched session is genuinely still alive and working. Once the branch carries real commits past baseline, a genuine "merged" ancestry answer is trusted exactly as before (CAP-2 is otherwise unchanged) — this is a divergence guard, not a rewrite of the ancestry check itself.
+- **CAP-168 — station-scoped and sequence-scoped dispatch** ← spec-marshal-single-story-dispatch CAP-10
+  - **intent:** Station-scoped and sequence-scoped dispatch, both handed as an override to CAP-7's own per-station ordered-backlog reader rather than a second campaign implementation: `drain --mode <mode> --station <slug>` restricts CAP-7's chaining/preflight/journal to exactly one station's backlog instead of all eight; `dispatch <slug> --stories <key1>,<key2>,...` chains a caller-supplied ordered list instead of the ledger's own backlog order, for prioritizing specific stories without editing `fleet-drain-queue.yaml`'s `order_overrides` for a one-off push. Every named key is validated against the station's actual tracked backlog before anything launches.
+  - **success:** `--station` scopes one drain cycle to that station's next backlog story only — every other station's backlog is provably untouched by that invocation; `--stories` launches its list in the given order via the same chaining `drain` already uses, and refuses before any worktree is provisioned when a named key is unknown or already done; both reuse CAP-2's zombie/in-flight preflight, CAP-4's landing machinery, and CAP-9's divergence guard unchanged — no second preflight or landing path exists.
+- **CAP-169 — after harness exit, at most one follow-up review, then land** ← spec-marshal-single-story-dispatch CAP-11
+  - **intent:** A story whose spec is `status: done` must not enter another review pass unless `followup_review_recommended` is literally `true`, and even then only once. After the harness exits `done`, marshal's only legal next step is CAP-4 land. A land failure (conflicts, no PR, dirty) parks the story (`awaiting-operator` / CHAIN) naming the PR or worktree — it never starts another harness session. A 0-patch review must not commit.
+  - **success:** Replaying the 41.2 / 13.2 fixtures (spec already `done`, `followup_review_recommended: false`, ledger still `backlog` on `main`) produces zero new review commits and zero new `bmad-build-auto` launches; CAP-4 either lands or escalates. A second `done`+`true` follow-up is allowed at most once, then the flag is forced `false`.
+- **CAP-170 — a diff that touches `src/platform/` also needs the platform-wide check** ← spec-marshal-single-story-dispatch CAP-12
+  - **intent:** CAP-3's bound verify command is a floor, not a ceiling: it stays the fixed, anti-gaming per-station command (`MRS-GATE-010`/`011` unchanged), but when a story's own diff surface (already computed for CAP-3's frozen-surface check) touches a shared cross-station directory — `src/platform/`, the one Django host every station's portal mounts into — the driver additionally requires that surface's own broader check (`pixi run -e local-recipes platform-ci-local -- --test`) to pass before CAP-4 land. A failure is a loud non-landing verdict naming the failed cross-surface gate, the same lattice CAP-3 already uses — never a silent skip, and never a substitute for GitHub Actions' own full-CI backstop.
+  - **success:** A story whose diff touches only its own station's package lands exactly as today (CAP-3 unchanged, no new gate reached). A story whose diff touches `src/platform/` is refused landing when `platform-ci-local -- --test` fails, even though the station-bound command passed — replaying the 49.14 fixture (bound gate green, full platform suite red) produces a refusal naming the cross-surface gate, not a landing. `MRS-GATE-011`'s byte-match binding on the station-bound command is untouched by this CAP.
 - **CAP-171 — harness_run_id recovers via filesystem discovery** ← spec-marshal-status-harness-run-id-poisoning CAP-1 (shipped 2026-09-09)
-  - **intent:** A status read for a run whose journal-poll timed out (`harness_run_id: null`)
-  - **success:** Given a run whose journal entry has `harness_run_id: null` but whose
+  - **intent:** A status read for a run whose journal-poll timed out (`harness_run_id: null`) recovers the real bmad-loop run id via the same `.bmad-loop/runs/` filesystem discovery `cli/spin.py::_latest_run_dir` already performs, rather than permanently reporting `unknown`.
+  - **success:** Given a run whose journal entry has `harness_run_id: null` but whose `.bmad-loop/runs/<id>/` directory exists and is readable, `marshal status` reports the run's real state (`running`/`idle`/`stopped`), not `unknown` — reproduced against the live 2026-08-15 case (`pyforge-doctor` story 9.1's spin).
 - **CAP-172 — `MRS-STATUS-002` keeps firing correctly for genuinely unrecoverable cases** ← spec-marshal-status-harness-run-id-poisoning CAP-2 (shipped 2026-09-09)
-  - **intent:** A run whose directory truly cannot be found or read still reports `unknown`
-  - **success:** Given a run with no discoverable `.bmad-loop/runs/` directory at all (or an
-- **CAP-173 — from spec-marshal-templated-merge-subject-cross-project-collision** ← spec-marshal-templated-merge-subject-cross-project-collision CAP-1 (shipped 2026-09-11)
-  - **intent:** A templated-form merge subject is trusted as `project_slug`'s own merged key
-  - **success:** `merged_story_keys(subjects, template, 'pyforge-doctor', known_keys=...)` against
-- **CAP-174 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-1
-  - **intent:** A declared context pipeline: a `[context]` block in `EffectivePolicy`,
-  - **success:** Rendered output carries the block from one composition site; a run on
-- **CAP-175 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-2
-  - **intent:** Wire compression at the harness seam: when policy enables it, sessions
-  - **success:** The launched command is demonstrably wrapped; a compressed artifact is
-- **CAP-176 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-3
-  - **intent:** Output-compression seeding: Genesis deploys the caveman skill per loop home
-  - **success:** `marshal seed check` verifies deployment; a landed story's verdict and
-- **CAP-177 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-4
-  - **intent:** Structure from the graph: loop-home provisioning builds/syncs the codegraph
-  - **success:** Seed check proves the index present and fresh at admission; a session
-- **CAP-178 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-5
-  - **intent:** Incremental derived context: epic-context / continuity distills become
-  - **success:** Unchanged sources yield zero recompute across two consecutive iterations; a
-- **CAP-179 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-6
-  - **intent:** Planning-graph retrieval: story routing retrieves the scoped planning
-  - **success:** An epic-path iteration completes within the epic-context token target with
-- **CAP-180 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-7
-  - **intent:** Savings telemetry: the supervisor journals per-story spend AND per-layer
-  - **success:** Journal entries carry savings fields; status shows them while a run is
-- **CAP-181 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-8
-  - **intent:** A graduated compression ladder: as a story approaches its token ceiling the
-  - **success:** A test proves ladder ordering — compression escalation strictly precedes
-- **CAP-182 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-9
-  - **intent:** A measured baseline: a pinned, re-runnable benchmark (same story, layers on
-  - **success:** The benchmark artifact reproducibly emits the comparison; ceiling
-- **CAP-183 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-10
-  - **intent:** Index freshness is an admission signal: `marshal check` gains advisory
-  - **success:** A stale index yields a named finding; the exit-code domain
-- **CAP-184 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-11
-  - **intent:** A declared model-cost catalog: policy carries a price table (per
-  - **success:** Journals, `marshal status`, and the benchmark artifact show dollar
-- **CAP-185 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-12
-  - **intent:** Difficulty tiers route across providers and pools: the `model_tier_map`
-  - **success:** A declared difficulty demonstrably launches different provider/model pairs
-- **CAP-186 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-13
-  - **intent:** Graph-node staleness flag: `compile_graph` (Scribe's own compile-step,
-  - **success:** A node whose source changed since compile with no declared supersession is
-- **CAP-187 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-14
-  - **intent:** `factory drain` (no caller-supplied `--stories`) derives dispatch order
-  - **success:** A station whose backlog has a cross-epic dependency (verified:
-- **CAP-188 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-15
-  - **intent:** A dispatch ended by an external stop (SIGTERM outside marshal's own
-  - **success:** An externally-stopped story is not journaled `MRS-DRAIN-005 failed`; it
-- **CAP-189 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-16
-  - **intent:** `policy_surface` resolution (feeding AD-27's existing narrow-only
-  - **success:** A story touching only files under its own station's package tree and the
-- **CAP-190 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-17
-  - **intent:** A policy-declared, per-station scope-violation enforcement mode with three
-  - **success:** A station with no mode declared runs `warn` (visible, non-blocking) — the
-- **CAP-191 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-18
-  - **intent:** One publisher: marshal publishes bmad-loop/dispatch run state *and* CAP-7's
-  - **success:** marshal imports `django_pyforge` in exactly one publisher module (today it
-- **CAP-192 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-19
-  - **intent:** One substrate, many harnesses (the session-path fold, primary — the
-  - **success:** A bare clone plus one bootstrap command reaches the same substrate
-- **CAP-193 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-20
-  - **intent:** Silent saves — a repo default that no-ops honestly.
-  - **success:** A fresh loop home with zero station config journals the
-- **CAP-194 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-21
-  - **intent:** Marshal is the execution front door. The docs rule (AGENTS.md /
-  - **success:** The front-door rule is written where an agent actually reads it;
-- **CAP-195 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-22
-  - **intent:** The session path — dispatch measured, interactive documented.
-  - **success:** The interactive path is one documented invocation, not a
-- **CAP-196 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-23
-  - **intent:** Per-layer benchmark legs with cache-hit rates.
-  - **success:** A named story runs one leg per layer; each artifact reports
-- **CAP-197 — from spec-marshal-token-economy** ← spec-marshal-token-economy CAP-24
-  - **intent:** The multi-harness matrix tells the truth, per currency. Correct
-  - **success:** The matrix records each harness × layer × binding currency;
+  - **intent:** A run whose directory truly cannot be found or read still reports `unknown` with the `MRS-STATUS-002` finding — the fix narrows the failure mode, it does not remove the honest-degradation signal.
+  - **success:** Given a run with no discoverable `.bmad-loop/runs/` directory at all (or an unreadable one), status still reports `unknown` and the finding still fires.
+- **CAP-173 — a templated merge subject is trusted only with project-scoped corroboration** ← spec-marshal-templated-merge-subject-cross-project-collision CAP-1 (shipped 2026-09-11)
+  - **intent:** A templated-form merge subject is trusted as `project_slug`'s own merged key only when corroborated by a project-scoped signal — never by the subject text alone, since the templated shape carries no station token by construction (AD-24).
+  - **success:** `merged_story_keys(subjects, template, 'pyforge-doctor', known_keys=...)` against real `main` no longer returns `22.11`/`22.12` (marshal's own) or any other station's exclusive keys. Re-running the Dream's own live reproduction returns only keys doctor's `epics.md` actually contains. (Story 35.1.)
+- **CAP-174 — declared context pipeline** ← spec-marshal-token-economy CAP-1
+  - **intent:** A declared context pipeline: a `[context]` block in `EffectivePolicy`, rendered into every launch surface identically for both engines (bmad-loop spin and bmad-build-auto dispatch) — which layers are on, aggressiveness, store paths.
+  - **success:** Rendered output carries the block from one composition site; a run on either engine resolves the same declaration; an absent block means every layer off and today's behavior byte-identical.
+- **CAP-175 — wire compression at the harness seam** ← spec-marshal-token-economy CAP-2
+  - **intent:** Wire compression at the harness seam: when policy enables it, sessions launch through the compression layer (agent wrap / proxy) so tool outputs, logs, and file reads are compressed before the provider call, with originals in a loop-home-scoped CCR store the agent can retrieve from.
+  - **success:** The launched command is demonstrably wrapped; a compressed artifact is retrievable byte-exact; the prompt prefix (system prompt, tool definitions, older turns) is byte-identical wrapped vs unwrapped.
+- **CAP-176 — output-compression seeding** ← spec-marshal-token-economy CAP-3
+  - **intent:** Output-compression seeding: Genesis deploys the caveman skill per loop home so dev-session speech compresses (~65%), while review verdicts, journals, and escalation context stay fully articulated.
+  - **success:** `marshal seed check` verifies deployment; a landed story's verdict and journal read as normal prose.
+- **CAP-177 — structure from the graph** ← spec-marshal-token-economy CAP-4
+  - **intent:** Structure from the graph: loop-home provisioning builds/syncs the codegraph index and wires the agent integration, so structure questions resolve from the graph instead of file re-reads.
+  - **success:** Seed check proves the index present and fresh at admission; a session answers a structure query without re-reading the files it names.
+- **CAP-178 — incremental derived context** ← spec-marshal-token-economy CAP-5
+  - **intent:** Incremental derived context: epic-context / continuity distills become incrementally-maintained derived artifacts (cocoindex) recomputed only when their planning sources change.
+  - **success:** Unchanged sources yield zero recompute across two consecutive iterations; a source edit yields exactly one refresh.
+- **CAP-179 — planning-graph retrieval** ← spec-marshal-token-economy CAP-6
+  - **intent:** Planning-graph retrieval: story routing retrieves the scoped planning context a story binds to (graph query via the Scribe-owned GraphStore seam over graphifyy) instead of loading `epics.md`/`prd.md` wholesale; degrades to epic-context files when the seam is absent.
+  - **success:** An epic-path iteration completes within the epic-context token target with zero full-document loads; the fallback is proven by disabling the seam.
+- **CAP-180 — savings telemetry** ← spec-marshal-token-economy CAP-7
+  - **intent:** Savings telemetry: the supervisor journals per-story spend AND per-layer savings (wire-compression stats, output-compression delta, graph-hit vs file-read counts); `marshal status` renders both mid-run.
+  - **success:** Journal entries carry savings fields; status shows them while a run is live (chips at `DW-FU-3-6-6` mid-session blindness).
+- **CAP-181 — graduated compression ladder** ← spec-marshal-token-economy CAP-8
+  - **intent:** A graduated compression ladder: as a story approaches its token ceiling the supervisor raises compression aggressiveness before the stop-retry-defer ladder fires. The ladder is compression-only: it never changes the model — model selection stays with FR-51 declared difficulty (static) and the Story 3.12 struggle-triggered floor-raise (dynamic, upward only; `spec-adaptive-model-tiering` forbids downgrades).
+  - **success:** A test proves ladder ordering — compression escalation strictly precedes kill — and that no gate or reviewer is ever skipped by escalation.
+- **CAP-182 — measured baseline** ← spec-marshal-token-economy CAP-9
+  - **intent:** A measured baseline: a pinned, re-runnable benchmark (same story, layers on vs off) reports before/after weighted tokens per layer.
+  - **success:** The benchmark artifact reproducibly emits the comparison; ceiling recalibration cites it.
+- **CAP-183 — index freshness is an admission signal** ← spec-marshal-token-economy CAP-10
+  - **intent:** Index freshness is an admission signal: `marshal check` gains advisory codegraph/cocoindex staleness findings.
+  - **success:** A stale index yields a named finding; the exit-code domain `{0, 1, 2, 3, 4, 130}` is unchanged; the finding never blocks a run by itself.
+- **CAP-184 — declared model-cost catalog** ← spec-marshal-token-economy CAP-11
+  - **intent:** A declared model-cost catalog: policy carries a price table (per provider/model: input / output / cache-read / cache-write per 1M, subscription-pool membership; seed snapshot in `model-economics.md`); telemetry (CAP-7) and the benchmark (CAP-9) render estimated dollar figures alongside weighted tokens, and per-provider token weights (e.g. `cache_read_weight`) derive from the declared ratios — the global constant stays the fallback for undeclared providers.
+  - **success:** Journals, `marshal status`, and the benchmark artifact show dollar estimates when the catalog is declared and omit them (never fabricate) when absent; a Cursor-pool run provably weighs cache reads at its declared ratio (0.25–0.40) instead of the Anthropic 0.10 constant; no code path fetches prices from a network.
+- **CAP-185 — cross-provider tier routing** ← spec-marshal-token-economy CAP-12
+  - **intent:** Difficulty tiers route across providers and pools: the `model_tier_map` vocabulary extends so a tier's stage entry can name a (harness profile, model) pair — easy stories launch on economy-class models, medium on standard-class, heavy on frontier-class (ladder in `model-economics.md`) — preferring subscription-covered pools before metered API where the catalog marks them.
+  - **success:** A declared difficulty demonstrably launches different provider/model pairs per the map on both engines (rendered-launch diff); the serving pool is journaled; an exhausted or unavailable pool falls through to the next preference, never blocks; the FR-51 seam remains the only selection mechanism and run-level batching is unchanged.
+- **CAP-186 — graph-node staleness flag** ← spec-marshal-token-economy CAP-13
+  - **intent:** Graph-node staleness flag: `compile_graph` (Scribe's own compile-step, CAP-18) flags a node `stale: true` when its source file's latest git commit postdates the node's own `valid_from` and no `supersedes:` edge points at it — CAP-6 retrieval consumes the flag and falls back to the epic-context file path (CAP-5) instead of silently serving a stale graph answer.
+  - **success:** A node whose source changed since compile with no declared supersession is flagged stale; an unchanged source or a properly superseded node is never flagged; a retrieval that hits a stale node demonstrably falls back, never serves it; zero LLM calls and no new dependency (a git-timestamp comparison on data compile already walks).
+- **CAP-187 — `factory drain` dispatches in declared-dependency order, not raw ledger order** ← spec-marshal-token-economy CAP-14
+  - **intent:** `factory drain` (no caller-supplied `--stories`) derives dispatch order from each backlog story's `Deps:` line instead of walking `sprint-status-ledger.yaml` raw order — a topological sort over the tracked dependency graph, honoring cross-epic edges, falling back to ledger order only among stories with no unmet dependency either way. `--stories` remains as an explicit caller override.
+  - **success:** A station whose backlog has a cross-epic dependency (verified: `pyforge-atlas` Story 23.9 → Story 22.1) dispatches in an order that never violates a declared `Deps:` edge, without an operator hand-deriving it first; a station with no `--stories` override still produces a valid order; `--stories` continues to work unchanged as an override.
+- **CAP-188 — an externally stopped dispatch is retryable, not a failure** ← spec-marshal-token-economy CAP-15
+  - **intent:** A dispatch ended by an external stop (SIGTERM outside marshal's own idle/budget ladder) is distinguished, in the journal, from a genuine failure (verdict-gated, review-rejected, crashed) — and is retryable through the normal `drain`/`dispatch --stories` path without an undocumented workaround. Before a retry touches a worktree carrying uncommitted changes, the size and file list of that diff is surfaced, not silently ignored or discarded. Liveness detection for a station's current dispatch does not treat "worktree has uncommitted changes" alone as proof a session process is still alive.
+  - **success:** An externally-stopped story is not journaled `MRS-DRAIN-005 failed`; it dispatches again through `drain`/`--stories` without requiring the bare-`dispatch <slug> <story>` workaround; a retry against a worktree with uncommitted changes reports the diff (files, line count) before proceeding; `MRS-DISP-011`'s refusal correctly reflects actual process liveness, not stale worktree state left behind by an external kill; `MRS-DISP-011`'s live-session-process refusal is otherwise unchanged.
+- **CAP-189 — `policy_surface` auto-derives a safe per-station default surface** ← spec-marshal-token-economy CAP-16
+  - **intent:** `policy_surface` resolution (feeding AD-27's existing narrow-only `compute_effective_surface` combinator, unchanged) auto-derives a safe per-station default at `spin`/`dispatch` policy composition — the station's own full package tree (`src/shared/packages/pyforge-<slug>/**`), its planning/implementation-artifact trees, and the common bookkeeping paths every hand-authored `[epic_surfaces]` entry already repeats (`.gitignore`, `pixi.toml`, `pixi.lock`, `environment.yaml`, `scripts/.spec-surface-baseline.json`) — without requiring an `[epic_surfaces]` entry to exist. An explicit `[epic_surfaces]` entry still narrows further via the existing intersection when an operator wants tighter containment than the station-wide default.
+  - **success:** A story touching only files under its own station's package tree and the common bookkeeping paths passes `MRS-GATE-007` with zero `[epic_surfaces]` entry declared; a story touching a *different* station's package, or repo config outside the computed default, still fails it — the cross-station containment property is preserved, only the within-station per-file enumeration toil is removed; an existing `[epic_surfaces]` entry that narrows further continues to behave exactly as today.
+- **CAP-190 — scope-violation enforcement is per-station hard, warn or off, default warn** ← spec-marshal-token-economy CAP-17
+  - **intent:** A policy-declared, per-station scope-violation enforcement mode with three values — `hard` (today's non-waivable `SCOPE_VIOLATION` refuse), `warn` (`MRS-GATE-007`/`008` still fire, still name the offending path, land as an advisory finding — journaled AND surfaced in `marshal status`/`fleet-picture`, never journal-only — but never block landing), `off` (the check does not run at all: no finding, no journal entry, zero scope containment). **Default is `warn`**, not `hard` — an explicit operator decision (2026-08- 31, after this exact gate stalled two live dispatches for over an hour apiece with no self-service recovery path) that visible-but-non-blocking is the right steady state once CAP-16's auto-derivation is trusted, with `hard` and `off` both available as an explicit opt-in for a station that wants tighter or looser posture. `pyforge-marshal` is set to `off` immediately as an operational stopgap (unblocks the live Epic 28 drain campaign without waiting on CAP-16/17's own implementation) — this story ships the real `hard`/`warn`/`off` mechanism to replace that stopgap, not to introduce it.
+  - **success:** A station with no mode declared runs `warn` (visible, non-blocking) — the new default, not today's `hard`; `hard` declared for a station reproduces exactly today's non-waivable refuse behavior; `off` declared for a station means `MRS-GATE-007`/`008` are not evaluated at all for that station — zero findings, zero journal entries, by design; `marshal status`/`fleet-picture` render a `warn`-mode violation finding, not only the journal; the mode is per-station, so one station's choice never changes another's.
+- **CAP-191 — one publisher: marshal publishes run state and savings telemetry over one hop** ← spec-marshal-token-economy CAP-18
+  - **intent:** One publisher: marshal publishes bmad-loop/dispatch run state *and* CAP-7's per-layer savings telemetry to `django_pyforge.supervisor` over a single supervisor-side hop, so the published plane — not `~/.bmad-loops` — is the source of run truth for marshal, doctor, the Unifying Spec's run-state-as-a-service (`spec-pyforge-unifying-strategy` CAP-17, qualified) and the Hub Track (`spec-intelligence-hub` `hub:CAP-3`). Both supervisors (loop and dispatch) feed that one publisher — one writer, not one per engine.
+  - **success:** marshal imports `django_pyforge` in exactly one publisher module (today it imports it zero times); `cli/init.py:331` and pyforge-doctor's `sources/marshal.py:544` read the published plane instead of `Path.home()/".bmad-loops"`; the front door shows live run state and the per-story timing survives the workstation; CAP-7's savings fields carry real numbers, not the four `None` stubs at `adapters/harness_bmadloop.py:1880-1898`.
+- **CAP-192 — one substrate serves every harness: bootstrap, pinned bundle, capture ritual** ← spec-marshal-token-economy CAP-19
+  - **intent:** One substrate, many harnesses (the session-path fold, primary — the 2026-09-16 analysis: the shared substrate amortizes understanding once and serves every harness; the per-harness wire is the secondary residue). (a) A bootstrap path: nightly-built substrate artifacts (codegraph, cocoindex distills, planning-graph export) published as CI/release assets, plus a `pyforge context bootstrap` fetch-or-rebuild command, so a cloud agent's bare clone opens on the substrate instead of re-deriving privately at ACU/quota cost. (b) A canonical, digest-pinned context bundle — extending Story 28.8's declaration half — so every harness opens on identical bytes (prefix stability is the only portable cache; provider prompt caches do not move across vendors). (c) `scribe capture` blessed in the front-door docs as the harness-neutral session-close write-back ritual. (d) The freshness SLA holds: `scribe compile_surface` owns freshness and `spec-scribe-recall-stale-between-nightlies` already surfaces staleness — this CAP builds nothing new there.
+  - **success:** A bare clone plus one bootstrap command reaches the same substrate a loop home has (or a loud, attributable rebuild); two harnesses on the same commit open on byte-identical context bundles (digest compare); the session-close ritual is named in the same docs that name the front door.
+- **CAP-193 — repo-default context layers apply silently and the wire resolves `auto`** ← spec-marshal-token-economy CAP-20
+  - **intent:** Silent saves — a repo default that no-ops honestly. `_bmad-output/policy-defaults.toml` carries the repo-default `[context]` block so both engines (spin and dispatch) gain the harness-agnostic layers by default (Story 33.3's single declaration point). Wire is declared `enabled = "auto"`: a tri-state (`true`/`false`/`"auto"`) that resolves against the running harness profile's declared `[wrapper]` — on when the harness can take it, honestly absent when it cannot. Per-station `marshal-policy.toml` is a force-override, never the primary mechanism. The journal taxonomy distinguishes silent saves (repo default) from configured layers, and the savings rollup reports each harness's binding currency (USD for Claude, quota-burn for Cursor/Copilot, request-count for Gemini, ACUs for Devin) — never one blended token number. An interactive session whose layers would lapse gets a persistence advisory.
+  - **success:** A fresh loop home with zero station config journals the harness-agnostic layers; `auto` on a wrapper-less harness (Cursor) is a clean skip, never a journaled wrap it cannot perform; wrapper declared but binary missing stays a WARN (`MRS-DISP-033` class), never silent; the rollup output is keyed per harness × currency.
+- **CAP-194 — docs name `marshal factory dispatch` as the execution front door** ← spec-marshal-token-economy CAP-21
+  - **intent:** Marshal is the execution front door. The docs rule (AGENTS.md /CLAUDE.md / station skill notes) names `marshal factory dispatch` / `spin` as the default way stories execute, because that is the path the layers instrument. Bare `bmad-build-auto` remains sanctioned but is documented as the unmeasured path. An advisory detector may flag a bare dispatch; never a gate.
+  - **success:** The front-door rule is written where an agent actually reads it; a bare `bmad-build-auto` run is documented, not forbidden; nothing new turns red in CI because of this CAP.
+- **CAP-195 — dispatch is the measured path, interactive Claude the documented one** ← spec-marshal-token-economy CAP-22
+  - **intent:** The session path — dispatch measured, interactive documented. Both Claude paths are sanctioned. Dispatch is the *measured* path (the benchmark harness lives there). Interactive Claude on the shared checkout is a *documented convenience* path on the same instruments — the wrap, the caveman skill, and the retrieve/recall discipline written once, where a session actually starts.
+  - **success:** The interactive path is one documented invocation, not a re-discovery; a session on it is demonstrably wrapped or seeded according to the declared `[context]` layers; wholesale `epics.md` / PRD loads are a miss against retrieve/recall.
+- **CAP-196 — `marshal benchmark compare` runs per-layer legs with cache-hit rates** ← spec-marshal-token-economy CAP-23
+  - **intent:** Per-layer benchmark legs with cache-hit rates. `marshal benchmark compare` gains per-layer legs (one layer at a time, not whole-kit on/off), each leg reporting the prompt-cache hit rate alongside weighted tokens; the equivalence gate (28.5) applies per leg. Until this exists, Claude wire savings are *unverified* — the prompt-cache collision (a wire compressor rewriting prefixes unstably can cost more in lost cache discount than it saves in tokens) is the sharpest open risk, and this CAP is what closes it. NFR-14's live-zone-only admission requirement gets its measurement here.
+  - **success:** A named story runs one leg per layer; each artifact reports weighted tokens, dollars if the catalog is declared, and cache-hit rate; a cache-colliding layer shows as worse weighted tokens, unmasked by other layers' gains.
+- **CAP-197 — the multi-harness matrix tells the truth per currency** ← spec-marshal-token-economy CAP-24
+  - **intent:** The multi-harness matrix tells the truth, per currency. Correct the recorded matrix: the output layer is multi-harness (caveman ships 21 targets — copilot, cursor, gemini, devin among them); only enforcement strength varies. Land the one `[wrapper]` story for Copilot (headroom ships `wrap copilot`; the profile's own notes record a live 429 quota exhaustion) so copilot dispatch gets the full kit. Probe the Gemini wire seam (env/proxy or an upstream headroom target) before the matrix says never; if none, `auto` skip stands as designed. Devin stays the deliberate unverified stub — loud absence is correct.
+  - **success:** The matrix records each harness × layer × binding currency; `copilot.toml` declares a verified `[wrapper]` or a dated finding; gemini's wire cell reads "probed, none" with evidence or gains a target.
 - **CAP-198 — Verify-refusal terminalization (supervisor)** ← spec-marshal-verify-fail-terminalization CAP-1 (shipped 2026-09-09)
-  - **intent:** When `session_alive == false`, independent verify outcome is
-  - **success:** Fixture: dead session + journaled verify refuse + WIP commit →
+  - **intent:** When `session_alive == false`, independent verify outcome is `refused`, and git shows progress beyond baseline, the dispatch supervisor **stops heartbeating as LIVE**: journals `dispatch-completion` → **`failed`**, runs **`dispatch-preserve`** (`failed/<story>/changes.patch`), exits.
+  - **success:** Fixture: dead session + journaled verify refuse + WIP commit → supervisor exits within one tick; preserve ref exists; completion verdict `failed`. Live session + verify refuse → still **LIVE** (agent may recover).
 - **CAP-199 — Transient auto-redispatch (fleet drain, compose with hotfix)** ← spec-marshal-verify-fail-terminalization CAP-2 (shipped 2026-09-09)
-  - **intent:** After CAP-1, `classify_dispatch_block` (existing hotfix) treats
-  - **success:** Integration test or documented cycle: failed+preserve run →
+  - **intent:** After CAP-1, `classify_dispatch_block` (existing hotfix) treats retriable gates (`MRS-GATE-001`..`006`, etc.) as **TRANSIENT** → `story_blocked_reason` returns **None** → next `factory drain --once` tick **dispatches the same backlog head again** without bare-`dispatch` workaround.
+  - **success:** Integration test or documented cycle: failed+preserve run → next fleet cycle launches a new dispatch for the same story key when ledger still backlog; no `MRS-DRAIN-005` permanent block for `MRS-GATE-001`.
 - **CAP-200 — Observability** ← spec-marshal-verify-fail-terminalization CAP-3 (shipped 2026-09-09)
-  - **intent:** `marshal status` / completion payload names
-  - **success:** Journal observation entry or completion payload includes failed
+  - **intent:** `marshal status` / completion payload names `verify_refusal_terminalized: true` (or equivalent journal field) when CAP-1 fires; fleet-picture ATTENTION unchanged unless retry cap exceeded (future).
+  - **success:** Journal observation entry or completion payload includes failed gate code from verify outcome when terminalizing.
 - **CAP-201 — worktree-aware `bmad-switch`** ← spec-multi-loop-isolation CAP-1 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** run inside a linked worktree, where the gitignored Tier-3 target (`projects/<slug>/implementation-artifacts`) does not exist; auto-provision it as an absolute symlink back to the main checkout's canonical dir (creating the canonical dir if absent), then switch normally. Refuse to replace a real non-empty local dir. Marker + planning symlinks remain per-worktree.
+  - **success:** `bmad-switch <slug>` succeeds in a fresh worktree; the worktree's `implementation-artifacts` realpath equals the main checkout's; the main checkout's own marker/symlinks are unchanged.
 - **CAP-202 — `bmad-loop-worktree` provisioner** ← spec-multi-loop-isolation CAP-2 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** `bmad-loop-worktree <slug>` creates (or reuses) a worktree on branch `loop/<slug>`, runs `bmad-switch <slug>` inside it, verifies, and prints the launch line (`cd <wt> && BMAD_ACTIVE_PROJECT=<slug> …`). `--remove` tears the worktree + branch down.
+  - **success:** provisioning is idempotent; the printed line is directly runnable; `--remove` leaves `git worktree list` clean.
 - **CAP-203 — isolation verification** ← spec-multi-loop-isolation CAP-3 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
-- **CAP-204 — from spec-one-front-door** ← spec-one-front-door CAP-1 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
-- **CAP-205 — from spec-one-front-door** ← spec-one-front-door CAP-3 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
-- **CAP-206 — from spec-one-front-door** ← spec-one-front-door CAP-4 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
-- **CAP-207 — from spec-one-front-door** ← spec-one-front-door CAP-5 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
-- **CAP-208 — from spec-pr-lifecycle** ← spec-pr-lifecycle CAP-1 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
-- **CAP-209 — from spec-pr-lifecycle** ← spec-pr-lifecycle CAP-2 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
-- **CAP-210 — from spec-pr-lifecycle** ← spec-pr-lifecycle CAP-3 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
-- **CAP-211 — from spec-pr-lifecycle** ← spec-pr-lifecycle CAP-4 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
-- **CAP-212 — from spec-quick-dev-reconciliation** ← spec-quick-dev-reconciliation CAP-1 (shipped 2026-09-09)
-  - **intent:** Something observes git (repository fact) plus existing spec/story-identity
-  - **success:** Given a story merged to the integration branch with no corresponding
-- **CAP-213 — from spec-quick-dev-reconciliation** ← spec-quick-dev-reconciliation CAP-2 (shipped 2026-09-09)
-  - **intent:** A detected non-loop completion is folded into the tracked ledger -- the
-  - **success:** `marshal status` / the fleet dashboard shows a quick-dev'd story as `done`
-- **CAP-214 — from spec-quick-dev-reconciliation** ← spec-quick-dev-reconciliation CAP-3 (shipped 2026-09-09)
-  - **intent:** A quick-dev'd story's spec receives the same durability guarantee Story 4.1
-  - **success:** A quick-dev'd story's spec, once its story is detected as done, is
-- **CAP-215 — from spec-quick-dev-reconciliation** ← spec-quick-dev-reconciliation CAP-4 (shipped 2026-09-09)
-  - **intent:** An operator can hand-pick any backlog story for `bmad-quick-dev` while that
-  - **success:** Reconciling a quick-dev completion around a live, unrelated loop run neither
+  - **intent:** `bmad-loop-worktree --verify <slug-a> <slug-b>` asserts the two provisioned worktrees hold independent markers/symlinks, share canonical Tier-3 with the main checkout (realpath identity), and the main checkout's active project is untouched.
+  - **success:** exit 0 on isolation; non-zero with a named finding on any cross-talk.
+- **CAP-204 — marshal run -- wraps the engine, never absorbs it** ← spec-one-front-door CAP-1 (shipped 2026-09-16)
+  - **intent:** a single verb drives a story or epic through bmad-loop (run/resume/status internally) without the operator hand-invoking bmad-loop directly, supplying active project + loop home + policy layer + story key from context rather than requiring them repeated per call.
+  - **success:** driving one story from the Dream's evidence scenario collapses bmad-loop run + status + tmux capture-pane into one marshal run invocation with no loss of the context bmad-loop itself needs.
+- **CAP-205 — marshal check -- the detector registry as a verb** ← spec-one-front-door CAP-3 (shipped 2026-09-16)
+  - **intent:** scripts/detectors.py's derived registry becomes reachable as marshal check rather than a separate pixi task the operator must remember exists.
+  - **success:** marshal check produces the same output as pixi run -e local-recipes detectors, invoked through the front door instead of beside it.
+- **CAP-206 — marshal land -- the last mile, routed** ← spec-one-front-door CAP-4 (shipped 2026-09-16)
+  - **intent:** once [[pr-lifecycle]]'s Spec exists and specifies what landing requires (linter gates, maintenance label, environment.yaml sync, PR lifecycle), marshal land is the one verb behind that door -- this Spec records the routing contract only; the landing behavior itself is pr-lifecycle's to specify.
+  - **success:** marshal land invokes pr-lifecycle's specified behavior rather than this Spec re-specifying it -- a clean route, not a second definition of what landing requires.
+- **CAP-207 — context supplied once** ← spec-one-front-door CAP-5 (shipped 2026-09-16)
+  - **intent:** the active project, loop home, policy layer, and story key are resolved once by the front door and threaded through every routed call, rather than each of the composed tools (bmad-switch, bmad-loop, the detector registry, dashboard-gen) independently requiring the operator to supply them. This is the actual value of the Dream per its own text -- not shorter commands, context held once.
+  - **success:** a single marshal invocation carries project/home/policy/story context to every tool it routes to without the operator re-specifying any of them mid-sequence.
+- **CAP-208 — landing policy surface** ← spec-pr-lifecycle CAP-1 (shipped 2026-09-16)
+  - **intent:** required checks, merge strategy, label rules (including repo-specific ones -- this fork's maintenance label and its UNGATED environment.yaml sync trigger, which the label does not suppress), and branch-delete behaviour are declared once in EffectivePolicy with per-key provenance, the same treatment gates already got (marshal config).
+  - **success:** a repo states its landing rules as policy; marshal land executes them with no hand-typed --repo flags, no memorized label rules, no manually-triggered environment.yaml regen.
+- **CAP-209 — marshal land <story>** ← spec-pr-lifecycle CAP-2 (shipped 2026-09-16)
+  - **intent:** one verb performs open-or-update PR, apply labels, wait on required checks, merge, retire the branch, resync -- idempotent and re-entrant, because the interesting failure mode is a half-landed story (PR open, checks green, merge never issued).
+  - **success:** re-running marshal land on a half-landed story converges to fully landed rather than erroring or duplicating the PR; the five hand-driven 2026-07-31 PRs would have required one marshal land call each instead of the six-step manual sequence.
+- **CAP-210 — refusal semantics, mirroring teardown** ← spec-pr-lifecycle CAP-3 (shipped 2026-09-16)
+  - **intent:** landing refuses exactly as story 1.8's teardown does -- no merge on a red required check, no merge past an unacknowledged advisory finding, no silent force -- because a destructive/irreversible step (a merge to main) must not proceed on an unproven claim of green.
+  - **success:** `marshal land` refuses to merge on a red required check, refuses to merge past an unacknowledged advisory finding and never forces; each refusal exits with its named reason, mirroring teardown's (Story 1.8), and a test asserts each.
+- **CAP-211 — a verdict and paper trail for the last mile** ← spec-pr-lifecycle CAP-4 (shipped 2026-09-16)
+  - **intent:** every landing leaves a journal verdict recording which checks were required, which passed, what merged, and under whose authority -- closing the one place in the factory's whole claim (every stage has a supervisor, a journal, a verdict) that today has none of the three.
+  - **success:** a landed story's journal entry answers, without re-deriving from git history, exactly what gated its merge and who or what authorized it.
+- **CAP-212 — a backlog story landed outside bmad-loop is recognized from git** ← spec-quick-dev-reconciliation CAP-1 (shipped 2026-09-09)
+  - **intent:** Something observes git (repository fact) plus existing spec/story-identity artifacts and recognizes that a backlog story's work landed via a path other than bmad-loop, without relying on a hand-maintained flag.
+  - **success:** Given a story merged to the integration branch with no corresponding bmad-loop journal/run record, the detection mechanism identifies it as completed outside the loop, naming the story key and the evidence it used.
+- **CAP-213 — a non-loop completion advances the tracked ledger, path labelled** ← spec-quick-dev-reconciliation CAP-2 (shipped 2026-09-09)
+  - **intent:** A detected non-loop completion is folded into the tracked ledger -- the story's key advances out of `backlog` in `sprint-status-ledger.yaml` (or the mechanism feeding it) -- and the record distinguishes `bmad-loop` vs `bmad-quick-dev` as the completion path.
+  - **success:** `marshal status` / the fleet dashboard shows a quick-dev'd story as `done` with its completion path labelled, with no operator hand-edit to a generated file and no commit-subject archaeology required.
+- **CAP-214 — a quick-dev'd story's spec gets the loop-landed durability guarantee** ← spec-quick-dev-reconciliation CAP-3 (shipped 2026-09-09)
+  - **intent:** A quick-dev'd story's spec receives the same durability guarantee Story 4.1 already gives a loop-landed story's spec.
+  - **success:** A quick-dev'd story's spec, once its story is detected as done, is promoted/tracked the same way a loop-landed story's spec is -- "promoted" means "will still exist next week" regardless of which path produced it.
+- **CAP-215 — hand-picking a story for quick-dev keeps tracked state coherent** ← spec-quick-dev-reconciliation CAP-4 (shipped 2026-09-09)
+  - **intent:** An operator can hand-pick any backlog story for `bmad-quick-dev` while that station's `bmad-loop` run is between stories, or mid-run on a **different** story, and Marshal's own tracked state (ledger, dashboard) stays coherent either way.
+  - **success:** Reconciling a quick-dev completion around a live, unrelated loop run neither corrupts that run's own journal/state nor blocks the reconciliation -- both are provably true in the same test pass.
 - **CAP-216 — surface-manifest convention** ← spec-regenerable-factory CAP-1 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** every SPEC.md declares `surface:` — the repo paths/globs it governs; existing kernels (multi-loop-isolation, design-code-bridge) are retrofitted.
+  - **success:** the checker (CAP-3) can enumerate every spec's surface; no spec without one.
 - **CAP-217 — backfill waves** ← spec-regenerable-factory CAP-2 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** brownfield-`bmad-spec` each realized Dream per the wave order in `waves.md` (pilot first; `bmad-document-project` grounding for the two deep surfaces; chain-verify only where chains exist).
+  - **success:** every realized Dream traces to a validated kernel with a surface manifest; each wave's spec self-validates with zero unresolved contradictions.
 - **CAP-218 — repo-wide surface checker** ← spec-regenerable-factory CAP-3 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** a deterministic script reporting (a) coverage — every tracked source file maps to ≥1 spec surface or an explicit allowlist entry, and (b) drift — a governed file changed since its spec's recorded baseline without the spec/memlog moving.
+  - **success:** exit 0 on a clean repo, non-zero with named findings otherwise; runs as a pixi task and joins the CI detector family.
 - **CAP-219 — regeneration drill** ← spec-regenerable-factory CAP-4 (shipped 2026-09-16)
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
-- **CAP-220 — from spec-risk-tiered-review-depth** ← spec-risk-tiered-review-depth CAP-1
-  - **intent:** A story is classified into a review weight before review runs, mechanically,
-  - **success:** Given a story's declaration and its observed diff, the classification
-- **CAP-221 — from spec-risk-tiered-review-depth** ← spec-risk-tiered-review-depth CAP-2
-  - **intent:** Review depth/cost varies by weight without ever skipping the independent
-  - **success:** A test proves the reviewer runs on every story regardless of weight, and that
-- **CAP-222 — from spec-risk-tiered-review-depth** ← spec-risk-tiered-review-depth CAP-3
-  - **intent:** `deferred-work-check`'s full-capture guarantee holds at every tier -- a
-  - **success:** A regression test reproduces the `DW-AD23-3` shape (a follow-up recommended
-- **CAP-223 — from spec-risk-tiered-review-depth** ← spec-risk-tiered-review-depth CAP-4
-  - **intent:** The tier a story's review ran at, and why, is visible in the same
-  - **success:** The envelope for any evaluated story carries its review-weight tier and the
-- **CAP-224 — from spec-run-state-one-publisher** ← spec-run-state-one-publisher CAP-1
-  - **intent:** The host holds a run it does not own — the supervisor store accepts, keeps
-  - **success:** An externally published run stays `running` across its heartbeats and is
-- **CAP-225 — from spec-run-state-one-publisher** ← spec-run-state-one-publisher CAP-2
-  - **intent:** A published external run is attributable to a verified subject — the
-  - **success:** A publish without a verifiable assertion is refused and leaves no row; a
-- **CAP-226 — from spec-run-state-one-publisher** ← spec-run-state-one-publisher CAP-3
-  - **intent:** The deployed proof is exercised and recorded — CAP-17's success criterion runs
-  - **success:** The mechanism tier gates in `platform-ci-local --test` (publish, exit, re-query
-- **CAP-227 — from spec-run-state-one-publisher** ← spec-run-state-one-publisher CAP-4
-  - **intent:** No run-state read from a home directory remains in the fleet — every read of
-  - **success:** A kind-aware guard over non-test code matches the `.bmad-loops` literal and the
-- **CAP-228 — from spec-run-state-one-publisher** ← spec-run-state-one-publisher CAP-5
-  - **intent:** The operator's bearer reaches the publisher by reference, and marshal is a
-  - **success:** `pyforge login` writes the bearer file with owner-only permissions and nothing
+  - **intent:** prove regenerability — delete a governed module (pilot: `pyforge.doctor.sources.fleet_scan`), rebuild it from its spec alone, pass the same verification the original passed.
+  - **success:** one documented drill with a green outcome; the drill procedure recorded so it can be repeated on any governed surface.
+- **CAP-220 — a story's review weight is classified mechanically before review runs** ← spec-risk-tiered-review-depth CAP-1
+  - **intent:** A story is classified into a review weight before review runs, mechanically, from something already true about it (its own declaration, its diff shape, or both) -- the same pure-function-of-already-gathered-facts idiom `classify_doc_only_declaration` already establishes.
+  - **success:** Given a story's declaration and its observed diff, the classification produces a deterministic, testable weight with no I/O and no model call in the path.
+- **CAP-221 — review depth varies by weight, the independent reviewer never skipped** ← spec-risk-tiered-review-depth CAP-2
+  - **intent:** Review depth/cost varies by weight without ever skipping the independent reviewer -- a low-weight story may run fewer review cycles or a cheaper review pass; the `gate_mode = "none"` human-approval-only boundary is untouched.
+  - **success:** A test proves the reviewer runs on every story regardless of weight, and that only cycle count/cost, never occurrence, differs by tier.
+- **CAP-222 — `deferred-work-check` captures every follow-up at every tier** ← spec-risk-tiered-review-depth CAP-3
+  - **intent:** `deferred-work-check`'s full-capture guarantee holds at every tier -- a tightened cap for a low-weight story can never cause a real reviewer-recommended follow-up to go uncaptured.
+  - **success:** A regression test reproduces the `DW-AD23-3` shape (a follow-up recommended under a tightened cap) and proves it is captured by `deferred-work-check`, not silently dropped, for every defined tier.
+- **CAP-223 — the review tier and why is visible in the envelope** ← spec-risk-tiered-review-depth CAP-4
+  - **intent:** The tier a story's review ran at, and why, is visible in the same machine-readable envelope other gate output already uses.
+  - **success:** The envelope for any evaluated story carries its review-weight tier and the classification facts that produced it.
+- **CAP-224 — The host holds a run it does not own** ← spec-run-state-one-publisher CAP-1
+  - **intent:** The host holds a run it does not own — the supervisor store accepts, keeps alive and finishes a run whose process is external to the platform (a bmad-loop story, a dispatch wave) through publish, heartbeat and complete, without wrapping it in a Celery task.
+  - **success:** An externally published run stays `running` across its heartbeats and is marked lost only when its heartbeat ages past the bound, with reason `heartbeat_lost`, never `worker_lost` and never by asking Celery; a terminal row is never rewritten — a later heartbeat opens a new attempt row linked by harness run id; a fan-out wave under one operator subject is not refused by the per-subject default; the same `/runs/` query lists held runs beside MCP runs.
+- **CAP-225 — A published external run is attributable to a verified subject** ← spec-run-state-one-publisher CAP-2
+  - **intent:** A published external run is attributable to a verified subject — the out-of-host publisher presents, once at publish, an assertion the host minted from the operator's verified IdP bearer (signed, audience-bound, short-lived), and holds only a subject-bound run handle for the rest of the run's life.
+  - **success:** A publish without a verifiable assertion is refused and leaves no row; a published loop run carries the operator's `idp_subject` and roles; heartbeat and complete succeed by handle alone and the handle cannot create rows, change subject or read results; `revoke --sub` cancels the run and its next heartbeat receives a terminal answer; no forwarded header, no shared laptop secret and no host private key exists on the workstation.
+- **CAP-226 — The deployed proof is exercised and recorded** ← spec-run-state-one-publisher CAP-3
+  - **intent:** The deployed proof is exercised and recorded — CAP-17's success criterion runs in a deployed, egress-blocked namespace (a live bmad-loop run on `/runs/` with no operator home mounted; a completed run's timing queryable after the workstation is gone) and the evidence is written where the realization gate reads it.
+  - **success:** The mechanism tier gates in `platform-ci-local --test` (publish, exit, re-query with timing intact; a socket guard on the render path; no hostPath volume in any chart template); one attended CRC exercise with the default-deny egress policy active is recorded as a dated verification file; CAP-17's `verified:` line names both tiers and states the Enterprise Managed OCP namespace as not exercised; marshal 33.4 and steward 49.8 close on that evidence and the Dream flips to `realized` on it and on nothing else.
+- **CAP-227 — No run-state read from a home directory remains in the fleet** ← spec-run-state-one-publisher CAP-4
+  - **intent:** No run-state read from a home directory remains in the fleet — every read of the loop home outside the publisher is either moved to the published plane (run state: which runs are live, story phase, commit, timing) or classified beside the site as loop-home *file* access (install tree, hook relays, worktrees, policy), with a guard that fails when a run-state read reappears.
+  - **success:** A kind-aware guard over non-test code matches the `.bmad-loops` literal and the run-state file names (`.bmad-loop/runs`, `state.json`, `journal.jsonl`), allow-lists only the publisher and the tagged loop-home-file sites, never trips on comments or help text, and reds a new run-state read; steward's two `upgrade.py` reads carry their loop-home-file tag; doctor's story-status read moves once the published payload carries per-story phase and commit, and is tagged as CAP-17 debt until then.
+- **CAP-228 — The operator's bearer reaches the publisher by reference, and marshal is a station the host will mint for** ← spec-run-state-one-publisher CAP-5
+  - **intent:** The operator's bearer reaches the publisher by reference, and marshal is a station the host will mint for — an operator obtains an IdP bearer for the CLI without pasting a secret, it lands in a referenced bearer file, and the marshal station role exists in the realm and the dev personas.
+  - **success:** `pyforge login` writes the bearer file with owner-only permissions and nothing else; a mint for station `marshal` returns 200 for a role-holding operator in both the local and the deployed profile, and 403 once the role is removed at the IdP; no token value appears in any environment dump or journal line.
 - **CAP-229 — promotion runs on landing, not on memory** ← spec-sprint-status-auto-promote CAP-1
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** a story landing (merge commit on a loop-home branch / a run's `state.json` marking it `done`) mechanically triggers `promote_sprint_status.py` + `generate.py --source sprint-status`, instead of both being remembered steps. At minimum the recurring status check-in runs both as a standing step every cycle; the full form is a post-landing hook so no check-in is needed at all.
+  - **success:** a landed story is reflected in the tracked ledger and `data.js` within one check-in cycle (hook form: without any human action), never sitting stale until someone asks.
 - **CAP-230 — staleness is detectable on its own** ← spec-sprint-status-auto-promote CAP-2
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** a detector (new, or an extension of `dashboard_drift_check.py`) compares each project's landed reality against its tracked ledger / `data.js` statuses and fails loudly on a landed-but-unpromoted story — the check `forward_dependency_check.py` performed once by accident for `8-5` becomes designed-for.
+  - **success:** recreating any of the three incident states makes the detector exit non-zero and name the stale story; a promoted state passes clean.
 - **CAP-231 — the check is real, never approximated** ← spec-sprint-status-auto-promote CAP-3
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** no freshness heuristic ("looked recent enough", mtime, last-run timestamp) ever substitutes for actually running the promotion/comparison — staleness is undetectable without the check, which is the whole point.
+  - **success:** the automation's skip conditions are only "no upstream change" (the existing idempotence of `promote_sprint_status.py`) or the CAP-4 race guard, never a time-based guess.
 - **CAP-232 — never races the orchestrator** ← spec-sprint-status-auto-promote CAP-4
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
+  - **intent:** promotion for a story never runs *during* an active bmad-loop session for that story — the loop-home's Tier-3 feed is the orchestrator's single-writer surface while a run is live. The trigger is landing, not a mid-run poll.
+  - **success:** with a run live, the automation defers or scopes around that run's project; promotion fires only once the story has landed.
 - **CAP-233 — promotion never writes the operator checkout** ← spec-sprint-status-auto-promote CAP-5
-  - **intent:** (see absorbed Spec memlog)
-  - **success:** (see absorbed Spec memlog)
-- **CAP-234 — from spec-sprint-status-promotion-regression-guard** ← spec-sprint-status-promotion-regression-guard CAP-1 (shipped 2026-09-16)
-  - **intent:** An operator promoting Tier-3 status into the tracked ledger can trust that any
-  - **success:** Given a tracked-ledger key whose status is `done` and whose Tier-3 twin holds
-- **CAP-235 — b** ← spec-surface-drift-reconciliation CAP-1 (shipped 2026-09-09)
+  - **intent:** the tracked-twin commit is published onto `origin/<base>` from a throwaway detached worktree pinned to that remote tip after `fetch`, then fast-forward-pushed. The operator `main` working tree, the story dispatch worktree, and `loop/<slug>` are never the commit surface (Story 4.3 already forbade checking `base` out a second time on the shared tree).
+  - **success:** after `gh pr merge` + promote, local `main` is not a diverge leftover (ahead-by-promote / behind-by-merge); a dirty operator checkout cannot absorb or lose the twin; a non-fast-forward remote refuses loudly (`MRS-LAND-011`) instead of rewriting history.
+- **CAP-234 — any drift from a tracked `done` key refuses promotion** ← spec-sprint-status-promotion-regression-guard CAP-1 (shipped 2026-09-16)
+  - **intent:** An operator promoting Tier-3 status into the tracked ledger can trust that any drift away from a tracked `done` — not only `done -> backlog` — is caught before it silently overwrites the ledger.
+  - **success:** Given a tracked-ledger key whose status is `done` and whose Tier-3 twin holds any other status, a plain promotion run refuses and names the key exactly as it already does for `done -> backlog`, and `--repair-feed` restores the ledger's `done` into the Tier-3 feed exactly as it already does for `done -> backlog`.
+- **CAP-235 — baseline stamping is scopeable** ← spec-surface-drift-reconciliation CAP-1 (shipped 2026-09-09)
   - **intent:** An operator settles one spec's baseline without accepting any other spec's pending drift.
   - **success:** `--write-baseline --spec NAME` merges only that spec's entry into the committed baseline and leaves every other entry byte-identical; an unknown spec name exits 2 with the known names listed; unscoped `--write-baseline` still works and states in its own help text that it accepts every other spec's pending drift.
-- **CAP-236 — a** ← spec-surface-drift-reconciliation CAP-2 (shipped 2026-09-09)
+- **CAP-236 — a memlog entry reconciles only the governed files it names** ← spec-surface-drift-reconciliation CAP-2 (shipped 2026-09-09)
   - **intent:** A memlog entry stops speaking for governed files it never mentions, so unrelated activity cannot launder pending drift.
   - **success:** With a spec's memlog moved, a drifted file **named** in that memlog clears while an **unnamed** one reports `[drift-presumed]`; appending an unrelated memlog entry no longer changes the verdict for an untouched governed file (the live 63 → 61 laundering no longer reproduces).
-- **CAP-237 — t** ← spec-surface-drift-reconciliation CAP-3 (shipped 2026-09-09)
+- **CAP-237 — every standing finding is dispositioned, never carried** ← spec-surface-drift-reconciliation CAP-3 (shipped 2026-09-09)
   - **intent:** An operator can act on the verdict because every finding is dispositioned rather than carried.
   - **success:** Each of the 24 `[no-baseline]` scoped-stamped; each of the 34 `[drift]` either genuinely reconciled through its spec or scoped-stamped with the reasoning recorded in that spec's memlog; both `[ungoverned]` files given a surface or allowlist entry; the one `[stale-allowlist]` pattern removed. Anything that cannot be honestly cleared is filed as deferred work with its reason, never suppressed.
-- **CAP-238 — t** ← spec-surface-drift-reconciliation CAP-4 (shipped 2026-09-09)
+- **CAP-238 — neither fix can silently regress to the blanket behavior** ← spec-surface-drift-reconciliation CAP-4 (shipped 2026-09-09)
   - **intent:** Neither fix can silently regress into the blanket behavior it replaces.
   - **success:** Both are mutation-tested **both ways** — removing `--spec` scoping re-reds the isolation test, and restoring the per-spec short-circuit re-reds the laundering test — and `spec-surface-check` exits 0 on `main`.
-- **CAP-239 — t** ← spec-surface-drift-reconciliation CAP-7 (shipped 2026-09-09)
+- **CAP-239 — bmad-loop names the governed paths it changed in the memlog** ← spec-surface-drift-reconciliation CAP-7 (shipped 2026-09-09)
   - **intent:** bmad-loop names the governed paths it changed in the owning Spec's memlog as part of the story, so the spec-surface gate stops being a tax paid by whoever lands the work.
   - **success:** A loop-produced story that changes governed files leaves that Spec's `.memlog.md` naming each changed path before the story is marked complete; `spec-surface-check` is green on the loop's own station branch without a human editing a memlog; a story that changes NO governed file writes nothing (silence is not a finding); and the reconciliation is per-file naming under S-13.2's rule, never a blanket stamp — the loop must not be handed `--write-baseline`.
-- **CAP-240 — t** ← spec-surface-drift-reconciliation CAP-6 (shipped 2026-09-09)
+- **CAP-240 — every `[drift-presumed]` entry is dispositioned so the channel stays small** ← spec-surface-drift-reconciliation CAP-6 (shipped 2026-09-09)
   - **intent:** The 994 `[drift-presumed]` entries CAP-2 made visible are dispositioned, so the informational channel stays small enough to read and a new entry means something.
   - **success:** Every presumed entry is traced to the commit that last moved it and partitioned — `added` (baseline lag) vs `changed` (the per-file question) — with each cluster judged against its Spec's own capabilities and the judgment recorded in that Spec's memlog before any stamp; anything moved by a story that is **not** `done`, or landing outside a contracted capability, is reported rather than stamped; the four Specs are then scoped-stamped individually and `spec-surface-check` reports **0 findings and 0 `[drift-presumed]`**, with a before/after diff proving no gating `[drift]` was absorbed.
-- **CAP-241 — a** ← spec-surface-drift-reconciliation CAP-5 (shipped 2026-09-09)
+- **CAP-241 — a spec surface with no memlog behind it is `[drift-blind]`** ← spec-surface-drift-reconciliation CAP-5 (shipped 2026-09-09)
   - **intent:** A Spec that declares a `surface:` but has no `.memlog.md` stops being silently drift-blind — its contract hash is `""`, so the contract can never move and the "reconcile the spec" remedy the detector prints is unreachable.
   - **success:** A spec that governs ≥1 tracked file under the default `surface-drift: memlog` mode with no `.memlog.md` reports a **gating** `[drift-blind]` finding naming the spec, its governed count, and the path the memlog belongs at; a spec governing zero files, an `exempt` spec, and a `sentinel:` spec each report nothing (their contracts cannot go blind); the 7 live instances (396 governed files) are dispositioned by creating each memlog **and** scoped-stamping its baseline in the same change, verified by a before/after diff showing no `[drift]` moved to `[drift-presumed]`; mutation-tested both ways — removing the check re-greens a fixture whose memlog was deleted, restoring it re-reds.
-- **CAP-242 — from spec-surface-overlap-tolerance** ← spec-surface-overlap-tolerance CAP-1
-  - **intent:** A file governed by multiple specs is `drift-presumed`/`drift` only when
-  - **success:** A synthetic fixture with two specs governing the same file, where one
-- **CAP-243 — from spec-surface-overlap-tolerance** ← spec-surface-overlap-tolerance CAP-2
-  - **intent:** A genuinely unreconciled change is still caught exactly as today — this
-  - **success:** The existing `spec-surface-check` test suite's single-owner drift/
+- **CAP-242 — drift on a co-governed file needs every co-governing memlog silent** ← spec-surface-overlap-tolerance CAP-1
+  - **intent:** A file governed by multiple specs is `drift-presumed`/`drift` only when NONE of its co-governing specs' memlogs account for the change — not whenever any single co-governing spec's memlog doesn't.
+  - **success:** A synthetic fixture with two specs governing the same file, where one spec's memlog explicitly names the changed file (today's existing clean-pass bar), produces zero finding against EITHER spec for that file.
+- **CAP-243 — a genuinely unreconciled change is still caught exactly as today** ← spec-surface-overlap-tolerance CAP-2
+  - **intent:** A genuinely unreconciled change is still caught exactly as today — this Spec narrows a false positive, it does not widen what counts as accounted-for.
+  - **success:** The existing `spec-surface-check` test suite's single-owner drift/drift-presumed fixtures all pass unchanged; a new multi-owner fixture where NEITHER co-governing spec's memlog names the file still produces a finding (against at least one of them, matching today's behavior for that spec).
 - **CAP-244 — a landing never re-dispatches the story it just landed** ← spec-pyforge-marshal CAP-244 (ready 2026-09-18)
   - **intent:** The fleet campaign supervisor treats the window between a dispatch session exiting and `dispatch_land_finalize` promoting the ledger as *still in flight*, so a story is never re-dispatched, never refuses itself, and never turns its own refusal into a campaign-ending block.
   - **success:** With a story whose session has exited but whose supervisor has not yet journaled `dispatch-completion`/`dispatch-land`, the next cycle reports that station `in-flight` (MRS-DISP-011-shaped), never `dispatched`; a story whose most recent run is a self-refusal of the already-merged kind classifies as **advance**, not `blocked`, so the campaign chains the next ready story; a drain over ≥2 serial stories completes with zero operator relaunches, proven on a fixture journal replaying the 2026-09-18 herald sequence (`…151925342Z-82ce96c8`: dispatched 15:19Z → landed 16:21Z → respawned 16:20:47Z → blocked, complete).
@@ -1105,6 +1104,21 @@ A pain to solve and an opportunity to capture, on the same clock. The capability
 - **CAP-292 — a dispatch landing records which CI surfaces were paused when it merged** ← spec-pyforge-marshal CAP-292 (ready 2026-10-14; reads pyforge-steward:CAP-166)
   - **intent:** once per landing, after the CAP-284 check wait and before the first `forge.merge_pr`, the dispatch landing reads `pyforge steward ci status --json` — a CLI subprocess through one adapter, steward's frozen `urn:local-recipes:pyforge-steward:ci-status-schema` envelope, never an import of `pyforge.steward` — and records `ci_pauses_at_merge` in the landing journal: `{"state": "read", "surfaces": [...], "fetched_at": ...}` with the surface ids sorted and an empty list written explicitly, or `{"state": "unknown", "reason": ...}` when steward cannot be read (no binary, a timeout, any non-zero exit — its refusals exit 3 and a partial read exits 1 — or output that is not the envelope). A row is listed when its `declared_state` is `paused-manually`, or when its `live_switch_value` is `true` and its `declared_state` is neither `opt-in-off` nor `retired`; steward's verdict alone under-reports, because `drift`, `stuck` and `overdue` outrank `paused`. The PR body gains one line — `CI paused at merge: <ids>`, `… none` or `… unknown (<reason>)` — through the existing `forge.update_pr` seam before the merge, and the finalize subprocess writes the same object into its own journal record, so the promotion record carries the list. Behind `pyforge.marshal.landing_ci_pauses`; off, the landing reads nothing and writes exactly what it writes today. The record changes no landing verdict and waits on no CI. (Operator direction 2026-10-13: mint after steward Story 99.3; plan `docs/intake/ci-pause-control-plane/PLAN-2026-10-12.md` § 4.4 and § 6.)
   - **success:** against Story 59.1's forge fake and a fake process returning recorded steward output: an envelope with two `paused` rows, a pause past its `review_by` (verdict `overdue`), a `paused-manually` row, an `opt-in-off` row whose value is `true`, a `value` row and `live` rows journals exactly the four paused ids, sorted; the PR-body line names the same ids; the finalize record carries the identical object; an all-live envelope writes `surfaces: []` and the line `none`; exit 3, exit 1, a missing binary, a timeout and stdout that is not the envelope each journal `unknown` with a reason and the landing still merges; a failed `update_pr` is a WARN-class finding and the landing reads `LANDED`; with the flag off no steward call is made, no key is written and the body is unchanged; one test file runs both flag states through `pyforge.testing_kit.flags.flag_states`; `pyforge-marshal-test` green.
+- **CAP-293 — the Dream-chain detector is proven by fixtures with known answers** ← spec-dream-to-code-model-self-verification Capability 1 (shipped; restored 2026-10-25: the 2026-09-16 fold minted no CAP from that Spec's plain-list scope)
+  - **intent:** The detector that enforces INV-0..INV-3 (`dream-chain`, now `python -m pyforge.doctor.sources dream-chain`) is verified by tests that build known-good and known-bad Dream and Spec trees and assert exact findings, not by running it on the live repo and trusting the output.
+  - **success:** Fixture trees pin a Spec with no `owner-dream:` (one INV-0 finding), a Dream with no Spec (INV-1), a Dream covered through `covers-dreams:` or a `## Satellite:` heading (no INV-1), unparseable Spec frontmatter (a finding, never an absent Spec), the INV-2 and INV-3 kinds, and a conformant tree (zero findings, exit 0); a reintroduced logged incident turns the suite red. Realized by marshal Story 17.1 (`pyforge-doctor` `tests/unit/test_sources_chain_dream_chain.py`).
+- **CAP-294 — the drift detector is proven by fixtures with known answers** ← spec-dream-to-code-model-self-verification Capability 2 (shipped; restored 2026-10-25: the 2026-09-16 fold minted no CAP from that Spec's plain-list scope)
+  - **intent:** `bmad-drift`'s deterministic checks are verified by fixtures, not only by the live-repo integrity test.
+  - **success:** pin-missing, archive-misplaced, stray-file and spec-status-stale each have a fixture asserting the exact finding; the live-repo integrity test stays (it gates the tree; the fixtures gate the detector). Realized by marshal Story 17.1 (`pyforge-doctor` `tests/unit/test_sources_factory.py`, cross-checked by `test_detector_incident_log.py`).
+- **CAP-295 — every wrong detector answer is logged with the fixture that pins it** ← spec-dream-to-code-model-self-verification Capability 3 (shipped; restored 2026-10-25: the 2026-09-16 fold minted no CAP from that Spec's plain-list scope)
+  - **intent:** Each time a detector's output is found wrong, the incident is recorded durably beside the detectors, so the next wrong number is caught by a fixture instead of by an operator noticing.
+  - **success:** A tracked log (`src/shared/packages/pyforge-doctor/docs/detector-incident-log.md`) records date, detector, wrong claim, true value, root cause, fixing commit and pinning fixture for each incident, seeded with the known incidents; an entry is mandatory in the change that fixes a detector, and a test (`test_detector_incident_log.py`) guards the log's shape. Realized by marshal Story 17.1.
+- **CAP-296 — the Dream hygiene mode exists, distinct from chain completeness** ← spec-dream-to-code-model-self-verification Capability 4 (shipped; restored 2026-10-25: the 2026-09-16 fold minted no CAP from that Spec's plain-list scope)
+  - **intent:** The `--dreams` hygiene mode the 2026-07-23 restructure promised checks each Dream file's own frontmatter, separately from the chain invariants.
+  - **success:** `dreams-hygiene` (also reached as `dream-chain --dreams`) reports per-Dream frontmatter validity (status from the README vocabulary, `owner:` in the station set or `guild`, `title:` present), README table sync and realization-log presence, warn-only, with fixtures from day one (`tests/unit/test_sources_chain_dreams_hygiene.py`); chain completeness stays INV-1..INV-3. Realized by marshal Story 17.2.
+- **CAP-297 — `seed version` reports the CLI clock and the model clock** ← Constraint "Two clocks" (shipped; minted 2026-10-26 on the Story 108.1 review under CHAIN-STANDARD §12: a Constraint that promises a visible guarantee is a capability; the Constraint stays as its provenance)
+  - **intent:** an operator asks one verb which two versions a repo is on and gets both clocks — the CLI release (`seed_model_version`) and the operating model (`model_version`) — so being current on one and behind on the other is legible.
+  - **success:** `marshal seed version` prints both versions, by name, on every installed repo and on a repo with no state file (the model clock then reads absent, never a crash); the two values are the ones the state file (CAP-17) records and `seed check` (CAP-13) compares; a test pins both. FR-125 cites this capability and CAP-17; A-05 names it.
 
 ## Constraints
 

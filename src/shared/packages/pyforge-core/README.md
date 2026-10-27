@@ -35,7 +35,8 @@ station CLI is reachable because forwarding has no allowlist; CI generates
 a parity matrix from sibling `pyproject.toml` files plus AST introspection
 (`add_parser` / Typer commands). If those two surfaces drift, the build
 fails. A CLI that cannot be introspected (atlas Kedro/Click today) must
-name a preparatory story (`spec-22-prep-atlas-kedro-cli-introspection`);
+name a tracked story spec (today `spec-24-3-atlas-s-mcp-tools-pass-the-cli-tool-parity-gate`,
+which superseded the preparatory `spec-22-prep-atlas-kedro-cli-introspection`, now under `archive/`);
 silently omitting the station is a test failure.
 
 ## Develop

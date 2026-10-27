@@ -13,6 +13,10 @@ from pathlib import Path
 
 import pytest
 
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 
 def _load_next_rehearsal_argv() -> list[str]:
     unit_path = Path(__file__).resolve().parents[1] / "unit" / "test_upgrade_next_rehearsal.py"
@@ -26,7 +30,7 @@ def _load_next_rehearsal_argv() -> list[str]:
 
 
 RUNBOOK_RELATIVE = (
-    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/release-cadence.md"
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/release-cadence.md"
 )
 
 

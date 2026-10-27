@@ -86,9 +86,9 @@ core/steward/marshal tests as the gate.
 
 - `docs/dreams/pyforge-unifying-strategy.md` § Cutover /
   `spec-python-foundry-cutover` (`fnd:CAP-1..10`; new `fnd:CAP-11` kernel)
-- `docs/dreams/intelligence-hub.md` / `spec-intelligence-hub` (Frames, Track, Guards)
-- `docs/dreams/bmad-suite-lifecycle.md` / `spec-bmad-suite-lifecycle` (register, provision)
-- `docs/dreams/regenerable-factory.md` (archive as oracle, not as source copy)
+- `archive/docs/dreams/intelligence-hub.md` / `spec-intelligence-hub` (Frames, Track, Guards)
+- `archive/docs/dreams/bmad-suite-lifecycle.md` / `spec-bmad-suite-lifecycle` (register, provision)
+- `archive/docs/dreams/regenerable-factory.md` (archive as oracle, not as source copy)
 - `docs/dreams/pyforge-steward.md`, `docs/dreams/pyforge-marshal.md`
 - Company Frame `docs/foundry/frames/pyforge.frame.md` (no lasting `src/shared/packages/`)
 - `docs/dreams/foundry-capability-ledger.md` / `spec-foundry-capability-ledger` (modes / Epic 55)

@@ -91,7 +91,30 @@ def test_lane_scratch_env_carries_only_lane_basetemp_and_cache(
     assert randomly_idx < x_idx
 
 
-def test_lane_scratch_env_unset_or_empty_inherited(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "inherited",
+    [
+        "--splits 4 --group 3 --durations-path tests/durations/pyforge-steward.json -x",
+        "--splits=4 --group=3 --durations-path=tests/durations/pyforge-steward.json -x",
+        "--store-durations --durations-path tests/durations/pyforge-steward.json -x",
+        "--basetemp=/outer --splits 2 --group 1 -x",
+    ],
+)
+def test_lane_scratch_env_drops_a_ci_shard_s_pytest_split_flags(tmp_path: Path, inherited: str, monkeypatch) -> None:
+    """Story 117.10: a CI shard sets --splits/--group for the job; a lane's own pytest runs the whole suite."""
+    monkeypatch.setenv("PYTEST_ADDOPTS", inherited)
+    env = preflight._lane_scratch_env(tmp_path / "lane")  # noqa: SLF001
+    tokens = shlex.split(env["PYTEST_ADDOPTS"])
+    assert not {"--splits", "--group", "--durations-path", "--store-durations"} & set(tokens)
+    assert not any(t.startswith(("--splits=", "--group=", "--durations-path=")) for t in tokens)
+    assert "-x" in tokens
+    assert len(_basetemp_tokens(env["PYTEST_ADDOPTS"])) == 1
+
+
+def test_lane_scratch_env_unset_or_empty_inherited(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # Story 117.10: a CI shard sets PYTEST_ADDOPTS (--splits/--group) for the whole job; this test is about an
+    # unset or empty inherited value, so it clears the one the shard inherits.
+    monkeypatch.delenv("PYTEST_ADDOPTS", raising=False)
     lane_dir = tmp_path / "lane"
     env = preflight._lane_scratch_env(lane_dir)  # noqa: SLF001
     assert env["PYTEST_ADDOPTS"] == (

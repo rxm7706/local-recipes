@@ -43,8 +43,13 @@ def test_normalize_base_keeps_revisions_and_names_the_remote_tracking_ref(driver
     assert driver._normalize_base(sha[:10]) == sha[:10]
     assert driver._normalize_base("main") == "refs/remotes/origin/main"
     assert driver._normalize_base("origin/main") == "refs/remotes/origin/main"
-    assert driver._normalize_base("origin/release/2026") == "refs/remotes/origin/release/2026"
-    assert driver._normalize_base("refs/remotes/origin/main") == "refs/remotes/origin/main"
+    assert (
+        driver._normalize_base("origin/release/2026")
+        == "refs/remotes/origin/release/2026"
+    )
+    assert (
+        driver._normalize_base("refs/remotes/origin/main") == "refs/remotes/origin/main"
+    )
     assert driver._normalize_base("origin/main~1") == "refs/remotes/origin/main~1"
     assert driver._normalize_base("origin/main@{1}") == "refs/remotes/origin/main@{1}"
     assert driver._normalize_base("user@feature") == "refs/remotes/origin/user@feature"
@@ -57,13 +62,17 @@ def test_normalize_base_keeps_revisions_and_names_the_remote_tracking_ref(driver
 
 @pytest.mark.parametrize("kind", ["branch", "tag"])
 @pytest.mark.parametrize("given", ["origin/main", "main", "origin/main~0"])
-def test_a_local_origin_main_at_head_no_longer_empties_the_touched_list(driver, tmp_path, monkeypatch, kind, given):
+def test_a_local_origin_main_at_head_no_longer_empties_the_touched_list(
+    driver, tmp_path, monkeypatch, kind, given
+):
     """The trap CAP-4 closes: a local branch or tag `origin/main` at HEAD made `origin/main...HEAD` empty, so the
     gate judged no module. The normalized base reads the remote-tracking ref instead."""
     import subprocess
 
     def git(*args: str) -> str:
-        return subprocess.run(["git", *args], cwd=tmp_path, check=True, capture_output=True, text=True).stdout.strip()
+        return subprocess.run(
+            ["git", *args], cwd=tmp_path, check=True, capture_output=True, text=True
+        ).stdout.strip()
 
     git("init", "-q", "--initial-branch=main")
     git("config", "user.email", "t@example.com")
@@ -76,8 +85,12 @@ def test_a_local_origin_main_at_head_no_longer_empties_the_touched_list(driver, 
     git(kind, "origin/main", "HEAD")  # the shadow
     monkeypatch.setattr(driver, "REPO", tmp_path)
 
-    assert driver._git_diff_names("origin/main", "HEAD") == []  # the trap, for the record
-    assert driver._git_diff_names(driver._normalize_base(given), "HEAD") == ["touched.py"]
+    assert (
+        driver._git_diff_names("origin/main", "HEAD") == []
+    )  # the trap, for the record
+    assert driver._git_diff_names(driver._normalize_base(given), "HEAD") == [
+        "touched.py"
+    ]
 
 
 def test_suite_test_paths_skips_missing_integration(driver, tmp_path: Path):
@@ -191,7 +204,9 @@ def test_plan_prints_json_without_pytest(driver, tmp_path: Path, monkeypatch, ca
     assert any("tests/meta" in p for p in run["test_paths"])
 
 
-def test_plan_stdout_stays_json_when_format_only_paths_skipped(driver, monkeypatch, capsys):
+def test_plan_stdout_stays_json_when_format_only_paths_skipped(
+    driver, monkeypatch, capsys
+):
     """format-only diagnostics must not precede JSON (Story 71.4 preflight parses stdout)."""
 
     def fake_drop(paths, base, head, *, quiet=False):
@@ -210,6 +225,7 @@ def test_run_pytest_cov_carries_station_test_task_xdist_flags(driver, monkeypatc
 
     def fake_run(cmd, **kwargs):
         captured.append(list(cmd))
+
         class _Proc:
             returncode = 0
 
@@ -227,13 +243,15 @@ def test_run_pytest_cov_carries_station_test_task_xdist_flags(driver, monkeypatc
     assert "--dist" in cmd and "loadgroup" in cmd
 
 
-_SPEED = "src/shared/packages/pyforge-doctor/tests/unit/test_check_speed_budget.py"
+# Story 117.4: doctor's speed-budget test is a live-tree module and runs alone in pyforge-doctor-live-test; the package
+# task with a set-aside run that the gate mirrors is steward's (test_preflight_concurrency.py SIGINTs its own process).
+_SPEED = "src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py"
 
 
 @pytest.mark.parametrize(
     ("cmd", "flags", "alone"),
     [
-        (  # doctor: the speed budget is set aside, then runs alone
+        (  # steward: the SIGINT file is set aside, then runs alone (doctor's speed budget does the same in its live task)
             f"env X=4 pytest pkg/tests -q -n auto --dist loadgroup --ignore={_SPEED} && pytest {_SPEED} -q",
             ["-n", "auto", "--dist", "loadgroup", "--ignore", _SPEED],
             [[_SPEED, "-q"]],
@@ -270,41 +288,169 @@ def _fake_runs(monkeypatch, rcs: list[int]) -> list[list[str]]:
     return captured
 
 
-def _run_doctor_unit(driver) -> tuple[str, int]:
-    report = REPO / ".coverage-report-doctor-unit.json"
+def _run_steward_unit(driver) -> tuple[str, int]:
+    report = REPO / ".coverage-report-steward-unit.json"
     try:
-        return driver._run_pytest_cov(station="doctor", suite="unit", report=report)
+        return driver._run_pytest_cov(station="steward", suite="unit", report=report)
     finally:
         report.unlink(missing_ok=True)
 
 
-def test_doctor_speed_budget_runs_alone_after_the_coverage_run(driver, monkeypatch):
+def test_the_set_aside_file_runs_alone_after_the_coverage_run(driver, monkeypatch):
     captured = _fake_runs(monkeypatch, [0, 0])
-    assert _run_doctor_unit(driver) == ("ran", 0)
+    assert _run_steward_unit(driver) == ("ran", 0)
     cov_run, alone_run = captured
-    assert "--cov=pyforge.doctor" in cov_run
-    assert cov_run[cov_run.index("--ignore") + 1] == _SPEED
+    assert "--cov=pyforge.steward" in cov_run
+    assert _SPEED in cov_run[cov_run.index("--ignore") + 1 :]
     assert _SPEED in alone_run
     assert not any(tok.startswith("--cov") for tok in alone_run)
     assert "-n" not in alone_run
 
 
-def test_a_slow_speed_budget_reds_the_gate(driver, monkeypatch):
+def test_a_red_set_aside_run_reds_the_gate(driver, monkeypatch):
     captured = _fake_runs(monkeypatch, [0, 1])
-    assert _run_doctor_unit(driver) == ("ran", 1)
+    assert _run_steward_unit(driver) == ("ran", 1)
     assert len(captured) == 2
 
 
 def test_a_red_coverage_run_skips_the_set_aside_run(driver, monkeypatch):
     captured = _fake_runs(monkeypatch, [1])
-    assert _run_doctor_unit(driver) == ("ran", 1)
+    assert _run_steward_unit(driver) == ("ran", 1)
     assert len(captured) == 1
 
 
 def test_a_set_aside_run_outside_the_suite_does_not_run(driver, tmp_path: Path):
-    assert driver._under_any([_SPEED, "-q"], [REPO / "src/shared/packages/pyforge-doctor/tests/unit"])
+    assert driver._under_any(
+        [_SPEED, "-q"], [REPO / "src/shared/packages/pyforge-steward/tests/unit"]
+    )
     assert not driver._under_any([_SPEED, "-q"], [tmp_path])
     assert not driver._under_any(["-q"], [tmp_path])
+
+
+def _report(files: dict[str, dict[str, list]]) -> dict:
+    return {"meta": {"version": "7.0"}, "files": files, "totals": {}}
+
+
+def test_merge_coverage_reports_unions_lines_and_branches_and_recomputes_percent(
+    driver, tmp_path: Path
+):
+    """Story 117.4: the package half and the live-tree half each write a report; the gate judges their union.
+
+    ``a.py``: the package half executed lines 1-2, the live half line 3; line 4 ran in neither. Branch (1, 2) ran in
+    one half, (3, 4) in none. coverage.py's formula: (3 covered lines + 1 covered branch) / (4 statements + 2 branches).
+    ``b.py`` is in one report only and keeps its data.
+    """
+    unit = tmp_path / "unit.json"
+    live = tmp_path / "live.json"
+    unit.write_text(
+        json.dumps(
+            _report(
+                {
+                    "a.py": {
+                        "executed_lines": [1, 2],
+                        "missing_lines": [3, 4],
+                        "executed_branches": [[1, 2]],
+                        "missing_branches": [[3, 4]],
+                    },
+                    "b.py": {
+                        "executed_lines": [1],
+                        "missing_lines": [2],
+                        "executed_branches": [],
+                        "missing_branches": [],
+                    },
+                }
+            )
+        ),
+        encoding="utf-8",
+    )
+    live.write_text(
+        json.dumps(
+            _report(
+                {
+                    "a.py": {
+                        "executed_lines": [3],
+                        "missing_lines": [1, 2, 4],
+                        "executed_branches": [],
+                        "missing_branches": [[1, 2], [3, 4]],
+                    },
+                }
+            )
+        ),
+        encoding="utf-8",
+    )
+    merged = driver.merge_coverage_reports([unit, live])
+    a = merged["files"]["a.py"]
+    assert a["executed_lines"] == [1, 2, 3]
+    assert a["missing_lines"] == [4]
+    assert a["executed_branches"] == [[1, 2]]
+    assert a["missing_branches"] == [[3, 4]]
+    assert a["summary"]["percent_covered"] == pytest.approx(100.0 * 4 / 6)
+    assert a["summary"]["num_statements"] == 4 and a["summary"]["num_branches"] == 2
+    b = merged["files"]["b.py"]
+    assert b["executed_lines"] == [1] and b["missing_lines"] == [2]
+    assert b["summary"]["percent_covered"] == pytest.approx(50.0)
+    assert merged["totals"]["percent_covered"] == pytest.approx(
+        100.0 * (4 + 1) / (6 + 2)
+    )
+    assert merged["meta"]["merged_from"] == [str(unit), str(live)]
+
+
+def test_merge_of_one_report_keeps_its_files(driver, tmp_path: Path):
+    only = tmp_path / "only.json"
+    only.write_text(
+        json.dumps(
+            _report(
+                {
+                    "a.py": {
+                        "executed_lines": [1],
+                        "missing_lines": [],
+                        "executed_branches": [],
+                        "missing_branches": [],
+                    }
+                }
+            )
+        ),
+        encoding="utf-8",
+    )
+    merged = driver.merge_coverage_reports([only])
+    assert merged["files"]["a.py"]["summary"]["percent_covered"] == 100.0
+    assert merged["totals"]["percent_covered"] == 100.0
+
+
+def test_report_globs_name_every_shard_and_the_write_target_drops_the_star(
+    driver, tmp_path: Path
+):
+    """Story 117.10: a sharded job uploads steward-unit-1.json … -N.json; the gate names them with one glob that the
+    unsharded steward-unit.json matches too, so the pixi task and the CI step carry the same literal."""
+    d = tmp_path / ".steward" / "coverage"
+    d.mkdir(parents=True)
+    for name in (
+        "steward-unit-1.json",
+        "steward-unit-2.json",
+        "steward-live-1.json",
+        "other.json",
+    ):
+        (d / name).write_text("{}", encoding="utf-8")
+    found = driver.expand_report_patterns(
+        [
+            str(d / "steward-unit*.json"),
+            str(d / "steward-live*.json"),
+            str(d / "missing*.json"),
+            str(d / "other.json"),
+        ]
+    )
+    assert [p.name for p in found] == [
+        "steward-unit-1.json",
+        "steward-unit-2.json",
+        "steward-live-1.json",
+        "other.json",
+    ]
+    assert driver.report_write_target(".steward/coverage/steward-unit*.json") == Path(
+        ".steward/coverage/steward-unit.json"
+    )
+    assert driver.report_write_target(".steward/coverage/doctor-unit.json") == Path(
+        ".steward/coverage/doctor-unit.json"
+    )
 
 
 def test_plan_empty_when_no_station_touched(driver, tmp_path: Path, capsys):
@@ -314,3 +460,104 @@ def test_plan_empty_when_no_station_touched(driver, tmp_path: Path, capsys):
     assert rc == 0
     payload = json.loads(capsys.readouterr().out.strip())
     assert payload["runs"] == []
+
+
+# --- Story 117.2: --report judges the suite's own coverage JSON ------------------------------------
+
+
+def _doctor_paths_file(tmp_path: Path) -> Path:
+    paths_file = tmp_path / "paths.txt"
+    paths_file.write_text(
+        "src/shared/packages/pyforge-doctor/src/pyforge/doctor/cli.py\n",
+        encoding="utf-8",
+    )
+    return paths_file
+
+
+def test_report_present_is_judged_without_a_pytest_run(
+    driver, tmp_path: Path, monkeypatch, capsys
+):
+    report = tmp_path / "doctor-unit.json"
+    report.write_text(json.dumps({"files": {}}), encoding="utf-8")
+    evaluated: list[tuple[str, str, Path]] = []
+
+    def boom(**kwargs):
+        raise AssertionError(
+            "the suite's own report is present; pytest must not run again"
+        )
+
+    def fake_evaluate(*, station, suite, report, modules):
+        evaluated.append((station, suite, report))
+        return 0
+
+    monkeypatch.setattr(driver, "_run_pytest_cov", boom)
+    monkeypatch.setattr(driver, "_evaluate", fake_evaluate)
+    monkeypatch.setenv("COVERAGE_GATES_STATIONS", "doctor")
+    rc = driver.main(
+        [
+            "--paths-file",
+            str(_doctor_paths_file(tmp_path)),
+            "--suites",
+            "unit",
+            "--report",
+            str(report),
+        ]
+    )
+    assert rc == 0
+    assert evaluated == [("doctor", "unit", report)]
+    assert "judging pyforge-doctor unit from" in capsys.readouterr().out
+
+
+def test_report_absent_runs_the_coverage_pass_into_that_path(
+    driver, tmp_path: Path, monkeypatch
+):
+    report = tmp_path / "out" / "doctor-unit.json"
+    ran: list[Path] = []
+
+    def fake_run(*, station, suite, report):
+        ran.append(report)
+        report.write_text(json.dumps({"files": {}}), encoding="utf-8")
+        return "ran", 0
+
+    monkeypatch.setattr(driver, "_run_pytest_cov", fake_run)
+    monkeypatch.setattr(driver, "_evaluate", lambda **kwargs: 0)
+    monkeypatch.setenv("COVERAGE_GATES_STATIONS", "doctor")
+    rc = driver.main(
+        [
+            "--paths-file",
+            str(_doctor_paths_file(tmp_path)),
+            "--suites",
+            "unit",
+            "--report",
+            str(report),
+        ]
+    )
+    assert rc == 0
+    assert ran == [report] and report.parent.is_dir()
+
+
+@pytest.mark.parametrize(
+    "stations, suites",
+    [("doctor,marshal", "unit"), ("doctor", "unit,integration"), ("", "unit")],
+)
+def test_report_wants_one_station_and_the_unit_suite(
+    driver, tmp_path: Path, monkeypatch, stations, suites
+):
+    monkeypatch.setattr(
+        driver, "_run_pytest_cov", lambda **kwargs: pytest.fail("must not run")
+    )
+    if stations:
+        monkeypatch.setenv("COVERAGE_GATES_STATIONS", stations)
+    else:
+        monkeypatch.delenv("COVERAGE_GATES_STATIONS", raising=False)
+    rc = driver.main(
+        [
+            "--paths-file",
+            str(_doctor_paths_file(tmp_path)),
+            "--suites",
+            suites,
+            "--report",
+            str(tmp_path / "r.json"),
+        ]
+    )
+    assert rc == 2

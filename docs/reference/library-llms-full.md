@@ -96,8 +96,8 @@ Everything runs through pixi environments. Nothing here is installed globally.
 | `platform-ci-test` | platform-ci-test (no-default-feature) | **`python 3.12.*`.** Slim conda-only env for Platform CI's `test` job (psycopg3 vs image psycopg2). No langflow/dbgpt. Install: `pixi install -e platform-ci-test` |
 | `pyforge-mason`| pyforge-mason (no-default-feature)                    | Lean env for the built `pyforge-mason` package (`src/shared/packages/pyforge-mason` path dep -> conda pkg + pytest/hatchling/python-build). The Artisan Builder's CLI (`mason recipe`/`package`/`environment`); **no CLI-framework dep by contract** (FR-41 forbids click/typer — argparse only). Tasks: `pyforge-mason-build{,-conda,-dist}`, `pyforge-mason-test`. Spec: `_bmad-output/projects/pyforge-mason/planning-artifacts/` |
 | `pyforge-steward`| pyforge-steward (no-default-feature)                | Lean env for the built `pyforge-steward` package (`src/shared/packages/pyforge-steward` path dep -> conda pkg + pytest/hatchling/python-build). The Provisioner's CLI (`steward keys`/`deploy`/`provision`/`budget`); task names mirror `pyforge-warden`'s verbatim. Spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/` |
-| `pyforge-marshal`| pyforge-marshal (no-default-feature)                | Lean env for the built `pyforge-marshal` package (`src/shared/packages/pyforge-marshal` path dep -> conda pkg + **copier** + pytest/hatchling/python-build + **import-linter**). Marshal is the harness/orchestration station and ships Genesis (`marshal seed` verbs) via **copier** (NFR-C2, `>=9.17,<10`); `import-linter` enforces AD-3/AD-4 as build-breaking contracts. Tasks: `pyforge-marshal-test`, `pyforge-marshal-build{,-conda,-dist}`. Spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/` |
-| `python-agent-platform`| python-agent-platform (no-default-feature)     | **`python 3.12.*` — one of three 3.12 envs (`platform-ci-test`, `dbgpt-sidecar` share the floor).** CAP-5 (Story 10.2, "one factory-sourced environment"): the ONE env that runs the three agentic engines (`langflow`, `dbgpt`, `dbgpt-serve`) alongside `django` on a single conda-forge-sourced interpreter, plus the `fastapi`/`django-health-check`/`psycopg2`/`redis-py` host deps and (Story 11.1) `chromadb`/`langchain-chroma`/`elevenlabs`/`psycopg` — deps `langflow.main.create_app()` hard-imports that the recipe only lists as soft `run_constraints`. `channel-priority = "flexible"` (feature-scoped) lets the solver fall through to a `SelfExplainML`-channel `slowapi` build once conda-forge's own build is ruled out by the `redis-py >=6.0.0` floor. Epic 11's engine-mounting stories and Story 10.3 (container image) both depend on this env existing. Spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-agent-platform/` |
+| `pyforge-marshal`| pyforge-marshal (no-default-feature)                | Lean env for the built `pyforge-marshal` package (`src/shared/packages/pyforge-marshal` path dep -> conda pkg + **copier** + **mcp** (`>=2.2`, Story 103.1 `marshal-mcp` MCPServer) + pytest/hatchling/python-build + **import-linter**). Marshal is the harness/orchestration station and ships Genesis (`marshal seed` verbs) via **copier** (NFR-C2, `>=9.17,<10`); `import-linter` enforces AD-3/AD-4 as build-breaking contracts. Tasks: `pyforge-marshal-test`, `pyforge-marshal-build{,-conda,-dist}`. Spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/` |
+| `python-agent-platform`| python-agent-platform (no-default-feature)     | **`python 3.12.*` — one of three 3.12 envs (`platform-ci-test`, `dbgpt-sidecar` share the floor).** CAP-5 (Story 10.2, "one factory-sourced environment"): the ONE env that runs the three agentic engines (`langflow`, `dbgpt`, `dbgpt-serve`) alongside `django` on a single conda-forge-sourced interpreter, plus the `fastapi`/`django-health-check`/`psycopg2`/`redis-py` host deps and (Story 11.1) `chromadb`/`langchain-chroma`/`elevenlabs`/`psycopg` — deps `langflow.main.create_app()` hard-imports that the recipe only lists as soft `run_constraints`. `channel-priority = "flexible"` (feature-scoped) lets the solver fall through to a `SelfExplainML`-channel `slowapi` build once conda-forge's own build is ruled out by the `redis-py >=6.0.0` floor. Epic 11's engine-mounting stories and Story 10.3 (container image) both depend on this env existing. Spec: `archive/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-agent-platform/` |
 | `platform-dev` | python-agent-platform + platform-dev (no-default-feature) | AD-16, Story 11.1 + 56.1: composes `platform-dev` (`postgresql`/`pgvector`/`redis-server`/`kubernetes-helm`/`kubernetes-client`/`django-debug-toolbar`) ONTO `python-agent-platform` — one env for the full local Tier-1 baseline including `config.settings.local`, zero containers or managed services. |
 | `bmad-ui`      | bmad-ui (no-default-feature)                          | **linux-64 only.** BMad Method UI dashboards (`archive/docs/specs/bmad-loop-adoption.md` W4). Consumes the locally-built consume-not-submit mirrors `bmad-dashboard` + `mybmad-dashboard` from `./build_artifacts/linux64` + conda-forge. Tasks: `bmad-dashboard-install` (wires the VS Code extension), `mybmad` (Next.js dashboard + local PostgreSQL on :3002) |
 | `bmad-suite-full`| bmad-suite-full (no-default-feature)                | **linux-64 only.** CAP-4 greenfield one-pin proof env (`spec-bmad-suite-metapackage`, story 39.4): composes only `bmad-suite` (>=2026.9.1, SelfExplainML) + a minimal `python` floor — solver smoke without pulling the fat `local-recipes` graph. Not composed into `local-recipes`, which keeps its own 11 explicit `bmad-*` pins for pipeline-truth / doctor drift granularity. Docs: `install-matrix.md`'s Greenfield one-pin section. |
@@ -172,6 +172,7 @@ manifest is a second, un-mirrored source root `pixi.toml` doesn't otherwise expo
 - **jsonschema** (>=4.26.0) — JSON Schema validation; `pyforge-doctor` (`__main__.py`),
   `pyforge-marshal` (`seed/state/store.py`), `pyforge-warden` (`report.py`).
 - **psutil** (>=7.2.2) — process/system introspection; `pyforge-marshal` only.
+- **mcp** (>=2.2) — official MCP SDK for `marshal-mcp` (Story 103.1); `pyforge-marshal` only.
 - **attrs** (>=26.1.0) — declarative classes; `pyforge-atlas` (`observability.py`) only.
 - **packageurl-python** (>=0.17.6) — package-URL (purl) parse/build; `pyforge-warden`
   (`sbom.py`, `sources.py`, `eligibility_sbom.py`); imports as `packageurl`.
@@ -186,6 +187,12 @@ manifest is a second, un-mirrored source root `pixi.toml` doesn't otherwise expo
   Story 14.3 / AUD-ATLAS-010: an undeclared module-level import is a runtime dependency).
   Resolvable transitively via **bokeh** in every other env; declared directly only in
   atlas's nested manifest, in step with its `pyproject.toml`.
+- **brotli-python** (>=1.2) — Brotli compression bindings (PyPI `Brotli`; imports as
+  `brotli`; the `brotli` conda package is the C library and CLI, with no Python module); `pyforge-atlas` only
+  (`datasets/tier3_sources.py` decodes the nixpkgs `packages.json.br` through a guarded
+  import, Story 34.13). Resolvable transitively via conda-forge **urllib3** in every env
+  that has it; declared directly only in atlas's nested manifest, in step with its
+  `pyproject.toml`.
 
 ---
 
@@ -436,7 +443,7 @@ All in `local-recipes`.
   trees + an `AGENTS.md` block; ships one skill, `catalog-config`. **pyforge-atlas
   env only** (dev/tooling, never a package run-dep); exact-pinned to the audited
   version (no floor) — see the audit at
-  `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption/kedro-skills-audit-report.md`.
+  `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption/kedro-skills-audit-report.md`.
 - **great-expectations** (>=1.24.0) — data-quality contracts: expectations suites,
   validation, data docs (used inside Kedro nodes).
 - **pandera** (>=0.32.1) — lightweight statistical dataframe validation via typed
@@ -883,6 +890,9 @@ Testing:
 - **pytest-mock** (>=3.16.0) — `mocker` fixture over unittest.mock.
 - **pytest-cov** (>=7.1.0) — coverage reporting.
 - **pytest-xdist** (>=3.8.0) — parallel test execution (`-n auto`).
+- **pytest-split** (>=0.11.0) — `--splits N --group K` cuts a suite into N groups for a CI
+  shard matrix (steward Story 117.10, CAP-175); reads `--durations-path` when a durations file
+  exists, splits by count otherwise. In the steward, marshal, atlas, doctor and herald features.
 
 Browser automation:
 - **playwright** (>=1.64.0) — the Node Playwright CLI (browser installs, codegen).

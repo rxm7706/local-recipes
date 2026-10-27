@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Weekly CI canary matrix from docs/governance/ci-surfaces.yaml (Story 99.6 / CAP-166)."""
+"""Nightly CI canary matrix from docs/governance/ci-surfaces.yaml (Story 99.6 / CAP-166; nightly and PR-exempt rows since Story 117.6 / CAP-175)."""
 from __future__ import annotations
 
 import argparse
@@ -36,14 +36,18 @@ def surface_id_from_canary_token(token: str | None) -> str | None:
 
 
 def paused_high_cost_matrix(registry: dict[str, Any]) -> list[dict[str, Any]]:
-    """Rows the weekly canary builds: paused registry rows with cost: high."""
+    """Rows the canary builds: cost: high rows that are paused, or that never run on a pull_request.
+
+    Story 117.6 (CAP-175, ruling D1): a row with ``trigger: main`` runs on push-to-main and here, nightly,
+    so a PR never waits on an image build and the build is still exercised every day.
+    """
     out: list[dict[str, Any]] = []
     for row in registry.get("surfaces") or []:
         if not isinstance(row, dict):
             continue
         if str(row.get("cost") or "") != "high":
             continue
-        if str(row.get("state") or "") != "paused":
+        if str(row.get("state") or "") != "paused" and str(row.get("trigger") or "") != "main":
             continue
         row_id = str(row.get("id") or "")
         if not row_id:

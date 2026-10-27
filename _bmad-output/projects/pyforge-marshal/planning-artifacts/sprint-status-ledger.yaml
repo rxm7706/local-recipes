@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 662
+# stories: 728
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -37,13 +37,61 @@ development_status:
   100-1-a-landing-records-which-ci-surfaces-were-paused-when-it-merged: done
   101-1-the-landing-line-lists-every-surface-the-ci-master-switch-pauses: done
   102-1-a-landing-reuses-its-verified-verdict-when-only-a-merge-of-main-moved-the-branch: done
-  103-1-the-marshal-mcp-server-starts-on-the-official-sdk-and-preflight-proves-it: backlog
+  103-1-the-marshal-mcp-server-starts-on-the-official-sdk-and-preflight-proves-it: done
+  104-1-the-mcp-json-marshal-renders-never-makes-a-loop-home-dirty: done
+  105-1-every-marshal-prd-fr-arrow-names-the-spec-capability-that-realizes-it: done
+  106-1-every-marshal-seed-installer-fr-names-the-capability-that-realizes-it: done
+  106-2-fr-144-to-fr-147-trace-to-the-capabilities-the-fold-dropped: done
+  107-1-a-refresh-or-a-sync-never-carries-a-stale-slug-story-key: done
+  108-1-every-marshal-requirement-cites-a-capability-the-spec-s-cut-text-is-restored-and-the-harness-layers-carry-the-rule: done
+  108-2-every-marshal-nfr-names-the-capabilities-it-bounds: backlog
+  109-1-marshal-s-five-loose-spec-files-move-to-the-archive-home: done
   11-1-neutral-contract-and-agent-adapter-fan-out: done
   11-2-projects-md-index-and-artifact-symlink-derivation: done
   11-3-migration-registry-and-runner: done
   11-4-marshal-seed-update-two-phase: done
   11-5-referenced-dependency-verification-and-doctor-delegation: done
   11-6-marshal-seed-explain-and-marshal-seed-version: done
+  110-1-the-front-door-names-the-environment-a-roster-station-runs-in-sits-behind-a-kill-switch: done
+  110-10-seed-check-in-ci-sits-behind-a-kill-switch: done
+  110-11-adapters-from-one-contract-sits-behind-a-kill-switch: done
+  110-12-genesis-owned-state-file-sits-behind-a-kill-switch: done
+  110-13-supervisor-finalizes-when-the-harness-cannot-run-shell-sits-behind-a-kill-switch: done
+  110-14-marshal-watch-reports-what-changed-and-a-recommended-delay-sits-behind-a-kill-switch: done
+  110-15-completion-is-judged-from-git-and-process-facts-never-self-reports-sits-behind-a-kill-switch: done
+  110-16-a-session-s-self-report-is-input-to-verification-never-the-verdict-sits-behind-a-kill-switch: done
+  110-17-dispatch-lands-through-existing-landing-machinery-never-a-second-path-sits-behind-a-kill-switch: done
+  110-18-one-story-in-flight-per-station-cross-station-dispatches-run-concurrently-sits-behind-a-kill-switch: done
+  110-19-branch-merged-is-never-true-on-ancestry-alone-sits-behind-a-kill-switch: done
+  110-2-loop-homes-and-isolation-sits-behind-a-kill-switch: done
+  110-20-after-harness-exit-at-most-one-follow-up-review-then-land-sits-behind-a-kill-switch: done
+  110-21-declared-context-pipeline-sits-behind-a-kill-switch: done
+  110-22-promotion-runs-on-landing-not-on-memory-sits-behind-a-kill-switch: done
+  110-23-a-dispatch-only-checkout-still-has-fleet-rows-sits-behind-a-kill-switch: done
+  110-24-marshal-s-shell-outs-name-the-guild-env-sits-behind-a-kill-switch: done
+  110-25-a-loop-home-refresh-sends-its-proven-fast-forward-past-the-pre-push-preflight-journaled-sits-behind-a-kill-switch: done
+  110-26-a-follow-up-review-a-landed-story-recommends-is-carried-into-the-deferred-work-ledger-never-dropped-sits-behind-a-kill-switch: done
+  110-27-a-landing-s-ledger-promotion-reaches-origin-main-and-a-failed-one-is-never-silent-sits-behind-a-kill-switch: done
+  110-28-the-switch-script-runs-where-it-is-documented-to-run-or-says-in-one-line-why-it-cannot-sits-behind-a-kill-switch: done
+  110-29-marshal-seed-check-judges-the-paths-the-manifest-means-never-its-unrendered-placeholders-sits-behind-a-kill-switch: done
+  110-3-supervised-unattended-runs-sits-behind-a-kill-switch: done
+  110-30-a-drain-runs-the-follow-up-review-a-landed-story-recommended-gated-by-its-deferred-work-row-never-by-the-ledger-sits-behind-a-kill-switch: done
+  110-31-every-dispatch-session-opens-on-the-shared-codegraph-index-sits-behind-a-kill-switch: done
+  110-32-a-landing-unions-append-only-memlogs-instead-of-refusing-sits-behind-a-kill-switch: done
+  110-33-an-operator-run-refresh-reads-every-harness-s-live-model-list-and-reports-drift-sits-behind-a-kill-switch: done
+  110-34-a-dev-pass-receives-relevant-team-memory-feedback-before-it-starts-sits-behind-a-kill-switch: done
+  110-35-a-review-pass-sees-the-same-feedback-the-dev-pass-saw-sits-behind-a-kill-switch: done
+  110-36-the-recall-injection-is-its-own-context-layer-sits-behind-a-kill-switch: done
+  110-37-a-recall-miss-or-failure-injects-nothing-sits-behind-a-kill-switch: done
+  110-38-the-retrofit-kill-switches-retire-on-their-cleanup-date: backlog
+  110-4-gates-you-can-run-sits-behind-a-kill-switch: done
+  110-5-fleet-visibility-sits-behind-a-kill-switch: done
+  110-6-policy-composition-sits-behind-a-kill-switch: done
+  110-7-operating-model-as-data-sits-behind-a-kill-switch: done
+  110-8-managed-region-upgrades-sits-behind-a-kill-switch: done
+  110-9-adopt-onto-a-living-repo-sits-behind-a-kill-switch: done
+  111-1-marshal-s-54-archived-dreams-leave-the-live-tree: done
+  112-1-marshal-s-absorbed-spec-folders-move-to-the-archive-home: done
   12-1-full-pixi-wiring-distribution-and-repo-gate-compliance: done
   12-2-the-local-recipes-empty-plan-oracle-critical: done
   12-3-offline-operation-and-the-egress-counter: done
@@ -445,7 +493,7 @@ development_status:
   87-16-the-orphaned-tips-are-re-preserved-as-local-archive-tags: done
   87-17-the-legacy-promoter-reads-every-commit-s-bytes: done
   87-18-the-legacy-promoter-lists-every-legacy-ref: done
-  87-19-the-content-gate-judges-only-what-a-push-sends: backlog
+  87-19-the-content-gate-judges-only-what-a-push-sends: done
   87-2-the-unpushed-work-detector-fails-closed-and-never-prints-a-tag-minting-remedy: done
   87-3-preserved-work-has-one-grammar-and-one-verb: done
   87-4-spin-parks-every-attempt-as-a-preserve-tag-before-bmad-loop-can-prune-it: done
@@ -484,10 +532,28 @@ development_status:
   epic-101-retrospective: optional
   epic-102: done
   epic-102-retrospective: optional
-  epic-103: backlog
-  epic-103-retrospective: optional
+  epic-103: done
+  epic-103-retrospective: done
+  epic-104: done
+  epic-104-retrospective: done
+  epic-105: done
+  epic-105-retrospective: optional
+  epic-106: done
+  epic-106-retrospective: optional
+  epic-107: done
+  epic-107-retrospective: optional
+  epic-108: in-progress
+  epic-108-retrospective: optional
+  epic-109: done
+  epic-109-retrospective: optional
   epic-11: done
   epic-11-retrospective: optional
+  epic-110: in-progress
+  epic-110-retrospective: optional
+  epic-111: done
+  epic-111-retrospective: optional
+  epic-112: done
+  epic-112-retrospective: optional
   epic-12: done
   epic-12-retrospective: optional
   epic-13: done
@@ -648,7 +714,7 @@ development_status:
   epic-85-retrospective: done
   epic-86: done
   epic-86-retrospective: optional
-  epic-87: in-progress
+  epic-87: done
   epic-87-retrospective: optional
   epic-88: done
   epic-88-retrospective: optional

@@ -1,9 +1,9 @@
-"""Proves the ``cli.py`` 4-axis engine fan-out (Story 5.2, NFR-P-concurrency)
+"""Proves the ``cli.py`` 4-axis engine fan-out (Story 5.2, NFR-P4)
 actually runs CONCURRENTLY via ``ThreadPoolExecutor`` (not the pre-5.2
 sequential loop) AND that ``engine_results``/``errors``/``rungs`` are
 reassembled in ``engines_to_run``'s own registration order regardless of
 which future finishes first — the load-bearing invariant the story's
-Boundaries call out (NFR-R3b, the existing first-registration-order-wins
+Boundaries call out (NFR-R3.2, the existing first-registration-order-wins
 engine-vs-engine finding dedupe in ``interfaces.DefaultPolicy.evaluate``).
 
 Mirrors ``test_scan_harness.py``'s ``register_engine_for_test`` monkeypatch

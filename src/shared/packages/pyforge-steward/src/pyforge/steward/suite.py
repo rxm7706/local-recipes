@@ -91,11 +91,10 @@ _PYFORGE_STUDIO_ROOT_ENV = "PYFORGE_STUDIO_ROOT"
 _PYFORGE_STUDIO_ROOT_DEFAULT = "~/pyforge-studio"
 
 INSTALL_CLASS_PLAYBOOK_REL = (
-    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/"
-    "spec-bmad-suite-install-class-wiring/install-class-playbook.md"
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/install-class-playbook.md"
 )
 INSTALL_MATRIX_REL = (
-    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-channel-product/install-matrix.md"
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/install-matrix.md"
 )
 
 # Values that are class-correct "not unwired" — not a module census miss.
@@ -945,7 +944,7 @@ def build_pipeline_truth_report(
 
 # ── 2026-08-22 research matrix (recorded baseline shape) ───────────────────
 
-# Values from docs/dreams/bmad-suite-channel-product.md + install-matrix.md
+# Values from archive/docs/dreams/bmad-suite-channel-product.md + install-matrix.md
 # (channel bmad-method 6.3.0 relic; TEA tag-unreleased 1.23.3; npm-stale
 # builder/CIS/WDS; wired vs unwired census from the Dream).
 BASELINE_2026_08_22: dict[str, dict[str, str | None]] = {

@@ -14,7 +14,7 @@ Warden stays the sole PR verdict. Doctor stays advisory. These verbs are
 | policy_and_safety | yes | Warden license/vuln/waiver, marshal MRS-GATEs |
 | regression_and_drift | yes | bmad-drift-check, spec-surface, doctor frozen_path |
 | source_grounding | yes (first addition) | scribe recall AD-8; `steward guards source-ground` on dev/review text |
-| outcome | **no** | blocked on `docs/dreams/build-league-scorecard.md` |
+| outcome | **no** | blocked on `archive/docs/dreams/build-league-scorecard.md` |
 
 **The table above is sorted alphabetically, not by rank.** Recorded 2026-09-14 because it had
 been read as a ranking: the whitepaper's own §5.5 order is **1 Algorithmic · 2 Source-Grounding ·

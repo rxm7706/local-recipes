@@ -208,7 +208,7 @@ verify_commands = [
   "scripts/.spec-surface-baseline.json",
   "recipes/**",
   ".claude/skills/conda-forge-expert/**",
-  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-channel-product/**",
+  "archive/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-channel-product/**",
   # Every story writes its own status here at completion, so an epic that omits
   # it re-fires MRS-GATE-012 on its own bookkeeping (steward 43.6, 2026-09-03).
   "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
@@ -358,6 +358,19 @@ verify_commands = [
   # The station's planning and package paths, plus Story 31.1's one retro(cfe) commit (the fleet-picture ATTENTION
   # test and the CFE version carriers) and every Spec memlog a surface reconcile names (spec-packaging-factory and
   # spec-conda-forge-expert-rebuild govern the CFE surface; spec-pyforge-marshal co-governs the test).
+  "src/shared/packages/pyforge-mason/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-mason/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
+  ".claude/skills/conda-forge-expert/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
+"34" = [  # The atlas's dependency graph and bot health read the conda-forge bot's split repos (fix under spec-pyforge-mason CAP-24), added 2026-10-26
+  # The station's planning and package paths, plus Story 34.1's one retro(cfe) commit (the atlas scripts, their tests and
+  # docs, and the CFE version carriers) and every Spec memlog a surface reconcile names (spec-packaging-factory and
+  # spec-conda-forge-expert-rebuild govern the CFE surface).
   "src/shared/packages/pyforge-mason/**",
   "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
   "_bmad-output/projects/pyforge-mason/implementation-artifacts/**",

@@ -43,13 +43,17 @@ from pathlib import Path
 
 import pytest
 
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 FORBIDDEN_STATUS_WORDS = re.compile(
     r"(?i)\b(?:done|blocked|backlog|in-progress|in-review|ready|draft|shipped|"
     r"complete|paused|superseded)\b"
 )
 
 REGISTER_RELATIVE = (
-    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md"
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/adoption-register.md"
 )
 
 

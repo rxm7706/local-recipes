@@ -6,22 +6,22 @@ updated: "2026-09-29"
 owner-dream: docs/dreams/pyforge-scribe.md
 covers-dreams:
   - docs/dreams/pyforge-scribe.md
-  - docs/dreams/pyforge-scribe-team-memory.md
-  - docs/dreams/scribe-code-navigation-owner.md
-  - docs/dreams/scribe-graphify-nightly-currency.md
-  - docs/dreams/scribe-graphify-target-list.md
-  - docs/dreams/scribe-in-flight-story-specs.md
-  - docs/dreams/scribe-knowledge-layers.md
-  - docs/dreams/scribe-marshal-fact-visibility.md
-  - docs/dreams/scribe-mines-raw-session-transcripts.md
-  - docs/dreams/scribe-named-docs.md
-  - docs/dreams/scribe-planning-pointers.md
-  - docs/dreams/scribe-portal-recall-defaults.md
-  - docs/dreams/scribe-recall-mode-wiring.md
-  - docs/dreams/scribe-recall-modes.md
-  - docs/dreams/scribe-recall-stale-between-nightlies.md
-  - docs/dreams/sentinel.md
-  - docs/dreams/team-memory.md
+  - archive/docs/dreams/pyforge-scribe-team-memory.md
+  - archive/docs/dreams/scribe-code-navigation-owner.md
+  - archive/docs/dreams/scribe-graphify-nightly-currency.md
+  - archive/docs/dreams/scribe-graphify-target-list.md
+  - archive/docs/dreams/scribe-in-flight-story-specs.md
+  - archive/docs/dreams/scribe-knowledge-layers.md
+  - archive/docs/dreams/scribe-marshal-fact-visibility.md
+  - archive/docs/dreams/scribe-mines-raw-session-transcripts.md
+  - archive/docs/dreams/scribe-named-docs.md
+  - archive/docs/dreams/scribe-planning-pointers.md
+  - archive/docs/dreams/scribe-portal-recall-defaults.md
+  - archive/docs/dreams/scribe-recall-mode-wiring.md
+  - archive/docs/dreams/scribe-recall-modes.md
+  - archive/docs/dreams/scribe-recall-stale-between-nightlies.md
+  - archive/docs/dreams/sentinel.md
+  - archive/docs/dreams/team-memory.md
 surface:
   - src/shared/packages/pyforge-scribe/**
   - scripts/scribe_pg.py

@@ -357,6 +357,25 @@ def test_a_pre_rule_fix_spec_is_not_warned_about(
     assert payload["findings"] == []
 
 
+def test_a_done_or_superseded_pre_rule_feature_spec_is_not_warned_about(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """Story 51.1: the warned population is the live pre-rule stories (ruling 3, 2026-09-28); a done story's
+    capability is retrofitted at the CAP, and its spec is never rewritten."""
+    root = _fixture(tmp_path)
+    done = _spec(root, status="done")
+    superseded = _spec(root, name="spec-1-2-b-story.md", status="superseded")
+    live = _spec(root, name="spec-1-3-c-story.md", status="blocked")
+    _fixture(tmp_path, baseline=[done, superseded, live])
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert rc == 0
+    assert _kinds(payload) == ["flag-pre-rule"]
+    assert payload["findings"][0]["path"] == live
+    assert flag_gate_check.ENDED_STORY_STATUSES == {"done", "superseded"}
+
+
 def test_a_memlog_and_a_folder_spec_file_are_not_story_specs(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):

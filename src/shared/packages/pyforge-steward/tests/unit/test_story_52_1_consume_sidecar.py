@@ -14,10 +14,16 @@ from pyforge.steward.provision import (
     provision_module,
 )
 
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 REGISTER_RELATIVE = (
-    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md"
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/adoption-register.md"
 )
-LIFECYCLE_SPEC = "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/SPEC.md"
+LIFECYCLE_SPEC = (
+    "archive/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/SPEC.md"
+)
 
 
 def _repo_root() -> Path:

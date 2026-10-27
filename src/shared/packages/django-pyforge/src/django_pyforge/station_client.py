@@ -16,6 +16,23 @@ from pyforge.core.client import API_VERSION_HEADER, PyForgeStationClient, Statio
 
 from django_pyforge.assertion.client import PortalClient
 from django_pyforge.circuits import CircuitBreaker, Degraded
+from django_pyforge.flags import evaluate_boolean
+
+# steward Story 114.8 (spec-feature-flag-governance CAP-7): the kill switch for unifying CAP-6, spelled literally.
+STATION_CLIENT_IDENTITY_FLAG_KEY = "pyforge.steward.station_client_identity"
+
+
+def _station_client_identity_on() -> bool:
+    """The kill switch's reading: ON unless the host's FILE provider reads it OFF.
+
+    django-pyforge does not declare OpenFeature (the host's environment carries it); with no OpenFeature there is
+    no provider that could hold the switch OFF, so it reads ON rather than failing the call with ImportError.
+    """
+    try:
+        return evaluate_boolean(STATION_CLIENT_IDENTITY_FLAG_KEY, default=True)
+    except ImportError:
+        return True
+
 
 __all__ = [
     "API_VERSION_HEADER",
@@ -115,6 +132,11 @@ class StationHttpClient:
         private_pem: str | None = None,
         transport: Transport | None = None,
     ) -> PyForgeStationClient:
+        # steward Story 114.8 (spec-feature-flag-governance CAP-7; spec-pyforge-unifying-strategy CAP-6): the
+        # kill switch for the one identity-carrying client, read through ``django_pyforge.flags``. OFF refuses
+        # every station call here, the one seam; no portal falls back to a raw HTTP request.
+        if not _station_client_identity_on():
+            raise StationClientError(f"flag {STATION_CLIENT_IDENTITY_FLAG_KEY} is off")
         assertion = self._portal.emit(sub, roles, station, private_pem=private_pem)
         return PyForgeStationClient(
             station=station,

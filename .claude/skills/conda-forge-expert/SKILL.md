@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.101.4
+version: 8.102.1
 allowed-tools: [conda_forge_server]
 ---
 
@@ -4530,6 +4530,65 @@ and the mirror returns to a plain copy of the feedstock.
 guard raise on unicorn 2.1.4. `recipes/pwndbg`'s test env resolved build 1 with `python-unicorn` 2.1.4 on Python 3.11
 and 3.14, and `pip check` passed on both. Against conda-forge's build 0 the same env fails with the original message.
 
+### G123. A redirected GitHub repo serves another repo's archive — validate a cached download by its contents, and never let a full-snapshot writer replace its table with nothing
+
+**Symptom**: `whodepends python --reverse` returns `[]`. The `dependencies` table in `cf_atlas.db` has 0 rows in every
+local copy, while `cf_atlas_meta.json` lists every phase as run and the build log raises no error. `feedstock-health`
+stops changing, and Phase H's cf-graph mode tags rows without giving them a version. The red that surfaces it is
+`test_atlas_clis_smoke.py::test_whodepends_reverse_json` in a local `pr-preflight` (CI skips the atlas tests).
+
+**Why**: the atlas downloaded `github.com/regro/cf-graph-countyfair/archive/refs/heads/master.tar.gz`. GitHub now
+answers that URL with a 301 to `conda-forge/conda-forge-bot-data`. cf-scripts split the bot's graph into four repos,
+`conda-forge/conda-forge-bot-data-node_attrs`, `-pr_info`, `-version_pr_info` and `-pr_json`, and the redirect target
+holds only `status/`, `import_to_pkg_maps/` and `mappings/`. The download succeeds and yields a valid 48 MB tarball,
+which then sits in the TTL cache. Phase J filtered members on `/node_attrs/` and found none. It deletes the table before
+it re-inserts (full-snapshot semantics), so it committed an empty table and printed "0 edges" with no warning. Phases E,
+M and H read nothing and wrote nothing. A `phase_state` row that reads "D completed, 916426 items" is the PyPI
+enumeration, not the graph: reading the wrong phase's row makes the empty table look like a Phase D defect.
+
+**Fix** (CFE v8.102.0, `scripts/_cf_graph_source.py`):
+1. Fetch each split repo (branch `main`) into its own cache, `cf-graph-<kind>.tar.gz`, starting every attempt from
+   byte 0. Never resume with a Range request: the bot pushes every few minutes, and a resumed file can splice two
+   commits while its head still looks valid.
+2. Validate the archive before it replaces the cache. The whole gzip stream must read with its CRC intact, every member
+   must sit under `conda-forge-bot-data-<kind>-main/`, and it must hold at least one sharded record. A redirect to
+   another repo fails the directory check even when that repo is full of JSON. A failed or rejected download keeps the
+   previous cache.
+3. A phase that wipes and rebuilds a table refuses when its source yields zero records: Phase J rolls back and reports
+   `skipped` with the reason. A phase that only updates (E, H, M) writes nothing and says why. A phase that derives
+   columns from several sources writes nothing from a partial set: Phase M needs `pr_info`, `version_pr_info` and, for
+   live PRs, `pr_json`, or it would reset the columns the missing part feeds.
+4. Key records by their path below the top directory with the five one-character shard directories removed. A few nodes
+   nest (`conda-forge/label/<name>`), and keying by basename alone would merge them with another node.
+5. Live bot PRs in `pr_info` are `{"__lazy_json__": "pr_json/<id>.json"}` references. Resolve them from `-pr_json`,
+   decoding only the referenced ids; an unresolvable reference counts as unknown, never as open.
+
+**Detect**:
+
+```bash
+sqlite3 .claude/data/conda-forge-expert/cf_atlas.db "select count(*) from dependencies"   # 0 on a built atlas
+tar tzf .claude/data/conda-forge-expert/cf-graph-node_attrs.tar.gz | head -1             # must be the repo you asked for
+```
+
+Refresh an affected checkout with `PHASE_E_ENABLED=1 pixi run -e local-recipes atlas-phase E`, then `atlas-phase J` and
+`atlas-phase M` (about a minute together).
+
+**General rule**: judge a cached download by what it contains, not by its HTTP status or its age. GitHub renames and
+transfers are silent, and both archive and raw URLs follow the redirect. A raw file URL keeps working while its path
+still exists in the new repo (`mapping_manager.py` reads `mappings/pypi/name_mapping.json` through the redirect
+unchanged), which is why only the archive readers broke. When two implementations read the same source (pyforge-atlas's
+`CfGraphTarballDataset` and this script), a fix in one is a finding in the other: pyforge-atlas ported its copy on
+2026-10-18 (atlas Story 34.3), and this script stayed broken for a week.
+
+**Case study**: mason Story 34.1 (2026-10-26). After the port, a refresh of Phases E, J and M took about a minute.
+It read 30,602 `node_attrs` records and wrote 343,280 edges, and resolved 18,146 of 18,146 live-PR references. The
+edges include 30,619 `test` edges, which Phase J had never written. The bot keeps test requirements in the recipe's
+test section, never in `requirements.test`: a v0 recipe in `test.requires` (per output, `outputs[].test.requires`),
+a v1 recipe in each `tests[]` element's `requirements.run` and `requirements.build`. So `whodepends --type test`
+always returned nothing. The four archives measured 37, 7, 2 and 4 MB. An independent review found two gaps in the
+first port, both fixed before landing. A resuming downloader could splice a retry onto a partial file that still
+validated at its head. And Phase M zeroed the open-PR columns when `pr_json` was missing.
+
 ---
 
 ## Skill Automation
@@ -4570,6 +4629,8 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.102.1** (Oct 27, 2026) — **mason Story 36.1 Rule-2 retro: three meta-test docstrings name the archived paths they cite. `spec-pyforge-mason` now governs this skill's surface with normal drift, so a CFE edit needs a mason memlog line and a scoped stamp (PATCH; docstrings only).** See `CHANGELOG.md`.
+- **v8.102.0** (Oct 26, 2026) — **mason Story 34.1 Rule-2 retro: the atlas reads the conda-forge bot's split graph repos; G123 (a redirected repo serves another repo's archive) (MINOR).** See `CHANGELOG.md`.
 - **v8.101.4** (Oct 22, 2026) — **mason Story 26.2 Rule-2 retro: CFE's tests never fetch conda-smithy's remote lint data (PATCH; tests only).** See `CHANGELOG.md`.
 - **v8.101.3** (Oct 22, 2026) — **doctor Story 45.3 Rule-2 retro: the fleet-picture ATTENTION test names any probe `main()` calls that it does not stub (PATCH; tests only).** See `CHANGELOG.md`.
 - **v8.101.2** (Oct 16, 2026) — **herald Story 45.1 retro correction: v8.101.1 named the wrong cause; the lane was paused, not missing a trigger (PATCH; CHANGELOG only).** See `CHANGELOG.md`.

@@ -122,16 +122,17 @@ class TestPhaseEPythonMinWrite:
     """Phase E populates `packages.python_min` from a mocked cf-graph tarball."""
 
     def _build_tarball(self, tmp_path: Path, node_attrs: dict[str, dict]) -> Path:
-        """Build a tiny cf-graph-shaped tarball with the given node_attrs files."""
-        cache = tmp_path / "cf-graph-countyfair.tar.gz"
+        """Build a tiny node_attrs archive in the bot's split layout.
+
+        Mirrors `conda-forge/conda-forge-bot-data-node_attrs`:
+        `<repo>-main/<5 one-char shard dirs>/<feedstock>.json`.
+        """
+        cache = tmp_path / "cf-graph-node_attrs.tar.gz"
         with tarfile.open(cache, "w:gz") as tf:
             for feedstock, payload in node_attrs.items():
-                # Mirror cf-graph layout: node_attrs/<l>/<l>/<l>/<l>/<l>/<feedstock>.json
-                # Path content is only matched by `/node_attrs/` substring +
-                # `.json` suffix in Phase E so any nested layout works.
                 bytes_payload = json.dumps(payload).encode()
                 info = tarfile.TarInfo(
-                    name=f"cf-graph-master/node_attrs/x/y/z/{feedstock}.json"
+                    name=f"conda-forge-bot-data-node_attrs-main/a/b/c/d/e/{feedstock}.json"
                 )
                 info.size = len(bytes_payload)
                 info.mtime = int(time.time())
@@ -187,6 +188,12 @@ class TestPhaseEPythonMinWrite:
         # Enable Phase E and bypass network re-fetch (cache exists with TTL).
         monkeypatch.setenv("PHASE_E_ENABLED", "1")
         monkeypatch.setenv("ATLAS_CFGRAPH_TTL_DAYS", "365")  # always-fresh cache
+
+        # The other three archives have no cache; a unit test never downloads.
+        def _offline(urls, target):
+            raise RuntimeError("offline in unit tests")
+
+        monkeypatch.setattr(atlas_mod, "_cfgraph_download", _offline)
         return conn
 
     def test_phase_e_writes_python_min_from_v1_override(self, populated_db, atlas_mod):

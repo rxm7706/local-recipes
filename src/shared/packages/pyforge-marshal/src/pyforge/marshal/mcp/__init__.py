@@ -1,12 +1,12 @@
 """Marshal MCP surface (Story 18.1, FR-153 / FR-154; Story 18.2, FR-155 / FR-156).
 
 Named, typed tools over Marshal's CLI capabilities. ``.server`` is
-deliberately NOT imported here — ``fastmcp`` stays a lazy,
+deliberately NOT imported here — the official ``mcp`` SDK stays a lazy,
 registration-time-only dependency (atlas pattern) so tool bodies import
-without FastMCP installed.
+without the SDK installed.
 
 Story 18.2 parity / coverage helpers live under ``.parity`` / ``.coverage``.
-They are FastMCP-free. Coverage is *not* imported here so
+They import no MCP SDK. Coverage is *not* imported here so
 ``python -m pyforge.marshal.mcp.coverage`` does not hit a double-load
 ``RuntimeWarning`` from package ``__init__`` pre-importing the module.
 """

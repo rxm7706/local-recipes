@@ -16,8 +16,10 @@ by the thinner `epics.md` drafts. Ledger statuses were not flipped.
 **Status (2026-08-11):** all 48 stories through Epic 13's first promoted spec
 (13.1) have a spec here — no promotion gap.
 
-This directory also holds a Dream-level Spec for a Herald-owned satellite
-Dream (`spec-herald-moments-2-4-live-backend/SPEC.md`, distinct from the
-per-story `spec-<epic>-<story>-...md` files above) — `status: draft`,
-archive-leaning per its own open questions. See
+This directory also holds the station Spec (`spec-pyforge-herald/`, which since 2026-10-27 also
+carries the deck facts catalog `facts-ledger.md` and the infographic standard
+`infographic-standard.md`, the live companions of the absorbed `spec-deck-family-currency`). The
+absorbed pointer Specs, among them the Dream-level `spec-herald-moments-2-4-live-backend/`, moved to
+`archive/_bmad-output/projects/pyforge-herald/planning-artifacts/specs/` on 2026-10-27 with their
+memlogs and record companions (Story 49.1, spec-one-chain-per-station:CAP-11). See
 `archive/_bmad-output/DREAM-TRIAGE-2026-08-08.md`.

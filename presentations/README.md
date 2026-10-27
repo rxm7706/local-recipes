@@ -21,7 +21,7 @@ Design-project sync ledgers (project IDs, etags).
 hand — see `docs/how-to/presentation-deck.md` § *The MCP bridge*.
 
 **Infographic posters** (`project/<Name> Infographic standalone.html`) follow the standard in
-[`spec-deck-family-currency/infographic-standard.md`](../_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-currency/infographic-standard.md)
+[`spec-pyforge-herald/infographic-standard.md`](../_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/infographic-standard.md)
 — six acts, full depth, inline diagrams, every fact a `facts.yaml` row (Unifying Strategy =
 structure, Warden = visual form).
 

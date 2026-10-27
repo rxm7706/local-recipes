@@ -15,6 +15,10 @@ import pytest
 from pyforge.steward.cli import INSTALL_CLASS_PLAYBOOK, build_parser
 from pyforge.steward.provision import _SKIPPED_MODULES, _SUPPORTED_MODULES
 
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 _SIX_PIECES = (
     "bmad-method",
     "bmad-loop",
@@ -58,7 +62,7 @@ def _matrix_path() -> Path:
     return (
         _repo_root()
         / "_bmad-output/projects/pyforge-steward/planning-artifacts/specs"
-        / "spec-bmad-suite-channel-product/install-matrix.md"
+        / "spec-pyforge-steward/install-matrix.md"
     )
 
 
@@ -82,7 +86,7 @@ def test_provision_help_names_the_class_keyed_playbook(capsys):
     assert exc.value.code == 0
     out = capsys.readouterr().out
     assert "install-class-playbook.md" in out
-    assert "spec-bmad-suite-install-class-wiring" in out
+    assert "spec-pyforge-steward" in out
     assert INSTALL_CLASS_PLAYBOOK in out
     assert "class-keyed playbook" in out
 

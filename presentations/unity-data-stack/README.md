@@ -2,7 +2,7 @@
 
 **Status: authored 2026-07-25 — 10 slides, full § Standard export set.** Local Wave C poster rebuild 2026-09-15 (Story 21.6) had left the standalone infographic corrupted (see the 2026-09-17 blocked Ledger entry below); **fixed and DONE 2026-09-17** — content rebuilt to the infographic standard, verified, pushed and read back byte-exact (see the 2026-09-17 rebuild+push Ledger entry). All five `project/` artifacts are confirmed in sync with Design. Engine + glue copied
 **verbatim** from `presentations/pyforge-steward/` (Archivo / Modernist system). A **platform
-product** deck (not a persona chapter); Dream: `docs/dreams/unity-data-stack.md`. The chain's Spec
+product** deck (not a persona chapter); Dream: `archive/docs/dreams/unity-data-stack.md`. The chain's Spec
 was consolidated into `spec-pyforge-atlas` 2026-08-02 (see the Dream's own superseded-notice); the
 original standalone Spec + its `constitution-provenance.md` companion now live archived at
 `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-unity-data-stack/SPEC.md`

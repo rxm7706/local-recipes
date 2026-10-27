@@ -3,6 +3,13 @@ title: '44.15: Actions-minutes metering'
 type: 'feature'
 created: '2026-09-18'
 status: 'blocked'
+flag:
+  key: pyforge.steward.cutover_minutes_metering
+  provider: openfeature-file
+  default: {production: off, staging: off, dev: off}
+  scope: global
+  fallback: "minutes are reported by the honest stub, as today"
+  cleanup: 90 days after ON in every environment (Q4)   # retrofit block (spec-feature-flag-governance CAP-7, operator ruling R6 of 2026-10-26): the key joins the tree when this story builds
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []

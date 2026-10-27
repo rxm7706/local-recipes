@@ -72,6 +72,7 @@ try:
         resolve_nuget_urls as _resolve_nuget_urls,
         resolve_anaconda_channel_urls as _resolve_anaconda_channel_urls,
         fetch_with_fallback as _fetch_with_fallback,
+        open_url as _http_open_url,
     )
     inject_ssl_truststore()
     _HTTP_AVAILABLE = True
@@ -93,7 +94,12 @@ except ImportError:
     _resolve_nuget_urls = None  # type: ignore[assignment]
     _resolve_anaconda_channel_urls = None  # type: ignore[assignment]
     _fetch_with_fallback = None  # type: ignore[assignment]
+    _http_open_url = None  # type: ignore[assignment]
     _HTTP_AVAILABLE = False
+
+# The conda-forge bot's graph, split across four conda-forge-bot-data-* repos
+# (Phases E, H's cf-graph mode, J and M). Private sibling module; no deps.
+import _cf_graph_source as _cfgs  # type: ignore[import-not-found]  # noqa: E402
 
 
 def _iso_to_unix_safe(iso: str | None) -> int | None:
@@ -140,8 +146,18 @@ SCHEMA_VERSION = 29
 
 
 def _get_data_dir() -> Path:
-    """Get skill-scoped data directory: .claude/data/conda-forge-expert/"""
-    return Path(__file__).parent.parent.parent.parent / "data" / "conda-forge-expert"
+    """Get skill-scoped data directory: .claude/data/conda-forge-expert/
+
+    Resolved through ``_paths`` (a marker walk to the repo root), the same
+    resolver ``_cf_graph_versions`` uses, so Phase E writes the cf-graph
+    caches where Phase H reads them. The resolved four-parent walk is the
+    fallback when the marker walk fails.
+    """
+    from _paths import get_data_dir  # type: ignore[import-not-found]
+
+    return get_data_dir() or (
+        Path(__file__).resolve().parent.parent.parent.parent / "data" / "conda-forge-expert"
+    )
 
 
 DATA_DIR = _get_data_dir()
@@ -2185,57 +2201,92 @@ def _extract_declared_python_min(raw_meta_yaml: str | None) -> str | None:
     return None
 
 
+def _cfgraph_urls(kind: str) -> list[str]:
+    """Source chain for one bot-graph archive; honors GITHUB_BASE_URL (JFrog)."""
+    repo, path = _cfgs.split_repo(kind), _cfgs.split_archive_path()
+    if _HTTP_AVAILABLE and _resolve_github_urls is not None:
+        return _resolve_github_urls(repo, path)
+    return [f"https://github.com/{repo}{path}"]
+
+
+def _cfgraph_download(urls: list[str], target: Path, *, attempts: int = 2) -> None:
+    """Stream one bot-graph archive to ``target``, from byte 0 on every attempt.
+
+    Never a Range resume (``_http.fetch_to_file_resumable`` resumes): the bot
+    pushes to these repos every few minutes, so the bytes of an earlier attempt
+    can belong to another commit, and a spliced archive still opens and still
+    shows a valid head. A hard 4xx moves to the next URL; anything else is
+    retried with a short backoff. Raises RuntimeError when every URL fails.
+    """
+    import shutil
+    import urllib.error
+
+    last_err: Exception | None = None
+    for url in urls:
+        for attempt in range(attempts):
+            try:
+                if _HTTP_AVAILABLE and _http_make_request is not None and _http_open_url is not None:
+                    req = _http_make_request(url, user_agent="unified-map-builder/1.0")
+                    opened = _http_open_url(req, timeout=600)
+                else:
+                    opened = urllib.request.urlopen(_make_req(url), timeout=600)
+                with opened as resp, open(target, "wb") as out:
+                    shutil.copyfileobj(resp, out, 1 << 20)
+                return
+            except urllib.error.HTTPError as exc:
+                last_err = exc
+                target.unlink(missing_ok=True)
+                if 400 <= exc.code < 500 and exc.code not in (408, 429):
+                    break
+            except Exception as exc:  # noqa: BLE001 -- network, TLS, disk: retry, then next URL
+                last_err = exc
+                target.unlink(missing_ok=True)
+            if attempt + 1 < attempts:
+                time.sleep(2 ** attempt)
+    raise RuntimeError(f"all {len(urls)} source(s) failed; last error: {last_err}")
+
+
 def phase_e_enrichment(conn: sqlite3.Connection) -> dict:
-    """Phase E: per-package enrichment via cf-graph-countyfair node_attrs.
+    """Phase E: per-package enrichment from the conda-forge bot's graph.
 
-    cf-graph-countyfair stores per-feedstock metadata as sharded JSON files
-    at node_attrs/<letter>/<letter>/<letter>/<feedstock_name>.json. Each file
-    contains the rendered recipe + about.json fields + extra.recipe-maintainers.
+    The bot publishes its graph as four repos (``_cf_graph_source``):
+    ``conda-forge/conda-forge-bot-data-{node_attrs,pr_info,version_pr_info,
+    pr_json}``, one ``<feedstock>.json`` per file under a five-level sha1
+    shard. ``node_attrs`` carries the rendered recipe + about.json fields +
+    extra.recipe-maintainers. Until 2026-10 they were one repo,
+    ``regro/cf-graph-countyfair``; GitHub now redirects that repo to
+    ``conda-forge/conda-forge-bot-data``, whose archive holds none of them.
 
-    Strategy: bulk download the cf-graph repo as a tarball (compressed ~250MB
-    but only the node_attrs/ subset needed). For each conda package row with
-    a feedstock_name, look up the corresponding node_attrs JSON and extract:
-    summary, license_family (if not in repodata), homepage, dev_url, doc_url,
-    repo_url, keywords, maintainers, recipe_format, source registry +
-    cross-channel names (npm/cran/cpan/luarocks).
-
-    Implementation note: cf-graph is large. For practical v1 we use a
-    shallow strategy: clone only node_attrs/ via git sparse-checkout, OR
-    fetch individual files on demand for our subset. The full archive is
-    ~250MB compressed; node_attrs/ alone is ~150MB.
+    Phase E fetches all four archives into ``cf-graph-<kind>.tar.gz`` (Phases
+    H's cf-graph mode, J and M read them), then streams ``node_attrs`` and, for
+    each conda package row with a feedstock_name, extracts: summary,
+    license_family (if not in repodata), homepage, dev_url, doc_url, repo_url,
+    keywords, maintainers, recipe_format, source registry + cross-channel
+    names (npm/cran/cpan/luarocks).
 
     Tunables (env vars):
       - PHASE_E_ENABLED          : "1" to enable Phase E (off by default).
-      - ATLAS_CFGRAPH_TTL_DAYS   : days the cached cf-graph tarball stays
-                                   fresh (default 1.0). Weekly-cron users
-                                   should set ``ATLAS_CFGRAPH_TTL_DAYS=7``
-                                   to skip the ~150MB re-download per run.
-                                   Phases J and M reuse the same cache
-                                   file, so the TTL is shared across them.
+      - ATLAS_CFGRAPH_TTL_DAYS   : days each cached archive stays fresh
+                                   (default 1.0). Weekly-cron users should
+                                   set ``ATLAS_CFGRAPH_TTL_DAYS=7``. Phases
+                                   H (cf-graph), J and M reuse the same
+                                   caches, so the TTL is shared across them.
     """
     t0 = time.monotonic()
-    print("  Phase E: per-package enrichment via cf-graph-countyfair")
-    print("  WARNING: cf-graph bulk download is ~150MB; this takes ~3-5 min")
-    print("  Skipping for v1-checkpoint. Implementation deferred — schema columns")
-    print("  remain nullable. Re-run with PHASE_E_ENABLED=1 to fetch.")
+    print("  Phase E: per-package enrichment via the conda-forge bot's graph")
 
     import os
     if not os.environ.get("PHASE_E_ENABLED"):
+        print("  Skipping: the four bot-graph archives are a heavy fetch. "
+              "Re-run with PHASE_E_ENABLED=1 to fetch.")
         return {
             "skipped": True,
             "reason": "Heavy fetch deferred. Set PHASE_E_ENABLED=1 to enable.",
             "duration_seconds": 0.0,
         }
 
-    # Bulk download cf-graph node_attrs via tarball — cache to disk so retries
-    # don't re-download the 139MB archive. We stream the parse from the cached
-    # file (no in-memory ~150MB BytesIO buffer); only the download path needs
-    # to materialize bytes in RAM.
-    import tarfile
-    cache_path = DATA_DIR / "cf-graph-countyfair.tar.gz"
-    cache_age = (time.time() - cache_path.stat().st_mtime) / 86400 if cache_path.exists() else 999
     # TTL was hardcoded at 1 day; weekly-cron users were re-downloading the
-    # ~150MB archive every run for no information gain. Override via env.
+    # archives every run for no information gain. Override via env.
     try:
         cache_ttl_days = float(os.environ.get("ATLAS_CFGRAPH_TTL_DAYS", "1"))
     except ValueError:
@@ -2250,32 +2301,47 @@ def phase_e_enrichment(conn: sqlite3.Connection) -> dict:
     ).fetchone()
     force_refresh = bool(force_refresh_row and force_refresh_row[0] == "1")
 
-    if cache_path.exists() and cache_age < cache_ttl_days:
-        print(f"  Using cached cf-graph archive ({cache_path.stat().st_size:,} bytes, "
-              f"{cache_age:.2f}d old, TTL {cache_ttl_days}d)")
-    else:
-        # Multi-URL fallback chain via _http resolver when available; honors
-        # GITHUB_BASE_URL for JFrog Generic Remote setups.
-        if _HTTP_AVAILABLE and _resolve_github_urls is not None and _fetch_with_fallback is not None:
-            urls = _resolve_github_urls(
-                "regro/cf-graph-countyfair",
-                "/archive/refs/heads/master.tar.gz",
-            )
-            print(f"  Downloading cf-graph archive ({len(urls)} source(s) tried, ~150 MB)...")
-            tar_bytes = _fetch_with_fallback(urls, timeout=600, user_agent="unified-map-builder/1.0")
+    # One archive per kind. A failed or rejected download keeps the previous
+    # cache (the result says so); _cf_graph_source validates each archive's
+    # top directory, so a redirect to another repo cannot replace a cache.
+    fetch_results: dict[str, dict[str, Any]] = {}
+    for kind in _cfgs.KINDS:
+        res = _cfgs.fetch(
+            DATA_DIR, kind,
+            ttl_days=cache_ttl_days,
+            urls=_cfgraph_urls(kind),
+            download=_cfgraph_download,
+        )
+        fetch_results[kind] = res
+        if res.get("cached"):
+            print(f"  {kind}: cached ({res.get('age_days')}d old, TTL {cache_ttl_days}d)")
+        elif res.get("downloaded"):
+            print(f"  {kind}: downloaded {res.get('bytes', 0):,} bytes")
         else:
-            cf_graph_url = "https://github.com/regro/cf-graph-countyfair/archive/refs/heads/master.tar.gz"
-            print(f"  Downloading {cf_graph_url} (large)...")
-            req = _make_req(cf_graph_url)
-            with urllib.request.urlopen(req, timeout=600) as resp:
-                tar_bytes = resp.read()
-        # Atomic write: tmp + rename so an interrupt during write doesn't
-        # leave a corrupt cache file that fails to open next run.
-        tmp_path = cache_path.with_suffix(cache_path.suffix + ".tmp")
-        tmp_path.write_bytes(tar_bytes)
-        os.replace(tmp_path, cache_path)
-        print(f"  Cached to {cache_path}")
-    print(f"  Streaming node_attrs/ from {cache_path.stat().st_size:,}-byte cache...")
+            kept = "keeping the previous cache" if res.get("kept_previous") else "no cache"
+            print(f"  WARNING {kind}: {res.get('error')}; {kept}")
+
+    # Once every split cache exists, the pre-split combined archive is only a
+    # misleading fallback (after 2026-10 it is the redirected bot-data archive,
+    # 48 MB with no graph in it): remove it.
+    legacy = _cfgs.legacy_cache_path(DATA_DIR)
+    if legacy.exists() and all(
+        _cfgs.split_cache_path(DATA_DIR, kind).is_file() for kind in _cfgs.KINDS
+    ):
+        legacy.unlink()
+        print(f"  removed the superseded {legacy.name}")
+
+    node_source = _cfgs.source_path(DATA_DIR, "node_attrs")
+    if node_source is None:
+        elapsed = time.monotonic() - t0
+        return {
+            "skipped": True,
+            "reason": "no cf-graph node_attrs archive (download failed and no cache).",
+            "fetch": fetch_results,
+            "duration_seconds": round(elapsed, 1),
+        }
+    print(f"  Streaming node_attrs from {node_source.name} "
+          f"({node_source.stat().st_size:,} bytes)...")
 
     # scope: Phase E enrichment needs reverse-lookup map for ALL feedstocks
     # (including archived) since cf-graph may carry metadata for archived
@@ -2295,210 +2361,208 @@ def phase_e_enrichment(conn: sqlite3.Connection) -> dict:
     # subsequent phases) rolled the whole phase back. Now we commit every
     # `commit_every` enrichments so progress survives across runs — the
     # UPDATE SET ... COALESCE(?, col) statements below are idempotent.
-    with tarfile.open(cache_path, "r:gz") as tf:
-        for member in tf:
-            if not member.isfile():
-                continue
-            # Match: cf-graph-countyfair-master/node_attrs/<l>/<l>/<l>/<feedstock>.json
-            if "/node_attrs/" not in member.name or not member.name.endswith(".json"):
-                continue
-            feedstock_basename = member.name.rsplit("/", 1)[-1][:-5]
-            conda_names = feedstock_to_conda.get(feedstock_basename, [])
-            if not conda_names:
-                continue
-            f = tf.extractfile(member)
-            if f is None:
-                continue
-            try:
-                payload = json.load(f)
-            except (json.JSONDecodeError, UnicodeDecodeError):
-                continue
-            # Extract about.json fields
-            meta_yaml = payload.get("meta_yaml") or {}
-            about = meta_yaml.get("about") or {}
-            extra = meta_yaml.get("extra") or {}
-            source = meta_yaml.get("source") or {}
-            source_url = None
-            if isinstance(source, dict):
-                source_url = source.get("url")
-            elif isinstance(source, list) and source:
-                first = source[0]
-                if isinstance(first, dict):
-                    source_url = first.get("url")
-            summary = about.get("summary")
-            homepage = about.get("home")
-            dev_url = about.get("dev_url")
-            doc_url = about.get("doc_url")
-            repo_url = about.get("repository") or about.get("dev_url")
-            license_family = about.get("license_family")
-            keywords = about.get("keywords") or []
-            maintainers = extra.get("recipe-maintainers") or []
-            # v28 (v8.19.0 Wave 3): declared `python_min` from raw_meta_yaml.
-            # The value is not a top-level node_attrs key — it lives inside
-            # `raw_meta_yaml` as a Jinja context override (v0: `{% set
-            # python_min = "3.11" %}`; v1: `python_min: "3.11"` in the
-            # `context:` block). Recipes that inherit the conda-forge-pinning
-            # default DO NOT declare it; we leave `python_min` NULL for them.
-            # The recipe-author override is what makes the column actionable
-            # — `pyver_breakdown --policy-check` compares this declared
-            # value against the empirical floor from `package_python_downloads`
-            # to flag bump-safe candidates. NULL rows render as "unknown" in
-            # the policy-check output (consumer responsibility to surface).
-            raw_meta_yaml = payload.get("raw_meta_yaml") or ""
-            declared_python_min = _extract_declared_python_min(raw_meta_yaml)
+    node_records = 0
+    for feedstock_basename, payload in _cfgs.iter_records(DATA_DIR, "node_attrs"):
+        node_records += 1
+        conda_names = feedstock_to_conda.get(feedstock_basename, [])
+        if not conda_names:
+            continue
+        # Extract about.json fields
+        meta_yaml = payload.get("meta_yaml") or {}
+        about = meta_yaml.get("about") or {}
+        extra = meta_yaml.get("extra") or {}
+        source = meta_yaml.get("source") or {}
+        source_url = None
+        if isinstance(source, dict):
+            source_url = source.get("url")
+        elif isinstance(source, list) and source:
+            first = source[0]
+            if isinstance(first, dict):
+                source_url = first.get("url")
+        summary = about.get("summary")
+        homepage = about.get("home")
+        dev_url = about.get("dev_url")
+        doc_url = about.get("doc_url")
+        repo_url = about.get("repository") or about.get("dev_url")
+        license_family = about.get("license_family")
+        keywords = about.get("keywords") or []
+        maintainers = extra.get("recipe-maintainers") or []
+        # v28 (v8.19.0 Wave 3): declared `python_min` from raw_meta_yaml.
+        # The value is not a top-level node_attrs key — it lives inside
+        # `raw_meta_yaml` as a Jinja context override (v0: `{% set
+        # python_min = "3.11" %}`; v1: `python_min: "3.11"` in the
+        # `context:` block). Recipes that inherit the conda-forge-pinning
+        # default DO NOT declare it; we leave `python_min` NULL for them.
+        # The recipe-author override is what makes the column actionable
+        # — `pyver_breakdown --policy-check` compares this declared
+        # value against the empirical floor from `package_python_downloads`
+        # to flag bump-safe candidates. NULL rows render as "unknown" in
+        # the policy-check output (consumer responsibility to surface).
+        raw_meta_yaml = payload.get("raw_meta_yaml") or ""
+        declared_python_min = _extract_declared_python_min(raw_meta_yaml)
 
-            # recipe_format detection from cf-graph node_attrs.
-            # cf-graph stores meta_yaml.schema_version: 0 = v0 (meta.yaml,
-            # Jinja-templated), 1 = v1 (recipe.yaml, native YAML context).
-            # Earlier classifier looked for `rendered_recipes` which
-            # cf-graph does not emit — left every row at "unknown".
-            #
-            # The full ladder:
-            #   1. meta_yaml.schema_version explicit (1 → recipe.yaml,
-            #      0 → meta.yaml).
-            #   2. raw_meta_yaml head bytes ({% set → v0, context: → v1).
-            #   3. meta_yaml structural shape (top-level `package` +
-            #      `source`/`build` is v0; top-level `context` is v1).
-            #      Catches CDT packages (~116 globally) which are auto-
-            #      generated v0 without any Jinja templating.
-            recipe_format = None
-            sv = meta_yaml.get("schema_version") if isinstance(meta_yaml, dict) else None
-            if sv == 1:
-                recipe_format = "recipe.yaml"
-            elif sv == 0:
+        # recipe_format detection from cf-graph node_attrs.
+        # cf-graph stores meta_yaml.schema_version: 0 = v0 (meta.yaml,
+        # Jinja-templated), 1 = v1 (recipe.yaml, native YAML context).
+        # Earlier classifier looked for `rendered_recipes` which
+        # cf-graph does not emit — left every row at "unknown".
+        #
+        # The full ladder:
+        #   1. meta_yaml.schema_version explicit (1 → recipe.yaml,
+        #      0 → meta.yaml).
+        #   2. raw_meta_yaml head bytes ({% set → v0, context: → v1).
+        #   3. meta_yaml structural shape (top-level `package` +
+        #      `source`/`build` is v0; top-level `context` is v1).
+        #      Catches CDT packages (~116 globally) which are auto-
+        #      generated v0 without any Jinja templating.
+        recipe_format = None
+        sv = meta_yaml.get("schema_version") if isinstance(meta_yaml, dict) else None
+        if sv == 1:
+            recipe_format = "recipe.yaml"
+        elif sv == 0:
+            recipe_format = "meta.yaml"
+        else:
+            raw = payload.get("raw_meta_yaml") or ""
+            head = raw[:500]
+            if "{% set" in head or head.lstrip().startswith("{%"):
                 recipe_format = "meta.yaml"
-            else:
-                raw = payload.get("raw_meta_yaml") or ""
-                head = raw[:500]
-                if "{% set" in head or head.lstrip().startswith("{%"):
-                    recipe_format = "meta.yaml"
-                elif "context:" in head:
+            elif "context:" in head:
+                recipe_format = "recipe.yaml"
+            elif isinstance(meta_yaml, dict):
+                # Structural-shape fallback. v1 recipes ALWAYS have a
+                # top-level `context` key in meta_yaml (the parsed
+                # YAML reflects this). v0 has package + source/build.
+                if "context" in meta_yaml:
                     recipe_format = "recipe.yaml"
-                elif isinstance(meta_yaml, dict):
-                    # Structural-shape fallback. v1 recipes ALWAYS have a
-                    # top-level `context` key in meta_yaml (the parsed
-                    # YAML reflects this). v0 has package + source/build.
-                    if "context" in meta_yaml:
-                        recipe_format = "recipe.yaml"
-                    elif "package" in meta_yaml and (
-                        "source" in meta_yaml or "build" in meta_yaml
-                    ):
-                        recipe_format = "meta.yaml"
-            if recipe_format is None:
-                recipe_format = "unknown"
-            # Source registry classification
-            registry, extracted = _classify_source_url(source_url)
+                elif "package" in meta_yaml and (
+                    "source" in meta_yaml or "build" in meta_yaml
+                ):
+                    recipe_format = "meta.yaml"
+        if recipe_format is None:
+            recipe_format = "unknown"
+        # Source registry classification
+        registry, extracted = _classify_source_url(source_url)
 
-            # Coerce list-typed metadata fields to strings to avoid SQLite errors
-            def _str(v: Any) -> str | None:
-                if v is None:
-                    return None
-                if isinstance(v, str):
-                    return v
-                if isinstance(v, list):
-                    return ", ".join(str(x) for x in v if x)
-                return str(v)
-            keywords_str = json.dumps(keywords) if keywords else None
-            for conda_name in conda_names:
-                conn.execute(
+        # Coerce list-typed metadata fields to strings to avoid SQLite errors
+        def _str(v: Any) -> str | None:
+            if v is None:
+                return None
+            if isinstance(v, str):
+                return v
+            if isinstance(v, list):
+                return ", ".join(str(x) for x in v if x)
+            return str(v)
+        keywords_str = json.dumps(keywords) if keywords else None
+        for conda_name in conda_names:
+            conn.execute(
+                """
+                UPDATE packages SET
+                    conda_summary = COALESCE(?, conda_summary),
+                    conda_homepage = COALESCE(?, conda_homepage),
+                    conda_dev_url = COALESCE(?, conda_dev_url),
+                    conda_doc_url = COALESCE(?, conda_doc_url),
+                    conda_repo_url = COALESCE(?, conda_repo_url),
+                    conda_license_family = COALESCE(?, conda_license_family),
+                    recipe_format = COALESCE(?, recipe_format),
+                    conda_source_registry = COALESCE(?, conda_source_registry),
+                    conda_keywords = COALESCE(?, conda_keywords)
+                WHERE conda_name = ?
+                """,
+                (
+                    _str(summary), _str(homepage), _str(dev_url), _str(doc_url),
+                    _str(repo_url), _str(license_family), recipe_format, registry,
+                    keywords_str, conda_name,
+                ),
+            )
+            # v28 (v8.19.0 Wave 3): write declared `python_min` per row.
+            # Unconditional UPDATE so the value can transition from
+            # non-NULL back to NULL (the recipe author dropped the
+            # override) on a full re-enrichment pass — COALESCE-wrapping
+            # or guarding `if not None` would pin a stale value across
+            # cf-graph updates. Phase E is the single writer for this
+            # column; idempotent on re-run.
+            conn.execute(
+                "UPDATE packages SET python_min = ? WHERE conda_name = ?",
+                (declared_python_min, conda_name),
+            )
+            # C.5 fold-in: deterministic source.url → pypi match
+            if registry == "pypi" and extracted:
+                cursor = conn.execute(
                     """
                     UPDATE packages SET
-                        conda_summary = COALESCE(?, conda_summary),
-                        conda_homepage = COALESCE(?, conda_homepage),
-                        conda_dev_url = COALESCE(?, conda_dev_url),
-                        conda_doc_url = COALESCE(?, conda_doc_url),
-                        conda_repo_url = COALESCE(?, conda_repo_url),
-                        conda_license_family = COALESCE(?, conda_license_family),
-                        recipe_format = COALESCE(?, recipe_format),
-                        conda_source_registry = COALESCE(?, conda_source_registry),
-                        conda_keywords = COALESCE(?, conda_keywords)
+                        pypi_name = COALESCE(pypi_name, ?),
+                        relationship = CASE WHEN ? = conda_name THEN 'both_same_name' ELSE 'both_renamed' END,
+                        match_source = 'recipe_source_url',
+                        match_confidence = 'verified'
                     WHERE conda_name = ?
+                      AND match_source != 'parselmouth'
                     """,
-                    (
-                        _str(summary), _str(homepage), _str(dev_url), _str(doc_url),
-                        _str(repo_url), _str(license_family), recipe_format, registry,
-                        keywords_str, conda_name,
-                    ),
+                    (extracted, extracted, conda_name),
                 )
-                # v28 (v8.19.0 Wave 3): write declared `python_min` per row.
-                # Unconditional UPDATE so the value can transition from
-                # non-NULL back to NULL (the recipe author dropped the
-                # override) on a full re-enrichment pass — COALESCE-wrapping
-                # or guarding `if not None` would pin a stale value across
-                # cf-graph updates. Phase E is the single writer for this
-                # column; idempotent on re-run.
+                if cursor.rowcount:
+                    pypi_url_matched += 1
+            if registry == "npm" and extracted:
                 conn.execute(
-                    "UPDATE packages SET python_min = ? WHERE conda_name = ?",
-                    (declared_python_min, conda_name),
+                    "UPDATE packages SET npm_name = COALESCE(npm_name, ?) WHERE conda_name = ?",
+                    (extracted, conda_name),
                 )
-                # C.5 fold-in: deterministic source.url → pypi match
-                if registry == "pypi" and extracted:
-                    cursor = conn.execute(
-                        """
-                        UPDATE packages SET
-                            pypi_name = COALESCE(pypi_name, ?),
-                            relationship = CASE WHEN ? = conda_name THEN 'both_same_name' ELSE 'both_renamed' END,
-                            match_source = 'recipe_source_url',
-                            match_confidence = 'verified'
-                        WHERE conda_name = ?
-                          AND match_source != 'parselmouth'
-                        """,
-                        (extracted, extracted, conda_name),
-                    )
-                    if cursor.rowcount:
-                        pypi_url_matched += 1
-                if registry == "npm" and extracted:
+            if registry == "maven":
+                # Pull groupId:artifactId from the source URL when
+                # the recipe sources a jar/pom/aar from Maven Central.
+                m_match = _MAVEN_SOURCE_RE.search(source_url) if isinstance(source_url, str) else None
+                if m_match:
+                    group_path = m_match.group(1).strip("/")
+                    artifact = m_match.group(2)
+                    group_id = group_path.replace("/", ".")
+                    coord = f"{group_id}:{artifact}"
                     conn.execute(
-                        "UPDATE packages SET npm_name = COALESCE(npm_name, ?) WHERE conda_name = ?",
-                        (extracted, conda_name),
+                        "UPDATE packages SET maven_coord = COALESCE(maven_coord, ?) WHERE conda_name = ?",
+                        (coord, conda_name),
                     )
-                if registry == "maven":
-                    # Pull groupId:artifactId from the source URL when
-                    # the recipe sources a jar/pom/aar from Maven Central.
-                    m_match = _MAVEN_SOURCE_RE.search(source_url) if isinstance(source_url, str) else None
-                    if m_match:
-                        group_path = m_match.group(1).strip("/")
-                        artifact = m_match.group(2)
-                        group_id = group_path.replace("/", ".")
-                        coord = f"{group_id}:{artifact}"
-                        conn.execute(
-                            "UPDATE packages SET maven_coord = COALESCE(maven_coord, ?) WHERE conda_name = ?",
-                            (coord, conda_name),
-                        )
-                # Maintainers: insert into junction table
-                for m in maintainers:
-                    if not isinstance(m, str):
-                        continue
-                    conn.execute(
-                        "INSERT OR IGNORE INTO maintainers(handle) VALUES (?)", (m,)
-                    )
-                    mid = conn.execute(
-                        "SELECT id FROM maintainers WHERE handle = ?", (m,)
-                    ).fetchone()[0]
-                    conn.execute(
-                        "INSERT OR IGNORE INTO package_maintainers(conda_name, maintainer_id) VALUES (?, ?)",
-                        (conda_name, mid),
-                    )
-                enriched += 1
-                if enriched % commit_every == 0:
-                    conn.commit()
+            # Maintainers: insert into junction table
+            for m in maintainers:
+                if not isinstance(m, str):
+                    continue
+                conn.execute(
+                    "INSERT OR IGNORE INTO maintainers(handle) VALUES (?)", (m,)
+                )
+                mid = conn.execute(
+                    "SELECT id FROM maintainers WHERE handle = ?", (m,)
+                ).fetchone()[0]
+                conn.execute(
+                    "INSERT OR IGNORE INTO package_maintainers(conda_name, maintainer_id) VALUES (?, ?)",
+                    (conda_name, mid),
+                )
+            enriched += 1
+            if enriched % commit_every == 0:
+                conn.commit()
     # v28 (v8.19.0 Wave 3): clear the force-refresh sentinel now that Phase E
     # has actually completed. Side-effect-free read-then-clear at the end of
     # the loop mirrors the Phase F sentinel-clear contract: confirm work
     # started, then drop the trigger.
-    if force_refresh:
+    # A source that yielded no record did no work, so the trigger stays.
+    if force_refresh and node_records:
         conn.execute("DELETE FROM meta WHERE key='phase_e_force_refresh_pending'")
         conn.commit()
 
     conn.commit()
 
     elapsed = time.monotonic() - t0
-    print(f"  Phase E done in {elapsed:.1f}s — enriched {enriched:,} rows; pypi_url matches {pypi_url_matched:,}")
-    return {
+    result: dict[str, Any] = {
+        "node_attrs_records": node_records,
         "enriched_rows": enriched,
         "pypi_url_matches": pypi_url_matched,
+        "fetch": fetch_results,
         "duration_seconds": round(elapsed, 1),
     }
+    if node_records == 0:
+        result["error"] = (
+            f"{node_source.name} holds no node_attrs record; nothing was enriched."
+        )
+        print(f"  WARNING Phase E: {result['error']}")
+    print(f"  Phase E done in {elapsed:.1f}s — {node_records:,} node_attrs records, "
+          f"enriched {enriched:,} rows; pypi_url matches {pypi_url_matched:,}")
+    return result
 
 
 def phase_e5_archived_feedstocks(conn: sqlite3.Connection) -> dict:
@@ -4404,6 +4468,20 @@ def _phase_h_via_cf_graph(conn: sqlite3.Connection) -> dict:
             "source": "cf-graph",
         }
 
+    # A cache with no version_pr_info record (the 2026-10 redirect of
+    # regro/cf-graph-countyfair served one) would tag every eligible row as
+    # "the bot found no upstream". Skip instead, and say why.
+    if not _cf_graph_versions.has_version_records(tarball):
+        elapsed = time.monotonic() - t0
+        print(f"  {tarball.name} holds no version_pr_info record; run Phase E")
+        return {
+            "skipped": True,
+            "reason": f"{tarball.name} holds no version_pr_info record; run Phase E.",
+            "rows_eligible": 0, "fetched": 0, "failed": 0, "not_found_404": 0,
+            "duration_seconds": round(elapsed, 1),
+            "source": "cf-graph",
+        }
+
     rows, ttl_days, _, _ = _phase_h_eligible_pypi_names(conn)
     stats = _phase_h_eligibility_stats(conn)
     eligible_pypi_names = {r["pypi_name"] for r in rows}
@@ -6064,13 +6142,50 @@ def phase_l_extra_registries(conn: sqlite3.Connection) -> dict:
     }
 
 
+def _with_test_reqs(reqs: Any, test: Any, tests: Any = None) -> dict:
+    """A recipe's requirements with its test requirements added as ``"test"``.
+
+    The bot's node_attrs keep test requirements in the recipe's test section,
+    not in ``requirements``: a v0 recipe in ``test.requires`` (per output
+    ``outputs[].test.requires``), a v1 recipe in each ``tests[]`` element's
+    ``requirements.run`` and ``requirements.build``. Phase J read only
+    ``requirements.test``, so the ``test`` edges ``whodepends --type test``
+    asks for were never written. An explicit ``requirements.test`` list wins.
+    A v1 ``python`` test element names no package, and a ``downstream``
+    element names a dependent rather than a dependency; neither adds an edge.
+    Returns {} when there is nothing.
+    """
+    out = dict(reqs) if isinstance(reqs, dict) else {}
+    if isinstance(out.get("test"), list):
+        return out
+    collected: list[Any] = []
+    test_reqs = test.get("requires") if isinstance(test, dict) else None
+    if isinstance(test_reqs, list):
+        collected.extend(test_reqs)
+    for element in tests if isinstance(tests, list) else []:
+        element_reqs = element.get("requirements") if isinstance(element, dict) else None
+        if not isinstance(element_reqs, dict):
+            continue
+        for key in ("run", "build"):
+            specs = element_reqs.get(key)
+            if isinstance(specs, list):
+                collected.extend(specs)
+    if collected:
+        out["test"] = collected
+    return out
+
+
 def phase_j_dependency_graph(conn: sqlite3.Connection) -> dict:
     """Phase J: parse cf-graph requirements into the dependencies table.
 
-    Reuses the cf-graph-countyfair.tar.gz cache populated by Phase E. Auto-
-    skips if the cache is missing. Wipes and rebuilds the dependencies table
-    each run — full-snapshot semantics; the table reflects current cf-graph
-    state, not historical edges.
+    Reuses the node_attrs archive Phase E fetches (``cf-graph-node_attrs.tar.gz``
+    from ``conda-forge/conda-forge-bot-data-node_attrs``; ``_cf_graph_source``).
+    Auto-skips if no node_attrs cache exists. Wipes and rebuilds the
+    dependencies table each run — full-snapshot semantics; the table reflects
+    current cf-graph state, not historical edges. A cache that holds no
+    node_attrs record leaves the table as it was: until 2026-10 the old
+    ``regro/cf-graph-countyfair`` URL redirected to a repo with no node_attrs,
+    and this phase wiped the table and wrote 0 edges without a word.
 
     For each feedstock node_attrs file, extracts `meta_yaml.requirements`
     per requirement_type (build/host/run/test) and writes one row per
@@ -6088,18 +6203,18 @@ def phase_j_dependency_graph(conn: sqlite3.Connection) -> dict:
     Self-references and Jinja-placeholder targets (`{{ python }}`, etc.) are
     skipped — they're not real package edges.
     """
-    import tarfile
     t0 = time.monotonic()
     print("  Phase J: dependency graph parse from cf-graph cache")
 
-    cache_path = DATA_DIR / "cf-graph-countyfair.tar.gz"
-    if not cache_path.exists():
+    cache_path = _cfgs.source_path(DATA_DIR, "node_attrs")
+    if cache_path is None:
         return {
             "skipped": True,
-            "reason": "cf-graph cache missing; run Phase E first.",
+            "reason": "cf-graph node_attrs cache missing; run Phase E first.",
             "duration_seconds": 0.0,
         }
 
+    node_records = 0
     feedstocks = 0
     edges = 0
     skipped_self = 0
@@ -6134,64 +6249,41 @@ def phase_j_dependency_graph(conn: sqlite3.Connection) -> dict:
     conn.execute("BEGIN TRANSACTION")
     try:
         conn.execute("DELETE FROM dependencies")
-        with tarfile.open(cache_path, "r:gz") as tf:
-            for member in tf:
-                if not member.isfile():
-                    continue
-                if "/node_attrs/" not in member.name or not member.name.endswith(".json"):
-                    continue
-                feedstock_basename = member.name.rsplit("/", 1)[-1][:-5]
-                if feedstock_basename in inactive_feedstocks:
-                    skipped_inactive += 1
-                    continue
-                f = tf.extractfile(member)
-                if f is None:
-                    continue
-                try:
-                    payload = json.load(f)
-                except (json.JSONDecodeError, UnicodeDecodeError):
-                    continue
-                meta_yaml = payload.get("meta_yaml")
-                if not isinstance(meta_yaml, dict):
-                    continue
+        for feedstock_basename, payload in _cfgs.iter_records(DATA_DIR, "node_attrs"):
+            node_records += 1
+            if feedstock_basename in inactive_feedstocks:
+                skipped_inactive += 1
+                continue
+            meta_yaml = payload.get("meta_yaml")
+            if not isinstance(meta_yaml, dict):
+                continue
 
-                # Build the (source_name, requirements) pairs to write.
-                # Multi-output recipes ship per-output `requirements` under
-                # `meta_yaml.outputs[].requirements`; the top-level
-                # `meta_yaml.requirements` is shared / build-only / absent.
-                pairs: list[tuple[str, dict]] = []
-                outputs_block = meta_yaml.get("outputs")
-                if isinstance(outputs_block, list) and outputs_block:
-                    seen_outputs: set[str] = set()
-                    for out in outputs_block:
-                        if not isinstance(out, dict):
-                            continue
-                        out_name = (out.get("name") or "").strip()
-                        if not out_name or out_name in seen_outputs:
-                            continue
-                        seen_outputs.add(out_name)
-                        out_reqs = out.get("requirements")
-                        if isinstance(out_reqs, dict):
-                            pairs.append((out_name, out_reqs))
-                    # Dedupe edge case: outputs is just a stub list with no
-                    # requirements; fall back to top-level.
-                    if not pairs:
-                        outputs_raw = payload.get("outputs_names")
-                        ons: list[str] = []
-                        if isinstance(outputs_raw, dict) and "elements" in outputs_raw:
-                            elems = outputs_raw.get("elements") or []
-                            if isinstance(elems, list):
-                                ons = [str(e) for e in elems if e]
-                        elif isinstance(outputs_raw, list):
-                            ons = [str(e) for e in outputs_raw if e]
-                        sn = ons[0] if ons else feedstock_basename
-                        top_reqs = meta_yaml.get("requirements")
-                        if isinstance(top_reqs, dict):
-                            pairs.append((sn, top_reqs))
-                else:
-                    # Single-output recipe — top-level requirements only.
+            # Build the (source_name, requirements) pairs to write.
+            # Multi-output recipes ship per-output `requirements` under
+            # `meta_yaml.outputs[].requirements`; the top-level
+            # `meta_yaml.requirements` is shared / build-only / absent.
+            # Test requirements live in the recipe's test section (v0
+            # `test.requires`, v1 `tests[].requirements`), never in
+            # `requirements.test`; _with_test_reqs folds them in as "test".
+            pairs: list[tuple[str, dict]] = []
+            outputs_block = meta_yaml.get("outputs")
+            if isinstance(outputs_block, list) and outputs_block:
+                seen_outputs: set[str] = set()
+                for out in outputs_block:
+                    if not isinstance(out, dict):
+                        continue
+                    out_name = (out.get("name") or "").strip()
+                    if not out_name or out_name in seen_outputs:
+                        continue
+                    seen_outputs.add(out_name)
+                    out_reqs = _with_test_reqs(out.get("requirements"), out.get("test"), out.get("tests"))
+                    if out_reqs:
+                        pairs.append((out_name, out_reqs))
+                # Dedupe edge case: outputs is just a stub list with no
+                # requirements; fall back to top-level.
+                if not pairs:
                     outputs_raw = payload.get("outputs_names")
-                    ons = []
+                    ons: list[str] = []
                     if isinstance(outputs_raw, dict) and "elements" in outputs_raw:
                         elems = outputs_raw.get("elements") or []
                         if isinstance(elems, list):
@@ -6199,45 +6291,75 @@ def phase_j_dependency_graph(conn: sqlite3.Connection) -> dict:
                     elif isinstance(outputs_raw, list):
                         ons = [str(e) for e in outputs_raw if e]
                     sn = ons[0] if ons else feedstock_basename
-                    top_reqs = meta_yaml.get("requirements")
-                    if isinstance(top_reqs, dict):
+                    top_reqs = _with_test_reqs(meta_yaml.get("requirements"), meta_yaml.get("test"), meta_yaml.get("tests"))
+                    if top_reqs:
                         pairs.append((sn, top_reqs))
+            else:
+                # Single-output recipe — top-level requirements only.
+                outputs_raw = payload.get("outputs_names")
+                ons = []
+                if isinstance(outputs_raw, dict) and "elements" in outputs_raw:
+                    elems = outputs_raw.get("elements") or []
+                    if isinstance(elems, list):
+                        ons = [str(e) for e in elems if e]
+                elif isinstance(outputs_raw, list):
+                    ons = [str(e) for e in outputs_raw if e]
+                sn = ons[0] if ons else feedstock_basename
+                top_reqs = _with_test_reqs(meta_yaml.get("requirements"), meta_yaml.get("test"), meta_yaml.get("tests"))
+                if top_reqs:
+                    pairs.append((sn, top_reqs))
 
-                if not pairs:
-                    continue
-                feedstocks += 1
-                for source_name, reqs in pairs:
-                    for req_type in ("build", "host", "run", "test"):
-                        spec_list = reqs.get(req_type)
-                        if not isinstance(spec_list, list):
+            if not pairs:
+                continue
+            feedstocks += 1
+            for source_name, reqs in pairs:
+                for req_type in ("build", "host", "run", "test"):
+                    spec_list = reqs.get(req_type)
+                    if not isinstance(spec_list, list):
+                        continue
+                    seen: set[tuple[str, str]] = set()
+                    for spec in spec_list:
+                        if not isinstance(spec, str):
                             continue
-                        seen: set[tuple[str, str]] = set()
-                        for spec in spec_list:
-                            if not isinstance(spec, str):
-                                continue
-                            spec = spec.strip()
-                            if not spec:
-                                continue
-                            parts = spec.split(None, 1)
-                            target = parts[0]
-                            pin = parts[1].strip() if len(parts) > 1 else None
-                            if target == source_name:
-                                skipped_self += 1
-                                continue
-                            if target.startswith("{{") or target.startswith("$"):
-                                skipped_jinja += 1
-                                continue
-                            key = (target, req_type)
-                            if key in seen:
-                                continue
-                            seen.add(key)
-                            conn.execute(
-                                "INSERT OR REPLACE INTO dependencies "
-                                "(source_conda_name, target_conda_name, requirement_type, pin_spec) "
-                                "VALUES (?, ?, ?, ?)",
-                                (source_name, target, req_type, pin),
-                            )
-                            edges += 1
+                        spec = spec.strip()
+                        if not spec:
+                            continue
+                        parts = spec.split(None, 1)
+                        target = parts[0]
+                        pin = parts[1].strip() if len(parts) > 1 else None
+                        if target == source_name:
+                            skipped_self += 1
+                            continue
+                        if target.startswith("{{") or target.startswith("$"):
+                            skipped_jinja += 1
+                            continue
+                        key = (target, req_type)
+                        if key in seen:
+                            continue
+                        seen.add(key)
+                        conn.execute(
+                            "INSERT OR REPLACE INTO dependencies "
+                            "(source_conda_name, target_conda_name, requirement_type, pin_spec) "
+                            "VALUES (?, ?, ?, ?)",
+                            (source_name, target, req_type, pin),
+                        )
+                        edges += 1
+        if node_records == 0:
+            # Nothing to snapshot: keep the graph the table already holds.
+            conn.execute("ROLLBACK")
+            elapsed = time.monotonic() - t0
+            reason = (
+                f"{cache_path.name} holds no node_attrs record; the dependencies "
+                "table is unchanged. Refetch with PHASE_E_ENABLED=1 (Phase E)."
+            )
+            print(f"  WARNING Phase J: {reason}")
+            return {
+                "skipped": True,
+                "reason": reason,
+                "node_attrs_records": 0,
+                "edges_written": 0,
+                "duration_seconds": round(elapsed, 1),
+            }
         conn.execute("COMMIT")
     except Exception:
         conn.execute("ROLLBACK")
@@ -6251,6 +6373,7 @@ def phase_j_dependency_graph(conn: sqlite3.Connection) -> dict:
         f"{skipped_inactive:,} archived/inactive feedstocks)"
     )
     return {
+        "node_attrs_records": node_records,
         "feedstocks_parsed": feedstocks,
         "edges_written": edges,
         "skipped_self_references": skipped_self,
@@ -6266,11 +6389,14 @@ def phase_m_feedstock_health(conn: sqlite3.Connection) -> dict:
     are stuck, where builds are failing, or where version-update PRs aren't
     landing.
 
-    cf-graph stores pr_info / version_pr_info as separate JSON files keyed
-    by feedstock (lazy-json refs from node_attrs). The tarball includes
-    them at `pr_info/<sharded>/<f>.json` and
-    `version_pr_info/<sharded>/<f>.json`. Parse both, write 6 health
-    columns:
+    The bot publishes pr_info and version_pr_info as two repos
+    (``conda-forge/conda-forge-bot-data-{pr_info,version_pr_info}``, one
+    ``<feedstock>.json`` per file; ``_cf_graph_source``), fetched by Phase E.
+    Closed PRs sit inline in ``pr_info.PRed``; live ones are
+    ``{"__lazy_json__": "pr_json/<id>.json"}`` references into a third repo,
+    ``conda-forge-bot-data-pr_json``. Only the referenced ids are decoded
+    from it; an unresolvable reference counts as unknown, never open. Write
+    6 health columns:
       - bot_open_pr_count        : open bot-issued PRs
       - bot_last_pr_state        : 'open'|'closed'|'merged'|None
       - bot_last_pr_version      : latest version the bot tried
@@ -6278,51 +6404,81 @@ def phase_m_feedstock_health(conn: sqlite3.Connection) -> dict:
       - feedstock_bad            : 1 if cf-graph flagged the feedstock 'bad'
       - bot_status_fetched_at    : UNIX seconds of this run
 
-    Auto-skips if cf-graph cache is missing.
+    Auto-skips if no pr_info / version_pr_info cache exists, and writes
+    nothing when the caches hold no record (a stale cache from the 2026-10
+    redirect of regro/cf-graph-countyfair held none).
     """
-    import tarfile
     t0 = time.monotonic()
     print("  Phase M: feedstock health from cf-graph pr_info")
 
-    cache_path = DATA_DIR / "cf-graph-countyfair.tar.gz"
-    if not cache_path.exists():
+    if (_cfgs.source_path(DATA_DIR, "pr_info") is None
+            and _cfgs.source_path(DATA_DIR, "version_pr_info") is None):
         return {
             "skipped": True,
-            "reason": "cf-graph cache missing; run Phase E first.",
+            "reason": "cf-graph pr_info cache missing; run Phase E first.",
             "duration_seconds": 0.0,
         }
 
-    pr_info_data: dict[str, dict[str, Any]] = {}
-    version_pr_info_data: dict[str, dict[str, Any]] = {}
-    files_seen = 0
-
-    with tarfile.open(cache_path, "r:gz") as tf:
-        for member in tf:
-            if not member.isfile() or not member.name.endswith(".json"):
-                continue
-            if "/pr_info/" in member.name and "/version_pr_info/" not in member.name:
-                files_seen += 1
-                feedstock = member.name.rsplit("/", 1)[-1][:-5]
-                f = tf.extractfile(member)
-                if f is None:
-                    continue
-                try:
-                    pr_info_data[feedstock] = json.load(f)
-                except (json.JSONDecodeError, UnicodeDecodeError):
-                    continue
-            elif "/version_pr_info/" in member.name:
-                files_seen += 1
-                feedstock = member.name.rsplit("/", 1)[-1][:-5]
-                f = tf.extractfile(member)
-                if f is None:
-                    continue
-                try:
-                    version_pr_info_data[feedstock] = json.load(f)
-                except (json.JSONDecodeError, UnicodeDecodeError):
-                    continue
+    pr_info_data: dict[str, dict[str, Any]] = dict(_cfgs.iter_records(DATA_DIR, "pr_info"))
+    version_pr_info_data: dict[str, dict[str, Any]] = dict(
+        _cfgs.iter_records(DATA_DIR, "version_pr_info")
+    )
+    files_seen = len(pr_info_data) + len(version_pr_info_data)
 
     print(f"  parsed {len(pr_info_data):,} pr_info files, "
           f"{len(version_pr_info_data):,} version_pr_info files")
+
+    def _skip(reason: str) -> dict:
+        # Every health column is derived from pr_info AND version_pr_info (and
+        # pr_json for live PRs); writing from a partial source would reset the
+        # columns the missing one feeds, so a partial source writes nothing.
+        elapsed = time.monotonic() - t0
+        reason = f"{reason}; health columns are unchanged. Refetch with PHASE_E_ENABLED=1 (Phase E)."
+        print(f"  WARNING Phase M: {reason}")
+        return {
+            "skipped": True,
+            "reason": reason,
+            "files_seen": files_seen,
+            "pr_info_count": len(pr_info_data),
+            "version_pr_info_count": len(version_pr_info_data),
+            "rows_updated": 0,
+            "duration_seconds": round(elapsed, 1),
+        }
+
+    missing = [kind for kind, data in (("pr_info", pr_info_data),
+                                       ("version_pr_info", version_pr_info_data)) if not data]
+    if missing:
+        return _skip(f"the {' and '.join(missing)} cache holds no record")
+
+    # Live PRs are lazy references into pr_json: decode only those records,
+    # and keep only `state` (pr_json holds the full GitHub PR JSON).
+    wanted_pr_ids: set[str] = set()
+    for pi in pr_info_data.values():
+        pred = pi.get("PRed")
+        if not isinstance(pred, list):
+            continue
+        for entry in pred:
+            if isinstance(entry, dict):
+                ref = _cfgs.lazy_pr_json_id(entry.get("PR"))
+                if ref:
+                    wanted_pr_ids.add(ref)
+    pr_state: dict[str, Any] = {}
+    if wanted_pr_ids:
+        for ref, payload in _cfgs.iter_records(DATA_DIR, "pr_json", wanted=wanted_pr_ids):
+            pr_state[ref] = payload.get("state")
+    print(f"  resolved {len(pr_state):,} of {len(wanted_pr_ids):,} live-PR references")
+    if wanted_pr_ids and not pr_state:
+        # Without pr_json every live PR would read as not open: the open-PR
+        # count and the last PR state would be reset on every row with one.
+        return _skip(f"none of the {len(wanted_pr_ids):,} live-PR references resolve "
+                     "(no pr_json record)")
+
+    def _resolve_pr(entry: Any) -> dict[str, Any] | None:
+        pr = entry.get("PR") if isinstance(entry, dict) else None
+        ref = _cfgs.lazy_pr_json_id(pr)
+        if ref is not None:
+            return {"state": pr_state[ref]} if ref in pr_state else None
+        return pr if isinstance(pr, dict) else None
 
     now = int(time.time())
     updated = 0
@@ -6361,15 +6517,15 @@ def phase_m_feedstock_health(conn: sqlite3.Connection) -> dict:
                 for entry in pred:
                     if not isinstance(entry, dict):
                         continue
-                    pr = entry.get("PR") or {}
-                    if isinstance(pr, dict) and pr.get("state") == "open":
+                    pr = _resolve_pr(entry)
+                    if pr is not None and pr.get("state") == "open":
                         open_count += 1
                 if pred:
                     last = pred[-1]
                     if isinstance(last, dict):
-                        last_pr = last.get("PR") or {}
+                        last_pr = _resolve_pr(last)
                         last_data = last.get("data") or {}
-                        if isinstance(last_pr, dict):
+                        if last_pr is not None:
                             last_state = last_pr.get("state")
                         if isinstance(last_data, dict):
                             last_version = last_data.get("version")
@@ -6414,6 +6570,8 @@ def phase_m_feedstock_health(conn: sqlite3.Connection) -> dict:
         "files_seen": files_seen,
         "pr_info_count": len(pr_info_data),
         "version_pr_info_count": len(version_pr_info_data),
+        "live_pr_references": len(wanted_pr_ids),
+        "live_pr_references_resolved": len(pr_state),
         "rows_updated": updated,
         "feedstock_bad_count": feedstock_bad_count,
         "bot_stuck_count": bot_stuck,

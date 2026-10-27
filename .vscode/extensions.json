@@ -5,7 +5,7 @@
   //
   // Included — stack / station tooling:
   // - kedro.Kedro — optional human Kedro IDE help; see
-  //   _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/
+  //   archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/
   //   spec-kedro-org-tooling-adoption/vscode-kedro-decision.md (defer + recommend)
   // - ms-python.python + ms-python.vscode-pylance + ms-python.vscode-python-envs
   //   — interpreter, language server, env picker

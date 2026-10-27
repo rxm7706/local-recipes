@@ -46,7 +46,9 @@ surfaces:
   gate: false
   switch: PAUSE_COVERAGE_GATES
   switch_class: pause
-  state: live
+  state: retired
+  retired_on: '2026-10-27'
+  reason: folded into the station jobs of pyforge-station-tests.yml (Story 117.2, the gate reads the suite's own report)
   owner: pyforge-steward
 - id: pages
   workflow: .github/workflows/pages.yml
@@ -251,6 +253,7 @@ surfaces:
   switch_class: pause
   state: live
   owner: pyforge-steward
+  trigger: main  # Story 117.6 / 117.8 (CAP-175, ruling D1): push-to-main and the nightly canary, never a pull_request
   local_twin: pyforge-steward-guild-image-build
   canary: ci-canary.station-tests.guild-container
 - id: platform-ci.container
@@ -263,6 +266,7 @@ surfaces:
   switch_class: pause
   state: live
   owner: pyforge-steward
+  trigger: main  # Story 117.6 / 117.8 (CAP-175, ruling D1): push-to-main and the nightly canary, never a pull_request
   local_twin: platform-ci-local --images --container
   canary: ci-canary.platform-ci.container
   transitive:
@@ -277,6 +281,7 @@ surfaces:
   switch_class: pause
   state: live
   owner: pyforge-steward
+  trigger: main  # Story 117.6 / 117.8 (CAP-175, ruling D1): push-to-main and the nightly canary, never a pull_request
   local_twin: platform-ci-local --images
   canary: ci-canary.platform-ci.container-dbgpt
 - id: platform-ci.build-platform-image.PLATFORM_CI_AIR_GAP_PARITY
@@ -377,6 +382,7 @@ surfaces:
   switch_class: pause
   state: live
   owner: pyforge-steward
+  trigger: main  # Story 117.6 / 117.8 (CAP-175, ruling D1): push-to-main and the nightly canary, never a pull_request
 - id: cfe-regression-net.cfe-regression-net
   workflow: .github/workflows/cfe-regression-net.yml
   job: cfe-regression-net
@@ -387,6 +393,18 @@ surfaces:
   switch_class: pause
   state: live
   owner: pyforge-steward
+  trigger: main  # Story 117.6 / 117.8 (CAP-175, ruling D1): push-to-main and the nightly canary, never a pull_request
+- id: cfe-regression-net.cfe-meta
+  workflow: .github/workflows/cfe-regression-net.yml
+  job: cfe-meta
+  kind: ci-job
+  cost: low
+  gate: true
+  switch: PAUSE_CFE_REGRESSION_NET
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+  local_twin: test-ci-meta
 - id: copilot-setup-steps.copilot-setup-steps
   workflow: .github/workflows/copilot-setup-steps.yml
   job: copilot-setup-steps
@@ -405,7 +423,9 @@ surfaces:
   gate: false
   switch: null
   switch_class: pause
-  state: live
+  state: retired
+  retired_on: '2026-10-27'
+  reason: folded into the station jobs of pyforge-station-tests.yml (Story 117.2, the gate reads the suite's own report)
   owner: pyforge-steward
 - id: coverage-gates.named-module-gates
   workflow: .github/workflows/coverage-gates.yml
@@ -415,7 +435,9 @@ surfaces:
   gate: false
   switch: null
   switch_class: pause
-  state: live
+  state: retired
+  retired_on: '2026-10-27'
+  reason: folded into the station jobs of pyforge-station-tests.yml (Story 117.2, the gate reads the suite's own report)
   owner: pyforge-steward
 - id: pages.build
   workflow: .github/workflows/pages.yml
@@ -530,6 +552,17 @@ surfaces:
   switch_class: pause
   state: live
   owner: pyforge-steward
+- id: platform-ci.checks
+  workflow: .github/workflows/platform-ci.yml
+  job: checks
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+  local_twin: platform-ci-local --test
 - id: pyforge-pip-install.pip-install
   workflow: .github/workflows/pyforge-pip-install.yml
   job: pip-install
@@ -590,6 +623,26 @@ surfaces:
   switch_class: pause
   state: live
   owner: pyforge-steward
+- id: pyforge-station-tests.doctor-live-test
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: doctor-live-test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.doctor-gate
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: doctor-gate
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
 - id: pyforge-station-tests.herald-test
   workflow: .github/workflows/pyforge-station-tests.yml
   job: herald-test
@@ -633,6 +686,56 @@ surfaces:
 - id: pyforge-station-tests.steward-test
   workflow: .github/workflows/pyforge-station-tests.yml
   job: steward-test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.steward-live-test
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: steward-live-test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.steward-gate
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: steward-gate
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.herald-gate
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: herald-gate
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.marshal-gate
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: marshal-gate
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.atlas-gate
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: atlas-gate
   kind: ci-job
   cost: low
   gate: false

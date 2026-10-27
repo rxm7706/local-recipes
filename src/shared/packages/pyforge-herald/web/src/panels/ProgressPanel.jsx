@@ -5,7 +5,7 @@ import ErrorState from '../components/ErrorState.jsx';
 /**
  * Story 8.4's Progress tab: real card-based rendering over a static
  * `progress.json` snapshot (there is no live REST API in this scaled-down
- * pass -- see docs/dreams/herald-moments-2-4-live-backend.md). The
+ * pass -- see archive/docs/dreams/herald-moments-2-4-live-backend.md). The
  * snapshot is written by `npm run sync-progress` (wired as a `predev`/
  * `prebuild` hook) from the operator's local `.herald/herald.db`.
  *

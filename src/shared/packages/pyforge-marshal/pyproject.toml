@@ -40,6 +40,8 @@ dependencies = [
     # tests/meta/test_p02_copier_sole_ownership.py).
     "copier>=9.17,<10",
     "packaging>=24.0",
+    # Story 103.1: official MCP SDK for marshal-mcp (MCPServer stdio surface).
+    "mcp>=2.2.0",
 ]
 
 [project.scripts]

@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 import pytest
 from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
+from pyforge.testing_kit.flags import flag_states, flagd_tree
 
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli import refresh as refresh_mod
@@ -229,6 +231,31 @@ def test_a_fast_forward_to_origin_main_pushes_with_the_journaled_preflight_opt_o
     assert vcs.push_proven == ["newsha1234567890"]
 
 
+def _kill_switch_tree(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, key: str, on: bool) -> None:
+    """A flagd tree holding one retrofit kill switch in the given state (Epic 110, CAP-7)."""
+    folder = tmp_path / "flag-tree-110-25"
+    folder.mkdir(exist_ok=True)
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(flagd_tree(folder, {key: "on" if on else "off"})))
+
+
+@flag_states("pyforge.marshal.refresh_proven_push")
+def test_the_proven_push_kill_switch_sends_the_push_through_the_preflight(
+    flag_provider: dict[str, bool], tmp_path: Path, capsys, monkeypatch
+) -> None:
+    """Story 110.25 (spec-feature-flag-governance CAP-7; CAP-267): ON hands the push the sha refresh
+    fast-forwarded to (the test above); OFF hands it none, so the pre-push preflight runs, as before Story 57.1."""
+    on = flag_provider["pyforge.marshal.refresh_proven_push"]
+    _kill_switch_tree(tmp_path, monkeypatch, "pyforge.marshal.refresh_proven_push", on)
+    monkeypatch.chdir(tmp_path)
+    home = tmp_path / "acme"
+    home.mkdir()
+    vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),), behind={"acme": 2})
+    run_refresh(_ns(), vcs=vcs)
+    capsys.readouterr()
+    assert vcs.ff_calls == [(home, "refs/remotes/origin/main")]
+    assert vcs.push_proven == (["newsha1234567890"] if on else [None])
+
+
 def test_a_fast_forward_to_another_base_pushes_through_the_preflight(tmp_path, capsys, monkeypatch):
     """Only origin/main has passed CI: a refresh against any other --base never skips."""
     monkeypatch.chdir(tmp_path)
@@ -295,26 +322,26 @@ def test_cli_wired_through_main(tmp_path, monkeypatch):
     assert main(["refresh", "--help"]) == 0
 
 
-def test_sync_status_step_skips_when_no_epics_md(tmp_path):
+def test_sync_status_step_skips_when_no_tracked_ledger(tmp_path):
     result = refresh_mod._sync_status_step("acme", tmp_path, [])
     assert result.status == "skipped"
-    assert "epics.md" in result.detail
+    assert "sprint-status-ledger.yaml" in result.detail
 
 
 def test_sync_status_step_skips_when_script_missing(tmp_path):
-    epics = tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts" / "epics.md"
-    epics.parent.mkdir(parents=True)
-    epics.write_text("# Epic 1\n", encoding="utf-8")
+    ledger = tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts" / "sprint-status-ledger.yaml"
+    ledger.parent.mkdir(parents=True)
+    ledger.write_text("development_status:\n  epic-1: backlog\n", encoding="utf-8")
     result = refresh_mod._sync_status_step("acme", tmp_path, [])
     assert result.status == "skipped"
-    assert "sprint_plan.py" in result.detail
+    assert "promote_sprint_status.py" in result.detail
 
 
-def _seed_epics_and_script(tmp_path: Path) -> None:
-    epics = tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts" / "epics.md"
-    epics.parent.mkdir(parents=True)
-    epics.write_text("# Epic 1\n", encoding="utf-8")
-    script = tmp_path / ".claude" / "skills" / "bmad-sprint-planning" / "scripts" / "sprint_plan.py"
+def _seed_ledger_and_script(tmp_path: Path, slug: str = "acme") -> None:
+    ledger = tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts" / "sprint-status-ledger.yaml"
+    ledger.parent.mkdir(parents=True)
+    ledger.write_text("development_status:\n  epic-1: backlog\n", encoding="utf-8")
+    script = tmp_path / "scripts" / "promote_sprint_status.py"
     script.parent.mkdir(parents=True)
     script.write_text("# stub\n", encoding="utf-8")
 
@@ -324,40 +351,70 @@ def _seed_epics_and_script(tmp_path: Path) -> None:
 # `test_harness_bmadloop_engine_liveness.py` convention) -- never `subprocess`.
 
 
-def test_sync_status_step_reports_done_with_new_entries(tmp_path, monkeypatch):
-    _seed_epics_and_script(tmp_path)
+def test_sync_status_step_syncs_the_feed_from_the_tracked_ledger(tmp_path, monkeypatch):
+    """Story 107.1: the step runs ``promote_sprint_status.py --feed-only`` for the
+    project key (the slug without ``pyforge-``), and never ``sprint_plan.py``,
+    whose 60-character slugs put a second key for every long title into the feed."""
+    _seed_ledger_and_script(tmp_path, "pyforge-acme")
     calls: list[tuple[list[str], Path, float | None]] = []
 
     def _fake_run(self, argv, *, cwd, timeout_s=None):
         calls.append((list(argv), cwd, timeout_s))
         return ProcessResult(
             returncode=0,
-            stdout=json.dumps({"ok": True, "new_entries": ["epic-2", "2-1-x"]}),
+            stdout=json.dumps({"ok": True, "dropped": ["1-1-a-trunc", "1-2-b_x"], "repaired": ["2-1-new"]}),
             stderr="",
         )
 
     monkeypatch.setattr(PosixProcess, "run", _fake_run)
     findings: list = []
-    result = refresh_mod._sync_status_step("acme", tmp_path, findings)
+    result = refresh_mod._sync_status_step("pyforge-acme", tmp_path, findings)
     assert result.status == "done"
-    assert "2 new entries" in result.detail
+    assert result.detail == "1 repaired, 2 stale-slug dropped"
     assert findings == []
-    # The seam is handed the same argv shape, cwd and timeout as before.
     assert len(calls) == 1
     argv, cwd, timeout_s = calls[0]
-    assert argv[:2] == ["uv", "run"]
-    assert argv[3] == "generate"
+    assert argv[0] == sys.executable
+    assert argv[1] == str(tmp_path / "scripts" / "promote_sprint_status.py")
+    assert argv[2:] == ["--project", "acme", "--feed-only"]
+    assert not any("sprint_plan" in arg for arg in argv)
     assert cwd == tmp_path
     assert timeout_s == refresh_mod._SYNC_STATUS_TIMEOUT_S
 
 
-def test_sync_status_step_reports_in_sync_with_no_new_entries(tmp_path, monkeypatch):
-    _seed_epics_and_script(tmp_path)
+def test_sync_status_step_names_a_stale_key_kept_ahead_of_the_ledger(tmp_path, monkeypatch):
+    _seed_ledger_and_script(tmp_path)
+
+    def _fake_run(self, argv, *, cwd, timeout_s=None):
+        return ProcessResult(
+            returncode=0, stdout=json.dumps({"ok": True, "dropped": [], "kept": ["3-1-old"], "repaired": []}), stderr=""
+        )
+
+    monkeypatch.setattr(PosixProcess, "run", _fake_run)
+    result = refresh_mod._sync_status_step("acme", tmp_path, [])
+    assert result.status == "done"
+    assert result.detail == "1 stale-slug kept (ahead of the ledger; re-key with --rekey)"
+
+
+def test_sync_status_step_reports_a_skipped_feed_sync(tmp_path, monkeypatch):
+    _seed_ledger_and_script(tmp_path)
+
+    def _fake_run(self, argv, *, cwd, timeout_s=None):
+        return ProcessResult(returncode=0, stdout=json.dumps({"ok": True, "skipped": "no tracked twin"}), stderr="")
+
+    monkeypatch.setattr(PosixProcess, "run", _fake_run)
+    result = refresh_mod._sync_status_step("acme", tmp_path, [])
+    assert result.status == "skipped"
+    assert result.detail == "no tracked twin"
+
+
+def test_sync_status_step_reports_in_sync_when_nothing_moved(tmp_path, monkeypatch):
+    _seed_ledger_and_script(tmp_path)
 
     def _fake_run(self, argv, *, cwd, timeout_s=None):
         return ProcessResult(
             returncode=0,
-            stdout=json.dumps({"ok": True, "new_entries": []}),
+            stdout=json.dumps({"ok": True, "dropped": [], "repaired": []}),
             stderr="",
         )
 
@@ -368,7 +425,7 @@ def test_sync_status_step_reports_in_sync_with_no_new_entries(tmp_path, monkeypa
 
 
 def test_sync_status_step_reports_failure_and_finding(tmp_path, monkeypatch):
-    _seed_epics_and_script(tmp_path)
+    _seed_ledger_and_script(tmp_path)
 
     def _fake_run(self, argv, *, cwd, timeout_s=None):
         return ProcessResult(returncode=1, stdout="", stderr="boom")
@@ -386,16 +443,16 @@ def test_sync_status_step_reports_failure_when_launch_raises(tmp_path, monkeypat
     typed form of the raw `OSError`/`TimeoutExpired` the old clause caught)
     is the same caller-visible outcome as before: a `failed` step plus an
     `MRS-REFRESH-008` finding, never an escaped exception."""
-    _seed_epics_and_script(tmp_path)
+    _seed_ledger_and_script(tmp_path)
 
     def _boom(self, argv, *, cwd, timeout_s=None):
-        raise ProcessError("executable not found: 'uv' (no uv on PATH)")
+        raise ProcessError("executable not found: 'python3' (no interpreter on PATH)")
 
     monkeypatch.setattr(PosixProcess, "run", _boom)
     findings: list = []
     result = refresh_mod._sync_status_step("acme", tmp_path, findings)
     assert result.status == "failed"
-    assert "no uv on PATH" in result.detail
+    assert "no interpreter on PATH" in result.detail
     assert any(f.code == "MRS-REFRESH-008" for f in findings)
     assert any("failed to launch" in f.message for f in findings)
 
@@ -407,7 +464,7 @@ def test_sync_status_step_reports_failure_when_child_times_out(tmp_path, monkeyp
     `_sync_status_step` unchanged: the same `failed` step + `MRS-REFRESH-008`
     finding as any other launch failure, with the seam's message verbatim
     in `result.detail`."""
-    _seed_epics_and_script(tmp_path)
+    _seed_ledger_and_script(tmp_path)
 
     def _timeout(self, argv, *, cwd, timeout_s=None):
         raise ProcessError(f"command timed out after {timeout_s}s: {' '.join(argv)}")
@@ -417,7 +474,7 @@ def test_sync_status_step_reports_failure_when_child_times_out(tmp_path, monkeyp
     result = refresh_mod._sync_status_step("acme", tmp_path, findings)
     assert result.status == "failed"
     assert f"timed out after {refresh_mod._SYNC_STATUS_TIMEOUT_S}s" in result.detail
-    assert "uv run" in result.detail
+    assert "promote_sprint_status.py" in result.detail
     assert any(f.code == "MRS-REFRESH-008" for f in findings)
 
 
@@ -435,7 +492,7 @@ def test_run_refresh_includes_sync_status_step(tmp_path, capsys, monkeypatch):
     row = out["data"]["homes"][0]
     steps = {s["name"]: s for s in row["steps"]}
     assert "sync_status" in steps
-    assert steps["sync_status"]["status"] == "skipped"  # no epics.md under tmp_path
+    assert steps["sync_status"]["status"] == "skipped"  # no tracked ledger under tmp_path
 
 
 # --- Coverage of the remaining branches (Story 52.1 coverage gate) --------
@@ -528,7 +585,7 @@ def test_compose_effective_unprobeable_path_falls_through_to_the_reader(monkeypa
 
 
 def test_sync_status_step_exit_zero_without_ok_json_is_a_failure(tmp_path, monkeypatch):
-    _seed_epics_and_script(tmp_path)
+    _seed_ledger_and_script(tmp_path)
 
     def _fake_run(self, argv, *, cwd, timeout_s=None):
         return ProcessResult(returncode=0, stdout="not json at all", stderr="")
@@ -542,15 +599,17 @@ def test_sync_status_step_exit_zero_without_ok_json_is_a_failure(tmp_path, monke
 
 
 def test_sync_status_step_reports_the_scripts_own_error_field(tmp_path, monkeypatch):
-    _seed_epics_and_script(tmp_path)
+    _seed_ledger_and_script(tmp_path)
 
     def _fake_run(self, argv, *, cwd, timeout_s=None):
-        return ProcessResult(returncode=0, stdout=json.dumps({"ok": False, "error": "epics.md unparsable"}), stderr="")
+        return ProcessResult(
+            returncode=0, stdout=json.dumps({"ok": False, "error": "unknown --project key 'acme'"}), stderr=""
+        )
 
     monkeypatch.setattr(PosixProcess, "run", _fake_run)
     result = refresh_mod._sync_status_step("acme", tmp_path, [])
     assert result.status == "failed"
-    assert result.detail == "epics.md unparsable"
+    assert result.detail == "unknown --project key 'acme'"
 
 
 # _refresh_one_home: the remaining failure branches

@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: herald
-source_fingerprint: b9f08b67b2aa3e05
-story_count: 147
+source_fingerprint: b5b1e9ca90071f43
+story_count: 151
 test_file_count: 97
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-herald`
-- **Stories parsed:** 147
-- **Epics parsed:** 45
+- **Stories parsed:** 151
+- **Epics parsed:** 49
 - **Test files inventoried:** 97 under `src/shared/packages/pyforge-herald/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `b9f08b67b2aa3e05`
+- **Source fingerprint:** `b5b1e9ca90071f43`
 
 ## Risk Assessment
 
@@ -69,6 +69,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 39: The dossier shows which CI surfaces are not live (spec-pyforge-herald CAP-59)
 - Epic 41: Pages hygiene before the rework (fix under spec-pyforge-herald CAP-52 and CAP-44; no CAP)
 - Epic 42: The Pages site shows the fleet and the guild, and builds for any host without a flag (spec-pyforge-herald CAP-60)
+- Epic 46: The herald PRD's FR arrows name the capabilities the Spec carries
+- Epic 47: The herald Spec's capability text is whole again (spec-one-chain-per-station CAP-5 amended, CAP-3)
+- Epic 48: The archived herald Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
+- Epic 49: The absorbed herald Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
 
 ### Low-risk epics
 
@@ -335,6 +339,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 43.7 | docsite/ retires and one generator remains | none observed |
 | 44.1 | Every docs page renders its body and its links resolve | none observed |
 | 45.1 | Herald's built-site tests install docs-site first, in preflight and CI | none observed |
+| 46.1 | Every herald PRD FR arrow names the Spec capability that realizes it | none observed |
+| 47.1 | The herald Spec's fold-cut capability text is restored | none observed |
+| 48.1 | Herald's ten archived Dreams leave the live tree, and deck-facts reads a deck... | none observed |
+| 49.1 | Herald's absorbed Spec folders move to the archive home | none observed |
 
 ## Quality Gates
 

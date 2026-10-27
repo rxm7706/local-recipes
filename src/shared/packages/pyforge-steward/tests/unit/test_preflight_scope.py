@@ -24,6 +24,10 @@ from pyforge.testing_kit.flags import flag_states
 
 from pyforge.steward import preflight, preflight_budget, preflight_ci
 
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 flag_provider = make_flag_provider_fixture()
 
 INV = "pyforge-guild"  # the invoking environment every bare depends-on lane runs in
@@ -582,3 +586,68 @@ def test_the_budget_reads_records_with_and_without_the_scope(tmp_path: Path) -> 
     judged = [preflight_budget.evaluate_budget(tmp_path, run_id=rid, journal_path=journal) for rid in ("old", "new")]
     assert [j.exit_code for j in judged] == [preflight_budget.EXIT_OK, preflight_budget.EXIT_OK]
     assert [j.lines[0].replace("run new", "run old") for j in judged] == [judged[0].lines[0]] * 2
+
+
+# ---- Story 71.14: the dependency-completeness lane -------------------------------------------------
+
+DEPS_PIXI = """
+[feature.pyforge-ci.tasks.pyforge-deps-test]
+cmd = "python -m pytest tests/packaging -q"
+"""
+DEPS_LANE = preflight.Lane("pyforge-deps-test", "pyforge-ci")
+
+
+@pytest.mark.parametrize(
+    "changed",
+    [
+        "src/shared/packages/pyforge-atlas/pyproject.toml",
+        "src/shared/packages/pyforge-atlas/pixi.toml",
+        "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/tier3_sources.py",
+        "src/shared/packages/pyforge-steward/src/pyforge/steward/ci.py",
+        "pixi.toml",
+        "Containerfile",
+        "Containerfile.platform",
+    ],
+)
+def test_the_dependency_lane_runs_when_a_package_manifest_or_its_source_changed(tmp_path: Path, changed: str) -> None:
+    verdict = preflight_ci.touch_verdict(
+        _repo(tmp_path), DEPS_LANE, tomllib.loads(DEPS_PIXI), [changed], lint_tasks=frozenset()
+    )
+    assert verdict.touched
+    assert changed in verdict.reason
+
+
+@pytest.mark.parametrize(
+    "changed",
+    [
+        "docs/note.md",
+        "src/shared/packages/pyforge-atlas/README.md",
+        "src/shared/packages/pyforge-atlas/tests/unit/test_x.py",
+        "src/shared/packages/pyforge-atlas/src/pyforge/atlas/conf/base/catalog.yml",
+        "src/shared/packages/django-atlas/pyproject.toml",
+        "src/platform/app.py",
+        "src/shared/packages/pyforge-atlas/pixi.lock",
+        "docker/Containerfile",
+    ],
+)
+def test_the_dependency_lane_is_deferred_when_nothing_it_reads_changed(tmp_path: Path, changed: str) -> None:
+    verdict = preflight_ci.touch_verdict(
+        _repo(tmp_path), DEPS_LANE, tomllib.loads(DEPS_PIXI), [changed], lint_tasks=frozenset()
+    )
+    assert not verdict.touched
+
+
+def test_the_package_rule_belongs_to_the_dependency_lane_alone(tmp_path: Path) -> None:
+    other = preflight.Lane("pyforge-b-test", "pyforge-b")
+    changed = ["src/shared/packages/pyforge-a/pyproject.toml"]
+    verdict = preflight_ci.touch_verdict(_repo(tmp_path), other, tomllib.loads(PIXI), changed, lint_tasks=frozenset())
+    assert not verdict.touched
+
+
+def test_the_shipped_lane_list_carries_the_dependency_lane() -> None:
+    """AC1: the repository's own ``pr-preflight-lanes`` lists the task in ``pyforge-ci``."""
+    root = Path(__file__).resolve().parents[6]
+    lanes = preflight.list_preflight_lanes(
+        tomllib.loads((root / "pixi.toml").read_text(encoding="utf-8")), invoking_env=INV
+    )
+    assert (preflight_ci.PACKAGING_TESTS_TASK, "pyforge-ci") in _keys(lanes)

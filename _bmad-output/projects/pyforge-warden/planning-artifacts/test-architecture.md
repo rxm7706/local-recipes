@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: warden
-source_fingerprint: cb82d34ab20e0c92
-story_count: 62
+source_fingerprint: 5af67278e8192695
+story_count: 68
 test_file_count: 80
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-warden`
-- **Stories parsed:** 62
-- **Epics parsed:** 18
+- **Stories parsed:** 68
+- **Epics parsed:** 23
 - **Test files inventoried:** 80 under `src/shared/packages/pyforge-warden/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `cb82d34ab20e0c92`
+- **Source fingerprint:** `5af67278e8192695`
 
 ## Risk Assessment
 
@@ -52,6 +52,11 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 16: Warden scans the enterprise fleet on GitHub Enterprise (spec-pyforge-warden CAP-26)
 - Epic 17: Phase 4+5 of the deferral burn-down: warden's open medium and low deferrals
 - Epic 18: The leak guard keeps the fleet target private, not the organisation's public name (fix under spec-pyforge-warden CAP-26)
+- Epic 19: The warden PRD's FR arrows name the capabilities the Spec carries
+- Epic 20: The warden Spec's capability text is whole again, and its NFRs get an owner (spec-one-chain-per-station CAP-5 amended, CAP-3)
+- Epic 21: Warden's planning artifacts fit the one-chain shape (spec-one-chain-per-station CAP-11)
+- Epic 23: The archived warden Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
+- Epic 24: The absorbed warden Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
 
 ### Low-risk epics
 
@@ -208,6 +213,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 16.5 | Warden inventories the items of the operator-designated GitHub Projects | none observed |
 | 17.1 | Eligibility records its policy, and warden's other open deferrals close | none observed |
 | 18.1 | The leak guard forbids the listed terms everywhere and the organisation's nam... | none observed |
+| 19.1 | Every warden PRD FR arrow names the Spec capability that realizes it | none observed |
+| 20.1 | The warden Spec's fold-cut capability text is restored | none observed |
+| 20.2 | Every warden NFR names the capabilities it bounds | none observed |
+| 21.1 | Warden's archived compliance-gates Spec folder moves to the archive home | none observed |
+| 23.1 | Warden's four archived Dreams leave the live tree | none observed |
+| 24.1 | Warden's absorbed Spec folders move to the archive home | none observed |
 
 ## Quality Gates
 

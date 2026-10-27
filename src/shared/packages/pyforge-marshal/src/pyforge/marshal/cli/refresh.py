@@ -8,13 +8,15 @@ home is reported, never silently omitted); fast-forward ONLY a clean tree
 (dirty homes refused by name; never force-push; never ``scripts/bmad-switch``);
 push the updated branch targeting ``loop/<slug>`` only; re-render
 ``.bmad-loop/policy.toml`` via the SAME ``write_policy_toml`` path
-``marshal config --write-harness-policy`` uses; regenerate the station's
-Tier-3 ``sprint-status.yaml`` from its tracked ``epics.md`` (the
-``sprint_plan.py generate`` script ``bmad-sprint-planning`` itself uses --
-found live 2026-09-10 that nothing kept this in sync with
-``sprint-status-ledger.yaml``, so ``marshal factory spin``/``bmad-loop``
-silently saw a stale story set while ``marshal factory dispatch``/
-``bmad-build-auto`` correctly read the tracked ledger). Each step reports
+``marshal config --write-harness-policy`` uses; sync the station's Tier-3
+``sprint-status.yaml`` from its tracked ``sprint-status-ledger.yaml``
+through ``scripts/promote_sprint_status.py --feed-only`` (found live
+2026-09-10 that nothing kept the feed in sync with the tracked ledger, so
+``marshal factory spin``/``bmad-loop`` silently saw a stale story set while
+``marshal factory dispatch``/``bmad-build-auto`` correctly read the ledger;
+Story 107.1 replaced the ``sprint_plan.py generate`` run that did this from
+``epics.md``, whose 60-character slugs put a second key for every long title
+into every feed, 550 of them on 2026-10-25). Each step reports
 ``done | skipped | failed``. A home whose fast-forward succeeded but whose
 policy re-render did not is marked ``incomplete`` (FR-135).
 
@@ -33,9 +35,10 @@ from __future__ import annotations
 
 import argparse
 import json
-from datetime import datetime
+import sys
 from pathlib import Path
 
+from pyforge.core.flags import kill_switch_on
 from pyforge.core.process import PosixProcess, ProcessError
 
 from ..adapters.harness_bmadloop import HarnessPolicyWriteError, write_policy_toml
@@ -73,6 +76,15 @@ _MRS_REFRESH_008 = "MRS-REFRESH-008"
 
 _DEFAULT_BASE = "main"
 _SYNC_STATUS_TIMEOUT_S = 60
+
+
+# Story 110.25 (spec-feature-flag-governance CAP-7): the kill switch for CAP-267, spelled literally.
+REFRESH_PROVEN_PUSH_FLAG_KEY = "pyforge.marshal.refresh_proven_push"
+
+
+def refresh_proven_push_enabled() -> bool:
+    """Whether a proven fast-forward is pushed past the pre-push preflight (CAP-267's kill switch, ON by default)."""
+    return kill_switch_on(REFRESH_PROVEN_PUSH_FLAG_KEY)
 
 
 def add_refresh_subparser(subparsers: argparse._SubParsersAction) -> None:
@@ -147,35 +159,23 @@ def _render_policy_step(slug: str, home: Path, findings: list[Finding]) -> Refre
 
 
 def _sync_status_step(slug: str, git_repo_root: Path, findings: list[Finding]) -> RefreshStep:
-    """Regenerate ``slug``'s Tier-3 ``sprint-status.yaml`` from its tracked
-    ``epics.md``, via the same script ``bmad-sprint-planning`` uses. Writes
-    to the SHARED physical ``_bmad-output/projects/<slug>/`` location every
-    worktree symlinks to -- independent of any loop home's own git state, so
-    this runs on every call regardless of the fast-forward outcome above."""
+    """Sync ``slug``'s Tier-3 ``sprint-status.yaml`` from its tracked
+    ``sprint-status-ledger.yaml`` with ``scripts/promote_sprint_status.py
+    --feed-only`` (Story 107.1): stale-slug copies of ledger stories are
+    dropped, the ledger's ``done``/``blocked`` values and missing keys are
+    pulled forward, a value the feed has advanced is kept, and the tracked
+    ledger is never written. Writes to the SHARED physical
+    ``_bmad-output/projects/<slug>/`` location every worktree symlinks to --
+    independent of any loop home's own git state, so this runs on every call
+    regardless of the fast-forward outcome above."""
     project_dir = git_repo_root / "_bmad-output" / "projects" / slug
-    epic_file = project_dir / "planning-artifacts" / "epics.md"
-    if not epic_file.is_file():
-        return RefreshStep(STEP_SYNC_STATUS, "skipped", "no epics.md")
-    script = git_repo_root / ".claude" / "skills" / "bmad-sprint-planning" / "scripts" / "sprint_plan.py"
+    ledger = project_dir / "planning-artifacts" / "sprint-status-ledger.yaml"
+    if not ledger.is_file():
+        return RefreshStep(STEP_SYNC_STATUS, "skipped", "no sprint-status-ledger.yaml")
+    script = git_repo_root / "scripts" / "promote_sprint_status.py"
     if not script.is_file():
-        return RefreshStep(STEP_SYNC_STATUS, "skipped", "sprint_plan.py not found")
-    impl_dir = project_dir / "implementation-artifacts"
-    argv = [
-        "uv",
-        "run",
-        str(script),
-        "generate",
-        "--epic-file",
-        str(epic_file),
-        "--status-file",
-        str(impl_dir / "sprint-status.yaml"),
-        "--stories-dir",
-        str(impl_dir),
-        "--project",
-        slug,
-        "--date",
-        datetime.now().strftime("%m-%d-%Y %H:%M"),
-    ]
+        return RefreshStep(STEP_SYNC_STATUS, "skipped", "promote_sprint_status.py not found")
+    argv = [sys.executable, str(script), "--project", slug.removeprefix("pyforge-"), "--feed-only"]
     # Story 52.1 (SPEC-pyforge-core CAP-6): routed through the ONE sanctioned
     # subprocess seam. `PosixProcess.run` never raises for a non-zero exit
     # (that case is classified below) and raises `ProcessError` for the
@@ -211,9 +211,16 @@ def _sync_status_step(slug: str, git_repo_root: Path, findings: list[Finding]) -
             )
         )
         return RefreshStep(STEP_SYNC_STATUS, "failed", detail)
-    new_entries = report.get("new_entries") or []
-    detail = f"{len(new_entries)} new entries" if new_entries else "in sync"
-    return RefreshStep(STEP_SYNC_STATUS, "done", detail)
+    if report.get("skipped"):
+        return RefreshStep(STEP_SYNC_STATUS, "skipped", str(report["skipped"]))
+    dropped = report.get("dropped") or []
+    kept = report.get("kept") or []
+    repaired = report.get("repaired") or []
+    parts = [f"{len(repaired)} repaired, {len(dropped)} stale-slug dropped"] if dropped or repaired else []
+    if kept:
+        # A stale key further along than the ledger's key is kept for a `--rekey` (Story 107.1).
+        parts.append(f"{len(kept)} stale-slug kept (ahead of the ledger; re-key with --rekey)")
+    return RefreshStep(STEP_SYNC_STATUS, "done", ", ".join(parts) or "in sync")
 
 
 def _refresh_one_home(
@@ -369,6 +376,11 @@ def _refresh_one_home(
         # refname and pushes exactly it (review 2). Any other `--base` pushes
         # normally and the preflight runs.
         proven = current_ref if proves_main else None
+        # Story 110.25 (spec-feature-flag-governance CAP-7; CAP-267): the kill
+        # switch. OFF pushes without the opt-out, so the pre-push preflight
+        # runs, as before Story 57.1.
+        if not refresh_proven_push_enabled():
+            proven = None
         try:
             # Push via the shared repo root; branch name is loop/<slug> only.
             vcs.push(git_repo_root, branch, proven_on_main_sha=proven)

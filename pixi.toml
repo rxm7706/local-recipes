@@ -154,7 +154,7 @@ dependencies.google-cloud-sdk = ">=588.0.0"
 # `python = "3.14.*"` -- CAP-5's one interpreter across laptop and cluster;
 # every pixi env in this file shares the same floor (Story 43.6). Promotes the
 # operator-verified 373-package conda-native solve
-# (docs/dreams/enterprise-multi-agent-orchestration.md) into a first-class,
+# (archive/docs/dreams/enterprise-multi-agent-orchestration.md) into a first-class,
 # reproducible pixi env. Epic 11's engine-mounting stories and this epic's
 # own Story 10.3 (container image) both depend on this existing first.
 #
@@ -350,7 +350,7 @@ django-debug-toolbar = ">=8.0.0"  # Story 56.1 / pdl:CAP-1: config.settings.loca
 # -- no `fastapi` version satisfies both, confirmed live by attempting to
 # add `dbgpt-app` to `python-agent-platform` and watching the solve fail
 # with exactly this conflict -- which is the demonstrated pluggability
-# failure `docs/dreams/db-gpt-django-plugin.md`'s 2026-08-21 AD-14 entry
+# failure `archive/docs/dreams/db-gpt-django-plugin.md`'s 2026-08-21 AD-14 entry
 # records: DB-GPT moves from Pattern A (in-process Django mount, still how
 # Langflow runs) to Pattern B (its own container). This feature/environment
 # exists SOLELY so `src/platform/compose/dbgpt/Containerfile`'s builder
@@ -459,6 +459,7 @@ watchfiles = ">=1.3.0"            #
 mypy = ">=2.4.0"                  #
 django-stubs = ">=6.1.1"          # compatible-mypy extra is mypy, already pinned
 pytest = ">=9.1.1"                #
+pytest-xdist = ">=3.8.0"          # Story 117.12 (spec-pyforge-steward CAP-175): the platform suite runs -n 4 in CI and in platform-ci-local
 pytest-sugar = ">=1.1.1"          #
 sphinx = ">=9.1.0"                #
 sphinx-autobuild = ">=2025.8.25"  #
@@ -555,17 +556,24 @@ description = "Build BOTH pyforge-mason artifacts (conda + wheel/sdist) from one
 depends-on = ["pyforge-mason-build-conda", "pyforge-mason-build-dist"]
 
 [feature.pyforge-mason.tasks.pyforge-mason-test]
-description = "Run the pyforge-mason test suite (unit + meta, fast default loop -- excludes @pytest.mark.slow) plus Story 16.3's CFE CLI⇄tool parity meta-test."
-cmd = "pytest src/shared/packages/pyforge-mason/tests -q -m \"not slow\" && pytest .claude/skills/conda-forge-expert/tests/meta/test_cli_tool_parity.py -q"
+description = "Run the pyforge-mason test suite (unit + meta, fast default loop -- excludes @pytest.mark.slow) plus Story 16.3's CFE CLI⇄tool parity meta-test. Story 117.2 (spec-pyforge-steward CAP-175, ruling D2): the first segment is the coverage gate's own run -- unit + meta, not slow, under --cov -- and writes .steward/coverage/mason-unit.json for pyforge-mason-coverage-gate to judge, so no suite runs twice; the later segments run everything else the task ran before."
+cmd = "pytest src/shared/packages/pyforge-mason/tests/unit src/shared/packages/pyforge-mason/tests/meta -q -m \"not slow\" --cov=pyforge.mason --cov-branch --cov-report=json:.steward/coverage/mason-unit.json && pytest src/shared/packages/pyforge-mason/tests --ignore=src/shared/packages/pyforge-mason/tests/unit --ignore=src/shared/packages/pyforge-mason/tests/meta -q -m \"not slow\" && pytest .claude/skills/conda-forge-expert/tests/meta/test_cli_tool_parity.py -q"
+# Story 117.2 (spec-pyforge-steward CAP-175): the suite imports the live source tree (and scripts/), as the
+# coverage run always did, so the coverage JSON its first segment writes names src/ paths the gate can judge.
+env = { PYTHONPATH = "src/shared/packages/pyforge-mason/src:scripts" }
 
 [feature.pyforge-mason.tasks.pyforge-mason-recipe-build-smoke]
 description = "Story 16.2: the first real estate caller of `mason recipe build` (FR-9's use-case, wired outside mason's own test tree) -- builds recipes/click-help-colors (a tiny, already-graduated noarch: python recipe with an explicit setuptools host dep and no ${{ python_min }} reference, chosen for a fast, dependency-light smoke build that needs neither the conda-forge-pinning overlay nor an isolated pip build-backend fetch) through `mason recipe build` against mason's own env, rather than `pixi run -e local-recipes recipe-build`. Wired into .github/workflows/pyforge-station-tests.yml's mason-test job so it runs on every execution of that already-existing lane, not only on demand. Does not replace the local-recipes route as the estate's primary recipe-build path."
 cmd = "mason recipe build recipes/click-help-colors"
 
 [feature.pyforge-mason.tasks.pyforge-mason-coverage-gate]
-description = "Mirror of .github/workflows/coverage-gates.yml's `named-module-gates (mason)` job: run scripts/coverage_gates_ci.py over the modules THIS branch touches, in mason's own env, against the 80% unit floor. Distinct from pyforge-mason-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
-cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit"
+description = "Mirror of the coverage-gate step of pyforge-station-tests.yml's `mason-test` job (Story 117.2; coverage-gates.yml retired): run scripts/coverage_gates_ci.py over the modules THIS branch touches, in mason's own env, against the 80% unit floor. Distinct from pyforge-mason-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
+cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit --report .steward/coverage/mason-unit.json"
 env = { COVERAGE_GATES_STATIONS = "mason" }
+# Story 117.2: the gate judges the JSON pyforge-mason-test wrote (--report); when the report is absent it runs the
+# coverage pass itself as before. The dependency orders the two lanes in pr-preflight; CI runs the gate by its
+# command line after the suite step (pyforge-station-tests.yml), so the suite is collected once per PR.
+depends-on = [{ task = "pyforge-mason-test", environment = "pyforge-mason" }]
 
 [feature.pyforge-mason.tasks.pyforge-mason-test-coverage]
 description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-mason. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage."
@@ -597,6 +605,8 @@ hatchling = ">=1.32.4"            # Python build backend (drives both conda + wh
 python-build = ">=1.6.1"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
 pytest-cov = ">=7.1.0"            # Story 32.7 (spec-pyforge-testing-charter CAP-4, amended by spec-fleet-consistency-standard): coverage JSON for the named-module gate. Declared in only pyforge-marshal and local-recipes until 2026-09-07, so seven station envs could not run a coverage gate at all -- verified live against scribe, which exited 1 with "unrecognized arguments: --cov".
+pytest-xdist = ">=3.8.0"          # Story 117.1 (spec-pyforge-steward CAP-175): parallel station suite in pyforge-steward-test
+pytest-split = ">=0.11.0"         # Story 117.10 (spec-pyforge-steward CAP-175): --splits N --group K shards the CI matrix; the local preflight runs the suite unsharded
 jsonschema = ">=4.26.0"           # Story 100.2: estate journal/plan schema validation in tests/unit/test_estate.py (same floor as pin-policy scripts / pyforge-doctor)
 django = ">=5.2.17,<6"            # Story 9.1: the `[dashboard]` extra default-installed IN-REPO at feature level (mirrors [feature.pyforge-atlas.dependencies]'s identical pyforge-warden edge) -- NOT a pyforge-steward package run-dep, so external conda installs stay dashboard-optional. MUST stay byte-identical to pyforge-steward's own pyproject.toml `dashboard` extra; that pair is enforced by tests/meta/test_invariants.py's pin-sync test. [feature.local-recipes.dependencies] separately pins django ">=5.2.17,<6.0" (line ~1692) -- a NARROWER pin in the same 5.2 LTS line, deliberately not identical and not synced here
 channels = ">=4.3.2,<5.0"         # Story 9.5 (CAP-6/AD-5): the [dashboard] extra's Channels/ASGI-consumer layer. Floor matches recipes/channels/meta.yaml's shipped 4.2.0. MUST stay byte-identical to pyproject.toml's `dashboard` extra pin (same pin-sync test as django, above)
@@ -622,8 +632,16 @@ description = "Build BOTH pyforge-steward artifacts (conda + wheel/sdist) from o
 depends-on = ["pyforge-steward-build-conda", "pyforge-steward-build-dist"]
 
 [feature.pyforge-steward.tasks.pyforge-steward-test]
-description = "Run the pyforge-steward suite across all three tiers (unit + conformance + meta)."
-cmd = "pytest src/shared/packages/pyforge-steward/tests -q"
+description = "Run the pyforge-steward suite across all three tiers (unit + conformance + meta) under pytest-xdist (Story 117.1, spec-pyforge-steward CAP-175): -n auto takes PYTEST_XDIST_AUTO_NUM_WORKERS from the caller (the preflight's share, CI's cores), --dist loadgroup spreads a file's tests across workers (the slowest file alone was the wall under loadfile: 165 s vs 106 s) and honours @pytest.mark.xdist_group where tests must share a worker; the three preflight test files that SIGINT their own process run alone afterwards, where a signal cannot take a worker with it. Story 117.2 (spec-pyforge-steward CAP-175, ruling D2): the first segment is the coverage gate's own run -- unit + meta, not slow, under --cov -- and writes .steward/coverage/steward-unit.json for pyforge-steward-coverage-gate to judge, so no suite runs twice; the later segments run everything else the task ran before."
+cmd = "pytest src/shared/packages/pyforge-steward/tests/unit src/shared/packages/pyforge-steward/tests/meta -q -m \"not slow and not live_tree\" -n auto --dist loadgroup --ignore=src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py --ignore=src/shared/packages/pyforge-steward/tests/unit/test_preflight_scope.py --ignore=src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py --cov=pyforge.steward --cov-branch --cov-report=json:.steward/coverage/steward-unit.json && pytest src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py -q"
+# Story 117.2 (spec-pyforge-steward CAP-175): the suite imports the live source tree (and scripts/), as the
+# coverage run always did, so the coverage JSON its first segment writes names src/ paths the gate can judge.
+env = { PYTHONPATH = "src/shared/packages/pyforge-steward/src:scripts" }
+
+[feature.pyforge-steward.tasks.pyforge-steward-live-test]
+description = "Story 117.4 (spec-pyforge-steward CAP-175, ruling D4): the live-tree half of the steward suite -- every module marked pytest.mark.live_tree (it reads planning artifacts, docs, pixi.toml, the workflows or other stations), under --cov writing .steward/coverage/steward-live.json for the gate to merge with the package half's report; the two preflight test files that SIGINT their own process run alone afterwards. Fires in CI on what these tests read (steward-live-test), not on every edit of the package."
+cmd = "pytest src/shared/packages/pyforge-steward/tests/unit src/shared/packages/pyforge-steward/tests/meta -q -m \"live_tree and not slow\" -n auto --dist loadgroup --ignore=src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py --ignore=src/shared/packages/pyforge-steward/tests/unit/test_preflight_scope.py --ignore=src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py --cov=pyforge.steward --cov-branch --cov-report=json:.steward/coverage/steward-live.json && pytest src/shared/packages/pyforge-steward/tests/unit/test_preflight_scope.py src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py -q"
+env = { PYTHONPATH = "src/shared/packages/pyforge-steward/src:scripts" }
 
 [feature.pyforge-steward.tasks.frame-preflight]
 description = "Story 53.2/53.6 (spec-intelligence-hub CAP-2): in-repo Frame Spec v0.3 preflight for docs/foundry/frames/ (type/identifier/name/description/visibility + maintainer; identity is the qualified-ref identifier, station Frames inherit pyforge/company, repeatable fields must be sequences). Not a gate: never joins detectors/detectors-ci — Warden stays the sole PR verdict."
@@ -634,9 +652,13 @@ description = "Story 64.1 (spec-pyforge-steward CAP-6 (c)): OPT-IN, needs networ
 cmd = "python -m pyforge.steward.frames --upstream-check"
 
 [feature.pyforge-steward.tasks.pyforge-steward-coverage-gate]
-description = "Mirror of .github/workflows/coverage-gates.yml's `named-module-gates (steward)` job: run scripts/coverage_gates_ci.py over the modules THIS branch touches, in steward's own env, against the 80% unit floor. Distinct from pyforge-steward-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
-cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit"
+description = "Mirror of the coverage-gate step of pyforge-station-tests.yml's `steward-test` job (Story 117.2; coverage-gates.yml retired): run scripts/coverage_gates_ci.py over the modules THIS branch touches, in steward's own env, against the 80% unit floor. Distinct from pyforge-steward-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
+cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit --report \".steward/coverage/steward-unit*.json\" --report \".steward/coverage/steward-live*.json\""
 env = { COVERAGE_GATES_STATIONS = "steward" }
+# Story 117.2: the gate judges the JSON pyforge-steward-test wrote (--report); when the report is absent it runs the
+# coverage pass itself as before. The dependency orders the two lanes in pr-preflight; CI runs the gate by its
+# command line after the suite step (pyforge-station-tests.yml), so the suite is collected once per PR.
+depends-on = [{ task = "pyforge-steward-test", environment = "pyforge-steward" }, { task = "pyforge-steward-live-test", environment = "pyforge-steward" }]
 
 [feature.pyforge-steward.tasks.pyforge-steward-test-coverage]
 description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-steward. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage."
@@ -698,6 +720,7 @@ cmd = "bash scripts/guild_image_ci.sh"
 # a documentation-level statement, not a platform-list removal.
 [feature.pyforge-marshal.dependencies]
 pyforge-marshal = { path = "src/shared/packages/pyforge-marshal" }  # -> built conda pkg
+mcp = ">=2.2.0"  # Story 103.1: marshal-mcp MCPServer; pixi does not rehash path-dep manifests
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: fs_local.py/harness_bmadloop.py/cli/config.py's mandatory run-dep (atomic_write*)
 pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # Story 19.2 / FR-130: seed source re-exports the shared kit (test-time only; not a package run-dep)
 bmad-loop = ">=0.12.0"  # marshal's declared runtime dep (pyproject: bmad-loop>=0.11.0,<0.13). From conda-forge: bmad-loop-feedstock ships a __unix (tmux) and a __win (uv) noarch variant since 0.12.0 build 1 (feedstock PR #4, 2026-09-26), so no SelfExplainML channel pin is needed. Keep in step with the local-recipes floor below.
@@ -710,6 +733,7 @@ python-build = ">=1.6.1"          # PyPA `python -m build` frontend (wheel + sdi
 pytest = ">=9.1.1"                # test runner
 pytest-cov = ">=7.1.0"            # Story 19.3 / FR-131: coverage JSON for named-module gates
 pytest-xdist = ">=3.8.0"          # Story 71.6 (CAP-159): parallel station suite in pyforge-marshal-test
+pytest-split = ">=0.11.0"         # Story 117.10 (spec-pyforge-steward CAP-175): --splits N --group K shards the CI matrix; the local preflight runs the suite unsharded
 import-linter = ">=2.15"          # enforces the AD-3 seam + AD-4 purity contracts (pyproject.toml's [tool.importlinter])
 # spec-library-catalog-manifest-sync CAP-1: mirror this station's own pixi.toml
 # [package.run-dependencies] pins, undocumented in root pixi.toml until 2026-09-12.
@@ -754,8 +778,11 @@ description = "Build BOTH pyforge-marshal artifacts (conda + wheel/sdist) from o
 depends-on = ["pyforge-marshal-build-conda", "pyforge-marshal-build-dist"]
 
 [feature.pyforge-marshal.tasks.pyforge-marshal-test]
-description = "Run the pyforge-marshal test suite (unit + meta, fast default loop -- excludes @pytest.mark.slow)."
-cmd = "pytest src/shared/packages/pyforge-marshal/tests -q -m \"not slow\" -n auto --dist loadgroup"
+description = "Run the pyforge-marshal test suite (unit + meta, fast default loop -- excludes @pytest.mark.slow). Story 117.2 (spec-pyforge-steward CAP-175, ruling D2): the first segment is the coverage gate's own run -- unit + meta, not slow, under --cov -- and writes .steward/coverage/marshal-unit.json for pyforge-marshal-coverage-gate to judge, so no suite runs twice; the later segments run everything else the task ran before."
+cmd = "pytest src/shared/packages/pyforge-marshal/tests/unit src/shared/packages/pyforge-marshal/tests/meta -q -m \"not slow\" -n auto --dist loadgroup --cov=pyforge.marshal --cov-branch --cov-report=json:.steward/coverage/marshal-unit.json && pytest src/shared/packages/pyforge-marshal/tests --ignore=src/shared/packages/pyforge-marshal/tests/unit --ignore=src/shared/packages/pyforge-marshal/tests/meta -q -m \"not slow\" -n auto --dist loadgroup"
+# Story 117.2 (spec-pyforge-steward CAP-175): the suite imports the live source tree (and scripts/), as the
+# coverage run always did, so the coverage JSON its first segment writes names src/ paths the gate can judge.
+env = { PYTHONPATH = "src/shared/packages/pyforge-marshal/src:scripts" }
 
 [feature.pyforge-marshal.tasks.pyforge-marshal-test-slow]
 description = "Run the slow, real-git end-to-end integration tests (@pytest.mark.slow) -- not part of the default loop (mirrors pyforge-warden-test-corpus-oracle's split)."
@@ -766,9 +793,13 @@ description = "SC-02 / Story 86.2: the local-recipes empty-plan oracle (marshal 
 cmd = "pytest src/shared/packages/pyforge-marshal/tests/integration/test_local_recipes_empty_plan.py -q -m slow"
 
 [feature.pyforge-marshal.tasks.pyforge-marshal-coverage-gate]
-description = "Mirror of .github/workflows/coverage-gates.yml's `named-module-gates (marshal)` job: run scripts/coverage_gates_ci.py over the modules THIS branch touches, in marshal's own env, against the 80% unit floor. Distinct from pyforge-marshal-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
-cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit"
+description = "Mirror of the coverage-gate step of pyforge-station-tests.yml's `marshal-test` job (Story 117.2; coverage-gates.yml retired): run scripts/coverage_gates_ci.py over the modules THIS branch touches, in marshal's own env, against the 80% unit floor. Distinct from pyforge-marshal-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
+cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit --report \".steward/coverage/marshal-unit*.json\""
 env = { COVERAGE_GATES_STATIONS = "marshal" }
+# Story 117.2: the gate judges the JSON pyforge-marshal-test wrote (--report); when the report is absent it runs the
+# coverage pass itself as before. The dependency orders the two lanes in pr-preflight; CI runs the gate by its
+# command line after the suite step (pyforge-station-tests.yml), so the suite is collected once per PR.
+depends-on = [{ task = "pyforge-marshal-test", environment = "pyforge-marshal" }]
 
 [feature.pyforge-marshal.tasks.pyforge-marshal-test-coverage]
 description = "Story 19.3 / FR-131: unit (>80%) + integration (>70%) coverage gates that name uncovered modules (full package evaluate)."
@@ -1370,6 +1401,10 @@ cmd = "pytest tests/scripts/test_docs_gen_common.py tests/scripts/test_docs_pixi
 # scripts/detectors.py maps a detector to the first task whose `cmd` contains its file name, and
 # `test_flag_gate_check.py` contains `flag_gate_check.py`. A new file guarded this way goes on that list, or
 # tests/scripts/test_pyforge_ci_is_stdlib_only.py reds.
+[feature.guild-tasks.tasks.test-ci-meta]
+description = "Story 117.8 (spec-pyforge-steward CAP-175, ruling D1): the pull-request lane of the CFE regression net -- the skill's tests/meta alone (7,792 tests, ~80 s serial in pyforge-guild; test_recipe_cbc_merges_with_pinning skips without conda_build), while `test-ci`, the full net in the 10 GB local-recipes env, runs on push-to-main and workflow_dispatch (cfe-regression-net.yml). Reads only; the skill tree and the test-ci task are untouched (conda-forge-expert and spec-pyforge-mason govern them)."
+cmd = "pytest .claude/skills/conda-forge-expert/tests/meta -q"
+
 [feature.guild-tasks.tasks.scripts-lib-test]
 description = "steward Story 103.3 (spec-pyforge-steward CAP-5): the tests/scripts files that need a library pyforge-ci does not carry (PyYAML, jsonschema, ruamel.yaml, openfeature, the doctor and scribe station packages; requests and packaging where a script needs them), listed in tests/scripts/scripts-lib-test.txt and run in pyforge-guild, which declares them, with tests/scripts/test_pyforge_ci_is_stdlib_only.py checking every library they guard imports here. In pyforge-ci, which is stdlib-only, each file skips on its pytest.importorskip. The Detectors scripts-suite job and pr-preflight call this task verbatim."
 cmd = "python -m pytest @tests/scripts/scripts-lib-test.txt -q"
@@ -1477,7 +1512,7 @@ description = "Detector (Story 99.1, spec-pyforge-steward CAP-166): docs/governa
 cmd = "python scripts/ci_surface_gates.py --check"
 
 [feature.guild-tasks.tasks.forward-dependency-check]
-description = "Detector: a story's own documented **Deps:** names a story in a LATER epic, and bmad-loop cannot see it. `next_actionable` (bmad_loop.sprintstatus) is a strict file-order scan within the current epic with no depends_on concept at all — confirmed against the installed library. A plain `bmad-loop run` would dispatch the forward-dependent story the moment its own epic clears, burning a dev attempt on work that can't complete yet. Found live 2026-08-03 in marshal (2-3 deps S-3.2, 2-7 deps S-4.1, 8-5 deps S-10.2); the fix is the non-standard `blocked` status (the loader does not validate against STORY_STATUSES, same mechanism `optional` relies on), then `python scripts/promote_sprint_status.py`. COVERAGE is keyed on MACHINE-READABLE refs, four classes (reworked 2026-08-08): `measured` (every declaration resolved or explicitly none) · `partial` (a real dependency stated in a grammar DEP_RE cannot parse — the ratio is named, so a station can never read as fully verified; this is how mason reported clean with 0 of 30 declarations parseable) · `no-dispatch` (the ledger positively shows 0 actionable stories, so nothing can be dispatched early — a measured fact, NOT a parse-clean claim) · `unmeasured` (no declaration and work remains, or the ledger is unreadable). Grammar: `S-<epic>.<num>` story, `S-<epic>.*` whole epic, `<station>:S-<epic>.<num>` cross-station, `—` none; prose only as trailing context. Contract: docs/dreams/bmad-loop-forward-dependency-blindness.md + its Spec under pyforge-marshal."
+description = "Detector: a story's own documented **Deps:** names a story in a LATER epic, and bmad-loop cannot see it. `next_actionable` (bmad_loop.sprintstatus) is a strict file-order scan within the current epic with no depends_on concept at all — confirmed against the installed library. A plain `bmad-loop run` would dispatch the forward-dependent story the moment its own epic clears, burning a dev attempt on work that can't complete yet. Found live 2026-08-03 in marshal (2-3 deps S-3.2, 2-7 deps S-4.1, 8-5 deps S-10.2); the fix is the non-standard `blocked` status (the loader does not validate against STORY_STATUSES, same mechanism `optional` relies on), then `python scripts/promote_sprint_status.py`. COVERAGE is keyed on MACHINE-READABLE refs, four classes (reworked 2026-08-08): `measured` (every declaration resolved or explicitly none) · `partial` (a real dependency stated in a grammar DEP_RE cannot parse — the ratio is named, so a station can never read as fully verified; this is how mason reported clean with 0 of 30 declarations parseable) · `no-dispatch` (the ledger positively shows 0 actionable stories, so nothing can be dispatched early — a measured fact, NOT a parse-clean claim) · `unmeasured` (no declaration and work remains, or the ledger is unreadable). Grammar: `S-<epic>.<num>` story, `S-<epic>.*` whole epic, `<station>:S-<epic>.<num>` cross-station, `—` none; prose only as trailing context. Contract: archive/docs/dreams/bmad-loop-forward-dependency-blindness.md + its Spec under pyforge-marshal."
 cmd = "python -m pyforge.doctor.sources forward-dependency"
 
 [feature.local-recipes.tasks.seed-claude-consent]
@@ -1521,7 +1556,7 @@ description = "Detector: Dream-APPEND-first is enforced, not asserted (doctor St
 cmd = "python -m pyforge.doctor.sources chain-sprawl"
 
 [feature.guild-tasks.tasks.fr-without-cap-check]
-description = "Detector: a product requirement minted after the rule date names its source capability (doctor Story 25.2, spec-one-chain-per-station CAP-5; CHAIN-STANDARD § 2 `FR-n <- CAP-m`). New FR/NFR ids per station PRD (vs docs/governance/fr-baseline.json, re-baselined only at that station's fold PR) must cite a CAP-m on the defining line or its first body line -- else FAIL fr-without-cap; a citation no open Spec under the station declares is FAIL fr-cap-unresolved."
+description = "Detector: a product requirement names its source capability and nothing else (doctor Stories 25.2 and 50.1, spec-one-chain-per-station CAP-5 / spec-pyforge-doctor CAP-92; CHAIN-STANDARD § 2, § 6 and § 12 `FR-n <- CAP-m`). Per station PRD (prds/*/prd.md): an FR/NFR definition with no arrow and no cite is FAIL fr-without-cap unless its id is in docs/governance/fr-baseline.json `projects` (the arrowless population at snapshot; only shrinks); an arrow item that is not a `CAP-m` / `spec-<x> CAP-m` cite is FAIL fr-cites-non-capability; a cite no CAP definition line of the named Spec resolves (bare: the station's own spec-pyforge-<s>; never a closed Spec) is FAIL fr-cap-unresolved (spec-not-found / spec-unreadable / spec-closed / cap-not-defined); an id without the hyphen is FAIL fr-id-unhyphenated and a definition-shaped token outside the `FR-n` / `NFR-n` / `FR-n.m` / `NFR-Xn` family is FAIL fr-id-malformed; a second definition of one id outside a record section is FAIL fr-duplicate-id; four or more consecutive FRs citing CAPs in lockstep with no title overlap is FAIL fr-counted-run. Structural findings keyed in the baseline's `findings` map report as fr-baselined (OK); a stale `projects` id or `findings` key is WARN fr-baseline-stale; an unreadable PRD is WARN fr-prd-unreadable; fr-arrow-no-title-overlap is a per-station advisory WARN. Operator rule: the baseline only shrinks -- `scripts/fr_baseline.py --prune` is the only routine verb; `--snapshot-findings` is a one-time act, refused once `findings` exists (`--force` only after a review that names each ADDED key in the PR); `--project pyforge-<s>` re-snapshots one station's arrowless ids at its fold PR."
 cmd = "python -m pyforge.doctor.sources fr-without-cap"
 
 [feature.guild-tasks.tasks.fold-complete-check]
@@ -1545,7 +1580,7 @@ description = "Detector: a station's board tells the truth about what it OWNS an
 cmd = "python -m pyforge.doctor.sources chain-completeness"
 
 [feature.guild-tasks.tasks.chain-currency-sweep-check]
-description = "Detector: the eight station planning spines are CURRENT -- the CAP-3 chain audit's staleness + coherence checkpoints swept across all 8 stations in one run (layers/orphans deliberately excluded: they are chain-completeness policy work, and folding the deck gap in would make this permanently red). scope=repo -- reads tracked planning artifacts, dreams, and tracked ledgers only. Exit 0 current / 1 findings (run the reconciler per _bmad-output/projects/pyforge-doctor/CHAIN-CURRENCY-RUNBOOK.md) / 2 could-not-run. Flags: -- --json, -- --project <slug>. Contract: docs/dreams/chain-currency-sweep.md."
+description = "Detector: the eight station planning spines are CURRENT -- the CAP-3 chain audit's staleness + coherence checkpoints swept across all 8 stations in one run (layers/orphans deliberately excluded: they are chain-completeness policy work, and folding the deck gap in would make this permanently red). scope=repo -- reads tracked planning artifacts, dreams, and tracked ledgers only. Exit 0 current / 1 findings (run the reconciler per _bmad-output/projects/pyforge-doctor/CHAIN-CURRENCY-RUNBOOK.md) / 2 could-not-run. Flags: -- --json, -- --project <slug>. Contract: archive/docs/dreams/chain-currency-sweep.md."
 cmd = "python scripts/chain_currency_sweep_check.py"
 
 [feature.guild-tasks.tasks.governance-currency]
@@ -1581,7 +1616,7 @@ description = "Detector: the tracked sprint ledger versus git merge history, WIT
 cmd = "python -m pyforge.doctor.sources ledger-direction"
 
 [feature.local-recipes.tasks.dashboard-layout-check]
-description = "Detector: the Guildhall console bar LOOKS right, not merely that its JavaScript runs (which is all check_render.js proves). Asserts chip edges, no overlap per row, one row above the 720px breakpoint, and no chip clipping its own label — across 6 viewport widths x 5 font-pressure steps via headless Chrome. Font pressure rather than live content, because both bugs it was written for are a function of text width and the live board is whatever it happens to be that minute. Reports UNKNOWN (exit 2) without a browser rather than claiming green. Contract: docs/dreams/fidelity-enforcement.md."
+description = "Detector: the Guildhall console bar LOOKS right, not merely that its JavaScript runs (which is all check_render.js proves). Asserts chip edges, no overlap per row, one row above the 720px breakpoint, and no chip clipping its own label — across 6 viewport widths x 5 font-pressure steps via headless Chrome. Font pressure rather than live content, because both bugs it was written for are a function of text width and the live board is whatever it happens to be that minute. Reports UNKNOWN (exit 2) without a browser rather than claiming green. Contract: archive/docs/dreams/fidelity-enforcement.md."
 cmd = "python -m pyforge.doctor.sources check-layout"
 
 [feature.guild-tasks.tasks.fleet-picture]
@@ -1593,7 +1628,7 @@ description = "Background hourly fleet poll at :30 past each hour — git pull/p
 cmd = "bash scripts/fleet-poll-hourly.sh"
 
 [feature.guild-tasks.tasks.unpushed-work-check]
-description = "Detector: no work exists only on this disk — local branches carrying unique content that are on no remote, plus dangling commits holding real work that `git gc` may collect without warning. scope=runtime and deliberately NOT in CI: a runner has neither local branches nor dangling objects, so this check would pass vacuously there, which is a false green of the purest kind. Live cost 2026-07-31 when nothing checked: six station loop branches, ~5,150 lines on recover/*, herald 1.2's 734-line transport story (spec included) unpushed for six days, 156 dangling commits, and marshal 1.8's 1,748 lines committed 40 minutes earlier. Flags: -- --branches-only (skip the fsck scan), -- --min-files N, -- --json. Contract: docs/dreams/fidelity-enforcement.md. The standing signal for between-runs staleness now that the standalone interval-push watcher is retired (Story 4.15/FR-177): S-3.10's tip comparison already covers `loop/*` station branches."
+description = "Detector: no work exists only on this disk — local branches carrying unique content that are on no remote, plus dangling commits holding real work that `git gc` may collect without warning. scope=runtime and deliberately NOT in CI: a runner has neither local branches nor dangling objects, so this check would pass vacuously there, which is a false green of the purest kind. Live cost 2026-07-31 when nothing checked: six station loop branches, ~5,150 lines on recover/*, herald 1.2's 734-line transport story (spec included) unpushed for six days, 156 dangling commits, and marshal 1.8's 1,748 lines committed 40 minutes earlier. Flags: -- --branches-only (skip the fsck scan), -- --min-files N, -- --json. Contract: archive/docs/dreams/fidelity-enforcement.md. The standing signal for between-runs staleness now that the standalone interval-push watcher is retired (Story 4.15/FR-177): S-3.10's tip comparison already covers `loop/*` station branches."
 cmd = "python scripts/unpushed_work_check.py"
 
 [feature.guild-tasks.tasks.mason-cfe-surface-check]
@@ -1625,16 +1660,18 @@ depends-on = [
   { task = "pyforge-testing-kit-test", environment = "pyforge-testing-kit" },
   { task = "pyforge-atlas-test", environment = "pyforge-atlas" },
   { task = "pyforge-doctor-test", environment = "pyforge-doctor" },
+  { task = "pyforge-doctor-live-test", environment = "pyforge-doctor" },
   { task = "pyforge-herald-test", environment = "pyforge-herald" },
   { task = "pyforge-marshal-test", environment = "pyforge-marshal" },
   { task = "pyforge-mason-test", environment = "pyforge-mason" },
   { task = "pyforge-scribe-test", environment = "pyforge-scribe" },
   { task = "pyforge-steward-test", environment = "pyforge-steward" },
+  { task = "pyforge-steward-live-test", environment = "pyforge-steward" },
   { task = "pyforge-warden-test", environment = "pyforge-warden" },
 ]
 
 [feature.guild-tasks.tasks.pyforge-station-coverage-gates]
-description = "Run every station's CI-mirroring coverage gate (scripts/coverage_gates_ci.py, touched modules, 80% unit floor) in its own pixi env — the local twin of .github/workflows/coverage-gates.yml's `named-module-gates` matrix. Declarative depends-on, never a shell loop (pixi's task shell cannot parse one; see pyforge-station-tests)."
+description = "Run every station's CI-mirroring coverage gate (scripts/coverage_gates_ci.py, touched modules, 80% unit floor) in its own pixi env — the local twin of the coverage-gate step in each station job of pyforge-station-tests.yml (Story 117.2; coverage-gates.yml's `named-module-gates` matrix. Declarative depends-on, never a shell loop (pixi's task shell cannot parse one; see pyforge-station-tests)."
 depends-on = [
   { task = "pyforge-atlas-coverage-gate", environment = "pyforge-atlas" },
   { task = "pyforge-doctor-coverage-gate", environment = "pyforge-doctor" },
@@ -1669,14 +1706,14 @@ description = """Serial reference for every lane a PR gates on — same graph ``
 
 Run locally, before pushing, everything a PR to rxm7706/local-recipes actually gates on. One command, so a green local run means a green CI run.
 
-Covers the four lanes that red a PR: `detectors-ci` (the CI detector subset), `test-ci` (the CFE regression suite — this is the lane that owns the spec-surface meta-test), `pyforge-station-tests` (pyforge-core + all 8 station suites, which ALL fire together on any shared-surface change), and `pyforge-station-coverage-gates` (the touched-module coverage floors).
+Covers the four lanes that red a PR: `detectors-ci` (the CI detector subset), `test-ci-meta` (the CFE skill's tests/meta — the PR's lane since Story 117.8, ruling D1; it owns the spec-surface meta-test, while the full `test-ci` net runs on push-to-main), `pyforge-station-tests` (pyforge-core + all 8 station suites, which ALL fire together on any shared-surface change), and `pyforge-station-coverage-gates` (the touched-module coverage floors).
 
 Added 2026-09-14 after PR #1355 went red on two lanes that had NO local equivalent: `cfe-regression-net` failed on a stale spec-surface baseline (a scoped `--write-baseline` had been taken, then a governed file was edited again, silently invalidating it), and `named-module-gates (doctor)` failed on a coverage floor that only measures modules a branch touches — so it had been latent for weeks and surfaced on an unrelated edit. Neither was reachable from `detectors` or `pyforge-station-tests`.
 
 NOT covered (needs Docker/podman or a live service): the container/guild-container jobs, atlas's Chromium/DuckDB/WASM setup, herald's browser check, and scribe's Postgres+pgvector service (`scribe-pg-up` first, or scribe's durable GraphStore tests error).
 
-Runs from `-e pyforge-guild` (the session default) as well as `-e local-recipes`: the `test-ci` leg is pinned to `local-recipes` because the CFE regression suite is a factory task that lives only there (found 2026-09-16, steward Story 63.1 -- the first `pr-preflight` from the Guild env failed with "could not find the task 'test-ci'"), the same per-leg pinning the two station aggregates already use. Fifth leg added the same day: `scripts-suite` (`tests/scripts`, the detectors.yml job `pyforge-doctor-scripts-test` in `-e pyforge-ci`) redded PR #1388 on a test that pinned a task to `feature.local-recipes` -- a CI lane this aggregate did not cover, the very gap it exists to close. Sixth leg added 2026-09-18 (herald Story 24.2, spec-pyforge-herald CAP-49, closes DW-FU-23-5): `site-check` (`-e site`) was the first docsite preflight leg (replaced 2026-10-10 by herald Story 27.5, spec-pyforge-herald CAP-52 / D8): `pages-check` (`-e site`) mirrors the `pages-check` step of `pages.yml` and is selected only when that workflow's own `paths` fire (steward Story 71.2); `site-check` retired 2026-10-15 with `docsite/` (herald Story 43.7), and `pages-check` is the one build check. Seventh leg added 2026-09-20 (doctor Story 30.2 review pass): `docs-map-render-test` -- a `tests/scripts/` file needing jsonschema (unavailable in `pyforge-ci`, stdlib-only as its env comment in pixi.toml defines; `pyforge-doctor-scripts-test` covers the stdlib-only subset) needs its OWN leg here rather than silently only ever skipping. Eighth leg added 2026-09-24 (doctor Story 30.3, spec-pyforge-doctor CAP-84): `docs-gen-test` -- the five reference-page generators import PyYAML via `_docs_gen_common.py`, which `pyforge-ci` does not carry (each test file skips cleanly there via `pytest.importorskip`), so this gets its own leg rather than relying on `pyforge-doctor-scripts-test`. Ninth leg added 2026-10-01 (doctor Story 39.1): `pyforge-doctor-aggregate-scripts-test` (`-e pyforge-doctor`) -- doctor Story 38.5 added a second Detectors `scripts-suite` step that runs `tests/scripts/test_detectors_doctor_sources.py` under `pyforge-doctor`, because its aggregate tests skip in `pyforge-ci`, and no leg here ran it, so those tests only ever skipped locally. A doctor meta-test (`tests/meta/test_preflight_mirrors_scripts_suite.py`) now reds any `scripts-suite` step that is not a leg here. Tenth leg added 2026-10-08 (herald Story 27.4, spec-pyforge-herald CAP-52): `docs-site-validate` (`-e site`) mirrors the link, sidebar-order and map checks `docsite-check.yml` runs on every PR touching `docs/**` or `docs-site/**`; without it a broken docs link or a sidebar out of `docs/map.yaml` order could pass every local gate. It needs node and docs-site's npm install (the map check reads YAML; herald Story 43.7), no build; steward Story 71.2 selects it from `docsite-check.yml`'s `paths` alongside `pages-check`. Eleventh leg added 2026-10-14 (atlas Story 31.1, spec-pyforge-atlas CAP-20 / spec-pyforge-steward CAP-153): `{ task = "mypy", environment = "pyforge-foundry-full" }` — the same `mypy` task CI's `lint-types.yml` runs after Guild `lint-types`, so atlas is checked against real Vizro/Dagster/Kedro/Bokeh types before push. Twelfth leg added 2026-10-16 (herald Story 45.1): `{ task = "docs-site-install", environment = "site" }`, declared before `pyforge-station-tests` so that, among the docs-site lanes that run one at a time (steward Story 105.1), the install takes the first turn and herald's built-site tests read this run's install. pr-preflight selects it when herald's job or pages.yml fires (herald's job runs `pyforge-herald-test-built`), and a touched run keeps it beside any kept docs-site lane. `pyforge-herald-test` itself stays npm-free, because `pyforge-station-tests` and the SBOM laptop gate run it (fnd:CAP-13). Thirteenth leg added 2026-10-17 (steward Story 103.3, spec-pyforge-steward CAP-5): `scripts-lib-test` -- `pyforge-ci` became stdlib-only (the `spec-kit` feature left it), so the `tests/scripts` files that need PyYAML, jsonschema or ruamel.yaml skip in `pyforge-doctor-scripts-test`, and the Detectors `scripts-suite` job's third step runs them in `pyforge-guild`; this leg runs the same task, so they are not left only ever skipping locally."""
-depends-on = ["lint-types", { task = "mypy", environment = "pyforge-foundry-full" }, "detectors-ci", { task = "test-ci", environment = "local-recipes" }, { task = "pyforge-doctor-scripts-test", environment = "pyforge-ci" }, { task = "pyforge-doctor-aggregate-scripts-test", environment = "pyforge-doctor" }, "docs-map-render-test", "docs-gen-test", "scripts-lib-test", { task = "docs-site-install", environment = "site" }, "pyforge-station-tests", "pyforge-station-coverage-gates", { task = "pages-check", environment = "site" }, { task = "docs-site-validate", environment = "site" }]
+Runs from `-e pyforge-guild` (the session default) as well as `-e local-recipes`: the `test-ci` leg is pinned to `local-recipes` because the CFE regression suite is a factory task that lives only there (found 2026-09-16, steward Story 63.1 -- the first `pr-preflight` from the Guild env failed with "could not find the task 'test-ci'"), the same per-leg pinning the two station aggregates already use. Fifth leg added the same day: `scripts-suite` (`tests/scripts`, the detectors.yml job `pyforge-doctor-scripts-test` in `-e pyforge-ci`) redded PR #1388 on a test that pinned a task to `feature.local-recipes` -- a CI lane this aggregate did not cover, the very gap it exists to close. Sixth leg added 2026-09-18 (herald Story 24.2, spec-pyforge-herald CAP-49, closes DW-FU-23-5): `site-check` (`-e site`) was the first docsite preflight leg (replaced 2026-10-10 by herald Story 27.5, spec-pyforge-herald CAP-52 / D8): `pages-check` (`-e site`) mirrors the `pages-check` step of `pages.yml` and is selected only when that workflow's own `paths` fire (steward Story 71.2); `site-check` retired 2026-10-15 with `docsite/` (herald Story 43.7), and `pages-check` is the one build check. Seventh leg added 2026-09-20 (doctor Story 30.2 review pass): `docs-map-render-test` -- a `tests/scripts/` file needing jsonschema (unavailable in `pyforge-ci`, stdlib-only as its env comment in pixi.toml defines; `pyforge-doctor-scripts-test` covers the stdlib-only subset) needs its OWN leg here rather than silently only ever skipping. Eighth leg added 2026-09-24 (doctor Story 30.3, spec-pyforge-doctor CAP-84): `docs-gen-test` -- the five reference-page generators import PyYAML via `_docs_gen_common.py`, which `pyforge-ci` does not carry (each test file skips cleanly there via `pytest.importorskip`), so this gets its own leg rather than relying on `pyforge-doctor-scripts-test`. Ninth leg added 2026-10-01 (doctor Story 39.1): `pyforge-doctor-aggregate-scripts-test` (`-e pyforge-doctor`) -- doctor Story 38.5 added a second Detectors `scripts-suite` step that runs `tests/scripts/test_detectors_doctor_sources.py` under `pyforge-doctor`, because its aggregate tests skip in `pyforge-ci`, and no leg here ran it, so those tests only ever skipped locally. A doctor meta-test (`tests/meta/test_preflight_mirrors_scripts_suite.py`) now reds any `scripts-suite` step that is not a leg here. Tenth leg added 2026-10-08 (herald Story 27.4, spec-pyforge-herald CAP-52): `docs-site-validate` (`-e site`) mirrors the link, sidebar-order and map checks `docsite-check.yml` runs on every PR touching `docs/**` or `docs-site/**`; without it a broken docs link or a sidebar out of `docs/map.yaml` order could pass every local gate. It needs node and docs-site's npm install (the map check reads YAML; herald Story 43.7), no build; steward Story 71.2 selects it from `docsite-check.yml`'s `paths` alongside `pages-check`. Eleventh leg added 2026-10-14 (atlas Story 31.1, spec-pyforge-atlas CAP-20 / spec-pyforge-steward CAP-153): `{ task = "mypy", environment = "pyforge-foundry-full" }` — the same `mypy` task CI's `lint-types.yml` runs after Guild `lint-types`, so atlas is checked against real Vizro/Dagster/Kedro/Bokeh types before push. Twelfth leg added 2026-10-16 (herald Story 45.1): `{ task = "docs-site-install", environment = "site" }`, declared before `pyforge-station-tests` so that, among the docs-site lanes that run one at a time (steward Story 105.1), the install takes the first turn and herald's built-site tests read this run's install. pr-preflight selects it when herald's job or pages.yml fires (herald's job runs `pyforge-herald-test-built`), and a touched run keeps it beside any kept docs-site lane. `pyforge-herald-test` itself stays npm-free, because `pyforge-station-tests` and the SBOM laptop gate run it (fnd:CAP-13). Thirteenth leg added 2026-10-17 (steward Story 103.3, spec-pyforge-steward CAP-5): `scripts-lib-test` -- `pyforge-ci` became stdlib-only (the `spec-kit` feature left it), so the `tests/scripts` files that need PyYAML, jsonschema or ruamel.yaml skip in `pyforge-doctor-scripts-test`, and the Detectors `scripts-suite` job's third step runs them in `pyforge-guild`; this leg runs the same task, so they are not left only ever skipping locally. Fourteenth leg added 2026-10-25 (steward Story 71.14, spec-pyforge-steward CAP-159): `{ task = "pyforge-deps-test", environment = "pyforge-ci" }` -- the dependency-completeness test (`tests/packaging/test_dependency_completeness.py`) ran on no PR and in no lane, so atlas Story 37.7's undeclared `numpy` reached `main` (`DW-atlas-retro-2026-10-15-4`); the Detectors `scripts-suite` job's fourth step runs the same task, and a touched run keeps it when a `pyforge-*` package's manifest or Python under its `src/` changed."""
+depends-on = ["lint-types", { task = "mypy", environment = "pyforge-foundry-full" }, "detectors-ci", "test-ci-meta", { task = "pyforge-doctor-scripts-test", environment = "pyforge-ci" }, { task = "pyforge-doctor-aggregate-scripts-test", environment = "pyforge-doctor" }, "docs-map-render-test", "docs-gen-test", "scripts-lib-test", { task = "pyforge-deps-test", environment = "pyforge-ci" }, { task = "docs-site-install", environment = "site" }, "pyforge-station-tests", "pyforge-station-coverage-gates", { task = "pages-check", environment = "site" }, { task = "docs-site-validate", environment = "site" }]
 
 [feature.guild-tasks.tasks.pr-preflight]
 description = "Story 71.1 (spec-pyforge-steward CAP-159): run pr-preflight-lanes serially, journal each lane's wall time and exit code to .steward/preflight-runs.jsonl, stop on the first red leg — same lanes and verdict as pr-preflight-lanes. The pre-push hook still calls pixi run --frozen -e pyforge-guild pr-preflight."
@@ -2728,13 +2765,20 @@ description = "Run the Warden multi-axis dependency gate (hygiene + security [+ 
 cmd = "warden"
 
 [feature.pyforge-warden.tasks.pyforge-warden-test]
-description = "Run the pyforge.warden test suite (fast default loop -- excludes @pytest.mark.slow)"
-cmd = "pytest src/shared/packages/pyforge-warden/tests -q -m \"not slow\" -n auto --dist loadgroup"
+description = "Run the pyforge.warden test suite (fast default loop -- excludes @pytest.mark.slow) Story 117.2 (spec-pyforge-steward CAP-175, ruling D2): the first segment is the coverage gate's own run -- unit + meta, not slow, under --cov -- and writes .steward/coverage/warden-unit.json for pyforge-warden-coverage-gate to judge, so no suite runs twice; the later segments run everything else the task ran before."
+cmd = "pytest src/shared/packages/pyforge-warden/tests/unit src/shared/packages/pyforge-warden/tests/meta -q -m \"not slow\" -n auto --dist loadgroup --cov=pyforge.warden --cov-branch --cov-report=json:.steward/coverage/warden-unit.json && pytest src/shared/packages/pyforge-warden/tests --ignore=src/shared/packages/pyforge-warden/tests/unit --ignore=src/shared/packages/pyforge-warden/tests/meta -q -m \"not slow\" -n auto --dist loadgroup"
+# Story 117.2 (spec-pyforge-steward CAP-175): the suite imports the live source tree (and scripts/), as the
+# coverage run always did, so the coverage JSON its first segment writes names src/ paths the gate can judge.
+env = { PYTHONPATH = "src/shared/packages/pyforge-warden/src:scripts" }
 
 [feature.pyforge-warden.tasks.pyforge-warden-coverage-gate]
-description = "Mirror of .github/workflows/coverage-gates.yml's `named-module-gates (warden)` job: run scripts/coverage_gates_ci.py over the modules THIS branch touches, in warden's own env, against the 80% unit floor. Distinct from pyforge-warden-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
-cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit"
+description = "Mirror of the coverage-gate step of pyforge-station-tests.yml's `warden-test` job (Story 117.2; coverage-gates.yml retired): run scripts/coverage_gates_ci.py over the modules THIS branch touches, in warden's own env, against the 80% unit floor. Distinct from pyforge-warden-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
+cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit --report .steward/coverage/warden-unit.json"
 env = { COVERAGE_GATES_STATIONS = "warden" }
+# Story 117.2: the gate judges the JSON pyforge-warden-test wrote (--report); when the report is absent it runs the
+# coverage pass itself as before. The dependency orders the two lanes in pr-preflight; CI runs the gate by its
+# command line after the suite step (pyforge-station-tests.yml), so the suite is collected once per PR.
+depends-on = [{ task = "pyforge-warden-test", environment = "pyforge-warden" }]
 
 [feature.pyforge-warden.tasks.pyforge-warden-test-coverage]
 description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-warden. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage."
@@ -2783,6 +2827,7 @@ python-build = ">=1.6.1"          # PyPA `python -m build` frontend (wheel + sdi
 pytest = ">=9.1.1"                # test runner (kedro-test)
 pytest-cov = ">=7.1.0"            # Story 32.7 (spec-pyforge-testing-charter CAP-4, amended by spec-fleet-consistency-standard): coverage JSON for the named-module gate. Declared in only pyforge-marshal and local-recipes until 2026-09-07, so seven station envs could not run a coverage gate at all -- verified live against scribe, which exited 1 with "unrecognized arguments: --cov".
 pytest-xdist = ">=3.8.0"          # Story 71.6 (CAP-159): parallel station suite in pyforge-atlas-test
+pytest-split = ">=0.11.0"         # Story 117.10 (spec-pyforge-steward CAP-175): --splits N --group K shards the CI matrix; the local preflight runs the suite unsharded
 attrs = ">=26.1.0"                # spec-library-catalog-manifest-sync CAP-1: mirrors this station's own pixi.toml [package.run-dependencies] pin; observability.py's own run-dep, undocumented in root pixi.toml until 2026-09-12
 filelock = ">=3.32.6"             # spec-library-catalog-manifest-sync CAP-1 (scoping correction): duckdb_writer.py + admission.py's own run-dep, undocumented in root pixi.toml until 2026-09-12 -- distinct from the separate marshal/scribe filelock *adoption* question tracked in pyforge-unifying-strategy's Estate leverage table
 kedro-viz = ">=12.5.0"            # C2 `viz` task + test_viz_loadable smoke — NOT a pyforge-atlas run-dep so not pulled transitively; the lean no-default-feature env needs it explicitly (Gemini #85)
@@ -2811,7 +2856,7 @@ mcp = ">=2.3.0"                   # steward 21.2: official SDK for atlas MCP hos
 # Story 12-1 (kedro-skills-audit-then-adopt): dev/tooling-only CLI, never a
 # pyproject.toml runtime dep. SelfExplainML conda (not conda-forge). Same floor
 # as [feature.local-recipes.dependencies]. See
-# _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption/kedro-skills-audit-report.md.
+# archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption/kedro-skills-audit-report.md.
 kedro-skills = ">=0.1.1"          # Distribute AI coding skills to Kedro projects.
 # AUD-ATLAS-010: semantic/models.py imports boring_semantic_layer at module
 # level. TEST/env supply only — not a pyforge-atlas package run-dep. Conda
@@ -2837,13 +2882,20 @@ duckdb-server = ">=0.31.0"
 git-pkgs = ">=0.21.0,<0.22"
 
 [feature.pyforge-atlas.tasks.pyforge-atlas-test]
-description = "Run the pyforge-atlas test suite. Story 32.2 (spec-fleet-consistency-standard CAP-5): the canonical fleet grammar is `pixi run -e pyforge-<station> pyforge-<station>-test`, documented in CLAUDE.md, and atlas was the one station where that command did not exist -- its suite only answered to `kedro-test`, so anyone following the documented contract got 'task not found'. Story 27.1: a second pytest run gates the inventory quartet's tests (tests/packaging/test_openteams_handoffs.py and scripts/tests/) -- they hold the kill tests for the quartet scripts and no other lane ran them. A separate run keeps the station suite's own rootdir."
-cmd = "pytest src/shared/packages/pyforge-atlas/tests -q -n auto --dist loadgroup && pytest tests/packaging/test_openteams_handoffs.py scripts/tests -q -n auto --dist loadgroup"
+description = "Run the pyforge-atlas test suite. Story 32.2 (spec-fleet-consistency-standard CAP-5): the canonical fleet grammar is `pixi run -e pyforge-<station> pyforge-<station>-test`, documented in CLAUDE.md, and atlas was the one station where that command did not exist -- its suite only answered to `kedro-test`, so anyone following the documented contract got 'task not found'. Story 27.1: a second pytest run gates the inventory quartet's tests (tests/packaging/test_openteams_handoffs.py and scripts/tests/) -- they hold the kill tests for the quartet scripts and no other lane ran them. A separate run keeps the station suite's own rootdir. Story 117.2 (spec-pyforge-steward CAP-175, ruling D2): the first segment is the coverage gate's own run -- unit + meta, not slow, under --cov -- and writes .steward/coverage/atlas-unit.json for pyforge-atlas-coverage-gate to judge, so no suite runs twice; the later segments run everything else the task ran before."
+cmd = "pytest src/shared/packages/pyforge-atlas/tests/unit src/shared/packages/pyforge-atlas/tests/meta -q -m \"not slow\" -n auto --dist loadgroup --cov=pyforge.atlas --cov-branch --cov-report=json:.steward/coverage/atlas-unit.json && pytest src/shared/packages/pyforge-atlas/tests --ignore=src/shared/packages/pyforge-atlas/tests/unit --ignore=src/shared/packages/pyforge-atlas/tests/meta -q -n auto --dist loadgroup && pytest tests/packaging/test_openteams_handoffs.py scripts/tests -q -n auto --dist loadgroup"
+# Story 117.2 (spec-pyforge-steward CAP-175): the suite imports the live source tree (and scripts/), as the
+# coverage run always did, so the coverage JSON its first segment writes names src/ paths the gate can judge.
+env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:scripts" }
 
 [feature.pyforge-atlas.tasks.pyforge-atlas-coverage-gate]
-description = "Mirror of .github/workflows/coverage-gates.yml's `named-module-gates (atlas)` job: run scripts/coverage_gates_ci.py over the modules THIS branch touches, in atlas's own env, against the 80% unit floor. Distinct from pyforge-atlas-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
-cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit"
+description = "Mirror of the coverage-gate step of pyforge-station-tests.yml's `atlas-test` job (Story 117.2; coverage-gates.yml retired): run scripts/coverage_gates_ci.py over the modules THIS branch touches, in atlas's own env, against the 80% unit floor. Distinct from pyforge-atlas-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
+cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit --report \".steward/coverage/atlas-unit*.json\""
 env = { COVERAGE_GATES_STATIONS = "atlas" }
+# Story 117.2: the gate judges the JSON pyforge-atlas-test wrote (--report); when the report is absent it runs the
+# coverage pass itself as before. The dependency orders the two lanes in pr-preflight; CI runs the gate by its
+# command line after the suite step (pyforge-station-tests.yml), so the suite is collected once per PR.
+depends-on = [{ task = "pyforge-atlas-test", environment = "pyforge-atlas" }]
 
 [feature.pyforge-atlas.tasks.pyforge-atlas-test-coverage]
 description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-atlas. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage."
@@ -2961,6 +3013,7 @@ python-build = ">=1.6.1"          # PyPA `python -m build` frontend (wheel + sdi
 pytest = ">=9.1.1"                # test runner
 pytest-cov = ">=7.1.0"            # Story 32.7 (spec-pyforge-testing-charter CAP-4, amended by spec-fleet-consistency-standard): coverage JSON for the named-module gate. Declared in only pyforge-marshal and local-recipes until 2026-09-07, so seven station envs could not run a coverage gate at all -- verified live against scribe, which exited 1 with "unrecognized arguments: --cov".
 pytest-xdist = ">=3.8.0"          # Story 71.6 (CAP-159): parallel station suite in pyforge-doctor-test
+pytest-split = ">=0.11.0"         # Story 117.10 (spec-pyforge-steward CAP-175): --splits N --group K shards the CI matrix; the local preflight runs the suite unsharded
 # --- pyforge-scribe (Scribe): pixi build workspace member (warden mirror, Story 1.1) --
 # Source + package manifest live in ./src/shared/packages/pyforge-scribe (its
 # own [package] table, no [workspace]) — same src/shared/packages convention as
@@ -3077,6 +3130,7 @@ pyyaml = ">=6.0.3"                # test-only: tests/unit/test_dossier_structure
 hatchling = ">=1.32.4"            # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.6.1"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
+pytest-split = ">=0.11.0"         # Story 117.10 (spec-pyforge-steward CAP-175; herald's xdist is its own Story H.1): --splits N --group K shards the CI matrix; the local preflight runs the suite unsharded
 pytest-cov = ">=7.1.0"            # Story 32.7 (spec-pyforge-testing-charter CAP-4, amended by spec-fleet-consistency-standard): coverage JSON for the named-module gate. Declared in only pyforge-marshal and local-recipes until 2026-09-07, so seven station envs could not run a coverage gate at all -- verified live against scribe, which exited 1 with "unrecognized arguments: --cov".
 daphne = ">=4.2.3"                # Story 13.6: the ASGI host `webhook_host.py` mounts behind (`webhook-host` extra) -- MUST stay byte-identical to pyproject.toml's `webhook-host` extra pin, itself byte-identical to [feature.pyforge-steward.dependencies]'s own daphne pin (line ~174) and to this file's pre-existing wagtail/coderedcms pin (line ~1253)
 # Story 14.2: deck_qa.py's headless-render gate drives Chromium via playwright
@@ -3115,17 +3169,29 @@ python-build = ">=1.6.1"          # PyPA `python -m build` frontend (wheel + sdi
 pytest = ">=9.1.1"                # test runner
 
 [feature.pyforge-doctor.tasks.pyforge-doctor-test]
-description = "Run the pyforge.doctor test suite (pytest-xdist, 4 workers; the 5 s speed-budget test runs alone afterwards so worker contention cannot time it)"
-cmd = "env PYTEST_XDIST_AUTO_NUM_WORKERS=4 pytest src/shared/packages/pyforge-doctor/tests -q -n auto --dist loadgroup --ignore=src/shared/packages/pyforge-doctor/tests/unit/test_check_speed_budget.py && pytest src/shared/packages/pyforge-doctor/tests/unit/test_check_speed_budget.py -q"
+description = "Run the pyforge.doctor test suite (pytest-xdist; -n auto takes PYTEST_XDIST_AUTO_NUM_WORKERS from the caller -- the preflight's per-lane share, CI's four cores, a laptop's all -- never a pin in this cmd (doctor Story 55.3); the 5 s speed-budget test is a live-tree reader and runs alone in pyforge-doctor-live-test) Story 117.2 (spec-pyforge-steward CAP-175, ruling D2): the first segment is the coverage gate's own run -- unit + meta, not slow, under --cov -- and writes .steward/coverage/doctor-unit.json for pyforge-doctor-coverage-gate to judge, so no suite runs twice; the later segments run everything else the task ran before."
+cmd = "pytest src/shared/packages/pyforge-doctor/tests/unit src/shared/packages/pyforge-doctor/tests/meta -q -m \"not slow and not live_tree\" -n auto --dist loadgroup --cov=pyforge.doctor --cov-branch --cov-report=json:.steward/coverage/doctor-unit.json"
+# Story 117.2 (spec-pyforge-steward CAP-175): the suite imports the live source tree (and scripts/), as the
+# coverage run always did, so the coverage JSON its first segment writes names src/ paths the gate can judge.
+env = { PYTHONPATH = "src/shared/packages/pyforge-doctor/src:scripts" }
+
+[feature.pyforge-doctor.tasks.pyforge-doctor-live-test]
+description = "Doctor Story 55.4 (relay of spec-pyforge-steward:CAP-175, ruling D4): the live-tree half of the doctor suite -- every module marked pytest.mark.live_tree (the gatherers over planning artifacts, dreams, governance, archive, recipes, skills and src/), under --cov writing .steward/coverage/doctor-live.json for the gate to merge; the 5 s speed-budget test runs alone afterwards so worker contention cannot time it. Fires in CI on what these tests read (doctor-live-test)."
+cmd = "pytest src/shared/packages/pyforge-doctor/tests/unit src/shared/packages/pyforge-doctor/tests/meta -q -m \"live_tree and not slow\" -n auto --dist loadgroup --ignore=src/shared/packages/pyforge-doctor/tests/unit/test_check_speed_budget.py --cov=pyforge.doctor --cov-branch --cov-report=json:.steward/coverage/doctor-live.json && pytest src/shared/packages/pyforge-doctor/tests/unit/test_check_speed_budget.py -q"
+env = { PYTHONPATH = "src/shared/packages/pyforge-doctor/src:scripts" }
 
 [feature.pyforge-doctor.tasks.pyforge-doctor-aggregate-scripts-test]
 description = "Story 39.1 (spec-pyforge-doctor; follows Story 38.5; Story 41.1 added the second file): tests/scripts/test_detectors_doctor_sources.py and tests/scripts/test_apply_verification_verdicts.py where Doctor's run-deps (jsonschema, pyyaml, pyforge-core) are installed. The aggregate tests load Doctor's dispatch table and the verdict-writer tests import its citation predicate, so both skip under pyforge-doctor-scripts-test (pyforge-ci, stdlib-only as its env comment in pixi.toml defines; steward Story 103.3) and this is where they run. The Detectors scripts-suite job and pr-preflight call this task verbatim."
 cmd = "python -m pytest tests/scripts/test_detectors_doctor_sources.py tests/scripts/test_apply_verification_verdicts.py -q"
 
 [feature.pyforge-doctor.tasks.pyforge-doctor-coverage-gate]
-description = "Mirror of .github/workflows/coverage-gates.yml's `named-module-gates (doctor)` job: run scripts/coverage_gates_ci.py over the modules THIS branch touches, in doctor's own env, against the 80% unit floor. Distinct from pyforge-doctor-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
-cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit"
+description = "Mirror of the coverage-gate step of pyforge-station-tests.yml's `doctor-test` job (Story 117.2; coverage-gates.yml retired): run scripts/coverage_gates_ci.py over the modules THIS branch touches, in doctor's own env, against the 80% unit floor. Distinct from pyforge-doctor-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
+cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit --report .steward/coverage/doctor-unit.json --report \".steward/coverage/doctor-live*.json\""
 env = { COVERAGE_GATES_STATIONS = "doctor" }
+# Story 117.2: the gate judges the JSON pyforge-doctor-test wrote (--report); when the report is absent it runs the
+# coverage pass itself as before. The dependency orders the two lanes in pr-preflight; CI runs the gate by its
+# command line after the suite step (pyforge-station-tests.yml), so the suite is collected once per PR.
+depends-on = [{ task = "pyforge-doctor-test", environment = "pyforge-doctor" }, { task = "pyforge-doctor-live-test", environment = "pyforge-doctor" }]
 
 [feature.pyforge-doctor.tasks.pyforge-doctor-test-coverage]
 description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-doctor. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage."
@@ -3145,13 +3211,20 @@ cwd = "src/shared/packages/pyforge-doctor"
 description = "Build all three artifacts: conda + wheel + sdist"
 depends-on = ["pyforge-doctor-build-conda", "pyforge-doctor-build-dist"]
 [feature.pyforge-scribe.tasks.pyforge-scribe-test]
-description = "Run the pyforge.scribe test suite"
-cmd = "pytest src/shared/packages/pyforge-scribe/tests -q"
+description = "Run the pyforge.scribe test suite Story 117.2 (spec-pyforge-steward CAP-175, ruling D2): the first segment is the coverage gate's own run -- unit + meta, not slow, under --cov -- and writes .steward/coverage/scribe-unit.json for pyforge-scribe-coverage-gate to judge, so no suite runs twice; the later segments run everything else the task ran before."
+cmd = "pytest src/shared/packages/pyforge-scribe/tests/unit src/shared/packages/pyforge-scribe/tests/meta -q -m \"not slow\" --cov=pyforge.scribe --cov-branch --cov-report=json:.steward/coverage/scribe-unit.json"
+# Story 117.2 (spec-pyforge-steward CAP-175): the suite imports the live source tree (and scripts/), as the
+# coverage run always did, so the coverage JSON its first segment writes names src/ paths the gate can judge.
+env = { PYTHONPATH = "src/shared/packages/pyforge-scribe/src:scripts" }
 
 [feature.pyforge-scribe.tasks.pyforge-scribe-coverage-gate]
-description = "Mirror of .github/workflows/coverage-gates.yml's `named-module-gates (scribe)` job: run scripts/coverage_gates_ci.py over the modules THIS branch touches, in scribe's own env, against the 80% unit floor. Distinct from pyforge-scribe-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
-cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit"
+description = "Mirror of the coverage-gate step of pyforge-station-tests.yml's `scribe-test` job (Story 117.2; coverage-gates.yml retired): run scripts/coverage_gates_ci.py over the modules THIS branch touches, in scribe's own env, against the 80% unit floor. Distinct from pyforge-scribe-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
+cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit --report .steward/coverage/scribe-unit.json"
 env = { COVERAGE_GATES_STATIONS = "scribe" }
+# Story 117.2: the gate judges the JSON pyforge-scribe-test wrote (--report); when the report is absent it runs the
+# coverage pass itself as before. The dependency orders the two lanes in pr-preflight; CI runs the gate by its
+# command line after the suite step (pyforge-station-tests.yml), so the suite is collected once per PR.
+depends-on = [{ task = "pyforge-scribe-test", environment = "pyforge-scribe" }]
 
 [feature.pyforge-scribe.tasks.pyforge-scribe-test-coverage]
 description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-scribe. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage."
@@ -3180,8 +3253,11 @@ description = "Story 8.1 (spec-8-1): installs the checked-in nightly-compile tri
 cmd = "python scripts/scribe_install_nightly_trigger.py"
 
 [feature.pyforge-herald.tasks.pyforge-herald-test]
-description = "Run the pyforge.herald test suite. npm-free on purpose (herald Story 45.1): pyforge-station-tests and the SBOM laptop gate run it from the SBOM alone (fnd:CAP-13), so its built-site tests skip without docs-site's install. pyforge-herald-test-built installs first."
-cmd = "pytest src/shared/packages/pyforge-herald/tests -q"
+description = "Run the pyforge.herald test suite. npm-free on purpose (herald Story 45.1): pyforge-station-tests and the SBOM laptop gate run it from the SBOM alone (fnd:CAP-13), so its built-site tests skip without docs-site's install. pyforge-herald-test-built installs first. Story 117.2 (spec-pyforge-steward CAP-175, ruling D2): the first segment is the coverage gate's own run -- unit + meta, not slow, under --cov -- and writes .steward/coverage/herald-unit.json for pyforge-herald-coverage-gate to judge, so no suite runs twice; the later segments run everything else the task ran before."
+cmd = "pytest src/shared/packages/pyforge-herald/tests/unit src/shared/packages/pyforge-herald/tests/meta -q -m \"not slow\" --cov=pyforge.herald --cov-branch --cov-report=json:.steward/coverage/herald-unit.json && pytest src/shared/packages/pyforge-herald/tests --ignore=src/shared/packages/pyforge-herald/tests/unit --ignore=src/shared/packages/pyforge-herald/tests/meta -q"
+# Story 117.2 (spec-pyforge-steward CAP-175): the suite imports the live source tree (and scripts/), as the
+# coverage run always did, so the coverage JSON its first segment writes names src/ paths the gate can judge.
+env = { PYTHONPATH = "src/shared/packages/pyforge-herald/src:scripts" }
 
 [feature.pyforge-herald.tasks.pyforge-herald-test-built]
 description = "Herald Story 45.1: docs-site-install (npm ci in the site env), then pyforge-herald-test, so the built-site tests build Astro instead of skipping. CI's herald job runs this with HERALD_DOCS_SITE_REQUIRED=1, under which a missing install fails those tests; pr-preflight selects the install beside herald's lane from that step. A separate task, so pyforge-herald-test, pyforge-station-tests and the SBOM laptop gate stay free of the site env and npm (fnd:CAP-13)."
@@ -3196,9 +3272,13 @@ depends-on = [{ task = "docs-site-install", environment = "site" }, { task = "py
 # runs the install first (a kept docs-site lane brings it; it is declared before the station suites in
 # pr-preflight-lanes).
 [feature.pyforge-herald.tasks.pyforge-herald-coverage-gate]
-description = "Mirror of .github/workflows/coverage-gates.yml's `named-module-gates (herald)` job: run scripts/coverage_gates_ci.py over the modules THIS branch touches, in herald's own env, against the 80% unit floor. Distinct from pyforge-herald-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
-cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit"
+description = "Mirror of the coverage-gate step of pyforge-station-tests.yml's `herald-test` job (Story 117.2; coverage-gates.yml retired): run scripts/coverage_gates_ci.py over the modules THIS branch touches, in herald's own env, against the 80% unit floor. Distinct from pyforge-herald-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
+cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit --report \".steward/coverage/herald-unit*.json\""
 env = { COVERAGE_GATES_STATIONS = "herald" }
+# Story 117.2: the gate judges the JSON pyforge-herald-test wrote (--report); when the report is absent it runs the
+# coverage pass itself as before. The dependency orders the two lanes in pr-preflight; CI runs the gate by its
+# command line after the suite step (pyforge-station-tests.yml), so the suite is collected once per PR.
+depends-on = [{ task = "pyforge-herald-test", environment = "pyforge-herald" }]
 
 [feature.pyforge-herald.tasks.pyforge-herald-test-coverage]
 description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-herald. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage. Herald Story 45.1: runs docs-site-install first and sets HERALD_DOCS_SITE_REQUIRED, as CI's pyforge-herald-test-built run does, because its unit suite takes in tests/meta, where the built-site tests are; an operator report, outside pyforge-station-tests and the SBOM laptop gate."

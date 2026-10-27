@@ -22,13 +22,13 @@ entries** — it stops dead after `DW-B2-5`, collateral of the 2026-07-19 copy
 failure — and that directory is **gitignored**, so it carries no durable copy.
 
 It was briefly believed the other 45 were lost. **They were not.** They survive
-with full bodies in `../spec-archive/ATLAS-BMAD-SPECS-CONSOLIDATED.md`, which is
+with full bodies in `archive/_bmad-output/projects/pyforge-atlas/spec-archive/ATLAS-BMAD-SPECS-CONSOLIDATED.md`, which is
 git-tracked. This file consolidates both sources into one durable ledger in
 Tier-2 `planning-artifacts/`, where it cannot be lost to a Tier-3 accident again.
 
 ## Provenance
 
-- 43 entries recovered from `../spec-archive/ATLAS-BMAD-SPECS-CONSOLIDATED.md`
+- 43 entries recovered from `archive/_bmad-output/projects/pyforge-atlas/spec-archive/ATLAS-BMAD-SPECS-CONSOLIDATED.md`
 - 9 entries from the surviving `implementation-artifacts/deferred-work.md`
   (where both had an entry, the longer body won)
 - **0 lost.** `DW-A2-P4` and `DW-D2` were previously recorded here as "the only
@@ -3831,7 +3831,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   closed_by: Story 27.4
   resolution: Story 27.4
 
-  verified: 2026-10-04 — closed — Story 27.4; verified: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/catalog-sources.md:39
+  verified: 2026-10-04 — closed — Story 27.4; verified: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/catalog-sources.md:39
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4533,7 +4533,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   closed_by: Story 27.4
   resolution: Story 27.4
 
-  verified: 2026-10-04 — closed — Story 27.4; verified: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/catalog-sources.md:39
+  verified: 2026-10-04 — closed — Story 27.4; verified: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/catalog-sources.md:39
 
   verified: 2026-09-08 — still-open — CONFIRMED as a doc-vs-code divergence, with the code side being correct. `catalog-sources.md`'s Tier 2 table still names `artifactory_downloads_raw` under `artifactory_downloads`, while what shipped is `enterprise_jfrog_names` bucketed under `upstream_discovery` in `PREFIX_TO_PIPELINE`. The diff correctly implements the intent-contract; the companion planning doc was never reconciled and remains stale.
 
@@ -5006,7 +5006,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: review finding, atlas Story 34.5 independent review rounds 1-2
   severity: low
   promoted: 2026-10-18 -- implementer response to 34.5 review round 2
-  status: open
+  resolved: 2026-10-25 (Story 34.13: pyproject.toml declares brotli>=1.2 (PyPI Brotli) and the package pixi.toml brotli-python = ">=1.2", the floor the env already resolves through conda-forge urllib3; pixi.lock records it for every pyforge-atlas source entry, and a fresh pixi install -e pyforge-atlas --locked in a clean clone reads the lock as current; the dependency-parity test maps brotli-python to brotli (CONDA_TO_PYPI); the guarded import in datasets/tier3_sources.py is unchanged)
+  status: closed
 
 ### DW-atlas-34-6-1: The `pyforge-atlas-bootstrap` task description still names all three discovery stores as fetcher-less.
 
@@ -5266,3 +5267,26 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-10-24 -- atlas Story 37.12; owner atlas (a fix to Story 37.5's nodes)
   resolved: 2026-10-24 (Story 37.13: SnapshotHistoryDataset leaves the AD-13 marker <store>.staleness.json on a save that appends no snapshot, an empty frame or a store it cannot read, and removes it after a save that writes rows; with pyforge.atlas.board_projections on, the cve-watcher's AD-17 stamp is the older of its latest snapshot's time and the diff file's mtime, and the stamp line says stale with the marker's reason, so an earlier run's diff is dated by its own snapshot and marked; with no snapshot store the board reads as a data gap)
   status: closed
+
+### DW-atlas-39-1: Atlas PRD FR-15, FR-61 and FR-63 have no realizing capability: they keep the 2026-09-17 fold's counted arrows CAP-15, CAP-1 and CAP-3 until the operator picks their source.
+
+- source_spec: `planning-artifacts/specs/spec-39-1-every-atlas-prd-fr-arrow-names-the-spec-capability-that-realizes-it.md`
+  summary: Atlas PRD FR-15, FR-61 and FR-63 have no realizing capability: they keep the 2026-09-17 fold's counted arrows CAP-15, CAP-1 and CAP-3 until the operator picks their source.
+  evidence: Story 39.1 (2026-10-25) re-mapped the fold's counted FR arrows from evidence, and the operator ruled ("Approve as proposed") to leave these three unchanged pending a source-capability decision. FR-61 (kedro-skills audit-then-adopt) and FR-63 (a recorded verdict on vscode-kedro) come from spec-kedro-org-tooling-adoption, which numbered its capabilities as a plain list ("Capability 1..3"), not CAP-n. The fold (86d1cdf3ee) minted spec-pyforge-atlas CAPs only from CAP-n lines, so Capabilities 1 and 3 never became capabilities, while their stories (atlas 11.1, 11.3) stayed done; Capability 2's published DAG view is extended by CAP-41 and re-specified by CAP-62. FR-15 (Pixi-first, nebi-scaffolded, conda-forge-only) derives from the Spec's Constraints bullet "Conda-forge-only, pixi-managed, py3.14-floored provisioning", not from a CAP; its arrow names CAP-15, the derived layer. Options: restore kedro-org Capabilities 1 and 3 as spec-pyforge-atlas CAPs through bmad-spec and point FR-61 and FR-63 at them, or retire those FRs; for FR-15, mint a toolchain CAP from the constraint, or let the FR cite the constraint instead of a CAP.
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/prds/prd-pyforge-atlas-2026-07-17/prd.md (FR-15, FR-61, FR-63)
+  origin: spec-deferred 9588d5cf96f1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-25 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  resolved: 2026-10-25 (Story 40.1, operator rulings "Restore 2 atlas CAPs (Recommended)" and "Cite the constraint (Recommended)": spec-pyforge-atlas CAP-70 and CAP-71 restore spec-kedro-org-tooling-adoption's Capabilities 1 and 3, shipped; FR-61 cites CAP-70 and FR-63 cites CAP-71; FR-15 cites the Spec constraint "Conda-forge-only, pixi-managed, py3.14-floored provisioning"; PRD § Currency reconciliation — 2026-10-25 (Story 40.1))
+  status: closed
+
+### DW-atlas-42-1-1: 48 capabilities of the atlas flag inventory stay `unresolved`: the join cannot reach their code, so the CAP-7 retrofit cannot judge whether they are reachable at runtime.
+
+- source_spec: `planning-artifacts/specs/spec-42-1-agents-trigger-and-read-the-pipeline-natively-sits-behind-a-kill-switch.md`
+  summary: 48 rows of `docs/governance/flag-inventory/pyforge-atlas.md` read `unresolved` after the join fix (doctor Story 51.1): 35 CAPs no story cites on a line naming the Spec, 12 cited only by stories not yet landed, 1 whose Surface path no longer exists. They are not the retrofit's debt (operator ruling R7 of 2026-10-26): a row the join cannot classify is a planning gap, not a capability known to be reachable.
+  evidence: Regenerated 2026-10-26 on the fixed join (landed stories only, best class across citing stories). The residue is the inventory's blind spot by construction: a CAP joins only through a citing story's `Surface:` line in `epics.md` or a story spec's `Parent:` line. The follow-up shape is Doctor's: let the join also read each capability's own `verified:` sub-bullet citations (they name `file:line`), then re-measure; a station backfills `Surface:` lines only where a capability turns out runtime.
+  location: docs/governance/flag-inventory/pyforge-atlas.md
+  origin: spec-deferred — recorded by hand in the CAP-7 retrofit PR (operator ruling R7, 2026-10-26)
+  severity: low
+  promoted: 2026-10-26 — the retrofit chain commit
+  status: open

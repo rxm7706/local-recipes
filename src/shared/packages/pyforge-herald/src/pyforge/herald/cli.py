@@ -9,7 +9,7 @@ push-back). ``progress``/``success``/``notice`` are all real as of Epics
 8/9/10: each is local-storage-backed (``progress.py``/``claims.py``/
 ``notices.py``, all scaled down from the epics doc's live-database/
 webhook/cron design per the 2026-08-08 scope decision -- see
-``docs/dreams/herald-moments-2-4-live-backend.md``), with an explicit CLI
+``archive/docs/dreams/herald-moments-2-4-live-backend.md``), with an explicit CLI
 command as the primary, operator-run record-creation path. Epic 13 (Story
 13.4) added a second, HMAC-verified path -- ``webhook.py``'s
 ``on-ship``/``on-pr-close`` ASGI3 handlers, calling straight through to
@@ -1367,7 +1367,7 @@ def _run_progress_update(args: argparse.Namespace, station: str) -> None:
     operator-gated write in ``auth.py``'s own docstring). Records today's
     progress from explicit flags -- the scoped-down interpretation of the
     original AC's "extracted from bmad-loop journal / CI webhook payload"
-    (see ``docs/dreams/herald-moments-2-4-live-backend.md``)."""
+    (see ``archive/docs/dreams/herald-moments-2-4-live-backend.md``)."""
     auth.require_operator_role(auth.resolve_auth_context(), action="herald progress --update")
     _validate_station(station)
     on_date = datetime.now(UTC).date().isoformat()

@@ -68,7 +68,7 @@ TOOL_SPECS: dict[str, dict[str, Any]] = {
         "cli": None,
     },
     "list_atlas_pipelines": {
-        "description": "List registered atlas pipeline names.",
+        "description": "List the MCP-triggerable atlas pipeline names.",
         "cli": None,
     },
     "list_atlas_datasets": {
@@ -85,11 +85,13 @@ TOOL_SPECS: dict[str, dict[str, Any]] = {
     },
 }
 
-# The authoritative registry mirror: the four registered pipelines from
-# B1/B2 (`find_pipelines()` discovers them from the pipelines/ package).
+# The MCP-triggerable pipelines: eight of the twelve `register_pipelines()`
+# registers (`find_pipelines()` discovers them from the pipelines/ package).
 # Kept STATIC — not computed from a live registry — so list_pipelines()
-# stays offline/thin; tests/mcp/test_audit_mapping.py pins this tuple
-# against the real registry (the 5 create_pipeline modules). B6 added
+# stays offline/thin; tests/unit/mcp/test_audit_mapping.py pins this tuple
+# against the real registry, less its NO_MCP_TRIGGER_PIPELINES (the four
+# CLI-only by design: artifactory_downloads, query_plane_cache,
+# semantic_packages, catalog_index). B6 added
 # `seed_gaps` (the four READ-ONLY seed-freshness report nodes). NB: this is
 # the generic per-PIPELINE trigger the registry-mirror invariant requires —
 # the four seed-gap SUGGESTERS themselves stay CLI-only (AD-7): no per-tool
@@ -113,6 +115,16 @@ class AtlasMCPError(PyforgeError, RuntimeError):
     additional base -- ``RuntimeError`` stays in the MRO."""
 
 
+# Epic 42 (spec-feature-flag-governance CAP-7): the kill switches for atlas's pre-rule runtime capabilities live on
+# the session seam (`mcp/session.py`, the ONE execution plane every trigger and read crosses, AD-23); a tool body
+# only calls the seam (AD-7). The names are re-exported here so the CLI face and the tests read one key.
+AGENT_PIPELINE_TOOLS_FLAG_KEY = _session.AGENT_PIPELINE_TOOLS_FLAG_KEY  # CAP-9, Story 42.1
+MANIFEST_INVENTORY_FLAG_KEY = _session.MANIFEST_INVENTORY_FLAG_KEY  # CAP-13, Story 42.2
+MANIFEST_INVENTORY_PIPELINE = _session.MANIFEST_INVENTORY_PIPELINE
+require_agent_pipeline_tools = _session.require_agent_pipeline_tools
+require_manifest_inventory = _session.require_manifest_inventory
+
+
 def run_pipeline(
     name: str,
     *,
@@ -120,14 +132,17 @@ def run_pipeline(
     extra_params: dict[str, Any] | None = None,
     env: str | None = None,
 ) -> dict[str, Any]:
-    """Trigger the named registered pipeline through the ONE execution
-    plane (AD-23): ``KedroSession.run(pipeline_name=...)``.
+    """Trigger the named MCP-triggerable pipeline (one of ``PIPELINE_NAMES``)
+    through the ONE execution plane (AD-23): ``KedroSession.run(pipeline_name=...)``.
 
     Returns a thin advisory + timestamped receipt (AD-17) — the OUTPUT
     NAMES only, never the raw data (reads go through ``read_dataset``).
     """
     if name not in PIPELINE_NAMES:
         raise AtlasMCPError(f"unknown pipeline {name!r}; known: {PIPELINE_NAMES}")
+    _session.require_agent_pipeline_tools()
+    if name == _session.MANIFEST_INVENTORY_PIPELINE:
+        _session.require_manifest_inventory()
     with _session.bootstrapped_session(project_path, extra_params, env) as s:
         result = s.run(pipeline_name=name)
     return {
@@ -170,6 +185,7 @@ def read_dataset(
     Raises whatever ``catalog.load`` raises on an unknown dataset name (the
     envelope wraps only the success path).
     """
+    _session.require_agent_pipeline_tools()
     with _session.bootstrapped_session(project_path, env=env) as s:
         catalog = _session.loaded_catalog(s)
         result, info = _provenance.load_with_provenance(catalog, name)
@@ -243,9 +259,9 @@ def list_pipelines(
     project_path: Path | str | None = None,
     env: str | None = None,
 ) -> list[str]:
-    """The registered pipeline names — served from the static registry
-    mirror (see PIPELINE_NAMES) so this stays offline/thin; the mirror is
-    pinned against the real registry by test_audit_mapping."""
+    """The MCP-triggerable pipeline names — served from the static mirror
+    (see PIPELINE_NAMES) so this stays offline/thin; the mirror is pinned
+    against the real registry, less the CLI-only pipelines, by test_audit_mapping."""
     return sorted(PIPELINE_NAMES)
 
 

@@ -3,7 +3,7 @@ backing store from a JSON file to the shared SQLite database in
 ``db.py``).
 
 Per the 2026-08-08 scope decision recorded in
-``docs/dreams/herald-moments-2-4-live-backend.md``, this module persists
+``archive/docs/dreams/herald-moments-2-4-live-backend.md``, this module persists
 ``Claim`` records as rows in ``db.py``'s shared ``.herald/herald.db``
 (table ``claims``) rather than reaching a live PostgreSQL/SQLAlchemy stack
 the original Epic 9 spec assumed. ``evidence``/``edit_history`` stay JSON

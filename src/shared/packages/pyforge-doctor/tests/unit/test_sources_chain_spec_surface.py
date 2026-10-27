@@ -28,6 +28,10 @@ from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import __main__ as dispatch
 from pyforge.doctor.sources import chain
 
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 # Same git-env scrub as test_sources_ledger_independence.py's sibling ledger
 # test file -- a contributor's own git config must not decide whether this
 # suite passes (see that file's own docstring for the full rationale).

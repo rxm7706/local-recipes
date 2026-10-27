@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Detector: a story permanently deferred by bmad-loop's stuck-orchestrator
-baseline-drift bug (docs/dreams/bmad-loop-baseline-drift.md,
+baseline-drift bug (archive/docs/dreams/bmad-loop-baseline-drift.md,
 spec-bmad-loop-baseline-drift, CAP-1/CAP-2) and not yet recovered.
 
 PLACEMENT (Story 20.1 — closes parent SPEC open question)

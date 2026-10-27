@@ -206,7 +206,7 @@ Values can be injected at runtime: `${globals:key}` (from `conf/base/globals.yml
 This project's catalog conventions are enforced by `tests/catalog/*`
 (`pixi run kedro-catalog-check`, 47 tests, live-verified 2026-08-09) — audited
 against the guidance above in
-`_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption/kedro-skills-audit-report.md`.
+`archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption/kedro-skills-audit-report.md`.
 Two confirmed corrections; everything else above passes as written.
 
 1. **Layer tag** (corrects "Dataset type naming" → `Top-level layer:`). Ignore

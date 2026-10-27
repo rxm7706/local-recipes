@@ -145,3 +145,64 @@ def test_main_write_then_check_roundtrip(tmp_path: Path, monkeypatch: pytest.Mon
     # regenerated -> --check reds it.
     monkeypatch.setattr(m, "capture_help", lambda script: "fixed help text plus a new verb")
     assert m.main() == 1
+
+
+def test_capture_help_scrubs_terminal_forcing_variables_and_pins_columns(monkeypatch: pytest.MonkeyPatch):
+    """Marshal Story 103.1 (AC9): with the caller's environment forcing a terminal
+    (FORCE_COLOR, PY_COLORS, GITHUB_ACTIONS, ...), rich wraps at 80 under a dumb
+    TERM or pollutes the capture with escape codes otherwise, and PYTHON_COLORS=1
+    colours argparse's own --help past NO_COLOR, and TYPER_USE_RICH=0 swaps typer
+    to click's formatter, so a harness rendered this page stale. The child's
+    environment carries none of those eight variables, whatever the caller had, and
+    pins COLUMNS=100 and NO_COLOR=1. The eight are named literally here so dropping
+    one from the tuple reds this test."""
+    import subprocess
+
+    forcing = {
+        "FORCE_COLOR",
+        "PY_COLORS",
+        "PYTHON_COLORS",
+        "CLICOLOR_FORCE",
+        "GITHUB_ACTIONS",
+        "TTY_COMPATIBLE",
+        "TERMINAL_WIDTH",
+        "TYPER_USE_RICH",
+    }
+    assert set(m._TERMINAL_FORCING_VARS) >= forcing
+
+    seen: dict[str, dict[str, str]] = {}
+
+    def fake_run(argv, **kwargs):
+        seen["env"] = kwargs["env"]
+        return subprocess.CompletedProcess(argv, 0, stdout="usage: x [-h]\n", stderr="")
+
+    monkeypatch.setattr(m.subprocess, "run", fake_run)
+    monkeypatch.setattr(m.shutil, "which", lambda name: f"/opt/bin/{name}")
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    monkeypatch.setenv("PY_COLORS", "1")
+    monkeypatch.setenv("PYTHON_COLORS", "1")
+    monkeypatch.setenv("CLICOLOR_FORCE", "1")
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    monkeypatch.setenv("TTY_COMPATIBLE", "1")
+    monkeypatch.setenv("TERMINAL_WIDTH", "80")
+    monkeypatch.setenv("TYPER_USE_RICH", "0")
+    monkeypatch.setenv("TERM", "dumb")
+    monkeypatch.setenv("COLUMNS", "80")
+    monkeypatch.setenv("PATH", "/opt/bin")
+
+    assert m.capture_help("x") == "usage: x [-h]\n"
+
+    env = seen["env"]
+    assert "FORCE_COLOR" not in env
+    assert "PY_COLORS" not in env
+    assert "PYTHON_COLORS" not in env
+    assert "CLICOLOR_FORCE" not in env
+    assert "GITHUB_ACTIONS" not in env
+    assert "TTY_COMPATIBLE" not in env
+    assert "TERMINAL_WIDTH" not in env
+    assert "TYPER_USE_RICH" not in env
+    assert env["COLUMNS"] == "100"
+    assert env["NO_COLOR"] == "1"
+    # The rest of the caller's environment still reaches the child (PATH above all).
+    assert env["PATH"] == "/opt/bin"
+    assert env["TERM"] == "dumb"

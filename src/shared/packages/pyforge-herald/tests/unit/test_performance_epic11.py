@@ -1,6 +1,6 @@
 """Story 11.4: performance testing, scaled to what is actually
 CLI-testable in this architecture (see
-``docs/dreams/herald-moments-2-4-live-backend.md``).
+``archive/docs/dreams/herald-moments-2-4-live-backend.md``).
 
 The original AC has four bullets:
 

@@ -97,9 +97,6 @@ _EXTERNAL_AD_CITATIONS: dict[str, dict[int, str]] = {
     "pyforge-steward/implementation-artifacts/spec-45-2-the-reviewer-is-measured-against-a-planted-defect": {
         21: "eval-quality CLI's documented exit code 3 -- the Tier-3 twin of the spec above",
     },
-    "pyforge-steward/planning-artifacts/specs/spec-bmad-eval-quality/.memlog.md": {
-        33: "eval-quality CLI's own witness-matched / clean-control oracle states",
-    },
     # Project-scoped on purpose. A bare "planning-artifacts/deferred-work-ledger.md"
     # was tried first and matched EVERY station's ledger, so atlas citing the same
     # number would have been silently absolved -- the too-broad-pattern defect,
@@ -150,8 +147,11 @@ _CAP_CITE = re.compile(r"(?<![\w:-])CAP-(\d+)")
 
 #: Spines live under `planning-artifacts/architecture/<run>/`, and -- when a
 #: Spec adopts one as a companion -- beside that Spec. Both are conformant:
-#: `spec-python-agent-platform/SPEC.md` declares
-#: `companions: [ARCHITECTURE-SPINE.md]`, which is bmad-spec's own convention.
+#: `spec-python-agent-platform/SPEC.md` declared
+#: `companions: [ARCHITECTURE-SPINE.md]`, which is bmad-spec's own convention; that
+#: pap host spine now sits beside `spec-pyforge-steward/SPEC.md` (carried there
+#: 2026-10-27 when the absorbed folder moved to the archive,
+#: spec-one-chain-per-station:CAP-11).
 _SPINE_GLOBS = (
     "planning-artifacts/architecture/*/ARCHITECTURE-SPINE.md",
     "planning-artifacts/specs/*/ARCHITECTURE-SPINE.md",

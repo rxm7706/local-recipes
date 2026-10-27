@@ -24,6 +24,10 @@ import pytest
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import chain
 
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 # Guarded, mirroring test_check_speed_budget.py's own idiom: an IndexError
 # from a shallower-than-7-levels layout (e.g. an extracted sdist) degrades to
 # a skip rather than a collection error for the whole file.
@@ -1596,7 +1600,9 @@ def test_derive_story_key_falls_back_to_parent_dir_for_generic_stem_real_excerpt
     own worked fallback-slug example ("a fallback slug
     (`deferred-work-visibility`, whose trailing segment is not an
     integer)")."""
-    real = "`_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md`"
+    real = (
+        "`archive/_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md`"
+    )
     assert chain._derive_story_key(real) == "deferred-work-visibility"
 
 
@@ -2288,19 +2294,19 @@ def test_derive_story_key_generic_stems_are_case_insensitive() -> None:
     (wrong) story key."""
     assert (
         chain._derive_story_key(
-            "`_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/Spec.md`"
+            "`archive/_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/Spec.md`"
         )
         == "deferred-work-visibility"
     )
     assert (
         chain._derive_story_key(
-            "`_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/Readme.md`"
+            "`archive/_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/Readme.md`"
         )
         == "deferred-work-visibility"
     )
     assert (
         chain._derive_story_key(
-            "`_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/INDEX.md`"
+            "`archive/_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/INDEX.md`"
         )
         == "deferred-work-visibility"
     )

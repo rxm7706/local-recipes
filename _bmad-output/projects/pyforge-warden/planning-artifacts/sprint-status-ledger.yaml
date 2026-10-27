@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: warden
-# stories: 98
+# stories: 114
 development_status:
   1-1-frozen-contract-verdict-lattice-projection-safety: done
   1-2-interfaces-null-engine-regression-harness-socket-deny: done
@@ -46,12 +46,18 @@ development_status:
   16-5-warden-inventories-the-items-of-the-operator-designated-github-projects: done
   17-1-eligibility-records-its-policy-and-warden-s-other-open-deferrals-close: done
   18-1-the-leak-guard-forbids-the-listed-terms-everywhere-and-the-organisation-s-name-in-warden-s-files: done
+  19-1-every-warden-prd-fr-arrow-names-the-spec-capability-that-realizes-it: done
   2-1-conda-pypi-map-the-ecosystem-identity-predicate: done
   2-2-non-rendering-extraction-common-case-differential-oracle: done
   2-3-the-full-supported-construct-matrix: done
   2-4-honest-split-coverage-the-indeterminate-producer: done
   2-5-name-level-cve-tier-stale-db-cross-ecosystem-non-merge: done
   2-6-lockfile-extraction-the-locked-closure-vuln-hero-path: done
+  20-1-the-warden-spec-s-fold-cut-capability-text-is-restored: done
+  20-2-every-warden-nfr-names-the-capabilities-it-bounds: done
+  21-1-warden-s-archived-compliance-gates-spec-folder-moves-to-the-archive-home: done
+  23-1-warden-s-four-archived-dreams-leave-the-live-tree: done
+  24-1-warden-s-absorbed-spec-folders-move-to-the-archive-home: done
   3-1-configurable-policy: done
   3-2-auditable-expiring-waivers: done
   3-3-waiver-expiry-warn-only-adoption-on-ramp: done
@@ -96,8 +102,18 @@ development_status:
   epic-17-retrospective: optional
   epic-18: done
   epic-18-retrospective: optional
+  epic-19: done
+  epic-19-retrospective: optional
   epic-2: done
   epic-2-retrospective: done
+  epic-20: done
+  epic-20-retrospective: optional
+  epic-21: done
+  epic-21-retrospective: optional
+  epic-23: done
+  epic-23-retrospective: optional
+  epic-24: done
+  epic-24-retrospective: optional
   epic-3: done
   epic-3-retrospective: done
   epic-4: done

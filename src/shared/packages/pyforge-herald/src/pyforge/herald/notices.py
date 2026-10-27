@@ -3,7 +3,7 @@ Notices), scaled down per the effort's own scoping decision: local-storage,
 CLI-triggered, no server, no live database beyond the shared local one
 (Story 13.3). The full-spec live-backend version (HTTP redirects, a
 scheduled draft-review job) is captured as a Dream at
-``docs/dreams/herald-moments-2-4-live-backend.md`` and deliberately not
+``archive/docs/dreams/herald-moments-2-4-live-backend.md`` and deliberately not
 built here -- Herald has no running server anywhere (a stateless CLI plus
 a static web dashboard).
 

@@ -1,4 +1,4 @@
-# marshal-seed:begin region=model-ignores model-version=1.0.0 sha=6dfa035c
+# marshal-seed:begin region=model-ignores model-version=1.0.0 sha=12233758
 # BMAD: personal config (user-scoped) and per-developer artifacts.
 # Note: project-scoped planning-artifacts (PRDs, briefs, ADRs) are committed team artifacts.
 # Note: project-scoped implementation-artifacts are gitignored (per-developer scratch).
@@ -32,6 +32,12 @@ _bmad-output/projects/*/.bmad-config.user.toml
 # the same failure shape `.bmad-loop/policy.toml` above already exists to
 # prevent.
 .bmad-loop/profiles/
+
+# marshal init (AD-43) renders policy-declared MCP servers into the loop home's
+# root `.mcp.json` (copy-when-absent); bmad-loop seeds the same configs into run
+# worktrees. Untracked, it makes `marshal refresh` and `bmad-loop run` refuse the
+# home as dirty -- the same failure shape `.bmad-loop/profiles/` above prevents.
+/.mcp.json
 
 # The plan artifact (AD-57): derived, cheap to regenerate, and a committed
 # stale plan is a hazard -- so the plan file is ignored, but NOT the whole
@@ -981,6 +987,8 @@ _bmad-output/projects/*/_root-fallback-fork-*/
 # tarballs. Never commit — paths are host-absolute and archives hold full
 # trees.
 .steward/workspaces.yaml
+# Story 117.2: the coverage JSON each station suite writes for its gate to judge (never tracked).
+.steward/coverage/
 # Story 66.2: the pre-push hook journals every PYFORGE_PREFLIGHT_SKIP=1 here.
 .steward/preflight-skips.log
 .steward/preflight-runs.jsonl
@@ -992,6 +1000,7 @@ _bmad-output/projects/*/_root-fallback-fork-*/
 # each observed etag -- host-scratch, not repo content.
 .steward/deck-integrity-baseline.json
 .steward/ci-vars.json
+.steward/ci-status.json
 
 # Fleet-drain / agent scratch worktrees (`git worktree add` under repo root).
 # Machine-local checkouts with pixi envs — never commit; remove with

@@ -32,6 +32,7 @@ surface:
   - recipes/liquibase/**
   - pixi.toml
   - environment.yaml
+  - scripts/emit_wagtailcore_schema_delta.py   # governance carried 2026-10-27 from the absorbed spec-django-accelerator-framework (spec-one-chain-per-station:CAP-11)
 sources:
   - ../../../../../../docs/dreams/pyforge-unifying-strategy.md
 open_questions:

@@ -157,7 +157,7 @@ verify_commands = [
   # --project marshal`), and the owning spec's memlog is where a
   # spec-surface change is reconciled before its baseline is re-stamped.
   "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
-  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/.memlog.md",
+  "archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/.memlog.md",
   # Self-referential: widening this file's own epic_surfaces entry is itself
   # a changed path under the OLD surface that didn't yet cover it.
   "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml",
@@ -320,10 +320,10 @@ verify_commands = [
   "src/shared/packages/pyforge-doctor/**",
   "_bmad-output/policy-defaults.toml",
   "_bmad-output/projects/*/planning-artifacts/marshal-policy.toml",
-  "docs/dreams/marshal-token-economy.md",
-  "docs/dreams/adaptive-model-tiering.md",
-  "docs/dreams/risk-tiered-review-depth.md",
-  "docs/dreams/marshal-parallel-dispatch-fanout.md",
+  "archive/docs/dreams/marshal-token-economy.md",
+  "archive/docs/dreams/adaptive-model-tiering.md",
+  "archive/docs/dreams/risk-tiered-review-depth.md",
+  "archive/docs/dreams/marshal-parallel-dispatch-fanout.md",
   "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md",
 ]
 
@@ -711,6 +711,56 @@ verify_commands = [
   "docs/reference/station-cheat-sheet.md",
   "scripts/docs_station_cli.py",
   "docs/reference/library-llms-full.md",
+  # Widened 2026-10-25 (Story 104.1's chain): the paths 103.1's pixi.toml / pixi.lock change regenerates, which its
+  # dispatch wrote and the scope gate reported as MRS-GATE-012 (WARN).
+  ".steward/estate-refresh/*.json",
+  "docs/dreams/pyforge-unifying-strategy.md",
+  "docs/how-to/pixi-tasks.md",
+  "docs/map.yaml",
+  "docs/reference/bmad-estate-llms-full.md",
+  "docs/reference/environments.md",
+]
+"104" = [  # the .mcp.json marshal renders never makes a loop home dirty (a fix under spec-pyforge-marshal CAP-133,
+  # CAP-1, CAP-14 and CAP-15, no CAP; Story 104.1), added 2026-10-25. The default surface, restated because a declared
+  # entry replaces it outright; its package glob covers the seed template and its tests. Plus the repo .gitignore
+  # (already in the default) whose model-ignores region is re-rendered, the seed state that records the region's hash,
+  # and every Spec memlog (marshal's src/ is co-governed by spec-pyforge-core).
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+  ".marshal/seed-state.yml",
+]
+"105" = [  # every marshal PRD FR arrow names the Spec capability that realizes it (a chore under
+  # spec-one-chain-per-station CAP-5 and CAP-8, no CAP; Story 105.1), added 2026-10-25. Planning files only: the PRD,
+  # the spine and epics re-stamps, the deferred-work ledger, the story spec and every Spec memlog.
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/prds/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/architecture/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/test-architecture.md",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+  "scripts/.spec-surface-baseline.json",
+]
+"107" = [  # a refresh or a sync never carries a stale-slug story key (a fix under spec-pyforge-marshal CAP-265,
+  # CAP-132 and CAP-134, no CAP; Story 107.1), added 2026-10-25. Narrower than the default surface on purpose: the
+  # marshal package (cli/refresh.py, core/refresh.py, cli/land.py and their tests), its specs, the root script the
+  # hand sync, the refresh and the landing share, and every Spec memlog (marshal's src/ is co-governed by
+  # spec-pyforge-core). The story touches no pixi file and no .gitignore.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  "scripts/promote_sprint_status.py",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 "87" = [  # preserved work is a protected tag, and no cleanup destroys it (spec-pyforge-marshal CAP-287; Story 87.1's
   # sweeper fix), added 2026-10-04. The default surface, restated because a declared entry replaces it outright, plus:
@@ -885,6 +935,21 @@ verify_commands = [
 # label at PR open/update time (gated -- suppressed for a recipe-only PR).
 # trigger_mode = "exclude": fires when at least one changed path is OUTSIDE
 # `recipes/**` (corrected in review, 2026-08-06 -- see core/landing.py).
+
+"110" = [  # the CAP-7 retrofit: every pre-rule marshal runtime capability sits behind a kill switch (spec-feature-flag-governance CAP-7), added 2026-10-26.
+  "src/shared/packages/pyforge-marshal/**",
+  "src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/**",
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
+  "src/platform/tests/**",
+  "docs/governance/flag-inventory/pyforge-marshal.md",
+  "docs/dreams/pyforge-marshal.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/*/.memlog.md",
+  "docs/governance/spec-feature-flag-governance/**",
+]
+
 [[landing_rules]]
 name = "maintenance-label"
 trigger_path_glob = "recipes/**"
@@ -956,6 +1021,16 @@ review = { harness = "cursor", model = "composer-2.5-fast" }
 [model_tier_map.easy]
 dev = { harness = "cursor", model = "composer-2.5" }
 
+# frontier (operator rulings 2026-10-25: "can you use CLAUDE FABLE", then "use the Claude Harness and Fable 5.1 as
+# the Model -- this tier can be called "Frontier""): an opt-in difficulty class a story spec selects with
+# `difficulty: frontier`, for a story the default tiers could not finish (Story 103.1, after three composer-2.5-fast
+# passes failed independent review). Claude Code harness with Claude Fable 5.1 for dev and review. It replaces the
+# short-lived Cursor `fable` tier, whose launch Cursor refused on its monthly Fable usage limit. The harness needs
+# the standalone claude CLI signed in (`claude auth status` loggedIn true).
+[model_tier_map.frontier]
+dev = { harness = "claude", model = "claude-fable-5-1" }
+review = { harness = "claude", model = "claude-fable-5-1" }
+
 # model_cost_catalog (Story 28.10, CAP-11): declared price snapshot from
 # spec-marshal-token-economy/model-economics.md (2026-08-30). Advisory only —
 # never fetched live, never a gate. Must stay LAST alongside model_tier_map
@@ -989,6 +1064,15 @@ input_per_million = 2.00
 output_per_million = 10.00
 cache_read_per_million = 0.20
 cache_write_per_million = 2.50
+
+# 2026-10-25: the `frontier` tier's model. Dispatch keeps a tier model's override only when the catalog lists it under
+# the provider of the harness that resolves it (claude -> anthropic); otherwise MRS-DISP-043 drops it. Anthropic's
+# first-party list rates for Claude Fable 5.1: input $10, output $50, cache read $0.25, cache write $12.50 per MTok.
+[model_cost_catalog.providers.anthropic.models."claude-fable-5-1"]
+input_per_million = 10.00
+output_per_million = 50.00
+cache_read_per_million = 0.25
+cache_write_per_million = 12.50
 
 [model_cost_catalog.providers.openai]
 subscription_pool = "copilot-pro"

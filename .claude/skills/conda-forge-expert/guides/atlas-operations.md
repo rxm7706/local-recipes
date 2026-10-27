@@ -221,7 +221,7 @@ a phase fails, hangs, or finishes with errors logged in `packages.*_last_error`.
 | **B.5** (feedstock outputs) | Crash | Rerun `build-cf-atlas` — the tarball download is cached and the parse is idempotent |
 | **C / C.5** (parselmouth / source-URL match) | Wrong PyPI mapping | Force refresh via `update-mapping-cache` then rerun `atlas-phase C` |
 | **D** (PyPI enumeration) | Crash mid-run | Rerun `build-cf-atlas`; D's UPSERTs converge |
-| **E** (cf-graph) | Corrupted tarball | `rm cf-graph-countyfair.tar.gz` then `PHASE_E_ENABLED=1 atlas-phase E` |
+| **E** (cf-graph) | Corrupted tarball | `rm cf-graph-<kind>.tar.gz` (`node_attrs`, `pr_info`, `version_pr_info` or `pr_json`) then `PHASE_E_ENABLED=1 atlas-phase E`; then `atlas-phase J` and `atlas-phase M` |
 | **E.5** (archived feedstocks) | GraphQL 502 | `atlas-phase E.5` retries cleanly |
 | **F** (downloads) | api.anaconda.org blocked / slow | `PHASE_F_SOURCE=s3-parquet atlas-phase F` (v7.6+ S3 backend) |
 | **F** (downloads) | Some rows have `downloads_last_error` | `atlas-phase F --reset-ttl` to retry all rows in one pass, or NULL just the failures (recipe below) |
@@ -444,7 +444,7 @@ PHASE_H_SOURCE=pypi-json pixi run -e local-recipes build-cf-atlas
 After full bootstrap:
 
 - `cf_atlas.db`: ~200 MB
-- `cf-graph-countyfair.tar.gz`: ~150 MB cached
+- `cf-graph-{node_attrs,pr_info,version_pr_info,pr_json}.tar.gz`: ~50 MB cached together (the bot's split graph, v8.102.0)
 - `vdb/`: ~2.5 GB (apsw multi-source vuln index)
 - `cve/`: ~50 MB (legacy OSV)
 - Other caches: <50 MB

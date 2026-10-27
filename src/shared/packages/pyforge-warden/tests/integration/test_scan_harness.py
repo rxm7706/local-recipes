@@ -980,7 +980,7 @@ def test_fail_on_high_escalates_vuln_high_fixture_to_policy_violation(capsys):
 
 
 def test_config_precedence_pyproject_wins_with_conflict_warning(capsys):
-    """FR30: pyproject.toml (fail-on=high) and pixi.toml (fail-on=low) in
+    """FR-30: pyproject.toml (fail-on=high) and pixi.toml (fail-on=low) in
     the same directory -- a same-key conflict resolves pyproject-wins,
     surfaced as one stderr warning naming the key + both values + the
     winner, never failing the build (the scan still completes normally)."""
@@ -1121,7 +1121,7 @@ def test_license_gating_is_true_when_the_axis_actually_ran(capsys):
     assert by_axis["license"]["gating"] is True
 
 
-# --- Story 6.3: the currency axis producer + its gate flags (FR34/FR35) ------
+# --- Story 6.3: the currency axis producer + its gate flags (FR34/FR-35) ------
 
 
 def test_currency_axis_produces_a_real_warn_capped_finding_end_to_end(capsys):

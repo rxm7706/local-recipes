@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 614
+# stories: 660
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -60,6 +60,33 @@ development_status:
   11-2-db-gpt-joins-via-its-configured-integration-pattern: done
   11-3-async-work-never-blocks-django: done
   11-4-isolation-and-statelessness-proven: done
+  110-1-every-steward-prd-fr-arrow-names-the-spec-capability-that-realizes-it: done
+  111-1-the-steward-spec-s-fold-cut-capability-text-is-restored-and-the-foundry-inherits-the-amended-rule: done
+  112-1-the-platform-ci-test-job-installs-only-what-its-runner-image-lacks-and-its-budget-covers-a-slow-mirror: done
+  113-1-steward-s-archived-spec-folders-and-its-superseded-preparatory-spec-move-to-the-archive-home: done
+  114-1-steward-budget-a-declared-ceiling-and-an-honest-spend-signal-sits-behind-a-kill-switch: done
+  114-2-frame-draft-re-grounding-the-estate-claims-conformance-the-way-the-draft-now-asks-sits-behind-a-kill-switch: done
+  114-3-workspace-clean-removes-merged-worktrees-archived-rather-than-deleted-sits-behind-a-kill-switch: done
+  114-4-only-the-worktrees-it-created-marshal-s-loop-homes-stay-invisible-sits-behind-a-kill-switch: done
+  114-5-the-deployment-perimeter-ships-with-the-pattern-sits-behind-a-kill-switch: done
+  114-6-the-pre-commit-set-attribution-lines-and-un-preflighted-pushes-are-refused-by-hooks-not-prose-sits-behind-a-kill-switch: done
+  114-7-steward-reads-origin-main-and-its-own-branches-by-their-full-refs-sits-behind-a-kill-switch: done
+  114-8-one-client-carrying-identity-sits-behind-a-kill-switch: done
+  114-9-the-retrofit-kill-switches-retire-on-their-cleanup-date: backlog
+  115-1-steward-s-36-archived-dreams-leave-the-live-tree: done
+  116-1-steward-s-absorbed-spec-folders-and-the-intake-drops-move-to-the-archive-home: done
+  117-1-the-steward-suite-runs-under-pytest-xdist-and-its-serial-remainder-alone: done
+  117-10-each-station-suite-runs-as-sharded-jobs-whose-coverage-the-gate-merges: done
+  117-11-the-changes-gate-and-the-gate-diffs-run-on-shallow-fetches-of-the-pr-base: done
+  117-12-the-platform-suite-runs-under-xdist-with-its-checks-in-a-parallel-job: done
+  117-2-a-station-s-coverage-floor-is-judged-from-its-own-suite-s-run-and-coverage-gates-yml-retires: done
+  117-3-the-preflight-admits-lanes-longest-first-by-the-cores-they-will-use: done
+  117-4-each-station-suite-runs-as-its-package-local-and-live-tree-halves: done
+  117-5-preflight-budget-names-every-lane-over-its-journal-derived-budget: backlog
+  117-6-image-builds-leave-the-pull-request-path-for-main-and-the-nightly-canary: done
+  117-7-the-ci-workflows-run-what-the-diff-touches-with-pinned-tools-and-parallel-detectors: done
+  117-8-the-cfe-regression-net-leaves-the-pull-request-path-and-the-pr-keeps-its-meta-suite: done
+  117-9-the-steward-suite-s-slowest-tests-shed-their-subprocesses-repos-and-sleeps: backlog
   12-1-the-vanilla-chart-with-an-ocp-overlay: done
   12-2-gke-as-a-portability-profile: done
   12-3-air-gap-parity-is-a-failing-check: done
@@ -75,6 +102,7 @@ development_status:
   13-4-the-set-reports-and-tears-down-safely: done
   13-5-workspace-clean-delete-removes-a-gone-or-landed-workspace-without-a-prompt-or-an-archive: done
   13-6-a-workspace-started-from-another-branch-is-landed-once-its-branch-is-on-main: done
+  13-7-a-landed-workspace-that-holds-tier-3-files-deletes-and-keeps-the-files: done
   14-1-the-pre-flight-diff-retrodicts-a-real-upgrade: done
   14-10-the-next-rehearsal-exercises-cap-6s-fallback-and-cap-8s-conflict-path-report-only: done
   14-2-apply-is-deliberate-branched-and-never-clobbers-custom: done
@@ -331,6 +359,7 @@ development_status:
   71-11-no-lane-process-outlives-a-stop-and-a-reduced-lane-cut-short-is-never-ok: done
   71-12-every-cancelled-lane-names-what-stopped-the-run: done
   71-13-a-second-sigint-never-deadlocks-the-preflight-s-interrupt-handler: done
+  71-14-every-pr-runs-the-dependency-completeness-test: done
   71-2-the-preflight-runs-the-lanes-ci-would-run-for-the-diff-read-from-the-workflow-files: done
   71-3-selected-lanes-run-concurrently-and-share-no-mutable-state: done
   71-4-a-station-s-coverage-gate-reuses-its-own-suite-s-run: done
@@ -410,6 +439,7 @@ development_status:
   99-5-the-preflight-honors-what-ci-will-skip-and-says-so: done
   99-6-a-paused-expensive-build-still-runs-once-a-week: done
   99-7-the-hand-disabled-workflows-are-retired-or-parked-and-the-convention-is-documented: done
+  99-8-a-red-main-run-on-a-ci-surface-reaches-the-next-preflight: done
   epic-1: done
   epic-1-retrospective: optional
   epic-10: done
@@ -436,6 +466,22 @@ development_status:
   epic-109-retrospective: optional
   epic-11: done
   epic-11-retrospective: optional
+  epic-110: done
+  epic-110-retrospective: optional
+  epic-111: done
+  epic-111-retrospective: optional
+  epic-112: done
+  epic-112-retrospective: optional
+  epic-113: done
+  epic-113-retrospective: optional
+  epic-114: in-progress
+  epic-114-retrospective: optional
+  epic-115: done
+  epic-115-retrospective: optional
+  epic-116: done
+  epic-116-retrospective: optional
+  epic-117: in-progress
+  epic-117-retrospective: optional
   epic-12: done
   epic-12-retrospective: optional
   epic-13: done

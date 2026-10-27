@@ -11,9 +11,9 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/market-agent-orchestration-research-2026-07-25.md"
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md"
 project_name: pyforge-marshal
-epicCount: 101  # 2026-10-25: Epic 103 appended (a fix under spec-pyforge-marshal CAP-1, CAP-21 and CAP-22, no CAP); 101 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-10-15: Epic 102 appended (a fix under spec-pyforge-marshal CAP-161, no CAP); 100 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-10-14 (later): Epic 101 appended (a fix under spec-pyforge-marshal CAP-292, no CAP); 99 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-10-14: Epic 100 appended (spec-pyforge-marshal CAP-292); 98 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status; last restated at 72 on 2026-09-28, while Epics 75-99 added keys without restating it). Earlier: 2026-09-28 (night): Epic 74 appended (spec-feature-flag-governance CAP-3, CAP-4, CAP-6); 72 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening, cont. 5): Epic 73 appended (spec-pyforge-marshal CAP-281); 71 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening, cont. 4): Epic 72 appended (spec-pyforge-marshal CAP-280); 70 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening, cont. 2): Epic 71 appended (spec-pyforge-core:CAP-11); 69 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening, cont.): Epic 70 appended (spec-pyforge-marshal CAP-279); 68 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening): Epic 69 appended (spec-pyforge-marshal CAP-278); 67 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (later): Epic 68 appended (spec-pyforge-marshal CAP-277); 66 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier 2026-09-28: Epics 66 and 67 appended (spec-pyforge-marshal CAP-275, CAP-276); 65 epic keys once epic-66/epic-67 reach the ledger (63 measured today with fleet_scan.parse_sprint_status -- the rows wait behind the live Story 64.1 dispatch, which owns the feed and the tracked ledger until it lands). Earlier: 2026-09-27 (late night, cont.): Epic 65 appended (spec-pyforge-marshal CAP-274); 63 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 62 before this mint). Earlier: 2026-09-27 (late night): Epic 64 appended (spec-pyforge-marshal CAP-273); 62 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 61 before this mint). Earlier: 2026-09-27 (night): Epic 63 appended (spec-pyforge-core:CAP-10). Earlier: 2026-09-27 (late, cont.): Epic 62 appended (spec-pyforge-marshal CAP-272). Earlier: 2026-09-27 (late): Epic 61 appended (spec-pyforge-marshal CAP-271). Earlier: 2026-09-27 (night): Epic 60 appended (spec-pyforge-marshal CAP-270). Earlier: 2026-09-27 (evening, cont.): Epic 59 appended (spec-pyforge-marshal CAP-269). Earlier: 2026-09-27 (evening): Epic 58 appended (spec-pyforge-marshal CAP-268). Earlier 2026-09-27 (later): Epic 57 appended (spec-pyforge-marshal CAP-267). Earlier 2026-09-27: Epic 56 appended (spec-pyforge-marshal CAP-266); 54 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 53 before this mint, Epic 55 had not been counted). Prior 2026-09-24: Epic 54 appended (spec-pyforge-marshal CAP-265); 52 epic keys in the ledger (measured). Prior 2026-09-18: Epic 50 appended; 48 epic keys in the ledger (48/49 reserved holes). Prior 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-storyCount: 460  # 2026-10-25 (later): +1 for Epic 87 / Story 87.19 (460 story keys in the ledger after this commit's sync, measured). Earlier: 2026-10-25: +1 for Epic 103 / Story 103.1 (459 story keys in the ledger after this commit's sync, measured; 458 before it, Stories 87.17 and 87.18 had not restated this line). Earlier: 2026-10-15: +1 for Epic 102 / Story 102.1 (456 story keys in the ledger after this commit's sync, measured). Earlier: 2026-10-14 (later): +1 for Epic 101 / Story 101.1 (455 story keys in the ledger after this commit's sync, measured). Earlier: 2026-10-14: +1 for Epic 100 / Story 100.1 (454 story keys in the ledger after this commit's sync, measured; last restated at 346 on 2026-09-28). Earlier: 2026-09-28 (night): +3 for Epic 74 / Stories 74.1, 74.2, 74.3 (346 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening, cont. 5): +2 for Epic 73 / Stories 73.1, 73.2 (343 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening, cont. 4): +1 for Epic 72 / Story 72.1 (341 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening, cont. 2): +1 for Epic 71 / Story 71.1 (340 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening, cont.): +1 for Epic 70 / Story 70.1 (339 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening): +1 for Epic 69 / Story 69.1 (338 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (later): +1 for Epic 68 / Story 68.1 (337 story keys in the ledger after this commit's sync, measured). Earlier 2026-09-28: +3 for Epic 66 / Stories 66.1, 66.2 and Epic 67 / Story 67.1 (336 story keys once the three rows reach the ledger; 333 measured today). Earlier: 2026-09-27 (late night, cont.): +2 for Epic 65 / Stories 65.1, 65.2 (333 story keys in the ledger, measured; 331 before this mint). Earlier: 2026-09-27 (late night): +1 for Epic 64 / Story 64.1 (331 story keys in the ledger, measured; 330 before this mint). Earlier: 2026-09-27 (night): +1 for Epic 63 / Story 63.1. Earlier: 2026-09-27 (late, cont.): +1 for Epic 62 / Story 62.1. Earlier: 2026-09-27 (late): +1 for Epic 61 / Story 61.1. Earlier: 2026-09-27 (night): +1 for Epic 60 / Story 60.1. Earlier: 2026-09-27 (evening, cont.): +1 for Epic 59 / Story 59.1. Earlier: 2026-09-27 (evening): +1 for Epic 58 / Story 58.1. Earlier 2026-09-27 (later): +1 for Epic 57 / Story 57.1. Earlier 2026-09-27: +1 for Epic 56 / Story 56.1 (323 story keys in the ledger, measured; 322 before this mint). Prior 2026-09-24: +1 for Epic 54 / Story 54.1. Prior 2026-09-18: +5 for Epic 50 (ledger key count, measured with fleet_scan.parse_sprint_status). Prior 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-updated: "2026-10-25"   # RE-STAMPED 2026-10-25 (later; the content gate refuses what origin already holds): Story 87.19 added under done Epic 87 (a fix under CAP-287 / FR-234, AD-81, no CAP, no flag; operator ruling "start the option 2 chain here"): the content gate judges the objects a push sends, not the whole snapshot, and MRS-STATUS-016 names a push path that works with the flag off; key 87-19 (backlog) added; epic-87 reopens from done to in-progress (doctor Story 41.5); no other epic or story moved. Validated against the spine's Currency reconciliation 2026-10-25 (no AD added or amended). Prior "2026-10-25"   # RE-STAMPED 2026-10-25 (marshal's own MCP server has never started): Epic 103 / Story 103.1 added (a fix under CAP-1, CAP-21 and CAP-22 / FR-5, FR-153, FR-154, no CAP, no flag; operator ruling "Go with the migration: move marshal-mcp to the official SDK MCPServer, add a real --help, and make preflight run a startup handshake"): marshal-mcp builds on the official SDK MCPServer, gains a real --help, and preflight starts each declared MCP server and completes a handshake; keys 103-1 (backlog), epic-103 (backlog) and epic-103-retrospective (optional) added; no other epic or story moved. Validated against the spine's Currency reconciliation 2026-10-25 (no AD added or amended). Prior "2026-10-22"   # RE-STAMPED 2026-10-22 (the legacy promoter dies on one commit's bytes, and misses nested refs): Stories 87.17 and 87.18 added under done Epic 87 (a fix under CAP-287 / FR-234, no CAP, no flag; operator ruling 2026-10-22 "go ahead" to promote the 17 refs/attempt-preserve-dirty/* refs). Prior "2026-10-15"   # RE-STAMPED 2026-10-15 (a landing re-verifies when only main moved): Epic 102 / Story 102.1 added (a fix under CAP-161 / FR-193, no CAP, no flag; operator rulings "chain it now and I'll mint the story chain and implement it" and "make sure we include this - Optional, marshal: a landing re-verification setting"): with [dispatch] landing_reverify = "on-code-change", a re-landing whose branch moved only by merges of main and planning-only commits reuses its full verified verdict after a narrow re-check, and still waits for CI; keys 102-1 (backlog), epic-102 (backlog) and epic-102-retrospective (optional) added; no other epic or story moved. Earlier 2026-10-14: RE-STAMPED 2026-10-14 (the master switch's surfaces at merge): Epic 101 / Story 101.1 added (a fix under CAP-292 / FR-239, no CAP, no flag; operator ask "chain it here"): with PAUSE_ALL_CI on, the landing record and its PR-body line name every surface steward marks paused_by_master, except an opt-in that is off; keys 101-1 (blocked: a cross-station gate on steward Story 103.1 the operator flips), epic-101 (backlog) and epic-101-retrospective (optional) added; no other epic or story moved. Earlier 2026-10-14: RE-STAMPED 2026-10-14 (ci pauses at merge): Epic 100 / Story 100.1 added for spec-pyforge-marshal CAP-292 (FR-239; reads pyforge-steward:CAP-166, steward Story 99.3 done): a dispatch landing records which CI surfaces were paused when it merged, in its journal, its PR body and its finalize record, behind pyforge.marshal.landing_ci_pauses; keys 100-1 (backlog), epic-100 (backlog) and epic-100-retrospective (optional) added; no other epic or story moved. Earlier 2026-10-12: RE-STAMPED 2026-10-12 (seed check waits on its probes one at a time): Epic 99 / Story 99.1 added (a fix under CAP-13 and FR-95, no CAP, no flag; closes Story 98.1's DW-marshal-98-1; operator asks "start the flaky marshal tests fix" and "merge 2171 and rescope 2172"): the Doctor delegation and the CLI probes start together, a probe timeout reads as a timeout, and a slow test times the real check; keys 99-1 (backlog), epic-99 (backlog) and epic-99-retrospective (optional) added; no other epic or story moved. Earlier 2026-10-12: AMENDED 2026-10-12 (two tests red the local preflight): Epic 98 / Story 98.1 minted (a fix under CAP-13 and CAP-139, no CAP, no flag; tests only); keys 98-1, epic-98 (backlog) and epic-98-retrospective (optional) added; no existing key changed. Prior: RE-STAMPED 2026-10-12 (seed accept and repo-owned managed artifacts): Epic 97 / Stories 97.1 and 97.2 added (fixes under the seed CAPs CAP-10, CAP-11, CAP-12, CAP-13, CAP-15, CAP-17 and CAP-279, no CAP, no flag; operator ruling "Sign off + fix story (Recommended)"): 97.1 adds a journaled `marshal seed accept`, moves detector-registry, dreams-readme and detectors-ci-workflow to copied-seeded and corrects the update --force remedy; 97.2 (deps 97.1) makes a seed update dry run plan only real changes, which Story 86.2's AC6 claimed and did not hold; keys 97-1 and 97-2 (backlog), epic-97 (backlog) and epic-97-retrospective (optional) added; no other epic or story moved. Earlier 2026-10-11: RE-STAMPED 2026-10-11 (duplicate frontmatter keys in story specs): Epic 96 / Story 96.1 added (a fix under CAP-161 with CAP-169 and CAP-275, no CAP, no flag; operator ask "Do this task here: Stop story specs gaining duplicate frontmatter keys"): dispatch collapses a repeated story-spec frontmatter key to the occurrence git wrote last before it verifies, the build-skill customizations tell the session to replace a key in place, and the 37 specs that repeat a key on main are cleaned; doctor Story 42.1 (the detector) is minted blocked on it; keys 96-1 (backlog), epic-96 (backlog) and epic-96-retrospective (optional) added; no other epic or story moved. Earlier 2026-10-11: RE-STAMPED 2026-10-11 (a held PR is never marked ready): Story 94.2 added to Epic 94 (a fix of Story 83.18's landing hold under CAP-169, no CAP; operator ruling "Fold into 94.1 (Recommended)", applied as a second story because 94.1 had already been dispatched; deps 94.1, done); epic-94 reopens from done to in-progress (doctor Story 41.5); no other epic or story moved. Earlier 2026-10-11: RE-STAMPED 2026-10-11 (a passing review read as older): Epic 94 / Story 94.1 added (a fix of Story 89.1's review gate under CAP-169 and CAP-229, no CAP; queued after Story 93.1); no other epic or story moved. Earlier 2026-10-11: RE-STAMPED 2026-10-11 (recall fold): Epic 93 / Story 93.1 added (a fix under spec-marshal-recall-in-the-loop CAP-1 and CAP-2, carried as spec-pyforge-marshal CAP-288 and CAP-289 once the fold is rendered); Epic 47 records the fold, and Story 47.1's Status line reads done, as its ledger key has since its 2026-10-11 landing. Earlier 2026-10-11: RE-STAMPED 2026-10-11 (cont.): Epics 91 and 92 / Stories 91.1 and 92.1 added (fixes, no CAP; 92.1 lands Story 90.1's reverted behaviour again); no other epic or story moved. Earlier 2026-10-11: RE-STAMPED 2026-10-11: chain-currency cascade (spec -> PRD -> spine -> epics) after the memlog reconcile of marshal Story 90.1's code revert (its psutil group read held every dispatch live); no CAP/FR/AD/story moved. Prior: RE-STAMPED 2026-10-11 (operator ruling "Fold into 95.1 (Recommended)"): Story 95.1 also adds ruff to the pyforge-marshal feature, re-locks, regenerates environment.yaml and makes the real-ruff tests fail instead of skip; the Epic 95 preamble records the ruling; no story, key or epic added. Earlier 2026-10-11: RE-STAMPED 2026-10-11 (pre-verify ruff covers the platform and the portal packages): Epic 95 / Story 95.1 added (a fix of Stories 83.9 and 83.15's pre-verify pass under CAP-161, no CAP; operator ask "Do this task here: Extend marshal pre-verify ruff to platform and portals"); no other epic or story moved. Earlier 2026-10-11: RE-STAMPED 2026-10-11 (a held PR is never marked ready): Story 94.2 added to Epic 94 (a fix of Story 83.18's landing hold under CAP-169, no CAP; operator ruling "Fold into 94.1 (Recommended)", applied as a second story because 94.1 had already been dispatched; deps 94.1, done); epic-94 reopens from done to in-progress (doctor Story 41.5); no other epic or story moved. Earlier 2026-10-11: RE-STAMPED 2026-10-11 (a passing review read as older): Epic 94 / Story 94.1 added (a fix of Story 89.1's review gate under CAP-169 and CAP-229, no CAP; queued after Story 93.1); no other epic or story moved. Earlier 2026-10-11: RE-STAMPED 2026-10-11 (recall fold): Epic 93 / Story 93.1 added (a fix under spec-marshal-recall-in-the-loop CAP-1 and CAP-2, carried as spec-pyforge-marshal CAP-288 and CAP-289 once the fold is rendered); Epic 47 records the fold, and Story 47.1's Status line reads done, as its ledger key has since its 2026-10-11 landing. Earlier 2026-10-11: RE-STAMPED 2026-10-11 (cont.): Epics 91 and 92 / Stories 91.1 and 92.1 added (fixes, no CAP; 92.1 lands Story 90.1's reverted behaviour again); no other epic or story moved. Earlier 2026-10-11: RE-STAMPED 2026-10-11: chain-currency cascade (spec -> PRD -> spine -> epics) after the memlog reconcile of marshal Story 90.1's code revert (its psutil group read held every dispatch live); no CAP/FR/AD/story moved. Prior: RE-STAMPED 2026-10-08 (verify and landing order): Stories 22.20 and 22.21 added to Epic 22 (fixes, no CAP); epic-22 stays in-progress. Prior: RE-STAMPED 2026-10-07 (flag registry conflict): Story 22.19 added to Epic 22 (fix, no CAP); epic-22 stays in-progress. Prior: RE-STAMPED 2026-10-07 (baseline conflict): Story 22.18 added to Epic 22 (fix, no CAP); epic-22 stays in-progress. Prior: RE-STAMPED 2026-10-07 (landing gaps, again): Stories 22.15, 22.16 and 22.17 added to done Epic 22 (fixes, no CAP); epic-22 reopens to in-progress (doctor Story 41.5). Validated against the spine's Currency reconciliation 2026-10-07 (no AD added or amended). Covers the 2026-10-06 additions too, which were not stamped: Stories 22.13, 22.14, 53.4 and 85.6 (fixes, no CAP; all since landed). Prior: RE-STAMPED 2026-10-04 (83.19 review + Cursor attribution): Stories 83.24 and 83.25 added to Epic 83 (fixes, no CAP). Prior: RE-STAMPED 2026-10-04 (testing kit CI): Story 19.5 added to done Epic 19 (fix, no CAP); epic-19 reopens to in-progress. Prior: RE-STAMPED 2026-10-04 (chain follow-ups): Stories 83.22 and 83.23 added to Epic 83, Story 85.5 to done Epic 85 and Story 70.2 to done Epic 70 (fixes, no CAP); epic-85 and epic-70 reopen to in-progress (operator ruling 2026-10-04; doctor Story 41.5). Prior: RE-STAMPED 2026-10-04 (preserved-work refs): Epic 87 widened to CAP-287 (FR-234, AD-81); Stories 87.2-87.16 added (fixes 87.2, 87.6, 87.10, 87.13, 87.14; chores 87.12, 87.16, operator-gated; the rest features behind pyforge.marshal.preserve_refs, 87.9 detector-or-gate exempt); Story 87.1 amended (Deps S-87.3, S-87.15). Prior: RE-STAMPED 2026-10-04 (finalize roll-up): Story 83.21 added to Epic 83 (fix, no CAP). Prior: RE-STAMPED 2026-10-04 (late night): Story 85.4 added to done Epic 85 (fix, no CAP); epic-85 reopens to in-progress (doctor Story 41.5 lets a new story reopen its epic). Prior: RE-STAMPED 2026-10-04 (night): Story 86.8 added to Epic 86 (fix, no CAP). Prior: RE-STAMPED 2026-10-04 (later): Epic 87 / Story 87.1 added (fix, no CAP). Prior: RE-STAMPED 2026-10-04: Story 83.20 added to Epic 83 (fix, no CAP). Prior: RE-STAMPED 2026-10-03 (night, last): Stories 83.18-83.19 added to Epic 83 (fixes, no CAP). Prior: RE-STAMPED 2026-10-03 (night, latest): Stories 83.16-83.17 added to Epic 83 (fixes, no CAP). Prior: RE-STAMPED 2026-10-03 (85.1 split): Stories 85.2 and 85.3 added to Epic 85 (CAP-286, same flag). Prior: RE-STAMPED 2026-10-03 (night, later): Stories 83.13-83.15 added to Epic 83 and 84.2 to Epic 84 (fixes, no CAP). Prior: RE-STAMPED 2026-10-03 (late night): Story 83.12 added to Epic 83 (fix, no CAP). Prior: RE-STAMPED 2026-10-03 (Phase 3): Epic 86 / Stories 86.1-86.7 minted from the operator's Phase 3 rulings (fix, no CAP). Prior: RE-STAMPED 2026-10-03 (night): Story 83.11 added to Epic 83 (fix, no CAP). Prior: RE-STAMPED 2026-10-03 (evening): Story 83.10 added to Epic 83 (fix, no CAP); Epic 85 / Story 85.1 minted (spec-pyforge-marshal CAP-286, FR-233). Prior: RE-STAMPED 2026-10-03 (later): Story 83.9 added to Epic 83 (fix, no CAP). Prior: RE-STAMPED 2026-10-03: Story 83.8 added to Epic 83 (fix, no CAP). Prior 2026-10-02 (night)   # RE-STAMPED 2026-10-02 (night): Epic 84 / Story 84.1 minted (spec-pyforge-marshal CAP-285, FR-232). Prior 2026-10-02   # RE-STAMPED 2026-10-02: Epics 81-83 minted since the last stamp; Epic 83 / Stories 83.1-83.6 (fix stories, no CAP) chain the defects found landing Phase 2. Prior 2026-09-30   # RE-STAMPED 2026-09-30: Epic 78 / Story 78.1 minted (spec-pyforge-marshal CAP-283, FR-230). Prior 2026-09-29 (night)   # RE-STAMPED 2026-09-29 (night): Epic 77 / Story 77.1 minted (spec-pyforge-marshal CAP-282, FR-229). Prior 2026-09-29 (evening)   # RE-STAMPED 2026-09-29 (evening): Epic 76 / Story 76.1 minted (spec-one-chain-per-station CAP-11 relay; no marshal CAP or FR). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 75 / Story 75.1 minted (spec-one-chain-per-station CAP-11 relay; no marshal CAP or FR). Prior 2026-09-28 (night): Epic 74 / Stories 74.1-74.3 minted (spec-feature-flag-governance CAP-4, CAP-3, CAP-6 -- the Guild's CAPs, no marshal CAP; no FR registered, PRD section 31.11); 74.2 minted blocked behind doctor Story 34.2. Earlier: AMENDED (evening, cont. 6): operator rulings -- Story 70.1 (CAP-279: .bmad-loop/policy.toml required in loop homes only), Story 72.1 (CAP-280 widened: dispatch land's ALREADY_LANDED read moves to origin/main) and Story 73.2 (CAP-281: the per-campaign follow-up cap) amended; FR-225, FR-227, FR-228 amended in place (PRD section 31.10); keys, statuses, Deps, epicCount and storyCount unchanged. Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade for FR-228 / CAP-281; Epic 73 / Stories 73.1, 73.2 minted. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade for FR-227 / CAP-280; Epic 72 / Story 72.1 minted. Earlier: AMENDED (evening, cont. 3): Epic 54 / Story 54.1 re-scoped with CAP-265 (FR-211 amended; operator ruling; key, epic and status kept). Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade for FR-226 / spec-pyforge-core:CAP-11; Epic 71 / Story 71.1 minted. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-225 / CAP-279; Epic 70 / Story 70.1 minted. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-224 / CAP-278; Epic 69 / Story 69.1 minted. Earlier: RE-STAMPED (later): chain-currency cascade for FR-223 / CAP-277; Epic 68 / Story 68.1 minted, and the ledger rows for Epics 66-68 synced. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-221 / CAP-275 and FR-222 / CAP-276; Epic 66 / Stories 66.1, 66.2 and Epic 67 / Story 67.1 minted. Prior 2026-09-27
+epicCount: 110  # 2026-10-27 (absorbed Spec folders to the archive home): Epic 112 appended (a chore under spec-one-chain-per-station:CAP-11; Story 112.1); 110 epic keys in the ledger after this commit's sync (measured). Earlier: # 2026-10-26 (one archive home): Epic 111 appended (a chore under spec-one-chain-per-station:CAP-11; Story 111.1); 109 epic keys in the ledger after this commit's sync (measured). Earlier: # 2026-10-26 (CAP-7 retrofit): Epic 110 appended. Earlier: # 2026-10-26 (every requirement derives from a capability): Epic 108 appended (a chore under spec-one-chain-per-station CAP-5 as amended and CAP-8; Stories 108.1 and 108.2); 106 epic keys in the ledger after this commit's sync (measured). Earlier: # 2026-10-25 (refresh feed keys): Epic 107 appended (a fix under spec-pyforge-marshal CAP-265, CAP-132 and CAP-134, no CAP); 105 epic keys in the ledger after this commit's sync (measured). Earlier: 2026-10-25 (five-station FR arrows): Epic 106 appended (a chore under spec-one-chain-per-station CAP-5 and CAP-8; Stories 106.1 and 106.2); 104 epic keys in the ledger after this commit's sync (measured). Earlier: 2026-10-25 (latest): Epic 105 appended (a chore under spec-one-chain-per-station CAP-5 and CAP-8, no CAP); 103 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-10-25 (later): Epic 104 appended (a fix under spec-pyforge-marshal CAP-133, CAP-1, CAP-14 and CAP-15, no CAP); 102 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-10-25: Epic 103 appended (a fix under spec-pyforge-marshal CAP-1, CAP-21 and CAP-22, no CAP); 101 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-10-15: Epic 102 appended (a fix under spec-pyforge-marshal CAP-161, no CAP); 100 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-10-14 (later): Epic 101 appended (a fix under spec-pyforge-marshal CAP-292, no CAP); 99 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-10-14: Epic 100 appended (spec-pyforge-marshal CAP-292); 98 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status; last restated at 72 on 2026-09-28, while Epics 75-99 added keys without restating it). Earlier: 2026-09-28 (night): Epic 74 appended (spec-feature-flag-governance CAP-3, CAP-4, CAP-6); 72 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening, cont. 5): Epic 73 appended (spec-pyforge-marshal CAP-281); 71 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening, cont. 4): Epic 72 appended (spec-pyforge-marshal CAP-280); 70 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening, cont. 2): Epic 71 appended (spec-pyforge-core:CAP-11); 69 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening, cont.): Epic 70 appended (spec-pyforge-marshal CAP-279); 68 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening): Epic 69 appended (spec-pyforge-marshal CAP-278); 67 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (later): Epic 68 appended (spec-pyforge-marshal CAP-277); 66 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier 2026-09-28: Epics 66 and 67 appended (spec-pyforge-marshal CAP-275, CAP-276); 65 epic keys once epic-66/epic-67 reach the ledger (63 measured today with fleet_scan.parse_sprint_status -- the rows wait behind the live Story 64.1 dispatch, which owns the feed and the tracked ledger until it lands). Earlier: 2026-09-27 (late night, cont.): Epic 65 appended (spec-pyforge-marshal CAP-274); 63 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 62 before this mint). Earlier: 2026-09-27 (late night): Epic 64 appended (spec-pyforge-marshal CAP-273); 62 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 61 before this mint). Earlier: 2026-09-27 (night): Epic 63 appended (spec-pyforge-core:CAP-10). Earlier: 2026-09-27 (late, cont.): Epic 62 appended (spec-pyforge-marshal CAP-272). Earlier: 2026-09-27 (late): Epic 61 appended (spec-pyforge-marshal CAP-271). Earlier: 2026-09-27 (night): Epic 60 appended (spec-pyforge-marshal CAP-270). Earlier: 2026-09-27 (evening, cont.): Epic 59 appended (spec-pyforge-marshal CAP-269). Earlier: 2026-09-27 (evening): Epic 58 appended (spec-pyforge-marshal CAP-268). Earlier 2026-09-27 (later): Epic 57 appended (spec-pyforge-marshal CAP-267). Earlier 2026-09-27: Epic 56 appended (spec-pyforge-marshal CAP-266); 54 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 53 before this mint, Epic 55 had not been counted). Prior 2026-09-24: Epic 54 appended (spec-pyforge-marshal CAP-265); 52 epic keys in the ledger (measured). Prior 2026-09-18: Epic 50 appended; 48 epic keys in the ledger (48/49 reserved holes). Prior 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
+storyCount: 508  # 2026-10-27 (absorbed Spec folders to the archive home): +1 for Story 112.1 (chore, no CAP, no flag); 508 story keys in the ledger after this commit's sync (measured). Earlier: # 2026-10-26 (one archive home): +1 for Story 111.1 (chore, no CAP, no flag); 507 story keys in the ledger after this commit's sync (measured). Earlier: # 2026-10-26 (CAP-7 retrofit): Epic 110 appended. Earlier: # 2026-10-26 (every requirement derives from a capability): +2 for Stories 108.1 and 108.2 (467 story keys in the ledger after this commit's sync, measured). Earlier: # 2026-10-25 (refresh feed keys): +1 for Epic 107 / Story 107.1 (465 story keys in the ledger after this commit's sync, measured). Earlier: 2026-10-25 (five-station FR arrows): +1 for Story 106.2 (464 story keys in the ledger after this commit's sync, measured). Earlier: 2026-10-25 (five-station FR arrows): +1 for Story 106.1 (463 story keys in the ledger after this commit's sync, measured). Earlier: 2026-10-25 (latest): +1 for Epic 105 / Story 105.1, merged onto Epic 104 and main's Story 87.19 (462 story keys in the ledger after this commit's sync, measured). Earlier: 2026-10-25 (later): +1 for Epic 104 / Story 104.1 (460 story keys in the ledger after this commit's sync, measured). Earlier: 2026-10-25: +1 for Epic 103 / Story 103.1 (459 story keys in the ledger after this commit's sync, measured; 458 before it, Stories 87.17 and 87.18 had not restated this line). Earlier: 2026-10-15: +1 for Epic 102 / Story 102.1 (456 story keys in the ledger after this commit's sync, measured). Earlier: 2026-10-14 (later): +1 for Epic 101 / Story 101.1 (455 story keys in the ledger after this commit's sync, measured). Earlier: 2026-10-14: +1 for Epic 100 / Story 100.1 (454 story keys in the ledger after this commit's sync, measured; last restated at 346 on 2026-09-28). Earlier: 2026-09-28 (night): +3 for Epic 74 / Stories 74.1, 74.2, 74.3 (346 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening, cont. 5): +2 for Epic 73 / Stories 73.1, 73.2 (343 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening, cont. 4): +1 for Epic 72 / Story 72.1 (341 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening, cont. 2): +1 for Epic 71 / Story 71.1 (340 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening, cont.): +1 for Epic 70 / Story 70.1 (339 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening): +1 for Epic 69 / Story 69.1 (338 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (later): +1 for Epic 68 / Story 68.1 (337 story keys in the ledger after this commit's sync, measured). Earlier 2026-09-28: +3 for Epic 66 / Stories 66.1, 66.2 and Epic 67 / Story 67.1 (336 story keys once the three rows reach the ledger; 333 measured today). Earlier: 2026-09-27 (late night, cont.): +2 for Epic 65 / Stories 65.1, 65.2 (333 story keys in the ledger, measured; 331 before this mint). Earlier: 2026-09-27 (late night): +1 for Epic 64 / Story 64.1 (331 story keys in the ledger, measured; 330 before this mint). Earlier: 2026-09-27 (night): +1 for Epic 63 / Story 63.1. Earlier: 2026-09-27 (late, cont.): +1 for Epic 62 / Story 62.1. Earlier: 2026-09-27 (late): +1 for Epic 61 / Story 61.1. Earlier: 2026-09-27 (night): +1 for Epic 60 / Story 60.1. Earlier: 2026-09-27 (evening, cont.): +1 for Epic 59 / Story 59.1. Earlier: 2026-09-27 (evening): +1 for Epic 58 / Story 58.1. Earlier 2026-09-27 (later): +1 for Epic 57 / Story 57.1. Earlier 2026-09-27: +1 for Epic 56 / Story 56.1 (323 story keys in the ledger, measured; 322 before this mint). Prior 2026-09-24: +1 for Epic 54 / Story 54.1. Prior 2026-09-18: +5 for Epic 50 (ledger key count, measured with fleet_scan.parse_sprint_status). Prior 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
+updated: "2026-10-27"   # AMENDED 2026-10-27 (absorbed Spec folders to the archive home): Epic 112 / Story 112.1 minted in-progress under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 56 absorbed Spec folders move to archive/<original path>; keys 112-1, epic-112 (in-progress) and epic-112-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync. Prior "2026-10-26"   # AMENDED 2026-10-26 (one archive home): Epic 111 / Story 111.1 minted done under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 54 archived satellite Dreams left docs/dreams/ for archive/docs/dreams/, their bodies verbatim in the station Dream; keys 111-1, epic-111 (done) and epic-111-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync. Prior "2026-10-26"   # AMENDED 2026-10-26 (CAP-7 retrofit): Epic 110 / Stories 110.1–110.38 minted; keys through the Tier-3 feed and sprint-ledger-sync; no other epic or story moved. Prior "2026-10-26"   # AMENDED 2026-10-26 (every requirement derives from a capability): Epic 108 / Stories 108.1 (in-progress, built in the chain PR) and 108.2 (backlog) minted under spec-one-chain-per-station CAP-5 as amended and CAP-8: FR-101, FR-120, FR-121, FR-125 and FR-126 cite capabilities instead of a Constraint, A-04/A-05/P-10/L-01 name their Constraints, the Spec's fold-cut text is restored, the _bmad/custom/ layers carry the rule; keys 108-1 (in-progress), 108-2 (backlog), epic-108 (in-progress) and epic-108-retrospective (optional) added; no other epic or story moved. Prior "2026-10-25"   # AMENDED 2026-10-25 (refresh feed keys, later): Story 107.1 and Epic 107 promoted to done in the landing PR after the independent review. Earlier: Epic 107 / Story 107.1 minted (a fix under CAP-265, CAP-132 and CAP-134). Earlier: AMENDED 2026-10-25 (latest): Stories 106.1 and 106.2 and Epic 106 promoted to done in the five-station FR-arrow chain PR after its independent review (Status lines, story spec and ledger keys through the Tier-3 feed and sprint-ledger-sync); no other epic or story moved. Earlier 2026-10-25: RE-STAMPED 2026-10-25 (FR-144..FR-147's capabilities were dropped by the fold): Story 106.2 added to Epic 106 (a chore that restores spec-pyforge-marshal CAP-293..CAP-296, shipped, under spec-one-chain-per-station CAP-5 and CAP-8; no flag; operator ruling "Restore 4 marshal CAPs (Recommended)" on DW-marshal-105-1): FR-144..FR-147 cite the restored capabilities; key 106-2 (backlog) added; arch->epics cascade for the spine's re-stamp of the same date; no other epic or story moved. Earlier 2026-10-25: RE-STAMPED 2026-10-25 (five-station FR arrows; the seed installer's FRs never got their arrows): Epic 106 / Story 106.1 added (a chore under spec-one-chain-per-station CAP-5 and CAP-8, no CAP, no flag; operator rulings "Do rows 1-5 in one PR" and "Cite the constraint (Recommended)"): the marshal PRD's 62 seed-installer FRs gain arrows naming the capabilities (CAP-8, CAP-10..CAP-18) or Spec constraints that realize them; keys 106-1 (backlog), epic-106 (backlog) and epic-106-retrospective (optional) added; arch->epics cascade for the spine's re-stamp of the same date; no other epic or story moved. Earlier 2026-10-25: RE-STAMPED 2026-10-25 (latest; the PRD's FR arrows were numbered, not traced): Epic 105 / Story 105.1 added (a chore under spec-one-chain-per-station CAP-5 and CAP-8, no CAP, no flag; operator ruling "Apply the PRD FR→CAP re-map as proposed: 71 headings through a chore story chain"): 71 marshal PRD FR arrows the 2026-09-16 fold had counted are re-mapped to the Spec capabilities that realize them, and FR-144..FR-147 wait on a source-capability decision; keys 105-1 (backlog), epic-105 (backlog) and epic-105-retrospective (optional) added; no other epic or story moved. Earlier 2026-10-25: RE-STAMPED 2026-10-25 (later; the marshal home is dirty with marshal's own file): Epic 104 / Story 104.1 added (a fix under CAP-133, CAP-1, CAP-14 and CAP-15 / FR-134, FR-5, no CAP, no flag; operator direction "fix / include / resolve the gaps identified autonomously"): the seeded .gitignore model region ignores the root .mcp.json that marshal init renders, so marshal refresh and bmad-loop stop refusing the marshal loop home; keys 104-1 (backlog), epic-104 (backlog) and epic-104-retrospective (optional) added; no other epic or story moved. Earlier 2026-10-25: RE-STAMPED 2026-10-25 (marshal's own MCP server has never started): Epic 103 / Story 103.1 added (a fix under CAP-1, CAP-21 and CAP-22 / FR-5, FR-153, FR-154, no CAP, no flag; operator ruling "Go with the migration: move marshal-mcp to the official SDK MCPServer, add a real --help, and make preflight run a startup handshake"): marshal-mcp builds on the official SDK MCPServer, gains a real --help, and preflight starts each declared MCP server and completes a handshake; keys 103-1 (backlog), epic-103 (backlog) and epic-103-retrospective (optional) added; no other epic or story moved. Validated against the spine's Currency reconciliation 2026-10-25 (no AD added or amended). Prior "2026-10-22"   # RE-STAMPED 2026-10-22 (the legacy promoter dies on one commit's bytes, and misses nested refs): Stories 87.17 and 87.18 added under done Epic 87 (a fix under CAP-287 / FR-234, no CAP, no flag; operator ruling 2026-10-22 "go ahead" to promote the 17 refs/attempt-preserve-dirty/* refs). Prior "2026-10-15"   # RE-STAMPED 2026-10-15 (a landing re-verifies when only main moved): Epic 102 / Story 102.1 added (a fix under CAP-161 / FR-193, no CAP, no flag; operator rulings "chain it now and I'll mint the story chain and implement it" and "make sure we include this - Optional, marshal: a landing re-verification setting"): with [dispatch] landing_reverify = "on-code-change", a re-landing whose branch moved only by merges of main and planning-only commits reuses its full verified verdict after a narrow re-check, and still waits for CI; keys 102-1 (backlog), epic-102 (backlog) and epic-102-retrospective (optional) added; no other epic or story moved. Earlier 2026-10-14: RE-STAMPED 2026-10-14 (the master switch's surfaces at merge): Epic 101 / Story 101.1 added (a fix under CAP-292 / FR-239, no CAP, no flag; operator ask "chain it here"): with PAUSE_ALL_CI on, the landing record and its PR-body line name every surface steward marks paused_by_master, except an opt-in that is off; keys 101-1 (blocked: a cross-station gate on steward Story 103.1 the operator flips), epic-101 (backlog) and epic-101-retrospective (optional) added; no other epic or story moved. Earlier 2026-10-14: RE-STAMPED 2026-10-14 (ci pauses at merge): Epic 100 / Story 100.1 added for spec-pyforge-marshal CAP-292 (FR-239; reads pyforge-steward:CAP-166, steward Story 99.3 done): a dispatch landing records which CI surfaces were paused when it merged, in its journal, its PR body and its finalize record, behind pyforge.marshal.landing_ci_pauses; keys 100-1 (backlog), epic-100 (backlog) and epic-100-retrospective (optional) added; no other epic or story moved. Earlier 2026-10-12: RE-STAMPED 2026-10-12 (seed check waits on its probes one at a time): Epic 99 / Story 99.1 added (a fix under CAP-13 and FR-95, no CAP, no flag; closes Story 98.1's DW-marshal-98-1; operator asks "start the flaky marshal tests fix" and "merge 2171 and rescope 2172"): the Doctor delegation and the CLI probes start together, a probe timeout reads as a timeout, and a slow test times the real check; keys 99-1 (backlog), epic-99 (backlog) and epic-99-retrospective (optional) added; no other epic or story moved. Earlier 2026-10-12: AMENDED 2026-10-12 (two tests red the local preflight): Epic 98 / Story 98.1 minted (a fix under CAP-13 and CAP-139, no CAP, no flag; tests only); keys 98-1, epic-98 (backlog) and epic-98-retrospective (optional) added; no existing key changed. Prior: RE-STAMPED 2026-10-12 (seed accept and repo-owned managed artifacts): Epic 97 / Stories 97.1 and 97.2 added (fixes under the seed CAPs CAP-10, CAP-11, CAP-12, CAP-13, CAP-15, CAP-17 and CAP-279, no CAP, no flag; operator ruling "Sign off + fix story (Recommended)"): 97.1 adds a journaled `marshal seed accept`, moves detector-registry, dreams-readme and detectors-ci-workflow to copied-seeded and corrects the update --force remedy; 97.2 (deps 97.1) makes a seed update dry run plan only real changes, which Story 86.2's AC6 claimed and did not hold; keys 97-1 and 97-2 (backlog), epic-97 (backlog) and epic-97-retrospective (optional) added; no other epic or story moved. Earlier 2026-10-11: RE-STAMPED 2026-10-11 (duplicate frontmatter keys in story specs): Epic 96 / Story 96.1 added (a fix under CAP-161 with CAP-169 and CAP-275, no CAP, no flag; operator ask "Do this task here: Stop story specs gaining duplicate frontmatter keys"): dispatch collapses a repeated story-spec frontmatter key to the occurrence git wrote last before it verifies, the build-skill customizations tell the session to replace a key in place, and the 37 specs that repeat a key on main are cleaned; doctor Story 42.1 (the detector) is minted blocked on it; keys 96-1 (backlog), epic-96 (backlog) and epic-96-retrospective (optional) added; no other epic or story moved. Earlier 2026-10-11: RE-STAMPED 2026-10-11 (a held PR is never marked ready): Story 94.2 added to Epic 94 (a fix of Story 83.18's landing hold under CAP-169, no CAP; operator ruling "Fold into 94.1 (Recommended)", applied as a second story because 94.1 had already been dispatched; deps 94.1, done); epic-94 reopens from done to in-progress (doctor Story 41.5); no other epic or story moved. Earlier 2026-10-11: RE-STAMPED 2026-10-11 (a passing review read as older): Epic 94 / Story 94.1 added (a fix of Story 89.1's review gate under CAP-169 and CAP-229, no CAP; queued after Story 93.1); no other epic or story moved. Earlier 2026-10-11: RE-STAMPED 2026-10-11 (recall fold): Epic 93 / Story 93.1 added (a fix under spec-marshal-recall-in-the-loop CAP-1 and CAP-2, carried as spec-pyforge-marshal CAP-288 and CAP-289 once the fold is rendered); Epic 47 records the fold, and Story 47.1's Status line reads done, as its ledger key has since its 2026-10-11 landing. Earlier 2026-10-11: RE-STAMPED 2026-10-11 (cont.): Epics 91 and 92 / Stories 91.1 and 92.1 added (fixes, no CAP; 92.1 lands Story 90.1's reverted behaviour again); no other epic or story moved. Earlier 2026-10-11: RE-STAMPED 2026-10-11: chain-currency cascade (spec -> PRD -> spine -> epics) after the memlog reconcile of marshal Story 90.1's code revert (its psutil group read held every dispatch live); no CAP/FR/AD/story moved. Prior: RE-STAMPED 2026-10-11 (operator ruling "Fold into 95.1 (Recommended)"): Story 95.1 also adds ruff to the pyforge-marshal feature, re-locks, regenerates environment.yaml and makes the real-ruff tests fail instead of skip; the Epic 95 preamble records the ruling; no story, key or epic added. Earlier 2026-10-11: RE-STAMPED 2026-10-11 (pre-verify ruff covers the platform and the portal packages): Epic 95 / Story 95.1 added (a fix of Stories 83.9 and 83.15's pre-verify pass under CAP-161, no CAP; operator ask "Do this task here: Extend marshal pre-verify ruff to platform and portals"); no other epic or story moved. Earlier 2026-10-11: RE-STAMPED 2026-10-11 (a held PR is never marked ready): Story 94.2 added to Epic 94 (a fix of Story 83.18's landing hold under CAP-169, no CAP; operator ruling "Fold into 94.1 (Recommended)", applied as a second story because 94.1 had already been dispatched; deps 94.1, done); epic-94 reopens from done to in-progress (doctor Story 41.5); no other epic or story moved. Earlier 2026-10-11: RE-STAMPED 2026-10-11 (a passing review read as older): Epic 94 / Story 94.1 added (a fix of Story 89.1's review gate under CAP-169 and CAP-229, no CAP; queued after Story 93.1); no other epic or story moved. Earlier 2026-10-11: RE-STAMPED 2026-10-11 (recall fold): Epic 93 / Story 93.1 added (a fix under spec-marshal-recall-in-the-loop CAP-1 and CAP-2, carried as spec-pyforge-marshal CAP-288 and CAP-289 once the fold is rendered); Epic 47 records the fold, and Story 47.1's Status line reads done, as its ledger key has since its 2026-10-11 landing. Earlier 2026-10-11: RE-STAMPED 2026-10-11 (cont.): Epics 91 and 92 / Stories 91.1 and 92.1 added (fixes, no CAP; 92.1 lands Story 90.1's reverted behaviour again); no other epic or story moved. Earlier 2026-10-11: RE-STAMPED 2026-10-11: chain-currency cascade (spec -> PRD -> spine -> epics) after the memlog reconcile of marshal Story 90.1's code revert (its psutil group read held every dispatch live); no CAP/FR/AD/story moved. Prior: RE-STAMPED 2026-10-08 (verify and landing order): Stories 22.20 and 22.21 added to Epic 22 (fixes, no CAP); epic-22 stays in-progress. Prior: RE-STAMPED 2026-10-07 (flag registry conflict): Story 22.19 added to Epic 22 (fix, no CAP); epic-22 stays in-progress. Prior: RE-STAMPED 2026-10-07 (baseline conflict): Story 22.18 added to Epic 22 (fix, no CAP); epic-22 stays in-progress. Prior: RE-STAMPED 2026-10-07 (landing gaps, again): Stories 22.15, 22.16 and 22.17 added to done Epic 22 (fixes, no CAP); epic-22 reopens to in-progress (doctor Story 41.5). Validated against the spine's Currency reconciliation 2026-10-07 (no AD added or amended). Covers the 2026-10-06 additions too, which were not stamped: Stories 22.13, 22.14, 53.4 and 85.6 (fixes, no CAP; all since landed). Prior: RE-STAMPED 2026-10-04 (83.19 review + Cursor attribution): Stories 83.24 and 83.25 added to Epic 83 (fixes, no CAP). Prior: RE-STAMPED 2026-10-04 (testing kit CI): Story 19.5 added to done Epic 19 (fix, no CAP); epic-19 reopens to in-progress. Prior: RE-STAMPED 2026-10-04 (chain follow-ups): Stories 83.22 and 83.23 added to Epic 83, Story 85.5 to done Epic 85 and Story 70.2 to done Epic 70 (fixes, no CAP); epic-85 and epic-70 reopen to in-progress (operator ruling 2026-10-04; doctor Story 41.5). Prior: RE-STAMPED 2026-10-04 (preserved-work refs): Epic 87 widened to CAP-287 (FR-234, AD-81); Stories 87.2-87.16 added (fixes 87.2, 87.6, 87.10, 87.13, 87.14; chores 87.12, 87.16, operator-gated; the rest features behind pyforge.marshal.preserve_refs, 87.9 detector-or-gate exempt); Story 87.1 amended (Deps S-87.3, S-87.15). Prior: RE-STAMPED 2026-10-04 (finalize roll-up): Story 83.21 added to Epic 83 (fix, no CAP). Prior: RE-STAMPED 2026-10-04 (late night): Story 85.4 added to done Epic 85 (fix, no CAP); epic-85 reopens to in-progress (doctor Story 41.5 lets a new story reopen its epic). Prior: RE-STAMPED 2026-10-04 (night): Story 86.8 added to Epic 86 (fix, no CAP). Prior: RE-STAMPED 2026-10-04 (later): Epic 87 / Story 87.1 added (fix, no CAP). Prior: RE-STAMPED 2026-10-04: Story 83.20 added to Epic 83 (fix, no CAP). Prior: RE-STAMPED 2026-10-03 (night, last): Stories 83.18-83.19 added to Epic 83 (fixes, no CAP). Prior: RE-STAMPED 2026-10-03 (night, latest): Stories 83.16-83.17 added to Epic 83 (fixes, no CAP). Prior: RE-STAMPED 2026-10-03 (85.1 split): Stories 85.2 and 85.3 added to Epic 85 (CAP-286, same flag). Prior: RE-STAMPED 2026-10-03 (night, later): Stories 83.13-83.15 added to Epic 83 and 84.2 to Epic 84 (fixes, no CAP). Prior: RE-STAMPED 2026-10-03 (late night): Story 83.12 added to Epic 83 (fix, no CAP). Prior: RE-STAMPED 2026-10-03 (Phase 3): Epic 86 / Stories 86.1-86.7 minted from the operator's Phase 3 rulings (fix, no CAP). Prior: RE-STAMPED 2026-10-03 (night): Story 83.11 added to Epic 83 (fix, no CAP). Prior: RE-STAMPED 2026-10-03 (evening): Story 83.10 added to Epic 83 (fix, no CAP); Epic 85 / Story 85.1 minted (spec-pyforge-marshal CAP-286, FR-233). Prior: RE-STAMPED 2026-10-03 (later): Story 83.9 added to Epic 83 (fix, no CAP). Prior: RE-STAMPED 2026-10-03: Story 83.8 added to Epic 83 (fix, no CAP). Prior 2026-10-02 (night)   # RE-STAMPED 2026-10-02 (night): Epic 84 / Story 84.1 minted (spec-pyforge-marshal CAP-285, FR-232). Prior 2026-10-02   # RE-STAMPED 2026-10-02: Epics 81-83 minted since the last stamp; Epic 83 / Stories 83.1-83.6 (fix stories, no CAP) chain the defects found landing Phase 2. Prior 2026-09-30   # RE-STAMPED 2026-09-30: Epic 78 / Story 78.1 minted (spec-pyforge-marshal CAP-283, FR-230). Prior 2026-09-29 (night)   # RE-STAMPED 2026-09-29 (night): Epic 77 / Story 77.1 minted (spec-pyforge-marshal CAP-282, FR-229). Prior 2026-09-29 (evening)   # RE-STAMPED 2026-09-29 (evening): Epic 76 / Story 76.1 minted (spec-one-chain-per-station CAP-11 relay; no marshal CAP or FR). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 75 / Story 75.1 minted (spec-one-chain-per-station CAP-11 relay; no marshal CAP or FR). Prior 2026-09-28 (night): Epic 74 / Stories 74.1-74.3 minted (spec-feature-flag-governance CAP-4, CAP-3, CAP-6 -- the Guild's CAPs, no marshal CAP; no FR registered, PRD section 31.11); 74.2 minted blocked behind doctor Story 34.2. Earlier: AMENDED (evening, cont. 6): operator rulings -- Story 70.1 (CAP-279: .bmad-loop/policy.toml required in loop homes only), Story 72.1 (CAP-280 widened: dispatch land's ALREADY_LANDED read moves to origin/main) and Story 73.2 (CAP-281: the per-campaign follow-up cap) amended; FR-225, FR-227, FR-228 amended in place (PRD section 31.10); keys, statuses, Deps, epicCount and storyCount unchanged. Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade for FR-228 / CAP-281; Epic 73 / Stories 73.1, 73.2 minted. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade for FR-227 / CAP-280; Epic 72 / Story 72.1 minted. Earlier: AMENDED (evening, cont. 3): Epic 54 / Story 54.1 re-scoped with CAP-265 (FR-211 amended; operator ruling; key, epic and status kept). Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade for FR-226 / spec-pyforge-core:CAP-11; Epic 71 / Story 71.1 minted. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-225 / CAP-279; Epic 70 / Story 70.1 minted. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-224 / CAP-278; Epic 69 / Story 69.1 minted. Earlier: RE-STAMPED (later): chain-currency cascade for FR-223 / CAP-277; Epic 68 / Story 68.1 minted, and the ledger rows for Epics 66-68 synced. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-221 / CAP-275 and FR-222 / CAP-276; Epic 66 / Stories 66.1, 66.2 and Epic 67 / Story 67.1 minted. Prior 2026-09-27 · AMENDED 2026-10-26 (one-chain shape): Epic 109 / Story 109.1 minted and done in the same PR (chore under spec-one-chain-per-station CAP-11: the five loose spec files move to the archive home); no requirement, decision or AD moved
 # 2026-09-27  # RE-STAMPED (late night, cont.): chain-currency cascade for FR-220 / CAP-274; Epic 65 / Stories 65.1, 65.2 minted. Earlier: RE-STAMPED (late night): chain-currency cascade for FR-219 / CAP-273; Epic 64 / Story 64.1 minted. Earlier: RE-STAMPED (night): Epic 63 / Story 63.1 minted (spec-pyforge-core:CAP-10). Earlier: RE-STAMPED (late, cont.): chain-currency cascade for FR-218 / CAP-272; Epic 62 / Story 62.1 minted. Earlier: RE-STAMPED (late): chain-currency cascade for FR-217 / CAP-271; Epic 61 / Story 61.1 minted. Earlier: RE-STAMPED (night): chain-currency cascade for FR-216 / CAP-270; Epic 60 / Story 60.1 minted. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-215 / CAP-269; Epic 59 / Story 59.1 minted. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-214 / CAP-268; Epic 58 / Story 58.1 minted. Earlier (later): FR-213 / CAP-267; Epic 57 / Story 57.1 minted. Earlier 2026-09-27: FR-212 / CAP-266; Epic 56 / Story 56.1 minted. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency cascade (arch -> epics) after the 2026-09-26 spine re-stamp; no story minted (a verified dependency-range widening, DW-marshal-bmad-loop-0-12-cap-2026-09-26 closed). Prior 2026-09-24
 status: complete
@@ -9602,7 +9602,7 @@ So that a clean preserve reaches `origin`, and a secret that an earlier unpushed
 **When** the gate reads `git ls-remote <remote> 'refs/heads/*' 'refs/tags/*'` once with a timeout and judges `git rev-list --objects --ignore-missing --stdin <commit>` with the listed shas excluded, reading sent objects through one `cat-file --batch-check` and one `cat-file --batch` on a new bytes path of `PosixProcess`
 **Then** a preserve that adds only clean content on top of public files passes and is pushed; a secret in an intermediate unpushed commit, in a blob reachable on the remote only from `refs/pull/*`, or in the tag or commit message is refused; a new blob over the cap, a new planted credential, a purge-listed ancestor and a purge-listed path are still refused; an unreadable or timed-out remote is a refusal with a new named reason
 **And** the gate's process count does not grow with the number of blobs or listed refs; `push_reviewed_rows` skips a row already on `origin` and survives one row's `PreserveGitError`; `MRS-STATUS-016` names `marshal preserve push` with the flag it needs and `scripts/legacy_preserve_promote.py --push-reviewed`; six mutations each fail a named test; a read-only run from the story worktree over `origin/main` and every tag `ls-remote` does not list refuses none in under 120 s and pushes nothing; `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 88: Marshal's commits stage every tracked path they name
 
@@ -10098,7 +10098,888 @@ So that a registered tool surface is one an agent can reach, and a server that c
 **When** the story lands
 **Then** `pixi run -e pyforge-guild marshal-mcp` answers an MCP `initialize` with `serverInfo.name` `pyforge-marshal`, and `tools/list` returns the eight registered tools; `marshal-mcp --help` exits 0 without reading stdin; `marshal preflight pyforge-marshal` reports the server `startable` with its tool count
 **And** a declared server that exits, hangs past the timeout or answers with anything but an MCP reply is `MRS-PREFLIGHT-012` (ERROR) with its stderr tail; no `fastmcp` import remains in the package; removing the handshake call, or treating a timeout as startable, fails a named test (mutation); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+**Status:** done
+
+## Epic 104: Marshal's own render never blocks a loop-home refresh
+
+Minted 2026-10-25 from the station Dream's entry of the same date (the marshal home is dirty with marshal's own file),
+at the operator's direction "fix / include / resolve the gaps identified autonomously". `marshal refresh` refused the
+`pyforge-marshal` loop home (`MRS-REFRESH-003`) for one untracked `.mcp.json` that `marshal init` itself rendered from
+the policy's `[mcp_servers.marshal]` (AD-43); bmad-loop's `worktree_clean` would refuse the same home. A fix under
+CAP-133, CAP-1, CAP-14 and CAP-15, so no CAP is minted and no flag is added. It is a new epic because Epics 6, 15 and
+18 are done and Epic 103 is a different concern.
+**HARD boundaries:**
+- The refresh probe stays as strict as it is (FR-134): untracked files still count.
+- The home's `.mcp.json` is never deleted (preflight requires it), and the shared `info/exclude` is never used.
+- The `.gitignore` region changes only through `marshal seed`, never by hand.
+
+### Story 104.1: The .mcp.json marshal renders never makes a loop home dirty
+
+As the operator whose `marshal refresh` refuses the marshal loop home for a file marshal itself wrote there,
+I want the seeded `.gitignore` model region to ignore the root `.mcp.json`,
+So that a home holding marshal's rendered MCP registration reads clean to refresh, to bmad-loop and to the dispatch supervisor.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-133 (← spec-loop-home-fleet-refresh CAP-2, FR-134), CAP-1 (FR-5), CAP-14 and CAP-15 (the seeded `.gitignore` region); AD-43 • Dream 2026-10-25 (the marshal home is dirty with marshal's own file) • operator direction 2026-10-25
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/templates/files/model-ignores.gitignore.j2`; `.gitignore` (the `model-ignores` region, re-rendered); `.marshal/seed-state.yml`; `tests/integration/test_init_worktree.py` and the seed template tests
+**Spec:** `planning-artifacts/specs/spec-104-1-the-mcp-json-marshal-renders-never-makes-a-loop-home-dirty.md`
+**Given** `d287eceb0a`, where the template has no `.mcp.json` rule, `marshal init` renders `<home>/.mcp.json` when the policy declares `mcp_servers`, and `has_uncommitted_changes` counts untracked files
+**When** the story lands
+**Then** `git check-ignore -v .mcp.json` names the `model-ignores` region at the repo root; a home holding a rendered `.mcp.json` reads clean to `has_uncommitted_changes` and to `git status --porcelain`; a nested `.mcp.json` is not ignored
+**And** `marshal seed check` and the local-recipes seed oracle stay green; `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+**Status:** done
+
+## Epic 105: The marshal PRD's FR arrows name the capabilities the Spec carries
+
+Minted 2026-10-25 from the station Dream's entry of the same date (the PRD's FR arrows were numbered, not traced), at
+the operator's ruling "Apply the PRD FR→CAP re-map as proposed: 71 headings through a chore story chain, and leave
+FR-144..FR-147 unchanged with a note that they need a source-capability decision." The 2026-09-16 fold appended an
+`← CAP-n` arrow to every FR heading by counting, so most of FR-59..FR-65 and FR-128..FR-195 name the wrong capability.
+A chore under `spec-one-chain-per-station` CAP-5 and CAP-8: no CAP is minted and no flag is added. It is a new epic
+because the concern is the PRD's traceability, not any capability epic.
+**HARD boundaries:**
+- Only the 71 approved arrows change; no FR title, body or number moves.
+- FR-144..FR-147 keep their arrows until the operator decides their source capability.
+- No `SPEC.md` change and no detector rule change.
+
+### Story 105.1: Every marshal PRD FR arrow names the Spec capability that realizes it
+
+As the operator reading the marshal PRD to learn which capability a requirement serves,
+I want every `FR-n ← CAP-m` arrow to name the capability the Spec actually carries,
+So that a requirement traces to its contract instead of to a number the fold counted.
+
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-5 (FRs derive from CAPs) and CAP-8 (the marshal pilot) • Dream 2026-10-25 (the PRD's FR arrows were numbered, not traced) • operator ruling 2026-10-25
+**Flag:** none (`spec-feature-flag-governance` Q1, a chore)
+**Surface:** `planning-artifacts/prds/prd-pyforge-marshal-2026-07-25/prd.md` (71 FR headings and a currency-reconciliation section); the spine and epics `updated:` re-stamps; the deferred-work ledger row for FR-144..FR-147
+**Spec:** `planning-artifacts/specs/spec-105-1-every-marshal-prd-fr-arrow-names-the-spec-capability-that-realizes-it.md`
+**Given** `d287eceb0a`, where the fold commit `1e845b55fc` numbered FR-59..FR-65 and FR-128..FR-195's arrows by counting
+**When** the story lands
+**Then** each of the 71 headings carries the arrow in the spec-pyforge-marshal memlog's 2026-10-25 re-map table, every cited CAP exists, and FR-144..FR-147 are named as awaiting a source-capability decision
+**And** doctor's `fr-without-cap` and the planning detectors stay green
+**Status:** done
+
+## Epic 106: The marshal PRD's remaining FR arrows name what realizes them
+
+Minted 2026-10-25 from the station Dream's entries of the same date (the seed installer's FRs never got their arrows;
+FR-144..FR-147's capabilities were dropped by the fold), at the operator's rulings "Do rows 1-5 in one PR", "Cite the
+constraint (Recommended)" and "Restore 4 marshal CAPs (Recommended)". Epic 105 re-mapped the arrows the 2026-09-16
+fold counted; this epic finishes the PRD: § 15's 62 seed-installer FRs, which never had arrows, and FR-144..FR-147,
+whose capabilities the fold dropped. A chore epic under `spec-one-chain-per-station` CAP-5 and CAP-8: no flag is
+added. Story 106.1 mints no CAP; Story 106.2 restores four. It is a new epic because the concern is the PRD's
+traceability, not any capability epic.
+**HARD boundaries:**
+- Only arrow text moves on FR lines; no FR title, body or number moves.
+- `SPEC.md` changes only by Story 106.2's render of the four restored capabilities from its memlog decision.
+- No detector rule change.
+
+### Story 106.1: Every marshal seed-installer FR names the capability that realizes it
+
+As the operator reading the marshal PRD's seed-installer section to learn which capability a requirement serves,
+I want every FR-66..FR-127 bullet to carry an arrow naming the capability, or the constraint, that realizes it,
+So that § 15 traces to the Spec as the rest of the PRD does.
+
+**Type:** chore • **Effort:** M • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-5 (FRs derive from CAPs) and CAP-8 (the marshal pilot) • Dream 2026-10-25 (the seed installer's FRs never got their arrows) • operator rulings 2026-10-25
+**Flag:** none (`spec-feature-flag-governance` Q1, a chore)
+**Surface:** `planning-artifacts/prds/prd-pyforge-marshal-2026-07-25/prd.md` (62 FR bullets and § 45); the spine and epics `updated:` re-stamps
+**Spec:** `planning-artifacts/specs/spec-106-1-every-marshal-seed-installer-fr-names-the-capability-that-realizes-it.md`
+**Given** `fd06415e4d`, where FR-66..FR-127 carry no arrow
+**When** the story lands
+**Then** each of the 62 bullets carries the arrow in the spec-pyforge-marshal memlog's 2026-10-25 table for Story 106.1, every cited CAP exists, and every cited constraint is a bullet of the Spec's Constraints
+**And** doctor's `fr-without-cap` and the planning detectors stay green
+**Status:** done
+
+### Story 106.2: FR-144..FR-147 trace to the capabilities the fold dropped
+
+As the operator reading the marshal PRD's detector self-verification section,
+I want FR-144..FR-147 to cite capabilities the Spec carries,
+So that the four requirements Stories 17.1 and 17.2 delivered trace to a contract instead of to numbers the fold counted.
+
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-293, CAP-294, CAP-295, CAP-296 (restored, shipped; ← spec-dream-to-code-model-self-verification Capabilities 1..4) / FR-144..FR-147; spec-one-chain-per-station CAP-5 and CAP-8 • Dream 2026-10-25 (FR-144..FR-147's capabilities were dropped by the fold) • operator ruling 2026-10-25 on DW-marshal-105-1
+**Flag:** none (`spec-feature-flag-governance` Q1, a chore)
+**Surface:** `planning-artifacts/specs/spec-pyforge-marshal/SPEC.md` (CAP-293..CAP-296, script-rendered from the memlog decision); `planning-artifacts/prds/prd-pyforge-marshal-2026-07-25/prd.md` (four FR heading arrows and § 46); the spine and epics `updated:` re-stamps; `docs/foundry/capability-ledger.yaml` (four rows); the deferred-work ledger (`DW-marshal-105-1` closed)
+**Spec:** `planning-artifacts/specs/spec-106-2-fr-144-to-fr-147-trace-to-the-capabilities-the-fold-dropped.md`
+**Given** `fd06415e4d`, where FR-144..FR-147 cite the fold's counted CAP-102..CAP-105 (fleet chain-completeness capabilities) and no capability carries detector self-verification
+**When** the story lands
+**Then** `spec-pyforge-marshal` declares CAP-293..CAP-296 with the memlog decision's text, FR-144..FR-147 cite them one to one, each is classified in the capability ledger, and `DW-marshal-105-1` reads closed
+**And** `fr-without-cap`, `capability-ledger-check` and the planning detectors stay green
+**Status:** done
+
+## Epic 107: A loop-home refresh keeps the Tier-3 feed on the tracked ledger's keys
+
+Minted 2026-10-25 from the station Dream's entry of the same date (the refresh writes keys the ledger does not carry),
+at the operator's direction "Do this task here: Find what writes truncated slugs into Tier-3 feeds". `marshal refresh`
+regenerates every station's shared Tier-3 feed from `epics.md` through `sprint_plan.py generate`, whose slugs are cut at
+60 characters and keep `_` and non-ASCII letters, so each long or unusual title gets a second key at `backlog` beside
+the tracked ledger's `done` one. The 2026-10-25 refresh wrote 550 of them, and a bare `sprint-ledger-sync` copies them
+into the tracked ledgers. A fix under CAP-265 and CAP-132 / CAP-134, so no CAP is minted and no flag is added. It is a
+new epic because Epics 15 and 54 are done.
+**HARD boundaries:**
+- `sprint_plan.py` is installer-owned and is not changed.
+- The feed sync never writes a tracked ledger; only `sprint-ledger-sync`'s promotion does.
+- A key whose story number the tracked ledger lacks is never dropped; a re-key still goes through `--rekey`.
+
+### Story 107.1: A refresh or a sync never carries a stale-slug story key
+
+As the operator whose loop spins and ledger syncs read the shared Tier-3 feed,
+I want `marshal refresh` to sync the feed from the tracked ledger, and every sync to drop a story key the ledger carries under another slug,
+So that no spin sees a finished story as actionable and no sync adds a duplicate key to a tracked ledger.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-265 (the hand sync repairs feed drift itself), CAP-132 and CAP-134 (← spec-loop-home-fleet-refresh CAP-1 and CAP-3, FR-133..FR-135); AD-21 • Dream 2026-10-25 (the refresh writes keys the ledger does not carry) • operator direction 2026-10-25
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix)
+**Surface:** `scripts/promote_sprint_status.py`; `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/refresh.py`; `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/land.py` (the landing's feed sync, review round 1); `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/refresh.py` (docstring); `tests/unit/test_promote_sprint_status_regressions.py`, `tests/unit/test_refresh.py` and `tests/unit/test_land_epic_rollups.py`
+**Spec:** `planning-artifacts/specs/spec-107-1-a-refresh-or-a-sync-never-carries-a-stale-slug-story-key.md`
+**Given** `48445a6b8d`, where `_sync_status_step` runs `sprint_plan.py generate` into the shared feed and a bare sync promotes every feed key the twin lacks
+**When** the story lands
+**Then** `marshal refresh`'s `sync_status` step runs `promote_sprint_status.py --feed-only`, which drops and names each stale-slug key, repairs the feed from the twin and never writes the twin; a bare sync and a landing drop the same keys before they promote; a key whose story number the twin lacks survives, and a stale key further along than its twin key is kept and named for a `--rekey`
+**And** replaying the 2026-10-25 herald feed leaves zero stale-slug keys and the twin unchanged; `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+**Status:** done
+
+## Epic 108: Every marshal requirement derives from a capability, and the harness carries the rule (spec-one-chain-per-station CAP-5 amended; spec-pyforge-marshal CAP-297)
+
+Minted 2026-10-26 from the station Dream's entry of the same date and the operator's rulings of 2026-10-26 on the FR-arrow re-audit ("yes forbid it"; ruling (a): FR-120 ← CAP-14, CAP-15). Story 108.1 re-points the five requirements that cite a Spec Constraint at the capabilities the Constraint bounds, lets A-04, A-05, P-10 and L-01 name the Constraints they implement, restores the Spec text the pilot fold cut (124 placeholder titles, 11 one-letter titles, 138 placeholder bullets, 280 cut bullets), and carries the rule into every harness run through `_bmad/custom/` — `bmad-prd.toml`, `bmad-architecture.toml`, `bmad-spec.toml` (`persistent_facts`) and the `fr-arrow` review lens in `bmad-build.toml`, the placement Story 74.3 set for the feature-flag mandate. Story 108.2 (the 33 lettered NFRs name the capabilities they bound; ruling (c)) is minted `backlog` as the owner of the marshal rows the upgraded `fr-without-cap` baseline carries. A chore epic under `spec-one-chain-per-station` CAP-5 as amended and CAP-8; no CAP, no flag.
+**HARD boundaries:**
+- No CAP is renumbered, added or removed; `SPEC.md` is never hand-edited (memlog decision, script render, both self-validate passes logged); 292 capability lines before and after.
+- No FR number, title or body changes beyond the five arrows; no marshal code changes.
+- A mandate lives in `_bmad/custom/*.toml`, never in an installer-owned `SKILL.md`.
+
+### Story 108.1: Every marshal requirement cites a capability, the Spec's cut text is restored, and the harness layers carry the rule
+
+As an operator or agent who reads a marshal requirement to learn what realizes it, and a harness that writes the next one,
+I want the five requirements that cite a Spec Constraint to cite the capabilities the Constraint bounds, the four architecture decisions that implement those Constraints to say so, every marshal capability block to carry a real title and its full text, and the `_bmad/custom/` overrides to carry the rule into every `bmad-prd`, `bmad-spec`, `bmad-architecture` and `bmad-build` run,
+So that no marshal arrow points outside the capability tier, the Constraint is traced where CHAIN-STANDARD § 12 says (the AD), and the next PRD a harness writes is traced, not counted.
+
+**Type:** chore • **Effort:** M • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-5 (amended 2026-10-26) and CAP-8 (the marshal pilot); spec-pyforge-marshal CAP-12, CAP-13, CAP-14, CAP-15, CAP-17 and CAP-297 (minted on the review from the Constraint "Two clocks"; the capabilities FR-101, FR-120, FR-121, FR-125 and FR-126 now cite); A-04, A-05, P-10, L-01 (each names the Spec Constraint it implements); spec-feature-flag-governance CAP-6's placement precedent (Story 74.3) for the `_bmad/custom/` layers
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `planning-artifacts/prds/prd-pyforge-marshal-2026-07-25/prd.md` (FR-101 ← CAP-15; FR-120 ← CAP-14, CAP-15; FR-121 ← CAP-14, CAP-15, CAP-12; FR-125 ← CAP-297, CAP-17; FR-126 ← CAP-13; § Currency reconciliation — 2026-10-26); the spine (A-04, A-05, P-10 and L-01 name the Constraint each implements; § Currency reconciliation — 2026-10-26); `specs/spec-pyforge-marshal/SPEC.md` (124 placeholder titles — 59 restored from source lines, 76 authored from intent, by the counts in the memlog; 137 '(see absorbed Spec memlog)' bullets restored from the source memlogs' capability entries, 1 authored; 280 cut bullets rejoined; 11 one-letter titles restored — by script from `git show 1e845b55fc^`, every id stable); `_bmad/custom/bmad-prd.toml` (new) and `bmad-architecture.toml` (new) and `bmad-spec.toml` (`persistent_facts`), `bmad-build.toml` (the `fr-arrow` review lens)
+**Spec:** `planning-artifacts/specs/spec-108-1-every-marshal-requirement-cites-a-capability-the-spec-s-cut-text-is-restored-and-the-harness-layers-carry-the-rule.md`
+**Given** at `92fa3edbbd` FR-120, FR-121, FR-125 and FR-126 cite a Constraint alone and FR-101 cites one beside CAP-15 (the 2026-10-25 rulings for Story 106.1); A-04, A-05, P-10 and L-01 carry those Constraints without naming them; 124 Spec titles read `from spec-…`, 11 are one letter, 138 bullets read '(see absorbed Spec memlog)' and 280 end mid-sentence (fold `1e845b55fc`); the feature-flag mandate (Story 74.3) is the only mandate `_bmad/custom/` carries
+**When** the operator rules on 2026-10-26 that a requirement cites defined capabilities only, and accepts (a) FR-120 ← CAP-14, CAP-15
+**Then** the five bullets carry only CAP cites (FR-121 adds CAP-12 because `seed adopt` feeds templates through `run_copy`), A-04/A-05/P-10/L-01 each name the Constraint they implement and the CAPs it bounds, every Spec block reads whole with every id stable, `bmad-prd.toml` and `bmad-architecture.toml` exist with the mandate under `[workflow] persistent_facts`, `bmad-spec.toml` carries it beside the flag mandate, and `bmad-build.toml` carries the `fr-arrow` `[[workflow.review_layers]]` lens
+**And** no FR number, title or body changes beyond the five arrows; no CAP is added, removed or renumbered; `fr-without-cap` resolves every marshal cite; `chain-completeness`, `chain-currency` (marshal) and `detectors-ci` stay green; `pyforge-marshal-test` passes (no marshal code changes)
+**Status:** done
+
+### Story 108.2: Every marshal NFR names the capabilities it bounds
+
+As a reader who asks which capability a marshal NFR bounds,
+I want each of the 33 lettered NFR lines to cite the capability or capabilities whose success it bounds, keeping its lettered id,
+So that the NFR tier derives from capabilities the way the FR tier does, and the baseline's marshal arrowless population reaches zero.
+
+**Type:** chore • **Effort:** M • **Deps:** 108.1 • **FR/AD:** spec-one-chain-per-station CAP-5 (amended 2026-10-26: an NFR cites the CAP(s) it bounds; the lettered family `NFR-<L>n` is sanctioned); CHAIN-STANDARD § 6 and § 12; the marshal capabilities each NFR bounds, traced
+**Flag:** none (`type: chore`)
+**Surface:** `planning-artifacts/prds/prd-pyforge-marshal-2026-07-25/prd.md` (the 33 lettered NFR lines — `NFR-R1`.., `NFR-A1`.., `NFR-P1`.., `NFR-C1`.., `NFR-S1`.., `NFR-M1`.., `NFR-O1` — gain `← CAP-m` traced from each capability's success); `docs/governance/fr-baseline.json` (`projects.pyforge-marshal` loses the 33 ids through `scripts/fr_baseline.py --prune`)
+**Spec:** `planning-artifacts/specs/spec-108-2-every-marshal-nfr-names-the-capabilities-it-bounds.md`
+**Given** none of the marshal PRD's 33 NFR lines cites a capability and their ids are lettered (`NFR-C2`), a family CHAIN-STANDARD § 6 now sanctions; they sit in `fr-baseline.json`'s `projects` map as the pre-rule population (ruling (c), 2026-10-26)
+**When** each NFR is traced against the Spec's capability successes
+**Then** every lettered NFR line carries `← CAP-m`, each cited CAP is a definition line in `spec-pyforge-marshal/SPEC.md`, the ids keep their letters, and the independent review reads each arrow
+**And** `scripts/fr_baseline.py --prune` drops the 33 ids from the baseline; `fr-without-cap` stays green
 **Status:** backlog
+
+## Epic 109: Marshal's planning artifacts fit the one-chain shape (spec-one-chain-per-station CAP-11)
+
+Minted 2026-10-26 from the station Dream's Realization log entry of the same date (planning artifacts outside the one-chain
+shape), on the 2026-10-26 re-audit of the one-chain rule (main `97c8211773`). Five loose `specs/spec-<slug>.md` files sat
+under the station `specs/` directory, neither Spec folders nor `spec-<E>-<S>-<slug>.md` story specs: one legacy Tier-2 Spec
+(the 2026-07-26 code audit) and four story specs that pre-date their ledger keys or never had one. CHAIN-STANDARD § 11 puts
+everything the fleet retires at `archive/<original path>`.
+**HARD boundaries:**
+- Every move is a `git mv`; nothing is deleted. The one text change is the audit Spec's frontmatter `status:` (`ready` →
+  `archived`, `archived-reason: superseded`); the four story specs are byte-identical.
+- No CAP, FR, AD or `SPEC.md` change; no story key is minted after the fact for a fix that landed without one.
+- Dated records that name the old paths stay as written; only live pointers follow the move.
+
+### Story 109.1: Marshal's five loose spec files move to the archive home
+
+As a reader who walks the station `specs/` directory to find the one Spec, its seams, its absorbed folders and its story specs,
+I want the five loose `spec-<slug>.md` files to sit under `archive/`, at their original paths,
+So that the directory shows the one-chain shape and each retired record is found where CHAIN-STANDARD § 11 says it is.
+
+**Type:** chore • **Effort:** XS • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-11 (one archive home) and CAP-3 (the station fold procedure); no marshal CAP, FR or AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-code-audit-remediation-2026-07-26.md` (status `archived`, reason `superseded`), `.../spec-status-harness-run-id-poisoning.md`, `.../spec-marshal-land-cross-project-story-key-collision.md`, `.../spec-dispatch-tier-routing-fails-safe.md`, `.../spec-land-promote-isolation.md` (from `planning-artifacts/specs/`); `docs/dreams/dispatch-tier-routing-fails-safe.md` (its "Story spec:" line) and `docs/reference/story-spec-flag-block.md` (its legacy-name example) re-pointed
+**Spec:** `planning-artifacts/specs/spec-109-1-marshal-s-five-loose-spec-files-move-to-the-archive-home.md`
+**Given** at `97c8211773` the five files sit under `planning-artifacts/specs/`: the audit Spec at `status: ready` with its waves closed 2026-07-27 and its branch abandoned; `spec-status-harness-run-id-poisoning.md` beside its ledger record `spec-39-1-…md`; `spec-marshal-land-cross-project-story-key-collision.md` and `spec-dispatch-tier-routing-fails-safe.md` beside their absorbed Spec folders, their fixes landed by direct commits (`d7fd62707b`; `6113ac34f2`, `97ca64d1e3`); `spec-land-promote-isolation.md` at `status: in-progress` although `21c29320a9` delivered it
+**When** each is moved by `git mv` to `archive/<original path>`, the audit Spec's status is set to `archived`, and the two live pointers are re-pointed
+**Then** `git` reports five renames and no deletion, the station `specs/` directory holds no loose `spec-<slug>.md`, and `spec-surface-check`, `governance-currency`, `chain-sprawl-check`, `fold-complete-check`, `bmad-drift-check` and `detectors-ci` exit 0
+**And** `tests/scripts/test_flag_rule.py`'s name-only population test still passes; dated records naming the old paths stay as written
+## Epic 111: The archived marshal Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
+
+Minted 2026-10-26 from `docs/governance/spec-one-chain-per-station/SPEC.md`, capability spec-one-chain-per-station:CAP-11 (owner Dream
+`docs/dreams/one-chain-per-station.md`, `owner: guild`) and that Dream's entry of the same date: a Dream is live in
+`docs/dreams/` or archived under `archive/docs/dreams/`, never both, and a folded satellite leaves the live tree only
+once its whole body sits verbatim in a dated section of its station Dream (CHAIN-STANDARD §11; doctor's
+`fold-complete` check, Story 36.1, proves it). On 2026-10-26, at `97c8211773`, 54 marshal Dreams under `docs/dreams/`
+still read `status: archived` — the satellites the 2026-09-16/17 fold absorbed and left in place behind a
+`Consolidated into` banner. Marshal mints no CAP and registers no FR for this story: the CAP is the Guild Spec's,
+enumerated here and in that Spec's `.memlog.md`, as the relay epics of 2026-09-29 do (doctor Epic 36, marshal Epic 75,
+herald Epic 33). One of the eight station stories of the 2026-10-26 one-PR move (the #2240 / #2319 / #2322 shape).
+**HARD boundaries:** every move is a `git mv`; a body is pasted verbatim with its headings demoted one level, never
+trimmed; a moved file keeps its frontmatter and loses only the one-chain fold banner; dated records (memlogs, story
+specs, epic bodies, PRD prose, ledgers, research) keep the path they were written with; `SPEC.md` is never
+hand-edited (memlog event, then the anchor-asserting script render, both self-validate passes logged). The story is a
+`chore`.
+
+### Story 111.1: Marshal's 54 archived Dreams leave the live tree
+
+As a reader of `docs/dreams/`,
+I want marshal's 54 archived satellite Dreams to live under `archive/docs/dreams/<same name>`, each with its whole body verbatim in `docs/dreams/pyforge-marshal.md`,
+So that the live tree holds live Dreams only and nothing a satellite said is lost.
+
+**Type:** chore • **Effort:** M • **Deps:** — • **FR/AD:** spec-one-chain-per-station:CAP-11 (CHAIN-STANDARD §11: one archive home; a fold is complete before the file moves; readers follow the move); no marshal CAP or FR
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `docs/dreams/pyforge-marshal.md` (42 dated 2026-10-26 sections, one per satellite whose long paragraphs were not all there: the body verbatim, headings demoted one level, the fold banner left out); `archive/docs/dreams/<slug>.md` × 54 (each moved with `git mv`, its banner stripped, its frontmatter unchanged); `docs/dreams/README.md` (the 54 interim rows leave with their files); `specs/spec-pyforge-marshal/SPEC.md` (`surface:` and `covers-dreams:` entries name the archive paths) and the 3 absorbed pointer Specs whose `owner-dream:` named a moved file; `.memlog.md` (the surface reconcile); `planning-artifacts/marshal-policy.toml` (four path entries under story 31), `prds/prd-pyforge-marshal-2026-07-25/prd.md` frontmatter (two Dream paths; the prose keeps its dated citations), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/templates/manifest.yaml` (one comment), `src/shared/packages/pyforge-core/src/pyforge/core/roster.py` (docstring; `spec-pyforge-core`), `scripts/fleet_picture.py` and `tests/scripts/test_fleet_picture_baseline_drift_attention.py` (the stuck-orchestrator recovery hint names the archive path)
+**Spec:** `planning-artifacts/specs/spec-111-1-marshal-s-54-archived-dreams-leave-the-live-tree.md`
+**Given** at `97c8211773` 54 marshal Dreams under `docs/dreams/` read `status: archived`, 42 of them with paragraphs nowhere but in the archived file (the 2026-09-16 pilot pasted the other 12; they lacked only the banner) — measured with `fold-complete`'s own `long_paragraphs`
+**When** each incomplete body is pasted verbatim into a dated section of `docs/dreams/pyforge-marshal.md` and every one of the 54 moves to `archive/docs/dreams/`
+**Then** `fold-complete` reads each of the 54 as a complete fold and no marshal Dream in `docs/dreams/` reads `status: archived`; every live pointer that named a moved file names its archive path
+**And** `dreams-hygiene`, `dream-chain`, `chain-sprawl` (its baseline pruned), `governance-currency`, `spec-surface`, `chain-completeness`, `chain-currency` and `detectors-ci` stay green
+**Status:** done
+
+## Epic 110: Every pre-rule marshal runtime capability sits behind a kill switch (37 flags, one per CAP; the Guild flag rule's retrofit capability, Q6)
+
+Minted 2026-10-26 from the station Dream's entry of the same date and the operator's approval of the CAP-7 retrofit sheet (R1–R8): every capability the flag inventory reads as reachable at runtime and minted before the rule date sits behind one flag that defaults ON in every environment, a kill switch (spec-feature-flag-governance CAP-7; Q6 one flag per CAP; Q3 a flag-off verb stays listed and refuses with the usage code). Three shapes: a verb switch, an invariant switch (the dependent verb refuses, the defect never reopens; ruling R3) and a behaviour switch (the pre-rule behaviour at one read site). Each key carries its clock from 2026-10-26; Story 110.38 (backlog) retires them on 2027-01-24 (Q4; ruling R5). Rows: `spec-pyforge-core` CAP-11; `spec-pyforge-marshal` CAP-1, CAP-2, CAP-3, CAP-5, CAP-7, CAP-10, CAP-11, CAP-12, CAP-13, CAP-16, CAP-17, CAP-141, CAP-154, CAP-160, CAP-161, CAP-162, CAP-163, CAP-167, CAP-169, CAP-174, CAP-229, CAP-259, CAP-263, CAP-267, CAP-275, CAP-277, CAP-278, CAP-279, CAP-281, CAP-282, CAP-283, CAP-285, CAP-288, CAP-289, CAP-290, CAP-291.
+**HARD boundaries:**
+- Keys are read only through `pyforge.core.flags` or `django_pyforge.flags`, spelled literally; one tree, no second reader.
+- No station exit code changes: a refusal is the usage code 2.
+- No done story spec is rewritten; the inventory is regenerated.
+
+### Story 110.1: the front door names the environment a roster station runs in sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-core CAP-11 (the front door names the environment a roster station runs in) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as an uninstalled roster station token reads `unknown station`, as before spec-pyforge-core CAP-11.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-core CAP-11 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.front_door_environment` (default ON in dev, staging and production: a kill switch; a behaviour switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-1-the-front-door-names-the-environment-a-roster-station-runs-in-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `pyforge.core.dispatch.dispatch_argv`: the `station is not installed in this environment` refusal though the inventory's join does not read it as `runtime` (outside R1's measured population)
+**When** the retrofit lands
+**Then** `pyforge.marshal.front_door_environment` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `pyforge.core.dispatch.dispatch_argv`: the `station is not installed in this environment` refusal through `pyforge.core.flags`; OFF: an uninstalled roster station token reads `unknown station`, as before spec-pyforge-core CAP-11
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.2: loop homes and isolation sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-1 (loop homes and isolation) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal factory spin` is listed disabled and refuses with usage code 2.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-1 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.loop_homes` (default ON in dev, staging and production: a kill switch; a verb switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-2-loop-homes-and-isolation-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `marshal factory spin` though the inventory's join does not read it as `runtime` (outside R1's measured population)
+**When** the retrofit lands
+**Then** `pyforge.marshal.loop_homes` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal factory spin` through `pyforge.core.flags`; OFF: `marshal factory spin` is listed disabled and refuses with usage code 2
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.3: supervised unattended runs sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-2 (supervised unattended runs) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal factory attach|resume|checkpoint` are listed disabled and refuse with usage code 2.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-2 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.supervised_runs` (default ON in dev, staging and production: a kill switch; a verb switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-3-supervised-unattended-runs-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `marshal factory attach`, `marshal factory resume`, `marshal factory checkpoint` though the inventory's join does not read it as `runtime` (outside R1's measured population)
+**When** the retrofit lands
+**Then** `pyforge.marshal.supervised_runs` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal factory attach`, `marshal factory resume`, `marshal factory checkpoint` through `pyforge.core.flags`; OFF: `marshal factory attach|resume|checkpoint` are listed disabled and refuse with usage code 2
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.4: gates you can run sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-3 (gates you can run) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal gate evaluate` is listed disabled and refuses with usage code 2.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-3 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.gate_evaluate` (default ON in dev, staging and production: a kill switch; a verb switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-4-gates-you-can-run-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `marshal gate evaluate` though the inventory's join does not read it as `runtime` (outside R1's measured population)
+**When** the retrofit lands
+**Then** `pyforge.marshal.gate_evaluate` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal gate evaluate` through `pyforge.core.flags`; OFF: `marshal gate evaluate` is listed disabled and refuses with usage code 2
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.5: fleet visibility sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-5 (fleet visibility) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal status` is listed disabled and refuses with usage code 2.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-5 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.fleet_status` (default ON in dev, staging and production: a kill switch; a verb switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-5-fleet-visibility-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `marshal status` and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.marshal.fleet_status` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal status` through `pyforge.core.flags`; OFF: `marshal status` is listed disabled and refuses with usage code 2
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.6: policy composition sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-7 (policy composition) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal init|preflight|homes|teardown` refuse with usage code 2; no policy is ever composed from a second site.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-7 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.policy_composition` (default ON in dev, staging and production: a kill switch; an invariant switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-6-policy-composition-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `marshal init`, `marshal preflight`, `marshal homes`, `marshal teardown` though the inventory's join does not read it as `runtime` (outside R1's measured population)
+**When** the retrofit lands
+**Then** `pyforge.marshal.policy_composition` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal init`, `marshal preflight`, `marshal homes`, `marshal teardown` through `pyforge.core.flags`; OFF: `marshal init|preflight|homes|teardown` refuse with usage code 2; no policy is ever composed from a second site
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.7: operating model as data sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-10 (operating model as data) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal seed explain` is listed disabled and refuses with usage code 2.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-10 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.seed_explain` (default ON in dev, staging and production: a kill switch; a verb switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-7-operating-model-as-data-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `marshal seed explain` and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.marshal.seed_explain` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal seed explain` through `pyforge.core.flags`; OFF: `marshal seed explain` is listed disabled and refuses with usage code 2
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.8: managed-region upgrades sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-11 (managed-region upgrades) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal seed update` is listed disabled and refuses with usage code 2.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-11 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.managed_regions` (default ON in dev, staging and production: a kill switch; a verb switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-8-managed-region-upgrades-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `marshal seed update` and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.marshal.managed_regions` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal seed update` through `pyforge.core.flags`; OFF: `marshal seed update` is listed disabled and refuses with usage code 2
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.9: adopt onto a living repo sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-12 (adopt onto a living repo) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal seed adopt` is listed disabled and refuses with usage code 2.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-12 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.seed_adopt` (default ON in dev, staging and production: a kill switch; a verb switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-9-adopt-onto-a-living-repo-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `marshal seed adopt` and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.marshal.seed_adopt` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal seed adopt` through `pyforge.core.flags`; OFF: `marshal seed adopt` is listed disabled and refuses with usage code 2
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.10: seed check in CI sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-13 (seed check in CI) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal seed check` is listed disabled and refuses with usage code 2.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-13 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.seed_check` (default ON in dev, staging and production: a kill switch; a verb switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-10-seed-check-in-ci-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `marshal seed check` and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.marshal.seed_check` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal seed check` through `pyforge.core.flags`; OFF: `marshal seed check` is listed disabled and refuses with usage code 2
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.11: adapters from one contract sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-16 (adapters from one contract) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `seed adopt` renders no per-tool adapter file; existing adapter files are left untouched.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-16 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.adapter_fanout` (default ON in dev, staging and production: a kill switch; a behaviour switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-11-adapters-from-one-contract-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `seed/verbs/adopt.py`: the adapter fan-out (`derive_adapters.render_adapter`) during `seed adopt` and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.marshal.adapter_fanout` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `seed/verbs/adopt.py`: the adapter fan-out (`derive_adapters.render_adapter`) during `seed adopt` through `pyforge.core.flags`; OFF: `seed adopt` renders no per-tool adapter file; existing adapter files are left untouched
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.12: genesis-owned state file sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-17 (genesis-owned state file) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal seed init|adopt|update` refuse with usage code 2: the state file is load-bearing and is never skipped.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-17 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.genesis_state_file` (default ON in dev, staging and production: a kill switch; an invariant switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-12-genesis-owned-state-file-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `marshal seed init`, `marshal seed adopt`, `marshal seed update` and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.marshal.genesis_state_file` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal seed init`, `marshal seed adopt`, `marshal seed update` through `pyforge.core.flags`; OFF: `marshal seed init|adopt|update` refuse with usage code 2: the state file is load-bearing and is never skipped
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.13: Supervisor finalizes when the harness cannot run shell sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-141 (Supervisor finalizes when the harness cannot run shell) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as the supervisor leaves a shell-less session's leftover for the operator (`MRS-DISP-036`), as before.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-141 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.supervisor_shell_finalize` (default ON in dev, staging and production: a kill switch; a behaviour switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-13-supervisor-finalizes-when-the-harness-cannot-run-shell-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `dispatch_supervisor/__main__.py`: the `supervisor_should_finalize_harness_work` decision and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.marshal.supervisor_shell_finalize` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `dispatch_supervisor/__main__.py`: the `supervisor_should_finalize_harness_work` decision through `pyforge.core.flags`; OFF: the supervisor leaves a shell-less session's leftover for the operator (`MRS-DISP-036`), as before
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.14: `marshal watch` reports what changed and a recommended delay sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-154 (`marshal watch` reports what changed and a recommended delay) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal watch` is listed disabled and refuses with usage code 2.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-154 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.watch` (default ON in dev, staging and production: a kill switch; a verb switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-14-marshal-watch-reports-what-changed-and-a-recommended-delay-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `marshal watch` though the inventory's join does not read it as `runtime` (outside R1's measured population)
+**When** the retrofit lands
+**Then** `pyforge.marshal.watch` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal watch` through `pyforge.core.flags`; OFF: `marshal watch` is listed disabled and refuses with usage code 2
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.15: completion is judged from git and process facts, never self-reports sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-160 (completion is judged from git and process facts, never self-reports) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as the dispatch verbs refuse with usage code 2; completion is never judged from a self-report.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-160 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.completion_from_facts` (default ON in dev, staging and production: a kill switch; an invariant switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-15-completion-is-judged-from-git-and-process-facts-never-self-reports-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `marshal factory dispatch`, `marshal factory dispatch-attach`, `marshal factory dispatch-resume`, `marshal factory drain` and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.marshal.completion_from_facts` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal factory dispatch`, `marshal factory dispatch-attach`, `marshal factory dispatch-resume`, `marshal factory drain` through `pyforge.core.flags`; OFF: the dispatch verbs refuse with usage code 2; completion is never judged from a self-report
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.16: a session's self-report is input to verification, never the verdict sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-161 (a session's self-report is input to verification, never the verdict) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as the dispatch verbs, `marshal land` and `marshal deploy land-story` refuse with usage code 2; nothing lands on a self-report.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-161 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.verify_before_landing` (default ON in dev, staging and production: a kill switch; an invariant switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-16-a-session-s-self-report-is-input-to-verification-never-the-verdict-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `marshal factory dispatch`, `marshal factory dispatch-attach`, `marshal factory dispatch-resume`, `marshal factory drain`, `marshal land`, `marshal deploy land-story` and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.marshal.verify_before_landing` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal factory dispatch`, `marshal factory dispatch-attach`, `marshal factory dispatch-resume`, `marshal factory drain`, `marshal land`, `marshal deploy land-story` through `pyforge.core.flags`; OFF: the dispatch verbs, `marshal land` and `marshal deploy land-story` refuse with usage code 2; nothing lands on a self-report
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.17: dispatch lands through existing landing machinery, never a second path sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-162 (dispatch lands through existing landing machinery, never a second path) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as the dispatch verbs refuse with usage code 2; no second landing path exists.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-162 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.dispatch_lands_via_land` (default ON in dev, staging and production: a kill switch; an invariant switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-17-dispatch-lands-through-existing-landing-machinery-never-a-second-path-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `marshal factory dispatch`, `marshal factory dispatch-attach`, `marshal factory dispatch-resume`, `marshal factory drain` and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.marshal.dispatch_lands_via_land` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal factory dispatch`, `marshal factory dispatch-attach`, `marshal factory dispatch-resume`, `marshal factory drain` through `pyforge.core.flags`; OFF: the dispatch verbs refuse with usage code 2; no second landing path exists
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.18: one story in flight per station, cross-station dispatches run concurrently sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-163 (one story in flight per station, cross-station dispatches run concurrently) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as a second dispatch onto a busy station is not refused (`MRS-DISP-021` is never raised); the dependency and surface-overlap checks still run.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-163 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.one_in_flight_per_station` (default ON in dev, staging and production: a kill switch; a behaviour switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-18-one-story-in-flight-per-station-cross-station-dispatches-run-concurrently-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `cli/dispatch.py`: the `MRS-DISP-021` in-flight refusal in the dispatch preflight and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.marshal.one_in_flight_per_station` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `cli/dispatch.py`: the `MRS-DISP-021` in-flight refusal in the dispatch preflight through `pyforge.core.flags`; OFF: a second dispatch onto a busy station is not refused (`MRS-DISP-021` is never raised); the dependency and surface-overlap checks still run
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.19: `branch_merged` is never true on ancestry alone sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-167 (`branch_merged` is never true on ancestry alone) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as the dispatch verbs refuse with usage code 2; ancestry alone never reads as merged.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-167 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.branch_merged_divergence` (default ON in dev, staging and production: a kill switch; an invariant switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-19-branch-merged-is-never-true-on-ancestry-alone-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `marshal factory dispatch`, `marshal factory dispatch-attach`, `marshal factory dispatch-resume`, `marshal factory drain` and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.marshal.branch_merged_divergence` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal factory dispatch`, `marshal factory dispatch-attach`, `marshal factory dispatch-resume`, `marshal factory drain` through `pyforge.core.flags`; OFF: the dispatch verbs refuse with usage code 2; ancestry alone never reads as merged
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.20: after harness exit, at most one follow-up review, then land sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-169 (after harness exit, at most one follow-up review, then land) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as the dispatch verbs refuse with usage code 2; a second review pass never starts.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-169 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.single_followup_review` (default ON in dev, staging and production: a kill switch; an invariant switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-20-after-harness-exit-at-most-one-follow-up-review-then-land-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `marshal factory dispatch`, `marshal factory dispatch-attach`, `marshal factory dispatch-resume`, `marshal factory drain` and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.marshal.single_followup_review` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal factory dispatch`, `marshal factory dispatch-attach`, `marshal factory dispatch-resume`, `marshal factory drain` through `pyforge.core.flags`; OFF: the dispatch verbs refuse with usage code 2; a second review pass never starts
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.21: declared context pipeline sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-174 (declared context pipeline) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as every `[context]` layer resolves off, exactly as a policy with no declared block (the CAP's own fallback); the launch surfaces, and `marshal seed check` and `seed kit`, which read the same composition, judge a repo as if it declared no layer.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-174 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.context_pipeline` (default ON in dev, staging and production: a kill switch; a behaviour switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-21-declared-context-pipeline-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `core/policy.py::resolve_context_layers`, the one composition site both engines read and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.marshal.context_pipeline` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `core/policy.py::resolve_context_layers`, the one composition site both engines read through `pyforge.core.flags`; OFF: every `[context]` layer resolves off, exactly as a policy with no declared block (the CAP's own fallback); the launch surfaces, and `marshal seed check` and `seed kit`, which read the same composition, judge a repo as if it declared no layer
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.22: promotion runs on landing, not on memory sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-229 (promotion runs on landing, not on memory) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal land` and `marshal deploy land-story` refuse with usage code 2; a promotion is never run from memory.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-229 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.promotion_on_landing` (default ON in dev, staging and production: a kill switch; an invariant switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-22-promotion-runs-on-landing-not-on-memory-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `marshal land`, `marshal deploy land-story` and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.marshal.promotion_on_landing` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal land`, `marshal deploy land-story` through `pyforge.core.flags`; OFF: `marshal land` and `marshal deploy land-story` refuse with usage code 2; a promotion is never run from memory
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.23: a dispatch-only checkout still has fleet rows sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-259 (a dispatch-only checkout still has fleet rows) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal status` lists loop homes only; a dispatch-only station has no row, as before Story 51.12.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-259 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.dispatch_only_fleet_rows` (default ON in dev, staging and production: a kill switch; a behaviour switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-23-a-dispatch-only-checkout-still-has-fleet-rows-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `cli/status.py`: the placeholder row for a station with Tier-3 dispatch runs and no loop home and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.marshal.dispatch_only_fleet_rows` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `cli/status.py`: the placeholder row for a station with Tier-3 dispatch runs and no loop home through `pyforge.core.flags`; OFF: `marshal status` lists loop homes only; a dispatch-only station has no row, as before Story 51.12
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.24: marshal's shell-outs name the Guild env sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-263 (marshal's shell-outs name the Guild env) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal watch` and `marshal gate evaluate` refuse with usage code 2; no shell-out ever names another env.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-263 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.guild_env_shellouts` (default ON in dev, staging and production: a kill switch; an invariant switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-24-marshal-s-shell-outs-name-the-guild-env-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `marshal watch`, `marshal gate evaluate` and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.marshal.guild_env_shellouts` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal watch`, `marshal gate evaluate` through `pyforge.core.flags`; OFF: `marshal watch` and `marshal gate evaluate` refuse with usage code 2; no shell-out ever names another env
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.25: a loop-home refresh sends its proven fast-forward past the pre-push preflight, journaled sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-267 (a loop-home refresh sends its proven fast-forward past the pre-push preflight, journaled) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as a refresh pushes without the opt-out, so the pre-push preflight runs, as before Story 57.1.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-267 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.refresh_proven_push` (default ON in dev, staging and production: a kill switch; a behaviour switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-25-a-loop-home-refresh-sends-its-proven-fast-forward-past-the-pre-push-preflight-journaled-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `cli/refresh.py`: the `proven_on_main_sha` handed to `VcsPort.push` and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.marshal.refresh_proven_push` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `cli/refresh.py`: the `proven_on_main_sha` handed to `VcsPort.push` through `pyforge.core.flags`; OFF: a refresh pushes without the opt-out, so the pre-push preflight runs, as before Story 57.1
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.26: a follow-up review a landed story recommends is carried into the deferred-work ledger, never dropped sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-275 (a follow-up review a landed story recommends is carried into the deferred-work ledger, never dropped) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as finalize adds no `DW-FRR` row and closes none; the recommendation stays in the story spec only.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-275 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.followup_review_to_ledger` (default ON in dev, staging and production: a kill switch; a behaviour switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-26-a-follow-up-review-a-landed-story-recommends-is-carried-into-the-deferred-work-ledger-never-dropped-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `dispatch_land_finalize/__main__.py`: the `_run_deferred_work_intake` call and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.marshal.followup_review_to_ledger` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `dispatch_land_finalize/__main__.py`: the `_run_deferred_work_intake` call through `pyforge.core.flags`; OFF: finalize adds no `DW-FRR` row and closes none; the recommendation stays in the story spec only
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.27: a landing's ledger promotion reaches origin/main, and a failed one is never silent sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-277 (a landing's ledger promotion reaches origin/main, and a failed one is never silent) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal land` and `marshal deploy land-story` refuse with usage code 2; a failed promotion is never silent.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-277 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.ledger_promotion_to_origin` (default ON in dev, staging and production: a kill switch; an invariant switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-27-a-landing-s-ledger-promotion-reaches-origin-main-and-a-failed-one-is-never-silent-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `marshal land`, `marshal deploy land-story` and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.marshal.ledger_promotion_to_origin` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal land`, `marshal deploy land-story` through `pyforge.core.flags`; OFF: `marshal land` and `marshal deploy land-story` refuse with usage code 2; a failed promotion is never silent
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.28: the switch script runs where it is documented to run, or says in one line why it cannot sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-278 (the switch script runs where it is documented to run, or says in one line why it cannot) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal land` and `marshal deploy land-story` refuse with usage code 2.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-278 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.switch_script_placement` (default ON in dev, staging and production: a kill switch; an invariant switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-28-the-switch-script-runs-where-it-is-documented-to-run-or-says-in-one-line-why-it-cannot-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `marshal land`, `marshal deploy land-story` though the inventory's join does not read it as `runtime` (outside R1's measured population)
+**When** the retrofit lands
+**Then** `pyforge.marshal.switch_script_placement` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal land`, `marshal deploy land-story` through `pyforge.core.flags`; OFF: `marshal land` and `marshal deploy land-story` refuse with usage code 2
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.29: `marshal seed check` judges the paths the manifest means, never its unrendered placeholders sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-279 (`marshal seed check` judges the paths the manifest means, never its unrendered placeholders) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal seed check` refuses with usage code 2; an unrendered placeholder is never judged.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-279 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.seed_check_rendered_paths` (default ON in dev, staging and production: a kill switch; an invariant switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-29-marshal-seed-check-judges-the-paths-the-manifest-means-never-its-unrendered-placeholders-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `marshal seed check` and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.marshal.seed_check_rendered_paths` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal seed check` through `pyforge.core.flags`; OFF: `marshal seed check` refuses with usage code 2; an unrendered placeholder is never judged
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.30: a drain runs the follow-up review a landed story recommended, gated by its deferred-work row, never by the ledger sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-281 (a drain runs the follow-up review a landed story recommended, gated by its deferred-work row, never by the ledger) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal factory drain` refuses with usage code 2; a follow-up review is never gated by the ledger.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-281 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.drain_followup_review` (default ON in dev, staging and production: a kill switch; an invariant switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-30-a-drain-runs-the-follow-up-review-a-landed-story-recommended-gated-by-its-deferred-work-row-never-by-the-ledger-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `marshal factory drain` and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.marshal.drain_followup_review` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal factory drain` through `pyforge.core.flags`; OFF: `marshal factory drain` refuses with usage code 2; a follow-up review is never gated by the ledger
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.31: every dispatch session opens on the shared codegraph index sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-282 (every dispatch session opens on the shared codegraph index) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as nothing is copied or run; the dispatch-launch journal's `structure_graph` payload reads `skipped` with reason `flag off`.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-282 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.dispatch_codegraph_index` (default ON in dev, staging and production: a kill switch; a behaviour switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-31-every-dispatch-session-opens-on-the-shared-codegraph-index-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `cli/dispatch.py::_seed_dispatch_structure_graph`, the layer-off shape and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.marshal.dispatch_codegraph_index` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `cli/dispatch.py::_seed_dispatch_structure_graph`, the layer-off shape through `pyforge.core.flags`; OFF: nothing is copied or run; the dispatch-launch journal's `structure_graph` payload reads `skipped` with reason `flag off`
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.32: a landing unions append-only memlogs instead of refusing sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-283 (a landing unions append-only memlogs instead of refusing) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal land` and `marshal deploy land-story` refuse with usage code 2.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-283 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.landing_memlog_union` (default ON in dev, staging and production: a kill switch; an invariant switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-32-a-landing-unions-append-only-memlogs-instead-of-refusing-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `marshal land`, `marshal deploy land-story` though the inventory's join does not read it as `runtime` (outside R1's measured population)
+**When** the retrofit lands
+**Then** `pyforge.marshal.landing_memlog_union` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal land`, `marshal deploy land-story` through `pyforge.core.flags`; OFF: `marshal land` and `marshal deploy land-story` refuse with usage code 2
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.33: an operator-run refresh reads every harness's live model list and reports drift sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-285 (an operator-run refresh reads every harness's live model list and reports drift) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `marshal adapters models` is listed disabled and refuses with usage code 2.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-285 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.model_list_refresh` (default ON in dev, staging and production: a kill switch; a verb switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-33-an-operator-run-refresh-reads-every-harness-s-live-model-list-and-reports-drift-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `marshal adapters models` and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.marshal.model_list_refresh` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `marshal adapters models` through `pyforge.core.flags`; OFF: `marshal adapters models` is listed disabled and refuses with usage code 2
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.34: a dev pass receives relevant team-memory feedback before it starts sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-288 (a dev pass receives relevant team-memory feedback before it starts) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as the `[context.recall]` layer reads off: no query runs and nothing is injected before the dev pass.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-288 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.recall_dev_pass` (default ON in dev, staging and production: a kill switch; a behaviour switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-34-a-dev-pass-receives-relevant-team-memory-feedback-before-it-starts-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `core/recall_feedback.py::layer_enabled`, the one gate both engines consult and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.marshal.recall_dev_pass` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `core/recall_feedback.py::layer_enabled`, the one gate both engines consult through `pyforge.core.flags`; OFF: the `[context.recall]` layer reads off: no query runs and nothing is injected before the dev pass
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.35: a review pass sees the same feedback the dev pass saw sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-289 (a review pass sees the same feedback the dev pass saw) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as the `[context.recall]` layer reads off: the review prompt carries no block.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-289 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.recall_review_pass` (default ON in dev, staging and production: a kill switch; a behaviour switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-35-a-review-pass-sees-the-same-feedback-the-dev-pass-saw-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `core/recall_feedback.py::layer_enabled` and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.marshal.recall_review_pass` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `core/recall_feedback.py::layer_enabled` through `pyforge.core.flags`; OFF: the `[context.recall]` layer reads off: the review prompt carries no block
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.36: the recall injection is its own [context] layer sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-290 (the recall injection is its own [context] layer) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as the `[context.recall]` layer resolves as absent: `enabled = false` on both engines.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-290 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.recall_context_layer` (default ON in dev, staging and production: a kill switch; a behaviour switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-36-the-recall-injection-is-its-own-context-layer-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `core/recall_feedback.py::layer_enabled` though the inventory's join does not read it as `runtime` (outside R1's measured population)
+**When** the retrofit lands
+**Then** `pyforge.marshal.recall_context_layer` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `core/recall_feedback.py::layer_enabled` through `pyforge.core.flags`; OFF: the `[context.recall]` layer resolves as absent: `enabled = false` on both engines
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.37: a recall miss or failure injects nothing sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-marshal CAP-291 (a recall miss or failure injects nothing) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as recall is disabled entirely (the layer reads off), so a miss or failure can inject nothing.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-291 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.marshal.recall_miss_injects_nothing` (default ON in dev, staging and production: a kill switch; an invariant switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-37-a-recall-miss-or-failure-injects-nothing-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `core/recall_feedback.py::layer_enabled` though the inventory's join does not read it as `runtime` (outside R1's measured population)
+**When** the retrofit lands
+**Then** `pyforge.marshal.recall_miss_injects_nothing` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `core/recall_feedback.py::layer_enabled` through `pyforge.core.flags`; OFF: recall is disabled entirely (the layer reads off), so a miss or failure can inject nothing
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 110.38: the retrofit kill switches retire on their cleanup date
+
+As the operator who turned none of the 37 retrofit kill switches off in their 90-day window,
+I want each key removed from the tree, its reader and its two-state test on 2027-01-24 (the Q4 clock, `on_everywhere` 2026-10-26 plus 90 days), declared with `retires-flag:` by this station,
+So that the gate's `flag-clock-overdue` never reds `detectors-ci`, no reader is left behind, and the inventory reads each row as retired by this story.
+
+**Type:** feature • **Effort:** M • **Deps:** 110.1 • **FR/AD:** the retirement path of the Guild flag rule (spec-feature-flag-governance, the gate capability as amended 2026-10-15; Q4)
+**Flag:** `flag-exempt: flag-infrastructure`; `retires-flag:` `pyforge.marshal.front_door_environment`, `pyforge.marshal.loop_homes`, `pyforge.marshal.supervised_runs`, `pyforge.marshal.gate_evaluate`, `pyforge.marshal.fleet_status`, `pyforge.marshal.policy_composition`, `pyforge.marshal.seed_explain`, `pyforge.marshal.managed_regions`, `pyforge.marshal.seed_adopt`, `pyforge.marshal.seed_check`, `pyforge.marshal.adapter_fanout`, `pyforge.marshal.genesis_state_file`, `pyforge.marshal.supervisor_shell_finalize`, `pyforge.marshal.watch`, `pyforge.marshal.completion_from_facts`, `pyforge.marshal.verify_before_landing`, `pyforge.marshal.dispatch_lands_via_land`, `pyforge.marshal.one_in_flight_per_station`, `pyforge.marshal.branch_merged_divergence`, `pyforge.marshal.single_followup_review`, `pyforge.marshal.context_pipeline`, `pyforge.marshal.promotion_on_landing`, `pyforge.marshal.dispatch_only_fleet_rows`, `pyforge.marshal.guild_env_shellouts`, `pyforge.marshal.refresh_proven_push`, `pyforge.marshal.followup_review_to_ledger`, `pyforge.marshal.ledger_promotion_to_origin`, `pyforge.marshal.switch_script_placement`, `pyforge.marshal.seed_check_rendered_paths`, `pyforge.marshal.drain_followup_review`, `pyforge.marshal.dispatch_codegraph_index`, `pyforge.marshal.landing_memlog_union`, `pyforge.marshal.model_list_refresh`, `pyforge.marshal.recall_dev_pass`, `pyforge.marshal.recall_review_pass`, `pyforge.marshal.recall_context_layer`, `pyforge.marshal.recall_miss_injects_nothing`
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, the read sites and the two-state tests the Epic 110 stories name, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-marshal.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-110-38-the-retrofit-kill-switches-retire-on-their-cleanup-date.md`
+**Given** the 37 keys read ON in every environment since 2026-10-26 with `cleanup_by` 2027-01-24
+**When** the cleanup date arrives and the operator has turned none of them off
+**Then** this story removes each key from the tree and the overlays, its read site and its test, declares every key under `retires-flag:`, and the inventory reads each row as `retired by 110-38`
+**And** `flag-gate-check` reports no `flag-retired-still-read` and no `flag-clock-overdue`; a key the operator turned off stays, and its capability's removal is a story of its own
+**Status:** backlog
+
+## Epic 112: The absorbed marshal Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
+
+Minted 2026-10-27 from `docs/governance/spec-one-chain-per-station/SPEC.md` (spec-one-chain-per-station:CAP-11; owner Dream
+`docs/dreams/one-chain-per-station.md`, `owner: guild`) and that Dream's entry of the same date: everything the fleet retires
+leaves the live tree for `archive/<original path>`, and after the archived Dreams (PR #2328) come the absorbed and archived
+Spec folders, each with its memlog and its companions (CHAIN-STANDARD §11 step 2). On 2026-10-27, at `9dd0a8f1f9`, 56
+`status: absorbed` Spec folders still sat under `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/`.
+Marshal mints no CAP and registers no FR for this story: the CAP is the Guild Spec's, enumerated here and in that
+Spec's `.memlog.md`, the relay shape of doctor Epic 36, marshal Epic 75, herald Epic 33 and the 2026-10-26 mop. One of the
+eight station stories of the 2026-10-27 one-PR close-out of spec-one-chain-per-station:CAP-11. **HARD boundaries:** every move is a `git mv`; nothing
+is deleted; a moved file's text is unchanged except the memlog event appended before the move; a live companion is carried
+into the station Spec folder, never archived (operator ruling 2026-10-27); dated records keep the path they were written
+with; `SPEC.md` is never hand-edited (memlog event, then the anchor-asserting script render, both self-validate passes
+logged). The story is a `chore`.
+
+### Story 112.1: Marshal's absorbed Spec folders move to the archive home
+
+As a reader of the marshal planning tree,
+I want the station's 56 absorbed Spec folders to live under `archive/<original path>`, each with its pointer, memlog and record companions,
+So that `specs/` holds the station Spec, its declared seams and its story specs only, and nothing an absorbed Spec said is lost.
+
+**Type:** chore • **Effort:** M • **Deps:** — • **FR/AD:** spec-one-chain-per-station:CAP-11 (CHAIN-STANDARD §11 step 2: the absorbed and archived Spec folders move, each with its memlog and every companion; readers follow the move); no marshal CAP or FR
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-<slug>/` × 56 (each moved with `git mv`: its pointer `SPEC.md`, its `.memlog.md` and its record companions); the live companion `spec-marshal-token-economy/integration-layers.md` carried with `git mv` into `specs/spec-pyforge-marshal/` before its folder moves (operator ruling 2026-10-27), its readers following; every live pointer that named a moved path (code, tests, workflows, docs, `docs/foundry/capability-ledger.yaml`'s source paths); `docs/governance/chain-sprawl-baseline.json` (the moved folders' entries leave); `specs/spec-pyforge-marshal/.memlog.md` (the surface reconcile)
+**Spec:** `planning-artifacts/specs/spec-112-1-marshal-s-absorbed-spec-folders-move-to-the-archive-home.md`
+**Given** at `9dd0a8f1f9` 56 `status: absorbed` Spec folders sat under the station `specs/` directory
+**When** each live companion is carried into `specs/spec-pyforge-marshal/` and every absorbed folder moves to `archive/<original path>`
+**Then** no folder under `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/` reads `status: absorbed`, each moved folder keeps its files, and every live pointer names the file's new path
+**And** `chain-sprawl` (its baseline pruned), `dream-chain`, `governance-currency`, `spec-surface`, `ad-citation`, `chain-completeness`, `chain-currency` and `detectors-ci` stay green, and the station suite passes
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

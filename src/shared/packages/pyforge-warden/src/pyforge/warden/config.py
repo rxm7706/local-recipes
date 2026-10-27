@@ -67,7 +67,7 @@ Ownership decisions recorded:
   ``self._config.fail_on_kev`` into ``vuln.vuln_rung``; ``cli.py``
   constructs ``OsvEngine(fail_on_kev=config.fail_on_kev)`` the same way it
   already special-cases ``DeptryEngine`` in its engine-construction loop.
-* ``allow-licenses``/``deny-licenses`` (Story 6.2, FR33's v1 gate-activation
+* ``allow-licenses``/``deny-licenses`` (Story 6.2, FR-33's v1 gate-activation
   rule) DO get CLI flags (``--allow-licenses``/``--deny-licenses``) — unlike
   ``dep001-block-confidence``/``fail-on-kev`` above, these two ARE part of
   epics.md's spelled-out v1 CLI surface. Both accept a comma-separated
@@ -85,7 +85,7 @@ Ownership decisions recorded:
   ``license.license_rung(finding, policy=…)`` exactly as
   ``vuln_severity_policy`` is threaded into ``vuln_rung`` (config.py is the
   single writer of the two-mode semantics; the rung only reads).
-* ``--max-lag``/``--require-lts``/``--fail-on-eol`` (Story 6.3, FR35's v1
+* ``--max-lag``/``--require-lts``/``--fail-on-eol`` (Story 6.3, FR-35's v1
   gate-activation rule) mirror ``--allow-licenses``/``--deny-licenses``'s
   treatment exactly: all three ARE part of epics.md's spelled-out v1 CLI
   surface, all three CLI-override either TOML file (same last-applied
@@ -436,7 +436,7 @@ class EffectiveConfig:
     @property
     def license_gating(self) -> bool:
         """Whether the license axis's gate is active this scan (Story 6.2,
-        FR33's v1 gate-activation rule) — ``True`` iff ``allow_licenses`` or
+        FR-33's v1 gate-activation rule) — ``True`` iff ``allow_licenses`` or
         ``deny_licenses`` is non-empty. Threaded into the reported
         ``AxisCoverage.gating`` for the license axis
         (``report.assemble_report``) — transparency of configuration state.
@@ -476,7 +476,7 @@ class EffectiveConfig:
     @property
     def currency_gating(self) -> bool:
         """Whether the currency axis's gate is active this scan (Story 6.3,
-        FR35's v1 gate-activation rule) — ``True`` iff ``max_lag is not
+        FR-35's v1 gate-activation rule) — ``True`` iff ``max_lag is not
         None`` or ``require_lts`` or ``fail_on_eol``. Threaded into the
         reported ``AxisCoverage.gating`` for the currency axis
         (``report.assemble_report``) — transparency of configuration state.

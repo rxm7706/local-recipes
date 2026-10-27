@@ -15,14 +15,22 @@ For each station the report lists
 
 * every CAP declared by an open Spec folder the station hosts (its status is not in the roster's
   ``spec_statuses_ended_acts``), joined to its code the way ``pyforge.doctor.sources.capability_effect``
-  already joins them -- the citing story's ``Surface:`` line in ``epics.md``. That join is imported, never
-  re-implemented (``_load_join``), and it is the only station-side import here;
+  already joins them -- the citing story's ``Surface:`` line in ``epics.md`` (or a story spec's, through its
+  ``Parent:`` line). That join is imported, never re-implemented (``_load_join``), and it is the only
+  station-side import here. Doctor Story 51.1: only a **landed** story joins (its ledger key reads ``done`` in the
+  tracked ``sprint-status-ledger.yaml``; a story spec's own ``status: done``), and where several landed stories
+  cite one CAP the one whose ``Surface:`` classifies best wins (runtime over module over planning over
+  unresolved) -- so a later chore that cites a CAP range with a planning-only ``Surface:`` cannot hide the code
+  an earlier story landed, and a blocked story's ``Surface:`` cannot make an unbuilt capability ``runtime``;
 * the row's class: ``runtime`` (a resolved code fragment is an entry point of the station's package: a CLI
   verb module, an MCP tool module, a REST route or a portal view), ``module`` (resolved code that is no named
   entry point), ``planning`` (every fragment is a document) or ``unresolved`` (no citing story, no ``Surface:``
   line, or no fragment resolves) -- and, for a ``runtime`` row, what it is reached through;
 * the flag key in the one tree that gates it (a tracked story spec of the same station carries a ``flag:``
-  block whose key is in ``src/platform/config/flags.json`` and whose text cites the Spec slug and CAP), or ``none``;
+  block whose key is in ``src/platform/config/flags.json`` and whose text cites the Spec slug and CAP), or
+  ``exempt: <value> (<story key>)`` when a tracked story spec of the station carries a ``flag-exempt:`` value from
+  the roster's ``flag_retrofit_cover_exemptions`` list and cites the Spec and CAP (the flag platform's own
+  capability cannot sit behind a flag; Story 51.1), or ``none``;
 * every pre-rule ``type: feature`` story spec the gate warns on, with its key and status. That list is the
   ``flag-pre-rule`` findings of ``flag_gate_check.judge_one``, so the report and the gate cannot disagree.
 
@@ -46,7 +54,7 @@ import json
 import os
 import subprocess
 import sys
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -61,6 +69,7 @@ import flag_rule  # noqa: E402
 
 OUT_REL = Path("docs/governance/flag-inventory")
 ROSTER_REL = flag_rule.ROSTER_REL
+COVER_EXEMPTIONS_KEY = "flag_retrofit_cover_exemptions"
 DOCTOR_SRC_REL = Path("src/shared/packages/pyforge-doctor/src")
 
 RUNTIME = "runtime"
@@ -88,17 +97,19 @@ class InventoryError(flag_rule.FlagRuleError):
 
 
 class JoinUnavailable(InventoryError):
-    """Doctor's capability join cannot be loaded (the module or one of its eight names is gone)."""
+    """Doctor's capability join cannot be loaded (the module or one of its ten names is gone)."""
 
 
 # --- Doctor's join: the one station-side import ---------------------------------------------------
 
-# The eight names of the join, as Doctor spells them. They are underscore-private in Doctor and no script
+# The ten names of the join, as Doctor spells them. They are underscore-private in Doctor and no script
 # imports one today, so they load through this one seam, and a test pins that they all exist.
 JOIN_NAMES: Mapping[str, Mapping[str, str]] = {
     "pyforge.doctor.sources.capability_effect": {
-        "story_surface_by_cap": "_story_surface_by_cap",
+        "story_surface_citations_by_cap": "_story_surface_citations_by_cap",
         "caps_cited_on_spec_line": "_caps_cited_on_spec_line",
+        "caps_attributed_on_line": "_caps_attributed_on_line",
+        "parent_text": "_parent_text",
         "split_surface_fragments": "_split_surface_fragments",
         "is_document_surface_fragment": "_is_document_surface_fragment",
         "strip_surface_annotation": "_strip_surface_annotation",
@@ -113,8 +124,10 @@ JOIN_NAMES: Mapping[str, Mapping[str, str]] = {
 
 @dataclass(frozen=True)
 class Join:
-    story_surface_by_cap: Callable[..., dict[tuple[str, int], str | None]]
+    story_surface_citations_by_cap: Callable[..., dict[tuple[str, int], list[Any]]]
     caps_cited_on_spec_line: Callable[[str, str], set[int]]
+    caps_attributed_on_line: Callable[[str, list[str]], dict[str, set[int]]]
+    parent_text: Callable[[str], str]
     split_surface_fragments: Callable[[str], list[str]]
     is_document_surface_fragment: Callable[[str], bool]
     strip_surface_annotation: Callable[[str], str]
@@ -133,7 +146,7 @@ def _import_join() -> Join:
 
 
 def _load_join() -> Join:
-    """Doctor's eight join names. An ImportError (or a renamed name) is exit 2: the join is not re-implemented.
+    """Doctor's ten join names. An ImportError (or a renamed name) is exit 2: the join is not re-implemented.
 
     Doctor is not installed in every environment that runs the scripts suite, so a failed import
     retries once with Doctor's source tree of THIS checkout on ``sys.path`` -- the way ``scripts/detectors.py``
@@ -162,6 +175,7 @@ def _load_join() -> Join:
 class Roster:
     stations: tuple[str, ...]
     ended_statuses: frozenset[str]
+    cover_exemptions: frozenset[str]  # Story 51.1: the exempt values under which a retrofit story covers a CAP
 
 
 def read_roster(root: Path) -> Roster:
@@ -177,7 +191,51 @@ def read_roster(root: Path) -> Roster:
         raise flag_rule.RosterUnreadable(f"{ROSTER_REL.as_posix()} carries no `stations` list of names")
     if not isinstance(ended, list) or not all(isinstance(s, str) for s in ended):
         raise flag_rule.RosterUnreadable(f"{ROSTER_REL.as_posix()} carries no `spec_statuses_ended_acts` list")
-    return Roster(tuple(stations), frozenset(ended))
+    covers = data.get(COVER_EXEMPTIONS_KEY, [])
+    if not isinstance(covers, list) or not all(isinstance(s, str) and s for s in covers):
+        raise flag_rule.RosterUnreadable(f"{ROSTER_REL.as_posix()} `{COVER_EXEMPTIONS_KEY}` is not a list of values")
+    return Roster(tuple(stations), frozenset(ended), frozenset(covers))
+
+
+LEDGER_NAME = "sprint-status-ledger.yaml"
+LANDED_STATUS = "done"
+
+
+def _ledger_story(line: str) -> tuple[str, str] | None:
+    """``("<epic>.<n>", status)`` for a ``  <epic>-<n>-<slug>: <status>`` ledger line, else None.
+
+    The shape ``fleet_scan.parse_sprint_status`` reads; ``<n>`` may carry one letter (``3a``). No regex: the
+    scripts suite pins this file's imports.
+    """
+    if not line.startswith("  ") or line.startswith("   "):
+        return None
+    key, sep, rest = line[2:].partition(":")
+    if not sep:
+        return None
+    parts = key.strip().split("-", 2)
+    if len(parts) < 3 or not parts[0].isdigit():
+        return None
+    number = parts[1]
+    digits = number[:-1] if number[-1:].isalpha() else number
+    if not digits or not digits.isdigit():
+        return None
+    status = rest.split("#", 1)[0].strip()
+    return f"{parts[0]}.{number}", status
+
+
+def landed_stories(planning: Path, root: Path) -> frozenset[str]:
+    """``"<epic>.<n>"`` of every story whose key reads ``done`` in the tracked ledger (Story 51.1).
+
+    The tracked ``planning-artifacts/sprint-status-ledger.yaml`` is the twin of record; a project with an
+    ``epics.md`` and no readable ledger is exit 2 (unknown), never a report that reads every story as landed.
+    """
+    text = _read_text(planning / LEDGER_NAME, root, "the ledger")
+    landed: set[str] = set()
+    for line in text.splitlines():
+        parsed = _ledger_story(line)
+        if parsed is not None and parsed[1] == LANDED_STATUS:
+            landed.add(parsed[0])
+    return frozenset(landed)
 
 
 def head_sha(root: Path) -> str:
@@ -337,6 +395,9 @@ def _norm(path: Path) -> Path:
     return Path(os.path.normpath(path))
 
 
+_CLASS_RANK = {klass: rank for rank, klass in enumerate(CLASSES)}
+
+
 def classify_cap(
     join: Join,
     root: Path,
@@ -344,13 +405,37 @@ def classify_cap(
     project: str,
     slug: str,
     cap: int,
-    surface_by_cap: Mapping[tuple[str, int], str | None],
+    citations: Mapping[tuple[str, int], Sequence[Any]],
+    *,
+    landed: Callable[[Any], bool],
 ) -> tuple[str, str]:
-    """(class, reach) for one declared CAP: precedence runtime, module, planning, unresolved."""
-    key = (slug, cap)
-    if key not in surface_by_cap:
+    """(class, reach) for one declared CAP, from the landed citing story whose ``Surface:`` classifies best.
+
+    ``citations`` is Doctor's ``_story_surface_citations_by_cap`` (every citing story, epics.md order then story
+    specs); ``landed`` says whether one citation's story has landed. Precedence across landed citations is
+    runtime, module, planning, unresolved; a tie keeps the earliest (Story 51.1). A CAP no landed story cites is
+    unresolved, naming how many citing stories have not landed.
+    """
+    cited = citations.get((slug, cap), ())
+    if not cited:
         return UNRESOLVED, "no story in epics.md cites this CAP on a line naming the Spec"
-    surface = surface_by_cap[key]
+    landed_citations = [c for c in cited if landed(c)]
+    if not landed_citations:
+        n = len(cited)
+        return UNRESOLVED, f"no landed story cites this CAP ({n} citing stor{'y' if n == 1 else 'ies'} not done)"
+    best: tuple[str, str] | None = None
+    for citation in landed_citations:
+        candidate = _classify_surface(join, root, station, project, citation.surface)
+        if best is None or _CLASS_RANK[candidate[0]] < _CLASS_RANK[best[0]]:
+            best = candidate
+        if best[0] == RUNTIME:
+            break
+    assert best is not None  # noqa: S101 -- landed_citations is non-empty
+    return best
+
+
+def _classify_surface(join: Join, root: Path, station: str, project: str, surface: str | None) -> tuple[str, str]:
+    """(class, reach) for one story's ``Surface:`` field: precedence runtime, module, planning, unresolved."""
     if surface is None:
         return UNRESOLVED, "the citing story carries no `Surface:` line"
     fragments = join.split_surface_fragments(surface)
@@ -443,6 +528,7 @@ class Story:
     rel: str
     status: str
     flag_key: str
+    exempt: str = ""  # the spec's ``flag-exempt:`` value, or ``""``
 
 
 def story_key(rel: str) -> str:
@@ -457,35 +543,100 @@ def _flag_key(frontmatter: Mapping[str, Any] | None) -> str:
     return key.strip() if isinstance(key, str) else ""
 
 
+def _exempt_value(frontmatter: Mapping[str, Any] | None) -> str:
+    value = frontmatter.get("flag-exempt") if frontmatter else None
+    return value.strip() if isinstance(value, str) else ""
+
+
+def _cited_caps(
+    join: Join,
+    root: Path,
+    story: Story,
+    slugs: Sequence[str],
+    *,
+    parent_only: bool = False,
+    known_specs: Collection[str] | None = None,
+) -> set[tuple[str, int]]:
+    """Every ``(spec slug, CAP-N)`` the story spec's text cites, each CAP given to its nearest Spec mention.
+
+    Story 51.1: a line that names two Specs (a story for ``spec-pyforge-core`` CAP-11 that also names the
+    station's inventory file) cites each CAP for the Spec it sits beside, never for every Spec on the line.
+    ``parent_only`` reads the story spec's ``Parent:`` line alone: a cover is the CAP's own retrofit story.
+    """
+    try:
+        text = (root / story.rel).read_text(encoding="utf-8")
+    except OSError, UnicodeDecodeError:
+        return set()  # the gate read this spec's frontmatter a moment ago; a vanished file gates nothing
+    lines = [join.parent_text(text)] if parent_only else text.splitlines()
+    cited: set[tuple[str, int]] = set()
+    for line in lines:
+        for slug, caps in join.caps_attributed_on_line(line, list(slugs), known_specs).items():
+            cited.update((slug, cap) for cap in caps)
+    return cited
+
+
 def _gating_flags(
-    join: Join, root: Path, stories: Sequence[Story], slugs: Sequence[str]
+    join: Join,
+    root: Path,
+    stories: Sequence[Story],
+    slugs: Sequence[str],
+    known_specs: Collection[str] | None = None,
 ) -> dict[tuple[str, int], set[str]]:
     """``(spec slug, CAP-N)`` -> the keys of the station's flagged story specs whose text cites that Spec and CAP."""
     cited: dict[tuple[str, int], set[str]] = {}
     for story in stories:
         if not story.flag_key:
             continue
-        try:
-            text = (root / story.rel).read_text(encoding="utf-8")
-        except OSError, UnicodeDecodeError:
-            continue  # the gate read this spec's frontmatter a moment ago; a vanished file gates nothing
-        for line in text.splitlines():
-            for slug in slugs:
-                for cap in join.caps_cited_on_spec_line(line, slug):
-                    cited.setdefault((slug, cap), set()).add(story.flag_key)
+        for key in _cited_caps(join, root, story, slugs, known_specs=known_specs):
+            cited.setdefault(key, set()).add(story.flag_key)
     return cited
 
 
-def flag_cell(keys: Iterable[str], tree: Mapping[str, Any], retired: Mapping[str, str] | None = None) -> str:
-    """The flag column: the gating keys the tree holds; else why none does. A key its owning station retired
-    (``retires-flag:``, ``flag_gate_check.RETIRES_FIELD``; ``retired`` is ``Inputs.retired``, owner retirements
-    only, doctor Story 34.7) is named by its retiring story, not by the key; another station's declaration
-    leaves the key reading "not in tree"."""
+def _exempt_covers(
+    join: Join,
+    root: Path,
+    stories: Sequence[Story],
+    slugs: Sequence[str],
+    cover_exemptions: Collection[str],
+    known_specs: Collection[str] | None = None,
+) -> dict[tuple[str, int], set[tuple[str, str]]]:
+    """``(spec slug, CAP-N)`` -> ``(exempt value, story key)`` of each exempt retrofit story that covers it (Story 51.1).
+
+    Only a value in the roster's ``flag_retrofit_cover_exemptions`` covers, and only for the CAPs the story's
+    ``Parent:`` line names (the CAP's own retrofit story; a prose citation covers nothing). Every other
+    exemption covers nothing.
+    """
+    covers: dict[tuple[str, int], set[tuple[str, str]]] = {}
+    for story in stories:
+        if not story.exempt or story.exempt not in cover_exemptions:
+            continue
+        for key in _cited_caps(join, root, story, slugs, parent_only=True, known_specs=known_specs):
+            covers.setdefault(key, set()).add((story.exempt, story_key(story.rel)))
+    return covers
+
+
+def flag_cell(
+    keys: Iterable[str],
+    tree: Mapping[str, Any],
+    retired: Mapping[str, str] | None = None,
+    covers: Iterable[tuple[str, str]] = (),
+) -> str:
+    """The flag column: the gating keys the tree holds; else an exempt cover; else why none does.
+
+    A key its owning station retired (``retires-flag:``, ``flag_gate_check.RETIRES_FIELD``; ``retired`` is
+    ``Inputs.retired``, owner retirements only, doctor Story 34.7) is named by its retiring story, not by the key;
+    another station's declaration leaves the key reading "not in tree". ``covers`` (Story 51.1) are the
+    ``(exempt value, story key)`` pairs of exempt retrofit stories that cover the CAP; a cover is named only when
+    no gating key is in the tree, and it is never counted as unflagged.
+    """
     retired = retired or {}
     present = sorted(k for k in set(keys) if k in tree)
     missing = sorted(k for k in set(keys) if k not in tree)
     if present:
         return ", ".join(f"`{k}`" for k in present)
+    covering = sorted(set(covers))
+    if covering:
+        return "exempt: " + ", ".join(f"{value} ({story})" for value, story in covering)
     if missing:
         reasons = []
         unretired = [k for k in missing if k not in retired]
@@ -507,6 +658,7 @@ def build_station(
     stories: Sequence[Story],
     warned: Sequence[Warned],
     sha: str,
+    known_specs: Collection[str] | None = None,
 ) -> StationInventory:
     project = f"pyforge-{station}"
     project_dir = root / "_bmad-output" / "projects" / project
@@ -521,7 +673,8 @@ def build_station(
         open_specs.append((spec_md.parent.name, status or UNKNOWN, _read_text(spec_md, root, "the Spec")))
     slugs = [slug for slug, _status, _text in open_specs]
 
-    surface_by_cap: dict[tuple[str, int], str | None] = {}
+    citations: dict[tuple[str, int], list[Any]] = {}
+    landed_epics: frozenset[str] = frozenset()
     if open_specs:
         epics = join.canonical_epics(project_dir)
         if epics is None and (planning / "epics.md").exists():
@@ -529,18 +682,28 @@ def build_station(
                 f"cannot read epics {flag_rule.repo_relative(planning / 'epics.md', root)}: not a file"
             )
         if epics is not None:
-            surface_by_cap = join.story_surface_by_cap(
-                _read_text(epics, root, "epics"), slugs, story_specs_dir=planning / "specs"
+            citations = join.story_surface_citations_by_cap(
+                _read_text(epics, root, "epics"), slugs, story_specs_dir=planning / "specs", known_specs=known_specs
             )
-    gating = _gating_flags(join, root, stories, slugs) if open_specs else {}
+            landed_epics = landed_stories(planning, root)
+    spec_status = {PurePosixPath(s.rel).name: s.status for s in stories}
+
+    def landed(citation: Any) -> bool:
+        story = citation.story
+        if story.endswith(".md"):  # a story spec's citation, through its Parent: line
+            return spec_status.get(story) == LANDED_STATUS
+        return story in landed_epics
+
+    gating = _gating_flags(join, root, stories, slugs, known_specs) if open_specs else {}
+    covers = _exempt_covers(join, root, stories, slugs, roster.cover_exemptions, known_specs) if open_specs else {}
 
     blocks: list[SpecBlock] = []
     for slug, status, text in open_specs:
         rows = []
         for cap in sorted(join.parse_declared_cap_ids(text)):
-            klass, reach = classify_cap(join, root, station, project, slug, cap, surface_by_cap)
+            klass, reach = classify_cap(join, root, station, project, slug, cap, citations, landed=landed)
             keys = gating.get((slug, cap), ())
-            flag = flag_cell(keys, inputs.tree, inputs.retired)
+            flag = flag_cell(keys, inputs.tree, inputs.retired, covers.get((slug, cap), ()))
             if klass != RUNTIME and flag == NO_FLAG:
                 flag = NOT_APPLICABLE
             rows.append(CapRow(slug, cap, klass, reach, flag))
@@ -554,12 +717,15 @@ _LEGEND = (
     "Classes: `runtime` -- a resolved code fragment is an entry point of the station's package (a CLI verb module, "
     "an MCP tool module, a REST route or a portal view); `module` -- resolved code that is no named entry point, "
     "so the inventory cannot show a user reaches it (listed, never counted as unflagged); `planning` -- every "
-    "`Surface:` fragment is a document (not reachable at runtime); `unresolved` -- no citing story, no `Surface:` "
-    "line, or no code fragment resolves. The join is Doctor's (`pyforge.doctor.sources.capability_effect`): a CAP "
-    "is joined to its code through the citing story's `Surface:` line in `epics.md`, and a Spec whose "
-    "`## Capabilities` section lists no `- **CAP-N ...**` bullet declares none. The flag column names the key of "
-    "a tracked story spec of this station that carries a `flag:` block and cites the Spec and CAP; `n/a` marks a "
-    "row that is not `runtime`."
+    "`Surface:` fragment is a document (not reachable at runtime); `unresolved` -- no landed citing story, no "
+    "`Surface:` line, or no code fragment resolves. The join is Doctor's (`pyforge.doctor.sources.capability_effect`): "
+    "a CAP is joined to its code through the `Surface:` line of each story that cites it in `epics.md` (or on a "
+    "story spec's `Parent:` line); only a landed story joins (its ledger key reads `done`), and the landed story "
+    "whose `Surface:` classifies best wins. A Spec whose `## Capabilities` section lists no `- **CAP-N ...**` "
+    "bullet declares none. The flag column names the key of a tracked story spec of this station that carries a "
+    "`flag:` block and cites the Spec and CAP, or `exempt: <value> (<story key>)` for a retrofit story exempt "
+    "under a value in the roster's `flag_retrofit_cover_exemptions` that cites the Spec and CAP (not counted as "
+    "unflagged); `n/a` marks a row that is not `runtime`."
 )
 
 
@@ -602,8 +768,8 @@ def render_station(inv: StationInventory) -> str:
     lines += ["", "## Warned specs", ""]
     if inv.warned:
         lines += [
-            "Pre-rule `type: feature` story specs that carry neither a `flag:` block nor a `flag-exempt:` value "
-            "(the gate's `flag-pre-rule` warnings for this station).",
+            "Live (not `done` or `superseded`) pre-rule `type: feature` story specs that carry neither a `flag:` "
+            "block nor a `flag-exempt:` value (the gate's `flag-pre-rule` warnings for this station).",
             "",
             "| Story key | Status | Path |",
             "|---|---|---|",
@@ -617,6 +783,21 @@ def render_station(inv: StationInventory) -> str:
 # --- the run --------------------------------------------------------------------------------------
 
 
+def spec_folder_names(root: Path) -> frozenset[str]:
+    """Every Spec folder's name (``spec-<slug>``), open or ended, read from the tracked ``SPEC.md`` files (Story 51.1).
+
+    A ``spec-<name>`` token that names none (a tool such as ``spec-surface-check``, a story-spec file) is no Spec
+    mention when the join attributes CAPs.
+    """
+    rels = flag_gate_check._list_files(root, ("_bmad-output", "docs", "archive"))
+    names: set[str] = set()
+    for rel in rels:
+        parts = PurePosixPath(rel).parts
+        if len(parts) >= 2 and parts[-1] == "SPEC.md" and parts[-2].startswith("spec-"):
+            names.add(parts[-2])
+    return frozenset(names)
+
+
 def build_reports(root: Path) -> dict[str, str]:
     """``pyforge-<station>.md`` -> its text, for every roster station. Raises InventoryError / FlagRuleError."""
     inputs = flag_gate_check.load_inputs(root)  # roster exemptions, baseline, tree -- in that order
@@ -626,13 +807,16 @@ def build_reports(root: Path) -> dict[str, str]:
 
     stories: dict[str, list[Story]] = {}
     warned: dict[str, list[Warned]] = {}
+    known_specs = spec_folder_names(root)
     spec_rels = flag_gate_check.story_specs(root)
     env_targets = flag_gate_check.env_default_judge_targets(root, inputs.exemptions, spec_rels)
     for rel in spec_rels:
         station = flag_gate_check.station_of(rel)
         frontmatter, _why = flag_rule.read_frontmatter(rel, repo_root=root)
         status = str(frontmatter.get("status", "")).strip() if frontmatter else ""
-        stories.setdefault(station, []).append(Story(rel, status or UNKNOWN, _flag_key(frontmatter)))
+        stories.setdefault(station, []).append(
+            Story(rel, status or UNKNOWN, _flag_key(frontmatter), _exempt_value(frontmatter))
+        )
         for finding in flag_gate_check.judge_one(root, inputs, rel, env_default_targets=env_targets):
             if finding.kind == flag_gate_check.K_PRE_RULE:
                 warned.setdefault(station, []).append(Warned(story_key(rel), status or UNKNOWN, rel))
@@ -641,7 +825,7 @@ def build_reports(root: Path) -> dict[str, str]:
     for station in roster.stations:
         project = f"pyforge-{station}"
         inventory = build_station(
-            join, root, roster, inputs, station, stories.get(project, []), warned.get(project, []), sha
+            join, root, roster, inputs, station, stories.get(project, []), warned.get(project, []), sha, known_specs
         )
         reports[f"{project}.md"] = render_station(inventory)
     return reports

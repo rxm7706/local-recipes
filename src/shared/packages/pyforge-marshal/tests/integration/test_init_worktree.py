@@ -1,26 +1,13 @@
-"""Integration test -- Stories 1.4/1.5/1.6/1.7/1.8, ``@pytest.mark.slow``
-(real ``git``/filesystem I/O against a throwaway temp repo shaped like this
-one: a tracked ``_bmad-output/projects/<slug>/planning-artifacts/`` on
-``main``). Drives the full ``marshal init``/``marshal homes``/``marshal
-preflight``/``marshal teardown`` commands end-to-end through ``cli.main.main``
-with the REAL ``GitVcs``/``LocalFs``/``BmadLoopHarness`` adapters (no fakes
--- those live in ``tests/unit/test_init.py``), proving the Acceptance
-Criteria a fake-port test cannot: a real git worktree lands on disk on the
-right branch, a real second invocation is a true zero-write no-op, the
-home's gitignored Tier-3 store (Story 1.5) really resolves to the SAME real
-directory as the repo's own canonical copy, ``marshal homes`` (Story 1.6)
-really auto-discovers real worktrees via real ``git worktree list`` and
-really detects a real hand-edited desync, ``marshal preflight`` (Story 1.7)
-really invokes the installed ``bmad-loop --version``, really resolves the
-real ``claude`` profile via the installed ``bmad_loop`` package, really
-copies a real seed file's bytes, and really persists a machine-scoped
-acknowledgement across two invocations, and ``marshal teardown`` (Story 1.8)
-really removes a real worktree+branch via real ``git worktree remove``/
-``git branch -D``, and -- the story's own headline scenario -- really
-recognizes a REAL single-parent squash-merge commit (this repo's own
-bmad-loop landing convention) as merged via the real ``git commit-tree``+
-``git cherry`` fallback, where real bare ancestry would misreport it as
-unmerged.
+"""Integration tests for ``marshal init``/``homes``/``preflight``/``teardown``.
+
+Most cases are ``@pytest.mark.slow`` (real ``git``/filesystem I/O in a throwaway
+repo with tracked ``_bmad-output/projects/<slug>/planning-artifacts/`` on
+``main``). Story 104.1 adds fast cases (no ``slow`` marker) for root
+``.mcp.json`` gitignore behavior after ``marshal init``.
+
+Slow cases drive the full commands through ``cli.main.main`` with REAL
+``GitVcs``/``LocalFs``/``BmadLoopHarness`` adapters (fakes live in
+``tests/unit/test_init.py``).
 """
 
 from __future__ import annotations
@@ -31,7 +18,10 @@ from pathlib import Path
 
 import pytest
 
+from pyforge.marshal.adapters.vcs_git import GitVcs
+from pyforge.marshal.cli import config as marshal_config
 from pyforge.marshal.cli.main import main
+from pyforge.marshal.seed.state import store as seed_state_store
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
@@ -330,6 +320,41 @@ def test_preflight_refuses_an_unprovisioned_loop_home(tmp_path, monkeypatch, cap
     assert "marshal init" in out
 
 
+def _packaged_model_ignores_template_path() -> Path:
+    store_mod = Path(seed_state_store.__file__).resolve()
+    return store_mod.parents[1] / "templates" / "files" / "model-ignores.gitignore.j2"
+
+
+def _model_ignores_template_body(*, include_root_mcp_json_rule: bool = True) -> str:
+    body = _packaged_model_ignores_template_path().read_text(encoding="utf-8")
+    if not include_root_mcp_json_rule:
+        body = body.replace("/.mcp.json\n", "")
+    return body
+
+
+def _seed_model_ignores_gitignore(repo: Path, *, include_root_mcp_json_rule: bool = True) -> None:
+    """Story 104.1: the home's checkout must carry the packaged ``model-ignores`` body."""
+    region_body = _model_ignores_template_body(include_root_mcp_json_rule=include_root_mcp_json_rule)
+    gitignore = (
+        "# marshal-seed:begin region=model-ignores model-version=1.0.0 sha=00000000\n"
+        f"{region_body}"
+        "# marshal-seed:end region=model-ignores\n"
+    )
+    (repo / ".gitignore").write_text(gitignore, encoding="utf-8")
+    _git(repo, "add", ".gitignore")
+    _git(repo, "commit", "-m", "seed model-ignores gitignore")
+
+
+def _seed_mcp_servers_policy(repo: Path, slug: str) -> None:
+    policy_dir = repo / "_bmad-output" / "projects" / slug / "planning-artifacts"
+    (policy_dir / "marshal-policy.toml").write_text(
+        '[mcp_servers.test]\ncommand = "true"\nargs = []\n',
+        encoding="utf-8",
+    )
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "declare mcp server")
+
+
 def _seed_real_gitignore(repo: Path) -> None:
     """Commits the SAME two ``.gitignore`` patterns this repo's own root
     ``.gitignore`` carries for a loop home's ``_bmad/custom/.active-project``
@@ -347,6 +372,83 @@ def _seed_real_gitignore(repo: Path) -> None:
     )
     _git(repo, "add", ".gitignore")
     _git(repo, "commit", "-m", "seed gitignore")
+
+
+def test_init_rendered_root_mcp_json_leaves_home_clean(tmp_path, monkeypatch, capsys):
+    """Story 104.1 AC3: ``marshal init``'s ``.mcp.json`` render must not trip
+    ``has_uncommitted_changes`` when the checkout carries ``/.mcp.json`` in
+    ``model-ignores``."""
+    slug = "acme"
+    repo = _build_repo(tmp_path, slug)
+    _seed_model_ignores_gitignore(repo)
+    _seed_mcp_servers_policy(repo, slug)
+    loop_home_root = tmp_path / "loop-homes"
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(loop_home_root))
+    monkeypatch.chdir(repo)
+    monkeypatch.setattr(marshal_config, "repo_root", lambda: repo)
+
+    assert main(["init", slug]) == 0
+    capsys.readouterr()
+    home = loop_home_root / slug
+    assert (home / ".mcp.json").is_file()
+
+    vcs = GitVcs()
+    assert vcs.has_uncommitted_changes(home) is False
+    assert _git(home, "status", "--porcelain").stdout.strip() == ""
+
+
+def test_nested_mcp_json_is_not_hidden_by_root_anchor(tmp_path, monkeypatch, capsys):
+    """Story 104.1 AC4: ``/.mcp.json`` ignores only the repository root."""
+    slug = "acme"
+    repo = _build_repo(tmp_path, slug)
+    nested = repo / "pkg"
+    nested.mkdir()
+    (nested / ".gitkeep").write_text("", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "tracked subdir")
+    _seed_model_ignores_gitignore(repo)
+    _seed_mcp_servers_policy(repo, slug)
+    loop_home_root = tmp_path / "loop-homes"
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(loop_home_root))
+    monkeypatch.chdir(repo)
+    monkeypatch.setattr(marshal_config, "repo_root", lambda: repo)
+
+    assert main(["init", slug]) == 0
+    capsys.readouterr()
+    home = loop_home_root / slug
+    nested_mcp = home / "pkg" / ".mcp.json"
+    nested_mcp.parent.mkdir(parents=True, exist_ok=True)
+    nested_mcp.write_text('{"mcpServers": {}}', encoding="utf-8")
+
+    check = subprocess.run(
+        ["git", "-C", str(home), "check-ignore", str(nested_mcp.relative_to(home))],
+        capture_output=True,
+        text=True,
+    )
+    assert check.returncode == 1
+    status = _git(home, "status", "--porcelain").stdout
+    assert "pkg/.mcp.json" in status.replace("\\", "/")
+
+
+def test_init_rendered_root_mcp_json_without_ignore_rule_is_dirty(tmp_path, monkeypatch, capsys):
+    """Story 104.1 AC5: without ``/.mcp.json`` in the template-built ignore file,
+    the home reports dirty after init renders the file."""
+    slug = "acme"
+    repo = _build_repo(tmp_path, slug)
+    _seed_model_ignores_gitignore(repo, include_root_mcp_json_rule=False)
+    _seed_mcp_servers_policy(repo, slug)
+    loop_home_root = tmp_path / "loop-homes"
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(loop_home_root))
+    monkeypatch.chdir(repo)
+    monkeypatch.setattr(marshal_config, "repo_root", lambda: repo)
+
+    assert main(["init", slug]) == 0
+    capsys.readouterr()
+    home = loop_home_root / slug
+    assert (home / ".mcp.json").is_file()
+    vcs = GitVcs()
+    assert vcs.has_uncommitted_changes(home) is True
+    assert ".mcp.json" in _git(home, "status", "--porcelain").stdout
 
 
 @pytest.mark.slow

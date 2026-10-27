@@ -38,6 +38,39 @@ needs_atlas = pytest.mark.skipif(
 )
 
 
+def _db_dependency_edges() -> int:
+    """Rows in `dependencies` (Phase J), or 0 when the DB or table is unreadable."""
+    if not ATLAS_DB.exists():
+        return 0
+    try:
+        with sqlite3.connect(ATLAS_DB) as conn:
+            return conn.execute("SELECT COUNT(*) FROM dependencies").fetchone()[0]
+    except sqlite3.Error:
+        return 0
+
+
+# The node_attrs archive Phase E fetches from the bot's split repos (CFE v8.102.0).
+NODE_ATTRS_CACHE = ATLAS_DB.parent / "cf-graph-node_attrs.tar.gz"
+
+
+# A built atlas can still hold no dependency edges: Phase J fills them from the
+# node_attrs archive Phase E fetches, and every atlas built while the old
+# regro/cf-graph-countyfair URL redirected to a repo with no node_attrs has an
+# empty table. Such a checkout has no split cache yet: skip it, and name the
+# rebuild. Once the split cache exists, an empty table is a real failure (a
+# half refresh, or the source moving again; G123), so the test runs and says so.
+needs_dependencies = pytest.mark.skipif(
+    _db_has_packages() and _db_dependency_edges() == 0 and not NODE_ATTRS_CACHE.exists(),
+    reason=(
+        "cf_atlas.db has no dependency edges and predates the split-repo cf-graph "
+        "cache (Phase J fills `dependencies` from the node_attrs archive Phase E "
+        "fetches); rebuild via `PHASE_E_ENABLED=1 pixi run -e local-recipes "
+        "build-cf-atlas`, or refresh only those phases: `PHASE_E_ENABLED=1 pixi run "
+        "-e local-recipes atlas-phase E` then `pixi run -e local-recipes atlas-phase J`"
+    ),
+)
+
+
 # ── --help smoke (no DB needed) ──────────────────────────────────────────────
 
 @pytest.mark.parametrize("script", [
@@ -87,12 +120,19 @@ def test_whodepends_forward_json(script_runner):
 
 
 @needs_atlas
+@needs_dependencies
 def test_whodepends_reverse_json(script_runner):
     rc, out, err = script_runner(
         "whodepends.py", "python", "--reverse", "--limit", "5", "--json"
     )
     assert rc == 0, err
     rows = json.loads(out)
+    if not rows and _db_dependency_edges() == 0:
+        pytest.fail(
+            f"{NODE_ATTRS_CACHE.name} exists but `dependencies` is empty: run "
+            "`pixi run -e local-recipes atlas-phase J`; if Phase J reports 0 edges "
+            "or skips, the bot's graph moved again (SKILL.md G123)"
+        )
     # python should have many dependents
     assert len(rows) >= 1
 

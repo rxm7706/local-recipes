@@ -8,7 +8,7 @@ inputDocuments:
 project: pyforge-atlas
 status: final
 created: 2026-07-17
-updated: "2026-10-24"   # RE-STAMPED 2026-10-24 (latest): Story 37.12 added to done Epic 37 (a fix under CAP-63 / CAP-64, no CAP, no flag): the Pages Vizro job keeps the public stores' last-good copies between runs (actions/cache over data/raw, data/stores/* except the vdb store, and the vulnerability snapshot history the cve-watcher diffs); key 37-12 added (done; epic-37 back to done). Prior "2026-10-24"   # RE-STAMPED 2026-10-24 (later): Story 34.12 added to done Epic 34 (a fix under CAP-64, no CAP, no flag): a vulnerability feed that cannot be reached keeps its last good copy under the AD-13 marker; key 34-12 added (done; epic-34 back to done); closes DW-atlas-38-1-1. Prior "2026-10-24"   # RE-STAMPED 2026-10-24: Epic 38 / Story 38.1 minted (CAP-69; no CAP; the existing flag pyforge.atlas.board_projections for the version-downloads path): semantic_packages reads its upload times and archived flag, version-downloads its upload dates; keys epic-38 (backlog), epic-38-retrospective (optional) and 38-1 added; owns DW-atlas-37-6-2 and DW-atlas-37-7-2. Prior "2026-10-23"   # RE-STAMPED 2026-10-23 (later): Story 37.6 done (CAP-69; no CAP; the existing flag pyforge.atlas.board_projections): legacy release-cadence's counts from per-version upload times streamed out of every subdir's full repodata.json.zst (operator ruling 2026-10-23); closes DW-atlas-37-6-1, opens DW-atlas-37-6-2. Prior "2026-10-23"   # RE-STAMPED 2026-10-23 (later): Story 37.7 done (CAP-69; no CAP; the existing flag pyforge.atlas.board_projections): legacy find-alternative's top 10 candidates for every archived package on the channel, from the summary and keywords the cf-graph anchor rows now carry; closes DW-atlas-37-7-1, opens DW-atlas-37-7-2 and DW-atlas-37-7-3. Prior "2026-10-23"   # RE-STAMPED 2026-10-23 (later): Story 37.8 done (CAP-69; no CAP; the existing flag pyforge.atlas.board_projections): legacy export-purls' six artifacts and their manifest; closes DW-atlas-37-8-1. Prior "2026-10-23"   # RE-STAMPED 2026-10-23 (later): Story 37.10 done (CAP-69; no CAP; the existing flag pyforge.atlas.board_projections): a new catalog_index pipeline, run after each build, reports every catalog entry's last write, row count, tier and status; closes DW-atlas-37-10-1. Prior "2026-10-23"   # RE-STAMPED 2026-10-23: Story 37.9 done (CAP-69; no CAP; the existing flag pyforge.atlas.board_projections): the mapping-gap classifies the unmapped packages as legacy mapping_gap does, read-only; closes DW-atlas-37-9-1. Prior "2026-10-23"   # RE-STAMPED 2026-10-23: Story 37.5 done (CAP-69; no CAP; the existing flag pyforge.atlas.board_projections): the cve-watcher reads a diff of two vulnerability snapshots; closes DW-atlas-37-5-1. Prior "2026-10-22"   # RE-STAMPED 2026-10-22 (later): Story 37.11 added to Epic 37 (a fix under CAP-63 / CAP-69, no CAP, no flag): a board's note reads "Data gap" only where data is missing. Prior "2026-10-22"   # RE-STAMPED 2026-10-22: arch->epics cascade for FR-71 amended in place (CAP-63, operator ruling 2026-10-21: the identity boards show their public-derived rows on Pages); Story 37.2's Then and Surface lines amended in place; no story added, renumbered or removed, no ledger key moved. Prior: RE-STAMPED 2026-10-19: Epic 37 / Stories 37.1-37.10 minted (spec-pyforge-atlas CAP-63 amended, CAP-69; FR-71, FR-77); see § Currency reconciliation — 2026-10-19. Prior: RE-STAMPED 2026-10-18 (later): Epics 34-36 / Stories 34.1-34.9 (+34.10, minted with Story 34.2), 35.1-35.4, 36.1-36.3 minted (spec-pyforge-atlas CAP-64..CAP-68, FR-72..FR-76; atlas fills its own data, Dream entry 2026-10-18): 16 story keys (backlog), epic-34..36 (backlog) and their retrospective keys (optional) added; no other key moved. Earlier: RE-STAMPED 2026-10-18: Epic 33 / Story 33.1 minted (fix under spec-pyforge-atlas CAP-9, no CAP, no flag; the atlas CLI reaches the verbs its contracts name, from any directory; Dream entry 2026-10-18): keys epic-33, epic-33-retrospective and 33-1 added; no other key moved. Prior: RE-STAMPED 2026-10-15: Story 30.2's text amended in place to CAP-63 as amended 2026-10-15 (the task under [feature.pyforge-atlas.tasks], run in -e pyforge-atlas; the exact-file VENDORED_ROOTS entry for the vendored plotly.min.js); no story added, renumbered or removed, no ledger key moved. Prior: RE-STAMPED 2026-10-14: Epic 31 / Story 31.1 minted (fix under spec-pyforge-atlas CAP-20, no CAP, no flag; closes DW-atlas-steward-100-7-1: atlas passes mypy in pyforge-foundry-full, and the existing mypy task runs there in the lint-types CI job and in pr-preflight; Dream entry 2026-10-14; renumbered from 30.1 after the Pages chain took Epic 30). Prior: RE-STAMPED 2026-10-14: Epic 30 / Stories 30.1-30.2 minted (features under spec-pyforge-atlas CAP-62 and CAP-63, FR-70 and FR-71, AD-21 amended; flags pyforge.atlas.viz_export_artifact and pyforge.atlas.vizro_static_boards) from the operator ruling of 2026-10-13 (the DAG export reaches Pages as an artifact; Dream entry of that date): keys 30-1 and 30-2 (backlog), epic-30 (backlog) and epic-30-retrospective (optional) added; no other key moved. See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-13: Epic 29 / Story 29.1 minted (fix under spec-pyforge-atlas CAP-16, no CAP, no flag; the range-test recorder race, Dream entry 2026-10-13). Prior: RE-STAMPED 2026-10-11: Epic 28 / Story 28.1 minted (fix under spec-pyforge-atlas CAP-6, no CAP, no flag; the live-attach fixture socket path, Dream entry 2026-10-11). Prior: RE-STAMPED 2026-10-10: arch->epics cascade after the spine's 2026-10-10 re-stamp (Story 25.1's gate cleared, its key flipped blocked -> backlog by operator ruling); no epic or story added or changed; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-04: Story 27.5 added to done Epic 27 (fix, no CAP, no flag; DW-atlas-27-3-1); epic-27 reopens to in-progress (operator ruling 2026-10-04; doctor Story 41.5). Prior 2026-10-03   # RE-STAMPED 2026-10-03 (Phase 4+5): Epic 27 / Stories 27.1-27.4 minted from the operator's Phase 4+5 ruling (fix, no CAP, no flag; 96 open medium and low deferrals). Prior: RE-STAMPED 2026-10-03: arch->epics cascade for marshal Story 66.2's deferred-work backfill; no epic or story minted. Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 26 / Story 26.1 minted (spec-one-chain-per-station CAP-11 relay; no atlas CAP or FR). Prior 2026-09-28   # RE-STAMPED 2026-09-28: Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-atlas CAP-61, FR-69); Story 24.4's stale pre-rekey "Story 25.2" citations corrected to 24.2; § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-20 (fleet consistency pass).
+updated: "2026-10-27"   # AMENDED 2026-10-27 (absorbed Spec folders to the archive home): Epic 45 / Story 45.1 minted in-progress under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 10 absorbed Spec folders move to archive/<original path>; keys 45-1, epic-45 (in-progress) and epic-45-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync. Prior "2026-10-26"   # AMENDED 2026-10-26 (one archive home): Epic 44 / Story 44.1 minted done under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 12 archived satellite Dreams left docs/dreams/ for archive/docs/dreams/, their bodies verbatim in the station Dream; keys 44-1, epic-44 (done) and epic-44-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync. Prior "2026-10-26"   # AMENDED 2026-10-26 (CAP-7 retrofit): Epic 42 / Stories 42.1–42.4 minted; keys through the Tier-3 feed and sprint-ledger-sync; no other epic or story moved. Prior "2026-10-26"   # AMENDED 2026-10-26 (every requirement derives from a capability): Epic 41 / Stories 41.1 (in-progress, built in the chain PR), 41.2 and 41.3 (backlog) minted under spec-one-chain-per-station CAP-5 as amended and spec-pyforge-atlas CAP-72 (minted from the Constraint FR-15 cited); keys 41-1 (in-progress), 41-2 (backlog), 41-3 (backlog), epic-41 (in-progress) and epic-41-retrospective (optional) added; no other epic or story moved. Prior "2026-10-25"   # AMENDED 2026-10-25 (latest): Story 40.1 and Epic 40 promoted to done in the five-station FR-arrow chain PR after its independent review (Status lines, story spec and ledger keys through the Tier-3 feed and sprint-ledger-sync); no other epic or story moved. Earlier 2026-10-25: RE-STAMPED 2026-10-25 (FR-15, FR-61 and FR-63 had no capability to name): Epic 40 / Story 40.1 added (a chore that restores spec-pyforge-atlas CAP-70 and CAP-71, shipped, under spec-one-chain-per-station CAP-5 and CAP-3; no flag; operator rulings on DW-atlas-39-1 "Restore 2 atlas CAPs (Recommended)" and "Cite the constraint (Recommended)"): FR-61 and FR-63 cite the restored capabilities and FR-15 cites its constraint; keys 40-1 (backlog), epic-40 (backlog) and epic-40-retrospective (optional) added; arch->epics cascade for the spine's re-stamp of the same date; no other epic or story moved. Earlier 2026-10-25: RE-STAMPED 2026-10-25 (later; the 2026-10-25 atlas retro's candidate fixes): Story 33.2 added to done Epic 33 (a fix under CAP-9 and AD-3, no CAP, no flag: the spine counts twelve pipelines, the MCP face names its eight as MCP-triggerable) and Story 34.13 added to done Epic 34 (a fix under CAP-64, no CAP, no flag: atlas declares brotli, closes DW-atlas-34-5-1; operator ruling "brotli + brotli-python (Recommended)"); keys 33-2 and 34-13 added (backlog), epic-33 and epic-34 reopened by them (doctor Story 41.5); no other epic or story moved. Earlier 2026-10-25: RE-STAMPED 2026-10-25 (the PRD's FR arrows were counted, not traced): Epic 39 / Story 39.1 added (a chore under spec-one-chain-per-station CAP-5 and CAP-3, no CAP, no flag; operator rulings 2026-10-25 "Approve as proposed (Recommended)", "Drop the arrow (Recommended)", "Append a correction (Recommended)", and "CAP-4, CAP-5, CAP-15" for FR-6 after review): 23 atlas PRD FR arrows the 2026-09-17 fold had counted are re-mapped to the Spec capabilities that realize them, and FR-15, FR-61 and FR-63 wait on a source-capability decision (DW-atlas-39-1); keys 39-1 (backlog), epic-39 (backlog) and epic-39-retrospective (optional) added; arch->epics cascade for the spine's re-stamp of the same date; no other epic or story moved. Prior "2026-10-24"   # RE-STAMPED 2026-10-24 (latest): Story 37.12 added to done Epic 37 (a fix under CAP-63 / CAP-64, no CAP, no flag): the Pages Vizro job keeps the public stores' last-good copies between runs (actions/cache over data/raw, data/stores/* except the vdb store, and the vulnerability snapshot history the cve-watcher diffs); key 37-12 added (done; epic-37 back to done). Prior "2026-10-24"   # RE-STAMPED 2026-10-24 (later): Story 34.12 added to done Epic 34 (a fix under CAP-64, no CAP, no flag): a vulnerability feed that cannot be reached keeps its last good copy under the AD-13 marker; key 34-12 added (done; epic-34 back to done); closes DW-atlas-38-1-1. Prior "2026-10-24"   # RE-STAMPED 2026-10-24: Epic 38 / Story 38.1 minted (CAP-69; no CAP; the existing flag pyforge.atlas.board_projections for the version-downloads path): semantic_packages reads its upload times and archived flag, version-downloads its upload dates; keys epic-38 (backlog), epic-38-retrospective (optional) and 38-1 added; owns DW-atlas-37-6-2 and DW-atlas-37-7-2. Prior "2026-10-23"   # RE-STAMPED 2026-10-23 (later): Story 37.6 done (CAP-69; no CAP; the existing flag pyforge.atlas.board_projections): legacy release-cadence's counts from per-version upload times streamed out of every subdir's full repodata.json.zst (operator ruling 2026-10-23); closes DW-atlas-37-6-1, opens DW-atlas-37-6-2. Prior "2026-10-23"   # RE-STAMPED 2026-10-23 (later): Story 37.7 done (CAP-69; no CAP; the existing flag pyforge.atlas.board_projections): legacy find-alternative's top 10 candidates for every archived package on the channel, from the summary and keywords the cf-graph anchor rows now carry; closes DW-atlas-37-7-1, opens DW-atlas-37-7-2 and DW-atlas-37-7-3. Prior "2026-10-23"   # RE-STAMPED 2026-10-23 (later): Story 37.8 done (CAP-69; no CAP; the existing flag pyforge.atlas.board_projections): legacy export-purls' six artifacts and their manifest; closes DW-atlas-37-8-1. Prior "2026-10-23"   # RE-STAMPED 2026-10-23 (later): Story 37.10 done (CAP-69; no CAP; the existing flag pyforge.atlas.board_projections): a new catalog_index pipeline, run after each build, reports every catalog entry's last write, row count, tier and status; closes DW-atlas-37-10-1. Prior "2026-10-23"   # RE-STAMPED 2026-10-23: Story 37.9 done (CAP-69; no CAP; the existing flag pyforge.atlas.board_projections): the mapping-gap classifies the unmapped packages as legacy mapping_gap does, read-only; closes DW-atlas-37-9-1. Prior "2026-10-23"   # RE-STAMPED 2026-10-23: Story 37.5 done (CAP-69; no CAP; the existing flag pyforge.atlas.board_projections): the cve-watcher reads a diff of two vulnerability snapshots; closes DW-atlas-37-5-1. Prior "2026-10-22"   # RE-STAMPED 2026-10-22 (later): Story 37.11 added to Epic 37 (a fix under CAP-63 / CAP-69, no CAP, no flag): a board's note reads "Data gap" only where data is missing. Prior "2026-10-22"   # RE-STAMPED 2026-10-22: arch->epics cascade for FR-71 amended in place (CAP-63, operator ruling 2026-10-21: the identity boards show their public-derived rows on Pages); Story 37.2's Then and Surface lines amended in place; no story added, renumbered or removed, no ledger key moved. Prior: RE-STAMPED 2026-10-19: Epic 37 / Stories 37.1-37.10 minted (spec-pyforge-atlas CAP-63 amended, CAP-69; FR-71, FR-77); see § Currency reconciliation — 2026-10-19. Prior: RE-STAMPED 2026-10-18 (later): Epics 34-36 / Stories 34.1-34.9 (+34.10, minted with Story 34.2), 35.1-35.4, 36.1-36.3 minted (spec-pyforge-atlas CAP-64..CAP-68, FR-72..FR-76; atlas fills its own data, Dream entry 2026-10-18): 16 story keys (backlog), epic-34..36 (backlog) and their retrospective keys (optional) added; no other key moved. Earlier: RE-STAMPED 2026-10-18: Epic 33 / Story 33.1 minted (fix under spec-pyforge-atlas CAP-9, no CAP, no flag; the atlas CLI reaches the verbs its contracts name, from any directory; Dream entry 2026-10-18): keys epic-33, epic-33-retrospective and 33-1 added; no other key moved. Prior: RE-STAMPED 2026-10-15: Story 30.2's text amended in place to CAP-63 as amended 2026-10-15 (the task under [feature.pyforge-atlas.tasks], run in -e pyforge-atlas; the exact-file VENDORED_ROOTS entry for the vendored plotly.min.js); no story added, renumbered or removed, no ledger key moved. Prior: RE-STAMPED 2026-10-14: Epic 31 / Story 31.1 minted (fix under spec-pyforge-atlas CAP-20, no CAP, no flag; closes DW-atlas-steward-100-7-1: atlas passes mypy in pyforge-foundry-full, and the existing mypy task runs there in the lint-types CI job and in pr-preflight; Dream entry 2026-10-14; renumbered from 30.1 after the Pages chain took Epic 30). Prior: RE-STAMPED 2026-10-14: Epic 30 / Stories 30.1-30.2 minted (features under spec-pyforge-atlas CAP-62 and CAP-63, FR-70 and FR-71, AD-21 amended; flags pyforge.atlas.viz_export_artifact and pyforge.atlas.vizro_static_boards) from the operator ruling of 2026-10-13 (the DAG export reaches Pages as an artifact; Dream entry of that date): keys 30-1 and 30-2 (backlog), epic-30 (backlog) and epic-30-retrospective (optional) added; no other key moved. See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-13: Epic 29 / Story 29.1 minted (fix under spec-pyforge-atlas CAP-16, no CAP, no flag; the range-test recorder race, Dream entry 2026-10-13). Prior: RE-STAMPED 2026-10-11: Epic 28 / Story 28.1 minted (fix under spec-pyforge-atlas CAP-6, no CAP, no flag; the live-attach fixture socket path, Dream entry 2026-10-11). Prior: RE-STAMPED 2026-10-10: arch->epics cascade after the spine's 2026-10-10 re-stamp (Story 25.1's gate cleared, its key flipped blocked -> backlog by operator ruling); no epic or story added or changed; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-04: Story 27.5 added to done Epic 27 (fix, no CAP, no flag; DW-atlas-27-3-1); epic-27 reopens to in-progress (operator ruling 2026-10-04; doctor Story 41.5). Prior 2026-10-03   # RE-STAMPED 2026-10-03 (Phase 4+5): Epic 27 / Stories 27.1-27.4 minted from the operator's Phase 4+5 ruling (fix, no CAP, no flag; 96 open medium and low deferrals). Prior: RE-STAMPED 2026-10-03: arch->epics cascade for marshal Story 66.2's deferred-work backfill; no epic or story minted. Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 26 / Story 26.1 minted (spec-one-chain-per-station CAP-11 relay; no atlas CAP or FR). Prior 2026-09-28   # RE-STAMPED 2026-09-28: Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-atlas CAP-61, FR-69); Story 24.4's stale pre-rekey "Story 25.2" citations corrected to 24.2; § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-20 (fleet consistency pass).
 currency_review: "Reviewed 2026-09-06 (Epic 24 added: spec-bmad-suite-lifecycle atlas relay — mcp-builder for the MCP face, Story 24.1). Reviewed 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02. Validated 2026-08-26 against the re-cut architecture spine — no heading or status changed; see the dated validation note at end of file. 2026-08-27: Epic 20 appended (spec-atlas-query-dashboards CAP-5..7 reconcile against the 2026-08-26 query-plane rulings); no existing heading or status changed."
 generatedBy: bmad-create-epics-and-stories (unattended Tier-2 stage 3)
 # The single canonical story source for this station: every `### Story` heading
@@ -2408,6 +2408,22 @@ So that the documented grammar, the persona's RUN menu and the parity gate descr
 **And** a test fails when any verb the parity gate counts is unreachable through `main` (mutation: `main` back on `find_run_command`), when `main` runs a verb outside the member dir (mutation: drop the cwd pin), and when a `run_*` tool declares the deprecated `--pipeline` (mutation); `pyforge-atlas-test`, `kedro-test`, `kedro-catalog-check`, `pyforge-atlas-coverage-gate` and `lint-types` exit 0; every governing Spec is reconciled and stamped scoped
 **Status:** done
 
+### Story 33.2: The spine counts twelve pipelines, and the MCP face names its eight as the MCP-triggerable ones
+
+As an operator or agent reading AD-3 or calling `list_atlas_pipelines`,
+I want the spine to name every registered pipeline and the MCP face to say its eight names are the MCP-triggerable set,
+So that neither text claims a pipeline count the registry no longer has.
+
+**Type:** fix • **Effort:** XS • **Deps:** — • **FR/AD:** — (a `fix`, so no new CAP and no FR; `spec-feature-flag-governance` Q1: a `fix` needs no flag) • spec-pyforge-atlas CAP-9 • AD-3 • Dream 2026-10-25 (twelve pipelines, eight triggers) • retro-pyforge-atlas-2026-10-25 Finding 7 (candidate fixes 4 and 5)
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix)
+**Surface:** the spine's AD-3 amendment parenthetical (in place) and a `## Currency reconciliation` entry; `mcp/server.py` (`list_atlas_pipelines` docstring, the served tool description), `mcp/tools.py` (`TOOL_SPECS` `list_pipelines` description, the `PIPELINE_NAMES` comment, `list_pipelines` docstring), `tests/unit/mcp/test_audit_mapping.py` (module docstring), `.claude/skills/pyforge-atlas/` (the `list_pipelines` line)
+**Spec:** `planning-artifacts/specs/spec-33-2-the-spine-counts-twelve-pipelines-and-the-mcp-face-names-its-eight.md`
+**Given** `register_pipelines()` registers twelve pipelines (`catalog_index` outside `__default__`), while AD-3's amendment says its rule "holds across all ten" and the MCP texts call `PIPELINE_NAMES`' eight "the registered pipelines"
+**When** the story lands
+**Then** AD-3's amendment names the twelve and which run in `__default__`, and every MCP text names the eight as the MCP-triggerable pipelines, the other four CLI-only by design
+**And** no pipeline, tool, trigger set or test assertion changes; `pixi run -e pyforge-atlas pyforge-atlas-test` green
+**Status:** done
+
 ## Epic 34: A plain run fills every dataset a public source serves (spec-pyforge-atlas CAP-64, FR-72)
 
 Minted 2026-10-18 from the station Dream's entry of that date (atlas fills its own data) and the operator's rulings
@@ -2598,6 +2614,22 @@ So that one unreachable host no longer stops the whole run.
 **When** a feed's fetch fails, returns an HTTP error, or returns a body that does not parse to rows
 **Then** the dataset serves its last good frame from `raw/<entry>/last_good.parquet` (or, on a fresh root, the empty frame of the feed's columns) under the AD-13 `.staleness.json` marker, never raises, and the run goes on; the bootstrap-index-health board shows the entry `stale` (on a fresh root `missing`) with the marker's reason, and provenance reports the copy's age
 **And** each request carries a timeout and no `~/.netrc` credential; unit tests with no network cover a connect failure, an HTTP error, a malformed body and a fresh root, and fail when the fallback is removed (mutation)
+**Status:** done
+
+### Story 34.13: Atlas declares the brotli its nixpkgs store decodes
+
+As the operator installing pyforge-atlas outside the conda-forge env,
+I want the package to declare the brotli module its nixpkgs Tier-3 store imports,
+So that a pip install decodes `packages.json.br` instead of marking the store stale.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-atlas CAP-64 (FR-72) • AUD-ATLAS-010 (an undeclared import is a runtime dependency) • Dream 2026-10-25 (the nixpkgs store decodes brotli by luck) • operator ruling 2026-10-25 • closes `DW-atlas-34-5-1`
+**Flag:** none (a fix)
+**Surface:** `src/shared/packages/pyforge-atlas/pyproject.toml` (`brotli>=1.2`), `src/shared/packages/pyforge-atlas/pixi.toml` (`brotli-python = ">=1.2"`), `pixi.lock` (the pyforge-atlas source entries' run-dependencies), `tests/packaging/test_dependency_completeness.py` (the PyPI-to-conda name map), `docs/reference/library-llms-full.md` (the catalog bullet)
+**Spec:** `planning-artifacts/specs/spec-34-13-atlas-declares-the-brotli-its-nixpkgs-store-decodes.md`
+**Given** `datasets/tier3_sources.py` imports `brotli` through a guarded `importlib.import_module`, and the env has it only through conda-forge `urllib3`'s `brotli-python` dependency
+**When** the story lands
+**Then** both manifests declare it at `>=1.2`, `pixi.lock` records that string for every pyforge-atlas source entry, and a fresh pixi installs the env `--locked`
+**And** `pyforge-deps-test` passes with the name map, `llms-full-check` passes, and `pixi run -e pyforge-atlas pyforge-atlas-test` green
 **Status:** done
 
 ## Epic 35: VCS and registry fetches cover the full universe, credentialed on opt-in (spec-pyforge-atlas CAP-65, FR-73)
@@ -2926,6 +2958,255 @@ So that the adoption-stage, staleness, find-alternative and version-downloads bo
 **When** a run has written `core_repodata_uploads_raw`, `core_packages_enumerated`, the cf-graph and the attribution
 **Then** `semantic_packages` carries `latest_conda_upload`, `latest_upload_age_days`, `releases_30d` and `total_versions` as legacy derives them, and `feedstock_archived` from either source
 **And** with the flag on, version-downloads reads each version's `upload_date`; the adoption-stage board classifies packages out of `unknown`
+**Status:** done
+
+## Epic 39: The atlas PRD's FR arrows name the capabilities the Spec carries
+
+Minted 2026-10-25 from the station Dream's entry of the same date (the PRD's FR arrows were counted, not traced), at
+the operator's rulings "Approve as proposed (Recommended)", "Drop the arrow (Recommended)" and "Append a correction
+(Recommended)". The 2026-09-17 one-chain fold appended an `← CAP-n` arrow to every FR heading by counting, so
+FR-1..FR-22 read CAP-1..CAP-22 and FR-61..FR-68 read CAP-1..CAP-8, and only four of those 30 name the capability that
+realizes them. A chore under `spec-one-chain-per-station` CAP-5 and CAP-3: no CAP is minted and no flag is added. It
+is a new epic because the concern is the PRD's traceability, not any capability epic.
+**HARD boundaries:**
+- Only the 23 approved arrows change, plus the two fold-written lines the rulings name; no FR title, body or number
+  moves.
+- FR-15, FR-61 and FR-63 keep their arrows until the operator decides their source capability.
+- No `SPEC.md` change, no detector rule change, and no satellite FR is touched.
+
+### Story 39.1: Every atlas PRD FR arrow names the Spec capability that realizes it
+
+As the operator reading the atlas PRD to learn which capability a requirement serves,
+I want every `FR-n ← CAP-m` arrow to name the capability the Spec actually carries,
+So that a requirement traces to its contract instead of to a number the fold counted.
+
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-5 (FRs derive from CAPs) and CAP-3 (the station fold procedure) • Dream 2026-10-25 (the PRD's FR arrows were counted, not traced) • operator rulings 2026-10-25
+**Flag:** none (`spec-feature-flag-governance` Q1, a chore)
+**Surface:** `planning-artifacts/prds/prd-pyforge-atlas-2026-07-17/prd.md` (23 FR headings, the `### FR-61..FR-68 delivered` heading, the fold-provenance line and a currency-reconciliation section); the spine and epics `updated:` re-stamps; the deferred-work ledger row for FR-15, FR-61 and FR-63
+**Spec:** `planning-artifacts/specs/spec-39-1-every-atlas-prd-fr-arrow-names-the-spec-capability-that-realizes-it.md`
+**Given** `f8803da678`, where the fold commit `86d1cdf3ee` numbered FR-1..FR-22 and FR-61..FR-68's arrows by counting
+**When** the story lands
+**Then** each of the 23 headings carries the arrow in the spec-pyforge-atlas memlog's 2026-10-25 re-map table, every cited CAP exists, and FR-15, FR-61 and FR-63 are named as awaiting a source-capability decision
+**And** doctor's `fr-without-cap` and the planning detectors stay green
+**Status:** done
+
+## Epic 40: FR-15, FR-61 and FR-63 name what realizes them (spec-pyforge-atlas CAP-70, CAP-71)
+
+Minted 2026-10-25 from the station Dream's entry of the same date (FR-15, FR-61 and FR-63 had no capability to name), at
+the operator's rulings on `DW-atlas-39-1`, "Restore 2 atlas CAPs (Recommended)" and "Cite the constraint
+(Recommended)". Story 39.1 left the three on the fold's counted arrows. A chore under `spec-one-chain-per-station`
+CAP-5 and CAP-3 that restores two shipped capabilities; no flag is added. It is a new epic because Epic 39 is done.
+**HARD boundaries:**
+- `SPEC.md` changes only by the render of CAP-70 and CAP-71 from the memlog decision.
+- Only the three FR arrows move; no FR title, body or number moves. The satellite FR series is untouched.
+- No detector rule change.
+
+### Story 40.1: FR-15, FR-61 and FR-63 name what realizes them
+
+As the operator reading the atlas PRD to learn what a requirement derives from,
+I want FR-61 and FR-63 to cite the capabilities their stories delivered, and FR-15 to cite the constraint it states,
+So that no atlas FR keeps an arrow the fold counted.
+
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-atlas CAP-70, CAP-71 (restored, shipped; ← spec-kedro-org-tooling-adoption Capabilities 1, 3) / FR-61, FR-63; FR-15 ← the Spec constraint "Conda-forge-only, pixi-managed, py3.14-floored provisioning"; spec-one-chain-per-station CAP-5 and CAP-3 • Dream 2026-10-25 (FR-15, FR-61 and FR-63 had no capability to name) • operator rulings 2026-10-25 on DW-atlas-39-1
+**Flag:** none (`spec-feature-flag-governance` Q1, a chore)
+**Surface:** `planning-artifacts/specs/spec-pyforge-atlas/SPEC.md` (CAP-70, CAP-71, script-rendered from the memlog decision); `planning-artifacts/prds/prd-pyforge-atlas-2026-07-17/prd.md` (three FR heading arrows, a fold-provenance sentence and a currency-reconciliation section); the spine and epics `updated:` re-stamps; `docs/foundry/capability-ledger.yaml` (two rows); the deferred-work ledger (`DW-atlas-39-1` closed)
+**Spec:** `planning-artifacts/specs/spec-40-1-fr-15-fr-61-and-fr-63-name-what-realizes-them.md`
+**Given** `fd06415e4d`, where FR-15, FR-61 and FR-63 keep the fold's counted CAP-15, CAP-1 and CAP-3 and `DW-atlas-39-1` is open
+**When** the story lands
+**Then** `spec-pyforge-atlas` declares CAP-70 and CAP-71 with the memlog decision's text, FR-61 cites CAP-70, FR-63 cites CAP-71, FR-15 cites its constraint, both CAPs are classified in the capability ledger, and `DW-atlas-39-1` reads closed
+**And** `fr-without-cap`, `capability-ledger-check` and the planning detectors stay green
+**Status:** done
+
+## Epic 41: Every atlas requirement derives from a capability (spec-pyforge-atlas CAP-72; spec-one-chain-per-station CAP-5 amended)
+
+Minted 2026-10-26 from the station Dream's entry of the same date and the operator's rulings of 2026-10-26 on the FR-arrow re-audit ("yes forbid it"; the ruling sheet accepted in full). Story 41.1 mints CAP-72 from the Constraint FR-15 used to cite, points FR-15 at it, lets AD-16 carry the Constraint, and restores the 86 capability bullets the 2026-09-17 fold cut at their first line. Stories 41.2 (the satellite FR ids leave the kernel's id space; ruling (d): minted `backlog`, not built in the one-PR effort) and 41.3 (the ten NFRs name the capabilities they bound; ruling (c)) are the atlas owners of the two rows the upgraded `fr-without-cap` baseline still carries. A chore epic under `spec-one-chain-per-station` CAP-5 as amended; one new CAP (CAP-72), no flag.
+**HARD boundaries:**
+- No CAP is renumbered or removed; CAP-72 is appended after CAP-71 with the Constraint as provenance.
+- No kernel FR moves; 41.2 renumbers only the two satellite series, with a committed re-key map.
+- `SPEC.md` is never hand-edited: memlog decision, then the anchor-asserting script render, both self-validate passes logged.
+
+### Story 41.1: FR-15 names the capability minted from its Constraint, and the Spec's cut text is restored
+
+As an operator or agent who reads FR-15 to learn what realizes it,
+I want FR-15 to cite a defined capability, CAP-72, minted from the Constraint it used to cite, and every atlas capability block to carry the full intent and success the fold cut,
+So that a requirement never points outside the capability tier, and the arrow's target says what it guarantees.
+
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-atlas CAP-72 (minted from the Constraint "Conda-forge-only, pixi-managed, py3.14-floored provisioning"); spec-one-chain-per-station CAP-5 (amended 2026-10-26) and CAP-3; AD-16 (names the Constraint and CAP-72)
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `planning-artifacts/prds/prd-pyforge-atlas-2026-07-17/prd.md` (FR-15's arrow; § Currency reconciliation — 2026-10-26); `specs/spec-pyforge-atlas/SPEC.md` (CAP-72 appended after CAP-71; 86 intent/success bullets the 2026-09-17 fold cut at their first line rejoined to the pre-fold text, by script, ids stable); `.memlog.md`; the spine (AD-16 names the Constraint and CAP-72; § Currency reconciliation — 2026-10-26); `docs/foundry/capability-ledger.yaml` (CAP-72, rebuild)
+**Spec:** `planning-artifacts/specs/spec-41-1-fr-15-names-the-capability-minted-from-its-constraint-and-the-spec-s-cut-text-is-restored.md`
+**Given** FR-15 reads `← Constraint "Conda-forge-only, pixi-managed, py3.14-floored provisioning"` (the 2026-10-25 ruling for Story 40.1) and 86 of the Spec's capability bullets end mid-sentence at `86d1cdf3ee`
+**When** the operator rules on 2026-10-26 that a requirement cites defined capabilities only
+**Then** `spec-pyforge-atlas` CAP-72 exists after CAP-71 with the Constraint as its provenance, FR-15 reads `← CAP-72`, AD-16 names the Constraint and CAP-72, the capability ledger carries CAP-72 as `rebuild`, and every cut bullet is the pre-fold text in full
+**And** no CAP id, order or provenance moves; `fr-without-cap` resolves FR-15's cite against CAP-72's definition line; `chain-completeness`, `chain-currency` and `detectors-ci` stay green
+**Status:** done
+
+### Story 41.2: The satellite PRDs' FR ids leave the kernel's id space
+
+As the detector and every reader that resolves an atlas FR id,
+I want the Unity and Wasm satellite requirements renumbered into the one atlas FR space from FR-78 onward, each arrowed to the capability it realizes, with a re-key map and every reference re-pointed,
+So that `FR-10` names one requirement, not three, and `fr-duplicate-id` carries no atlas baseline.
+
+**Type:** chore • **Effort:** M • **Deps:** 41.1 • **FR/AD:** spec-pyforge-atlas CAP-18..CAP-26 (Unity) and CAP-27..CAP-31 (Wasm), the capabilities the satellite requirements realize; spec-one-chain-per-station CAP-5 (amended) and CAP-6; CHAIN-STANDARD § 6 (`FR-n` per PRD, defined once)
+**Flag:** none (`type: chore`)
+**Surface:** `planning-artifacts/prds/prd-pyforge-atlas-2026-07-17/prd.md` (§ Satellite: Unity Data Stack `###### FR-1..FR-60` → FR-78..FR-137; § Satellite: Wasm Analytics Stack `###### FR-1..FR-17` → FR-138..FR-154; each heading gains `← CAP-m` traced by subsection); `planning-artifacts/rekey-<date>.md` (one line per old → new id); every reference to a satellite id in `epics.md`, the spine, story specs and the Spec (read one by one: 146 `FR-1..FR-22` mentions in `epics.md` are ambiguous between kernel, Unity and Wasm); `docs/governance/fr-baseline.json` (`fr-duplicate-id` entries for atlas pruned to zero)
+**Spec:** `planning-artifacts/specs/spec-41-2-the-satellite-prds-fr-ids-leave-the-kernel-s-id-space.md`
+**Given** the pre-fold atlas Spec chose that satellite numbering "is not renumbered and stays independent", so Unity FR-1..FR-60 and Wasm FR-1..FR-17 collide with kernel FR-1..FR-22 and the detector's first-definition-wins parser reads 39 of them as duplicates (baselined on 2026-10-26)
+**When** the story lands (marshal's 2026-08-08 precedent: its genesis-installer satellite's FR1..FR62 island became FR-66..FR-127)
+**Then** every satellite heading carries a unique id in FR-78..FR-154 and an arrow traced to CAP-18..CAP-31, the re-key map is committed, and every reference resolves to the renumbered id
+**And** `scripts/fr_baseline.py --prune` removes every atlas `fr-duplicate-id` entry; `fr-without-cap`, `chain-completeness` and `detectors-ci` stay green; no kernel FR moves
+**Status:** backlog
+
+### Story 41.3: Every atlas NFR names the capabilities it bounds
+
+As a reader who asks which capability an atlas NFR bounds,
+I want each of the ten atlas NFR lines to cite the capability or capabilities whose success it bounds,
+So that the NFR tier derives from capabilities the way the FR tier now does, and the baseline's atlas arrowless population reaches zero.
+
+**Type:** chore • **Effort:** S • **Deps:** 41.1 • **FR/AD:** spec-one-chain-per-station CAP-5 (amended 2026-10-26: an NFR cites the CAP(s) it bounds); CHAIN-STANDARD § 6 and § 12; the atlas capabilities each NFR bounds, traced
+**Flag:** none (`type: chore`)
+**Surface:** `planning-artifacts/prds/prd-pyforge-atlas-2026-07-17/prd.md` (NFR-1..NFR-10 gain `← CAP-m` traced from each capability's success); `docs/governance/fr-baseline.json` (`projects.pyforge-atlas` loses the ten ids through `scripts/fr_baseline.py --prune`)
+**Spec:** `planning-artifacts/specs/spec-41-3-every-atlas-nfr-names-the-capabilities-it-bounds.md`
+**Given** none of the atlas PRD's ten NFR lines cites a capability (measured 2026-10-26), so they sit in `fr-baseline.json`'s `projects` map as the pre-rule population
+**When** each NFR is traced against the Spec's capability successes (a performance bound names the CAP whose success it tightens; a portability bound names the CAP it constrains)
+**Then** every `NFR-n` line carries `← CAP-m`, each cited CAP is a definition line in `spec-pyforge-atlas/SPEC.md`, and the independent review reads each arrow
+**And** `scripts/fr_baseline.py --prune` drops the ten ids from the baseline; `fr-without-cap` stays green
+**Status:** backlog
+
+## Epic 42: Every pre-rule atlas runtime capability sits behind a kill switch (2 flags, one per CAP; the Guild flag rule's retrofit capability, Q6)
+
+Minted 2026-10-26 from the station Dream's entry of the same date and the operator's approval of the CAP-7 retrofit sheet (R1–R8): every capability the flag inventory reads as reachable at runtime and minted before the rule date sits behind one flag that defaults ON in every environment, a kill switch (spec-feature-flag-governance CAP-7; Q6 one flag per CAP; Q3 a flag-off verb stays listed and refuses with the usage code). Three shapes: a verb switch, an invariant switch (the dependent verb refuses, the defect never reopens; ruling R3) and a behaviour switch (the pre-rule behaviour at one read site). Each key carries its clock from 2026-10-26; Story 42.4 (backlog) retires them on 2027-01-24 (Q4; ruling R5). Rows: `spec-pyforge-atlas` CAP-9, CAP-13, CAP-20.
+**HARD boundaries:**
+- Keys are read only through `pyforge.core.flags` or `django_pyforge.flags`, spelled literally; one tree, no second reader.
+- No station exit code changes: a refusal is the usage code 2.
+- No done story spec is rewritten; the inventory is regenerated.
+
+### Story 42.1: agents trigger and read the pipeline natively sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-atlas CAP-9 (agents trigger and read the pipeline natively) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as the MCP trigger and read tools raise `AtlasMCPError` naming the flag; `pyforge atlas run` is listed disabled and refuses with exit 2 (the frozen domain `{0,1,2,130}` holds).
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-atlas CAP-9 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.atlas.agent_pipeline_tools` (default ON in dev, staging and production: a kill switch; a verb switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-atlas/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-atlas.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-42-1-agents-trigger-and-read-the-pipeline-natively-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `mcp/tools.py::run_pipeline` and `read_dataset`; `pyforge atlas run` in `__main__.py` and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.atlas.agent_pipeline_tools` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `mcp/tools.py::run_pipeline` and `read_dataset`; `pyforge atlas run` in `__main__.py` through `pyforge.core.flags`; OFF: the MCP trigger and read tools raise `AtlasMCPError` naming the flag; `pyforge atlas run` is listed disabled and refuses with exit 2 (the frozen domain `{0,1,2,130}` holds)
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 42.2: any manifest becomes one comparable inventory, behind one exit code sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-atlas CAP-13 (any manifest becomes one comparable inventory, behind one exit code) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as the `universal_sbom` trigger raises `AtlasMCPError` naming the flag; the CLI run refuses with exit 2.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-atlas CAP-13 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.atlas.manifest_inventory` (default ON in dev, staging and production: a kill switch; a verb switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-atlas/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-atlas.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-42-2-any-manifest-becomes-one-comparable-inventory-behind-one-exit-code-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `mcp/tools.py::run_pipeline` for `universal_sbom`; `pyforge atlas run --pipeline universal_sbom` though the inventory's join does not read it as `runtime` (outside R1's measured population)
+**When** the retrofit lands
+**Then** `pyforge.atlas.manifest_inventory` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `mcp/tools.py::run_pipeline` for `universal_sbom`; `pyforge atlas run --pipeline universal_sbom` through `pyforge.core.flags`; OFF: the `universal_sbom` trigger raises `AtlasMCPError` naming the flag; the CLI run refuses with exit 2
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 42.3: A developer runs one command that executes every check CI executes sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-atlas CAP-20 (A developer runs one command that executes every check CI executes) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as a gated gate is a silent green (the Spec's fidelity Constraint): the retrofit story is `flag-exempt: detector-or-gate`.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-atlas CAP-20 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `flag-exempt: detector-or-gate` (a gate is never flagged: a flag-OFF gate is a silent green, the Guild Spec's fidelity Constraint)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `docs/governance/flag-inventory/pyforge-atlas.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-42-3-a-developer-runs-one-command-that-executes-every-check-ci-executes-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through none: the capability is the local CI check-set and its parity gate (AD-32) and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** the retrofit story is `flag-exempt: detector-or-gate` and cites spec-pyforge-atlas CAP-20, and the inventory reads the row as covered under the roster's `flag_retrofit_cover_exemptions`
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 42.4: the retrofit kill switches retire on their cleanup date
+
+As the operator who turned none of the 2 retrofit kill switches off in their 90-day window,
+I want each key removed from the tree, its reader and its two-state test on 2027-01-24 (the Q4 clock, `on_everywhere` 2026-10-26 plus 90 days), declared with `retires-flag:` by this station,
+So that the gate's `flag-clock-overdue` never reds `detectors-ci`, no reader is left behind, and the inventory reads each row as retired by this story.
+
+**Type:** feature • **Effort:** M • **Deps:** 42.1 • **FR/AD:** the retirement path of the Guild flag rule (spec-feature-flag-governance, the gate capability as amended 2026-10-15; Q4)
+**Flag:** `flag-exempt: flag-infrastructure`; `retires-flag:` `pyforge.atlas.agent_pipeline_tools`, `pyforge.atlas.manifest_inventory`
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, the read sites and the two-state tests the Epic 42 stories name, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-atlas.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-42-4-the-retrofit-kill-switches-retire-on-their-cleanup-date.md`
+**Given** the 2 keys read ON in every environment since 2026-10-26 with `cleanup_by` 2027-01-24
+**When** the cleanup date arrives and the operator has turned none of them off
+**Then** this story removes each key from the tree and the overlays, its read site and its test, declares every key under `retires-flag:`, and the inventory reads each row as `retired by 42-4`
+**And** `flag-gate-check` reports no `flag-retired-still-read` and no `flag-clock-overdue`; a key the operator turned off stays, and its capability's removal is a story of its own
+**Status:** backlog
+
+## Epic 44: The archived atlas Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
+
+Minted 2026-10-26 from `docs/governance/spec-one-chain-per-station/SPEC.md`, capability spec-one-chain-per-station:CAP-11 (owner Dream
+`docs/dreams/one-chain-per-station.md`, `owner: guild`) and that Dream's entry of the same date: a Dream is live in
+`docs/dreams/` or archived under `archive/docs/dreams/`, never both, and a folded satellite leaves the live tree only
+once its whole body sits verbatim in a dated section of its station Dream (CHAIN-STANDARD §11; doctor's
+`fold-complete` check, Story 36.1, proves it). On 2026-10-26, at `97c8211773`, 12 atlas Dreams under `docs/dreams/`
+still read `status: archived` — the satellites the 2026-09-16/17 fold absorbed and left in place behind a
+`Consolidated into` banner. Atlas mints no CAP and registers no FR for this story: the CAP is the Guild Spec's,
+enumerated here and in that Spec's `.memlog.md`, as the relay epics of 2026-09-29 do (doctor Epic 36, marshal Epic 75,
+herald Epic 33). One of the eight station stories of the 2026-10-26 one-PR move (the #2240 / #2319 / #2322 shape).
+**HARD boundaries:** every move is a `git mv`; a body is pasted verbatim with its headings demoted one level, never
+trimmed; a moved file keeps its frontmatter and loses only the one-chain fold banner; dated records (memlogs, story
+specs, epic bodies, PRD prose, ledgers, research) keep the path they were written with; `SPEC.md` is never
+hand-edited (memlog event, then the anchor-asserting script render, both self-validate passes logged). The story is a
+`chore`.
+
+### Story 44.1: Atlas's twelve archived Dreams leave the live tree
+
+As a reader of `docs/dreams/`,
+I want atlas's 12 archived satellite Dreams to live under `archive/docs/dreams/<same name>`, each with its whole body verbatim in `docs/dreams/pyforge-atlas.md`,
+So that the live tree holds live Dreams only and nothing a satellite said is lost.
+
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-one-chain-per-station:CAP-11 (CHAIN-STANDARD §11: one archive home; a fold is complete before the file moves; readers follow the move); no atlas CAP or FR
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `docs/dreams/pyforge-atlas.md` (12 dated 2026-10-26 sections, one per satellite whose long paragraphs were not all there: the body verbatim, headings demoted one level, the fold banner left out); `archive/docs/dreams/<slug>.md` × 12 (each moved with `git mv`, its banner stripped, its frontmatter unchanged); `docs/dreams/README.md` (the 12 interim rows leave with their files); `specs/spec-pyforge-atlas/SPEC.md` (`surface:` and `covers-dreams:` entries name the archive paths) and the 1 absorbed pointer Spec whose `owner-dream:` named a moved file; `.memlog.md` (the surface reconcile)
+**Spec:** `planning-artifacts/specs/spec-44-1-atlas-s-twelve-archived-dreams-leave-the-live-tree.md`
+**Given** at `97c8211773` 12 atlas Dreams under `docs/dreams/` read `status: archived`, every one with paragraphs nowhere but in the archived file — measured with `fold-complete`'s own `long_paragraphs`
+**When** each incomplete body is pasted verbatim into a dated section of `docs/dreams/pyforge-atlas.md` and every one of the 12 moves to `archive/docs/dreams/`
+**Then** `fold-complete` reads each of the 12 as a complete fold and no atlas Dream in `docs/dreams/` reads `status: archived`; every live pointer that named a moved file names its archive path
+**And** `dreams-hygiene`, `dream-chain`, `chain-sprawl` (its baseline pruned), `governance-currency`, `spec-surface`, `chain-completeness`, `chain-currency` and `detectors-ci` stay green
+**Status:** done
+
+## Epic 45: The absorbed atlas Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
+
+Minted 2026-10-27 from `docs/governance/spec-one-chain-per-station/SPEC.md` (spec-one-chain-per-station:CAP-11; owner Dream
+`docs/dreams/one-chain-per-station.md`, `owner: guild`) and that Dream's entry of the same date: everything the fleet retires
+leaves the live tree for `archive/<original path>`, and after the archived Dreams (PR #2328) come the absorbed and archived
+Spec folders, each with its memlog and its companions (CHAIN-STANDARD §11 step 2). On 2026-10-27, at `9dd0a8f1f9`, 10
+`status: absorbed` Spec folders still sat under `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/`, and `spec-archive/` still held 29 files.
+Atlas mints no CAP and registers no FR for this story: the CAP is the Guild Spec's, enumerated here and in that
+Spec's `.memlog.md`, the relay shape of doctor Epic 36, marshal Epic 75, herald Epic 33 and the 2026-10-26 mop. One of the
+eight station stories of the 2026-10-27 one-PR close-out of spec-one-chain-per-station:CAP-11. **HARD boundaries:** every move is a `git mv`; nothing
+is deleted; a moved file's text is unchanged except the memlog event appended before the move; a live companion is carried
+into the station Spec folder, never archived (operator ruling 2026-10-27); dated records keep the path they were written
+with; `SPEC.md` is never hand-edited (memlog event, then the anchor-asserting script render, both self-validate passes
+logged). The story is a `chore`.
+
+### Story 45.1: Atlas's absorbed Spec folders and spec-archive move to the archive home
+
+As a reader of the atlas planning tree,
+I want the station's 10 absorbed Spec folders to live under `archive/<original path>`, each with its pointer, memlog and record companions,
+So that `specs/` holds the station Spec, its declared seams and its story specs only, and nothing an absorbed Spec said is lost.
+
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-one-chain-per-station:CAP-11 (CHAIN-STANDARD §11 step 2: the absorbed and archived Spec folders move, each with its memlog and every companion; readers follow the move); no atlas CAP or FR
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-<slug>/` × 10 (each moved with `git mv`: its pointer `SPEC.md`, its `.memlog.md` and its record companions); the live companion `spec-atlas-kedro-catalog-expansion/catalog-sources.md` carried with `git mv` into `specs/spec-pyforge-atlas/` before its folder moves (operator ruling 2026-10-27), its readers following; every live pointer that named a moved path (code, tests, workflows, docs, `docs/foundry/capability-ledger.yaml`'s source paths); `docs/governance/chain-sprawl-baseline.json` (the moved folders' entries leave); `specs/spec-pyforge-atlas/.memlog.md` (the surface reconcile); `_bmad-output/projects/pyforge-atlas/spec-archive/` (29 files) moves to `archive/_bmad-output/projects/pyforge-atlas/spec-archive/`, the second side archive CHAIN-STANDARD §11 folds in
+**Spec:** `planning-artifacts/specs/spec-45-1-atlas-s-absorbed-spec-folders-and-spec-archive-move-to-the-archive-home.md`
+**Given** at `9dd0a8f1f9` 10 `status: absorbed` Spec folders sat under the station `specs/` directory, and `spec-archive/` still held 29 files
+**When** each live companion is carried into `specs/spec-pyforge-atlas/` and every absorbed folder moves to `archive/<original path>`
+**Then** no folder under `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/` reads `status: absorbed`, each moved folder keeps its files, and every live pointer names the file's new path
+**And** `chain-sprawl` (its baseline pruned), `dream-chain`, `governance-currency`, `spec-surface`, `ad-citation`, `chain-completeness`, `chain-currency` and `detectors-ci` stay green, and the station suite passes
 **Status:** done
 
 ## Validation note — 2026-08-26 (chain-currency sweep)

@@ -55,6 +55,17 @@ jobs:
           environments: pyforge-guild pyforge-foundry-full
           locked: true
           cache: true
+      # Story 117.7 (spec-pyforge-steward CAP-175): mypy rebuilt its cache on every run (87 s of the
+      # foundry-full leg alone). scripts/lint_types.py keeps one cache per package and environment under
+      # <package>/.mypy_cache/<environment> (Story 106.1), gitignored, so restoring those directories is safe
+      # and a warm run only re-checks the modules whose sources or dependencies moved.
+      - name: Restore the per-environment mypy caches
+        uses: actions/cache@v4
+        with:
+          path: src/shared/packages/*/.mypy_cache
+          key: mypy-${{ runner.os }}-${{ hashFiles('pixi.lock') }}-${{ hashFiles('src/shared/packages/*/src/**/*.py', 'src/shared/packages/*/src/**/*.pyi') }}
+          restore-keys: |
+            mypy-${{ runner.os }}-${{ hashFiles('pixi.lock') }}-
       - name: lint-types (ruff, ruff-format, mypy, target-version-check, precommit-config-check)
         run: pixi run --frozen -e pyforge-guild lint-types
       - name: mypy (pyforge-foundry-full — real atlas runtime libraries)

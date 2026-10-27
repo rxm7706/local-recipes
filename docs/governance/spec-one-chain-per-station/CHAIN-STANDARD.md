@@ -4,7 +4,7 @@ type: companion
 spec: one-chain-per-station
 status: ready
 created: "2026-09-16"
-updated: "2026-09-17"
+updated: "2026-10-26"   # AMENDED 2026-10-26 (CAP-5): a requirement cites defined CAPs only — §2, §6 (NFR families), §12 (the ruling and the arrows it reverses). Prior "2026-09-17"
 ---
 
 # The chain standard
@@ -29,7 +29,7 @@ docs/dreams/pyforge-<s>.md                                   Dream        status
 _bmad-output/projects/pyforge-<s>/planning-artifacts/
   specs/spec-pyforge-<s>/SPEC.md  +  .memlog.md               Spec         status: ready       (forever; CAP-n carry their own met dates)
   specs/spec-<E>-<S>-<slug>.md                               story spec   one file per story, named by the ledger key
-  prds/prd-pyforge-<s>-<created>/prd.md                      PRD          FR-n  ← CAP-n
+  prds/prd-pyforge-<s>-<created>/prd.md                      PRD          FR-n  ← CAP-m  (traced, never numbered)
   architecture/architecture-pyforge-<s>-<created>/           spine        AD-n  (prefixed: canopy:AD-n, pap:AD-n, fnd:AD-n)
   epics.md                                                   Epic E / Story E.S — sequential from 1, no gaps
   sprint-status-ledger.yaml                                  key: <E>-<S>-<slug>  (generated; never hand-edited)
@@ -41,7 +41,14 @@ Plus **declared seams** (Spec CAP-3): a Spec folder that survives the fold
 carries `fold-exemption: cross-station-seam` in its frontmatter. Today: marshal's
 `spec-pyforge-core` and `spec-pyforge-testing-charter`. Plus the **Guild chain**
 under `docs/governance/spec-<slug>/` for the constitutive Dream and gates that
-judge every Smith (Charter §5 as amended 2026-09-14).
+judge every Smith (Charter §5 as amended 2026-09-14). Plus **marshal's factory-doc
+set** (operator ruling 2026-10-26, the one-chain re-audit): `_bmad-output/projects/pyforge-marshal/planning-artifacts/PRD.md`,
+its `architecture.md` and four `architecture-<part>.md`, `integration-architecture.md`
+and `validation-report-PRD.md` in the same directory — the whole-factory rebuild
+contract the PRD's own § 0 decomposes across five stations, not a chain PRD: no
+`FR-n`, never read by `fr-without-cap`, governed by `bmad-drift` and
+`_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md`, and never moved into
+`prds/` (marshal's planning README § *Deliberate asymmetries*).
 
 **Everything else is a section, a CAP, or a Story** — never a new file.
 A new `docs/dreams/*.md` or `spec-*/` folder needs `fold-exemption:` from
@@ -56,7 +63,19 @@ Dream § dated section  →  CAP-n  →  FR-n  →  AD-n  →  Story E.S  →  l
 ```
 
 - A **CAP** cites the Dream section it realizes (memlog `capability` entry).
-- An **FR** cites its source CAP (`FR-n ← CAP-m`; Spec CAP-5, `fr-without-cap`).
+- A **requirement** (`FR-n`, `NFR-n`) cites one or more *defined* CAPs —
+  `← CAP-m`, or `← spec-<x> CAP-m` for another Spec's capability — and
+  nothing else: never a Spec Constraint, a Charter clause, an AD or a
+  decision id (Spec CAP-5 as amended 2026-10-26; `fr-without-cap`; §12).
+  The arrow is traced from the cited CAP's intent and success, never
+  numbered in sequence.
+- A Spec **Constraint** reaches code through an **AD** that names the
+  Constraint by its bolded lead and the CAPs it bounds. A Constraint that
+  promises something a user or operator can see is minted as a CAP through
+  `bmad-spec`, with the Constraint as provenance, and requirements cite that
+  CAP. A PRD line that only restates HOW is not a requirement: it lives in
+  the PRD's *Constraints and Guardrails* section (or `addendum.md`) as prose
+  naming its AD.
 - An **AD** cites the FR/CAP it decides for.
 - A **Story** carries `FR:` and `AD:` lines and cites its CAP range (INV-A).
 - A **story spec** is named by the ledger key and cites the Story heading.
@@ -118,7 +137,7 @@ heading, key and filename agree for all 1,445 stories, not only new ones.
 | Job | Family | Scope | Source |
 |---|---|---|---|
 | Spec capability | `CAP-n` | per station Spec, sequential from 1 | Spec CAP-3(b) |
-| Product requirement | `FR-n`, `NFR-n` | per PRD; each `← CAP-m` | Spec CAP-5 |
+| Product requirement | `FR-n`, `NFR-n` — or a lettered NFR family `NFR-<L>n` where a PRD groups its NFRs (marshal `NFR-C2`, warden `NFR-S8`); the one grammar is `N?FR-[A-Z]?\d+(\.\d+)*`, always hyphenated; the letters are sections of the one lettered family (marshal's R, A, P, C, S, M, O), and what is forbidden is mixing `NFR-n` with `NFR-<L>n` in one PRD or spelling an id outside the grammar (`NFR-R3a`, `NFR-P-warm`) | per PRD; each `← CAP-m` naming the defined CAP(s) it realizes (FR) or bounds (NFR), and nothing else — never a Constraint, Charter clause, AD or decision id (§2, §12) | Spec CAP-5 (amended 2026-10-26) |
 | Architecture decision | `<spine>:AD-n` | per spine | steward spine |
 | Story | `E.S` | per station, sequential | vocabulary CAP-6 |
 | Deferred work | `DW-<STATION>-<n>` — **one** family, station token, sequential | per station | vocabulary CAP-6 Q14 said "new ids carry the token; no retro-rename of 1,338" — the rebase ends that carve-out: topic-word families (`DW-VOCAB-`, `DW-LEDGER-`, `DW-CANOPY-`, `DW-FU-`…) re-key through the fold map |
@@ -260,3 +279,66 @@ Archived column, the deck facts, scribe's compile, the sibling-drift check)
 reads `archive/docs/dreams/` wherever it needs archived Dreams. Those
 changes land as Stories before the first fold PR moves a file.
 
+
+## 12. Requirements derive from capabilities (CAP-5 amended, 2026-10-26)
+
+**The rule.** A requirement (`FR-n`, `NFR-n`, or a lettered NFR family)
+cites one or more *defined* CAPs and nothing else. `← CAP-m` resolves
+against the station Spec's capability *definition* lines; `← spec-<x> CAP-m`
+resolves against the named Spec's. A Spec Constraint is realized by an AD
+that names the Constraint by its bolded lead; a Constraint that promises a
+user- or operator-visible guarantee is minted as a CAP through `bmad-spec`
+(the Constraint is its provenance) and requirements cite that CAP; a line
+that only says how something is built is not a requirement and goes in the
+PRD's *Constraints and Guardrails* section naming its AD. Arrows are traced
+from the cited CAP's intent and success, never numbered in sequence.
+
+**Why.** §2 and §6 already required `← CAP-m` and this page's preamble says
+the artifact moves; Spec CAP-7 names FR ← CAP as pyforge-foundry's starting
+discipline; the capability ledger (`docs/foundry/capability-ledger.yaml`)
+routes only capabilities, so a requirement sourced from a Constraint has no
+rebuild/retire decision anywhere; Constraints have no stable id, so a
+quoted-text arrow breaks on the first rewording and no detector can resolve
+it; and every Constraint-cited requirement already lived as an AD in its
+spine (atlas AD-16; marshal A-04, A-05, P-10, L-01).
+
+**The ruling it records, and the rulings it reverses.** Operator,
+2026-10-26: *"yes forbid it — single pr for all stations / all open items for
+pyforge stations and aligned to unifying strategy / cutover"*. This
+supersedes the 2026-10-25 rulings on `spec-pyforge-atlas` (memlog, Story
+40.1: *"FR-15, 'Cite the constraint (Recommended)' — an FR that derives from
+a Spec Constraints bullet, not a capability, names the constraint in its
+arrow"*) and on `spec-pyforge-marshal` (memlog, Story 106.1: *"Cite the
+constraint (Recommended)": the arrow names the constraint, e.g.
+`<- Constraint "Copier is a dependency, not a framework"`*; and the round-1
+review ruling for FR-101, *"CAP-15 + constraint (Recommended)"*). Those
+rulings were made on a brief that did not show that each Constraint already
+lived as an AD, nor the ledger and CAP-7 consequences. The arrows they
+produced (atlas FR-15; marshal FR-101, FR-120, FR-121, FR-125, FR-126) are
+re-pointed by atlas Story 41.1 and marshal Story 108.1 (FR-125 to marshal
+CAP-297, minted from the Constraint "Two clocks" on the Story 108.1 review —
+this section's own rule applied); doctor FR-14 and FR-15, which cited
+Charter §6, by doctor Story 50.1.
+
+**NFRs.** §6 says every NFR cites a CAP; at this amendment none of the 82 NFR
+lines fleet-wide did (atlas 10, marshal 33, mason 16, warden 23, as the detector
+reads them), and marshal's and warden's ids are lettered (five of warden's
+outside the grammar: `NFR-R3a`, `NFR-R3b`, `NFR-P-warm`, `NFR-P-cold`,
+`NFR-P-concurrency`). The lettered family is sanctioned (§6); an NFR
+cites the CAP(s) it bounds; the 82 enter `docs/governance/fr-baseline.json`
+as the pre-rule population and leave it as each station's backfill story
+lands (atlas 41.3, marshal 108.2, mason 33.2, warden 20.2).
+
+**Enforced, not asserted.** `fr-without-cap` (doctor CAP-92, Story 50.1)
+fails, on new findings against a baseline that only shrinks: a post-date
+requirement with no CAP; a non-CAP arrow (`fr-cites-non-capability`); a cite
+that resolves to no definition line (`fr-cap-unresolved`); an unhyphenated
+id (`fr-id-unhyphenated`); an id spelled outside the grammar
+(`fr-id-malformed`); a second definition of an id in one PRD
+(`fr-duplicate-id`); and a counted run — four or more consecutive
+requirements whose CAP number steps with the requirement number while their
+titles share no word with the CAPs' (`fr-counted-run`). A title-overlap
+score is advisory only. The same rule travels as `persistent_facts` in
+`_bmad/custom/bmad-prd.toml`, `bmad-spec.toml` and `bmad-architecture.toml`,
+as the `fr-arrow` review lens in `bmad-build.toml`, and as
+`spec-foundry-regenerate-not-fold` CAP-7's on-ramp line for B.

@@ -12,13 +12,13 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-mason/planning-artifacts/research/domain-packaging-automation-tooling-research-2026-07-25.md"
   - "_bmad-output/projects/pyforge-mason/planning-artifacts/research/technical-mason-cli-seam-research-2026-07-25.md"
 project_name: pyforge-mason
-epicCount: 14  # 2026-09-06: Epic 14 added (spec-bmad-suite-lifecycle mason relay); Epic 13 (2026-09-03) had not bumped this from 12.
-storyCount: 59  # 2026-09-06: 58 + Story 14.1 (dated snapshot; the ledger enumerates).
+epicCount: 36  # 2026-10-27 (absorbed Spec folders to the archive home): Epic 36 appended (a chore under spec-one-chain-per-station:CAP-11; Story 36.1); 36 epic keys in the ledger after this commit's sync (measured). Earlier: # 2026-10-26 (one archive home): Epic 35 appended (a chore under spec-one-chain-per-station:CAP-11; Story 35.1); 35 epic keys in the ledger after this commit's sync (measured). Earlier: # 2026-10-26: Epic 34 minted (a fix under spec-pyforge-mason CAP-24; Story 34.1); measured after this commit's sync. Earlier: # 2026-10-26: Epic 33 minted (a chore under spec-one-chain-per-station CAP-5 as amended and CAP-3; Story 33.1, Story 33.2); measured after this commit's sync. Earlier: # 2026-10-25: Epic 32 minted (a chore under spec-one-chain-per-station CAP-5 and CAP-3; Story 32.1); 32 epic keys in the ledger after this commit's sync (measured), restating a count last bumped at 14. Earlier 2026-09-06: Epic 14 added (spec-bmad-suite-lifecycle mason relay); Epic 13 (2026-09-03) had not bumped this from 12.
+storyCount: 120  # 2026-10-27 (absorbed Spec folders to the archive home): +1 for Story 36.1 (chore, no CAP, no flag); 120 story keys in the ledger after this commit's sync (measured). Earlier: # 2026-10-26 (one archive home): +1 for Story 35.1 (chore, no CAP, no flag); 119 story keys in the ledger after this commit's sync (measured). Earlier: # 2026-10-26: +1 for Story 34.1 (fix under CAP-24, no new CAP, no flag); measured after this commit's sync. Earlier: # 2026-10-26: +2 for Story 33.1, Story 33.2 (chore, no CAP, no flag); measured after this commit's sync. Earlier: # 2026-10-25: +1 for Story 32.1; 115 story keys in the ledger after this commit's sync (measured), restating a count last set at 59. Earlier 2026-09-06: 58 + Story 14.1 (dated snapshot; the ledger enumerates).
 frCount: 50
 status: complete
 revision: 2
 revisionNote: "r2 tracks PRD revision 2 (adversarial-review fixes). Added S-1.10 (config+logging), S-3.9 (ship verb + TestPyPI rehearsal), S-5.6 removed in favour of folding FR-47 into S-5.5; corrected S-3.6, S-5.1, S-5.2, S-2.2 for the D-10/D-12/FR-44/FR-45 resolutions."
-updated: "2026-10-22"   # RE-STAMPED 2026-10-22: Story 26.2 minted done under done Epic 26 (a fix under spec-pyforge-mason CAP-34; no new CAP, no FR moves, no flag): CFE's tests never fetch conda-smithy's remote lint data (hints.toml and the conda-forge.yml bot schema). Prior "2026-10-10"   # RE-STAMPED 2026-10-10: Story 25.16 minted under Epic 25 (a fix under spec-pyforge-mason CAP-35 / FR-57, CAP-20, CAP-23; no new CAP, no FR moves, no flag) and Story 25.15 re-scoped, on two operator rulings of 2026-10-09 on 25.15's open questions ("Retire recipes/dbt-core"; "Fix in a story"). 25.15 retires six directories (the five lfx* copies, and recipes/dbt-core into recipes/dbt) and restores recipes/dbt's feedstock patch file; its title changes, its ledger key stands. 25.16 re-mirrors recipes/dbt-bigquery, recipes/dbt-postgres and recipes/dbt-redshift from their own feedstocks. Story 25.5 re-points its dbt-core row to recipes/dbt, drops dbt-bigquery (11 recipes) and gains Deps S-25.15; Story 25.7's AC 12 is corrected to langflow-feedstock's patch_deps.py; Story 25.13's boundary line names the new dbt owners. Prior "2026-10-09"   # RE-STAMPED 2026-10-09 (night, latest): Story 25.15 minted under Epic 25 (a fix under spec-pyforge-mason CAP-35 / FR-57, CAP-20, CAP-23; no new CAP, no FR moves, no flag) on two operator rulings: Wave F's 18 outputs stay inside their feedstocks' mirrors ("Yes, inside the mirrors"), and the duplicate recipe directories retire in a fix story ("Retire in a fix story"). 25.15 retires the five lfx* copies into recipes/langflow; recipes/dbt is kept, verified at mint as the recipes/<feedstock>/ mirror of conda-forge/dbt-feedstock. Story 25.7's batch drops recipes/lfx (10 recipes); Story 25.14 gains Deps S-25.15. Prior "2026-10-09"   # RE-STAMPED 2026-10-09 (night, later): Stories 25.13-25.14 minted under Epic 25 (Wave F, operator ruling "create them" on Track B Q2; spec-pyforge-mason CAP-35 / FR-57, CAP-20, CAP-23; no new CAP, no FR moves): 25.13 mirrors dbt-snowflake and zxing-cpp-python, 25.14 keeps the 18 dbgpt-*/langflow-* outputs in recipes/db-gpt and recipes/langflow; Story 25.9 gains a dated note and AC 13 (zxing-cpp-feedstock repurposed to the C++ library). Prior "2026-10-09"   # RE-STAMPED 2026-10-09 (night): Story 25.2 re-scoped to Wave A, Wave 0 and its four Track B pilots (operator ruling "Land 25.2 now, split rest"); Stories 25.4-25.12 minted under Epic 25 (25.4 a fix for the 14 Wave 0 leftovers; 25.5-25.12 eight Track B batches of 11-12 named recipes; spec-pyforge-mason CAP-35 / FR-57, CAP-20, CAP-23; no new CAP, no FR moves). Prior "2026-10-09"   # RE-STAMPED 2026-10-09: Epic 28 / Story 28.1 minted (fix under spec-pyforge-mason CAP-16, no new CAP, no FR moves, no flag): the CFE-rebuild guard reads a SHA field whatever type YAML gives it. Prior "2026-10-09"   # RE-STAMPED 2026-10-09: Story 25.3 minted (feature under spec-pyforge-mason CAP-35 / FR-57, CAP-20, CAP-23; no new CAP, no FR moves) and given a --repair mode; Story 25.2 Deps S-25.3 and a Wave 0 that repairs Story 25.1's landing; § Currency reconciliation — 2026-10-09 (later) appended. Prior "2026-10-09"   # RE-STAMPED 2026-10-09: Stories 22.3 and 22.4 minted blocked (fixes under spec-pyforge-mason CAP-32, FR-54), split from Story 22.1 by two operator rulings; § Currency reconciliation — 2026-10-09 appended. Prior 2026-10-03   # RE-STAMPED 2026-10-03 (Phase 4+5): Epic 27 / Stories 27.1-27.2 minted from the operator's Phase 4+5 ruling (fix, no CAP; 61 open medium/low deferrals). Prior 2026-10-02   # RE-STAMPED 2026-10-02: Epic 26 / Story 26.1 minted (a fix under spec-pyforge-mason CAP-34, FR-56). Prior 2026-09-29 (evening)   # RE-STAMPED 2026-09-29 (evening): Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-mason CAP-35, FR-57); § Currency reconciliation — 2026-09-29 (evening). Prior 2026-09-29 (later)   # RE-STAMPED 2026-09-29 (later): Epic 24 / Story 24.1 minted (spec-pyforge-mason CAP-34, FR-56); § Currency reconciliation — 2026-09-29 (later). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 23 / Stories 23.1-23.3 minted (spec-pyforge-mason CAP-33, FR-55); § Currency reconciliation — 2026-09-29. Prior 2026-09-28 (night, later)   # RE-STAMPED 2026-09-28 (night, later): Epic 22 / Stories 22.1-22.2 minted (spec-pyforge-mason CAP-32, FR-54); § Currency reconciliation — 2026-09-28 (night, later) appended. Prior 2026-09-28 (night): Epic 21 / Stories 21.1-21.5 minted (spec-pyforge-mason CAP-31, FR-53); § Currency reconciliation — 2026-09-28 (night) appended. Prior 2026-09-28 (later): Epic 20 / Story 20.1 minted (spec-pyforge-mason CAP-30, FR-52); § Currency reconciliation — 2026-09-28 (later) appended. Prior 2026-09-28: Epic 19 / Stories 19.1-19.5 minted (spec-pyforge-mason CAP-29, FR-51); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (night): Epic 18 / Story 18.1 minted (spec-pyforge-mason CAP-28). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
+updated: "2026-10-27"   # AMENDED 2026-10-27 (absorbed Spec folders to the archive home): Epic 36 / Story 36.1 minted in-progress under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 11 absorbed Spec folders move to archive/<original path>; keys 36-1, epic-36 (in-progress) and epic-36-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync. Prior "2026-10-26"   # AMENDED 2026-10-26 (one archive home): Epic 35 / Story 35.1 minted done under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 12 archived satellite Dreams left docs/dreams/ for archive/docs/dreams/, their bodies verbatim in the station Dream; keys 35-1, epic-35 (done) and epic-35-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync. Prior "2026-10-26"   # AMENDED 2026-10-26 (the atlas reads the bot's split graph repos): Epic 34 / Story 34.1 minted done under spec-pyforge-mason CAP-24 (a fix; no new CAP, no FR moves, no flag); keys 34-1, epic-34 (done) and epic-34-retrospective (optional) added; no other epic or story moved. Prior "2026-10-26"   # AMENDED 2026-10-26 (every requirement derives from a capability): Epic 33 / Story 33.1 (in-progress), Story 33.2 (backlog) minted under spec-one-chain-per-station CAP-5 as amended and CAP-3 (no CAP, no flag); keys 33-1, 33-2, epic-33 (in-progress) and epic-33-retrospective (optional) added; no other epic or story moved. Prior "2026-10-25"   # AMENDED 2026-10-25 (latest): Story 32.1 and Epic 32 promoted to done in the five-station FR-arrow chain PR after its independent review (Status lines, story spec and ledger keys through the Tier-3 feed and sprint-ledger-sync); no other epic or story moved. Earlier 2026-10-25: RE-STAMPED 2026-10-25 (the PRD's section 4.7 arrows were mapped by section, not traced): Epic 32 / Story 32.1 added (a chore under spec-one-chain-per-station CAP-5 and CAP-3, no CAP, no flag; operator ruling "Do rows 1-5 in one PR"): three mason PRD FR arrows are re-pointed at the Spec capabilities that realize them; keys 32-1 (backlog), epic-32 (backlog) and epic-32-retrospective (optional) added; epicCount and storyCount restated from the ledger; arch->epics cascade for the spine's re-stamp of the same date; no other epic or story moved. Prior "2026-10-22"   # RE-STAMPED 2026-10-22: Story 26.2 minted done under done Epic 26 (a fix under spec-pyforge-mason CAP-34; no new CAP, no FR moves, no flag): CFE's tests never fetch conda-smithy's remote lint data (hints.toml and the conda-forge.yml bot schema). Prior "2026-10-10"   # RE-STAMPED 2026-10-10: Story 25.16 minted under Epic 25 (a fix under spec-pyforge-mason CAP-35 / FR-57, CAP-20, CAP-23; no new CAP, no FR moves, no flag) and Story 25.15 re-scoped, on two operator rulings of 2026-10-09 on 25.15's open questions ("Retire recipes/dbt-core"; "Fix in a story"). 25.15 retires six directories (the five lfx* copies, and recipes/dbt-core into recipes/dbt) and restores recipes/dbt's feedstock patch file; its title changes, its ledger key stands. 25.16 re-mirrors recipes/dbt-bigquery, recipes/dbt-postgres and recipes/dbt-redshift from their own feedstocks. Story 25.5 re-points its dbt-core row to recipes/dbt, drops dbt-bigquery (11 recipes) and gains Deps S-25.15; Story 25.7's AC 12 is corrected to langflow-feedstock's patch_deps.py; Story 25.13's boundary line names the new dbt owners. Prior "2026-10-09"   # RE-STAMPED 2026-10-09 (night, latest): Story 25.15 minted under Epic 25 (a fix under spec-pyforge-mason CAP-35 / FR-57, CAP-20, CAP-23; no new CAP, no FR moves, no flag) on two operator rulings: Wave F's 18 outputs stay inside their feedstocks' mirrors ("Yes, inside the mirrors"), and the duplicate recipe directories retire in a fix story ("Retire in a fix story"). 25.15 retires the five lfx* copies into recipes/langflow; recipes/dbt is kept, verified at mint as the recipes/<feedstock>/ mirror of conda-forge/dbt-feedstock. Story 25.7's batch drops recipes/lfx (10 recipes); Story 25.14 gains Deps S-25.15. Prior "2026-10-09"   # RE-STAMPED 2026-10-09 (night, later): Stories 25.13-25.14 minted under Epic 25 (Wave F, operator ruling "create them" on Track B Q2; spec-pyforge-mason CAP-35 / FR-57, CAP-20, CAP-23; no new CAP, no FR moves): 25.13 mirrors dbt-snowflake and zxing-cpp-python, 25.14 keeps the 18 dbgpt-*/langflow-* outputs in recipes/db-gpt and recipes/langflow; Story 25.9 gains a dated note and AC 13 (zxing-cpp-feedstock repurposed to the C++ library). Prior "2026-10-09"   # RE-STAMPED 2026-10-09 (night): Story 25.2 re-scoped to Wave A, Wave 0 and its four Track B pilots (operator ruling "Land 25.2 now, split rest"); Stories 25.4-25.12 minted under Epic 25 (25.4 a fix for the 14 Wave 0 leftovers; 25.5-25.12 eight Track B batches of 11-12 named recipes; spec-pyforge-mason CAP-35 / FR-57, CAP-20, CAP-23; no new CAP, no FR moves). Prior "2026-10-09"   # RE-STAMPED 2026-10-09: Epic 28 / Story 28.1 minted (fix under spec-pyforge-mason CAP-16, no new CAP, no FR moves, no flag): the CFE-rebuild guard reads a SHA field whatever type YAML gives it. Prior "2026-10-09"   # RE-STAMPED 2026-10-09: Story 25.3 minted (feature under spec-pyforge-mason CAP-35 / FR-57, CAP-20, CAP-23; no new CAP, no FR moves) and given a --repair mode; Story 25.2 Deps S-25.3 and a Wave 0 that repairs Story 25.1's landing; § Currency reconciliation — 2026-10-09 (later) appended. Prior "2026-10-09"   # RE-STAMPED 2026-10-09: Stories 22.3 and 22.4 minted blocked (fixes under spec-pyforge-mason CAP-32, FR-54), split from Story 22.1 by two operator rulings; § Currency reconciliation — 2026-10-09 appended. Prior 2026-10-03   # RE-STAMPED 2026-10-03 (Phase 4+5): Epic 27 / Stories 27.1-27.2 minted from the operator's Phase 4+5 ruling (fix, no CAP; 61 open medium/low deferrals). Prior 2026-10-02   # RE-STAMPED 2026-10-02: Epic 26 / Story 26.1 minted (a fix under spec-pyforge-mason CAP-34, FR-56). Prior 2026-09-29 (evening)   # RE-STAMPED 2026-09-29 (evening): Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-mason CAP-35, FR-57); § Currency reconciliation — 2026-09-29 (evening). Prior 2026-09-29 (later)   # RE-STAMPED 2026-09-29 (later): Epic 24 / Story 24.1 minted (spec-pyforge-mason CAP-34, FR-56); § Currency reconciliation — 2026-09-29 (later). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 23 / Stories 23.1-23.3 minted (spec-pyforge-mason CAP-33, FR-55); § Currency reconciliation — 2026-09-29. Prior 2026-09-28 (night, later)   # RE-STAMPED 2026-09-28 (night, later): Epic 22 / Stories 22.1-22.2 minted (spec-pyforge-mason CAP-32, FR-54); § Currency reconciliation — 2026-09-28 (night, later) appended. Prior 2026-09-28 (night): Epic 21 / Stories 21.1-21.5 minted (spec-pyforge-mason CAP-31, FR-53); § Currency reconciliation — 2026-09-28 (night) appended. Prior 2026-09-28 (later): Epic 20 / Story 20.1 minted (spec-pyforge-mason CAP-30, FR-52); § Currency reconciliation — 2026-09-28 (later) appended. Prior 2026-09-28: Epic 19 / Stories 19.1-19.5 minted (spec-pyforge-mason CAP-29, FR-51); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (night): Epic 18 / Story 18.1 minted (spec-pyforge-mason CAP-28). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
 currency_review: "Reviewed 2026-09-14 (chain-currency sweep cascade, arch->epics edge) — validation note appended at end of file (§ Validation note — 2026-09-14): ledger re-measured with the real parser at 70/70 stories done across 17/17 epics; Epic 16's two realization-gate stories confirmed landed against live evidence (the pyforge-mason-recipe-build-smoke pixi task is wired into pyforge-station-tests.yml:228); the PRD's new FR-14 as-built divergence is recorded as owing a Dream/Spec, NOT minted as a story here. No epic or story restructured. Reviewed 2026-09-06 (Epic 14 added: spec-bmad-suite-lifecycle mason relay — bmad-eval-quality __win variant, Story 14.1; CFE Rule 1 + Rule 2 apply). Reviewed 2026-08-26 — validated against the ARCHITECTURE-SPINE as truth-upped the same day and the as-built code: all 50 stories across 11 epics are done in the tracked ledger (station complete per fleet ledger 2026-08-21). Counts corrected 6/42 -> 11/50 (Epics 6-11 had grown past the r2 snapshot). No story headings or statuses changed; see the appended Validation note. Prior review 2026-08-02 (AD binding check)."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -3576,6 +3576,185 @@ clean `main`
 - The `retro(cfe):` commit lands a CFE `CHANGELOG.md` PATCH entry (v8.100.4).
 - `pixi run --frozen -e pyforge-mason pyforge-mason-test` is green.
 
+**Status:** done
+
+## Epic 32: The mason PRD's FR arrows name the capabilities the Spec carries
+
+Minted 2026-10-25 from the station Dream's entry of the same date (the PRD's section 4.7 arrows were mapped by section,
+not traced), at the operator's ruling "Do rows 1-5 in one PR". The 2026-09-17 one-chain fold gave every FR in § 4.7
+"Seam enforcement" the arrow `← CAP-7`, and three of them (FR-48, FR-49, FR-50) are realized by other capabilities. A
+chore under `spec-one-chain-per-station` CAP-5 and CAP-3: no CAP is minted and no flag is added. It is a new epic
+because the concern is the PRD's traceability, not any capability epic. **HARD boundaries:**
+- Only the three approved arrows change; no FR title, body or number moves.
+- No `SPEC.md` change and no detector rule change.
+- It touches no CFE file, `src/shared/packages/pyforge-mason/`, `pixi.toml` or `recipes/**` file.
+
+### Story 32.1: Every mason PRD FR arrow names the Spec capability that realizes it
+
+As the operator reading the mason PRD to learn which capability a requirement serves,
+I want every `FR-n ← CAP-m` arrow to name the capability the Spec actually carries,
+So that a requirement traces to its contract instead of to the section the fold mapped it from.
+
+**Type:** chore • **Effort:** XS • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-5 (FRs derive from CAPs) and CAP-3 (the station fold procedure) • Dream 2026-10-25 (the PRD's section 4.7 arrows were mapped by section, not traced) • operator ruling 2026-10-25
+**Flag:** none (`spec-feature-flag-governance` Q1, a chore)
+**Surface:** `planning-artifacts/prds/prd-pyforge-mason-2026-07-25/prd.md` (three FR headings and a currency-reconciliation section); the spine and epics `updated:` re-stamps
+**Spec:** `planning-artifacts/specs/spec-32-1-every-mason-prd-fr-arrow-names-the-spec-capability-that-realizes-it.md`
+**Given** `fd06415e4d`, where the fold commit `e062c19c9d` gave FR-48, FR-49 and FR-50 the arrow `← CAP-7` with the rest of § 4.7
+**When** the story lands
+**Then** each of the three headings carries the arrow in the spec-pyforge-mason memlog's 2026-10-25 table, and every cited CAP exists
+**And** doctor's `fr-without-cap` and the planning detectors stay green
+**Status:** done
+
+## Epic 33: The mason Spec's capability text is whole again, and its NFRs get an owner (spec-one-chain-per-station CAP-5 amended, CAP-3)
+
+Minted 2026-10-26 from the station Dream's entry of the same date and the operator's rulings of 2026-10-26 on the FR-arrow re-audit. Story 32.1 traced mason's FR arrows; Story 33.1 restores the 8 capability bullets the 2026-09-17 fold cut at their first line, and Story 33.2 (`backlog`, ruling (c)) arrows the 16 NFR lines to the capabilities they bound so the upgraded `fr-without-cap` baseline has a mason owner. A chore epic under `spec-one-chain-per-station` CAP-5 as amended; no CAP, no flag, no PRD requirement changes in 33.1.
+**HARD boundaries:**
+- `SPEC.md` is never hand-edited: memlog correction, then the script render, both self-validate passes logged; 27 capability lines before and after.
+- No CAP id, order, provenance or status moves.
+
+### Story 33.1: The mason Spec's fold-cut capability text is restored
+
+As a reader who opens a mason capability to learn what it guarantees,
+I want every capability block in `spec-pyforge-mason/SPEC.md` to carry the full intent and success the 2026-09-17 fold cut,
+So that a PRD arrow's target says what it realizes, and the detector's title-overlap guard reads whole text.
+
+**Type:** chore • **Effort:** XS • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-5 (amended 2026-10-26) and CAP-3 (the station fold procedure); spec-pyforge-mason's capabilities (their text; no CAP minted)
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `planning-artifacts/specs/spec-pyforge-mason/SPEC.md` (8 cut intent/success bullets rejoined; by script from `git show e062c19c9d^`, every id, order and provenance line stable); `.memlog.md`; PRD, spine and epics re-stamps (chain currency; no FR, AD or story text changes)
+**Spec:** `planning-artifacts/specs/spec-33-1-the-mason-spec-s-fold-cut-capability-text-is-restored.md`
+**Given** at `92fa3edbbd` the fold (`e062c19c9d`) left 8 cut intent/success bullets rejoined
+**When** the restore script rejoins each cut bullet to its pre-fold source text (and adds the bullets the fold dropped from the source block)
+**Then** every intent and success is the source's full text, and no capability block lacks its intent or success
+**And** the capability line count is unchanged; no id, order, provenance line or status moves; `chain-completeness`, `chain-currency` and `detectors-ci` stay green
+**Status:** done
+
+### Story 33.2: Every mason NFR names the capabilities it bounds
+
+As a reader who asks which capability a mason NFR bounds,
+I want each of the 16 NFR lines (`NFR-1`..`NFR-16`) to cite the capability or capabilities whose success it bounds,
+So that the NFR tier derives from capabilities the way the FR tier does, and the baseline's arrowless population for this station reaches zero.
+
+**Type:** chore • **Effort:** S • **Deps:** 33.1 • **FR/AD:** spec-one-chain-per-station CAP-5 (amended 2026-10-26: an NFR cites the CAP(s) it bounds); CHAIN-STANDARD § 6 and § 12; the mason capabilities each NFR bounds, traced
+**Flag:** none (`type: chore`)
+**Surface:** `_bmad-output/projects/pyforge-mason/planning-artifacts/prds/prd-pyforge-mason-2026-07-25/prd.md` (the 16 NFR lines (`NFR-1`..`NFR-16`) gain `← CAP-m` traced from each capability's success); `docs/governance/fr-baseline.json` (`projects.pyforge-mason` loses the ids through `scripts/fr_baseline.py --prune`)
+**Spec:** `planning-artifacts/specs/spec-33-2-every-mason-nfr-names-the-capabilities-it-bounds.md`
+**Given** none of the 16 NFR lines (`NFR-1`..`NFR-16`) cites a capability (measured 2026-10-26), so they sit in `fr-baseline.json`'s `projects` map as the pre-rule population (ruling (c))
+**When** each NFR is traced against the Spec's capability successes
+**Then** every NFR line carries `← CAP-m`, each cited CAP is a definition line in `spec-pyforge-mason/SPEC.md`, and the independent review reads each arrow
+**And** `scripts/fr_baseline.py --prune` drops the ids from the baseline; `fr-without-cap` stays green
+**Status:** backlog
+
+## Epic 34: The atlas's dependency graph and bot health read the conda-forge bot's split repos (fix under spec-pyforge-mason CAP-24)
+
+Minted 2026-10-26 from the station Dream's entry of the same date, on a `pr-preflight` failure two worktrees hit that
+day: `test_atlas_clis_smoke.py::test_whodepends_reverse_json` found no row, because the `dependencies` table was empty in
+every local `cf_atlas.db`. GitHub now redirects `regro/cf-graph-countyfair` to `conda-forge/conda-forge-bot-data`,
+which holds none of the bot's graph; CFE's atlas phases still downloaded it, and Phase J committed an empty table. The
+fix was implemented before the chain was written, so the story is minted at `done`, as Stories 24.1 and 26.2 were
+(operator ruling 2026-09-29). **HARD boundaries:**
+- The story goes through `conda-forge-expert` (Rule 1).
+- Its code, tests, docs, `CHANGELOG.md` entry and version carriers land in one `retro(cfe):` commit (Rule 2).
+- `.claude/skills/conda-forge-expert/` only: no `src/shared/packages/` (pyforge-atlas keeps its own reader),
+  `pixi.toml`, `pixi.lock` or `recipes/**` file.
+- 34.1 is a fix and carries no flag (`spec-feature-flag-governance` CAP-1, Q1).
+
+### Story 34.1: The atlas reads the conda-forge bot's split graph repos
+
+As a maintainer who asks the atlas what depends on a package,
+I want the atlas phases to read the bot's graph from the repos it now lives in, and to refuse a source that holds none of it,
+So that `whodepends` answers, and a moved upstream never empties a table again without a word.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-24 (atlas intelligence; no new CAP; a
+fix carries no flag, `spec-feature-flag-governance` Q1); AD-1; AD-15; CFE Rule 1 + Rule 2
+**Surface:** `.claude/skills/conda-forge-expert/scripts/{_cf_graph_source.py (new),conda_forge_atlas.py,_cf_graph_versions.py,bootstrap_data.py}`,
+`.claude/skills/conda-forge-expert/tests/unit/{test_cf_graph_split_repos.py (new),test_atlas_clis_smoke.py,test_phase_e_python_min.py}`,
+the atlas docs (`reference/atlas-phases-overview.md`, `guides/atlas-operations.md`, `reference/conda-forge-ecosystem.md`),
+gotcha G123 and the CFE version carriers (`.claude/skills/conda-forge-expert/{CHANGELOG.md,SKILL.md,MANIFEST.yaml,config/skill-config.yaml,config/failure-catalog.yaml}`),
+all in one `retro(cfe): …` commit.
+**Spec:** `planning-artifacts/specs/spec-34-1-the-atlas-reads-the-conda-forge-bot-s-split-graph-repos.md`
+**Given** GitHub serves `conda-forge/conda-forge-bot-data` for `regro/cf-graph-countyfair`, whose archive holds no
+`node_attrs/`, `pr_info/` or `version_pr_info/`, and Phase J deletes the `dependencies` table before it re-inserts
+**When** Phase E fetches `conda-forge/conda-forge-bot-data-{node_attrs,pr_info,version_pr_info,pr_json}`, validates
+each archive's top directory before it replaces the cache, and Phases E, H (cf-graph mode), J and M read the split
+records
+**Then** `whodepends python --reverse` returns rows on a refreshed atlas, and `test_whodepends_reverse_json` passes there
+**And:**
+- A source with no record replaces no data: Phase J keeps its table, Phases E, H and M write nothing, and each says why.
+  Phase M also writes nothing from a partial set of `pr_info`, `version_pr_info` and `pr_json`.
+- A download from a redirected repo, or a truncated one, is rejected and the previous cache is kept; every download
+  attempt starts from byte 0.
+- Phase M resolves live bot PRs from `-pr_json`, decoding only the referenced ids.
+- Phase J writes `test` edges from the recipe's test section (v0 `test.requires`, v1 `tests[].requirements`).
+- On a built atlas whose `dependencies` table is empty and that has no split `node_attrs` cache yet,
+  `test_whodepends_reverse_json` skips, naming `PHASE_E_ENABLED=1 pixi run -e local-recipes build-cf-atlas` and the
+  `atlas-phase E` / `atlas-phase J` refresh. With the split cache present, an empty table fails the test.
+- The new tests pass with the network blocked (`unshare -rn`).
+- The `retro(cfe):` commit lands a CFE `CHANGELOG.md` MINOR entry (v8.102.0) with gotcha G123.
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` is green.
+**Status:** done
+
+## Epic 35: The archived mason Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
+
+Minted 2026-10-26 from `docs/governance/spec-one-chain-per-station/SPEC.md`, capability spec-one-chain-per-station:CAP-11 (owner Dream
+`docs/dreams/one-chain-per-station.md`, `owner: guild`) and that Dream's entry of the same date: a Dream is live in
+`docs/dreams/` or archived under `archive/docs/dreams/`, never both, and a folded satellite leaves the live tree only
+once its whole body sits verbatim in a dated section of its station Dream (CHAIN-STANDARD §11; doctor's
+`fold-complete` check, Story 36.1, proves it). On 2026-10-26, at `97c8211773`, 12 mason Dreams under `docs/dreams/`
+still read `status: archived` — the satellites the 2026-09-16/17 fold absorbed and left in place behind a
+`Consolidated into` banner. Mason mints no CAP and registers no FR for this story: the CAP is the Guild Spec's,
+enumerated here and in that Spec's `.memlog.md`, as the relay epics of 2026-09-29 do (doctor Epic 36, marshal Epic 75,
+herald Epic 33). One of the eight station stories of the 2026-10-26 one-PR move (the #2240 / #2319 / #2322 shape).
+**HARD boundaries:** every move is a `git mv`; a body is pasted verbatim with its headings demoted one level, never
+trimmed; a moved file keeps its frontmatter and loses only the one-chain fold banner; dated records (memlogs, story
+specs, epic bodies, PRD prose, ledgers, research) keep the path they were written with; `SPEC.md` is never
+hand-edited (memlog event, then the anchor-asserting script render, both self-validate passes logged). The story is a
+`chore`.
+
+### Story 35.1: Mason's twelve archived Dreams leave the live tree
+
+As a reader of `docs/dreams/`,
+I want mason's 12 archived satellite Dreams to live under `archive/docs/dreams/<same name>`, each with its whole body verbatim in `docs/dreams/pyforge-mason.md`,
+So that the live tree holds live Dreams only and nothing a satellite said is lost.
+
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-one-chain-per-station:CAP-11 (CHAIN-STANDARD §11: one archive home; a fold is complete before the file moves; readers follow the move); no mason CAP or FR
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `docs/dreams/pyforge-mason.md` (12 dated 2026-10-26 sections, one per satellite whose long paragraphs were not all there: the body verbatim, headings demoted one level, the fold banner left out); `archive/docs/dreams/<slug>.md` × 12 (each moved with `git mv`, its banner stripped, its frontmatter unchanged); `docs/dreams/README.md` (the 12 interim rows leave with their files); `specs/spec-pyforge-mason/SPEC.md` (`surface:` and `covers-dreams:` entries name the archive paths) and the 12 absorbed pointer Specs whose `owner-dream:` named a moved file; `.memlog.md` (the surface reconcile); `prds/prd-pyforge-mason-2026-07-25/prd.md` frontmatter (`dream:` names the archive copy of `packaging-factory`), `src/shared/packages/pyforge-mason/README.md` (the practice line)
+**Spec:** `planning-artifacts/specs/spec-35-1-mason-s-twelve-archived-dreams-leave-the-live-tree.md`
+**Given** at `97c8211773` 12 mason Dreams under `docs/dreams/` read `status: archived`, every one with paragraphs nowhere but in the archived file — measured with `fold-complete`'s own `long_paragraphs`
+**When** each incomplete body is pasted verbatim into a dated section of `docs/dreams/pyforge-mason.md` and every one of the 12 moves to `archive/docs/dreams/`
+**Then** `fold-complete` reads each of the 12 as a complete fold and no mason Dream in `docs/dreams/` reads `status: archived`; every live pointer that named a moved file names its archive path
+**And** `dreams-hygiene`, `dream-chain`, `chain-sprawl` (its baseline pruned), `governance-currency`, `spec-surface`, `chain-completeness`, `chain-currency` and `detectors-ci` stay green
+**Status:** done
+
+## Epic 36: The absorbed mason Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
+
+Minted 2026-10-27 from `docs/governance/spec-one-chain-per-station/SPEC.md` (spec-one-chain-per-station:CAP-11; owner Dream
+`docs/dreams/one-chain-per-station.md`, `owner: guild`) and that Dream's entry of the same date: everything the fleet retires
+leaves the live tree for `archive/<original path>`, and after the archived Dreams (PR #2328) come the absorbed and archived
+Spec folders, each with its memlog and its companions (CHAIN-STANDARD §11 step 2). On 2026-10-27, at `9dd0a8f1f9`, 11
+`status: absorbed` Spec folders still sat under `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/`, and two conda-forge-expert meta-test docstrings named a moved Dream by its old path.
+Mason mints no CAP and registers no FR for this story: the CAP is the Guild Spec's, enumerated here and in that
+Spec's `.memlog.md`, the relay shape of doctor Epic 36, marshal Epic 75, herald Epic 33 and the 2026-10-26 mop. One of the
+eight station stories of the 2026-10-27 one-PR close-out of spec-one-chain-per-station:CAP-11. **HARD boundaries:** every move is a `git mv`; nothing
+is deleted; a moved file's text is unchanged except the memlog event appended before the move; a live companion is carried
+into the station Spec folder, never archived (operator ruling 2026-10-27); dated records keep the path they were written
+with; `SPEC.md` is never hand-edited (memlog event, then the anchor-asserting script render, both self-validate passes
+logged). The story is a `chore`.
+
+### Story 36.1: Mason's absorbed Spec folders move to the archive home
+
+As a reader of the mason planning tree,
+I want the station's 11 absorbed Spec folders to live under `archive/<original path>`, each with its pointer, memlog and record companions,
+So that `specs/` holds the station Spec, its declared seams and its story specs only, and nothing an absorbed Spec said is lost.
+
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-one-chain-per-station:CAP-11 (CHAIN-STANDARD §11 step 2: the absorbed and archived Spec folders move, each with its memlog and every companion; readers follow the move); no mason CAP or FR
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `archive/_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-<slug>/` × 11 (each moved with `git mv`: its pointer `SPEC.md`, its `.memlog.md` and its record companions); the live companion `spec-conda-forge-expert-rebuild/campaign-state.yaml` carried with `git mv` into `specs/spec-pyforge-mason/` before its folder moves (operator ruling 2026-10-27), its readers following; every live pointer that named a moved path (code, tests, workflows, docs, `docs/foundry/capability-ledger.yaml`'s source paths); `docs/governance/chain-sprawl-baseline.json` (the moved folders' entries leave); `specs/spec-pyforge-mason/.memlog.md` (the surface reconcile); the two conda-forge-expert meta-test docstrings that named a moved Dream by its old path (`test_fleet_picture_loop_home_staleness.py`, `test_unpushed_work_check.py`) name its archive path, landed with a conda-forge-expert retro (CHANGELOG entry and version bump)
+**Spec:** `planning-artifacts/specs/spec-36-1-mason-s-absorbed-spec-folders-move-to-the-archive-home.md`
+**Given** at `9dd0a8f1f9` 11 `status: absorbed` Spec folders sat under the station `specs/` directory, and two conda-forge-expert meta-test docstrings named a moved Dream by its old path
+**When** each live companion is carried into `specs/spec-pyforge-mason/` and every absorbed folder moves to `archive/<original path>`
+**Then** no folder under `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/` reads `status: absorbed`, each moved folder keeps its files, and every live pointer names the file's new path
+**And** `chain-sprawl` (its baseline pruned), `dream-chain`, `governance-currency`, `spec-surface`, `ad-citation`, `chain-completeness`, `chain-currency` and `detectors-ci` stay green, and the station suite passes
 **Status:** done
 
 ## Validation note — 2026-09-14 (chain-currency sweep cascade)

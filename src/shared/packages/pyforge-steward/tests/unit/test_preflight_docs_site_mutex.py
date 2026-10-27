@@ -171,9 +171,10 @@ def test_the_pool_gives_the_slot_to_a_lane_that_can_run(tmp_path: Path) -> None:
 
 def test_a_lane_with_a_service_key_and_the_docs_site_key_takes_both_without_deadlock(tmp_path: Path) -> None:
     """herald's suite holds the Postgres service key and the docs-site key; it overlaps neither the docs-site lane nor
-    the other Postgres lane, those two (which share nothing) still overlap each other, and the run finishes.
-    (``run_preflight`` installs a SIGINT handler, so it runs on this main thread; the lock order itself is proven
-    without the scheduler by the opposite-orders test below.)"""
+    the other Postgres lane, those two (which share nothing) still overlap each other, a lane sharing no key overlaps
+    a key holder, and the run finishes. Since steward Story 117.2 the install takes the first docs-site turn, so herald
+    runs after it and the unrelated lane overlaps the install. (``run_preflight`` installs a SIGINT handler, so it runs
+    on this main thread; the lock order itself is proven without the scheduler by the opposite-orders test below.)"""
     _write(
         tmp_path / ".github" / "workflows" / "w.yml",
         "on:\n  pull_request:\n    paths: ['**']\n"
@@ -201,7 +202,7 @@ def test_a_lane_with_a_service_key_and_the_docs_site_key_takes_both_without_dead
     assert not runs.overlap("pyforge-herald-test", "docs-site-install"), runs.rows
     assert not runs.overlap("pyforge-herald-test", "scribe-db"), runs.rows
     assert runs.overlap("docs-site-install", "scribe-db"), runs.rows
-    assert runs.overlap("pyforge-herald-test", "lint-types"), runs.rows
+    assert runs.overlap("docs-site-install", "lint-types"), runs.rows
 
 
 class _SlowLock:
@@ -352,7 +353,9 @@ def test_the_docs_site_lanes_trade_turns_and_every_other_lane_keeps_its_position
     """Re-review should-fix: with one slot, a keyless lane that a pending lane waits on keeps its declared place
     (``a``, ``b``, ``c``), and the docs-site lanes trade turns only among themselves. ``docs-site-install`` takes the
     turn of ``pyforge-herald-test`` (declared before it), ``pages-build`` the next docs-site turn, and herald the one
-    after; ``a`` and ``b``, outside the set, start at their declared positions 0 and 2."""
+    after; ``a`` and ``b``, outside the set, start at their declared positions 0 and 2. Declaration order is the
+    flag-off scheduler (Story 117.3): with the flag on, the second run would read the first run's journal and admit
+    the lanes with no history (30 s) before ``a`` (0 s), which is that story's rule, not this test's subject."""
     started: list[str] = []
 
     def run_ctx(ctx: preflight.LaneRunContext) -> int:
@@ -362,7 +365,12 @@ def test_the_docs_site_lanes_trade_turns_and_every_other_lane_keeps_its_position
     _write(tmp_path / "pixi.toml", _pixi(["a", "c"], {"c": ["b"]}))
     assert (
         preflight.run_preflight(
-            tmp_path, invoking_env=INV, jobs=1, install_environment=_NOOP_INSTALL, run_lane_ctx=run_ctx
+            tmp_path,
+            invoking_env=INV,
+            jobs=1,
+            install_environment=_NOOP_INSTALL,
+            run_lane_ctx=run_ctx,
+            critical_path=False,
         )
         == preflight.EXIT_OK
     )
@@ -380,7 +388,12 @@ def test_the_docs_site_lanes_trade_turns_and_every_other_lane_keeps_its_position
     assert declared == ["a", "pyforge-herald-test", "b", "docs-site-install", "pages-build", "pages-check"]
     assert (
         preflight.run_preflight(
-            tmp_path, invoking_env=INV, jobs=1, install_environment=_NOOP_INSTALL, run_lane_ctx=run_ctx
+            tmp_path,
+            invoking_env=INV,
+            jobs=1,
+            install_environment=_NOOP_INSTALL,
+            run_lane_ctx=run_ctx,
+            critical_path=False,
         )
         == preflight.EXIT_OK
     )
@@ -389,9 +402,11 @@ def test_the_docs_site_lanes_trade_turns_and_every_other_lane_keeps_its_position
 
 
 def test_after_a_red_stop_no_lane_starts_even_one_pending_lanes_depend_on(tmp_path: Path) -> None:
-    """Review nit: herald (holding the docs-site key) goes red while docs-site-install, which pages-build waits on,
-    is deferred. The stop ends the run, so nothing that would only feed cancelled dependents starts: the install
-    never runs and is journaled as a lane that never started (Story 71.10), naming the red lane (Story 71.12)."""
+    """Review nit: herald (holding the docs-site key) goes red; the stop ends the run, so nothing that would only feed
+    cancelled dependents starts: after-herald and pages-build are journaled as lanes that never started (Story 71.10),
+    naming the red lane (Story 71.12). Since steward Story 117.2 the install takes the first docs-site turn whenever it
+    is ready (herald Story 45.1), so here it runs green before herald's suite takes the key; its dependent pages-build
+    is still cancelled by the stop."""
     _write(
         tmp_path / "pixi.toml",
         _pixi(
@@ -411,17 +426,17 @@ def test_after_a_red_stop_no_lane_starts_even_one_pending_lanes_depend_on(tmp_pa
         )
         == preflight.EXIT_LANE_RED
     )
-    assert started == ["pyforge-herald-test"]
+    assert started == ["docs-site-install", "pyforge-herald-test"]
     by_task = {entry["task"]: entry for entry in _journal(tmp_path)["lanes"]}
     assert by_task["pyforge-herald-test"]["status"] == "red"
     assert (by_task["after-herald"]["status"], by_task["after-herald"]["cancelled_by"]) == (
         "cancelled",
         "pyforge-herald-test",
     )
-    install = by_task["docs-site-install"]
-    assert (install["status"], install["exit_code"], install["seconds"]) == ("cancelled", 0, 0.0)
-    assert (install["cancelled_by"], install["cancelled_by_environment"]) == (
+    assert by_task["docs-site-install"]["status"] == "ok"
+    build = by_task["pages-build"]
+    assert (build["status"], build["exit_code"], build["seconds"]) == ("cancelled", 0, 0.0)
+    assert (build["cancelled_by"], build["cancelled_by_environment"]) == (
         "pyforge-herald-test",
         by_task["pyforge-herald-test"]["environment"],
     )
-    assert by_task["pages-build"]["status"] == "cancelled"

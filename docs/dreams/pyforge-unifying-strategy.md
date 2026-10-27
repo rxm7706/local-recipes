@@ -135,7 +135,7 @@ authoritative. Build-target mermaid only in the living file.
 Historical 10-layer / `services/` / `:800x` illustration, sizing, station
 reviews, extended Grounding (2026-08-30), fleet evidence, and realization
 entries through 2026-08-24:
-[`archive/pyforge-unifying-strategy-2026-08-23-topology.md`](archive/pyforge-unifying-strategy-2026-08-23-topology.md).
+[`archive/docs/dreams/pyforge-unifying-strategy-2026-08-23-topology.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/pyforge-unifying-strategy-2026-08-23-topology.md>).
 
 ## The Dream
 
@@ -465,7 +465,7 @@ Station APIs live at ``/stations/<name>/api/v<N>/`` (not bare ``/api/v1``). Exam
 
 ## Pixi environment matrix (measured)
 
-<!-- pixi-env-matrix:begin lock-sha256=ea1f95e75f0db54a -->
+<!-- pixi-env-matrix:begin lock-sha256=e7dfa07d7a0db74f -->
 
 Measured from ``pixi.lock`` (not a cross-minor solver benchmark). Regenerate with ``python scripts/pixi_env_matrix.py --update --dream docs/dreams/pyforge-unifying-strategy.md`` after lock changes.
 
@@ -484,23 +484,23 @@ Measured from ``pixi.lock`` (not a cross-minor solver benchmark). Regenerate wit
 | ``local-recipes`` | ``3.14.*`` | 1,157 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``mcp-host`` | ``3.14.*`` | 170 | ``linux-64`` |
 | ``osx`` | ``3.14.*`` | 252 | ``osx-arm64-min`` |
-| ``platform-ci-test`` | ``3.14.*`` | 371 | ``linux-64`` |
+| ``platform-ci-test`` | ``3.14.*`` | 373 | ``linux-64`` |
 | ``platform-dev`` | ``3.14.*`` | 608 | ``linux-64``, ``osx-arm64-min`` |
 | ``platform-object-storage`` | ``3.14.*`` | 27 | ``linux-64`` |
-| ``pyforge-atlas`` | ``3.14.*`` | 471 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-atlas`` | ``3.14.*`` | 472 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-ci`` | ``3.14.*`` | 106 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-container`` | ``3.14.*`` | 649 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-container`` | ``3.14.*`` | 650 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-core`` | ``3.14.*`` | 42 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-doctor`` | ``3.14.*`` | 101 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-foundry-full`` | ``3.14.*`` | 726 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-foundry-full-stack`` | ``3.14.*`` | 736 | ``linux-64`` |
+| ``pyforge-doctor`` | ``3.14.*`` | 102 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-foundry-full`` | ``3.14.*`` | 727 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-foundry-full-stack`` | ``3.14.*`` | 737 | ``linux-64`` |
 | ``pyforge-guild`` | ``3.14.*`` | 296 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-herald`` | ``3.14.*`` | 192 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
-| ``pyforge-marshal`` | ``3.15.*`` | 124 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-herald`` | ``3.14.*`` | 193 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-marshal`` | ``3.15.*`` | 137 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-mason`` | ``3.14.*`` | 140 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-scribe`` | ``3.14.*`` | 118 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-scribe-pg`` | ``3.14.*`` | 126 | ``linux-64``, ``osx-arm64-min`` |
-| ``pyforge-steward`` | ``3.14.*`` | 112 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
+| ``pyforge-steward`` | ``3.14.*`` | 115 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-testing-kit`` | ``3.14.*`` | 53 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``pyforge-warden`` | ``3.14.*`` | 170 | ``linux-64``, ``osx-arm64-min``, ``win-64`` |
 | ``python-agent-platform`` | ``3.14.*`` | 583 | ``linux-64``, ``osx-arm64-min`` |
@@ -512,12 +512,12 @@ Measured from ``pixi.lock`` (not a cross-minor solver benchmark). Regenerate wit
 ## Fleet conventions (one vocabulary)
 
 Contract is Grounding (2026-08-30). Ten-row evidence table:
-[archive § Fleet conventions](archive/pyforge-unifying-strategy-2026-08-23-topology.md).
+[archive § Fleet conventions](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/pyforge-unifying-strategy-2026-08-23-topology.md>).
 
 ## Living names (`python-<role>-<class>`)
 
 Formula: `python-<role>-<class>`. Full map:
-[archive § Living names](archive/pyforge-unifying-strategy-2026-08-23-topology.md).
+[archive § Living names](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/pyforge-unifying-strategy-2026-08-23-topology.md>).
 Destination: **`python-foundry`**; mount **`src/platform/`**; eight stations.
 
 ## Cutover to `python-foundry` (build target, 2026-09-04)
@@ -929,7 +929,7 @@ list is their decomposition input. None of this waits on B, and none of it flips
 
 ## Realization log
 
-Entries through 2026-08-31: [archive § Realization log (historical)](archive/pyforge-unifying-strategy-2026-08-23-topology.md).
+Entries through 2026-08-31: [archive § Realization log (historical)](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/pyforge-unifying-strategy-2026-08-23-topology.md>).
 
 - **2026-09-01** — Folded `pyforge-target-monorepo` (tree + phases 0–6) and
   `pyforge-foundry-unifying-architecture` (`python-<role>-<class>`) into this

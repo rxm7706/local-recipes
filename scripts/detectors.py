@@ -30,7 +30,7 @@ SCOPE, declared by each detector rather than inferred here:
 The split is not an inconvenience to route around. It is the factory's missing
 observation plane showing up as a deployment constraint: the runtime detectors
 are precisely the ones with nowhere to run, which is the gap
-docs/dreams/fidelity-enforcement.md exists to close.
+archive/docs/dreams/fidelity-enforcement.md exists to close.
 
 EXIT CODES, and the rule that governs them:
 

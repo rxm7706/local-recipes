@@ -2,7 +2,7 @@
 id: SPEC-pyforge-core
 spec: pyforge-core
 status: ready
-owner-dream: docs/dreams/pyforge-core.md
+owner-dream: archive/docs/dreams/pyforge-core.md
 surface:
   - src/shared/packages/pyforge-core/**            # net-new, not yet created
   # DW-FU-20-2 fix (2026-09-07): the prior single-line brace-expansion glob
@@ -28,8 +28,8 @@ surface-drift-exclude:
   # this spec's own drift tracking for these specific files is off.
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/publisher_host.py   # also governed by pyforge-marshal/spec-run-state-one-publisher
   - src/shared/packages/pyforge-core/src/pyforge/core/client.py   # also governed by pyforge-steward/spec-pyforge-unifying-strategy
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py   # also governed by pyforge-marshal/spec-pyforge-marshal
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py   # also governed by pyforge-marshal/spec-pyforge-marshal
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/model_cost.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/tier_routing.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
@@ -38,7 +38,7 @@ surface-drift-exclude:
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py   # also governed by pyforge-steward/spec-pyforge-steward (Story 59.2)
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/status_body_consistency.py   # also governed by pyforge-steward/spec-pyforge-steward (Story 59.2)
 sources:
-  - ../../../../../../docs/dreams/pyforge-core.md
+  - ../../../../../../archive/docs/dreams/pyforge-core.md
   - ../../research/technical-pyforge-unification-2026-08-08.md   # § 7 duplication census — figures superseded, see Assumptions
 open_questions:
   - "Q1 — does the station roster belong in pyforge-core at all? It is the one census entry whose canonical home already exists (bmad_drift_check.STATIONS, imported rather than mirrored by generate.py). Moving it into a package that ships to conda would give a stdlib-only detector a package dependency it does not have today. Decide before CAP-4, not during."

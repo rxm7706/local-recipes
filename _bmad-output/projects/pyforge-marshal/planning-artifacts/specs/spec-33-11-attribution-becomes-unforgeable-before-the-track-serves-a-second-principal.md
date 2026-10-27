@@ -3,6 +3,13 @@ title: '33.11: Attribution becomes unforgeable before the Track serves a second 
 type: 'feature'
 created: '2026-09-18'
 status: 'blocked'
+flag:
+  key: pyforge.marshal.attribution_unforgeable
+  provider: openfeature-file
+  default: {production: off, staging: off, dev: off}
+  scope: global
+  fallback: "attribution is recorded as today, unsigned"
+  cleanup: 90 days after ON in every environment (Q4)   # retrofit block (spec-feature-flag-governance CAP-7, operator ruling R6 of 2026-10-26): the key joins the tree when this story builds
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md

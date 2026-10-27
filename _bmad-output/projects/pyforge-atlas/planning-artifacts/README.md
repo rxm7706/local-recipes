@@ -18,7 +18,6 @@ planning-artifacts/
 │   │   ├── catalog-contract.md      #   companion: 7 pipelines × 86 datasets, TTLs, identity
 │   │   ├── degradation-contract.md  #   companion: the 3 markers, the exit projection
 │   │   └── gate-contract.md         #   companion: the 7 gates
-│   ├── spec-upstream-discovery/     # a second Spec kernel — trending / org-audit ingestion
 │   └── spec-<story>.md × 47         # per-story specs (tracked, durable — never Tier-3)
 ├── prds/prd-pyforge-atlas-2026-07-17/
 │   ├── prd.md, addendum.md, .memlog.md, review-*.md, validation-report.{md,html}

@@ -1,6 +1,6 @@
 # Chain-Currency Runbook — the planning-spine reconciler sweep
 
-Dream: `docs/dreams/chain-currency-sweep.md` (owner: doctor). Detector side: the
+Dream: `archive/docs/dreams/chain-currency-sweep.md` (owner: doctor). Detector side: the
 chain-layers audit (`pixi run -e local-recipes chain-layers-audit-check -- --project
 <slug>`, Stories 17-3/21-1, FR-150/FR-192 CAP-3). This runbook is the reconciler side —
 the marshal `SYNC-RUNBOOK.md` two-layer pattern generalized to the fleet's planning
@@ -287,3 +287,25 @@ Regenerating a board view is optional confirmation, not the measure.
   Tier 3. The truth-up found three gaps the finding did not name, recorded as rows and not repaired: `pyforge-deps-test`
   runs for no atlas change, `steward-test` misses the station `src/` its guild-env test reads, and the two `mypy` lanes
   share one cache.
+
+- **Run 2026-10-25 (marshal) — 1 finding cleared, single station.** Entry: pyforge-marshal `staleness`, `feeds
+  code→retro` (Story 103.1 moved the package `pyproject.toml` to 2026-10-25 with `mcp>=2.2.0`; the last retro was
+  2026-10-11). Exit: `chain_currency_sweep_check.py --project pyforge-marshal` exit 0. Remedy: a station retro over
+  Epics 103–105 (`planning-artifacts/retros/retro-pyforge-marshal-2026-10-25.md`), and the `epic-103-retrospective` and
+  `epic-104-retrospective` keys moved to `done` through a worktree-local feed and `sprint-ledger-sync`; landed with
+  Story 105.1's PR (#2314). Deviation: written by hand, not `bmad-retrospective -H`, for the reason the 2026-10-15 atlas
+  run gives. The retro found two defects the finding did not name, recorded as candidate fix stories and not repaired:
+  a `claude`-profile run's verify-fix turn launched `cursor-agent`, and a cached local pixi accepted a lock that every CI
+  runner refused.
+
+- **Run 2026-10-25 (atlas) — 1 finding cleared, single station.** Entry: pyforge-atlas `staleness` with three edges:
+  `feeds code→retro` (marshal Story 103.1 declared `numpy>=2.5.3` in the package `pyproject.toml` on 2026-10-25; the
+  last retro was 2026-10-15) and `behind-code` on the PRD and the spine (both 2026-10-22). Exit:
+  `chain_currency_sweep_check.py --project pyforge-atlas` exit 0. Remedy: a station retro over Epics 30, 32–38 and Story
+  27.6 (`planning-artifacts/retros/retro-pyforge-atlas-2026-10-25.md`); PRD and spine `## Currency reconciliation —
+  2026-10-25` (no FR or AD change); the `epic-N-retrospective` keys for 30, 32–35, 37 and 38 moved to `done` through a
+  worktree-local feed and `sprint-ledger-sync`. Deviation: drafted by a subagent and checked against the code before
+  commit. The truth-up found what the finding did not name, recorded and not repaired: AD-3 counts ten pipelines where
+  twelve are registered, the MCP `list_pipelines` text calls its eight-name trigger set the registry,
+  `test_dependency_completeness.py` runs on no atlas change (the third recurrence of `DW-atlas-retro-2026-10-15-4`),
+  and `brotli` is still undeclared (`DW-atlas-34-5-1`).

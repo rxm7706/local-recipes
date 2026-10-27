@@ -14,7 +14,7 @@ replan:
   story: "0.1"
   note: "Story-0.1 replan executed: Epic 6 (multi-axis expansion) added from the spec's v1 tier; the spec (docs/specs/pyforge-warden.md) is upstream and wins conflicts."
   rebaseline: "2026-07-16 (D12 + reviewer gates): v1 absorbs the axis gates (flag-activated), EPSS, baseline & grandfathering, fix-PR actuator — Epic 6 = stories 6.1-6.10 (FR32-FR40); story 2.6 split from 2.1; 31 stories total."
-updated: '2026-10-11'   # AMENDED 2026-10-11 (leak guard terms): Epic 18 / Story 18.1 minted (fix under CAP-26, no CAP, no flag, Deps S-16.5; ledger backlog): the leak guard forbids the listed terms everywhere and the organisation's name only in warden's own files, by the operator's ruling "Drop org from terms (Recommended)"; § Currency reconciliation — 2026-10-11 extended. Prior: AMENDED 2026-10-11 (operator rulings): Story 16.1 re-scoped to an operator-designated github.com organisation read through the operator's gh login (key kept, title changed, steward 75.1 no longer a dep; the target is never named in a tracked file) and Story 16.5 minted (the items of the operator-designated GitHub Projects, CAP-26 / FR-43, Deps S-16.1); arch->epics validation after the spine's 2026-10-11 re-stamp; § Currency reconciliation — 2026-10-11 appended. Prior: RE-STAMPED 2026-10-10: arch->epics cascade after the spine's 2026-10-10 re-stamp (Stories 15.1 and 16.1's gates cleared, their keys flipped blocked -> backlog by operator ruling); no epic or story added or changed; § Currency reconciliation — 2026-10-10 appended. Prior: AMENDED 2026-10-07 (subprocess seam): Story 11.3 minted (fix, no CAP, no flag), reopening Epic 11: the TEA advisory spawns through engines.py. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (arch->epics edge) after the spine's 2026-10-07 re-stamp (Story 17.1 landing, Stories 14.1-14.2); validation note appended (§ Currency reconciliation — 2026-10-07); no epic or story restructured, no status changed. Prior: AMENDED 2026-10-03 (Phase 4+5 landing): Story 17.1's seven follow-up-review rows withdrawn by operator ruling (they run as review batches); it closes 4 rows. Prior: RE-STAMPED 2026-10-03 (Phase 4+5): Epic 17 / Story 17.1 minted (fix, no CAP): warden's 11 open medium and low deferrals, operator rulings of 2026-10-03. Prior: RE-STAMPED 2026-09-28: Epics 14-16 / Stories 14.1-14.3, 15.1, 16.1-16.4 minted (spec-pyforge-warden CAP-24..26, FR-41..FR-43); § Currency reconciliation — 2026-09-28 appended; Epic 9's canopy FR citations qualified. Prior 2026-09-27 (night): Epic 13 / Story 13.1 minted (spec-pyforge-warden CAP-23). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (py-rattler test-oracle floor 0.26.0 → 0.25.0 for the pyforge-foundry-full union solve; surface reconcile); no requirement/AD/story delta. Prior 2026-09-17   # 2026-09-14 chain-currency sweep cascade (arch->epics edge); validation note appended, no epic or story restructured
+updated: '2026-10-27'   # AMENDED 2026-10-27 (absorbed Spec folders to the archive home): Epic 24 / Story 24.1 minted in-progress under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 3 absorbed Spec folders move to archive/<original path>; keys 24-1, epic-24 (in-progress) and epic-24-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync. Prior '2026-10-26'   # AMENDED 2026-10-26 (one archive home): Epic 23 / Story 23.1 minted done under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 4 archived satellite Dreams left docs/dreams/ for archive/docs/dreams/, their bodies verbatim in the station Dream; keys 23-1, epic-23 (done) and epic-23-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync. Prior '2026-10-26'   # AMENDED 2026-10-26 (Story 20.2 built): Story 20.2 and Epic 20 promoted to done in the story's PR (Status lines, story spec and ledger keys through the Tier-3 feed and sprint-ledger-sync); by the operator's ruling of 2026-10-26 (option A) the live story text spells NFR-R3.1/NFR-R3.2, NFR-P2/P3/P4, FR-30, FR-33 and FR-35 (the Epic 19 record keeps the spellings it describes); prd->epics cascade for the PRD's § Currency reconciliation — 2026-10-26 (Story 20.2); no other epic or story moved. Prior '2026-10-26'   # AMENDED 2026-10-26 (every requirement derives from a capability): Epic 20 / Story 20.1 (in-progress), Story 20.2 (backlog) minted under spec-one-chain-per-station CAP-5 as amended and CAP-3 (no CAP, no flag); keys 20-1, 20-2, epic-20 (in-progress) and epic-20-retrospective (optional) added; no other epic or story moved. Prior '2026-10-25'   # AMENDED 2026-10-25 (latest): Story 19.1 and Epic 19 promoted to done in the five-station FR-arrow chain PR after its independent review (Status lines, story spec and ledger keys through the Tier-3 feed and sprint-ledger-sync); no other epic or story moved. Earlier 2026-10-25: RE-STAMPED 2026-10-25 (the PRD's FR arrows were mapped by subsection, not traced): Epic 19 / Story 19.1 added (a chore under spec-one-chain-per-station CAP-5 and CAP-3, no CAP, no flag; operator ruling "Do rows 1-5 in one PR"): six warden PRD FR arrows (four, then FR-34 and FR-36 on the independent review) are written to the Spec capabilities that realize them; keys 19-1 (backlog), epic-19 (backlog) and epic-19-retrospective (optional) added; arch->epics cascade for the spine's re-stamp of the same date; no other epic or story moved. Prior '2026-10-11'   # AMENDED 2026-10-11 (leak guard terms): Epic 18 / Story 18.1 minted (fix under CAP-26, no CAP, no flag, Deps S-16.5; ledger backlog): the leak guard forbids the listed terms everywhere and the organisation's name only in warden's own files, by the operator's ruling "Drop org from terms (Recommended)"; § Currency reconciliation — 2026-10-11 extended. Prior: AMENDED 2026-10-11 (operator rulings): Story 16.1 re-scoped to an operator-designated github.com organisation read through the operator's gh login (key kept, title changed, steward 75.1 no longer a dep; the target is never named in a tracked file) and Story 16.5 minted (the items of the operator-designated GitHub Projects, CAP-26 / FR-43, Deps S-16.1); arch->epics validation after the spine's 2026-10-11 re-stamp; § Currency reconciliation — 2026-10-11 appended. Prior: RE-STAMPED 2026-10-10: arch->epics cascade after the spine's 2026-10-10 re-stamp (Stories 15.1 and 16.1's gates cleared, their keys flipped blocked -> backlog by operator ruling); no epic or story added or changed; § Currency reconciliation — 2026-10-10 appended. Prior: AMENDED 2026-10-07 (subprocess seam): Story 11.3 minted (fix, no CAP, no flag), reopening Epic 11: the TEA advisory spawns through engines.py. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (arch->epics edge) after the spine's 2026-10-07 re-stamp (Story 17.1 landing, Stories 14.1-14.2); validation note appended (§ Currency reconciliation — 2026-10-07); no epic or story restructured, no status changed. Prior: AMENDED 2026-10-03 (Phase 4+5 landing): Story 17.1's seven follow-up-review rows withdrawn by operator ruling (they run as review batches); it closes 4 rows. Prior: RE-STAMPED 2026-10-03 (Phase 4+5): Epic 17 / Story 17.1 minted (fix, no CAP): warden's 11 open medium and low deferrals, operator rulings of 2026-10-03. Prior: RE-STAMPED 2026-09-28: Epics 14-16 / Stories 14.1-14.3, 15.1, 16.1-16.4 minted (spec-pyforge-warden CAP-24..26, FR-41..FR-43); § Currency reconciliation — 2026-09-28 appended; Epic 9's canopy FR citations qualified. Prior 2026-09-27 (night): Epic 13 / Story 13.1 minted (spec-pyforge-warden CAP-23). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (py-rattler test-oracle floor 0.26.0 → 0.25.0 for the pyforge-foundry-full union solve; surface reconcile); no requirement/AD/story delta. Prior 2026-09-17   # 2026-09-14 chain-currency sweep cascade (arch->epics edge); validation note appended, no epic or story restructured · AMENDED 2026-10-26 (one-chain shape): Epic 21 / Story 21.1 minted and done in the same PR (chore under spec-one-chain-per-station CAP-11: the archived compliance-gates Spec folder moves to the archive home); no requirement, decision or AD moved
 currency_review: "Reviewed 2026-09-14 (chain-currency sweep cascade, arch->epics edge, fired by the spine's 2026-09-14 re-stamp) — validation note appended at end of file (§ Currency validation — 2026-09-14): ledger re-measured with the real parser at 49/49 stories done across 12/12 epics, which supersedes the Spec's own dated 43-key/11-epic snapshot; the PRD's newly recorded `review_required` gap is deliberately NOT minted as a story here because it is a schema/behaviour change owing a Dream/Spec; the station's coherence checkpoint stays red on three operator-owned open questions. No epic or story restructured. Prior: Reviewed 2026-09-09 (Epic 12 added: spec-golden-path-conda-blind-spot CAP-1..5 decomposed after the operator answered its five open questions in the fleet readiness decision batch, plus Story 12.1 minted FIRST as the missing regression guard on the deploy verifier's clean-only refusal; gate verdict invariant unchanged — Warden stays the sole verdict). Reviewed 2026-09-06 (Epic 11 added: spec-bmad-suite-lifecycle warden relays — two advisory lenses, Stories 11.1–11.2; gate verdict invariant unchanged). Reviewed 2026-08-26 — validated against the architecture's 2026-08-26 reconciliation (post-v1 surfaces + as-built divergences). Epics 1-10 / 41 stories confirmed 1:1 with sprint-status-ledger.yaml, all done; Canopy/operating-model obligation sections re-verified as landed. Validation note appended; no story headings or statuses changed."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -58,11 +58,11 @@ Complete epic and story breakdown for **pyforge-warden** — a non-interactive C
 
 **G. SBOM & Machine Contract** — FR27 CycloneDX 1.6 SBOM (source-registry purls, self-declared partiality) · FR28 stable exit-code contract.
 
-**H. CLI Operation & Configuration** — FR29 one non-interactive command → one exit code · FR30 dual `[tool.pyforge-warden]` config (pyproject+pixi, per-key precedence, owns hygiene→status + CVSS-threshold tables) · FR31 `--version`/`--help` stable contract.
+**H. CLI Operation & Configuration** — FR29 one non-interactive command → one exit code · FR-30 dual `[tool.pyforge-warden]` config (pyproject+pixi, per-key precedence, owns hygiene→status + CVSS-threshold tables) · FR31 `--version`/`--help` stable contract.
 
-**I. License Axis (Axis 3 — added 2026-07-15; gate → v1 per D12)** — FR32 SPDX license enrichment (`license-expression`; conda `about:` pre-build + PyPI `importlib.metadata`; no source scan; unconfigured → `warn`) · FR33 *(v1, flag-activated)* `--allow/--deny-licenses` gate: denied → policy-violation, unknown → indeterminate.
+**I. License Axis (Axis 3 — added 2026-07-15; gate → v1 per D12)** — FR32 SPDX license enrichment (`license-expression`; conda `about:` pre-build + PyPI `importlib.metadata`; no source scan; unconfigured → `warn`) · FR-33 *(v1, flag-activated)* `--allow/--deny-licenses` gate: denied → policy-violation, unknown → indeterminate.
 
-**J. Currency Axis (Axis 4 — added 2026-07-15; gate → v1 per D12)** — FR34 tiered currency (bundled LTS registry → endoflife.date → N/N-1 → unknown; deps + `runtime_python`; per-mode tier matrix; bundled-data `snapshot_at`+`max_age_ok`; ADD/UPDATE fleet-only; unconfigured → `warn`) · FR35 *(v1, flag-activated)* `--max-lag`/`--require-lts`/`--fail-on-eol`, freshness-preconditioned.
+**J. Currency Axis (Axis 4 — added 2026-07-15; gate → v1 per D12)** — FR34 tiered currency (bundled LTS registry → endoflife.date → N/N-1 → unknown; deps + `runtime_python`; per-mode tier matrix; bundled-data `snapshot_at`+`max_age_ok`; ADD/UPDATE fleet-only; unconfigured → `warn`) · FR-35 *(v1, flag-activated)* `--max-lag`/`--require-lts`/`--fail-on-eol`, freshness-preconditioned.
 
 **K. Security Enrichment & Axis Mechanics (added 2026-07-15; EPSS → v1 per D12 2026-07-16)** — FR36 KEV **+ EPSS** enrichment (`kev`,`kev_date`,`epss{score,percentile}`) + `--fail-on-kev` + `--min-epss` (both v1; absent/stale feed under an active policy → `indeterminate`, never a silent no-op; per-feed provenance) · FR37 unconfigured-axis visibility (`unknown`/`denied`/`eol` → `warn` rung, never silent clean; configuring an axis's flags activates its v1 gate) · FR38 the one versioned schema amendment (per-axis `gating` bool, license/currency sections, `kev_date`/`epss` object, per-feed provenance; `report.py` + schema + exact-13 test + fixtures).
 
@@ -73,7 +73,7 @@ Complete epic and story breakdown for **pyforge-warden** — a non-interactive C
 - **C0 — Gate-Integrity invariant (cross-cutting acceptance property):** never false-green; N adversarial fixtures → 0 exit-0.
 - **Reliability:** NFR-R1 corpus 0 uncaught exceptions (~1,950 files) · R2 ratcheted unparseable-rate baseline · R3a no repo/host mutation · R3b two-tier determinism (decision-deterministic default; byte-identical `--deterministic`) · R5 bounded engine timeout.
 - **Security:** S1 no execution of untrusted input (AST-denylist, no jinja-render, safe_load only) · S2 no silent egress (socket guard) · S3 waiver untrusted + least-privilege · S4 no repo writes + secure temp · S5 ReDoS/resource bound · S6 engine-input purity (no requirements/argv injection) · S7 output neutralization (schema-aware encoder) · S8 trusted-input integrity (fresh+authentic DB) · **S9 bundled-data max-age (added 2026-07-15: `snapshot_at`+`max_age_ok` on LTS-registry/map-derived verdicts; stale bundled data never silently `supported`)**.
-- **Performance:** NFR-P-warm (overhead ≤ ~2s p95, engines-stubbed) · P-cold (cacheable first-run DB) · P-concurrency (engines parallel, no shared state, O(project)).
+- **Performance:** NFR-P2 (warm overhead ≤ ~2s p95, engines-stubbed) · NFR-P3 (cold: cacheable first-run DB) · NFR-P4 (concurrency: engines parallel, no shared state, O(project)).
 - **Interoperability:** I1 schema conformance (report JSON schema, CycloneDX 1.6, purl) · I2 schema-version field + frozen exit enum `{0,1,2,130}` · I3 machine-output purity (stdout = one doc or empty).
 - **Usability:** U1 actionable diagnostics (fail-with-a-fix) · U2 safe-by-default + warn-only on-ramp.
 - **Portability:** C1 Python ≥ 3.12; engines on PATH in a tested version range; pixi ≥ 0.72.2.
@@ -89,7 +89,7 @@ Complete epic and story breakdown for **pyforge-warden** — a non-interactive C
 - **Bundled `data/conda_pypi_map.json` asset** — generate from the atlas `export-purls` conda↔pypi TSVs (powers the Gap-C `pypi_identity` predicate that prevents the silent `pytorch`→`torch` false-green).
 - **The E1 extraction is non-rendering parse-as-data** + a **supported-construct matrix** (compiler/stdlib→build-tool-exclude, pin_subpackage→internal-exclude, selectors→union+mark, expr-logic→degrade) — an owned deliverable.
 - **4 first-story open items** (readiness gap analysis): (a) generate the conda→pypi map from the atlas; (b) pick the name-mapping confidence threshold (DEP001 block vs warn); (c) pick the coverage denominator formula; (d) confirm the osv offline-DB provisioning mechanism.
-- **Cross-cutting acceptance gates applied to EVERY story** (not a single "do security" story): **C0** (false-green=0 on the slice's fixtures) · **C0c — socket-deny (NFR-S2, no silent egress):** a deny-by-default socket harness landed in 1.2 — any egress during a scan is a hard test failure — self-enforcing for every future engine, plus visible ACs on 1.5 (osv/DB) + 2.2 (extraction) · **verdict.py sole-ownership guard** (a static check fails CI if any module other than `verdict.py` invokes an exit primitive with a guarded exit value or materializes the rung ordering as an ordered sequence literal — stories *feed* rungs, only verdict.py *projects*; wording amended 2026-07-13, see story 1.1 AC 6) · the **NFR-S\*** suite (AST-denylist for any new `extract/` module, output-neutralization, engine-input purity, ReDoS bound) · **NFR-R1/R2** (0 uncaught exceptions + ratcheted rate on any new corpus surface) · **NFR-R3b** (twice-run byte-identical in `--deterministic`) · **differential-oracle** (E1 dep-set ⊇ rattler-build/conda-build render; *skip-if-renderer-unavailable* at fixture scale in 2.2, matured to corpus scale in 5.2).
+- **Cross-cutting acceptance gates applied to EVERY story** (not a single "do security" story): **C0** (false-green=0 on the slice's fixtures) · **C0c — socket-deny (NFR-S2, no silent egress):** a deny-by-default socket harness landed in 1.2 — any egress during a scan is a hard test failure — self-enforcing for every future engine, plus visible ACs on 1.5 (osv/DB) + 2.2 (extraction) · **verdict.py sole-ownership guard** (a static check fails CI if any module other than `verdict.py` invokes an exit primitive with a guarded exit value or materializes the rung ordering as an ordered sequence literal — stories *feed* rungs, only verdict.py *projects*; wording amended 2026-07-13, see story 1.1 AC 6) · the **NFR-S\*** suite (AST-denylist for any new `extract/` module, output-neutralization, engine-input purity, ReDoS bound) · **NFR-R1/R2** (0 uncaught exceptions + ratcheted rate on any new corpus surface) · **NFR-R3.2** (twice-run byte-identical in `--deterministic`) · **differential-oracle** (E1 dep-set ⊇ rattler-build/conda-build render; *skip-if-renderer-unavailable* at fixture scale in 2.2, matured to corpus scale in 5.2).
 
 ### UX Design Requirements
 
@@ -122,7 +122,7 @@ A conda-feedstock/pixi maintainer gets the gate on their **source** manifest (re
 ### Epic 3: Policy control + auditable waivers + warn-only
 A team tunes the gate and files auditable, expiring, time-boxed exceptions without lying about coverage. Makes E1's `Policy` interface **configurable + waivable** — per-repo config precedence, coverage-floor gate, the DEP001-block confidence threshold; waivers-as-code (read-not-written, expiry re-block, review routing); the warn-only adoption mode.
 **Stories (3):** 3.1 configurable policy · 3.2 auditable expiring waivers (FR24) · 3.3 waiver-expiry re-block + warn-only.
-**FRs covered:** FR19, FR23, FR24, FR25, FR26, FR30
+**FRs covered:** FR19, FR23, FR24, FR25, FR26, FR-30
 
 ### Epic 4: Machine contract + CycloneDX SBOM
 The CI pipeline / cf_atlas consumes a stable, versioned report **and** an honest CycloneDX 1.6 SBOM. `sbom.py` as a **separate read-only projection over the frozen inventory** (source-registry purls, self-declared partiality). *(**Dissolved 4.2** per the roundtable: schema-conformance is asserted by a test in 1.1, not built as a story; pure-JSON hardening lives in 1.8's renderer. E4 = the one genuinely-additive value story.)*
@@ -202,7 +202,7 @@ So that 1.5, 2.5, and CI have a bounded, reproducible vulnerability-data substra
 
 **Acceptance Criteria:**
 
-**Given** the offline-first constraint (NFR-S2/S8), **When** the spike concludes, **Then** a **decision record** documents the chosen mechanism (bundled-conda-DB vs `--offline` + a provisioned local DB), how "stale" is defined (feeds FR12), and the trust-anchor/authenticity check (NFR-S8). **And** a **hermetic fixture DB** the conformance harness can consume offline is produced. **And** the decision record documents the **DB size + cache-key contract** so runs #2..N are warm and air-gapped mode is pre-provisioned/fail-loud (NFR-P-cold — owned here).
+**Given** the offline-first constraint (NFR-S2/S8), **When** the spike concludes, **Then** a **decision record** documents the chosen mechanism (bundled-conda-DB vs `--offline` + a provisioned local DB), how "stale" is defined (feeds FR12), and the trust-anchor/authenticity check (NFR-S8). **And** a **hermetic fixture DB** the conformance harness can consume offline is produced. **And** the decision record documents the **DB size + cache-key contract** so runs #2..N are warm and air-gapped mode is pre-provisioned/fail-loud (NFR-P3 — owned here).
 
 **Given** the decision, **When** downstream stories consume it, **Then** it explicitly gates **1.5** (osv engine) and **2.5** (stale-DB semantics; ref corrected 2026-07-16 post-renumber) — and **not** 1.3 (deptry has no OSV surface).
 
@@ -371,7 +371,7 @@ So that the gate fits our risk posture.
 
 **Acceptance Criteria:**
 
-**Given** a `[tool.pyforge-warden]` table in `pyproject.toml` and/or `pixi.toml`, **When** loaded, **Then** config resolves with **per-key precedence** (pyproject wins; conflicts surfaced to stderr, never fail the build) and CLI flags override (FR30).
+**Given** a `[tool.pyforge-warden]` table in `pyproject.toml` and/or `pixi.toml`, **When** loaded, **Then** config resolves with **per-key precedence** (pyproject wins; conflicts surfaced to stderr, never fail the build) and CLI flags override (FR-30).
 
 **Given** config values, **When** applied, **Then** `--fail-on`, the CVSS thresholds, the DEP001-block confidence threshold, and the coverage-floor (`--fail-under-coverage`, default off) all move the verdict (FR18/FR19 — incl. FR19's repurposed roles: the under-`--warn-only` coverage guardrail and the ceiling on waived-away `indeterminate` surface); a config-key type error → typed `config-validation` error. **And** the hygiene→status + CVSS-threshold tables live in the `ConfigLoader`.
 
@@ -449,7 +449,7 @@ So that it never flaps and I never have to disable it.
 
 **Given** the corpus-provisioning task (its **first** step — harvest + pin the ~1,950-file corpus so 5.2's gates aren't silently absorbing a fixture-harvesting spike), **When** it completes, **Then** the corpus is a committed, versioned fixture set **augmented with a small adversarial out-of-repo recipe set** (exotic selectors, `{% for %}`, unicode, oversized files — sourced in part from **`prefix-dev/rattler-build-parser-tests`**, the renderer's own parser-stress corpus; the in-repo corpus is a friendly, CFE-curated distribution; added 2026-07-12).
 
-**Given** the registered axis producers (deptry + osv, plus the E6 license/currency producers once landed — widened 2026-07-15), **When** a scan runs, **Then** all axes run **in parallel** with no shared mutable state, per-invocation cost O(project) not O(fleet), and our overhead ≤ ~2s p95 on the reference corpus (engines-stubbed), **measured on a named reference machine recorded with the result** (NFR-P-warm/concurrency).
+**Given** the registered axis producers (deptry + osv, plus the E6 license/currency producers once landed — widened 2026-07-15), **When** a scan runs, **Then** all axes run **in parallel** with no shared mutable state, per-invocation cost O(project) not O(fleet), and our overhead ≤ ~2s p95 on the reference corpus (engines-stubbed), **measured on a named reference machine recorded with the result** (NFR-P2/concurrency).
 
 **Given** the full corpus, **When** the regression gate runs, **Then** **0 uncaught exceptions**, a **committed ratcheted `unparseable_rate` baseline** (CI fails on regression), the **differential-oracle passes across all formats** at corpus scale, and twice-run is byte-identical in `--deterministic` (NFR-R1/R2/R3b). **And** an out-of-range engine version fails loud (NFR-C1). **And** the **dogfood gate** holds (spec DoD): the tool runs clean on this repo's own `pixi.toml`/`pyproject.toml` via a committed `pixi run` task — exit 0 on the known-clean state, non-zero on a seeded-violation fixture (added 2026-07-12).
 
@@ -458,7 +458,7 @@ So that it never flaps and I never have to disable it.
 
 ## Epic 6: Multi-axis expansion — license, currency, KEV/EPSS & adoption (added 2026-07-15; re-baselined 2026-07-16, D12)
 
-The spec's four-axis v1 **with its gates**, delivered after E4 and before E5. One sanctioned schema amendment (6.1) unlocks the two new axis producers **with their flag-activated gates** (6.2/6.3, registered behind E1's existing `Engine` seam — the axis is an open string, no new interface work per OD7), the KEV feed + gate (6.4), the two-mode policy wiring (6.5), the engine version-range distribution gate (6.6), the EPSS feed + `--min-epss` gate (6.7), baseline & grandfathering (6.8), and the opt-in fix-PR actuator (6.9). Every story carries the standing cross-cutting gates (C0, C0c socket-deny, verdict.py sole-ownership, NFR-S*, NFR-R3b). Contract source: `docs/specs/pyforge-warden.md` §§ Reconciliation (D12), FR-K1/FR-L*/FR-C*/FR-B1/FR-A1 (canonical FR32–FR40), Release map.
+The spec's four-axis v1 **with its gates**, delivered after E4 and before E5. One sanctioned schema amendment (6.1) unlocks the two new axis producers **with their flag-activated gates** (6.2/6.3, registered behind E1's existing `Engine` seam — the axis is an open string, no new interface work per OD7), the KEV feed + gate (6.4), the two-mode policy wiring (6.5), the engine version-range distribution gate (6.6), the EPSS feed + `--min-epss` gate (6.7), baseline & grandfathering (6.8), and the opt-in fix-PR actuator (6.9). Every story carries the standing cross-cutting gates (C0, C0c socket-deny, verdict.py sole-ownership, NFR-S*, NFR-R3.2). Contract source: `docs/specs/pyforge-warden.md` §§ Reconciliation (D12), FR-K1/FR-L*/FR-C*/FR-B1/FR-A1 (canonical FR32–FR40), Release map.
 
 ### Story 6.1: The versioned `ComplianceReport` schema amendment
 
@@ -470,13 +470,13 @@ So that axes 3+4 and full KEV land without ad-hoc schema drift (FR38).
 
 **Given** the frozen v1 contract (story 1.1), **When** the amendment lands, **Then** `schema_version` bumps additively (staying `1.x` — `models.py`'s `_SCHEMA_VERSION_RE` pattern is honored, not widened), adding: a per-axis `gating` bool (computed by `config.py`, the single writer); `license` + `currency` report sections each carrying per-section coverage + provenance (FR15's widened per-axis form) (`{source, snapshot_at, max_age_ok}` — the bundled-data age fields, NFR-S9); **the license/currency finding-ID families + typed verdict encoding** (schema-validated fields — policy tables, waivers, and baselines key ONLY on these, never on free-text `indeterminate:` reason tokens); **the post-verdict `actuation` section** (FR40's slot); **the suppression rung-discriminator** (waiver-vs-baseline echo); `kev_date` on findings; `epss` widened to `{score, percentile}`; and per-feed KEV/EPSS provenance. **And** `report.py`'s assembly fails loud on a coverage claim for an unregistered axis (never a silent drop). **And** this story is a **HARD sprint dependency: no 6.x producer story may start before 6.1 is DONE**, and **6.1 itself is HARD-gated on story 6.10's decision record being DONE** — both gates encoded mechanically in `sprint-status.yaml` at regeneration (not a recommendation; numeric key order does NOT express this). **And** the coordinated update set is exactly: `report-schema.json` · `models.py` (+ `to_json_dict` render + sort keys) · `report.py` runtime self-validation + `_REPORT_AXES` · the exact-13 `Component` test (widened deliberately, with Gap-B merge/fold semantics defined for every new `Component` field) · fixtures. **And** no other story widens the schema — the producer re-closes behind this amendment (asserted by the conformance suite).
 
-**Given** a pre-amendment consumer reading a post-amendment report, **When** it validates, **Then** additive-only compatibility holds (the existing `test_additive_extra_fields_still_validate` property is preserved) and byte-identical determinism (`--deterministic`) still holds across the widened field set (NFR-R3b).
+**Given** a pre-amendment consumer reading a post-amendment report, **When** it validates, **Then** additive-only compatibility holds (the existing `test_additive_extra_fields_still_validate` property is preserved) and byte-identical determinism (`--deterministic`) still holds across the widened field set (NFR-R3.2).
 
 ### Story 6.2: License axis producer + gate flags (Axis 3)
 
 As a **compliance-conscious maintainer**,
 I want every resolved component to carry an honest SPDX license verdict, gateable the moment I configure a policy,
-So that license exposure is visible by default and blockable in v1 (FR32/FR33 — D12).
+So that license exposure is visible by default and blockable in v1 (FR32/FR-33 — D12).
 
 **Acceptance Criteria:**
 
@@ -484,13 +484,13 @@ So that license exposure is visible by default and blockable in v1 (FR32/FR33 �
 
 **Given** a bare uninstalled PyPI manifest and no license policy flags, **When** the axis runs, **Then** every unresolvable component is `unknown` — surfaced per FR37 via the `warn` rung (never a silent clean, never an unconfigured red gate) — and the axis's `AxisCoverage` reports honest `deps_assessed`/`deps_total`. **And** an installed/locked env resolves PyPI licenses via `importlib.metadata` (PEP 639 `License-Expression`, legacy `License`, trove classifiers). **And** no source scanning occurs (ScanCode-class deep-scan stays deferred).
 
-**Given** `--allow-licenses` and/or `--deny-licenses` (FR33 — v1, D12), **When** either flag is set, **Then** the flags **parse into the FR30 ConfigLoader policy tables** (CLI overrides config, per-key precedence) and `config.py` flips the license axis's `gating` bool — **this story's producer never feeds a rung above `warn`** — and 6.2 **delivers** the no-Status-above-warn producer meta-test as a parameterized suite over every registered axis producer (6.3 registers into it); the actual escalation (denied → `policy-violation`, unknown → `indeterminate`, never a silent clean) is **asserted end-to-end in story 6.5**, which solely owns it.
+**Given** `--allow-licenses` and/or `--deny-licenses` (FR-33 — v1, D12), **When** either flag is set, **Then** the flags **parse into the FR-30 ConfigLoader policy tables** (CLI overrides config, per-key precedence) and `config.py` flips the license axis's `gating` bool — **this story's producer never feeds a rung above `warn`** — and 6.2 **delivers** the no-Status-above-warn producer meta-test as a parameterized suite over every registered axis producer (6.3 registers into it); the actual escalation (denied → `policy-violation`, unknown → `indeterminate`, never a silent clean) is **asserted end-to-end in story 6.5**, which solely owns it.
 
 ### Story 6.3: Currency axis producer + gate flags (Axis 4)
 
 As a **platform owner tracking supportability**,
 I want tiered, age-honest currency verdicts for components and the Python runtime, gateable the moment I configure a policy,
-So that EOL exposure is visible by default and blockable in v1 (FR34/FR35 — D12).
+So that EOL exposure is visible by default and blockable in v1 (FR34/FR-35 — D12).
 
 **Acceptance Criteria:**
 
@@ -498,7 +498,7 @@ So that EOL exposure is visible by default and blockable in v1 (FR34/FR35 — D1
 
 **Given** edge mode (no atlas, offline default), **When** the tier ladder runs (LTS registry → cached endoflife.date → N/N-1 from channel data → `unknown`), **Then** tiers whose data is absent degrade to a **visible** `unknown` (FR37 `warn` rung), the per-mode tier matrix is honored, and the **ADD/UPDATE availability-at-N/N-1 finding is omitted with a coverage note** (fleet-mode only — it requires the estate's policy tier via `inventory-match`). **And** `runtime_python` currency is a first-class field. **And** the endoflife.date fetch follows the `_http.py` mirror-override pattern: offline default, opt-in online, never silent (NFR-S2).
 
-**Given** `--max-lag` / `--require-lts` / `--fail-on-eol` (FR35 — v1, D12), **When** any flag is set, **Then** the flags **parse into the FR30 ConfigLoader tables** and `config.py` flips the currency axis's `gating` bool — **this story's producer never feeds a rung above `warn`** (producer meta-test); escalation (`eol`/over-lag → `policy-violation`, `unknown` → `indeterminate`, **freshness-preconditioned**: a stale bundled registry under an active currency policy → `indeterminate`, never a pass — NFR-S9) is **asserted end-to-end in story 6.5**. **And** this story consumes `feeds.py` (6.4's skeleton) for the endoflife cache — it builds no private cache and computes no staleness itself.
+**Given** `--max-lag` / `--require-lts` / `--fail-on-eol` (FR-35 — v1, D12), **When** any flag is set, **Then** the flags **parse into the FR-30 ConfigLoader tables** and `config.py` flips the currency axis's `gating` bool — **this story's producer never feeds a rung above `warn`** (producer meta-test); escalation (`eol`/over-lag → `policy-violation`, `unknown` → `indeterminate`, **freshness-preconditioned**: a stale bundled registry under an active currency policy → `indeterminate`, never a pass — NFR-S9) is **asserted end-to-end in story 6.5**. **And** this story consumes `feeds.py` (6.4's skeleton) for the endoflife cache — it builds no private cache and computes no staleness itself.
 
 ### Story 6.4: KEV feed provisioning, enrichment & the `--fail-on-kev` gate
 
@@ -508,7 +508,7 @@ So that a KEV listing can never be silently missed (FR36).
 
 **Acceptance Criteria:**
 
-**Given** a provisioned KEV feed (cache layout, lifecycle, and max-age policy documented — the OSV-DB provisioning decision record `osv-db-offline-provisioning-decision.md` is the template), **When** a security finding matches a KEV-listed advisory on a pinned version, **Then** the finding carries `kev: true` (+ `kev_date` post-6.1) and the verdict blocks (`--fail-on-kev` is in the FR18 default) — exit 1. **And** this story delivers the **`feeds.py` skeleton** (ONE cache layout + ONE provenance shape + staleness/max-age defaults living in `feeds.py`, overridable only via the FR30 ConfigLoader) that 6.3 and 6.7 consume — axes never compute staleness. **And** KEV/EPSS enrichment mutates findings at exactly one pipeline position: inside the vuln producer, before policy dedup. **And** this story ships a **hermetic fixture KEV feed** (the 1.4 fixture-DB precedent) wired into the test harness, so the default-on `--fail-on-kev` policy never flips shipped E1/E2 fixtures to `indeterminate`. **And** the KEV tier's opt-out is named and testable: the FR30 config key `policy.fail_on_kev = false` (config/table-driven — the coarse `--no-fail-on-*` flag family stays retired), which makes the no-KEV-policy branch reachable.
+**Given** a provisioned KEV feed (cache layout, lifecycle, and max-age policy documented — the OSV-DB provisioning decision record `osv-db-offline-provisioning-decision.md` is the template), **When** a security finding matches a KEV-listed advisory on a pinned version, **Then** the finding carries `kev: true` (+ `kev_date` post-6.1) and the verdict blocks (`--fail-on-kev` is in the FR18 default) — exit 1. **And** this story delivers the **`feeds.py` skeleton** (ONE cache layout + ONE provenance shape + staleness/max-age defaults living in `feeds.py`, overridable only via the FR-30 ConfigLoader) that 6.3 and 6.7 consume — axes never compute staleness. **And** KEV/EPSS enrichment mutates findings at exactly one pipeline position: inside the vuln producer, before policy dedup. **And** this story ships a **hermetic fixture KEV feed** (the 1.4 fixture-DB precedent) wired into the test harness, so the default-on `--fail-on-kev` policy never flips shipped E1/E2 fixtures to `indeterminate`. **And** the KEV tier's opt-out is named and testable: the FR-30 config key `policy.fail_on_kev = false` (config/table-driven — the coarse `--no-fail-on-*` flag family stays retired), which makes the no-KEV-policy branch reachable.
 
 **Given** an absent or stale KEV snapshot **while a KEV-blocking policy is in effect**, **When** the scan runs, **Then** the verdict is **`indeterminate` with a KEV-provenance driver** — the gate never silently no-ops (the review-T1 fix). **And** with **no** KEV policy in effect, null slots gate on CVSS as before. **And** the report's per-feed KEV provenance (`{source, snapshot_at, max_age_ok}`) makes `kev: null` (feed absent) distinguishable from "assessed, not KEV-listed". **And** feed fetch is offline-default / opt-in-online / never silent (NFR-S2).
 
@@ -516,13 +516,13 @@ So that a KEV listing can never be silently missed (FR36).
 
 As the **owner of the never-false-green invariant**,
 I want unconfigured-axis verdicts visible without blocking AND configured axes gating in the same release,
-So that `gating: false` is honesty, not invisibility, and a configured policy actually blocks (FR37 + FR33/FR35 — D12).
+So that `gating: false` is honesty, not invisibility, and a configured policy actually blocks (FR37 + FR-33/FR-35 — D12).
 
 **Acceptance Criteria:**
 
 **Given** an axis with `gating: false` (unconfigured license/currency), **When** a component's verdict is `unknown`, `denied`, or `eol`, **Then** the policy feeds a **`warn` rung** whose driver names the axis + finding — status `warn` (not `clean`), exit 0 — and a clean run on gating axes with any non-gating unknowns can never render status `clean`. **And** `--warn-as-error` escalates these to non-zero for strict shops. **And** this story **solely owns the escalation mapping** for axes 3/4 (producers are meta-tested to never feed above `warn`; both modes proven by running the identical fixture set and diffing only rungs/exit). **And** the tighten-only rule is applied as redefined by the architecture (2026-07-16): the shipped 1.2 `indeterminate` backstop is a **placeholder, not a floor** — the axis's defined mapping (warn unconfigured / gate configured) supersedes it for that axis; the C0 bound (never toward `clean`) is the invariant; verdict.py sole-ownership guard passes.
 
-**Given** an axis whose policy flags are configured (FR33/FR35 — v1, D12), **When** `gating` flips true for that axis, **Then** the same outcomes escalate (`denied`/`eol` → `policy-violation`, `unknown` → `indeterminate`) **with no producer changes** — the escalation is a policy-table change only, proven by running the identical fixture set in both modes and diffing only the rungs/exit.
+**Given** an axis whose policy flags are configured (FR-33/FR-35 — v1, D12), **When** `gating` flips true for that axis, **Then** the same outcomes escalate (`denied`/`eol` → `policy-violation`, `unknown` → `indeterminate`) **with no producer changes** — the escalation is a policy-table change only, proven by running the identical fixture set in both modes and diffing only the rungs/exit.
 
 ### Story 6.6: Engine version-range pinning (the distribution gate)
 
@@ -532,7 +532,7 @@ So that publishing can't ship the fleet-wide false-error the ranges exist to pre
 
 **Acceptance Criteria:**
 
-**Given** `src/shared/packages/pyforge-warden/pixi.toml` (run-deps `deptry = "*"`, `osv-scanner = "*"` today), **When** this story lands, **Then** both engines carry a **tested version range** (per NFR-C1: a range, not an exact pin — the engines come from feedstocks), the range choice is recorded with its compatibility evidence (deptry output schema; osv `--format json` shape + exit-code contract), and an out-of-range engine at runtime fails loud via FR21's typed `engine-unavailable`/incompatible error. **And** internal JFrog v1 publish and public v1.x publish are both blocked until this story is DONE (the D6 gate) — encoded mechanically as a release-gate row in `sprint-status.yaml` and a checkbox in the spec DoD (its mechanical homes, not process prose). **And** the story is the recorded owner of `pixi.toml:32-33` — closing the review-T-a finding that no story owned the mitigation. **And** the standing cross-cutting gates hold (C0 fixtures unaffected by the range change; twice-run determinism NFR-R3b).
+**Given** `src/shared/packages/pyforge-warden/pixi.toml` (run-deps `deptry = "*"`, `osv-scanner = "*"` today), **When** this story lands, **Then** both engines carry a **tested version range** (per NFR-C1: a range, not an exact pin — the engines come from feedstocks), the range choice is recorded with its compatibility evidence (deptry output schema; osv `--format json` shape + exit-code contract), and an out-of-range engine at runtime fails loud via FR21's typed `engine-unavailable`/incompatible error. **And** internal JFrog v1 publish and public v1.x publish are both blocked until this story is DONE (the D6 gate) — encoded mechanically as a release-gate row in `sprint-status.yaml` and a checkbox in the spec DoD (its mechanical homes, not process prose). **And** the story is the recorded owner of `pixi.toml:32-33` — closing the review-T-a finding that no story owned the mitigation. **And** the standing cross-cutting gates hold (C0 fixtures unaffected by the range change; twice-run determinism NFR-R3.2).
 
 ### Story 6.7: EPSS feed + the `--min-epss` gate
 
@@ -556,7 +556,7 @@ So that day-one debt doesn't force disabling the gate — and nothing is silentl
 
 **Given** `--baseline .warden-baseline.yaml` (committed, schema-validated — malformed → typed `config-validation` error, never a guess), **When** the scan runs, **Then** findings whose **stable finding IDs** (the full finding-ID grammar — 1.1's three families **plus 6.1's license/currency families**; the same key waiver matching uses) appear in the baseline do not block; **NEW findings gate normally**; every applied baseline entry is **echoed in the report** carrying the 6.1 **suppression rung-discriminator** marking it `baseline` (vs `waiver`) — loud, `bypassed`-style; C0 holds: a baselined run can never render `clean`, and the baseline can never mask an `error`.
 
-**Given** a baseline entry past its `expires_at` (waiver-identical semantics), **When** the scan runs, **Then** the finding **re-blocks** until fixed or re-accepted. **And** the tool only ever **reads** the baseline (NFR-R3a/S4); `--baseline-emit` prints a candidate stanza for the human to commit — the tool never writes the repo. **And** baseline entries are a **second input to 3.2's suppression engine** — one engine, no parallel suppression path; baseline + waiver interaction is deterministic (waiver wins where both match — one suppression, echoed once, discriminated per 6.1).
+**Given** a baseline entry past its `expires_at` (waiver-identical semantics), **When** the scan runs, **Then** the finding **re-blocks** until fixed or re-accepted. **And** the tool only ever **reads** the baseline (NFR-R3.1/S4); `--baseline-emit` prints a candidate stanza for the human to commit — the tool never writes the repo. **And** baseline entries are a **second input to 3.2's suppression engine** — one engine, no parallel suppression path; baseline + waiver interaction is deterministic (waiver wins where both match — one suppression, echoed once, discriminated per 6.1).
 
 ### Story 6.9: Fix-PR actuator (opt-in remediation PRs)
 
@@ -566,7 +566,7 @@ So that the gate drives fixes, not just red builds (FR40 — D12).
 
 **Acceptance Criteria:**
 
-**Given** `--open-fix-prs` with forge credentials provided via environment (never flags), **When** the verdict has been composed (exit code fixed), **Then** `cli.py` — the sole invoker — runs the actuator, **then** assembles + emits the final report including the `actuation` section (6.1's slot; content in the NFR-R3b volatile-field set): order = compose verdict → actuate → assemble → emit. PRs open via the forge API — security findings → upgrade-to-fixed-version PRs; hygiene unused-dependency findings → removal PRs — with the finding ID + report excerpt in the PR body. **And** the scanned working tree is **never written** (NFR-R3a asserted by the harness); the actuator is the **only** component permitted forge egress, and the C0c socket-deny carve-out applies **only to the real path under the flag** (landed in this story, never a global loosening), inert without the flag.
+**Given** `--open-fix-prs` with forge credentials provided via environment (never flags), **When** the verdict has been composed (exit code fixed), **Then** `cli.py` — the sole invoker — runs the actuator, **then** assembles + emits the final report including the `actuation` section (6.1's slot; content in the NFR-R3.2 volatile-field set): order = compose verdict → actuate → assemble → emit. PRs open via the forge API — security findings → upgrade-to-fixed-version PRs; hygiene unused-dependency findings → removal PRs — with the finding ID + report excerpt in the PR body. **And** the scanned working tree is **never written** (NFR-R3.1 asserted by the harness); the actuator is the **only** component permitted forge egress, and the C0c socket-deny carve-out applies **only to the real path under the flag** (landed in this story, never a global loosening), inert without the flag.
 
 **Given** `--fix-prs-dry-run`, **When** the actuator runs, **Then** it shares the real code path up to the egress seam, writes its intent into the same `actuation` report section (stdout stays ONE pure document, NFR-I3), and **opens no sockets** (the carve-out does not apply to dry-run). **And** a failed PR-open is recorded in the `actuation` section + stderr — **never an FR20 rung**; verdict, status, and exit code unchanged. **And** duplicate protection: an existing open PR for the same finding ID is detected and skipped, never re-opened.
 
@@ -1049,6 +1049,160 @@ So that the guard can scan the whole tree without failing on my own earlier, pub
 **When** the leak guard runs with a configuration present
 **Then** each `leak_guard_terms` entry is forbidden in every tracked file and in every file the branch changes; the organisation's name is forbidden only in warden's own files (the declared warden-owned paths, a team-memory entry that names warden, and a line that names warden in the memory index, in another Spec's memlog or in another changed file); a failure prints paths only
 **And** a fixture organisation named in a non-warden file passes while the same name in a warden file fails; an empty `leak_guard_terms` is refused unless `allow_empty_leak_guard_terms = true`; re-adding the organisation to the global terms, or dropping the warden-scoped check, turns a test red (mutations, reverted); `pixi run --frozen -e pyforge-warden pyforge-warden-test` and `platform-ci-local -- --test` are green, the orchestrator's live run against the real configuration passes, and the `spec-pyforge-unifying-strategy` memlog reconciles both files before one scoped stamp
+**Status:** done
+
+## Epic 19: The warden PRD's FR arrows name the capabilities the Spec carries
+
+Minted 2026-10-25 from the station Dream's entry of the same date (the PRD's FR arrows were mapped by subsection, not
+traced), at the operator's ruling "Do rows 1-5 in one PR". The 2026-09-17 one-chain fold gave each requirement bullet
+the capability of its subsection: FR-11 and FR-12 read CAP-4 although CAP-11 states them, and FR33 and FR35 (spelled
+without the hyphen) got no arrow. A chore under `spec-one-chain-per-station` CAP-5 and CAP-3: no CAP is minted and no
+flag is added. It is a new epic because the concern is the PRD's traceability, not any capability epic.
+**HARD boundaries:**
+- Only the six approved arrows change; no FR title, body, number or spelling moves.
+- No `SPEC.md` change and no detector rule change.
+
+### Story 19.1: Every warden PRD FR arrow names the Spec capability that realizes it
+
+As the operator reading the warden PRD to learn which capability a requirement serves,
+I want every FR arrow to name the capability the Spec actually carries,
+So that a requirement traces to its contract instead of to the subsection the fold mapped it from.
+
+**Type:** chore • **Effort:** XS • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-5 (FRs derive from CAPs) and CAP-3 (the station fold procedure) • Dream 2026-10-25 (the PRD's FR arrows were mapped by subsection, not traced) • operator ruling 2026-10-25
+**Flag:** none (`spec-feature-flag-governance` Q1, a chore)
+**Surface:** `planning-artifacts/prds/prd-pyforge-warden-2026-07-14/prd.md` (six FR bullets and a currency-reconciliation section); the spine and epics `updated:` re-stamps
+**Spec:** `planning-artifacts/specs/spec-19-1-every-warden-prd-fr-arrow-names-the-spec-capability-that-realizes-it.md`
+**Given** `fd06415e4d`, where the fold commit `548e907247` gave FR-11 and FR-12 `← CAP-4` and skipped FR33 and FR35
+**When** the story lands
+**Then** each of the six bullets carries the arrow in the spec-pyforge-warden memlog's 2026-10-25 table as amended after review, and every cited CAP exists
+**And** doctor's `fr-without-cap` and the planning detectors stay green
+**Status:** done
+
+## Epic 20: The warden Spec's capability text is whole again, and its NFRs get an owner (spec-one-chain-per-station CAP-5 amended, CAP-3)
+
+Minted 2026-10-26 from the station Dream's entry of the same date and the operator's rulings of 2026-10-26 on the FR-arrow re-audit. Story 19.1 traced warden's FR arrows; Story 20.1 restores the 10 capability bullets the 2026-09-17 fold cut and gives CAP-13..CAP-17 back the intent and success bullets the fold dropped, and Story 20.2 (ruling (c)) arrows the 23 lettered NFR lines (`NFR-S8`, `NFR-R3.1`, …; the family CHAIN-STANDARD § 6 now sanctions) to the capabilities they bound. The operator's ruling of 2026-10-26 (option A of the Story 20.2 ruling sheet; the Spec memlog's decision entry of that date) re-spells the ids outside the grammar in place: `NFR-R3a` / `NFR-R3b` → `NFR-R3.1` / `NFR-R3.2`, `NFR-P-warm` / `NFR-P-cold` / `NFR-P-concurrency` → `NFR-P2` / `NFR-P3` / `NFR-P4`, and the unhyphenated `FR33` / `FR35` → `FR-33` / `FR-35` (`FR9` was never a detector finding; the `FR30` row was the PRD's traceability note, which now names `FR-30` after its title; the six `FR-NEW-*` journey rows name their canonical FRs from the PRD's own crosswalk). A chore epic under `spec-one-chain-per-station` CAP-5 as amended; no CAP, no flag.
+**HARD boundaries:**
+- `SPEC.md` is never hand-edited: memlog correction, then the script render, both self-validate passes logged; 26 capability lines before and after.
+- No CAP id, order, provenance or status moves; no FR id is re-spelled without a ruling.
+
+### Story 20.1: The warden Spec's fold-cut capability text is restored
+
+As a reader who opens a warden capability to learn what it guarantees,
+I want every capability block in `spec-pyforge-warden/SPEC.md` to carry the full intent and success the 2026-09-17 fold cut,
+So that a PRD arrow's target says what it realizes, and the detector's title-overlap guard reads whole text.
+
+**Type:** chore • **Effort:** XS • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-5 (amended 2026-10-26) and CAP-3 (the station fold procedure); spec-pyforge-warden's capabilities (their text; no CAP minted)
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `planning-artifacts/specs/spec-pyforge-warden/SPEC.md` (10 cut intent/success bullets rejoined, and the intent/success bullets the fold dropped from CAP-13..CAP-17 added back from the source; by script from `git show 548e907247^`, every id, order and provenance line stable); `.memlog.md`; PRD, spine and epics re-stamps (chain currency; no FR, AD or story text changes)
+**Spec:** `planning-artifacts/specs/spec-20-1-the-warden-spec-s-fold-cut-capability-text-is-restored.md`
+**Given** at `92fa3edbbd` the fold (`548e907247`) left 10 cut intent/success bullets rejoined, and the intent/success bullets the fold dropped from CAP-13..CAP-17 added back from the source, and CAP-13, CAP-15, CAP-16 and CAP-17 carry no intent or success at all (CAP-14 only a success)
+**When** the restore script rejoins each cut bullet to its pre-fold source text (and adds the bullets the fold dropped from the source block)
+**Then** every intent and success is the source's full text, and no capability block lacks its intent or success
+**And** the capability line count is unchanged; no id, order, provenance line or status moves; `chain-completeness`, `chain-currency` and `detectors-ci` stay green
+**Status:** done
+
+### Story 20.2: Every warden NFR names the capabilities it bounds
+
+As a reader who asks which capability a warden NFR bounds,
+I want each of the 23 lettered NFR lines to cite the capability or capabilities whose success it bounds,
+So that the NFR tier derives from capabilities the way the FR tier does, and the baseline's arrowless population for this station reaches zero.
+
+**Type:** chore • **Effort:** S • **Deps:** 20.1 • **FR/AD:** spec-one-chain-per-station CAP-5 (amended 2026-10-26: an NFR cites the CAP(s) it bounds; the lettered family is sanctioned); CHAIN-STANDARD § 6 and § 12; the warden capabilities each NFR bounds, traced
+**Flag:** none (`type: chore`)
+**Surface:** `_bmad-output/projects/pyforge-warden/planning-artifacts/prds/prd-pyforge-warden-2026-07-14/prd.md` (the 23 lettered NFR lines gain `← CAP-m` traced from each capability's success); `docs/governance/fr-baseline.json` (`projects.pyforge-warden`, `findings.pyforge-warden` and the `owners` row leave through `scripts/fr_baseline.py --prune`); by the operator's ruling of 2026-10-26 (option A) the eight ids outside the grammar are re-spelled in the PRD, the spine, this file's live text and the 27 code comment, docstring and help-string lines of `src/shared/packages/pyforge-warden/` (dated records, memlogs, the Dream log and CHAIN-STANDARD's quoted examples keep the old spellings)
+**Spec:** `planning-artifacts/specs/spec-20-2-every-warden-nfr-names-the-capabilities-it-bounds.md`
+**Given** none of the 23 lettered NFR lines cites a capability (measured 2026-10-26), so they sit in `fr-baseline.json`'s `projects` map as the pre-rule population (ruling (c))
+**When** each NFR is traced against the Spec's capability successes
+**Then** every NFR line carries `← CAP-m`, each cited CAP is a definition line in `spec-pyforge-warden/SPEC.md`, and the independent review reads each arrow
+**And** `scripts/fr_baseline.py --prune` drops the ids from the baseline; `fr-without-cap` stays green
+**Status:** done
+
+## Epic 21: Warden's planning artifacts fit the one-chain shape (spec-one-chain-per-station CAP-11)
+
+Minted 2026-10-26 from the station Dream's Realization log entry of the same date (planning artifacts outside the one-chain
+shape), on the 2026-10-26 re-audit of the one-chain rule (main `97c8211773`). One `status: archived` Spec folder still sat
+under the station `specs/` directory; CHAIN-STANDARD § 11 puts everything the fleet retires at `archive/<original path>`.
+**HARD boundaries:**
+- The move is a `git mv`; nothing is deleted and the moved files' text does not change.
+- No CAP, FR, AD or `SPEC.md` change.
+- The Dream `docs/dreams/pyforge-warden-compliance-gates.md` stays in `docs/dreams/` (the archived-Dreams move is its own task).
+
+### Story 21.1: Warden's archived compliance-gates Spec folder moves to the archive home
+
+As a reader who walks the station `specs/` directory to find the one Spec, its absorbed folders and its story specs,
+I want the archived `spec-pyforge-warden-compliance-gates` folder to sit under `archive/`, at its original path,
+So that the directory shows the one-chain shape and the retirement record is found where CHAIN-STANDARD § 11 says it is.
+
+**Type:** chore • **Effort:** XS • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-11 (one archive home) and CAP-3 (the station fold procedure); no warden CAP, FR or AD moves
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `archive/_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden-compliance-gates/` (`SPEC.md` + `.memlog.md`, from `planning-artifacts/specs/`); `docs/governance/chain-sprawl-baseline.json` (pruned)
+**Spec:** `planning-artifacts/specs/spec-21-1-warden-s-archived-compliance-gates-spec-folder-moves-to-the-archive-home.md`
+**Given** at `97c8211773` `specs/spec-pyforge-warden-compliance-gates/` reads `status: archived` (`archived-reason: duplicate`, 2026-08-02) under the station directory
+**When** it is moved by `git mv` to `archive/<original path>` with its memlog, and the chain-sprawl baseline is pruned
+**Then** `git` reports two renames and no deletion, the station `specs/` directory holds no `status: archived` folder, `chain-sprawl-check` lists one fewer baseline folder, and `spec-surface-check`, `governance-currency`, `fold-complete-check`, `bmad-drift-check` and `detectors-ci` exit 0
+**And** the Spec's `owner-dream:` path still resolves
+## Epic 23: The archived warden Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
+
+Minted 2026-10-26 from `docs/governance/spec-one-chain-per-station/SPEC.md`, capability spec-one-chain-per-station:CAP-11 (owner Dream
+`docs/dreams/one-chain-per-station.md`, `owner: guild`) and that Dream's entry of the same date: a Dream is live in
+`docs/dreams/` or archived under `archive/docs/dreams/`, never both, and a folded satellite leaves the live tree only
+once its whole body sits verbatim in a dated section of its station Dream (CHAIN-STANDARD §11; doctor's
+`fold-complete` check, Story 36.1, proves it). On 2026-10-26, at `97c8211773`, 4 warden Dreams under `docs/dreams/`
+still read `status: archived` — the satellites the 2026-09-16/17 fold absorbed and left in place behind a
+`Consolidated into` banner. Warden mints no CAP and registers no FR for this story: the CAP is the Guild Spec's,
+enumerated here and in that Spec's `.memlog.md`, as the relay epics of 2026-09-29 do (doctor Epic 36, marshal Epic 75,
+herald Epic 33). One of the eight station stories of the 2026-10-26 one-PR move (the #2240 / #2319 / #2322 shape).
+**HARD boundaries:** every move is a `git mv`; a body is pasted verbatim with its headings demoted one level, never
+trimmed; a moved file keeps its frontmatter and loses only the one-chain fold banner; dated records (memlogs, story
+specs, epic bodies, PRD prose, ledgers, research) keep the path they were written with; `SPEC.md` is never
+hand-edited (memlog event, then the anchor-asserting script render, both self-validate passes logged). The story is a
+`chore`.
+
+### Story 23.1: Warden's four archived Dreams leave the live tree
+
+As a reader of `docs/dreams/`,
+I want warden's 4 archived satellite Dreams to live under `archive/docs/dreams/<same name>`, each with its whole body verbatim in `docs/dreams/pyforge-warden.md`,
+So that the live tree holds live Dreams only and nothing a satellite said is lost.
+
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-one-chain-per-station:CAP-11 (CHAIN-STANDARD §11: one archive home; a fold is complete before the file moves; readers follow the move); no warden CAP or FR
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `docs/dreams/pyforge-warden.md` (4 dated 2026-10-26 sections, one per satellite whose long paragraphs were not all there: the body verbatim, headings demoted one level, the fold banner left out); `archive/docs/dreams/<slug>.md` × 4 (each moved with `git mv`, its banner stripped, its frontmatter unchanged); `docs/dreams/README.md` (the 4 interim rows leave with their files); `specs/spec-pyforge-warden/SPEC.md` (`surface:` and `covers-dreams:` entries name the archive paths) and the 5 absorbed pointer Specs whose `owner-dream:` named a moved file; `.memlog.md` (the surface reconcile)
+**Spec:** `planning-artifacts/specs/spec-23-1-warden-s-four-archived-dreams-leave-the-live-tree.md`
+**Given** at `97c8211773` 4 warden Dreams under `docs/dreams/` read `status: archived`, every one with paragraphs nowhere but in the archived file — measured with `fold-complete`'s own `long_paragraphs`
+**When** each incomplete body is pasted verbatim into a dated section of `docs/dreams/pyforge-warden.md` and every one of the 4 moves to `archive/docs/dreams/`
+**Then** `fold-complete` reads each of the 4 as a complete fold and no warden Dream in `docs/dreams/` reads `status: archived`; every live pointer that named a moved file names its archive path
+**And** `dreams-hygiene`, `dream-chain`, `chain-sprawl` (its baseline pruned), `governance-currency`, `spec-surface`, `chain-completeness`, `chain-currency` and `detectors-ci` stay green
+**Status:** done
+
+## Epic 24: The absorbed warden Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
+
+Minted 2026-10-27 from `docs/governance/spec-one-chain-per-station/SPEC.md` (spec-one-chain-per-station:CAP-11; owner Dream
+`docs/dreams/one-chain-per-station.md`, `owner: guild`) and that Dream's entry of the same date: everything the fleet retires
+leaves the live tree for `archive/<original path>`, and after the archived Dreams (PR #2328) come the absorbed and archived
+Spec folders, each with its memlog and its companions (CHAIN-STANDARD §11 step 2). On 2026-10-27, at `9dd0a8f1f9`, 3
+`status: absorbed` Spec folders still sat under `_bmad-output/projects/pyforge-warden/planning-artifacts/specs/`.
+Warden mints no CAP and registers no FR for this story: the CAP is the Guild Spec's, enumerated here and in that
+Spec's `.memlog.md`, the relay shape of doctor Epic 36, marshal Epic 75, herald Epic 33 and the 2026-10-26 mop. One of the
+eight station stories of the 2026-10-27 one-PR close-out of spec-one-chain-per-station:CAP-11. **HARD boundaries:** every move is a `git mv`; nothing
+is deleted; a moved file's text is unchanged except the memlog event appended before the move; a live companion is carried
+into the station Spec folder, never archived (operator ruling 2026-10-27); dated records keep the path they were written
+with; `SPEC.md` is never hand-edited (memlog event, then the anchor-asserting script render, both self-validate passes
+logged). The story is a `chore`.
+
+### Story 24.1: Warden's absorbed Spec folders move to the archive home
+
+As a reader of the warden planning tree,
+I want the station's 3 absorbed Spec folders to live under `archive/<original path>`, each with its pointer, memlog and record companions,
+So that `specs/` holds the station Spec, its declared seams and its story specs only, and nothing an absorbed Spec said is lost.
+
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-one-chain-per-station:CAP-11 (CHAIN-STANDARD §11 step 2: the absorbed and archived Spec folders move, each with its memlog and every companion; readers follow the move); no warden CAP or FR
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `archive/_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-<slug>/` × 3 (each moved with `git mv`: its pointer `SPEC.md`, its `.memlog.md` and its record companions); every live pointer that named a moved path (code, tests, workflows, docs, `docs/foundry/capability-ledger.yaml`'s source paths); `docs/governance/chain-sprawl-baseline.json` (the moved folders' entries leave); `specs/spec-pyforge-warden/.memlog.md` (the surface reconcile)
+**Spec:** `planning-artifacts/specs/spec-24-1-warden-s-absorbed-spec-folders-move-to-the-archive-home.md`
+**Given** at `9dd0a8f1f9` 3 `status: absorbed` Spec folders sat under the station `specs/` directory
+**When** each live companion is carried into `specs/spec-pyforge-warden/` and every absorbed folder moves to `archive/<original path>`
+**Then** no folder under `_bmad-output/projects/pyforge-warden/planning-artifacts/specs/` reads `status: absorbed`, each moved folder keeps its files, and every live pointer names the file's new path
+**And** `chain-sprawl` (its baseline pruned), `dream-chain`, `governance-currency`, `spec-surface`, `ad-citation`, `chain-completeness`, `chain-currency` and `detectors-ci` stay green, and the station suite passes
 **Status:** done
 
 ## Currency validation — 2026-08-26

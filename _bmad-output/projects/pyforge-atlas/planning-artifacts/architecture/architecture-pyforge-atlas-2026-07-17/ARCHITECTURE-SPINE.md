@@ -7,7 +7,7 @@ paradigm: 'declarative dataflow (pipes-and-filters over a declared Data Catalog)
 scope: 'Migration of the cf_atlas orchestrator to Kedro pipelines + Dagster orchestration + DuckDB compute, with BSL/Vizro read surface and MCP/A2A agent interfaces (FR-1..FR-22, Waves 0 + A–H)'
 status: final
 created: '2026-07-17'
-updated: "2026-10-22"   # RE-STAMPED 2026-10-22: prd→arch for FR-71 amended in place (CAP-63, operator ruling 2026-10-21: on Pages the identity boards show what public inputs give them); no AD added, removed or amended. See § Currency reconciliation — 2026-10-22. Prior: RE-STAMPED 2026-10-19: prd→arch for FR-77 (CAP-69, the Vizro boards read the datasets the pipelines write) and FR-71 amended (CAP-63, the producer builds public data first); no AD added, removed or amended. See § Currency reconciliation — 2026-10-19. Prior: RE-STAMPED 2026-10-18 (later): AD-6 amended for CAP-64..CAP-68 (public sources own their refreshers in-package; credentialed refreshers on the PYFORGE_ATLAS_CREDENTIALED=1 opt-in). Earlier the same day: chain-currency cascade (PRD -> arch) for atlas Story 33.1 (fix under spec-pyforge-atlas CAP-9): AD-23 checked and now holds for the CLI entry point; no AD added, removed or amended. See § Currency reconciliation — 2026-10-18. Prior: RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD -> arch) for FR-70 / CAP-62 and FR-71 / CAP-63 (Epic 30: the DAG export reaches Pages as a workflow artifact; Vizro boards publish as static exports). AD-21 amended (every static surface atlas publishes reaches Pages as a workflow artifact); no AD added or removed. See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD -> arch) for Stories 28.1 and 29.1, two test-only fixes (CAP-6, CAP-16); no AD added, amended or removed. See § Currency reconciliation — 2026-10-13. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD -> arch) for Story 25.1's gate clearing (key blocked -> backlog by operator ruling); no AD amended. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD -> arch) for marshal Story 66.2's deferred-work backfill; no AD amended. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch) for FR-69 / CAP-61 (Epic 25); lands on AD-1, AD-2, AD-3, AD-4, AD-5, AD-6 and AD-13 as written, no AD amended. Prior 2026-09-20 (fleet consistency pass).
+updated: "2026-10-26"   # RE-STAMPED 2026-10-26 (CAP-7 retrofit, Epic 42): prd->arch cascade; no decision changes. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 41.1): prd->arch cascade for the PRD's § Currency reconciliation — 2026-10-26 (Story 41.1); AD-16 amended in place to name the Spec Constraint it implements and CAP-72 (CHAIN-STANDARD § 12); no AD added or removed. See § Currency reconciliation — 2026-10-26 (Story 41.1). Prior "2026-10-25"   # RE-STAMPED 2026-10-25 (Story 40.1): spec->prd->arch cascade for CAP-70 and CAP-71 (FR-61 and FR-63 cite the restored capabilities; FR-15 cites its constraint); no AD moves. See § Currency reconciliation — 2026-10-25 (Story 40.1). Earlier 2026-10-25: RE-STAMPED 2026-10-25 (Stories 33.2 and 34.13): AD-3 amended in place (its as-built list names all five packages and the rule holds across the twelve registered pipelines), closing the enumeration divergence recorded in § Currency reconciliation — 2026-10-25; the MCP face's registry wording fixed in code; no AD added or removed. See § Currency reconciliation — 2026-10-25 (Stories 33.2 and 34.13). Earlier 2026-10-25: RE-STAMPED 2026-10-25 (Story 39.1): prd->arch cascade for the PRD's § Currency reconciliation — 2026-10-25 (Story 39.1) (23 FR heading arrows re-mapped to the capabilities that realize them); no AD moves. See § Currency reconciliation — 2026-10-25 (Story 39.1). Earlier 2026-10-25: RE-STAMPED 2026-10-25 (chain-currency behind-code: the package pyproject.toml moved with marshal Story 103.1's numpy>=2.5.3 declaration, #2307; prd→arch for the PRD's re-stamp of the same date): no AD added, removed or amended; AD-3's pipeline enumeration (ten listed, twelve registered) and the MCP face's registry wording recorded as divergences, not repaired. See § Currency reconciliation — 2026-10-25. Prior: RE-STAMPED 2026-10-22: prd→arch for FR-71 amended in place (CAP-63, operator ruling 2026-10-21: on Pages the identity boards show what public inputs give them); no AD added, removed or amended. See § Currency reconciliation — 2026-10-22. Prior: RE-STAMPED 2026-10-19: prd→arch for FR-77 (CAP-69, the Vizro boards read the datasets the pipelines write) and FR-71 amended (CAP-63, the producer builds public data first); no AD added, removed or amended. See § Currency reconciliation — 2026-10-19. Prior: RE-STAMPED 2026-10-18 (later): AD-6 amended for CAP-64..CAP-68 (public sources own their refreshers in-package; credentialed refreshers on the PYFORGE_ATLAS_CREDENTIALED=1 opt-in). Earlier the same day: chain-currency cascade (PRD -> arch) for atlas Story 33.1 (fix under spec-pyforge-atlas CAP-9): AD-23 checked and now holds for the CLI entry point; no AD added, removed or amended. See § Currency reconciliation — 2026-10-18. Prior: RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD -> arch) for FR-70 / CAP-62 and FR-71 / CAP-63 (Epic 30: the DAG export reaches Pages as a workflow artifact; Vizro boards publish as static exports). AD-21 amended (every static surface atlas publishes reaches Pages as a workflow artifact); no AD added or removed. See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD -> arch) for Stories 28.1 and 29.1, two test-only fixes (CAP-6, CAP-16); no AD added, amended or removed. See § Currency reconciliation — 2026-10-13. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD -> arch) for Story 25.1's gate clearing (key blocked -> backlog by operator ruling); no AD amended. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD -> arch) for marshal Story 66.2's deferred-work backfill; no AD amended. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch) for FR-69 / CAP-61 (Epic 25); lands on AD-1, AD-2, AD-3, AD-4, AD-5, AD-6 and AD-13 as written, no AD amended. Prior 2026-09-20 (fleet consistency pass).
 currency_review: "Reviewed 2026-08-02 — the FR-9 Capability Map row still stated the pre-correction '28-CLI port' claim after the PRD's 2026-08-01 CAP-8 fix (AUD-ATLAS-041). Row corrected to match: 8 dashboard pages + factory-status ship in v1, full 28-CLI inventory deferred (DW-D2-1). No other capability-map row referenced the overclaim. Reviewed again 2026-08-26 — AD-3 amended for the three governed pipeline additions; post-08-02 as-built deltas (CAP-19 query plane, host MCP face, CAP-18 hooks, vizro-ai deprecation, canopy AD-numbering disambiguation) reconciled in the appended section 'Currency reconciliation — 2026-08-26'. Reviewed again 2026-09-18 (fleet chain-currency sweep) — the 2026-09-17 PRD fold/rekey and 2026-09-10 code motion (Story 24.4 live Artifactory transport) reconciled in the appended section 'Currency reconciliation — 2026-09-18'; AD-3's Epic 13/15 citations corrected to post-rekey Epic 12/14."
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22]
 sources:
@@ -91,7 +91,7 @@ graph TD
 
 - **Binds:** FR-2, FR-13, FR-16..21, all node ports
 - **Prevents:** two pipelines writing one dataset; hidden cross-pipeline coupling (the legacy "dependencies in the developer's head")
-- **Rule:** the pipeline set is exactly spec § 5.2 (Core · PyPI Intelligence · Vulnerability · VCS & Health · Universal SBOM · Seed-Gaps · Read-Surface/Derived-Artifacts). Each dataset has exactly one producing pipeline; consumers reference it by catalog name (e.g. Phase H: PyPI Intelligence produces, VCS & Health consumes). Phase I becomes an explicit node. New signals join their assigned pipeline, never a new ad-hoc one. *(Amended 2026-08-26: "fixed" binds the migration surface — the closed seven stay sealed and no migration signal leaves its pipeline. Three additional pipeline packages exist as-built, each added through a governed chain, never ad-hoc: `upstream_discovery` (spec-upstream-discovery / Epic 12), `artifactory_downloads` (spec-artifactory-download-intelligence / Epic 14), and `query_plane_cache` (canopy CAP-19, story 34.2 — the operator-answered "named new pipeline" sitting strictly downstream of the seven, reading their outputs without modifying them). The producer-owns-dataset invariant is unchanged and holds across all ten. Epic numbers here are post-rekey (`rekey-2026-09-17.md`: old Epic 13 → 12, old Epic 15 → 14) — see the 2026-09-18 reconciliation below.)*
+- **Rule:** the pipeline set is exactly spec § 5.2 (Core · PyPI Intelligence · Vulnerability · VCS & Health · Universal SBOM · Seed-Gaps · Read-Surface/Derived-Artifacts). Each dataset has exactly one producing pipeline; consumers reference it by catalog name (e.g. Phase H: PyPI Intelligence produces, VCS & Health consumes). Phase I becomes an explicit node. New signals join their assigned pipeline, never a new ad-hoc one. *(Amended 2026-08-26: "fixed" binds the migration surface — the closed seven stay sealed and no migration signal leaves its pipeline. Five additional pipeline packages exist as-built, each added through a governed chain, never ad-hoc: `upstream_discovery` (spec-upstream-discovery / Epic 12), `artifactory_downloads` (spec-artifactory-download-intelligence / Epic 14), `query_plane_cache` (canopy CAP-19, story 34.2 — the operator-answered "named new pipeline" sitting strictly downstream of the seven, reading their outputs without modifying them), `semantic_packages` (CAP-49, Story 19.3 — the composed semantic store the dashboard pages read, downstream of `core`, `vcs_health` and, since Story 38.1, `derived_artifacts`), and `catalog_index` (CAP-69, Story 37.10 — the catalog index's freshness report, which reads what the others wrote). The producer-owns-dataset invariant is unchanged and holds across all twelve registered pipelines: eleven make up `__default__`, and `catalog_index` runs after a build (`AFTER_RUN_PIPELINES`). The last two were written in on 2026-10-25 (Story 33.2). Epic numbers here are post-rekey (`rekey-2026-09-17.md`: old Epic 13 → 12, old Epic 15 → 14) — see the 2026-09-18 reconciliation below.)*
 
 ### AD-4 — Parquet + DuckDB singularity (FR-5)
 
@@ -166,6 +166,8 @@ graph TD
 - **Rule:** derived-layer datasets are downstream nodes of the rebuild and re-run after every rebuild; consumers enforce the `STALE_AFTER_DAYS = 14` dataset-level freshness contract (refuse-stale exactly as the legacy gate). The four seed-gap suggesters are strictly read-only report nodes (byte-identical-seed guarantee survives as a pipeline test); `mapping-gap`'s writeback lives in the PyPI Intelligence pipeline, never in Seed-Gaps.
 
 ### AD-16 — Pixi-first, conda-forge-only, lean-env provisioning `[ADOPTED]` (FR-15)
+
+- **Implements:** Spec Constraint **"Conda-forge-only, pixi-managed, py3.14-floored provisioning"**, minted as CAP-72 on 2026-10-26 (a user-visible guarantee); FR-15 ← CAP-72, and this decision carries the Constraint (CHAIN-STANDARD §12).
 
 - **Binds:** all dependencies, the scaffolded project, loop worktrees
 - **Prevents:** stack drift off conda-forge/py3.14; worktree materialization of the fat `local-recipes` env; catalog drift
@@ -1604,3 +1606,109 @@ credentialed and enterprise sources stay empty.* Checked against every AD; none 
 - **AD-21 (static surfaces reach Pages as workflow artifacts).** Unchanged; the export now caps each table at 5,000
   rows and sums each chart over the whole frame, a rendering detail inside the artifact.
 
+## Currency reconciliation — 2026-10-25
+
+*Trigger: chain-currency `behind-code`, plus the PRD's re-stamp of the same date (`prd→arch`). On 2026-10-25 marshal
+Story 103.1 (#2307, `67a4ae014c`) declared `numpy>=2.5.3` in the package `pyproject.toml` and `pixi.toml`.* This pass
+checks the code at `b0753539a3` for the atlas landings since the 2026-10-22 stamp (35.2–35.4, 37.4–37.13, 38.1, 34.12
+and 27.6) and for Story 36.2 (#2277), which landed just before it. Every AD was checked, and none is added, removed or
+amended. Two divergences are recorded here and left unrepaired.
+
+- **AD-16 (pixi-first, conda-forge-only; binds every dependency).** Reads as written. numpy comes from conda-forge, is
+  declared at the floor the env resolves (`pyproject.toml:37`, `pixi.toml:57`), and is already in the library catalog.
+  The gap is in the gate that found the missing declaration. `tests/packaging/test_dependency_completeness.py` runs
+  only among marshal's verify commands (`pyforge-marshal/planning-artifacts/marshal-policy.toml:96`). It does not run
+  in:
+  - `pr-preflight-lanes` (`pixi.toml:1680`);
+  - `pyforge-atlas-test`, which runs another file from that directory (`pixi.toml:2842`);
+  - atlas's `verify_commands` (`planning-artifacts/marshal-policy.toml:51`–`:54`);
+  - any workflow.
+
+  AD-11's verify set never named it, and `DW-atlas-retro-2026-10-15-4` holds the fix. `brotli` is still undeclared
+  (`DW-atlas-34-5-1`). `datasets/tier3_sources.py:98` imports it through `importlib`, which the static import check
+  cannot see.
+- **AD-3 (seven fixed pipelines; producer owns the dataset). Recorded divergence.** The 2026-08-26 amendment names
+  three governed additions and says the invariant "holds across all ten". Twelve pipelines are registered. Two came
+  through governed chains but were never written into this AD: `semantic_packages` (Story 20.3, `dc1d7bc1d6`,
+  2026-08-28) and `catalog_index` (Story 37.10, `bae5855c73`, #2291). Loading `register_pipelines()` against this tree
+  shows:
+  - twelve pipelines, and no dataset written by nodes of two of them;
+  - `__default__` sums eleven of them (97 nodes);
+  - `catalog_index` runs after a build (`AFTER_RUN_PIPELINES`, `pipeline_registry.py:10`), because it reads what the
+    others wrote.
+
+  So the producer-owns-dataset rule holds, and only the enumeration is stale. Amending it is the Spec owner's call,
+  through `bmad-architecture`.
+- **AD-7 (MCP surface). Recorded divergence, in wording only.** The trigger set has eight names, and the other four
+  registered pipelines are left out on purpose (`NO_MCP_TRIGGER_PIPELINES`, `tests/unit/mcp/test_audit_mapping.py:73`).
+  But `list_pipelines()` says it returns "The registered pipeline names" (`mcp/tools.py:246`). The comment above
+  `PIPELINE_NAMES` speaks of "the four registered pipelines" and "the 5 create_pipeline modules" (`mcp/tools.py:88`–
+  `:92`), and `test_audit_mapping.py:8`–`:9` says the same. An agent that lists the pipelines through MCP sees 8 of 12.
+- **AD-13 (skip and mark stale, never fail).** Before Story 34.12 (#2298), the Pages data build broke this rule: one
+  public vulnerability feed's connection failure failed the whole build, five times during a cwe.mitre.org outage
+  (spec-38-1 § Review Triage Log, review 2 B-2). The three feeds now share `VulnerabilityFeedDataset`
+  (`datasets/vulnerability_feeds.py:213`) and keep last-good, so the code meets the AD. One boundary is carried: the
+  Pages runner starts from an empty data root, so its last-good copy exists only through Story 37.12's
+  `actions/cache` (#2299). When an entry is evicted depends on what the other workflows write. The operator raised the
+  limits to 40 GB and 45 days (#2304). On a cache miss the board still shows an empty table under the marker.
+- **AD-17 (snapshots are advisory and stamped).** Reads as written. Story 37.13 (#2300) makes the cve-watcher mark an
+  earlier run's diff stale instead of presenting it as current (`DW-atlas-37-12-3`).
+- **AD-11 (gates are fixtures, never credentials).** Reads as written. Story 36.2's eighth review found two tests in
+  which Kedro telemetry looked up `heapanalytics.com`. The session now disables telemetry (`tests/conftest.py:74`),
+  and the conftest guard refuses name lookups that are not loopback. Subprocesses, C-level sockets and the task's
+  second pytest run are not covered (spec-36-2 § Spec Change Log).
+- **AD-21 (static surfaces reach Pages as workflow artifacts).** Reads as written. Story 37.4's second review found
+  that the page swap dropped a page's `access_column`, so the static refusal would have missed a projected board that
+  declared one. No page declares one, so the gap was latent, and `page_inventory` now keeps the column. The cache that
+  37.12 adds lives in the producer job, and no data root is committed.
+- **AD-8 (BSL is the one semantic interface) and AD-15 (the derived layer rebuilds each run).** Read as written. The
+  boards these stories fed read through BSL models (`semantic/models.py`: `build_purl_export_model`,
+  `build_mapping_gap_model`, `build_bootstrap_index_health_model`) over Ibis on DuckDB (`dashboard/data.py:649`).
+  `catalog_index` and the cve-watcher's snapshot history are datasets owned by their pipelines, not a second read
+  path.
+- **AD-1, AD-2, AD-6 and AD-23.** No story in this span changes where IO lives, which host a credential reaches, how
+  a refresher is scheduled or which execution plane runs a pipeline. That comes from each story's Boundaries and review
+  logs; nothing beyond the registry check above was re-measured here.
+
+## Currency reconciliation — 2026-10-25 (Story 39.1)
+
+*`prd→arch` cascade for the PRD's § Currency reconciliation — 2026-10-25 (Story 39.1).* The PRD's FR heading arrows
+now name the capabilities that realize them, not the numbers the 2026-09-17 fold counted. No requirement's text moved,
+so no AD binding changes. **Content changed:** this section. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-10-25 (Stories 33.2 and 34.13)
+
+*The two divergences § Currency reconciliation — 2026-10-25 recorded, and the 2026-10-25 retro's candidate fixes 2, 4
+and 5.*
+
+- **AD-3 amended in place (above).** The 2026-08-26 parenthetical now names all five as-built pipeline packages,
+  adding `semantic_packages` (CAP-49, Story 19.3) and `catalog_index` (CAP-69, Story 37.10), and says the
+  producer-owns-dataset invariant holds across the twelve registered pipelines: eleven make up `__default__`, and
+  `catalog_index` runs after a build (`AFTER_RUN_PIPELINES`). AD-3's heading and rule (the sealed seven) stand.
+  `tests/unit/test_pipeline_inventory.py` already pins the package README's twelve against the registry; nothing pins
+  the spine's text, so this edit is by hand.
+- **The MCP face's registry wording** (the second recorded divergence) is fixed in code by Story 33.2: the
+  `list_atlas_pipelines` description, `TOOL_SPECS`, the `PIPELINE_NAMES` comment, the `list_pipelines` and
+  `run_pipeline` docstrings, the audit test's docstring and the station skill name the eight as the MCP-triggerable
+  pipelines, the other four CLI-only. No AD binds that wording, so no AD changes.
+- **Story 34.13** declares `brotli-python` (PyPI `Brotli`) for the nixpkgs Tier-3 store's guarded import. It was
+  already in the env through conda-forge `urllib3`; AD-6 (public sources own their refreshers in-package) and the
+  conda-forge-only provisioning constraint hold as written.
+
+**Content changed:** this section and AD-3's amendment parenthetical. `updated:` bumped. No AD added or removed.
+
+## Currency reconciliation — 2026-10-25 (Story 40.1)
+
+*`spec→prd→arch` cascade for CAP-70 and CAP-71 (the PRD's § Currency reconciliation — 2026-10-25 (Story 40.1)).*
+`spec-pyforge-atlas` restores two shipped capabilities the 2026-09-17 fold dropped (the kedro-skills audit and the
+vscode-kedro decision); FR-61 and FR-63 cite them, and FR-15 cites the Spec constraint it derives from. Both are
+decisions and a reviewed skills install, not pipeline code, so no AD binding changes. **Content changed:** this
+section. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-10-26 (Story 41.1)
+
+*`prd→arch` cascade for the PRD's § Currency reconciliation — 2026-10-26 (Story 41.1).* FR-15 now cites CAP-72, minted from the Constraint it used to cite; AD-16 gains an *Implements* line naming that Constraint and CAP-72, so the spine is the one place the Constraint is traced (CHAIN-STANDARD § 12). **Content changed:** AD-16's *Implements* line and this section. `updated:` bumped. No AD added or removed.
+
+## Currency reconciliation — 2026-10-26 (CAP-7 retrofit, Epic 42)
+
+prd->arch cascade after the PRD's re-stamp of the same date. No AD changes: the kill switches read through `pyforge.core.flags` (canopy:AD-11, one tree, no second reader), and no exit-code domain moves.

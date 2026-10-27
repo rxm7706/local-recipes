@@ -29,6 +29,7 @@ import os
 import shlex
 import shutil
 import signal
+import statistics
 import subprocess
 import sys
 import tempfile
@@ -63,6 +64,14 @@ SCOPE_FULL = "full"
 SCOPE_TOUCHED = "touched"
 SCOPES = (SCOPE_FULL, SCOPE_TOUCHED)
 SCOPE_FLAG_KEY = "pyforge.steward.preflight_ci_arbitrates"
+#: Story 117.3 (spec-pyforge-steward CAP-175): ON, ready lanes are admitted longest-expected first and by the cores
+#: they will use (an xdist lane takes a share of the free cores at admission); OFF, declaration order and the static
+#: per-lane share of Story 71.6. A kill switch: on everywhere.
+CRITICAL_PATH_FLAG_KEY = "pyforge.steward.preflight_critical_path"
+#: Story 117.3: what a lane with no journal history weighs to the scheduler, in seconds, and how many of its last
+#: green runs feed its expected seconds.
+UNKNOWN_LANE_SECONDS = 30.0
+LANE_MEDIAN_RUNS = 5
 DEFERRED_REASON = "CI arbitrates"
 # The cheap planning detectors a touched run keeps, each a guild task of its own, in place of the
 # detectors-ci lane that runs them among the rest.
@@ -177,6 +186,42 @@ class ScopeChoice:
 
     scope: str
     source: str
+
+
+def lane_medians(journal_path: Path, *, last_n: int = LANE_MEDIAN_RUNS) -> dict[LaneKey, float]:
+    """Each lane's median wall seconds over its last ``last_n`` green runs in the journal (Story 117.3).
+
+    Keyed by ``(task, environment)``; only runs whose verdict is ``ok`` and lanes whose status is ``ok`` count, newest
+    first, so a cancelled or red lane leaves no mark. A lane absent from the result has no history and weighs
+    :data:`UNKNOWN_LANE_SECONDS`. Reads the journal this module writes; a missing or malformed line is skipped.
+    """
+    if not journal_path.is_file():
+        return {}
+    runs: list[dict[str, Any]] = []
+    for line in journal_path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        try:
+            record = json.loads(stripped)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(record, dict) and "lanes" in record and record.get("verdict") == "ok":
+            runs.append(record)
+    samples: dict[LaneKey, list[float]] = {}
+    for run in reversed(runs):
+        for lane in run.get("lanes") or []:
+            if not isinstance(lane, dict) or lane.get("status") != "ok":
+                continue
+            key = (str(lane.get("task")), str(lane.get("environment")))
+            values = samples.setdefault(key, [])
+            if len(values) < last_n:
+                values.append(float(lane.get("seconds", 0.0)))
+    return {key: statistics.median(values) for key, values in samples.items() if values}
+
+
+def _critical_path_flag_on() -> bool:
+    return read_boolean(CRITICAL_PATH_FLAG_KEY, default=True)
 
 
 def _scope_flag_on() -> bool:
@@ -964,21 +1009,44 @@ def _next_lane(
     lanes: Sequence[Lane],
     pending: dict[LaneKey, Lane],
     docs_turn: int | None,
+    expected: Mapping[LaneKey, float] | None = None,
 ) -> Lane:
     """The ready lane that starts next (Story 105.1's review and re-review).
 
     Every lane outside :data:`DOCS_SITE_TASKS` keeps its declared turn, its index in ``lanes``. The docs-site lanes,
     which run one at a time, trade turns among themselves only: the next docs-site turn (``docs_turn``, the declared
-    index of the next docs-site lane in declaration order) goes to the ready docs-site lane that pending lanes depend
-    on, else the first one declared. So ``docs-site-install``, then ``pages-build``, take the turns of the docs-site
+    index of the next docs-site lane in declaration order) goes to ``docs-site-install`` when it is ready, else to the
+    ready docs-site lane that pending lanes depend on, else the first one declared. So ``docs-site-install``, then ``pages-build``, take the turns of the docs-site
     lanes declared before them, and herald's built-site tests read this run's install, never a stale one or none at
     all (a fresh worktree). At ``--jobs 1`` every other lane runs at its declared position.
+
+    With ``expected`` (Story 117.3, the flag on), the longest-expected ready lane goes first and the declared turn only
+    breaks ties: a lane's expected seconds are its journal median, :data:`UNKNOWN_LANE_SECONDS` when
+    it has no history. The docs-site lanes still choose their representative as above; it competes by its own
+    expected seconds.
     """
-    turns = [(lanes.index(lane), lane) for lane in ready if lane.task not in DOCS_SITE_TASKS]
+
+    def rank(lane: Lane, turn: int) -> tuple[float, int]:
+        if expected is None:
+            return (0.0, turn)
+        return (-expected.get(_lane_key(lane), UNKNOWN_LANE_SECONDS), turn)
+
+    turns = [(rank(lane, lanes.index(lane)), lane) for lane in ready if lane.task not in DOCS_SITE_TASKS]
     docs = [lane for lane in ready if lane.task in DOCS_SITE_TASKS]
     if docs:
-        first = min(docs, key=lambda lane: (not _needed_by_pending_dependent(lane, pending), lanes.index(lane)))
-        turns.append((lanes.index(first) if docs_turn is None else docs_turn, first))
+        # The install every other docs-site lane reads goes first whenever it is ready (herald Story 45.1); then the
+        # lane pending docs-site lanes depend on; then declared order. Story 117.2 made the order explicit: the
+        # station coverage gates depend on their suites, and herald's suite is itself a docs-site lane, so
+        # 'needed by a pending dependent' alone would hand the turn to the suite before the install it reads.
+        first = min(
+            docs,
+            key=lambda lane: (
+                lane.task != DOCS_SITE_INSTALL_TASK,
+                not _needed_by_pending_dependent(lane, pending),
+                lanes.index(lane),
+            ),
+        )
+        turns.append((rank(first, lanes.index(first) if docs_turn is None else docs_turn), first))
     return min(turns, key=lambda turn: turn[0])[1]
 
 
@@ -1096,8 +1164,15 @@ def run_preflight(
     between_segments: Callable[[LaneRunContext, int], None] | None = None,
     scope: str = SCOPE_FULL,
     scope_source: str = "",
+    critical_path: bool | None = None,
+    logical_cores: int | None = None,
+    expected_seconds: Mapping[LaneKey, float] | None = None,
 ) -> int:
     """Run CI-selected lanes; return exit code 0 / 1 / 2 / 130.
+
+    ``critical_path`` (Story 117.3): ``None`` reads the flag :data:`CRITICAL_PATH_FLAG_KEY`; ``True`` admits ready
+    lanes longest-expected first and by the cores they will use, ``False`` keeps declaration order and the static
+    xdist share. ``logical_cores`` and ``expected_seconds`` (journal medians per lane) are injectable for tests.
 
     ``scope`` is ``full`` (every selected lane) or ``touched`` (Story 103.6: see :func:`touched_cut`);
     ``scope_source`` says what chose it, for the run's stdout. A run in which a lane depends on a lane outside it
@@ -1136,6 +1211,8 @@ def run_preflight(
         paused_lanes = list(banner_lines.values())
         if paused_lanes:
             preflight_ci.print_ci_pause_banner(repo_root, paused_lanes, resolution=resolution)
+        # Story 99.8: advisory only -- the lanes, the verdict and the exit code below never read it.
+        preflight_ci.print_main_red_banner(repo_root)
         paused_lanes = lane_paused
         paused_keys = {(entry.task, entry.environment) for entry in paused_lanes}
         run_lanes = [lane for lane in lanes if selection.is_selected(lane)]
@@ -1214,7 +1291,12 @@ def run_preflight(
         print("preflight: refusing the run before any install or lane starts", file=sys.stderr)
         return EXIT_CONFIG
 
-    worker_count = jobs if jobs is not None else _logical_core_count()
+    cores = logical_cores if logical_cores is not None else _logical_core_count()
+    worker_count = jobs if jobs is not None else cores
+    critical = critical_path if critical_path is not None else _critical_path_flag_on()
+    expected: Mapping[LaneKey, float] | None = None
+    if critical:
+        expected = expected_seconds if expected_seconds is not None else lane_medians(repo_root / JOURNAL_RELATIVE)
     if worker_count < 1:
         worker_count = 1
 
@@ -1290,7 +1372,7 @@ def run_preflight(
     xdist_workers = preflight_xdist.lane_xdist_worker_map(
         lanes=[_lane_key(lane) for lane in lanes],
         pixi_data=pixi_data,
-        logical_cores=_logical_core_count(),
+        logical_cores=cores,  # Story 117.3: the one core count, injectable for tests; the machine's otherwise
         pool_jobs=worker_count,
     )
     coord = _RunCoordinator(
@@ -1337,6 +1419,7 @@ def run_preflight(
     results_by_key: dict[LaneKey, LaneResult] = {}
     pending: dict[LaneKey, Lane] = {_lane_key(lane): lane for lane in lanes}
     completed: dict[LaneKey, LaneResult] = {}
+    weights: dict[LaneKey, int] = {}  # Story 117.3: cores each in-flight lane holds (1, or its xdist share)
     # Story 105.1: the declared turns of the docs-site lanes, which they trade among themselves (_next_lane).
     docs_turns = [index for index, lane in enumerate(lanes) if lane.task in DOCS_SITE_TASKS]
     docs_started = 0
@@ -1382,7 +1465,41 @@ def run_preflight(
                     if not ready_candidates:
                         break
                     docs_turn = docs_turns[docs_started] if docs_started < len(docs_turns) else None
-                    ready = _next_lane(ready_candidates, lanes, pending, docs_turn)
+                    # Story 117.3: the longest-expected ready lane first, admitted only while its weight -- one core
+                    # for a serial lane, its xdist share for a parallel one -- fits the cores the in-flight lanes leave.
+                    # A parallel lane that cannot get MIN_XDIST_WORKERS yet is set aside this round, not starved: it is
+                    # offered again when a lane finishes. --jobs stays the upper bound on lanes in flight.
+                    free_cores = cores - sum(weights.get(_lane_key(running), 1) for running in futures.values())
+                    ready: Lane | None = None
+                    while ready_candidates:
+                        pick = _next_lane(ready_candidates, lanes, pending, docs_turn, expected)
+                        if not critical:
+                            ready = pick
+                            break
+                        pick_key = _lane_key(pick)
+                        if preflight_xdist.task_cmd_uses_xdist_auto(pixi_data, pick.task):
+                            pending_xdist = sum(
+                                1
+                                for lane in pending.values()
+                                if preflight_xdist.task_cmd_uses_xdist_auto(pixi_data, lane.task)
+                            )
+                            share = preflight_xdist.xdist_share_at_admission(
+                                free_cores=free_cores, pending_xdist=pending_xdist, logical_cores=cores
+                            )
+                            if share == 0:
+                                ready_candidates.remove(pick)
+                                continue
+                            weights[pick_key] = share
+                            coord.xdist_workers[pick_key] = share
+                        elif free_cores < 1:
+                            ready_candidates.remove(pick)
+                            continue
+                        else:
+                            weights[pick_key] = 1
+                        ready = pick
+                        break
+                    if ready is None:
+                        break
                     key = _lane_key(ready)
                     del pending[key]
                     if ready.task in DOCS_SITE_TASKS:
@@ -1445,7 +1562,7 @@ def run_preflight(
                 "started_at": started.isoformat(),
                 "head_sha": head_sha,
                 "branch": branch,
-                "logical_cores": _logical_core_count(),
+                "logical_cores": cores,
                 "jobs": worker_count,
                 "keep_going": keep_going,
                 "total_seconds": total_seconds,
@@ -1497,7 +1614,7 @@ def run_preflight(
             "started_at": started.isoformat(),
             "head_sha": head_sha,
             "branch": branch,
-            "logical_cores": _logical_core_count(),
+            "logical_cores": cores,
             "jobs": worker_count,
             "keep_going": keep_going,
             "total_seconds": total_seconds,

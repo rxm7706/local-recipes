@@ -12,7 +12,7 @@
 
 **Purpose:** drain each station's story backlog using the **single-story, worktree-isolated, non-fork** `bmad-build-auto` pattern — **not** `bmad-loop`, **not** marshal factory spin. One story in flight per station; stations run in parallel with each other.
 
-**Marshal home (Tier 2):** `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch/` — `SPEC.md` (CAP-1..CAP-7) + `fleet-drain-playbook.md`. This folder is the **interim runner** until Epic 22 Stories 22.1–22.6 land as `marshal factory dispatch` / `marshal drain` verbs.
+**Marshal home (Tier 2):** `archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch/` — `SPEC.md` (CAP-1..CAP-7) + `fleet-drain-playbook.md`. This folder is the **interim runner** until Epic 22 Stories 22.1–22.6 land as `marshal factory dispatch` / `marshal drain` verbs.
 
 **This campaign's station order:** [SEQUENCING.md](./SEQUENCING.md) (Canopy: 18-1 → 32-1 unlock → eight-station Wave 2 → steward serial).
 

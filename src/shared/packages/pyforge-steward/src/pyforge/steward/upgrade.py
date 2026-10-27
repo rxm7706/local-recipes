@@ -128,7 +128,7 @@ TRAP_LOCAL_CUSTOMIZATION = 16
 WORKED_EXAMPLE_LOOP_HOME_COUNT = 8
 _CFE_META_TEST_REL = Path(".claude/skills/conda-forge-expert/tests/meta/test_bmad_artifacts_in_sync.py")
 _INSTALL_MATRIX_REL = Path(
-    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-channel-product/install-matrix.md"
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/install-matrix.md"
 )
 # Matrix table native URL for bmad-loop (uv-from-git class). Mirrors the
 # install-matrix.md `bmad-loop` row verbatim — the two move together

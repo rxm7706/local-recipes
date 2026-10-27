@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: atlas
-# stories: 220
+# stories: 245
 development_status:
   1-1-generate-legacy-contextual-skill: done
   10-1-restore-atlas-dependency-completeness-so-the-suite-can-collect: done
@@ -107,10 +107,12 @@ development_status:
   31-1-atlas-passes-mypy-in-pyforge-foundry-full-and-a-lane-keeps-it-so: done
   32-1-the-dag-export-builds-in-ci-and-a-failed-build-fails-its-task: done
   33-1-the-atlas-cli-reaches-the-verbs-its-contracts-name: done
+  33-2-the-spine-counts-twelve-pipelines-and-the-mcp-face-names-its-eight: done
   34-1-endoflife-date-and-the-spdx-list-arrive-as-records-the-seed-gap-reports-read: done
   34-10-phase-h-covers-every-mapped-pypi-project-gated-by-its-serial: done
   34-11-the-phase-c-mapping-fills-legacy-s-name-coincidence-and-recipe-source-tiers: done
   34-12-a-vulnerability-feed-that-cannot-be-reached-keeps-its-last-good-copy: done
+  34-13-atlas-declares-the-brotli-its-nixpkgs-store-decodes: done
   34-2-the-phase-c-mapping-fills-from-the-conda-forge-bot-s-name-mapping: done
   34-3-dependencies-feedstock-health-and-maintainers-read-the-bot-s-split-graph-repos: done
   34-4-the-download-tables-fill-from-anaconda-s-monthly-parquet: done
@@ -140,8 +142,19 @@ development_status:
   37-8-the-export-purls-lists-the-purl-artifacts: done
   37-9-the-mapping-gap-classifies-the-unmapped-packages: done
   38-1-the-semantic-store-reads-its-upload-times-and-archived-flag: done
+  39-1-every-atlas-prd-fr-arrow-names-the-spec-capability-that-realizes-it: done
   4-1-integrate-kedro-dagster-for-scheduling-execution: done
   4-2-integrate-kedro-viz-expose-a-pixi-task: done
+  40-1-fr-15-fr-61-and-fr-63-name-what-realizes-them: done
+  41-1-fr-15-names-the-capability-minted-from-its-constraint-and-the-spec-s-cut-text-is-restored: done
+  41-2-the-satellite-prds-fr-ids-leave-the-kernel-s-id-space: backlog
+  41-3-every-atlas-nfr-names-the-capabilities-it-bounds: backlog
+  42-1-agents-trigger-and-read-the-pipeline-natively-sits-behind-a-kill-switch: done
+  42-2-any-manifest-becomes-one-comparable-inventory-behind-one-exit-code-sits-behind-a-kill-switch: done
+  42-3-a-developer-runs-one-command-that-executes-every-check-ci-executes-sits-behind-a-kill-switch: done
+  42-4-the-retrofit-kill-switches-retire-on-their-cleanup-date: backlog
+  44-1-atlas-s-twelve-archived-dreams-leave-the-live-tree: done
+  45-1-atlas-s-absorbed-spec-folders-and-spec-archive-move-to-the-archive-home: done
   5-1-define-the-boring-semantic-layer-bsl-models: done
   5-2-build-the-vizro-dashboard-port-the-28-clis-to-pages: done
   5-3-integrate-vizro-ai-expose-the-nl-interface-as-an-mcp-tool: done
@@ -205,25 +218,37 @@ development_status:
   epic-3: done
   epic-3-retrospective: done
   epic-30: done
-  epic-30-retrospective: optional
+  epic-30-retrospective: done
   epic-31: done
   epic-31-retrospective: done
   epic-32: done
-  epic-32-retrospective: optional
+  epic-32-retrospective: done
   epic-33: done
-  epic-33-retrospective: optional
+  epic-33-retrospective: done
   epic-34: done
-  epic-34-retrospective: optional
+  epic-34-retrospective: done
   epic-35: done
-  epic-35-retrospective: optional
+  epic-35-retrospective: done
   epic-36: in-progress
   epic-36-retrospective: optional
   epic-37: done
-  epic-37-retrospective: optional
+  epic-37-retrospective: done
   epic-38: done
-  epic-38-retrospective: optional
+  epic-38-retrospective: done
+  epic-39: done
+  epic-39-retrospective: optional
   epic-4: done
   epic-4-retrospective: done
+  epic-40: done
+  epic-40-retrospective: optional
+  epic-41: in-progress
+  epic-41-retrospective: optional
+  epic-42: in-progress
+  epic-42-retrospective: optional
+  epic-44: done
+  epic-44-retrospective: optional
+  epic-45: done
+  epic-45-retrospective: optional
   epic-5: done
   epic-5-retrospective: done
   epic-6: done

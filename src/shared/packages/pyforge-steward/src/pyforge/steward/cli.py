@@ -15,7 +15,8 @@ import sys
 from collections.abc import Sequence
 from datetime import date
 
-from pyforge.core.flags import FlagConfigError, FlagOff, disabled_help
+from pyforge.core.cutover_root import resolve_flags_path
+from pyforge.core.flags import FlagConfigError, FlagOff, disabled_help, require
 
 from . import __version__
 from .interfaces import Duty, DutyResult, NullDuty
@@ -228,8 +229,7 @@ _HELP = {
 # the six non-module suite pieces. Cited from install-class-playbook.md;
 # native commands live there (and in install-matrix.md), never invented here.
 INSTALL_CLASS_PLAYBOOK = (
-    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/"
-    "spec-bmad-suite-install-class-wiring/install-class-playbook.md"
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/install-class-playbook.md"
 )
 _PROVISION_PLAYBOOK_EPILOG = (
     "Non-module suite pieces (bmad-method, bmad-loop, skill-forge, labs, "
@@ -237,6 +237,90 @@ _PROVISION_PLAYBOOK_EPILOG = (
     "class-keyed playbook — pixi path, cited native wire, and steward "
     f"verb/task per class: {INSTALL_CLASS_PLAYBOOK}"
 )
+
+
+# Epic 114 (spec-feature-flag-governance CAP-7): one kill switch per pre-rule runtime capability the flag
+# inventory reads for steward, each defaulting ON. A verb switch (Q3) keeps the duty or sub-verb listed in
+# ``--help`` marked disabled and refuses with steward's usage code (``FlagOff`` -> ``EXIT_USAGE`` in ``main``);
+# an invariant switch is wired the same way, so OFF never re-opens the defect the capability closed (operator
+# ruling 2026-10-26, R3). Keys are spelled literally so the gate's orphan check and the retirement walk find them;
+# every read goes through ``pyforge.core.flags``. No tree reads every switch ON with no read.
+RETROFIT_DEFAULT = True
+RETROFIT_KEY_VERBS: dict[str, tuple[tuple[str, ...], ...]] = {
+    "pyforge.steward.budget": (("budget",),),  # CAP-4, Story 114.1
+    "pyforge.steward.workspace_clean": (("workspace", "clean"),),  # CAP-107, Story 114.3
+    "pyforge.steward.workspace_own_worktrees_only": (("workspace", "clean"),),  # CAP-108, Story 114.4
+    "pyforge.steward.deploy_perimeter": (("deploy", "perimeter"),),  # CAP-114, Story 114.5
+    "pyforge.steward.setup_hooks": (("setup",),),  # CAP-154, Story 114.6
+    "pyforge.steward.workspace_full_refs": (  # CAP-158, Story 114.7
+        ("workspace", "start"),
+        ("workspace", "status"),
+        ("workspace", "clean"),
+    ),
+}
+
+
+def _retrofit_verb_flags() -> dict[tuple[str, ...], tuple[str, ...]]:
+    table: dict[tuple[str, ...], list[str]] = {}
+    for key, paths in RETROFIT_KEY_VERBS.items():
+        for path in paths:
+            table.setdefault(path, []).append(key)
+    return {path: tuple(keys) for path, keys in table.items()}
+
+
+RETROFIT_VERB_FLAGS: dict[tuple[str, ...], tuple[str, ...]] = _retrofit_verb_flags()
+
+
+# Set by ``main`` around one ``build_parser`` call: the switches are read for the listing only when help is asked
+# for, so an ordinary invocation reads only its own duty's keys. Any other caller of ``build_parser`` (the docs
+# generator) gets the unmarked listing.
+_MARK_RETROFIT_HELP = False
+
+
+def _build_parser_for(tokens: Sequence[str]) -> argparse.ArgumentParser:
+    """``build_parser()`` with the Q3 listing marked when ``tokens`` ask for help (Epic 114)."""
+    global _MARK_RETROFIT_HELP  # noqa: PLW0603 -- one build's listing mode
+    _MARK_RETROFIT_HELP = any(token in {"-h", "--help"} for token in tokens)
+    try:
+        return build_parser()
+    finally:
+        _MARK_RETROFIT_HELP = False
+
+
+def retrofit_help(path: tuple[str, ...], text: str) -> str:
+    """``text`` marked disabled for each OFF switch that gates the duty or sub-verb at ``path`` (Q3: still listed)."""
+    keys = RETROFIT_VERB_FLAGS.get(path, ())
+    if not keys or not _MARK_RETROFIT_HELP:
+        return text
+    tree = resolve_flags_path()
+    if tree is None:
+        return text
+    for key in keys:
+        text = disabled_help(text, key, RETROFIT_DEFAULT, flags_path=tree)
+    return text
+
+
+def retrofit_verb_path(ns: argparse.Namespace) -> tuple[str, ...]:
+    """The invoked path: the duty plus its ``<duty>_verb`` sub-verb when the parser set one."""
+    duty = getattr(ns, "duty", None)
+    if not isinstance(duty, str):
+        return ()
+    verb = getattr(ns, f"{duty}_verb", None)
+    return (duty, verb) if isinstance(verb, str) else (duty,)
+
+
+def require_retrofit_flags(ns: argparse.Namespace) -> None:
+    """Raise ``FlagOff`` naming the first OFF switch that gates the invoked duty; return when every one reads ON."""
+    path = retrofit_verb_path(ns)
+    # A duty-level switch (``("budget",)``) gates every sub-verb of that duty; a sub-verb switch gates one.
+    keys = tuple(dict.fromkeys((*RETROFIT_VERB_FLAGS.get(path[:1], ()), *RETROFIT_VERB_FLAGS.get(path, ()))))
+    if not keys:
+        return
+    tree = resolve_flags_path()
+    if tree is None:
+        return
+    for key in keys:
+        require(key, RETROFIT_DEFAULT, flags_path=tree)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -247,7 +331,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--version", action="version", version=f"steward {__version__}")
     subs = parser.add_subparsers(dest="duty", metavar="{" + ",".join(DUTIES) + "}")
     for name in DUTIES:
-        duty_parser = subs.add_parser(name, help=_HELP[name], description=_HELP[name])
+        duty_help = retrofit_help((name,), _HELP[name])
+        duty_parser = subs.add_parser(name, help=duty_help, description=duty_help)
         if name == "keys":
             _add_keys_subparsers(duty_parser)
         elif name == "deploy":
@@ -416,7 +501,13 @@ def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
     )
 
     # Story 75.1 / Q3: the verb stays listed in --help, marked disabled, while its flag is off.
-    exec_help = disabled_help(_KEYS_EXEC_HELP, _KEYS_EXEC_FLAG)
+    # With no tree in reach the flag reads its default (off): mark it without a read, so `steward --help` outside a
+    # checkout prints no WARN (marshal's `preserve` listing does the same).
+    exec_help = (
+        disabled_help(_KEYS_EXEC_HELP, _KEYS_EXEC_FLAG)
+        if resolve_flags_path() is not None
+        else f"{_KEYS_EXEC_HELP} [disabled: flag {_KEYS_EXEC_FLAG} is off]"
+    )
     exec_ = keys_subs.add_parser("exec", help=exec_help, description=exec_help)
     exec_.add_argument(
         "--scope",
@@ -529,11 +620,14 @@ def _add_cutover_subparsers(cutover_parser: argparse.ArgumentParser) -> None:
     plan.add_argument("--regenerate", action="store_true")
     plan.add_argument("--append", action="store_true")
     plan.add_argument("--manifest", default=None, metavar="PATH")
-    apply = cutover_subs.add_parser("apply", help="replay one phase into foundry")
+    apply = cutover_subs.add_parser("apply", help=retrofit_help(("cutover", "apply"), "replay one phase into foundry"))
     apply.add_argument("--phase", required=True, metavar="N", help="1a or 1b")
     apply.add_argument("--manifest", default=None, metavar="PATH")
     apply.add_argument("--foundry-root", default=None, metavar="DIR")
-    flip = cutover_subs.add_parser("flip", help="set pyforge.cutover_root (refuses if a loop is running)")
+    flip = cutover_subs.add_parser(
+        "flip",
+        help=retrofit_help(("cutover", "flip"), "set pyforge.cutover_root (refuses if a loop is running)"),
+    )
     flip.add_argument("--to", required=True, choices=("local-recipes", "foundry"))
     flip.add_argument("--flags", default=None, metavar="PATH")
 
@@ -904,9 +998,10 @@ def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
 
     perimeter = deploy_subs.add_parser(
         "perimeter",
-        help=(
+        help=retrofit_help(
+            ("deploy", "perimeter"),
             "validate the AD-5 cross-worker shareability of a dashboard "
-            "deployment topology and render its daphne+nginx manifests (CAP-6)"
+            "deployment topology and render its daphne+nginx manifests (CAP-6)",
         ),
     )
     perimeter.add_argument(
@@ -1137,7 +1232,10 @@ def _add_workspace_subparsers(workspace_parser: argparse.ArgumentParser) -> None
     """Add `start`/`ls`/`status`/`clean` (Stories 13.1–13.4 / CAP-1..4 + set teardown)."""
     workspace_subs = workspace_parser.add_subparsers(dest="workspace_verb", metavar="{start,ls,status,clean}")
 
-    start = workspace_subs.add_parser("start", help="create a scratch worktree and record it in bookkeeping")
+    start = workspace_subs.add_parser(
+        "start",
+        help=retrofit_help(("workspace", "start"), "create a scratch worktree and record it in bookkeeping"),
+    )
     start.add_argument(
         "slug",
         help=(
@@ -1159,9 +1257,10 @@ def _add_workspace_subparsers(workspace_parser: argparse.ArgumentParser) -> None
 
     status = workspace_subs.add_parser(
         "status",
-        help=(
+        help=retrofit_help(
+            ("workspace", "status"),
             "report dirty/clean, ahead/behind, merged? for owned worktrees "
-            "(pays per-worktree git cost; optional slug or repo-set feature)"
+            "(pays per-worktree git cost; optional slug or repo-set feature)",
         ),
     )
     status.add_argument(
@@ -1176,7 +1275,9 @@ def _add_workspace_subparsers(workspace_parser: argparse.ArgumentParser) -> None
 
     clean = workspace_subs.add_parser(
         "clean",
-        help="archive-not-delete owned scratch worktrees (bmad-loop clean discipline)",
+        help=retrofit_help(
+            ("workspace", "clean"), "archive-not-delete owned scratch worktrees (bmad-loop clean discipline)"
+        ),
     )
     clean.add_argument(
         "slug",
@@ -1837,11 +1938,14 @@ def resolve_duty(name: str) -> Duty:
 
 def main(argv: Sequence[str] | None = None) -> int:
     try:
-        parser = build_parser()
+        tokens = sys.argv[1:] if argv is None else list(argv)
+        parser = _build_parser_for(tokens)
         ns = parser.parse_args(argv)
         if not ns.duty:
             parser.print_help()
             return EXIT_OK
+        # Epic 114 (CAP-7): the invoked duty's kill switches, read before it runs (FlagOff -> EXIT_USAGE below).
+        require_retrofit_flags(ns)
         result: DutyResult = resolve_duty(ns.duty).run(ns)
         # An empty summary prints nothing: a duty that has already delivered its
         # payload elsewhere (`ledger-query --output`) must leave stdout EMPTY

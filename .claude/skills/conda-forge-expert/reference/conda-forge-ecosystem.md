@@ -35,7 +35,7 @@ The submission-to-feedstock workflow spans two GitHub orgs: **conda-forge** (the
 |------|------|
 | [`conda-forge/admin-requests`](https://github.com/conda-forge/admin-requests) | Cron jobs and admin scripts that turn merged staged-recipes PRs into standalone feedstock repos and handle ad-hoc admin tasks (mark-broken, transfer ownership, etc.) |
 | [`regro/cf-scripts`](https://github.com/regro/cf-scripts) | Codebase for the **autotick bot** (`regro-cf-autotick-bot`) — monitors upstream releases, opens version-bump PRs against feedstocks |
-| [`regro/cf-graph-countyfair`](https://github.com/regro/cf-graph-countyfair) | Dependency graph the autotick bot uses to plan migrations across the ecosystem |
+| [`conda-forge/conda-forge-bot-data-node_attrs`](https://github.com/conda-forge/conda-forge-bot-data-node_attrs) (and `-pr_info`, `-version_pr_info`, `-pr_json`) | Dependency graph the autotick bot uses to plan migrations across the ecosystem. Formerly `regro/cf-graph-countyfair`, which now redirects to `conda-forge/conda-forge-bot-data` (no graph inside; G123) |
 | [`conda-forge/conda-forge-metadata`](https://github.com/conda-forge/conda-forge-metadata) | Python package providing API access to conda-forge metadata (PyPI↔conda mappings, feedstock metadata) — used by bots and the local `mapping_manager.py` |
 | [`conda-forge/webservices`](https://github.com/conda-forge/webservices) | Backend that handles `@conda-forge-admin` PR commands (rerender, restart ci, lint, add user, …) and Heroku-hosted automation |
 | [`conda-forge/feedstock-tokens`](https://github.com/conda-forge/feedstock-tokens) | Manages per-feedstock CI upload tokens |

@@ -33,6 +33,12 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
+import pytest
+
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 _HERE = Path(__file__).resolve()
 ROOT = next(p for p in _HERE.parents if (p / "pixi.toml").is_file() and (p / "AGENTS.md").is_file())
 PLATFORM = ROOT / "src" / "platform"

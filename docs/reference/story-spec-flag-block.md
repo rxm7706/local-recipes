@@ -28,7 +28,7 @@ shrinks.
 
 Only a spec named `spec-<epic>-<story>-*.md` is a story spec under the rule; that naming is what
 puts a spec in the baseline population, and a legacy-named spec (for example
-`spec-land-promote-isolation.md`) is outside it.
+marshal's pre-numbering `spec-land-promote-isolation.md`, under `archive/` since 2026-10-26) is outside it.
 
 ## Registering a flag
 

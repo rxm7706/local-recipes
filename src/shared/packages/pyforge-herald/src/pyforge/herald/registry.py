@@ -530,7 +530,7 @@ def append_push_ledger_row(readme_path: Path, *, date: str, rows: Sequence[tuple
 
 DESIGN_SYSTEM_PROJECT_NAMES = frozenset({"Modernist", "Broadsheet", "Nocturne"})
 """Every Design project that is a bound design-system library, not a deck
-(the operator's Q1 scope ruling, `docs/dreams/design-sync-loop.md`): mirrored
+(the operator's Q1 scope ruling, `archive/docs/dreams/design-sync-loop.md`): mirrored
 as libraries (Story 23.2), never given a deck twin, ledger or Pages page.
 Matched by exact `list_projects` `name` -- the same "excluded by name, never
 a heuristic" discipline `read_exclusions` below applies. Modernist is also

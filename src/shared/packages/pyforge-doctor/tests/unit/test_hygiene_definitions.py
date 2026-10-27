@@ -21,6 +21,10 @@ import yaml
 
 from pyforge.doctor import hygiene_definitions as hd
 
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 # Guarded, mirroring `test_check_speed_budget.py`'s own idiom: this file
 # sits at the identical `tests/unit/` depth, so `parents[6]` lands at the
 # monorepo root. An IndexError (e.g. an extracted sdist, no monorepo

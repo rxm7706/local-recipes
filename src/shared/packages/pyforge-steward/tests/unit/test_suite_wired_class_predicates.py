@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from pyforge.steward.provision import _SKIPPED_MODULES, _SUPPORTED_MODULES
 from pyforge.steward.suite import (
     INSTALL_CLASS_CLI,
@@ -22,6 +24,10 @@ from pyforge.steward.suite import (
     format_pipeline_truth,
     probe_wired,
 )
+
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
 
 _SIX_CLASSES = {
     "bmad-method": INSTALL_CLASS_INSTALLER_TREE,
@@ -98,7 +104,7 @@ def test_labs_plugin_path_documented_from_playbook(tmp_path: Path):
     playbook = (
         tmp_path
         / "_bmad-output/projects/pyforge-steward/planning-artifacts/specs"
-        / "spec-bmad-suite-install-class-wiring/install-class-playbook.md"
+        / "spec-pyforge-steward/install-class-playbook.md"
     )
     playbook.parent.mkdir(parents=True)
     playbook.write_text("npx skills add bmad-labs/skills\n", encoding="utf-8")
@@ -187,7 +193,7 @@ def test_report_names_each_of_the_six_by_class(tmp_path: Path):
     playbook = (
         tmp_path
         / "_bmad-output/projects/pyforge-steward/planning-artifacts/specs"
-        / "spec-bmad-suite-install-class-wiring/install-class-playbook.md"
+        / "spec-pyforge-steward/install-class-playbook.md"
     )
     playbook.parent.mkdir(parents=True)
     playbook.write_text("npx skills add bmad-labs/skills\n", encoding="utf-8")

@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 MEASURE_CATALOG_RELATIVE = Path(
-    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-build-league-scorecard/measure-catalog.md"
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/measure-catalog.md"
 )
 
 _VALID_STATES = frozenset({"on", "off", "archived"})

@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: 6e3357061bbc87c7
-story_count: 144
-test_file_count: 187
+source_fingerprint: db4bdee52b2c15d2
+story_count: 157
+test_file_count: 188
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 144
-- **Epics parsed:** 38
-- **Test files inventoried:** 187 under `src/shared/packages/pyforge-atlas/tests/`
+- **Stories parsed:** 157
+- **Epics parsed:** 44
+- **Test files inventoried:** 188 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `6e3357061bbc87c7`
+- **Source fingerprint:** `db4bdee52b2c15d2`
 
 ## Risk Assessment
 
@@ -70,6 +70,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 36: Basilisk, the OpenTeams identity sources and the estate source (spec-pyforge-atlas CAP-66..CAP-68, FR-74..FR-76)
 - Epic 37: The Vizro boards read what the pipelines write, on Pages too (spec-pyforge-atlas CAP-63 amended, CAP-69, FR-71, FR-77)
 - Epic 38: The semantic store has its upload times and archived flag (spec-pyforge-atlas CAP-69, FR-77)
+- Epic 39: The atlas PRD's FR arrows name the capabilities the Spec carries
+- Epic 40: FR-15, FR-61 and FR-63 name what realizes them (spec-pyforge-atlas CAP-70, CAP-71)
+- Epic 41: Every atlas requirement derives from a capability (spec-pyforge-atlas CAP-72; spec-one-chain-per-station CAP-5 amended)
+- Epic 42: Every pre-rule atlas runtime capability sits behind a kill switch (2 flags, one per CAP; the Guild flag rule's retrofit capability, Q6)
+- Epic 44: The archived atlas Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
+- Epic 45: The absorbed atlas Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
 
 ### Low-risk epics
 
@@ -249,6 +255,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/test_query_plane_parquet_cache.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_query_plane_vectors.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_read_only_live_attach.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_retrofit_flags.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_scaffold_layout.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_scan_submit.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_scribe_plane_recall.py` | unit | none observed |
@@ -382,6 +389,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 31.1 | Atlas passes mypy in `pyforge-foundry-full`, and a lane keeps it so | none observed |
 | 32.1 | The DAG export builds in CI, and a failed build fails its task | none observed |
 | 33.1 | The atlas CLI reaches the verbs its contracts name, from any directory | none observed |
+| 33.2 | The spine counts twelve pipelines, and the MCP face names its eight as the MC... | none observed |
 | 34.1 | endoflife.date and the SPDX list arrive as records the seed-gap reports read | none observed |
 | 34.2 | The Phase C mapping fills from the conda-forge bot's name mapping | none observed |
 | 34.3 | Dependencies, feedstock health and maintainers read the bot's split graph repos | none observed |
@@ -394,6 +402,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 34.10 | Phase H covers every mapped PyPI project, gated by its serial | none observed |
 | 34.11 | The Phase C mapping fills legacy's name-coincidence and recipe-source tiers | none observed |
 | 34.12 | A vulnerability feed that cannot be reached keeps its last good copy | none observed |
+| 34.13 | Atlas declares the brotli its nixpkgs store decodes | none observed |
 | 35.1 | One opt-in switch, and GitHub authenticates | none observed |
 | 35.2 | The VCS batches come from the whole universe | none observed |
 | 35.3 | Upstream versions and feedstock health come from GitHub | none observed |
@@ -415,6 +424,17 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 37.12 | The Pages data build keeps its last good copies between runs | none observed |
 | 37.13 | The cve-watcher marks an earlier run's diff stale | none observed |
 | 38.1 | The semantic store reads its upload times and archived flag | none observed |
+| 39.1 | Every atlas PRD FR arrow names the Spec capability that realizes it | none observed |
+| 40.1 | FR-15, FR-61 and FR-63 name what realizes them | none observed |
+| 41.1 | FR-15 names the capability minted from its Constraint, and the Spec's cut tex... | none observed |
+| 41.2 | The satellite PRDs' FR ids leave the kernel's id space | none observed |
+| 41.3 | Every atlas NFR names the capabilities it bounds | none observed |
+| 42.1 | agents trigger and read the pipeline natively sits behind a kill switch | none observed |
+| 42.2 | any manifest becomes one comparable inventory, behind one exit code sits behi... | none observed |
+| 42.3 | A developer runs one command that executes every check CI executes sits behin... | none observed |
+| 42.4 | the retrofit kill switches retire on their cleanup date | none observed |
+| 44.1 | Atlas's twelve archived Dreams leave the live tree | none observed |
+| 45.1 | Atlas's absorbed Spec folders and spec-archive move to the archive home | none observed |
 
 ## Quality Gates
 

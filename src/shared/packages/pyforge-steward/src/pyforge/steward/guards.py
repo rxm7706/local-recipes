@@ -89,7 +89,7 @@ LIBRARY: dict[str, GuardEntry] = {
         category="outcome",
         in_library=False,
         surfaces=(),
-        blocked_on="docs/dreams/build-league-scorecard.md",
+        blocked_on="archive/docs/dreams/build-league-scorecard.md",
     ),
 }
 

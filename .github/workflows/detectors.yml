@@ -21,7 +21,7 @@ name: Detectors
 # (dashboard-drift-check, loop-stall-check) reads gitignored Tier-3 sprint
 # feeds, tmux, and ~/.bmad-loops. None of that exists on a runner. Those
 # detectors observe what the factory DID, and the factory has no durable
-# observation plane yet — see docs/dreams/fidelity-enforcement.md. Their absence
+# observation plane yet — see archive/docs/dreams/fidelity-enforcement.md. Their absence
 # here is that gap, surfacing as a deployment constraint.
 #
 # ADVISORY, NOT BLOCKING — operator decision 2026-07-31 — WITH TWO SCOPED
@@ -40,7 +40,7 @@ name: Detectors
 # itself always succeeds, so their findings never block a merge.
 #
 # State that plainly rather than letting the green tick imply more than it means:
-# this is FAST FEEDBACK, not a gate. docs/dreams/fidelity-enforcement.md holds
+# this is FAST FEEDBACK, not a gate. archive/docs/dreams/fidelity-enforcement.md holds
 # that "a contract that nothing can fail against is a plan", and by its own test
 # an advisory check is the weaker thing. It is still a large step up from what
 # preceded it — nothing ran these at all, and PR #170 merged a real
@@ -61,7 +61,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: detectors-${{ github.ref }}
+  group: detectors-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -114,6 +114,11 @@ jobs:
       # (steward Story 103.3). pr-preflight runs the same task.
       - name: tests/scripts files that need a library (scripts-lib-test)
         run: pixi run --frozen -e pyforge-guild scripts-lib-test
+      # Every pyforge-* package declares what it imports, in both manifests (AUD-ATLAS-010): the
+      # dependency-completeness test ran on no PR until steward Story 71.14, so atlas 37.7's undeclared
+      # numpy reached main. pr-preflight runs the same task, in the same env.
+      - name: tests/packaging (pyforge-deps-test)
+        run: pixi run --frozen -e pyforge-ci pyforge-deps-test
 
   detectors:
     # ci-surfaces: detectors.detectors
@@ -200,7 +205,7 @@ jobs:
       - name: Run repo-scope detectors
         run: |
           set +e
-          ${{ steps.py.outputs.cmd }} scripts/detectors.py --scope repo 2>&1 | tee detectors.out
+          ${{ steps.py.outputs.cmd }} scripts/detectors.py --scope repo --jobs auto 2>&1 | tee detectors.out
           rc=${PIPESTATUS[0]}
           set -e
 

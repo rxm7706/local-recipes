@@ -49,6 +49,15 @@ from pyforge.core.errors import PyforgeError
 
 
 @dataclass(frozen=True)
+class BytesProcessResult:
+    """Like ``ProcessResult`` but stdout/stderr stay raw bytes (no UTF-8 decode)."""
+
+    returncode: int
+    stdout: bytes
+    stderr: bytes
+
+
+@dataclass(frozen=True)
 class ProcessResult:
     """One completed process's outcome: ``returncode`` plus its captured
     ``stdout``/``stderr`` (already-decoded text, ``text=True``/
@@ -220,6 +229,42 @@ class PosixProcess:
             # land in ProcessError, never escape raw.
             raise ProcessError(f"cannot launch {list(argv)!r}: {exc}") from exc
         return ProcessResult(returncode=result.returncode, stdout=result.stdout, stderr=result.stderr)
+
+    def run_bytes(
+        self,
+        argv: Sequence[str],
+        *,
+        cwd: Path,
+        timeout_s: float | None = None,
+        env: Mapping[str, str] | None = None,
+        input: bytes | None = None,
+    ) -> BytesProcessResult:
+        """Run ``argv`` like ``run``, but capture stdout/stderr as bytes and optionally write ``input`` to stdin."""
+        if not argv:
+            raise ProcessError("cannot launch an empty argv (no executable given)")
+        try:
+            result = subprocess.run(
+                list(argv),
+                cwd=cwd,
+                capture_output=True,
+                input=input,
+                timeout=timeout_s,
+                env=env,
+                check=False,
+            )
+        except FileNotFoundError as exc:
+            raise ProcessError(f"executable not found: {argv[0]!r} ({exc})") from exc
+        except subprocess.TimeoutExpired as exc:
+            raise ProcessError(f"command timed out after {timeout_s}s: {' '.join(argv)}") from exc
+        except ValueError as exc:
+            raise ProcessError(f"cannot launch {list(argv)!r}: {exc}") from exc
+        except OSError as exc:
+            raise ProcessError(f"cannot launch {list(argv)!r}: {exc}") from exc
+        return BytesProcessResult(
+            returncode=result.returncode,
+            stdout=result.stdout or b"",
+            stderr=result.stderr or b"",
+        )
 
     def is_alive(self, pid: int) -> bool:
         try:

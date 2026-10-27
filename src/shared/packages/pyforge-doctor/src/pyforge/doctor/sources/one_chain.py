@@ -19,12 +19,21 @@ network, no station import):
   never a finding, and a baseline write may only REMOVE entries (a fold that
   archived or absorbed something) -- adding is what the exemption is for.
 
-* ``gather_fr_without_cap`` (Story 25.2, CAP-5) -- a product requirement
-  minted after the rule date names its source capability (``FR-n <- CAP-m``,
-  CHAIN-STANDARD § 2). The pre-rule FR population per station lives in
-  ``docs/governance/fr-baseline.json`` and is never a finding; that baseline
-  is regenerated only at a station's fold PR, when its PRD is re-derived
-  FR <- CAP in full.
+* ``gather_fr_without_cap`` (Story 25.2, CAP-5; Story 50.1, spec-pyforge-doctor
+  CAP-92) -- a product requirement names its source capability and nothing
+  else (``FR-n <- CAP-m``, CHAIN-STANDARD § 2 and § 6). A definition with no
+  arrow and no cite is ``fr-without-cap`` unless its id is in
+  ``docs/governance/fr-baseline.json`` ``projects`` -- the arrowless
+  population at snapshot, which only shrinks. The arrow grammar adds
+  ``fr-cites-non-capability`` (an arrow item that is not a CAP cite),
+  ``fr-cap-unresolved`` (a cite no CAP *definition* line of the named Spec
+  resolves -- never a closed Spec's), ``fr-id-unhyphenated``,
+  ``fr-id-malformed`` (a definition-shaped token outside the family),
+  ``fr-duplicate-id`` and ``fr-counted-run``; the baseline's ``findings`` map
+  turns a known one into ``fr-baselined`` (OK) and a stale ``projects`` id or
+  ``findings`` key is ``fr-baseline-stale`` (WARN). ``fr-arrow-no-title-overlap``
+  is advisory, one WARN per station; an unreadable PRD is ``fr-prd-unreadable``
+  (WARN), never a silent green.
 
 * ``gather_fold_complete`` (Story 36.1, CAP-11) -- a fold is complete before
   its file moves. Every ``archive/docs/dreams/*.md`` not in
@@ -43,6 +52,7 @@ from __future__ import annotations
 
 import json
 import re
+from dataclasses import dataclass
 from pathlib import Path
 
 from ..models import DoctorStatus, Finding, Source
@@ -59,8 +69,10 @@ __all__ = (
     "gather_fr_without_cap",
     "long_paragraphs",
     "prune_chain_sprawl_baseline",
+    "prune_fr_baseline",
     "snapshot_chain_sprawl_baseline",
     "snapshot_fr_baseline",
+    "snapshot_fr_findings",
 )
 
 CHAIN_SPRAWL_BASELINE_REL = Path("docs") / "governance" / "chain-sprawl-baseline.json"
@@ -307,122 +319,680 @@ def _gather_chain_sprawl(target: Path) -> tuple[Finding, ...]:
 
 
 # --------------------------------------------------------------------------
-# Story 25.2 -- fr-without-cap
+# Story 25.2 -- fr-without-cap; Story 50.1 (CAP-92) -- the arrow grammar
 # --------------------------------------------------------------------------
+#
+# A requirement definition opens a line: a marker (heading, bullet, table
+# cell or bold), an id-like token, then a definition separator -- or, for a
+# heading and for a bold-opened id whose bold closes into a separator,
+# whitespace and a title. It is a definition only when it is a heading, has
+# a title or arrow description, or carries an arrow; a bare `- **FR-n** prose`
+# mention is a reference whenever it appears. A column-0 or indented mention
+# with no marker, a token followed by a range marker (`FR-8..FR-11`,
+# `FR-66–FR-71`, `FR-1 to FR-3`) or carrying a lettered suffix
+# (`FR9-was-KEV`), and anything inside a fenced code block are references.
+# The sanctioned id family is `N?FR-[A-Z]?\d+(\.\d+)*`: a token without the
+# hyphen is `fr-id-unhyphenated`, any other definition-shaped token is
+# `fr-id-malformed`. The first definition wins; a second one is
+# `fr-duplicate-id` unless it sits in a record section (a `## ` heading that
+# opens `Currency reconciliation` / `Fold provenance` / `Test-tree
+# convergence` / `Currency validation` / `Validation note`, or carries an ISO
+# date beside a reconcile / provenance / convergence / validation / log
+# word), where every line is a reference. Citations come from the defining
+# line, else its first non-blank body line; an arrow (`←`) must carry CAP
+# cites and nothing else; a `spec-<x>` prefix carries forward over the items
+# of one arrow or parenthetical; a bare `CAP-m` resolves only against the
+# station Spec's own CAP definition lines, a `spec-<x> CAP-m` cite against
+# that Spec's, wherever it lives, never into a closed (archived / absorbed /
+# superseded) Spec.
 
-_FR_ID_RE = re.compile(r"\b(N?FR-\d+)\b")
-_FR_LINE_RE = re.compile(r"^\s*(?:#{1,6}\s*|[-*]\s*|\|\s*)?\**\s*(N?FR-\d+)\b")
+_FR_DEF_RE = re.compile(
+    r"^[ \t]*(?P<marker>#{1,6}[ \t]+|[-*][ \t]+|\|[ \t]+|\*\*)(?P<bold>\*\*)?"
+    r"(?P<id>N?FR(?:-[A-Z]?\d*|\d+)(?:\.\d+)*[A-Za-z0-9-]*)(?P<rest>.*)$"
+)
+_FR_ID_RE = re.compile(r"N?FR-[A-Z]?\d+(?:\.\d+)*")  # the family (CHAIN-STANDARD § 6)
+_FR_ID_UNHYPHENATED_RE = re.compile(r"N?FR[A-Z]?\d+(?:\.\d+)*")
+_FR_ID_SUFFIXED_RE = re.compile(r"N?FR-?[A-Z]?\d+(?:\.\d+)*-[A-Za-z]")  # `FR9-was-KEV`
+_FR_SEPARATOR_RE = re.compile(r"^(?::|\*\*| —| -| ←| \*\(| \(| \||$)")
+_FR_BOLD_TITLE_RE = re.compile(r"^(\s+[^*\n]+)\*\*(?=:| —| -| ←| \*\(| \(| \||$)")
+_FR_REFERENCE_RE = re.compile(r"^\s*(?:\.\.|…|–\s*N?FR|(?:to|through|and)\s+N?FR\b)")
+_CAP_DEF_RE = re.compile(r"^[ \t]*(?:#{1,6}[ \t]+|[-*][ \t]+\*\*|\*\*)CAP-(?P<n>\d+)(?P<rest>.*)$")
+_CAP_SEPARATOR_RE = re.compile(r"^(?::|\*\*| —| -| ←| \(|$)")
+_CAP_CITE_RE = re.compile(r"(?:`?(?P<spec>spec-[a-z0-9-]+)`?[ :])?CAP-(?P<a>\d+)(?:\s*(?:\.\.|–|-)\s*CAP-(?P<b>\d+))?")
 _CAP_RE = re.compile(r"\bCAP-(\d+)\b")
+_ARROW_END_RE = re.compile(r" — | – | - | \*\(| \(|: |\*\*| \|")
+_ARROW_ITEM_SPLIT_RE = re.compile(r'(?:,|\band\b)(?=(?:[^"]*"[^"]*")*[^"]*$)')
+_INTENT_SUCCESS_RE = re.compile(r"\*{1,2}\s*(intent|success)\s*:?\s*\*{1,2}\s*:?\s*(.*)", re.IGNORECASE)
+_RECORD_PREFIX_RE = re.compile(
+    r"^(?:Currency reconciliation|Fold provenance|Test-tree convergence|Currency validation|Validation note)"
+)
+_RECORD_DATED_RE = re.compile(r"\b(?:reconcil\w*|provenance|convergence|validation|log)\b", re.IGNORECASE)
+_ISO_DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
+_SECTION_NUMBER_RE = re.compile(r"^\d+(?:\.\d+)*\.?\s+")
+_FENCE_RE = re.compile(r"^\s*(?:```|~~~)")
+_HEADING_TITLE_RE = re.compile(r"\s+\S")
+_WORD_RE = re.compile(r"[a-z0-9]+")
+_STOPWORDS = frozenset(
+    "the a an and or of to in on for by with from is are be its it as at not no one every "
+    "each that this all any into via than can has have was were will when where which".split()
+)
 _CLOSED_SPEC_STATUSES = frozenset({"archived", "absorbed", "superseded"})
+_MIN_RUN = 4
+_MAX_RANGE = 50  # a `CAP-a..CAP-b` wider than this cites its two endpoints only
 
 
 def _prd_files(project_dir: Path) -> list[Path]:
     prds = project_dir / "planning-artifacts" / "prds"
     if not prds.is_dir():
         return []
-    return sorted(p for p in prds.glob("*/*.md") if p.is_file())
+    return sorted(p for p in prds.glob("*/prd.md") if p.is_file())
 
 
-def _fr_ids_with_citation(text: str) -> dict[str, bool]:
-    """``{FR-n: cited}`` for every FR/NFR id that OPENS a line (a heading, a
-    list item or a table row). ``cited`` is True when ``CAP-m`` appears on the
-    same line or the first non-blank line after it."""
-    lines = text.splitlines()
-    out: dict[str, bool] = {}
-    for i, line in enumerate(lines):
-        m = _FR_LINE_RE.match(line)
-        if m is None:
-            continue
-        fr = m.group(1)
-        if fr in out:
-            continue  # first definition wins; later mentions are references
-        cited = bool(_CAP_RE.search(line))
-        if not cited:
-            for nxt in lines[i + 1 : i + 4]:
-                if nxt.strip():
-                    cited = bool(_CAP_RE.search(nxt))
-                    break
-        out[fr] = cited
+def _content_words(text: str) -> set[str]:
+    out: set[str] = set()
+    for word in _WORD_RE.findall(text.lower()):
+        if len(word) >= 3 and word not in _STOPWORDS:
+            out.add(word.rstrip("s"))
     return out
 
 
-def _fr_citations(text: str, fr: str) -> set[str]:
-    """CAP ids cited on the defining line (or first body line) of ``fr``."""
+def _fr_sort_key(fr: str) -> tuple:
+    m = re.match(r"(N?)FR-?([A-Z]?)(\d+(?:\.\d+)*)$", fr)
+    if m is None:
+        return (2, fr)  # a malformed token sorts last, by its text
+    return (m.group(1) == "N", m.group(2), tuple(int(p) for p in m.group(3).split(".")))
+
+
+def _id_kind(token: str) -> str:
+    """``ok`` / ``unhyphenated`` / ``reference`` (an id with a lettered
+    suffix, `FR9-was-KEV`) / ``malformed`` (any other id-like token)."""
+    if _FR_ID_RE.fullmatch(token):
+        return "ok"
+    if _FR_ID_UNHYPHENATED_RE.fullmatch(token):
+        return "unhyphenated"
+    if _FR_ID_SUFFIXED_RE.match(token):
+        return "reference"
+    return "malformed"
+
+
+@dataclass(frozen=True)
+class _FrDef:
+    fr: str
+    line: int  # 1-based
+    heading: bool
+    kind: str  # `ok` / `unhyphenated` / `malformed` (see _id_kind)
+    title: str  # the text between the separator and the arrow / closing bold
+    text: str  # title, or the description after the arrow when the title is empty
+    has_arrow: bool
+    cites: tuple[tuple[str | None, int], ...]  # (spec folder or None for the station Spec, n)
+    offending: tuple[str, ...]  # arrow items that are not CAP cites
+
+    @property
+    def cited(self) -> bool:
+        return bool(self.cites)
+
+    @property
+    def arrowless(self) -> bool:
+        """No ``←`` and no CAP cite at all -- the `fr-without-cap` shape."""
+        return not self.has_arrow and not self.cites
+
+    @property
+    def integer_id(self) -> int | None:
+        m = re.fullmatch(r"FR-(\d+)", self.fr)
+        return int(m.group(1)) if m else None
+
+
+def _parse_cites(text: str, spec: str | None = None) -> list[tuple[str | None, int]]:
+    """Every CAP cite in ``text``; a ``spec-<x>`` prefix carries forward over
+    the cites that follow it (``spec-x CAP-1, CAP-2`` names two of x's)."""
+    cites: list[tuple[str | None, int]] = []
+    for m in _CAP_CITE_RE.finditer(text):
+        spec = m.group("spec") or spec
+        a = int(m.group("a"))
+        b = int(m.group("b")) if m.group("b") else a
+        span = range(a, b + 1) if 0 <= b - a <= _MAX_RANGE else (a, b)
+        cites.extend((spec, n) for n in span)
+    return cites
+
+
+def _parse_arrow(line: str) -> tuple[str, str]:
+    """``(arrow_text, description)`` -- the text after ``←`` up to the first
+    terminator, and whatever follows that terminator."""
+    after = line.split("←", 1)[1]
+    end = _ARROW_END_RE.search(after)
+    if end is None:
+        return after, ""
+    return after[: end.start()], after[end.end() :]
+
+
+def _arrow_items(arrow_text: str) -> tuple[list[tuple[str | None, int]], list[str]]:
+    cites: list[tuple[str | None, int]] = []
+    offending: list[str] = []
+    spec: str | None = None
+    for raw in _ARROW_ITEM_SPLIT_RE.split(arrow_text):
+        item = raw.strip().strip("`").rstrip(".;)").strip()
+        if not item:
+            continue
+        if _CAP_CITE_RE.fullmatch(item):
+            cites.extend(_parse_cites(item, spec))
+            spec = cites[-1][0]
+        else:
+            offending.append(item)
+    return cites, offending
+
+
+def _clean_title(text: str) -> str:
+    text = re.split(r" ←|\*\*| \*\(|\(spec-", text, maxsplit=1)[0]
+    return text.strip(" \t:—-*|").strip()
+
+
+def _record_section(heading: str) -> bool:
+    heading = _SECTION_NUMBER_RE.sub("", heading.strip())
+    if _RECORD_PREFIX_RE.match(heading):
+        return True
+    return _ISO_DATE_RE.search(heading) is not None and _RECORD_DATED_RE.search(heading) is not None
+
+
+def _fr_definitions(text: str) -> tuple[list[_FrDef], dict[str, list[int]]]:
+    """The requirement definitions of one PRD in document order, and the
+    duplicate definition lines (``{FR-n: [line, ...]}``) outside record
+    sections. A line is a definition when it is a heading, carries a title
+    or an arrow description, or carries an arrow -- first and later
+    occurrences alike; reference lines are never returned."""
     lines = text.splitlines()
+    defs: list[_FrDef] = []
+    seen: set[str] = set()
+    duplicates: dict[str, list[int]] = {}
+    in_fence = False
+    record = False
     for i, line in enumerate(lines):
-        m = _FR_LINE_RE.match(line)
-        if m is None or m.group(1) != fr:
+        if _FENCE_RE.match(line):
+            in_fence = not in_fence
             continue
-        caps = {f"CAP-{n}" for n in _CAP_RE.findall(line)}
-        if not caps:
-            for nxt in lines[i + 1 : i + 4]:
-                if nxt.strip():
-                    caps = {f"CAP-{n}" for n in _CAP_RE.findall(nxt)}
+        if in_fence:
+            continue
+        if line.startswith("## "):
+            record = _record_section(line[3:])
+        m = _FR_DEF_RE.match(line)
+        if m is None:
+            continue
+        fr, rest = m.group("id"), m.group("rest")
+        kind = _id_kind(fr)
+        if kind == "reference" or _FR_REFERENCE_RE.match(rest):
+            continue
+        heading = m.group("marker").startswith("#")
+        bold_opened = m.group("bold") is not None or m.group("marker") == "**"
+        sep = _FR_SEPARATOR_RE.match(rest)
+        if sep is not None:
+            tail = rest[sep.end() :]
+            if sep.group(0) == "**":
+                # the bold closed on the id: a title follows only through a second separator
+                tail = tail if _FR_SEPARATOR_RE.match(tail) and not tail.startswith(" ←") else ""
+            elif tail.startswith("**"):
+                tail = tail[2:].replace("**", "")  # `- **NFR-C1:** desc`: the bold closed on the separator
+        elif heading and _HEADING_TITLE_RE.match(rest):
+            tail = rest
+        elif bold_opened and (bold := _FR_BOLD_TITLE_RE.match(rest)):
+            tail = bold.group(1)  # `- **FR-n a title** — …`: the title sits inside the bold
+        else:
+            continue
+        title = _clean_title(tail)
+        cite_src = line
+        if "←" not in line and not _CAP_RE.search(line):
+            # else the first non-blank body line -- never the next definition or heading
+            cite_src = next((nxt for nxt in lines[i + 1 : i + 4] if nxt.strip()), "")
+            if _FR_DEF_RE.match(cite_src) or cite_src.lstrip().startswith("#"):
+                cite_src = ""
+            if "←" not in cite_src and not _CAP_RE.search(cite_src):
+                cite_src = ""
+        has_arrow = "←" in cite_src
+        description = ""
+        if has_arrow:
+            arrow_text, description = _parse_arrow(cite_src)
+            cites, offending = _arrow_items(arrow_text)
+        else:
+            cites, offending = _parse_cites(cite_src), []
+        text_for_words = title or description.replace("**", "").strip(" \t:—-*")
+        if not (heading or text_for_words or has_arrow):
+            continue  # `- **FR-n** prose…`: a mention, first or later
+        if fr in seen:
+            if not record:
+                duplicates.setdefault(fr, []).append(i + 1)
+            continue  # first definition wins; later lines are references
+        seen.add(fr)
+        defs.append(
+            _FrDef(
+                fr=fr,
+                line=i + 1,
+                heading=heading,
+                kind=kind,
+                title=title,
+                text=text_for_words,
+                has_arrow=has_arrow,
+                cites=tuple(cites),
+                offending=tuple(offending),
+            )
+        )
+    return defs, duplicates
+
+
+@dataclass(frozen=True)
+class _CapDef:
+    title: str
+    intent: str
+    success: str
+
+
+def _cap_definitions(text: str) -> dict[int, _CapDef]:
+    """``{n: _CapDef}`` for every CAP that OPENS a line of a Spec (heading,
+    bullet or bold), first definition winning; ``intent`` / ``success`` are
+    read from the labelled lines of its block."""
+    caps: dict[int, _CapDef] = {}
+    current: int | None = None
+    fields: dict[int, dict[str, str]] = {}
+    in_fence = False
+    for line in text.splitlines():
+        if _FENCE_RE.match(line):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        m = _CAP_DEF_RE.match(line)
+        if m is not None:
+            rest = m.group("rest")
+            sep = _CAP_SEPARATOR_RE.match(rest)
+            if sep is None and not (line.lstrip().startswith("#") and _HEADING_TITLE_RE.match(rest)):
+                current = None
+                continue
+            n = int(m.group("n"))
+            if n in caps:
+                current = None
+                continue
+            caps[n] = _CapDef(title=_clean_title(rest[sep.end() :] if sep else rest), intent="", success="")
+            current = n
+            fields[n] = {}
+        elif line.startswith("#"):
+            current = None
+            continue
+        if current is None:
+            continue
+        for label, body in _INTENT_SUCCESS_RE.findall(line):
+            fields[current].setdefault(label.lower(), body.strip())
+    return {
+        n: _CapDef(title=c.title, intent=fields[n].get("intent", ""), success=fields[n].get("success", ""))
+        for n, c in caps.items()
+    }
+
+
+class _SpecIndex:
+    """Lazily parsed CAP definitions per Spec folder. A cite from station
+    ``pyforge-<s>`` finds ``spec-<x>`` under that station's own ``specs/``
+    first, then ``docs/governance/``, then any other station's ``specs/``.
+    A closed Spec (``_CLOSED_SPEC_STATUSES``) resolves nothing: its CAPs were
+    reminted on the station Spec, and citing the absorbed one is wrong."""
+
+    def __init__(self, target: Path) -> None:
+        self._target = target
+        self._paths: dict[tuple[str, str], Path | None] = {}
+        self._caps: dict[Path, dict[int, _CapDef] | None] = {}  # None: unreadable
+        self._closed: dict[Path, bool] = {}
+
+    def path_for(self, slug: str, spec: str) -> Path | None:
+        key = (slug, spec)
+        if key not in self._paths:
+            own = self._target / _PROJECTS_REL / slug / "planning-artifacts" / "specs" / spec / "SPEC.md"
+            governance = self._target / _GOVERNANCE_REL / spec / "SPEC.md"
+            others = sorted((self._target / _PROJECTS_REL).glob(f"*/planning-artifacts/specs/{spec}/SPEC.md"))
+            self._paths[key] = next((p for p in (own, governance, *others) if p.is_file()), None)
+        return self._paths[key]
+
+    def caps(self, path: Path) -> dict[int, _CapDef] | None:
+        if path not in self._caps:
+            try:
+                self._caps[path] = _cap_definitions(path.read_text(encoding="utf-8"))
+            except OSError, UnicodeDecodeError:
+                self._caps[path] = None
+        return self._caps[path]
+
+    def closed(self, path: Path) -> bool:
+        if path not in self._closed:
+            fm, _ = _frontmatter_parse(path)
+            status = str(fm.get("status", "")).split()[0] if fm.get("status") else ""
+            self._closed[path] = status in _CLOSED_SPEC_STATUSES
+        return self._closed[path]
+
+    def resolve(self, slug: str, cite: tuple[str | None, int]) -> tuple[_CapDef | None, str | None]:
+        """``(definition, None)`` or ``(None, reason)`` with reason
+        ``spec-not-found`` / ``spec-unreadable`` / ``spec-closed`` /
+        ``cap-not-defined``."""
+        spec, n = cite
+        path = self.path_for(slug, spec or f"spec-{slug}")
+        if path is None:
+            return None, "spec-not-found"
+        caps = self.caps(path)
+        if caps is None:
+            return None, "spec-unreadable"
+        if self.closed(path):
+            return None, "spec-closed"
+        cap = caps.get(n)
+        return (cap, None) if cap is not None else (None, "cap-not-defined")
+
+
+def _cite_label(slug: str, cite: tuple[str | None, int]) -> str:
+    spec, n = cite
+    return f"CAP-{n}" if spec in (None, f"spec-{slug}") else f"{spec} CAP-{n}"
+
+
+def _fr_fail(check: str, key: str, rel: str, message: str, **evidence: object) -> Finding:
+    return Finding(
+        source=Source.FR_WITHOUT_CAP,
+        check=check,
+        status=DoctorStatus.FAIL,
+        message=f"{rel}: {message}",
+        evidence={"key": key, "prd": rel, **evidence},
+    )
+
+
+def _counted_runs(defs: list[_FrDef], slug: str, specs: _SpecIndex) -> list[list[_FrDef]]:
+    """Runs of >= ``_MIN_RUN`` consecutive FR-n definitions, each citing
+    exactly one CAP of the station Spec at a constant offset, where no FR
+    text shares a content word with its CAP's title."""
+    runs: list[list[_FrDef]] = []
+    run: list[_FrDef] = []
+    last_n = offset = 0
+
+    def _close() -> None:
+        if len(run) >= _MIN_RUN:
+            for d in run:
+                cap, _ = specs.resolve(slug, d.cites[0])
+                if cap is not None and _content_words(d.text) & _content_words(cap.title):
                     break
-        return caps
-    return set()
+            else:
+                runs.append(list(run))
+        run.clear()
 
-
-def _open_caps(project_dir: Path) -> tuple[set[str], list[str]]:
-    """CAP ids declared by every OPEN Spec folder under the station (before
-    its fold, any of them; after it, only ``spec-pyforge-<s>`` remains open).
-    Returns ``(caps, folders_consulted)``."""
-    caps: set[str] = set()
-    consulted: list[str] = []
-    specs = project_dir / "planning-artifacts" / "specs"
-    if not specs.is_dir():
-        return caps, consulted
-    for spec_md in sorted(specs.glob("spec-*/SPEC.md")):
-        fm, _ = _frontmatter_parse(spec_md)
-        status = str(fm.get("status", "")).split()[0] if fm.get("status") else ""
-        if status in _CLOSED_SPEC_STATUSES:
+    for d in defs:
+        n = d.integer_id
+        if n is None or len(d.cites) != 1 or d.cites[0][0] not in (None, f"spec-{slug}"):
+            _close()
             continue
+        step = d.cites[0][1] - n
+        if not (run and n == last_n + 1 and step == offset):
+            _close()
+            offset = step
+        run.append(d)
+        last_n = n
+    _close()
+    return runs
+
+
+def _structural_findings(
+    rel: str, slug: str, defs: list[_FrDef], duplicates: dict[str, list[int]], specs: _SpecIndex
+) -> list[Finding]:
+    """Every arrow-grammar FAIL of one PRD, each carrying its baseline
+    ``key`` (``<check>:<FR-id or FR-a..FR-b>``)."""
+    station = slug.removeprefix("pyforge-")
+    out: list[Finding] = []
+    for d in defs:
+        if d.offending:
+            out.append(
+                _fr_fail(
+                    "fr-cites-non-capability",
+                    f"fr-cites-non-capability:{d.fr}",
+                    rel,
+                    f"{d.fr} (line {d.line}) cites {', '.join(repr(x) for x in d.offending)} on its arrow — "
+                    "a requirement cites one or more defined CAPs (`← CAP-m` or `← spec-<x> CAP-m`) and "
+                    "nothing else (CHAIN-STANDARD § 2, § 6)",
+                    fr=d.fr,
+                    line=d.line,
+                    station=station,
+                    offending=list(d.offending),
+                )
+            )
+        unresolved: list[str] = []
+        reasons: dict[str, str] = {}
+        for cite in d.cites:
+            cap, reason = specs.resolve(slug, cite)
+            if cap is None and reason is not None:
+                label = _cite_label(slug, cite)
+                unresolved.append(label)
+                reasons[label] = reason
+        if unresolved:
+            out.append(
+                _fr_fail(
+                    "fr-cap-unresolved",
+                    f"fr-cap-unresolved:{d.fr}",
+                    rel,
+                    f"{d.fr} (line {d.line}) cites "
+                    + ", ".join(f"{label} ({reasons[label]})" for label in unresolved)
+                    + f" — a bare CAP-m resolves against spec-{slug}/SPEC.md's own definition lines, "
+                    "a `spec-<x> CAP-m` cite against that Spec's (never a closed one)",
+                    fr=d.fr,
+                    line=d.line,
+                    station=station,
+                    unresolved=unresolved,
+                    reasons=reasons,
+                )
+            )
+        if d.kind == "unhyphenated":
+            out.append(
+                _fr_fail(
+                    "fr-id-unhyphenated",
+                    f"fr-id-unhyphenated:{d.fr}",
+                    rel,
+                    f"{d.fr} (line {d.line}) is defined without the hyphen — the family is `FR-n` / `NFR-n` "
+                    "(CHAIN-STANDARD § 6)",
+                    fr=d.fr,
+                    line=d.line,
+                    station=station,
+                )
+            )
+        elif d.kind == "malformed":
+            out.append(
+                _fr_fail(
+                    "fr-id-malformed",
+                    f"fr-id-malformed:{d.fr}",
+                    rel,
+                    f"{d.fr} (line {d.line}) is defined under an id outside the family — one of "
+                    "`FR-n`, `NFR-n`, `FR-n.m`, `NFR-Xn` (CHAIN-STANDARD § 6, § 12)",
+                    fr=d.fr,
+                    line=d.line,
+                    station=station,
+                )
+            )
+    first_line = {d.fr: d.line for d in defs}
+    for fr, dup_lines in duplicates.items():
+        out.append(
+            _fr_fail(
+                "fr-duplicate-id",
+                f"fr-duplicate-id:{fr}",
+                rel,
+                f"{fr} is defined again at line{'s' if len(dup_lines) > 1 else ''} "
+                f"{', '.join(map(str, dup_lines))} (first at line {first_line.get(fr, '?')}) — one id, one "
+                "definition; a later mention is a reference, not a second definition",
+                fr=fr,
+                line=first_line.get(fr),
+                duplicate_lines=dup_lines,
+                station=station,
+            )
+        )
+    for run in _counted_runs(defs, slug, specs):
+        first, last = run[0], run[-1]
+        fr_range = f"{first.fr}..{last.fr}"
+        cap_range = f"CAP-{first.cites[0][1]}..CAP-{last.cites[0][1]}"
+        out.append(
+            _fr_fail(
+                "fr-counted-run",
+                f"fr-counted-run:{fr_range}",
+                rel,
+                f"{fr_range} (lines {first.line}–{last.line}) cite {cap_range} in lockstep and no FR shares a "
+                "content word with its CAP's title — arrows are derived from the Spec, never counted onto it",
+                fr_range=fr_range,
+                cap_range=cap_range,
+                frs=[d.fr for d in run],
+                station=station,
+            )
+        )
+    return out
+
+
+def _no_title_overlap(defs: list[_FrDef], slug: str, specs: _SpecIndex) -> list[str]:
+    """FR ids whose text shares no content word with the union of their
+    cited CAPs' title, intent and success text (advisory)."""
+    out: list[str] = []
+    for d in defs:
+        words = _content_words(d.text)
+        if not words or not d.cites:
+            continue
+        cap_words: set[str] = set()
+        resolved = False
+        for cite in d.cites:
+            cap, _ = specs.resolve(slug, cite)
+            if cap is not None:
+                resolved = True
+                cap_words |= _content_words(f"{cap.title} {cap.intent} {cap.success}")
+        if resolved and not (words & cap_words):
+            out.append(d.fr)
+    return out
+
+
+@dataclass(frozen=True)
+class _PrdMeasure:
+    rel: str
+    defs: list[_FrDef]
+    structural: list[Finding]
+    no_overlap: list[str]
+
+
+def _measure_station(target: Path, project_dir: Path, specs: _SpecIndex) -> tuple[list[_PrdMeasure], list[str]]:
+    """``(measures, unreadable)`` -- one measure per readable PRD, and the
+    repo-relative paths of the PRDs that could not be read."""
+    slug = project_dir.name
+    out: list[_PrdMeasure] = []
+    unreadable: list[str] = []
+    for prd in _prd_files(project_dir):
+        rel = prd.relative_to(target).as_posix()
         try:
-            text = spec_md.read_text(encoding="utf-8")
+            text = prd.read_text(encoding="utf-8")
         except OSError, UnicodeDecodeError:
+            unreadable.append(rel)
             continue
-        consulted.append(spec_md.parent.name)
-        caps.update(f"CAP-{n}" for n in _CAP_RE.findall(text))
-    return caps, consulted
+        defs, duplicates = _fr_definitions(text)
+        out.append(
+            _PrdMeasure(
+                rel=rel,
+                defs=defs,
+                structural=_structural_findings(rel, slug, defs, duplicates, specs),
+                no_overlap=_no_title_overlap(defs, slug, specs),
+            )
+        )
+    return out, unreadable
+
+
+def _station_dirs(target: Path) -> list[Path]:
+    pdir = target / _PROJECTS_REL
+    return sorted(pdir.glob("pyforge-*")) if pdir.is_dir() else []
+
+
+_FR_BASELINE_COMMENT = [
+    "fr-without-cap baseline (doctor Stories 25.2 and 50.1, spec-one-chain-per-station CAP-5).",
+    "`projects`: per station, the FR/NFR ids whose definition carried NO citation when snapshotted --",
+    "a missing arrow on an id listed here is never a finding; an id with an arrow is enforced forever,",
+    "so the list only shrinks (`--project pyforge-<s>` re-snapshots one station at its fold PR).",
+    "`findings`: per station, the structural findings (`<check>:<FR-id>`) present at `findings_sha` --",
+    "reported as fr-baselined, never FAIL. Either entry that stopped applying is WARN fr-baseline-stale",
+    "until `--prune` (the only routine verb) removes it. `--snapshot-findings` is a one-time act: it is",
+    "refused once `findings` exists, and `--force` is for a review that names each ADDED key in its PR.",
+    "`owners`: hand-maintained -- the story that owns what each station still carries here.",
+]
+_FR_BASELINE_CARRIED = ("rebaselined", "owners", "findings_sha", "findings")
 
 
 def snapshot_fr_baseline(
     target: Path, *, ruling_sha: str, only_project: str | None = None, existing: dict | None = None
 ) -> dict:
-    """Per-station pre-rule FR population. With ``only_project`` set, every
+    """Per-station arrowless FR population. With ``only_project`` set, every
     other station's entry is carried over from ``existing`` untouched -- a
-    fold PR re-baselines its own station only."""
+    fold PR re-baselines its own station only. ``owners``, the ``findings``
+    map and its SHA are carried over as they are."""
     projects: dict[str, list[str]] = {}
     if existing and isinstance(existing.get("projects"), dict):
         projects.update({k: list(v) for k, v in existing["projects"].items()})
-    pdir = target / _PROJECTS_REL
-    for project_dir in sorted(pdir.glob("pyforge-*")) if pdir.is_dir() else []:
+    specs = _SpecIndex(target)
+    for project_dir in _station_dirs(target):
         slug = project_dir.name
         if only_project and slug != only_project:
             continue
-        ids: set[str] = set()
-        for prd in _prd_files(project_dir):
-            try:
-                ids.update(_fr_ids_with_citation(prd.read_text(encoding="utf-8")))
-            except OSError, UnicodeDecodeError:
+        measures, _unreadable = _measure_station(target, project_dir, specs)
+        projects[slug] = sorted({d.fr for m in measures for d in m.defs if d.arrowless}, key=_fr_sort_key)
+    data: dict = {"$comment": _FR_BASELINE_COMMENT, "ruling_sha": ruling_sha, "projects": projects}
+    for key in _FR_BASELINE_CARRIED:
+        if existing and key in existing:
+            data[key] = existing[key]
+    return data
+
+
+def snapshot_fr_findings(target: Path) -> dict[str, list[str]]:
+    """``{pyforge-<s>: [key, ...]}`` -- every structural finding firing now."""
+    specs = _SpecIndex(target)
+    out: dict[str, list[str]] = {}
+    for project_dir in _station_dirs(target):
+        measures, _unreadable = _measure_station(target, project_dir, specs)
+        out[project_dir.name] = sorted({f.evidence["key"] for m in measures for f in m.structural})
+    return out
+
+
+def prune_fr_baseline(target: Path) -> tuple[dict | None, list[str]]:
+    """Drop ``projects`` ids that are no longer arrowless definitions and
+    ``findings`` keys that no longer fire. Returns the new baseline (or
+    ``None`` when unreadable) and the removed entries. Never adds; a station
+    with an unreadable PRD is left untouched."""
+    data = _read_json(target / FR_BASELINE_REL)
+    if data is None or not isinstance(data.get("projects"), dict):
+        return None, []
+    removed: list[str] = []
+    specs = _SpecIndex(target)
+    arrowless: dict[str, set[str]] = {}
+    firing: dict[str, set[str]] = {}
+    skipped: set[str] = set()
+    for project_dir in _station_dirs(target):
+        measures, unreadable = _measure_station(target, project_dir, specs)
+        if unreadable:
+            skipped.add(project_dir.name)
+            continue
+        arrowless[project_dir.name] = {d.fr for m in measures for d in m.defs if d.arrowless}
+        firing[project_dir.name] = {f.evidence["key"] for m in measures for f in m.structural}
+    for slug, ids in data["projects"].items():
+        if slug in skipped:
+            continue
+        kept = [fr for fr in ids if fr in arrowless.get(slug, set())]
+        removed.extend(f"{slug}: {fr}" for fr in ids if fr not in arrowless.get(slug, set()))
+        data["projects"][slug] = kept
+    if isinstance(data.get("findings"), dict):
+        for slug, keys in data["findings"].items():
+            if slug in skipped:
                 continue
-        projects[slug] = sorted(ids, key=lambda s: (s.startswith("N"), int(s.split("-")[1])))
-    return {
-        "$comment": [
-            "fr-without-cap baseline (doctor Story 25.2, spec-one-chain-per-station CAP-5).",
-            "Every FR-n / NFR-n id per station PRD at the ruling SHA -- the pre-rule population,",
-            "never a finding. Regenerated ONLY per station, at that station's fold PR, when its",
-            "PRD is re-derived FR <- CAP in full:",
-            "  python scripts/fr_baseline.py --project pyforge-<s>",
-        ],
-        "ruling_sha": ruling_sha,
-        "projects": projects,
-    }
+            kept = [k for k in keys if k in firing.get(slug, set())]
+            removed.extend(f"{slug}: {k}" for k in keys if k not in firing.get(slug, set()))
+            data["findings"][slug] = kept
+    return data, removed
 
 
 def gather_fr_without_cap(target: Path) -> tuple[Finding, ...]:
-    """A product requirement minted after the rule date names its source CAP."""
+    """A product requirement names its source CAP, and nothing else."""
     return degrade_on_exception(Source.FR_WITHOUT_CAP, "fr-without-cap", lambda: _gather_fr_without_cap(target))
+
+
+def _stale(slug: str, kind: str, key: str) -> Finding:
+    what = "`projects` id" if kind == "projects" else "`findings` key"
+    why = "now carries an arrow or is no longer defined" if kind == "projects" else "no longer fires"
+    return Finding(
+        source=Source.FR_WITHOUT_CAP,
+        check="fr-baseline-stale",
+        status=DoctorStatus.WARN,
+        message=f"{slug}: baseline {what} `{key}` {why} — prune it (`python scripts/fr_baseline.py --prune`)",
+        evidence={"station": slug.removeprefix("pyforge-"), "kind": kind, "key": key},
+    )
 
 
 def _gather_fr_without_cap(target: Path) -> tuple[Finding, ...]:
@@ -441,79 +1011,123 @@ def _gather_fr_without_cap(target: Path) -> tuple[Finding, ...]:
             ),
         )
     known: dict[str, set[str]] = {k: set(v) for k, v in baseline["projects"].items() if isinstance(v, list)}
+    known_findings: dict[str, set[str]] = {}
+    if isinstance(baseline.get("findings"), dict):
+        known_findings = {k: set(v) for k, v in baseline["findings"].items() if isinstance(v, list)}
+    specs = _SpecIndex(target)
     findings: list[Finding] = []
+    counts: dict[str, dict[str, int]] = {}
     measured_new = 0
-    pdir = target / _PROJECTS_REL
-    for project_dir in sorted(pdir.glob("pyforge-*")) if pdir.is_dir() else []:
+    no_overlap: dict[str, list[str]] = {}
+    for project_dir in _station_dirs(target):
         slug = project_dir.name
         station = slug.removeprefix("pyforge-")
         base_ids = known.get(slug, set())
-        caps: set[str] | None = None
-        consulted: list[str] = []
-        for prd in _prd_files(project_dir):
-            try:
-                text = prd.read_text(encoding="utf-8")
-            except OSError, UnicodeDecodeError:
-                continue
-            rel = prd.relative_to(target).as_posix()
-            for fr, cited in _fr_ids_with_citation(text).items():
-                if fr in base_ids:
+        spec_folder = f"{_PROJECTS_REL.as_posix()}/{slug}/planning-artifacts/specs/spec-{slug}/"
+        fired: set[str] = set()
+        arrowless_ids: set[str] = set()
+        baselined: list[str] = []
+        station_counts = {"definitions": 0, "cited": 0, "arrowless": 0, "new": 0}
+        measures, unreadable = _measure_station(target, project_dir, specs)
+        for rel in unreadable:
+            findings.append(
+                Finding(
+                    source=Source.FR_WITHOUT_CAP,
+                    check="fr-prd-unreadable",
+                    status=DoctorStatus.WARN,
+                    message=f"{rel} cannot be read — {station}'s requirements were not measured",
+                    evidence={"prd": rel, "station": station},
+                )
+            )
+        for m in measures:
+            station_counts["definitions"] += len(m.defs)
+            station_counts["cited"] += sum(d.cited for d in m.defs)
+            station_counts["arrowless"] += sum(d.arrowless for d in m.defs)
+            arrowless_ids.update(d.fr for d in m.defs if d.arrowless)
+            for d in m.defs:
+                if d.fr in base_ids:
                     continue
-                measured_new += 1
-                spec_folder = f"{_PROJECTS_REL.as_posix()}/{slug}/planning-artifacts/specs/spec-{slug}/"
-                if not cited:
-                    findings.append(
-                        Finding(
-                            source=Source.FR_WITHOUT_CAP,
-                            check="fr-without-cap",
-                            status=DoctorStatus.FAIL,
-                            message=(
-                                f"{rel}: {fr} was minted after the rule date and cites no "
-                                f"source capability — write `{fr} ← CAP-m` against "
-                                f"{station}'s Spec (CHAIN-STANDARD § 2)"
-                            ),
-                            evidence={
-                                "prd": rel,
-                                "fr": fr,
-                                "station": station,
-                                "spec_folder": spec_folder,
-                            },
-                        )
-                    )
+                measured_new += 1  # enforced: not in the arrowless population
+                station_counts["new"] += 1
+                if not d.arrowless:
                     continue
-                if caps is None:
-                    caps, consulted = _open_caps(project_dir)
-                missing = sorted(c for c in _fr_citations(text, fr) if c not in caps)
-                if missing:
-                    findings.append(
-                        Finding(
-                            source=Source.FR_WITHOUT_CAP,
-                            check="fr-cap-unresolved",
-                            status=DoctorStatus.FAIL,
-                            message=(
-                                f"{rel}: {fr} cites {', '.join(missing)}, which no open Spec "
-                                f"under {slug} declares ({len(consulted)} folder(s) consulted)"
-                            ),
-                            evidence={
-                                "prd": rel,
-                                "fr": fr,
-                                "station": station,
-                                "unresolved": missing,
-                                "consulted": consulted,
-                            },
-                        )
+                findings.append(
+                    Finding(
+                        source=Source.FR_WITHOUT_CAP,
+                        check="fr-without-cap",
+                        status=DoctorStatus.FAIL,
+                        message=(
+                            f"{m.rel}: {d.fr} (line {d.line}) was minted after the rule date and cites no "
+                            f"source capability — write `{d.fr} ← CAP-m` against "
+                            f"{station}'s Spec (CHAIN-STANDARD § 2)"
+                        ),
+                        evidence={
+                            "prd": m.rel,
+                            "fr": d.fr,
+                            "line": d.line,
+                            "station": station,
+                            "spec_folder": spec_folder,
+                        },
                     )
-    if not findings:
+                )
+            for f in m.structural:
+                key = f.evidence["key"]
+                fired.add(key)
+                station_counts[f.check] = station_counts.get(f.check, 0) + 1
+                if key in known_findings.get(slug, set()):
+                    baselined.append(key)
+                else:
+                    findings.append(f)
+            if m.no_overlap:
+                no_overlap.setdefault(slug, []).extend(m.no_overlap)
+        counts[slug] = station_counts
+        if baselined:
+            findings.append(
+                Finding(
+                    source=Source.FR_WITHOUT_CAP,
+                    check="fr-baselined",
+                    status=DoctorStatus.OK,
+                    message=(
+                        f"{slug}: {len(baselined)} arrow-grammar finding(s) listed in "
+                        f"{FR_BASELINE_REL.as_posix()} `findings` (not FAIL): {', '.join(sorted(baselined))}"
+                    ),
+                    evidence={"station": station, "keys": sorted(baselined)},
+                )
+            )
+        if not unreadable:
+            findings.extend(_stale(slug, "projects", fr) for fr in sorted(base_ids - arrowless_ids, key=_fr_sort_key))
+            findings.extend(_stale(slug, "findings", key) for key in sorted(known_findings.get(slug, set()) - fired))
+    total_no_overlap = sum(len(v) for v in no_overlap.values())
+    for slug, frs in sorted(no_overlap.items()):
+        findings.append(
+            Finding(
+                source=Source.FR_WITHOUT_CAP,
+                check="fr-arrow-no-title-overlap",
+                status=DoctorStatus.WARN,
+                message=(
+                    f"{slug}: {len(frs)} FR(s) share no content word with the CAP(s) they cite "
+                    f"(title, intent and success text) — advisory, read each arrow: {', '.join(frs)}"
+                ),
+                evidence={"station": slug.removeprefix("pyforge-"), "frs": frs, "fleet_total": total_no_overlap},
+            )
+        )
+    if not any(f.status is DoctorStatus.FAIL for f in findings):
         findings.append(
             Finding(
                 source=Source.FR_WITHOUT_CAP,
                 check="fr-without-cap",
                 status=DoctorStatus.OK,
                 message=(
-                    f"every FR minted since {baseline.get('ruling_sha', '?')} cites a "
-                    f"resolving CAP ({measured_new} new FR(s) measured)"
+                    f"every FR minted since {baseline.get('ruling_sha', '?')} cites a resolving CAP and "
+                    f"nothing else ({measured_new} enforced of "
+                    f"{sum(c['definitions'] for c in counts.values())} definition(s) measured)"
                 ),
-                evidence={"ruling_sha": baseline.get("ruling_sha"), "new_frs": measured_new},
+                evidence={
+                    "ruling_sha": baseline.get("ruling_sha"),
+                    "findings_sha": baseline.get("findings_sha"),
+                    "new_frs": measured_new,
+                    "counts": counts,
+                },
             )
         )
     return tuple(findings)

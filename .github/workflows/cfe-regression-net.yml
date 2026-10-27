@@ -39,6 +39,11 @@ name: CFE regression net
 # below. This same `pixi run --frozen -e local-recipes test-ci` also reruns
 # on workflow_dispatch.
 #
+# Story 117.8 (spec-pyforge-steward CAP-175, operator ruling D1, 2026-10-27): the
+# full net runs on push-to-main and workflow_dispatch; a pull_request runs the
+# `cfe-meta` job (the skill's tests/meta in pyforge-guild, ~80 s) instead. The
+# path filters below stay: they decide which pull requests get the meta lane.
+#
 # This net is NEW GROUND on top of the existing offline pyforge-mason-test /
 # platform-ci.yml jobs (SPEC.md: "the test net is the safety rail") — it
 # replaces and narrows nothing that already runs elsewhere.
@@ -92,7 +97,10 @@ jobs:
   cfe-regression-net:
     # ci-surfaces: cfe-regression-net.cfe-regression-net
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_CFE_REGRESSION_NET != 'true') }}
+    # Story 117.8 (spec-pyforge-steward CAP-175, ruling D1): the full net (a serial 579 s suite in the 10 GB env,
+    # after 113 s of freeing the runner's disk) runs on push-to-main and workflow_dispatch; a pull_request runs the
+    # `cfe-meta` job below instead (registry row cfe-regression-net.cfe-regression-net, trigger: main).
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_CFE_REGRESSION_NET != 'true' && (github.event_name != 'pull_request')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -123,3 +131,23 @@ jobs:
       # pixi task, not here, so local runs and CI run the identical command.
       - name: CFE regression suite
         run: pixi run --frozen -e local-recipes test-ci
+
+  cfe-meta:
+    # ci-surfaces: cfe-regression-net.cfe-meta
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_CFE_REGRESSION_NET != 'true' && (github.event_name == 'pull_request')) }}
+    # Story 117.8 (spec-pyforge-steward CAP-175, ruling D1): the pull-request lane -- the skill's tests/meta alone
+    # (7,792 tests, ~80 s) in the slim pyforge-guild env, no disk freeing, no 10 GB restore. The same pixi task runs
+    # locally. BLOCKING like the full net: its exit code stands.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          environments: pyforge-guild
+          cache: true
+
+      - name: CFE meta suite (the pull-request lane)
+        run: pixi run --frozen -e pyforge-guild test-ci-meta

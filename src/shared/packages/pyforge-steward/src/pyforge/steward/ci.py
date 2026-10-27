@@ -13,12 +13,16 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, Protocol
 
+from pyforge.core.atomic_write import atomic_write_text
+
 from .bootstrap import repo_root
 from .interfaces import DutyResult
 
 CI_FLAG_KEY = "pyforge.steward.ci_pause_control"
 DEFAULT_REPO = "rxm7706/local-recipes"
 CI_VARS_REL = Path(".steward/ci-vars.json")
+#: Story 99.8: the last ``ci status`` envelope, which ``pr-preflight`` reads for red ``main`` runs.
+CI_STATUS_REL = Path(".steward/ci-status.json")
 CI_PAUSES_LOG_REL = Path(".steward/ci-pauses.log")
 SCHEMA_ID = "urn:local-recipes:pyforge-steward:ci-status-schema"
 CANARY_WORKFLOW = ".github/workflows/ci-canary.yml"
@@ -201,7 +205,7 @@ def _fetch_runs(deps: CiDeps, workflow_file: str) -> tuple[list[dict[str, Any]] 
             "--limit",
             "20",
             "--json",
-            "databaseId,conclusion,status,createdAt,event",
+            "databaseId,conclusion,status,createdAt,event,headBranch",
         ],
         deps.root,
     )
@@ -328,6 +332,22 @@ def _last_green(runs: list[dict[str, Any]]) -> str | None:
     for run in runs:
         if str(run.get("conclusion") or "") == "success":
             return str(run.get("createdAt") or "") or None
+    return None
+
+
+def _latest_main_run(runs: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """The newest completed run on ``main`` that a PR did not start (Story 99.8). ``gh run list`` lists newest first."""
+    for run in runs:
+        if str(run.get("headBranch") or "") != "main" or str(run.get("status") or "") != "completed":
+            continue
+        if str(run.get("event") or "") in ("pull_request", "pull_request_target"):
+            continue
+        run_id = run.get("databaseId")
+        return {
+            "conclusion": str(run.get("conclusion") or ""),
+            "created_at": str(run.get("createdAt") or "") or None,
+            "run_id": run_id if isinstance(run_id, int) and not isinstance(run_id, bool) else None,
+        }
     return None
 
 
@@ -776,7 +796,10 @@ def _build_rows(registry: dict[str, Any], snap: _GhSnapshot, deps: CiDeps) -> li
             "review_by": review_s,
             "review_days_left": days_left,
             "owner": row.get("owner"),
+            # Story 117.6 (CAP-175, ruling D1): `main` names a surface that never runs on a pull_request.
+            "trigger": row.get("trigger"),
             "last_green_run": last_green,
+            "latest_main_run": None if retired else _latest_main_run(runs),
             "verdict": verdict,
             **({"detail": detail} if detail else {}),
         }
@@ -903,12 +926,15 @@ def run_status(deps: CiDeps, *, json_out: bool) -> DutyResult:
     rows = _build_rows(registry, snap, deps)
     payload = _status_payload(deps, snap, rows)
     partial = bool(snap.run_list_errors)
+    snapshot_error = _write_status_snapshot(deps, payload)
     if json_out:
         summary = json.dumps(payload, indent=2)
     else:
         summary = _format_table(rows)
     ok = not partial
     details: dict[str, object] = {"payload": payload, "partial": partial}
+    if snapshot_error is not None:
+        details["status_snapshot_error"] = snapshot_error
     if partial:
         details["run_list_errors"] = snap.run_list_errors
         if json_out:
@@ -916,6 +942,19 @@ def run_status(deps: CiDeps, *, json_out: bool) -> DutyResult:
             # read; the envelope's ``partial`` names what it could not, and the exit code stays 1.
             details["summary_stream"] = "stdout"
     return DutyResult(ok=ok, summary=summary, details=details)
+
+
+def _write_status_snapshot(deps: CiDeps, payload: dict[str, Any]) -> str | None:
+    """Save the envelope where ``pr-preflight`` reads red ``main`` runs (Story 99.8), complete or partial, atomically.
+
+    Returns why it could not, or ``None``: an unwritable ``.steward/`` never costs the caller its envelope."""
+    path = deps.root / CI_STATUS_REL
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        atomic_write_text(path, json.dumps(payload, indent=2) + "\n")
+    except OSError as exc:
+        return f"{CI_STATUS_REL}: {exc}"
+    return None
 
 
 def _vars_path(deps: CiDeps) -> Path:

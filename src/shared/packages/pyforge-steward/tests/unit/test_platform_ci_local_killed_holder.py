@@ -30,10 +30,15 @@ except IndexError:
     _REPO_ROOT = None
 _SCRIPT = (_REPO_ROOT / "scripts" / "platform-ci-local.sh") if _REPO_ROOT else None
 
-pytestmark = pytest.mark.skipif(
-    not (_SCRIPT and _SCRIPT.is_file()),
-    reason="scripts/platform-ci-local.sh required",
-)
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = [
+    pytest.mark.live_tree,
+    pytest.mark.skipif(
+        not (_SCRIPT and _SCRIPT.is_file()),
+        reason="scripts/platform-ci-local.sh required",
+    ),
+]
 
 
 def _free_port() -> int:

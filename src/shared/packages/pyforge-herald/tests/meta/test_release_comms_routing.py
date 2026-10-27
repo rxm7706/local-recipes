@@ -34,7 +34,7 @@ PRODUCER_SKILL_DIRS = (
     ".claude/skills/bmad-os-changelog-social",
 )
 REGISTER_RELATIVE = (
-    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md"
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/adoption-register.md"
 )
 
 

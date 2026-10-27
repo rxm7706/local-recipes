@@ -16,6 +16,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from pyforge.core.flags import kill_switch_on
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from pyforge.marshal.adapters.clock_system import SystemClock
@@ -68,6 +69,15 @@ _PROJECT_SLUG_PREFIX = "pyforge-"
 #: Story 79.1: a Tier-3 feed row that reads this is a deliberate state the landing never moves
 #: (`_LEDGER_DONE_STATUS`, imported above, is the other one).
 _LEDGER_BLOCKED_STATUS = "blocked"
+
+
+# Story 110.26 (spec-feature-flag-governance CAP-7): the kill switch for CAP-275, spelled literally.
+FOLLOWUP_REVIEW_TO_LEDGER_FLAG_KEY = "pyforge.marshal.followup_review_to_ledger"
+
+
+def followup_review_to_ledger_enabled() -> bool:
+    """Whether finalize carries a recommended follow-up review into the ledger (CAP-275's kill switch, ON by default)."""
+    return kill_switch_on(FOLLOWUP_REVIEW_TO_LEDGER_FLAG_KEY)
 
 
 @dataclass
@@ -1038,6 +1048,12 @@ def finalize_dispatch_land(
         if followup_review_id is not None
         else None
     )
+    # Story 110.26 (spec-feature-flag-governance CAP-7; CAP-275): the kill switch. OFF carries no follow-up
+    # review into the deferred-work ledger and closes none -- the recommendation stays in the story spec only --
+    # while the intake itself (Story 53.2: the spec's `deferred:` entries reach the ledger) runs as before.
+    if not followup_review_to_ledger_enabled():
+        followup = None
+        close = None
     intake_finding = _run_deferred_work_intake(
         process, fs, vcs, root, project_slug, str(key), followup=followup, close=close
     )

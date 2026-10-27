@@ -16,14 +16,14 @@
 model_version: 1.0.0
 seed_model_version: 0.1.0
 adopted_at: '2026-10-11T08:57:57Z'
-last_update: '2026-10-11T08:57:57Z'
+last_update: '2026-10-27T10:11:07Z'
 mode: adopt
 agents: []
 managed:
 - id: bmad-loop-worktree
   path: scripts/bmad-loop-worktree
   class: copied-managed
-  body_sha: ea241146
+  body_sha: 451f5b20
   inserted_region_spans: []
 - id: bmad-switch
   path: scripts/bmad-switch
@@ -48,12 +48,12 @@ managed:
 - id: gitignore
   path: .gitignore
   class: hybrid-managed-region
-  body_sha: 6dfa035c
+  body_sha: '12233758'
   inserted_region_spans:
   - name: model-ignores
     start: 75
-    end: 2165
-    body_sha: 6dfa035c
+    end: 2501
+    body_sha: '12233758'
 - id: readme-badge
   path: README.md
   class: hybrid-managed-region
@@ -81,3 +81,14 @@ skips:
 legacy: []
 migrations_applied: []
 opted_out: []
+acceptances:
+- id: bmad-loop-worktree
+  region: null
+  path: scripts/bmad-loop-worktree
+  previous_sha: ea241146
+  accepted_sha: 451f5b20
+  accepted_at: '2026-10-27T10:11:07Z'
+  accepted_by: t <t@example.com>
+  head: e5e8c692d6429497201a183f468f862e218dd351
+  reason: 'PR #2330 (one-chain CAP-11 close-out) re-pointed the Spec comment in scripts/bmad-loop-worktree
+    to its archive path; the edit is intended, the baseline follows it'

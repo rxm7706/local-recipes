@@ -149,7 +149,7 @@ artifacts:
     applies_to: both
     rationale: >-
       installed but barely exercised; keep/wrap/remove is an open operator
-      triage call (docs/dreams/one-front-door.md). Classified referenced
+      triage call (archive/docs/dreams/one-front-door.md). Classified referenced
       provisionally so coverage can pass honestly rather than by omission.
     pin: ">=3.1.0.dev0"
   - id: bmad-labs-skills

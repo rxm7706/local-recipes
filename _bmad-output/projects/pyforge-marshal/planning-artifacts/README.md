@@ -28,6 +28,9 @@ session context, and an unexplained deviation reads as drift. Recorded 2026-09-0
   `deployment-guide.md`): marshal is the factory-docs project, so it carries more
   root-level documents than a station does. `bmad_drift_check.py` classifies every
   one of them; none is a stray file.
+  Ruled again 2026-10-26 (the one-chain re-audit, item 3; operator: keep and declare):
+  `docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md` § 1 names this set as the
+  factory's rebuild contract, not a chain PRD — no `FR-n`, never read by `fr-without-cap`.
 
 - **`reviews/` holds review artifacts, `retros/` holds retrospectives.** They are
   different things and both are correct here. `reviews/` currently holds the TEA

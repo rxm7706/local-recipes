@@ -54,6 +54,7 @@ kedro-dagster = ">=0.7.0"    # py3.14-unclassified glue — kedro-test import sm
 # story, not smuggled into a dependency fix.
 pandas = ">=3.0.3"
 pyarrow = ">=24.0.0"
+numpy = ">=2.5.3"                     # pipelines/derived_artifacts/alternatives.py imports it at module level
 pyyaml = ">=6.0.3"                    # imported as `yaml`
 pydantic = ">=2.13.4"                 # pydantic_core arrives with it
 attrs = ">=26.1.0"                    # imported as `attr` (observability.py)
@@ -102,6 +103,12 @@ bokeh = ">=3.9.2"
 # entries.
 tornado = ">=6.5.8"
 starlette = ">=1.6.0"
+# Story 34.13 (CAP-64, DW-atlas-34-5-1): `datasets/tier3_sources.py` decodes the nixpkgs
+# `packages.json.br` through a guarded `importlib.import_module("brotli")`. It was in the env only
+# through conda-forge `urllib3`'s own `brotli-python` dependency (AUD-ATLAS-010: declared). The conda
+# package is `brotli-python` (the `brotli` conda package is the C library alone). Kept byte-for-byte
+# in step with the pyproject.toml [project].dependencies entry (PyPI `Brotli`).
+brotli-python = ">=1.2"
 # Story 25.1 (CAP-61): git-pkgs's tested range is >=0.21.0,<0.22 (recipes/git-pkgs;
 # SelfExplainML, linux-64 only). It is declared where it can resolve -- the root
 # [feature.pyforge-atlas.target.linux-64.dependencies] env table -- and enforced at

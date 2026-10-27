@@ -104,7 +104,7 @@ def build_server(name: str = "pyforge-atlas-atlas"):
 
     @mcp.tool()
     def list_atlas_pipelines() -> list[str]:
-        """List the registered atlas pipeline names."""
+        """List the MCP-triggerable atlas pipeline names (eight of the twelve registered; the rest are CLI-only)."""
         return tools.list_pipelines()
 
     @mcp.tool()

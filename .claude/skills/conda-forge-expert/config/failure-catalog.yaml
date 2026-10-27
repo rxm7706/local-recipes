@@ -4,7 +4,7 @@
 # "Recipe Authoring Gotchas" section. Hand edits are detectably wrong —
 # regenerating overwrites them; see tests/meta/test_failure_catalog_freshness.py.
 schema_version: 1
-source_sha256: "b3243770f5f751372a7bf356a0934fd6f8cbbff3c4641d1fffe1fbdfc4cface0"
+source_sha256: "0e946a07795a9cd404689e3daebdcfb503d32ab29231741b8444ef15b94707f0"
 rows:
   - id: G1
     title: "Don't rely on env vars carrying across `script:` list entries — older rattler-build ran each entry in its own shell"
@@ -995,4 +995,16 @@ rows:
       - "unicorn>=2.1.4"
       - "python-unicorn"
       - "pip_check: false"
+    enforced_by: null
+  - id: G123
+    title: "A redirected GitHub repo serves another repo's archive — validate a cached download by its contents, and never let a full-snapshot writer replace its table with nothing"
+    symptom_signature:
+      - "whodepends python --reverse"
+      - "[]"
+      - "dependencies"
+      - "cf_atlas.db"
+      - "cf_atlas_meta.json"
+      - "feedstock-health"
+      - "test_atlas_clis_smoke.py::test_whodepends_reverse_json"
+      - "pr-preflight"
     enforced_by: null

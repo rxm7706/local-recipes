@@ -3,6 +3,13 @@ title: '46.2: The canonical context bundle is digest-pinned'
 type: 'feature'
 created: '2026-09-18'
 status: 'backlog'
+flag:
+  key: pyforge.marshal.context_bundle_digest
+  provider: openfeature-file
+  default: {production: off, staging: off, dev: off}
+  scope: global
+  fallback: "the context bundle is rendered without a digest pin, as today"
+  cleanup: 90 days after ON in every environment (Q4)   # retrofit block (spec-feature-flag-governance CAP-7, operator ruling R6 of 2026-10-26): the key joins the tree when this story builds
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md

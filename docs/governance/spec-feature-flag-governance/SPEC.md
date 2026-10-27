@@ -8,7 +8,7 @@ status: ready   # 2026-09-28 — seeded `draft` from the intake triage (docs/dre
                 # instance of the Charter §5 shape, after coverage-gate-independence and
                 # one-chain-per-station.
 created: "2026-09-28"
-updated: "2026-10-15"   # CAP-2 gains the retirement path (memlog, operator ruling 2026-10-15)
+updated: "2026-10-26"   # CAP-7 executed: the retrofit rulings R1-R8 (memlog, operator ruling 2026-10-26). Prior "2026-10-15" CAP-2 gains the retirement path
 owner-dream: docs/dreams/feature-flag-governance.md
 fold-exemption: governance   # a gate over every Smith's stories (Charter §5, the 2026-09-14 shape); chain-sprawl-check reads it here too
 surface: []     # Empty by construction: spec-surface-check reads only planning-artifacts Specs
@@ -36,6 +36,7 @@ open_questions: []
 > Dream in `sources:`. It was ruled the same session and is now the complete contract for what to
 > build, test and validate. The Dream in the frontmatter is for traceability only. Re-derived
 > 2026-10-15 for CAP-2's retirement path, and again the same day after its independent review.
+> Re-derived 2026-10-26 for CAP-7's execution rulings (R1–R8).
 
 # SPEC — every capability ships behind a flag, and a gate no station owns checks that it does
 
@@ -169,9 +170,19 @@ Retirement (memlog, 2026-10-15):
     - Each Smith then mints its own retrofit stories, one flag per CAP, defaulting ON so each flag
       works as a kill switch.
     - Every pre-rule-date backlog story gains a block or an exemption.
-  - *success:* The inventory is a checked-in report per station. The CAP-2 warnings reach zero. No
-    station's exit-code domain changes. *Inventory: Doctor's. Retrofit stories: each Smith's, minted
-    after the inventory lands.*
+  - *success:* The inventory is a checked-in report per station, joined through landed stories only
+    (a later chore citing a CAP range never hides a runtime row; a blocked story never makes an
+    unbuilt capability runtime; each CAP is attributed to the Spec it sits beside). Every `runtime`
+    row names a flag key, or the exempt retrofit story that covers it from its `Parent:` line under
+    the roster's `flag_retrofit_cover_exemptions` (the flag platform's own capability; a capability
+    that is itself a gate). The CAP-2
+    warnings on live pre-rule specs reach zero
+    (a done story's capability is retrofitted at the CAP; its spec is never rewritten). No station's
+    exit-code domain changes. An invariant's switch makes the dependent verb refuse, never re-opens
+    the defect. A retrofit key is ON everywhere on mint day, so its Q4 clock runs from that day and
+    the owning station's retirement story is minted with it. *Inventory and the measure: Doctor's.
+    Retrofit stories: each Smith's, minted after the inventory lands (executed 2026-10-26, operator
+    rulings R1–R8).*
 
 ## Constraints
 
@@ -210,8 +221,9 @@ Retirement (memlog, 2026-10-15):
 - A flagged story ships with a test that runs both states.
 - The tree names that flag's owner, story and cleanup date, and the gate reds the flag 90 days
   after it went ON everywhere.
-- After the retrofit, every station's runtime CAPs sit behind default-ON flags. The gate's backlog
-  warnings read zero.
+- After the retrofit, every station's runtime CAPs sit behind default-ON flags, or behind an exempt
+  retrofit story the inventory reads as their cover. The gate's warnings on live pre-rule specs
+  read zero.
 - A flag key that a `done` spec's block names passes the gate, once removed from the tree, only with
   its owner's `retires-flag:` story and no reader the gate can see left. A reader left behind, or
   another station's declaration, reds.

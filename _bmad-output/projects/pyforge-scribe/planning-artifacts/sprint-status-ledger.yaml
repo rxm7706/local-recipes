@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: scribe
-# stories: 100
+# stories: 113
 development_status:
   1-1-package-scaffold-direct-capture-into-team-memory: done
   1-2-claude-md-wiring-team-memory-loads-automatically: done
@@ -45,9 +45,14 @@ development_status:
   24-3-every-harness-is-pointed-at-the-catalog-once: done
   25-1-the-estate-catalog-skips-skill-directories-git-ignores: done
   26-1-recall-breaks-ties-by-recency-and-scribe-s-other-open-deferrals-close: done
+  27-1-the-instruction-surface-carries-the-requirement-arrow-rule: done
+  28-1-scribe-s-sixteen-archived-dreams-leave-the-live-tree: done
+  29-1-every-session-reads-one-derived-picture-of-the-bmad-estate-sits-behind-a-kill-switch: done
+  29-2-the-retrofit-kill-switch-retires-on-its-cleanup-date: backlog
   3-1-the-scanner-surfaces-what-sessions-said-but-memory-missed: done
   3-2-transcripts-join-the-compile-sources: done
   3-3-the-nightly-compile-gets-a-schedule-and-a-cost-ceiling: done
+  30-1-scribe-s-absorbed-spec-folders-move-to-the-archive-home: done
   4-1-register-graphstore-as-cap-18-plugins: done
   5-1-skf-skill-ownership-and-bmad-persona-for-scribe: done
   5-2-first-portal-slice-one-recall-query: done
@@ -100,8 +105,16 @@ development_status:
   epic-25-retrospective: optional
   epic-26: done
   epic-26-retrospective: optional
+  epic-27: done
+  epic-27-retrospective: optional
+  epic-28: done
+  epic-28-retrospective: optional
+  epic-29: in-progress
+  epic-29-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional
+  epic-30: done
+  epic-30-retrospective: optional
   epic-4: done
   epic-4-retrospective: optional
   epic-5: done

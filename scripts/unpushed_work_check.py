@@ -14,7 +14,7 @@ the answer was no — not for marshal, and not for most of the fleet:
 
 None of it was detected. Nine detectors ran green throughout, because not one of
 them asks the question this file asks. It is the same shape as the story-spec
-gap that motivated docs/dreams/fidelity-enforcement.md: a real invariant that
+gap that motivated archive/docs/dreams/fidelity-enforcement.md: a real invariant that
 everyone assumed and nothing checked.
 
 The precedent is not hypothetical either — scribe 1.3's 1,102 lines survived

@@ -18,6 +18,7 @@ Full package-wide evaluate (every module) remains available via the pixi
 from __future__ import annotations
 
 import argparse
+import glob
 import json
 import os
 import re
@@ -26,7 +27,7 @@ import subprocess
 import sys
 import tempfile
 import tomllib
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -42,9 +43,9 @@ if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from coverage_gate import (
-    format_only_paths,
     STATIONS,
     evaluate_coverage_payload,
+    format_only_paths,
     package_root,
     package_src,
     thresholds_for,
@@ -105,24 +106,45 @@ def _git_diff_names(base: str, head: str) -> list[str]:
 
 
 def _git_show(rev: str, path: str) -> str | None:
-    proc = subprocess.run(["git", "show", f"{rev}:{path}"], cwd=REPO, check=False, capture_output=True, text=True)
+    proc = subprocess.run(
+        ["git", "show", f"{rev}:{path}"],
+        cwd=REPO,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
     return proc.stdout if proc.returncode == 0 else None
 
 
-def _drop_format_only(paths: list[str], base: str, head: str, *, quiet: bool = False) -> list[str]:
+def _drop_format_only(
+    paths: list[str], base: str, head: str, *, quiet: bool = False
+) -> list[str]:
     """Remove station source files whose AST did not change between ``base``
     and ``head`` (steward Story 66.1, 2026-09-20): a formatting-only edit is
     not a touched module, so the floor measures code changes, not the
     formatter. Diffs against the merge-base, the same three-dot semantics as
     ``_git_diff_names``. Added / deleted / unparseable files stay touched.
     """
-    proc = subprocess.run(["git", "merge-base", base, head], cwd=REPO, check=False, capture_output=True, text=True)
-    merge_base = proc.stdout.strip() if proc.returncode == 0 and proc.stdout.strip() else base
-    candidates = [p for p in paths if p.endswith(".py") and "/src/shared/packages/" in f"/{p}"]
+    proc = subprocess.run(
+        ["git", "merge-base", base, head],
+        cwd=REPO,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    merge_base = (
+        proc.stdout.strip() if proc.returncode == 0 and proc.stdout.strip() else base
+    )
+    candidates = [
+        p for p in paths if p.endswith(".py") and "/src/shared/packages/" in f"/{p}"
+    ]
     pairs = {p: (_git_show(merge_base, p), _git_show(head, p)) for p in candidates}
     skipped = format_only_paths(pairs)
     if skipped and not quiet:
-        print(f"format-only (AST unchanged), not counted as touched: {len(skipped)} file(s)", flush=True)
+        print(
+            f"format-only (AST unchanged), not counted as touched: {len(skipped)} file(s)",
+            flush=True,
+        )
     return [p for p in paths if p not in skipped]
 
 
@@ -359,7 +381,9 @@ def _under_any(argv: list[str], test_paths: list[Path]) -> bool:
     """True when every path in ``argv`` lies under one of this suite's test directories."""
     roots = [tp.resolve() for tp in test_paths]
     paths = [(REPO / tok).resolve() for tok in argv if not tok.startswith("-")]
-    return bool(paths) and all(any(p == r or r in p.parents for r in roots) for p in paths)
+    return bool(paths) and all(
+        any(p == r or r in p.parents for r in roots) for p in paths
+    )
 
 
 def _resolve_changed_paths(
@@ -387,8 +411,12 @@ def build_coverage_plan(
     """JSON-serializable plan of pytest runs the driver would make (Story 71.4)."""
     paths = _resolve_changed_paths(base, head, paths_file, quiet_format_only=True)
     stations = sorted(touched_stations(paths))
-    allow_raw = (coverage_gates_stations or os.environ.get("COVERAGE_GATES_STATIONS", "")).strip()
-    allow = {s.strip() for s in allow_raw.split(",") if s.strip()} if allow_raw else None
+    allow_raw = (
+        coverage_gates_stations or os.environ.get("COVERAGE_GATES_STATIONS", "")
+    ).strip()
+    allow = (
+        {s.strip() for s in allow_raw.split(",") if s.strip()} if allow_raw else None
+    )
     runs: list[dict[str, object]] = []
     for station in stations:
         if station not in STATIONS:
@@ -419,6 +447,125 @@ def build_coverage_plan(
     }
 
 
+def merge_coverage_reports(paths: Sequence[Path]) -> dict[str, object]:
+    """The union of several coverage.py JSON reports over the same source (Story 117.4).
+
+    Per file, executed lines and branches are unioned and the missing sets are what no report executed; the summary
+    percent is coverage.py's own formula, ``(covered_lines + covered_branches) / (num_statements + num_branches)``.
+    Files present in one report only keep that report's data. Totals are recomputed the same way.
+    """
+    merged: dict[str, dict[str, object]] = {}
+    meta: dict[str, object] = {}
+    for path in paths:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        meta = meta or dict(payload.get("meta") or {})
+        for name, data in (payload.get("files") or {}).items():
+            if not isinstance(data, Mapping):
+                continue
+            slot = merged.setdefault(
+                name,
+                {
+                    "executed_lines": set(),
+                    "missing_lines": set(),
+                    "executed_branches": set(),
+                    "missing_branches": set(),
+                    "excluded_lines": set(),
+                },
+            )
+            slot["executed_lines"] |= set(data.get("executed_lines") or [])
+            slot["missing_lines"] |= set(data.get("missing_lines") or [])
+            slot["excluded_lines"] |= set(data.get("excluded_lines") or [])
+            slot["executed_branches"] |= {
+                tuple(b) for b in data.get("executed_branches") or []
+            }
+            slot["missing_branches"] |= {
+                tuple(b) for b in data.get("missing_branches") or []
+            }
+    files: dict[str, object] = {}
+    tot_lines = tot_missing = tot_br = tot_br_missing = 0
+    for name, slot in sorted(merged.items()):
+        executed = slot["executed_lines"]
+        missing = slot["missing_lines"] - executed
+        exec_br = slot["executed_branches"]
+        missing_br = slot["missing_branches"] - exec_br
+        statements = len(executed) + len(missing)
+        branches = len(exec_br) + len(missing_br)
+        denominator = statements + branches
+        percent = (
+            100.0
+            if denominator == 0
+            else 100.0 * (len(executed) + len(exec_br)) / denominator
+        )
+        files[name] = {
+            "executed_lines": sorted(executed),
+            "missing_lines": sorted(missing),
+            "excluded_lines": sorted(slot["excluded_lines"]),
+            "executed_branches": [list(b) for b in sorted(exec_br)],
+            "missing_branches": [list(b) for b in sorted(missing_br)],
+            "summary": {
+                "covered_lines": len(executed),
+                "num_statements": statements,
+                "percent_covered": percent,
+                "percent_covered_display": f"{percent:.0f}",
+                "missing_lines": len(missing),
+                "excluded_lines": len(slot["excluded_lines"]),
+                "num_branches": branches,
+                "covered_branches": len(exec_br),
+                "missing_branches": len(missing_br),
+            },
+        }
+        tot_lines += len(executed)
+        tot_missing += len(missing)
+        tot_br += len(exec_br)
+        tot_br_missing += len(missing_br)
+    denominator = tot_lines + tot_missing + tot_br + tot_br_missing
+    totals = {
+        "covered_lines": tot_lines,
+        "num_statements": tot_lines + tot_missing,
+        "missing_lines": tot_missing,
+        "num_branches": tot_br + tot_br_missing,
+        "covered_branches": tot_br,
+        "missing_branches": tot_br_missing,
+        "percent_covered": 100.0
+        if denominator == 0
+        else 100.0 * (tot_lines + tot_br) / denominator,
+    }
+    return {
+        "meta": {**meta, "merged_from": [str(p) for p in paths]},
+        "files": files,
+        "totals": totals,
+    }
+
+
+def expand_report_patterns(values: Sequence[str]) -> list[Path]:
+    """The coverage JSONs ``--report`` names, in order, each value a path or a glob (Story 117.10).
+
+    A sharded CI job uploads one report per shard (``steward-unit-1.json`` … ``-4.json``); the gate names them as
+    ``.steward/coverage/steward-unit*.json`` -- the same literal in the pixi task and in the workflow step, so the
+    preflight twin still matches the lane to its CI step by that flag. An unsharded run's ``steward-unit.json``
+    matches the same pattern. Values that match nothing are left out; the caller then runs the pass itself.
+    """
+    out: list[Path] = []
+    for value in values:
+        if any(ch in value for ch in "*?["):
+            out.extend(Path(m) for m in sorted(glob.glob(value)) if Path(m).is_file())
+        elif Path(value).is_file():
+            out.append(Path(value))
+    return out
+
+
+def report_write_target(value: str) -> Path:
+    """Where the driver writes the report it has to produce itself: the first ``--report`` value, its glob
+    characters dropped (``steward-unit*.json`` -> ``steward-unit.json``)."""
+    return Path(re.sub(r"[*?\[\]]", "", value))
+
+
+def allow_for_report(environ: Mapping[str, str]) -> set[str]:
+    """The stations ``COVERAGE_GATES_STATIONS`` names (Story 117.2: ``--report`` wants exactly one)."""
+    raw = environ.get("COVERAGE_GATES_STATIONS", "").strip()
+    return {s.strip() for s in raw.split(",") if s.strip()} if raw else set()
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -445,6 +592,18 @@ def main(argv: list[str] | None = None) -> int:
         help="Comma-separated suites to gate (default: unit,integration)",
     )
     parser.add_argument(
+        "--report",
+        action="append",
+        default=None,
+        help=(
+            "Story 117.2: the coverage JSON the station suite's own run wrote; judge it instead of "
+            "running pytest-cov again. Repeatable (Story 117.4): the package-local and live-tree halves "
+            "each write one, and the gate judges their union (executed lines and branches merged per "
+            "file). When none of the files exists, run the coverage pass as before and write the first "
+            "path. One station (COVERAGE_GATES_STATIONS) and --suites unit only."
+        ),
+    )
+    parser.add_argument(
         "--plan",
         action="store_true",
         help="Print the stations and suites that would run as JSON; do not invoke pytest",
@@ -460,6 +619,12 @@ def main(argv: list[str] | None = None) -> int:
         if suite not in ("unit", "integration"):
             print(f"unknown suite {suite!r}; expected unit|integration", flush=True)
             return 2
+    if args.report and (suites != ["unit"] or len(allow_for_report(os.environ)) != 1):
+        print(
+            "--report takes --suites unit and exactly one COVERAGE_GATES_STATIONS station",
+            flush=True,
+        )
+        return 2
 
     if args.plan:
         plan = build_coverage_plan(
@@ -480,7 +645,9 @@ def main(argv: list[str] | None = None) -> int:
 
     # Optional allow-list (CI home env often only installs one station).
     allow_raw = os.environ.get("COVERAGE_GATES_STATIONS", "").strip()
-    allow = {s.strip() for s in allow_raw.split(",") if s.strip()} if allow_raw else None
+    allow = (
+        {s.strip() for s in allow_raw.split(",") if s.strip()} if allow_raw else None
+    )
     rc = 0
     with tempfile.TemporaryDirectory(prefix="coverage-gates-") as tmp:
         tmp_path = Path(tmp)
@@ -496,12 +663,36 @@ def main(argv: list[str] | None = None) -> int:
                 continue
             for suite in suites:
                 if suite not in ("unit", "integration"):
-                    print(f"unknown suite {suite!r}; expected unit|integration", flush=True)
+                    print(
+                        f"unknown suite {suite!r}; expected unit|integration",
+                        flush=True,
+                    )
                     return 2
                 report = tmp_path / f"{station}-{suite}.json"
-                status, pytest_rc = _run_pytest_cov(
-                    station=station, suite=suite, report=report
-                )
+                present = expand_report_patterns(args.report or [])
+                if present:
+                    # Story 117.2 / 117.4: the suite's own run(s) wrote these reports; judge their union, never re-run.
+                    print(
+                        f"coverage gate: judging pyforge-{station} {suite} from "
+                        + ", ".join(str(r) for r in present),
+                        flush=True,
+                    )
+                    if len(present) == 1:
+                        report = present[0]
+                    else:
+                        report = tmp_path / f"{station}-{suite}-merged.json"
+                        report.write_text(
+                            json.dumps(merge_coverage_reports(present), sort_keys=True),
+                            encoding="utf-8",
+                        )
+                    status, pytest_rc = "ran", 0
+                else:
+                    if args.report:
+                        report = report_write_target(args.report[0])
+                        report.parent.mkdir(parents=True, exist_ok=True)
+                    status, pytest_rc = _run_pytest_cov(
+                        station=station, suite=suite, report=report
+                    )
                 if status == "skipped":
                     # N/A suite (e.g. no tests/integration) — never zero-fill.
                     continue

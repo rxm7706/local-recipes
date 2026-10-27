@@ -17,9 +17,10 @@ each task does, and fails when the declared set misses a task or names one more:
 
 A script that imports only node builtins, spawns nothing and reads only ``docs/`` (the link and sidebar-order
 validators) is in none of these, so its lane keeps its concurrency; the test pins that too, from the scripts' own
-source. Steward's station-tests job must fire on every file this test reads (Story 98.1's rule): the last test checks
-that ``steward_paths`` in ``.github/workflows/pyforge-station-tests.yml`` covers each docs-site file an import closure
-visits, which the AST-derived trigger map cannot see.
+source. Steward's live-tree job must fire on every file this test reads (Story 98.1's rule; Story 117.4 moved this
+module, a live-tree reader, to ``pyforge-steward-live-test``): the last test checks that ``steward_live_paths`` in
+``.github/workflows/pyforge-station-tests.yml`` covers each docs-site file an import closure visits, which the
+AST-derived trigger map cannot see.
 """
 
 from __future__ import annotations
@@ -36,6 +37,10 @@ from typing import Any
 import pytest
 
 from pyforge.steward import preflight
+
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
 
 REPO_ROOT = Path(__file__).resolve().parents[6]
 PIXI = REPO_ROOT / "pixi.toml"
@@ -345,9 +350,9 @@ def test_the_real_lane_list_holds_more_than_one_docs_site_lane() -> None:
 
 
 def _steward_paths() -> list[str]:
-    """``steward_paths`` from the station-tests workflow's ``changes`` step: git pathspecs, quotes stripped."""
+    """``steward_live_paths`` from the station-tests workflow's ``changes`` step: git pathspecs, quotes stripped."""
     lines = STATION_TESTS_WORKFLOW.read_text(encoding="utf-8").splitlines()
-    start = next(i for i, line in enumerate(lines) if line.strip() == "steward_paths=(")
+    start = next(i for i, line in enumerate(lines) if line.strip() == "steward_live_paths=(")
     end = next(i for i in range(start + 1, len(lines)) if lines[i].strip() == ")")
     return [line.strip().strip("'\"") for line in lines[start + 1 : end] if line.strip()]
 
@@ -365,7 +370,7 @@ def _covered(path: str, pathspecs: list[str]) -> bool:
 
 def test_steward_s_job_fires_on_every_docs_site_file_this_test_reads() -> None:
     """Story 98.1's rule for what this test reads through import resolution: every file an import closure of a
-    docs-site task's script visits, and herald's Astro helper, is on steward_paths."""
+    docs-site task's script visits, and herald's Astro helper, is on steward_live_paths."""
     pathspecs = _steward_paths()
     assert "src/shared/packages/pyforge-steward" in pathspecs  # the parser read the right array
     read: set[str] = {(HERALD_TESTS / "meta" / "pages_astro.py").relative_to(REPO_ROOT).as_posix()}
@@ -375,3 +380,28 @@ def test_steward_s_job_fires_on_every_docs_site_file_this_test_reads() -> None:
     assert any(path.startswith("docs-site/src/lib/") for path in read)  # a blindness guard: imports were followed
     missing = sorted(path for path in read if not _covered(path, pathspecs))
     assert not missing, f"steward's station-tests job does not fire on files this test reads: {missing}"
+
+
+def test_a_non_docs_dependent_never_hands_the_docs_turn_to_its_dependency() -> None:
+    """Story 117.2: a station's coverage gate depends on its suite. herald's suite is a docs-site lane, but the gate is
+    not, so at the next docs-site turn the install -- the lane other docs-site lanes read -- still goes first."""
+    install = preflight.Lane(task="docs-site-install", environment="site")
+    herald = preflight.Lane(task="pyforge-herald-test", environment="pyforge-herald")
+    gate = preflight.Lane(
+        task="pyforge-herald-coverage-gate",
+        environment="pyforge-herald",
+        depends_on=(("pyforge-herald-test", "pyforge-herald"),),
+    )
+    build = preflight.Lane(task="pages-build", environment="site", depends_on=(("docs-site-install", "site"),))
+    lanes = [install, herald, gate, build]
+    pending = {preflight._lane_key(lane): lane for lane in lanes}
+    assert preflight.DOCS_SITE_TASKS >= {"docs-site-install", "pyforge-herald-test", "pages-build"}
+    assert preflight._next_lane([install, herald], lanes, pending, docs_turn=0) is install
+    # even when nothing pending depends on the install and the gate (a docs-site lane) depends on herald's suite,
+    # the install -- the lane every docs-site lane reads -- takes the turn first
+    del pending[preflight._lane_key(build)]
+    assert preflight._next_lane([install, herald], lanes, pending, docs_turn=0) is install
+    assert preflight._next_lane([herald, install], lanes, pending, docs_turn=0) is install
+    # with the install done, the docs-site lane a pending docs-site lane depends on goes before the first declared one
+    del pending[preflight._lane_key(install)]
+    assert preflight._next_lane([build, herald], lanes, pending, docs_turn=1) is herald

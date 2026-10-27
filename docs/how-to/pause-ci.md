@@ -5,7 +5,7 @@ sources:
   - scripts/ci_surface_gates.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/ci.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_ci.py
-verified: 2026-10-24
+verified: 2026-10-25
 ---
 
 # How to pause and resume CI surfaces
@@ -60,6 +60,12 @@ so its `last_green_run` is empty. When a live surface's run list cannot be read,
 is 1, that row's `last_green_run` reads `unknown`, and the `--json` envelope still prints on stdout with
 `partial: true` and one `run_list_errors` entry per failed workflow. Exit 3 is a refusal, with one line on stderr.
 
+Each registry surface row also carries `latest_main_run`: the newest completed run of its workflow on `main` that a
+PR did not start, as `{conclusion, created_at, run_id}`, or `null` when the 20 listed runs hold none (and for a
+`retired` row); the master row and the unregistered rows carry none. Every `ci status` saves its envelope atomically to
+the gitignored `.steward/ci-status.json`, the snapshot `pr-preflight` reads for red `main` runs (Story 99.8); a
+`.steward/` it cannot write is reported in the result's details and never costs the envelope.
+
 Refresh the local variable snapshot used by preflight (stale after 24 hours):
 
 ```bash
@@ -98,11 +104,23 @@ pixi run -e pyforge-guild pr-preflight -- --ignore-ci-pauses
 `platform-ci-local` and `pyforge-steward-guild-image-build` always run requested stages but still
 print the pause banner.
 
-## Weekly canary
+When `pyforge.steward.ci_pause_control` is on, it also prints one advisory line per red `main` run in
+`.steward/ci-status.json`, naming every surface row that shares the run, for example
+`preflight: main is red on <surface>, <surface>: failure, run 123 (…)`, so a landing knows `main` is broken before it
+merges on top. A run is red unless it concluded `success`, `skipped`, `neutral` or `cancelled` (a superseded push).
+A snapshot older than 24 hours, missing, unreadable or dated in the future prints one `main CI state unknown` line
+instead; run `pyforge steward ci status` to refresh it (marshal's landing runs it too). The banner never selects, skips
+or fails a lane, never raises, and makes no GitHub call. A `dispatch/*` branch skips `pr-preflight`, so a dispatched
+landing does not see the banner.
 
-`.github/workflows/ci-canary.yml` builds each paused `cost: high` surface once per week (and on
-`workflow_dispatch`), gated by `PAUSE_CI_CANARY` like other workflows. `steward ci status` uses the
-canary's last green run when judging paused expensive jobs.
+## Nightly canary
+
+`.github/workflows/ci-canary.yml` builds each paused `cost: high` surface, and each `cost: high` surface
+whose registry row says `trigger: main` (it never runs on a pull request — the image builds since
+steward Story 117.6, CAP-175 ruling D1), once a night at 04:00 UTC and on `workflow_dispatch`, gated by
+`PAUSE_CI_CANARY` like other workflows. `steward ci status` uses the canary's last green run when judging
+paused expensive jobs. A `trigger: main` row runs on push-to-main as well; the pull request never waits
+on it.
 
 ## Related checks
 

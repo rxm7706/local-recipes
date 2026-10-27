@@ -152,7 +152,7 @@ cve_watcher:
   since_days: 7
 
 # Story 37.10 (CAP-69) — the bootstrap-index-health board. tiers: the catalog-sources tier matrix
-# (spec-atlas-kedro-catalog-expansion/catalog-sources.md), each source by the dataset that persists it;
+# (spec-pyforge-atlas/catalog-sources.md), each source by the dataset that persists it;
 # floors: its scale sanity gates (a row count below the floor reads below_floor).
 catalog_index_health:
   tiers:

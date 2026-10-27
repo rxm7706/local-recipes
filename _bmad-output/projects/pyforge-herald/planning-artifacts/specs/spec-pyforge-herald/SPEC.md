@@ -5,17 +5,17 @@ status: ready
 updated: '2026-10-15'
 owner-dream: docs/dreams/pyforge-herald.md
 covers-dreams:
-  - docs/dreams/deck-family-currency.md
-  - docs/dreams/deck-family-lockstep.md
-  - docs/dreams/deck-visual-qa.md
-  - docs/dreams/design-sync-loop.md
-  - docs/dreams/herald-moments-2-4-live-backend.md
-  - docs/dreams/herald-moments-2-4-missing-surface.md
-  - docs/dreams/herald-pitch.md
-  - docs/dreams/pptx-custom-shapes.md
-  - docs/dreams/pptx-deck-generation.md
+  - archive/docs/dreams/deck-family-currency.md
+  - archive/docs/dreams/deck-family-lockstep.md
+  - archive/docs/dreams/deck-visual-qa.md
+  - archive/docs/dreams/design-sync-loop.md
+  - archive/docs/dreams/herald-moments-2-4-live-backend.md
+  - archive/docs/dreams/herald-moments-2-4-missing-surface.md
+  - archive/docs/dreams/herald-pitch.md
+  - archive/docs/dreams/pptx-custom-shapes.md
+  - archive/docs/dreams/pptx-deck-generation.md
   - docs/dreams/pyforge-herald.md
-  - docs/dreams/pyforge-pages.md
+  - archive/docs/dreams/pyforge-pages.md
 surface:
   - src/shared/packages/pyforge-herald/**
   - presentations/**
@@ -35,6 +35,7 @@ surface:
   - docs-site/**
   - docs/index.md
   - docs/404.md
+  - .gitignore   # governance carried 2026-10-27 from the absorbed spec-pyforge-pages (spec-one-chain-per-station:CAP-11)
 surface-drift-exclude:
   - src/shared/packages/pyforge-herald/src/pyforge/herald/station_api.py
   - presentations/pyforge-atlas/facts.yaml
@@ -75,6 +76,8 @@ companions:
   - station-roster.md
   - bridge-protocol.md
   - epic-structure.md
+  - facts-ledger.md           # live companion carried 2026-10-27 from spec-deck-family-currency (spec-one-chain-per-station:CAP-11)
+  - infographic-standard.md   # live companion carried 2026-10-27 from spec-deck-family-currency (spec-one-chain-per-station:CAP-11)
 sources:
   - ../../../../../../docs/dreams/pyforge-herald.md
 open_questions: []
@@ -135,15 +138,15 @@ argued, not merely filed), **Progress** (HER-11 — a build in flight is not sel
 ## Capabilities
 
 - **CAP-1 — a Dream becomes a deck.** ← spec-pyforge-herald HER-1 (shipped 2026-09-17)
-  - **intent:** See absorbed Spec memlog and git history.
+  - **intent:** An operator turns a Dream into a designed deck and brings the designed result back without hand-carrying files: `herald seed` renders the Dream into Claude Design and `herald pull` returns it to the repository.
   - **success:** `herald seed` renders a Dream into a deck and `herald pull` brings the designed result back; the round trip is the realized [[design-code-bridge]] (elaborated in HER-4 below). *Shipped* (re-grounded 2026-09-09): the CLI foundation and the `seed`/`pull`/`status`/`watch` subcommands are all wired and tested (`cli.py:226-318`).
 
 - **CAP-2 — releases are proclaimed from the ledger.** ← spec-pyforge-herald HER-2 (shipped 2026-09-17)
-  - **intent:** See absorbed Spec memlog and git history.
+  - **intent:** What shipped is announced from the pipeline data the factory already keeps (the sprint ledgers and run journals), never hand-written, so every release notable traces to the story that produced it.
   - **success:** release notables compile from pipeline data, never hand-written. *Status* (re-grounded 2026-09-09): the detailed breakdown that used to live in a separate `spec-herald-moments-2-4` document is inline as HER-11 (Progress), HER-12 (Success) and HER-13 (Operations) below, and shipped as the CLI-triggered v1 in Epics 8–10 (47 stories, 2026-08-08). The automatic, ledger-triggered version is `spec-herald-moments-2-4-live-backend`'s contract and has never run.
 
 - **CAP-3 — the visual identity is one system.** ← spec-pyforge-herald HER-3 (shipped 2026-09-17)
-  - **intent:** See absorbed Spec memlog and git history.
+  - **intent:** Every surface Herald produces (decks, infographics, the Guildhall) draws on one design vocabulary, so a reader recognizes the factory's work across formats.
   - **success:** decks, infographics and the Guildhall share [[modernist-identity]]'s vocabulary (elaborated in HER-7 below).
 
 - **CAP-4 — Design-Code-Bridge Framework.** ← spec-pyforge-herald HER-4 (shipped 2026-09-17)
@@ -151,27 +154,27 @@ argued, not merely filed), **Progress** (HER-11 — a build in flight is not sel
   - **success:** prototype round-trips seamlessly between Design and Code; etagged safety prevents overwrites; zero manual file transfers; 7 decks proven. This is the realized mechanism behind HER-1's `seed`/`pull`.
 
 - **CAP-5 — Deckcraft Framework.** ← spec-pyforge-herald HER-5 (shipped 2026-09-17)
-  - **intent:** Generate editable PowerPoint from Markdown sources without sacrificing manual refinement.
+  - **intent:** Generate editable PowerPoint from Markdown sources without sacrificing manual refinement. What it does: input is a Markdown source (`{station}.md`) + Modernist design tokens; `pixi run deck-export` runs the deckcraft pipeline → python-pptx → editable PPTX at `src/pptx/{station}.pptx`.
   - **success:** PPTX files are editable in PowerPoint; formatting and layout choices preserved; regenerable from markdown in 5–10s. *Scope note:* this is the narrow "render markdown to PPTX" slice of the broader standalone `deckcraft` AI-pipeline product (prompt/document → deck via local LLMs) — that broader product's own PRD/Architecture/Spec were archived in the 2026-08-01 consolidation (commit `409b3357bd`); only this reused rendering capability survived into Herald's own chain.
 
 - **CAP-6 — Video-Scripts Framework.** ← spec-pyforge-herald HER-6 (shipped 2026-09-17)
-  - **intent:** Extract narration scripts from decks and feed them into video production pipelines (bmad-manticore).
+  - **intent:** Extract narration scripts from decks and feed them into video production pipelines (bmad-manticore). What it does: mechanical narration extraction from Design speaker notes → `{station}-narration-YYYY-MM-DD.md`; Herald feeds the narration corpus to manticore (322 scenes, 27 files mechanically extracted; first master script authored as exemplar); manticore orchestrates voice (Kokoro-82M), graphics (HyperFrames), b-roll (real screen recordings, never fabricated UI), SFX (AudioLDM2) → `.mp4`. Four hard gates: Outline → Cut Plan → Graphics Beats → Final Render; no fabricated product demos.
   - **success:** narration scripts extracted and available; video production ready; no fabricated demos; all b-roll is real.
 
 - **CAP-7 — Modernist-Identity Framework.** ← spec-pyforge-herald HER-7 (shipped 2026-09-17)
-  - **intent:** One visual language across all PyForge surfaces (decks, dashboards, docs, exports, videos) — the mechanism behind HER-3.
+  - **intent:** One visual language across all PyForge surfaces (decks, dashboards, docs, exports, videos) — the mechanism behind HER-3. What it does: flat, architectural, Archivo typography throughout; light palette (#f3f2f2), ink (#201e1d), red accent (#ec3013/#c22a10); visible grid, 2px rules, zero corner radius, flush-left labels, black-and-white photography. Tokens round-trip through Figma variables, design-tokens JSON, PPTX templates, deck engine, video production bibles.
   - **success:** Modernist design system adopted across all Herald family decks; 7 decks bound; tokens ready for PPTX ↔ Figma ↔ video round-trip.
 
 - **CAP-8 — Six-Act Deck Framework.** ← spec-pyforge-herald HER-8 (shipped 2026-09-17)
-  - **intent:** Canonical structure for all pitch decks to ensure consistency and narrative clarity.
+  - **intent:** Canonical structure for all pitch decks to ensure consistency and narrative clarity. What it does: 8 sections — Cover (hook), Act I (friction), Act II (insight), Act III (solution/mechanics, L.A.T.C.H. Time), Act IV (real-world application, L.A.T.C.H. Location), Act V (future/vision, L.A.T.C.H. Category), Act VI (action/CTA), Appendix (personas). ~28 slides per deck, 90KB+ class, inline SVGs, full depth (no size-restricted authoring). Visual principles: L.A.T.C.H. (Location, Analogy, Time, Color, Hierarchy).
   - **success:** all 9 decks follow six-act structure; all contain persona appendices; all render full depth; all use L.A.T.C.H. visual principles consistently. Full structure detail in companion `six-act-framework.md`.
 
 - **CAP-9 — Multi-Format Export.** ← spec-pyforge-herald HER-9 (shipped 2026-09-17)
-  - **intent:** Deliver 6 artifact formats per station from a single Design prototype.
+  - **intent:** Deliver 6 artifact formats per station from a single Design prototype. What it does: (1) Design protos (.dc.html) — source of truth, tracked, etagged; (2) Markdown sources (marp) — version-controlled content extracted from Design; (3) PPTX exports (editable) — deckcraft output, tracked for deliverable readiness; (4) Narration scripts (.md) — video production input, tracked for pipeline readiness; (5) Infographics (SVG) — inline static images, tracked, never raster; (6) HTML decks (interactive) — Vite bundle, gitignored (regenerable <5s). Optimization: aggressive strategy tracking ~144 files (source + final deliverables), gitignoring intermediate builds (fragments.json, dist/, assets/, .mp4, ~62% reduction).
   - **success:** all 6 formats available per station; tracked/gitignored split correct; regeneration strategy reduces footprint by 62%; no manual file copies. Full tracking rationale in companion `artifact-tracking-matrix.md`.
 
 - **CAP-10 — Station-Specific Customization.** ← spec-pyforge-herald HER-10 (shipped 2026-09-17)
-  - **intent:** Apply the framework consistently across 9 pyforge stations with domain-appropriate content.
+  - **intent:** Apply the framework consistently across 9 pyforge stations with domain-appropriate content. What it does: 9 stations (Marshal, Warden, Atlas, Mason, Steward, Scribe, Genesis, Doctor, Herald), each with its own thesis, pain point, solution pillars, ecosystem vision, personas, and domain-appropriate diagrams (warden: lattices/gates; marshal: policy composition; atlas: pipeline stages); framework (six-act structure, Modernist identity, design bridge, deckcraft pipeline) stays constant across all 9.
   - **success:** 9 Design projects seeded; 9 prototypes authored per six-act framework; 9 × 6 artifact sets committed; zero manual re-engineering per station. Full roster in companion `station-roster.md`; workflow detail in companion `workflow-stages.md`; implementation-critical bridge details in companion `bridge-protocol.md`.
 
 - **CAP-11 — Progress Visibility Surface (Moment 2).** ← spec-pyforge-herald HER-11 (shipped 2026-09-17)
@@ -179,70 +182,70 @@ argued, not merely filed), **Progress** (HER-11 — a build in flight is not sel
   - **success:** progress surface renders weekly; cost data is accurate (derived from sprint-status + bmad-loop journals); every shipped effort has an unblock narrative.
 
 - **CAP-12 — Success Proclamation Surface (Moment 3).** ← spec-pyforge-herald HER-12 (shipped 2026-09-17)
-  - **intent:** Shipping ≠ being known to ship — create a public claim backed by retrievable evidence.
+  - **intent:** Shipping ≠ being known to ship — create a public claim backed by retrievable evidence. What it does: release claim — structured statement ("Project X shipped. Thesis: [what we proved]. Proof: [links to tests, metrics, adoption data]"); evidence integration — automatic link to CI test results, dashboard metrics, user adoption counts, upstream PRs merged; automation trigger — on PR close to main + passing gate-suite; integration — Herald CLI `herald success <project>`, Herald web release archive.
   - **success:** every closed project has a success claim with ≥1 evidence link; claims are retrievable and dated; no claims exist without proof.
 
 - **CAP-13 — Operations Proclamation Surface (Moment 4).** ← spec-pyforge-herald HER-13 (shipped 2026-09-17)
-  - **intent:** Deprecations, security fixes, end-of-life notices — the unglamorous tail that protects users but nobody announces.
+  - **intent:** Deprecations, security fixes, end-of-life notices — the unglamorous tail that protects users but nobody announces. What it does: notice authoring — structured template for deprecation/fix/EOL notices (what changed, why, migration path, deadline); archive & redirect — notices are permanent and indexed by date/category, old URLs redirect to archive; automation trigger — manual on notice author, no auto-generation; integration — Herald CLI `herald notice author|list|archive`, Herald web notice board.
   - **success:** every deprecated feature has a notice; every notice links to proof/reason; archive is indexed and searchable; all links are permanent. Story breakdown (7 epics, 12–19 stories) in companion `epic-structure.md`.
 
-- **CAP-14 — from spec-deck-family-currency** ← spec-deck-family-currency CAP-1 (shipped 2026-09-17)
+- **CAP-14 — `infographic-standard.md` is the one standard every poster is checked against** ← spec-deck-family-currency CAP-1 (shipped 2026-09-17)
   - **intent:** One codified infographic standard exists that any author or reviewer can check a poster against — the six-act arc with act bands, the full-depth section set adapted per subject, the inline-diagram floor, the length class and the source-cited-facts rule — with Unifying Strategy as the structure, acts and length reference and Warden as the density and visual-form reference.
   - **success:** `infographic-standard.md` is the standard's single home and `docs/how-to/presentation-deck.md`'s verify checklist points to it; each rebuilt poster's README ledger records its measured values (sections, act bands, inline SVGs, bytes, cited facts) against the floors; a poster below any floor is not marked current.
 
-- **CAP-15 — from spec-deck-family-currency** ← spec-deck-family-currency CAP-2 (shipped 2026-09-17)
+- **CAP-15 — `facts.yaml`: every value a poster shows is re-derived, never remembered** ← spec-deck-family-currency CAP-2 (shipped 2026-09-17)
   - **intent:** Every count, version, status and date a poster shows is traceable to a live source through a per-deck fact ledger, `presentations/<slug>/facts.yaml`, re-derivable on demand from the tracked ledgers and manifests — never from a prior poster or from memory.
   - **success:** Each of the ten decks has a `facts.yaml` whose rows carry `id`, `value`, `source`, `method` and `shown_as`, under a document header naming the `tree` (HEAD sha) and `derived_at` (HEAD commit date); every swept token (`n/n`, `x.y.z`, `YYYY-MM-DD`) and every `data-fact` mark the poster shows resolves to a row; re-deriving on an unchanged tree reproduces the file byte-identically; re-deriving after a tracked source changes reports the changed rows.
 
-- **CAP-16 — from spec-deck-family-currency** ← spec-deck-family-currency CAP-3 (shipped 2026-09-17)
+- **CAP-16 — each PyForge poster rebuilt to the standard, at full depth** ← spec-deck-family-currency CAP-3 (shipped 2026-09-17)
   - **intent:** Each PyForge-branded poster is rebuilt to the standard from its fact ledger, repo-side and at full depth.
   - **success:** All ten `presentations/pyforge-*/project/<Name> Infographic standalone.html` meet CAP-1's floors and cite CAP-2's rows; each renders headless to a full-page PNG with no clipped or blank region, and the README ledger records the render date and page height; each lands through its own PR.
 
-- **CAP-17 — from spec-deck-family-currency** ← spec-deck-family-currency CAP-4 (shipped 2026-09-17)
+- **CAP-17 — the Design mirror matches git byte-for-byte, and the bridge knows** ← spec-deck-family-currency CAP-4 (shipped 2026-09-17)
   - **intent:** The Design mirror carries the same bytes as git for every rebuilt poster, and the bridge knows about it.
   - **success:** Each poster is pushed to its Design project through the DesignSync local-path pipeline; the README ledger records the returned etag and byte count; a read-back is byte-identical (content-identical after the harness strip above 256 KiB); `herald deck status` reports the deck linked; `pyforge-unifying-strategy` has a Modernist-bound Design project holding its poster.
 
-- **CAP-18 — from spec-deck-family-currency** ← spec-deck-family-currency CAP-5 (shipped 2026-09-17)
+- **CAP-18 — poster staleness is detectable** ← spec-deck-family-currency CAP-5 (shipped 2026-09-17)
   - **intent:** Poster staleness is detectable — an advisory check compares each poster's fact tokens against a fresh derivation and names the stale posters and rows.
   - **success:** After a tracked ledger changes a value a poster shows, the check names that poster and row; on an unchanged tree it reports clean; it always exits 0 and is invocable as a pixi task.
 
-- **CAP-19 — from spec-deck-family-currency** ← spec-deck-family-currency CAP-6 (shipped 2026-09-17)
+- **CAP-19 — a stale marked literal is refreshed mechanically from the ledger** ← spec-deck-family-currency CAP-6 (shipped 2026-09-17)
   - **intent:** A stale marked literal is refreshed mechanically from the ledger — `deck-facts <slug> --refresh` re-derives the ledger and rewrites every `data-fact` mark whose text no longer equals its row, preserving the literal's shape (`N/M` vs `N of M`, a leading `v`), so a poster follows its ledger without hand edits.
   - **success:** After a tracked ledger moves, `--refresh` leaves `--check` at 0 `mismatch` on the marks it rewrote, reports each rewrite (`id`, old → new), leaves the file byte-identical outside the rewritten text spans, exits 0, and reports nested or unresolvable marks instead of rewriting them.
 
-- **CAP-20 — from spec-deck-family-lockstep** ← spec-deck-family-lockstep CAP-1 (ready 2026-09-17)
+- **CAP-20 — the trio derives from the standalone** ← spec-deck-family-lockstep CAP-1 (ready 2026-09-17)
   - **intent:** The trio derives from the standalone — a verb turns a current standalone into its Infographic head (`.dc.html`, `x-dc` wrapper, styles in the helmet) and its Infographic Deck (the same sections re-laid as 1920×1080 slides), so the three can no longer disagree.
   - **success:** Run over a rebuilt deck, the head's body matches the standalone's exactly modulo the wrapper and style placement, the Infographic Deck carries one slide per numbered section, both render without error, and a second run changes nothing.
 
-- **CAP-21 — from spec-deck-family-lockstep** ← spec-deck-family-lockstep CAP-2 (ready 2026-09-17)
+- **CAP-21 — every marked surface of a deck refreshes together** ← spec-deck-family-lockstep CAP-2 (ready 2026-09-17)
   - **intent:** Every marked surface of a deck refreshes together — `deck-facts <slug> --refresh` walks the poster, head, Infographic Deck, exec summary and marp sources, so one ledger move updates all of them.
   - **success:** After a tracked ledger changes, one `--refresh` leaves every surface of that deck at 0 `mismatch`, and `--check` reports per surface.
 
-- **CAP-22 — from spec-deck-family-lockstep** ← spec-deck-family-lockstep CAP-3 (ready 2026-09-17)
+- **CAP-22 — the Standard export set is current in every format** ← spec-deck-family-lockstep CAP-3 (ready 2026-09-17)
   - **intent:** The Standard export set is current in every format — the exec summary and marp sources carry marked facts, and `deck-export` regenerates both PPTX from them.
   - **success:** For every deck the six companions are regenerated from current sources and dated the rebuild day; no README still reads "standalone ahead".
 
-- **CAP-23 — from spec-deck-family-lockstep** ← spec-deck-family-lockstep CAP-4 (ready 2026-09-17)
+- **CAP-23 — fourteen decks, not ten** ← spec-deck-family-lockstep CAP-4 (ready 2026-09-17)
   - **intent:** Fourteen decks, not ten — the four chain decks are rebuilt to the standard from their own fact ledgers, registered and linked.
   - **success:** `herald deck status` reports every deck in `presentations/` linked with its project id, and each of the four meets the `infographic-standard.md` floors at 0 unmarked / 0 mismatch.
 
-- **CAP-24 — from spec-deck-family-lockstep** ← spec-deck-family-lockstep CAP-5 (ready 2026-09-17)
+- **CAP-24 — the Design side is used as a design surface** ← spec-deck-family-lockstep CAP-5 (ready 2026-09-17)
   - **intent:** The Design side is used as a design surface — at least one deck goes through a real visual pass in Claude Design and returns through a byte-exact pull.
   - **success:** A dated Design-side edit is pulled to git, the read-back is byte-identical after the harness strip, the deck README records the etag, and the pull discipline is demonstrated end to end.
 
-- **CAP-25 — from spec-deck-family-lockstep** ← spec-deck-family-lockstep CAP-6 (ready 2026-09-17)
+- **CAP-25 — the transport speaks the mcp SDK it actually has pinned** ← spec-deck-family-lockstep CAP-6 (ready 2026-09-17)
   - **intent:** The transport speaks the `mcp` SDK it actually has pinned — `pyforge.herald. transport.mcp_transport` imports whichever streamable-HTTP client symbol the pinned `mcp` SDK actually exports, and `pyforge-herald`'s own `pyproject.toml` floor is reconciled with `pixi.toml`'s environment pin so the two agree.
   - **success:** A real `herald deck push` against a live Design project round-trips (push, then read back byte-identical) through the fixed transport, and `deck-facts <slug> --check` reports 0 `mismatch` afterward.
 
-- **CAP-26 — from spec-deck-visual-qa** ← spec-deck-visual-qa CAP-1 (ready 2026-09-17)
+- **CAP-26 — every slide renders headless to PNG, plus a contact sheet** ← spec-deck-visual-qa CAP-1 (ready 2026-09-17)
   - **intent:** A headless-render-to-PNG step callable after any deck build: drive the deck engine's existing per-slide `#/<n>` URL-hash routes with headless Chromium (playwright-python, already pinned in the pixi envs per `docs/reference/library-llms-full.md` — no new dependency), screenshot every slide `manifest.json` names at the native 1920×1080 frame, and emit one PNG per slide plus a contact sheet — an artifact a human or LLM reviewer actually looks at instead of trusting "the build didn't crash."
   - **success:** Run against the worked-example deck (`presentations/agentic-sdlc/`, 45 slides, PR #50), it emits exactly one PNG per manifest entry (named by slide index/id) plus one contact sheet, and a reviewer can spot a visually broken slide from the sheet alone. A slide that renders badly still yields its PNG — the run reports, it never aborts on ugliness.
 
-- **CAP-27 — from spec-deck-visual-qa** ← spec-deck-visual-qa CAP-2 (ready 2026-09-17)
+- **CAP-27 — the placeholder scan flags every unfilled image slot, both spellings** ← spec-deck-visual-qa CAP-2 (ready 2026-09-17)
   - **intent:** A format-agnostic unedited-placeholder scan reframed for Herald's own convention: flag slides shipping with unfilled image slots, catching BOTH spellings — `<image-slot placeholder="…">` in prototype/fragment sources AND the dashed `.image-slot` placeholder `<div>` the extractor converts them to (`presentation-deck.md` § extraction). Explicitly NOT the source org's PowerPoint-specific "Click to add"/Lorem-ipsum regex.
   - **success:** Run against `presentations/agentic-sdlc/` today, it flags exactly slide 40 ("In action"), whose three `<image-slot>` panels are documented in `presentation-deck.md`'s own placeholder table as deliberately left for real screenshots — a live true positive. A deck with every slot filled reports clean.
 
-- **CAP-28 — from spec-deck-visual-qa** ← spec-deck-visual-qa CAP-3 (ready 2026-09-17)
+- **CAP-28 — both gates emit one extensible report keyed by gate id** ← spec-deck-visual-qa CAP-3 (ready 2026-09-17)
   - **intent:** Both gates emit into one machine-readable report keyed by gate id (gate → status → per-slide findings → paths to reviewer-facing artifacts), designed so the three parked `.pptx`-contingent gates — `check_xml` OOXML ordering, `check_typst_safety`, `audit_overflow` — can register as new gate ids later without reworking the report shape, the entrypoint, or any consumer.
   - **success:** Adding a stub third gate id requires no change to the report schema or to the two v1 gates' output; the report round-trips (parse it back, address each gate's findings by id).
 
@@ -279,46 +282,46 @@ argued, not merely filed), **Progress** (HER-11 — a build in flight is not sel
   - **success:** Two consecutive runs: the second reports every deck `unchanged` with zero writes to git or Design; `--dry-run` prints the same report without writing.
 
 - **CAP-37 — DB-backed storage layer.** ← spec-herald-moments-2-4-live-backend LB-1 (in-progress 2026-09-17)
-  - **intent:** See absorbed Spec memlog and git history.
+  - **intent:** DB-backed storage layer — replace .herald/{progress,claims,notices-index}.json with a real database carrying the same schemas, swapped BEHIND the existing function seam (progress.upsert, claims.create/publish, notices.author/publish/close are already pure (path, **fields) -> record functions), with the CLI/web-tab contract unchanged. Notices' git-tracked markdown stays the durable copy; only the index/cache layer moves.
   - **success:** two writers hitting the same store concurrently never lose an update, and the CLI verbs behave identically across the swap.
 
 - **CAP-38 — Webhook endpoint.** ← spec-herald-moments-2-4-live-backend LB-2 (in-progress 2026-09-17)
-  - **intent:** See absorbed Spec memlog and git history.
+  - **intent:** Webhook endpoint — /api/herald/webhooks/on-ship and /on-pr-close that CI actually calls, creating progress records and success-claim drafts automatically rather than by operator memory; HMAC signature verification, retry/backoff, operator-alert delivery.
   - **success:** a merged PR produces a progress record with zero operator action.
 
 - **CAP-39 — Cron scheduler.** ← spec-herald-moments-2-4-live-backend LB-3 (in-progress 2026-09-17)
-  - **intent:** See absorbed Spec memlog and git history.
+  - **intent:** Cron scheduler — weekly progress aggregation and 7-day evidence re-validation actually running on a schedule, replacing the operator-remembered `herald progress --update`.
   - **success:** the weekly aggregation and the 7-day re-validation both run without anyone remembering them.
 
 - **CAP-40 — the shape API + autofit engine (→ 15.2).** ← spec-pptx-custom-shapes CAP-1 (ready 2026-09-17)
-  - **intent:** See absorbed Spec memlog and git history.
-  - **success:** See absorbed Spec memlog and git history.
+  - **intent:** `add_card`/`add_metric_box`/`add_table`/`add_section_label`-shaped calls rendering into the 15.1 pipeline's decks; autofit via Pillow `ImageFont` measurement (wrap, shrink, orphan rebalancing — already a transitive dependency, no new class); color/font mapping from the repo's own template, not any external brand.
+  - **success:** a metric-dense slide renders with no overflow and no manual size fiddling; the shapes are editable objects in PowerPoint.
 
 - **CAP-41 — template-parse-then-fill (→ 15.1).** ← spec-pptx-deck-generation CAP-1 (ready 2026-09-17)
-  - **intent:** See absorbed Spec memlog and git history.
-  - **success:** See absorbed Spec memlog and git history.
+  - **intent:** Parse the `.potx`/`.pptx` template once into a machine-readable `spec.json` contract; the agent writes `content_plan.json`; mechanical placeholder filling — raw OOXML never hand-written. Pattern from the sibling org's most mature blueprint (5/6 epics complete there; pattern only, unlicensed).
+  - **success:** an existing station deck's content renders to a .pptx whose every text run is genuinely editable in PowerPoint.
 
 - **CAP-42 — custom shapes + real autofit (→ 15.2, downstream).** ← spec-pptx-deck-generation CAP-2 (ready 2026-09-17)
-  - **intent:** See absorbed Spec memlog and git history.
-  - **success:** See absorbed Spec memlog and git history.
+  - **intent:** Owned by `spec-pptx-custom-shapes` — cards/metric boxes/tables/section labels beyond template placeholders, Pillow real-font-measured autofit.
+  - **success:** Cards, metric boxes, tables and section labels beyond the template's placeholders render into the 15.1 pipeline's decks with Pillow real-font-measured autofit; the mechanism is `spec-pptx-custom-shapes`'s (CAP-40 here) and this capability is met when that one is.
 
-- **CAP-43 — from spec-pyforge-pages** ← spec-pyforge-pages CAP-1 (ready 2026-09-17; amended 2026-10-15 by CAP-61, Story 43.7: `dossier.yml` moved under `docs-site/`, and `pages-check` replaces the retired `site-check`)
+- **CAP-43 — the dossier YAML is the only source of truth** ← spec-pyforge-pages CAP-1 (ready 2026-09-17; amended 2026-10-15 by CAP-61, Story 43.7: `dossier.yml` moved under `docs-site/`, and `pages-check` replaces the retired `site-check`)
   - **intent:** The dossier YAML is the only source of truth; the Pages site, the infographic gallery, and the Claude Artifact build are renders of it.
   - **success:** Changing a sentence in `docs-site/src/content/dossier/dossier.yml` and running `pixi run -e site pages-check` rebuilds every page from that file; no second hand-edited HTML copy of the dossier exists in git.
 
-- **CAP-44 — from spec-pyforge-pages** ← spec-pyforge-pages CAP-2 (ready 2026-09-17; root and path clauses superseded by CAP-52, its two-generator shape by CAP-61 on 2026-10-15; `dashboard.yml` is `pages.yml` since steward Story 102.1, still the one `deploy-pages` caller)
+- **CAP-44 — one Pages deployment: the dossier at root, Kedro-Viz at `/kedro-viz/`** ← spec-pyforge-pages CAP-2 (ready 2026-09-17; root and path clauses superseded by CAP-52, its two-generator shape by CAP-61 on 2026-10-15; `dashboard.yml` is `pages.yml` since steward Story 102.1, still the one `deploy-pages` caller)
   - **intent:** The Pages root is the dossier landing page; Kedro-Viz stays at `/kedro-viz/` and is linked from it; the repository still has one Pages deployment.
   - **success:** `dashboard.yml` builds the site into `docs/dashboard/` and remains the only workflow that calls `deploy-pages`; Kedro-Viz is still served at `/kedro-viz/`.
 
-- **CAP-45 — from spec-pyforge-pages** ← spec-pyforge-pages CAP-3 (ready 2026-09-17; superseded 2026-10-15 by CAP-61, Story 43.7: the `site`, `site-check`, `site-verify` and `site-serve` tasks retired; the local loop is `pages-build` and `pages-check` under `[feature.site]`)
+- **CAP-45 — local pixi site loop** ← spec-pyforge-pages CAP-3 (ready 2026-09-17; superseded 2026-10-15 by CAP-61, Story 43.7: the `site`, `site-check`, `site-verify` and `site-serve` tasks retired; the local loop is `pages-build` and `pages-check` under `[feature.site]`)
   - **intent:** Operators have a local pixi loop — build, check, verify figures, serve — without growing the `build` environment export.
   - **success:** `site`, `site-check`, `site-verify`, and `site-serve` exist under `[feature.site]`; `pixi project export conda-environment -e build` leaves `environment.yaml` byte-identical.
 
-- **CAP-46 — from spec-pyforge-pages** ← spec-pyforge-pages CAP-4 (ready 2026-09-17; amended 2026-10-15 by Stories 43.5 and 43.7: the measurer is `docs-site/scripts/verify_claims.py`, run by the build with `--emit`, so every `check:` stat is measured at build; the CI advisory step and the `site-verify` task retired)
+- **CAP-46 — marked dossier figures are compared to the tree, drift visible** ← spec-pyforge-pages CAP-4 (ready 2026-09-17; amended 2026-10-15 by Stories 43.5 and 43.7: the measurer is `docs-site/scripts/verify_claims.py`, run by the build with `--emit`, so every `check:` stat is measured at build; the CI advisory step and the `site-verify` task retired)
   - **intent:** Marked dossier figures are compared to the source tree so drift is visible; editorial judgment stays human.
   - **success:** `verify_claims.py` runs in CI as an annotation with `continue-on-error`; local `site-verify` may exit 1 on drift.
 
-- **CAP-47 — from spec-pyforge-pages** ← spec-pyforge-pages CAP-5 (ready 2026-09-17; amended 2026-10-15 by CAP-61, Story 43.7: the artifact build `herald/artifact/dossier.html` is made at build end by `docs-site/src/lib/artifact.ts`, and herald's `test_one_generator.py` asserts no `<html>`, `<head>` or `<body>` in place of the retired `build.py --check`)
+- **CAP-47 — the Claude Artifact host gets a body-only render, same templates** ← spec-pyforge-pages CAP-5 (ready 2026-09-17; amended 2026-10-15 by CAP-61, Story 43.7: the artifact build `herald/artifact/dossier.html` is made at build end by `docs-site/src/lib/artifact.ts`, and herald's `test_one_generator.py` asserts no `<html>`, `<head>` or `<body>` in place of the retired `build.py --check`)
   - **intent:** The Claude Artifact host receives a body-only render from the same templates as the site.
   - **success:** `build.py --check` asserts the artifact shell has no wrapping `<html>` / `<body>` that the host already supplies.
 - **CAP-48 — the windowed Design read never loops on a stalled window** ← spec-pyforge-herald CAP-48 (in-progress 2026-09-18)

@@ -423,3 +423,29 @@ def test_the_doctor_41_5_replay_publishes_epic_41_in_progress(tmp_path: Path, mo
     published = _origin_text(origin, _DOCTOR)
     assert _statuses(published)["epic-41"] == "in-progress"
     assert published == _DOCTOR_BEFORE.replace(f"  {_DOCTOR_41_5}: backlog\n", f"  {_DOCTOR_41_5}: done\n")
+
+
+# -- Story 107.1: a stale-slug feed key never reaches the twin through a landing -------------------------------
+
+_E9_STALE_TWIN = {
+    "9-1-the-first-story": "review",
+    "9-2-the-second-story-whose-title-runs-past-sixty-characters-long": "done",
+    "epic-9": "in-progress",
+}
+
+
+def test_a_stale_slug_feed_key_is_left_out_of_the_published_twin(tmp_path: Path, monkeypatch) -> None:
+    """Story 107.1 (review S3): the feed carries ``sprint_plan.py``'s 60-character copy of 9.2 at
+    ``backlog`` beside the twin's ``done`` key. Landing 9.1 publishes neither the copy nor an
+    ``epic-9`` rolled back by it."""
+    origin, primary = _estate(tmp_path, _SLUG, _plain_render(_SLUG, _E9_STALE_TWIN))
+    stale = "9-2-the-second-story-whose-title-runs-past-sixty-characters-lo"
+    _write_feed(primary, _SLUG, _feed_text({**_E9_STALE_TWIN, stale: "backlog"}))
+    parent = _git(origin, "rev-parse", "main").strip()
+
+    assert _finalize(monkeypatch, primary, _SLUG, "9.1") == 0
+
+    _assert_promotion_commit(origin, parent)
+    published = _statuses(_origin_text(origin, _SLUG))
+    assert stale not in published
+    assert published == {**_E9_STALE_TWIN, "9-1-the-first-story": "done", "epic-9": "done"}

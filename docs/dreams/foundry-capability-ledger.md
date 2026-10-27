@@ -55,11 +55,11 @@ Scribe’s extract surfaces (13.1 / 14.1).
   `spec-foundry-regenerate-not-fold` (`fnr:CAP-1..5`)
 - `docs/dreams/pyforge-unifying-strategy.md` /
   `spec-python-foundry-cutover` (44.1 stays blocked)
-- `docs/dreams/scribe-planning-pointers.md` /
+- `archive/docs/dreams/scribe-planning-pointers.md` /
   `spec-scribe-planning-pointers` (heading extract, never wholesale)
-- `docs/dreams/scribe-named-docs.md` /
+- `archive/docs/dreams/scribe-named-docs.md` /
   `spec-scribe-named-docs` (catalog `##` extract, never 20k truncate)
-- `docs/dreams/capability-effect-check.md` (effect is a later doctor
+- `archive/docs/dreams/capability-effect-check.md` (effect is a later doctor
   criterion; this Dream classifies destiny, not callers)
 
 ## Constraints / Non-goals

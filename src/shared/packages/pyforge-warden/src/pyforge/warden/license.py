@@ -2,7 +2,7 @@
 6.2, axis ``"license"``).
 
 This module turns each component into an honest ``allowed`` /``denied`` /
-``unknown`` :class:`~pyforge.warden.models.LicenseVerdict` (FR32/FR33) and
+``unknown`` :class:`~pyforge.warden.models.LicenseVerdict` (FR32/FR-33) and
 emits ``license:<spdx-or-"unknown">:<pkg>@<ver>`` ``Finding``s for the
 ``denied``/``unknown`` cases only. It NEVER projects an exit code and NEVER
 spells the verdict lattice order — ``license_rung`` produces a

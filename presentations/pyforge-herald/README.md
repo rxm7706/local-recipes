@@ -52,7 +52,7 @@ https://claude.ai/design/p/ff879a32-9741-4cf5-948f-d67040481d24?file=PyForge%20H
 
 ## Ledger — 2026-09-13 standard rebuild (Story 20.5)
 
-Rebuilt repo-side to `spec-deck-family-currency/infographic-standard.md` from
+Rebuilt repo-side to `spec-pyforge-herald/infographic-standard.md` from
 `facts.yaml` (tree `b5fe5e46fc`, re-derived on the clean branch point before authoring;
 40 rows). Every count, version, status and date the poster prints is a `data-fact` mark
 resolving to a row; numbers with no row (drift sizes, stub counts, test counts, dates outside

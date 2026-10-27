@@ -7,7 +7,7 @@ stranded behind legacy code for months).
 
 Reads `campaign-state.yaml` (the real, tracked instance at
 `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/
-spec-conda-forge-expert-rebuild/campaign-state.yaml`), every brief a slice's
+spec-pyforge-mason/campaign-state.yaml`), every brief a slice's
 `brief_path` names, and -- only when at least one slice carries a
 `brief_path` -- git history from `--since` to HEAD. With no `brief_path` on
 any slice (true since Story 15.1 closed the campaign) no clause needs a
@@ -126,7 +126,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 CAMPAIGN_STATE_PATH = (
     ROOT
     / "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/"
-      "spec-conda-forge-expert-rebuild/campaign-state.yaml"
+      "spec-pyforge-mason/campaign-state.yaml"
 )
 
 # Story-6.1 landing merge (PR #570) — the default lower bound for clause
@@ -760,7 +760,7 @@ def main() -> int:
         print(f"  ✗ [{f['kind']}] {f['ref']}")
         print(f"      {f['detail']}")
         print(f"      → {f['remedy']}")
-    print(f"\nFAIL: {len(findings)} finding(s). See docs/dreams/fidelity-enforcement.md "
+    print(f"\nFAIL: {len(findings)} finding(s). See archive/docs/dreams/fidelity-enforcement.md "
           "and the Epic 6 campaign-state.yaml for context.")
     return 1
 

@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: 8288923379165115
-story_count: 460
-test_file_count: 269
+source_fingerprint: 789f2cc48288d9de
+story_count: 508
+test_file_count: 271
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 460
-- **Epics parsed:** 101
-- **Test files inventoried:** 269 under `src/shared/packages/pyforge-marshal/tests/`
+- **Stories parsed:** 508
+- **Epics parsed:** 110
+- **Test files inventoried:** 271 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `8288923379165115`
+- **Source fingerprint:** `789f2cc48288d9de`
 
 ## Risk Assessment
 
@@ -34,6 +34,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 20: The loop cannot lose work, and a landing is always recognizable
 - Epic 50: The landing self-drives — what the first autonomous drain still needed a human for (spec-pyforge-marshal CAP-244..248)
 - Epic 51: The landing self-drives, second round — what the second autonomous drain still needed a human for (spec-pyforge-marshal CAP-249..256)
+- Epic 110: Every pre-rule marshal runtime capability sits behind a kill switch (37 flags, one per CAP; the Guild flag rule's retrofit capability, Q6)
 
 ### Medium-risk epics
 
@@ -123,6 +124,14 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 101: A landing under the CI master switch names every gate it stopped
 - Epic 102: A re-landing does not re-verify from scratch when only main moved
 - Epic 103: Marshal's own MCP server starts, and preflight proves it
+- Epic 104: Marshal's own render never blocks a loop-home refresh
+- Epic 105: The marshal PRD's FR arrows name the capabilities the Spec carries
+- Epic 106: The marshal PRD's remaining FR arrows name what realizes them
+- Epic 107: A loop-home refresh keeps the Tier-3 feed on the tracked ledger's keys
+- Epic 108: Every marshal requirement derives from a capability, and the harness carries the rule (spec-one-chain-per-station CAP-5 amended; spec-pyforge-marshal CAP-297)
+- Epic 109: Marshal's planning artifacts fit the one-chain shape (spec-one-chain-per-station CAP-11)
+- Epic 111: The archived marshal Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
+- Epic 112: The absorbed marshal Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
 
 ### Low-risk epics
 
@@ -316,6 +325,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_loop_runner_hook.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_marshal_recall_plugin.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_mcp_registration.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_mcp_story_103.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_mcp_tools.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_model.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_model_cost.py` | unit | none observed |
@@ -340,6 +350,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_refs.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_repo_root.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_retire.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_retrofit_flags.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_savings_telemetry.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_scope.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_scribe_cli.py` | unit | none observed |
@@ -876,6 +887,54 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 101.1 | The landing line lists every surface the CI master switch pauses | none observed |
 | 102.1 | A landing reuses its verified verdict when only a merge of main moved the branch | none observed |
 | 103.1 | The marshal-mcp server starts on the official SDK, and preflight proves it | none observed |
+| 104.1 | The .mcp.json marshal renders never makes a loop home dirty | none observed |
+| 105.1 | Every marshal PRD FR arrow names the Spec capability that realizes it | none observed |
+| 106.1 | Every marshal seed-installer FR names the capability that realizes it | none observed |
+| 106.2 | FR-144..FR-147 trace to the capabilities the fold dropped | none observed |
+| 107.1 | A refresh or a sync never carries a stale-slug story key | none observed |
+| 108.1 | Every marshal requirement cites a capability, the Spec's cut text is restored... | none observed |
+| 108.2 | Every marshal NFR names the capabilities it bounds | none observed |
+| 109.1 | Marshal's five loose spec files move to the archive home | none observed |
+| 110.1 | the front door names the environment a roster station runs in sits behind a k... | none observed |
+| 110.2 | loop homes and isolation sits behind a kill switch | none observed |
+| 110.3 | supervised unattended runs sits behind a kill switch | none observed |
+| 110.4 | gates you can run sits behind a kill switch | none observed |
+| 110.5 | fleet visibility sits behind a kill switch | none observed |
+| 110.6 | policy composition sits behind a kill switch | none observed |
+| 110.7 | operating model as data sits behind a kill switch | none observed |
+| 110.8 | managed-region upgrades sits behind a kill switch | none observed |
+| 110.9 | adopt onto a living repo sits behind a kill switch | none observed |
+| 110.10 | seed check in CI sits behind a kill switch | none observed |
+| 110.11 | adapters from one contract sits behind a kill switch | none observed |
+| 110.12 | genesis-owned state file sits behind a kill switch | none observed |
+| 110.13 | Supervisor finalizes when the harness cannot run shell sits behind a kill switch | none observed |
+| 110.14 | `marshal watch` reports what changed and a recommended delay sits behind a ki... | none observed |
+| 110.15 | completion is judged from git and process facts, never self-reports sits behi... | none observed |
+| 110.16 | a session's self-report is input to verification, never the verdict sits behi... | none observed |
+| 110.17 | dispatch lands through existing landing machinery, never a second path sits b... | none observed |
+| 110.18 | one story in flight per station, cross-station dispatches run concurrently si... | none observed |
+| 110.19 | `branch_merged` is never true on ancestry alone sits behind a kill switch | none observed |
+| 110.20 | after harness exit, at most one follow-up review, then land sits behind a kil... | none observed |
+| 110.21 | declared context pipeline sits behind a kill switch | none observed |
+| 110.22 | promotion runs on landing, not on memory sits behind a kill switch | none observed |
+| 110.23 | a dispatch-only checkout still has fleet rows sits behind a kill switch | none observed |
+| 110.24 | marshal's shell-outs name the Guild env sits behind a kill switch | none observed |
+| 110.25 | a loop-home refresh sends its proven fast-forward past the pre-push preflight... | none observed |
+| 110.26 | a follow-up review a landed story recommends is carried into the deferred-wor... | none observed |
+| 110.27 | a landing's ledger promotion reaches origin/main, and a failed one is never s... | none observed |
+| 110.28 | the switch script runs where it is documented to run, or says in one line why... | none observed |
+| 110.29 | `marshal seed check` judges the paths the manifest means, never its unrendere... | none observed |
+| 110.30 | a drain runs the follow-up review a landed story recommended, gated by its de... | none observed |
+| 110.31 | every dispatch session opens on the shared codegraph index sits behind a kill... | none observed |
+| 110.32 | a landing unions append-only memlogs instead of refusing sits behind a kill s... | none observed |
+| 110.33 | an operator-run refresh reads every harness's live model list and reports dri... | none observed |
+| 110.34 | a dev pass receives relevant team-memory feedback before it starts sits behin... | none observed |
+| 110.35 | a review pass sees the same feedback the dev pass saw sits behind a kill switch | none observed |
+| 110.36 | the recall injection is its own [context] layer sits behind a kill switch | none observed |
+| 110.37 | a recall miss or failure injects nothing sits behind a kill switch | none observed |
+| 110.38 | the retrofit kill switches retire on their cleanup date | none observed |
+| 111.1 | Marshal's 54 archived Dreams leave the live tree | none observed |
+| 112.1 | Marshal's absorbed Spec folders move to the archive home | none observed |
 
 ## Quality Gates
 

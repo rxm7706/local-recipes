@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: a5bbee56086766b2
-story_count: 396
-test_file_count: 143
+source_fingerprint: 36507b08a45515c1
+story_count: 426
+test_file_count: 148
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 396
-- **Epics parsed:** 109
-- **Test files inventoried:** 143 under `src/shared/packages/pyforge-steward/tests/`
+- **Stories parsed:** 426
+- **Epics parsed:** 117
+- **Test files inventoried:** 148 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `a5bbee56086766b2`
+- **Source fingerprint:** `36507b08a45515c1`
 
 ## Risk Assessment
 
@@ -135,6 +135,14 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 107: The preflight refuses a stranded lane, and its serial reference resolves under pixi (fix under spec-pyforge-steward CAP-159; no CAP)
 - Epic 108: `estate reconcile` and `ci status` report what happened (fixes under spec-pyforge-steward CAP-167 and CAP-166; no CAP)
 - Epic 109: The reset BMAD marketplace is a skill store on the catalog engine (spec-pyforge-steward CAP-169..CAP-173)
+- Epic 110: The steward PRD's first 31 FRs name the capabilities the Spec carries
+- Epic 111: The steward Spec's capability text is whole again, and the foundry inherits the amended rule (spec-one-chain-per-station CAP-5 amended, CAP-7)
+- Epic 112: The Platform CI `test` job's budget covers a slow mirror (spec-pyforge-steward CAP-174 / FR-48)
+- Epic 113: Steward's planning artifacts fit the one-chain shape (spec-one-chain-per-station CAP-11)
+- Epic 115: The archived steward Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
+- Epic 114: Every pre-rule steward runtime capability sits behind a kill switch (8 flags, one per CAP; the Guild flag rule's retrofit capability, Q6)
+- Epic 116: The absorbed steward Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
+- Epic 117: The preflight and a PR's CI answer within a measured budget, and a station suite runs once (spec-pyforge-steward CAP-175 / FR-49)
 
 ### Low-risk epics
 
@@ -164,6 +172,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/meta/test_pages_workflow.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_pr_preflight_lanes_resolve_under_pixi.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_preflight_docs_site_lanes.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_pull_request_exempt_surfaces.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_release_cadence_runbook.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_session_check_entry_points.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_skf_domain_skills.py` | meta | none observed |
@@ -174,6 +183,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/meta/test_steward_persona.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_steward_single_flag_tree.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_workflow_path_filters_match.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_workflows_have_no_duplicate_keys.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_bootstrap.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_bootstrap_remedies.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_bootstrap_setup.py` | unit | none observed |
@@ -242,6 +252,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_budget.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_ci.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_preflight_critical_path.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_docs_site_mutex.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_inherited_pytest_addopts.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_lane_identity.py` | unit | none observed |
@@ -263,6 +274,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_provision_verify.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_quarantine.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_restore_duty.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_retrofit_flags.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_revoke_duty.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_session.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_sprint_ledger_query.py` | unit | none observed |
@@ -287,6 +299,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_upgrade_reconcile.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_clean_delete.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_workspace_delete_tier3.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_edges.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_full_refs.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_preserve_tag.py` | unit | none observed |
@@ -364,6 +377,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 13.4 | The set reports and tears down safely | none observed |
 | 13.5 | `workspace clean --delete` removes a gone or landed workspace without a promp... | none observed |
 | 13.6 | A workspace started from another branch is landed once its branch is on main | none observed |
+| 13.7 | A landed workspace that holds Tier-3 files deletes, and keeps the files | none observed |
 | 14.1 | The pre-flight diff retrodicts a real upgrade | none observed |
 | 14.2 | Apply is deliberate, branched, and never clobbers custom | none observed |
 | 14.3 | Clobbered custom surfaces are caught and re-applied | none observed |
@@ -607,6 +621,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 71.11 | No lane process outlives a stop, and a reduced lane cut short is never ok | none observed |
 | 71.12 | Every cancelled lane names what stopped the run | none observed |
 | 71.13 | A second SIGINT never deadlocks the preflight's interrupt handler | none observed |
+| 71.14 | Every PR runs the dependency-completeness test, locally and in CI | none observed |
 | 72.1 | The Guild environment answers pyforge mason | none observed |
 | 72.2 | Mason's five-tier skill cell requires its station skill and conda-forge-expert | none observed |
 | 73.1 | `steward session check` reads `marshal seed check`'s envelope, whatever its e... | none observed |
@@ -664,6 +679,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 99.5 | The preflight honors what CI will skip, and says so | none observed |
 | 99.6 | A paused expensive build still runs once a week | none observed |
 | 99.7 | The hand-disabled workflows are retired or parked, and the convention is docu... | none observed |
+| 99.8 | A red main run on a CI surface reaches the next preflight | none observed |
 | 100.1 | The pin policy is declared once and an upgrade is judged against it | none observed |
 | 100.2 | One command moves the library pins on the policy and restores what the upgrad... | none observed |
 | 100.3 | Every derived surface regenerates from the lock by its own generator | none observed |
@@ -694,6 +710,33 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 109.3 | A marketplace tree renders a Pages index from listings | none observed |
 | 109.4 | The teammate CLI bmp shares the catalog engine | none observed |
 | 109.5 | Contribution lanes wait on a desk test and a Wizard-of-Oz pilot | none observed |
+| 110.1 | Every steward PRD FR arrow names the Spec capability that realizes it | none observed |
+| 111.1 | The steward Spec's fold-cut capability text is restored, and the foundry inhe... | none observed |
+| 112.1 | The Platform CI `test` job installs only what its runner image lacks, and its... | none observed |
+| 113.1 | Steward's archived Spec folders and its superseded preparatory spec move to t... | none observed |
+| 114.1 | `steward budget`: a declared ceiling and an honest spend signal sits behind a... | none observed |
+| 114.2 | Frame draft re-grounding: the estate claims conformance the way the draft now... | none observed |
+| 114.3 | `workspace clean` removes merged worktrees, archived rather than deleted sits... | none observed |
+| 114.4 | only the worktrees it created; Marshal's loop-homes stay invisible sits behin... | none observed |
+| 114.5 | the deployment perimeter ships with the pattern sits behind a kill switch | none observed |
+| 114.6 | the pre-commit set: attribution lines and un-preflighted pushes are refused b... | none observed |
+| 114.7 | steward reads `origin/main` and its own branches by their full refs sits behi... | none observed |
+| 114.8 | One client, carrying identity sits behind a kill switch | none observed |
+| 114.9 | the retrofit kill switches retire on their cleanup date | none observed |
+| 115.1 | Steward's 36 archived Dreams leave the live tree | none observed |
+| 116.1 | Steward's absorbed Spec folders and the intake drops move to the archive home | none observed |
+| 117.1 | The steward suite runs under pytest-xdist and its serial remainder alone | none observed |
+| 117.2 | A station's coverage floor is judged from its own suite's run, and coverage-g... | none observed |
+| 117.3 | The preflight admits lanes longest-first by the cores they will use | none observed |
+| 117.4 | Each station suite runs as its package-local and live-tree halves | none observed |
+| 117.5 | preflight-budget names every lane over its journal-derived budget | none observed |
+| 117.6 | Image builds leave the pull-request path for main and the nightly canary | none observed |
+| 117.7 | The CI workflows run what the diff touches, with pinned tools and parallel de... | none observed |
+| 117.8 | The CFE regression net leaves the pull-request path, and the PR keeps its met... | none observed |
+| 117.9 | The steward suite's slowest tests shed their subprocesses, repos and sleeps | none observed |
+| 117.10 | Each station suite runs as N sharded jobs whose coverage the gate merges | none observed |
+| 117.11 | The changes gate and the gate diffs run on shallow fetches of the PR base | none observed |
+| 117.12 | The platform suite runs under xdist, its checks in a parallel job | none observed |
 
 ## Quality Gates
 
