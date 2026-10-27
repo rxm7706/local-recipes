@@ -2,7 +2,7 @@
 title: "117.4: Each station suite runs as its package-local and live-tree halves"
 type: 'feature'
 created: '2026-10-27'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
@@ -36,9 +36,9 @@ Type / Effort / Deps: feature / L / none.
 
 ## Acceptance Criteria
 
-- **AC1 — Two halves.** For every station, `pyforge-<s>-test` and `pyforge-<s>-live-test` exist in `pixi.toml`, together collect exactly the tests the old task collected, and `pyforge-station-tests` runs both.
+- **AC1 — Two halves.** For steward (this story) and for every station whose own chain lands its split (doctor Story 55.4 lands with this one; herald, mason, atlas, scribe and warden on theirs), `pyforge-<s>-test` and `pyforge-<s>-live-test` exist in `pixi.toml`, together collect exactly the tests the old task collected, and `pyforge-station-tests` runs both.
 - **AC2 — Derived gates.** `test_station_tests_trigger_map.py` derives the package job's outside reads as empty for steward and asserts it; the live job's reads equal today's derived set; every read fires its job; `PRESERVED` is unchanged.
-- **AC3 — Fan-out.** The `changes` script on a one-file fixture diff under `src/shared/packages/pyforge-steward/src/` sets `steward=true`, `core=true`, `steward_live=true` and no other station's unit output `true`; on a one-file diff under `_bmad-output/projects/pyforge-doctor/planning-artifacts/` no unit output is `true`.
+- **AC3 — Fan-out.** The `changes` script on a one-file fixture diff under `src/shared/packages/pyforge-steward/src/` sets `steward=true`, `core=true` (CAP-8, by design) and `steward_live=true`, and no split station's package output `true` except steward's; on a one-file diff under `_bmad-output/projects/pyforge-doctor/planning-artifacts/` no split station's package output is `true`. An unsplit station's output (atlas and scribe read `src/shared/packages`; marshal reads the planning globs) keeps firing until its own chain splits it — the trigger map's fan-out test names them and shrinks as each lands.
 - **AC4 — The twin.** `preflight_ci.select_lanes` selects the same lanes CI runs for both fixture diffs (`test_preflight_selection.py`).
 - **AC5 — Nothing exempt.** No `*_paths` entry is removed except by the derivation shrinking; `on.pull_request.paths` still matches every derived read.
 
@@ -79,13 +79,14 @@ Parent: `spec-pyforge-steward` CAP-175
 
 ## Auto Run Result
 
-Status: backlog
+Status: done
 
-Summary: not started.
+Summary: built in the Wave 2 PR (2026-10-27), with doctor Story 55.4. The convention is the `live_tree` marker (`pytestmark = pytest.mark.live_tree`, registered in each package's `[tool.pytest.ini_options]`): 68 steward modules carry it (every module the trigger map derives an outside read for, plus `tests/meta/**`). `pyforge-steward-test` collects `-m "not slow and not live_tree"` (1623 tests; 62 s with the set-aside `test_preflight_concurrency.py` alone), `pyforge-steward-live-test` collects `-m "live_tree and not slow"` (1446 tests; 108 s, `test_preflight_scope.py` and `test_preflight_scratch.py` alone), the two together the 3069 the old task collected; each writes its own `--cov` report and the gate judges `coverage_gates_ci.py --report steward-unit.json --report steward-live.json` (`merge_coverage_reports`: the union of executed lines and branches, coverage.py's percent formula). Workflow: `changes` emits `<s>` on the package and shared surface (`src/shared/packages/pyforge-<s>` + the shared globs) and `<s>_live` on the derived arrays (today's `*_paths`, renamed `<s>_live_paths`); new `steward-live-test` and `steward-gate` jobs (the gate downloads both `coverage-steward-*` artifacts); `ci-surfaces.yaml` carries the four new rows. `test_station_tests_trigger_map.py` keys both jobs, filters each half's derivation by the marker (AST), asserts the package half reads nothing outside its package (`test_the_package_half_reads_nothing_outside_its_package`), keeps `PRESERVED`, and its mutation tests target the live arrays; `test_preflight_selection.py` and `test_preflight_docs_site_lanes.py` follow the split. Measured locally (16 cores): steward 62 s + 108 s versus 303 s for the one suite in CI before; doctor 12 s + 47 s.
 
 ## Spec Change Log
 
 - 2026-10-27: minted from the station Dream's entry of 2026-10-27 and the operator's rulings D1–D4 of the same date.
+- 2026-10-27: AC1 scoped to the stations whose chains land the split (steward here, doctor 55.4 beside it); AC3 names the unsplit stations whose outputs still fire (atlas, scribe on `src/shared/packages`; marshal on the planning globs) — their chains (A.2, S.2, marshal's) shrink the fan-out test's named set. The convention chosen is the `live_tree` marker, not a `tests/live/` directory: the readers stay beside the tests they sit with and `-m` selects them.
 
 ## Review Triage Log
 

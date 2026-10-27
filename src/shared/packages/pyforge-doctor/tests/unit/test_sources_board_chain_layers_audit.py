@@ -26,10 +26,15 @@ except IndexError:
 _HAVE_REAL_SCAN = bool(_REPO_ROOT and (_REPO_ROOT / "scripts" / "fleet_scan.py").is_file())
 _HAVE_REAL_ROSTER = bool(_REPO_ROOT and (_REPO_ROOT / "docs" / "governance" / "guild-roster.json").is_file())
 
-pytestmark = pytest.mark.skipif(
-    not (_HAVE_REAL_SCAN and _HAVE_REAL_ROSTER),
-    reason="fleet_scan.py + guild-roster.json required",
-)
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = [
+    pytest.mark.live_tree,
+    pytest.mark.skipif(
+        not (_HAVE_REAL_SCAN and _HAVE_REAL_ROSTER),
+        reason="fleet_scan.py + guild-roster.json required",
+    ),
+]
 
 
 def _install_generate(target: Path) -> None:

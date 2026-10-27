@@ -27,6 +27,10 @@ from pyforge.steward.session import (
     gather_session_findings,
 )
 
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 
 @pytest.fixture
 def repo_root() -> Path:

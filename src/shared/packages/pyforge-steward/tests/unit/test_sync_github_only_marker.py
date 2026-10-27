@@ -18,6 +18,10 @@ from pyforge.steward.sync import (
     reconcile_schedule_batch,
 )
 
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 _FLAG_FIXTURE_METADATA = {
     "owner": "steward",
     "story": "84-5-github-only-marker-tests",

@@ -23,6 +23,10 @@ from pyforge.doctor.checks.registry import gather_one
 from pyforge.doctor.cli_bridge import CliBridgeError
 from pyforge.doctor.models import DoctorStatus, Finding, Source
 
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 # Six levels up from tests/unit/<this file> lands at the monorepo root --
 # mirrors pyforge-warden's tests/unit/test_currency.py::
 # test_bundled_registry_matches_the_cfe_canonical_source_when_present.

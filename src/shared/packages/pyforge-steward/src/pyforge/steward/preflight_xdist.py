@@ -66,6 +66,24 @@ def lane_xdist_worker_map(
     return {lane: share for lane in xdist_lanes}
 
 
+#: Story 117.3: an xdist lane never starts on fewer workers than this; below it the lane waits for cores.
+MIN_XDIST_WORKERS = 2
+
+
+def xdist_share_at_admission(*, free_cores: int, pending_xdist: int, logical_cores: int) -> int:
+    """The workers an xdist lane admitted now gets (Story 117.3), or ``0`` when it cannot start yet.
+
+    The free cores are split among the xdist lanes still to start, this one included, so the longest lane -- admitted
+    first by the scheduler -- takes the largest share while cores are plentiful and later lanes take what frees up.
+    Never below :data:`MIN_XDIST_WORKERS` (an xdist run on one worker is a serial run that paid for the workers) and
+    never above ``logical_cores``; with fewer than :data:`MIN_XDIST_WORKERS` free cores the lane waits.
+    """
+    if free_cores < MIN_XDIST_WORKERS:
+        return 0
+    share = free_cores // max(1, pending_xdist)
+    return max(MIN_XDIST_WORKERS, min(share, logical_cores))
+
+
 def pytest_xdist_argv_from_cmd(cmd: str) -> list[str]:
     """Extract ``-n`` / ``--dist`` tokens from the first pytest segment in a task cmd."""
     for segment in cmd.split("&&"):

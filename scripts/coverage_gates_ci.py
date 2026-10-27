@@ -446,6 +446,96 @@ def build_coverage_plan(
     }
 
 
+def merge_coverage_reports(paths: Sequence[Path]) -> dict[str, object]:
+    """The union of several coverage.py JSON reports over the same source (Story 117.4).
+
+    Per file, executed lines and branches are unioned and the missing sets are what no report executed; the summary
+    percent is coverage.py's own formula, ``(covered_lines + covered_branches) / (num_statements + num_branches)``.
+    Files present in one report only keep that report's data. Totals are recomputed the same way.
+    """
+    merged: dict[str, dict[str, object]] = {}
+    meta: dict[str, object] = {}
+    for path in paths:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        meta = meta or dict(payload.get("meta") or {})
+        for name, data in (payload.get("files") or {}).items():
+            if not isinstance(data, Mapping):
+                continue
+            slot = merged.setdefault(
+                name,
+                {
+                    "executed_lines": set(),
+                    "missing_lines": set(),
+                    "executed_branches": set(),
+                    "missing_branches": set(),
+                    "excluded_lines": set(),
+                },
+            )
+            slot["executed_lines"] |= set(data.get("executed_lines") or [])
+            slot["missing_lines"] |= set(data.get("missing_lines") or [])
+            slot["excluded_lines"] |= set(data.get("excluded_lines") or [])
+            slot["executed_branches"] |= {
+                tuple(b) for b in data.get("executed_branches") or []
+            }
+            slot["missing_branches"] |= {
+                tuple(b) for b in data.get("missing_branches") or []
+            }
+    files: dict[str, object] = {}
+    tot_lines = tot_missing = tot_br = tot_br_missing = 0
+    for name, slot in sorted(merged.items()):
+        executed = slot["executed_lines"]
+        missing = slot["missing_lines"] - executed
+        exec_br = slot["executed_branches"]
+        missing_br = slot["missing_branches"] - exec_br
+        statements = len(executed) + len(missing)
+        branches = len(exec_br) + len(missing_br)
+        denominator = statements + branches
+        percent = (
+            100.0
+            if denominator == 0
+            else 100.0 * (len(executed) + len(exec_br)) / denominator
+        )
+        files[name] = {
+            "executed_lines": sorted(executed),
+            "missing_lines": sorted(missing),
+            "excluded_lines": sorted(slot["excluded_lines"]),
+            "executed_branches": [list(b) for b in sorted(exec_br)],
+            "missing_branches": [list(b) for b in sorted(missing_br)],
+            "summary": {
+                "covered_lines": len(executed),
+                "num_statements": statements,
+                "percent_covered": percent,
+                "percent_covered_display": f"{percent:.0f}",
+                "missing_lines": len(missing),
+                "excluded_lines": len(slot["excluded_lines"]),
+                "num_branches": branches,
+                "covered_branches": len(exec_br),
+                "missing_branches": len(missing_br),
+            },
+        }
+        tot_lines += len(executed)
+        tot_missing += len(missing)
+        tot_br += len(exec_br)
+        tot_br_missing += len(missing_br)
+    denominator = tot_lines + tot_missing + tot_br + tot_br_missing
+    totals = {
+        "covered_lines": tot_lines,
+        "num_statements": tot_lines + tot_missing,
+        "missing_lines": tot_missing,
+        "num_branches": tot_br + tot_br_missing,
+        "covered_branches": tot_br,
+        "missing_branches": tot_br_missing,
+        "percent_covered": 100.0
+        if denominator == 0
+        else 100.0 * (tot_lines + tot_br) / denominator,
+    }
+    return {
+        "meta": {**meta, "merged_from": [str(p) for p in paths]},
+        "files": files,
+        "totals": totals,
+    }
+
+
 def allow_for_report(environ: Mapping[str, str]) -> set[str]:
     """The stations ``COVERAGE_GATES_STATIONS`` names (Story 117.2: ``--report`` wants exactly one)."""
     raw = environ.get("COVERAGE_GATES_STATIONS", "").strip()
@@ -479,11 +569,14 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--report",
+        action="append",
         default=None,
         help=(
             "Story 117.2: the coverage JSON the station suite's own run wrote; judge it instead of "
-            "running pytest-cov again. When the file is absent, run the coverage pass as before and "
-            "write it there. One station (COVERAGE_GATES_STATIONS) and --suites unit only."
+            "running pytest-cov again. Repeatable (Story 117.4): the package-local and live-tree halves "
+            "each write one, and the gate judges their union (executed lines and branches merged per "
+            "file). When none of the files exists, run the coverage pass as before and write the first "
+            "path. One station (COVERAGE_GATES_STATIONS) and --suites unit only."
         ),
     )
     parser.add_argument(
@@ -552,17 +645,26 @@ def main(argv: list[str] | None = None) -> int:
                     )
                     return 2
                 report = tmp_path / f"{station}-{suite}.json"
-                if args.report:
-                    report = Path(args.report)
-                if args.report and report.is_file():
-                    # Story 117.2: the suite's own run wrote this report; judge it, never re-run.
+                present = [Path(r) for r in (args.report or []) if Path(r).is_file()]
+                if present:
+                    # Story 117.2 / 117.4: the suite's own run(s) wrote these reports; judge their union, never re-run.
                     print(
-                        f"coverage gate: judging pyforge-{station} {suite} from {report}",
+                        f"coverage gate: judging pyforge-{station} {suite} from "
+                        + ", ".join(str(r) for r in present),
                         flush=True,
                     )
+                    if len(present) == 1:
+                        report = present[0]
+                    else:
+                        report = tmp_path / f"{station}-{suite}-merged.json"
+                        report.write_text(
+                            json.dumps(merge_coverage_reports(present), sort_keys=True),
+                            encoding="utf-8",
+                        )
                     status, pytest_rc = "ran", 0
                 else:
                     if args.report:
+                        report = Path(args.report[0])
                         report.parent.mkdir(parents=True, exist_ok=True)
                     status, pytest_rc = _run_pytest_cov(
                         station=station, suite=suite, report=report

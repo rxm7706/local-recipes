@@ -353,7 +353,9 @@ def test_the_docs_site_lanes_trade_turns_and_every_other_lane_keeps_its_position
     """Re-review should-fix: with one slot, a keyless lane that a pending lane waits on keeps its declared place
     (``a``, ``b``, ``c``), and the docs-site lanes trade turns only among themselves. ``docs-site-install`` takes the
     turn of ``pyforge-herald-test`` (declared before it), ``pages-build`` the next docs-site turn, and herald the one
-    after; ``a`` and ``b``, outside the set, start at their declared positions 0 and 2."""
+    after; ``a`` and ``b``, outside the set, start at their declared positions 0 and 2. Declaration order is the
+    flag-off scheduler (Story 117.3): with the flag on, the second run would read the first run's journal and admit
+    the lanes with no history (30 s) before ``a`` (0 s), which is that story's rule, not this test's subject."""
     started: list[str] = []
 
     def run_ctx(ctx: preflight.LaneRunContext) -> int:
@@ -363,7 +365,12 @@ def test_the_docs_site_lanes_trade_turns_and_every_other_lane_keeps_its_position
     _write(tmp_path / "pixi.toml", _pixi(["a", "c"], {"c": ["b"]}))
     assert (
         preflight.run_preflight(
-            tmp_path, invoking_env=INV, jobs=1, install_environment=_NOOP_INSTALL, run_lane_ctx=run_ctx
+            tmp_path,
+            invoking_env=INV,
+            jobs=1,
+            install_environment=_NOOP_INSTALL,
+            run_lane_ctx=run_ctx,
+            critical_path=False,
         )
         == preflight.EXIT_OK
     )
@@ -381,7 +388,12 @@ def test_the_docs_site_lanes_trade_turns_and_every_other_lane_keeps_its_position
     assert declared == ["a", "pyforge-herald-test", "b", "docs-site-install", "pages-build", "pages-check"]
     assert (
         preflight.run_preflight(
-            tmp_path, invoking_env=INV, jobs=1, install_environment=_NOOP_INSTALL, run_lane_ctx=run_ctx
+            tmp_path,
+            invoking_env=INV,
+            jobs=1,
+            install_environment=_NOOP_INSTALL,
+            run_lane_ctx=run_ctx,
+            critical_path=False,
         )
         == preflight.EXIT_OK
     )

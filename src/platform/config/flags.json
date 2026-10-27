@@ -1364,6 +1364,21 @@
         "on_everywhere": "2026-10-26",
         "cleanup_by": "2027-01-24"
       }
+    },
+    "pyforge.steward.preflight_critical_path": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "steward",
+        "story": "117-3-the-preflight-admits-lanes-longest-first-by-the-cores-they-will-use",
+        "created": "2026-10-27",
+        "on_everywhere": "2026-10-27",
+        "cleanup_by": "2027-01-25"
+      }
     }
   }
 }

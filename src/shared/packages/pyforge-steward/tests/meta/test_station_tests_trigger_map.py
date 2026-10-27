@@ -950,6 +950,8 @@ def load_jobs(workflow_text: str) -> list[Job]:
             m = _PIXI_RUN.search(str(step.get("run", "")))
             if m and m.group(2) != "python":
                 tasks.append((m.group(1), m.group(2)))
+        if not tasks:
+            continue  # the coverage gate jobs run the gate script alone (Story 117.4); they collect no test
         envs = {env for env, _ in tasks}
         assert len(envs) == 1, f"{key} runs tasks in {envs}; expected exactly one pixi environment"
         jobs.append(Job(gate.group(1), key, f"{PACKAGES}/{next(iter(envs))}", tuple(tasks)))
@@ -998,6 +1000,28 @@ def task_paths(pixi: Mapping, job: Job) -> list[str]:
     return sorted(set(found))
 
 
+@functools.cache
+def _live_tree_marked(rel: str) -> bool:
+    """Does the module carry ``pytestmark = pytest.mark.live_tree`` (alone or in a list) at module level?"""
+    try:
+        tree = ast.parse((REPO_ROOT / rel).read_text(encoding="utf-8"))
+    except OSError, SyntaxError:
+        return False
+    for node in tree.body:
+        if not isinstance(node, ast.Assign):
+            continue
+        if not any(isinstance(target, ast.Name) and target.id == "pytestmark" for target in node.targets):
+            continue
+        return any(
+            isinstance(sub, ast.Attribute)
+            and sub.attr == "live_tree"
+            and isinstance(sub.value, ast.Attribute)
+            and sub.value.attr == "mark"
+            for sub in ast.walk(node.value)
+        )
+    return False
+
+
 def job_test_files(job: Job, paths: Iterable[str]) -> list[str]:
     files: set[str] = set()
     for path in [f"{job.package}/tests", *paths]:
@@ -1023,9 +1047,14 @@ def derive_reads(job: Job, pixi: Mapping) -> JobReads:
     """What the job's tests (and its pixi task lines) read: the static derivation."""
     paths = task_paths(pixi, job)
     scanner = Scanner(job.package)
+    live_job = job.output.endswith("_live")
+    split = live_job or f"{job.output}_live" in OUTPUTS
     for rel in job_test_files(job, paths):
-        if rel != THIS_FILE_REL:  # its own literals are declarations and mutations, not reads
-            scanner.scan(rel)
+        if rel == THIS_FILE_REL:  # its own literals are declarations and mutations, not reads
+            continue
+        if split and _live_tree_marked(rel) != live_job:
+            continue  # Story 117.4: each half scans the modules its task collects
+        scanner.scan(rel)
     reads: dict[tuple[str, ...], set[str]] = {k: set(v) for k, v in scanner.reads.items()}
     for path in paths:
         if not _within(path, job.package):
@@ -1033,7 +1062,7 @@ def derive_reads(job: Job, pixi: Mapping) -> JobReads:
     return JobReads(reads, set(scanner.handoffs))
 
 
-STEWARD_OWN = "steward-test (this meta-test reads every suite's tests)"
+STEWARD_OWN = "steward-live-test (this meta-test reads every suite's tests)"
 
 
 @functools.cache
@@ -1043,7 +1072,7 @@ def real_derivation() -> dict[str, JobReads]:
     derived = {job.output: derive_reads(job, pixi) for job in jobs}
     # Its own reads: this meta-test reads every suite's tests, so steward's list carries them -- a
     # station PR that adds an outside read runs steward-test and is caught in that PR.
-    own = derived["steward"].reads
+    own = derived["steward_live"].reads  # this meta-test is a live-tree module
     own.setdefault((*PACKAGES.split("/"), "pyforge-*", "tests"), set()).add(STEWARD_OWN)
     for job in jobs:
         for path in task_paths(pixi, job):
@@ -1208,7 +1237,7 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
         # Story 30.1 AC1: `git ls-files` / `git check-ignore` prove the export left git.
         "src/shared/packages/pyforge-atlas/tests/unit/test_viz_export_artifact.py": _H["GITIGNORE_STATE"],
     },
-    "doctor": {
+    "doctor_live": {
         "src/shared/packages/pyforge-doctor/tests/meta/test_portal_fleet_pulse.py": _H["GIT_PLATFORM_DIFF"],
         "src/shared/packages/pyforge-doctor/tests/meta/test_skf_domain_skill.py": _H["SKF_SKILL_TREE"],
         "src/shared/packages/pyforge-doctor/tests/meta/test_station_persona.py": _H["GIT_PLATFORM_DIFF"],
@@ -1289,7 +1318,7 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
         "src/shared/packages/pyforge-scribe/tests/meta/test_skf_skill_ownership.py": _H["GIT_PLATFORM_DIFF"],
         "src/shared/packages/pyforge-scribe/tests/meta/test_station_persona.py": _H["GIT_PLATFORM_DIFF"],
     },
-    "steward": {
+    "steward_live": {
         "src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py": _H["ADOPTION_PIPELINE"],
         "src/shared/packages/pyforge-steward/tests/meta/test_first_portal_slice_provision_list.py": _H[
             "GIT_PLATFORM_DIFF"
@@ -1456,8 +1485,31 @@ def without_trigger(workflow_text: str, glob: str) -> str:
 # Does the workflow fire? A fixture repository per representative path
 # ---------------------------------------------------------------------------
 
-OUTPUTS = ("core", "testing_kit", "atlas", "doctor", "herald", "marshal", "mason", "scribe", "steward", "warden")
-STATIONS = OUTPUTS[2:]
+# Story 117.4: a station with a live-tree half has two jobs -- `<s>` (the package half) and `<s>_live` (the modules
+# marked pytest.mark.live_tree); the gate job runs no pixi task and is not a job here.
+OUTPUTS = (
+    "core",
+    "testing_kit",
+    "atlas",
+    "doctor",
+    "doctor_live",
+    "herald",
+    "marshal",
+    "mason",
+    "scribe",
+    "steward",
+    "steward_live",
+    "warden",
+)
+STATIONS = tuple(o for o in OUTPUTS[2:] if not o.endswith("_live"))
+LIVE_SPLIT = tuple(o[: -len("_live")] for o in OUTPUTS if o.endswith("_live"))
+
+
+def live_output(station: str) -> str:
+    """The job that carries a station's outside reads: its live half where it has one, else the station job."""
+    return f"{station}_live" if station in LIVE_SPLIT else station
+
+
 _WORKERS = 8
 
 
@@ -1645,7 +1697,7 @@ def test_the_changes_script_is_valid_bash_and_the_workflow_is_valid_yaml(workflo
 # --- AC2: the derivation is not blind ---------------------------------------
 
 DERIVED_ROWS = {
-    "steward": [
+    "steward_live": [
         "scripts/lint_types.py",
         ".github/workflows/lint-types.yml",
         "src/shared/packages/django-herald/pyproject.toml",
@@ -1653,7 +1705,7 @@ DERIVED_ROWS = {
     ],
     "herald": ["src/shared/packages/django-herald", "src/shared/packages/pyforge-steward/src"],
     "atlas": ["src/platform/config/flags.json", "src/shared/packages/pyforge-scribe/src"],
-    "doctor": ["scripts/fleet_scan.py", "src/shared/packages/django-pyforge/src"],
+    "doctor_live": ["scripts/fleet_scan.py", "src/shared/packages/django-pyforge/src"],
     "marshal": ["scripts/fleet_picture.py"],
     "mason": ["scripts/cfe_rebuild_guard_check.py"],
     "scribe": ["src/platform/db/changelog/changes"],
@@ -1661,7 +1713,7 @@ DERIVED_ROWS = {
     "testing_kit": ["src/platform/config/flags.json"],
 }
 PLANNING_ROWS = {
-    "doctor": [
+    "doctor_live": [
         "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
         "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
     ],
@@ -1697,9 +1749,74 @@ def test_planning_reads_are_derived_or_declared(output: str, row: str) -> None:
 
 
 def test_the_steward_job_reads_every_suites_tests() -> None:
-    assert any(read[-2:] == ("pyforge-*", "tests") for read in real_derivation()["steward"].reads), (
+    assert any(read[-2:] == ("pyforge-*", "tests") for read in real_derivation()["steward_live"].reads), (
         "steward's own reads lost src/shared/packages/pyforge-*/tests"
     )
+
+
+@pytest.mark.parametrize("station", LIVE_SPLIT)
+def test_the_package_half_reads_nothing_outside_its_package(station: str) -> None:
+    """Story 117.4 AC2: every module with an outside read is marked live_tree, so the package job's derived reads
+    (inside-package reads are dropped by the scanner) are empty and the job fires on the package and the shared
+    surface alone; its handoffs are empty too."""
+    derived = real_derivation()[station]
+    assert derived.reads == {}, sorted("/".join(k) for k in derived.reads)
+    assert derived.handoffs == set()
+    assert station not in ROOT_HANDOFF_INPUTS
+
+
+# --- Story 117.4 AC3 / doctor Story 55.4 AC3: the fan-out of one edit ----------
+
+# Stations whose suites are not yet split read another station's tree whole, so one edit there still runs their whole
+# suite: atlas and scribe read `src/shared/packages` (AD-1 boundary, portal inventory, graphify extras), herald reads
+# `src/shared/packages/pyforge-steward/src` (its Pages and docs-site tests import steward), marshal reads the planning
+# globs. Each station's own chain splits its suite (the atlas, herald, scribe and marshal entries of the preflight and
+# CI budget effort, spec-pyforge-steward CAP-175); when it lands, its name leaves the set here — the test then reds on
+# the stale name, which is the moment to remove it. Core reads `src` by design (spec-pyforge-core CAP-8).
+UNSPLIT_ON_A_STATION_SRC_EDIT = frozenset({"atlas", "herald", "scribe"})
+UNSPLIT_ON_A_PLANNING_EDIT = frozenset({"marshal"})
+
+STEWARD_SRC_EDIT = f"{PACKAGES}/pyforge-steward/src/pyforge/steward/preflight.py"
+DOCTOR_SRC_EDIT = f"{PACKAGES}/pyforge-doctor/src/pyforge/doctor/sources/hygiene.py"
+DOCTOR_PLANNING_EDIT = "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md"
+MARSHAL_PLANNING_EDIT = "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md"
+
+
+@pytest.fixture(scope="module")
+def fan_out(workflow_text: str) -> dict[str, set[str]]:
+    """The outputs the ``changes`` step sets ``true`` for each one-file fixture diff."""
+    paths = (STEWARD_SRC_EDIT, DOCTOR_SRC_EDIT, DOCTOR_PLANNING_EDIT, MARSHAL_PLANNING_EDIT)
+    outputs = run_changes(workflow_text, paths)
+    return {path: {k for k, v in outputs[path].items() if v == "true"} for path in paths}
+
+
+def test_a_steward_src_edit_runs_steward_core_and_the_live_halves_and_no_other_split_package_half(
+    fan_out: dict[str, set[str]],
+) -> None:
+    """Story 117.4 AC3: steward's package half, core (CAP-8), steward's live half and the live halves whose derived
+    reads cover ``src`` (doctor's ``src/**`` env-hygiene walk) fire; no other split station's package half does."""
+    fired = fan_out[STEWARD_SRC_EDIT]
+    assert {"steward", "core", "steward_live", "doctor_live"} <= fired
+    assert "doctor" not in fired  # the split package half of another station
+    assert fired - {"steward", "core", "steward_live", "doctor_live"} == UNSPLIT_ON_A_STATION_SRC_EDIT, sorted(fired)
+
+
+def test_a_doctor_src_edit_runs_both_doctor_halves(fan_out: dict[str, set[str]]) -> None:
+    """Doctor Story 55.4 AC3: a doctor ``src/`` edit runs the package half and the live half."""
+    assert {"doctor", "doctor_live"} <= fan_out[DOCTOR_SRC_EDIT]
+
+
+@pytest.mark.parametrize("path", [DOCTOR_PLANNING_EDIT, MARSHAL_PLANNING_EDIT])
+def test_a_planning_only_edit_runs_live_halves_and_no_split_package_half(
+    fan_out: dict[str, set[str]], path: str
+) -> None:
+    """Story 117.4 AC3 and doctor Story 55.4 AC3: a planning-artifacts edit runs the live halves (doctor's and
+    steward's gatherer tests read every project's planning tree) and no split station's package half; the unsplit
+    marshal suite still fires until its own chain splits it."""
+    fired = fan_out[path]
+    assert {"doctor_live", "steward_live"} <= fired
+    assert not ({"doctor", "steward"} & fired), sorted(fired)
+    assert fired - {"doctor_live", "steward_live"} == UNSPLIT_ON_A_PLANNING_EDIT, sorted(fired)
 
 
 # --- AC3: every read fires its job ------------------------------------------
@@ -1722,11 +1839,12 @@ def test_every_django_package_fires_steward_and_its_own_station(workflow_text: s
     outputs = run_changes(workflow_text, reps.values())
     patterns = trigger_paths(workflow_text)
     for pkg, rep in reps.items():
-        assert outputs[rep]["steward"] == "true", f"{rep} does not fire steward"
+        assert outputs[rep]["steward_live"] == "true", f"{rep} does not fire steward's live half"
         assert preflight_ci.filter_matches(patterns, rep), f"on.pull_request.paths does not match {rep}"
         station = pkg.removeprefix("django-")
         if station in STATIONS:
-            assert outputs[rep][station] == "true", f"{rep} does not fire {station}"
+            job = live_output(station)
+            assert outputs[rep][job] == "true", f"{rep} does not fire {job}"
 
 
 # --- AC4: root handoffs are declared -----------------------------------------
@@ -1739,7 +1857,7 @@ def test_root_handoffs_are_declared_exactly() -> None:
 def test_the_handoff_floor() -> None:
     derived = derived_handoffs()
     pkg = f"{PACKAGES}/pyforge-doctor/tests/unit"
-    assert {f"{pkg}/test_sources_chain_dreams_hygiene.py", f"{pkg}/test_sources_board.py"} <= derived["doctor"]
+    assert {f"{pkg}/test_sources_chain_dreams_hygiene.py", f"{pkg}/test_sources_board.py"} <= derived["doctor_live"]
     assert f"{PACKAGES}/pyforge-marshal/tests/meta/test_tea_architecture_generator.py" in derived["marshal"]
 
 
@@ -1750,9 +1868,9 @@ def _declared_globs(job: str) -> list[str]:
 @pytest.mark.parametrize(
     ("job", "sample"),
     [
-        ("doctor", "docs/dreams/a-dream.md"),
-        ("doctor", "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md"),
-        ("doctor", "archive/_bmad-output/x.md"),
+        ("doctor_live", "docs/dreams/a-dream.md"),
+        ("doctor_live", "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md"),
+        ("doctor_live", "archive/_bmad-output/x.md"),
         ("marshal", "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md"),
         ("marshal", f"{PACKAGES}/pyforge-atlas/tests/unit/test_x.py"),
     ],
@@ -1780,10 +1898,10 @@ def _targets(job: str, read: str) -> list[Target]:
 
 
 def test_dropping_lint_types_from_steward_fails_the_meta_test(workflow_text: str) -> None:
-    mutant = without_array_entry(workflow_text, "steward", "scripts/lint_types.py")
-    failures = fire_failures(mutant, _targets("steward", "scripts/lint_types.py"))
-    assert failures and all(f.startswith("steward: read `scripts/lint_types.py`") for f in failures)
-    assert "left output `steward` false" in failures[0]
+    mutant = without_array_entry(workflow_text, "steward_live", "scripts/lint_types.py")
+    failures = fire_failures(mutant, _targets("steward_live", "scripts/lint_types.py"))
+    assert failures and all(f.startswith("steward_live: read `scripts/lint_types.py`") for f in failures)
+    assert "left output `steward_live` false" in failures[0]
 
 
 def test_dropping_django_herald_from_heralds_list_fails_the_meta_test(workflow_text: str) -> None:
@@ -1794,15 +1912,15 @@ def test_dropping_django_herald_from_heralds_list_fails_the_meta_test(workflow_t
 
 def test_dropping_the_django_glob_from_the_trigger_paths_fails_the_paths_half(workflow_text: str) -> None:
     mutant = without_trigger(workflow_text, "src/shared/packages/django-*/**")
-    failures = fire_failures(mutant, _targets("steward", "src/shared/packages/django-*"))
+    failures = fire_failures(mutant, _targets("steward_live", "src/shared/packages/django-*"))
     assert failures and all("on.pull_request.paths does not match it" in f for f in failures)
-    assert failures[0].startswith("steward: read `src/shared/packages/django-*`")
+    assert failures[0].startswith("steward_live: read `src/shared/packages/django-*`")
 
 
 def test_dropping_docs_dreams_from_doctors_list_fails_the_meta_test(workflow_text: str) -> None:
-    mutant = without_array_entry(workflow_text, "doctor", "docs/dreams")
-    failures = fire_failures(mutant, _targets("doctor", "docs/dreams"))
-    assert failures and all(f.startswith("doctor: read `docs/dreams`") for f in failures)
+    mutant = without_array_entry(workflow_text, "doctor_live", "docs/dreams")
+    failures = fire_failures(mutant, _targets("doctor_live", "docs/dreams"))
+    assert failures and all(f.startswith("doctor_live: read `docs/dreams`") for f in failures)
 
 
 def test_dropping_the_planning_glob_from_marshals_list_fails_the_meta_test(workflow_text: str) -> None:

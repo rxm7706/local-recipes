@@ -596,6 +596,26 @@ surfaces:
   switch_class: pause
   state: live
   owner: pyforge-steward
+- id: pyforge-station-tests.doctor-live-test
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: doctor-live-test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.doctor-gate
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: doctor-gate
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
 - id: pyforge-station-tests.herald-test
   workflow: .github/workflows/pyforge-station-tests.yml
   job: herald-test
@@ -639,6 +659,26 @@ surfaces:
 - id: pyforge-station-tests.steward-test
   workflow: .github/workflows/pyforge-station-tests.yml
   job: steward-test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.steward-live-test
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: steward-live-test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.steward-gate
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: steward-gate
   kind: ci-job
   cost: low
   gate: false
