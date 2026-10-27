@@ -25,8 +25,14 @@ _STATION_GATE_RE = re.compile(r"^pyforge-([a-z]+)-coverage-gate$")
 PYTEST_EXIT_NO_TESTS_COLLECTED = 5
 
 
+_SPLIT_FLAGS_WITH_VALUE = ("--splits", "--group", "--durations-path")
+_SPLIT_SWITCHES = ("--store-durations", "--clean-durations")
+
+
 def strip_inherited_pytest_basetemp_and_cache(addopts: str) -> str:
-    """Drop basetemp and cache_dir overrides from a PYTEST_ADDOPTS string (Story 90.1)."""
+    """Drop basetemp and cache_dir overrides from a PYTEST_ADDOPTS string (Story 90.1), and pytest-split's
+    ``--splits``, ``--group``, ``--durations-path``, ``--store-durations`` and ``--clean-durations`` (Story 117.10:
+    a CI shard sets them for the whole job; a lane's own child pytest runs the whole suite, never one shard)."""
     stripped = addopts.strip()
     if not stripped:
         return ""
@@ -38,6 +44,12 @@ def strip_inherited_pytest_basetemp_and_cache(addopts: str) -> str:
     i = 0
     while i < len(tokens):
         tok = tokens[i]
+        if tok in _SPLIT_FLAGS_WITH_VALUE:
+            i += 2 if i + 1 < len(tokens) else 1
+            continue
+        if tok in _SPLIT_SWITCHES or tok.startswith(tuple(f"{flag}=" for flag in _SPLIT_FLAGS_WITH_VALUE)):
+            i += 1
+            continue
         if tok.startswith("--basetemp="):
             i += 1
             continue
