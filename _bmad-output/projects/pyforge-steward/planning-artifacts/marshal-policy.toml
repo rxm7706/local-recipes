@@ -1504,12 +1504,6 @@ verify_commands = [
   # co-governor reconciles (spec-pyforge-core governs every station's src; the platform Specs co-govern src/platform)
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
-
-# dispatch (Story 85.1 / CAP-286 knobs), added 2026-10-13: steward's verify-fix turn gets 45 minutes, not the
-# 15-minute default. pyforge-steward-test alone runs ~4 minutes (2482 tests), so a fix turn that must re-run it two or
-# three times hit the default cap: Story 100.3's fix session was killed at 900 s (MRS-DISP-059) with its edits complete
-# but uncommitted (operator direction 2026-10-13: "adjust the supervisor"). max_parallel restates the default because a
-# declared block replaces the default block whole.
 "114" = [  # the CAP-7 retrofit: every pre-rule steward runtime capability sits behind a kill switch (spec-feature-flag-governance CAP-7), added 2026-10-26.
   "src/shared/packages/pyforge-steward/**",
   "src/shared/packages/django-pyforge/**",
@@ -1523,6 +1517,12 @@ verify_commands = [
   "_bmad-output/projects/*/planning-artifacts/specs/*/.memlog.md",
   "docs/governance/spec-feature-flag-governance/**",
 ]
+
+# dispatch (Story 85.1 / CAP-286 knobs), added 2026-10-13: steward's verify-fix turn gets 45 minutes, not the
+# 15-minute default. pyforge-steward-test alone runs ~4 minutes (2482 tests), so a fix turn that must re-run it two or
+# three times hit the default cap: Story 100.3's fix session was killed at 900 s (MRS-DISP-059) with its edits complete
+# but uncommitted (operator direction 2026-10-13: "adjust the supervisor"). max_parallel restates the default because a
+# declared block replaces the default block whole.
 
 [dispatch]
 max_parallel = 1

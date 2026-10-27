@@ -552,10 +552,6 @@ verify_commands = [
   # co-governor reconciles (spec-pyforge-core governs every station's src)
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
-# dispatch (Story 102.1 / spec-pyforge-marshal CAP-161), added 2026-10-15: a re-landing reuses this station's own
-# verified verdict when only merges of main and planning-only commits moved the branch since the head it judged,
-# after a narrow re-check, and still waits for CI (operator rulings 2026-10-15; the Pages stations' speed ask). The
-# block's other keys keep their defaults: each is read at the consumer when a block omits it.
 "51" = [  # the inventory and the gate measure the CAP-7 retrofit as ruled (a fix under CAP-20; spec-feature-flag-governance CAP-7), added 2026-10-26.
   "scripts/flag_inventory.py",
   "scripts/flag_gate_check.py",
@@ -568,6 +564,11 @@ verify_commands = [
   "_bmad-output/projects/*/planning-artifacts/specs/*/.memlog.md",
   "docs/governance/spec-feature-flag-governance/**",
 ]
+
+# dispatch (Story 102.1 / spec-pyforge-marshal CAP-161), added 2026-10-15: a re-landing reuses this station's own
+# verified verdict when only merges of main and planning-only commits moved the branch since the head it judged,
+# after a narrow re-check, and still waits for CI (operator rulings 2026-10-15; the Pages stations' speed ask). The
+# block's other keys keep their defaults: each is read at the consumer when a block omits it.
 
 [dispatch]
 landing_reverify = "on-code-change"

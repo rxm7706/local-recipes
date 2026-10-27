@@ -361,7 +361,7 @@ def test_a_cap_in_another_specs_provenance_is_not_this_specs(tmp_path: Path, cap
     _spec(root, caps=(1, 2, 3))
     _spec(root, caps=(2,), slug="spec-old", status="absorbed")  # an ended Spec is still a Spec mention
     _code(root, "cli.py", 'sub.add_parser("frobnicate")\n')
-    _epics(root, (f"CAP-1 (<- `spec-old` CAP-2), CAP-3", "`cli.py`"))
+    _epics(root, ("CAP-1 (<- `spec-old` CAP-2), CAP-3", "`cli.py`"))
 
     report = _report(root, tmp_path, capsys)
 

@@ -103,8 +103,12 @@ def test_the_manifest_inventory_switch_unregisters_its_pipeline(
 ) -> None:
     """Re-review finding 4: OFF, `universal_sbom` leaves the registry, so `__default__` (a bare `run`), `--nodes`
     and a direct `kedro run --pipeline universal_sbom` cannot reach its gate; ON, the registry is unchanged."""
+    from kedro.framework.project import configure_project
+
     from pyforge.atlas import pipeline_registry
 
+    # Kedro's find_pipelines needs the package configured; never rely on an earlier test on this xdist worker.
+    configure_project("pyforge.atlas")
     on = flag_provider["pyforge.atlas.manifest_inventory"]
     _tree(tmp_path, monkeypatch, "pyforge.atlas.manifest_inventory", on)
     registered = pipeline_registry.register_pipelines()
