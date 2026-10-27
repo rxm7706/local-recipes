@@ -623,7 +623,8 @@ def test_the_shipped_tree_and_overlay_agree_across_the_three_readers(
 # Story 76.2: what every key in the shipped tree evaluates to, per environment -- the
 # values before the tree carried metadata. Metadata is inert to evaluation.
 _SHIPPED_BOOLEANS = {
-    # spec-feature-flag-governance CAP-7 retrofit kill switches (2026-10-26): ON in every environment.
+    # spec-feature-flag-governance CAP-7 retrofit kill switches (2026-10-26):
+    # ON in every environment.
     "pyforge.marshal.front_door_environment": True,
     "pyforge.marshal.loop_homes": True,
     "pyforge.marshal.supervised_runs": True,
