@@ -218,8 +218,7 @@ These parts do not transfer to this estate:
   date as recommended (R1–R8; Spec memlog 67): the inventory's unflagged runtime rows get one key
   per CAP, an invariant's switch makes the dependent verb refuse rather than re-open the defect,
   the flag platform's own capability may be covered by an exempt `flag-infrastructure` story the
-  inventory reads from its `Parent:` line (the roster's `flag_retrofit_cover_exemptions`, one
-  value), the 90-day clock stands and each station mints its retirement story now (due
+  inventory reads from its `Parent:` line (the roster's `flag_retrofit_cover_exemptions`), the 90-day clock stands and each station mints its retirement story now (due
   2027-01-24), and the gate's `flag-pre-rule` warning covers live pre-rule specs only. Three
   findings drove the shape. Doctor's join let the last citing story win (steward Story 111.1's
   `CAP-1..CAP-168` citation hid twelve runtime rows); it admitted blocked stories; and it gave
@@ -230,6 +229,8 @@ These parts do not transfer to this estate:
   114 (8), atlas Epic 42 (2), scribe Epic 29 (1), every one read through
   `pyforge.core.flags.kill_switch_on` (or `django_pyforge.flags` on the host); the 13 live
   pre-rule specs carry a block or an exemption; `flag-gate-check` reads 0 fail, 0 warn. Atlas
-  CAP-20 (the local CI check-set, a gate with no entry point to switch) waits on an operator
-  ruling. Status: the Dream stays `specified`; CAP-7's retrofit half is realized, its retirement
+  CAP-20 (the local CI check-set, a gate with no entry point to switch) is covered by its
+  `detector-or-gate` retrofit story: the operator amended R4 the same day, so the roster's cover
+  list holds `flag-infrastructure` and `detector-or-gate`, read from a story's `Parent:` line.
+  Status: the Dream stays `specified`; CAP-7's retrofit half is realized, its retirement
   half waits on the four backlog retirement stories.
