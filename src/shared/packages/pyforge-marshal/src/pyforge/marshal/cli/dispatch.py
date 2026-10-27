@@ -46,6 +46,7 @@ from typing import TYPE_CHECKING, Any
 
 import yaml
 from pyforge.core.errors import PyforgeError
+from pyforge.core.flags import read_boolean
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort, ProcessResult
 
 from ..adapters.fs_local import FsError, LocalFs
@@ -334,6 +335,21 @@ def _land_only_verification_writer_id() -> str:
 
 _CAP4_VERIFICATION_EVAL_FAILED = "MRS-DISP-062"
 _LAND_ONLY_SPEC_GATE_REFUSED = "MRS-DISP-063"
+
+# Epic 110 (spec-feature-flag-governance CAP-7): the behaviour-shaped kill switches this module reads, spelled
+# literally so the gate's orphan check and the retirement walk can find them.
+ONE_IN_FLIGHT_FLAG_KEY = "pyforge.marshal.one_in_flight_per_station"  # CAP-163, Story 110.18
+DISPATCH_CODEGRAPH_INDEX_FLAG_KEY = "pyforge.marshal.dispatch_codegraph_index"  # CAP-282, Story 110.31
+
+
+def one_in_flight_enabled() -> bool:
+    """Whether a second dispatch onto a busy station is refused (CAP-163's kill switch, ON by default)."""
+    return read_boolean(ONE_IN_FLIGHT_FLAG_KEY, default=True)
+
+
+def dispatch_codegraph_index_enabled() -> bool:
+    """Whether a dispatch worktree is given a codegraph index (CAP-282's kill switch, ON by default)."""
+    return read_boolean(DISPATCH_CODEGRAPH_INDEX_FLAG_KEY, default=True)
 
 
 @dataclass(frozen=True)
@@ -1022,6 +1038,11 @@ def _seed_dispatch_structure_graph(
     item = kit_item(KitItemId.CODEGRAPH_INDEX)
     if not layer_enabled(context_payload, item.layer):
         return StructureGraphSeed()
+    # Story 110.31 (spec-feature-flag-governance CAP-7; CAP-282): the kill
+    # switch. OFF is the layer-off shape with its reason named: nothing is
+    # copied or run, and the dispatch proceeds without an index.
+    if not dispatch_codegraph_index_enabled():
+        return StructureGraphSeed(mode="skipped", reason="flag off")
 
     started = time.monotonic()
 
@@ -2516,7 +2537,10 @@ def station_in_flight_conflict(
         if is_refused_landing_open and candidate_refused_landing_open:
             # Story 83.4: refused stories never hold each other (only LIVE holds refused).
             continue
-        if not parallel_dispatch and is_live:
+        # Story 110.18 (spec-feature-flag-governance CAP-7; CAP-163): the kill
+        # switch for one-story-in-flight. OFF never raises MRS-DISP-021; the
+        # dependency and surface checks below still run.
+        if not parallel_dispatch and is_live and one_in_flight_enabled():
             return DispatchPreflightConflict(
                 code="MRS-DISP-021",
                 message=(f"refusing dispatch: station {slug!r} already has in-flight story {in_flight!r} ({evidence})"),

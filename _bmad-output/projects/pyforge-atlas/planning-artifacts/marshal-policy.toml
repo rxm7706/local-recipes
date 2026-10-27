@@ -89,6 +89,20 @@ harness_preference = ["cursor"]
 # UI switch, 23.8/23.9 the workbook retirement), the quartet's docs/conf, the
 # Kedro-Viz CI workflow (21.10), and pixi.toml (+ its ungated environment.yaml
 # twin). fnmatch globs: `*` spans `/`, so `**` and `*` are equivalent here.
+
+"42" = [  # the CAP-7 retrofit: every pre-rule atlas runtime capability sits behind a kill switch (spec-feature-flag-governance CAP-7), added 2026-10-26.
+  "src/shared/packages/pyforge-atlas/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/**",
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
+  "src/platform/tests/**",
+  "docs/governance/flag-inventory/pyforge-atlas.md",
+  "docs/dreams/pyforge-atlas.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/*/.memlog.md",
+  "docs/governance/spec-feature-flag-governance/**",
+]
+
 [epic_surfaces]
 "21" = [
   "scripts/conda-forge-packaging-inventory-operations_metrics.py",

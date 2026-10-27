@@ -115,6 +115,16 @@ class AtlasMCPError(PyforgeError, RuntimeError):
     additional base -- ``RuntimeError`` stays in the MRO."""
 
 
+# Epic 42 (spec-feature-flag-governance CAP-7): the kill switches for atlas's pre-rule runtime capabilities live on
+# the session seam (`mcp/session.py`, the ONE execution plane every trigger and read crosses, AD-23); a tool body
+# only calls the seam (AD-7). The names are re-exported here so the CLI face and the tests read one key.
+AGENT_PIPELINE_TOOLS_FLAG_KEY = _session.AGENT_PIPELINE_TOOLS_FLAG_KEY  # CAP-9, Story 42.1
+MANIFEST_INVENTORY_FLAG_KEY = _session.MANIFEST_INVENTORY_FLAG_KEY  # CAP-13, Story 42.2
+MANIFEST_INVENTORY_PIPELINE = _session.MANIFEST_INVENTORY_PIPELINE
+require_agent_pipeline_tools = _session.require_agent_pipeline_tools
+require_manifest_inventory = _session.require_manifest_inventory
+
+
 def run_pipeline(
     name: str,
     *,
@@ -130,6 +140,9 @@ def run_pipeline(
     """
     if name not in PIPELINE_NAMES:
         raise AtlasMCPError(f"unknown pipeline {name!r}; known: {PIPELINE_NAMES}")
+    _session.require_agent_pipeline_tools()
+    if name == _session.MANIFEST_INVENTORY_PIPELINE:
+        _session.require_manifest_inventory()
     with _session.bootstrapped_session(project_path, extra_params, env) as s:
         result = s.run(pipeline_name=name)
     return {
@@ -172,6 +185,7 @@ def read_dataset(
     Raises whatever ``catalog.load`` raises on an unknown dataset name (the
     envelope wraps only the success path).
     """
+    _session.require_agent_pipeline_tools()
     with _session.bootstrapped_session(project_path, env=env) as s:
         catalog = _session.loaded_catalog(s)
         result, info = _provenance.load_with_provenance(catalog, name)

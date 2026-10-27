@@ -74,7 +74,12 @@ def _fixture(
         tmp_path,
         "docs/governance/guild-roster.json",
         json.dumps(
-            {"stations": list(stations), "spec_statuses_ended_acts": list(ended), "flag_exemptions": ["docs-only"]}
+            {
+                "stations": list(stations),
+                "spec_statuses_ended_acts": list(ended),
+                "flag_exemptions": ["docs-only", "flag-infra"],
+                "flag_retrofit_cover_exemptions": ["flag-infra"],
+            }
         ),
     )
     _write(
@@ -97,19 +102,39 @@ def _spec(root: Path, caps=(1,), *, station="atlas", slug=SLUG, status="ready") 
     )
 
 
-def _epics(root: Path, *stories: tuple[str, str | None], station="atlas", slug=SLUG) -> None:
-    """An ``epics.md`` with one story per ``(cited CAPs, Surface: line or None)``."""
+def _epics(
+    root: Path,
+    *stories: tuple[str, str | None],
+    station="atlas",
+    slug=SLUG,
+    statuses: tuple[str, ...] | None = None,
+    ledger: bool = True,
+) -> None:
+    """An ``epics.md`` with one story per ``(cited CAPs, Surface: line or None)``, and the tracked ledger beside it.
+
+    Story ``1.<n>`` gets ledger key ``1-<n>-story-<n>`` at ``statuses[n-1]`` (``done`` by default: Story 51.1 joins
+    landed stories only); ``ledger=False`` writes no ledger.
+    """
     blocks = []
+    keys = []
     for number, (caps, surface) in enumerate(stories, start=1):
         surface_line = f"**Surface:** {surface}\n" if surface is not None else ""
         blocks.append(
             f"### Story 1.{number}: story {number}\n\nLiving CAP citations: `{slug}` {caps}.\n{surface_line}\n"
         )
+        status = statuses[number - 1] if statuses is not None else "done"
+        keys.append(f"  1-{number}-story-{number}: {status}\n")
     _write(
         root,
         f"_bmad-output/projects/pyforge-{station}/planning-artifacts/epics.md",
         "# Epics\n\n## Epic 1\n\n" + "".join(blocks),
     )
+    if ledger:
+        _write(
+            root,
+            f"_bmad-output/projects/pyforge-{station}/planning-artifacts/sprint-status-ledger.yaml",
+            "development_status:\n" + "".join(keys) + "  epic-1: done\n",
+        )
 
 
 def _code(root: Path, rel: str, text: str = "", *, station="atlas") -> None:
@@ -190,6 +215,7 @@ def test_a_cap_joined_only_through_its_story_spec_parent_line_is_runtime_not_unr
     _story_spec(
         root,
         "spec-1-1-alpha.md",
+        status="done",
         body=f"Parent: `{SLUG}` CAP-1\nSurface: `cli.py`\n",
     )
 
@@ -199,6 +225,157 @@ def test_a_cap_joined_only_through_its_story_spec_parent_line_is_runtime_not_unr
     assert "| runtime |" in row
     assert "| unresolved |" not in row
     assert _header(report, "Runtime CAPs with no flag") == 1
+
+
+# --- Story 51.1: only a landed story joins, and the best-classified landed Surface wins ---------------
+
+
+def test_a_later_chore_citing_the_cap_with_a_planning_surface_does_not_hide_the_landed_code(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """Steward Story 111.1's shape: `CAP-1..CAP-168` restored by text, Surface a SPEC.md. Last-wins hid 12 rows."""
+    root = _fixture(tmp_path)
+    _spec(root, caps=(1, 2))
+    _code(root, "cli.py", 'sub.add_parser("frobnicate")\n')
+    _epics(
+        root,
+        ("CAP-1", "`cli.py`"),
+        ("CAP-1..CAP-2 (their text)", f"`_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/{SLUG}/SPEC.md`"),
+    )
+
+    report = _report(root, tmp_path, capsys)
+
+    assert "| runtime |" in _row(report, 1)
+    assert "| planning |" in _row(report, 2)
+    assert _header(report, "Runtime CAPs with no flag") == 1
+
+
+def test_the_best_classified_landed_surface_wins_whatever_its_order(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    root = _fixture(tmp_path)
+    _spec(root)
+    _code(root, "cli.py", 'sub.add_parser("frobnicate")\n')
+    _code(root, "helper.py", "x = 1\n")
+    _epics(root, ("CAP-1", "`helper.py`"), ("CAP-1", None), ("CAP-1", "`cli.py`"))
+
+    report = _report(root, tmp_path, capsys)
+
+    row = _row(report, 1)
+    assert "| runtime |" in row
+    assert "`cli.py`" in row
+
+
+def test_a_story_that_has_not_landed_does_not_join_its_cap(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    """Steward Story 44.9's shape: a blocked story's Surface named cli.py, so an unbuilt capability read runtime."""
+    root = _fixture(tmp_path)
+    _spec(root, caps=(1, 2))
+    _code(root, "cli.py", 'sub.add_parser("frobnicate")\n')
+    _epics(root, ("CAP-1", "`cli.py`"), ("CAP-2", "`cli.py`"), statuses=("blocked", "done"))
+
+    report = _report(root, tmp_path, capsys)
+
+    row = _row(report, 1)
+    assert "| unresolved |" in row
+    assert "no landed story cites this CAP (1 citing story not done)" in row
+    assert "| runtime |" in _row(report, 2)
+    assert _header(report, "Runtime CAPs with no flag") == 1
+
+
+def test_a_story_spec_that_has_not_landed_does_not_join_through_its_parent_line(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    root = _fixture(tmp_path)
+    _spec(root)
+    _epics(root, ("CAP-1", None))
+    _code(root, "cli.py", 'sub.add_parser("frobnicate")\n')
+    _story_spec(root, "spec-1-1-alpha.md", status="in-review", body=f"Parent: `{SLUG}` CAP-1\nSurface: `cli.py`\n")
+
+    report = _report(root, tmp_path, capsys)
+
+    row = _row(report, 1)
+    assert "| unresolved |" in row
+    assert "the citing story carries no `Surface:` line" in row  # the landed epics block, with no Surface
+    assert _header(report, "Runtime CAPs with no flag") == 0
+
+
+def test_a_project_with_an_epics_file_and_no_ledger_exits_2_naming_the_ledger(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    root = _fixture(tmp_path)
+    _spec(root)
+    _epics(root, ("CAP-1", "`cli.py`"), ledger=False)
+
+    rc, _out, err = _run(root, tmp_path / "out", capsys)
+
+    assert rc == 2
+    assert "sprint-status-ledger.yaml" in err
+    assert not (tmp_path / "out").exists()
+
+
+# --- Story 51.1: an exempt retrofit story covers the flag platform's own capability -------------------
+
+
+def test_a_retrofit_story_exempt_under_the_cover_value_reads_as_the_caps_cover_and_is_not_unflagged(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    root = _fixture(tmp_path)
+    _spec(root)
+    _code(root, "cli.py", 'sub.add_parser("frobnicate")\n')
+    _epics(root, ("CAP-1", "`cli.py`"))
+    _story_spec(
+        root, "spec-2-1-the-flag-platform.md", "flag-exempt: flag-infra\n", status="done",
+        body=f"Parent: `{SLUG}` CAP-1 (the flag platform itself).\n",
+    )
+
+    report = _report(root, tmp_path, capsys)
+
+    row = _row(report, 1)
+    assert "| runtime |" in row
+    assert "| exempt: flag-infra (2-1-the-flag-platform) |" in row
+    assert _header(report, "Runtime CAPs with no flag") == 0
+
+
+def test_an_exempt_story_under_any_other_value_covers_nothing(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    root = _fixture(tmp_path)
+    _spec(root)
+    _code(root, "cli.py", 'sub.add_parser("frobnicate")\n')
+    _epics(root, ("CAP-1", "`cli.py`"))
+    _story_spec(
+        root, "spec-2-1-docs.md", "flag-exempt: docs-only\n", status="done", body=f"Parent: `{SLUG}` CAP-1.\n"
+    )
+
+    report = _report(root, tmp_path, capsys)
+
+    assert _row(report, 1).endswith("| none |")
+    assert _header(report, "Runtime CAPs with no flag") == 1
+
+
+def test_a_gating_key_in_the_tree_is_named_before_an_exempt_cover(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    root = _fixture(tmp_path, tree_keys=(KEY,))
+    _spec(root)
+    _code(root, "cli.py", 'sub.add_parser("frobnicate")\n')
+    _epics(root, ("CAP-1", "`cli.py`"))
+    _story_spec(root, "spec-2-1-flagged.md", FLAG_BLOCK.format(key=KEY), status="done", body=f"Parent: `{SLUG}` CAP-1.\n")
+    _story_spec(root, "spec-2-2-exempt.md", "flag-exempt: flag-infra\n", status="done", body=f"Parent: `{SLUG}` CAP-1.\n")
+
+    report = _report(root, tmp_path, capsys)
+
+    assert _row(report, 1).endswith(f"| `{KEY}` |")
+
+
+def test_a_roster_cover_list_that_is_not_a_list_of_values_exits_2(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    root = _fixture(tmp_path)
+    path = root / "docs/governance/guild-roster.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["flag_retrofit_cover_exemptions"] = "flag-infra"
+    path.write_text(json.dumps(data), encoding="utf-8")
+    _spec(root)
+
+    rc, _out, err = _run(root, tmp_path / "out", capsys)
+
+    assert rc == 2
+    assert "flag_retrofit_cover_exemptions" in err
 
 
 def test_a_cli_cap_whose_story_names_a_verb_module_and_no_flag_is_listed_with_its_verb_and_none(
@@ -705,16 +882,16 @@ def test_the_warned_list_is_sorted_by_path_and_carries_each_specs_own_status(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     # `-` sorts before `.`, so by path `spec-1-1-a-b.md` precedes `spec-1-1-a.md`; by key (`1-1-a` is a prefix of
-    # `1-1-a-b`) and by status (`backlog` < `done`) the order is the reverse. Only a path sort gives the asserted order.
+    # `1-1-a-b`) and by status (`backlog` < `in-review`) the order is the reverse. Only a path sort gives the asserted order.
     prefix = "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/"
     root = _fixture(tmp_path, baseline=[prefix + "spec-1-1-a.md", prefix + "spec-1-1-a-b.md"])
     _story_spec(root, "spec-1-1-a.md", status="backlog")
-    _story_spec(root, "spec-1-1-a-b.md", status="done")
+    _story_spec(root, "spec-1-1-a-b.md", status="in-review")
 
     rows = _warned_rows(_report(root, tmp_path, capsys))
 
     assert rows == [
-        ("1-1-a-b", "done", prefix + "spec-1-1-a-b.md"),
+        ("1-1-a-b", "in-review", prefix + "spec-1-1-a-b.md"),
         ("1-1-a", "backlog", prefix + "spec-1-1-a.md"),
     ]
     assert [path for _key, _status, path in rows] == sorted(path for _key, _status, path in rows)
@@ -1176,6 +1353,8 @@ def test_the_script_holds_no_copy_of_the_exemption_list_and_names_no_live_key():
     source = INVENTORY.read_text(encoding="utf-8")
 
     assert [v for v in flag_rule.load_exemptions() if v in source] == []
+    roster = json.loads((REPO_ROOT / "docs/governance/guild-roster.json").read_text(encoding="utf-8"))
+    assert [v for v in roster["flag_retrofit_cover_exemptions"] if v in source] == []
     assert [k for k in flag_gate_check.load_tree(REPO_ROOT) if k in source] == []
 
 

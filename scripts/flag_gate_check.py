@@ -33,8 +33,11 @@ Tree mode (no arguments) walks every tracked
     FAIL  flag-default-env-mismatch
                                 a ``done`` flagged spec whose declared ``default`` for an environment disagrees
                                 with the tree's rendered value for that environment (Story 34.3)
-    WARN  flag-pre-rule         a pre-rule ``type: feature`` spec that carries neither, grouped
-                                by station (the list Story 34.4's inventory counts); never a FAIL
+    WARN  flag-pre-rule         a live pre-rule ``type: feature`` spec that carries neither -- its status is not
+                                ``done`` or ``superseded`` (``ENDED_STORY_STATUSES``) -- grouped by station (the
+                                list Story 34.4's inventory counts); never a FAIL. A done pre-rule story's
+                                capability is retrofitted at the CAP (CAP-7, one flag per CAP), never through a
+                                block on its historical spec (doctor Story 51.1; operator ruling 2026-10-26)
 
 ``--spec <path>`` judges one story spec and prints one JSON object (``verdict`` ``pass``, ``warn``
 or ``red``, ``findings``, ``rule_date``) -- the interface marshal Story 74.2's dispatch preflight
@@ -167,6 +170,10 @@ K_EXEMPT_UNKNOWN = "flag-exempt-unknown"
 K_NOT_IN_TREE = "flag-key-not-in-tree"
 K_ORPHAN = "flag-key-orphan"
 K_PRE_RULE = "flag-pre-rule"
+# Story 51.1: the rule's third scope ruling (2026-09-28) names the warned population as *stories already in
+# backlog*. A story at one of these statuses is history: its capability is retrofitted at the CAP, and its
+# spec is never rewritten.
+ENDED_STORY_STATUSES = frozenset({"done", "superseded"})
 K_NO_TEST = "flag-verification-names-no-test"
 K_TEST_MISSING = "flag-test-file-missing"
 K_NOT_TWO_STATE = "flag-test-not-two-state"
@@ -394,6 +401,13 @@ def _unknown_exemption(frontmatter: Mapping[str, Any], exemptions: Sequence[str]
     return None if blank or value in exemptions else value
 
 
+def _story_status(frontmatter: Mapping[str, Any] | None) -> str:
+    """The spec's ``status:`` value, lower-cased; ``""`` when unreadable (never read as ended)."""
+    if frontmatter is None:
+        return ""
+    return str(frontmatter.get("status", "")).strip().lower()
+
+
 def _flag_key(frontmatter: Mapping[str, Any]) -> str:
     block = frontmatter.get("flag")
     key = block.get("key") if isinstance(block, Mapping) else None
@@ -579,7 +593,7 @@ def judge_spec(
                     station=station,
                 )
             )
-        else:
+        elif _story_status(frontmatter) not in ENDED_STORY_STATUSES:
             findings.append(
                 Finding(
                     K_PRE_RULE,

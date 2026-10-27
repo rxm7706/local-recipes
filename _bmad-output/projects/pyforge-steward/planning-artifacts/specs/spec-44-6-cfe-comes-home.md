@@ -3,6 +3,13 @@ title: 'CFE comes home'
 type: 'feature'
 created: '2026-09-13'
 status: 'backlog'
+flag:
+  key: pyforge.steward.cutover_cfe_home
+  provider: openfeature-file
+  default: {production: off, staging: off, dev: off}
+  scope: global
+  fallback: "A stays the root of record; the CFE stays here"
+  cleanup: 90 days after ON in every environment (Q4)   # retrofit block (spec-feature-flag-governance CAP-7, operator ruling R6 of 2026-10-26): the key joins the tree when this story builds
 difficulty: medium
 story: 44.6
 spec: python-foundry-cutover

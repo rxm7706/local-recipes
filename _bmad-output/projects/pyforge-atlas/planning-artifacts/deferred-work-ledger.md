@@ -5279,3 +5279,14 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-10-25 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   resolved: 2026-10-25 (Story 40.1, operator rulings "Restore 2 atlas CAPs (Recommended)" and "Cite the constraint (Recommended)": spec-pyforge-atlas CAP-70 and CAP-71 restore spec-kedro-org-tooling-adoption's Capabilities 1 and 3, shipped; FR-61 cites CAP-70 and FR-63 cites CAP-71; FR-15 cites the Spec constraint "Conda-forge-only, pixi-managed, py3.14-floored provisioning"; PRD § Currency reconciliation — 2026-10-25 (Story 40.1))
   status: closed
+
+### DW-atlas-42-1-1: 48 capabilities of the atlas flag inventory stay `unresolved`: the join cannot reach their code, so the CAP-7 retrofit cannot judge whether they are reachable at runtime.
+
+- source_spec: `planning-artifacts/specs/spec-42-1-agents-trigger-and-read-the-pipeline-natively-sits-behind-a-kill-switch.md`
+  summary: 48 rows of `docs/governance/flag-inventory/pyforge-atlas.md` read `unresolved` after the join fix (doctor Story 51.1): 35 CAPs no story cites on a line naming the Spec, 12 cited only by stories not yet landed, 1 whose Surface path no longer exists. They are not the retrofit's debt (operator ruling R7 of 2026-10-26): a row the join cannot classify is a planning gap, not a capability known to be reachable.
+  evidence: Regenerated 2026-10-26 on the fixed join (landed stories only, best class across citing stories). The residue is the inventory's blind spot by construction: a CAP joins only through a citing story's `Surface:` line in `epics.md` or a story spec's `Parent:` line. The follow-up shape is Doctor's: let the join also read each capability's own `verified:` sub-bullet citations (they name `file:line`), then re-measure; a station backfills `Surface:` lines only where a capability turns out runtime.
+  location: docs/governance/flag-inventory/pyforge-atlas.md
+  origin: spec-deferred — recorded by hand in the CAP-7 retrofit PR (operator ruling R7, 2026-10-26)
+  severity: low
+  promoted: 2026-10-26 — the retrofit chain commit
+  status: open

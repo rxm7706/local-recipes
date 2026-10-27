@@ -46,11 +46,19 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from pyforge.core.cutover_root import resolve_flags_path
+from pyforge.core.flags import read_boolean
+
+# Story 114.2 (spec-feature-flag-governance CAP-7): the kill switch for CAP-6 (c), spelled literally.
+FRAME_UPSTREAM_CHECK_FLAG_KEY = "pyforge.steward.frame_upstream_check"
 
 FRAMES_RELATIVE = Path("docs/foundry/frames")
 UPSTREAM_PIN_RELATIVE = FRAMES_RELATIVE / "upstream-pin.yaml"
 CONFORMANCE_PROFILE_RELATIVE = FRAMES_RELATIVE / "conformance-profile.yaml"
 EXIT_OK, EXIT_FAIL, EXIT_COULD_NOT_RUN = 0, 1, 2
+# Steward's usage code (``cli.EXIT_USAGE``), the code a flag-off verb refuses with (Q3); the same value this
+# module's own domain names could-not-run, so no new code is minted.
+EXIT_USAGE = 2
 COMPANY_IDENTIFIER = "pyforge/company"
 PUBLISHER = "pyforge"
 STATION_TOKENS: tuple[str, ...] = (
@@ -464,6 +472,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     ns = build_parser().parse_args(argv)
     repo_root = Path(ns.repo).resolve()
     if ns.upstream_check:
+        # Story 114.2 (spec-feature-flag-governance CAP-7; spec-pyforge-steward CAP-6 (c)): the kill switch
+        # for the opt-in upstream check. OFF refuses with steward's usage code and names the flag; the in-repo
+        # ``frame-preflight`` is untouched. No tree reads the switch ON.
+        tree = resolve_flags_path()
+        if tree is not None and not read_boolean(FRAME_UPSTREAM_CHECK_FLAG_KEY, default=True, flags_path=tree):
+            print(f"frame-upstream-check: flag {FRAME_UPSTREAM_CHECK_FLAG_KEY} is off", file=sys.stderr)
+            return EXIT_USAGE
         code, text = upstream_check(repo_root)
         print(text)
         return code

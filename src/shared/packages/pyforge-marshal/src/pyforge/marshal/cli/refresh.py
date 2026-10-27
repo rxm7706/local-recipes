@@ -38,6 +38,7 @@ import json
 import sys
 from pathlib import Path
 
+from pyforge.core.flags import read_boolean
 from pyforge.core.process import PosixProcess, ProcessError
 
 from ..adapters.harness_bmadloop import HarnessPolicyWriteError, write_policy_toml
@@ -75,6 +76,15 @@ _MRS_REFRESH_008 = "MRS-REFRESH-008"
 
 _DEFAULT_BASE = "main"
 _SYNC_STATUS_TIMEOUT_S = 60
+
+
+# Story 110.25 (spec-feature-flag-governance CAP-7): the kill switch for CAP-267, spelled literally.
+REFRESH_PROVEN_PUSH_FLAG_KEY = "pyforge.marshal.refresh_proven_push"
+
+
+def refresh_proven_push_enabled() -> bool:
+    """Whether a proven fast-forward is pushed past the pre-push preflight (CAP-267's kill switch, ON by default)."""
+    return read_boolean(REFRESH_PROVEN_PUSH_FLAG_KEY, default=True)
 
 
 def add_refresh_subparser(subparsers: argparse._SubParsersAction) -> None:
@@ -366,6 +376,11 @@ def _refresh_one_home(
         # refname and pushes exactly it (review 2). Any other `--base` pushes
         # normally and the preflight runs.
         proven = current_ref if proves_main else None
+        # Story 110.25 (spec-feature-flag-governance CAP-7; CAP-267): the kill
+        # switch. OFF pushes without the opt-out, so the pre-push preflight
+        # runs, as before Story 57.1.
+        if not refresh_proven_push_enabled():
+            proven = None
         try:
             # Push via the shared repo root; branch name is loop/<slug> only.
             vcs.push(git_repo_root, branch, proven_on_main_sha=proven)

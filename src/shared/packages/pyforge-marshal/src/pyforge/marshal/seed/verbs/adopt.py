@@ -276,6 +276,7 @@ from importlib import resources
 from pathlib import Path
 from typing import Any
 
+from pyforge.core.flags import read_boolean
 from pyforge.core.process import PosixProcess, ProcessError
 
 from .. import fs
@@ -320,6 +321,15 @@ from ..state import (
 )
 from .preconditions import ManagedRecord, check_preconditions
 from .skips import apply_skips, managed_after_skips, with_recorded_skips
+
+# Story 110.11 (spec-feature-flag-governance CAP-7): the kill switch for CAP-16, spelled literally.
+ADAPTER_FANOUT_FLAG_KEY = "pyforge.marshal.adapter_fanout"
+
+
+def adapter_fanout_enabled() -> bool:
+    """Whether `seed adopt` renders the per-tool adapter files (CAP-16's kill switch, ON by default)."""
+    return read_boolean(ADAPTER_FANOUT_FLAG_KEY, default=True)
+
 
 # The classes FR-83's first-claim augmentation ever fires for -- the epics
 # AC's own two named classes. ``copied-seeded`` and ``hybrid-managed-region``
@@ -928,6 +938,15 @@ def _default_commit(
                     repo_root=repo_root,
                     never_write=never_write,
                 )
+        elif (
+            entry.id in derive_adapters.ADAPTER_COMPOSITION
+            and entry.artifact_class is ArtifactClass.GENERATED_DERIVED
+            and not adapter_fanout_enabled()
+        ):
+            # Story 110.11 (spec-feature-flag-governance CAP-7; CAP-16): the kill
+            # switch for the adapter fan-out. OFF renders no per-tool adapter file
+            # and leaves an existing one untouched.
+            return
         elif (
             entry.id in derive_adapters.ADAPTER_COMPOSITION and entry.artifact_class is ArtifactClass.GENERATED_DERIVED
         ):

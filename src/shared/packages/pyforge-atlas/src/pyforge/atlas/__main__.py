@@ -30,6 +30,45 @@ def discover_cli_verbs() -> frozenset[str]:
     return frozenset(project_group.commands.keys())
 
 
+# Epic 42 (spec-feature-flag-governance CAP-7): the switches `run` reads, spelled literally. The MCP face reads the
+# same keys in `mcp/tools.py`; both go through `pyforge.core.flags`.
+AGENT_PIPELINE_TOOLS_FLAG_KEY = "pyforge.atlas.agent_pipeline_tools"  # CAP-9, Story 42.1
+MANIFEST_INVENTORY_FLAG_KEY = "pyforge.atlas.manifest_inventory"  # CAP-13, Story 42.2
+MANIFEST_INVENTORY_PIPELINE = "universal_sbom"
+EXIT_USAGE = 2  # Click's own usage code: the frozen atlas domain holds, nothing new is minted
+RETROFIT_DEFAULT = True
+
+
+def _retrofit_refusal(cli_args: list[str], project_group: Any) -> str | None:
+    """The flag-off message for this invocation, or None; marks `run`'s help when a switch is OFF.
+
+    No tree (``resolve_flags_path`` finds none) reads every switch ON with no read.
+    """
+    from pyforge.core.cutover_root import resolve_flags_path
+    from pyforge.core.flags import disabled_help, read_boolean
+
+    tree = resolve_flags_path()
+    if tree is None:
+        return None
+    wants_help = any(token in {"-h", "--help"} for token in cli_args)
+    run_command = project_group.commands.get("run")
+    keys = [AGENT_PIPELINE_TOOLS_FLAG_KEY]
+    if MANIFEST_INVENTORY_PIPELINE in cli_args:
+        keys.append(MANIFEST_INVENTORY_FLAG_KEY)
+    if wants_help and run_command is not None:
+        text = run_command.get_short_help_str()
+        for key in (AGENT_PIPELINE_TOOLS_FLAG_KEY, MANIFEST_INVENTORY_FLAG_KEY):
+            text = disabled_help(text, key, RETROFIT_DEFAULT, flags_path=tree)
+        run_command.short_help = text
+        return None
+    if cli_args[:1] != ["run"]:
+        return None
+    for key in keys:
+        if not read_boolean(key, default=RETROFIT_DEFAULT, flags_path=tree):
+            return f"flag {key} is off"
+    return None
+
+
 def main(*args, **kwargs) -> Any:
     # Story 7.1: Kedro's own Click-based command routing has no built-in
     # `--version` (`pyforge-atlas --version` exits 2, "no such option") --
@@ -73,6 +112,15 @@ def main(*args, **kwargs) -> Any:
 
     from kedro.framework.cli.project import project_group
     from kedro.framework.startup import bootstrap_project
+
+    # Epic 42 (spec-feature-flag-governance CAP-7, Q3): `run` is the CLI face of
+    # CAP-9 (Story 42.1) and, with `universal_sbom`, of CAP-13 (Story 42.2). With a
+    # switch OFF the verb stays listed in `--help` marked disabled and refuses with
+    # exit 2 -- usage, inside the frozen `{0, 1, 2, 130}` domain -- before Kedro runs.
+    refusal = _retrofit_refusal(list(cli_args), project_group)
+    if refusal is not None:
+        print(f"pyforge-atlas: {refusal}", file=sys.stderr)
+        return EXIT_USAGE
 
     # Story 33.1: dispatch to Kedro's project command group (`ipython`,
     # `package`, `run`) -- the group `discover_cli_verbs` reads for the

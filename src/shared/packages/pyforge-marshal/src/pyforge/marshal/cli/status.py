@@ -124,6 +124,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from pyforge.core import preserve_refs as core_preserve_refs
+from pyforge.core.flags import read_boolean
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from ..adapters.clock_system import SystemClock
@@ -196,6 +197,15 @@ _SUPERVISOR_HEARTBEAT_KIND = "supervisor-heartbeat"
 _BUDGET_USAGE_KIND = "budget-usage"
 
 _MRS_STATUS_002 = "MRS-STATUS-002"
+
+
+# Story 110.23 (spec-feature-flag-governance CAP-7): the kill switch for CAP-259, spelled literally.
+DISPATCH_ONLY_FLEET_ROWS_FLAG_KEY = "pyforge.marshal.dispatch_only_fleet_rows"
+
+
+def dispatch_only_fleet_rows_enabled() -> bool:
+    """Whether a dispatch-only station gets a placeholder fleet row (CAP-259's kill switch, ON by default)."""
+    return read_boolean(DISPATCH_ONLY_FLEET_ROWS_FLAG_KEY, default=True)
 
 
 def _format_dollar_estimate(amount: float | None) -> str:
@@ -1843,7 +1853,10 @@ def run_status(
     # with no run yet" (`home=None`) that `_merge_dispatch_overlay` fills
     # from the run journal exactly as it does for a loop-home row.
     seen_slugs = {slug for slug, _ in fleet}
-    for slug in _dispatch_only_slugs(git_repo_root):
+    # Story 110.23 (spec-feature-flag-governance CAP-7; CAP-259): the kill
+    # switch. OFF lists loop homes only, as before Story 51.12.
+    dispatch_only = _dispatch_only_slugs(git_repo_root) if dispatch_only_fleet_rows_enabled() else ()
+    for slug in dispatch_only:
         if slug in seen_slugs:
             continue
         if args.project is not None and slug != args.project:

@@ -647,6 +647,40 @@ def test_story_spec_join_missing_dir_is_empty(tmp_path: Path) -> None:
     assert capability_effect._story_surface_by_cap("", ["spec-demo"], story_specs_dir=tmp_path / "nope") == {}
 
 
+def test_story_surface_citations_keep_every_citing_story_in_order(tmp_path: Path) -> None:
+    """Story 51.1: a later chore citing a CAP range with a planning Surface does not hide the earlier story."""
+    specs = tmp_path / "specs"
+    _write_story_spec(specs, "spec-5-1-a-story.md", "Parent: spec-demo CAP-2\nSurface: `story/two.py`\n")
+    _write_story_spec(specs, "spec-5-2-prose.md", "Parent: spec-demo CAP-2\nSurface: named in epics.md\n")
+    epics = (
+        "## Epic 1\n\n### Story 1.1: x\n\n**FR/AD:** spec-demo CAP-2\n\n**Surface:** `src/pkg/cli.py`\n\n"
+        "### Story 9.3: a later chore\n\n**FR/AD:** spec-demo CAP-1..CAP-3 (their text)\n\n"
+        "**Surface:** `planning-artifacts/specs/spec-demo/SPEC.md`\n\n"
+        "### Story 9.4: no surface\n\n**FR/AD:** spec-demo CAP-2\n"
+    )
+
+    got = capability_effect._story_surface_citations_by_cap(epics, ["spec-demo"], story_specs_dir=specs)
+
+    C = capability_effect.StorySurfaceCitation
+    assert got[("spec-demo", 2)] == [
+        C("1.1", "`src/pkg/cli.py`"),
+        C("9.3", "`planning-artifacts/specs/spec-demo/SPEC.md`"),
+        C("9.4", None),
+        C("spec-5-1-a-story.md", "`story/two.py`"),
+        C("spec-5-2-prose.md", None),
+    ]
+    assert got[("spec-demo", 1)] == [C("9.3", "`planning-artifacts/specs/spec-demo/SPEC.md`")]
+    assert set(got) == {("spec-demo", 1), ("spec-demo", 2), ("spec-demo", 3)}
+    # The last-wins join is unchanged: the chore's Surface still wins there.
+    last = capability_effect._story_surface_by_cap(epics, ["spec-demo"], story_specs_dir=specs)
+    assert last[("spec-demo", 2)] == "`planning-artifacts/specs/spec-demo/SPEC.md`"
+
+
+def test_story_surface_citations_missing_dir_and_empty_epics_are_empty(tmp_path: Path) -> None:
+    assert capability_effect._story_surface_citations_by_cap("", ["spec-demo"], story_specs_dir=tmp_path / "nope") == {}
+    assert capability_effect._story_surface_citations_by_cap("", ["spec-demo"]) == {}
+
+
 def test_caller_reach_resolves_a_cap_through_its_story_spec(tmp_path: Path) -> None:
     _init_repo(tmp_path)
     pa = _pa(tmp_path, "pyforge-testproj")
