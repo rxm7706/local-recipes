@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 88daeb57594c0d57
-story_count: 418
+source_fingerprint: 561af39b056ec29a
+story_count: 421
 test_file_count: 144
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 418
+- **Stories parsed:** 421
 - **Epics parsed:** 116
 - **Test files inventoried:** 144 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `88daeb57594c0d57`
+- **Source fingerprint:** `561af39b056ec29a`
 
 ## Risk Assessment
 
@@ -724,6 +724,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 117.7 | The CI workflows run what the diff touches, with pinned tools and parallel de... | none observed |
 | 117.8 | The CFE regression net leaves the pull-request path, and the PR keeps its met... | none observed |
 | 117.9 | The steward suite's slowest tests shed their subprocesses, repos and sleeps | none observed |
+| 117.10 | Each station suite runs as N sharded jobs whose coverage the gate merges | none observed |
+| 117.11 | The changes gate and the gate diffs run on shallow fetches of the PR base | none observed |
+| 117.12 | The platform suite runs under xdist, its checks in a parallel job | none observed |
 
 ## Quality Gates
 

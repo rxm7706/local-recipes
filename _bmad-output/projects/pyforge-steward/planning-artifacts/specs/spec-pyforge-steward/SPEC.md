@@ -875,14 +875,25 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
     job while a planning edit no longer runs eight unit suites; image builds and the CFE regression net run on
     push-to-main and the nightly canary, declared in `docs/governance/ci-surfaces.yaml`, and a PR keeps the CFE
     `tests/meta`; `preflight-budget` names each lane over its journal-derived budget and never changes the exit code.
+    *(Amended 2026-10-27, later the same day:)* each station half runs as N matrix shards (`pytest-split` groups on top
+    of `-n auto`, N sized so no shard works longer than ~45 s on four cores) whose coverage JSONs the gate merges as
+    one; the `changes` step and every coverage-gate diff read a shallow fetch of the PR's base sha instead of full
+    history, so the gate costs under ten seconds; the platform `test` job runs its pytest-django suite under xdist with
+    ruff, mypy and the policy suite in a parallel job. The repository is public: runner minutes are free and the wall
+    is the only cost. (Measured 2026-10-27 after Waves 1–2: a shared-surface head 764 s of wall on the CFE net and
+    94 runner-minutes with 30 jobs started within five seconds; a memory-only head 347 s on an ungated image build;
+    four image jobs 66–172 s each freeing disk; `fetch-depth: 0` on 13 checkouts; `changes` 24–36 s ahead of every
+    station job.)
     (Measured 2026-10-27: a full preflight 670 s at the median and 1950 s at worst over 52 green runs where Epic 71 had
     it under a minute; a PR head 12–13 min of wall and ~126 runner-minutes; `pyforge-steward-test` 698 s serial where
     Epic 71 measured 19 s; five PRs each ran 8–10 of the 10 suite jobs by Story 98.1's own rule. Operator rulings
     D1–D4 in `.memlog.md`, 2026-10-27.)
   - **success:** on a single-station branch `pixi run -e pyforge-guild pr-preflight` journals `total_seconds` ≤ 90 at
-    the median of its last ten green runs and a full-estate run ≤ 240; a single-station PR's slowest workflow finishes
-    in ≤ 5 min of wall and the head's jobs sum to ≤ 20 runner-minutes (read from `gh api
-    repos/rxm7706/local-recipes/actions/runs/<id>/jobs`); every read `test_station_tests_trigger_map.py` derives still
+    the median of its last ten green runs and a full-estate run ≤ 240; a single-station PR head's CI wall (first run
+    start to last run end, read from `gh api repos/rxm7706/local-recipes/actions/runs?head_sha=<sha>`) is ≤ 90 s and a
+    shared-surface head's ≤ 150 s, no job working longer than ~45 s after its set-up, no job cloning full history and
+    the `changes` step ≤ 10 s (amended 2026-10-27 from ≤ 5 min of wall and ≤ 20 runner-minutes: the repository is
+    public, minutes are free, the wall is the cost); every read `test_station_tests_trigger_map.py` derives still
     fires a job, and a package-suite test that gains an outside read reds `steward-test`; `coverage-gates.yml` reads
     `state: retired` and each station's floor is still judged from its own run's JSON; `ci_surface_gates.py --check`,
     `detectors-ci`, `flag-gate-check` and `preflight-budget` exit 0.
