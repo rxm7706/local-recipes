@@ -1,0 +1,8 @@
+---
+name: "2026-10-26-operator-rulings-on-the-one-chain-residue-re-audi"
+description: "2026-10-26 operator rulings on the one-chain residue (re-audit of main 97c8211773; PR from branch claude/xenodochial-th…"
+metadata:
+  type: project
+---
+
+2026-10-26 operator rulings on the one-chain residue (re-audit of main 97c8211773; PR from branch claude/xenodochial-thompson-d7f9d3): (1) the three archived Spec folders and six loose specs/spec-<slug>.md files move to archive/<original path> as chore stories steward 113.1, warden 21.1, marshal 109.1 -- none re-keyed (four marshal story specs never had a ledger key; the 2026-07-26 code-audit Spec reads archived/superseded); an archived Dream's Spec is then found through the station Spec's covers-dreams, which gains the Dream (steward 35 -> 37). (2) Item 3 ruled C: marshal's factory-doc set (planning-artifacts/PRD.md, architecture*.md, integration-architecture.md, validation-report-PRD.md) stays as the whole-factory rebuild contract under bmad-drift + SYNC-RUNBOOK, declared in CHAIN-STANDARD section 1; it is not a chain PRD (zero FR-n, never read by fr-without-cap); a fold into mason (wrong owner for parts 2-5, Dream-sized) and archiving with the sync loop retired (marshal story, effort M) were not taken. (3) Item 4 ruled A: docs/governance/spec-pyforge-charter/SPEC.md moves from the retired in-progress to ready (the last live use; the roster's grandfathering ends at next edit), with the 2026-09-09 HELD text quoted per CAP-1 and its gaps kept as CAP-3 / CAP-7 realization gaps; the Charter Dream stays specified. (4) The 27 advisory fr-arrow-no-title-overlap arrows were read once and all kept, recorded on the Guild memlog. Both SPEC.md renders went the memlog-first scratchpad-script route approved 2026-09-25.

@@ -5,7 +5,7 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: herald
-source_fingerprint: 1cec0834eca63867
+source_fingerprint: 757f98fbd05cb17c
 story_count: 149
 test_file_count: 97
 coverage_target_unit: ">=80%"
@@ -24,7 +24,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Test files inventoried:** 97 under `src/shared/packages/pyforge-herald/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `1cec0834eca63867`
+- **Source fingerprint:** `757f98fbd05cb17c`
 
 ## Risk Assessment
 

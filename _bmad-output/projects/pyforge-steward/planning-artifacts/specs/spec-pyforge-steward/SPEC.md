@@ -19,6 +19,7 @@ covers-dreams:
   - docs/dreams/developer-machine-bootstrap.md
   - docs/dreams/enterprise-airgap.md
   - docs/dreams/enterprise-multi-agent-orchestration.md
+  - docs/dreams/htap-query-plane.md
   - docs/dreams/intelligence-hub.md
   - docs/dreams/jira-github-projects-sync.md
   - docs/dreams/langflow-django-plugin.md
@@ -32,6 +33,7 @@ covers-dreams:
   - docs/dreams/platform-fifteen-factors.md
   - docs/dreams/platform-image-one-pixi-env.md
   - docs/dreams/platform-object-storage-kind.md
+  - docs/dreams/pyforge-steward-feedstock-maintenance.md
   - docs/dreams/python-agent-platform.md
   - docs/dreams/scratch-worktree-lifecycle.md
   - docs/dreams/secure-live-dashboards.md
