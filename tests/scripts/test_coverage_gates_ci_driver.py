@@ -43,8 +43,13 @@ def test_normalize_base_keeps_revisions_and_names_the_remote_tracking_ref(driver
     assert driver._normalize_base(sha[:10]) == sha[:10]
     assert driver._normalize_base("main") == "refs/remotes/origin/main"
     assert driver._normalize_base("origin/main") == "refs/remotes/origin/main"
-    assert driver._normalize_base("origin/release/2026") == "refs/remotes/origin/release/2026"
-    assert driver._normalize_base("refs/remotes/origin/main") == "refs/remotes/origin/main"
+    assert (
+        driver._normalize_base("origin/release/2026")
+        == "refs/remotes/origin/release/2026"
+    )
+    assert (
+        driver._normalize_base("refs/remotes/origin/main") == "refs/remotes/origin/main"
+    )
     assert driver._normalize_base("origin/main~1") == "refs/remotes/origin/main~1"
     assert driver._normalize_base("origin/main@{1}") == "refs/remotes/origin/main@{1}"
     assert driver._normalize_base("user@feature") == "refs/remotes/origin/user@feature"
@@ -57,13 +62,17 @@ def test_normalize_base_keeps_revisions_and_names_the_remote_tracking_ref(driver
 
 @pytest.mark.parametrize("kind", ["branch", "tag"])
 @pytest.mark.parametrize("given", ["origin/main", "main", "origin/main~0"])
-def test_a_local_origin_main_at_head_no_longer_empties_the_touched_list(driver, tmp_path, monkeypatch, kind, given):
+def test_a_local_origin_main_at_head_no_longer_empties_the_touched_list(
+    driver, tmp_path, monkeypatch, kind, given
+):
     """The trap CAP-4 closes: a local branch or tag `origin/main` at HEAD made `origin/main...HEAD` empty, so the
     gate judged no module. The normalized base reads the remote-tracking ref instead."""
     import subprocess
 
     def git(*args: str) -> str:
-        return subprocess.run(["git", *args], cwd=tmp_path, check=True, capture_output=True, text=True).stdout.strip()
+        return subprocess.run(
+            ["git", *args], cwd=tmp_path, check=True, capture_output=True, text=True
+        ).stdout.strip()
 
     git("init", "-q", "--initial-branch=main")
     git("config", "user.email", "t@example.com")
@@ -76,8 +85,12 @@ def test_a_local_origin_main_at_head_no_longer_empties_the_touched_list(driver, 
     git(kind, "origin/main", "HEAD")  # the shadow
     monkeypatch.setattr(driver, "REPO", tmp_path)
 
-    assert driver._git_diff_names("origin/main", "HEAD") == []  # the trap, for the record
-    assert driver._git_diff_names(driver._normalize_base(given), "HEAD") == ["touched.py"]
+    assert (
+        driver._git_diff_names("origin/main", "HEAD") == []
+    )  # the trap, for the record
+    assert driver._git_diff_names(driver._normalize_base(given), "HEAD") == [
+        "touched.py"
+    ]
 
 
 def test_suite_test_paths_skips_missing_integration(driver, tmp_path: Path):
@@ -191,7 +204,9 @@ def test_plan_prints_json_without_pytest(driver, tmp_path: Path, monkeypatch, ca
     assert any("tests/meta" in p for p in run["test_paths"])
 
 
-def test_plan_stdout_stays_json_when_format_only_paths_skipped(driver, monkeypatch, capsys):
+def test_plan_stdout_stays_json_when_format_only_paths_skipped(
+    driver, monkeypatch, capsys
+):
     """format-only diagnostics must not precede JSON (Story 71.4 preflight parses stdout)."""
 
     def fake_drop(paths, base, head, *, quiet=False):
@@ -210,6 +225,7 @@ def test_run_pytest_cov_carries_station_test_task_xdist_flags(driver, monkeypatc
 
     def fake_run(cmd, **kwargs):
         captured.append(list(cmd))
+
         class _Proc:
             returncode = 0
 
@@ -302,7 +318,9 @@ def test_a_red_coverage_run_skips_the_set_aside_run(driver, monkeypatch):
 
 
 def test_a_set_aside_run_outside_the_suite_does_not_run(driver, tmp_path: Path):
-    assert driver._under_any([_SPEED, "-q"], [REPO / "src/shared/packages/pyforge-doctor/tests/unit"])
+    assert driver._under_any(
+        [_SPEED, "-q"], [REPO / "src/shared/packages/pyforge-doctor/tests/unit"]
+    )
     assert not driver._under_any([_SPEED, "-q"], [tmp_path])
     assert not driver._under_any(["-q"], [tmp_path])
 
@@ -314,3 +332,104 @@ def test_plan_empty_when_no_station_touched(driver, tmp_path: Path, capsys):
     assert rc == 0
     payload = json.loads(capsys.readouterr().out.strip())
     assert payload["runs"] == []
+
+
+# --- Story 117.2: --report judges the suite's own coverage JSON ------------------------------------
+
+
+def _doctor_paths_file(tmp_path: Path) -> Path:
+    paths_file = tmp_path / "paths.txt"
+    paths_file.write_text(
+        "src/shared/packages/pyforge-doctor/src/pyforge/doctor/cli.py\n",
+        encoding="utf-8",
+    )
+    return paths_file
+
+
+def test_report_present_is_judged_without_a_pytest_run(
+    driver, tmp_path: Path, monkeypatch, capsys
+):
+    report = tmp_path / "doctor-unit.json"
+    report.write_text(json.dumps({"files": {}}), encoding="utf-8")
+    evaluated: list[tuple[str, str, Path]] = []
+
+    def boom(**kwargs):
+        raise AssertionError(
+            "the suite's own report is present; pytest must not run again"
+        )
+
+    def fake_evaluate(*, station, suite, report, modules):
+        evaluated.append((station, suite, report))
+        return 0
+
+    monkeypatch.setattr(driver, "_run_pytest_cov", boom)
+    monkeypatch.setattr(driver, "_evaluate", fake_evaluate)
+    monkeypatch.setenv("COVERAGE_GATES_STATIONS", "doctor")
+    rc = driver.main(
+        [
+            "--paths-file",
+            str(_doctor_paths_file(tmp_path)),
+            "--suites",
+            "unit",
+            "--report",
+            str(report),
+        ]
+    )
+    assert rc == 0
+    assert evaluated == [("doctor", "unit", report)]
+    assert "judging pyforge-doctor unit from" in capsys.readouterr().out
+
+
+def test_report_absent_runs_the_coverage_pass_into_that_path(
+    driver, tmp_path: Path, monkeypatch
+):
+    report = tmp_path / "out" / "doctor-unit.json"
+    ran: list[Path] = []
+
+    def fake_run(*, station, suite, report):
+        ran.append(report)
+        report.write_text(json.dumps({"files": {}}), encoding="utf-8")
+        return "ran", 0
+
+    monkeypatch.setattr(driver, "_run_pytest_cov", fake_run)
+    monkeypatch.setattr(driver, "_evaluate", lambda **kwargs: 0)
+    monkeypatch.setenv("COVERAGE_GATES_STATIONS", "doctor")
+    rc = driver.main(
+        [
+            "--paths-file",
+            str(_doctor_paths_file(tmp_path)),
+            "--suites",
+            "unit",
+            "--report",
+            str(report),
+        ]
+    )
+    assert rc == 0
+    assert ran == [report] and report.parent.is_dir()
+
+
+@pytest.mark.parametrize(
+    "stations, suites",
+    [("doctor,marshal", "unit"), ("doctor", "unit,integration"), ("", "unit")],
+)
+def test_report_wants_one_station_and_the_unit_suite(
+    driver, tmp_path: Path, monkeypatch, stations, suites
+):
+    monkeypatch.setattr(
+        driver, "_run_pytest_cov", lambda **kwargs: pytest.fail("must not run")
+    )
+    if stations:
+        monkeypatch.setenv("COVERAGE_GATES_STATIONS", stations)
+    else:
+        monkeypatch.delenv("COVERAGE_GATES_STATIONS", raising=False)
+    rc = driver.main(
+        [
+            "--paths-file",
+            str(_doctor_paths_file(tmp_path)),
+            "--suites",
+            suites,
+            "--report",
+            str(tmp_path / "r.json"),
+        ]
+    )
+    assert rc == 2

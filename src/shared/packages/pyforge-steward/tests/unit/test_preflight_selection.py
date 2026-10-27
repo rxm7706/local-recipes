@@ -61,6 +61,25 @@ ALWAYS_ON_SINCE_SPEC = {"pyforge-doctor-aggregate-scripts-test", "scripts-lib-te
 DOCS_SITE_VALIDATE = {"docs-site-validate-links", "docs-site-validate-sidebar-order", "docs-site-validate-sidebar"}
 PAGES_CHECK_LEAVES = {"pages-check", "pages-build", "docs-site-install"}
 GATES = {f"pyforge-{s}-coverage-gate" for s in STATIONS}
+# Story 117.2: a gate is selected exactly when its suite is -- the gate step lives in the station job and reads
+# the suite's own coverage report (coverage-gates.yml retired).
+MATRIX_WORKFLOW_FIXTURE = (
+    REPO_ROOT
+    / "src"
+    / "shared"
+    / "packages"
+    / "pyforge-steward"
+    / "tests"
+    / "fixtures"
+    / "workflows"
+    / "coverage-gates-matrix.yml"
+)
+
+
+def gates_of(chosen: set[str]) -> set[str]:
+    return {f"pyforge-{s}-coverage-gate" for s in STATIONS if f"pyforge-{s}-test" in chosen}
+
+
 NO_CI_COUNTERPART = {"docs-map-render-test", "docs-gen-test"}
 # Herald Story 45.1: herald's job runs pyforge-herald-test-built, whose depends-on runs docs-site-install and then
 # pyforge-herald-test, so a herald job that fires runs the install too (the reader selects every lane in the closure
@@ -112,6 +131,7 @@ def make_repo(
     *,
     with_base: bool = True,
     edits: Sequence[WorkflowEdit] = (),
+    extra_workflows: Mapping[str, str] | None = None,
 ) -> Path:
     """Real workflows + pixi.toml, a base commit (``refs/remotes/origin/main``), a branch commit.
 
@@ -121,6 +141,10 @@ def make_repo(
     repo.mkdir()
     _git(repo, "init", "-q", "-b", "main")
     shutil.copytree(REPO_ROOT / ".github" / "workflows", repo / ".github" / "workflows")
+    for name, text in (extra_workflows or {}).items():
+        # A workflow the live tree no longer carries but whose shape a test still exercises (Story 117.2
+        # retired coverage-gates.yml; its fromJSON matrix is the one matrix-expansion case these tests have).
+        (repo / ".github" / "workflows" / name).write_text(text, encoding="utf-8")
     for name, old, new in edits:
         path = repo / ".github" / "workflows" / name
         text = path.read_text(encoding="utf-8")
@@ -297,7 +321,9 @@ def test_marshal_selection_journals_the_workflow_and_rule_that_skipped_each_lane
     assert all(entry["workflow"] and entry["rule"] for entry in skipped.values())
     assert skipped[suite("warden")]["workflow"] == "pyforge-station-tests.yml"
     assert "needs.changes.outputs.warden" in skipped[suite("warden")]["rule"]
-    assert skipped[gate("warden")]["workflow"] == "coverage-gates.yml"
+    assert (
+        skipped[gate("warden")]["workflow"] == "pyforge-station-tests.yml"
+    )  # Story 117.2: the gate rides its suite's job
     assert skipped["test-ci"]["workflow"] == "cfe-regression-net.yml"
     assert "on.pull_request.paths" in skipped["test-ci"]["rule"]
     assert skipped["pyforge-testing-kit-test"]["workflow"] == "pyforge-station-tests.yml"
@@ -316,14 +342,14 @@ def test_pixi_toml_triggers_lint_and_station_lanes_not_pages(tmp_path: Path) -> 
     assert not (chosen & (PAGES_CHECK_LEAVES - HERALD_JOB_INSTALL))
     assert {suite("herald")} | HERALD_JOB_INSTALL <= chosen
     assert not (chosen & DOCS_SITE_VALIDATE)
-    assert not (chosen & GATES)
+    assert chosen & GATES == gates_of(chosen)
 
 
 def test_cfe_only_branch_selects_the_lanes_station_tests_reads(tmp_path: Path) -> None:
     repo = make_repo(tmp_path, {".claude/skills/conda-forge-expert/scripts/x.py": "x = 1\n"})
     chosen = selected_tasks(select(repo))
     assert ALWAYS_ON <= chosen
-    assert not chosen & GATES
+    assert chosen & GATES == gates_of(chosen)
     assert {
         suite("atlas"),
         suite("doctor"),
@@ -343,11 +369,12 @@ def test_dream_only_branch_selects_the_always_on_lanes(tmp_path: Path) -> None:
     assert chosen == (
         ALWAYS_ON
         | {suite("doctor"), suite("herald"), suite("marshal"), suite("steward")}
+        | {gate("doctor"), gate("herald"), gate("marshal"), gate("steward")}  # Story 117.2: a gate rides its suite
         | HERALD_JOB_INSTALL
         | _spurious_lint_tasks_from_station_tests_changes(repo)
     )
     assert not (chosen & LINT - _spurious_lint_tasks_from_station_tests_changes(repo))
-    assert "test-ci" not in chosen and not chosen & GATES
+    assert "test-ci" not in chosen and chosen & GATES == gates_of(chosen)
 
 
 def test_pages_check_leaves_carry_dependency_edges_from_pixi() -> None:
@@ -367,7 +394,7 @@ def test_docs_site_branch_selects_the_docs_site_validators_and_the_always_on_lan
         ALWAYS_ON
         | DOCS_SITE_VALIDATE
         | PAGES_CHECK_LEAVES
-        | {suite("herald")}
+        | {suite("herald"), gate("herald")}  # Story 117.2: the gate rides its suite's job
         | _spurious_lint_tasks_from_station_tests_changes(repo)
     )
 
@@ -506,9 +533,7 @@ def oracle_selection(repo: Path, tmp_path: Path) -> set[str]:
                 chosen.add(lane)
         if out.get("herald") == "true":
             chosen |= HERALD_JOB_INSTALL  # the job runs pyforge-herald-test-built: the install, then the suite (45.1)
-    if _oracle_fires(repo, "coverage-gates.yml", changed):
-        out = _oracle_outputs(repo, "coverage-gates.yml", tmp_path)
-        chosen |= {gate(s) for s in json.loads(out["stations"])}
+    chosen |= gates_of(chosen)  # Story 117.2: the gate step is in the station job; it fires with the suite
     if _oracle_fires(repo, "pyforge-station-tests.yml", changed):
         chosen |= _spurious_lint_tasks_from_station_tests_changes(repo)
     return chosen
@@ -610,6 +635,7 @@ def test_unexpandable_matrix_selects_every_gate_and_names_the_rule(tmp_path: Pat
     repo = make_repo(
         tmp_path,
         {"src/shared/packages/pyforge-warden/src/x.py": "x\n"},
+        extra_workflows={"coverage-gates.yml": MATRIX_WORKFLOW_FIXTURE.read_text(encoding="utf-8")},
         edits=[
             (
                 "coverage-gates.yml",
@@ -635,7 +661,8 @@ def test_a_failing_changes_step_runs_its_workflow_s_lanes(tmp_path: Path) -> Non
     assert "exited 3" in verdict(selection, suite("atlas")).reason
     # Another workflow's lanes are still decided by their own rules.
     assert "test-ci" not in selected_tasks(selection)
-    assert gate("marshal") not in selected_tasks(selection) and gate("warden") in selected_tasks(selection)
+    # Story 117.2: every gate rides its suite's job, so a failing `changes` step runs every gate with every suite.
+    assert GATES <= selected_tasks(selection)
 
 
 def test_unreadable_changes_output_runs_its_workflow_s_lanes(tmp_path: Path) -> None:
@@ -659,6 +686,7 @@ def test_a_job_output_that_is_not_a_run_step_output_is_unevaluable(tmp_path: Pat
     repo = make_repo(
         tmp_path,
         {"src/shared/packages/pyforge-warden/src/x.py": "x\n"},
+        extra_workflows={"coverage-gates.yml": MATRIX_WORKFLOW_FIXTURE.read_text(encoding="utf-8")},
         edits=[
             (
                 "coverage-gates.yml",
@@ -669,7 +697,8 @@ def test_a_job_output_that_is_not_a_run_step_output_is_unevaluable(tmp_path: Pat
     )
     selection = select(repo)
     assert GATES <= selected_tasks(selection)
-    assert "not a run step's output" in verdict(selection, gate("atlas")).reason
+    # marshal's suite does not fire on a warden src diff, so its gate's verdict is the fixture matrix's own.
+    assert "not a run step's output" in verdict(selection, gate("marshal")).reason
 
 
 # ---------------------------------------------------------------------------

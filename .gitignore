@@ -987,6 +987,8 @@ _bmad-output/projects/*/_root-fallback-fork-*/
 # tarballs. Never commit — paths are host-absolute and archives hold full
 # trees.
 .steward/workspaces.yaml
+# Story 117.2: the coverage JSON each station suite writes for its gate to judge (never tracked).
+.steward/coverage/
 # Story 66.2: the pre-push hook journals every PYFORGE_PREFLIGHT_SKIP=1 here.
 .steward/preflight-skips.log
 .steward/preflight-runs.jsonl

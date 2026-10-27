@@ -23,11 +23,13 @@ sprint ledgers only. Exit 0 all current; 1 any staleness/coherence finding; 2 a
 station's audit could not run (unknown, never green). Pass --json for machine output,
 --project <slug> to sweep one station.
 """
+
 from __future__ import annotations
 
 import argparse
+import contextlib
+import io
 import json
-import subprocess
 import sys
 from pathlib import Path
 
@@ -51,28 +53,41 @@ CURRENCY_CHECKS = frozenset(
 )
 
 
-def _audit(slug: str) -> tuple[list[dict], str | None]:
-    """(currency findings, error) for one station. error means COULD NOT RUN."""
-    proc = subprocess.run(
-        [sys.executable, "-m", "pyforge.doctor.sources", "chain-completeness",
-         "--layers", "--project", slug, "--json"],
-        capture_output=True, text=True, cwd=REPO_ROOT,
-    )
-    out = proc.stdout
-    # The gather prints a human [fleet] preamble before the JSON array; the array
-    # starts at the first line that is exactly "[".
-    lines = out.splitlines()
-    start = next((i for i, ln in enumerate(lines) if ln.strip() == "["), None)
-    if start is None:
-        detail = (proc.stderr or out or "no output").strip().splitlines()
-        return [], f"{slug}: no JSON array in audit output ({detail[-1] if detail else 'empty'})"
+def _load_gatherer():
+    """The in-process gatherer the subprocess used to call (doctor Story 55.2, AD-1:
+    a Doctor source is a library call, never a subprocess reimplementation).
+    Returns ``None`` when ``pyforge.doctor`` is not importable here."""
     try:
-        findings = json.loads("\n".join(lines[start:]))
-    except json.JSONDecodeError as exc:
-        return [], f"{slug}: audit JSON unparseable ({exc})"
+        from pyforge.doctor.sources import board
+    except Exception:  # noqa: BLE001 -- unimportable == COULD NOT RUN, reported per station
+        return None
+    return board.gather_chain_layers_audit
+
+
+def _audit(slug: str) -> tuple[list[dict], str | None]:
+    """(currency findings, error) for one station. error means COULD NOT RUN.
+
+    Story 55.2: one process for the eight stations. ``gather_chain_layers_audit``
+    saves and restores ``fleet_scan``'s module globals per call, so sequential
+    calls are independent; its human ``[fleet]`` preamble is swallowed so the
+    script's own ``--json`` stays parseable.
+    """
+    gather = _load_gatherer()
+    if gather is None:
+        return (
+            [],
+            f"{slug}: pyforge.doctor is not importable here (run under pixi run -e pyforge-guild)",
+        )
+    sink = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(sink):
+            findings = gather(REPO_ROOT, slug)
+    except Exception as exc:  # noqa: BLE001 -- an audit that raises is COULD NOT RUN, never a crash
+        return [], f"{slug}: audit raised {type(exc).__name__}: {exc}"
+    rows = [f.to_json_dict() for f in findings]
     hits = [
         {**f, "project": slug}
-        for f in findings
+        for f in rows
         if f.get("check") in CURRENCY_CHECKS and f.get("status") == "fail"
     ]
     return hits, None
@@ -81,8 +96,12 @@ def _audit(slug: str) -> tuple[list[dict], str | None]:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--json", action="store_true", help="machine-readable output")
-    ap.add_argument("--project", metavar="SLUG", choices=STATIONS,
-                    help="sweep a single station instead of all eight")
+    ap.add_argument(
+        "--project",
+        metavar="SLUG",
+        choices=STATIONS,
+        help="sweep a single station instead of all eight",
+    )
     args = ap.parse_args()
 
     slugs = (args.project,) if args.project else STATIONS
@@ -97,7 +116,9 @@ def main() -> int:
             continue
         all_hits.extend(hits)
         if not args.json:
-            state = "current" if not hits else f"{len(hits)} currency checkpoint fail(s)"
+            state = (
+                "current" if not hits else f"{len(hits)} currency checkpoint fail(s)"
+            )
             print(f"[chain-currency] {slug}: {state}")
             for h in hits:
                 print(f"[chain-currency]   {h['check']}: {h.get('message', '')}")
@@ -107,9 +128,11 @@ def main() -> int:
 
     if all_hits:
         if not args.json:
-            print(f"[chain-currency] FINDINGS: {len(all_hits)} across "
-                  f"{len({h['project'] for h in all_hits})} station(s) — run the "
-                  f"reconciler sweep (CHAIN-CURRENCY-RUNBOOK.md)")
+            print(
+                f"[chain-currency] FINDINGS: {len(all_hits)} across "
+                f"{len({h['project'] for h in all_hits})} station(s) — run the "
+                f"reconciler sweep (CHAIN-CURRENCY-RUNBOOK.md)"
+            )
         return 1
     if errors:
         return 2

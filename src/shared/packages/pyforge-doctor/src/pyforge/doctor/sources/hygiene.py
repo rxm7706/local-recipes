@@ -380,34 +380,89 @@ def _grep_other_paths(
     return []
 
 
+def _grep_lines(target: Path, args: list[str]) -> list[tuple[str, str]]:
+    """Run ``git grep -a -z`` and return ``(path, line)`` pairs -- the same two
+    scopes ``_grep_other_paths`` tries, in the same order (doctor Story 55.1)."""
+    scopes: tuple[tuple[str, ...], ...] = ((), ("--untracked", "--no-exclude-standard"))
+    last_error: CliBridgeError | None = None
+    for scope in scopes:
+        try:
+            output = run_git(
+                target,
+                ["grep", "-a", "-z", *args, *scope],
+                ok_exit_codes=frozenset({0, 1}),
+            )
+        except CliBridgeError as exc:
+            last_error = exc
+            continue
+        pairs: list[tuple[str, str]] = []
+        for raw in output.split("\n"):
+            path, sep, line = raw.partition("\0")
+            if sep:
+                pairs.append((path, line))
+        return pairs
+    if last_error is not None:
+        raise last_error
+    return []
+
+
+def _inbound_reference_index(target: Path, repo_relpaths: list[str]) -> dict[str, bool]:
+    """For every candidate, ``True`` iff some OTHER file in the repo references it
+    by path or whole-token basename (tracked and untracked, non-ignored).
+
+    One ``git grep`` per scope for the whole batch (doctor Story 55.1): the
+    fixed-string patterns are every candidate path and every candidate basename,
+    the matching lines come back with their file, and the per-candidate verdict
+    is decided here on the line text with the same two tests the per-candidate
+    greps made -- the path as a substring, the basename at a word boundary --
+    so the findings are the ones ``_has_inbound_references`` gave, two
+    processes instead of two per candidate.
+    """
+    rels = list(dict.fromkeys(repo_relpaths))
+    if not rels:
+        return {}
+    names = sorted({PurePosixPath(rel).name for rel in rels})
+    # Every pattern on the command line (`-e` repeated): Doctor writes no file, not
+    # even a patterns file for `-f` (tests/meta/test_read_only_guard.py).
+    patterns: list[str] = []
+    for pattern in [*rels, *names]:
+        patterns.extend(["-e", pattern])
+    lines = _grep_lines(target, ["--fixed-strings", *patterns])
+    index: dict[str, bool] = {}
+    for rel in rels:
+        boundary = re.compile(rf"\b{re.escape(PurePosixPath(rel).name)}\b")
+        index[rel] = any(path != rel and (rel in line or boundary.search(line)) for path, line in lines)
+    return index
+
+
 def _has_inbound_references(target: Path, repo_relpath: str) -> bool:
     """``True`` iff some OTHER file in the repo references this candidate by
-    path or whole-token basename (tracked and untracked, non-ignored)."""
-    basename = PurePosixPath(repo_relpath).name
-    path_hits = _grep_other_paths(target, ["--fixed-strings", "-e", repo_relpath])
-    if any(hit != repo_relpath for hit in path_hits):
-        return True
-    boundary = rf"\b{re.escape(basename)}\b"
-    basename_hits = _grep_other_paths(target, ["-E", boundary])
-    return any(hit != repo_relpath for hit in basename_hits)
+    path or whole-token basename (tracked and untracked, non-ignored) -- the
+    one-candidate reading of ``_inbound_reference_index``."""
+    return _inbound_reference_index(target, [repo_relpath])[repo_relpath]
 
 
 def _check_orphan_files(target: Path, project_dir: Path, station: str, findings: list[Finding]) -> None:
+    # Cheap pre-filter (Never clause): a conventional name/directory is never
+    # orphaned regardless of references, so `has_inbound_references=False`'s
+    # `if has_inbound_references: return False` branch never fires here -- this
+    # correctly asks "is this candidate non-conventional at all," without
+    # re-deriving hygiene_definitions' own private constant sets, and without a
+    # `git grep` call for the common case (a file under `specs/`, `prds/`, etc.).
+    pending: list[tuple[str, str]] = []
     for candidate in _orphan_file_candidates(project_dir):
         relpath = str(candidate.relative_to(project_dir))
-        # Cheap pre-filter (Never clause): a conventional name/directory is
-        # never orphaned regardless of references, so `has_inbound_
-        # references=False`'s `if has_inbound_references: return False`
-        # branch never fires here -- this correctly asks "is this candidate
-        # non-conventional at all," without re-deriving hygiene_definitions'
-        # own private constant sets, and without a `git grep` call for the
-        # common case (a file under `specs/`, `prds/`, etc.).
         if not is_orphan_file(relpath, has_inbound_references=False):
             continue
-        repo_relpath = str(candidate.relative_to(target))
-        try:
-            has_refs = _has_inbound_references(target, repo_relpath)
-        except CliBridgeError as exc:
+        pending.append((relpath, str(candidate.relative_to(target))))
+    if not pending:
+        return
+    # One batched inbound-reference index for every surviving candidate (doctor
+    # Story 55.1): two `git grep` processes per scope, not two per candidate.
+    try:
+        index = _inbound_reference_index(target, [repo_relpath for _relpath, repo_relpath in pending])
+    except CliBridgeError as exc:
+        for relpath, _repo_relpath in pending:
             findings.append(
                 Finding(
                     source=Source.BMAD_OUTPUT_HYGIENE,
@@ -417,8 +472,9 @@ def _check_orphan_files(target: Path, project_dir: Path, station: str, findings:
                     evidence={"station": station, "path": _evidence_path(project_dir, target, relpath)},
                 )
             )
-            continue
-        if not is_orphan_file(relpath, has_inbound_references=has_refs):
+        return
+    for relpath, repo_relpath in pending:
+        if not is_orphan_file(relpath, has_inbound_references=index[repo_relpath]):
             continue
         findings.append(
             Finding(

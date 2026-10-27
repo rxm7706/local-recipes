@@ -863,7 +863,7 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
     launch succeeding with no apt download; the budget comment names the measured figures;
     `scripts/ci_surface_gates.py --check` and `detectors-ci` exit 0; the `platform-ci.test` registry row is unchanged.
 
-- **CAP-175 — the preflight and a PR's CI answer within a measured budget, and a station suite runs once, as its package-local and live-tree halves** ← spec-pyforge-steward CAP-175 (ready 2026-10-27; extends CAP-159, CAP-166; works with CAP-174, spec-pyforge-core CAP-8, spec-coverage-gate-independence)
+- **CAP-175 — the preflight and a PR's CI answer within a measured budget, and a station suite runs once, as its package-local and live-tree halves** ← spec-pyforge-steward CAP-175 (ready 2026-10-27; extends CAP-159, CAP-166; works with CAP-174, spec-pyforge-core:CAP-8, spec-coverage-gate-independence)
   - **intent:** every pytest lane the preflight and CI run goes under `pytest-xdist` where its tests allow, with the
     serial remainder named in the task and run alone after it; a station's coverage floor is judged from the JSON its
     own suite run wrote (one driver, `scripts/station_suite_ci.py`, locally and in CI alike), so no suite runs twice

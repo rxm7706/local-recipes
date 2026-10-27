@@ -1,3 +1,5 @@
+# Test fixture (steward Story 117.2): the retired coverage-gates.yml, kept for the fromJSON matrix shape
+# test_preflight_selection.py exercises. Never run; not a live workflow.
 name: Coverage gates
 
 # Story 19.3 / FR-131 — coverage gates that *name* the uncovered module.
@@ -200,4 +202,4 @@ jobs:
             BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
           fi
           pixi run --frozen -e pyforge-${{ matrix.station }} python scripts/coverage_gates_ci.py \
-            --base "$BASE" --head HEAD --suites unit
+            --base "$BASE" --head HEAD --suites unit --report .steward/coverage/${{ matrix.station }}-unit.json

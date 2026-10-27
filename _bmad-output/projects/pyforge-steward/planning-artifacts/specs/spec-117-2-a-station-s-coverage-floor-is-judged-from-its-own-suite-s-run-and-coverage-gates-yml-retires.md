@@ -2,7 +2,7 @@
 title: "117.2: A station's coverage floor is judged from its own suite's run, and coverage-gates.yml retires"
 type: 'feature'
 created: '2026-10-27'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
@@ -32,7 +32,7 @@ Type / Effort / Deps: feature / M / none.
 
 - **`spec-pyforge-steward` CAP-175** — the preflight and a PR's CI answer within a measured budget, and a station suite runs once, as its package-local and live-tree halves; this story is one of its eight parts (Epic 117). Operator rulings D1–D4 of 2026-10-27 in the Spec's `.memlog.md`.
 - **`spec-pyforge-steward` CAP-159** (Epic 71: the preflight's journal, CI-rule lane selection, concurrency, coverage reuse, xdist for the then-large suites) and **CAP-166** (the CI surfaces registry, its switches and render) — extended, not rewritten.
-- **`spec-pyforge-steward` CAP-174**, **`spec-pyforge-core` CAP-8** (the shared-surface rule) and **`spec-coverage-gate-independence`** — kept as written.
+- **`spec-pyforge-steward` CAP-174**, **`spec-pyforge-core:CAP-8`** (the shared-surface rule) and **`spec-coverage-gate-independence`** — kept as written.
 
 ## Acceptance Criteria
 
@@ -79,13 +79,16 @@ Parent: `spec-pyforge-steward` CAP-175
 
 ## Auto Run Result
 
-Status: backlog
+Status: done
 
-Summary: not started.
+Summary: built in PR #2331 (2026-10-27): every station test task's first segment is the gate's own run (unit + meta, `not slow`, under `--cov`, writing `.steward/coverage/<s>-unit.json`; `PYTHONPATH` on the task so the report names `src/` paths); `coverage_gates_ci.py --report` judges that JSON and runs the pass itself only when it is absent; the eight gate tasks depend on their suite; each station job of `pyforge-station-tests.yml` gained the gate step (and `fetch-depth: 0`); `coverage-gates.yml` removed and its three registry rows `retired`; the steward selection tests now read a gate as riding its suite, with the retired matrix shape kept as a test fixture. Operator step after merge: delete the `PAUSE_COVERAGE_GATES` repository variable (`steward ci resume`).
 
 ## Spec Change Log
 
 - 2026-10-27: minted from the station Dream's entry of 2026-10-27 and the operator's rulings D1–D4 of the same date.
+
+- 2026-10-27: AC3's `PAUSE_COVERAGE_GATES` deletion is the operator's post-merge step (an outward write); the workflow file is gone so the variable is inert until then.
+- 2026-10-27: `preflight_suite_reduction` now skips every station (each task is multi-segment), which is the intended end state: one full suite run writes the report, the gate reads it; `COVERAGE_PARITY_NOTE` is moot.
 
 ## Review Triage Log
 

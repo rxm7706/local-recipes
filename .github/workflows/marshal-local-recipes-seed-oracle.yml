@@ -2,10 +2,58 @@ name: marshal-local-recipes-seed-oracle
 
 # Story 86.2 / NFR-M2: SC-02 empty-plan oracle against the control-plane repo.
 
+# Story 117.7 (spec-pyforge-steward CAP-175): the oracle plans `marshal seed adopt --dry-run` over the
+# managed artifacts, the instruction-surface tree the manifest writes and marshal's own code, so it fires
+# on those paths and not on every PR (pull_request and push lists identical: steward's
+# test_workflow_path_filters_match.py).
 on:
   pull_request:
+    paths:
+      - '.github/workflows/marshal-local-recipes-seed-oracle.yml'
+      - '.marshal/**'
+      - 'src/shared/packages/pyforge-marshal/**'
+      - 'pixi.toml'
+      - 'pixi.lock'
+      - 'scripts/bmad-loop-worktree'
+      - 'scripts/bmad-switch'
+      - 'scripts/detectors.py'
+      - '.github/workflows/detectors.yml'
+      - 'docs/dreams/README.md'
+      - 'docs/specs/**'
+      - '.gitignore'
+      - 'README.md'
+      - 'AGENTS.md'
+      - 'CLAUDE.md'
+      - 'GEMINI.md'
+      - '.claude/**'
+      - '.cursor/**'
+      - '.gemini/**'
+      - '.github/copilot-instructions.md'
+      - '_bmad-output/harness-profiles/**'
   push:
     branches: [main]
+    paths:
+      - '.github/workflows/marshal-local-recipes-seed-oracle.yml'
+      - '.marshal/**'
+      - 'src/shared/packages/pyforge-marshal/**'
+      - 'pixi.toml'
+      - 'pixi.lock'
+      - 'scripts/bmad-loop-worktree'
+      - 'scripts/bmad-switch'
+      - 'scripts/detectors.py'
+      - '.github/workflows/detectors.yml'
+      - 'docs/dreams/README.md'
+      - 'docs/specs/**'
+      - '.gitignore'
+      - 'README.md'
+      - 'AGENTS.md'
+      - 'CLAUDE.md'
+      - 'GEMINI.md'
+      - '.claude/**'
+      - '.cursor/**'
+      - '.gemini/**'
+      - '.github/copilot-instructions.md'
+      - '_bmad-output/harness-profiles/**'
   workflow_dispatch:
 
 jobs:

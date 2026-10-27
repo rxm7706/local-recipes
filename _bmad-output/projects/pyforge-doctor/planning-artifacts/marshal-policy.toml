@@ -565,6 +565,17 @@ verify_commands = [
   "docs/governance/spec-feature-flag-governance/**",
 ]
 
+"55" = [  # the repo-scope detectors and the doctor suite answer in seconds (fixes under CAP-20 / CAP-42; relay of spec-pyforge-steward CAP-175), added 2026-10-27.
+  "src/shared/packages/pyforge-doctor/**",
+  "scripts/chain_currency_sweep_check.py",
+  "tests/scripts/**",
+  "pixi.toml",
+  ".github/workflows/pyforge-station-tests.yml",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/**",
+  "docs/dreams/pyforge-doctor.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/*/.memlog.md",
+]
+
 # dispatch (Story 102.1 / spec-pyforge-marshal CAP-161), added 2026-10-15: a re-landing reuses this station's own
 # verified verdict when only merges of main and planning-only commits moved the branch since the head it judged,
 # after a narrow re-check, and still waits for CI (operator rulings 2026-10-15; the Pages stations' speed ask). The

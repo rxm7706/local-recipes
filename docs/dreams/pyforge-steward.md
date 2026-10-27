@@ -247,7 +247,7 @@ Drift — orphaned between stations.
 
   Kinships: CAP-153 (the `lint-types` lane) and CAP-154 (the `pre-push` hook that runs this);
   doctor's `detectors-ci` and `spec-coverage-gate-independence` (the per-station coverage
-  gates); `spec-pyforge-core` CAP-8 (the station-tests shared-surface rule, Story 52.2);
+  gates); `spec-pyforge-core:CAP-8` (the station-tests shared-surface rule, Story 52.2);
   mason's CFE suite (`test-ci`).
   Owner: steward. → CAP-159 / Epic 71 / Stories 71.1–71.7 (FR-32), specced 2026-09-27: the
   per-lane journal (71.1), the lanes CI's rules select (71.2), concurrent lanes with isolated state
@@ -2221,7 +2221,7 @@ Drift — orphaned between stations.
   (D2) coverage gates merge into the station test job and `coverage-gates.yml` retires; (D3) `preflight-budget`
   stays warn-only; (D4) fan-out shrinks by splitting live-tree readers into `pyforge-<s>-live-test`, never by
   narrowing the arrays. Kinships: CAP-159 (Epic 71), CAP-166 (the CI surfaces registry), CAP-174 (the Platform CI
-  budget), `spec-pyforge-core` CAP-8 (the shared-surface rule), `spec-coverage-gate-independence`; doctor
+  budget), `spec-pyforge-core:CAP-8` (the shared-surface rule), `spec-coverage-gate-independence`; doctor
   (`detectors-ci`, the hygiene source, `pyforge-doctor-test`), herald, mason (`test-ci`), atlas, scribe and warden
   take their halves on their own chains. Owner: steward. → CAP-175 / FR-49, Epic 117 / Stories 117.1–117.8,
   specced 2026-10-27.

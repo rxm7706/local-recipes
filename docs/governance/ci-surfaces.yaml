@@ -46,7 +46,9 @@ surfaces:
   gate: false
   switch: PAUSE_COVERAGE_GATES
   switch_class: pause
-  state: live
+  state: retired
+  retired_on: '2026-10-27'
+  reason: folded into the station jobs of pyforge-station-tests.yml (Story 117.2, the gate reads the suite's own report)
   owner: pyforge-steward
 - id: pages
   workflow: .github/workflows/pages.yml
@@ -405,7 +407,9 @@ surfaces:
   gate: false
   switch: null
   switch_class: pause
-  state: live
+  state: retired
+  retired_on: '2026-10-27'
+  reason: folded into the station jobs of pyforge-station-tests.yml (Story 117.2, the gate reads the suite's own report)
   owner: pyforge-steward
 - id: coverage-gates.named-module-gates
   workflow: .github/workflows/coverage-gates.yml
@@ -415,7 +419,9 @@ surfaces:
   gate: false
   switch: null
   switch_class: pause
-  state: live
+  state: retired
+  retired_on: '2026-10-27'
+  reason: folded into the station jobs of pyforge-station-tests.yml (Story 117.2, the gate reads the suite's own report)
   owner: pyforge-steward
 - id: pages.build
   workflow: .github/workflows/pages.yml
