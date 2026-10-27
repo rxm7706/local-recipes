@@ -1372,7 +1372,7 @@ def run_preflight(
     xdist_workers = preflight_xdist.lane_xdist_worker_map(
         lanes=[_lane_key(lane) for lane in lanes],
         pixi_data=pixi_data,
-        logical_cores=_logical_core_count(),
+        logical_cores=cores,  # Story 117.3: the one core count, injectable for tests; the machine's otherwise
         pool_jobs=worker_count,
     )
     coord = _RunCoordinator(
@@ -1562,7 +1562,7 @@ def run_preflight(
                 "started_at": started.isoformat(),
                 "head_sha": head_sha,
                 "branch": branch,
-                "logical_cores": _logical_core_count(),
+                "logical_cores": cores,
                 "jobs": worker_count,
                 "keep_going": keep_going,
                 "total_seconds": total_seconds,
@@ -1614,7 +1614,7 @@ def run_preflight(
             "started_at": started.isoformat(),
             "head_sha": head_sha,
             "branch": branch,
-            "logical_cores": _logical_core_count(),
+            "logical_cores": cores,
             "jobs": worker_count,
             "keep_going": keep_going,
             "total_seconds": total_seconds,

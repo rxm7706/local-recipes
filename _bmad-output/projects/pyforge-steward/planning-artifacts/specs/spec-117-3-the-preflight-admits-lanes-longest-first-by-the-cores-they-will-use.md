@@ -94,6 +94,7 @@ Summary: built in the Wave 2 PR (2026-10-27). `preflight.lane_medians(journal, l
 
 - 2026-10-27: minted from the station Dream's entry of 2026-10-27 and the operator's rulings D1–D4 of the same date.
 - 2026-10-27 (AC3, measured): full-scope `pr-preflight` on this branch, 16 logical cores, 40 lanes, flag ON: `total_seconds` 772 s against the longest lane `test-ci` (local-recipes) 768 s — the wall is 0.5 % over its longest lane (the CFE serial suite, mason M.1's story, is now the floor); the next lanes were `pyforge-marshal-test` 347 s, `pyforge-herald-test` 306 s, `pyforge-steward-live-test` 305 s; the last lane to start did so at +377 s (`pyforge-marshal-coverage-gate`). Before 117.3 a full run's wall was a queue (median 670 s, lanes starting at +1099 s).
+- 2026-10-27 (PR #2332 CI): the OFF path's static xdist map and the journal record now read the same injectable core count as the ON path (`cores`), and the OFF-state test derives Story 71.6's share from the fixture's task table — on the 4-core runner it had read `'4' == '16'`. The platform's shipped-flag table (`src/platform/tests/test_openfeature_file_flags.py`) and core's (`test_flags.py`) both carry the new kill switch.
 - 2026-10-27: `lane_medians` lives in `preflight.py` (the story named `preflight_budget.py`): `preflight_budget` imports the run path, and the budget guard test forbids the run path importing it back. AC3 reworded for the two serialisations the run records (stop-on-red, the docs-site turn): the wall is the longest lane plus those, not plus queueing.
 
 ## Review Triage Log

@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import threading
 import time
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -137,10 +138,14 @@ def test_off_keeps_declaration_order_and_the_static_share(tmp_path: Path) -> Non
     order, workers, code = _run(repo, jobs=1, cores=16, critical=False)
     assert code == preflight.EXIT_OK
     assert order == list(FIVE)
+    # Story 71.6's static share, computed the way the OFF path computes it: from the fixture's own task table on the
+    # injected core count (CI's four cores and a laptop's sixteen must agree; PR #2332 caught the 16 assumed here).
     static = preflight_xdist.lane_xdist_worker_map(
-        lanes=[(task, INV) for task in FIVE], pixi_data={"feature": {}}, logical_cores=16, pool_jobs=1
+        lanes=[(task, INV) for task in FIVE], pixi_data=tomllib.loads(_pixi(FIVE)), logical_cores=16, pool_jobs=1
     )
-    assert workers["xdist-suite"] == str(static.get(("xdist-suite", INV), 16))
+    assert ("xdist-suite", INV) in static
+    assert workers["xdist-suite"] == str(static[("xdist-suite", INV)])
+    assert workers["serial-a"] is None
 
 
 def test_on_admitted_weights_never_exceed_the_cores_and_jobs_still_caps_lanes(tmp_path: Path) -> None:

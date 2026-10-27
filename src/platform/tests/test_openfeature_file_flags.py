@@ -802,6 +802,12 @@ _SHIPPED_BOOLEANS = {
         "staging": False,
         "production": False,
     },
+    # Story 117.3 (CAP-175): critical-path admission; a kill switch ON everywhere.
+    "pyforge.steward.preflight_critical_path": {
+        "dev": True,
+        "staging": True,
+        "production": True,
+    },
     "pyforge.marshal.verify_fix_loop": {
         "dev": True,
         "staging": True,
