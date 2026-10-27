@@ -8,7 +8,7 @@ flag-exempt: docs-only
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
-  - docs/dreams/self-hosted-bmad-marketplace.md
+  - archive/docs/dreams/self-hosted-bmad-marketplace.md
   - docs/dreams/pyforge-steward.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/briefs/brief-bmad-marketplace-reset-2026-10-21/brief.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/design-thinking-2026-10-20.md

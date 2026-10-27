@@ -1,7 +1,7 @@
 # Design thinking — BMAD marketplace reset (2026-10-20)
 
 Verbatim session record for the 2026-10-21 revisit of
-`docs/dreams/self-hosted-bmad-marketplace.md`. That seed stays archived.
+`archive/docs/dreams/self-hosted-bmad-marketplace.md`. That seed stays archived.
 The living aspiration is the 2026-10-21 entry on `docs/dreams/pyforge-steward.md`
 (CAP-169..CAP-173, FR-42..FR-46, Epic 109). These files are not a second Dream.
 
@@ -30,6 +30,7 @@ Sample data. The paper skill card's lock command is not the runbook. Checksums, 
 | [prototypes/p3-skill-card.png](prototypes/p3-skill-card.png) | The same card, as reviewed in the session |
 | [prototypes/p4-wizard-of-oz-pilot.md](prototypes/p4-wizard-of-oz-pilot.md) | Story 109.5. Exit criteria before automating `bmp`, lint, or publish |
 | [analysis-against-main-2026-10-25.md](analysis-against-main-2026-10-25.md) | Re-check after merging `origin/main` `81f66ee411`. Round 0 and Round 1 runbooks. No renumber |
+| [analysis-against-main-2026-10-27.md](analysis-against-main-2026-10-27.md) | Re-check after merging `origin/main` `b306864227`. Same roadmap. Main reserved the numbers. FR-47 stays unused |
 
 ## What the committed tree took from this record
 
