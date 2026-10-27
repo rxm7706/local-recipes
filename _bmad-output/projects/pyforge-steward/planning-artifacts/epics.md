@@ -7387,6 +7387,8 @@ So that `specs/` holds the station Spec, its declared seams and its story specs 
 
 Minted 2026-10-27 from the station Dream's Realization-log entry of the same date (the preflight answers in eleven minutes, a PR's CI in thirteen) and the operator's four rulings on it. Measured 2026-10-27 from every worktree's `.steward/preflight-runs.jsonl` (132 runs) and the Actions API: a full `pr-preflight` is 670 s at the median and 1950 s at worst (Epic 71 had it under a minute); one PR head is 12–13 min of wall and ~126 runner-minutes; `pyforge-steward-test` runs serial at 698 s (19 s on 2026-09-27); coverage gates re-run every touched suite; image builds cost ~1400 runner-s per PR; detectors run serially in CI; and five recent PRs each ran 8–10 of the 10 suite jobs because Story 98.1's arrays are what each suite's tests read. Rulings: (D1) image builds and the CFE regression net leave the PR path for push-to-main plus the nightly canary, the PR keeps the CFE `tests/meta`; (D2) coverage gates merge into the station test job and `coverage-gates.yml` retires; (D3) `preflight-budget` stays warn-only; (D4) fan-out shrinks by splitting live-tree readers from package suites, never by narrowing the arrays. Doctor (`detectors-ci`'s hygiene and chain-currency sources, `pyforge-doctor-test`'s pinned workers), herald, mason (`test-ci`), atlas, scribe and warden take their halves on their own chains and cite the story here they serve. **HARD boundaries:** a lane is skipped only where CI's own rule skips it; verdicts are read from exit codes, never through a pipe; `PYFORGE_PREFLIGHT_SKIP=1` stays the one journaled opt-out; the not-covered list (container, atlas's Chromium/DuckDB/WASM, herald's browser check, scribe's Postgres) does not grow; no test is deleted, skipped or re-marked to meet a budget; a `pixi.toml` edit regenerates `environment.yaml` in the same PR; the CFE suite task changes only through the `conda-forge-expert` skill and its retro; `SPEC.md` is never hand-edited; the station-tests arrays are never narrowed by hand (Story 98.1, rulings 2026-10-12); nothing is paused, disabled or set `continue-on-error`.
 
+Amended 2026-10-27 (later the same day) from the Dream's second entry of the day — the wall is the lanes the waves did not touch (a shared-surface head 764 s and 94 runner-minutes after Waves 1–2; a memory-only head 347 s on an ungated image build; the repository is public, so minutes are free and the wall is the only cost): Stories 117.10–117.12 add sharded station jobs with an N-way gate merge, a shallow `changes` gate and shallow coverage diffs, and the platform suite under xdist. 117.6 and 117.8 (D1) come first in the build order.
+
 ### Story 117.1: The steward suite runs under pytest-xdist and its serial remainder alone
 
 As the operator whose every push and every PR waits on these gates,
@@ -7529,6 +7531,54 @@ So that the lane reaches the ≤ 70 s mark Story 117.1 measured as out of xdist'
 **When** each heavy class is replaced where the contract allows — one module-scoped `git init` template copied with `shutil.copytree` per test, `cli.main(argv)` in-process where a `pixi run` subprocess proves nothing extra (one true subprocess test per entry point kept for the exit-code domain), `threading.Event.wait` on the coordinator's events instead of sleeps
 **Then** the suite is green with the same collected count and `pyforge-steward-test` journals ≤ 70 s in a touched-scope preflight on 16 cores
 **And** no test is deleted, skipped or re-marked; the three alone-run files keep their real signals
+**Status:** backlog
+
+### Story 117.10: Each station suite runs as N sharded jobs whose coverage the gate merges
+
+As the operator whose every PR waits on the slowest station job,
+I want each station half to run as N matrix shards sized so no shard works longer than about 45 s on four cores, with the coverage gate judging the shards' reports merged as one,
+So that a PR's wall is one shard plus its set-up, not one suite.
+
+**Type:** feature • **Effort:** L • **Deps:** 117.4; 117.6 and 117.8 first in the build order • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (amended 2026-10-27, later: sharded station jobs, shallow gates, the platform suite under xdist; extends CAP-159 and CAP-166; works with CAP-174, spec-pyforge-core:CAP-8, spec-coverage-gate-independence); lands on AD-1 (wrap, never reimplement: pytest-split, pytest-xdist and the Actions matrix are the tools' own), AD-5 (provision wraps pixi) and AD-8 (exit-code sole ownership)
+**Flag:** none (`flag-exempt: detector-or-gate`: CI jobs, test tasks and a gate; `spec-feature-flag-governance` Q1)
+**Surface:** `pixi.toml` (`pytest-split` in the station features; `pyforge-<s>-test` / `pyforge-<s>-live-test` accept `--splits N --group K` through a task argument and write `.steward/coverage/<s>-<half>-<K>.json`), `.github/workflows/pyforge-station-tests.yml` (a `strategy.matrix.group` per station job, the gate's `download-artifact` pattern over all shards), `scripts/coverage_gates_ci.py` (`--report` already merges N paths), `tests/durations/<station>.json` (the `pytest-split` durations file, regenerated by the nightly run), `src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py` (`load_jobs` reads a matrix job as one job), `test_preflight_selection.py` (a shard set rides its job's rule)
+**Spec:** `planning-artifacts/specs/spec-117-10-each-station-suite-runs-as-sharded-jobs-whose-coverage-the-gate-merges.md`
+**Given** after Waves 1–2 the longest station jobs are `herald-test` 341 s, `marshal-test` 276 s, `atlas-test` 257 s and `steward-live-test` 245 s on four cores, a job's floor is ~25 s of set-up, and the repository is public (free runner minutes; 30–35 jobs start within five seconds)
+**When** each station job becomes a matrix of N shards (steward-live 5, marshal 5, atlas 4–5, herald 2–3 after H.1, doctor-live 2) that run `pytest --splits N --group K -n auto` on a durations file the nightly run regenerates, each shard uploads its coverage JSON, and the gate downloads every shard's report and judges `merge_coverage_reports` of them
+**Then** no station job works longer than 45 s after its set-up on a four-core runner, the halves' collected counts over all shards equal the unsharded counts, the coverage verdict for a touched module is unchanged against the unsharded report, and a shared-surface PR's shard total stays under 30 jobs
+**And** `test_station_tests_trigger_map.py` passes with a matrix job keyed once (`PRESERVED` intact); `test_preflight_selection.py` selects a shard set as its job; the local preflight runs the unsharded task (one machine, 16 cores) and journals the same suite once
+**Status:** backlog
+
+### Story 117.11: The changes gate and the gate diffs run on shallow fetches of the PR base
+
+As the operator whose every station job waits for the `changes` job before it starts,
+I want the `changes` step and every coverage-gate diff to read a shallow fetch of the PR's base sha instead of full history,
+So that the gate costs under ten seconds and no job pays twenty seconds for a clone it does not need.
+
+**Type:** chore • **Effort:** S • **Deps:** 117.2 • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (amended 2026-10-27, later: sharded station jobs, shallow gates, the platform suite under xdist; extends CAP-159 and CAP-166; works with CAP-174, spec-pyforge-core:CAP-8, spec-coverage-gate-independence); lands on AD-1 (wrap, never reimplement: pytest-split, pytest-xdist and the Actions matrix are the tools' own), AD-5 (provision wraps pixi) and AD-8 (exit-code sole ownership)
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `.github/workflows/pyforge-station-tests.yml` (`changes`: `fetch-depth: 1` + `git fetch --depth=1 origin $BASE_SHA` from `github.event.pull_request.base.sha`, a two-dot diff; every station and gate job drops `fetch-depth: 0` the same way), `scripts/coverage_gates_ci.py` (`--base` accepts a sha the job fetched shallowly), `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_ci.py` (the twin's base resolution unchanged), steward `tests/meta/test_workflow_path_filters_match.py` and `tests/unit/test_preflight_ci.py`
+**Spec:** `planning-artifacts/specs/spec-117-11-the-changes-gate-and-the-gate-diffs-run-on-shallow-fetches-of-the-pr-base.md`
+**Given** `changes` takes 24–36 s (a `fetch-depth: 0` clone of a repository with 1,900 recipes is ~20 s of it) and every station job waits for it; thirteen jobs clone full history for a coverage diff that needs two commits
+**When** the `changes` step fetches the PR's base sha at depth one and diffs `$BASE_SHA HEAD` two-dot, and every station and gate job does the same for its coverage diff, with `push` events falling back to `HEAD~1` as today
+**Then** the `changes` job finishes in ≤ 10 s, every station job's checkout is ≤ 11 s, the set of outputs `changes` emits is byte-identical to the deep-clone run on the same PR (checked on three recorded heads), and the coverage verdicts are unchanged
+**And** `test_station_tests_trigger_map.py`'s `run_changes` harness drives the shallow script unchanged; `preflight_ci` keeps `refs/remotes/origin/main` as the local base
+**Status:** backlog
+
+### Story 117.12: The platform suite runs under xdist, its checks in a parallel job
+
+As the operator whose shared-surface PRs wait on Platform CI's `test` job,
+I want the platform `test` job to run its pytest-django suite under xdist with ruff, mypy and the policy suite in a parallel job,
+So that Platform CI's wall is one short job, not a 350 s serial one.
+
+**Type:** feature • **Effort:** M • **Deps:** 117.6 (the image jobs leave the PR path first) • **FR/AD:** spec-pyforge-steward CAP-175 / FR-49 (amended 2026-10-27, later: sharded station jobs, shallow gates, the platform suite under xdist; extends CAP-159 and CAP-166; works with CAP-174, spec-pyforge-core:CAP-8, spec-coverage-gate-independence); lands on AD-1 (wrap, never reimplement: pytest-split, pytest-xdist and the Actions matrix are the tools' own), AD-5 (provision wraps pixi) and AD-8 (exit-code sole ownership); CAP-174 (the Platform CI test job's budget)
+**Flag:** none (`flag-exempt: detector-or-gate`: a CI job and a test task; `spec-feature-flag-governance` Q1)
+**Surface:** `.github/workflows/platform-ci.yml` (`test` runs `pytest -n 4 --dist loadgroup`; a new `checks` job runs ruff, `ruff format --check`, mypy, `manage.py check` and the policy suite), `pixi.toml` (`pytest-xdist` in the `platform-ci-test` feature; `scripts/platform-ci-local.sh` mirrors both jobs), `src/platform/pyproject.toml` (`--reuse-db` per xdist worker; `xdist_group` on the tests that share a fixture database), `docs/governance/ci-surfaces.yaml` (the `platform-ci.checks` row), steward `tests/meta/test_platform_ci_*`
+**Spec:** `planning-artifacts/specs/spec-117-12-the-platform-suite-runs-under-xdist-with-its-checks-in-a-parallel-job.md`
+**Given** the `test` job takes 340–350 s: a serial 226 s pytest-django suite, 35 s of policy tests, 26 s of service start-up, 16 s of installs, 13 s of Chromium and 12 s of mypy, in one job on the PR path of every shared-surface PR
+**When** the suite runs under xdist on the runner's four cores with pytest-django's per-worker test databases, and ruff, mypy, the system checks and the policy suite move to a `checks` job that runs beside it
+**Then** `test` finishes in ≤ 150 s and `checks` in ≤ 90 s on a four-core runner with the same collected count and the same verdicts; `platform-ci-local -- --test` mirrors both jobs
+**And** `ci_surface_gates.py --check` and the steward platform-CI meta tests exit 0; the `platform-ci.test` registry row keeps its budget (CAP-174) and the new row is declared
 **Status:** backlog
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)

@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 650
+# stories: 653
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -71,6 +71,9 @@ development_status:
   115-1-steward-s-36-archived-dreams-leave-the-live-tree: done
   116-1-steward-s-absorbed-spec-folders-and-the-intake-drops-move-to-the-archive-home: done
   117-1-the-steward-suite-runs-under-pytest-xdist-and-its-serial-remainder-alone: done
+  117-10-each-station-suite-runs-as-sharded-jobs-whose-coverage-the-gate-merges: backlog
+  117-11-the-changes-gate-and-the-gate-diffs-run-on-shallow-fetches-of-the-pr-base: backlog
+  117-12-the-platform-suite-runs-under-xdist-with-its-checks-in-a-parallel-job: backlog
   117-2-a-station-s-coverage-floor-is-judged-from-its-own-suite-s-run-and-coverage-gates-yml-retires: done
   117-3-the-preflight-admits-lanes-longest-first-by-the-cores-they-will-use: done
   117-4-each-station-suite-runs-as-its-package-local-and-live-tree-halves: done
