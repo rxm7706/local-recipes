@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: 6949c94147b416b1
-story_count: 164
+source_fingerprint: 79c3230a31871c4a
+story_count: 165
 test_file_count: 99
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 164
-- **Epics parsed:** 52
+- **Stories parsed:** 165
+- **Epics parsed:** 53
 - **Test files inventoried:** 99 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `6949c94147b416b1`
+- **Source fingerprint:** `79c3230a31871c4a`
 
 ## Risk Assessment
 
@@ -88,6 +88,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 50: Every requirement arrow resolves to a defined capability (spec-pyforge-doctor CAP-92, CAP-93; FR-14..FR-16)
 - Epic 51: The flag inventory and the gate measure the CAP-7 retrofit as ruled (a fix under spec-pyforge-doctor CAP-20; the Guild flag rule's rulings R4, R6, R8 of 2026-10-26)
 - Epic 53: The archived doctor Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
+- Epic 54: The absorbed doctor Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
 
 ## Test Inventory
 
@@ -361,6 +362,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 50.1 | fr-without-cap resolves every arrow against a defined capability and names a ... | none observed |
 | 51.1 | the flag inventory and the gate measure the retrofit as ruled | none observed |
 | 53.1 | Doctor's fourteen archived Dreams leave the live tree, and a Kinship wikilink... | none observed |
+| 54.1 | Doctor's absorbed Spec folders move to the archive home | none observed |
 
 ## Quality Gates
 

@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: e4aa9cf01df90d51
-story_count: 156
+source_fingerprint: db4bdee52b2c15d2
+story_count: 157
 test_file_count: 188
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 156
-- **Epics parsed:** 43
+- **Stories parsed:** 157
+- **Epics parsed:** 44
 - **Test files inventoried:** 188 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `e4aa9cf01df90d51`
+- **Source fingerprint:** `db4bdee52b2c15d2`
 
 ## Risk Assessment
 
@@ -75,6 +75,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 41: Every atlas requirement derives from a capability (spec-pyforge-atlas CAP-72; spec-one-chain-per-station CAP-5 amended)
 - Epic 42: Every pre-rule atlas runtime capability sits behind a kill switch (2 flags, one per CAP; the Guild flag rule's retrofit capability, Q6)
 - Epic 44: The archived atlas Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
+- Epic 45: The absorbed atlas Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
 
 ### Low-risk epics
 
@@ -433,6 +434,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 42.3 | A developer runs one command that executes every check CI executes sits behin... | none observed |
 | 42.4 | the retrofit kill switches retire on their cleanup date | none observed |
 | 44.1 | Atlas's twelve archived Dreams leave the live tree | none observed |
+| 45.1 | Atlas's absorbed Spec folders and spec-archive move to the archive home | none observed |
 
 ## Quality Gates
 

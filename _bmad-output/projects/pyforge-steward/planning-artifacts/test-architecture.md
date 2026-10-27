@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: e31ee41fbc0247c6
-story_count: 408
+source_fingerprint: b15e4c5c711ad54e
+story_count: 409
 test_file_count: 143
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 408
-- **Epics parsed:** 114
+- **Stories parsed:** 409
+- **Epics parsed:** 115
 - **Test files inventoried:** 143 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `e31ee41fbc0247c6`
+- **Source fingerprint:** `b15e4c5c711ad54e`
 
 ## Risk Assessment
 
@@ -140,6 +140,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 113: Steward's planning artifacts fit the one-chain shape (spec-one-chain-per-station CAP-11)
 - Epic 115: The archived steward Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 - Epic 114: Every pre-rule steward runtime capability sits behind a kill switch (8 flags, one per CAP; the Guild flag rule's retrofit capability, Q6)
+- Epic 116: The absorbed steward Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
 
 ### Low-risk epics
 
@@ -711,6 +712,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 114.8 | One client, carrying identity sits behind a kill switch | none observed |
 | 114.9 | the retrofit kill switches retire on their cleanup date | none observed |
 | 115.1 | Steward's 36 archived Dreams leave the live tree | none observed |
+| 116.1 | Steward's absorbed Spec folders and the intake drops move to the archive home | none observed |
 
 ## Quality Gates
 
