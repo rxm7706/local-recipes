@@ -382,6 +382,7 @@ jobs:
             _bmad
             '_bmad-output/projects/*/README.md'
             '_bmad-output/projects/*/planning-artifacts/*'
+            archive/docs/dreams/build-league-scorecard.md
             docs-site/scripts
             docs-site/src/lib
             docs/404.md
