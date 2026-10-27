@@ -1610,7 +1610,7 @@ Versions as read from `steward suite pipeline-truth` on 2026-09-06 (recipe = cha
   .claude/skills/                      # installer-written suite dirs (bmad-os-*, bmad-testarch-*, BMB's five, skf-*, bmad-cis-*) stay real dirs after cutover (fnd:AD-5 carve-out); estate-authored skills become generated adapters
   _bmad/                               # installer-owned core; custom/config.toml = the pin layer AND the provisioned-module roster (suite:AD-9, suite:AD-12); skf/ (own installer; config.yaml derived)
   _bmad-output/projects/pyforge-steward/planning-artifacts/
-    specs/spec-bmad-suite-lifecycle/   # SPEC + adoption-register + release-cadence + cutover-readiness + open-items-register
+    specs/spec-pyforge-steward/        # station SPEC + adoption-register + release-cadence (carried 2026-10-27; the absorbed spec-bmad-suite-lifecycle pointer, cutover-readiness and open-items-register are under archive/)
     prds/prd-bmad-suite-lifecycle-2026-09-06/
     architecture/architecture-bmad-suite-lifecycle-2026-09-06/
   evals/review-catches-planted-defect/ # the eval-quality pilot (45.2 — planned, not yet on disk)

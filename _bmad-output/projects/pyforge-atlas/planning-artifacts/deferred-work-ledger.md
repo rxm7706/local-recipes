@@ -22,13 +22,13 @@ entries** — it stops dead after `DW-B2-5`, collateral of the 2026-07-19 copy
 failure — and that directory is **gitignored**, so it carries no durable copy.
 
 It was briefly believed the other 45 were lost. **They were not.** They survive
-with full bodies in `../spec-archive/ATLAS-BMAD-SPECS-CONSOLIDATED.md`, which is
+with full bodies in `archive/_bmad-output/projects/pyforge-atlas/spec-archive/ATLAS-BMAD-SPECS-CONSOLIDATED.md`, which is
 git-tracked. This file consolidates both sources into one durable ledger in
 Tier-2 `planning-artifacts/`, where it cannot be lost to a Tier-3 accident again.
 
 ## Provenance
 
-- 43 entries recovered from `../spec-archive/ATLAS-BMAD-SPECS-CONSOLIDATED.md`
+- 43 entries recovered from `archive/_bmad-output/projects/pyforge-atlas/spec-archive/ATLAS-BMAD-SPECS-CONSOLIDATED.md`
 - 9 entries from the surviving `implementation-artifacts/deferred-work.md`
   (where both had an entry, the longer body won)
 - **0 lost.** `DW-A2-P4` and `DW-D2` were previously recorded here as "the only

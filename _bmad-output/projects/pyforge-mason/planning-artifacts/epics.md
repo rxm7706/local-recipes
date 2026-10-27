@@ -3755,7 +3755,7 @@ So that `specs/` holds the station Spec, its declared seams and its story specs 
 **When** each live companion is carried into `specs/spec-pyforge-mason/` and every absorbed folder moves to `archive/<original path>`
 **Then** no folder under `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/` reads `status: absorbed`, each moved folder keeps its files, and every live pointer names the file's new path
 **And** `chain-sprawl` (its baseline pruned), `dream-chain`, `governance-currency`, `spec-surface`, `ad-citation`, `chain-completeness`, `chain-currency` and `detectors-ci` stay green, and the station suite passes
-**Status:** in-progress
+**Status:** done
 
 ## Validation note — 2026-09-14 (chain-currency sweep cascade)
 

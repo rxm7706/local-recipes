@@ -146,7 +146,7 @@ development_status:
   46-1-every-herald-prd-fr-arrow-names-the-spec-capability-that-realizes-it: done
   47-1-the-herald-spec-s-fold-cut-capability-text-is-restored: done
   48-1-herald-s-ten-archived-dreams-leave-the-live-tree-and-deck-facts-reads-a-deck-s-dream-under-the-archive: done
-  49-1-herald-s-absorbed-spec-folders-move-to-the-archive-home: in-progress
+  49-1-herald-s-absorbed-spec-folders-move-to-the-archive-home: done
   5-1-push-regenerated-exports-with-etag-guard: done
   5-2-conflict-refusal-on-export-push: done
   6-1-implement-herald-cli-dispatcher: done
@@ -251,7 +251,7 @@ development_status:
   epic-47-retrospective: optional
   epic-48: done
   epic-48-retrospective: optional
-  epic-49: in-progress
+  epic-49: done
   epic-49-retrospective: optional
   epic-5: done
   epic-5-retrospective: optional

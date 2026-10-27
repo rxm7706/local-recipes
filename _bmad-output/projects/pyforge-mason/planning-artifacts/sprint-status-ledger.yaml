@@ -115,7 +115,7 @@ development_status:
   33-2-every-mason-nfr-names-the-capabilities-it-bounds: backlog
   34-1-the-atlas-reads-the-conda-forge-bot-s-split-graph-repos: done
   35-1-mason-s-twelve-archived-dreams-leave-the-live-tree: done
-  36-1-mason-s-absorbed-spec-folders-move-to-the-archive-home: in-progress
+  36-1-mason-s-absorbed-spec-folders-move-to-the-archive-home: done
   4-1-lock-engine-adapter-and-provenance: done
   4-2-manifest-discovery: done
   4-3-mason-environment-lock: done
@@ -192,7 +192,7 @@ development_status:
   epic-34-retrospective: optional
   epic-35: done
   epic-35-retrospective: optional
-  epic-36: in-progress
+  epic-36: done
   epic-36-retrospective: optional
   epic-4: done
   epic-4-retrospective: optional

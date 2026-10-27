@@ -7,17 +7,23 @@ scope: 'spec-python-agent-platform — the invariant set shared by the 12 storie
 status: final
 created: '2026-08-14'
 binds: [CAP-1, CAP-2, CAP-3, CAP-4, CAP-5, CAP-6]
-companion-of: SPEC.md
+companion-of: ../../../../../../archive/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-agent-platform/SPEC.md
 sources:
-  - 'SPEC.md (this dir — the canonical contract; the three 2026-08-14 operator resolutions and the Docker+Podman constraint are read-only inputs here, not re-derived)'
+  - '../../../../../../archive/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-agent-platform/SPEC.md (the canonical contract, absorbed into spec-pyforge-steward and archived 2026-10-27; the three 2026-08-14 operator resolutions and the Docker+Podman constraint are read-only inputs here, not re-derived)'
   - '../../epics.md §§ Epic 10-12 (the 11 consuming stories)'
-  - '../../../../../../docs/dreams/python-agent-platform.md (owner Dream; Realization log carries the decision trail)'
+  - '../../../../../../archive/docs/dreams/python-agent-platform.md (owner Dream, archived 2026-10-26; Realization log carries the decision trail)'
 ---
 > **Qualified `pap:` 2026-09-08.** These ids are now written `pap:AD-n`, matching how every
 > cross-Spec citation already spells them — this document's own line below demanded exactly
 > that ("Unifying Strategy must not treat these as canopy AD-1.."). It leaves the bare `AD-n`
 > namespace inside pyforge-steward to the station spine alone, so a bare citation there is
 > unambiguous. No citation changes meaning: `pap:AD-2` meant this document before and still does.
+>
+> **Carried 2026-10-27 (spec-one-chain-per-station:CAP-11).** This spine moved from
+> `spec-python-agent-platform/` into `spec-pyforge-steward/` when that absorbed Spec folder moved to
+> `archive/`. `SPEC.md` below means that archived Spec
+> (`archive/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-agent-platform/SPEC.md`),
+> not the station Spec beside this file, and `binds:` names that Spec's CAP-1..CAP-6.
 
 
 # Architecture Spine — python-agent-platform (companion to SPEC.md)

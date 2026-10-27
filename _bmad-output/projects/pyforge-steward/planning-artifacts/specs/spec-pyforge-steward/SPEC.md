@@ -151,9 +151,11 @@ companions:
   - adoption-register.md      # live companion carried 2026-10-27 from spec-bmad-suite-lifecycle (spec-one-chain-per-station:CAP-11)
   - release-cadence.md        # live companion carried 2026-10-27 from spec-bmad-suite-lifecycle (spec-one-chain-per-station:CAP-11)
   - install-class-playbook.md # live companion carried 2026-10-27 from spec-bmad-suite-install-class-wiring (spec-one-chain-per-station:CAP-11)
-  - ARCHITECTURE-SPINE.md     # the canopy host spine (canopy:AD-n), carried 2026-10-27 from spec-python-agent-platform (spec-one-chain-per-station:CAP-11)
+  - ARCHITECTURE-SPINE.md     # the pap host spine (pap:AD-n), carried 2026-10-27 from spec-python-agent-platform, whose archived SPEC.md it still binds (spec-one-chain-per-station:CAP-11)
   - measure-catalog.md        # live companion carried 2026-10-27 from spec-build-league-scorecard (spec-one-chain-per-station:CAP-11)
   - vocabulary-map.md         # live companion carried 2026-10-27 from spec-intelligence-hub (spec-one-chain-per-station:CAP-11)
+  - failure-modes.md          # live companion carried 2026-10-27 from spec-bmad-method-core-upgrade (spec-one-chain-per-station:CAP-11)
+  - cluster-bringup-facts.md  # live companion carried 2026-10-27 from spec-local-ocp-hybrid-environment (spec-one-chain-per-station:CAP-11)
 sources:
   - ../../../../../../docs/dreams/pyforge-steward.md
 ---

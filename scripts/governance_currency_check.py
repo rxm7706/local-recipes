@@ -37,8 +37,8 @@ scope=repo: reads tracked documents and the tracked skills/scripts trees only.
 
 Exit 0 every reference resolves / 1 findings / 2 could-not-run.
 Flags: --json, --file <path> (check one document).
-Contract: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/
-spec-fleet-consistency-standard/SPEC.md (CAP-6).
+Contract: archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/
+spec-fleet-consistency-standard/SPEC.md (CAP-6; absorbed into spec-pyforge-marshal).
 """
 
 from __future__ import annotations

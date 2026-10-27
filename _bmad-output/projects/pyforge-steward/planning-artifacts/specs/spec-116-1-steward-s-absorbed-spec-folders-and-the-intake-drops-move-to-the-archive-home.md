@@ -2,7 +2,7 @@
 title: "116.1: Steward's absorbed Spec folders and the intake drops move to the archive home"
 type: 'chore'
 created: '2026-10-27'
-status: 'in-progress'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
@@ -40,7 +40,7 @@ folders still read `status: absorbed` under `_bmad-output/projects/pyforge-stewa
   Memlogs, story specs, epic bodies, PRD prose, ledgers, research and the Dreams' own logs keep the path they were written
   with. `archive/<original path>` is structure-preserving, so the old path still reads.
 - **Detector baselines.** `chain-sprawl`'s baseline drops the entries for the moved folders.
-- **Also in this story.** `docs/intake/estate-refresh/` and `docs/intake/ci-pause-control-plane/` move to `archive/docs/intake/` (both routed, their appends landed: steward Epics 100 and 99), so `docs/intake/` holds only its README; `docs/dreams/archive/pyforge-unifying-strategy-2026-08-23-topology.md` (steward Story 43.1's split-off snapshot) moves to `archive/docs/dreams/archive/`.
+- **Also in this story.** `docs/intake/estate-refresh/` and `docs/intake/ci-pause-control-plane/` move to `archive/docs/intake/` (both routed, their appends landed: steward Epics 100 and 99), so `docs/intake/` holds only its README; `docs/dreams/archive/pyforge-unifying-strategy-2026-08-23-topology.md` (steward Story 43.1's split-off snapshot) moves to `archive/docs/dreams/<same name>` (the path doctor's fold-complete baseline already names: `docs/dreams/archive/` folds into the Dream archive).
 
 Ledger key: `116-1-steward-s-absorbed-spec-folders-and-the-intake-drops-move-to-the-archive-home`.
 Type / Effort / Deps: chore / M / —.
@@ -112,8 +112,17 @@ Type / Effort / Deps: chore / M / —.
 
 ## Review Triage Log
 
-- No independent review has run yet (implementation and review stay separate).
+- **2026-10-27 — Independent review** (fresh reviewer, diff `9dd0a8f1f9..6a3ed54289`, read-only, scripted checks over the whole set): 0 deleted files, 399 pure renames + 10 memlogs changed only by the appended event; SPEC.md diffs limited to the documented lines with CAP counts unchanged. Fleet findings, all fixed in this PR:
+  - `[high]` `[patch]` the conda-forge-expert surface lost its drift governor when spec-packaging-factory and spec-conda-forge-expert-rebuild moved: operator ruling 2026-10-27, `spec-pyforge-mason` governs it with normal drift.
+  - `[high]` `[patch]` steward `test_fresh_clone_class_path.py` made the same directory twice once the playbook and the matrix both lived in `spec-pyforge-steward/`; it now passes `exist_ok=True`.
+  - `[medium]` `[patch]` live pointers the rewrite rule missed were fixed: paths split across lines, relative `spec-archive/` links, marshal `index.md` rows in the wrong station, a layout listing.
+  - `[medium]` `[patch]` two more live companions were carried: steward `failure-modes.md` and `cluster-bringup-facts.md`. The atlas kedro audit report and VS Code decision are records and stay archived.
+  - `[low]` `[patch]` the carried spine is the pap host spine, not the canopy spine; the claims that moved text is unchanged are corrected in the Dream entry.
+  - `[low]` `[defer]` `scripts/.spec-surface-baseline.json` still holds entries for Specs no longer discovered. A scoped stamp cannot drop a vanished Spec, and a bare stamp is forbidden. The verdict ignores them.
+  - Station specifics: carried `failure-modes.md` and `cluster-bringup-facts.md` (9 companions in `spec-pyforge-steward/` now); pap spine frontmatter binds the archived python-agent-platform SPEC.md with a dated note; Structural Seed listing updated; OCP how-to ground-truth pointer.
 
 ## Auto Run Result
 
-Status: in-progress
+Status: done
+
+Summary: steward's 35 absorbed Spec folders, the two intake drops and the topology snapshot moved to the archive home; 9 live companions carried into `spec-pyforge-steward/`; `pixi.lock` governed by `spec-pyforge-steward`. No folder under the station `specs/` reads `status: absorbed`; spec-surface, chain-sprawl, ad-citation and governance-currency exit 0.

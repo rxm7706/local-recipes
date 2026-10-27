@@ -154,7 +154,7 @@ development_status:
   42-3-a-developer-runs-one-command-that-executes-every-check-ci-executes-sits-behind-a-kill-switch: done
   42-4-the-retrofit-kill-switches-retire-on-their-cleanup-date: backlog
   44-1-atlas-s-twelve-archived-dreams-leave-the-live-tree: done
-  45-1-atlas-s-absorbed-spec-folders-and-spec-archive-move-to-the-archive-home: in-progress
+  45-1-atlas-s-absorbed-spec-folders-and-spec-archive-move-to-the-archive-home: done
   5-1-define-the-boring-semantic-layer-bsl-models: done
   5-2-build-the-vizro-dashboard-port-the-28-clis-to-pages: done
   5-3-integrate-vizro-ai-expose-the-nl-interface-as-an-mcp-tool: done
@@ -247,7 +247,7 @@ development_status:
   epic-42-retrospective: optional
   epic-44: done
   epic-44-retrospective: optional
-  epic-45: in-progress
+  epic-45: done
   epic-45-retrospective: optional
   epic-5: done
   epic-5-retrospective: done

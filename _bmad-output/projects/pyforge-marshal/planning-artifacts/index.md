@@ -102,13 +102,13 @@ The tracked living set is **12 documents** (the detector's `tracked:living` clas
 
 | Spec | Governs |
 |---|---|
-| [`spec-packaging-factory/`](../../../../archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-packaging-factory/SPEC.md) | the conda-forge-expert skill surface (361 files; drift sentinel = the skill CHANGELOG) |
+| [`spec-packaging-factory/`](../../../../archive/_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-packaging-factory/SPEC.md) | the conda-forge-expert skill surface (361 files; drift sentinel = the skill CHANGELOG) |
 | [`spec-regenerable-factory/`](../../../../archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-regenerable-factory/SPEC.md) | spec-surface governance itself (+ [`waves.md`](../../../../archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-regenerable-factory/waves.md)) |
-| [`spec-fleet-stewardship/`](../../../../archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-stewardship/SPEC.md) | the recipe/feedstock fleet (2,809 files; drift exempt) |
-| [`spec-modernist-identity/`](./specs/spec-modernist-identity/SPEC.md) | the PyForge identity + deck family (693 files) |
+| [`spec-fleet-stewardship/`](../../../../archive/_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-fleet-stewardship/SPEC.md) | the recipe/feedstock fleet (2,809 files; drift exempt) |
+| [`spec-modernist-identity/`](../../../../archive/_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-modernist-identity/SPEC.md) | the PyForge identity + deck family (693 files) |
 | [`spec-factory-console/`](../../../../archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-factory-console/SPEC.md) | **superseded 2026-08-24** → steward CAP-2 (Lane 1 Wagtail front door); generator until S-30.2 (+ [`console-contract.md`](../../../../archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-factory-console/console-contract.md), [`drill-evidence.md`](../../../../archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-factory-console/drill-evidence.md)) |
 | [`spec-multi-loop-isolation/`](../../../../archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-multi-loop-isolation/SPEC.md) | concurrent bmad-loop homes |
-| [`spec-enterprise-airgap/`](../../../../archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-enterprise-airgap/SPEC.md) | the air-gap / JFrog routing layer |
+| [`spec-enterprise-airgap/`](../../../../archive/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-enterprise-airgap/SPEC.md) | the air-gap / JFrog routing layer |
 | [`spec-pyforge-marshal/`](./specs/spec-pyforge-marshal/SPEC.md) | Marshal's governance surface in this repo (distinct from the `pyforge-marshal` project's product Spec — the collision `spec_surface_check.py` keys around) |
 
 ---
@@ -145,7 +145,7 @@ The tracked living set is **12 documents** (the detector's `tracked:living` clas
 
 ### The spec tiers
 - **Tier 0 — Dreams:** [`docs/dreams/`](../../../../docs/dreams/) — **26** Dreams + a README. Every effort starts here.
-- **Tier 1 — legacy intake specs:** [`docs/specs/`](../../../../docs/specs/) — **19** files, **phasing out**; author no new ones. Shipped intakes are consolidated in [`cfe-shipped-releases.md`](../../../../docs/specs/cfe-shipped-releases.md).
+- **Tier 1 — legacy intake specs:** [`archive/docs/specs/`](../../../../archive/docs/specs/) — **retired** (emptied 2026-10-10, doctor Story 37.1; spec-one-chain-per-station:CAP-11); author no new ones. Shipped intakes are consolidated in [`cfe-shipped-releases.md`](../../../../archive/docs/specs/cfe-shipped-releases.md).
 - **Tier 2 — Specs & planning:** `_bmad-output/projects/<slug>/planning-artifacts/` — the active contract. 22 Specs across 14 projects; 63 tracked story specs.
 - **Tier 3 — execution output:** `implementation-artifacts/` — **gitignored; nothing there may ever be git-tracked** (HARD `tracked-impl-artifact`). Story specs are the exception to Tier 3: they are promoted to `planning-artifacts/specs/` and committed once their story merges.
 

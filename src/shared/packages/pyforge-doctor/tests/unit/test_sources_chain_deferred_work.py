@@ -1596,7 +1596,9 @@ def test_derive_story_key_falls_back_to_parent_dir_for_generic_stem_real_excerpt
     own worked fallback-slug example ("a fallback slug
     (`deferred-work-visibility`, whose trailing segment is not an
     integer)")."""
-    real = "`archive/_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md`"
+    real = (
+        "`archive/_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md`"
+    )
     assert chain._derive_story_key(real) == "deferred-work-visibility"
 
 

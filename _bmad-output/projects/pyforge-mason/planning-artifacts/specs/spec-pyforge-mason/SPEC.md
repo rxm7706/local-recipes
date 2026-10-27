@@ -21,6 +21,9 @@ covers-dreams:
 surface:
   - src/shared/packages/pyforge-mason/**    # the CLI this Spec builds — as-built and shipped (fleet ledger: complete 2026-08-21)
   - scripts/failure_catalog_check.py   # governance carried 2026-10-27 from the absorbed spec-machine-checked-recipe-knowledge (spec-one-chain-per-station:CAP-11)
+  - .claude/skills/conda-forge-expert/**   # governance carried 2026-10-27 from the absorbed spec-packaging-factory and spec-conda-forge-expert-rebuild; normal drift by operator ruling 2026-10-27 (spec-one-chain-per-station:CAP-11)
+  - .claude/scripts/conda-forge-expert/**   # governance carried 2026-10-27 from the absorbed spec-packaging-factory and spec-conda-forge-expert-rebuild; normal drift by operator ruling 2026-10-27 (spec-one-chain-per-station:CAP-11)
+  - .claude/tools/conda_forge_server.py   # governance carried 2026-10-27 from the absorbed spec-packaging-factory and spec-conda-forge-expert-rebuild; normal drift by operator ruling 2026-10-27 (spec-one-chain-per-station:CAP-11)
 companions:
   - glossary.md                                                                      # spec-authored: the vocabulary the chain requires verbatim
   - ../../prds/prd-pyforge-mason-2026-07-25/prd.md                                   # adopted (chain): FR-1..FR-50 / NFR-1..NFR-16 / D-1..D-13

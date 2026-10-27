@@ -28,8 +28,8 @@ surface-drift-exclude:
   # this spec's own drift tracking for these specific files is off.
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/publisher_host.py   # also governed by pyforge-marshal/spec-run-state-one-publisher
   - src/shared/packages/pyforge-core/src/pyforge/core/client.py   # also governed by pyforge-steward/spec-pyforge-unifying-strategy
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py   # also governed by pyforge-marshal/spec-pyforge-marshal
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py   # also governed by pyforge-marshal/spec-pyforge-marshal
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/model_cost.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/tier_routing.py   # also governed by pyforge-marshal/spec-dispatch-tier-routing-fails-safe

@@ -455,9 +455,9 @@ named what was left of CAP-11. Measured on `main` at `9dd0a8f1f9`:
     (`spec-deck-family-currency/facts-ledger.md`, `infographic-standard.md`);
   - steward's bmad-suite install matrix, adoption register, release
     cadence and install-class playbook;
-  - the canopy spine (`spec-python-agent-platform/ARCHITECTURE-SPINE.md`),
-    which `ad-citation` reads through its `specs/*/ARCHITECTURE-SPINE.md`
-    glob;
+  - the pap host spine (`spec-python-agent-platform/ARCHITECTURE-SPINE.md`,
+    cited as `pap:AD-n`), which `ad-citation` reads through its
+    `specs/*/ARCHITECTURE-SPINE.md` glob;
   - the build-league measure catalog that `pyforge.core.league_measure`
     reads;
   - the intelligence-hub vocabulary map, which the Charter names as the
@@ -502,8 +502,10 @@ named what was left of CAP-11. Measured on `main` at `9dd0a8f1f9`:
   Each memlog whose folder gave up a companion says where it went.
 - **Intake and side archives.** `docs/intake/` holds only its README, and
   its two drops sit under `archive/docs/intake/`. `docs/dreams/archive/`
-  and atlas's `spec-archive/` are gone, with their files under `archive/`
-  at their original paths.
+  and atlas's `spec-archive/` are gone. Atlas's files sit under `archive/`
+  at their original paths. The topology snapshot folds into the Dream
+  archive at `archive/docs/dreams/<same name>`, the path doctor's
+  `fold-complete` baseline already names.
 - **Pointers follow, records do not.** Every live pointer follows its
   file: the code, the tests, the workflows, `AGENTS.md`, the how-tos, the
   deck fact headers, the capability ledger's source paths and the station
@@ -523,3 +525,46 @@ named what was left of CAP-11. Measured on `main` at `9dd0a8f1f9`:
   54.1, herald 49.1, marshal 112.1, mason 36.1, scribe 30.1, steward 116.1
   and warden 24.1.
 - `SPEC.md` is never hand-edited.
+
+**After the independent review (2026-10-27).** An independent review of
+the diff found four gaps. They are fixed in the same PR.
+
+- **Lost drift governance.** Two absorbed Specs, `spec-packaging-factory`
+  and `spec-conda-forge-expert-rebuild`, were still the only drift
+  governors of the 412 conda-forge-expert files, under a CHANGELOG
+  sentinel. Moving them left those files with no drift check.
+
+  **Ruled (operator, 2026-10-27): "Mason governs, normal drift".**
+  `spec-pyforge-mason` now governs the CFE surface. A CFE edit needs a
+  mason memlog line naming each changed path, and a scoped stamp, besides
+  the CFE CHANGELOG.
+
+  The review flagged three more files. Re-checked against each absorbed
+  Spec's frontmatter, none of them had a drift owner on `main` either:
+  - `scripts/bmad_drift_check.py` and `scripts/spec_surface_check.py`
+    stay on the allowlist, by design.
+  - Marshal's `adapters/harness_bmadloop.py` and `cli/dispatch.py` now
+    have `spec-pyforge-marshal` as their drift owner.
+- **Two more live companions.** The review found two more companions that
+  fit ruling 2. Both are carried into `spec-pyforge-steward/`:
+  - `failure-modes.md`: the release cadence appends traps to it, and
+    steward's upgrade code cites them.
+  - `cluster-bringup-facts.md`: the OCP how-to calls it the ground truth.
+
+  That makes fourteen live companions. Atlas's kedro skills audit report
+  and VS Code decision record are dated records that atlas's Spec cites as
+  evidence. They stay in the archive.
+- **Missed pointers.** The rewrite rule missed some pointers. It did not
+  match paths split across two lines, nor relative `../../spec-archive/`
+  links. It also mechanically re-pointed three marshal `index.md` rows into
+  the wrong station. These now resolve.
+- **Wrong claims.** The carried spine is the pap host spine, not the canopy
+  spine. A dated note in the spine says its `SPEC.md` is the archived
+  python-agent-platform Spec. Three edits break the "moved text is
+  unchanged" claim:
+  - A carried companion's relative links and paths were re-pointed inside
+    the file (`install-class-playbook.md`, `campaign-state.yaml`, the
+    spine's frontmatter).
+  - Two closed atlas deferred-work entries had `verified:` citations of
+    `catalog-sources.md:39`. They now name the carried file, because
+    atlas's planning-record test resolves every cited line.

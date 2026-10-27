@@ -2,7 +2,7 @@
 title: "49.1: Herald's absorbed Spec folders move to the archive home"
 type: 'chore'
 created: '2026-10-27'
-status: 'in-progress'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
@@ -111,8 +111,16 @@ Type / Effort / Deps: chore / S / —.
 
 ## Review Triage Log
 
-- No independent review has run yet (implementation and review stay separate).
+- **2026-10-27 — Independent review** (fresh reviewer, diff `9dd0a8f1f9..6a3ed54289`, read-only, scripted checks over the whole set): 0 deleted files, 399 pure renames + 10 memlogs changed only by the appended event; SPEC.md diffs limited to the documented lines with CAP counts unchanged. Fleet findings, all fixed in this PR:
+  - `[high]` `[patch]` the conda-forge-expert surface lost its drift governor when spec-packaging-factory and spec-conda-forge-expert-rebuild moved: operator ruling 2026-10-27, `spec-pyforge-mason` governs it with normal drift.
+  - `[high]` `[patch]` steward `test_fresh_clone_class_path.py` made the same directory twice once the playbook and the matrix both lived in `spec-pyforge-steward/`; it now passes `exist_ok=True`.
+  - `[medium]` `[patch]` live pointers the rewrite rule missed were fixed: paths split across lines, relative `spec-archive/` links, marshal `index.md` rows in the wrong station, a layout listing.
+  - `[medium]` `[patch]` two more live companions were carried: steward `failure-modes.md` and `cluster-bringup-facts.md`. The atlas kedro audit report and VS Code decision are records and stay archived.
+  - `[low]` `[patch]` the carried spine is the pap host spine, not the canopy spine; the claims that moved text is unchanged are corrected in the Dream entry.
+  - `[low]` `[defer]` `scripts/.spec-surface-baseline.json` still holds entries for Specs no longer discovered. A scoped stamp cannot drop a vanished Spec, and a bare stamp is forbidden. The verdict ignores them.
 
 ## Auto Run Result
 
-Status: in-progress
+Status: done
+
+Summary: herald's 9 absorbed Spec folders moved to the archive home; `facts-ledger.md` and `infographic-standard.md` carried into `spec-pyforge-herald/`; `.gitignore` governed by `spec-pyforge-herald`. No folder under the station `specs/` reads `status: absorbed`; spec-surface, chain-sprawl, ad-citation and governance-currency exit 0.

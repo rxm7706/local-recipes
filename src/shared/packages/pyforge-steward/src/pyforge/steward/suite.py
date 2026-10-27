@@ -91,8 +91,7 @@ _PYFORGE_STUDIO_ROOT_ENV = "PYFORGE_STUDIO_ROOT"
 _PYFORGE_STUDIO_ROOT_DEFAULT = "~/pyforge-studio"
 
 INSTALL_CLASS_PLAYBOOK_REL = (
-    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/"
-    "spec-pyforge-steward/install-class-playbook.md"
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/install-class-playbook.md"
 )
 INSTALL_MATRIX_REL = (
     "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/install-matrix.md"

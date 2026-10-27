@@ -67,7 +67,7 @@ class ProvenanceEntry:
     ``EligibilityResult``.
 
     Deliberately omits the Dream's ``metadata`` field: the tracked Tier-2
-    spec (``_bmad-output/projects/pyforge-warden/planning-artifacts/specs/
+    spec (``archive/_bmad-output/projects/pyforge-warden/planning-artifacts/specs/
     spec-package-inventory-eligibility/SPEC.md``, CAP-2 -- the durable
     source of record) and ``epic-7-context.md`` (its Tier-3, regeneratable
     compilation -- the sibling Dream is pattern-reference only, not a

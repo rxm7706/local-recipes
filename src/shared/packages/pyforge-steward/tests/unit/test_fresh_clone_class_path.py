@@ -193,7 +193,7 @@ def test_prove_fails_when_playbook_improvises_installer(tmp_path: Path):
         / "_bmad-output/projects/pyforge-steward/planning-artifacts/specs"
         / "spec-pyforge-steward/install-matrix.md"
     )
-    matrix.parent.mkdir(parents=True)
+    matrix.parent.mkdir(parents=True, exist_ok=True)  # same folder as the playbook since CAP-11
     matrix.write_text("npx bmad-method install\n", encoding="utf-8")
     playbook.write_text(
         "## Fresh-clone class-path (CAP-3)\n\nDrive `new Installer()` from the transcript.\n",

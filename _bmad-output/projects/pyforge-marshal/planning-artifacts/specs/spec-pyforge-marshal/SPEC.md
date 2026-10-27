@@ -186,8 +186,6 @@ surface-drift-exclude:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/publisher_host.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/publish.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/publisher.py
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/model_cost.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/tier_routing.py
