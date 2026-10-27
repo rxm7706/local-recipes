@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: b15e4c5c711ad54e
-story_count: 409
+source_fingerprint: 0af661285cdfbff3
+story_count: 417
 test_file_count: 143
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 409
-- **Epics parsed:** 115
+- **Stories parsed:** 417
+- **Epics parsed:** 116
 - **Test files inventoried:** 143 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `b15e4c5c711ad54e`
+- **Source fingerprint:** `0af661285cdfbff3`
 
 ## Risk Assessment
 
@@ -141,6 +141,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 115: The archived steward Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 - Epic 114: Every pre-rule steward runtime capability sits behind a kill switch (8 flags, one per CAP; the Guild flag rule's retrofit capability, Q6)
 - Epic 116: The absorbed steward Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
+- Epic 117: The preflight and a PR's CI answer within a measured budget, and a station suite runs once (spec-pyforge-steward CAP-175 / FR-49)
 
 ### Low-risk epics
 
@@ -713,6 +714,14 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 114.9 | the retrofit kill switches retire on their cleanup date | none observed |
 | 115.1 | Steward's 36 archived Dreams leave the live tree | none observed |
 | 116.1 | Steward's absorbed Spec folders and the intake drops move to the archive home | none observed |
+| 117.1 | The steward suite runs under pytest-xdist and its serial remainder alone | none observed |
+| 117.2 | A station's coverage floor is judged from its own suite's run, and coverage-g... | none observed |
+| 117.3 | The preflight admits lanes longest-first by the cores they will use | none observed |
+| 117.4 | Each station suite runs as its package-local and live-tree halves | none observed |
+| 117.5 | preflight-budget names every lane over its journal-derived budget | none observed |
+| 117.6 | Image builds leave the pull-request path for main and the nightly canary | none observed |
+| 117.7 | The CI workflows run what the diff touches, with pinned tools and parallel de... | none observed |
+| 117.8 | The CFE regression net leaves the pull-request path, and the PR keeps its met... | none observed |
 
 ## Quality Gates
 
