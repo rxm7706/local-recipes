@@ -417,6 +417,42 @@ def test_merge_of_one_report_keeps_its_files(driver, tmp_path: Path):
     assert merged["totals"]["percent_covered"] == 100.0
 
 
+def test_report_globs_name_every_shard_and_the_write_target_drops_the_star(
+    driver, tmp_path: Path
+):
+    """Story 117.10: a sharded job uploads steward-unit-1.json … -N.json; the gate names them with one glob that the
+    unsharded steward-unit.json matches too, so the pixi task and the CI step carry the same literal."""
+    d = tmp_path / ".steward" / "coverage"
+    d.mkdir(parents=True)
+    for name in (
+        "steward-unit-1.json",
+        "steward-unit-2.json",
+        "steward-live-1.json",
+        "other.json",
+    ):
+        (d / name).write_text("{}", encoding="utf-8")
+    found = driver.expand_report_patterns(
+        [
+            str(d / "steward-unit*.json"),
+            str(d / "steward-live*.json"),
+            str(d / "missing*.json"),
+            str(d / "other.json"),
+        ]
+    )
+    assert [p.name for p in found] == [
+        "steward-unit-1.json",
+        "steward-unit-2.json",
+        "steward-live-1.json",
+        "other.json",
+    ]
+    assert driver.report_write_target(".steward/coverage/steward-unit*.json") == Path(
+        ".steward/coverage/steward-unit.json"
+    )
+    assert driver.report_write_target(".steward/coverage/doctor-unit.json") == Path(
+        ".steward/coverage/doctor-unit.json"
+    )
+
+
 def test_plan_empty_when_no_station_touched(driver, tmp_path: Path, capsys):
     paths_file = tmp_path / "paths.txt"
     paths_file.write_text("pixi.toml\n", encoding="utf-8")

@@ -7483,7 +7483,7 @@ So that a green local run still means a green CI run, and both answer in minutes
 **When** the registry declares each build surface `trigger: main` with a nightly canary, the render moves them to push-to-main, `workflow_dispatch` and `ci-canary.yml`, `guild-container`'s docker leg stays on a PR only when its inputs changed and builds with the GHA layer cache (operator ruling D1, 2026-10-27)
 **Then** a PR that touches no image input runs no image build, a `main` push still builds every image, the nightly canary builds them all, and `steward ci status` lists each surface with its trigger
 **And** `ci_surface_gates.py --check` and `detectors-ci` exit 0; the `cost: high` rows are unchanged in cost; nothing is paused, disabled or `continue-on-error`
-**Status:** backlog
+**Status:** done
 
 ### Story 117.7: The CI workflows run what the diff touches, with pinned tools and parallel detectors
 
@@ -7515,7 +7515,7 @@ So that a green local run still means a green CI run, and both answer in minutes
 **When** the net runs on push-to-main and the nightly canary, a PR that touches the CFE paths runs `cfe-meta` instead, and the registry declares both (operator ruling D1, 2026-10-27)
 **Then** a CFE PR's slowest workflow is ≤ 5 min, every `main` commit still runs the full net, and the meta suite's verdict is on the PR
 **And** `test_cfe_regression_net_paths.py` asserts the new trigger shape; `ci_surface_gates.py --check` exits 0; the net is never paused or disabled
-**Status:** backlog
+**Status:** done
 
 ### Story 117.9: The steward suite's slowest tests shed their subprocesses, repos and sleeps
 
@@ -7547,7 +7547,7 @@ So that a PR's wall is one shard plus its set-up, not one suite.
 **When** each station job becomes a matrix of N shards (steward-live 5, marshal 5, atlas 4–5, herald 2–3 after H.1, doctor-live 2) that run `pytest --splits N --group K -n auto` on a durations file the nightly run regenerates, each shard uploads its coverage JSON, and the gate downloads every shard's report and judges `merge_coverage_reports` of them
 **Then** no station job works longer than 45 s after its set-up on a four-core runner, the halves' collected counts over all shards equal the unsharded counts, the coverage verdict for a touched module is unchanged against the unsharded report, and a shared-surface PR's shard total stays under 30 jobs
 **And** `test_station_tests_trigger_map.py` passes with a matrix job keyed once (`PRESERVED` intact); `test_preflight_selection.py` selects a shard set as its job; the local preflight runs the unsharded task (one machine, 16 cores) and journals the same suite once
-**Status:** backlog
+**Status:** done
 
 ### Story 117.11: The changes gate and the gate diffs run on shallow fetches of the PR base
 
@@ -7563,7 +7563,7 @@ So that the gate costs under ten seconds and no job pays twenty seconds for a cl
 **When** the `changes` step fetches the PR's base sha at depth one and diffs `$BASE_SHA HEAD` two-dot, and every station and gate job does the same for its coverage diff, with `push` events falling back to `HEAD~1` as today
 **Then** the `changes` job finishes in ≤ 10 s, every station job's checkout is ≤ 11 s, the set of outputs `changes` emits is byte-identical to the deep-clone run on the same PR (checked on three recorded heads), and the coverage verdicts are unchanged
 **And** `test_station_tests_trigger_map.py`'s `run_changes` harness drives the shallow script unchanged; `preflight_ci` keeps `refs/remotes/origin/main` as the local base
-**Status:** backlog
+**Status:** done
 
 ### Story 117.12: The platform suite runs under xdist, its checks in a parallel job
 
@@ -7579,7 +7579,7 @@ So that Platform CI's wall is one short job, not a 350 s serial one.
 **When** the suite runs under xdist on the runner's four cores with pytest-django's per-worker test databases, and ruff, mypy, the system checks and the policy suite move to a `checks` job that runs beside it
 **Then** `test` finishes in ≤ 150 s and `checks` in ≤ 90 s on a four-core runner with the same collected count and the same verdicts; `platform-ci-local -- --test` mirrors both jobs
 **And** `ci_surface_gates.py --check` and the steward platform-CI meta tests exit 0; the `platform-ci.test` registry row keeps its budget (CAP-174) and the new row is declared
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

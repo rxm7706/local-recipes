@@ -3,9 +3,10 @@
 # Platform change is proven before it is pushed and no Actions minutes are
 # spent finding out. Four stages, each one of the workflow's jobs:
 #
-#   test        the `test` job, step for step: manage.py check, ruff, ruff
-#               format, mypy, the policy suite, sqlmigrate extraction, the
-#               full pytest suite
+#   test        the `checks` and `test` jobs, step for step: manage.py check,
+#               ruff, ruff format, mypy, the policy suite, sqlmigrate extraction
+#               (the `checks` job since Story 117.12), then the full pytest
+#               suite under xdist (-n 4 --dist loadgroup, the `test` job)
 #   images      the three image builds (platform, DB-GPT sidecar, mcp-host)
 #   container   the `container` job's runtime smokes against the built image:
 #               migrate, start, /ht/, /admin/login/, /, every static asset the
@@ -343,7 +344,7 @@ run_platform_ci_local() {
     step test "Policy suite" "${py[@]}" -m pytest tests/policy -q -p no:cacheprovider &&
     step test "sqlmigrate extraction" "${py[@]}" -m db.sqlmigrate_extraction &&
     step test "Full test suite (platformapp app tests, the ASGI seam, and the import boundary)" \
-      "${py[@]}" -m pytest -q -p no:cacheprovider
+      "${py[@]}" -m pytest -q -p no:cacheprovider -n 4 --dist loadgroup
     popd >/dev/null || exit 2
   }
 

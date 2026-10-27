@@ -176,7 +176,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0
+          # Story 117.11 (spec-pyforge-steward CAP-175): two commits, not full history. On a pull_request HEAD is the
+          # merge commit and its first parent is the base tip, so the three-dot diff below has its merge base; on a
+          # push HEAD~1 is the previous tip. A full clone of this repository cost ~20 s per job.
+          fetch-depth: 2
 
       - name: Compute per-station changed paths
         id: filter
@@ -185,7 +188,14 @@ jobs:
         run: |
           set -euo pipefail
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE="refs/remotes/origin/${GITHUB_BASE_REF}"  # spec-pyforge-core CAP-10: never a name a local ref or tag can wear
+            # spec-pyforge-core CAP-10: never a name a local ref or tag can wear. The local twin (preflight_ci) and
+            # the trigger-map harness keep a full history with a real remote-tracking ref, so it wins when it exists;
+            # the two-commit CI checkout has none, and the merge commit's first parent is the base tip (Story 117.11).
+            if git rev-parse -q --verify "refs/remotes/origin/${GITHUB_BASE_REF}" >/dev/null; then
+              BASE="refs/remotes/origin/${GITHUB_BASE_REF}"
+            else
+              BASE="$(git rev-parse HEAD^1)"
+            fi
           elif [ "${{ github.event_name }}" = "push" ]; then
             BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
           else
@@ -413,6 +423,7 @@ jobs:
             recipes/bmad-suite
             recipes/click-help-colors
             scripts/bmad-loop-worktree
+            scripts/ci_canary.py
             scripts/coverage_gates_ci.py
             scripts/detectors.py
             scripts/lint_types.py
@@ -560,6 +571,15 @@ jobs:
     needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Story 117.10 (spec-pyforge-steward CAP-175): 3 shards; each runs its pytest-split group on top of xdist and
+    # uploads its own coverage report, which the gate job merges with the others' (minutes are free on this public
+    # repository; the wall is one shard). The local preflight runs the task unsharded.
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [1, 2, 3]
+    env:
+      PYTEST_ADDOPTS: --splits 3 --group ${{ matrix.group }} --durations-path tests/durations/pyforge-atlas.json
     env:
       # test_wasm_smoke.py's _chromium_executable() reads this var itself
       # (falling back to a hardcoded /opt/pw-browsers otherwise, which this
@@ -569,7 +589,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0  # Story 117.2: the coverage gate diffs refs/remotes/origin/main...HEAD
+          fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           environments: pyforge-atlas
@@ -615,20 +635,56 @@ jobs:
         run: pixi run --frozen -e pyforge-atlas python src/shared/packages/pyforge-atlas/wasm/build.py
       - run: pixi run --frozen -e pyforge-atlas kedro-test
       - run: pixi run --frozen -e pyforge-atlas kedro-catalog-check
-      # Story 117.2 (spec-pyforge-steward CAP-175, ruling D2): the floor is judged from the JSON the suite step
-      # above wrote (.steward/coverage/atlas-unit.json); the gate never re-runs the suite. coverage-gates.yml retired.
-      - name: Coverage gate for atlas (reads the suite's own report)
+      # Story 117.10: this shard's report; the atlas-gate job merges every shard's and judges the floor.
+      - name: Name this shard's coverage report
+        run: mv .steward/coverage/atlas-unit.json .steward/coverage/atlas-unit-${{ matrix.group }}.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-atlas-unit-${{ matrix.group }}
+          path: .steward/coverage/atlas-unit-${{ matrix.group }}.json
+          if-no-files-found: error
+          retention-days: 3
+
+  # Story 117.10 (spec-pyforge-steward CAP-175): the atlas suite runs as shards, so the floor is judged here from
+  # every shard's coverage report merged (coverage_gates_ci.py --report, repeatable); it rides the suite's rule.
+  atlas-gate:
+    # ci-surfaces: pyforge-station-tests.atlas-gate
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.atlas == 'true')) }}
+    needs: [changes, atlas-test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          environments: pyforge-atlas
+          cache: true
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-atlas-*
+          path: .steward/coverage
+          merge-multiple: true
+      - name: Coverage gate for atlas (every shard's report)
         env:
           GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
           COVERAGE_GATES_STATIONS: atlas
         run: |
           set -euo pipefail
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE="refs/remotes/origin/${GITHUB_BASE_REF}"  # CAP-4: never a name a local ref or tag can wear
+            # CAP-4: never a name a local ref or tag can wear; Story 117.11: the two-commit checkout has no remote ref,
+            # so the merge commit's first parent (the base tip) is the base; the remote ref wins where it exists.
+            if git rev-parse -q --verify "refs/remotes/origin/${GITHUB_BASE_REF}" >/dev/null; then
+              BASE="refs/remotes/origin/${GITHUB_BASE_REF}"
+            else
+              BASE="$(git rev-parse HEAD^1)"
+            fi
           else
             BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
           fi
-          pixi run --frozen -e pyforge-atlas python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report .steward/coverage/atlas-unit.json
+          pixi run --frozen -e pyforge-atlas python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report ".steward/coverage/atlas-unit*.json"
 
   doctor-test:
     # ci-surfaces: pyforge-station-tests.doctor-test
@@ -640,7 +696,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0  # Story 117.2: the coverage gate diffs refs/remotes/origin/main...HEAD
+          fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           environments: pyforge-doctor
@@ -664,20 +720,31 @@ jobs:
     needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Story 117.10 (spec-pyforge-steward CAP-175): 2 shards; each runs its pytest-split group on top of xdist and
+    # uploads its own coverage report, which the gate job merges with the others' (minutes are free on this public
+    # repository; the wall is one shard). The local preflight runs the task unsharded.
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [1, 2]
+    env:
+      PYTEST_ADDOPTS: --splits 2 --group ${{ matrix.group }} --durations-path tests/durations/pyforge-doctor-live.json
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0  # Story 117.2: the coverage gate diffs refs/remotes/origin/main...HEAD
+          fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           environments: pyforge-doctor
           cache: true
       - run: pixi run --frozen -e pyforge-doctor pyforge-doctor-live-test
       # Story 117.4: the live-tree half's report, merged with the package half's by the doctor-gate job.
+      - name: Name this shard's coverage report
+        run: mv .steward/coverage/doctor-live.json .steward/coverage/doctor-live-${{ matrix.group }}.json
       - uses: actions/upload-artifact@v4
         with:
-          name: coverage-doctor-live
-          path: .steward/coverage/doctor-live.json
+          name: coverage-doctor-live-${{ matrix.group }}
+          path: .steward/coverage/doctor-live-${{ matrix.group }}.json
           if-no-files-found: error
           retention-days: 3
 
@@ -693,7 +760,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0  # the gate diffs refs/remotes/origin/main...HEAD
+          fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           environments: pyforge-doctor
@@ -703,18 +770,24 @@ jobs:
           pattern: coverage-doctor-*
           path: .steward/coverage
           merge-multiple: true
-      - name: Coverage gate for doctor (both halves' reports)
+      - name: Coverage gate for doctor (every shard of both halves)
         env:
           GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
           COVERAGE_GATES_STATIONS: doctor
         run: |
           set -euo pipefail
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE="refs/remotes/origin/${GITHUB_BASE_REF}"  # CAP-4: never a name a local ref or tag can wear
+            # CAP-4: never a name a local ref or tag can wear; Story 117.11: the two-commit checkout has no remote ref,
+            # so the merge commit's first parent (the base tip) is the base; the remote ref wins where it exists.
+            if git rev-parse -q --verify "refs/remotes/origin/${GITHUB_BASE_REF}" >/dev/null; then
+              BASE="refs/remotes/origin/${GITHUB_BASE_REF}"
+            else
+              BASE="$(git rev-parse HEAD^1)"
+            fi
           else
             BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
           fi
-          pixi run --frozen -e pyforge-doctor python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report .steward/coverage/doctor-unit.json --report .steward/coverage/doctor-live.json
+          pixi run --frozen -e pyforge-doctor python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report .steward/coverage/doctor-unit.json --report ".steward/coverage/doctor-live*.json"
 
   herald-test:
     # ci-surfaces: pyforge-station-tests.herald-test
@@ -723,10 +796,19 @@ jobs:
     needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Story 117.10 (spec-pyforge-steward CAP-175): 2 shards; each runs its pytest-split group on top of xdist and
+    # uploads its own coverage report, which the gate job merges with the others' (minutes are free on this public
+    # repository; the wall is one shard). The local preflight runs the task unsharded.
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [1, 2]
+    env:
+      PYTEST_ADDOPTS: --splits 2 --group ${{ matrix.group }} --durations-path tests/durations/pyforge-herald.json
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0  # Story 117.2: the coverage gate diffs refs/remotes/origin/main...HEAD
+          fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       # Herald Story 45.1: the last step runs pyforge-herald-test-built, docs-site-install (npm ci in the site env)
       # then herald's suite, so its built-site tests build Astro here instead of skipping; setting up `site` beside
       # herald caches that env. pyforge-herald-test itself stays npm-free for the SBOM laptop gate (fnd:CAP-13).
@@ -749,20 +831,56 @@ jobs:
       - run: pixi run --frozen -e pyforge-herald pyforge-herald-test-built
         env:
           HERALD_DOCS_SITE_REQUIRED: "1"
-      # Story 117.2 (spec-pyforge-steward CAP-175, ruling D2): the floor is judged from the JSON the suite step
-      # above wrote (.steward/coverage/herald-unit.json); the gate never re-runs the suite. coverage-gates.yml retired.
-      - name: Coverage gate for herald (reads the suite's own report)
+      # Story 117.10: this shard's report; the herald-gate job merges every shard's and judges the floor.
+      - name: Name this shard's coverage report
+        run: mv .steward/coverage/herald-unit.json .steward/coverage/herald-unit-${{ matrix.group }}.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-herald-unit-${{ matrix.group }}
+          path: .steward/coverage/herald-unit-${{ matrix.group }}.json
+          if-no-files-found: error
+          retention-days: 3
+
+  # Story 117.10 (spec-pyforge-steward CAP-175): the herald suite runs as shards, so the floor is judged here from
+  # every shard's coverage report merged (coverage_gates_ci.py --report, repeatable); it rides the suite's rule.
+  herald-gate:
+    # ci-surfaces: pyforge-station-tests.herald-gate
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.herald == 'true')) }}
+    needs: [changes, herald-test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          environments: pyforge-herald
+          cache: true
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-herald-*
+          path: .steward/coverage
+          merge-multiple: true
+      - name: Coverage gate for herald (every shard's report)
         env:
           GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
           COVERAGE_GATES_STATIONS: herald
         run: |
           set -euo pipefail
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE="refs/remotes/origin/${GITHUB_BASE_REF}"  # CAP-4: never a name a local ref or tag can wear
+            # CAP-4: never a name a local ref or tag can wear; Story 117.11: the two-commit checkout has no remote ref,
+            # so the merge commit's first parent (the base tip) is the base; the remote ref wins where it exists.
+            if git rev-parse -q --verify "refs/remotes/origin/${GITHUB_BASE_REF}" >/dev/null; then
+              BASE="refs/remotes/origin/${GITHUB_BASE_REF}"
+            else
+              BASE="$(git rev-parse HEAD^1)"
+            fi
           else
             BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
           fi
-          pixi run --frozen -e pyforge-herald python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report .steward/coverage/herald-unit.json
+          pixi run --frozen -e pyforge-herald python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report ".steward/coverage/herald-unit*.json"
 
   marshal-test:
     # ci-surfaces: pyforge-station-tests.marshal-test
@@ -771,10 +889,19 @@ jobs:
     needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Story 117.10 (spec-pyforge-steward CAP-175): 4 shards; each runs its pytest-split group on top of xdist and
+    # uploads its own coverage report, which the gate job merges with the others' (minutes are free on this public
+    # repository; the wall is one shard). The local preflight runs the task unsharded.
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [1, 2, 3, 4]
+    env:
+      PYTEST_ADDOPTS: --splits 4 --group ${{ matrix.group }} --durations-path tests/durations/pyforge-marshal.json
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0  # Story 117.2: the coverage gate diffs refs/remotes/origin/main...HEAD
+          fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           environments: pyforge-marshal
@@ -785,20 +912,56 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
       - run: pixi run --frozen -e pyforge-marshal pyforge-marshal-test
-      # Story 117.2 (spec-pyforge-steward CAP-175, ruling D2): the floor is judged from the JSON the suite step
-      # above wrote (.steward/coverage/marshal-unit.json); the gate never re-runs the suite. coverage-gates.yml retired.
-      - name: Coverage gate for marshal (reads the suite's own report)
+      # Story 117.10: this shard's report; the marshal-gate job merges every shard's and judges the floor.
+      - name: Name this shard's coverage report
+        run: mv .steward/coverage/marshal-unit.json .steward/coverage/marshal-unit-${{ matrix.group }}.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-marshal-unit-${{ matrix.group }}
+          path: .steward/coverage/marshal-unit-${{ matrix.group }}.json
+          if-no-files-found: error
+          retention-days: 3
+
+  # Story 117.10 (spec-pyforge-steward CAP-175): the marshal suite runs as shards, so the floor is judged here from
+  # every shard's coverage report merged (coverage_gates_ci.py --report, repeatable); it rides the suite's rule.
+  marshal-gate:
+    # ci-surfaces: pyforge-station-tests.marshal-gate
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.marshal == 'true')) }}
+    needs: [changes, marshal-test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          environments: pyforge-marshal
+          cache: true
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-marshal-*
+          path: .steward/coverage
+          merge-multiple: true
+      - name: Coverage gate for marshal (every shard's report)
         env:
           GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
           COVERAGE_GATES_STATIONS: marshal
         run: |
           set -euo pipefail
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE="refs/remotes/origin/${GITHUB_BASE_REF}"  # CAP-4: never a name a local ref or tag can wear
+            # CAP-4: never a name a local ref or tag can wear; Story 117.11: the two-commit checkout has no remote ref,
+            # so the merge commit's first parent (the base tip) is the base; the remote ref wins where it exists.
+            if git rev-parse -q --verify "refs/remotes/origin/${GITHUB_BASE_REF}" >/dev/null; then
+              BASE="refs/remotes/origin/${GITHUB_BASE_REF}"
+            else
+              BASE="$(git rev-parse HEAD^1)"
+            fi
           else
             BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
           fi
-          pixi run --frozen -e pyforge-marshal python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report .steward/coverage/marshal-unit.json
+          pixi run --frozen -e pyforge-marshal python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report ".steward/coverage/marshal-unit*.json"
 
   mason-test:
     # ci-surfaces: pyforge-station-tests.mason-test
@@ -810,7 +973,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0  # Story 117.2: the coverage gate diffs refs/remotes/origin/main...HEAD
+          fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           environments: pyforge-mason
@@ -825,7 +988,13 @@ jobs:
         run: |
           set -euo pipefail
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE="refs/remotes/origin/${GITHUB_BASE_REF}"  # CAP-4: never a name a local ref or tag can wear
+            # CAP-4: never a name a local ref or tag can wear; Story 117.11: the two-commit checkout has no remote ref,
+            # so the merge commit's first parent (the base tip) is the base; the remote ref wins where it exists.
+            if git rev-parse -q --verify "refs/remotes/origin/${GITHUB_BASE_REF}" >/dev/null; then
+              BASE="refs/remotes/origin/${GITHUB_BASE_REF}"
+            else
+              BASE="$(git rev-parse HEAD^1)"
+            fi
           else
             BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
           fi
@@ -867,7 +1036,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0  # Story 117.2: the coverage gate diffs refs/remotes/origin/main...HEAD
+          fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           environments: pyforge-scribe
@@ -886,7 +1055,13 @@ jobs:
         run: |
           set -euo pipefail
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE="refs/remotes/origin/${GITHUB_BASE_REF}"  # CAP-4: never a name a local ref or tag can wear
+            # CAP-4: never a name a local ref or tag can wear; Story 117.11: the two-commit checkout has no remote ref,
+            # so the merge commit's first parent (the base tip) is the base; the remote ref wins where it exists.
+            if git rev-parse -q --verify "refs/remotes/origin/${GITHUB_BASE_REF}" >/dev/null; then
+              BASE="refs/remotes/origin/${GITHUB_BASE_REF}"
+            else
+              BASE="$(git rev-parse HEAD^1)"
+            fi
           else
             BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
           fi
@@ -899,20 +1074,31 @@ jobs:
     needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Story 117.10 (spec-pyforge-steward CAP-175): 2 shards; each runs its pytest-split group on top of xdist and
+    # uploads its own coverage report, which the gate job merges with the others' (minutes are free on this public
+    # repository; the wall is one shard). The local preflight runs the task unsharded.
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [1, 2]
+    env:
+      PYTEST_ADDOPTS: --splits 2 --group ${{ matrix.group }} --durations-path tests/durations/pyforge-steward.json
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0  # Story 117.2: the coverage gate diffs refs/remotes/origin/main...HEAD
+          fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           environments: pyforge-steward
           cache: true
       - run: pixi run --frozen -e pyforge-steward pyforge-steward-test
       # Story 117.4: the package half's report, merged with the live-tree half's by the steward-gate job.
+      - name: Name this shard's coverage report
+        run: mv .steward/coverage/steward-unit.json .steward/coverage/steward-unit-${{ matrix.group }}.json
       - uses: actions/upload-artifact@v4
         with:
-          name: coverage-steward-unit
-          path: .steward/coverage/steward-unit.json
+          name: coverage-steward-unit-${{ matrix.group }}
+          path: .steward/coverage/steward-unit-${{ matrix.group }}.json
           if-no-files-found: error
           retention-days: 3
 
@@ -926,20 +1112,31 @@ jobs:
     needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Story 117.10 (spec-pyforge-steward CAP-175): 4 shards; each runs its pytest-split group on top of xdist and
+    # uploads its own coverage report, which the gate job merges with the others' (minutes are free on this public
+    # repository; the wall is one shard). The local preflight runs the task unsharded.
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [1, 2, 3, 4]
+    env:
+      PYTEST_ADDOPTS: --splits 4 --group ${{ matrix.group }} --durations-path tests/durations/pyforge-steward-live.json
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0  # Story 117.2: the coverage gate diffs refs/remotes/origin/main...HEAD
+          fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           environments: pyforge-steward
           cache: true
       - run: pixi run --frozen -e pyforge-steward pyforge-steward-live-test
       # Story 117.4: the live-tree half's report, merged with the package half's by the steward-gate job.
+      - name: Name this shard's coverage report
+        run: mv .steward/coverage/steward-live.json .steward/coverage/steward-live-${{ matrix.group }}.json
       - uses: actions/upload-artifact@v4
         with:
-          name: coverage-steward-live
-          path: .steward/coverage/steward-live.json
+          name: coverage-steward-live-${{ matrix.group }}
+          path: .steward/coverage/steward-live-${{ matrix.group }}.json
           if-no-files-found: error
           retention-days: 3
 
@@ -955,7 +1152,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0  # the gate diffs refs/remotes/origin/main...HEAD
+          fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           environments: pyforge-steward
@@ -965,18 +1162,24 @@ jobs:
           pattern: coverage-steward-*
           path: .steward/coverage
           merge-multiple: true
-      - name: Coverage gate for steward (both halves' reports)
+      - name: Coverage gate for steward (every shard of both halves)
         env:
           GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
           COVERAGE_GATES_STATIONS: steward
         run: |
           set -euo pipefail
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE="refs/remotes/origin/${GITHUB_BASE_REF}"  # CAP-4: never a name a local ref or tag can wear
+            # CAP-4: never a name a local ref or tag can wear; Story 117.11: the two-commit checkout has no remote ref,
+            # so the merge commit's first parent (the base tip) is the base; the remote ref wins where it exists.
+            if git rev-parse -q --verify "refs/remotes/origin/${GITHUB_BASE_REF}" >/dev/null; then
+              BASE="refs/remotes/origin/${GITHUB_BASE_REF}"
+            else
+              BASE="$(git rev-parse HEAD^1)"
+            fi
           else
             BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
           fi
-          pixi run --frozen -e pyforge-steward python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report .steward/coverage/steward-unit.json --report .steward/coverage/steward-live.json
+          pixi run --frozen -e pyforge-steward python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report ".steward/coverage/steward-unit*.json" --report ".steward/coverage/steward-live*.json"
 
   warden-test:
     # ci-surfaces: pyforge-station-tests.warden-test
@@ -988,7 +1191,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0  # Story 117.2: the coverage gate diffs refs/remotes/origin/main...HEAD
+          fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           environments: pyforge-warden
@@ -1003,7 +1206,13 @@ jobs:
         run: |
           set -euo pipefail
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE="refs/remotes/origin/${GITHUB_BASE_REF}"  # CAP-4: never a name a local ref or tag can wear
+            # CAP-4: never a name a local ref or tag can wear; Story 117.11: the two-commit checkout has no remote ref,
+            # so the merge commit's first parent (the base tip) is the base; the remote ref wins where it exists.
+            if git rev-parse -q --verify "refs/remotes/origin/${GITHUB_BASE_REF}" >/dev/null; then
+              BASE="refs/remotes/origin/${GITHUB_BASE_REF}"
+            else
+              BASE="$(git rev-parse HEAD^1)"
+            fi
           else
             BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
           fi
@@ -1015,7 +1224,10 @@ jobs:
   guild-container:
     # ci-surfaces: station-tests.guild-container
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && vars.PAUSE_CONTAINER_BUILDS != 'true') }}
+    # Story 117.6 (spec-pyforge-steward CAP-175, ruling D1): the two image builds (263 s + 150 s, after 110-170 s of
+    # freeing the runner's disk) ran on every pull_request of this workflow with no path gate. They run on
+    # push-to-main and nightly in ci-canary.yml (registry row station-tests.guild-container, trigger: main).
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && vars.PAUSE_CONTAINER_BUILDS != 'true' && (github.event_name != 'pull_request')) }}
     strategy:
       fail-fast: false
       matrix:

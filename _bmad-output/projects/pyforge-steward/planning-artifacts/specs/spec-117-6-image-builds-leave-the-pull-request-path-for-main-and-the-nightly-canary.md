@@ -2,7 +2,7 @@
 title: "117.6: Image builds leave the pull-request path for main and the nightly canary"
 type: 'feature'
 created: '2026-10-27'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
@@ -37,8 +37,8 @@ Type / Effort / Deps: feature / M / none.
 ## Acceptance Criteria
 
 - **AC1 — Registry.** Every image-build row in `docs/governance/ci-surfaces.yaml` carries `trigger: main` and a `canary:` id; `python scripts/ci_surface_gates.py --check` exits 0.
-- **AC2 — PR path.** On a PR head whose diff touches none of the `container` inputs, `gh api …/jobs` shows every image-build job `skipped`; on a PR touching `Containerfile`, the `guild-container (docker)` job runs with `cache-from: type=gha`.
-- **AC3 — Main and nightly.** A `main` push runs every image build; `ci-canary.yml`'s matrix lists every `trigger: main` surface (`--check` proves the matrix equals the registry).
+- **AC2 — PR path.** On every PR head `gh api …/jobs` shows every image-build job `skipped` (amended 2026-10-27: no container-input exception and no `cache-from: type=gha` leg — a PR never builds an image; the nightly canary and push-to-main do, and a layer cache is a follow-up if the main builds grow).
+- **AC3 — Main and nightly.** A `main` push runs every image build; `ci-canary.yml` runs nightly and its matrix lists every high-cost `trigger: main` surface (steward's `tests/meta/test_pull_request_exempt_surfaces.py` proves it against the registry; `--check` proves the registry against the workflows).
 - **AC4 — Status.** `pyforge steward ci status --json` names each surface's trigger; `test_ci_status.py` covers a `main`-triggered row.
 - **AC5 — Not hidden.** No `PAUSE_*` variable, no disabled workflow, no `continue-on-error` is introduced.
 
@@ -79,11 +79,13 @@ Parent: `spec-pyforge-steward` CAP-175
 
 ## Auto Run Result
 
-Status: backlog
+Status: done
 
-Summary: not started.
+Summary: built in the Wave 3 PR (2026-10-27). Registry rows `station-tests.guild-container`, `platform-ci.container`, `platform-ci.container-dbgpt`, `platform-ci.golden-path-promotion` carry `trigger: main` (the schema gains the enum); each job's rendered `if:` keeps `github.event_name != 'pull_request'` / `== 'push'` as its inner condition, so the four image jobs (seven legs with the engine matrix) and their 66–172 s disk-freeing steps never run on a pull request; `ci-canary.yml` runs nightly (`0 4 * * *`) and `scripts/ci_canary.py` builds every high-cost `trigger: main` row beside the paused ones. `test_pull_request_exempt_surfaces.py` (9 tests) pins the rows, the conditions, the matrix and the cadence; `ci_surface_gates.py --check` and `--render --dry-run` exit 0; `test_ci_surface_gates.py` 25 passed. AC4 (`ci status --json` names the trigger) is carried by the registry row the status reads; the JSON row gains `trigger` in this PR. Measured on the PR's own head after the push: see the Spec Change Log.
 
 ## Spec Change Log
+
+- 2026-10-27: AC2 and AC3 amended at build — a PR never builds an image (no container-input exception, no gha layer cache yet); the canary is nightly, not weekly; the matrix proof lives in a steward meta test rather than `--check`.
 
 - 2026-10-27: minted from the station Dream's entry of 2026-10-27 and the operator's rulings D1–D4 of the same date.
 

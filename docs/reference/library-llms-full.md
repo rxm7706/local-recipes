@@ -890,6 +890,9 @@ Testing:
 - **pytest-mock** (>=3.16.0) — `mocker` fixture over unittest.mock.
 - **pytest-cov** (>=7.1.0) — coverage reporting.
 - **pytest-xdist** (>=3.8.0) — parallel test execution (`-n auto`).
+- **pytest-split** (>=0.11.0) — `--splits N --group K` cuts a suite into N groups for a CI
+  shard matrix (steward Story 117.10, CAP-175); reads `--durations-path` when a durations file
+  exists, splits by count otherwise. In the steward, marshal, atlas, doctor and herald features.
 
 Browser automation:
 - **playwright** (>=1.64.0) — the Node Playwright CLI (browser installs, codegen).

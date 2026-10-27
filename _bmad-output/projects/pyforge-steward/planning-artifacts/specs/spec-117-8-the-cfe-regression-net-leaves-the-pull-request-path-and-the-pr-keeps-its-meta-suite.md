@@ -2,7 +2,7 @@
 title: "117.8: The CFE regression net leaves the pull-request path, and the PR keeps its meta suite"
 type: 'feature'
 created: '2026-10-27'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
@@ -36,10 +36,10 @@ Type / Effort / Deps: feature / S / mason's `test-ci-meta` task story (minted on
 
 ## Acceptance Criteria
 
-- **AC1 — Trigger.** `cfe-regression-net.yml` has no `pull_request` trigger; it runs on `push` to `main`, `workflow_dispatch` and the nightly canary; the registry row reads `trigger: main`.
-- **AC2 — Meta on PR.** A PR touching `.claude/skills/conda-forge-expert/**` runs the `cfe-meta` job (`pytest .claude/skills/conda-forge-expert/tests/meta -q`) and it passes; a PR touching nothing CFE skips it.
+- **AC1 — Trigger.** The `cfe-regression-net` job never runs on a `pull_request` (its `if:` excludes the event); it runs on `push` to `main` and `workflow_dispatch`; the registry row reads `trigger: main`. The workflow keeps its `pull_request` trigger and path filters for the `cfe-meta` job (amended 2026-10-27: one workflow, two jobs, so the PR's lane rides the same filters; the canary builds images only and does not run this suite).
+- **AC2 — Meta on PR.** A PR touching `.claude/skills/conda-forge-expert/**` runs the `cfe-meta` job (`pixi run --frozen -e pyforge-guild test-ci-meta`: `pytest .claude/skills/conda-forge-expert/tests/meta -q`, 7,792 tests, ~80 s, one test skipping without `conda_build`) and it passes; a PR touching nothing CFE skips it.
 - **AC3 — Wall.** On a CFE PR, the head's slowest workflow is ≤ 5 min (`gh run list`).
-- **AC4 — Meta-test.** `test_cfe_regression_net_paths.py` passes against the new shape and fails if the `pull_request` trigger returns or the meta job's paths drop a CFE path.
+- **AC4 — Meta-test.** `test_cfe_regression_net_paths.py` passes against the new shape; `test_pull_request_exempt_surfaces.py` fails if the full job returns to the pull-request path or the `cfe-meta` job stops running on one.
 - **AC5 — Not hidden.** No `PAUSE_*`, no disabled workflow.
 
 ## Boundaries & Constraints
@@ -71,7 +71,7 @@ Parent: `spec-pyforge-steward` CAP-175
 **Commands:**
 - `pixi run --frozen -e pyforge-steward pytest src/shared/packages/pyforge-steward/tests/meta/test_cfe_regression_net_paths.py -q` — expected: pass.
 - `python scripts/ci_surface_gates.py --check` — expected: exit 0.
-- `pixi run -e local-recipes pytest .claude/skills/conda-forge-expert/tests/meta -q` — expected: pass (the lane the PR keeps).
+- `pixi run --frozen -e pyforge-guild test-ci-meta` — expected: pass (the lane the PR keeps; `pr-preflight` runs it in place of `test-ci`).
 
 **Run before the push:**
 - `PYFORGE_PREFLIGHT_SCOPE=full pixi run -e pyforge-guild pr-preflight` — expected: exit 0.
@@ -79,11 +79,14 @@ Parent: `spec-pyforge-steward` CAP-175
 
 ## Auto Run Result
 
-Status: backlog
+Status: done
 
-Summary: not started.
+Summary: built in the Wave 3 PR (2026-10-27). `cfe-regression-net.yml`: the full job's `if:` excludes `pull_request` (registry row `trigger: main`); the new `cfe-meta` job runs on `pull_request` only, `pixi run --frozen -e pyforge-guild test-ci-meta` — a new guild task over the skill's `tests/meta` (7,792 passed, 7 skipped, 80 s serial in `pyforge-guild`; the skill tree and `test-ci` untouched, so no CFE retro). `pr-preflight-lanes` runs `test-ci-meta` in place of `test-ci`, so the local full preflight loses its 768 s lane; the selection twin and its oracle follow (`test_preflight_selection.py`). Registry row `cfe-regression-net.cfe-meta` (local twin `test-ci-meta`); `--check` exit 0.
 
 ## Spec Change Log
+
+- 2026-10-27 (measured): with `test-ci-meta` in place of `test-ci`, a full-scope `pr-preflight` on this branch ran 40 lanes in 303 s (772 s the same morning with the 768 s `test-ci` lane); the longest lane is now `pyforge-marshal-test` 288 s, then `pyforge-steward-live-test` 254 s and `pyforge-herald-test` 247 s — the other stations' xdist and split stories.
+- 2026-10-27: AC1, AC2 and AC4 amended at build — the workflow keeps its `pull_request` trigger for the meta job; the meta lane is the `test-ci-meta` guild task in `pyforge-guild` (not `local-recipes`); the pull-request-path proof is `test_pull_request_exempt_surfaces.py`.
 
 - 2026-10-27: minted from the station Dream's entry of 2026-10-27 and the operator's rulings D1–D4 of the same date.
 
