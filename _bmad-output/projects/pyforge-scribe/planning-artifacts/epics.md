@@ -11,7 +11,7 @@ inputDocuments:
   - _bmad-output/projects/pyforge-scribe/planning-artifacts/briefs/brief-pyforge-scribe-2026-07-25/brief.md
   - docs/specs/claude-team-memory.md
 mode: headless-express — no interactive elicitation; epic/story structure drafted directly from the PRD's Wave 1/Wave 2 split and the architecture spine's module breakdown
-updated: "2026-10-26"   # AMENDED 2026-10-26 (one archive home): Epic 28 / Story 28.1 minted done under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 16 archived satellite Dreams left docs/dreams/ for archive/docs/dreams/, their bodies verbatim in the station Dream; keys 28-1, epic-28 (done) and epic-28-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync. Prior "2026-10-26"   # AMENDED 2026-10-26 (CAP-7 retrofit): Epic 29 / Stories 29.1–29.2 minted; keys through the Tier-3 feed and sprint-ledger-sync; no other epic or story moved. Prior "2026-10-26"   # AMENDED 2026-10-26 (every requirement derives from a capability): Epic 27 / Story 27.1 minted (chore under spec-pyforge-scribe CAP-27 and CAP-29, spec-one-chain-per-station CAP-5 as amended; no CAP, no flag): AGENTS.md items 6 and 7 carry the requirement-arrow and multi-station-PR bullets, the block the CHAIN-STANDARD pointer and the shared-Postgres pitfall, the notes file the incident, team memory two captures; keys 27-1 (in-progress), epic-27 (in-progress) and epic-27-retrospective (optional) added; no other epic or story moved. Prior "2026-10-15"   # RE-STAMPED 2026-10-15: arch->epics cascade after the 2026-10-15 spine re-stamp (a stale surface glob re-pointed); no story, AC or ledger key moved. See § Currency reconciliation — 2026-10-15. Prior: AMENDED 2026-10-03 (Phase 4+5 landing): Story 26.1's four follow-up-review rows withdrawn by operator ruling (they run as review batches); it closes 5 rows. Prior: RE-STAMPED 2026-10-03 (Phase 4+5): Epic 26 / Story 26.1 minted (fix, no CAP): nine of scribe's 14 open medium and low deferrals, operator rulings of 2026-10-03. Prior: RE-STAMPED 2026-09-29: Epic 24 minted (24.1–24.3, spec-pyforge-scribe CAP-32) from the station Dream entry of 2026-09-29. Prior 2026-09-28:  chain-currency cascade (arch -> epics) after the 2026-09-28 spine re-stamp; no story change. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics); Epic 21 minted (21.1, spec-python-foundry-cutover fnd:CAP-15). Prior 2026-09-20
+updated: "2026-10-27"   # AMENDED 2026-10-27 (absorbed Spec folders to the archive home): Epic 30 / Story 30.1 minted in-progress under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 16 absorbed Spec folders move to archive/<original path>; keys 30-1, epic-30 (in-progress) and epic-30-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync. Prior "2026-10-26"   # AMENDED 2026-10-26 (one archive home): Epic 28 / Story 28.1 minted done under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 16 archived satellite Dreams left docs/dreams/ for archive/docs/dreams/, their bodies verbatim in the station Dream; keys 28-1, epic-28 (done) and epic-28-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync. Prior "2026-10-26"   # AMENDED 2026-10-26 (CAP-7 retrofit): Epic 29 / Stories 29.1–29.2 minted; keys through the Tier-3 feed and sprint-ledger-sync; no other epic or story moved. Prior "2026-10-26"   # AMENDED 2026-10-26 (every requirement derives from a capability): Epic 27 / Story 27.1 minted (chore under spec-pyforge-scribe CAP-27 and CAP-29, spec-one-chain-per-station CAP-5 as amended; no CAP, no flag): AGENTS.md items 6 and 7 carry the requirement-arrow and multi-station-PR bullets, the block the CHAIN-STANDARD pointer and the shared-Postgres pitfall, the notes file the incident, team memory two captures; keys 27-1 (in-progress), epic-27 (in-progress) and epic-27-retrospective (optional) added; no other epic or story moved. Prior "2026-10-15"   # RE-STAMPED 2026-10-15: arch->epics cascade after the 2026-10-15 spine re-stamp (a stale surface glob re-pointed); no story, AC or ledger key moved. See § Currency reconciliation — 2026-10-15. Prior: AMENDED 2026-10-03 (Phase 4+5 landing): Story 26.1's four follow-up-review rows withdrawn by operator ruling (they run as review batches); it closes 5 rows. Prior: RE-STAMPED 2026-10-03 (Phase 4+5): Epic 26 / Story 26.1 minted (fix, no CAP): nine of scribe's 14 open medium and low deferrals, operator rulings of 2026-10-03. Prior: RE-STAMPED 2026-09-29: Epic 24 minted (24.1–24.3, spec-pyforge-scribe CAP-32) from the station Dream entry of 2026-09-29. Prior 2026-09-28:  chain-currency cascade (arch -> epics) after the 2026-09-28 spine re-stamp; no story change. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics); Epic 21 minted (21.1, spec-python-foundry-cutover fnd:CAP-15). Prior 2026-09-20
 currency_review: "Reviewed 2026-09-17 (one-chain scribe fold) — INV-A window cites spec-pyforge-scribe CAP-1..26; epic numbers unchanged. No blocked keys flipped."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -1026,6 +1026,37 @@ So that the live tree holds live Dreams only and nothing a satellite said is los
 **Then** `fold-complete` reads each of the 16 as a complete fold and no scribe Dream in `docs/dreams/` reads `status: archived`; every live pointer that named a moved file names its archive path
 **And** `dreams-hygiene`, `dream-chain`, `chain-sprawl` (its baseline pruned), `governance-currency`, `spec-surface`, `chain-completeness`, `chain-currency` and `detectors-ci` stay green
 **Status:** done
+
+## Epic 30: The absorbed scribe Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
+
+Minted 2026-10-27 from `docs/governance/spec-one-chain-per-station/SPEC.md` (spec-one-chain-per-station:CAP-11; owner Dream
+`docs/dreams/one-chain-per-station.md`, `owner: guild`) and that Dream's entry of the same date: everything the fleet retires
+leaves the live tree for `archive/<original path>`, and after the archived Dreams (PR #2328) come the absorbed and archived
+Spec folders, each with its memlog and its companions (CHAIN-STANDARD §11 step 2). On 2026-10-27, at `9dd0a8f1f9`, 16
+`status: absorbed` Spec folders still sat under `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/`.
+Scribe mints no CAP and registers no FR for this story: the CAP is the Guild Spec's, enumerated here and in that
+Spec's `.memlog.md`, the relay shape of doctor Epic 36, marshal Epic 75, herald Epic 33 and the 2026-10-26 mop. One of the
+eight station stories of the 2026-10-27 one-PR close-out of spec-one-chain-per-station:CAP-11. **HARD boundaries:** every move is a `git mv`; nothing
+is deleted; a moved file's text is unchanged except the memlog event appended before the move; a live companion is carried
+into the station Spec folder, never archived (operator ruling 2026-10-27); dated records keep the path they were written
+with; `SPEC.md` is never hand-edited (memlog event, then the anchor-asserting script render, both self-validate passes
+logged). The story is a `chore`.
+
+### Story 30.1: Scribe's absorbed Spec folders move to the archive home
+
+As a reader of the scribe planning tree,
+I want the station's 16 absorbed Spec folders to live under `archive/<original path>`, each with its pointer, memlog and record companions,
+So that `specs/` holds the station Spec, its declared seams and its story specs only, and nothing an absorbed Spec said is lost.
+
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-one-chain-per-station:CAP-11 (CHAIN-STANDARD §11 step 2: the absorbed and archived Spec folders move, each with its memlog and every companion; readers follow the move); no scribe CAP or FR
+**Flag:** none (`type: chore`, `spec-feature-flag-governance` Q1)
+**Surface:** `archive/_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-<slug>/` × 16 (each moved with `git mv`: its pointer `SPEC.md`, its `.memlog.md` and its record companions); every live pointer that named a moved path (code, tests, workflows, docs, `docs/foundry/capability-ledger.yaml`'s source paths); `docs/governance/chain-sprawl-baseline.json` (the moved folders' entries leave); `specs/spec-pyforge-scribe/.memlog.md` (the surface reconcile)
+**Spec:** `planning-artifacts/specs/spec-30-1-scribe-s-absorbed-spec-folders-move-to-the-archive-home.md`
+**Given** at `9dd0a8f1f9` 16 `status: absorbed` Spec folders sat under the station `specs/` directory
+**When** each live companion is carried into `specs/spec-pyforge-scribe/` and every absorbed folder moves to `archive/<original path>`
+**Then** no folder under `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/` reads `status: absorbed`, each moved folder keeps its files, and every live pointer names the file's new path
+**And** `chain-sprawl` (its baseline pruned), `dream-chain`, `governance-currency`, `spec-surface`, `ad-citation`, `chain-completeness`, `chain-currency` and `detectors-ci` stay green, and the station suite passes
+**Status:** in-progress
 
 ## Platform floor addendum — 2026-09-07
 
