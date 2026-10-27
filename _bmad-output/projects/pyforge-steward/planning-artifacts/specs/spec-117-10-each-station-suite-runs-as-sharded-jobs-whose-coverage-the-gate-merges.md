@@ -85,6 +85,7 @@ Summary: built in the Wave 3 PR (2026-10-27). `pytest-split` joins the steward, 
 
 ## Spec Change Log
 
+- 2026-10-27 (measured, PR #2335 head 336e1ccb1c (a shared-surface PR: `pixi.lock` moved, so every lane ran)): the station-tests workflow's wall 226 s (472 s on PR #2332's head, 672 s at the baseline) and 2,555 runner-seconds across 29 jobs. Shards (job seconds / pytest step): steward-test 80 / 31 and 103 / 67; steward-live-test 163 / 128, 98 / 60, 98 / 64, 91 / 18 — the count-based split lands unevenly, so a durations file is the next lever (AC3's ≤ 45 s per shard is not yet met: four shards work 60–137 s); doctor-live-test 124 / 62 and 68 / 31; marshal-test 112 / 85, 102 / 68, 92 / 62, 102 / 42; atlas-test 122 / 52, 162 / 86, 143 / 82; herald-test 160 / 104 and 185 / 137 (serial; herald's xdist is its Story H.1). The gates: 27–52 s each, every shard's report merged. `herald-test (1)` red once on a Playwright chrome-channel launch that found no bundled fallback; the job now installs and probes Chromium like the Platform and atlas jobs (CAP-174's shape).
 - 2026-10-27: AC5 amended at build — durations files are written by a full `--store-durations` run (local, or a nightly job later), none committed yet; shards split by count until one lands.
 
 - 2026-10-27: minted from the station Dream's second Realization-log entry of 2026-10-27 (the wall is the lanes the waves did not touch) and the CAP-175 amendment of the same date.

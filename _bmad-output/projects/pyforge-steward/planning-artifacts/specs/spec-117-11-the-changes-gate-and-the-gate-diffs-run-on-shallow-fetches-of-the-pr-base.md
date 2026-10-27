@@ -82,6 +82,7 @@ Summary: built in the Wave 3 PR (2026-10-27). `pyforge-station-tests.yml`: the `
 
 ## Spec Change Log
 
+- 2026-10-27 (measured, PR #2335 head 336e1ccb1c (a shared-surface PR: `pixi.lock` moved, so every lane ran)): the `changes` job 16 s (12 s of it the two-commit checkout; 24–36 s before); station checkouts 5–22 s on most jobs with runner-side outliers at 31–47 s on four (the same depth on every job: runner I/O, not history); the three-dot diffs and the gate verdicts unchanged.
 - 2026-10-27: AC1 and AC2 amended at build — a two-commit fetch (not depth one plus a base fetch) keeps the three-dot diffs; the base ref rule is `refs/remotes/origin/<base>` where it exists, else `HEAD^1`.
 
 - 2026-10-27: minted from the station Dream's second Realization-log entry of 2026-10-27 (the wall is the lanes the waves did not touch) and the CAP-175 amendment of the same date.

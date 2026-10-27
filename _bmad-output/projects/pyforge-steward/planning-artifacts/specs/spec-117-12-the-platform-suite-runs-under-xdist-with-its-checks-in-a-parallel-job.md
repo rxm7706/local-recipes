@@ -86,6 +86,7 @@ Summary: built in the Wave 3 PR (2026-10-27). `platform-ci.yml`: the `test` job 
 
 ## Spec Change Log
 
+- 2026-10-27 (measured, PR #2335 head 336e1ccb1c (a shared-surface PR: `pixi.lock` moved, so every lane ran)): the `test` job 198 s (the suite 121 s under `-n 4`; 347 s with the serial 226 s suite on PR #2332's head), the `checks` job 112 s beside it (policy suite 25 s, mypy, ruff, system checks); Platform CI's wall 203 s.
 - 2026-10-27: minted from the station Dream's second Realization-log entry of 2026-10-27 (the wall is the lanes the waves did not touch) and the CAP-175 amendment of the same date.
 
 ## Review Triage Log

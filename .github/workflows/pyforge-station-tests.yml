@@ -815,13 +815,32 @@ jobs:
         with:
           environments: pyforge-herald site
           cache: true
-      # DW-14-2-1: the render gate's real-browser tests need Chromium.
-      # ubuntu-latest ships google-chrome; fall back to a playwright-managed
-      # chromium otherwise -- same precedent as detectors.yml's check_layout job.
+      # DW-14-2-1: the render gate's real-browser tests need Chromium. Steward Story 112.1 / CAP-174's shape
+      # (the Platform CI test job, the atlas job): install Playwright's own chromium, launch it once, and pull its
+      # system packages through apt only when that launch fails. `which google-chrome` alone proved nothing:
+      # on PR #2335 the render gate's chrome-channel launch failed on a runner that had google-chrome, and the
+      # bundled fallback the test then tries had never been installed (herald-test (1), 2026-10-27).
       - name: Verify a browser is present for the render gate
         run: |
-          which google-chrome || which chromium || \
-            pixi run --frozen -e pyforge-herald python -m playwright install --with-deps chromium
+          probe() {
+            pixi run --frozen -e pyforge-herald python - <<'PY'
+          from playwright.sync_api import sync_playwright
+
+          with sync_playwright() as playwright:
+              playwright.chromium.launch().close()
+          PY
+          }
+          pixi run --frozen -e pyforge-herald python -m playwright install chromium
+          if probe; then
+            echo "Chromium launches on this runner image; no system packages installed."
+          else
+            echo "::warning::Chromium does not launch on this runner image; installing its system packages through apt (playwright install-deps chromium)."
+            pixi run --frozen -e pyforge-herald python -m playwright install-deps chromium
+            if ! probe; then
+              echo "::error::Chromium still does not launch after playwright install-deps chromium."
+              exit 1
+            fi
+          fi
       # test_skf_validators_pass invokes `uv run` directly (not a pixi
       # dependency -- this station's own skf-frontmatter validator script
       # is meant to be runnable standalone via uv).

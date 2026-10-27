@@ -85,6 +85,7 @@ Summary: built in the Wave 3 PR (2026-10-27). `cfe-regression-net.yml`: the full
 
 ## Spec Change Log
 
+- 2026-10-27 (measured, PR #2335 head 336e1ccb1c (a shared-surface PR: `pixi.lock` moved, so every lane ran)): `cfe-regression-net` `skipped` on the pull request; `cfe-meta` 155 s (111 s of it the serial meta suite in `pyforge-guild`, 28 s the env restore; the full net's job was 759 s on PR #2332's head). AC3 (a CFE PR's slowest workflow ≤ 5 min) holds: 159 s.
 - 2026-10-27 (measured): with `test-ci-meta` in place of `test-ci`, a full-scope `pr-preflight` on this branch ran 40 lanes in 303 s (772 s the same morning with the 768 s `test-ci` lane); the longest lane is now `pyforge-marshal-test` 288 s, then `pyforge-steward-live-test` 254 s and `pyforge-herald-test` 247 s — the other stations' xdist and split stories.
 - 2026-10-27: AC1, AC2 and AC4 amended at build — the workflow keeps its `pull_request` trigger for the meta job; the meta lane is the `test-ci-meta` guild task in `pyforge-guild` (not `local-recipes`); the pull-request-path proof is `test_pull_request_exempt_surfaces.py`.
 

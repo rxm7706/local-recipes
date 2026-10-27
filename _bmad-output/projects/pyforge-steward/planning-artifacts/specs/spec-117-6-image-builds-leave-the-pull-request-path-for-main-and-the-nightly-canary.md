@@ -85,6 +85,7 @@ Summary: built in the Wave 3 PR (2026-10-27). Registry rows `station-tests.guild
 
 ## Spec Change Log
 
+- 2026-10-27 (measured, PR #2335 head 336e1ccb1c (a shared-surface PR: `pixi.lock` moved, so every lane ran)): `guild-container`, Platform `container` (both engines), `container-dbgpt` (both) and `golden-path-promotion` all `skipped` on the pull request; Platform CI's wall 203 s (754 s on the 2026-10-27 baseline, 695 s on PR #2332's head), the station-tests workflow 226 s with no image job; the PR's eight workflows summed to 61 runner-minutes (94 on PR #2332, 126 at the baseline).
 - 2026-10-27: AC2 and AC3 amended at build — a PR never builds an image (no container-input exception, no gha layer cache yet); the canary is nightly, not weekly; the matrix proof lives in a steward meta test rather than `--check`.
 
 - 2026-10-27: minted from the station Dream's entry of 2026-10-27 and the operator's rulings D1–D4 of the same date.
