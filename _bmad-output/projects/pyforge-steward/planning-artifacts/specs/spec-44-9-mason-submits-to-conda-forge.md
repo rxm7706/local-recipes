@@ -3,6 +3,13 @@ title: '44.9: Mason submits to conda-forge'
 type: 'feature'
 created: '2026-09-18'
 status: 'blocked'
+flag:
+  key: pyforge.steward.cutover_mason_submit
+  provider: openfeature-file
+  default: {production: off, staging: off, dev: off}
+  scope: global
+  fallback: "A stays the root of record; mason's submit targets stay as today (dry-run without --yes)"
+  cleanup: 90 days after ON in every environment (Q4)   # retrofit block (spec-feature-flag-governance CAP-7, operator ruling R6 of 2026-10-26): the key joins the tree when this story builds
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []

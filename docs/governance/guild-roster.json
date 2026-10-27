@@ -129,6 +129,18 @@
     "planning-ledger-only",
     "detector-or-gate"
   ],
+  "$comment_flag_retrofit_cover_exemptions": [
+    "The closed-list values under which an EXEMPT retrofit story covers a runtime capability in Doctor's",
+    "flag inventory (spec-feature-flag-governance CAP-7; doctor Story 51.1). flag-infrastructure (operator",
+    "ruling R4, 2026-10-26): a flag on the flag platform itself is recursive. detector-or-gate (operator ruling",
+    "2026-10-26, amending R4 for atlas CAP-20): a capability that is itself a gate has no entry point a",
+    "switch could gate, and the Spec's fidelity Constraint says a gated gate is a silent green. The",
+    "inventory reads such a story as the CAP's cover (`exempt: <value> (<story key>)`), never as an",
+    "unflagged runtime row, and only for the CAPs the story's Parent: line names; a prose citation covers",
+    "nothing. Every other exemption value covers nothing. scripts/flag_inventory.py reads THIS list and",
+    "nothing else; it holds no copy. Adding a value here is a governance act, never a code change."
+  ],
+  "flag_retrofit_cover_exemptions": ["flag-infrastructure", "detector-or-gate"],
   "$comment_dream_statuses": [
     "The Dream lifecycle -- each state names the ACT THAT COMPLETED. There is",
     "deliberately no `building` state: status declares what EXISTS (stable,",

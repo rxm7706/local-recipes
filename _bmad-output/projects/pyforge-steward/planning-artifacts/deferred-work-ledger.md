@@ -6649,3 +6649,14 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-10-25 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-steward-114-1-1: 139 capabilities of the steward flag inventory stay `unresolved`: the join cannot reach their code, so the CAP-7 retrofit cannot judge whether they are reachable at runtime.
+
+- source_spec: `planning-artifacts/specs/spec-114-1-steward-budget-a-declared-ceiling-and-an-honest-spend-signal-sits-behind-a-kill-switch.md`
+  summary: 139 rows of `docs/governance/flag-inventory/pyforge-steward.md` read `unresolved` after the join fix (doctor Story 51.1): 125 citing stories with no Surface line, 13 whose Surface paths no longer exist, 1 CAP no story cites. They are not the retrofit's debt (operator ruling R7 of 2026-10-26): a row the join cannot classify is a planning gap, not a capability known to be reachable.
+  evidence: Regenerated 2026-10-26 on the fixed join (landed stories only, best class across citing stories). The residue is the inventory's blind spot by construction: a CAP joins only through a citing story's `Surface:` line in `epics.md` or a story spec's `Parent:` line. The follow-up shape is Doctor's: let the join also read each capability's own `verified:` sub-bullet citations (they name `file:line`), then re-measure; a station backfills `Surface:` lines only where a capability turns out runtime.
+  location: docs/governance/flag-inventory/pyforge-steward.md
+  origin: spec-deferred — recorded by hand in the CAP-7 retrofit PR (operator ruling R7, 2026-10-26)
+  severity: low
+  promoted: 2026-10-26 — the retrofit chain commit
+  status: open

@@ -647,6 +647,69 @@ def test_story_spec_join_missing_dir_is_empty(tmp_path: Path) -> None:
     assert capability_effect._story_surface_by_cap("", ["spec-demo"], story_specs_dir=tmp_path / "nope") == {}
 
 
+def test_story_surface_citations_keep_every_citing_story_in_order(tmp_path: Path) -> None:
+    """Story 51.1: a later chore citing a CAP range with a planning Surface does not hide the earlier story."""
+    specs = tmp_path / "specs"
+    _write_story_spec(specs, "spec-5-1-a-story.md", "Parent: spec-demo CAP-2\nSurface: `story/two.py`\n")
+    _write_story_spec(specs, "spec-5-2-prose.md", "Parent: spec-demo CAP-2\nSurface: named in epics.md\n")
+    epics = (
+        "## Epic 1\n\n### Story 1.1: x\n\n**FR/AD:** spec-demo CAP-2\n\n**Surface:** `src/pkg/cli.py`\n\n"
+        "### Story 9.3: a later chore\n\n**FR/AD:** spec-demo CAP-1..CAP-3 (their text)\n\n"
+        "**Surface:** `planning-artifacts/specs/spec-demo/SPEC.md`\n\n"
+        "### Story 9.4: no surface\n\n**FR/AD:** spec-demo CAP-2\n"
+    )
+
+    got = capability_effect._story_surface_citations_by_cap(epics, ["spec-demo"], story_specs_dir=specs)
+
+    C = capability_effect.StorySurfaceCitation
+    assert got[("spec-demo", 2)] == [
+        C("1.1", "`src/pkg/cli.py`"),
+        C("9.3", "`planning-artifacts/specs/spec-demo/SPEC.md`"),
+        C("9.4", None),
+        C("spec-5-1-a-story.md", "`story/two.py`"),
+        C("spec-5-2-prose.md", None),
+    ]
+    assert got[("spec-demo", 1)] == [C("9.3", "`planning-artifacts/specs/spec-demo/SPEC.md`")]
+    assert set(got) == {("spec-demo", 1), ("spec-demo", 2), ("spec-demo", 3)}
+    # The last-wins join is unchanged: the chore's Surface still wins there.
+    last = capability_effect._story_surface_by_cap(epics, ["spec-demo"], story_specs_dir=specs)
+    assert last[("spec-demo", 2)] == "`planning-artifacts/specs/spec-demo/SPEC.md`"
+
+
+def test_caps_are_attributed_to_the_nearest_spec_mention() -> None:
+    """Story 51.1 AC8: each CAP token belongs to the Spec it sits beside."""
+    f = capability_effect._caps_attributed_on_line
+    slugs = ["spec-a", "spec-b"]
+    assert f("spec-a CAP-1 (<- spec-x CAP-2, CAP-3; note), CAP-4", slugs) == {"spec-a": {1, 4}, "spec-b": set()}
+    assert f("`spec-a` CAP-10 over the CAP-6 seam, and the env of `spec-b`", slugs) == {
+        "spec-a": {6, 10},
+        "spec-b": set(),
+    }
+    assert f("CAP-5 of spec-b", slugs) == {"spec-a": set(), "spec-b": {5}}
+    assert f("spec-b CAP-1..3 and CAP-7-CAP-8", slugs) == {"spec-a": set(), "spec-b": {1, 2, 3, 7, 8}}
+    assert f("spec-b CAP-1 listed in docs/inventory/a.md", ["spec-a", "spec-b"])["spec-a"] == set()
+    assert f("no spec here CAP-1", slugs) == {"spec-a": set(), "spec-b": set()}
+    known = {"spec-a", "spec-b", "spec-x"}
+    assert f("spec-a CAP-1, and spec-surface-check reads CAP-2", slugs, known) == {"spec-a": {1, 2}, "spec-b": set()}
+    assert f("spec-a CAP-1, and spec-surface-check reads CAP-2", slugs) == {"spec-a": {1}, "spec-b": set()}
+
+
+def test_the_citations_join_ends_a_story_block_at_an_epic_heading() -> None:
+    epics = (
+        "## Epic 1\n\n### Story 1.1: x\n\n**FR/AD:** spec-demo CAP-1\n\n**Surface:** `a.py`\n\n"
+        "## Epic 2: next (spec-demo CAP-2)\n\n### Story 2.1: y\n\nnothing\n"
+    )
+    got = capability_effect._story_surface_citations_by_cap(epics, ["spec-demo"])
+    assert set(got) == {("spec-demo", 1)}
+    # The last-wins join keeps its reading (the heading line joins the block above it).
+    assert ("spec-demo", 2) in capability_effect._story_surface_by_cap(epics, ["spec-demo"])
+
+
+def test_story_surface_citations_missing_dir_and_empty_epics_are_empty(tmp_path: Path) -> None:
+    assert capability_effect._story_surface_citations_by_cap("", ["spec-demo"], story_specs_dir=tmp_path / "nope") == {}
+    assert capability_effect._story_surface_citations_by_cap("", ["spec-demo"]) == {}
+
+
 def test_caller_reach_resolves_a_cap_through_its_story_spec(tmp_path: Path) -> None:
     _init_repo(tmp_path)
     pa = _pa(tmp_path, "pyforge-testproj")

@@ -60,6 +60,7 @@ from importlib import resources
 from pathlib import Path
 
 import pytest
+from pyforge.testing_kit.flags import flag_states, flagd_tree
 
 from pyforge.marshal.seed.errors import PreconditionFailure, StateInvalid
 from pyforge.marshal.seed.fs import NeverWrite
@@ -282,6 +283,52 @@ def test_apply_yes_materializes_every_planned_artifact_and_writes_state_last(cle
     assert state is not None
     assert state.mode == "adopt"
     assert {record.id for record in state.managed} == {"whole", "hybrid"}
+
+
+def _kill_switch_tree(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, key: str, on: bool) -> None:
+    """A flagd tree holding one retrofit kill switch in the given state (Epic 110, CAP-7)."""
+    folder = tmp_path.parent / f"{tmp_path.name}-flag-tree-110-11"
+    folder.mkdir(exist_ok=True)
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(flagd_tree(folder, {key: "on" if on else "off"})))
+
+
+@flag_states("pyforge.marshal.adapter_fanout")
+def test_the_adapter_fanout_kill_switch_renders_and_records_no_adapter(
+    flag_provider: dict[str, bool], clean_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 110.11 (spec-feature-flag-governance CAP-7; CAP-16): ON, the per-tool adapter is planned, rendered and
+    recorded; OFF, it leaves the plan before plan.json is written, so nothing renders it and the state records no
+    adapter this run did not render, while every other artifact applies as before."""
+    on = flag_provider["pyforge.marshal.adapter_fanout"]
+    _kill_switch_tree(clean_repo, monkeypatch, "pyforge.marshal.adapter_fanout", on)
+    manifest = _manifest(
+        _copied_managed("whole", "WHOLE.md"),
+        _generated_derived("cursor-rules", ".cursor/rules/specs.mdc"),
+    )
+    calls: list[str] = []
+
+    result = run_adopt(
+        clean_repo,
+        manifest,
+        apply=True,
+        yes=True,
+        confirm=_unreachable_confirm,
+        commit=_fake_commit(manifest, clean_repo, calls),
+    )
+
+    planned = {action.artifact_id for action in result.plan.actions}
+    state = read_state(clean_repo)
+    assert state is not None
+    recorded = {record.id for record in state.managed}
+    assert (clean_repo / "WHOLE.md").read_text() == "materialized whole\n"
+    if on:
+        assert planned == {"whole", "cursor-rules"} and set(calls) == {"whole", "cursor-rules"}
+        assert recorded == {"whole", "cursor-rules"}
+    else:
+        assert planned == {"whole"} and calls == ["whole"]
+        assert recorded == {"whole"}
+        assert not (clean_repo / ".cursor/rules/specs.mdc").exists()
+        assert "cursor-rules" not in (clean_repo / ".marshal" / "plan.json").read_text()
 
 
 def _escaping_symlink(repo: Path, name: str) -> Path:

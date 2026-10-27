@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: 71cbd4489c34c070
-story_count: 162
+source_fingerprint: 42c02b4d676ce744
+story_count: 163
 test_file_count: 99
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 162
-- **Epics parsed:** 50
+- **Stories parsed:** 163
+- **Epics parsed:** 51
 - **Test files inventoried:** 99 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `71cbd4489c34c070`
+- **Source fingerprint:** `42c02b4d676ce744`
 
 ## Risk Assessment
 
@@ -86,6 +86,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 48: One registry orders the whole Pages site, and a stale site tells on itself (spec-pyforge-doctor CAP-90, CAP-91)
 - Epic 49: The detector registry finds each detector's task by its path (spec-pyforge-doctor FR-15)
 - Epic 50: Every requirement arrow resolves to a defined capability (spec-pyforge-doctor CAP-92, CAP-93; FR-14..FR-16)
+- Epic 51: The flag inventory and the gate measure the CAP-7 retrofit as ruled (a fix under spec-pyforge-doctor CAP-20; the Guild flag rule's rulings R4, R6, R8 of 2026-10-26)
 
 ## Test Inventory
 
@@ -357,6 +358,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 48.2 | A Pages deploy more than a day behind its inputs is named in fleet-picture | none observed |
 | 49.1 | A detector's task is the one that runs its script | none observed |
 | 50.1 | fr-without-cap resolves every arrow against a defined capability and names a ... | none observed |
+| 51.1 | the flag inventory and the gate measure the retrofit as ruled | none observed |
 
 ## Quality Gates
 

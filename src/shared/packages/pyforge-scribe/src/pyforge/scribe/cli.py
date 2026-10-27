@@ -15,10 +15,13 @@ importing internal modules directly (AD-7).
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import typer
 from pyforge.core.atomic_write import atomic_write_text
+from pyforge.core.cutover_root import resolve_flags_path
+from pyforge.core.flags import disabled_help, kill_switch_on
 
 from pyforge.scribe import __version__
 from pyforge.scribe import catalog as estate_catalog
@@ -638,6 +641,35 @@ def _index_refresh_declared(repo_root: Path, manifest_path: Path, warnings: list
     )
 
 
+# Story 29.1 (spec-feature-flag-governance CAP-7; spec-pyforge-scribe CAP-32): the kill switch for the derived
+# BMAD-estate catalog, defaulting ON, read through ``pyforge.core.flags`` only. OFF keeps `bmad-estate` listed in
+# `--help` marked disabled (Q3) and refuses with exit 2 -- Click's usage code, no new code. No tree reads it ON.
+BMAD_ESTATE_CATALOG_FLAG_KEY = "pyforge.scribe.bmad_estate_catalog"
+RETROFIT_DEFAULT = True
+# No full stop: Click's short help stops at the first sentence, and the Q3 marker must stay inside it.
+_BMAD_ESTATE_HELP = "Render (or check) the derived BMAD-estate catalog (Story 24.1, CAP-32)"
+
+
+def _bmad_estate_switch_on() -> bool | None:
+    """The switch's reading, or None when no tree is in reach (read as ON, no read)."""
+    tree = resolve_flags_path()
+    if tree is None:
+        return None
+    return kill_switch_on(BMAD_ESTATE_CATALOG_FLAG_KEY, flags_path=tree)
+
+
+def mark_retrofit_help() -> None:
+    """Mark `catalog bmad-estate` disabled in `--help` while its switch reads OFF (called from `main`)."""
+    tree = resolve_flags_path()
+    text = _BMAD_ESTATE_HELP
+    if tree is not None:
+        marked = disabled_help(text, BMAD_ESTATE_CATALOG_FLAG_KEY, RETROFIT_DEFAULT, flags_path=tree)
+        # typer renders help as rich markup, where `[disabled: ...]` would read as a style tag and vanish.
+        # typer renders help as rich markup, where `[disabled: ...]` would read as a style tag: escape the bracket.
+        text = text + marked[len(text) :].replace("[", "\\[")
+    catalog_bmad_estate.__doc__ = text + "." + _BMAD_ESTATE_DOC_BODY
+
+
 @catalog_app.command("bmad-estate")
 def catalog_bmad_estate(
     write: bool = typer.Option(False, "--write", help="Render into docs/reference/bmad-estate-llms-full.md."),
@@ -661,6 +693,9 @@ def catalog_bmad_estate(
     `pixi.toml`, the marshal harness range and the release-cadence steps — offline, no
     station internals. Without `--write` or `--check` the rendered catalog is printed.
     Exit codes: 0 rendered / current, 1 drift (`--check`), 2 a source cannot be read."""
+    if _bmad_estate_switch_on() is False:
+        typer.echo(f"scribe: flag {BMAD_ESTATE_CATALOG_FLAG_KEY} is off", err=True)
+        raise typer.Exit(code=2)
     if write and check:
         typer.echo("choose one of --write or --check", err=True)
         raise typer.Exit(code=2)
@@ -683,8 +718,20 @@ def catalog_bmad_estate(
         raise typer.Exit(code=2) from exc
 
 
-def main() -> None:
-    app()
+# The docstring body `mark_retrofit_help` keeps below the (possibly marked) first line.
+_BMAD_ESTATE_DOC_BODY = (catalog_bmad_estate.__doc__ or "").partition("\n")[2]
+_BMAD_ESTATE_DOC_BODY = "\n" + _BMAD_ESTATE_DOC_BODY if _BMAD_ESTATE_DOC_BODY else ""
+
+
+def main(argv: list[str] | None = None) -> int | None:
+    """Run the CLI on ``argv`` (``sys.argv[1:]`` when None); Click exits through ``SystemExit`` as before.
+
+    The listing is marked only when help is asked for, so an ordinary command reads no flag it does not need.
+    """
+    tokens = sys.argv[1:] if argv is None else argv
+    if any(token in {"-h", "--help"} for token in tokens):
+        mark_retrofit_help()
+    return app(args=argv)
 
 
 if __name__ == "__main__":

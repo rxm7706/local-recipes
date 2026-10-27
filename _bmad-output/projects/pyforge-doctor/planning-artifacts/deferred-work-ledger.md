@@ -3145,3 +3145,14 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   resolution: doctor Story 30.5 (spec-pyforge-doctor CAP-84, Epic 30): in `docs-currency` and in `scripts/governance_currency_check.py`, which it mirrors, the ignore probe for a path the page writes with a trailing slash is retried in that slashed form (a directory-only rule matches an absent directory only that way; written without the slash, the path still reads as a file), and a `bmad-*`/`skf-*` token resolves when `<token>-check` is a pixi task (a detector named by its source). `docs/reference/github-workflows.md` names `docs/dashboard/kedro-viz/` again and `docs/explanation/the-detector-framework.md` names the sources `dreams-hygiene` and `bmad-output-hygiene`. `.claude/worktrees/` stays a placeholder: only a local `.git/info/exclude` ignores it, so a fresh clone rightly reads it as absent.
   verified: 2026-10-24 doctor Story 30.5 (branch docs-currency-detector-gaps-2026-10-25; landing PR to follow) -- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/docs_currency.py:351` (`_is_git_ignored`) and `:365` (`_resolves_as_identifier`); `scripts/governance_currency_check.py:144` and `:169`; four new tests, two per detector, each failing when its rule is undone or the slash retry is made unconditional; `docs-currency` and `governance-currency` report no warning on the tree.
   status: closed
+
+### DW-doctor-51-1-1: 62 capabilities of the doctor flag inventory stay `unresolved`: the join cannot reach their code, so the CAP-7 retrofit cannot judge whether they are reachable at runtime.
+
+- source_spec: `planning-artifacts/specs/spec-51-1-the-flag-inventory-and-the-gate-measure-the-retrofit-as-ruled.md`
+  summary: 62 rows of `docs/governance/flag-inventory/pyforge-doctor.md` read `unresolved` after the join fix (doctor Story 51.1): 35 CAPs no story cites on a line naming the Spec, 24 citing stories with no Surface line, 3 whose Surface paths no longer exist. They are not the retrofit's debt (operator ruling R7 of 2026-10-26): a row the join cannot classify is a planning gap, not a capability known to be reachable.
+  evidence: Regenerated 2026-10-26 on the fixed join (landed stories only, best class across citing stories). The residue is the inventory's blind spot by construction: a CAP joins only through a citing story's `Surface:` line in `epics.md` or a story spec's `Parent:` line. The follow-up shape is Doctor's: let the join also read each capability's own `verified:` sub-bullet citations (they name `file:line`), then re-measure; a station backfills `Surface:` lines only where a capability turns out runtime.
+  location: docs/governance/flag-inventory/pyforge-doctor.md
+  origin: spec-deferred — recorded by hand in the CAP-7 retrofit PR (operator ruling R7, 2026-10-26)
+  severity: low
+  promoted: 2026-10-26 — the retrofit chain commit
+  status: open

@@ -25,6 +25,8 @@ evaluation through OpenFeature; neither changes what is stated here).
   and the reason. A new capability passes ``default=False`` so it never reads ON by
   accident; only a retrofit kill switch (``spec-feature-flag-governance`` CAP-7) may
   pass ``default=True``.
+* **The kill switch** (``spec-feature-flag-governance`` CAP-7): :func:`kill_switch_on` is the one reader a
+  retrofit flag uses -- ON unless the tree says OFF, silent with no tree in reach.
 * **The Q3 helpers** (a flag-off verb stays listed in ``--help`` and refuses with its
   station's usage code): :class:`FlagOff`, :func:`require` and :func:`disabled_help`.
   They never choose an exit code -- each station's ``main()`` catches ``FlagOff`` and
@@ -545,6 +547,19 @@ def read_boolean(key: str, default: bool = False, *, flags_path: Path | str | No
     if via_openfeature is not None:
         return via_openfeature
     return structural
+
+
+def kill_switch_on(key: str, *, flags_path: Path | str | None = None) -> bool:
+    """A retrofit kill switch (``spec-feature-flag-governance`` CAP-7): True unless the tree reads ``key`` OFF.
+
+    No tree in reach (:func:`pyforge.core.cutover_root.resolve_flags_path` finds none) reads ON with no read and no
+    warning, so a package run outside the estate keeps its behaviour silently. With a tree, the key is read by
+    :func:`read_boolean` with ``default=True``: a tree that lacks it reads ON with that function's one named WARN,
+    and ``state: DISABLED`` or an OFF variant reads False. Every retrofit read site uses this one helper.
+    """
+    if cutover_root.resolve_flags_path(flags_path) is None:
+        return True
+    return read_boolean(key, True, flags_path=flags_path)
 
 
 def require(key: str, default: bool = False, *, flags_path: Path | str | None = None) -> None:

@@ -3,6 +3,13 @@ title: '44.11: Windows-native estate'
 type: 'feature'
 created: '2026-09-18'
 status: 'blocked'
+flag:
+  key: pyforge.steward.cutover_windows_native
+  provider: openfeature-file
+  default: {production: off, staging: off, dev: off}
+  scope: global
+  fallback: "the estate stays as today; no windows-native path opens"
+  cleanup: 90 days after ON in every environment (Q4)   # retrofit block (spec-feature-flag-governance CAP-7, operator ruling R6 of 2026-10-26): the key joins the tree when this story builds
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []

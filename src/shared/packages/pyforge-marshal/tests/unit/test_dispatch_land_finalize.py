@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 from pyforge.core.process import ProcessError, ProcessResult
+from pyforge.testing_kit.flags import flag_states, flagd_tree
 
 from pyforge.marshal.adapters.fs_local import FsError, LocalFs
 from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
@@ -2326,6 +2327,31 @@ def test_finalize_publishes_the_intakes_rows_and_the_followup_row_together(tmp_p
     assert ledger.read_text(encoding="utf-8") == _FRR_BASE_LEDGER
     assert _frr_promoted_id(tmp_path) == _FRR_ID
     assert _journaled_findings_79(tmp_path) == []
+
+
+@flag_states("pyforge.marshal.followup_review_to_ledger")
+def test_the_followup_kill_switch_drops_only_the_followup_row_and_keeps_the_intake(
+    flag_provider: dict[str, bool], tmp_path: Path, monkeypatch
+) -> None:
+    """Story 110.26 (spec-feature-flag-governance CAP-7; CAP-275): ON publishes the intake's row and the follow-up
+    row together (the test above); OFF still publishes the intake's row (Story 53.2's deferred-work intake is not
+    this switch's capability) and carries no follow-up row."""
+    on = flag_provider["pyforge.marshal.followup_review_to_ledger"]
+    folder = tmp_path.parent / f"{tmp_path.name}-flag-tree-110-26"
+    folder.mkdir(exist_ok=True)
+    monkeypatch.setenv(
+        "PYFORGE_FLAGS_PATH",
+        str(flagd_tree(folder, {"pyforge.marshal.followup_review_to_ledger": "on" if on else "off"})),
+    )
+    ledger = _frr_setup(tmp_path)
+    vcs = _FrrVcs()
+
+    assert _frr_finalize(monkeypatch, tmp_path, vcs, _AddingIntakeProcess(ledger)) == 0
+
+    published = _frr_published_ledger(vcs)
+    assert "### DW-INTAKE-1: filed by intake" in published
+    assert published.count(f"### {_FRR_ID}:") == (1 if on else 0)
+    assert _frr_promoted_id(tmp_path) == (_FRR_ID if on else None)
 
 
 def test_the_row_is_built_on_origin_mains_ledger_never_the_stale_primary_copy(tmp_path: Path, monkeypatch) -> None:

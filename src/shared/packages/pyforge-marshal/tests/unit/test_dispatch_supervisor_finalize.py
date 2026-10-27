@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+from pyforge.testing_kit.flags import flag_states, flagd_tree
+
 from pyforge.marshal.cli.dispatch import (
     _redispatch_blocked_pending_supervisor_finalize,
     gather_fleet_finalize_escalations,
@@ -55,6 +58,32 @@ def test_supervisor_should_finalize_dead_session_with_progress() -> None:
         verification_verdict=None,
         landing_complete=False,
     )
+
+
+@flag_states("pyforge.marshal.supervisor_shell_finalize")
+def test_the_shell_finalize_kill_switch_leaves_the_leftover_for_the_operator(
+    flag_provider: dict[str, bool], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 110.13 (spec-feature-flag-governance CAP-7; CAP-141): the poll loop's one finalize decision. ON, a dead
+    session with progress that reported shell unavailable is finalized by the supervisor; OFF, it is not, and the
+    leftover waits for the operator (MRS-DISP-036), as before."""
+    from pyforge.marshal.dispatch_supervisor.__main__ import should_run_supervisor_finalize
+
+    on = flag_provider["pyforge.marshal.supervisor_shell_finalize"]
+    monkeypatch.setenv(
+        "PYFORGE_FLAGS_PATH",
+        str(flagd_tree(tmp_path, {"pyforge.marshal.supervisor_shell_finalize": "on" if on else "off"})),
+    )
+    decision = should_run_supervisor_finalize(
+        session_alive=False,
+        git_facts=_git_facts(),
+        session_log="shell unavailable",
+        verification_verdict=None,
+        landing_complete=False,
+        folded=fold([]),
+        run_id="run-1",
+    )
+    assert decision is on
 
 
 def test_supervisor_should_not_finalize_when_verified() -> None:

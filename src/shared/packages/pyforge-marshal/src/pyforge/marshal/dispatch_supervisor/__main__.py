@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
+from pyforge.core.flags import kill_switch_on
 from pyforge.core.preserve_refs import PreserveGitError, push_preserve_ref
 from pyforge.core.process import PosixProcess, ProcessPort
 
@@ -150,6 +151,41 @@ _FETCH_EVERY_N_TICKS = 5
 #: (Story 85.4).
 _FIX_TURN_PUBLISH_INTERVAL_S = 30.0
 _BASE_REF = ORIGIN_MAIN  # Story 60.1 (CAP-270): the full refname, never a short name a local ref can shadow
+
+
+# Story 110.13 (spec-feature-flag-governance CAP-7): the kill switch for CAP-141, spelled literally.
+SUPERVISOR_SHELL_FINALIZE_FLAG_KEY = "pyforge.marshal.supervisor_shell_finalize"
+
+
+def supervisor_shell_finalize_enabled() -> bool:
+    """Whether the supervisor finalizes a shell-less session's leftover (CAP-141's kill switch, ON by default)."""
+    return kill_switch_on(SUPERVISOR_SHELL_FINALIZE_FLAG_KEY)
+
+
+def should_run_supervisor_finalize(
+    *,
+    session_alive: bool,
+    git_facts: DispatchGitFacts,
+    session_log: str | None,
+    verification_verdict: str | None,
+    landing_complete: bool,
+    folded: object,
+    run_id: str,
+) -> bool:
+    """The poll loop's one finalize decision (Story 28.24, CAP-141): the predicate, no attempt journaled yet, and
+    the kill switch ON (Story 110.13). OFF leaves a shell-less session's leftover for the operator (MRS-DISP-036),
+    as before the supervisor finalized it. The switch is read last: the predicate is cheaper than the tree."""
+    return (
+        supervisor_should_finalize_harness_work(
+            session_alive=session_alive,
+            git=git_facts,
+            session_log=session_log,
+            verification_verdict=verification_verdict,
+            landing_complete=landing_complete,
+        )
+        and not finalize_attempt_journaled(folded, run_id)
+        and supervisor_shell_finalize_enabled()
+    )
 
 
 def _writer_id() -> str:
@@ -2892,13 +2928,15 @@ def run_dispatch_supervisor(
                 spec_relative_path=narration_path,
             )
         landing_done = _landing_succeeded(folded, run_id)
-        if supervisor_should_finalize_harness_work(
+        if should_run_supervisor_finalize(
             session_alive=session_alive,
-            git=git_facts,
+            git_facts=git_facts,
             session_log=session_log,
             verification_verdict=v_outcome,
             landing_complete=landing_done,
-        ) and not finalize_attempt_journaled(folded, run_id):
+            folded=folded,
+            run_id=run_id,
+        ):
             counter, _finalize_ok = _run_supervisor_finalize_sequence(
                 fs=fs,
                 vcs=vcs,

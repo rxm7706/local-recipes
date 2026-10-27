@@ -230,6 +230,27 @@ def test_require_honors_a_retrofit_default_true(tmp_path, capsys):
         require(KEY, True, flags_path=_tree(tmp_path, _bool_entry("on", state="DISABLED")))
 
 
+def test_kill_switch_on_reads_on_with_no_tree_and_no_warn(tmp_path, monkeypatch, capsys):
+    """spec-feature-flag-governance CAP-7: a retrofit kill switch outside the estate reads ON silently."""
+    monkeypatch.delenv("PYFORGE_FLAGS_PATH", raising=False)
+    monkeypatch.chdir(tmp_path)
+    assert flags.kill_switch_on("pyforge.x.retrofit") is True
+    assert capsys.readouterr().err == ""
+
+
+def test_kill_switch_on_reads_the_tree_when_there_is_one(tmp_path, capsys):
+    tree = tmp_path / "flags.json"
+    tree.write_text(
+        json.dumps({"flags": {"pyforge.x.on": _bool_entry("on"), "pyforge.x.off": _bool_entry("off")}}),
+        encoding="utf-8",
+    )
+    assert flags.kill_switch_on("pyforge.x.on", flags_path=tree) is True
+    assert flags.kill_switch_on("pyforge.x.off", flags_path=tree) is False
+    capsys.readouterr()
+    assert flags.kill_switch_on("pyforge.x.absent", flags_path=tree) is True
+    assert "WARN flag pyforge.x.absent" in capsys.readouterr().err
+
+
 def test_disabled_help_marks_an_off_flag_and_leaves_an_on_flag_unchanged(tmp_path):
     off = _tree(tmp_path, _bool_entry("off"), name="off.json")
     on = _tree(tmp_path, _bool_entry("on"), name="on.json")
@@ -871,6 +892,57 @@ def test_a_rendered_tree_carries_the_metadata_through_unchanged(tmp_path):
 
 # The shipped tree: what every flag in src/platform/config/flags.json must say (Story 76.2).
 _SHIPPED_CLOCKS = {
+    # spec-feature-flag-governance CAP-7, the retrofit (operator ruling 2026-10-26): one kill switch per pre-rule
+    # runtime capability, ON in every environment on mint day, so each clock runs from 2026-10-26 and the owning
+    # station's retirement story is due 2027-01-24 (Q4: 90 days). Epics marshal 110, steward 114, atlas 42, scribe 29.
+    "pyforge.marshal.front_door_environment": ("marshal", "110-1-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.loop_homes": ("marshal", "110-2-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.supervised_runs": ("marshal", "110-3-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.gate_evaluate": ("marshal", "110-4-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.fleet_status": ("marshal", "110-5-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.policy_composition": ("marshal", "110-6-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.seed_explain": ("marshal", "110-7-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.managed_regions": ("marshal", "110-8-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.seed_adopt": ("marshal", "110-9-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.seed_check": ("marshal", "110-10-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.adapter_fanout": ("marshal", "110-11-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.genesis_state_file": ("marshal", "110-12-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.supervisor_shell_finalize": ("marshal", "110-13-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.watch": ("marshal", "110-14-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.completion_from_facts": ("marshal", "110-15-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.verify_before_landing": ("marshal", "110-16-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.dispatch_lands_via_land": ("marshal", "110-17-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.one_in_flight_per_station": ("marshal", "110-18-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.branch_merged_divergence": ("marshal", "110-19-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.single_followup_review": ("marshal", "110-20-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.context_pipeline": ("marshal", "110-21-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.promotion_on_landing": ("marshal", "110-22-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.dispatch_only_fleet_rows": ("marshal", "110-23-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.guild_env_shellouts": ("marshal", "110-24-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.refresh_proven_push": ("marshal", "110-25-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.followup_review_to_ledger": ("marshal", "110-26-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.ledger_promotion_to_origin": ("marshal", "110-27-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.switch_script_placement": ("marshal", "110-28-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.seed_check_rendered_paths": ("marshal", "110-29-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.drain_followup_review": ("marshal", "110-30-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.dispatch_codegraph_index": ("marshal", "110-31-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.landing_memlog_union": ("marshal", "110-32-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.model_list_refresh": ("marshal", "110-33-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.recall_dev_pass": ("marshal", "110-34-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.recall_review_pass": ("marshal", "110-35-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.recall_context_layer": ("marshal", "110-36-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.marshal.recall_miss_injects_nothing": ("marshal", "110-37-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.steward.budget": ("steward", "114-1-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.steward.frame_upstream_check": ("steward", "114-2-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.steward.workspace_clean": ("steward", "114-3-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.steward.workspace_own_worktrees_only": ("steward", "114-4-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.steward.deploy_perimeter": ("steward", "114-5-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.steward.setup_hooks": ("steward", "114-6-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.steward.workspace_full_refs": ("steward", "114-7-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.steward.station_client_identity": ("steward", "114-8-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.atlas.agent_pipeline_tools": ("atlas", "42-1-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.atlas.manifest_inventory": ("atlas", "42-2-", "2026-10-26", "2026-10-26", "2027-01-24"),
+    "pyforge.scribe.bmad_estate_catalog": ("scribe", "29-1-", "2026-10-26", "2026-10-26", "2027-01-24"),
     "pyforge.cutover_root": ("steward", "44-12-", "2026-09-13", "", ""),
     "pyforge.steward.ghe_fleet_credentials": ("steward", "75-1-", "2026-09-29", "", ""),
     "pyforge.steward.object_store_consumer": ("steward", "74-1-", "2026-09-29", "", ""),
@@ -1042,10 +1114,19 @@ def test_the_shipped_tree_records_each_flags_owner_story_and_dates():
         ), key
 
 
-def test_no_running_cleanup_clock_in_the_shipped_tree_after_story_76_4():
+# The CAP-7 retrofit kill switches: the only clocks the shipped tree runs (ON everywhere since mint day).
+_RETROFIT_KILL_SWITCHES = frozenset(
+    k for k, (_o, _s, created, on, _c) in _SHIPPED_CLOCKS.items() if on == created == "2026-10-26"
+)
+
+
+def test_the_only_running_cleanup_clocks_are_the_cap_7_retrofit_kill_switches():
+    """Story 76.4 left no clock running; the retrofit (2026-10-26) starts one per kill switch, each due 2027-01-24."""
     payload, _ = _shipped()
     running = {k: e["metadata"]["cleanup_by"] for k, e in payload["flags"].items() if e["metadata"]["cleanup_by"]}
-    assert running == {}
+    assert set(running) == _RETROFIT_KILL_SWITCHES
+    assert set(running.values()) == {"2027-01-24"}
+    assert len(_RETROFIT_KILL_SWITCHES) == 48
 
 
 def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_the_metadata(monkeypatch):
@@ -1065,6 +1146,55 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
     # Story 84.4 / 85.3 / 74.2: per-environment booleans (object_store_consumer, sync_github_only_marker and
     # verify_fix_loop on in dev/staging, off in production).
     per_environment = {
+        # CAP-7 retrofit kill switches: ON in every environment.
+        "pyforge.marshal.front_door_environment": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.loop_homes": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.supervised_runs": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.gate_evaluate": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.fleet_status": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.policy_composition": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.seed_explain": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.managed_regions": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.seed_adopt": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.seed_check": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.adapter_fanout": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.genesis_state_file": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.supervisor_shell_finalize": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.watch": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.completion_from_facts": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.verify_before_landing": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.dispatch_lands_via_land": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.one_in_flight_per_station": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.branch_merged_divergence": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.single_followup_review": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.context_pipeline": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.promotion_on_landing": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.dispatch_only_fleet_rows": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.guild_env_shellouts": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.refresh_proven_push": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.followup_review_to_ledger": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.ledger_promotion_to_origin": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.switch_script_placement": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.seed_check_rendered_paths": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.drain_followup_review": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.dispatch_codegraph_index": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.landing_memlog_union": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.model_list_refresh": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.recall_dev_pass": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.recall_review_pass": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.recall_context_layer": {"dev": True, "staging": True, "production": True},
+        "pyforge.marshal.recall_miss_injects_nothing": {"dev": True, "staging": True, "production": True},
+        "pyforge.steward.budget": {"dev": True, "staging": True, "production": True},
+        "pyforge.steward.frame_upstream_check": {"dev": True, "staging": True, "production": True},
+        "pyforge.steward.workspace_clean": {"dev": True, "staging": True, "production": True},
+        "pyforge.steward.workspace_own_worktrees_only": {"dev": True, "staging": True, "production": True},
+        "pyforge.steward.deploy_perimeter": {"dev": True, "staging": True, "production": True},
+        "pyforge.steward.setup_hooks": {"dev": True, "staging": True, "production": True},
+        "pyforge.steward.workspace_full_refs": {"dev": True, "staging": True, "production": True},
+        "pyforge.steward.station_client_identity": {"dev": True, "staging": True, "production": True},
+        "pyforge.atlas.agent_pipeline_tools": {"dev": True, "staging": True, "production": True},
+        "pyforge.atlas.manifest_inventory": {"dev": True, "staging": True, "production": True},
+        "pyforge.scribe.bmad_estate_catalog": {"dev": True, "staging": True, "production": True},
         "pyforge.steward.object_store_consumer": {"dev": True, "staging": True, "production": False},
         "pyforge.steward.sync_github_only_marker": {"dev": True, "staging": True, "production": False},
         "pyforge.steward.workspace_preserve_tag": {"dev": False, "staging": False, "production": False},
