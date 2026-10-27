@@ -28,6 +28,10 @@ from pyforge.steward.marketplace_pages import (
     write_site_from_index,
 )
 
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads docs/foundry/marketplace and the estate skill
+# copies, so it runs in the station's live-tree half and fires on those paths, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 _CATALOG = Path("src/shared/packages/pyforge-steward/catalog")
 _MARKETPLACE = Path("docs/foundry/marketplace")
 

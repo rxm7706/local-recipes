@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from pyforge.steward.bootstrap import repo_root
+
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads docs/foundry/marketplace, so it runs in the
+# station's live-tree half and fires on that tree, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
 
 _SKILLS = Path("docs/foundry/marketplace/skills")
 _PILOTS = ("mason/environment", "mason/package", "warden/scan")
