@@ -644,6 +644,726 @@
         "on_everywhere": "",
         "cleanup_by": ""
       }
+    },
+    "pyforge.marshal.front_door_environment": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-1-the-front-door-names-the-environment-a-roster-station-runs-in-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.loop_homes": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-2-loop-homes-and-isolation-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.supervised_runs": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-3-supervised-unattended-runs-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.gate_evaluate": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-4-gates-you-can-run-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.fleet_status": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-5-fleet-visibility-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.policy_composition": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-6-policy-composition-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.seed_explain": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-7-operating-model-as-data-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.managed_regions": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-8-managed-region-upgrades-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.seed_adopt": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-9-adopt-onto-a-living-repo-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.seed_check": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-10-seed-check-in-ci-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.adapter_fanout": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-11-adapters-from-one-contract-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.genesis_state_file": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-12-genesis-owned-state-file-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.supervisor_shell_finalize": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-13-supervisor-finalizes-when-the-harness-cannot-run-shell-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.watch": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-14-marshal-watch-reports-what-changed-and-a-recommended-delay-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.completion_from_facts": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-15-completion-is-judged-from-git-and-process-facts-never-self-reports-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.verify_before_landing": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-16-a-session-s-self-report-is-input-to-verification-never-the-verdict-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.dispatch_lands_via_land": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-17-dispatch-lands-through-existing-landing-machinery-never-a-second-path-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.one_in_flight_per_station": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-18-one-story-in-flight-per-station-cross-station-dispatches-run-concurrently-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.branch_merged_divergence": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-19-branch-merged-is-never-true-on-ancestry-alone-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.single_followup_review": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-20-after-harness-exit-at-most-one-follow-up-review-then-land-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.context_pipeline": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-21-declared-context-pipeline-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.promotion_on_landing": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-22-promotion-runs-on-landing-not-on-memory-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.dispatch_only_fleet_rows": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-23-a-dispatch-only-checkout-still-has-fleet-rows-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.guild_env_shellouts": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-24-marshal-s-shell-outs-name-the-guild-env-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.refresh_proven_push": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-25-a-loop-home-refresh-sends-its-proven-fast-forward-past-the-pre-push-preflight-journaled-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.followup_review_to_ledger": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-26-a-follow-up-review-a-landed-story-recommends-is-carried-into-the-deferred-work-ledger-never-dropped-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.ledger_promotion_to_origin": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-27-a-landing-s-ledger-promotion-reaches-origin-main-and-a-failed-one-is-never-silent-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.switch_script_placement": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-28-the-switch-script-runs-where-it-is-documented-to-run-or-says-in-one-line-why-it-cannot-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.seed_check_rendered_paths": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-29-marshal-seed-check-judges-the-paths-the-manifest-means-never-its-unrendered-placeholders-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.drain_followup_review": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-30-a-drain-runs-the-follow-up-review-a-landed-story-recommended-gated-by-its-deferred-work-row-never-by-the-ledger-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.dispatch_codegraph_index": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-31-every-dispatch-session-opens-on-the-shared-codegraph-index-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.landing_memlog_union": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-32-a-landing-unions-append-only-memlogs-instead-of-refusing-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.model_list_refresh": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-33-an-operator-run-refresh-reads-every-harness-s-live-model-list-and-reports-drift-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.recall_dev_pass": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-34-a-dev-pass-receives-relevant-team-memory-feedback-before-it-starts-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.recall_review_pass": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-35-a-review-pass-sees-the-same-feedback-the-dev-pass-saw-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.recall_context_layer": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-36-the-recall-injection-is-its-own-context-layer-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.marshal.recall_miss_injects_nothing": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "marshal",
+        "story": "110-37-a-recall-miss-or-failure-injects-nothing-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.steward.budget": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "steward",
+        "story": "114-1-steward-budget-a-declared-ceiling-and-an-honest-spend-signal-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.steward.frame_upstream_check": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "steward",
+        "story": "114-2-frame-draft-re-grounding-the-estate-claims-conformance-the-way-the-draft-now-asks-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.steward.workspace_clean": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "steward",
+        "story": "114-3-workspace-clean-removes-merged-worktrees-archived-rather-than-deleted-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.steward.workspace_own_worktrees_only": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "steward",
+        "story": "114-4-only-the-worktrees-it-created-marshal-s-loop-homes-stay-invisible-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.steward.deploy_perimeter": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "steward",
+        "story": "114-5-the-deployment-perimeter-ships-with-the-pattern-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.steward.setup_hooks": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "steward",
+        "story": "114-6-the-pre-commit-set-attribution-lines-and-un-preflighted-pushes-are-refused-by-hooks-not-prose-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.steward.workspace_full_refs": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "steward",
+        "story": "114-7-steward-reads-origin-main-and-its-own-branches-by-their-full-refs-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.steward.station_client_identity": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "steward",
+        "story": "114-8-one-client-carrying-identity-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.atlas.agent_pipeline_tools": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "atlas",
+        "story": "42-1-agents-trigger-and-read-the-pipeline-natively-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.atlas.manifest_inventory": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "atlas",
+        "story": "42-2-any-manifest-becomes-one-comparable-inventory-behind-one-exit-code-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
+    },
+    "pyforge.scribe.bmad_estate_catalog": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "scribe",
+        "story": "29-1-every-session-reads-one-derived-picture-of-the-bmad-estate-sits-behind-a-kill-switch",
+        "created": "2026-10-26",
+        "on_everywhere": "2026-10-26",
+        "cleanup_by": "2027-01-24"
+      }
     }
   }
 }

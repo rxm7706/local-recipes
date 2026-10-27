@@ -3,6 +3,7 @@ title: '63.3: One deny list, one hook — the Guild session guardrails are enfor
 type: 'feature'
 created: '2026-09-18'
 status: 'in-review'
+flag-exempt: detector-or-gate   # retrofit (spec-feature-flag-governance CAP-7, operator ruling R6 of 2026-10-26): the session hook is a gate; a gated gate is a silent green
 baseline_revision: '2f98ede57d5ebb7df285bbd1383782cf6a7c86af'
 review_loop_iteration: 0
 followup_review_recommended: false

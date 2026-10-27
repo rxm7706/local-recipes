@@ -11,7 +11,7 @@ inputDocuments:
   - _bmad-output/projects/pyforge-scribe/planning-artifacts/briefs/brief-pyforge-scribe-2026-07-25/brief.md
   - docs/specs/claude-team-memory.md
 mode: headless-express — no interactive elicitation; epic/story structure drafted directly from the PRD's Wave 1/Wave 2 split and the architecture spine's module breakdown
-updated: "2026-10-26"   # AMENDED 2026-10-26 (one archive home): Epic 28 / Story 28.1 minted done under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 16 archived satellite Dreams left docs/dreams/ for archive/docs/dreams/, their bodies verbatim in the station Dream; keys 28-1, epic-28 (done) and epic-28-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync
+updated: "2026-10-26"   # AMENDED 2026-10-26 (one archive home): Epic 28 / Story 28.1 minted done under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 16 archived satellite Dreams left docs/dreams/ for archive/docs/dreams/, their bodies verbatim in the station Dream; keys 28-1, epic-28 (done) and epic-28-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync. Prior "2026-10-26"   # AMENDED 2026-10-26 (CAP-7 retrofit): Epic 29 / Stories 29.1–29.2 minted; keys through the Tier-3 feed and sprint-ledger-sync; no other epic or story moved. Prior "2026-10-26"   # AMENDED 2026-10-26 (every requirement derives from a capability): Epic 27 / Story 27.1 minted (chore under spec-pyforge-scribe CAP-27 and CAP-29, spec-one-chain-per-station CAP-5 as amended; no CAP, no flag): AGENTS.md items 6 and 7 carry the requirement-arrow and multi-station-PR bullets, the block the CHAIN-STANDARD pointer and the shared-Postgres pitfall, the notes file the incident, team memory two captures; keys 27-1 (in-progress), epic-27 (in-progress) and epic-27-retrospective (optional) added; no other epic or story moved. Prior "2026-10-15"   # RE-STAMPED 2026-10-15: arch->epics cascade after the 2026-10-15 spine re-stamp (a stale surface glob re-pointed); no story, AC or ledger key moved. See § Currency reconciliation — 2026-10-15. Prior: AMENDED 2026-10-03 (Phase 4+5 landing): Story 26.1's four follow-up-review rows withdrawn by operator ruling (they run as review batches); it closes 5 rows. Prior: RE-STAMPED 2026-10-03 (Phase 4+5): Epic 26 / Story 26.1 minted (fix, no CAP): nine of scribe's 14 open medium and low deferrals, operator rulings of 2026-10-03. Prior: RE-STAMPED 2026-09-29: Epic 24 minted (24.1–24.3, spec-pyforge-scribe CAP-32) from the station Dream entry of 2026-09-29. Prior 2026-09-28:  chain-currency cascade (arch -> epics) after the 2026-09-28 spine re-stamp; no story change. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics); Epic 21 minted (21.1, spec-python-foundry-cutover fnd:CAP-15). Prior 2026-09-20
 currency_review: "Reviewed 2026-09-17 (one-chain scribe fold) — INV-A window cites spec-pyforge-scribe CAP-1..26; epic numbers unchanged. No blocked keys flipped."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -953,6 +953,46 @@ So that an agent on any harness traces arrows instead of counting them, and the 
 **Then** items 6 and 7 carry the two bullets, the block carries the pointer and the pitfall with its provenance line at 2026-10-26 / `92fa3edbbd`, the notes file carries the incident, and `.claude/memory/` carries the two captures with `MEMORY.md` lines
 **And** the scribe parity meta-test (`test_instruction_surface_parity.py`) and `governance-currency` stay green; no section is duplicated into a per-tool file; `pyforge-scribe-test` passes
 **Status:** done
+
+## Epic 29: Every pre-rule scribe runtime capability sits behind a kill switch (1 flags, one per CAP; the Guild flag rule's retrofit capability, Q6)
+
+Minted 2026-10-26 from the station Dream's entry of the same date and the operator's approval of the CAP-7 retrofit sheet (R1–R8): every capability the flag inventory reads as reachable at runtime and minted before the rule date sits behind one flag that defaults ON in every environment, a kill switch (spec-feature-flag-governance CAP-7; Q6 one flag per CAP; Q3 a flag-off verb stays listed and refuses with the usage code). Three shapes: a verb switch, an invariant switch (the dependent verb refuses, the defect never reopens; ruling R3) and a behaviour switch (the pre-rule behaviour at one read site). Each key carries its clock from 2026-10-26; Story 29.2 (backlog) retires them on 2027-01-24 (Q4; ruling R5). Rows: `spec-pyforge-scribe` CAP-32.
+**HARD boundaries:**
+- Keys are read only through `pyforge.core.flags` or `django_pyforge.flags`, spelled literally; one tree, no second reader.
+- No station exit code changes: a refusal is the usage code 2.
+- No done story spec is rewritten; the inventory is regenerated.
+
+### Story 29.1: every session reads one derived picture of the BMAD estate sits behind a kill switch
+
+As the operator who can turn any capability off without a redeploy,
+I want spec-pyforge-scribe CAP-32 (every session reads one derived picture of the BMAD estate) behind one flag that defaults ON,
+So that the capability keeps today's behaviour until the switch is turned, and turning it reads as `scribe catalog bmad-estate` is listed disabled and refuses with exit 2; the committed catalog stays readable.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-scribe CAP-32 (minted before the rule date; the flag inventory's runtime row); the Guild flag rule's retrofit (spec-feature-flag-governance, Q3, Q4, Q6; operator rulings R1–R3 of 2026-10-26)
+**Flag:** `pyforge.scribe.bmad_estate_catalog` (default ON in dev, staging and production: a kill switch; a verb switch)
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/pyforge-scribe/tests/unit/test_retrofit_flags.py`, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-scribe.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-29-1-every-session-reads-one-derived-picture-of-the-bmad-estate-sits-behind-a-kill-switch.md`
+**Given** the capability reaches a user through `scribe catalog bmad-estate` and the inventory lists it with no flag
+**When** the retrofit lands
+**Then** `pyforge.scribe.bmad_estate_catalog` is in the tree ON everywhere with its owner, story, created, `on_everywhere` and `cleanup_by` metadata; the key is read at `scribe catalog bmad-estate` through `pyforge.core.flags`; OFF: `scribe catalog bmad-estate` is listed disabled and refuses with exit 2; the committed catalog stays readable
+**And** one test runs both states; the station's exit-code domain is unchanged (a refusal is the usage code 2, never a new code)
+**Status:** done
+
+### Story 29.2: the retrofit kill switch retires on its cleanup date
+
+As the operator who turned none of the 1 retrofit kill switches off in their 90-day window,
+I want each key removed from the tree, its reader and its two-state test on 2027-01-24 (the Q4 clock, `on_everywhere` 2026-10-26 plus 90 days), declared with `retires-flag:` by this station,
+So that the gate's `flag-clock-overdue` never reds `detectors-ci`, no reader is left behind, and the inventory reads each row as retired by this story.
+
+**Type:** feature • **Effort:** M • **Deps:** 29.1 • **FR/AD:** the retirement path of the Guild flag rule (spec-feature-flag-governance, the gate capability as amended 2026-10-15; Q4)
+**Flag:** `flag-exempt: flag-infrastructure`; `retires-flag:` `pyforge.scribe.bmad_estate_catalog`
+**Surface:** `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, the read sites and the two-state tests the Epic 29 stories name, `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `docs/governance/flag-inventory/pyforge-scribe.md` (regenerated)
+**Spec:** `planning-artifacts/specs/spec-29-2-the-retrofit-kill-switch-retires-on-its-cleanup-date.md`
+**Given** the 1 keys read ON in every environment since 2026-10-26 with `cleanup_by` 2027-01-24
+**When** the cleanup date arrives and the operator has turned none of them off
+**Then** this story removes each key from the tree and the overlays, its read site and its test, declares every key under `retires-flag:`, and the inventory reads each row as `retired by 29-2`
+**And** `flag-gate-check` reports no `flag-retired-still-read` and no `flag-clock-overdue`; a key the operator turned off stays, and its capability's removal is a story of its own
+**Status:** backlog
 
 ## Epic 28: The archived scribe Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 

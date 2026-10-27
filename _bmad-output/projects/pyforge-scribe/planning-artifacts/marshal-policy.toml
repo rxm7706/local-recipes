@@ -190,6 +190,20 @@ verify_commands = [
 # 28.29 is separately proven. This IDE drives the wave.
 # 2026-10-03 (operator ruling, see harness_preference above): Cursor on composer-2.5-fast for dev and review in the
 # heavy and medium tiers (an undeclared difficulty resolves to medium on dispatch); easy keeps composer-2.5.
+
+"29" = [  # the CAP-7 retrofit: every pre-rule scribe runtime capability sits behind a kill switch (spec-feature-flag-governance CAP-7), added 2026-10-26.
+  "src/shared/packages/pyforge-scribe/**",
+  "_bmad-output/projects/pyforge-scribe/planning-artifacts/**",
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
+  "src/platform/tests/**",
+  "docs/governance/flag-inventory/pyforge-scribe.md",
+  "docs/dreams/pyforge-scribe.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/*/.memlog.md",
+  "docs/governance/spec-feature-flag-governance/**",
+]
+
 [model_tier_map.heavy]
 dev = { harness = "cursor", model = "composer-2.5-fast" }
 review = { harness = "cursor", model = "composer-2.5-fast" }

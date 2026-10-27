@@ -19,6 +19,7 @@ from typing import Any, Iterator
 
 from kedro.framework.session import KedroSession
 from kedro.framework.startup import bootstrap_project
+from pyforge.core.flags import kill_switch_on
 
 # The member dir (the Kedro project root):
 # .../pyforge-atlas/src/pyforge/atlas/mcp/session.py
@@ -31,6 +32,33 @@ PROJECT_ROOT = Path(__file__).resolve().parents[4]
 assert (PROJECT_ROOT / "conf" / "base" / "catalog.yml").is_file(), (
     f"PROJECT_ROOT mis-resolved: no conf/base/catalog.yml under {PROJECT_ROOT}"
 )
+
+
+# Epic 42 (spec-feature-flag-governance CAP-7): the kill switches for atlas's pre-rule runtime capabilities, read
+# here on the one execution plane (AD-23) through ``pyforge.core.flags`` only, defaulting ON. OFF raises
+# ``AtlasMCPError`` naming the flag (the surface's own error, no new exit code); ``pyforge atlas run`` refuses with
+# 2 in ``__main__`` reading the same keys. Spelled literally so the gate's orphan check finds them.
+AGENT_PIPELINE_TOOLS_FLAG_KEY = "pyforge.atlas.agent_pipeline_tools"  # CAP-9, Story 42.1
+MANIFEST_INVENTORY_FLAG_KEY = "pyforge.atlas.manifest_inventory"  # CAP-13, Story 42.2
+MANIFEST_INVENTORY_PIPELINE = "universal_sbom"
+
+
+def _flag_off_error(key: str) -> Exception:
+    from pyforge.atlas.mcp.tools import AtlasMCPError  # noqa: PLC0415 -- tools imports this module at load
+
+    return AtlasMCPError(f"flag {key} is off")
+
+
+def require_agent_pipeline_tools() -> None:
+    """Raise ``AtlasMCPError`` when the CAP-9 switch reads OFF (a trigger or a read); return when ON."""
+    if not kill_switch_on(AGENT_PIPELINE_TOOLS_FLAG_KEY):
+        raise _flag_off_error(AGENT_PIPELINE_TOOLS_FLAG_KEY)
+
+
+def require_manifest_inventory() -> None:
+    """Raise ``AtlasMCPError`` when the CAP-13 switch reads OFF (the ``universal_sbom`` trigger); return when ON."""
+    if not kill_switch_on(MANIFEST_INVENTORY_FLAG_KEY):
+        raise _flag_off_error(MANIFEST_INVENTORY_FLAG_KEY)
 
 
 @contextlib.contextmanager

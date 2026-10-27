@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: 7f8474468d837cc9
-story_count: 152
-test_file_count: 187
+source_fingerprint: e4aa9cf01df90d51
+story_count: 156
+test_file_count: 188
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 152
-- **Epics parsed:** 42
-- **Test files inventoried:** 187 under `src/shared/packages/pyforge-atlas/tests/`
+- **Stories parsed:** 156
+- **Epics parsed:** 43
+- **Test files inventoried:** 188 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `7f8474468d837cc9`
+- **Source fingerprint:** `e4aa9cf01df90d51`
 
 ## Risk Assessment
 
@@ -73,6 +73,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 39: The atlas PRD's FR arrows name the capabilities the Spec carries
 - Epic 40: FR-15, FR-61 and FR-63 name what realizes them (spec-pyforge-atlas CAP-70, CAP-71)
 - Epic 41: Every atlas requirement derives from a capability (spec-pyforge-atlas CAP-72; spec-one-chain-per-station CAP-5 amended)
+- Epic 42: Every pre-rule atlas runtime capability sits behind a kill switch (2 flags, one per CAP; the Guild flag rule's retrofit capability, Q6)
 - Epic 44: The archived atlas Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 
 ### Low-risk epics
@@ -253,6 +254,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/test_query_plane_parquet_cache.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_query_plane_vectors.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_read_only_live_attach.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_retrofit_flags.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_scaffold_layout.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_scan_submit.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_scribe_plane_recall.py` | unit | none observed |
@@ -426,6 +428,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 41.1 | FR-15 names the capability minted from its Constraint, and the Spec's cut tex... | none observed |
 | 41.2 | The satellite PRDs' FR ids leave the kernel's id space | none observed |
 | 41.3 | Every atlas NFR names the capabilities it bounds | none observed |
+| 42.1 | agents trigger and read the pipeline natively sits behind a kill switch | none observed |
+| 42.2 | any manifest becomes one comparable inventory, behind one exit code sits behi... | none observed |
+| 42.3 | A developer runs one command that executes every check CI executes sits behin... | none observed |
+| 42.4 | the retrofit kill switches retire on their cleanup date | none observed |
 | 44.1 | Atlas's twelve archived Dreams leave the live tree | none observed |
 
 ## Quality Gates

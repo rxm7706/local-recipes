@@ -24,6 +24,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
+from pyforge.core.flags import kill_switch_on
+
 from .derived_context import implementation_artifacts_relpath
 
 __all__ = (
@@ -58,9 +60,23 @@ class RecallInjectionResult:
     target: Path | None = None
 
 
+# Stories 110.34-109.37 (spec-feature-flag-governance CAP-7): one kill switch per recall capability
+# (spec-pyforge-marshal CAP-288, CAP-289, CAP-290, CAP-291), all read at this one gate both engines consult.
+# Any one OFF reads the layer off: no query runs, nothing is injected before the dev pass, the review prompt
+# carries no block, and a miss or failure has nothing to inject.
+RECALL_FLAG_KEYS: tuple[str, ...] = (
+    "pyforge.marshal.recall_dev_pass",  # CAP-288
+    "pyforge.marshal.recall_review_pass",  # CAP-289
+    "pyforge.marshal.recall_context_layer",  # CAP-290
+    "pyforge.marshal.recall_miss_injects_nothing",  # CAP-291
+)
+
+
 def layer_enabled(layer: Mapping[str, object] | None) -> bool:
-    """Whether the declared ``recall`` context layer is on."""
-    return bool((layer or {}).get("enabled", False))
+    """Whether the declared ``recall`` context layer is on -- and every recall kill switch reads ON."""
+    if not bool((layer or {}).get("enabled", False)):
+        return False
+    return all(kill_switch_on(key) for key in RECALL_FLAG_KEYS)
 
 
 def build_recall_query(station_slug: str) -> str:

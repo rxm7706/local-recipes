@@ -218,6 +218,8 @@ from dataclasses import dataclass
 from enum import StrEnum
 from types import MappingProxyType
 
+from pyforge.core.flags import kill_switch_on
+
 from . import protected_refs
 from .landing import LandingRule, landing_rule_to_dict
 from .model import Finding, Severity
@@ -731,6 +733,16 @@ DEFAULT_POLICY: Mapping[str, object] = {
 # "empty/unused registry, mechanism proven synthetically" precedent.
 SECRET_KEY_SUFFIXES: frozenset[str] = frozenset({"_TOKEN", "_KEY", "_SECRET", "_PASSWORD"})
 REDACTED_SENTINEL = "***REDACTED***"
+
+
+# Story 110.21 (spec-feature-flag-governance CAP-7): the kill switch for CAP-174, read in
+# `resolve_context_layers`. Spelled literally so the gate can find it.
+CONTEXT_PIPELINE_FLAG_KEY = "pyforge.marshal.context_pipeline"
+
+
+def context_pipeline_enabled() -> bool:
+    """Whether the declared `[context]` block is honoured (CAP-174's kill switch, ON by default)."""
+    return kill_switch_on(CONTEXT_PIPELINE_FLAG_KEY)
 
 
 class PolicyLayer(StrEnum):
@@ -2184,6 +2196,12 @@ def resolve_context_layers(effective: EffectivePolicy) -> dict[str, dict[str, ob
     existing ``bool(...)`` coercion -- validation already guarantees a real
     ``bool`` for them."""
     declared = effective.context.value
+    # Story 110.21 (spec-feature-flag-governance CAP-7; spec-pyforge-marshal
+    # CAP-174): the kill switch for the declared context pipeline. OFF reads
+    # the block as absent -- every layer off, launch surfaces byte-identical
+    # to a policy with no declaration -- the CAP's own documented fallback.
+    if not context_pipeline_enabled():
+        declared = {}
     resolved: dict[str, dict[str, object]] = {}
     for layer in CONTEXT_LAYER_NAMES:
         layer_declared = declared.get(layer, {})

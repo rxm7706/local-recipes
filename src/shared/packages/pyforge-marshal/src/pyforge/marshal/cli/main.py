@@ -137,6 +137,7 @@ from . import login as login_cli
 from . import planning as planning_cli
 from . import refresh as refresh_cli
 from . import retire as retire_cli
+from . import retrofit_flags
 from . import seed as seed_cli
 from . import spin as spin_cli
 from . import status as status_cli
@@ -349,6 +350,11 @@ def main(argv: list[str] | None = None) -> int:
         # during parser construction must return EXIT_SIGINT like one during
         # parsing, or main() would raise in violation of its own contract.
         parser = _build_parser()
+        if any(token in {"-h", "--help"} for token in argv):
+            # Epic 110 (spec-feature-flag-governance CAP-7, Q3): a verb whose kill
+            # switch is OFF stays listed, marked disabled. Marked only when help is
+            # asked for, so an ordinary invocation reads only its own verb's keys.
+            retrofit_flags.mark_disabled_help(parser)
         args = parser.parse_args(argv)
         if getattr(args, "command", None) is None:
             # Story 1.1's bare-invocation EXIT CODE is preserved (0), but
@@ -373,6 +379,9 @@ def main(argv: list[str] | None = None) -> int:
         # so every handler that hasn't been extended with a `context=`
         # parameter yet keeps working completely unchanged (see the module
         # docstring for exactly which ones have been, this pass).
+        # Epic 110 (CAP-7): the invoked verb's kill switches, read before the
+        # handler runs. An OFF key raises FlagOff -> EXIT_USAGE below (Q3).
+        retrofit_flags.require_verb_flags(args)
         if "context" in inspect.signature(handler).parameters:
             result = handler(args, context=_resolve_context(args))
         else:

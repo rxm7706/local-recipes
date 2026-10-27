@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: atlas
-# stories: 236
+# stories: 242
 development_status:
   1-1-generate-legacy-contextual-skill: done
   10-1-restore-atlas-dependency-completeness-so-the-suite-can-collect: done
@@ -149,6 +149,10 @@ development_status:
   41-1-fr-15-names-the-capability-minted-from-its-constraint-and-the-spec-s-cut-text-is-restored: done
   41-2-the-satellite-prds-fr-ids-leave-the-kernel-s-id-space: backlog
   41-3-every-atlas-nfr-names-the-capabilities-it-bounds: backlog
+  42-1-agents-trigger-and-read-the-pipeline-natively-sits-behind-a-kill-switch: done
+  42-2-any-manifest-becomes-one-comparable-inventory-behind-one-exit-code-sits-behind-a-kill-switch: done
+  42-3-a-developer-runs-one-command-that-executes-every-check-ci-executes-sits-behind-a-kill-switch: done
+  42-4-the-retrofit-kill-switches-retire-on-their-cleanup-date: backlog
   44-1-atlas-s-twelve-archived-dreams-leave-the-live-tree: done
   5-1-define-the-boring-semantic-layer-bsl-models: done
   5-2-build-the-vizro-dashboard-port-the-28-clis-to-pages: done
@@ -238,6 +242,8 @@ development_status:
   epic-40-retrospective: optional
   epic-41: in-progress
   epic-41-retrospective: optional
+  epic-42: in-progress
+  epic-42-retrospective: optional
   epic-44: done
   epic-44-retrospective: optional
   epic-5: done

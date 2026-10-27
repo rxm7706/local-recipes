@@ -431,3 +431,14 @@ sibling ledgers and the detector both use.
   severity: low
   promoted: 2026-10-17 — recorded with steward Story 103.3's review fixes
   status: open
+
+### DW-scribe-29-1-1: 25 capabilities of the scribe flag inventory stay `unresolved`: the join cannot reach their code, so the CAP-7 retrofit cannot judge whether they are reachable at runtime.
+
+- source_spec: `planning-artifacts/specs/spec-29-1-every-session-reads-one-derived-picture-of-the-bmad-estate-sits-behind-a-kill-switch.md`
+  summary: 25 rows of `docs/governance/flag-inventory/pyforge-scribe.md` read `unresolved` after the join fix (doctor Story 51.1): 23 CAPs no story cites on a line naming the Spec, 2 whose Surface paths no longer exist. They are not the retrofit's debt (operator ruling R7 of 2026-10-26): a row the join cannot classify is a planning gap, not a capability known to be reachable.
+  evidence: Regenerated 2026-10-26 on the fixed join (landed stories only, best class across citing stories). The residue is the inventory's blind spot by construction: a CAP joins only through a citing story's `Surface:` line in `epics.md` or a story spec's `Parent:` line. The follow-up shape is Doctor's: let the join also read each capability's own `verified:` sub-bullet citations (they name `file:line`), then re-measure; a station backfills `Surface:` lines only where a capability turns out runtime.
+  location: docs/governance/flag-inventory/pyforge-scribe.md
+  origin: spec-deferred — recorded by hand in the CAP-7 retrofit PR (operator ruling R7, 2026-10-26)
+  severity: low
+  promoted: 2026-10-26 — the retrofit chain commit
+  status: open
