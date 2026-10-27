@@ -106,7 +106,7 @@ solved and live, and that the interactive-chat shape is a distinct, unverified s
 
 - [`pyforge-marshal.md`](pyforge-marshal.md) — CAP-6 / Epic 6, the realized headless-dispatch
   portability capability this Dream extends into the interactive surface.
-- [`agent-portability.md`](agent-portability.md) — archived/absorbed into pyforge-marshal; this
+- [`agent-portability.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/agent-portability.md>) — archived/absorbed into pyforge-marshal; this
   Dream is a fresh satellite for the one gap that absorption didn't cover.
 
 ## Realization log

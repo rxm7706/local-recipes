@@ -179,18 +179,18 @@ of the core-upgrade Spec are on main, unit-tested; the suite is 13/13 current on
 
 ## Kinships
 
-- [`bmad-method-core-upgrade.md`](bmad-method-core-upgrade.md), [`bmad-method-version-drift.md`](bmad-method-version-drift.md),
-  [`bmad-611-era-alignment.md`](bmad-611-era-alignment.md) — the per-release triad this Dream's cadence
+- [`bmad-method-core-upgrade.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-method-core-upgrade.md>), [`bmad-method-version-drift.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-method-version-drift.md>),
+  [`bmad-611-era-alignment.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-611-era-alignment.md>) — the per-release triad this Dream's cadence
   runbook orders; shim retirement and `--no-shims` land as new capabilities on the first and third.
-- [`bmad-suite-channel-product.md`](bmad-suite-channel-product.md), [`bmad-suite-install-class-wiring.md`](bmad-suite-install-class-wiring.md),
-  [`bmad-suite-metapackage.md`](bmad-suite-metapackage.md), [`bmad-module-provisioning.md`](bmad-module-provisioning.md) —
+- [`bmad-suite-channel-product.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-suite-channel-product.md>), [`bmad-suite-install-class-wiring.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-suite-install-class-wiring.md>),
+  [`bmad-suite-metapackage.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-suite-metapackage.md>), [`bmad-module-provisioning.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-module-provisioning.md>) —
   the packaging and provisioning machinery this Dream drives to completion.
-- [`bmad-eval-quality.md`](bmad-eval-quality.md) — its CAP-2 pilot is unblocked here.
+- [`bmad-eval-quality.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-eval-quality.md>) — its CAP-2 pilot is unblocked here.
 - [`pyforge-unifying-strategy.md`](pyforge-unifying-strategy.md) and the `python-foundry` cutover chain
   (`spec-python-foundry-cutover`, Epic 44) — the estate this Dream makes cutover-ready.
-- [`one-front-door.md`](one-front-door.md) — its own/route/triage survey; row 6 closes here.
-- [`herald-pitch.md`](herald-pitch.md) — the named manticore consumer.
-- [`conda-forge-expert-rebuild.md`](conda-forge-expert-rebuild.md) — the skf-driven rebuild that the
+- [`one-front-door.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/one-front-door.md>) — its own/route/triage survey; row 6 closes here.
+- [`herald-pitch.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/herald-pitch.md>) — the named manticore consumer.
+- [`conda-forge-expert-rebuild.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/conda-forge-expert-rebuild.md>) — the skf-driven rebuild that the
   authoring path decision (BMB beside skf) must not disturb.
 
 ## Realization log

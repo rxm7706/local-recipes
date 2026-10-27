@@ -119,7 +119,7 @@ mode for a class of stories, not just for the repo as a whole.
   and `_bmad-output/policy-defaults.toml` were deliberately left untouched
   pending the Spec/story chain. Companion pain, same investigation, separate
   Dream (different subsystem, different epic):
-  [`quick-dev-reconciliation.md`](quick-dev-reconciliation.md).
+  [`quick-dev-reconciliation.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/quick-dev-reconciliation.md>).
 - **2026-08-14** — Realized — Story 2.8 (FR-185) shipped `classify_review_tier`/`resolve_review_cycles` in `core/gate.py`. Status flipped and FR-185 backfilled into the PRD by the 2026-08-14 audit.
 
 - **2026-09-09 (fleet readiness pass — operator-approved batch)** — **STATUS REVERSED, `realized` →
@@ -131,7 +131,7 @@ mode for a class of stories, not just for the repo as a whole.
   calls either function — recorded as `DW-FU-2-8-2` and `DW-FU-2-8-4`, the latter re-verified
   `2026-09-05 — STANDS`. A one-line doc fix and a cross-module rewrite therefore still get the
   identical review, which is this Dream's own title. The 2026-08-14 flip was chain bookkeeping — the
-  same failure [`adaptive-model-tiering.md`](adaptive-model-tiering.md) records against itself, and
+  same failure [`adaptive-model-tiering.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/adaptive-model-tiering.md>) records against itself, and
   the third instance inside marshal alone.
   `spec-risk-tiered-review-depth` moves `shipped` → `in-progress` and gains one open question (where
   does `declared_low_risk` come from?). **Enablement is marshal Story 33.5**, beside the token-economy

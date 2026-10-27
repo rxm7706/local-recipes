@@ -143,10 +143,10 @@ or driver code.
 
 ## Kinships
 
-- [`bmad-suite-channel-product.md`](bmad-suite-channel-product.md) /
-  [`bmad-suite-metapackage.md`](bmad-suite-metapackage.md) — the membership machinery this joins.
-- [`bmad-module-provisioning.md`](bmad-module-provisioning.md) — install-class wiring precedent.
-- [`risk-tiered-review-depth.md`](risk-tiered-review-depth.md) — sibling question about the
+- [`bmad-suite-channel-product.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-suite-channel-product.md>) /
+  [`bmad-suite-metapackage.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-suite-metapackage.md>) — the membership machinery this joins.
+- [`bmad-module-provisioning.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-module-provisioning.md>) — install-class wiring precedent.
+- [`risk-tiered-review-depth.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/risk-tiered-review-depth.md>) — sibling question about the
   reviewer; this Dream supplies the measurement that one would need.
 
 ## Realization log

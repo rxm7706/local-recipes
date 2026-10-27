@@ -65,12 +65,12 @@ in flight together, not an accident of timing.
 
 Related dreams already in flight:
 
-- [`marshal-dependency-aware-dispatch.md`](marshal-dependency-aware-dispatch.md)
+- [`marshal-dependency-aware-dispatch.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/marshal-dependency-aware-dispatch.md>)
   — ordering (28.12), sanctioned retry (28.13), scope automation (28.14/28.15).
-- [`marshal-single-story-dispatch.md`](marshal-single-story-dispatch.md) — the
+- [`marshal-single-story-dispatch.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/marshal-single-story-dispatch.md>) — the
   validated pattern; addendum already named "parallel when surfaces are disjoint"
   as an open Spec question.
-- [`horizontal-run-concurrency.md`](horizontal-run-concurrency.md) — bmad-loop
+- [`horizontal-run-concurrency.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/horizontal-run-concurrency.md>) — bmad-loop
   `max_parallel` stub; **this Dream is factory-dispatch fan-out**, not in-loop
   Phase 5.
 

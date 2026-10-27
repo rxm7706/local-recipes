@@ -221,7 +221,7 @@ CFE skill (autotick machinery; Rule 1/2 govern the recipe-side stories).
   6.11.0 the same day.
 - **2026-09-05** — The channel machinery this Dream specified carried the suite refresh: PR #1059
   regenerated the metapackage to `2026.9.5`, seating `bmad-eval-quality` in place of the retired
-  `bmad-method-wds-expansion` (see [`bmad-eval-quality.md`](bmad-eval-quality.md) § Realization log).
+  `bmad-method-wds-expansion` (see [`bmad-eval-quality.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-eval-quality.md>) § Realization log).
 - **2026-09-05 (re-check)** — BMAD-METHOD 6.12.0 (released 2026-09-04) re-verified against the live
   `pipeline-truth`: 13/13 recipe = channel = installed; roster = 6 tag-pinned + 7 commit-pinned; the
   eighth class (`cli`) recorded; hazards recounted (6 / 3 / 3). Status → `realized` (owed since

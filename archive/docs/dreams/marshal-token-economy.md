@@ -51,7 +51,7 @@ per-run weighted-token and wall-clock ceilings (E3.6, defaults 50M/500M
 weighted), the idle ladder (nudge → stop-retry → defer), prompt-cache TTL
 discipline (NFR-14, poll ≤60s, `cache_read_weight = 0.1`), difficulty-driven
 model tiering (FR-51, wired but rarely fed — see
-[`adaptive-model-tiering.md`](adaptive-model-tiering.md)), and single-story
+[`adaptive-model-tiering.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/adaptive-model-tiering.md>)), and single-story
 dispatch (E22). Nothing in the marshal package or the bmad-loop/bmad-build-auto
 chain compresses, indexes, or graph-serves context. The deferred-work ledger
 confirms it: token findings are all observability gaps (`DW-FU-3-6-6`
@@ -79,7 +79,7 @@ mid-session ceiling blindness), never "context is too big".
   its live-zone-only design compresses only the newest blocks and leaves the
   provider cache hot zone untouched — it *cooperates* with NFR-14 instead of
   fighting it. Commented-out in `pixi.toml` (blocked per
-  [`pixi-candidate-currency.md`](pixi-candidate-currency.md)).
+  [`pixi-candidate-currency.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/pixi-candidate-currency.md>)).
 - **`recipes/caveman/`** (2.4.0, MIT installer) — Claude Code skill cutting
   ~65% of **output** tokens (the heaviest-weighted kind) via ultra-compressed
   agent speech. This recipe ships only the MIT skill installer
@@ -171,7 +171,7 @@ altered, only the encoding of what flows through.
    approaches its token ceiling, the supervisor can raise compression
    aggressiveness (compression-only — model movement stays with FR-51 declared
    difficulty and the Story 3.12 upward-only floor-raise, since
-   [`adaptive-model-tiering.md`](adaptive-model-tiering.md) forbids downgrades) before it ever
+   [`adaptive-model-tiering.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/adaptive-model-tiering.md>) forbids downgrades) before it ever
    reaches the kill threshold. Ceilings get recalibrated once baseline savings
    are measured — 50M weighted was sized for an uncompressed world.
 6. **Index-freshness as a detector.** `marshal check` (the existing detector
@@ -181,7 +181,7 @@ altered, only the encoding of what flows through.
    graph-served context instead of re-exploring the worktree from zero —
    multiplied across four lenses per story, this is where Layer 1+2 pay twice.
    (Depth-scheduling itself stays with
-   [`risk-tiered-review-depth.md`](risk-tiered-review-depth.md).)
+   [`risk-tiered-review-depth.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/risk-tiered-review-depth.md>).)
 
 ## Guardrails — what this Dream refuses to do
 
@@ -210,7 +210,7 @@ altered, only the encoding of what flows through.
   moving crm+feedrattler into a grayskull-only `crm` feature (nothing in
   local-recipes invokes them), and caveman was rebuilt against nodejs 24 so its
   run-export coexists with codegraph's `nodejs >=24.19,<25` pin (details in
-  [`pixi-candidate-currency.md`](pixi-candidate-currency.md)). Layers 0–1 no
+  [`pixi-candidate-currency.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/pixi-candidate-currency.md>)). Layers 0–1 no
   longer degrade on the linux loop fleet. `codegraph` and `caveman` are
   linux-64-only; the loop fleet is linux, so acceptable, but the policy block
   must still degrade gracefully on other platforms.
@@ -386,7 +386,7 @@ was sized for an uncompressed world") is downstream of that artifact and of
 nothing else.
 
 **The guard this Dream needs, learned from its sibling.**
-[`adaptive-model-tiering.md`](adaptive-model-tiering.md) is the same pathology
+[`adaptive-model-tiering.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/adaptive-model-tiering.md>) is the same pathology
 on the other cost lever — its title is literally "FR-51's model tiering is fully
 wired and never turned on" — and it carries `status: realized` while its own
 README row records that no story declares a `difficulty:` and no project
@@ -560,7 +560,7 @@ the boundary never has to be re-litigated:
   instrument (CAP-11/CAP-12 → Stories 28.10/28.11).
 - **2026-08-31** — Addendum: Layer 4 retrieval is only as good as the graph's freshness — landed as
   CAP-13; the live dispatch-ordering incident added CAP-14..CAP-17 (Stories 28.12–28.15) through
-  [`marshal-dependency-aware-dispatch.md`](marshal-dependency-aware-dispatch.md).
+  [`marshal-dependency-aware-dispatch.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/marshal-dependency-aware-dispatch.md>).
 - **2026-09-01** — Dispatch-autonomy hotfixes + Epic 28 artifact catch-up (`90c5a28bd6`).
 - **2026-09-09** — Code-level verification against `main`: Epic 28's machinery is real
   and complete, and every layer is off — no `[context]` block is declared in any policy,
@@ -569,7 +569,7 @@ the boundary never has to be re-litigated:
   and the cross-engine question is answered in the negative (the block renders
   identically on both adapters, but only dispatch/build-auto can act on the wire,
   derived-context and planning-graph layers). Recorded as the addendum above, with the
-  `realized` guard learned from [`adaptive-model-tiering.md`](adaptive-model-tiering.md).
+  `realized` guard learned from [`adaptive-model-tiering.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/adaptive-model-tiering.md>).
   Next: `bmad-correct-course` mints marshal Epic 33.
 - **2026-09-09 (later)** — § *What is real* glossed as the dated baseline (kept as record). The
   Unifying Strategy currency review
@@ -586,7 +586,7 @@ the boundary never has to be re-litigated:
   by `_bmad-output/projects/pyforge-marshal/planning-artifacts/change-history/sprint-change-proposal-2026-09-09-token-economy-enablement.md`.
   Status stays **`specified`** and does not move until Story 33.1's benchmark artifact reports a
   measured saving on a real story — this Dream's own guard, learned from
-  [`adaptive-model-tiering.md`](adaptive-model-tiering.md).
+  [`adaptive-model-tiering.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/adaptive-model-tiering.md>).
   The epic in order: **33.1** measurement first — the on/off benchmark artifact with CAP-7's four
   savings getters made real (`adapters/harness_bmadloop.py:1880-1898` returns `None` four times
   today); **33.2** enable the layers on `factory dispatch` (`resolve_wire_wrap` folded); **33.3**

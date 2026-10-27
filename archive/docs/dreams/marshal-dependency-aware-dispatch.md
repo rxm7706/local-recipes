@@ -290,7 +290,7 @@ Spec: `spec-marshal-drain-self-resolution/SPEC.md`. Dream file
 - **2026-09-01** — The addenda were contracted in `spec-marshal-drain-self-resolution`
   (`e5e31c228d`: CAP-1..6 / Stories 28.18–28.23, the drain self-heal residue; `14ac9ed408`: CAP-7 /
   Story 28.24, supervisor finalizes when the harness cannot run shell), with
-  [`marshal-drain-self-resolution.md`](marshal-drain-self-resolution.md) archived in place as a
+  [`marshal-drain-self-resolution.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/marshal-drain-self-resolution.md>) archived in place as a
   pointer. `spec-marshal-verify-fail-terminalization` (status `ready`) also references this Dream.
 
 - **2026-09-09 (fleet readiness pass — operator-approved batch)** — **`specified` → `realized`,
