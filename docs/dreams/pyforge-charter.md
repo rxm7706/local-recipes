@@ -660,7 +660,7 @@ agent treats “Cog” as a ninth Smith.
 *(Amended 2026-09-24 — steward Story 59.3 / `spec-vocabulary-one-name-one-job`
 CAP-3 (folded 2026-09-17 into `spec-pyforge-steward` CAP-133 — the id above is
 the originating capability, CAP-133 is where it lives now). Source:
-`docs/dreams/vocabulary-one-name-one-job.md` § Operator rulings (accepted
+`archive/docs/dreams/vocabulary-one-name-one-job.md` § Operator rulings (accepted
 2026-09-15), Rulings 5 and 6.)*
 
 BMAD has its own daily nouns — Epic, Story, Sprint, PRD, Retrospective — and,
@@ -699,7 +699,7 @@ Three divergences, named in the open rather than left to infer:
    The story-ledger's `optional` value reuses BMAD's own retrospective
    lattice, used exactly where it belongs (Ruling 5's own wording). This is
    a separate, unrelated fact from a Dream sitting at `pitched` (Ruling 6,
-   `docs/dreams/vocabulary-one-name-one-job.md`) — the two share no spelling
+   `archive/docs/dreams/vocabulary-one-name-one-job.md`) — the two share no spelling
    and nothing else beyond being stated side by side here: `pitched` is a
    rung on the Dream ladder, used only once Herald has actually made the
    case (a deck exists) and the Spec is still `draft`, never required and

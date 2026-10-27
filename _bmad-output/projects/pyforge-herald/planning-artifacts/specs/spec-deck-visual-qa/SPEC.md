@@ -4,7 +4,7 @@ spec: deck-visual-qa
 status: absorbed
 absorbed-into: spec-pyforge-herald
 updated: '2026-09-17'
-owner-dream: docs/dreams/deck-visual-qa.md
+owner-dream: archive/docs/dreams/deck-visual-qa.md
 ---
 
 # Absorbed into spec-pyforge-herald

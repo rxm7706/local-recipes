@@ -4,7 +4,7 @@ spec: herald-moments-2-4-missing-surface
 status: absorbed
 absorbed-into: spec-pyforge-herald
 updated: '2026-09-17'
-owner-dream: docs/dreams/herald-moments-2-4-missing-surface.md
+owner-dream: archive/docs/dreams/herald-moments-2-4-missing-surface.md
 ---
 
 # Absorbed into spec-pyforge-herald

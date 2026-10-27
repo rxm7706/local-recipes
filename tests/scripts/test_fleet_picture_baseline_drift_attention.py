@@ -135,7 +135,7 @@ def test_needs_lines_name_story_run_baselines_and_preserve_ref():
     assert PRESERVE_REF in line
     assert "recover from:" in line
     assert "pixi run -e local-recipes baseline-drift-check" in line
-    assert "docs/dreams/bmad-loop-baseline-drift.md" in line
+    assert "archive/docs/dreams/bmad-loop-baseline-drift.md" in line
 
 
 def test_needs_lines_name_the_preserve_tag_before_the_scratch_branch():

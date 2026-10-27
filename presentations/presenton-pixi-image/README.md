@@ -2,7 +2,7 @@
 
 **Status: authored 2026-07-25 — 10 slides, extract + build green.** Standalone infographic poster rebuilt to the family standard and pushed 2026-09-17 (Story 21.9 fix). The 2026-09-15 Wave C pass had corrupted the poster (repeated boilerplate past the intro, never caught by `deck-facts --check` since that check validates fact-span presence, not prose sanity) — caught before it reached Design, since the project's stored copy was still the original pre-corruption stub. Rebuilt clean: six acts, 37 sections, 4 SVGs, 20 tables, 92,582 bytes; pushed and read back byte-identical. Engine + glue copied
 **verbatim** from `presentations/pyforge-steward/` (Archivo / Modernist system). Dream:
-`docs/dreams/presenton-pixi-image.md`; the Spec and its planning chain live in
+`archive/docs/dreams/presenton-pixi-image.md`; the Spec and its planning chain live in
 `_bmad-output/projects/presenton-pixi-image/planning-artifacts/`.
 
 `presenton-pixi-image` repackages the open-source Presenton AI deck generator as a signed,

@@ -4,7 +4,7 @@ spec: scribe-mines-raw-session-transcripts
 status: absorbed
 absorbed-into: spec-pyforge-scribe
 updated: "2026-09-17"
-owner-dream: docs/dreams/scribe-mines-raw-session-transcripts.md
+owner-dream: archive/docs/dreams/scribe-mines-raw-session-transcripts.md
 ---
 
 # Absorbed into spec-pyforge-scribe

@@ -4,7 +4,7 @@ spec: ocp-as-a-portability-profile
 status: absorbed
 absorbed-into: spec-pyforge-steward
 updated: "2026-09-17"
-owner-dream: docs/dreams/ocp-as-a-portability-profile.md
+owner-dream: archive/docs/dreams/ocp-as-a-portability-profile.md
 ---
 
 # Absorbed into spec-pyforge-steward

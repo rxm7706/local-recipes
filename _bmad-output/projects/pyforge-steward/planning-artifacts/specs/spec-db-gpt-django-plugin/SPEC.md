@@ -1,11 +1,11 @@
 ---
 spec: db-gpt-django-plugin
 status: absorbed
-owner-dream: docs/dreams/db-gpt-django-plugin.md
+owner-dream: archive/docs/dreams/db-gpt-django-plugin.md
 absorbed-into: spec-pyforge-unifying-strategy
 companions: []
 sources:
-  - ../../../../../../docs/dreams/db-gpt-django-plugin.md
+  - ../../../../../../archive/docs/dreams/db-gpt-django-plugin.md
 ---
 
 # SPEC — DB-GPT joins Django as a pluggable app (ABSORBED)

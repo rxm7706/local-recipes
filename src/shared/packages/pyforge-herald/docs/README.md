@@ -5,7 +5,7 @@ Operator-facing documentation for the `herald` CLI and its web dashboard
 scaled-down architecture — local JSON storage under `.herald/`, every
 write triggered by an explicit CLI command, no webhook/database/cron
 anywhere in this package. See
-`docs/dreams/herald-moments-2-4-live-backend.md` (repo root) for the
+`archive/docs/dreams/herald-moments-2-4-live-backend.md` (repo root) for the
 deferred live-backend version.
 
 - **[`operator-guide.md`](operator-guide.md)** — start here. What Herald

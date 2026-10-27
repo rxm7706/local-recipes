@@ -104,6 +104,11 @@ def test_gather_live_bmad_method_version_drift_case():
     # (it had been silently checking against pyforge-atlas's epic-14 instead,
     # a cross-project key collision — pyforge-atlas sorts before
     # pyforge-doctor), and the comment itself was corrected to match.
+    # Since 2026-10-26 (doctor Story 53.1, spec-one-chain-per-station CAP-11)
+    # the Dream lives at archive/docs/dreams/bmad-method-version-drift.md, which
+    # this source does not scan, so the assertion now guards against the file
+    # returning to docs/dreams/ with the contradiction: it passes vacuously
+    # while the Dream stays archived.
     repo_root = Path(__file__).resolve().parents[6]
     findings = sbc.gather_status_comment_reconcile(repo_root)
     hits = [f for f in findings if f.evidence.get("path") == "docs/dreams/bmad-method-version-drift.md"]

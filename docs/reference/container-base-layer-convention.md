@@ -108,7 +108,7 @@ No new base image is built or published by this convention — the upstream
 `ghcr.io/prefix-dev/pixi` image stays the base for every builder stage
 across all three Containerfiles. Building a repo-owned, pixi-preinstalled
 base image is a separate, larger undertaking
-(`docs/dreams/pixi-container-image.md`) that stays out of scope until at
+(`archive/docs/dreams/pixi-container-image.md`) that stays out of scope until at
 least two Containerfiles diverge for reasons a shared custom base would
 actually solve — not true today, since all three still follow this one
 documented pattern.

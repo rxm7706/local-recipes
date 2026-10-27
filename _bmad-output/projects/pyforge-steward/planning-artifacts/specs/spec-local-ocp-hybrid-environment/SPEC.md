@@ -4,7 +4,7 @@ spec: local-ocp-hybrid-environment
 status: absorbed
 absorbed-into: spec-pyforge-steward
 updated: "2026-09-17"
-owner-dream: docs/dreams/local-ocp-hybrid-environment.md
+owner-dream: archive/docs/dreams/local-ocp-hybrid-environment.md
 ---
 
 # Absorbed into spec-pyforge-steward

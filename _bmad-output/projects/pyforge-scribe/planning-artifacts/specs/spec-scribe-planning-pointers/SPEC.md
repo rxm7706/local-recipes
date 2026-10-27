@@ -4,7 +4,7 @@ spec: scribe-planning-pointers
 status: absorbed
 absorbed-into: spec-pyforge-scribe
 updated: "2026-09-17"
-owner-dream: docs/dreams/scribe-planning-pointers.md
+owner-dream: archive/docs/dreams/scribe-planning-pointers.md
 ---
 
 # Absorbed into spec-pyforge-scribe

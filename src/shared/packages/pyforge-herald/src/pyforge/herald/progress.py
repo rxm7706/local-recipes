@@ -7,7 +7,7 @@ moved the backing store from a JSON file to the shared SQLite database in
 JSON array stored as a ``TEXT`` column -- no cross-record query needs it
 normalized (Simplicity First), the same reasoning ``claims.py``'s
 ``evidence``/``edit_history`` and ``notices.py``'s ``revisions`` columns
-follow. See ``docs/dreams/herald-moments-2-4-live-backend.md`` for the
+follow. See ``archive/docs/dreams/herald-moments-2-4-live-backend.md`` for the
 full live-database shape this module's data-access seam originally
 existed to swap behind without a CLI/web-tab contract change -- this story
 is that swap, for progress/claims/notices' local storage (not a live

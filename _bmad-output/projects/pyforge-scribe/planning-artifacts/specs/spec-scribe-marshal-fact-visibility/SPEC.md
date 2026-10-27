@@ -4,7 +4,7 @@ spec: scribe-marshal-fact-visibility
 status: absorbed
 absorbed-into: spec-pyforge-scribe
 updated: "2026-09-17"
-owner-dream: docs/dreams/scribe-marshal-fact-visibility.md
+owner-dream: archive/docs/dreams/scribe-marshal-fact-visibility.md
 ---
 
 # Absorbed into spec-pyforge-scribe

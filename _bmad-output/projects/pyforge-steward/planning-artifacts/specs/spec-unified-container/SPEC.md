@@ -4,7 +4,7 @@ spec: unified-container
 status: absorbed
 absorbed-into: spec-pyforge-steward
 updated: "2026-09-17"
-owner-dream: docs/dreams/unified-container.md
+owner-dream: archive/docs/dreams/unified-container.md
 ---
 
 # Absorbed into spec-pyforge-steward

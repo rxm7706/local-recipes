@@ -2,7 +2,7 @@
 platform, Story 11.2).
 
 AD-14 established two named integration patterns for the agentic engines
-this platform hosts (`docs/dreams/db-gpt-django-plugin.md`):
+this platform hosts (`archive/docs/dreams/db-gpt-django-plugin.md`):
 
 - Pattern A -- in-process ASGI mount + schema isolation (Langflow, Story
   11.1: `langflow_integration/asgi.py`, mounted by `config/asgi.py`).
@@ -18,7 +18,7 @@ code fork: the same dispatcher/routing code paths serve both patterns,
 branching only on this registry.
 
 First triggered by DB-GPT's own Pattern-B deviation (dated in
-`docs/dreams/db-gpt-django-plugin.md`'s 2026-08-21 AD-14 entry) after the
+`archive/docs/dreams/db-gpt-django-plugin.md`'s 2026-08-21 AD-14 entry) after the
 `dbgpt-app` / `langflow-base` `fastapi` pin conflict -- see that entry for
 the full citation, not re-derived here.
 """

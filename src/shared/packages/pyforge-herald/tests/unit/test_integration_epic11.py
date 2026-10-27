@@ -1,7 +1,7 @@
 """Story 11.1: end-to-end integration test across all three real Moments
 (Progress/Success/Notice, Epics 8-10), exercised only through what is
 actually built -- no webhook, no live database, no cron (see
-``docs/dreams/herald-moments-2-4-live-backend.md``).
+``archive/docs/dreams/herald-moments-2-4-live-backend.md``).
 
 The scaled-down honest form of the original AC's "PR merge -> progress
 created -> claim auto-extracted -> claim published -> success visible in

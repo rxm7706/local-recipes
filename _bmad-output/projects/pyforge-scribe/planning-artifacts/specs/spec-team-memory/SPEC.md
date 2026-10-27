@@ -4,7 +4,7 @@ spec: team-memory
 status: absorbed
 absorbed-into: spec-pyforge-scribe
 updated: "2026-09-17"
-owner-dream: docs/dreams/team-memory.md
+owner-dream: archive/docs/dreams/team-memory.md
 ---
 
 # Absorbed into spec-pyforge-scribe

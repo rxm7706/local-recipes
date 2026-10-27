@@ -1,11 +1,11 @@
 ---
 spec: enterprise-multi-agent-orchestration
 status: absorbed
-owner-dream: docs/dreams/enterprise-multi-agent-orchestration.md
+owner-dream: archive/docs/dreams/enterprise-multi-agent-orchestration.md
 absorbed-into: spec-pyforge-unifying-strategy
 companions: []
 sources:
-  - ../../../../../../docs/dreams/enterprise-multi-agent-orchestration.md
+  - ../../../../../../archive/docs/dreams/enterprise-multi-agent-orchestration.md
 ---
 
 # SPEC — Enterprise multi-agent orchestration atop the platform (ABSORBED)

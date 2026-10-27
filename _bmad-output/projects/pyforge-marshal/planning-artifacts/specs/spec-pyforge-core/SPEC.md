@@ -2,7 +2,7 @@
 id: SPEC-pyforge-core
 spec: pyforge-core
 status: ready
-owner-dream: docs/dreams/pyforge-core.md
+owner-dream: archive/docs/dreams/pyforge-core.md
 surface:
   - src/shared/packages/pyforge-core/**            # net-new, not yet created
   # DW-FU-20-2 fix (2026-09-07): the prior single-line brace-expansion glob
@@ -38,7 +38,7 @@ surface-drift-exclude:
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py   # also governed by pyforge-steward/spec-pyforge-steward (Story 59.2)
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/status_body_consistency.py   # also governed by pyforge-steward/spec-pyforge-steward (Story 59.2)
 sources:
-  - ../../../../../../docs/dreams/pyforge-core.md
+  - ../../../../../../archive/docs/dreams/pyforge-core.md
   - ../../research/technical-pyforge-unification-2026-08-08.md   # § 7 duplication census — figures superseded, see Assumptions
 open_questions:
   - "Q1 — does the station roster belong in pyforge-core at all? It is the one census entry whose canonical home already exists (bmad_drift_check.STATIONS, imported rather than mirrored by generate.py). Moving it into a package that ships to conda would give a stdlib-only detector a package dependency it does not have today. Decide before CAP-4, not during."

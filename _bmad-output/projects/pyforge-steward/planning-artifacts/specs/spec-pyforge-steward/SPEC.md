@@ -6,42 +6,42 @@ updated: "2026-10-26"
 owner-dream: docs/dreams/pyforge-steward.md
 covers-dreams:
   - docs/dreams/pyforge-steward.md
-  - docs/dreams/asgi-multiplexer-monolith.md
-  - docs/dreams/bmad-eval-quality.md
-  - docs/dreams/bmad-method-core-upgrade.md
-  - docs/dreams/bmad-module-provisioning.md
-  - docs/dreams/bmad-suite-channel-product.md
-  - docs/dreams/bmad-suite-install-class-wiring.md
-  - docs/dreams/bmad-suite-lifecycle.md
-  - docs/dreams/bmad-suite-metapackage.md
-  - docs/dreams/build-league-scorecard.md
-  - docs/dreams/db-gpt-django-plugin.md
-  - docs/dreams/developer-machine-bootstrap.md
-  - docs/dreams/enterprise-airgap.md
-  - docs/dreams/enterprise-multi-agent-orchestration.md
-  - docs/dreams/htap-query-plane.md
-  - docs/dreams/intelligence-hub.md
-  - docs/dreams/jira-github-projects-sync.md
-  - docs/dreams/langflow-django-plugin.md
-  - docs/dreams/local-ocp-hybrid-environment.md
-  - docs/dreams/mcp-era-isolation.md
-  - docs/dreams/mcp-host-real-station-tools.md
-  - docs/dreams/multi-repo-workspaces.md
-  - docs/dreams/ocp-as-a-portability-profile.md
-  - docs/dreams/platform-datastores-consumed-not-self-hosted.md
-  - docs/dreams/platform-dev-boots-local.md
-  - docs/dreams/platform-fifteen-factors.md
-  - docs/dreams/platform-image-one-pixi-env.md
-  - docs/dreams/platform-object-storage-kind.md
-  - docs/dreams/pyforge-steward-feedstock-maintenance.md
-  - docs/dreams/python-agent-platform.md
-  - docs/dreams/scratch-worktree-lifecycle.md
-  - docs/dreams/secure-live-dashboards.md
-  - docs/dreams/self-hosted-bmad-marketplace.md
-  - docs/dreams/suite-scaffold-and-mybmad-sidecar.md
-  - docs/dreams/unified-container.md
-  - docs/dreams/vocabulary-one-name-one-job.md
-  - docs/dreams/work-passports-dated-extracts.md
+  - archive/docs/dreams/asgi-multiplexer-monolith.md
+  - archive/docs/dreams/bmad-eval-quality.md
+  - archive/docs/dreams/bmad-method-core-upgrade.md
+  - archive/docs/dreams/bmad-module-provisioning.md
+  - archive/docs/dreams/bmad-suite-channel-product.md
+  - archive/docs/dreams/bmad-suite-install-class-wiring.md
+  - archive/docs/dreams/bmad-suite-lifecycle.md
+  - archive/docs/dreams/bmad-suite-metapackage.md
+  - archive/docs/dreams/build-league-scorecard.md
+  - archive/docs/dreams/db-gpt-django-plugin.md
+  - archive/docs/dreams/developer-machine-bootstrap.md
+  - archive/docs/dreams/enterprise-airgap.md
+  - archive/docs/dreams/enterprise-multi-agent-orchestration.md
+  - archive/docs/dreams/htap-query-plane.md
+  - archive/docs/dreams/intelligence-hub.md
+  - archive/docs/dreams/jira-github-projects-sync.md
+  - archive/docs/dreams/langflow-django-plugin.md
+  - archive/docs/dreams/local-ocp-hybrid-environment.md
+  - archive/docs/dreams/mcp-era-isolation.md
+  - archive/docs/dreams/mcp-host-real-station-tools.md
+  - archive/docs/dreams/multi-repo-workspaces.md
+  - archive/docs/dreams/ocp-as-a-portability-profile.md
+  - archive/docs/dreams/platform-datastores-consumed-not-self-hosted.md
+  - archive/docs/dreams/platform-dev-boots-local.md
+  - archive/docs/dreams/platform-fifteen-factors.md
+  - archive/docs/dreams/platform-image-one-pixi-env.md
+  - archive/docs/dreams/platform-object-storage-kind.md
+  - archive/docs/dreams/pyforge-steward-feedstock-maintenance.md
+  - archive/docs/dreams/python-agent-platform.md
+  - archive/docs/dreams/scratch-worktree-lifecycle.md
+  - archive/docs/dreams/secure-live-dashboards.md
+  - archive/docs/dreams/self-hosted-bmad-marketplace.md
+  - archive/docs/dreams/suite-scaffold-and-mybmad-sidecar.md
+  - archive/docs/dreams/unified-container.md
+  - archive/docs/dreams/vocabulary-one-name-one-job.md
+  - archive/docs/dreams/work-passports-dated-extracts.md
 surface:
   - src/shared/packages/pyforge-steward/**
   - scripts/lint_types.py
@@ -72,13 +72,13 @@ surface:
   - .claude/scripts/conda-forge-expert/bmad_suite_metapackage.py
   - .claude/skills/conda-forge-expert/scripts/_http.py
   - docs/reference/pixi-config-jfrog.example.toml
-  - docs/dreams/mcp-era-isolation.md
+  - archive/docs/dreams/mcp-era-isolation.md
   - src/shared/packages/django-pyforge/src/django_pyforge/mcp_http.py
   - src/platform/config/asgi.py
   - src/platform/deploy/charts/platform/
   - pixi.toml    # its [feature.mcp-host] and [feature.python-agent-platform] tables (re-pointed 2026-10-15: a surface glob names files, not TOML tables)
   - scripts/mcp_factory_stdio_translator.py
-  - docs/dreams/mcp-host-real-station-tools.md
+  - archive/docs/dreams/mcp-host-real-station-tools.md
   - src/platform/mcp_host/app.py
   - src/platform/mcp_host/settings.py
   - src/platform/compose/mcp-host/Containerfile

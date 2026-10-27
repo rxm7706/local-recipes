@@ -6,60 +6,60 @@ updated: "2026-10-26"   # AMENDED 2026-10-26 (every requirement derives from a c
 owner-dream: docs/dreams/pyforge-marshal.md
 covers-dreams:
   - docs/dreams/pyforge-marshal.md
-  - docs/dreams/adaptive-model-tiering.md
-  - docs/dreams/agent-portability.md
-  - docs/dreams/agent-tool-surface.md
-  - docs/dreams/agentic-sdlc-autonomy.md
-  - docs/dreams/artifact-chain-reconciliation.md
-  - docs/dreams/artifact-console.md
-  - docs/dreams/bmad-611-era-alignment.md
-  - docs/dreams/bmad-cursor-interactive-routing.md
-  - docs/dreams/bmad-loop-baseline-drift.md
-  - docs/dreams/bmad-loop-forward-dependency-blindness.md
-  - docs/dreams/bmad-loop-intent-gap-work-preservation.md
-  - docs/dreams/bmad-loop-liveness-footgun.md
-  - docs/dreams/bmad-output-hygiene.md
-  - docs/dreams/bmad-switch-scope-enforcement.md
-  - docs/dreams/cursor-native-tier-map.md
-  - docs/dreams/dashboard-project-path-derivation.md
-  - docs/dreams/dashboard-velocity-captures-hand-driven-work.md
-  - docs/dreams/dispatch-tier-routing-fails-safe.md
-  - docs/dreams/dream-to-code-model-self-verification.md
-  - docs/dreams/durable-runs.md
-  - docs/dreams/factory-console.md
-  - docs/dreams/fidelity-enforcement.md
-  - docs/dreams/fleet-chain-completeness.md
-  - docs/dreams/fleet-status-supervisor-fallback.md
-  - docs/dreams/genesis-installer-name-retirement.md
-  - docs/dreams/genesis-installer.md
-  - docs/dreams/horizontal-run-concurrency.md
-  - docs/dreams/landing-evidence-grammar.md
-  - docs/dreams/library-catalog-manifest-sync.md
-  - docs/dreams/loop-home-fleet-refresh.md
-  - docs/dreams/marshal-dependency-aware-dispatch.md
-  - docs/dreams/marshal-drain-self-resolution.md
-  - docs/dreams/marshal-land-cross-project-story-key-collision.md
-  - docs/dreams/marshal-land-merge-subject.md
-  - docs/dreams/marshal-launch-environment-integrity.md
-  - docs/dreams/marshal-parallel-dispatch-fanout.md
-  - docs/dreams/marshal-run-watch.md
-  - docs/dreams/marshal-single-story-dispatch.md
-  - docs/dreams/marshal-status-harness-run-id-poisoning.md
-  - docs/dreams/marshal-templated-merge-subject-cross-project-collision.md
-  - docs/dreams/marshal-token-economy.md
-  - docs/dreams/one-front-door.md
-  - docs/dreams/pr-lifecycle.md
-  - docs/dreams/pyforge-core.md
-  - docs/dreams/pyforge-marshal-loop-orchestrator.md
-  - docs/dreams/pyforge-testing-charter.md
-  - docs/dreams/quick-dev-reconciliation.md
-  - docs/dreams/regenerable-factory.md
-  - docs/dreams/risk-tiered-review-depth.md
-  - docs/dreams/run-state-one-publisher.md
-  - docs/dreams/spec-surface-overlap-tolerance.md
-  - docs/dreams/sprint-status-auto-promote.md
-  - docs/dreams/surface-drift-reconciliation.md
-  - docs/dreams/token-economy-claude-session-path.md
+  - archive/docs/dreams/adaptive-model-tiering.md
+  - archive/docs/dreams/agent-portability.md
+  - archive/docs/dreams/agent-tool-surface.md
+  - archive/docs/dreams/agentic-sdlc-autonomy.md
+  - archive/docs/dreams/artifact-chain-reconciliation.md
+  - archive/docs/dreams/artifact-console.md
+  - archive/docs/dreams/bmad-611-era-alignment.md
+  - archive/docs/dreams/bmad-cursor-interactive-routing.md
+  - archive/docs/dreams/bmad-loop-baseline-drift.md
+  - archive/docs/dreams/bmad-loop-forward-dependency-blindness.md
+  - archive/docs/dreams/bmad-loop-intent-gap-work-preservation.md
+  - archive/docs/dreams/bmad-loop-liveness-footgun.md
+  - archive/docs/dreams/bmad-output-hygiene.md
+  - archive/docs/dreams/bmad-switch-scope-enforcement.md
+  - archive/docs/dreams/cursor-native-tier-map.md
+  - archive/docs/dreams/dashboard-project-path-derivation.md
+  - archive/docs/dreams/dashboard-velocity-captures-hand-driven-work.md
+  - archive/docs/dreams/dispatch-tier-routing-fails-safe.md
+  - archive/docs/dreams/dream-to-code-model-self-verification.md
+  - archive/docs/dreams/durable-runs.md
+  - archive/docs/dreams/factory-console.md
+  - archive/docs/dreams/fidelity-enforcement.md
+  - archive/docs/dreams/fleet-chain-completeness.md
+  - archive/docs/dreams/fleet-status-supervisor-fallback.md
+  - archive/docs/dreams/genesis-installer-name-retirement.md
+  - archive/docs/dreams/genesis-installer.md
+  - archive/docs/dreams/horizontal-run-concurrency.md
+  - archive/docs/dreams/landing-evidence-grammar.md
+  - archive/docs/dreams/library-catalog-manifest-sync.md
+  - archive/docs/dreams/loop-home-fleet-refresh.md
+  - archive/docs/dreams/marshal-dependency-aware-dispatch.md
+  - archive/docs/dreams/marshal-drain-self-resolution.md
+  - archive/docs/dreams/marshal-land-cross-project-story-key-collision.md
+  - archive/docs/dreams/marshal-land-merge-subject.md
+  - archive/docs/dreams/marshal-launch-environment-integrity.md
+  - archive/docs/dreams/marshal-parallel-dispatch-fanout.md
+  - archive/docs/dreams/marshal-run-watch.md
+  - archive/docs/dreams/marshal-single-story-dispatch.md
+  - archive/docs/dreams/marshal-status-harness-run-id-poisoning.md
+  - archive/docs/dreams/marshal-templated-merge-subject-cross-project-collision.md
+  - archive/docs/dreams/marshal-token-economy.md
+  - archive/docs/dreams/one-front-door.md
+  - archive/docs/dreams/pr-lifecycle.md
+  - archive/docs/dreams/pyforge-core.md
+  - archive/docs/dreams/pyforge-marshal-loop-orchestrator.md
+  - archive/docs/dreams/pyforge-testing-charter.md
+  - archive/docs/dreams/quick-dev-reconciliation.md
+  - archive/docs/dreams/regenerable-factory.md
+  - archive/docs/dreams/risk-tiered-review-depth.md
+  - archive/docs/dreams/run-state-one-publisher.md
+  - archive/docs/dreams/spec-surface-overlap-tolerance.md
+  - archive/docs/dreams/sprint-status-auto-promote.md
+  - archive/docs/dreams/surface-drift-reconciliation.md
+  - archive/docs/dreams/token-economy-claude-session-path.md
   - archive/docs/dreams/marshal-recall-in-the-loop.md
 surface:
   - src/shared/packages/pyforge-marshal/**
@@ -78,12 +78,12 @@ surface:
   - tests/scripts/test_tea_playwright_check.py
   - pixi.toml
   - scripts/bmad_loop_baseline_drift_check.py
-  - docs/dreams/bmad-loop-baseline-drift.md
+  - archive/docs/dreams/bmad-loop-baseline-drift.md
   - .bmad-loop/**
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/supervisor/
   - scripts/missing_preserve_check.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/harness.py
-  - docs/dreams/bmad-loop-liveness-footgun.md
+  - archive/docs/dreams/bmad-loop-liveness-footgun.md
   - scripts/bmad-switch
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py
   - _bmad-output/projects/pyforge-herald/planning-artifacts/marshal-policy.toml

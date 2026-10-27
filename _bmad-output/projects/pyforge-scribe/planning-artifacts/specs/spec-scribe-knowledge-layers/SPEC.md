@@ -4,7 +4,7 @@ spec: scribe-knowledge-layers
 status: absorbed
 absorbed-into: spec-pyforge-scribe
 updated: "2026-09-17"
-owner-dream: docs/dreams/scribe-knowledge-layers.md
+owner-dream: archive/docs/dreams/scribe-knowledge-layers.md
 companions:
   - later-caps.md
 ---

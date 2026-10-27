@@ -94,7 +94,7 @@ consolidated into this station's own single planning-chain documents (each
 carries a "Satellite: Presenton" section) per explicit user override of the
 earlier separation decision; the Dream itself, its epics, and its
 blocked-status were deliberately left untouched. See
-`docs/dreams/presenton-pixi-image.md` for the full account.
+`archive/docs/dreams/presenton-pixi-image.md` for the full account.
 
 ## The frontier
 
@@ -791,3 +791,970 @@ Station Dream status is `specified` (Spec `spec-pyforge-mason` is `ready`). Maso
   with a CHANGELOG MINOR bump (AD-15), because the change adds gotcha G123. No pyforge-atlas, `pixi.toml` or `recipes/**`
   change. A fix under CAP-24 (atlas intelligence: "what depends on it"): no flag and no new CAP. Owner: mason.
   → Epic 34 / Story 34.1, specced 2026-10-26.
+
+## 2026-10-26 — Rebuild conda-forge-expert as a Skill-Forge-authored skill, slice by slice (folded from conda-forge-expert-rebuild)
+
+*Folded 2026-10-26 under spec-one-chain-per-station CAP-11 (Story 35.1). The body below is `docs/dreams/conda-forge-expert-rebuild.md`, verbatim, with its headings demoted one level and its 2026-09-17 fold banner left out; the file moved to `archive/docs/dreams/conda-forge-expert-rebuild.md`.*
+
+## Rebuild conda-forge-expert as a Skill-Forge-authored skill, slice by slice
+
+### The Dream
+
+`conda-forge-expert` — the ~41,410-LOC skill that has carried this repo's entire recipe
+lifecycle (generate → validate → build → submit) since it began, encoding 106 gotchas and 10
+hard constraints earned the hard way, one build failure at a time — gets rebuilt, not wrapped.
+Not the whole thing at once, and not by hand: `skf-*` (Skill Forge, already installed in this
+repo's `.claude/skills/`) does the compiling, slice by slice, along the skill's own existing
+3-tier seams (recipe-authoring, atlas-intelligence, project-scanning), with `skf-campaign`
+orchestrating the sequence and `skf-audit-skill` proving each slice is drift-free once it lands.
+
+This explicitly reopens [[pyforge-mason]]'s D-1 ("wrap, never fork the craft") — but only for
+CFE itself, not for Mason. Mason's own wrap decision doesn't need to change: `mason recipe`
+shells out through `cfe.py` to whatever lives at the CFE root, and as long as this rebuild
+preserves compatible entry points, Mason keeps working through the transition unmodified.
+This is a standalone effort, motivated by the same underlying wish Mason's D-1 already weighed
+and rejected once — and the user chose to reopen it anyway, with eyes open about why it was
+rejected the first time.
+
+**The precedent this Dream has to answer to, explicitly:** `pyforge-atlas` took the "extract
+and re-implement" path once already, in this exact repo. 80 files / 14,461 src LOC + 110 files
+/ 14,682 test LOC, 32 stories, PRs #58–#105 all merged — and the legacy `conda_forge_atlas.py`
+(8,902 LOC) is *still the live runtime*. Every `build-cf-atlas` / `atlas-phase` /
+`query-cf-atlas` task and every atlas MCP tool still shells out to the old path. Nothing routes
+to `pyforge.atlas`. ~29,000 lines did not displace the original, because the rebuild had no
+migration step — Mason's own D-1 rationale names this as reason #2 of three independent,
+each-sufficient reasons not to rebuild CFE the same way.
+
+This Dream exists specifically to not repeat that outcome: the user chose full scope (rebuild
+all 30+ MCP tools and scripts, not a narrow pilot) but paired it with **hard cutover per
+slice** — every rebuilt capability retires its old CFE path, redirects every caller (pixi
+tasks, the MCP tool registration, Mason's own `cfe.py` port), in the *same* migration story
+*(historical framing — the cutover shape was re-decided 2026-08-10 to parallel-run with a
+detector-enforced end cutover; see the Realization log)*
+that builds it, never a separate future effort. That pairing is the whole bet: broad scope,
+but no slice is allowed to become a second, unused ~29,000 lines.
+
+### What it looks like when real
+
+- CFE's existing 3-tier architecture (recipe-authoring, atlas-intelligence,
+  project-scanning/MCP layer — see `.claude/skills/conda-forge-expert/SKILL.md`) is sliced
+  into Skill-Forge-sized units, each with a Brief.
+- `skf-analyze-source` run against the existing skill confirms or corrects the slicing before
+  any Brief is written — the boundaries come from what's actually there, not a guess.
+- Per slice: `skf-create-skill` compiles the replacement → a migration story in the *same*
+  epic redirects every caller (pixi tasks, `.claude/tools/conda_forge_server.py`'s MCP tool
+  registrations, Rule-1/Rule-2 references, Mason's `cfe.py` port) from the old path to the
+  new one → the slice is equivalence-proven against the live original (removal happens at the campaign-end cutover) → `skf-audit-skill`
+  confirms zero drift.
+- `skf-campaign` tracks the whole multi-slice sequence with file-based state and resume, so
+  the effort survives across sessions the way `bmad-loop` runs do for other stations.
+- At the end: no `.claude/skills/conda-forge-expert/` code path is dead weight sitting next to
+  a newer, unused replacement — every parallel slice is continuously equivalence-checked, and the end cutover is detector-enforced, never hoped for.
+  The 106 gotchas and 10 constraints are carried forward into the new skill's own briefs, not
+  re-derived from scratch and not lost.
+- Rule 1 (SKILL.md is authoritative) and Rule 2 (every conda-forge effort ends with a retro
+  that improves the skill) continue to apply to whatever replaces CFE — this Dream does not
+  reopen *those* rules, only the wrap-vs-build seam for CFE's own implementation.
+
+### What is real
+
+Specified 2026-08-10 (Spec ready, Epic 6 decomposed to the re-scope gate). Originally a `dreamt`-stage placeholder, captured at the moment the decision
+to reopen D-1 was made explicitly, with the scope and cutover-discipline questions already
+answered (see Realization log) — the next step was a Spec — now in place; the pilot slice is the next code.
+
+### Constraints
+
+- **Parallel-run with a detector-enforced end cutover (re-shaped 2026-08-10, operator override; was: hard cutover per slice).** No slice's migration story may be deferred to
+  "later" — this is the one discipline atlas's rebuild lacked, and it is the entire reason
+  this Dream is structured the way it is.
+- **Mason's own D-1 is untouched.** `mason recipe`'s wrap-by-subprocess design does not change;
+  this rebuild only changes what's *at* the CFE root, not how Mason reaches it. If entry
+  points drift incompatibly, that's a defect in this Dream's execution, not a license to also
+  reopen Mason's architecture.
+- **No knowledge loss.** The 106 gotchas and 10 constraints currently living in CFE's
+  `SKILL.md`/`reference/`/`guides/` are inputs to each slice's Brief, not something
+  Skill Forge re-discovers from scratch.
+- **Rule 1 / Rule 2 continue to bind** whatever skill(s) replace CFE.
+
+### Non-goals
+
+- Not a change to Mason's PRD, architecture, or Epic 5 ("Prove the seam holds") — those stay
+  exactly as specified; Epic 5 keeps proving Mason's wrap against whichever CFE is live.
+- Not a big-bang single cutover — full scope was chosen, but delivered as a sequence of
+  independently-complete slices, each with its own proof.
+
+### Kinships
+
+[[pyforge-mason]] (the D-1 decision this Dream reopens, for CFE only — not for Mason itself) ·
+[[packaging-factory]] (the practice CFE has always served; this Dream rebuilds the tool, not
+the practice) · [[pyforge-atlas]] (the rebuild-with-no-migration cautionary tale this Dream is
+structured specifically to not repeat).
+
+### Realization log
+
+- **2026-08-07** — Dream captured. User asked whether Mason should rebuild conda-forge-expert
+  via `bmad-builder`/Skill Forge; clarified that Mason's own D-1 explicitly decided the
+  opposite (wrap, never fork) for exactly this reason, citing the atlas precedent (~29,000
+  rebuilt lines never displaced the original 8,902-line legacy runtime) and CFE's own moat (106
+  gotchas, 10 constraints) as the cost of forking. User confirmed they want to reopen D-1
+  anyway, for CFE specifically (not Mason). Asked to choose rebuild scope and cutover
+  discipline before any plan was drafted: user chose **full scope** (all 30+ MCP tools and
+  scripts, not a narrow pilot) paired with **hard cutover per slice** (every slice's migration
+  lands in the same epic that builds it — explicitly rejecting the "build everything, migrate
+  later" shape that produced atlas's outcome). This Dream captures that decision *(the cutover half re-decided
+  2026-08-10 — parallel-run, enforced endgame; see the Realization log)*; the Spec now
+  exists and Epic 6 decomposes the pilot.
+
+- **2026-08-10** — Specified, by operator directive during the mason correct-course
+  session: *"the current conda-forge-expert skill is unsustainable — we rebuild and shift
+  to using the mason rebuilt version."* AD-15 amended to sanction the rebuild as the CFE
+  surface's writer under this Spec's gates; mason Epic 6 decomposes the pilot slice through
+  the re-scope gate (6.1-6.4) and no further — the remaining slices decompose only from
+  6.4's recorded decision.
+- **2026-08-10 (later)** — Cutover shape decided by the operator, concern raised and
+  overridden: **parallel-run both, cut over at the end** (not per-slice cutover). The atlas
+  precedent was on the table; the decision is survivable only with the three CAP-3
+  mitigations (equivalence harness, dual-landing, detector-enforced endgame), now the
+  Spec's contract. This Dream cannot read `realized` until the end cutover completes.
+
+- **2026-09-09** — **Endgame declared over slices 1–2; the campaign closes there** (operator
+  ruling, `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`
+  § 2.3 **C2**). The re-scope gate CAP-4 exists for finally got its price tag, and the answer
+  was *stop*: the cost is **recurring**, not one-time — every CFE release became a byte-re-port
+  obligation into two mirrors (23 qualifying retro commits in the campaign range; both re-scope
+  gates returned `adjust`, never `go`) for **zero** behavioural change (no caller had flipped,
+  both slices still `compiled`). The premise moved too: `skf-create-skill` compiles the
+  **knowledge layer** — both compiled slices are sha256-identical copies of the live scripts, and
+  every drift was closed by porting live source in, never by re-compiling — so "Skill-Forge-authored"
+  describes a Forge-authored brief + audit harness around an unmodified code copy, and the
+  unbriefed slices would buy briefs, not better code. Slice 3 (atlas-owned under Story 12.5,
+  12.3× slice 1) and slice 4 are **not briefed and will not be**. Deprecation posture for the long
+  tail: **delete-on-cutover, no stubs** — Mason reaches CFE by filesystem path, not by import, so a
+  stub module cannot serve a path resolver and CAP-5's degradation path already handles a missing
+  root. `campaign-state.yaml` now reads `endgame_declared: true`; mason **Epic 15 / Story 15.1** is
+  the closing story (cut the two slices' callers over or retire the mirrors, keep
+  `cfe-rebuild-guard-check` clean), and it must land **before** steward S-44.6 moves the CFE cell to
+  `skills/domain/conda-forge-expert/`. This Dream still cannot read `realized` — the end cutover has
+  not completed; what changed is its **scope**, from five slices to two.
+
+## 2026-10-26 — copilot-cli on conda-forge — blocked at the license (folded from copilot-cli-packaging)
+
+*Folded 2026-10-26 under spec-one-chain-per-station CAP-11 (Story 35.1). The body below is `docs/dreams/copilot-cli-packaging.md`, verbatim, with its headings demoted one level and its 2026-09-17 fold banner left out; the file moved to `archive/docs/dreams/copilot-cli-packaging.md`.*
+
+## copilot-cli on conda-forge
+
+### The Dream
+
+Package GitHub's **Copilot CLI** for conda-forge so the agent tooling the
+factory itself leans on could be installed the same way everything else is.
+
+### Why it was archived
+
+**Blocked, and not by anything we can fix.** `LICENSE.md` §2 forbids standalone
+redistribution — precisely what a conda package is. staged-recipes **#32522** was
+rejected on that clause. No recipe change resolves it; only an upstream
+relicense would, and that is not ours to make.
+
+`recipes/copilot-cli/` remains on disk as a **local-only** recipe: it builds and
+installs here, and it must never be submitted. The archive entry exists so the
+next person to notice the directory does not re-litigate a settled rejection.
+
+### Kinships
+
+[[packaging-factory]] (the practice) · [[enterprise-airgap]] (the class of
+license constraint that decides what may be mirrored at all).
+
+### Realization log
+
+- **2026** — staged-recipes #32522 rejected on the LICENSE.md §2 clause.
+- **2026-07-25** — **ARCHIVED (blocked)** during the Dream-lifecycle
+  reconciliation; formerly a hardcoded console entry with no Dream file behind it.
+
+## 2026-10-26 — DB-GPT on conda-forge — the multi-output agent stack (folded from db-gpt-packaging)
+
+*Folded 2026-10-26 under spec-one-chain-per-station CAP-11 (Story 35.1). The body below is `docs/dreams/db-gpt-packaging.md`, verbatim, with its headings demoted one level and its 2026-09-17 fold banner left out; the file moved to `archive/docs/dreams/db-gpt-packaging.md`.*
+
+## DB-GPT on conda-forge
+
+### The Dream
+
+Get **DB-GPT** — an agentic data application framework with a large native
+dependency closure — installable from conda-forge, along with the five
+prerequisites it needed that nobody had packaged.
+
+### Why it was archived
+
+**Terminal: delivered, but not by us.** All five prerequisites we authored
+merged. DB-GPT itself arrived through an *independent* submission
+(staged-recipes **#33883**, 8 outputs including `dbgpt-acc-flash-attn`) that
+consumed our patches — so the outcome landed while our own submission became
+redundant. Per the consume-not-submit rule (CFE **G58**: check
+`lookup_feedstock` before submitting), the correct move was to stand down rather
+than open a competing PR. `recipes/db-gpt/` mirrors the merged shape (v0.8.1,
+green 8/8) for local use.
+
+This is a **success recorded as an archive** — the dream was realized, the
+effort was not.
+
+### Kinships
+
+[[packaging-factory]] (the practice) · [[pyforge-mason]] (the station).
+Spec: `docs/specs/db-gpt-conda-forge.md` (TERMINAL — do not re-run BMAD on it).
+
+### Realization log
+
+- **2026-07-01** — all 5 prerequisites merged; db-gpt delivered via #33883.
+- **2026-07-25** — **ARCHIVED (terminal)** during the Dream-lifecycle
+  reconciliation; formerly a hardcoded console entry with no Dream file behind it.
+
+## 2026-10-26 — A Django-service scaffolding engine, if this repo ever births new Django-based stations (folded from django-accelerator-framework)
+
+*Folded 2026-10-26 under spec-one-chain-per-station CAP-11 (Story 35.1). The body below is `docs/dreams/django-accelerator-framework.md`, verbatim, with its headings demoted one level and its 2026-09-17 fold banner left out; the file moved to `archive/docs/dreams/django-accelerator-framework.md`.*
+
+## A Django-service scaffolding engine, if this repo ever births new Django-based stations
+
+### The Dream
+
+The source dream's actual subject — a FreeMarker-templated, three-repo pipeline stamping out
+production-ready Django services (OIDC, DRF, Celery, Helm/CD) from a continuously-maintained
+sample app — solves "teams keep hand-building the same Django scaffolding." This repo has exactly
+one Django-backed surface today (Steward's dashboard app, Story 9.1+), hand-built once, not
+repeatedly re-scaffolded across many services. There is no current pattern of "a new Django
+service is needed" recurring often enough to justify a dedicated stamping-out engine. Captured
+for parity, not because a real gap exists.
+
+### What it looks like when real
+
+Left thin — no scoped feature, because the premise (repeated Django service scaffolding) doesn't
+recur here yet:
+
+- IF this repo ever needs a second, third, or Nth Django-backed station beyond Steward's
+  dashboard, revisit whether a scaffolding engine earns its keep at that point — one hand-built
+  Django app doesn't justify a templating pipeline; three or four might.
+- The one concretely useful idea independent of that premise: whatever Steward's dashboard app
+  already got right (OIDC-equivalent identity-at-the-boundary via `middleware.py`, the
+  adopter-declaration schema in `declarations.py`) is the reference a second Django surface should
+  copy from directly, not from this WF source's own FreeMarker templates.
+
+### What is real
+
+Nothing — this repo has one Django surface (Steward's dashboard), hand-built, no scaffolding
+engine, no recurring pain from lacking one.
+
+### Constraints
+
+- **Not to be built until a second Django-backed station is actually planned.** One data point
+  (Steward's dashboard) is not evidence of a recurring pattern.
+
+### Non-goals
+
+- **Not FreeMarker or a three-repo template pipeline** — no evidence this repo's own scaffolding
+  needs, if they ever exist, would look like WF's specific tooling choice.
+- **Not runtime application logic** — carried from the source dream's own non-goals unchanged
+  (moot, but recorded for parity).
+
+### Full feature audit against `django-accelerator-framework`
+
+| Source feature | Disposition | Why |
+|---|---|---|
+| Three-repo FreeMarker template pipeline | **Omitted, no target** | No recurring Django-scaffolding need exists to justify a templating engine. |
+| OIDC auth, group-based RBAC, 15-min session idle timeout | **Pattern noted, partially already-realized differently** | Steward's dashboard already solved the adjacent "identity at the boundary" problem (`middleware.py`) with its own, narrower design — not this source's OIDC-specific shape, but covering the same underlying concern for the one Django surface that exists. |
+| DRF + JSON:API, FastAPI demo mount | **Omitted, no target** | Nothing currently needs a second API surface. |
+| Celery + Redis, django-health-check | **Omitted, no target** | No background-job or health-check need identified beyond what Doctor's own fleet-health role already covers differently. |
+| structlog/django-structlog + OpenTelemetry | **Omitted, no target** | This repo has its own structured-logging conventions already, unrelated to Django specifically. |
+| pytest + behave-django, Ruff/MyPy/pre-commit | **Already this repo's own convention** | Not something to port — pytest + Ruff + pre-commit discipline already applies repo-wide, Django-backed or not. |
+| Dockerfile + Helm + Harness CD | **Omitted, no target** | See [[pixi-container-image]] and [[reusable-cicd-workflows]] — no containers, no Harness. |
+
+### Kinships
+
+[[pyforge-steward]] (owns the one real Django surface this Dream would draw its actual local
+precedent from, not the source's own FreeMarker sample app) · [[pixi-container-image]] and
+[[reusable-cicd-workflows]] (siblings sharing the same "no current target" disposition) ·
+[[pyforge-mason]] (nominal owner by the source label; genuinely unclaimed)
+
+### Realization log
+
+- **2026-08-14** — Dream captured while porting a sibling org's dream catalog for PyForge fit.
+  Checked this repo's actual Django footprint before drafting — exactly one hand-built surface
+  (Steward's dashboard, Story 9.1+), not a recurring scaffolding pain. Kept intentionally thin;
+  noted that Steward's own `middleware.py`/`declarations.py` design is the real local reference a
+  second Django surface should copy, not this source dream's FreeMarker tooling.
+- **2026-08-14** — **Activation trigger recorded (operator direction):** the Django/Langflow/DB-GPT family is to build on a cookiecutter-django Django service WITH FastAPI integration **based on this dream** — the engines joining as pluggable Django applications ([[langflow-django-plugin]] / [[db-gpt-django-plugin]]), on PostgreSQL + Redis + Kubernetes. This is the concrete second-Django-surface signal this dream's own Constraint was waiting for, affirmed by the operator rather than inferred. Stays `dreamt` only until the family's subject project is named; at that intake this dream is the basis and should be spec'd with (not after) the family.
+- **2026-08-14** — **Air-gapped realization requirements (operator, from the source original
+  django-accelerator-framework.md):** the source accelerator treats the private network as ground
+  truth — Artifactory coordinates are first-class template substitutions stamped into
+  `pyproject.toml`, `pixi.toml`, Helm charts, CI workflows, and the conda recipe of every
+  rendered service, and the pipeline publishes to Artifactory and deploys to OpenShift. The
+  cookiecutter-django + FastAPI host recorded above must carry the same posture from its first
+  render: (1) template renders parameterize the mirror endpoints so every pip/conda/pixi install
+  in a generated service resolves from Artifactory-mirrored indexes only (pixi channels swappable
+  to internal mirrors, as this repo already practices); (2) frontend assets follow the source's
+  Bootstrap 5.3 + HTMX + Django Compressor shape — vendored and bundled locally, served
+  WhiteNoise/`collectstatic`-style, zero CDN `<script>`/`<link>` references in base templates
+  (the CAP-4 CDN-rewrite precedent from spec-atlas-query-dashboards applies at template-authoring
+  time, not as a later patch); (3) all runtime config flows through the source's
+  `env()`-helper/split-settings pattern — DB, Redis broker, OIDC endpoints, and secret keys via
+  env/secret mounts, never committed, matching `_http.py`'s env-only enterprise routing;
+  (4) auth binds to an internal OIDC IdP (the source uses PINGi via django-allauth; form login
+  only in DEBUG) — no external identity callbacks; (5) deployment per the
+  K8s/OCP+PostgreSQL+Redis decision: images pulled from an internal registry, `/ht/`
+  django-health-check endpoints wired to K8s liveness/readiness probes, Celery's Redis broker
+  in-cluster. Python 3.14 compatibility is orthogonal but constrains which mirrored package
+  versions the template may pin.
+- **2026-08-14** — **Subject project NAMED: [[python-agent-platform]]** (operator). The family's last precondition is met — the subject Dream and its family Spec (spec-python-agent-platform, pyforge-steward) consolidate all four same-day operator decisions plus the spike evidence; this dream's remaining role is the decision trail and its named pattern contracts.
+- **2026-08-14** — Spec authored (spec-django-accelerator-framework, pyforge-mason) closing the "spec'd with the family" obligation: CAP-1 = the accelerator contract (first realization: python-agent-platform's src/platform render, Story 10.1; second reference: steward's dashboard); CAP-2 = the templating engine, explicitly parked on the dream's own third-surface trigger.
+- **2026-09-09** — **Archived, absorbed** (operator ruling,
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`
+  § 2.3 **C3**). CAP-2's third-surface trigger is **retired**, not scoped: the estate reached
+  **nine** Django faces and never repeated the hand-copy the trigger watched for. Instead of a
+  FreeMarker-style stamping engine it factored a declarative base class —
+  `django_pyforge.portals.PortalConfig` (`src/shared/packages/django-pyforge/`), subclassed by
+  eight station portals with ~10 declarative fields each
+  (`src/shared/packages/django-mason/src/django_mason_portal/apps.py:6-21`) and mounted into the
+  **one** project at `src/platform/config/settings/base.py:27-41,165-183`. The surface count never
+  passed two (`find src -name manage.py` → `src/platform/manage.py` only); steward's dashboard is a
+  Django *app* on its own daphne/nginx perimeter, not a second render. Counting surfaces —
+  repo-wide or estate-wide — measured the wrong thing. CAP-1's accelerator contract moves to
+  **`spec-pyforge-unifying-strategy`**'s Lane-2 section, where the living exemplar it must not
+  drift from actually lives (not `spec-python-agent-platform`, which steward Story 48.8
+  supersedes); CAP-1's evidence was in any case already stale in the mason copy (`SPEC.md:35`
+  cites `config/urls.py:26 include("health_check.urls")`, while the live route is
+  `src/platform/config/urls.py:98` via an explicit `HealthCheckView`, with `:50-55` recording the
+  `include(...)` form as **deprecated**). This Dream's residual value is its decision trail. The
+  Unifying Dream's "Lane 2 portal scaffolding" Kinship (`pyforge-unifying-strategy.md:669`) is
+  satisfied by the shipped portals. The Spec's `src/platform/**` surface glob is dropped —
+  it dual-governed `src/platform/deploy/DR.md` with a steward spec (an INV-2 smell
+  `spec-surface-check` reported under both). Mason never had an epic or a story for this Dream;
+  the Dream's own Kinships called mason *"nominal … genuinely unclaimed."*
+
+## 2026-10-26 — Fleet stewardship — tend every feedstock we can touch (folded from fleet-stewardship)
+
+*Folded 2026-10-26 under spec-one-chain-per-station CAP-11 (Story 35.1). The body below is `docs/dreams/fleet-stewardship.md`, verbatim, with its headings demoted one level and its 2026-09-17 fold banner left out; the file moved to `archive/docs/dreams/fleet-stewardship.md`.*
+
+## Fleet stewardship — 769 feedstocks, none left behind
+
+### The Dream
+
+*(Naming: this practice Dream — feedstock tending under Mason + Doctor — is
+distinct from the **Steward persona**, the platform/ops station:
+[[pyforge-steward]].)*
+
+Maintainership as a *practice*, not a backlog: every feedstock this factory can
+modify is kept current with upstream, on the modern recipe format, built for
+every platform its users need — and when CI goes red anywhere in the fleet, a
+disciplined remediation loop turns it green again. A **perpetual** dream:
+realized as recurring waves, never finished.
+
+### What is real (the three workflow engines)
+
+- **`feedstock-refresh`** — the two-track bulk refresh of ALL 769 modifiable
+  feedstocks: Track A (sole-maintainer, 537; waves B–F shipped, Wave H
+  total-coverage open) and Track B (co-maintainer, 232; adds etiquette rules).
+- **`feedstock-platform-expansion`** — the per-feedstock dual-goal workflow:
+  latest CFE shape at latest upstream + widened build matrix (osx-arm64,
+  linux-aarch64) in one PR.
+- **`feedstock-failure-remediation`** — the red-PR loop: triage
+  FLAKE / REAL_FIX / BLOCKED, execute-locally-first, maintainer-edit push,
+  rerender-after-push.
+- The sibling **conda-forge-tracker** repo (markdown-first personal tracker) and
+  the atlas-derived maintainer lists on `rxm7706/about`.
+
+### The frontier
+
+- Track A Wave H (179 feedstocks remaining); Track B execution.
+- Signal-driven scheduling: let [[pyforge-doctor]]'s pulse (staleness, CVE,
+  abandonment) *order* the waves instead of alphabetical sweeps.
+
+### Realization log
+
+- **2026-06 → 07** — waves B–F shipped; the 12-PR remediation batch (G31–G34)
+  became the workflow's worked example.
+- **2026-07-23** — Dream retro-seeded; engines live as timeless workflow specs
+  (legacy tier), powered by [[packaging-factory]] intelligence from [[pyforge-atlas]].
+- **2026-09-09 (realization-gate re-read)** — `realized` **holds**, with a dated dormancy note
+  (operator ruling,
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`
+  § 2.2). CAP-1 (local-mirror-first) and CAP-2 (`cfe-*` metadata) are exercised **continuously**:
+  70 commits touching `recipes/` since 2026-08-10 across a 7,873-directory tree. **CAP-3 — the
+  recurring campaigns — is dormant.** All three engine specs are untouched since 2026-06/07
+  (`feedstock-refresh.md` last commit `1aeaf12cee` 2026-07-02; `feedstock-platform-expansion.md`
+  `1bdd5a2f02` 2026-06-28; `feedstock-failure-remediation.md` `1aeaf12cee`), Track A Wave H still
+  lists **179** remaining and Track B (**232**) is unstarted. Recorded so "recurring waves" is not
+  read as live — the status is defensible, the narrative was not. **Greenfield note:** steward
+  S-44.8 moves only in-flight and sole-maintainer recipes to `factory/recipes/`; every other
+  `recipes/**` row reads `stays` and is **archived with `local-recipes`**. This Dream's CAP-1
+  surface is `recipes/**` (`surface-drift: exempt`), so after the cutover most of that surface
+  lives in an archived repo — which changes what "every feedstock we can touch" can mean. Neither
+  this Dream nor its Spec anticipated it; consult at 44.8, not after.
+
+## 2026-10-26 — The CFE failure catalog is generated from the skill spec, every row lint-verified against its enforcing check (folded from machine-checked-recipe-knowledge)
+
+*Folded 2026-10-26 under spec-one-chain-per-station CAP-11 (Story 35.1). The body below is `docs/dreams/machine-checked-recipe-knowledge.md`, verbatim, with its headings demoted one level and its 2026-09-17 fold banner left out; the file moved to `archive/docs/dreams/machine-checked-recipe-knowledge.md`.*
+
+## Machine-checked recipe knowledge
+
+### The Dream
+
+The conda-forge-expert skill's largest asset — 110+ numbered gotchas and the
+Build Failure Protocol — is prose. Nothing links a gotcha to the check that
+enforces it, so knowledge and enforcement drift silently. The dream: a
+failure catalog GENERATED from the skill's own text, one row per failure
+class, each carrying greppable symptom signatures and an `enforced_by:`
+pointer lint-resolved against the real check surface — with
+`enforced_by: null` an explicit, machine-readable automation backlog, and
+catalog↔spec drift failing CI.
+
+### Grounding
+
+Proven in the wild by OpenTeams auto-recipe (2026-08-22 seven-repo analysis,
+`archive/docs/intake/external-repos-analysis-2026-08-22/`): 45-row
+`failure-catalog.yaml` generated from its 980-line spec, lint-resolved
+against `verify --list-checks`, "when the two disagree, the spec wins and
+the code is wrong." That repo is unlicensed/private — the PATTERN is
+adopted; no text or YAML is copied. Locally the fit is exact: the G-corpus
+lives in SKILL.md, the check surface in the CFE verify/test machinery, and
+the bmad-drift-check philosophy (detector + reconciler + baseline) is the
+same shape one level up.
+
+### What it looks like when real
+
+`catalog.yaml` derives from SKILL.md's gotchas; every row names symptom
+tokens + its enforcing check (or null); a lint resolves each pointer against
+the live check registry; CI reds on drift either way; the null-rows report
+IS the prioritized backlog for new checks.
+
+### Constraints / Non-goals
+
+Doctor supplies the drift-lint surface (detector convention), mason owns the
+catalog + generation; no verbatim import from auto-recipe (no license);
+not a rewrite of the G-corpus — the prose stays authoritative, the catalog
+derives. Rule 1/2 apply (CFE surface).
+
+### Kinships
+
+CFE SKILL.md G-corpus · bmad-drift-check (the detector philosophy) ·
+`spec-conda-forge-expert-rebuild` (mason's CFE campaign) · the intake report.
+
+### Realization log
+
+- **2026-08-22** — Seeded from the seven-repo external analysis (`f0c695758c`);
+  `spec-machine-checked-recipe-knowledge` derived under pyforge-mason and decomposed into the
+  station backlog the same day (`a20192dd84`). Spec status `ready`.
+- **2026-09-09** — **Realized, and exercised** (operator ruling,
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`
+  § 2.2). `config/failure-catalog.yaml` (117 rows) derives from `SKILL.md`'s gotcha corpus via
+  `scripts/failure_catalog_generator.py`, is guarded for freshness by
+  `tests/meta/test_failure_catalog_freshness.py` (green), and is independently re-resolved by
+  `scripts/failure_catalog_check.py` (`DETECTOR = {"scope": "repo"}` at `:41`, auto-discovered by
+  `scripts/detectors.py`) — `pixi run -e local-recipes failure-catalog-check` reports **clean**.
+  The Spec flips `ready → shipped` and finally declares its own detector in `surface:`. The
+  null-rows backlog is real and large: **115 of 117 rows carry `enforced_by: null` — coverage
+  1.7 %**. That number is *emitted on every run* and nobody watches it; raising it is the
+  backlog's job, not this Dream's — the Dream's contract was that the number exist and that
+  drift be impossible to land silently, and both hold. The Dream's own open question (catalog
+  home: `config/` vs `data/`) is settled exactly as it predicted — it landed in `config/`,
+  because the artifact is derived-and-tracked.
+
+## 2026-10-26 — A custom-branded Python distributable, if this repo ever needs one (folded from miniforge-installer)
+
+*Folded 2026-10-26 under spec-one-chain-per-station CAP-11 (Story 35.1). The body below is `docs/dreams/miniforge-installer.md`, verbatim, with its headings demoted one level and its 2026-09-17 fold banner left out; the file moved to `archive/docs/dreams/miniforge-installer.md`.*
+
+## A custom-branded Python distributable, if this repo ever needs one
+
+### The Dream
+
+The source dream's actual problem — developers and CI agents getting Python from three divergent
+per-platform paths, none of them locked to an org's own Artifactory-only conda channels — doesn't
+exist here. This repo's own `pixi.toml` already declares public channels directly
+(`conda-forge`, `SelfExplainML`), with no Artifactory-only constraint to route around and no
+divergent per-platform install story to unify — every contributor and every CI runner already
+gets Python the same way, through pixi, from the same public channels. Captured for parity, not
+because a real gap exists.
+
+### What it looks like when real
+
+Left thin — no scoped feature, because the premise (an org needing to lock its own custom Python
+distributable to a private channel) doesn't hold here:
+
+- IF this repo (or a future enterprise deployment of it, per [[enterprise-airgap]]) ever needs a
+  Python distribution locked to a private/mirrored channel set, the source dream's
+  Conda-Constructor-based build shape is a reasonable pattern to reach for — but that's
+  [[enterprise-airgap]]'s own concern to raise if it ever becomes real, not something to
+  pre-build here speculatively.
+
+### What is real
+
+Nothing built or missing. `pixi` itself, installed directly per this repo's own
+[[developer-machine-bootstrap]] (also just captured, also aspirational), already serves the role
+a custom Miniforge distributable would serve here — one consistent way to get a working Python
+environment, for every contributor and every CI runner alike.
+
+### Constraints
+
+- **Not to be built until a private-channel-locking need is real.** [[enterprise-airgap]] is the
+  Dream that would surface that need if it ever materializes; this Dream should not get ahead of it.
+
+### Non-goals
+
+- **Not an alternative to `pixi`** — this repo's existing Python-provisioning story (pixi itself)
+  already solves what this Dream's source solves differently.
+- **Not multi-platform installer engineering** (Docker+QEMU cross-builds, Gradle orchestration)
+  — no target to build for.
+
+### Full feature audit against `miniforge-installer`
+
+| Source feature | Disposition | Why |
+|---|---|---|
+| Custom-branded `Miniforge3_WF` installer | **Omitted, no target** | `pixi` already serves this repo's equivalent role; no private-channel-locking need exists. |
+| `construct.yaml` (Conda Constructor blueprint) | **Pattern noted, no target** | Reasonable IF a private-channel need ever materializes via [[enterprise-airgap]]; not built speculatively. |
+| CVE-pinned package patching | **Omitted, no target** | Nothing to patch without a distributable to patch. |
+| Multi-platform build matrix (Linux x86_64/aarch64, macOS x86_64/arm64, Windows) | **Omitted, no target** | Same. |
+| Gradle build system + dual CI (Jenkins + GitHub Actions) | **Omitted, WF-infrastructure-specific** | No Jenkins presence in this repo. |
+
+### Kinships
+
+[[enterprise-airgap]] (the Dream that would actually surface a private-channel-locking need, if
+one ever becomes real) · [[developer-machine-bootstrap]] (the sibling Dream this one's role
+already substantially overlaps with, via plain `pixi`) · [[pyforge-mason]] (nominal owner by the
+source label; genuinely unclaimed)
+
+### Realization log
+
+- **2026-08-14** — Dream captured while porting a sibling org's dream catalog for PyForge fit.
+  Checked `pixi.toml`'s own channel declaration directly before drafting — confirmed public,
+  unlocked conda-forge channels with no Artifactory-only constraint this dream's source solves
+  for. Kept intentionally thin; the more honest home for this concern, if it ever becomes real, is
+  [[enterprise-airgap]], not a new standalone Dream.
+
+## 2026-10-26 — The Packaging Factory (folded from packaging-factory)
+
+*Folded 2026-10-26 under spec-one-chain-per-station CAP-11 (Story 35.1). The body below is `docs/dreams/packaging-factory.md`, verbatim, with its headings demoted one level and its 2026-09-17 fold banner left out; the file moved to `archive/docs/dreams/packaging-factory.md`.*
+
+## The Packaging Factory — every library, packaged before you ask
+
+> **Scope note (2026-07-25):** this is the **practice** Dream — the perpetual
+> conda-forge factory and its craft-skill. Mason **the station** (the Smith and the
+> `mason` CLI) now has his own charter: [[pyforge-mason]].
+
+### The Dream
+
+**The origin dream of this repository**: an AI-assisted, semi-autonomous packaging
+factory for conda-forge — Mason's domain. A machine that takes any upstream
+(PyPI, npm, CRAN, CPAN, LuaRocks, GitHub) and carries it through the entire
+recipe lifecycle — generate, security-scan, build, debug, submit, maintain —
+with a human steering intent, not syntax. Where packaging a library stops being
+an afternoon of YAML archaeology and becomes a sentence.
+
+This is a **perpetual** dream: realized as a running factory, never "done."
+
+### What is real
+
+- The **`conda-forge-expert` skill** (v8.90.1): the 9-step autonomous lifecycle
+  loop, build-failure protocol, **117 gotchas (G1–G117)**, the retro system that
+  makes every effort improve the skill (CLAUDE.md Rule 2).
+- **769 feedstocks** under maintenance; the staged-recipes campaign machinery
+  (langflow suite, db-gpt, flyte, mindroom chains).
+- The **FastMCP tool surface** (**46 tools**; `docs/reference/mcp-server-architecture.md`) and
+  the atlas intelligence layer feeding it ([[pyforge-atlas]]).
+- Shipped intelligence releases: `lts-registry-gap`, `seed-gap-suggesters`,
+  `cyclonedx-universe-inventory`, the `cfe-shipped-releases` archive.
+
+### The frontier (unrealized aspirations, from the 2026-04-25 roadmap)
+
+- **Multi-ecosystem autotick + scaffolders** — CRAN/npm/cargo updaters and
+  `generate_recipe_from_{cran,cratesio,npm}`; the factory is still Python-first.
+- **Smart test extractor** — re-run recipe tests against an existing artifact
+  without rebuilding (huge for slow C++ packages).
+- **Static dependency version checker** — validate version ranges, not existence.
+
+### Graveyard (recorded so it is never re-dreamed ignorantly)
+
+- **copilot-cli** — cannot ship to conda-forge; staged-recipes#32522 rejected on
+  LICENSE.md §2 standalone-redistribution. The recipe lives on locally only.
+
+### Kinships
+
+[[pyforge-mason]] (the station that tends this practice) · [[fleet-stewardship]]
+(the estate the factory keeps) · [[pyforge-atlas]] (the intelligence that feeds it) ·
+[[conda-forge-expert-rebuild]] (the campaign over the factory's own machinery — endgame
+declared 2026-09-09 over slices 1–2) ·
+**steward Epic 44** (the python-foundry cutover moves this practice's machinery:
+`fnd:CAP-3` → S-44.6 *"CFE comes home"* relocates the whole CFE cell to
+`skills/domain/conda-forge-expert/`, and `fnd:CAP-6` → S-44.9 *"Mason submits to
+conda-forge"* — both carry Mason's Rule 1/2 ACs, both read `blocked` in steward's ledger,
+and mason's chain has no counterpart story for either; noted 2026-09-09, decision-batch
+D11).
+
+### Realization log
+
+- **2025→2026** — the factory built and operated across hundreds of sessions;
+  history lives in the CFE CHANGELOG, the spec archives, and git.
+- **2026-07-23** — Dream retro-seeded under the Dream-first model; roadmap
+  aspirations folded in as the frontier. Chapters: [[pyforge-atlas]],
+  [[pyforge-warden]], [[fleet-stewardship]], [[upstream-discovery]].
+- **2026-07-23 (gist audit)** — grounding: the SelfExplainML 36-package channel drop (third-party-channel publishing!) + the rattler-build macOS codesign-stub cross-compile trick (`docs/intake/gists/`).
+- **2026-09-09 (currency re-read)** — the practice is the **most actively exercised thing in the
+  fleet**, and this Dream's own body had drifted eleven minor versions behind it. Verified live
+  against `.claude/skills/conda-forge-expert/` (`conda-forge-expert` invoked per CLAUDE.md Rule 1):
+  **v8.90.1** — with *five* releases landing on 2026-09-09 alone — **G1–G117** gotchas, **46**
+  FastMCP tools, and **7,873** `recipes/` directories. The "What is real" block above is corrected
+  in place (was v8.79.x / ~90 gotchas / 30+ tools). Status stays `realized`; the Spec stays
+  `shipped`. Recorded alongside a standing hazard the pass named fleet-wide: stamped literal
+  version numbers in companion comments and downstream artifacts cannot keep pace with a skill
+  that ships several releases a day — a **derived** pin (read `SKILL.md`'s own `version:`) is the
+  durable shape.
+
+## 2026-10-26 — A shared base container image with pixi already installed, if this repo ever ships one (folded from pixi-container-image)
+
+*Folded 2026-10-26 under spec-one-chain-per-station CAP-11 (Story 35.1). The body below is `docs/dreams/pixi-container-image.md`, verbatim, with its headings demoted one level and its 2026-09-17 fold banner left out; the file moved to `archive/docs/dreams/pixi-container-image.md`.*
+
+## A shared base container image with pixi already installed, if this repo ever ships one
+
+### The Dream
+
+The source dream's actual value — every containerized project inheriting one consistent,
+credential-safe pixi installation layer instead of each team hand-rolling its own — presupposes
+an organization shipping many containers that all need pixi. This repo now ships three (see "What
+is real" below), and all three independently converged on the same pixi-materialization discipline
+rather than actually inheriting one shared pre-built layer — that convergence is what's real today,
+not the shared-layer artifact itself. Mason's own `docker`-mode build path (`cfe.py`'s
+`build_docker`) uses Docker as a RECIPE cross-compilation isolation mechanism, not as a shipped
+application container — a genuinely different concern this Dream must not be confused with.
+Captured for parity originally; partially realized now (see "What is real" and "Constraints") in
+the discipline, not yet in a shared base image.
+
+### What it looks like when real
+
+Left thin originally, since no PyForge artifact shipped as a container at the time this Dream was
+captured. Three now do (see "What is real"), so the "IF" below has partly resolved — not into a
+shared pre-built base image, but into three independently-built images that converged on the same
+pixi-materialization discipline and are now held to it explicitly:
+
+- A shared base layer with pixi pre-installed is still the right pattern to reach for IF a fourth
+  Containerfile, or a real divergence between the three that exist, ever makes hand-rolling the
+  same builder stage three-plus times worth consolidating — this Dream is where that design would
+  live; it hasn't been built because it hasn't been needed (see "Constraints").
+- Credential handling (build-time secret mount, never baked into a layer) is the one piece that
+  didn't wait for a shared base image to become real — it's already true today across all three
+  Containerfiles, documented and guarded by
+  `docs/reference/container-base-layer-convention.md`, since it's a security discipline, not an
+  implementation detail specific to a shared base layer or WF's own Artifactory.
+
+### What is real
+
+The trigger fired. **Four** Containerfiles now ship in this repo's own tracked source:
+`Containerfile` (root, Story 7.1), `src/platform/Containerfile` (Story 10.3),
+`src/platform/compose/dbgpt/Containerfile` (Story 10.5), and
+`src/platform/compose/mcp-host/Containerfile` (spec-mcp-era-isolation slice 1 —
+`ghcr.io/prefix-dev/pixi:0.80.0` builder + `registry.access.redhat.com/ubi9/ubi-minimal:9.6`
+runtime, no `ENV` credential). All four converged independently on the
+same base-layer pattern — a registry-pinned `ghcr.io/prefix-dev/pixi` builder stage plus a minimal
+runtime stage, no credential ever baked into a layer or `ENV`. That convergence is now written down
+as policy in `docs/reference/container-base-layer-convention.md` and enforced by
+`tests/packaging/test_containerfile_base_layer_convention.py` (which sweeps every `FROM`/`ENV` line
+across the files it enumerates — three of the four today; see the 2026-09-09 log entry), alongside the pre-existing `scripts/pixi_version_registry.py` (which keeps
+the pixi builder-stage tag in sync with `pixi.toml`'s `requires-pixi` floor). Mason's `build_docker`
+mode remains the separate recipe cross-compilation concern this Dream never covers — confirmed by
+reading `models.py`'s own Story 2.6 documentation before drafting this, specifically to avoid
+mistaking the two for overlap.
+
+### Constraints
+
+- **The discipline is real; a repo-owned base image still is not.** The three Containerfiles above
+  all build directly `FROM` the upstream `ghcr.io/prefix-dev/pixi` image — none of them, and nothing
+  else in this repo, builds or publishes a custom pixi-preinstalled base image.
+  `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pixi-container-image/SPEC.md`
+  (the spec this Dream produced) keeps it that way deliberately: the official pixi image stays the
+  base, and a shipped repo-owned base image stays out of scope until at least two Containerfiles
+  diverge for reasons a shared custom base would actually solve — not true today, since all three
+  still follow one documented pattern. This Dream's original "not to be built until a real
+  containerized artifact exists" premise has therefore only partially resolved: the artifacts exist
+  and the pattern they converged on is now documented and guarded, but the larger ask this Dream
+  captures — an actual shared, repo-owned base image — remains speculative until a real divergence
+  makes one worth building.
+
+### Non-goals
+
+- **Not multi-architecture support** — moot until a target exists; source dream's own v1 was
+  x86_64-only anyway.
+- **Not confused with mason's `build_docker` recipe-build mode** — genuinely different concern,
+  called out explicitly so a future reader doesn't conflate them.
+
+### Full feature audit against `pixi-container-image`
+
+| Source feature | Disposition | Why |
+|---|---|---|
+| UBI8-minimal base + pixi pre-install | **Omitted, no target** | No PyForge artifact builds or publishes a shared, repo-owned, pixi-preinstalled base image — the three Containerfiles that now exist (see "What is real") each materialize pixi independently in their own builder stage rather than inheriting one. |
+| BuildKit `--mount=type=secret` credential handling | **Pattern retained** | The one piece worth keeping regardless of timing — a security discipline, not WF-specific. |
+| Jenkins + `SharedLibrary_cicd` CI/CD, weekly rebuild cron | **Omitted, WF-infrastructure-specific** | This repo runs plain GitHub Actions; no Jenkins presence anywhere. |
+| Prisma scan, OCI labels, `microdnf` hardening | **Omitted, no target** | Container-hardening detail with nothing to harden yet. |
+
+### Kinships
+
+[[pyforge-mason]] (nominal owner by the source label; genuinely unclaimed until a container
+artifact exists) · [[reusable-cicd-workflows]] and [[miniforge-installer]] (siblings in the same
+source org's Tier-3 batch, sharing the same "no current PyForge target" disposition)
+
+### Realization log
+
+- **2026-08-14** — Dream captured while porting a sibling org's dream catalog for PyForge fit.
+  Checked directly for any existing container artifact or Docker-shipping concern before drafting
+  (none found; mason's `build_docker` mode is a recipe cross-compilation mechanism, not an
+  application-container concern, confirmed by reading its own source docstring). Kept
+  intentionally thin — the credential-handling discipline is the only piece worth retaining
+  independent of timing.
+- **2026-08-14** — **Air-gapped realization requirements (operator, from the source original
+  pixi-container-image.md):** the source Dockerfile is itself the airgap mechanism; its specifics
+  should transfer intact if this is ever built: (1) the base is an internally-certified
+  UBI8-minimal pulled from the enterprise registry, never public Docker Hub, and the produced
+  image publishes back to that registry so K8s/OCP pulls (per today's operator decision) never
+  leave the perimeter; (2) the pixi binary downloads from an Artifactory generic-repo mirror
+  (`ARTIFACTORY_URL` + `ARTIFACTORY_REPO_PATH`, with a `${PIXI_VERSION%%.*}.x` major-version
+  subdirectory) — direct prefix.dev download is an explicit source non-goal; (3) credentials
+  cross the build boundary only via BuildKit `--mount=type=secret` read inline as
+  `$(cat /run/secrets/...)` — never ENV, never COPY, never persisted in any layer — the
+  build-time twin of `_http.py`'s env-only runtime posture, followed by `.pem`/`.enc` cleanup;
+  (4) TLS to the mirror trusts the internal CA via a `CA_PATH` build arg, the image-build analog
+  of the truststore half of `_http.py`'s runtime chain; (5) OS updates run `microdnf update`
+  against internal `rpm-OraLinux*` repos only (credentials via `--setopt` from the same mounted
+  secrets, `tsflags=nodocs`, caches cleaned), on a weekly rebuild cron so patching continues with
+  no container ever reaching the public net; (6) downstream layers that later run `pixi install`
+  resolve their channels from the same Artifactory conda mirrors this repo's pixi channels
+  already swap to.
+- **2026-08-22** — **Correction: the "nothing exists yet" premise is stale.** Story
+  `spec-8-1-the-convention-is-written-and-guarded` (from `spec-pixi-container-image`) found the
+  repo now ships three Containerfiles (root `Containerfile`, `src/platform/Containerfile`,
+  `src/platform/compose/dbgpt/Containerfile` — Stories 7.1, 10.3, 10.5), all three already
+  base-tag-pinned to `ghcr.io/prefix-dev/pixi` and free of any `ENV`-baked credential. Corrected
+  "What is real" and "Constraints" above in place (prior entries left untouched) to state that,
+  added `docs/reference/container-base-layer-convention.md` naming the three pillars (base-tag
+  pinning, the multi-stage pixi-materialization shape, and the `--mount=type=secret`-only
+  credential rule this Dream's own air-gapped requirements entry above already named as the piece
+  worth retaining), and added `tests/packaging/test_containerfile_base_layer_convention.py` to
+  statically guard against a future unpinned base or `ENV`-declared credential across all three
+  files. No repo-owned base image was built or published — the upstream `ghcr.io/prefix-dev/pixi`
+  image stays the base for every builder stage, per `spec-pixi-container-image`'s own Constraints.
+- **2026-09-09** — **Realized, with a coverage gap named** (operator ruling,
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`
+  § 2.2). A **fourth** Containerfile — `src/platform/compose/mcp-host/Containerfile`
+  (spec-mcp-era-isolation slice 1) — now ships and follows the same convention, so the
+  "three Containerfiles, one pattern" reading above was one behind; corrected in place. The Spec
+  flips `ready → shipped`. The gap: the two enumerations in the repo **disagree**.
+  `scripts/pixi_version_registry.py:79-87` already covers all four, but
+  `tests/packaging/test_containerfile_base_layer_convention.py:50-52` hard-codes only three, so
+  the fourth file is **ungoverned by the convention guard**. It is compliant today; the finding is
+  that nothing would notice if it stopped being. The fix is to **derive** the list (glob
+  `Containerfile*`), not to append a fourth literal — a declared list where a derived one was
+  needed. That fix is a code change and needs a story; it is not applied by this documentation
+  pass.
+
+## 2026-10-26 — Presenton, conda-native — AI decks inside the regulated enterprise (folded from presenton-pixi-image)
+
+*Folded 2026-10-26 under spec-one-chain-per-station CAP-11 (Story 35.1). The body below is `docs/dreams/presenton-pixi-image.md`, verbatim, with its headings demoted one level and its 2026-09-17 fold banner left out; the file moved to `archive/docs/dreams/presenton-pixi-image.md`.*
+
+## Presenton for the air-gapped enterprise
+
+### The Dream
+
+Bring the Presenton AI deck-generation app to places SaaS cannot go: an
+**air-gapped, conda-forge-native repackaging** deployable on OpenShift Container
+Platform in regulated-enterprise environments. Every dependency resolved from
+governed channels, every image reproducible, no call home — AI deck generation
+as an internal platform service.
+
+### What it looks like when real
+
+- Presenton repackaged with conda-forge primitives (pixi-locked image,
+  OpenShift-ready), passing [[pyforge-warden]]-grade dependency gates.
+- Distribution through the [[enterprise-airgap]] machinery (Artifactory
+  routing, offline bundles).
+- Division of labor with [[pyforge-herald|deckcraft]]: presenton = the repackaged *app*;
+  deckcraft = the from-primitives *pipeline*. Complementary, not competing.
+- Stations: [[packaging-factory]] (Mason) repackages; **[[pyforge-steward]]
+  deploys and operates** the OpenShift service.
+
+### What is real
+
+- The BMAD project `presenton-pixi-image` (registered, active). Planning not yet
+  run under the Dream-first flow.
+
+### Realization log
+
+- **2026-07** — project registered in PROJECTS.md.
+- **2026-07-23** — Dream retro-seeded; awaits `bmad-spec`.
+- **2026-08-02** — **ARCHIVED (blocked)** during dream consolidation: the full
+  planning chain landed 2026-07-25 (7 epics / 30 stories) and has not moved
+  since — no story has entered implementation, and the Phase-0 exit criteria
+  remain unresolved. See `spec-presenton-pixi-image`'s retirement record for
+  the full account.
+- **2026-08-02 (same day, later)** — the brief/PRD/architecture/Spec
+  planning-chain tier (only) was consolidated into `pyforge-mason`'s own
+  single documents per explicit user override; this Dream's own narrative and
+  the epics/blocked-status were deliberately left as archived above. Originals
+  moved to `archive/_bmad-output/projects/pyforge-mason/planning-artifacts/`.
+- **2026-09-08** — **the load-bearing unknown is answered; the Dream stays
+  archived.** The archive note above singles out Phase-0 exit 6(a) — whether
+  Microsoft's disconnected stack already ships a Copilot-for-PowerPoint
+  equivalent — as bearing directly on whether the core differentiator holds.
+  It does hold. Microsoft 365 Local's own capability list names exactly three
+  on-premises *server* products (Exchange Server, SharePoint Server, Skype for
+  Business Server); the Office client apps, and with them any Copilot deck
+  generation, are absent, and Foundry Local is positioned explicitly as the AI
+  layer and not the application layer. Risk R3 resolves to `infrastructure-only`,
+  the third of the PRD's three named outcomes. **Caveat, and the reason the
+  status does not move:** this is documentary evidence, whereas Story 1.6's
+  acceptance criteria require a Microsoft licensing/product conversation or
+  hands-on access to a disconnected deployment — neither of which happened, and
+  neither of which this repo can perform. The exit is ANSWERED, not formally
+  CLOSED, and the other five exits are untouched. Full finding, the contradictory
+  third-party source it corrects, and a per-exit state table:
+  `_bmad-output/projects/pyforge-mason/planning-artifacts/deferred-work-ledger.md`
+  entries `DW-PRESENTON-1-6-1` and `DW-PRESENTON-PHASE0-1` — the first tracked
+  record this gate has ever had.
+
+## 2026-10-26 — Dream — PyForge Mason: Recipe Validator (folded from pyforge-mason-recipe-validator)
+
+*Folded 2026-10-26 under spec-one-chain-per-station CAP-11 (Story 35.1). The body below is `docs/dreams/pyforge-mason-recipe-validator.md`, verbatim, with its headings demoted one level and its 2026-09-17 fold banner left out; the file moved to `archive/docs/dreams/pyforge-mason-recipe-validator.md`.*
+
+## PyForge Mason — Recipe Validator
+
+### Vision
+
+**Mason** validates conda-forge recipes against linting rules, schema, and best practices — enforcing recipe.yaml/meta.yaml conformance, selector syntax, pinning policy, and cross-platform compatibility.
+
+**The ask**: Build a recipe validator that catches every recipe defect before it hits staged-recipes CI, enforcing the factory's standards and speeding merge times.
+
+### Problem
+
+- **Linting feedback loops are slow.** Recipe lands on staged-recipes; CI fails; author waits days for re-trigger. Three rounds of feedback for small issues.
+- **Standards drift.** Each reviewer has their own mental model of "correct." No canonical enforcement; bike-shedding wastes time.
+- **Cross-platform breaks quietly.** Recipe works on linux-64; breaks on osx-arm64 silently. CI catches it; deployment is blocked.
+- **Selectors are fragile.** `# [win]` typo means it's never validated on Windows. Policy-violating pins hide in selectors. No visibility.
+- **Schema evolution breaks old recipes.** New schema version drops; old recipes suddenly invalid. No migration path.
+
+### Realization
+
+**Mason** delivers:
+
+1. **Comprehensive Linting** — 50+ rules covering: naming, versioning, pinning policy, selectors, noarch, dependencies, licensing, build scripts.
+
+2. **Schema Validation** — Recipes validated against recipe.yaml v1.0.0 and v0 meta.yaml. Drift detection warns of format mismatches.
+
+3. **Pinning Policy Enforcement** — Operators define pinning rules (e.g., "python >= 3.9", "numpy < 2.0"). Mason checks every pin against the factory's policy.
+
+4. **Cross-platform Coverage** — Validates selectors are present for all declared platforms. Warns on untested combos.
+
+5. **Upstream Conformance** — Checks recipe against upstream source: does the version match? Are patches still applicable? Are dependencies accurate?
+
+6. **Actionable Findings** — Every linting error includes: the problem, why it matters, the remediation, and a link to the policy doc.
+
+### Success Criteria
+
+- ✅ **Coverage**: 50+ linting rules, all with documented rationale
+- ✅ **Speed**: Full recipe validation <1 sec; 100-recipe batch <2 min
+- ✅ **Accuracy**: 0 false positives on canonical recipes; 95%+ catch rate on real defects
+- ✅ **Integration**: Works in CI, local pre-commit hooks, and automated batch scanning
+- ✅ **Feedback**: Every finding includes remediation guidance; authors fix issues without back-and-forth
+- ✅ **Evolution**: Policy changes auto-apply to batch scans; old recipes validated against current policy
+
+### Acceptance
+
+Mason is done when:
+1. All 50 linting rules implemented and documented
+2. Validates 1000+ canonical conda-forge recipes with 0 false positives
+3. Local `mason lint` speeds up feedback loop: catches CI issues before push
+4. Automated batch scanning of all 769 feedstocks complete; defects cataloged
+5. Integration with staged-recipes CI proven: PRs that pass Mason merge cleanly
+6. Policy changes auto-apply: 769 feedstocks re-validated and reported in 5 min
+
+## 2026-10-26 — A centrally-maintained CI/CD workflow family, if this repo ever needs more than plain Actions (folded from reusable-cicd-workflows)
+
+*Folded 2026-10-26 under spec-one-chain-per-station CAP-11 (Story 35.1). The body below is `docs/dreams/reusable-cicd-workflows.md`, verbatim, with its headings demoted one level and its 2026-09-17 fold banner left out; the file moved to `archive/docs/dreams/reusable-cicd-workflows.md`.*
+
+## A centrally-maintained CI/CD workflow family, if this repo ever needs more than plain Actions
+
+### The Dream
+
+The source dream's actual subject — a 63-family EPLX system of reusable GitHub Actions workflows
+built on Jenkins/Harness/Vault/Kaniko/FCD-governance/ThreadFix, letting any pixi project reach
+production with zero custom CI logic — solves a problem this repo doesn't have: this repo has
+ONE consuming project (itself), running on plain GitHub Actions (`detectors.yml`,
+`staged-recipes-linter.yml`, `dashboard.yml`), with no Jenkins, no Harness CD, no enterprise
+governance gate, and nothing else to centrally maintain workflows FOR. Captured for parity, not
+because a real gap exists.
+
+### What it looks like when real
+
+Left thin — no scoped feature, because the premise (multiple consuming repos needing shared,
+centrally-maintained CI) doesn't hold here yet:
+
+- IF this repo's workflows ever need to be shared across multiple consuming repos (a genuine
+  multi-repo estate, unlike today's single mono-repo), the source dream's two-tier architecture
+  (step workflows + flattened entry points) is a reasonable pattern to reach for.
+- The one concretely transferable idea, independent of that premise: this repo's own
+  `detectors.yml`/`staged-recipes-linter.yml` could plausibly run some of their own steps in
+  parallel rather than serially, the way the source dream's build engine does (documented 53%
+  speedup from parallel lint/test/build/typecheck in one job) — but no specific current bottleneck
+  was found to justify this as more than a speculative future optimization; checked both existing
+  CI workflow files directly and found neither an obvious serial-that-should-be-parallel
+  structure nor evidence either is currently slow enough to warrant it.
+
+### What is real
+
+Nothing built or missing — this repo's existing `detectors.yml` and `staged-recipes-linter.yml`
+already do what this repo needs, on plain GitHub Actions, with no shared-workflow-family problem
+to solve.
+
+### Constraints
+
+- **Not to be built until a second consuming repo exists.** The entire premise of a "reusable
+  workflow family" requires more than one consumer; building one for a single mono-repo would be
+  pure ceremony.
+
+### Non-goals
+
+- **Not Jenkins, Harness, Vault, Kaniko, or FCD governance** — none of this repo's infrastructure.
+- **Not GitLab CI** — this repo uses GitHub Actions exclusively.
+
+### Full feature audit against `reusable-cicd-workflows`
+
+| Source feature | Disposition | Why |
+|---|---|---|
+| Two-tier reusable workflow architecture (step workflows + entry points) | **Pattern noted, no target** | Reasonable pattern IF a multi-repo estate ever exists here; premise doesn't hold today. |
+| Parallel lint/test/build/typecheck in one job | **Noted as a possible future optimization, not scoped** | No specific current CI bottleneck identified to justify building this now. |
+| `PIXI_FROZEN: true` frozen installs | **Already this repo's own convention** | Not something to port — this repo already runs pixi tasks with frozen lockfiles as standard practice. |
+| Kaniko in-cluster container builds | **Omitted, no target** | No containers ship from this repo (see [[pixi-container-image]]). |
+| Prisma/Checkmarx/BlackDuck scanning, FCD governance gate, ThreadFix | **Omitted, WF-infrastructure-specific** | No equivalent enterprise scanning/governance infrastructure exists or is planned here. |
+| `vault-action`, HPOS Object Storage, Kafka-triggered Harness CD | **Omitted, WF-infrastructure-specific** | Same. |
+
+### Kinships
+
+[[pyforge-mason]] (nominal owner by the source label; genuinely unclaimed until a multi-repo
+estate or a real CI bottleneck exists) · [[pixi-container-image]] and [[miniforge-installer]]
+(siblings in the same source batch, same "no current PyForge target" disposition)
+
+### Realization log
+
+- **2026-08-14** — Dream captured while porting a sibling org's dream catalog for PyForge fit.
+  Checked this repo's actual CI workflows (`detectors.yml`, `test-all.yml` and siblings) directly
+  before drafting rather than assuming the source dream's premise applies — found no multi-repo
+  estate, no Jenkins/Harness presence, and no obvious serial-CI bottleneck the source dream's
+  parallel-job pattern would concretely fix. Kept thin and honest about the mismatch rather than
+  manufacturing a scoped feature set with no real target.
+- **2026-08-14** — **Air-gapped realization requirements (operator, from the source original
+  reusable-cicd-workflows.md):** the source family is a complete worked example of disconnected
+  CI, recorded here against the day a second consuming repo exists: (1) toolchain bootstrap never
+  touches the public internet — Miniforge downloads from internal object storage (HPOS), not
+  GitHub releases, and every build runs `PIXI_FROZEN: true` against `pixi.lock`; (2) channel
+  topology is committed, credentials are not — consumer repos carry a `.condarc-cicd` naming the
+  enterprise conda channels (the mirror-URL analog of this repo's swappable pixi channels), while
+  secrets inject per-job via `vault-action` (HashiCorp Vault), the CI counterpart of `_http.py`'s
+  env-vars-only rule; (3) container builds are in-cluster Kaniko (no Docker daemon) with separate
+  `builder_base_image`/`runtime_base_image` inputs, both pulled from the internal registry and
+  published to Artifactory docker-local — composing with [[pixi-container-image]]'s base layer
+  and today's K8s/OCP deployment decision; (4) artifacts publish to Artifactory
+  conda-local/pypi-local with checksum verification, and inter-job data moves through internal
+  object storage rather than GitHub-hosted artifact storage; (5) the scanning/governance slots
+  (Prisma, Checkmarx/BlackDuck, ThreadFix, FCD gate) all run against internal services — a
+  PyForge equivalent would fill them with Warden's registry-perimeter gates on Artifactory
+  ([[enterprise-airgap]]'s frontier), not WF's own scanners.

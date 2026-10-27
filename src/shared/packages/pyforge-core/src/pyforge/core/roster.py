@@ -2,7 +2,7 @@
 spec-pyforge-steward CAP-137 / spec-vocabulary-one-name-one-job CAP-7).
 
 Four Python-level ``STATIONS``-shaped constants disagreed with each other
-(measured 2026-09-14, ``docs/dreams/vocabulary-one-name-one-job.md``):
+(measured 2026-09-14, ``archive/docs/dreams/vocabulary-one-name-one-job.md``):
 three distinct member orders, and marshal's ``DREAM_STATIONS`` silently
 omitted ``doctor`` and ``scribe`` entirely. This module is the one
 declared list every station package imports rather than keeping its own

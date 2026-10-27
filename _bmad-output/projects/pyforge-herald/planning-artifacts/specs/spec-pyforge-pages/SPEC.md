@@ -4,7 +4,7 @@ spec: pyforge-pages
 status: absorbed
 absorbed-into: spec-pyforge-herald
 updated: '2026-09-17'
-owner-dream: docs/dreams/pyforge-pages.md
+owner-dream: archive/docs/dreams/pyforge-pages.md
 surface:
   - pixi.toml
   - .gitignore

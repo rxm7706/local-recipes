@@ -4,7 +4,7 @@ spec: docs-shelf-alignment
 status: absorbed
 absorbed-into: spec-pyforge-doctor
 updated: '2026-09-17'
-owner-dream: docs/dreams/docs-shelf-alignment.md
+owner-dream: archive/docs/dreams/docs-shelf-alignment.md
 ---
 
 # Absorbed into spec-pyforge-doctor

@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: e53181d5404575e9
-story_count: 506
+source_fingerprint: dc6e67a4c0af2ab7
+story_count: 507
 test_file_count: 271
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 506
-- **Epics parsed:** 108
+- **Stories parsed:** 507
+- **Epics parsed:** 109
 - **Test files inventoried:** 271 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `e53181d5404575e9`
+- **Source fingerprint:** `dc6e67a4c0af2ab7`
 
 ## Risk Assessment
 
@@ -130,6 +130,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 107: A loop-home refresh keeps the Tier-3 feed on the tracked ledger's keys
 - Epic 108: Every marshal requirement derives from a capability, and the harness carries the rule (spec-one-chain-per-station CAP-5 amended; spec-pyforge-marshal CAP-297)
 - Epic 109: Marshal's planning artifacts fit the one-chain shape (spec-one-chain-per-station CAP-11)
+- Epic 111: The archived marshal Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 
 ### Low-risk epics
 
@@ -931,6 +932,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 110.36 | the recall injection is its own [context] layer sits behind a kill switch | none observed |
 | 110.37 | a recall miss or failure injects nothing sits behind a kill switch | none observed |
 | 110.38 | the retrofit kill switches retire on their cleanup date | none observed |
+| 111.1 | Marshal's 54 archived Dreams leave the live tree | none observed |
 
 ## Quality Gates
 

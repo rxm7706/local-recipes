@@ -46,7 +46,7 @@ def test_source_grounding_is_first_library_addition() -> None:
 def test_outcome_is_the_library_gap() -> None:
     assert library_gaps() == ("outcome",)
     assert LIBRARY["outcome"].in_library is False
-    assert LIBRARY["outcome"].blocked_on == "docs/dreams/build-league-scorecard.md"
+    assert LIBRARY["outcome"].blocked_on == "archive/docs/dreams/build-league-scorecard.md"
 
 
 def test_every_row_refuses_a_second_verdict() -> None:

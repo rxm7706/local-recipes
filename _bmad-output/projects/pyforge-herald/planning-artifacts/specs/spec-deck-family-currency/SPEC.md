@@ -4,7 +4,7 @@ spec: deck-family-currency
 status: absorbed
 absorbed-into: spec-pyforge-herald
 updated: '2026-09-17'
-owner-dream: docs/dreams/deck-family-currency.md
+owner-dream: archive/docs/dreams/deck-family-currency.md
 surface:
   - pixi.toml
 companions:

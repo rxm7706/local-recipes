@@ -4,7 +4,7 @@ spec: db-gpt-packaging
 status: absorbed
 absorbed-into: spec-pyforge-mason
 updated: "2026-09-17"
-owner-dream: docs/dreams/db-gpt-packaging.md
+owner-dream: archive/docs/dreams/db-gpt-packaging.md
 surface: []          # archived — no live surface; see § What carries forward
 companions: []
 ---

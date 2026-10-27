@@ -4,7 +4,7 @@ spec: scribe-graphify-target-list
 status: absorbed
 absorbed-into: spec-pyforge-scribe
 updated: "2026-09-17"
-owner-dream: docs/dreams/scribe-graphify-target-list.md
+owner-dream: archive/docs/dreams/scribe-graphify-target-list.md
 ---
 
 # Absorbed into spec-pyforge-scribe

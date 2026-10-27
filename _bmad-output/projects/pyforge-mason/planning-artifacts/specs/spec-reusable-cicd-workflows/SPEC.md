@@ -4,7 +4,7 @@ spec: reusable-cicd-workflows
 status: absorbed
 absorbed-into: spec-pyforge-mason
 updated: "2026-09-17"
-owner-dream: docs/dreams/reusable-cicd-workflows.md
+owner-dream: archive/docs/dreams/reusable-cicd-workflows.md
 surface: []
 companions: []
 ---

@@ -3,10 +3,10 @@ id: SPEC-pyforge-steward-feedstock-maintenance
 spec: pyforge-steward-feedstock-maintenance
 status: archived
 archived-reason: absorbed
-owner-dream: docs/dreams/pyforge-steward-feedstock-maintenance.md
+owner-dream: archive/docs/dreams/pyforge-steward-feedstock-maintenance.md
 surface: []          # archived — no live surface; see § What carries forward
 sources:
-  - ../../../../../../docs/dreams/pyforge-steward-feedstock-maintenance.md
+  - ../../../../../../archive/docs/dreams/pyforge-steward-feedstock-maintenance.md
 open_questions: []
 ---
 

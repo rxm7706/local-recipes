@@ -1,7 +1,7 @@
 ---
 spec: django-accelerator-framework
 status: absorbed
-owner-dream: docs/dreams/django-accelerator-framework.md
+owner-dream: archive/docs/dreams/django-accelerator-framework.md
 absorbed-into: spec-pyforge-unifying-strategy
 surface:
   # `src/platform/**` and the pyforge-steward dashboard glob were DROPPED 2026-09-09: they
@@ -10,7 +10,7 @@ surface:
   - scripts/emit_wagtailcore_schema_delta.py
 companions: []
 sources:
-  - ../../../../../../docs/dreams/django-accelerator-framework.md
+  - ../../../../../../archive/docs/dreams/django-accelerator-framework.md
   - ../../../../pyforge-steward/planning-artifacts/specs/spec-python-agent-platform/SPEC.md
 open_questions: []
   # CLOSED 2026-09-09: "Does CAP-2's third-surface trigger count Django surfaces repo-wide

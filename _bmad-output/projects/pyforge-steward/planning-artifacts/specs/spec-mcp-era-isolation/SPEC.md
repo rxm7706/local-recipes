@@ -4,7 +4,7 @@ spec: mcp-era-isolation
 status: absorbed
 absorbed-into: spec-pyforge-steward
 updated: "2026-09-17"
-owner-dream: docs/dreams/mcp-era-isolation.md
+owner-dream: archive/docs/dreams/mcp-era-isolation.md
 ---
 
 # Absorbed into spec-pyforge-steward

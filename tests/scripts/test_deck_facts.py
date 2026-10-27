@@ -271,6 +271,39 @@ def test_genesis_rows_and_omissions_for_a_non_station_deck(root, capsys):
     assert "spec_status" not in _rows(root, "pyforge-genesis")
 
 
+# --- a deck's own Dream under the archive (herald Story 48.1; spec-one-chain-per-station CAP-11)
+
+
+def test_deck_dream_status_is_read_under_the_archive(root):
+    """CHAIN-STANDARD section 11: when a deck's Dream has moved to ``archive/docs/dreams/``,
+    ``dream_status`` is still derived, from the archive copy, and its source names that path."""
+    live = root / "docs/dreams/pyforge-alpha.md"
+    archived = root / "archive/docs/dreams/pyforge-alpha.md"
+    archived.parent.mkdir(parents=True, exist_ok=True)
+    live.rename(archived)
+    assert deck_facts.main(["pyforge-alpha"]) == 0
+    rows = _rows(root, "pyforge-alpha")
+    assert rows["dream_status"]["value"] == "dreamt"
+    assert rows["dream_status"]["source"] == "archive/docs/dreams/pyforge-alpha.md"
+
+
+def test_deck_dream_live_copy_wins_over_the_archive(root):
+    """A slug in both homes reads from ``docs/dreams/`` (the live copy), as the genesis counts do."""
+    archived = root / "archive/docs/dreams/pyforge-alpha.md"
+    _write(archived, "---\ntitle: a\nstatus: archived\n---\n")
+    assert deck_facts.main(["pyforge-alpha"]) == 0
+    rows = _rows(root, "pyforge-alpha")
+    assert rows["dream_status"]["value"] == "dreamt"
+    assert rows["dream_status"]["source"] == "docs/dreams/pyforge-alpha.md"
+
+
+def test_deck_dream_absent_from_both_homes_is_omitted(root):
+    (root / "docs/dreams/pyforge-alpha.md").unlink()
+    assert deck_facts.main(["pyforge-alpha"]) == 0
+    rows = _rows(root, "pyforge-alpha")
+    assert "dream_status" not in rows
+
+
 # --- pyforge-genesis Dream archive (herald Story 33.1; CHAIN-STANDARD §11)
 
 _ARCHIVED_AT_75_1 = {

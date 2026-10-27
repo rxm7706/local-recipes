@@ -4,7 +4,7 @@ spec: sentinel
 status: absorbed
 absorbed-into: spec-pyforge-scribe
 updated: "2026-09-17"
-owner-dream: docs/dreams/sentinel.md
+owner-dream: archive/docs/dreams/sentinel.md
 ---
 
 # Absorbed into spec-pyforge-scribe

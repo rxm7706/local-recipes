@@ -4,7 +4,7 @@ spec: pyforge-mason-recipe-validator
 status: absorbed
 absorbed-into: spec-pyforge-mason
 updated: "2026-09-17"
-owner-dream: docs/dreams/pyforge-mason-recipe-validator.md
+owner-dream: archive/docs/dreams/pyforge-mason-recipe-validator.md
 surface: []          # archived — no live surface; see § What carries forward
 companions: []
 ---

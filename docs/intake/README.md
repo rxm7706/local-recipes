@@ -25,11 +25,11 @@ contract → never here (BMAD planning-artifacts).
   citations themselves are untouched.
 - ~~`sentinel/`~~ — **archived 2026-08-15** to `archive/docs/intake/sentinel/`
   (structure-preserving, per this doc's own routing rule). Its Dream
-  (`docs/dreams/sentinel.md`, `status: archived`, `archived-reason: absorbed`)
+  (`archive/docs/dreams/sentinel.md`, `status: archived`, `archived-reason: absorbed`)
   was fully absorbed into the `pyforge-scribe` BMAD project, now complete
   (9/9 stories) — the raw intake material has no further staging purpose.
 - `agentic-sdlc/` — four-views white paper / HTMLs / Marp for the teaching
-  deck. Dream `docs/dreams/agentic-sdlc-autonomy.md` is `status: archived`
+  deck. Dream `archive/docs/dreams/agentic-sdlc-autonomy.md` is `status: archived`
   (folded into the `pyforge-marshal` station Dream 2026-09-16; the standing
   autonomy Spec itself stays `specified` — not a deliverable). Steward Story
   **59.4** names the deck and is still `backlog`. Do not mint a second
@@ -42,12 +42,12 @@ contract → never here (BMAD planning-artifacts).
 - ~~`secure-live-dashboards/`~~ — **archived 2026-09-19** to
   `archive/docs/intake/secure-live-dashboards/` (structure-preserving).
   Grounding for shipped steward **Epic 9** (`pyforge/steward/dashboard/`,
-  7/7 stories `done`); `docs/dreams/secure-live-dashboards.md` is
+  7/7 stories `done`); `archive/docs/dreams/secure-live-dashboards.md` is
   `status: archived` (folded into the `pyforge-steward` station Dream).
 - ~~`local-ocp-hybrid-environment/`~~ — **archived 2026-09-19** to
   `archive/docs/intake/local-ocp-hybrid-environment/` (structure-preserving).
   Source for `spec-local-ocp-hybrid-environment`; steward Epic 12 including
-  12.9 is `done`; `docs/dreams/local-ocp-hybrid-environment.md` is
+  12.9 is `done`; `archive/docs/dreams/local-ocp-hybrid-environment.md` is
   `status: archived` (folded into the `pyforge-steward` station Dream).
 - `external-repos-analysis-2026-08-22/` — research record (sibling OpenTeams
   fleet, prf pipeline) grounding five separate dream/fold targets across

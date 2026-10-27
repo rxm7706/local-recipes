@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: scribe
-source_fingerprint: 2d907bb116f88d59
-story_count: 51
+source_fingerprint: 01a3189bc77a3d42
+story_count: 52
 test_file_count: 24
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-scribe`
-- **Stories parsed:** 51
-- **Epics parsed:** 28
+- **Stories parsed:** 52
+- **Epics parsed:** 29
 - **Test files inventoried:** 24 under `src/shared/packages/pyforge-scribe/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `2d907bb116f88d59`
+- **Source fingerprint:** `01a3189bc77a3d42`
 
 ## Risk Assessment
 
@@ -60,6 +60,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 26: Phase 4+5 of the deferral burn-down: scribe's open medium and low deferrals
 - Epic 27: The instruction surface carries the requirement-arrow rule (spec-pyforge-scribe CAP-27, CAP-29; spec-one-chain-per-station CAP-5 amended)
 - Epic 29: Every pre-rule scribe runtime capability sits behind a kill switch (1 flags, one per CAP; the Guild flag rule's retrofit capability, Q6)
+- Epic 28: The archived scribe Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 
 ### Low-risk epics
 
@@ -148,6 +149,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 25.1 | The estate catalog skips skill directories git ignores | none observed |
 | 26.1 | Recall breaks ties by recency, and scribe's other open deferrals close | none observed |
 | 27.1 | The instruction surface carries the requirement-arrow rule | none observed |
+| 28.1 | Scribe's sixteen archived Dreams leave the live tree | none observed |
 | 29.1 | every session reads one derived picture of the BMAD estate sits behind a kill... | none observed |
 | 29.2 | the retrofit kill switch retires on its cleanup date | none observed |
 

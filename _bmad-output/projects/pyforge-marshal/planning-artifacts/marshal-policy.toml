@@ -320,10 +320,10 @@ verify_commands = [
   "src/shared/packages/pyforge-doctor/**",
   "_bmad-output/policy-defaults.toml",
   "_bmad-output/projects/*/planning-artifacts/marshal-policy.toml",
-  "docs/dreams/marshal-token-economy.md",
-  "docs/dreams/adaptive-model-tiering.md",
-  "docs/dreams/risk-tiered-review-depth.md",
-  "docs/dreams/marshal-parallel-dispatch-fanout.md",
+  "archive/docs/dreams/marshal-token-economy.md",
+  "archive/docs/dreams/adaptive-model-tiering.md",
+  "archive/docs/dreams/risk-tiered-review-depth.md",
+  "archive/docs/dreams/marshal-parallel-dispatch-fanout.md",
   "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md",
 ]
 

@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 3c30865d64ea42d7
-story_count: 407
+source_fingerprint: e31ee41fbc0247c6
+story_count: 408
 test_file_count: 143
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 407
-- **Epics parsed:** 113
+- **Stories parsed:** 408
+- **Epics parsed:** 114
 - **Test files inventoried:** 143 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `3c30865d64ea42d7`
+- **Source fingerprint:** `e31ee41fbc0247c6`
 
 ## Risk Assessment
 
@@ -138,6 +138,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 111: The steward Spec's capability text is whole again, and the foundry inherits the amended rule (spec-one-chain-per-station CAP-5 amended, CAP-7)
 - Epic 112: The Platform CI `test` job's budget covers a slow mirror (spec-pyforge-steward CAP-174 / FR-48)
 - Epic 113: Steward's planning artifacts fit the one-chain shape (spec-one-chain-per-station CAP-11)
+- Epic 115: The archived steward Dreams live in one archive home (spec-one-chain-per-station:CAP-11)
 - Epic 114: Every pre-rule steward runtime capability sits behind a kill switch (8 flags, one per CAP; the Guild flag rule's retrofit capability, Q6)
 
 ### Low-risk epics
@@ -709,6 +710,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 114.7 | steward reads `origin/main` and its own branches by their full refs sits behi... | none observed |
 | 114.8 | One client, carrying identity sits behind a kill switch | none observed |
 | 114.9 | the retrofit kill switches retire on their cleanup date | none observed |
+| 115.1 | Steward's 36 archived Dreams leave the live tree | none observed |
 
 ## Quality Gates
 

@@ -4,7 +4,7 @@ spec: machine-checked-recipe-knowledge
 status: absorbed
 absorbed-into: spec-pyforge-mason
 updated: "2026-09-17"
-owner-dream: docs/dreams/machine-checked-recipe-knowledge.md
+owner-dream: archive/docs/dreams/machine-checked-recipe-knowledge.md
 surface:
   - scripts/failure_catalog_check.py   # the Story 7.2 drift detector this Spec owns
 companions: []

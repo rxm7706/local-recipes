@@ -4,7 +4,7 @@ spec: pptx-deck-generation
 status: absorbed
 absorbed-into: spec-pyforge-herald
 updated: '2026-09-17'
-owner-dream: docs/dreams/pptx-deck-generation.md
+owner-dream: archive/docs/dreams/pptx-deck-generation.md
 ---
 
 # Absorbed into spec-pyforge-herald

@@ -2430,10 +2430,10 @@ or driver code.
 
 ## Kinships
 
-- [`bmad-suite-channel-product.md`](bmad-suite-channel-product.md) /
-  [`bmad-suite-metapackage.md`](bmad-suite-metapackage.md) — the membership machinery this joins.
-- [`bmad-module-provisioning.md`](bmad-module-provisioning.md) — install-class wiring precedent.
-- [`risk-tiered-review-depth.md`](risk-tiered-review-depth.md) — sibling question about the
+- [`bmad-suite-channel-product.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-suite-channel-product.md>) /
+  [`bmad-suite-metapackage.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-suite-metapackage.md>) — the membership machinery this joins.
+- [`bmad-module-provisioning.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-module-provisioning.md>) — install-class wiring precedent.
+- [`risk-tiered-review-depth.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/risk-tiered-review-depth.md>) — sibling question about the
   reviewer; this Dream supplies the measurement that one would need.
 
 ## Realization log
@@ -2986,7 +2986,7 @@ CFE skill (autotick machinery; Rule 1/2 govern the recipe-side stories).
   6.11.0 the same day.
 - **2026-09-05** — The channel machinery this Dream specified carried the suite refresh: PR #1059
   regenerated the metapackage to `2026.9.5`, seating `bmad-eval-quality` in place of the retired
-  `bmad-method-wds-expansion` (see [`bmad-eval-quality.md`](bmad-eval-quality.md) § Realization log).
+  `bmad-method-wds-expansion` (see [`bmad-eval-quality.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-eval-quality.md>) § Realization log).
 - **2026-09-05 (re-check)** — BMAD-METHOD 6.12.0 (released 2026-09-04) re-verified against the live
   `pipeline-truth`: 13/13 recipe = channel = installed; roster = 6 tag-pinned + 7 commit-pinned; the
   eighth class (`cli`) recorded; hazards recounted (6 / 3 / 3). Status → `realized` (owed since
@@ -3297,18 +3297,18 @@ of the core-upgrade Spec are on main, unit-tested; the suite is 13/13 current on
 
 ## Kinships
 
-- [`bmad-method-core-upgrade.md`](bmad-method-core-upgrade.md), [`bmad-method-version-drift.md`](bmad-method-version-drift.md),
-  [`bmad-611-era-alignment.md`](bmad-611-era-alignment.md) — the per-release triad this Dream's cadence
+- [`bmad-method-core-upgrade.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-method-core-upgrade.md>), [`bmad-method-version-drift.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-method-version-drift.md>),
+  [`bmad-611-era-alignment.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-611-era-alignment.md>) — the per-release triad this Dream's cadence
   runbook orders; shim retirement and `--no-shims` land as new capabilities on the first and third.
-- [`bmad-suite-channel-product.md`](bmad-suite-channel-product.md), [`bmad-suite-install-class-wiring.md`](bmad-suite-install-class-wiring.md),
-  [`bmad-suite-metapackage.md`](bmad-suite-metapackage.md), [`bmad-module-provisioning.md`](bmad-module-provisioning.md) —
+- [`bmad-suite-channel-product.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-suite-channel-product.md>), [`bmad-suite-install-class-wiring.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-suite-install-class-wiring.md>),
+  [`bmad-suite-metapackage.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-suite-metapackage.md>), [`bmad-module-provisioning.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-module-provisioning.md>) —
   the packaging and provisioning machinery this Dream drives to completion.
-- [`bmad-eval-quality.md`](bmad-eval-quality.md) — its CAP-2 pilot is unblocked here.
+- [`bmad-eval-quality.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-eval-quality.md>) — its CAP-2 pilot is unblocked here.
 - [`pyforge-unifying-strategy.md`](pyforge-unifying-strategy.md) and the `python-foundry` cutover chain
   (`spec-python-foundry-cutover`, Epic 44) — the estate this Dream makes cutover-ready.
-- [`one-front-door.md`](one-front-door.md) — its own/route/triage survey; row 6 closes here.
-- [`herald-pitch.md`](herald-pitch.md) — the named manticore consumer.
-- [`conda-forge-expert-rebuild.md`](conda-forge-expert-rebuild.md) — the skf-driven rebuild that the
+- [`one-front-door.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/one-front-door.md>) — its own/route/triage survey; row 6 closes here.
+- [`herald-pitch.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/herald-pitch.md>) — the named manticore consumer.
+- [`conda-forge-expert-rebuild.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/conda-forge-expert-rebuild.md>) — the skf-driven rebuild that the
   authoring path decision (BMB beside skf) must not disturb.
 
 ## Realization log
@@ -3486,7 +3486,7 @@ they are not this epic.
 - **2026-08-25** — Sibling Dream parked so Q5 is not an unbounded open question on the Canopy
   SPEC. Chain: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-build-league-scorecard/`
   (`status: draft`). Measures remain unpublished until the operator drafts them.
-- **2026-09-09** — **Fleet readiness pass** (`_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`, row stA-B5 / § C13/C14). Still correctly parked; the measure set stays the operator's. Proposed unblocking move that publishes no metric and violates no Never: a **measure inventory** — a read-only enumeration of every signal the estate already counts, with `file:line` per source (five-tier completeness 8×5 at `five_tier.py:17-33`, the ~30 detector pass/fail vector, ledger throughput, `gate-record.json` per-story command outcomes, `journal.json` run/phase timing, Warden verdict rungs, `driver.py:198`'s per-run `total_cost_usd`, steward discovery's `owner`/`work_class`) — so the operator selects rather than invents. Noted: [`intelligence-hub.md`](intelligence-hub.md)'s **Outcome** Guard category is the one category the repo lacks entirely and is blocked on this Dream, which puts a parked Dream on a second Dream's critical path.
+- **2026-09-09** — **Fleet readiness pass** (`_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`, row stA-B5 / § C13/C14). Still correctly parked; the measure set stays the operator's. Proposed unblocking move that publishes no metric and violates no Never: a **measure inventory** — a read-only enumeration of every signal the estate already counts, with `file:line` per source (five-tier completeness 8×5 at `five_tier.py:17-33`, the ~30 detector pass/fail vector, ledger throughput, `gate-record.json` per-story command outcomes, `journal.json` run/phase timing, Warden verdict rungs, `driver.py:198`'s per-run `total_cost_usd`, steward discovery's `owner`/`work_class`) — so the operator selects rather than invents. Noted: [`intelligence-hub.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/intelligence-hub.md>)'s **Outcome** Guard category is the one category the repo lacks entirely and is blocked on this Dream, which puts a parked Dream on a second Dream's critical path.
 - **2026-09-15** — Operator approved the eight already-counted signals as the
   first published set, with on/off/archived config and add/archive of sources.
   Spec `ready`. Steward Epic **62** (62.1–62.3 `backlog`) is the marshal
@@ -4523,17 +4523,17 @@ Spec to test; each "gap" is a candidate, not a commitment.
 
 | Whitepaper | Nearest thing here today | Gap the paper would name |
 |---|---|---|
-| Intelligence Hub | The Foundry estate — `src/platform/`, the eight stations, [`pyforge-unifying-strategy.md`](pyforge-unifying-strategy.md); air-gap by design ([`enterprise-airgap.md`](enterprise-airgap.md)), OCP profile ([`local-ocp-hybrid-environment.md`](local-ocp-hybrid-environment.md)) | Nothing installable *into* the Hub as a Frame/Cog/Op/Guard object; the Hub is code, not a runtime for artifacts |
+| Intelligence Hub | The Foundry estate — `src/platform/`, the eight stations, [`pyforge-unifying-strategy.md`](pyforge-unifying-strategy.md); air-gap by design ([`enterprise-airgap.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/enterprise-airgap.md>)), OCP profile ([`local-ocp-hybrid-environment.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/local-ocp-hybrid-environment.md>)) | Nothing installable *into* the Hub as a Frame/Cog/Op/Guard object; the Hub is code, not a runtime for artifacts |
 | Nebi | pixi + conda-forge + this recipe factory + the SelfExplainML channel + the bmad-suite metapackage — the very lineage the paper cites (pixi on conda) | No package format for Frames/Cogs/Ops/Guards; whether Nebi/Nebari are packaged anywhere we can consume is unverified |
 | Frames | `CLAUDE.md`, the verified `AGENTS.md` block, `docs/dreams/`, Specs and memlogs, `.claude/memory/` team memory (Scribe), each skill's `SKILL.md`, `docs/governance/` | Inheritance (repo → station → story) is real but informal; no open protocol, no field-level sharing, no feedback channel to an accountable owner beyond git review |
 | Cogs | Station skills and personas (`bmad-agent-*`), `conda-forge-expert`, the harness = Claude Code / bmad-loop; the bmad-suite conda packages are the closest "installable unit with declared tools" | Not versioned as a worker with declared permissions and governance parameters; harness choice is not hidden behind a Cog boundary |
 | Ops | bmad-loop runs, `marshal factory spin`, the CFE lifecycle loop, pixi tasks, the legacy workflow specs (`feedstock-platform-expansion`, `feedstock-failure-remediation`) | No Op manifest; no *declared* validation strategy per run — the checks exist but are implicit in policy TOML and detectors |
-| Guards | ~30 `*-check` detectors, Warden (sole PR verdict), pyforge-doctor sources (advisory), `bmad-review` lenses, [`bmad-eval-quality.md`](bmad-eval-quality.md) (measuring the reviewer) | Categories present: algorithmic, consensus (parallel adversarial review), expert (operator gates), regression/drift (`bmad-drift-check`, spec-surface). Thin or absent: source-grounding of LLM output, outcome Guards |
-| Gates | bmad-loop `gate_mode`, `bmad-loop-resolve` escalation, the landing rules of [`pr-lifecycle.md`](pr-lifecycle.md), the operator-confirmation policies in `AGENTS.md` | Autonomy is a repo-wide setting, not granted per engagement — the same observation [`risk-tiered-review-depth.md`](risk-tiered-review-depth.md) makes |
-| Tracks | `sprint-status-ledger.yaml`, [`landing-evidence-grammar.md`](landing-evidence-grammar.md), [`durable-runs.md`](durable-runs.md), the deferred-work ledger, run `state.json`, memlogs | No single structured evidence record per run with an explicit retention policy; evidence is spread across several files with different shapes |
+| Guards | ~30 `*-check` detectors, Warden (sole PR verdict), pyforge-doctor sources (advisory), `bmad-review` lenses, [`bmad-eval-quality.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-eval-quality.md>) (measuring the reviewer) | Categories present: algorithmic, consensus (parallel adversarial review), expert (operator gates), regression/drift (`bmad-drift-check`, spec-surface). Thin or absent: source-grounding of LLM output, outcome Guards |
+| Gates | bmad-loop `gate_mode`, `bmad-loop-resolve` escalation, the landing rules of [`pr-lifecycle.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/pr-lifecycle.md>), the operator-confirmation policies in `AGENTS.md` | Autonomy is a repo-wide setting, not granted per engagement — the same observation [`risk-tiered-review-depth.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/risk-tiered-review-depth.md>) makes |
+| Tracks | `sprint-status-ledger.yaml`, [`landing-evidence-grammar.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/landing-evidence-grammar.md>), [`durable-runs.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/durable-runs.md>), the deferred-work ledger, run `state.json`, memlogs | No single structured evidence record per run with an explicit retention policy; evidence is spread across several files with different shapes |
 | Organizational Memory | Scribe's GraphStore + `.claude/memory/` + per-user auto-memory + `_bmad-output/` | We sit at the paper's simplest tier (a versioned directory); no semantic retrieval over runs, no "ability to forget" policy |
-| Desktop/Web Application | The `django-*` station portals, the factory console, the artifact console, Atlas's Vizro board ([`secure-live-dashboards.md`](secure-live-dashboards.md)) | No Frame composition UI, no in-workflow Gate prompts, no Track view for non-admins |
-| Marketplace | conda-forge itself, plus the SelfExplainML channel ([`bmad-suite-channel-product.md`](bmad-suite-channel-product.md)) | Exchanges packages, not Frames/Guards with provenance attached |
+| Desktop/Web Application | The `django-*` station portals, the factory console, the artifact console, Atlas's Vizro board ([`secure-live-dashboards.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/secure-live-dashboards.md>)) | No Frame composition UI, no in-workflow Gate prompts, no Track view for non-admins |
+| Marketplace | conda-forge itself, plus the SelfExplainML channel ([`bmad-suite-channel-product.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-suite-channel-product.md>)) | Exchanges packages, not Frames/Guards with provenance attached |
 | Intelligent Ops Factory | The "Dream to Code" pipeline — this repo *is* an ops factory for packaging and station software | The paper's factory produces an organisation's SOPs as installable Ops; ours produces code and recipes |
 
 One honest tension the Spec must carry: the paper lists Claude Code among the rented black boxes,
@@ -4625,7 +4625,7 @@ parties — are ones PyForge could be independent evidence for.
 |---|---|---|
 | Infra-kinds lock (PostgreSQL + Redis + Kubernetes; DuckDB a library) | `nebari-frames` runs on single-writer SQLite; Collab Hub on fs / S3 / Postgres | Git is the Frame store (the paper's simplest tier, and the guide's own advice); `frames` CLI as validator only; a registry, if ever, is Collab Hub on Postgres. NIC foundation services sit where OCP's router and OAuth sit |
 | One PR verdict (Warden) | "Guard" language | Guards are detectors and Warden hook-spec plugins with a declared category; Gates are the verdict plus operator confirmation; nothing mints a second verdict |
-| Autonomy is a repo-wide setting (`gate_mode`) | Autonomy granted per engagement | The Op manifest per run is where `gate_mode` becomes per-engagement; converges with [`risk-tiered-review-depth.md`](risk-tiered-review-depth.md) |
+| Autonomy is a repo-wide setting (`gate_mode`) | Autonomy granted per engagement | The Op manifest per run is where `gate_mode` becomes per-engagement; converges with [`risk-tiered-review-depth.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/risk-tiered-review-depth.md>) |
 | Rented harness (Claude Code on the paper's list) | Cog hides harness choice | The Portability contract in `AGENTS.md` is the Cog boundary; state the split: model and harness rented, context / workflows / checks / evidence owned |
 | Air-gap parity | NIC downloads OpenTofu at runtime | Pin conda-forge `opentofu` through `NIC_TOFU_PATH` |
 | "No `CAP-20` in the evergreen Spec" (a Never) | New capabilities | They live on `spec-intelligence-hub` with `extends: spec-pyforge-unifying-strategy` under a fourth prefix, `hub:`, beside bare, `pap:` and `fnd:` |
@@ -4912,24 +4912,24 @@ Strategy to this Dream would take.
   platform shape this seed must not re-decide.
 - [`pyforge-charter.md`](pyforge-charter.md) — the Guild and its Lexicon; Smiths are the nearest
   thing to Cogs, and the Lexicon is where a vocabulary alignment would land.
-- [`packaging-factory.md`](packaging-factory.md), [`bmad-suite-channel-product.md`](bmad-suite-channel-product.md),
-  [`bmad-suite-metapackage.md`](bmad-suite-metapackage.md) — the conda/pixi lineage the paper cites as
+- [`packaging-factory.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/packaging-factory.md>), [`bmad-suite-channel-product.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-suite-channel-product.md>),
+  [`bmad-suite-metapackage.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-suite-metapackage.md>) — the conda/pixi lineage the paper cites as
   Nebi's own foundation; the channel as a marketplace in miniature.
-- [`bmad-eval-quality.md`](bmad-eval-quality.md), [`risk-tiered-review-depth.md`](risk-tiered-review-depth.md)
+- [`bmad-eval-quality.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/bmad-eval-quality.md>), [`risk-tiered-review-depth.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/risk-tiered-review-depth.md>)
   — Guards on the reviewer and risk-proportional validation: the accountability plane already
   arriving piecemeal.
-- [`landing-evidence-grammar.md`](landing-evidence-grammar.md), [`durable-runs.md`](durable-runs.md),
-  [`deferred-work-visibility.md`](deferred-work-visibility.md), [`pr-lifecycle.md`](pr-lifecycle.md) —
+- [`landing-evidence-grammar.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/landing-evidence-grammar.md>), [`durable-runs.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/durable-runs.md>),
+  [`deferred-work-visibility.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/deferred-work-visibility.md>), [`pr-lifecycle.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/pr-lifecycle.md>) —
   Tracks and Gates as we practise them today.
-- [`team-memory.md`](team-memory.md) (archived into [`pyforge-scribe.md`](pyforge-scribe.md)) —
+- [`team-memory.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/team-memory.md>) (archived into [`pyforge-scribe.md`](pyforge-scribe.md)) —
   Organizational Memory at the paper's simplest tier.
-- [`agentic-sdlc-autonomy.md`](agentic-sdlc-autonomy.md) — the four views of autonomy; the paper's
+- [`agentic-sdlc-autonomy.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/agentic-sdlc-autonomy.md>) — the four views of autonomy; the paper's
   "autonomy granted per engagement" is the same axis seen from the employer's side.
-- [`agent-portability.md`](agent-portability.md) (archived) — harness-agnostic Cogs echo the
+- [`agent-portability.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/agent-portability.md>) (archived) — harness-agnostic Cogs echo the
   Portability contract in `AGENTS.md`.
-- [`enterprise-airgap.md`](enterprise-airgap.md), [`local-ocp-hybrid-environment.md`](local-ocp-hybrid-environment.md)
+- [`enterprise-airgap.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/enterprise-airgap.md>), [`local-ocp-hybrid-environment.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/local-ocp-hybrid-environment.md>)
   — sovereignty as we already build it.
-- [`regenerable-factory.md`](regenerable-factory.md) — the Dream → Spec → code chain is our Frame
+- [`regenerable-factory.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/regenerable-factory.md>) — the Dream → Spec → code chain is our Frame
   inheritance graph and our Track of record at once.
 
 ## Realization log
@@ -4989,7 +4989,7 @@ Strategy to this Dream would take.
   `recipes/nebari-frames` 0.1.7), before this Dream recorded the lane. Shape 5, sequence item 5
   and RB-3's Effect line corrected. The same review found the kinship edge to the Unifying Strategy
   was one-way; that Dream now lists this one.
-- **2026-09-09 (fleet readiness pass)** — **All nine open questions answered as one operator-approved bundle** (`_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md` § 2.3 **C4**: B6–B11 plus the three questions this Dream gained earlier the same day, plus `guild-E3`). Owner stays **steward**, with `hub:CAP-3` relaying to marshal and CAP-2's Frame-store half to scribe. Verified against live code: the seven Guard categories map to five present surfaces, **Source-Grounding exists at exactly one site** (`scribe/recall.py` AD-8) and **Outcome is absent entirely** — and Outcome Guards are blocked on [`build-league-scorecard.md`](build-league-scorecard.md)'s parked measure set, making the two Dreams a dependency pair. A bmad-loop run emits ~60 % of a Track across five files in a **gitignored** Tier-3 dir, missing model/adapter version, human approvals and any retention statement — so one tracked `track.json` per run is assembled, Tracks kept indefinitely and the raw payload 90 days. Frames: yes, minimally and privately (one Company Frame from the `AGENTS.md` verified block + eight station Frames that `inherits` it, git as the store; no Community Frame, no registry), authored **now**, with CAP-2's success rewritten to an **in-repo four-field preflight** rather than upstream's unlicensed `tools/validate_frames.py`. Shape 5's residue is a conda-forge submission decision only — **not now**. `NebariApp`/NIC-kind profile and `nebi push` are **foundry-side**, and any `hub:` NIC-profile story is gated on the first green `ocp-portability-smoke` run. Escalation resolved: `spec-pyforge-unifying-strategy`'s `realization-gate-home` open question depended on this Spec reaching `ready`; **`spec-intelligence-hub` flips `draft` → `ready`** in this pass, so Epic 49's re-home to `hub:CAP-*` is unblocked and pending that Spec's re-derive. This Dream's own **status stays `dreamt` in this pass and flips to `specified` when the Spec's re-derive lands `ready`** (`docs/dreams/README.md:71` — `specified` requires a Spec at `ready` or better).
+- **2026-09-09 (fleet readiness pass)** — **All nine open questions answered as one operator-approved bundle** (`_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md` § 2.3 **C4**: B6–B11 plus the three questions this Dream gained earlier the same day, plus `guild-E3`). Owner stays **steward**, with `hub:CAP-3` relaying to marshal and CAP-2's Frame-store half to scribe. Verified against live code: the seven Guard categories map to five present surfaces, **Source-Grounding exists at exactly one site** (`scribe/recall.py` AD-8) and **Outcome is absent entirely** — and Outcome Guards are blocked on [`build-league-scorecard.md`](<https://github.com/rxm7706/local-recipes/blob/main/archive/docs/dreams/build-league-scorecard.md>)'s parked measure set, making the two Dreams a dependency pair. A bmad-loop run emits ~60 % of a Track across five files in a **gitignored** Tier-3 dir, missing model/adapter version, human approvals and any retention statement — so one tracked `track.json` per run is assembled, Tracks kept indefinitely and the raw payload 90 days. Frames: yes, minimally and privately (one Company Frame from the `AGENTS.md` verified block + eight station Frames that `inherits` it, git as the store; no Community Frame, no registry), authored **now**, with CAP-2's success rewritten to an **in-repo four-field preflight** rather than upstream's unlicensed `tools/validate_frames.py`. Shape 5's residue is a conda-forge submission decision only — **not now**. `NebariApp`/NIC-kind profile and `nebi push` are **foundry-side**, and any `hub:` NIC-profile story is gated on the first green `ocp-portability-smoke` run. Escalation resolved: `spec-pyforge-unifying-strategy`'s `realization-gate-home` open question depended on this Spec reaching `ready`; **`spec-intelligence-hub` flips `draft` → `ready`** in this pass, so Epic 49's re-home to `hub:CAP-*` is unblocked and pending that Spec's re-derive. This Dream's own **status stays `dreamt` in this pass and flips to `specified` when the Spec's re-derive lands `ready`** (`docs/dreams/README.md:71` — `specified` requires a Spec at `ready` or better).
 - **2026-09-13** — Steward Epic 53 minted (`spec-intelligence-hub hub:CAP-1..4`) and landed all
   five stories the same pass: 53.1 (Charter carries the Hub vocabulary map + reverse cross-walk,
   guild-E3), 53.2 (Company + eight station Frames pass the in-repo four-field preflight, B9/B11),
@@ -7606,3 +7606,163 @@ the vendor private project.
 - **2026-10-26 (every requirement derives from a capability) — Found:** the 2026-09-17 fold left 23 of the Spec's capability titles as `from spec-<old>` (CAP-1..CAP-4, steward's own duties, among them), 29 bullets as 'See absorbed Spec memlog', 147 cut at their first line and 15 `verified:` sub-bullets joined onto success lines; and the chain standard pyforge-foundry inherits (`spec-foundry-regenerate-not-fold` CAP-7) named FR ← CAP in its pre-amendment form. **Ruled** (2026-10-26, operator, fleet-wide: "yes forbid it" — a requirement cites one or more defined capabilities and nothing else; `spec-one-chain-per-station` CAP-5 as amended, CHAIN-STANDARD § 12; (e) every minted CAP routes `rebuild`). **For steward:** the text is restored by script from `97e0816ad2^` (9 titles from source lines, 14 authored from intent and recorded in the memlog for review; every id stable); the foundry memlog gains the 2026-10-26 CAP-7 event — B inherits the amended rule, not the exception; the capability ledger gains `pyforge-atlas:CAP-72`, `pyforge-doctor:CAP-92` and `CAP-93` as `rebuild`; no Epic 44 key moves and `spec-pyforge-unifying-strategy` is untouched. Epic 111 / Story 111.1, built in the one-PR effort with the other seven stations; no steward CAP minted.
 - **2026-10-26 (planning artifacts outside the one-chain shape) — Found:** two `status: archived` Spec folders still sat under the station `specs/` directory, `spec-htap-query-plane` (absorbed 2026-08-26 into the unifying strategy's query-plane capability, Epic 34) and `spec-pyforge-steward-feedstock-maintenance` (retired 2026-08-02), beside the loose `spec-22-prep-atlas-kedro-cli-introspection.md`, a preparatory spec with no ledger key, `status: superseded` since 2026-09-10 by atlas Story 24.3 (`pyforge.core.dispatch.PREPARATORY_UNINTROSPECTABLE` names that story's spec now). The 2026-10-26 re-audit of the one-chain rule on main `97c8211773` listed all three. **What it looks like when fixed:** each sits at `archive/<original path>` (`spec-one-chain-per-station` CAP-11; CHAIN-STANDARD § 11), moved by `git mv` with its memlog, nothing deleted; the station `specs/` directory holds the station Spec, the declared seams, the absorbed folders and `spec-<E>-<S>-<slug>.md` story specs only; the chain-sprawl baseline shrinks by the two folders; `pyforge-core`'s README names the live preparatory entry. **Constraints:** a chore under `spec-one-chain-per-station` CAP-11; no CAP, no FR, no AD, no `SPEC.md` change; the moved files' text is untouched; dated records that name the old paths (steward Story 22.1's spec, the 2026-09-14 identifier research) stay as written; the archived Specs' Dreams stay in `docs/dreams/` (the archived-Dreams move is its own task). Owner `spec-pyforge-steward`. → Epic 113 / Story 113.1, specced 2026-10-26; built in the same PR with warden 21.1 and marshal 109.1.
 - **2026-10-26 (every pre-rule runtime capability sits behind a kill switch) — Found:** the flag inventory (doctor Story 34.4, regenerated on the fixed join) reads 8 steward capabilities minted before the rule date as reachable at runtime with no flag; the operator ruled on 2026-09-28 that every capability ships behind a flag, with one retrofit flag per capability defaulting ON (Q6), and no station had minted its retrofit. **Ruled** (2026-10-26, operator: the CAP-7 retrofit sheet approved as recommended, R1–R8 — flag the unflagged runtime rows only, one key per CAP, an invariant's switch makes the dependent verb refuse, the 90-day clock stands and each station mints its retirement story now). **For steward:** 8 keys `pyforge.steward.<capability>` ON in dev, staging and production with their clocks from 2026-10-26, each read through `pyforge.core.flags` at its verb or behaviour site with one two-state test; a flag-off verb stays listed and refuses with the usage code 2 (Q3); no exit code changes. Epic 114 / Stories 114.1–114.8, built in the one-PR retrofit effort; Story 114.9 (the retirement, due 2027-01-24) minted backlog; no steward CAP minted.
+
+## 2026-10-26 — Firewalled Factory (folded from enterprise-airgap)
+
+*Folded 2026-10-26 under spec-one-chain-per-station CAP-11 (Story 115.1). The body below is `docs/dreams/enterprise-airgap.md`, verbatim, with its headings demoted one level and its 2026-09-17 fold banner left out; the file moved to `archive/docs/dreams/enterprise-airgap.md`.*
+
+## Enterprise air-gap — everything works where the internet doesn't
+
+### The Dream
+
+The whole factory — packaging, intelligence, gates, decks — runs inside
+regulated, air-gapped enterprises as naturally as it runs here: every outbound
+dependency routable through JFrog Artifactory / internal mirrors, every
+capability offline-first by design, credentials handled without leakage. Not a
+port; a posture: **air-gapped is the default deployment story, not an
+afterthought.**
+
+### What is real (the core)
+
+- **`docs/reference/enterprise-deployment.md`** + `docs/reference/pixi-config-jfrog.example.toml` —
+  the deployment doctrine.
+- **Runtime-driven routing** in `_http.py`: truststore + JFrog/GitHub/.netrc
+  auth chain — env-vars only, never committed config (CFE v6.0/v7.0).
+- **Air-gap-by-design decisions** across the stack: atlas's
+  `current_repodata.json` choice (explicitly JFrog-reusable), offline-safe read
+  CLIs, offline-safe deck bundles, the Pyodide/WASM atlas compilation
+  ([[pyforge-atlas]] G1).
+
+### The frontier
+
+- **[[presenton-pixi-image]]** and **[[pyforge-herald|deckcraft]]** — the two air-gapped
+  application expressions, both unbuilt.
+- **Warden's registry perimeter** ([[pyforge-warden]] ring 2): block/allow lists
+  on Artifactory — quarantine before the firewall.
+- **Closed (2026-09-09)** — the `JFROG_API_KEY` cross-resolver leak (the header
+  attaching to every outbound request regardless of host) is **fixed**:
+  `_http.py:508` gates `X-JFrog-Art-Api` on `is_configured_host`, with regression
+  coverage in `tests/unit/test_http_jfrog_host_gate.py`,
+  `test_dependency_checker_auth_host_gate.py` (including "never sent to an
+  explicitly named public channel") and `test_inventory_channel_auth_host_gate.py`.
+  ([[pyforge-doctor]] found it; [[pyforge-steward]] still owns the key lifecycle.)
+- **Deployment & install operations** (bundles, OpenShift, mirrors) are the
+  **Steward's** station ([[pyforge-steward]], adopted 2026-07-23).
+- Offline bundle format for the whole operating model ([[pyforge-charter|pyforge-genesis]]
+  behind a firewall) — kinship with [[sentinel]]'s §40 Airgap Bundle & Install.
+
+### Kinships
+
+- **[[miniforge-installer]]** (mason) — **reciprocal, recorded 2026-09-09.** Its activation
+  trigger is *steward-owned and un-watched*: "steward's enterprise-airgap / Story 12.3 work
+  surfaces a private-channel-locking need for a Python distributable." The socket already
+  exists and is empty by design —
+  `src/shared/packages/pyforge-mason/src/pyforge/mason/airgap_contract.py:54`,
+  `SUPPORTED_DISTRIBUTABLES: dict[str, DistributableBackend] = {}`
+  ("Empty by design (Story 9.2). External installers register later."). So whoever runs CAP-3's
+  mirror exercise or Story 12.3's air-gap parity check must also decide whether a Python
+  distributable needs private-channel locking, and tell mason if it does — nothing on the mason
+  side watches for it. *(Fleet readiness 2026-09-09, mason-E1 / Class D D11; the reciprocal half
+  is a note on `spec-enterprise-airgap`'s memlog.)*
+
+### Realization log
+
+- **2026 (CFE v6.0→v7.0)** — enterprise routing shipped runtime-driven.
+- **2026-07-23** — Dream retro-seeded from the deployment doc + the pattern's
+  presence across atlas/warden/presenton/deckcraft.
+- **2026-09-09** — **Fleet readiness pass** (`_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`, row stA / § C2). The host-gate fix verified live (`_http.py:508` plus five regression-test files); § *The frontier*'s "Known health issue" bullet was stale, security-shaped text and is closed. **Still unexercised:** CAP-3's success clause ("pipeline phases run against a JFrog remote-repo mirror unchanged") has no recorded run — realization-gate partial, placed `foundry-side`. Status stays `realized`.
+
+## 2026-10-26 — One HTAP query plane for every station and every agent (folded from htap-query-plane)
+
+*Folded 2026-10-26 under spec-one-chain-per-station CAP-11 (Story 115.1). The body below is `docs/dreams/htap-query-plane.md`, verbatim, with its headings demoted one level; the file moved to `archive/docs/dreams/htap-query-plane.md`.*
+
+> **Absorbed 2026-08-26** into
+> [`pyforge-unifying-strategy.md`](pyforge-unifying-strategy.md) § *The query
+> plane*. Bound as **CAP-19** on `spec-pyforge-unifying-strategy` (Epic 34).
+> Do not run `bmad-spec` against this file.
+
+## One HTAP query plane for every station and every agent
+
+### The Dream
+
+Narrative and contract live on the Unifying Strategy. One DuckDB HTAP plane;
+stations rebuild onto it; agents do not get the OLTP DSN.
+
+### Realization log
+
+- **2026-08-26** — Captured, absorbed the same day, then bound as CAP-19 when
+  the operator ruled the Unifying Strategy evergreen.
+
+## 2026-10-26 — Dream — PyForge Steward: Feedstock Maintenance Automation (folded from pyforge-steward-feedstock-maintenance)
+
+*Folded 2026-10-26 under spec-one-chain-per-station CAP-11 (Story 115.1). The body below is `docs/dreams/pyforge-steward-feedstock-maintenance.md`, verbatim, with its headings demoted one level; the file moved to `archive/docs/dreams/pyforge-steward-feedstock-maintenance.md`.*
+
+> **Superseded.** This Dream's full vision — upstream monitoring, autotick orchestration,
+> safe test-bumps, bot-comment routing, bulk maintenance groups, and health tracking across
+> 769 feedstocks — is already covered by pre-existing legacy Tier-1 specs, not by anything in
+> Steward's own scope: `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md`
+> (upstream monitoring + bulk maintenance across all 769 feedstocks, Tracks A/B),
+> [`docs/how-to/feedstock-failure-remediation.md`](../how-to/feedstock-failure-remediation.md)
+> (autotick/bot-comment triage — FLAKE/REAL_FIX/BLOCKED — and CI re-trigger), and
+> [`docs/how-to/feedstock-platform-expansion.md`](../how-to/feedstock-platform-expansion.md)
+> (the local-build-before-push safety discipline this Dream calls "safe version bumps").
+> Steward's real, already-authored Spec (`spec-pyforge-steward`, CAP-1..CAP-4) is
+> credentials/deploy/provisioning/budget — it has never covered feedstock maintenance, so this
+> is not a duplicate of Steward's own work; it is a mistagged restatement of a *different*,
+> already-real surface. Created 2026-08-02 in the same bulk commit already found this session
+> to contain fabricated content (a false migration note, boilerplate test-architecture docs,
+> and four sibling duplicate dreams — Marshal's loop-orchestrator, Mason's recipe-validator,
+> Atlas's intelligence-platform, Warden's compliance-gates — all retired the same day). Retired
+> same day rather than spec'd as new Steward work. See
+> `spec-pyforge-steward-feedstock-maintenance` for the retirement record.
+
+## PyForge Steward — Feedstock Maintenance Automation
+
+### Vision
+
+**Steward** automates feedstock maintenance — version tracking, autotick updates, bot command routing, and conda-forge integration — enabling hands-off recipe lifecycle management across 769+ feedstocks.
+
+**The ask**: Build an automated steward that keeps 769 feedstocks fresh, updated, and tested without requiring a human to review every upstream release.
+
+### Problem
+
+- **Autotick is fragile.** Version drops; Regro bot triggers build; build fails silently for days. Maintainer doesn't notice.
+- **Maintenance is manual.** Author picks 50 feedstocks to maintain; each needs quarterly updates. 200+ PRs/year to manage manually.
+- **Breakage is discovered late.** Upstream drops Python 3.10 support; recipes still target it. Build breaks in staged-recipes; CI blocks the PR.
+- **Version bumps are risky.** No way to test-bump safely. Merge a version bump, CI fails, 3-day rollback.
+- **Channels are noisy.** Conda-forge bot comments; human can't distinguish signal from noise. Real blockers hidden in PRs.
+
+### Realization
+
+**Steward** delivers:
+
+1. **Upstream Monitoring** — Tracks all upstream releases (PyPI, GitHub, CRAN, etc.). Detects new versions hourly. Ranks by stability (alpha/beta/RC vs release).
+
+2. **Autotick Orchestration** — Detects version updates, triggers builds automatically, monitors CI, and re-triggers on transient failures.
+
+3. **Safe Version Bumps** — Test-bumps locally before PR: does the build pass? Do tests pass? Only then create the PR.
+
+4. **Conda-forge Bot Integration** — Routes commands (`@conda-forge-admin, please rerender`), interprets bot comments, escalates real blockers.
+
+5. **Bulk Maintenance** — Operators define "maintenance groups" (e.g., "all my NumPy-dependent recipes"). Steward processes all N in parallel: updates, tests, lands.
+
+6. **Health Tracking** — Dashboard showing: # feedstocks up-to-date, # waiting on autotick, # blocked, last-update age per feedstock.
+
+### Success Criteria
+
+- ✅ **Coverage**: 769 feedstocks monitored; 90%+ have autotick enabled
+- ✅ **Velocity**: Version detection <1 hour from upstream release; PR up within 2 hours
+- ✅ **Reliability**: 95%+ of autotick PRs pass CI on first try
+- ✅ **Safety**: Test-bump prevents 99%+ of "merge-and-break" incidents
+- ✅ **Automation**: Maintenance groups require zero human intervention between version drops and merge
+- ✅ **Observability**: Every update tracked, every blockers flagged, every decision auditable
+
+### Acceptance
+
+Steward is done when:
+1. Upstream monitoring live for all 769 feedstocks
+2. Autotick enabled on 500+ feedstocks; 80%+ pass rate on first CI
+3. Test-bump feature proven safe: catches 100% of breaking changes before merge
+4. Bulk maintenance workflow tested: 20-feedstock group update completes in <30 min
+5. Health dashboard live: operators see maintenance status at a glance
+6. Integration with Doctor: stale dependency detection triggers update PRs automatically

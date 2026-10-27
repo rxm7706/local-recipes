@@ -4,7 +4,7 @@ spec: design-sync-loop
 status: absorbed
 absorbed-into: spec-pyforge-herald
 updated: '2026-09-17'
-owner-dream: docs/dreams/design-sync-loop.md
+owner-dream: archive/docs/dreams/design-sync-loop.md
 ---
 
 # Absorbed into spec-pyforge-herald

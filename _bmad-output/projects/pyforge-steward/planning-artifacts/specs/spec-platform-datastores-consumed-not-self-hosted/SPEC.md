@@ -4,7 +4,7 @@ spec: platform-datastores-consumed-not-self-hosted
 status: absorbed
 absorbed-into: spec-pyforge-steward
 updated: "2026-09-17"
-owner-dream: docs/dreams/platform-datastores-consumed-not-self-hosted.md
+owner-dream: archive/docs/dreams/platform-datastores-consumed-not-self-hosted.md
 ---
 
 # Absorbed into spec-pyforge-steward

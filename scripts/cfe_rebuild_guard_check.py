@@ -760,7 +760,7 @@ def main() -> int:
         print(f"  ✗ [{f['kind']}] {f['ref']}")
         print(f"      {f['detail']}")
         print(f"      → {f['remedy']}")
-    print(f"\nFAIL: {len(findings)} finding(s). See docs/dreams/fidelity-enforcement.md "
+    print(f"\nFAIL: {len(findings)} finding(s). See archive/docs/dreams/fidelity-enforcement.md "
           "and the Epic 6 campaign-state.yaml for context.")
     return 1
 

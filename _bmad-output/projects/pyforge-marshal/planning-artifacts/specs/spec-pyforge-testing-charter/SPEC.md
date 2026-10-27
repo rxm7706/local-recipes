@@ -1,7 +1,7 @@
 ---
 id: SPEC-pyforge-testing-charter
 status: ready
-owner-dream: docs/dreams/pyforge-testing-charter.md
+owner-dream: archive/docs/dreams/pyforge-testing-charter.md
 surface:
   - _bmad/scripts/bmad_tea_playwright.py
   - scripts/fleet_scan.py    # the file doctor loads as pyforge.doctor.sources.fleet_scan (sources/board.py); re-pointed 2026-10-15
@@ -14,7 +14,7 @@ companions:
   - station-tea-status.md
   - ../../../../../../docs/reference/test-charter.md    # adopted — the Guild's per-Smith mottos, testing hierarchy, and Phase 1-4 roadmap; not duplicated here
 sources:
-  - ../../../../../../docs/dreams/pyforge-testing-charter.md
+  - ../../../../../../archive/docs/dreams/pyforge-testing-charter.md
 open_questions: []
 fold-exemption: cross-station-seam
 ---

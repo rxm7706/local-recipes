@@ -370,3 +370,69 @@ FR-16's heading), herald 47.1, steward 111.1, warden 20.1 and mason 33.1
 backfills (atlas 41.3, marshal 108.2, mason 33.2, warden 20.2) and the
 satellite renumber (atlas 41.2) minted `backlog` so the baseline has a named
 owner for every row it still carries.
+
+
+## 2026-10-26 — The archived Dreams leave the live tree
+
+**What was found.** At `97c8211773` (2026-10-26), four weeks after the
+2026-09-29 ruling, `docs/dreams/` still held 173 Dream files and 158 of
+them read `status: archived` — marshal 54, steward 36, scribe 16, doctor
+14, atlas 12, mason 12, herald 10, warden 4: the satellites the
+2026-09-16/17 folds absorbed and left in place behind a `Consolidated into`
+banner. The readers had landed (doctor 36.1 and 36.2, marshal 75.1, herald
+33.1, all `done` by 2026-10-08) and `fold-complete` had named the 158 in
+its one WARN on every run since; no fold PR followed, and the 2026-10-26
+re-audit of this chain found the countdown where it started. Measured with
+the check's own `long_paragraphs`, 113 of the 158 had paragraphs nowhere
+but in the archived file (every atlas, doctor, herald, mason, scribe and
+warden satellite, 42 of marshal's 54, 3 of steward's 36 — the 2026-09-16
+pilot and the 2026-09-17 steward fold had pasted the rest); the other 45
+lacked only the banner paragraph itself.
+
+**What landed (one PR, one story per station — the #2240 / #2319 / #2322
+shape; stories atlas 44.1, doctor 53.1, herald 48.1, marshal 111.1, mason
+35.1, scribe 28.1, steward 115.1, warden 23.1).** For each of the 113, the
+whole body — verbatim, headings demoted one level, the one-chain banner
+left out, never trimmed — is a dated `## 2026-10-26 — <title> (folded from
+<slug>)` section of its station Dream; a body already partly there was
+pasted whole, because §11 asks for the body, not the difference. Then every
+one of the 158 lost its banner (an older `Superseded` or `Absorbed` note is
+body, and stayed) and moved with `git mv` to `archive/docs/dreams/<same
+name>`, frontmatter unchanged. `docs/dreams/` holds 15 live Dreams;
+`archive/docs/dreams/` holds 165; `fold-complete` reads 159 complete
+folds, 6 baselined, none archived in the live tree. The README's 158
+interim rows left with their files (its Practices and folded-rows tables,
+now empty, with them), and `chain-sprawl`'s baseline shrank from 164 Dream
+entries to 6 by its own `--prune`.
+
+**Readers that still had to follow the move.** Doctor's `dreams-hygiene`
+resolved a Kinship wikilink against `docs/dreams/` alone, and 605 wikilinks
+in the live Dreams name a moved slug (126 distinct); it now reads
+`archive/docs/dreams/` as well, for the wikilink check only, so the links
+stay as written. `deck_facts` reads a deck's own Dream under the archive
+when the live tree lacks it (the per-deck half of herald 33.1). Doctor's
+`pixi-currency` reads its ledger sections from the archive copy of
+`pixi-candidate-currency`.
+
+**Pointers follow, records do not.** Every live pointer that named a moved
+file names `archive/docs/dreams/` now: `AGENTS.md`'s run-state link,
+`pixi.toml` and its how-to, `_bmad-output/PROJECTS.md`, the marshal
+policy's path lists, two PRD frontmatter fields, the three archived decks'
+fact sources, `guild-roster.json`'s comment, `fleet_picture`'s recovery
+hint, steward's `outcome` guard, and the docstrings, comments and package
+docs in atlas, core, doctor, herald, marshal, mason, steward and the
+platform that cited a satellite by path. The station Specs' `surface:` and
+`covers-dreams:` entries and the absorbed pointer Specs' `owner-dream:`
+(the 93 folders §11's step 2 will move) are re-pointed by the memlog-first
+script render this Spec's CAP-3 fold procedure already uses. Memlogs, story
+specs, epic bodies, PRD prose, ledgers, research and the Dreams' own logs
+keep the path they were written with: a dated record names what was true
+when it was written, and `archive/<original path>` is structure-preserving
+so the old path still reads.
+
+**What is left of CAP-11.** Step 2 of §11's order, the absorbed and
+archived Spec folders (each moving with its memlog and companions);
+`docs/dreams/archive/pyforge-unifying-strategy-2026-08-23-topology.md`, a
+split-off snapshot rather than a fold (steward Story 43.1), which
+`fold-complete` has nothing to prove for and which moves with its own
+reader check; and step 3, `docs/intake/`'s routed items and `docs/specs/`.

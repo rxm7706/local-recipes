@@ -5,17 +5,17 @@ status: ready
 updated: '2026-10-15'
 owner-dream: docs/dreams/pyforge-herald.md
 covers-dreams:
-  - docs/dreams/deck-family-currency.md
-  - docs/dreams/deck-family-lockstep.md
-  - docs/dreams/deck-visual-qa.md
-  - docs/dreams/design-sync-loop.md
-  - docs/dreams/herald-moments-2-4-live-backend.md
-  - docs/dreams/herald-moments-2-4-missing-surface.md
-  - docs/dreams/herald-pitch.md
-  - docs/dreams/pptx-custom-shapes.md
-  - docs/dreams/pptx-deck-generation.md
+  - archive/docs/dreams/deck-family-currency.md
+  - archive/docs/dreams/deck-family-lockstep.md
+  - archive/docs/dreams/deck-visual-qa.md
+  - archive/docs/dreams/design-sync-loop.md
+  - archive/docs/dreams/herald-moments-2-4-live-backend.md
+  - archive/docs/dreams/herald-moments-2-4-missing-surface.md
+  - archive/docs/dreams/herald-pitch.md
+  - archive/docs/dreams/pptx-custom-shapes.md
+  - archive/docs/dreams/pptx-deck-generation.md
   - docs/dreams/pyforge-herald.md
-  - docs/dreams/pyforge-pages.md
+  - archive/docs/dreams/pyforge-pages.md
 surface:
   - src/shared/packages/pyforge-herald/**
   - presentations/**
