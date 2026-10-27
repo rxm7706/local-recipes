@@ -100,7 +100,7 @@ def test_install_matrix_documents_the_greenfield_one_pin_path() -> None:
     and show a one-pin install example, or the section counts as absent.
     """
     text = (REPO / "_bmad-output/projects/pyforge-steward/planning-artifacts"
-            "/specs/spec-bmad-suite-channel-product/install-matrix.md").read_text(encoding="utf-8")
+            "/specs/spec-pyforge-steward/install-matrix.md").read_text(encoding="utf-8")
     assert "Greenfield one-pin" in text
     assert "bmad-suite-full" in text
     assert "pixi install -e bmad-suite-full" in text or "pixi add --feature bmad-suite-full" in text

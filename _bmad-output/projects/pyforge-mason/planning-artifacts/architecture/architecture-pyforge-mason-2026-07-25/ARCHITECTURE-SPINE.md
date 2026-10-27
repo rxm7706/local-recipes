@@ -18,7 +18,7 @@ sources:
   - '../../briefs/brief-pyforge-mason-2026-07-25/brief.md'
   - '../../research/technical-mason-cli-seam-research-2026-07-25.md'
 companions:
-  - '../../specs/spec-packaging-factory/SPEC.md'
+  - '../../../../../../archive/_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-packaging-factory/SPEC.md'
 ---
 
 # Architecture Spine — pyforge-mason

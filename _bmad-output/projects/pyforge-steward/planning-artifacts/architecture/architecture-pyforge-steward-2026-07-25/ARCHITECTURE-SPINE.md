@@ -285,7 +285,7 @@ graph TD
 
 ### Inherited Invariants
 
-Parent: host spine in `specs/spec-python-agent-platform/ARCHITECTURE-SPINE.md` (merged into
+Parent: host spine in `specs/spec-pyforge-steward/ARCHITECTURE-SPINE.md` (merged into
 `spec-pyforge-unifying-strategy` by Story 48.8; companion file remains the `pap:AD-*` detail
 home). Cite as **`pap:AD-n`** (same as **parent AD-n**). Original IDs in that file stay `AD-n`.
 Unifying ADs in this file are **canopy AD-n**. Bare `AD-n` in epics is a review-blocking finding.
@@ -305,7 +305,7 @@ Unifying ADs in this file are **canopy AD-n**. Bare `AD-n` in epics is a review-
 
 **Conflict, not override — parent canopy:AD-5:** named Django `RunSQL` / data migrations as how `langflow_schema` / `dbgpt_schema` are provisioned. This chain's CAP-9 moves production DDL to Liquibase. Isolation, `search_path`, and "ORM never crosses schemas" remain; only the producer of the SQL changes. Cardinality: parent said three schemas; this chain adds one tracking schema `liquibase`. CAP-4 / CAP-17 stores are **tables in `public`**, not extra schemas.
 
-**Conflict, not override — parent canopy:AD-1:** Lane 1 multi-replica media cannot live on ephemeral pod disk (parent canopy:AD-6). Object storage (MinIO/S3) would be a fourth *kind*. The compatible path is a Kubernetes `ReadWriteMany` PVC — still Kubernetes-the-kind. An in-cluster object-store Deployment is a review-blocking finding until parent canopy:AD-1 is formally excepted. **Formal exception (defined 2026-09-05):** a dated, bounded paragraph appended under the parent AD in `spec-python-agent-platform/ARCHITECTURE-SPINE.md` in the canopy:AD-6 style — what is excepted, why the three kinds cannot carry it, its scope, its cost — preceded by a dated entry in the owner Dream and a correct-course proposal recording the operator ruling. Re-examined 2026-09-05 (`sprint-change-proposal-2026-09-05-ad-1-reopen.md`): **re-affirmed, not excepted.**
+**Conflict, not override — parent canopy:AD-1:** Lane 1 multi-replica media cannot live on ephemeral pod disk (parent canopy:AD-6). Object storage (MinIO/S3) would be a fourth *kind*. The compatible path is a Kubernetes `ReadWriteMany` PVC — still Kubernetes-the-kind. An in-cluster object-store Deployment is a review-blocking finding until parent canopy:AD-1 is formally excepted. **Formal exception (defined 2026-09-05):** a dated, bounded paragraph appended under the parent AD in `spec-pyforge-steward/ARCHITECTURE-SPINE.md` in the canopy:AD-6 style — what is excepted, why the three kinds cannot carry it, its scope, its cost — preceded by a dated entry in the owner Dream and a correct-course proposal recording the operator ruling. Re-examined 2026-09-05 (`sprint-change-proposal-2026-09-05-ad-1-reopen.md`): **re-affirmed, not excepted.**
 
 **Conflict, not override — parent canopy:AD-6:** pods stay disposable. Shared RWX is the replica-safe media store (same *kind* of exception as the dated dbgpt SQLite PVC). Ephemeral pod-local media and MinIO remain forbidden (parent canopy:AD-1 / canopy:AD-13).
 
@@ -623,7 +623,7 @@ flag flip (fnd:AD-17), not by a date; until a capability freezes (fnd:AD-22) `lo
 ### Inherited Invariants
 
 Parent: `## Satellite: Canopy — pyforge-unifying-strategy` (this document; was `../architecture-pyforge-unifying-strategy-2026-08-24/` before the 2026-09-08 fold)
-(canopy:AD-1..23) and, through it, host spine in `specs/spec-python-agent-platform/ARCHITECTURE-SPINE.md`
+(canopy:AD-1..23) and, through it, host spine in `specs/spec-pyforge-steward/ARCHITECTURE-SPINE.md`
 (`pap:AD-1..17`; contract merged into `spec-pyforge-unifying-strategy` by Story 48.8).
 Read-only; original ids; never re-derived.
 
@@ -1638,7 +1638,7 @@ sequenceDiagram
 
 | Capability / Area | Lives in | Governed by |
 | --- | --- | --- |
-| suite:CAP-1 adoption register | `specs/spec-bmad-suite-lifecycle/adoption-register.md` | suite:AD-6, suite:AD-2 (the § 2 meta-test) |
+| suite:CAP-1 adoption register | `specs/spec-pyforge-steward/adoption-register.md` | suite:AD-6, suite:AD-2 (the § 2 meta-test) |
 | suite:CAP-2 module wave | `steward provision` (`provision.py` backends); `_bmad/custom/config.toml [modules.*]` | suite:AD-1, suite:AD-9, suite:AD-11, steward suite:AD-1 |
 | suite:CAP-3 station routing | `bmad-agent-<station>` skills; one AGENTS pointer line | suite:AD-2, suite:AD-11 |
 | suite:CAP-4 TEA full adoption | TEA workflows; `bmad-review` customize override; warden advisory note | suite:AD-4, suite:AD-5, suite:AD-9 |

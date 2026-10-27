@@ -35,6 +35,7 @@ surface:
   - docs-site/**
   - docs/index.md
   - docs/404.md
+  - .gitignore   # governance carried 2026-10-27 from the absorbed spec-pyforge-pages (spec-one-chain-per-station:CAP-11)
 surface-drift-exclude:
   - src/shared/packages/pyforge-herald/src/pyforge/herald/station_api.py
   - presentations/pyforge-atlas/facts.yaml
@@ -75,6 +76,8 @@ companions:
   - station-roster.md
   - bridge-protocol.md
   - epic-structure.md
+  - facts-ledger.md           # live companion carried 2026-10-27 from spec-deck-family-currency (spec-one-chain-per-station:CAP-11)
+  - infographic-standard.md   # live companion carried 2026-10-27 from spec-deck-family-currency (spec-one-chain-per-station:CAP-11)
 sources:
   - ../../../../../../docs/dreams/pyforge-herald.md
 open_questions: []

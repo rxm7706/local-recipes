@@ -77,7 +77,7 @@ design.
 This repo's own pattern — confirmed correct, not merely "the best we found"
 — for the class of change "add/change prose inside an installer-owned step
 file": **spec-surface governance + Story 14.8's automated reapply**, per
-`_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-method-core-upgrade/customization-inventory.md`
+`archive/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-method-core-upgrade/customization-inventory.md`
 row C5:
 
 1. Edit the installer-owned file directly (e.g.

@@ -150,8 +150,11 @@ _CAP_CITE = re.compile(r"(?<![\w:-])CAP-(\d+)")
 
 #: Spines live under `planning-artifacts/architecture/<run>/`, and -- when a
 #: Spec adopts one as a companion -- beside that Spec. Both are conformant:
-#: `spec-python-agent-platform/SPEC.md` declares
-#: `companions: [ARCHITECTURE-SPINE.md]`, which is bmad-spec's own convention.
+#: `spec-python-agent-platform/SPEC.md` declared
+#: `companions: [ARCHITECTURE-SPINE.md]`, which is bmad-spec's own convention; that
+#: canopy spine now sits beside `spec-pyforge-steward/SPEC.md` (carried there
+#: 2026-10-27 when the absorbed folder moved to the archive,
+#: spec-one-chain-per-station:CAP-11).
 _SPINE_GLOBS = (
     "planning-artifacts/architecture/*/ARCHITECTURE-SPINE.md",
     "planning-artifacts/specs/*/ARCHITECTURE-SPINE.md",

@@ -197,7 +197,7 @@ verify_commands = [
   "src/shared/packages/pyforge-steward/**",
   ".claude/skills/**",
   "_bmad/**",
-  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-method-core-upgrade/**",
+  "archive/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-method-core-upgrade/**",
   "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
   "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
   ".gitignore",

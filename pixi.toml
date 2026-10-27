@@ -2812,7 +2812,7 @@ mcp = ">=2.3.0"                   # steward 21.2: official SDK for atlas MCP hos
 # Story 12-1 (kedro-skills-audit-then-adopt): dev/tooling-only CLI, never a
 # pyproject.toml runtime dep. SelfExplainML conda (not conda-forge). Same floor
 # as [feature.local-recipes.dependencies]. See
-# _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption/kedro-skills-audit-report.md.
+# archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption/kedro-skills-audit-report.md.
 kedro-skills = ">=0.1.1"          # Distribute AI coding skills to Kedro projects.
 # AUD-ATLAS-010: semantic/models.py imports boring_semantic_layer at module
 # level. TEST/env supply only — not a pyforge-atlas package run-dep. Conda

@@ -26,7 +26,7 @@ def _load_next_rehearsal_argv() -> list[str]:
 
 
 RUNBOOK_RELATIVE = (
-    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/release-cadence.md"
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/release-cadence.md"
 )
 
 

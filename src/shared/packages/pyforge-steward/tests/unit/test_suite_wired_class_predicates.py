@@ -98,7 +98,7 @@ def test_labs_plugin_path_documented_from_playbook(tmp_path: Path):
     playbook = (
         tmp_path
         / "_bmad-output/projects/pyforge-steward/planning-artifacts/specs"
-        / "spec-bmad-suite-install-class-wiring/install-class-playbook.md"
+        / "spec-pyforge-steward/install-class-playbook.md"
     )
     playbook.parent.mkdir(parents=True)
     playbook.write_text("npx skills add bmad-labs/skills\n", encoding="utf-8")
@@ -187,7 +187,7 @@ def test_report_names_each_of_the_six_by_class(tmp_path: Path):
     playbook = (
         tmp_path
         / "_bmad-output/projects/pyforge-steward/planning-artifacts/specs"
-        / "spec-bmad-suite-install-class-wiring/install-class-playbook.md"
+        / "spec-pyforge-steward/install-class-playbook.md"
     )
     playbook.parent.mkdir(parents=True)
     playbook.write_text("npx skills add bmad-labs/skills\n", encoding="utf-8")

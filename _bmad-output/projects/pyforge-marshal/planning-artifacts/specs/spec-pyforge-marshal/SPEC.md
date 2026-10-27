@@ -214,6 +214,7 @@ companions:
   - ../../prds/prd-pyforge-marshal-2026-07-25/prd.md
   - ../../architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md
   - ../../epics.md
+  - integration-layers.md   # live companion carried 2026-10-27 from spec-marshal-token-economy (spec-one-chain-per-station:CAP-11)
 sources:
   - ../../../../../../docs/dreams/pyforge-marshal.md
 open_questions: []

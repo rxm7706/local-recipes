@@ -2,7 +2,7 @@
 
 Exercises CAP-6 pixi-bin PATH fallback, CAP-8 single-conflict path, and CAP-7 skf
 restore together in the invocation shape documented in
-``spec-bmad-suite-lifecycle/release-cadence.md`` § The ``@next`` rehearsal.
+``spec-pyforge-steward/release-cadence.md`` § The ``@next`` rehearsal.
 
 No live ``npx bmad-method@next`` call — ``tmp_path`` stands in for the throwaway
 worktree.

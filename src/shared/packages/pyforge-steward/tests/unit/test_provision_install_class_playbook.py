@@ -58,7 +58,7 @@ def _matrix_path() -> Path:
     return (
         _repo_root()
         / "_bmad-output/projects/pyforge-steward/planning-artifacts/specs"
-        / "spec-bmad-suite-channel-product/install-matrix.md"
+        / "spec-pyforge-steward/install-matrix.md"
     )
 
 
@@ -82,7 +82,7 @@ def test_provision_help_names_the_class_keyed_playbook(capsys):
     assert exc.value.code == 0
     out = capsys.readouterr().out
     assert "install-class-playbook.md" in out
-    assert "spec-bmad-suite-install-class-wiring" in out
+    assert "spec-pyforge-steward" in out
     assert INSTALL_CLASS_PLAYBOOK in out
     assert "class-keyed playbook" in out
 

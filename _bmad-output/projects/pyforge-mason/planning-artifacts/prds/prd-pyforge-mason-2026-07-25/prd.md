@@ -7,7 +7,7 @@ updated: "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 33.1): chain-currency cas
 project: pyforge-mason
 currency_review: "Reviewed 2026-09-14 — chain-currency sweep. spec-pyforge-mason moved to 2026-09-11 (status: shipped added; seven dated verified: CAP lines, two of them PARTIAL with real findings; the realization-gate re-read and its 2026-09-11 resolution) and its memlog to 2026-09-13T23:57 (Story 44.7 foundry-island wiring; PR #1354's AD-14 credential-isolation closure) while this PRD sat at 2026-09-07. Reconciled in § Currency reconciliation — 2026-09-14. ONE REAL DIVERGENCE RECORDED, independently re-verified against live code this pass: FR-14's diff-before-apply consequence and NFR-9's defaults-to-dry-run claim do NOT hold for `mason recipe update` — `--dry-run` is opt-in (`cli.py:711-715`, help text: 'default: writes the field-scoped update for real') and `recipe.py::update()` appends it only when set. Recorded as a divergence, NOT repaired: the repair is a behaviour change and needs its own Dream/Spec. Prior review 2026-08-26 — as-built truth-up against src/shared/packages/pyforge-mason/ after the station completed (fleet ledger 2026-08-21) plus post-completion stories 10.1/11.1/11.2; OQ-4/OQ-6/OQ-8 stamped RESOLVED in place; divergences named in § Currency reconciliation. Prior review 2026-08-04 (structural timestamp bump, no drift)."
 dream: archive/docs/dreams/packaging-factory.md
-adopted_kernel: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-packaging-factory/SPEC.md
+adopted_kernel: archive/_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-packaging-factory/SPEC.md
 inputs:
   - ../../briefs/brief-pyforge-mason-2026-07-25/brief.md
   - ../../briefs/brief-pyforge-mason-2026-07-25/addendum.md

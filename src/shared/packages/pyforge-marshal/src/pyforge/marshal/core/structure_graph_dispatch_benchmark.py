@@ -43,7 +43,7 @@ REPRESENTATIVE_NAVIGATION_PATHS: tuple[str, ...] = (
     "spec-28-5-the-pinned-wrapped-vs-unwrapped-benchmark.md",
     "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/"
     "spec-28-33-the-structure-graph-reference-is-wired-for-spin-unblocking-the-already-built-loop-home-index.md",
-    "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/integration-layers.md",
+    "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/integration-layers.md",
     "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/token_economy_benchmark.py",
 )
 

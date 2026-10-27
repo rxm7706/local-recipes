@@ -890,7 +890,7 @@ under the same home inherit the trust.
 python-foundry cutover flip re-provisions it — remote, `pyforge.toml` name, marker/symlink/backlink
 consistency, rendered policy, refreshed `_bmad-output` relays, no in-flight run — plus the check
 proving each item and the "retired" vs "re-provisioned" wording reconciliation, is defined in
-`_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-loop-home-fleet-refresh/loop-home-cutover-readiness.md`
+`archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-loop-home-fleet-refresh/loop-home-cutover-readiness.md`
 (marshal Story 31.5). Steward Story 44.12 builds the re-provisioning mechanism against it.
 
 ---

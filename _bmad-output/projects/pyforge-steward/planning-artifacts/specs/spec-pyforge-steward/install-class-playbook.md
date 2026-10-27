@@ -1,7 +1,7 @@
 # Install-class playbook — the eight that are not CAP-3 modules
 
 Companion to `spec-bmad-suite-install-class-wiring` CAP-1. Native commands
-and hazard flags are **cited from** `../spec-bmad-suite-channel-product/install-matrix.md`
+and hazard flags are **cited from** `../spec-pyforge-steward/install-matrix.md`
 (CAP-4 dual-path contract, verified 2026-08-22 against upstream READMEs) —
 never invented here. The npm collision denylist travels with that matrix:
 never install `bmad-dashboard` (caionormando), `bmad-skills` (bacoco), or

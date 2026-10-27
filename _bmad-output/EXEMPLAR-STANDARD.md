@@ -5,7 +5,8 @@ Established 2026-07-27, extended to the full chain 2026-07-28. Applies to every 
 project in this repo under bmad-method ≥ 6.12 with bmad-loop.
 
 > **This file is a companion of
-> `projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-consistency-standard/SPEC.md`.**
+> `archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-consistency-standard/SPEC.md`**
+> (absorbed into `spec-pyforge-marshal`; the pointer moved to the archive home on 2026-10-27).
 > That Spec is the contract; this file is the enumeration behind it — the tables and
 > invariants its normative sentences cite, per the kernel/companion rule below. It keeps this
 > path because `pixi.toml`'s `dream-chain` detector names it as its `Contract:` and 33 other

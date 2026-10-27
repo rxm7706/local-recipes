@@ -137,7 +137,7 @@ The Charter governs the *workers*; this Spec governs *the Charter*.
   execution, *wielded, never worn*"); **Gates maps to a rule, not a noun**, since "the hand
   that builds is never the gate that judges" already makes Gate load-bearing at the doctrine
   level, so importing the paper's Gate gives one word two jobs. The gap analysis, tool
-  inventories and file-path cells stay in steward's `spec-intelligence-hub/vocabulary-map.md`;
+  inventories and file-path cells stay in steward's `spec-pyforge-steward/vocabulary-map.md`;
   the Charter gets the correspondence and the rule, which keeps it free of anything that goes
   stale when the paper revs.
 - **The Charter does not prescribe craft.** It names who is accountable, never how a craft

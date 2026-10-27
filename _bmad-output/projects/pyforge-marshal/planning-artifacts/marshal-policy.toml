@@ -157,7 +157,7 @@ verify_commands = [
   # --project marshal`), and the owning spec's memlog is where a
   # spec-surface change is reconciled before its baseline is re-stamped.
   "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
-  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/.memlog.md",
+  "archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/.memlog.md",
   # Self-referential: widening this file's own epic_surfaces entry is itself
   # a changed path under the OLD surface that didn't yet cover it.
   "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml",

@@ -17,11 +17,11 @@ schema_version: 1
 last_updated: "2026-10-04"
 
 spec:
-  path: "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/SPEC.md"
+  path: "archive/_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/SPEC.md"
   capabilities_tracked: ["CAP-1", "CAP-2", "CAP-3", "CAP-4"]
 
 slice_map:
-  path: "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/slice-map.md"
+  path: "archive/_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/slice-map.md"
   derived_at: "2026-08-21"
   derived_by: "story 6.1, direct live-tree derivation (skf-analyze-source's stages are scoped to onboarding a fresh external repo into new skill-brief.yaml recommendations, not to re-seaming an existing in-repo BMAD skill for a rebuild campaign — see slice-map.md § Method for the full reasoning)"
   cfe_skill_version_at_derivation: "8.82.3"
