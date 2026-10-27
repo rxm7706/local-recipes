@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from pyforge.steward.cli import DUTIES, build_parser, resolve_duty
 from pyforge.steward.guards import (
     FIRST_LIBRARY_CATEGORY,
@@ -17,6 +19,10 @@ from pyforge.steward.guards import (
     source_ground,
     spec_gaps,
 )
+
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
 
 _REPO = Path(__file__).resolve().parents[6]
 _DETECTORS = _REPO / "scripts" / "detectors.py"

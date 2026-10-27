@@ -243,13 +243,15 @@ def test_run_pytest_cov_carries_station_test_task_xdist_flags(driver, monkeypatc
     assert "--dist" in cmd and "loadgroup" in cmd
 
 
-_SPEED = "src/shared/packages/pyforge-doctor/tests/unit/test_check_speed_budget.py"
+# Story 117.4: doctor's speed-budget test is a live-tree module and runs alone in pyforge-doctor-live-test; the package
+# task with a set-aside run that the gate mirrors is steward's (test_preflight_concurrency.py SIGINTs its own process).
+_SPEED = "src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py"
 
 
 @pytest.mark.parametrize(
     ("cmd", "flags", "alone"),
     [
-        (  # doctor: the speed budget is set aside, then runs alone
+        (  # steward: the SIGINT file is set aside, then runs alone (doctor's speed budget does the same in its live task)
             f"env X=4 pytest pkg/tests -q -n auto --dist loadgroup --ignore={_SPEED} && pytest {_SPEED} -q",
             ["-n", "auto", "--dist", "loadgroup", "--ignore", _SPEED],
             [[_SPEED, "-q"]],
@@ -286,43 +288,133 @@ def _fake_runs(monkeypatch, rcs: list[int]) -> list[list[str]]:
     return captured
 
 
-def _run_doctor_unit(driver) -> tuple[str, int]:
-    report = REPO / ".coverage-report-doctor-unit.json"
+def _run_steward_unit(driver) -> tuple[str, int]:
+    report = REPO / ".coverage-report-steward-unit.json"
     try:
-        return driver._run_pytest_cov(station="doctor", suite="unit", report=report)
+        return driver._run_pytest_cov(station="steward", suite="unit", report=report)
     finally:
         report.unlink(missing_ok=True)
 
 
-def test_doctor_speed_budget_runs_alone_after_the_coverage_run(driver, monkeypatch):
+def test_the_set_aside_file_runs_alone_after_the_coverage_run(driver, monkeypatch):
     captured = _fake_runs(monkeypatch, [0, 0])
-    assert _run_doctor_unit(driver) == ("ran", 0)
+    assert _run_steward_unit(driver) == ("ran", 0)
     cov_run, alone_run = captured
-    assert "--cov=pyforge.doctor" in cov_run
-    assert cov_run[cov_run.index("--ignore") + 1] == _SPEED
+    assert "--cov=pyforge.steward" in cov_run
+    assert _SPEED in cov_run[cov_run.index("--ignore") + 1 :]
     assert _SPEED in alone_run
     assert not any(tok.startswith("--cov") for tok in alone_run)
     assert "-n" not in alone_run
 
 
-def test_a_slow_speed_budget_reds_the_gate(driver, monkeypatch):
+def test_a_red_set_aside_run_reds_the_gate(driver, monkeypatch):
     captured = _fake_runs(monkeypatch, [0, 1])
-    assert _run_doctor_unit(driver) == ("ran", 1)
+    assert _run_steward_unit(driver) == ("ran", 1)
     assert len(captured) == 2
 
 
 def test_a_red_coverage_run_skips_the_set_aside_run(driver, monkeypatch):
     captured = _fake_runs(monkeypatch, [1])
-    assert _run_doctor_unit(driver) == ("ran", 1)
+    assert _run_steward_unit(driver) == ("ran", 1)
     assert len(captured) == 1
 
 
 def test_a_set_aside_run_outside_the_suite_does_not_run(driver, tmp_path: Path):
     assert driver._under_any(
-        [_SPEED, "-q"], [REPO / "src/shared/packages/pyforge-doctor/tests/unit"]
+        [_SPEED, "-q"], [REPO / "src/shared/packages/pyforge-steward/tests/unit"]
     )
     assert not driver._under_any([_SPEED, "-q"], [tmp_path])
     assert not driver._under_any(["-q"], [tmp_path])
+
+
+def _report(files: dict[str, dict[str, list]]) -> dict:
+    return {"meta": {"version": "7.0"}, "files": files, "totals": {}}
+
+
+def test_merge_coverage_reports_unions_lines_and_branches_and_recomputes_percent(
+    driver, tmp_path: Path
+):
+    """Story 117.4: the package half and the live-tree half each write a report; the gate judges their union.
+
+    ``a.py``: the package half executed lines 1-2, the live half line 3; line 4 ran in neither. Branch (1, 2) ran in
+    one half, (3, 4) in none. coverage.py's formula: (3 covered lines + 1 covered branch) / (4 statements + 2 branches).
+    ``b.py`` is in one report only and keeps its data.
+    """
+    unit = tmp_path / "unit.json"
+    live = tmp_path / "live.json"
+    unit.write_text(
+        json.dumps(
+            _report(
+                {
+                    "a.py": {
+                        "executed_lines": [1, 2],
+                        "missing_lines": [3, 4],
+                        "executed_branches": [[1, 2]],
+                        "missing_branches": [[3, 4]],
+                    },
+                    "b.py": {
+                        "executed_lines": [1],
+                        "missing_lines": [2],
+                        "executed_branches": [],
+                        "missing_branches": [],
+                    },
+                }
+            )
+        ),
+        encoding="utf-8",
+    )
+    live.write_text(
+        json.dumps(
+            _report(
+                {
+                    "a.py": {
+                        "executed_lines": [3],
+                        "missing_lines": [1, 2, 4],
+                        "executed_branches": [],
+                        "missing_branches": [[1, 2], [3, 4]],
+                    },
+                }
+            )
+        ),
+        encoding="utf-8",
+    )
+    merged = driver.merge_coverage_reports([unit, live])
+    a = merged["files"]["a.py"]
+    assert a["executed_lines"] == [1, 2, 3]
+    assert a["missing_lines"] == [4]
+    assert a["executed_branches"] == [[1, 2]]
+    assert a["missing_branches"] == [[3, 4]]
+    assert a["summary"]["percent_covered"] == pytest.approx(100.0 * 4 / 6)
+    assert a["summary"]["num_statements"] == 4 and a["summary"]["num_branches"] == 2
+    b = merged["files"]["b.py"]
+    assert b["executed_lines"] == [1] and b["missing_lines"] == [2]
+    assert b["summary"]["percent_covered"] == pytest.approx(50.0)
+    assert merged["totals"]["percent_covered"] == pytest.approx(
+        100.0 * (4 + 1) / (6 + 2)
+    )
+    assert merged["meta"]["merged_from"] == [str(unit), str(live)]
+
+
+def test_merge_of_one_report_keeps_its_files(driver, tmp_path: Path):
+    only = tmp_path / "only.json"
+    only.write_text(
+        json.dumps(
+            _report(
+                {
+                    "a.py": {
+                        "executed_lines": [1],
+                        "missing_lines": [],
+                        "executed_branches": [],
+                        "missing_branches": [],
+                    }
+                }
+            )
+        ),
+        encoding="utf-8",
+    )
+    merged = driver.merge_coverage_reports([only])
+    assert merged["files"]["a.py"]["summary"]["percent_covered"] == 100.0
+    assert merged["totals"]["percent_covered"] == 100.0
 
 
 def test_plan_empty_when_no_station_touched(driver, tmp_path: Path, capsys):

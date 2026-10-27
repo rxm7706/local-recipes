@@ -2,7 +2,7 @@
 title: "55.4: Doctor's live-tree readers run as their own half"
 type: 'feature'
 created: '2026-10-27'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
@@ -37,9 +37,9 @@ Type / Effort / Deps: feature / M / steward Story 117.4 (the two-halves conventi
 
 ## Acceptance Criteria
 
-- **AC1 — Two halves.** `pyforge-doctor-test` and `pyforge-doctor-live-test` together collect the baseline's count; the speed-budget alone-run stays in the package half.
+- **AC1 — Two halves.** `pyforge-doctor-test` and `pyforge-doctor-live-test` together collect the baseline's count; the speed-budget alone-run rides the half that collects its module (the live half: `test_check_speed_budget.py` reads the live tree).
 - **AC2 — Empty outside reads.** `test_station_tests_trigger_map.py` derives no outside read for the doctor package job and today's set for the live job.
-- **AC3 — Fan-out.** The `changes` script on a one-file fixture diff under `_bmad-output/projects/pyforge-marshal/planning-artifacts/` sets `doctor_live=true` and `doctor=false`; under `src/shared/packages/pyforge-doctor/src/` both are `true`.
+- **AC3 — Fan-out.** The `changes` script on a one-file fixture diff under `_bmad-output/projects/pyforge-marshal/planning-artifacts/` sets `doctor_live=true` and `doctor=false`; under `src/shared/packages/pyforge-doctor/src/` both are `true` (steward's trigger map asserts both fixtures).
 - **AC4 — CI.** On a planning-only PR the `doctor-test` job reads `skipped` and `doctor-live-test` passes in ≤ 120 s.
 
 ## Boundaries & Constraints
@@ -78,13 +78,14 @@ Parent: spec-pyforge-steward:CAP-175
 
 ## Auto Run Result
 
-Status: backlog
+Status: done
 
-Summary: not started.
+Summary: built in the Wave 2 PR (2026-10-27) beside steward Story 117.4, under its `live_tree` marker convention. 43 doctor modules carry `pytestmark = pytest.mark.live_tree` (the 19 `ROOT_HANDOFF_INPUTS["doctor"]` gatherer files, `tests/meta/**`, `test_checks_env_hygiene.py`, `test_check_speed_budget.py` and every other module the trigger map derived an outside read for); the marker is registered in `pyforge-doctor/pyproject.toml`. `pyforge-doctor-test` collects `-m "not slow and not live_tree"` (1213 tests, 12 s on 16 workers, writes `.steward/coverage/doctor-unit.json`); `pyforge-doctor-live-test` collects `-m "live_tree and not slow"` with the speed-budget module set aside and run alone afterwards (2676 tests, 47 s, writes `doctor-live.json`); together 3889, the old task's collection. The gate (`pyforge-doctor-coverage-gate`, the `doctor-gate` CI job) judges the two reports merged. Workflow: `doctor` fires on `src/shared/packages/pyforge-doctor` and the shared surface, `doctor_live` on the old `doctor_paths` (now `doctor_live_paths`); `doctor-live-test` and `doctor-gate` jobs added; `ci-surfaces.yaml` rows `pyforge-station-tests.doctor-live-test` / `doctor-gate`. Steward's `test_station_tests_trigger_map.py` derives the doctor package half's outside reads as empty and asserts it. AC4 (the planning-only PR runs `doctor-live-test` ≤ 120 s, `doctor-test` skipped) reads from the first planning-only PR after this lands.
 
 ## Spec Change Log
 
 - 2026-10-27: minted from the station Dream's entry of 2026-10-27 beside steward Epic 117 (spec-pyforge-steward:CAP-175).
+- 2026-10-27: AC1's set-aside speed-budget run moved with its module into the live half (the test reads the live tree, so the marker puts it there; the package half has no set-aside run). `scripts/coverage_gates_ci.py`'s mirror of the set-aside run is now tested against steward's `test_preflight_concurrency.py`.
 
 ## Review Triage Log
 

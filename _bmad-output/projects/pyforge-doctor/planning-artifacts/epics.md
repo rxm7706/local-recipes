@@ -3616,7 +3616,7 @@ So that Doctor's verdicts arrive in seconds with nothing judged less.
 **When** the readers move into doctor's live-tree half under the convention Story 117.4 fixes, `pyforge-doctor-live-test` fires on `doctor_paths` and `pyforge-doctor-test` on the package and the shared surface, and the trigger map derives the package half's outside reads as empty
 **Then** a planning-only PR runs `doctor-live-test` and not `doctor-test`; a doctor `src/` edit runs both; the two halves together collect exactly what the old task collected
 **And** `test_station_tests_trigger_map.py` passes with `PRESERVED` intact; `pyforge-doctor-test`'s `--ignore` of the speed-budget test and its alone-run stay in the package half
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

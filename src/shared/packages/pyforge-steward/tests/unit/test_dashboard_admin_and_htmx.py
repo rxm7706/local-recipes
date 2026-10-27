@@ -73,6 +73,10 @@ from pyforge.steward.dashboard.views_htmx import (  # noqa: E402
 from pyforge.steward.glass import EMPTY_FILE_SHA256  # noqa: E402
 from pyforge.steward.sprint_ledger_query import WorkPassportItem  # noqa: E402
 
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 _EPICS_MD = """## Epic 1: Fixture Epic
 
 ### Story 1.1: Plain Done Story

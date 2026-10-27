@@ -72,8 +72,8 @@ development_status:
   116-1-steward-s-absorbed-spec-folders-and-the-intake-drops-move-to-the-archive-home: done
   117-1-the-steward-suite-runs-under-pytest-xdist-and-its-serial-remainder-alone: done
   117-2-a-station-s-coverage-floor-is-judged-from-its-own-suite-s-run-and-coverage-gates-yml-retires: done
-  117-3-the-preflight-admits-lanes-longest-first-by-the-cores-they-will-use: backlog
-  117-4-each-station-suite-runs-as-its-package-local-and-live-tree-halves: backlog
+  117-3-the-preflight-admits-lanes-longest-first-by-the-cores-they-will-use: done
+  117-4-each-station-suite-runs-as-its-package-local-and-live-tree-halves: done
   117-5-preflight-budget-names-every-lane-over-its-journal-derived-budget: backlog
   117-6-image-builds-leave-the-pull-request-path-for-main-and-the-nightly-canary: backlog
   117-7-the-ci-workflows-run-what-the-diff-touches-with-pinned-tools-and-parallel-detectors: done

@@ -22,6 +22,10 @@ from pyforge.steward import keys, sync
 from pyforge.steward.cli import EXIT_FAILED
 from pyforge.steward.keys import HostScopedCredential, http_bridge, locate_http_module, resolve_headers
 
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 _MARKER = str(Path(".claude/skills/conda-forge-expert/scripts/_http.py"))
 _GITHUB = HostScopedCredential(hosts=("api.github.com",))
 _GITHUB_URL = "https://api.github.com/graphql"

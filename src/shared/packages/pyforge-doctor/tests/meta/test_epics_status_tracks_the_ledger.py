@@ -14,6 +14,10 @@ from pathlib import Path
 
 import pytest
 
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 # tests/meta/test_x.py -> parents[3] is src/shared/packages/ (same arithmetic as the sibling meta-tests).
 PACKAGES_ROOT = Path(__file__).resolve().parents[3]
 REPO_ROOT = PACKAGES_ROOT.parents[2]

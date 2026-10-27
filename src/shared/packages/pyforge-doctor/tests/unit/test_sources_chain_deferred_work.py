@@ -24,6 +24,10 @@ import pytest
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import chain
 
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 # Guarded, mirroring test_check_speed_budget.py's own idiom: an IndexError
 # from a shallower-than-7-levels layout (e.g. an extracted sdist) degrades to
 # a skip rather than a collection error for the whole file.

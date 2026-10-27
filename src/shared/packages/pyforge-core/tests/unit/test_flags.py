@@ -1080,6 +1080,8 @@ _SHIPPED_CLOCKS = {
     "pyforge.steward.pages_duty": ("steward", "102-2-", "2026-10-14", "", ""),
     # Story 103.6 (CAP-159): the touched-scope preflight; default off, dev on.
     "pyforge.steward.preflight_ci_arbitrates": ("steward", "103-6-", "2026-10-15", "", ""),
+    # Story 117.3 (CAP-175): critical-path lane admission; a kill switch ON everywhere from mint day, due 2027-01-25.
+    "pyforge.steward.preflight_critical_path": ("steward", "117-3-", "2026-10-27", "2026-10-27", "2027-01-25"),
 }
 
 
@@ -1114,18 +1116,27 @@ def test_the_shipped_tree_records_each_flags_owner_story_and_dates():
         ), key
 
 
-# The CAP-7 retrofit kill switches: the only clocks the shipped tree runs (ON everywhere since mint day).
+# The CAP-7 retrofit kill switches (ON everywhere since mint day, 2026-10-26, each due 2027-01-24) and the kill
+# switches minted since under the same rule (ON everywhere from mint day, due 90 days on): the only clocks the shipped
+# tree runs. A new kill switch joins here with its own due date; a clock that stops is the removal story landing.
 _RETROFIT_KILL_SWITCHES = frozenset(
     k for k, (_o, _s, created, on, _c) in _SHIPPED_CLOCKS.items() if on == created == "2026-10-26"
 )
+_LATER_KILL_SWITCHES = {
+    "pyforge.steward.preflight_critical_path": "2027-01-25",  # steward Story 117.3 (CAP-175), minted 2026-10-27
+}
 
 
-def test_the_only_running_cleanup_clocks_are_the_cap_7_retrofit_kill_switches():
-    """Story 76.4 left no clock running; the retrofit (2026-10-26) starts one per kill switch, each due 2027-01-24."""
+def test_the_only_running_cleanup_clocks_are_the_kill_switches():
+    """Story 76.4 left no clock running; the retrofit (2026-10-26) starts one per kill switch, each due 2027-01-24, and
+    every kill switch minted since runs its own 90-day clock from its mint day."""
     payload, _ = _shipped()
     running = {k: e["metadata"]["cleanup_by"] for k, e in payload["flags"].items() if e["metadata"]["cleanup_by"]}
-    assert set(running) == _RETROFIT_KILL_SWITCHES
-    assert set(running.values()) == {"2027-01-24"}
+    assert set(running) == _RETROFIT_KILL_SWITCHES | set(_LATER_KILL_SWITCHES)
+    assert {k: v for k, v in running.items() if k in _RETROFIT_KILL_SWITCHES} == dict.fromkeys(
+        _RETROFIT_KILL_SWITCHES, "2027-01-24"
+    )
+    assert {k: v for k, v in running.items() if k in _LATER_KILL_SWITCHES} == _LATER_KILL_SWITCHES
     assert len(_RETROFIT_KILL_SWITCHES) == 48
 
 
@@ -1204,6 +1215,8 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.steward.ci_pause_control": {"dev": True, "staging": False, "production": False},
         "pyforge.steward.pages_duty": {"dev": True, "staging": False, "production": False},
         "pyforge.steward.preflight_ci_arbitrates": {"dev": True, "staging": False, "production": False},
+        # Story 117.3 (CAP-175): critical-path lane admission, a kill switch ON in every environment.
+        "pyforge.steward.preflight_critical_path": {"dev": True, "staging": True, "production": True},
         "pyforge.marshal.verify_fix_loop": {"dev": True, "staging": True, "production": False},
         "pyforge.marshal.landing_ci_pauses": {"dev": True, "staging": False, "production": False},
         "pyforge.atlas.dependency_history_sensor": {"dev": True, "staging": True, "production": False},

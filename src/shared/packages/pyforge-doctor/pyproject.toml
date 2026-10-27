@@ -56,6 +56,13 @@ packages = ["src/pyforge"]
 # Story 66.1 (spec-pyforge-steward CAP-153, 2026-09-20): the lint gate `pixi run -e pyforge-guild ruff`
 # / `ruff-format` reads THIS block (run from inside the package). Line width is ruff format's job;
 # E501 is off because 290 legacy long strings/comments predate the gate -- format keeps code at 120.
+[tool.pytest.ini_options]
+# Story 117.4 (spec-pyforge-steward:CAP-175): a module that reads the live tree outside this package carries
+# `pytestmark = pytest.mark.live_tree`; pyforge-doctor-test collects the rest, pyforge-doctor-live-test these.
+markers = [
+    "live_tree: the module reads the repository outside its own package (planning artifacts, docs, pixi.toml, the workflows, other stations); it runs in the station's live-tree half and fires on what it reads",
+]
+
 [tool.ruff]
 target-version = "py314"
 line-length = 120

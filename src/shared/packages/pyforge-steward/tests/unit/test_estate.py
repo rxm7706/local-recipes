@@ -35,6 +35,10 @@ from pyforge.steward.estate import (
     run_status,
 )
 
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 # The flag-provider fixture lives in this module, not in a conftest: the pip-only lane
 # (pyforge-pip-install.yml) installs pyforge-steward without the testing kit and collects
 # tests/meta and tests/unit/test_fresh_clone_class_path.py, so any conftest on those paths that

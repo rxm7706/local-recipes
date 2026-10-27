@@ -90,7 +90,8 @@
     "pyforge.steward.station_client_identity": "on",
     "pyforge.atlas.agent_pipeline_tools": "on",
     "pyforge.atlas.manifest_inventory": "on",
-    "pyforge.scribe.bmad_estate_catalog": "on"
+    "pyforge.scribe.bmad_estate_catalog": "on",
+    "pyforge.steward.preflight_critical_path": "on"
   },
   "staging": {
     "pyforge.cutover_root": "local-recipes",
@@ -183,7 +184,8 @@
     "pyforge.steward.station_client_identity": "on",
     "pyforge.atlas.agent_pipeline_tools": "on",
     "pyforge.atlas.manifest_inventory": "on",
-    "pyforge.scribe.bmad_estate_catalog": "on"
+    "pyforge.scribe.bmad_estate_catalog": "on",
+    "pyforge.steward.preflight_critical_path": "on"
   },
   "production": {
     "pyforge.cutover_root": "local-recipes",
@@ -276,6 +278,7 @@
     "pyforge.steward.station_client_identity": "on",
     "pyforge.atlas.agent_pipeline_tools": "on",
     "pyforge.atlas.manifest_inventory": "on",
-    "pyforge.scribe.bmad_estate_catalog": "on"
+    "pyforge.scribe.bmad_estate_catalog": "on",
+    "pyforge.steward.preflight_critical_path": "on"
   }
 }

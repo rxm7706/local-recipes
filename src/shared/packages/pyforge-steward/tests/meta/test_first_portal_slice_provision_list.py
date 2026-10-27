@@ -10,6 +10,10 @@ from pathlib import Path
 import pytest
 from pyforge.testing_kit import changed_paths_since
 
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 _HTTP_TOPLEVEL = frozenset({"httpx", "requests", "http.client"})
 _CHROME_COPY_NAMES = ("base.html", "switcher.html", "theme.css")
 

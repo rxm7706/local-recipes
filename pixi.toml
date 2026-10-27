@@ -631,9 +631,14 @@ depends-on = ["pyforge-steward-build-conda", "pyforge-steward-build-dist"]
 
 [feature.pyforge-steward.tasks.pyforge-steward-test]
 description = "Run the pyforge-steward suite across all three tiers (unit + conformance + meta) under pytest-xdist (Story 117.1, spec-pyforge-steward CAP-175): -n auto takes PYTEST_XDIST_AUTO_NUM_WORKERS from the caller (the preflight's share, CI's cores), --dist loadgroup spreads a file's tests across workers (the slowest file alone was the wall under loadfile: 165 s vs 106 s) and honours @pytest.mark.xdist_group where tests must share a worker; the three preflight test files that SIGINT their own process run alone afterwards, where a signal cannot take a worker with it. Story 117.2 (spec-pyforge-steward CAP-175, ruling D2): the first segment is the coverage gate's own run -- unit + meta, not slow, under --cov -- and writes .steward/coverage/steward-unit.json for pyforge-steward-coverage-gate to judge, so no suite runs twice; the later segments run everything else the task ran before."
-cmd = "pytest src/shared/packages/pyforge-steward/tests/unit src/shared/packages/pyforge-steward/tests/meta -q -m \"not slow\" -n auto --dist loadgroup --ignore=src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py --ignore=src/shared/packages/pyforge-steward/tests/unit/test_preflight_scope.py --ignore=src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py --cov=pyforge.steward --cov-branch --cov-report=json:.steward/coverage/steward-unit.json && pytest src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py src/shared/packages/pyforge-steward/tests/unit/test_preflight_scope.py src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py -q"
+cmd = "pytest src/shared/packages/pyforge-steward/tests/unit src/shared/packages/pyforge-steward/tests/meta -q -m \"not slow and not live_tree\" -n auto --dist loadgroup --ignore=src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py --ignore=src/shared/packages/pyforge-steward/tests/unit/test_preflight_scope.py --ignore=src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py --cov=pyforge.steward --cov-branch --cov-report=json:.steward/coverage/steward-unit.json && pytest src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py -q"
 # Story 117.2 (spec-pyforge-steward CAP-175): the suite imports the live source tree (and scripts/), as the
 # coverage run always did, so the coverage JSON its first segment writes names src/ paths the gate can judge.
+env = { PYTHONPATH = "src/shared/packages/pyforge-steward/src:scripts" }
+
+[feature.pyforge-steward.tasks.pyforge-steward-live-test]
+description = "Story 117.4 (spec-pyforge-steward CAP-175, ruling D4): the live-tree half of the steward suite -- every module marked pytest.mark.live_tree (it reads planning artifacts, docs, pixi.toml, the workflows or other stations), under --cov writing .steward/coverage/steward-live.json for the gate to merge with the package half's report; the two preflight test files that SIGINT their own process run alone afterwards. Fires in CI on what these tests read (steward-live-test), not on every edit of the package."
+cmd = "pytest src/shared/packages/pyforge-steward/tests/unit src/shared/packages/pyforge-steward/tests/meta -q -m \"live_tree and not slow\" -n auto --dist loadgroup --ignore=src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py --ignore=src/shared/packages/pyforge-steward/tests/unit/test_preflight_scope.py --ignore=src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py --cov=pyforge.steward --cov-branch --cov-report=json:.steward/coverage/steward-live.json && pytest src/shared/packages/pyforge-steward/tests/unit/test_preflight_scope.py src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py -q"
 env = { PYTHONPATH = "src/shared/packages/pyforge-steward/src:scripts" }
 
 [feature.pyforge-steward.tasks.frame-preflight]
@@ -646,12 +651,12 @@ cmd = "python -m pyforge.steward.frames --upstream-check"
 
 [feature.pyforge-steward.tasks.pyforge-steward-coverage-gate]
 description = "Mirror of the coverage-gate step of pyforge-station-tests.yml's `steward-test` job (Story 117.2; coverage-gates.yml retired): run scripts/coverage_gates_ci.py over the modules THIS branch touches, in steward's own env, against the 80% unit floor. Distinct from pyforge-steward-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
-cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit --report .steward/coverage/steward-unit.json"
+cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit --report .steward/coverage/steward-unit.json --report .steward/coverage/steward-live.json"
 env = { COVERAGE_GATES_STATIONS = "steward" }
 # Story 117.2: the gate judges the JSON pyforge-steward-test wrote (--report); when the report is absent it runs the
 # coverage pass itself as before. The dependency orders the two lanes in pr-preflight; CI runs the gate by its
 # command line after the suite step (pyforge-station-tests.yml), so the suite is collected once per PR.
-depends-on = [{ task = "pyforge-steward-test", environment = "pyforge-steward" }]
+depends-on = [{ task = "pyforge-steward-test", environment = "pyforge-steward" }, { task = "pyforge-steward-live-test", environment = "pyforge-steward" }]
 
 [feature.pyforge-steward.tasks.pyforge-steward-test-coverage]
 description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-steward. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage."
@@ -1648,11 +1653,13 @@ depends-on = [
   { task = "pyforge-testing-kit-test", environment = "pyforge-testing-kit" },
   { task = "pyforge-atlas-test", environment = "pyforge-atlas" },
   { task = "pyforge-doctor-test", environment = "pyforge-doctor" },
+  { task = "pyforge-doctor-live-test", environment = "pyforge-doctor" },
   { task = "pyforge-herald-test", environment = "pyforge-herald" },
   { task = "pyforge-marshal-test", environment = "pyforge-marshal" },
   { task = "pyforge-mason-test", environment = "pyforge-mason" },
   { task = "pyforge-scribe-test", environment = "pyforge-scribe" },
   { task = "pyforge-steward-test", environment = "pyforge-steward" },
+  { task = "pyforge-steward-live-test", environment = "pyforge-steward" },
   { task = "pyforge-warden-test", environment = "pyforge-warden" },
 ]
 
@@ -3152,10 +3159,15 @@ python-build = ">=1.6.1"          # PyPA `python -m build` frontend (wheel + sdi
 pytest = ">=9.1.1"                # test runner
 
 [feature.pyforge-doctor.tasks.pyforge-doctor-test]
-description = "Run the pyforge.doctor test suite (pytest-xdist; -n auto takes PYTEST_XDIST_AUTO_NUM_WORKERS from the caller -- the preflight's per-lane share, CI's four cores, a laptop's all -- never a pin in this cmd (doctor Story 55.3); the 5 s speed-budget test runs alone afterwards so worker contention cannot time it) Story 117.2 (spec-pyforge-steward CAP-175, ruling D2): the first segment is the coverage gate's own run -- unit + meta, not slow, under --cov -- and writes .steward/coverage/doctor-unit.json for pyforge-doctor-coverage-gate to judge, so no suite runs twice; the later segments run everything else the task ran before."
-cmd = "pytest src/shared/packages/pyforge-doctor/tests/unit src/shared/packages/pyforge-doctor/tests/meta -q -m \"not slow\" -n auto --dist loadgroup --ignore=src/shared/packages/pyforge-doctor/tests/unit/test_check_speed_budget.py --cov=pyforge.doctor --cov-branch --cov-report=json:.steward/coverage/doctor-unit.json && pytest src/shared/packages/pyforge-doctor/tests/unit/test_check_speed_budget.py -q"
+description = "Run the pyforge.doctor test suite (pytest-xdist; -n auto takes PYTEST_XDIST_AUTO_NUM_WORKERS from the caller -- the preflight's per-lane share, CI's four cores, a laptop's all -- never a pin in this cmd (doctor Story 55.3); the 5 s speed-budget test is a live-tree reader and runs alone in pyforge-doctor-live-test) Story 117.2 (spec-pyforge-steward CAP-175, ruling D2): the first segment is the coverage gate's own run -- unit + meta, not slow, under --cov -- and writes .steward/coverage/doctor-unit.json for pyforge-doctor-coverage-gate to judge, so no suite runs twice; the later segments run everything else the task ran before."
+cmd = "pytest src/shared/packages/pyforge-doctor/tests/unit src/shared/packages/pyforge-doctor/tests/meta -q -m \"not slow and not live_tree\" -n auto --dist loadgroup --cov=pyforge.doctor --cov-branch --cov-report=json:.steward/coverage/doctor-unit.json"
 # Story 117.2 (spec-pyforge-steward CAP-175): the suite imports the live source tree (and scripts/), as the
 # coverage run always did, so the coverage JSON its first segment writes names src/ paths the gate can judge.
+env = { PYTHONPATH = "src/shared/packages/pyforge-doctor/src:scripts" }
+
+[feature.pyforge-doctor.tasks.pyforge-doctor-live-test]
+description = "Doctor Story 55.4 (relay of spec-pyforge-steward:CAP-175, ruling D4): the live-tree half of the doctor suite -- every module marked pytest.mark.live_tree (the gatherers over planning artifacts, dreams, governance, archive, recipes, skills and src/), under --cov writing .steward/coverage/doctor-live.json for the gate to merge; the 5 s speed-budget test runs alone afterwards so worker contention cannot time it. Fires in CI on what these tests read (doctor-live-test)."
+cmd = "pytest src/shared/packages/pyforge-doctor/tests/unit src/shared/packages/pyforge-doctor/tests/meta -q -m \"live_tree and not slow\" -n auto --dist loadgroup --ignore=src/shared/packages/pyforge-doctor/tests/unit/test_check_speed_budget.py --cov=pyforge.doctor --cov-branch --cov-report=json:.steward/coverage/doctor-live.json && pytest src/shared/packages/pyforge-doctor/tests/unit/test_check_speed_budget.py -q"
 env = { PYTHONPATH = "src/shared/packages/pyforge-doctor/src:scripts" }
 
 [feature.pyforge-doctor.tasks.pyforge-doctor-aggregate-scripts-test]
@@ -3164,12 +3176,12 @@ cmd = "python -m pytest tests/scripts/test_detectors_doctor_sources.py tests/scr
 
 [feature.pyforge-doctor.tasks.pyforge-doctor-coverage-gate]
 description = "Mirror of the coverage-gate step of pyforge-station-tests.yml's `doctor-test` job (Story 117.2; coverage-gates.yml retired): run scripts/coverage_gates_ci.py over the modules THIS branch touches, in doctor's own env, against the 80% unit floor. Distinct from pyforge-doctor-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
-cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit --report .steward/coverage/doctor-unit.json"
+cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit --report .steward/coverage/doctor-unit.json --report .steward/coverage/doctor-live.json"
 env = { COVERAGE_GATES_STATIONS = "doctor" }
 # Story 117.2: the gate judges the JSON pyforge-doctor-test wrote (--report); when the report is absent it runs the
 # coverage pass itself as before. The dependency orders the two lanes in pr-preflight; CI runs the gate by its
 # command line after the suite step (pyforge-station-tests.yml), so the suite is collected once per PR.
-depends-on = [{ task = "pyforge-doctor-test", environment = "pyforge-doctor" }]
+depends-on = [{ task = "pyforge-doctor-test", environment = "pyforge-doctor" }, { task = "pyforge-doctor-live-test", environment = "pyforge-doctor" }]
 
 [feature.pyforge-doctor.tasks.pyforge-doctor-test-coverage]
 description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-doctor. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage."

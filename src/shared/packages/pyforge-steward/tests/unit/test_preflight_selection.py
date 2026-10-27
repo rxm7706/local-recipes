@@ -41,6 +41,10 @@ import yaml
 
 from pyforge.steward import preflight, preflight_ci
 
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 REPO_ROOT = Path(__file__).resolve().parents[6]
 INVOKING_ENV = "pyforge-guild"
 
@@ -74,6 +78,13 @@ MATRIX_WORKFLOW_FIXTURE = (
     / "workflows"
     / "coverage-gates-matrix.yml"
 )
+
+
+LIVE_SPLIT = ("doctor", "steward")  # Story 117.4: stations whose suite runs as a package half and a live-tree half
+
+
+def live(station: str) -> str:
+    return f"pyforge-{station}-live-test"
 
 
 def gates_of(chosen: set[str]) -> set[str]:
@@ -305,7 +316,7 @@ def test_marshal_only_branch_selects_marshal_core_and_always_on_lanes(tmp_path: 
         suite("marshal"),
         gate("marshal"),
         suite("atlas"),
-        suite("doctor"),
+        live("doctor"),  # Story 117.4: doctor's `src` readers are its live-tree half
         suite("scribe"),
     }
     assert selection.all_reason is None
@@ -352,11 +363,11 @@ def test_cfe_only_branch_selects_the_lanes_station_tests_reads(tmp_path: Path) -
     assert chosen & GATES == gates_of(chosen)
     assert {
         suite("atlas"),
-        suite("doctor"),
+        live("doctor"),  # Story 117.4: the .claude/skills readers are the live-tree halves
         suite("herald"),
         suite("marshal"),
         suite("mason"),
-        suite("steward"),
+        live("steward"),
         suite("warden"),
     } <= chosen
 
@@ -368,8 +379,8 @@ def test_dream_only_branch_selects_the_always_on_lanes(tmp_path: Path) -> None:
     # ``docs/dreams/**`` is outside ``pages.yml``'s twelve published-input paths (Story 102.2).
     assert chosen == (
         ALWAYS_ON
-        | {suite("doctor"), suite("herald"), suite("marshal"), suite("steward")}
-        | {gate("doctor"), gate("herald"), gate("marshal"), gate("steward")}  # Story 117.2: a gate rides its suite
+        | {live("doctor"), suite("herald"), suite("marshal"), live("steward")}  # Story 117.4: docs/dreams readers
+        | {gate("herald"), gate("marshal")}  # Story 117.2: a gate rides its package suite
         | HERALD_JOB_INSTALL
         | _spurious_lint_tasks_from_station_tests_changes(repo)
     )
@@ -405,8 +416,8 @@ def test_django_pyforge_branch_selects_kit_steward_doctor_marshal_and_core(tmp_p
     chosen = selected_tasks(selection)
     assert {
         "pyforge-testing-kit-test",
-        "pyforge-steward-test",
-        "pyforge-doctor-test",
+        live("steward"),  # Story 117.4: the django-pyforge readers are the live-tree halves
+        live("doctor"),
         "pyforge-marshal-test",
         "pyforge-core-test",
     } <= chosen
@@ -416,13 +427,13 @@ def test_django_pyforge_branch_selects_kit_steward_doctor_marshal_and_core(tmp_p
 def test_django_herald_branch_selects_steward_and_herald(tmp_path: Path) -> None:
     repo = make_repo(tmp_path, {"src/shared/packages/django-herald/src/x.py": "x = 1\n"})
     chosen = selected_tasks(select(repo))
-    assert {suite("steward"), suite("herald")} <= chosen
+    assert {live("steward"), suite("herald")} <= chosen  # Story 117.4
 
 
 def test_lint_types_only_branch_selects_steward(tmp_path: Path) -> None:
     repo = make_repo(tmp_path, {"scripts/lint_types.py": "# touched\n"})
     chosen = selected_tasks(select(repo))
-    assert suite("steward") in chosen
+    assert live("steward") in chosen  # Story 117.4: test_lint_types_django_tables.py is a live-tree module
 
 
 # ---------------------------------------------------------------------------
@@ -533,6 +544,9 @@ def oracle_selection(repo: Path, tmp_path: Path) -> set[str]:
                 chosen.add(lane)
         if out.get("herald") == "true":
             chosen |= HERALD_JOB_INSTALL  # the job runs pyforge-herald-test-built: the install, then the suite (45.1)
+        for s in LIVE_SPLIT:  # Story 117.4: the live-tree half fires on what its modules read
+            if out.get(f"{s}_live") == "true":
+                chosen.add(live(s))
     chosen |= gates_of(chosen)  # Story 117.2: the gate step is in the station job; it fires with the suite
     if _oracle_fires(repo, "pyforge-station-tests.yml", changed):
         chosen |= _spurious_lint_tasks_from_station_tests_changes(repo)

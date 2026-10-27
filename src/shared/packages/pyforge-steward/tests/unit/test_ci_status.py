@@ -1428,6 +1428,10 @@ def test_108_1_ac7_a_retired_row_that_reads_the_master_is_never_paused_by_it(tmp
 from pyforge.steward import preflight_ci as _preflight_ci  # noqa: E402
 from pyforge.steward.ci import CI_STATUS_REL, _latest_main_run  # noqa: E402
 
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 
 def _run(
     run_id: int,

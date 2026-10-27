@@ -170,6 +170,8 @@ jobs:
       mason: ${{ steps.filter.outputs.mason }}
       scribe: ${{ steps.filter.outputs.scribe }}
       steward: ${{ steps.filter.outputs.steward }}
+      steward_live: ${{ steps.filter.outputs.steward_live }}
+      doctor_live: ${{ steps.filter.outputs.doctor_live }}
       warden: ${{ steps.filter.outputs.warden }}
     steps:
       - uses: actions/checkout@v7
@@ -228,7 +230,13 @@ jobs:
             src/shared/packages
             tests/packaging/test_openteams_handoffs.py
           )
+          # Story 117.4 (doctor 55.4): the package half reads nothing outside its package; the live-tree half
+          # (pyforge-doctor-live-test) carries the paths its pytest.mark.live_tree modules read, derived by
+          # steward's tests/meta/test_station_tests_trigger_map.py.
           doctor_paths=(
+            src/shared/packages/pyforge-doctor
+          )
+          doctor_live_paths=(
             .claude/scripts
             .claude/skills
             .github/workflows/detectors.yml
@@ -366,7 +374,13 @@ jobs:
             src/platform
             src/shared/packages
           )
+          # Story 117.4 (doctor 55.4): the package half reads nothing outside its package; the live-tree half
+          # (pyforge-steward-live-test) carries the paths its pytest.mark.live_tree modules read, derived by
+          # steward's tests/meta/test_station_tests_trigger_map.py.
           steward_paths=(
+            src/shared/packages/pyforge-steward
+          )
+          steward_live_paths=(
             src/shared/packages/pyforge-steward
             .claude/hooks/pre-shell.py
             .claude/hooks/session-start.sh
@@ -453,6 +467,18 @@ jobs:
             fi
             if ! git diff --quiet "$BASE"...HEAD -- "$station_path" 2>/dev/null; then
               CORE_CHANGED=true
+            fi
+            # Story 117.4: a station with a live-tree half fires it on the package, the shared surface and what its
+            # live_tree modules read (today's full array); the package half above fires on the package alone.
+            live_name="${s}_live_paths"
+            if declare -p "$live_name" >/dev/null 2>&1; then
+              unset -n live_paths 2>/dev/null || true
+              declare -n live_paths="$live_name"
+              if [ "$SHARED_CHANGED" = "true" ] || ! git diff --quiet "$BASE"...HEAD -- "$station_path" "${live_paths[@]}" 2>/dev/null; then
+                echo "${s}_live=true" >> "$GITHUB_OUTPUT"
+              else
+                echo "${s}_live=false" >> "$GITHUB_OUTPUT"
+              fi
             fi
           done
           if ! git diff --quiet "$BASE"...HEAD -- "${core_paths[@]}" 2>/dev/null; then
@@ -620,9 +646,64 @@ jobs:
           environments: pyforge-doctor
           cache: true
       - run: pixi run --frozen -e pyforge-doctor pyforge-doctor-test
-      # Story 117.2 (spec-pyforge-steward CAP-175, ruling D2): the floor is judged from the JSON the suite step
-      # above wrote (.steward/coverage/doctor-unit.json); the gate never re-runs the suite. coverage-gates.yml retired.
-      - name: Coverage gate for doctor (reads the suite's own report)
+      # Story 117.4: the package half's report, merged with the live-tree half's by the doctor-gate job.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-doctor-unit
+          path: .steward/coverage/doctor-unit.json
+          if-no-files-found: error
+          retention-days: 3
+
+  # Story 117.4 (spec-pyforge-steward CAP-175, ruling D4): the live-tree half of the doctor suite -- the modules
+  # marked pytest.mark.live_tree -- fires on the package, the shared surface and what those modules read; the package
+  # half (doctor-test) fires on the package and the shared surface only.
+  doctor-live-test:
+    # ci-surfaces: pyforge-station-tests.doctor-live-test
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.doctor_live == 'true')) }}
+    needs: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # Story 117.2: the coverage gate diffs refs/remotes/origin/main...HEAD
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          environments: pyforge-doctor
+          cache: true
+      - run: pixi run --frozen -e pyforge-doctor pyforge-doctor-live-test
+      # Story 117.4: the live-tree half's report, merged with the package half's by the doctor-gate job.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-doctor-live
+          path: .steward/coverage/doctor-live.json
+          if-no-files-found: error
+          retention-days: 3
+
+  # Story 117.4: the coverage floor is judged from the union of both halves' reports (Story 117.2's --report, now
+  # repeatable); it rides the package half's rule and needs both halves' artifacts.
+  doctor-gate:
+    # ci-surfaces: pyforge-station-tests.doctor-gate
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.doctor == 'true')) }}
+    needs: [changes, doctor-test, doctor-live-test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # the gate diffs refs/remotes/origin/main...HEAD
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          environments: pyforge-doctor
+          cache: true
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-doctor-*
+          path: .steward/coverage
+          merge-multiple: true
+      - name: Coverage gate for doctor (both halves' reports)
         env:
           GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
           COVERAGE_GATES_STATIONS: doctor
@@ -633,7 +714,7 @@ jobs:
           else
             BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
           fi
-          pixi run --frozen -e pyforge-doctor python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report .steward/coverage/doctor-unit.json
+          pixi run --frozen -e pyforge-doctor python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report .steward/coverage/doctor-unit.json --report .steward/coverage/doctor-live.json
 
   herald-test:
     # ci-surfaces: pyforge-station-tests.herald-test
@@ -827,9 +908,64 @@ jobs:
           environments: pyforge-steward
           cache: true
       - run: pixi run --frozen -e pyforge-steward pyforge-steward-test
-      # Story 117.2 (spec-pyforge-steward CAP-175, ruling D2): the floor is judged from the JSON the suite step
-      # above wrote (.steward/coverage/steward-unit.json); the gate never re-runs the suite. coverage-gates.yml retired.
-      - name: Coverage gate for steward (reads the suite's own report)
+      # Story 117.4: the package half's report, merged with the live-tree half's by the steward-gate job.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-steward-unit
+          path: .steward/coverage/steward-unit.json
+          if-no-files-found: error
+          retention-days: 3
+
+  # Story 117.4 (spec-pyforge-steward CAP-175, ruling D4): the live-tree half of the steward suite -- the modules
+  # marked pytest.mark.live_tree -- fires on the package, the shared surface and what those modules read; the package
+  # half (steward-test) fires on the package and the shared surface only.
+  steward-live-test:
+    # ci-surfaces: pyforge-station-tests.steward-live-test
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.steward_live == 'true')) }}
+    needs: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # Story 117.2: the coverage gate diffs refs/remotes/origin/main...HEAD
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          environments: pyforge-steward
+          cache: true
+      - run: pixi run --frozen -e pyforge-steward pyforge-steward-live-test
+      # Story 117.4: the live-tree half's report, merged with the package half's by the steward-gate job.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-steward-live
+          path: .steward/coverage/steward-live.json
+          if-no-files-found: error
+          retention-days: 3
+
+  # Story 117.4: the coverage floor is judged from the union of both halves' reports (Story 117.2's --report, now
+  # repeatable); it rides the package half's rule and needs both halves' artifacts.
+  steward-gate:
+    # ci-surfaces: pyforge-station-tests.steward-gate
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.steward == 'true')) }}
+    needs: [changes, steward-test, steward-live-test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # the gate diffs refs/remotes/origin/main...HEAD
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          environments: pyforge-steward
+          cache: true
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-steward-*
+          path: .steward/coverage
+          merge-multiple: true
+      - name: Coverage gate for steward (both halves' reports)
         env:
           GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
           COVERAGE_GATES_STATIONS: steward
@@ -840,7 +976,7 @@ jobs:
           else
             BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
           fi
-          pixi run --frozen -e pyforge-steward python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report .steward/coverage/steward-unit.json
+          pixi run --frozen -e pyforge-steward python scripts/coverage_gates_ci.py --base "$BASE" --head HEAD --suites unit --report .steward/coverage/steward-unit.json --report .steward/coverage/steward-live.json
 
   warden-test:
     # ci-surfaces: pyforge-station-tests.warden-test

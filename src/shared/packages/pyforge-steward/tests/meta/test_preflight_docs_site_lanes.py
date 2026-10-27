@@ -17,9 +17,10 @@ each task does, and fails when the declared set misses a task or names one more:
 
 A script that imports only node builtins, spawns nothing and reads only ``docs/`` (the link and sidebar-order
 validators) is in none of these, so its lane keeps its concurrency; the test pins that too, from the scripts' own
-source. Steward's station-tests job must fire on every file this test reads (Story 98.1's rule): the last test checks
-that ``steward_paths`` in ``.github/workflows/pyforge-station-tests.yml`` covers each docs-site file an import closure
-visits, which the AST-derived trigger map cannot see.
+source. Steward's live-tree job must fire on every file this test reads (Story 98.1's rule; Story 117.4 moved this
+module, a live-tree reader, to ``pyforge-steward-live-test``): the last test checks that ``steward_live_paths`` in
+``.github/workflows/pyforge-station-tests.yml`` covers each docs-site file an import closure visits, which the
+AST-derived trigger map cannot see.
 """
 
 from __future__ import annotations
@@ -36,6 +37,10 @@ from typing import Any
 import pytest
 
 from pyforge.steward import preflight
+
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
 
 REPO_ROOT = Path(__file__).resolve().parents[6]
 PIXI = REPO_ROOT / "pixi.toml"
@@ -345,9 +350,9 @@ def test_the_real_lane_list_holds_more_than_one_docs_site_lane() -> None:
 
 
 def _steward_paths() -> list[str]:
-    """``steward_paths`` from the station-tests workflow's ``changes`` step: git pathspecs, quotes stripped."""
+    """``steward_live_paths`` from the station-tests workflow's ``changes`` step: git pathspecs, quotes stripped."""
     lines = STATION_TESTS_WORKFLOW.read_text(encoding="utf-8").splitlines()
-    start = next(i for i, line in enumerate(lines) if line.strip() == "steward_paths=(")
+    start = next(i for i, line in enumerate(lines) if line.strip() == "steward_live_paths=(")
     end = next(i for i in range(start + 1, len(lines)) if lines[i].strip() == ")")
     return [line.strip().strip("'\"") for line in lines[start + 1 : end] if line.strip()]
 
@@ -365,7 +370,7 @@ def _covered(path: str, pathspecs: list[str]) -> bool:
 
 def test_steward_s_job_fires_on_every_docs_site_file_this_test_reads() -> None:
     """Story 98.1's rule for what this test reads through import resolution: every file an import closure of a
-    docs-site task's script visits, and herald's Astro helper, is on steward_paths."""
+    docs-site task's script visits, and herald's Astro helper, is on steward_live_paths."""
     pathspecs = _steward_paths()
     assert "src/shared/packages/pyforge-steward" in pathspecs  # the parser read the right array
     read: set[str] = {(HERALD_TESTS / "meta" / "pages_astro.py").relative_to(REPO_ROOT).as_posix()}

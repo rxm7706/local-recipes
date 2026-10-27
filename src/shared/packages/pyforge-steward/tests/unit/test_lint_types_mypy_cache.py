@@ -16,6 +16,10 @@ from types import SimpleNamespace
 
 import pytest
 
+# Story 117.4 (spec-pyforge-steward:CAP-175): this module reads the live tree outside its package, so it runs in the
+# station's live-tree half (pyforge-<station>-live-test) and fires on what it reads, not on every edit of the package.
+pytestmark = pytest.mark.live_tree
+
 ROOT = Path(__file__).resolve().parents[6]
 SCRIPTS = ROOT / "scripts"
 # Set beside PIXI_ENVIRONMENT_NAME wherever a test reads the process environment, so a key that

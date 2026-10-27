@@ -7433,7 +7433,7 @@ So that a green local run still means a green CI run, and both answer in minutes
 **When** each lane is weighed by the median seconds of its last five green journal runs (30 s when unknown) and by the workers it will use (serial 1; xdist `max(2, cores // heavy_in_flight)`), ready lanes are ordered `(-expected_seconds, declared_index)`, and the loop admits while the admitted weights plus the candidate's stay ≤ `logical_cores` — behind `pyforge.steward.preflight_critical_path` (ON; OFF keeps declaration order and the static share)
 **Then** on the recorded 38-lane full run every lane starts within 60 s of the slot it needs becoming free and the run's wall is within 10 % of its longest lane, with `--jobs` still the upper bound on lanes in flight and the `DOCS_SITE_TASKS` turn-taking unchanged
 **And** one test runs the flag ON and OFF; the preflight's frozen exit domain is unchanged
-**Status:** backlog
+**Status:** done
 
 ### Story 117.4: Each station suite runs as its package-local and live-tree halves
 
@@ -7449,7 +7449,7 @@ So that a green local run still means a green CI run, and both answer in minutes
 **When** each station's task splits into a package-local half and a live-tree half, the workflow gates the package half on the package and the shared surface and the live half on the derived reads, and the trigger map keys both jobs so every read still fires exactly the job that runs its test (operator ruling D4, 2026-10-27)
 **Then** a steward-only `src/` edit runs `core-test`, `steward-test` and `steward-live-test` (plus the live jobs whose reads it touched) and no other unit suite; a planning-only edit runs live jobs only; `test_station_tests_trigger_map.py` passes with `PRESERVED` intact and its mutation tests reversed for the new shape
 **And** `pr-preflight` follows (it runs the `changes` shell); `test_preflight_selection.py` gains the split; no read is exempted and no array is narrowed by hand
-**Status:** backlog
+**Status:** done
 
 ### Story 117.5: preflight-budget names every lane over its journal-derived budget
 
