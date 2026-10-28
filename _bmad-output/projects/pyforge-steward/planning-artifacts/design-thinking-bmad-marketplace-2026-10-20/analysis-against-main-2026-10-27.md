@@ -80,8 +80,8 @@ These three are pending rxm7706. This note does not decide them.
 | Question | Recommendation, not a decision |
 |---|---|
 | Which internal GitHub or GHES mirror of local-recipes, and is mirroring the full repository allowed at work? | Leave `edit_store.mirrors` empty until rxm7706 names the host. Do not mirror the full tree, recipes included, before that. The Claude sparse checkout only needs `docs/foundry/marketplace/.claude-plugin` and `docs/foundry/marketplace/skills`. |
-| Apply the `maintenance` label? | The diff is outside `recipes/`. The label is not applied. That remains an operator choice. |
-| Story specs 109.4 and 109.5 say `ready-for-dev`. The epic status lines and the sprint ledger say `backlog`. | Leave the split. Do not run `sprint-ledger-sync` to flip it. |
+| Apply the `maintenance` label? | Closed 2026-10-28: the label is on PR #2274. The diff is outside `recipes/`, and § Policy requires it. |
+| Story specs 109.4 and 109.5 said `ready-for-dev` while the epic status lines and the sprint ledger said `backlog`. | Closed 2026-10-28: commit `40d02b7da9` set both story specs to `backlog`, and CAP-172 and CAP-173 render their arrows as `(backlog)`. No `sprint-ledger-sync` was run. |
 
 The rest, recommended and unchanged:
 
@@ -101,7 +101,7 @@ The rest, recommended and unchanged:
 - Round 0 has not been run. The skeleton can be reviewed, and it cannot yet claim a teammate install.
 - An empty mirror list means work teammates have no GHES URL. The public `github` source is the only install form that works today.
 - The three skills stop on unpublished packages. Round 0 cannot finish a lock, a build, or a scan inside the teammate's tool.
-- The ready-for-dev versus backlog split on 109.4 and 109.5 is still open. A ledger sync could flip it. This re-check does not.
+- The ready-for-dev versus backlog split on 109.4 and 109.5 closed on 2026-10-28: commit `40d02b7da9` set both story specs to `backlog`. No ledger sync was needed.
 - FR-47 is reserved in main's PRD prose and undefined here. A later story must not assume FR-47 is free, and this PR must not invent it to close the hole.
 - Doctor's docs-currency check reads generated pages strictly. Marketplace markdown has to keep real links, including `templates/steps.md`.
 - The seed path `docs/dreams/self-hosted-bmad-marketplace.md` no longer exists. Current pointers use `archive/docs/dreams/self-hosted-bmad-marketplace.md`.

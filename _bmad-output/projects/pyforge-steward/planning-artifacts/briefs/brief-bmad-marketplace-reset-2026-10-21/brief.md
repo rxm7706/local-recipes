@@ -2,7 +2,7 @@
 title: Product Brief — BMAD marketplace reset
 status: draft
 created: 2026-10-21
-updated: 2026-10-21
+updated: 2026-10-28
 chain: pyforge-steward
 caps: [CAP-169, CAP-170, CAP-171, CAP-172, CAP-173]
 ---
@@ -13,7 +13,7 @@ caps: [CAP-169, CAP-170, CAP-171, CAP-172, CAP-173]
 
 The estate already hosts a catalog. Epic 60 shipped a git-edited registry, a conda/Artifactory ship path, trust-tier names, and a thin browse list of modules and Frames. Teammates still cannot find a BMAD skill, copy it into the tool they actually use, and follow steps that run in their own repository. The 2026-10-20 design-thinking session re-decided the product: a marketplace of BMAD skills and modules, of station skills built with BMAD, and of agents built with BMAD. The four jobs are find, install, create, and publish. Skills are the first artifact. The first user is a teammate on a mixed set of tools, not the operator of this factory.
 
-The reset stays on steward. `steward catalog` remains the engine. A teammate-facing `bmp` command is a later face on that engine. The 2026-10-20 session selected every concept A–F (find and install, contribution, skill cards, portable agents, in-tool discovery and capture, trust and freshness) as one thin slice. GitHub and GitHub Pages are the browse host. A skill is a folder with `SKILL.md`, `steps.md`, and `listing.yaml`, installed by copying it into `.agents/skills/<scope>-<slug>/` and `.claude/skills/<scope>-<slug>/`. A GitHub release and Artifactory conda and pip are the install sources once a listing is published; until then the copy is the install. This brief is the contract for Epic 109. Stories 109.1–109.3 land the brief, three pilot skills, and the Pages skeleton. Stories 109.4 and 109.5 stay ready for the CLI and for contribution automation, and they wait on the desk test and the Wizard-of-Oz gates.
+The reset stays on steward. `steward catalog` remains the engine. A teammate-facing `bmp` command is a later face on that engine. The 2026-10-20 session selected every concept A–F (find and install, contribution, skill cards, portable agents, in-tool discovery and capture, trust and freshness) as one thin slice. GitHub and GitHub Pages are the browse host. A skill is a folder with `SKILL.md`, `steps.md`, and `listing.yaml`, installed by copying it into `.agents/skills/<scope>-<slug>/` and `.claude/skills/<scope>-<slug>/`. A GitHub release and Artifactory conda and pip are the install sources once a listing is published; until then the copy is the install. This brief is the contract for Epic 109. Stories 109.1–109.3 land the brief, three pilot skills, and the Pages skeleton. Stories 109.4 and 109.5 are backlog: the CLI and contribution automation wait on the desk test and the Wizard-of-Oz gates.
 
 ## The Problem
 
@@ -45,7 +45,7 @@ The primary user is a teammate of rxm7706 at work, not the operator. The pilot a
 
 **In now (Stories 109.1–109.3):** this brief; the three pilot folders `@mason/environment`, `@mason/package`, `@warden/scan`; the marketplace tree (`skills/<scope>/<slug>/`, index schema, generated index and cards, `SKILL.md` template, PR template, manual checklist); flag `pyforge.steward.marketplace_pages`.
 
-**Ready, not built (Stories 109.4–109.5):** `bmp` sharing `CatalogEngine`, including `@bmp/skillify` as `bmp new skill --from-session`; automated contribution lanes. The manual checklist records the P4 gates those stories wait on.
+**Backlog, not built (Stories 109.4–109.5):** `bmp` sharing `CatalogEngine`, including `@bmp/skillify` as `bmp new skill --from-session`; automated contribution lanes. The manual checklist records the P4 gates those stories wait on.
 
 **Out:** a separate marketplace repository (decision 2026-10-21: this monorepo hosts it); billing; Layer 3; a community import; per-tool adapter generation (no format confirmed); changing `CatalogEngine.render` or the v1 catalog manifests; replacing the estate skill procedures; vendoring BMAD module trees (that would be a closure of `DW-FU-60-1-4`, and it is not this scope).
 
