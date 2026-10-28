@@ -14,7 +14,8 @@ Marketplace id `mason/package`. Install this folder into both
 Claude Code's documented project skill path is `.claude/skills/`. Devin's is
 `.agents/skills/`. The tool matrix does not confirm the other directory for
 either of those two tools.
-The human steps are [steps.md](steps.md).
+The human steps are [steps.md](steps.md). The verified tool versions are
+recorded there, not here.
 
 Run from the teammate's project directory. Do not `cd` into local-recipes.
 Do not prefix commands with a pixi environment selector.
@@ -27,7 +28,27 @@ Build writes artifacts and uploads nothing:
 pyforge mason package build . --target library
 ```
 
-Ship prints a plan and uploads nothing unless `--yes` is present:
+`--target library` is the v1 target.
+
+## Until that package is published
+
+`pyforge-mason` and `pyforge-core` are not on PyPI, conda-forge, or
+SelfExplainML (404 on 2026-10-21). The wheel and sdist command the station
+assembles, from the engine module `pyforge.mason.engines.pep517`, is
+`pyproject-build --no-isolation` with the project directory as the working
+directory. The same module documents that console script as
+`python -m build --no-isolation --outdir dist`. `--no-isolation` builds in
+the current environment, so the project's `[build-system]` backend must be
+installed there first (`steps.md` step 0).
+
+The conda artifact command, from the engine module
+`pyforge.mason.engines.pixi`, is `pixi build --output-dir <dir>`. That build
+is local. It is not a pixi environment run.
+
+## Upload
+
+Upload is a separate confirmed command, and this skill does not run it.
+`ship` prints a plan and uploads nothing unless `--yes` is present:
 
 ```bash
 pyforge mason package ship --to pypi-test
@@ -35,26 +56,12 @@ pyforge mason package ship --to pypi-test --yes
 ```
 
 `--to` accepts `pypi-test`, `pypi`, `channel:<name>`, and `conda-forge`.
-`pypi` is irreversible once the upload succeeds. `TWINE_USERNAME` and
-`TWINE_PASSWORD` must already be set before a PyPI or TestPyPI target
-builds. This pilot does not run a real upload.
-
-## Until that package is published
-
-`pyforge-mason` and `pyforge-core` are not on PyPI, conda-forge, or
-SelfExplainML (404 on 2026-10-21). The wheel and sdist command the station
-assembles, from `engines/pep517.py`, is `pyproject-build --no-isolation`
-with the project directory as the working directory. The same module
-documents that console script as `python -m build --no-isolation --outdir dist`.
-Verified: `build` 1.6.1.
-
-The conda artifact command in `engines/pixi.py` is `pixi build --output-dir <dir>`.
-Verified: `pixi` 0.82.0. That build is local. It is not a pixi environment run.
-
-Do not run `twine upload` or `pixi upload` from this skill. Those are the
-commands the station runs only after `--yes` (`twine upload
---non-interactive --disable-progress-bar`, and `pixi upload prefix
---channel <name>`). Verified present: `twine` 7.0.0. Running them publishes.
+After `--yes` the station runs `twine upload --non-interactive
+--disable-progress-bar` for a PyPI target and `pixi upload prefix --channel
+<name>` for a channel. `TWINE_USERNAME` and `TWINE_PASSWORD` must already be
+set before a PyPI or TestPyPI target builds. `pypi` is irreversible once the
+upload succeeds. Do not run `twine upload` or `pixi upload` from this skill:
+running them publishes. This pilot does not run a real upload.
 
 ## What this skill is not
 

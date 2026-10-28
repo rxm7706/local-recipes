@@ -77,7 +77,7 @@ listings:
       status: pending
     docs:
       steps: steps.md
-      card: site/skills/mason/environment.html
+      card: skills/mason/environment.html
     related: ["@mason/package", "@warden/scan"]
   - id: mason/package
     kind: skill
@@ -138,7 +138,7 @@ listings:
       status: pending
     docs:
       steps: steps.md
-      card: site/skills/mason/package.html
+      card: skills/mason/package.html
     related: ["@mason/environment", "@warden/scan"]
   - id: warden/scan
     kind: skill
@@ -199,5 +199,5 @@ listings:
       status: pending
     docs:
       steps: steps.md
-      card: site/skills/warden/scan.html
+      card: skills/warden/scan.html
     related: ["@mason/environment", "@mason/package"]

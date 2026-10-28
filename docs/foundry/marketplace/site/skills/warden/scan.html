@@ -7,6 +7,7 @@
 <style>
 body{font-family:Georgia,serif;margin:2rem auto;max-width:46rem;line-height:1.45;color:#1c1917;background:#fafaf9}
 a{color:#1d4ed8} code{font-family:ui-monospace,monospace;font-size:.95em}
+pre{background:#f5f5f4;border:1px solid #d6d3d1;padding:.75rem;overflow-x:auto}
 article{border-top:1px solid #d6d3d1;padding-top:1rem;margin-top:1rem}
 .meta{color:#44403c;font-size:.95rem}
 </style>
@@ -15,65 +16,42 @@ article{border-top:1px solid #d6d3d1;padding-top:1rem;margin-top:1rem}
 <p><a href="../../index.html">Marketplace</a></p>
 <h1>Scan a project for dependency hygiene</h1>
 <p class="meta">skill · @warden/scan · version 0.1.0</p>
-<p class="meta">tier community · trust unverified · source estate-listings</p>
+<p class="meta">tier community · trust unverified · source estate-listings · never verified</p>
 <p class="meta">No review record. community maps to unverified until a CODEOWNER promotes it.</p>
 <p>Run the warden scan gate on the current project. Engine probes are not a second verdict. No pixi environment name and no path inside local-recipes.</p>
 <p>Owners: @rxm7706</p>
-<h2>Steps</h2>
-<p>Rendered from <code>steps.md</code>. The 2026-10-20 paper card's lock command is sample data and is not this runbook.</p>
-<pre># Steps — @warden/scan
-
-Run these from the project you want to scan. Verified 2026-10-21.
-The 2026-10-20 paper skill card is sample data and is not this runbook.
-
-## 1. Scan with the station command
-
-When `pyforge-warden` is on your `PATH`:
-
-```bash
-warden scan .
-```
-
-The same argv through dispatch:
-
-```bash
-pyforge warden scan .
-```
-
-Environment self-check, not a scan:
-
-```bash
-warden scan --doctor
-```
-
-`--doctor` exits 0 or 2, never 1. Verified: `warden scan --help` lists
-`--doctor` on `scan`.
-
-**Unpublished.** `pyforge-warden` 0.1.0 and `pyforge-core` returned HTTP 404
-on PyPI, conda-forge, and SelfExplainML on 2026-10-21. Until those
-packages are published, step 1 does not run on a teammate machine, and
-there is no substitute command that produces the compliance report.
-
-## 2. Probe the engines, and stop there
-
-```bash
-deptry --version
-osv-scanner --version
-```
-
-Verified: `deptry` 0.25.1 and `osv-scanner` 2.4.0. The warden CLI calls
-`deptry` and `osv-scanner scan --offline` itself. Do not paste their output
-into a review as a warden verdict.
-
-## 3. Stop
-
-Do not add a second gate, and do not import `pyforge.warden`.
-</pre>
-<p>Jobs: find, install</p>
 <h2>Install</h2>
 <p>Copy the folder <code>skills/warden/scan</code> into <code>.agents/skills/warden-scan</code>, <code>.claude/skills/warden-scan</code>. Claude Code's documented project skill path is <code>.claude/skills/</code>. Devin's is <code>.agents/skills/</code>. The tool matrix marks Claude Code reading <code>.agents/skills/</code> as uncertain and does not list <code>.claude/skills/</code> for Devin. <code>bmp install</code> is not built; this page is not an install button.</p>
-<h2>Sources</h2><ul><li>GitHub release: not published</li><li>Artifactory conda: not published</li><li>Artifactory pip: not published</li></ul>
+<p>The rolling <code>pages-site</code> release carries <code>warden-scan.zip</code> with <code>warden-scan.zip.sha256</code> beside it while the marketplace flag is on for that deploy. The zip holds the <code>warden-scan/</code> folder, so <code>unzip warden-scan.zip -d .claude/skills/</code> lands it in place; the folder holds <code>SKILL.md</code>, <code>steps.md</code>, <code>listing.yaml</code> and <code>references/</code> when the skill has one.</p>
+<p><code>marketplace.json</code> (the Claude marketplace file) is a discovery pointer for this listing; the folder copy above is the install until Round 0 confirms a plugin install exposes the skill.</p>
 <h2>Unpublished packages</h2><ul><li>pyforge-warden: PyPI, conda-forge, and SelfExplainML returned 404 on 2026-10-21</li><li>pyforge-core: Required by pyforge warden dispatch; same 404 check</li></ul>
+<h2>Sources</h2><ul><li>GitHub release: not published</li><li>Artifactory conda: not published</li><li>Artifactory pip: not published</li></ul>
+<h2>Steps</h2>
+<p>Rendered from <code>steps.md</code>. The 2026-10-20 paper card's lock command is sample data and is not this runbook.</p>
+<h2>Steps — @warden/scan</h2>
+<p>Run these from the project you want to scan. Verified 2026-10-21 against <code>warden scan --help</code> and the tools on the verifying host. Each version below is what that tool&#x27;s <code>--version</code> printed on that host on 2026-10-21.</p>
+<p><strong>Before you start.</strong> <code>pyforge-warden</code> 0.1.0 and <code>pyforge-core</code> returned HTTP 404 on PyPI, conda-forge, and SelfExplainML on 2026-10-21. Step 1 waits on those packages, and no published command produces the compliance report in its place. Steps 0 and 2 run today; they produce probes, not a report.</p>
+<h3>0. Install the published tools</h3>
+<ul><li><code>deptry</code> 0.25.1: <code>pip install deptry</code> (PyPI <code>deptry</code>) or <code>conda install -c conda-forge deptry</code>.</li><li><code>osv-scanner</code> 2.4.0: <code>conda install -c conda-forge osv-scanner</code>, or the binary from the osv-scanner GitHub release page.</li></ul>
+<h3>1. Scan with the station command (waits on <code>pyforge-warden</code>)</h3>
+<p>When <code>pyforge-warden</code> is on your <code>PATH</code>:</p>
+<pre><code class="language-bash">warden scan .
+</code></pre>
+<p>The same argv through dispatch:</p>
+<pre><code class="language-bash">pyforge warden scan .
+</code></pre>
+<p>Environment self-check, not a scan:</p>
+<pre><code class="language-bash">warden scan --doctor
+</code></pre>
+<p><code>--doctor</code> exits 0 or 2, never 1. Verified: <code>warden scan --help</code> lists <code>--doctor</code> on <code>scan</code>.</p>
+<h3>2. Probe the engines, and stop there</h3>
+<pre><code class="language-bash">deptry --version
+osv-scanner --version
+</code></pre>
+<p><code>deptry</code> and <code>osv-scanner</code> are not a warden verdict. The warden CLI calls <code>deptry</code> and <code>osv-scanner scan --offline</code> itself. Do not paste their output into a review as a warden verdict.</p>
+<h3>3. Stop</h3>
+<p>Do not add a second gate, and do not import <code>pyforge.warden</code>.</p>
+<p>Jobs: find, install</p>
 <h2>Related</h2><ul><li>@mason/environment</li><li>@mason/package</li></ul>
 <h2>Contribute</h2><p>Lane: code-backed. A pull request is the publish path.</p>
 <p>Code-backed: this listing requires a package. An instructions-only skill has none.</p>

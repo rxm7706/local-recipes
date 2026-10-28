@@ -100,7 +100,7 @@ The zip is built for the public github.io URL, so its absolute internal links ca
 
 This monorepo hosts the marketplace at `docs/foundry/marketplace/`. There is no separate marketplace repository. Decision 2026-10-21. The open question is which internal GitHub or GHES mirror of local-recipes teammates should use, and whether mirroring the full repository is allowed at work. `catalog.yaml`'s `edit_store.mirrors` lists each mirror as `{host, repo}` and starts empty.
 
-While `pyforge.steward.marketplace_pages` is on (dev on; staging and production off), the Pages build mounts the generated site at `/marketplace/` in the same artifact as the docs shelf. On an enterprise host whose site URL is `https://pages.ghe.example` and whose base path is `/org/local-recipes`, the index is:
+While `pyforge.steward.marketplace_pages` is on (dev on; staging and production off), the Pages build mounts the generated site at `/marketplace/` in the same artifact as the docs shelf. The build reads the flag as `PYFORGE_MARKETPLACE_PAGES`, which `python -m pyforge.steward.marketplace_pages --flag-env` appends to the build environment beside herald's `pages_env` lines; `pages.yml` sets no `PYFORGE_ENVIRONMENT`, so every deploy, on github.com or an enterprise host, resolves the `dev` overlay. While the flag is off, `/marketplace/` is absent from the artifact (a 404, not a stale page); the committed `site/` stays in git. On an enterprise host whose site URL is `https://pages.ghe.example` and whose base path is `/org/local-recipes`, the index is:
 
 ```text
 https://pages.ghe.example/org/local-recipes/marketplace/
@@ -120,6 +120,7 @@ The form that works against the mirror's git repository, without Pages, is a Cla
         "path": "docs/foundry/marketplace/.claude-plugin/marketplace.json",
         "sparsePaths": [
           "docs/foundry/marketplace/.claude-plugin",
+          "docs/foundry/marketplace/site",
           "docs/foundry/marketplace/skills"
         ]
       }
@@ -130,4 +131,4 @@ The form that works against the mirror's git repository, without Pages, is a Cla
 
 Replace `ghe.example/org/local-recipes` with the mirror you were told to use. `steward catalog pointers` prints this block once that mirror is an `edit_store.mirrors` entry, and it prints the `github` source (`repo: rxm7706/local-recipes`, the same `path` and `sparsePaths`) for the public repository. Paste the block into `.claude/settings.json` yourself. The duty does not edit that file.
 
-The rolling `pages-site` release also carries one zip per skill folder (`mason-environment.zip`, `mason-package.zip`, `warden-scan.zip`) when the marketplace flag is on for that deploy. Those zips are the skill folders, the same bytes a teammate copies into `.agents/skills/` and `.claude/skills/`.
+The rolling `pages-site` release also carries one zip per skill folder (`mason-environment.zip`, `mason-package.zip`, `warden-scan.zip`), each with a `<name>.zip.sha256` beside it, when the marketplace flag is on for that deploy. Each zip holds the `<scope>-<slug>/` folder with `SKILL.md`, `steps.md`, `listing.yaml` and `references/` and nothing else, so `unzip mason-environment.zip -d .claude/skills/` lands the folder in place; `sha256sum -c mason-environment.zip.sha256` checks it. The previous deploy's per-skill assets are deleted before each upload, so a renamed skill leaves no stale zip. `marketplace.json` (both forms) is a discovery pointer for each listing; the folder copy is the install until Round 0 of `docs/foundry/marketplace/MANUAL-CHECKLIST.md` confirms a plugin install exposes the skill.

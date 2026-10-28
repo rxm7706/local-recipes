@@ -13,7 +13,7 @@ import path from 'node:path';
 
 import { parse as parseYaml } from 'yaml';
 
-import { statusPages } from './flags.ts';
+import { marketplacePages, statusPages } from './flags.ts';
 import {
   doors,
   holdsAFile,
@@ -39,7 +39,10 @@ export interface SiteNav {
 let loaded: SiteNav | null = null;
 
 /** The flags a section can be gated on, by key. */
-const FLAGS: Record<string, () => boolean> = { 'pyforge.herald.status_pages': statusPages };
+const FLAGS: Record<string, () => boolean> = {
+  'pyforge.herald.status_pages': statusPages,
+  'pyforge.steward.marketplace_pages': marketplacePages,
+};
 
 export function siteNav(): SiteNav {
   if (loaded) {

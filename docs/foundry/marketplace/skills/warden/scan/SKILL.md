@@ -15,7 +15,8 @@ Marketplace id `warden/scan`. Install this folder into both
 Claude Code's documented project skill path is `.claude/skills/`. Devin's is
 `.agents/skills/`. The tool matrix does not confirm the other directory for
 either of those two tools.
-The human steps are [steps.md](steps.md).
+The human steps are [steps.md](steps.md). The verified tool versions are
+recorded there, not here.
 
 Run from the teammate's project directory. Do not `cd` into local-recipes.
 Do not prefix commands with a pixi environment selector.
@@ -44,9 +45,6 @@ SelfExplainML (404 on 2026-10-21). The scan command cannot be replaced by
 a hand-run of its engines. The CLI calls `deptry .` (with its own
 requirements file) and `osv-scanner scan --offline`. Those binaries can be
 probed. Their stdout is not a warden report.
-
-Verified present beside the unpublished package: `deptry` 0.25.1 and
-`osv-scanner` 2.4.0. Verified help: `warden scan --help`.
 
 ## What this skill is not
 

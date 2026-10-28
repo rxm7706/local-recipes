@@ -8,7 +8,8 @@
  * Two kinds of section show only when what they link exists in this build:
  * - a section whose `href` is a mounted export (`dashboard/kedro-viz/`, `dashboard/vizro/`) only when that export is
  *   in the build input, `docs/dashboard/<name>/` holding a file (the rule `scripts/populate-public.mts` mounts by);
- * - a section a flag owns (`status`, `pyforge.herald.status_pages`) only with that flag on.
+ * - a section a flag owns (`status`, `pyforge.herald.status_pages`; `marketplace`,
+ *   `pyforge.steward.marketplace_pages`) only with that flag on.
  *
  * Pure functions over parsed data: YAML is parsed by the caller (`astro.config.mjs` and `scripts/nav-check.mts`, with
  * the `yaml` package), so the herald tests import this module with node's type stripping and no `node_modules`.
@@ -27,7 +28,10 @@ const QUADRANT_LABELS: Record<string, string> = {
 /** The dashboard exports in `docs/dashboard/<name>/`, each mounted at `/dashboard/<name>/` only when present. */
 export const DASHBOARD_EXPORTS = ['kedro-viz', 'vizro'];
 /** The sections a flag owns, by key, and that flag's key (read through `src/lib/flags.ts`). */
-export const FLAG_SECTIONS: Record<string, string> = { status: 'pyforge.herald.status_pages' };
+export const FLAG_SECTIONS: Record<string, string> = {
+  status: 'pyforge.herald.status_pages',
+  marketplace: 'pyforge.steward.marketplace_pages',
+};
 /** The docs shelf's menu entry and door: the site root, first (CAP-58). */
 export const DOCS_ENTRY = { key: 'docs', label: 'Docs', href: '' };
 

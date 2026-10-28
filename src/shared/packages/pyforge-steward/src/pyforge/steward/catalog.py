@@ -133,10 +133,16 @@ class SourceDecl:
 MARKETPLACE_NAME = "pyforge-bmad-marketplace"
 MARKETPLACE_ROOT_RELATIVE = "docs/foundry/marketplace"
 MARKETPLACE_JSON_RELATIVE = "docs/foundry/marketplace/.claude-plugin/marketplace.json"
+# ``site`` is in the sparse set so a teammate who follows Round 0 from a sparse
+# checkout has ``site/index.html`` to open (review 2026-10-28, row 11).
 MARKETPLACE_SPARSE_PATHS = (
     "docs/foundry/marketplace/.claude-plugin",
+    "docs/foundry/marketplace/site",
     "docs/foundry/marketplace/skills",
 )
+#: Codex reads ``.agents/plugins/marketplace.json`` in the directory ``codex plugin marketplace add`` names
+#: (the catalog directory holds one). The ``owner/repo`` form needs that file at the repository root.
+CODEX_ROOT_MANIFEST_RELATIVE = ".agents/plugins/marketplace.json"
 PUBLIC_MARKETPLACE_GIT_URL = "https://github.com/rxm7706/local-recipes.git"
 
 
@@ -306,6 +312,13 @@ def _parse_decls(document_path: Path, section: object, section_name: str, factor
 
 _TOP_LEVEL_KEYS: frozenset[str] = frozenset({"catalog", "backends", "sources"})
 _MIRROR_KEYS: frozenset[str] = frozenset({"host", "repo"})
+#: A mirror host: DNS labels joined by dots, an optional ``:port``; no scheme, path, userinfo, query or fragment
+#: (review 2026-10-28, row 15: ``mirror_git_url`` pastes this into a clone URL a teammate copies).
+_MIRROR_HOST = re.compile(
+    r"^(?=.{1,253}(?::\d{1,5})?$)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?"
+    r"(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*(?::\d{1,5})?$",
+    re.IGNORECASE,
+)
 
 
 def _load_mirrors(document_path: Path, raw: object) -> tuple[Mirror, ...]:
@@ -318,6 +331,7 @@ def _load_mirrors(document_path: Path, raw: object) -> tuple[Mirror, ...]:
             f"{{host, repo}} mappings, got {type(raw).__name__}"
         )
     mirrors: list[Mirror] = []
+    seen: set[tuple[str, str]] = set()
     for index, item in enumerate(raw):
         where = f"catalog.edit_store.mirrors[{index}]"
         if not isinstance(item, dict):
@@ -329,12 +343,17 @@ def _load_mirrors(document_path: Path, raw: object) -> tuple[Mirror, ...]:
             )
         host = item.get("host")
         repo = item.get("repo")
-        if not isinstance(host, str) or not host.strip() or "/" in host or "://" in host or " " in host:
+        if not isinstance(host, str) or not _MIRROR_HOST.match(host.strip()):
             raise CatalogConfigError(
-                f"{document_path}: '{where}.host' must be a hostname (no scheme, no path), got {host!r}"
+                f"{document_path}: '{where}.host' must be a hostname with an optional :port "
+                f"(no scheme, path, user, query or fragment), got {host!r}"
             )
         if not isinstance(repo, str) or _github_owner_repo(repo) != repo.strip():
             raise CatalogConfigError(f"{document_path}: '{where}.repo' must be an owner/repo string, got {repo!r}")
+        key = (host.strip().lower(), repo.strip())
+        if key in seen:
+            raise CatalogConfigError(f"{document_path}: '{where}' repeats mirror {host.strip()}/{repo.strip()}")
+        seen.add(key)
         mirrors.append(Mirror(host=host.strip(), repo=repo.strip()))
     return tuple(mirrors)
 
@@ -1725,7 +1744,9 @@ class CatalogEngine:
             github_note = (
                 "this monorepo hosts the marketplace; the github source points at "
                 f"{repo}. edit_store.mirrors is empty until an internal mirror is named. "
-                "git-subdir is a plugin source, not a marketplace source."
+                "git-subdir is a plugin source, not a marketplace source. "
+                "marketplace.json is a discovery pointer for each listing; the folder copy is the install "
+                "until Round 0 confirms a plugin install exposes the skill."
             )
         quoted_dir = shlex.quote(str(abs_dir))  # a path with a space must paste intact
         return {
@@ -1738,7 +1759,14 @@ class CatalogEngine:
             "mirror_git_marketplaces": mirror_forms,
             "mirrors": [{"host": mirror.host, "repo": mirror.repo} for mirror in self.config.edit_store.mirrors],
             "claude_plugin_add": f"/plugin marketplace add {quoted_dir}",
-            "codex_plugin_add": f"codex plugin marketplace add {repo}",
+            # The local-directory form Codex documents: that directory holds .agents/plugins/marketplace.json.
+            # The owner/repo form reads the same file at the repository root, which does not exist
+            # (review 2026-10-28, row 13), so it is not printed.
+            "codex_plugin_add": f"codex plugin marketplace add {quoted_dir}",
+            "codex_note": (
+                f"codex plugin marketplace add {repo} (the owner/repo form) needs "
+                f"{CODEX_ROOT_MANIFEST_RELATIVE} at the repository root; none exists, so the directory form is printed"
+            ),
             "github_note": github_note,
             # Verified live 2026-09-19 (bmad-method 6.12.0): the installer resolves
             # this directory ("Local source resolved") but discovery mode installs
@@ -1808,8 +1836,9 @@ def format_pointers(pointers: dict[str, object]) -> str:
             "Claude Code — one session:",
             f"  {pointers['claude_plugin_add']}",
             "",
-            "Codex (reads .agents/plugins/marketplace.json):",
+            "Codex (reads .agents/plugins/marketplace.json in the directory named):",
             f"  {pointers['codex_plugin_add']}",
+            f"  note: {pointers['codex_note']}",
             "",
             f"note: {pointers['github_note']}",
             f"note: {pointers['settings_note']}",

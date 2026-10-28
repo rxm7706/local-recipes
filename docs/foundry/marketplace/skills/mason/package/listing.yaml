@@ -1,5 +1,7 @@
 # One listing. index.yaml is the committed concatenation of these files
 # until bmp index build. Sample P2 checksums and hosts are not in this row.
+# The 2026-10-20 paper card (prototypes/p3-skill-card.html) is sample data;
+# its lock command is not the runbook. steps.md is the runbook.
 id: mason/package
 kind: skill
 scope: mason
@@ -68,7 +70,7 @@ ci:
   status: pending
 docs:
   steps: steps.md
-  card: site/skills/mason/package.html
+  card: skills/mason/package.html
 related:
 - '@mason/environment'
 - '@warden/scan'

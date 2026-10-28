@@ -175,6 +175,155 @@ def test_the_status_pages_follow_their_flag(tmp_path: Path) -> None:
     _one(pages_check(off, env={"PYFORGE_STATUS_PAGES": "1"}, origins=False), "missing required path status/index.html")
 
 
+# --- the marketplace mount (steward Story 109.3; its review of 2026-10-28, rows 6 to 8) ---------------------------
+
+MARKETPLACE_ON = {"PYFORGE_MARKETPLACE_PAGES": "1"}
+PUBLIC_GIT = "https://github.com/rxm7706/local-recipes.git"
+
+
+def _plugin(scope: str, slug: str, *, url: str = PUBLIC_GIT, path: str | None = None, name: str | None = None) -> dict:
+    return {
+        "name": name if name is not None else f"{scope}-{slug}",
+        "description": "",
+        "version": "0.1.0",
+        "source": {
+            "source": "git-subdir",
+            "url": url,
+            "path": path or f"docs/foundry/marketplace/skills/{scope}/{slug}",
+        },
+    }
+
+
+def _manifest(plugins: list[dict], *, name: str = "pyforge-bmad-marketplace") -> str:
+    return json.dumps({"name": name, "owner": {"name": "rxm7706"}, "plugins": plugins}, indent=2) + "\n"
+
+
+def plant_marketplace(
+    root: Path, plugins: list[dict] | None = None, *, cards: bool = True, folders: bool = True
+) -> None:
+    """The mount as `populate-public` writes it with the flag on: the three documents, one card and one folder per
+    plugin of the manifest."""
+    plugins = [_plugin("mason", "environment")] if plugins is None else plugins
+    write(root / "marketplace/index.html", "<!doctype html><p>index</p>")
+    write(root / "marketplace/listings.json", '{"schema": "pyforge.bmad-marketplace/v1", "listings": []}\n')
+    write(root / "marketplace/marketplace.json", _manifest(plugins))
+    for plugin in plugins:
+        scope, slug = plugin["name"].split("-", 1)
+        if cards:
+            write(root / f"marketplace/skills/{scope}/{slug}.html", "<!doctype html><p>card</p>")
+        if folders:
+            write(root / f"marketplace/skills/{scope}/{slug}/SKILL.md", "# skill\n")
+
+
+def test_109_3_with_the_marketplace_flag_the_mount_passes(site: Path) -> None:
+    plant_marketplace(site)
+    assert pages_check(site, env=MARKETPLACE_ON, origins=False) == []
+
+
+def test_109_3_an_empty_plugin_list_is_a_valid_manifest(site: Path) -> None:
+    plant_marketplace(site, [])
+    assert pages_check(site, env=MARKETPLACE_ON, origins=False) == []
+
+
+def test_109_3_the_mount_follows_its_flag(site: Path, tmp_path: Path) -> None:
+    """The flag reaches the check as PYFORGE_MARKETPLACE_PAGES alone (the Python side resolves the environment):
+    no variable is off, whatever the tree says, and on with no mount names each missing document."""
+    plant_marketplace(site)
+    _one(
+        pages_check(site, origins=False),
+        "marketplace/ exists in the artifact but pyforge.steward.marketplace_pages is off",
+    )
+    _one(
+        pages_check(site, env={"PYFORGE_MARKETPLACE_PAGES": "0", "PYFORGE_ENVIRONMENT": "dev"}, origins=False),
+        "marketplace/ exists in the artifact but pyforge.steward.marketplace_pages is off",
+    )
+    off = plant(tmp_path / "off")
+    findings = pages_check(off, env=MARKETPLACE_ON, origins=False)
+    for rel in ("marketplace/index.html", "marketplace/listings.json", "marketplace/marketplace.json"):
+        _one(findings, f"pyforge.steward.marketplace_pages is on but {rel} is missing")
+
+
+@pytest.mark.parametrize(
+    ("plant", "finding"),
+    [
+        (
+            lambda root: plant_marketplace(root, cards=False),
+            "plugin mason-environment: marketplace/skills/mason/environment.html is not mounted",
+        ),
+        (
+            lambda root: plant_marketplace(root, folders=False),
+            "plugin mason-environment: marketplace/skills/mason/environment/SKILL.md is not mounted",
+        ),
+        (
+            lambda root: (plant_marketplace(root), write(root / "marketplace/marketplace.json", "{not json")),
+            "marketplace/marketplace.json is not JSON",
+        ),
+        (
+            lambda root: (
+                plant_marketplace(root),
+                write(
+                    root / "marketplace/marketplace.json", _manifest([_plugin("mason", "environment")], name="other")
+                ),
+            ),
+            "marketplace/marketplace.json: name is not pyforge-bmad-marketplace",
+        ),
+        (
+            lambda root: (
+                plant_marketplace(root),
+                write(
+                    root / "marketplace/marketplace.json",
+                    json.dumps(
+                        {
+                            "name": "pyforge-bmad-marketplace",
+                            "plugins": [{"name": "mason-environment", "source": "./skills/mason/environment"}],
+                        }
+                    ),
+                ),
+            ),
+            "plugin mason-environment: source is not git-subdir with url and path (the URL form)",
+        ),
+        (
+            lambda root: (
+                plant_marketplace(root),
+                write(
+                    root / "marketplace/marketplace.json",
+                    _manifest([_plugin("mason", "environment", url="git@github.com:rxm7706/local-recipes.git")]),
+                ),
+            ),
+            'plugin mason-environment: url "git@github.com:rxm7706/local-recipes.git" is not https://<host>/<owner>/<repo>.git',
+        ),
+        (
+            lambda root: (
+                plant_marketplace(root),
+                write(
+                    root / "marketplace/marketplace.json",
+                    _manifest([_plugin("mason", "environment", path="skills/mason/environment")]),
+                ),
+            ),
+            'plugin mason-environment: path "skills/mason/environment" is not docs/foundry/marketplace/skills/<scope>/<slug>',
+        ),
+        (
+            lambda root: (
+                plant_marketplace(root),
+                write(
+                    root / "marketplace/marketplace.json",
+                    _manifest([_plugin("mason", "environment", name="environment")]),
+                ),
+            ),
+            "plugin environment: name is not mason-environment",
+        ),
+    ],
+)
+def test_109_3_the_manifest_is_the_url_form_and_every_plugin_is_mounted(site: Path, plant, finding: str) -> None:
+    plant(site)
+    _one(pages_check(site, env=MARKETPLACE_ON, origins=False), finding)
+
+
+def test_109_3_an_enterprise_hosts_rewritten_url_passes(site: Path) -> None:
+    plant_marketplace(site, [_plugin("mason", "environment", url="https://ghe.example/org/local-recipes.git")])
+    assert pages_check(site, env=MARKETPLACE_ON, origins=False) == []
+
+
 def test_the_dashboard_is_exactly_the_build_inputs_mount(site: Path, tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     write(repo / "docs/dashboard/README.md", "# never mounted\n")

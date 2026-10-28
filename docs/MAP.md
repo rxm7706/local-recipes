@@ -185,8 +185,9 @@ GitHub Pages site. Each section requires five fields: `key` (slug), `label`, `hr
 section publishes, by the station that publishes it, through the same surface reconcile that
 adds a `pages:` row (the Publish roots rule). Herald Story 43.7 reads this list into the docs
 sidebar, the top menu every page carries and the home's doors, in `order`, and retired `site.yml`'s
-nav; a section whose `href` is a mounted export shows only when the export is present, and `status`
-only with `pyforge.herald.status_pages` on.
+nav; a section whose `href` is a mounted export shows only when the export is present, `status`
+only with `pyforge.herald.status_pages` on, and `marketplace` (steward Story 109.3, the BMAD
+marketplace mounted from `docs/foundry/marketplace/`) only with `pyforge.steward.marketplace_pages` on.
 
 ## Page registry (generated)
 

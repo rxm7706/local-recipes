@@ -99,7 +99,8 @@ def test_ac2_the_rolling_release_is_kept_and_its_tag_moved() -> None:
     release's target follows, and the asset is replaced with ``--clobber``; only a first deploy creates
     the release."""
     run = next(step["run"] for step in _steps("deploy") if pages.RELEASE_ASSET in str(step.get("run", "")))
-    assert "gh release delete" not in run and "--cleanup-tag" not in run
+    # the release is never deleted; `gh release delete-asset` (Story 109.3's per-skill zips) is not that
+    assert not re.search(r"gh release delete(?!-asset)", run) and "--cleanup-tag" not in run
     lines = [line.strip() for line in run.splitlines()]
     probe = lines.index('if gh api "repos/$GH_REPO/git/ref/tags/pages-site" >/dev/null 2>&1; then')
     move = lines.index(
@@ -187,6 +188,42 @@ def test_every_gh_step_names_the_host_and_carries_the_token() -> None:
 )
 def test_release_asset_runs_evaluates_the_gate(pages_duty: str, event_name: str, runs: bool) -> None:
     assert pages.release_asset_runs(pages_duty=pages_duty, event_name=event_name) is runs
+
+
+# --- Story 109.3: the marketplace flag and the per-skill zips (its review of 2026-10-28, rows 6 and 9) ---------
+
+
+def test_the_marketplace_flag_reaches_the_build_env_beside_heralds_lines() -> None:
+    step = next(step for step in _steps("build") if step.get("name") == "Resolve build env (flags)")
+    lines = [line.strip() for line in step["run"].splitlines() if line.strip()]
+    assert lines == [
+        'pixi run --frozen -e pyforge-guild python -m pyforge.herald.pages_env >> "$GITHUB_ENV"',
+        'pixi run --frozen -e pyforge-guild python scripts/pages_artifact_download.py --flag-env >> "$GITHUB_ENV"',
+        'pixi run --frozen -e pyforge-guild python -m pyforge.steward.marketplace_pages --flag-env >> "$GITHUB_ENV"',
+    ]
+    assert "PYFORGE_ENVIRONMENT" not in PAGES_WORKFLOW.read_text(encoding="utf-8").replace("# PYFORGE_ENVIRONMENT", "")
+
+
+def test_the_per_skill_zips_hold_the_folder_carry_a_checksum_and_replace_stale_assets() -> None:
+    """Each zip is made from the parent of the staged ``<scope>-<slug>/`` copy (``unzip -d .claude/skills/`` lands
+    the folder), carries only the shipped files, gets a ``.sha256`` beside it, and the previous deploy's per-skill
+    assets are deleted before the upload; ``pages-site.zip`` is never deleted."""
+    run = next(step["run"] for step in _steps("deploy") if pages.RELEASE_ASSET in str(step.get("run", "")))
+    lines = [line.strip() for line in run.splitlines()]
+    zipped = next(line for line in lines if line.startswith('(cd "$stage" && zip -qr'))
+    assert zipped == (
+        '(cd "$stage" && zip -qr "$RUNNER_TEMP/$name.zip" "$name" -i "$name/SKILL.md" "$name/steps.md" '
+        '"$name/listing.yaml" "$name/references/*")'
+    )
+    assert 'cp -R "$dir/." "$stage/$name/"' in lines
+    assert '(cd "$RUNNER_TEMP" && sha256sum "$name.zip" > "$name.zip.sha256")' in lines
+    assert 'gh release upload pages-site "$RUNNER_TEMP/$name.zip" "$RUNNER_TEMP/$name.zip.sha256" --clobber' in lines
+    assert "pages-site.zip) ;;" in lines
+    delete = lines.index('*.zip|*.zip.sha256) gh release delete-asset pages-site "$asset" --yes ;;')
+    site_upload = lines.index('gh release upload pages-site "$RUNNER_TEMP/pages-site.zip" --clobber')
+    loop = lines.index("if [ -d pages-site/marketplace/skills ]; then")
+    assert site_upload < delete < loop < lines.index(zipped)
+    assert 'zip -qr "$zip_path" .' not in run  # the old form zipped the folder's contents loose
 
 
 # --- AC6: protected refs ----------------------------------------------------------------------

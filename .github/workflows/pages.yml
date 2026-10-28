@@ -105,11 +105,14 @@ jobs:
         uses: actions/configure-pages@v6
 
       # Herald's build flags (pyforge.herald.status_pages, pyforge.herald.ci_surfaces_tile) as
-      # PYFORGE_* lines, resolved in the Guild env (herald Story 43.7: python -m pyforge.herald.pages_env).
+      # PYFORGE_* lines, resolved in the Guild env (herald Story 43.7: python -m pyforge.herald.pages_env);
+      # steward's pages_duty and marketplace_pages flags the same way (Stories 102.4 and 109.3). No
+      # PYFORGE_ENVIRONMENT is set here, so every deploy resolves the dev overlay of the estate tree.
       - name: Resolve build env (flags)
         run: |
           pixi run --frozen -e pyforge-guild python -m pyforge.herald.pages_env >> "$GITHUB_ENV"
           pixi run --frozen -e pyforge-guild python scripts/pages_artifact_download.py --flag-env >> "$GITHUB_ENV"
+          pixi run --frozen -e pyforge-guild python -m pyforge.steward.marketplace_pages --flag-env >> "$GITHUB_ENV"
 
       # Story 102.5: the deploy job's release-asset step reads steward's duty flag from here.
       - name: Carry the duty flag to the deploy job
@@ -263,15 +266,30 @@ jobs:
               --title "Pages site (rolling)" --notes "$notes"
           fi
           gh release upload pages-site "$RUNNER_TEMP/pages-site.zip" --clobber
-          # Story 109.3, the 102.5 release step: one zip per skill folder the mount
-          # copied under marketplace/skills/<scope>/<slug>/ while the marketplace
-          # flag is on. Absent when the flag is off.
+          # Story 109.3, the 102.5 release step (its review of 2026-10-28, row 9): one zip per skill
+          # folder the mount copied under marketplace/skills/<scope>/<slug>/ while the marketplace flag
+          # is on, absent when it is off. Each zip is made from the parent, so it holds the
+          # <scope>-<slug>/ folder and `unzip <scope>-<slug>.zip -d .claude/skills/` lands it in place;
+          # it carries only SKILL.md, steps.md, listing.yaml and references/** (the mount's allowlist,
+          # docs-site/src/lib/marketplace.ts), and a .sha256 sits beside it. The per-skill assets of
+          # the previous deploy are deleted first, so a renamed or dropped skill leaves no stale zip;
+          # pages-site.zip is never deleted.
+          for asset in $(gh release view pages-site --json assets --jq '.assets[].name'); do
+            case "$asset" in
+              pages-site.zip) ;;
+              *.zip|*.zip.sha256) gh release delete-asset pages-site "$asset" --yes ;;
+            esac
+          done
           if [ -d pages-site/marketplace/skills ]; then
+            stage="$RUNNER_TEMP/skill-zips"
             find pages-site/marketplace/skills -mindepth 2 -maxdepth 2 -type d | sort | while read -r dir; do
               scope=$(basename "$(dirname "$dir")")
               slug=$(basename "$dir")
-              zip_path="$RUNNER_TEMP/${scope}-${slug}.zip"
-              (cd "$dir" && zip -qr "$zip_path" .)
-              gh release upload pages-site "$zip_path" --clobber
+              name="${scope}-${slug}"
+              rm -rf "$stage/$name" && mkdir -p "$stage/$name"
+              cp -R "$dir/." "$stage/$name/"
+              (cd "$stage" && zip -qr "$RUNNER_TEMP/$name.zip" "$name" -i "$name/SKILL.md" "$name/steps.md" "$name/listing.yaml" "$name/references/*")
+              (cd "$RUNNER_TEMP" && sha256sum "$name.zip" > "$name.zip.sha256")
+              gh release upload pages-site "$RUNNER_TEMP/$name.zip" "$RUNNER_TEMP/$name.zip.sha256" --clobber
             done
           fi

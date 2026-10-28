@@ -15,11 +15,13 @@ Marketplace id `mason/environment`. Install this folder into both
 Claude Code's documented project skill path is `.claude/skills/`. Devin's is
 `.agents/skills/`. The tool matrix does not confirm the other directory for
 either of those two tools.
-The human steps are [steps.md](steps.md).
+The human steps are [steps.md](steps.md). The verified tool versions are
+recorded there, not here.
 
 Run every command from the teammate's project directory (the directory that
-holds `pyproject.toml`, `environment.yml`, or `pixi.toml`). Do not `cd` into
-a local-recipes checkout. Do not prefix the command with a pixi environment selector.
+holds `pyproject.toml`, `environment.yml`, `requirements*.txt`, or `pixi.toml`).
+Do not `cd` into a local-recipes checkout. Do not prefix the command with a
+pixi environment selector.
 
 ## When pyforge-mason is installed
 
@@ -39,17 +41,17 @@ the current directory only.
 ## Until that package is published
 
 `pyforge-mason` and `pyforge-core` are not on PyPI, conda-forge, or
-SelfExplainML (404 on 2026-10-21). The lock command the station actually
-assembles, from `pyforge.mason.engines.condalock`, is:
+SelfExplainML (404 on 2026-10-21). The lock command the station assembles,
+from the engine module `pyforge.mason.engines.condalock`, is:
 
 ```bash
 conda-lock lock -f pyproject.toml --lockfile conda-lock.yml
 ```
 
-Repeat `-f` for each manifest. Repeat `-p linux-64` (one flag per platform)
-only when the caller asked for platforms. With no `-p`, conda-lock chooses
-its own default. Verified in this repo's mason environment: `conda-lock`
-4.0.2 and `mason environment --help`.
+Pass one `-f` per manifest the project holds; `steps.md` step 2 spells out
+each substitution. Repeat `-p linux-64` (one flag per platform) only when
+the caller asked for platforms. With no `-p`, conda-lock chooses its own
+default.
 
 The station's check runs `conda-lock lock --check-input-hash` against a
 temporary copy of the lockfile, not against the lockfile in place. Do not

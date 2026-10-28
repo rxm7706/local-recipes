@@ -11,7 +11,7 @@
       "description": "Resolve a teammate project's conda and pip manifests into one lockfile, then check that lockfile. No pixi environment name and no path inside local-recipes.",
       "display_name": "Lock and check one environment",
       "docs": {
-        "card": "site/skills/mason/environment.html",
+        "card": "skills/mason/environment.html",
         "steps": "steps.md"
       },
       "id": "mason/environment",
@@ -104,7 +104,7 @@
       "description": "Build a wheel and sdist from the project directory. Upload stays behind an explicit confirm. No pixi environment name and no path inside local-recipes.",
       "display_name": "Build a package locally",
       "docs": {
-        "card": "site/skills/mason/package.html",
+        "card": "skills/mason/package.html",
         "steps": "steps.md"
       },
       "id": "mason/package",
@@ -197,7 +197,7 @@
       "description": "Run the warden scan gate on the current project. Engine probes are not a second verdict. No pixi environment name and no path inside local-recipes.",
       "display_name": "Scan a project for dependency hygiene",
       "docs": {
-        "card": "site/skills/warden/scan.html",
+        "card": "skills/warden/scan.html",
         "steps": "steps.md"
       },
       "id": "warden/scan",

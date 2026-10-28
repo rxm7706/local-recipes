@@ -2,14 +2,14 @@
 title: '109.3: A marketplace tree renders a Pages index from listings'
 type: 'feature'
 created: '2026-10-21'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '53aed16fe1957ab340c6146cb7bf0c3f810c1746'
 flag:
   key: pyforge.steward.marketplace_pages
   provider: openfeature-file
   default: {production: off, staging: off, dev: on}
   scope: global
-  fallback: 'pages are not regenerated; committed HTML stays'
+  fallback: 'write_site writes nothing and the committed site/ stays in git; the Pages build mounts no /marketplace/ (absent, not stale)'
   cleanup: 90 days after ON in every environment (Q4)
 review_loop_iteration: 1
 followup_review_recommended: true
@@ -25,6 +25,11 @@ context:
   - src/platform/config/flags.json
   - src/platform/config/flag-overlays.json
   - src/shared/packages/pyforge-steward/src/pyforge/steward/catalog.py
+  - docs-site/src/lib/marketplace.ts
+  - docs-site/scripts/populate-public.mts
+  - docs-site/scripts/pages.mts
+  - .github/workflows/pages.yml
+  - .github/PULL_REQUEST_TEMPLATE/marketplace-skill.md
 declared_low_risk: false
 ---
 
@@ -34,7 +39,7 @@ declared_low_risk: false
 
 **Problem:** The reset needs a tree in this monorepo, with listings a static site can render, without changing the v1 catalog engine or the empty estate module list.
 
-**Approach:** `docs/foundry/marketplace/` holds `index.yaml` (`schema: pyforge.bmad-marketplace/v1`, `index_version: 1`, `compatible_with: registry/estate.yaml`) and one `listing.yaml` per skill folder, in the field set of `prototypes/p2-index-schema.yaml`. bmp `tier` maps onto v1 `trust_tier`. The pilots are `community` / `unverified` and `code-backed`. The skill folders, `templates/SKILL.md`, `.github/PULL_REQUEST_TEMPLATE.md`, `MANUAL-CHECKLIST.md`, and `site/` are the marketplace. `pyforge.steward.marketplace_pages.write_site` writes `site/`. A card follows `prototypes/p3-skill-card.html`: it renders `steps.md`, names both install directories, names unpublished packages, and names GitHub release and Artifactory as unpublished. It does not copy the paper card's sample commands, checksums, or review record. `write_site` reads `pyforge.steward.marketplace_pages` and writes nothing while it is off. `registry/estate.yaml` with `modules: []` loads as no listings. A module row maps with `listing_from_estate_module`. `CatalogEngine.render` is not called and is not edited. `edit_store.mirrors` replaces `dedicated_repo`. `prototypes/p1-cli-transcript.md` is the later `bmp` face; this story does not build it.
+**Approach:** `docs/foundry/marketplace/` holds `index.yaml` (`schema: pyforge.bmad-marketplace/v1`, `index_version: 1`, `compatible_with: registry/estate.yaml`) and one `listing.yaml` per skill folder, in the field set of `prototypes/p2-index-schema.yaml`. bmp `tier` maps onto v1 `trust_tier`. The pilots are `community` / `unverified` and `code-backed`. The skill folders, `templates/SKILL.md`, the contribution PR template (`.github/PULL_REQUEST_TEMPLATE/marketplace-skill.md` at the repository root since 2026-10-28, where GitHub reads it), `MANUAL-CHECKLIST.md`, and `site/` are the marketplace. `pyforge.steward.marketplace_pages.write_site` writes `site/`. A card follows `prototypes/p3-skill-card.html`: it renders `steps.md`, names both install directories, names unpublished packages, and names GitHub release and Artifactory as unpublished. It does not copy the paper card's sample commands, checksums, or review record. `write_site` reads `pyforge.steward.marketplace_pages` and writes nothing while it is off. `registry/estate.yaml` with `modules: []` loads as no listings. A module row maps with `listing_from_estate_module`. `CatalogEngine.render` is not called and is not edited. `edit_store.mirrors` replaces `dedicated_repo`. `prototypes/p1-cli-transcript.md` is the later `bmp` face; this story does not build it.
 
 ## Acceptance criteria
 
@@ -58,6 +63,8 @@ declared_low_risk: false
 **Commands:**
 
 - `pixi run --frozen -e pyforge-steward python -m pytest src/shared/packages/pyforge-steward/tests/unit/test_marketplace_pages.py src/shared/packages/pyforge-steward/tests/unit/test_catalog.py -q` — expected: exit 0. `test_marketplace_pages.py` is the two-state test: `test_write_site_refuses_when_the_flag_is_off_and_writes_when_it_is_on`.
+- `pixi run --frozen -e pyforge-steward python -m pytest src/shared/packages/pyforge-steward/tests/unit/test_marketplace_markdown.py src/shared/packages/pyforge-steward/tests/unit/test_pages_release.py -q` — expected: exit 0 (the card's markdown renderer; the per-skill zip step and the flag export line in `pages.yml`).
+- `pixi run --frozen -e pyforge-herald python -m pytest src/shared/packages/pyforge-herald/tests/meta/test_marketplace_mount.py src/shared/packages/pyforge-herald/tests/meta/test_pages_artifact.py src/shared/packages/pyforge-herald/tests/unit/test_docs_site_nav.py -q` — expected: exit 0 (the mount, the rewrite, the allowlist, `pages-check`'s marketplace block in both flag states, the gated nav section).
 - `pixi run --frozen -e pyforge-core python -m pytest src/shared/packages/pyforge-core/tests/unit/test_flags.py -q` — expected: exit 0.
 - `pixi run --frozen -e pyforge-guild python -m pytest src/platform/tests/test_openfeature_file_flags.py -q` — expected: exit 0.
 
@@ -90,3 +97,27 @@ Verdict: failed. CI is green on `40d02b7da9` and every test the Verification nam
 | 17 | edge-case-hunter | `site-nav.ts`, `SiteTitle.astro`, `agent-surface.ts` and `docs/map.yaml` carry no marketplace entry, so `/marketplace/` is reachable only by typed URL and `/llms.txt` omits it; the "find" job has no entry point from the site. Re-verified. | A `docs/map.yaml` row for `docs/foundry/marketplace/README.md` and a nav entry gated the same way as the mount; list `/marketplace/listings.json` on the agent surface while the flag is on. |
 | 18 | edge-case-hunter | `MANUAL-CHECKLIST.md` Round 0 note fields (step ran, step stopped, unpublished list) have no slot for a tool that cannot be driven at all (an auth wall or login loop, as cursor-agent on 2026-08-27), so a blocked tool is logged as a skill failure or not at all. The README snippet that calls `write_site` from outside the repository reports "flag is off" when no flag tree was found (`:54-56`, `:525-527`). | A `tool: <name> — not driveable: <reason>` outcome in the checklist and a `Driveable` column in `tool-support-matrix.md`; `MarketplacePagesDisabled` names the missing flag tree. |
 | 19 | structure | README: §Install carries about 80 words of plugin-manifest internals; §Layout omits `.claude-plugin/marketplace.json` and `site/marketplace.json`; there is no §Contribute and no §Not built yet heading; the index-schema paragraph sits before "how do I install". MANUAL-CHECKLIST: operator change-log opens the desk-tester's file; the Round 0 rows restate the tool matrix per tool; the exit criteria are an H3 two levels down; row 23 is a cross-skill audit inside a one-person desk test. PR template: §Lane is fourth though it gates the other rows, and the lanes are defined twice. `templates/steps.md` does not carry the skeleton the three pilots share; `templates/SKILL.md` interleaves keep-text with author instructions. | Move, merge and add the headings as the structure lens lays out; no content cut. |
+
+### Fixes (2026-10-28, loop 1)
+
+Every row above landed on PR #2274 on 2026-10-28; the story moves to `in-review` for the follow-up review the loop recommends. Where the fix column offered a choice, the choice is named.
+
+- Row 1: `_steps_text` resolves the candidate under the skill folder and requires `is_relative_to`; `_safe_relative` refuses `..`, absolute, `//` and backslash paths up front; a declared file that is missing is refused too. Tests: the traversal case and a symlink that leaves the folder, both writing nothing.
+- Row 2: `SLUG` (`^[a-z0-9][a-z0-9-]*$`) on `scope`, `slug` and a module's `name`; install targets normalised by `PurePosixPath` parts, refusing `..`, absolute, empty and double-slash parts, with at most one folder under `.agents/skills` or `.claude/skills` and that folder a slug. One refusal test each.
+- Row 3: bool `published` and non-empty `name` on every package; a skill's lane against its packages (a module's package is the module, so the rule is skills-only); the folder and its `SKILL.md` present when a root is given (`load_listings(root=)`, `listings_from_skill_folders`, `write_site_from_index`); every `skills/<scope>/<slug>/` folder declared; unique ids, cards and `<scope>-<slug>` plugin names; `id == scope/slug` for skills; `KIND_DIRS` maps each kind to its card directory; `verified_at` a quoted `YYYY-MM-DD` or null, an unquoted date refused by name; a non-JSON value refused; `render_site` renders every document before `write_site` touches the directory. A negative test per rule.
+- Row 4: `write_site` replaces `site_dir` with a fresh tree after rendering (and refuses a site directory that holds the listings); the committed-site test compares the full sorted file listing in both directions, and a stale-card test proves the removal.
+- Row 5: `render_markdown` (headings demoted one level, fenced code, bullet lists, paragraphs, `**strong**`, `code` spans; everything escaped) with its own test module; the card order is Install, Unpublished packages, Sources, then Steps; "verified <date>" or "never verified" on the card and the index row; `site/` regenerated.
+- Row 6: `python -m pyforge.steward.marketplace_pages --flag-env` prints `PYFORGE_MARKETPLACE_PAGES=1|0` and `pages.yml` appends it beside herald's `pages_env` lines (the steward precedent `pages_artifact_download.py --flag-env`, not herald's `BUILD_FLAGS`, which lists herald's flags and herald does not import steward); `flags.ts` gains `marketplacePages()`; `populatePublic` and `check()` read it with `envFlagOn`; `marketplace-pages.mts` is deleted. A Pages deploy resolves `dev` (`pages.yml` sets no `PYFORGE_ENVIRONMENT`), recorded in the README, the how-to and the workflow comment.
+- Row 7: the fallback is amended (this spec's `flag.fallback`): off, the mount is absent, not stale; README and the how-to say so.
+- Row 8: herald fixture cases in `test_pages_artifact.py` (flag on with the three documents, `plugins: []`, every plugin's folder and card mounted, the URL form, an enterprise URL; flag off with a planted mount; on with no mount) and `test_marketplace_mount.py` (the mount's order and allowlist, the `GITHUB_SERVER_URL` / `GITHUB_REPOSITORY` rewrite, the tree reader gone). The `PYFORGE_ENVIRONMENT=production` case lives on the Python side, where the environment is resolved (`test_the_production_overlay_turns_the_flag_off`, the `--flag-env` test).
+- Row 9: the workflow zips the staged `<scope>-<slug>/` folder from its parent with an `-i` allowlist (`SKILL.md`, `steps.md`, `listing.yaml`, `references/*`), writes `<name>.zip.sha256`, deletes the previous per-skill assets before uploading (never `pages-site.zip`); `docs-site/src/lib/marketplace.ts` carries the same allowlist for the mount; the card names the zip and its checksum; `test_pages_release.py` pins the step.
+- Row 10: `docs.card` is `skills/<scope>/<slug>.html` in each `listing.yaml` and `index.yaml`, and `validate_listing` holds it to `_card_href`.
+- Row 11: `MARKETPLACE_SPARSE_PATHS` gains `docs/foundry/marketplace/site`; the how-to block and the catalog tests follow.
+- Row 12: the template is `.github/PULL_REQUEST_TEMPLATE/marketplace-skill.md` at the repository root; README, MANUAL-CHECKLIST and this spec link `?template=marketplace-skill.md`.
+- Row 13: `steward catalog pointers` prints the local-directory Codex form (the catalog directory holds `.agents/plugins/marketplace.json`) with a note that the owner/repo form needs a root manifest; `test_catalog.py` asserts the printed directory holds the manifest and the repository root does not.
+- Row 14: not verifiable from a session (it is Round 0's `/plugin install` then `/skills`): README, the card and the pointers note say `marketplace.json` is a discovery pointer and the folder copy is the install; MANUAL-CHECKLIST gains the Claude Code row.
+- Row 15: `_MIRROR_HOST` (DNS labels, an optional port; no scheme, path, userinfo, query or fragment) and duplicate `(host, repo)` refusal, case-insensitive on the host; six new cases.
+- Row 16: positive assertions on the title and on the committed card's `<h2>Unpublished packages</h2>` with the `pyforge-mason` and `pyforge-core` lines; `_package_entries` in the data test; an autouse `PYFORGE_ENVIRONMENT=dev`.
+- Row 17: `docs/map.yaml` gains the `marketplace` section (order 45, owner steward), gated in `nav.ts` / `site-nav.ts` on `pyforge.steward.marketplace_pages` the way `status` is; `agent-data.ts` lists `/marketplace/` and `/marketplace/listings.json` under Data while the flag is on; `docs/MAP.md` § Sections names the gate. A `pages:` row is not possible: the map schema's `quadrant` enum is the four Diátaxis directories and `docs/foundry/` is outside the map by MAP.md's own scope.
+- Row 18: MANUAL-CHECKLIST carries `tool: <name> — not driveable: <reason>`; `tool-support-matrix.md` gains a `Driveable (Round 0)` column; `MarketplacePagesDisabled` names a missing flag tree (`_require_enabled`).
+- Row 19: README reordered (what it is, install with the tool table, layout with both manifests, index schema, contribute, regenerate, not built yet); MANUAL-CHECKLIST (re-check log at the end, one tool row with the table, exit criteria an H2 in three groups, the cross-skill audit moved to the PR template); the PR template (lane first, lanes defined once); `templates/steps.md` carries the pilots' skeleton and `templates/SKILL.md` marks every author instruction as an HTML comment. No content cut.

@@ -1,9 +1,22 @@
 # Steps — @warden/scan
 
-Run these from the project you want to scan. Verified 2026-10-21.
-The 2026-10-20 paper skill card is sample data and is not this runbook.
+Run these from the project you want to scan. Verified 2026-10-21 against
+`warden scan --help` and the tools on the verifying host. Each version below
+is what that tool's `--version` printed on that host on 2026-10-21.
 
-## 1. Scan with the station command
+**Before you start.** `pyforge-warden` 0.1.0 and `pyforge-core` returned HTTP
+404 on PyPI, conda-forge, and SelfExplainML on 2026-10-21. Step 1 waits on
+those packages, and no published command produces the compliance report in
+its place. Steps 0 and 2 run today; they produce probes, not a report.
+
+## 0. Install the published tools
+
+- `deptry` 0.25.1: `pip install deptry` (PyPI `deptry`) or
+  `conda install -c conda-forge deptry`.
+- `osv-scanner` 2.4.0: `conda install -c conda-forge osv-scanner`, or the
+  binary from the osv-scanner GitHub release page.
+
+## 1. Scan with the station command (waits on `pyforge-warden`)
 
 When `pyforge-warden` is on your `PATH`:
 
@@ -26,11 +39,6 @@ warden scan --doctor
 `--doctor` exits 0 or 2, never 1. Verified: `warden scan --help` lists
 `--doctor` on `scan`.
 
-**Unpublished.** `pyforge-warden` 0.1.0 and `pyforge-core` returned HTTP 404
-on PyPI, conda-forge, and SelfExplainML on 2026-10-21. Until those
-packages are published, step 1 does not run on a teammate machine, and
-there is no substitute command that produces the compliance report.
-
 ## 2. Probe the engines, and stop there
 
 ```bash
@@ -38,7 +46,7 @@ deptry --version
 osv-scanner --version
 ```
 
-Verified: `deptry` 0.25.1 and `osv-scanner` 2.4.0. The warden CLI calls
+`deptry` and `osv-scanner` are not a warden verdict. The warden CLI calls
 `deptry` and `osv-scanner scan --offline` itself. Do not paste their output
 into a review as a warden verdict.
 

@@ -105,3 +105,4 @@ The rest, recommended and unchanged:
 - FR-47 is reserved in main's PRD prose and undefined here. A later story must not assume FR-47 is free, and this PR must not invent it to close the hole.
 - Doctor's docs-currency check reads generated pages strictly. Marketplace markdown has to keep real links, including `templates/steps.md`.
 - The seed path `docs/dreams/self-hosted-bmad-marketplace.md` no longer exists. Current pointers use `archive/docs/dreams/self-hosted-bmad-marketplace.md`.
+- Atlas's CVE boards, `marshal-mcp`, the new flags, and the conda-forge graph split are not listings. Do not invent a GHES mirror. (Moved here from `MANUAL-CHECKLIST.md` on 2026-10-28; the checklist is the desk-tester's file.)

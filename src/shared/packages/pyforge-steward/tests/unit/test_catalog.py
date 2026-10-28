@@ -285,6 +285,13 @@ def test_load_config_rejects_dedicated_repo(tmp_path: Path) -> None:
         "mirrors:\n  - host: git.example\n    repo: not-a-repo\n",
         "mirrors:\n  - host: git.example\n    repo: acme/local-recipes\n    path: extra\n",
         "mirrors:\n  - git.example\n",
+        # review 2026-10-28, row 15: userinfo, a query, a fragment, a bad label, a bad port, a duplicate
+        "mirrors:\n  - host: ci:TOKEN@ghe.example\n    repo: acme/local-recipes\n",
+        "mirrors:\n  - host: ghe.example?x=1\n    repo: acme/local-recipes\n",
+        "mirrors:\n  - host: ghe.example#frag\n    repo: acme/local-recipes\n",
+        "mirrors:\n  - host: -ghe.example\n    repo: acme/local-recipes\n",
+        "mirrors:\n  - host: ghe.example:port\n    repo: acme/local-recipes\n",
+        "mirrors:\n  - host: ghe.example\n    repo: acme/local-recipes\n  - host: GHE.example\n    repo: acme/local-recipes\n",
     ],
 )
 def test_load_config_mirrors_must_be_host_and_owner_repo(tmp_path: Path, value: str) -> None:
@@ -1119,7 +1126,11 @@ def test_pointers_name_every_consumer_form_and_edit_nothing(tmp_path: Path, caps
     assert f"bmad-method install --custom-source {catalog_dir.resolve()}" in out
     assert '"extraKnownMarketplaces"' in out and '"source": "directory"' in out
     assert f"/plugin marketplace add {catalog_dir.resolve()}" in out
-    assert "codex plugin marketplace add tester/repo" in out
+    # Codex (review 2026-10-28, row 13): the local-directory form, which holds .agents/plugins/marketplace.json;
+    # the owner/repo form would need that file at the repository root, and the note says so.
+    printed = [line.strip() for line in out.splitlines() if line.strip().startswith("codex plugin marketplace add")]
+    assert printed == [f"codex plugin marketplace add {catalog_dir.resolve()}"]
+    assert "needs .agents/plugins/marketplace.json at the repository root" in out
     assert '"source": "github"' in out
     assert "docs/foundry/marketplace/.claude-plugin/marketplace.json" in out
     assert "sparsePaths" in out
@@ -1145,6 +1156,7 @@ def test_pointers_name_every_consumer_form_and_edit_nothing(tmp_path: Path, caps
         "path": "docs/foundry/marketplace/.claude-plugin/marketplace.json",
         "sparsePaths": [
             "docs/foundry/marketplace/.claude-plugin",
+            "docs/foundry/marketplace/site",
             "docs/foundry/marketplace/skills",
         ],
     }
@@ -1173,7 +1185,7 @@ def test_pointers_print_a_full_git_url_for_each_mirror(tmp_path: Path) -> None:
     engine = CatalogEngine(tmp_path, load_config(catalog_dir / "catalog.yaml"), catalog_dir=catalog_dir)
     pointers = engine.pointers()
     assert pointers["mirrors"] == [{"host": "git.example", "repo": "acme/local-recipes"}]
-    assert pointers["codex_plugin_add"] == "codex plugin marketplace add tester/repo"
+    assert pointers["codex_plugin_add"] == f"codex plugin marketplace add {catalog_dir.resolve()}"
     mirror = pointers["mirror_git_marketplaces"][0]["extraKnownMarketplaces"]["pyforge-bmad-marketplace"]
     assert mirror["source"] == {
         "source": "git",
@@ -1181,6 +1193,7 @@ def test_pointers_print_a_full_git_url_for_each_mirror(tmp_path: Path) -> None:
         "path": "docs/foundry/marketplace/.claude-plugin/marketplace.json",
         "sparsePaths": [
             "docs/foundry/marketplace/.claude-plugin",
+            "docs/foundry/marketplace/site",
             "docs/foundry/marketplace/skills",
         ],
     }
@@ -1295,11 +1308,18 @@ def test_real_tree_pointers_use_the_repo_relative_directory_form(capsys) -> None
     assert source["path"] == "docs/foundry/marketplace/.claude-plugin/marketplace.json"
     assert source["sparsePaths"] == [
         "docs/foundry/marketplace/.claude-plugin",
+        "docs/foundry/marketplace/site",
         "docs/foundry/marketplace/skills",
     ]
     assert payload["mirrors"] == []
     assert payload["mirror_git_marketplaces"] == []
-    assert payload["codex_plugin_add"] == "codex plugin marketplace add rxm7706/local-recipes"
+    # The printed Codex form names a directory that holds the manifest Codex reads; an owner/repo form would
+    # have to resolve to a root manifest, which this repository does not carry.
+    catalog_dir = (repo_root() / CATALOG_RELATIVE).resolve()
+    assert payload["codex_plugin_add"] == f"codex plugin marketplace add {catalog_dir}"
+    assert (catalog_dir / ".agents" / "plugins" / "marketplace.json").is_file()
+    assert not (repo_root() / ".agents" / "plugins" / "marketplace.json").exists()
+    assert "rxm7706/local-recipes (the owner/repo form)" in payload["codex_note"]
     assert payload["catalog_dir"] == str((repo_root() / CATALOG_RELATIVE).resolve())
 
 

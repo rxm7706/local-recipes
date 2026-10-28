@@ -2,7 +2,7 @@
 title: '109.2: Three pilot skills run without the estate environment'
 type: 'docs'
 created: '2026-10-21'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '53aed16fe1957ab340c6146cb7bf0c3f810c1746'
 flag-exempt: docs-only
 review_loop_iteration: 1
@@ -65,3 +65,15 @@ Verdict: failed. The six pilot files hold the commands the acceptance criteria n
 | 5 | edge-case-hunter | No step installs the published tools. A no-AI-tool reader on a fresh machine meets `command not found` (`conda-lock`, `pyproject-build`, `pixi`, `deptry`, `osv-scanner`) or `BackendUnavailable` (`pyproject-build --no-isolation` needs the `[build-system]` backend installed) at the first published step. | A "0. Install the published tools" step in each runbook naming each tool's install source, and the backend precondition on `pyproject-build --no-isolation`. |
 | 6 | structure | The **Unpublished.** callout sits after the station-command block in all three `steps.md` (environment lines 19–21, package 16–17, warden 29–32). The reader types step 1, it fails, then reads why; warden's reader passes three code blocks before learning none of them runs. | Move the callout to the preamble as a "Before you start" line naming the unpublished packages and the numbered steps that wait on them; each gated step keeps a one-line "waits on `pyforge-mason`" tag. AC2 and AC6 still hold. |
 | 7 | structure (open question) | Reviewer provenance sits inside the teammate runbook: "The 2026-10-20 paper skill card is sample data. Its lock command is not this runbook." opens each `steps.md`, and the card prints the same sentence above the rendered steps, so the card shows it twice. Verified version strings are duplicated between each `SKILL.md` and its `steps.md` while the manual check names only `steps.md`. Package `SKILL.md` separates the upload rule (lines 54–57) from the ship commands it governs (lines 30–40). | Decide: move the provenance note to the `listing.yaml` header comment or the README; keep the verified versions in `steps.md` only; merge the package upload rule and its commands into one block. |
+
+### Fixes (2026-10-28, loop 1)
+
+Every row above landed on PR #2274 on 2026-10-28; the story moves to `in-review` for the follow-up review the loop recommends.
+
+- Row 1: each engine is named once by module (`pyforge.mason.engines.condalock`, `pyforge.mason.engines.pep517`, `pyforge.mason.engines.pixi`); no `engines/*.py` path and no "this repo" remain; each `steps.md` preamble says where the versions were read (the verifying host's `--version` on 2026-10-21). `test_pilot_skills_read_without_the_station_source` pins it.
+- Row 2: `pixi` 0.81.0, the version `pixi --version` prints on the host and the `pixi.lock` pin, both re-read 2026-10-28, with that provenance in package `steps.md` step 0.
+- Row 3: the test asserts `twine upload` and `pixi upload` with the "Do not run" sentence, `2026-10-21` and `404` in every pilot file, "temporary copy of the lockfile" in the environment steps and "`deptry` and `osv-scanner` are not a warden verdict" in the warden steps.
+- Row 4: environment `steps.md` step 2 lists one `-f` per manifest in the station's discovery order (`pyproject.toml`, `environment.yml`, each `requirements*.txt`, `pixi.toml`) with the substitution for each shape; `conda-lock` exits non-zero on a missing file.
+- Row 5: a "0. Install the published tools" step in each runbook (PyPI and conda-forge names: `conda-lock`, `build` / `python-build`, `pixi`, `deptry`, `osv-scanner`) and the `[build-system]` backend precondition on `pyproject-build --no-isolation` (`BackendUnavailable`). `test_pilot_steps_install_the_published_tools_first` pins step 0 before step 1.
+- Row 6: a "Before you start" line names the unpublished packages and the gated steps before step 0; each gated step heading carries "(waits on `pyforge-<station>`)". AC2 and AC6 hold.
+- Row 7 (decided): the provenance note moved to each `listing.yaml` header comment (the card keeps its one line); the verified versions live in `steps.md` only, and each `SKILL.md` says so; the package upload rule and the ship commands are one "Upload" section at the end of package `SKILL.md`.

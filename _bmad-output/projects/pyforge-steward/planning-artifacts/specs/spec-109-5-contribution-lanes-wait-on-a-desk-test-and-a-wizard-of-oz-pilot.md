@@ -9,7 +9,7 @@ review_loop_iteration: 0
 followup_review_recommended: false
 context:
   - docs/foundry/marketplace/MANUAL-CHECKLIST.md
-  - docs/foundry/marketplace/.github/PULL_REQUEST_TEMPLATE.md
+  - .github/PULL_REQUEST_TEMPLATE/marketplace-skill.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/prototypes/p4-wizard-of-oz-pilot.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/analysis-against-main-2026-10-25.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/analysis-against-main-2026-10-27.md
