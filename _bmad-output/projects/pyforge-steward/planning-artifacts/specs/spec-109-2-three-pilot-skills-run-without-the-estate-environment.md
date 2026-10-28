@@ -2,10 +2,10 @@
 title: '109.2: Three pilot skills run without the estate environment'
 type: 'docs'
 created: '2026-10-21'
-status: 'in-review'
+status: 'in-progress'
 baseline_revision: '53aed16fe1957ab340c6146cb7bf0c3f810c1746'
 flag-exempt: docs-only
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: true
 context:
   - .claude/skills/mason-environment/SKILL.md
@@ -77,3 +77,30 @@ Every row above landed on PR #2274 on 2026-10-28; the story moves to `in-review`
 - Row 5: a "0. Install the published tools" step in each runbook (PyPI and conda-forge names: `conda-lock`, `build` / `python-build`, `pixi`, `deptry`, `osv-scanner`) and the `[build-system]` backend precondition on `pyproject-build --no-isolation` (`BackendUnavailable`). `test_pilot_steps_install_the_published_tools_first` pins step 0 before step 1.
 - Row 6: a "Before you start" line names the unpublished packages and the gated steps before step 0; each gated step heading carries "(waits on `pyforge-<station>`)". AC2 and AC6 hold.
 - Row 7 (decided): the provenance note moved to each `listing.yaml` header comment (the card keeps its one line); the verified versions live in `steps.md` only, and each `SKILL.md` says so; the package upload rule and the ship commands are one "Upload" section at the end of package `SKILL.md`.
+
+## Review (2026-10-28, independent, loop 2)
+
+Verdict: failed, narrowly. Every loop-1 row is closed in the tree (the verifier's table below), the Verification command exits 0, and the six files now read without the station source. Two findings send the story back: the environment runbook's new substitution list names two manifests `conda-lock` cannot parse, so a reader who follows it runs a failing command, and the pixi version is pinned by the test as a number the implementer typed rather than read from the lock, the drift row 2 found. The structure rows are editorial and do not block. Source: five lenses (adversarial, edge-case-hunter, verification-gap, structure, tea-test-review) run as fresh subagents over `git diff 0135f82e20..aa964e0ceb`, plus an independent row verifier that read the tree against the loop-1 table without the § Fixes text. Line numbers are `aa964e0ceb`'s.
+
+### Loop-1 rows
+
+| # | Verdict | Evidence |
+|---|---|---|
+| 1 | closed | `grep -rn "engines/" docs/foundry/marketplace/skills/` and `grep -rni "this repo"` both exit 1; dotted modules at environment `SKILL.md:45`, `steps.md:4,37`, package `SKILL.md:37,45`, `steps.md:4,44,53`; provenance line in each `steps.md` preamble; `test_pilot_skills.py:74-85`. |
+| 2 | closed | package `steps.md:21-24` reads 0.81.0; host `pixi --version` 0.81.0; `pixi.lock:263` pins `pixi-0.81.0`; `test_pilot_skills.py:105`. See row 9 below for the test's shape. |
+| 3 | closed | `test_pilot_skills.py:55,60-61,67,70-71` assert the AC3–AC6 sentences; run exits 0. |
+| 4 | closed as asked | environment `steps.md:39-48`: one `-f` per manifest in the station's order, four substitutions, "exits non-zero on a file that is not there". See row 8 below: two of the substitutions name manifests the tool cannot read. |
+| 5 | closed | `## 0. Install the published tools` at environment `steps.md:13-18`, package `:12-24`, warden `:12-17`; `BackendUnavailable` at package `steps.md:17-20`; `test_pilot_skills.py:95,100,103-108`. |
+| 6 | closed | `**Before you start.**` before `## 0.` in all three (`test_pilot_skills.py:96-98`); "(waits on …)" tags at environment `:20,53`, package `:26,56`, warden `:19`. |
+| 7 | closed | Provenance note in each `listing.yaml:3-4`; versions absent from every `SKILL.md` (`test_pilot_skills.py:82-85`); package `SKILL.md:48-64` is one `## Upload` block. |
+
+### New findings
+
+| # | Lens | Finding | Required fix |
+|---|---|---|---|
+| 8 | edge-case-hunter | Environment `steps.md:40-48` tells the reader to add `-f requirements.txt` and `-f pixi.toml` "in the discovery order above". `conda-lock` parses `environment.yml`, `pyproject.toml` and `meta.yaml` only: probed, `conda-lock lock -f pixi.toml` exits 1 with a YAML `ParserError` and `-f requirements.txt` with an `AttributeError`, even when the file exists. The station's own discovery hands those two to the engine, so the runbook copied a station defect into a command the no-AI reader types. | Limit the written substitutions to `pyproject.toml` and `environment.yml` (and both); say that a `requirements*.txt` or `pixi.toml` beside them is not a `conda-lock` input and that the station engine fails on them today. Add a negative assertion in `test_pilot_skills.py` that neither `-f requirements` nor `-f pixi.toml` appears in the environment steps. |
+| 9 | verification-gap | `test_pilot_skills.py:105` asserts the literal `` `pixi` 0.81.0``, the number the implementer typed; nothing reads `pixi.lock`, so the next estate refresh that moves pixi leaves `steps.md` claiming a version "the local-recipes `pixi.lock` pins" that it no longer pins, with the test green. | Derive the version in the test (`re.search(r"/linux-64/pixi-(\d+\.\d+\.\d+)-", (repo_root() / "pixi.lock").read_text())`) and assert `f"`pixi` {version}" in package`; keep the `0.82.0` negative. |
+| 10 | structure (editorial, non-blocking) | Package `SKILL.md` `## Upload` (`:48-64`) sits after `## Until that package is published`, so the unavailable station command follows the fallback that runs today, and the file is the one pilot whose H2 set differs from `templates/SKILL.md`. | Move it above, as `### Upload` under `## When pyforge-mason is installed` (or an H2 directly after it). |
+| 11 | structure (editorial, non-blocking) | Environment `SKILL.md:43-60` repeats `steps.md:37-51,59-63` verbatim (the argv, the `-f`/`-p` rules, the temporary-copy sentence); package `SKILL.md:40-42` repeats the `BackendUnavailable` precondition. Package `steps.md:21-24` carries reviewer provenance ("what the local-recipes `pixi.lock` pins, both re-read on 2026-10-28") inside the portable runbook, the category row 7 moved out. | Condense each `SKILL.md` to the argv, "one `-f` per manifest — `steps.md` step 2", and the one `--check-input-hash` rule; condense the pixi bullet to "`pixi` 0.81.0 (re-read 2026-10-28)". |
+| 12 | structure (editorial, non-blocking) | The ~55-word install-orientation paragraph (both directories, the matrix caveat) is repeated in `templates/SKILL.md:14-20` and each pilot `SKILL.md`, read by the teammate's tool after install; the card and README hold the same text for the human before install. | Decide: condense `SKILL.md` to "Marketplace id `scope/slug`. The human runbook is [steps.md](steps.md); verified tool versions live there." and leave the paths to the card and README, or keep the duplicate deliberately. |
+| 13 | tea-test-review (advisory) | `test_pilot_skills_name_the_commands_that_were_verified` asserts across all three pilots in one test, so the first failing assertion masks the rest. | One test per skill and a parametrized test over `_texts()` for the per-file `404` + `2026-10-21` rule. |
