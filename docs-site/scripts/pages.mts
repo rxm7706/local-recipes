@@ -31,7 +31,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { ARTIFACT_DOSSIER, NOT_PAGES } from '../src/lib/artifact.ts';
 import { BUILT_FROM_OPEN } from '../src/lib/built-from.ts';
 import { envFlagOn } from '../src/lib/flags.ts';
-import { marketplaceManifestFindings } from '../src/lib/marketplace.ts';
+import { marketplaceArtifactFindings, marketplaceManifestFindings } from '../src/lib/marketplace.ts';
 import { DASHBOARD_EXPORTS, holdsAFile } from '../src/lib/nav.ts';
 
 const DOCS_SITE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -478,6 +478,9 @@ export function check(root: string, options: CheckOptions = {}): string[] {
     }
     if (has('marketplace/marketplace.json')) {
       out.push(...marketplaceManifestFindings(read('marketplace/marketplace.json'), has));
+      if (has('marketplace/listings.json')) {
+        out.push(...marketplaceArtifactFindings(read('marketplace/listings.json'), read('marketplace/marketplace.json'), all));
+      }
     }
   } else if (marketplaceFiles.length) {
     out.push('marketplace/ exists in the artifact but pyforge.steward.marketplace_pages is off');

@@ -1,0 +1,41 @@
+{
+  "name": "pyforge-bmad-marketplace",
+  "interface": {
+    "displayName": "BMAD marketplace"
+  },
+  "plugins": [
+    {
+      "name": "mason-environment",
+      "source": {
+        "source": "local",
+        "path": "./skills/mason/environment"
+      },
+      "policy": {
+        "installation": "AVAILABLE"
+      },
+      "category": "skill"
+    },
+    {
+      "name": "mason-package",
+      "source": {
+        "source": "local",
+        "path": "./skills/mason/package"
+      },
+      "policy": {
+        "installation": "AVAILABLE"
+      },
+      "category": "skill"
+    },
+    {
+      "name": "warden-scan",
+      "source": {
+        "source": "local",
+        "path": "./skills/warden/scan"
+      },
+      "policy": {
+        "installation": "AVAILABLE"
+      },
+      "category": "skill"
+    }
+  ]
+}

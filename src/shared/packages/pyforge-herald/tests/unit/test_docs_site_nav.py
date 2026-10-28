@@ -11,6 +11,7 @@ installed, which ``pyforge-herald-test-built`` does first, and otherwise skips n
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -87,6 +88,34 @@ def test_a_mounted_export_and_the_status_flag_add_their_sections_in_order() -> N
     ]
     assert [door[0] for door in result["doors"]] == ["Docs", "Herald", "Status", "Kedro-Viz", "Dashboards", "Changes"]
     assert ["Kedro-Viz"] in result["sidebar"] and ["Status"] in result["sidebar"]
+
+
+def test_the_marketplace_flag_adds_its_section_between_the_dashboards_and_changes() -> None:
+    """Steward Story 109.3 (its loop-2 review, row 34): the ``marketplace`` section shows only with
+    ``pyforge.steward.marketplace_pages`` on, after the exports and before Changes, in the sidebar, the menu and
+    the doors; and ``site-nav.ts`` reads every flag ``nav.ts`` gates on."""
+    on = three(MAP, mounted=("kedro-viz", "vizro"), flags=("pyforge.steward.marketplace_pages",))
+    assert [label for label, _ in on["menu"]] == [
+        "Docs",
+        "Overview",
+        "Dossier",
+        "Infographics",
+        "Decks",
+        "Kedro-Viz",
+        "Dashboards",
+        "Marketplace",
+        "Changes",
+    ]
+    assert ["Marketplace", "marketplace/"] in on["menu"]
+    assert ["Marketplace"] in on["sidebar"]
+    assert [door[:2] for door in on["doors"] if door[0] == "Marketplace"] == [["Marketplace", "marketplace/"]]
+    off = three(MAP, mounted=("kedro-viz", "vizro"))
+    assert "Marketplace" not in [label for label, _ in off["menu"]]
+    nav = (DOCS_SITE / "src" / "lib" / "nav.ts").read_text(encoding="utf-8")
+    site_nav = (DOCS_SITE / "src" / "lib" / "site-nav.ts").read_text(encoding="utf-8")
+    gated = set(re.findall(r"^\s+\w+: '([\w.]+)',$", nav.split("FLAG_SECTIONS")[1].split("};")[0], re.M))
+    read = set(re.findall(r"^\s+'([\w.]+)': \w+,$", site_nav.split("const FLAGS")[1].split("};")[0], re.M))
+    assert gated == read == {"pyforge.herald.status_pages", "pyforge.steward.marketplace_pages"}
 
 
 @pytest.mark.parametrize(

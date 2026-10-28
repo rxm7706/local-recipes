@@ -12,16 +12,13 @@ description: >
 
 Marketplace id `mason/environment`. Install this folder into both
 `.agents/skills/mason-environment/` and `.claude/skills/mason-environment/`.
-Claude Code's documented project skill path is `.claude/skills/`. Devin's is
-`.agents/skills/`. The tool matrix does not confirm the other directory for
-either of those two tools.
-The human steps are [steps.md](steps.md). The verified tool versions are
-recorded there, not here.
+The human runbook is [steps.md](steps.md); the verified tool versions live
+there. Which directory each tool reads is on the card and in the README.
 
 Run every command from the teammate's project directory (the directory that
-holds `pyproject.toml`, `environment.yml`, `requirements*.txt`, or `pixi.toml`).
-Do not `cd` into a local-recipes checkout. Do not prefix the command with a
-pixi environment selector.
+holds `pyproject.toml` or `environment.yml`). Do not `cd` into a
+local-recipes checkout. Do not prefix the command with a pixi environment
+selector.
 
 ## When pyforge-mason is installed
 
@@ -48,16 +45,11 @@ from the engine module `pyforge.mason.engines.condalock`, is:
 conda-lock lock -f pyproject.toml --lockfile conda-lock.yml
 ```
 
-Pass one `-f` per manifest the project holds; `steps.md` step 2 spells out
-each substitution. Repeat `-p linux-64` (one flag per platform) only when
-the caller asked for platforms. With no `-p`, conda-lock chooses its own
-default.
-
-The station's check runs `conda-lock lock --check-input-hash` against a
-temporary copy of the lockfile, not against the lockfile in place. Do not
-point `--check-input-hash` at the real lockfile. That check is the
-`pyforge mason environment check` command, and it waits on the unpublished
-package.
+One `-f` per manifest the project holds; the substitutions and the `-p`
+platform rule are `steps.md` step 2. Do not point `--check-input-hash` at
+the real lockfile: the station's check uses a temporary copy, and that
+check is the `pyforge mason environment check` command, which waits on the
+unpublished package.
 
 ## What this skill is not
 

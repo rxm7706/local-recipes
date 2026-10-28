@@ -1,6 +1,6 @@
-<!-- A marketplace skill contribution (docs/foundry/marketplace/). GitHub reads templates from the repository root,
-     so this file lives here, not in the marketplace tree; open the pull request with ?template=marketplace-skill.md,
-     or paste this body by hand. The lanes are defined once, below, and gate the other sections. -->
+<!-- A marketplace skill contribution (docs/foundry/marketplace/). Open the pull request with
+     `gh pr create --repo rxm7706/local-recipes --template marketplace-skill.md`, or with ?template=marketplace-skill.md
+     on the web compare URL, or paste this body by hand. -->
 
 ## Lane
 
@@ -26,11 +26,11 @@
 - [ ] `steps.md` is readable without the station source open: an engine is named by its module (`pyforge.<station>.engines.<name>`), never by a source path, and "this repo" does not appear
 - [ ] No `pixi run -e` and no path inside local-recipes
 - [ ] Install targets named in the skill are `.agents/skills/` and `.claude/skills/`
-- [ ] The folder holds only `SKILL.md`, `steps.md`, `listing.yaml` and `references/`; nothing else ships in the mount or the release zip
+- [ ] The folder holds only `SKILL.md`, `steps.md`, `listing.yaml` and text files (`.md`, `.txt`, `.yaml`, `.yml`, `.json`) under `references/`: no other file, no dot entry, no symlink, no file over 1 MiB, the folder under 4 MiB (`validate_listing` refuses each; the mount and the release zip ship exactly this set)
 
 ## Generated site
 
-- [ ] `site/` was regenerated with `pyforge.steward.marketplace_pages` on (dev) and matches `index.yaml` file for file
+- [ ] `site/`, `.claude-plugin/marketplace.json` and `.agents/plugins/marketplace.json` were regenerated with `pyforge.steward.marketplace_pages` on (dev) and match `index.yaml` file for file
 - [ ] The card renders `steps.md`, names every requires package whose `published` is false, and shows the verified date or "never verified"
 - [ ] No sample checksum, example host, or paper-card command was copied into the listing
 

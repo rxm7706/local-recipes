@@ -29,7 +29,7 @@ import json
 import re
 import shutil
 import sys
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from typing import Any
 
 import yaml
@@ -37,6 +37,7 @@ from pyforge.core import cutover_root
 from pyforge.core.flags import read_boolean
 
 from pyforge.steward.catalog import (
+    CODEX_MANIFEST_RELATIVE,
     MARKETPLACE_NAME,
     MARKETPLACE_ROOT_RELATIVE,
     PUBLIC_MARKETPLACE_GIT_URL,
@@ -68,6 +69,12 @@ SLUG = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 #: The files a skill folder ships (the mount, the release zip and ``bmp install`` copy these and nothing else).
 SKILL_FILES = ("SKILL.md", "steps.md", "listing.yaml")
+#: The one subdirectory a skill folder ships, text files only.
+REFERENCES_DIR = "references"
+SHIPPED_TEXT_SUFFIXES = frozenset({".md", ".txt", ".yaml", ".yml", ".json"})
+#: Caps on what a folder ships: one file, and the folder's total (the Pages artifact has a hard size cap).
+MAX_SHIPPED_FILE_BYTES = 1_048_576
+MAX_SHIPPED_FOLDER_BYTES = 4 * 1_048_576
 
 
 class MarketplaceIndexError(ValueError):
@@ -142,8 +149,9 @@ def _require_str(row: dict[str, Any], key: str, where: str) -> str:
 
 
 def _require_slug(row: dict[str, Any], key: str, where: str) -> str:
-    value = _require_str(row, key, where)
-    if not SLUG.match(value):
+    """The raw value must match ``SLUG``: a stripped match would let ``" mason"`` flow into hrefs and zip names."""
+    value = row.get(key)
+    if not isinstance(value, str) or not SLUG.match(value):
         raise MarketplaceIndexError(f"{where}: {key} {value!r} must match {SLUG.pattern}")
     return value
 
@@ -185,6 +193,8 @@ def validate_listing(row: dict[str, Any], *, root: Path | None = None) -> None:
     chosen = lane if lane is not None else contribution
     if chosen is not None and chosen not in LANES:
         raise MarketplaceIndexError(f"{ident}: lane {chosen!r} is not a known lane")
+    if kind == "skill" and chosen is None:
+        raise MarketplaceIndexError(f"{ident}: lane is required for a skill (instructions-only or code-backed)")
     packages = _validate_requires(row, ident)
     if kind == "skill" and chosen is not None:
         # A skill's lane is what its packages say (review 2026-10-28, row 3). A module's package is the module.
@@ -205,16 +215,27 @@ def validate_listing(row: dict[str, Any], *, root: Path | None = None) -> None:
             raise MarketplaceIndexError(f"{ident}: a skill's id must be {scope}/{slug}")
         if root is not None:
             folder = root / path
-            if not folder.is_dir():
-                raise MarketplaceIndexError(f"{ident}: folder {path} is not in {root}")
+            if folder.is_symlink() or not folder.is_dir():
+                raise MarketplaceIndexError(f"{ident}: folder {path} is not a directory in {root}")
             if not (folder / "SKILL.md").is_file():
                 raise MarketplaceIndexError(f"{ident}: {path}/SKILL.md is missing")
+            _validate_skill_folder(folder, ident)
     else:
         for key in ("scope", "slug"):
             if row.get(key) is not None:
                 _require_slug(row, key, ident)
         if row.get("slug") is None and not SLUG.match(str(row["name"])):
             raise MarketplaceIndexError(f"{ident}: name {row['name']!r} names the card; it must match {SLUG.pattern}")
+        # A non-skill row's folder, when it names one, sits under its kind's directory (review loop 2, row 20).
+        kind_path = row.get("path")
+        if kind_path is not None:
+            expected = f"{KIND_DIRS[kind]}/{row.get('slug') or row['name']}"
+            if not isinstance(kind_path, str) or not _safe_relative(kind_path) or kind_path != expected:
+                raise MarketplaceIndexError(f"{ident}: path {kind_path!r} must be {expected!r}")
+            if root is not None and (root / kind_path).is_symlink():
+                raise MarketplaceIndexError(f"{ident}: folder {kind_path} is a symlink")
+            if root is not None and not (root / kind_path).is_dir():
+                raise MarketplaceIndexError(f"{ident}: folder {kind_path} is not a directory in {root}")
     _validate_docs(row, ident)
     try:
         json.dumps(row)
@@ -264,11 +285,14 @@ def _validate_install_targets(row: dict[str, Any], ident: str) -> None:
 
 
 def _allowed_install_target(target: str) -> bool:
-    """``.agents/skills``, ``.claude/skills``, or one folder under either; never absolute, never ``..``."""
-    if not target or target.startswith("/") or "\\" in target or "//" in target:
+    """``.agents/skills``, ``.claude/skills``, or one folder under either; never absolute, never ``.`` or ``..``.
+
+    Split on ``/`` rather than through ``PurePosixPath``, which drops ``.`` segments before they can be refused.
+    """
+    if not target or "\\" in target:
         return False
-    parts = PurePosixPath(target).parts
-    if any(part in ("", ".", "..") for part in parts) or target.endswith("/"):
+    parts = target.split("/")
+    if any(part in ("", ".", "..") for part in parts):
         return False
     head = "/".join(parts[:2])
     if head not in INSTALL_TARGETS or len(parts) > 3:
@@ -278,10 +302,48 @@ def _allowed_install_target(target: str) -> bool:
 
 def _safe_relative(value: str) -> bool:
     """A relative POSIX path with no empty, ``.`` or ``..`` part, no backslash and no trailing slash."""
-    if not value or value.startswith("/") or "\\" in value or "//" in value or value.endswith("/"):
+    if not value or "\\" in value:
         return False
-    parts = PurePosixPath(value).parts
-    return bool(parts) and not any(part in ("", ".", "..") for part in parts)
+    parts = value.split("/")
+    return not any(part in ("", ".", "..") for part in parts)
+
+
+def _validate_skill_folder(folder: Path, ident: str) -> None:
+    """What a skill folder may hold (review loop 2, rows 23 and 38): ``SKILL.md``, ``steps.md``, ``listing.yaml``
+    and text files under ``references/``; no symlink, no dot entry, no other file; one file under
+    :data:`MAX_SHIPPED_FILE_BYTES` and the folder under :data:`MAX_SHIPPED_FOLDER_BYTES`. The mount and the release
+    zip ship exactly this set, so the folder a teammate copies from git is the same skill."""
+    total = 0
+    suffixes = ", ".join(sorted(SHIPPED_TEXT_SUFFIXES))
+    for entry in sorted(folder.rglob("*")):
+        rel = entry.relative_to(folder).as_posix()
+        if entry.is_symlink():
+            raise MarketplaceIndexError(f"{ident}: {rel} is a symlink; a skill folder ships regular files only")
+        parts = rel.split("/")
+        if any(part.startswith(".") for part in parts):
+            raise MarketplaceIndexError(f"{ident}: {rel} is a dot entry; it does not ship")
+        if entry.is_dir():
+            if parts[0] != REFERENCES_DIR:
+                raise MarketplaceIndexError(
+                    f"{ident}: {rel}/ is not {REFERENCES_DIR}/; a skill folder holds "
+                    f"{', '.join(SKILL_FILES)} and {REFERENCES_DIR}/"
+                )
+            continue
+        if len(parts) == 1:
+            if parts[0] not in SKILL_FILES:
+                raise MarketplaceIndexError(f"{ident}: {rel} is not one of {', '.join(SKILL_FILES)}; it does not ship")
+        elif parts[0] != REFERENCES_DIR:
+            raise MarketplaceIndexError(f"{ident}: {rel} is outside {REFERENCES_DIR}/; it does not ship")
+        elif entry.suffix.lower() not in SHIPPED_TEXT_SUFFIXES:
+            raise MarketplaceIndexError(f"{ident}: {rel}: {REFERENCES_DIR}/ ships text files only ({suffixes})")
+        size = entry.stat().st_size
+        if size > MAX_SHIPPED_FILE_BYTES:
+            raise MarketplaceIndexError(
+                f"{ident}: {rel} is {size} bytes; one shipped file is at most {MAX_SHIPPED_FILE_BYTES}"
+            )
+        total += size
+    if total > MAX_SHIPPED_FOLDER_BYTES:
+        raise MarketplaceIndexError(f"{ident}: the folder ships {total} bytes; the cap is {MAX_SHIPPED_FOLDER_BYTES}")
 
 
 def _validate_docs(row: dict[str, Any], ident: str) -> None:
@@ -296,6 +358,8 @@ def _validate_docs(row: dict[str, Any], ident: str) -> None:
             raise MarketplaceIndexError(
                 f"{ident}: docs.steps {steps!r} must be a relative path inside the skill folder (no .., no leading /)"
             )
+        if not isinstance(row.get("path"), str) or not row.get("path"):
+            raise MarketplaceIndexError(f"{ident}: docs.steps is declared but the listing has no path to read it under")
     card = docs.get("card")
     if card is not None:
         expected = _card_href(row)
@@ -313,6 +377,10 @@ def _validate_verified_at(row: dict[str, Any], ident: str) -> None:
         )
     if not isinstance(value, str) or not ISO_DATE.match(value):
         raise MarketplaceIndexError(f"{ident}: verified_at {value!r} must be a quoted YYYY-MM-DD string or null")
+    try:
+        _dt.date.fromisoformat(value)
+    except ValueError as exc:
+        raise MarketplaceIndexError(f"{ident}: verified_at {value!r} is not a calendar date") from exc
 
 
 def _plugin_name(row: dict[str, Any]) -> str:
@@ -446,10 +514,12 @@ def _steps_text(row: dict[str, Any], steps_root: Path | None) -> str | None:
     relative = relative.strip()
     skill_path = row.get("path")
     if not isinstance(skill_path, str) or not skill_path:
-        return None
-    if not _safe_relative(relative):
+        raise MarketplaceIndexError(f"{row['id']}: docs.steps is declared but the listing has no path to read it under")
+    if not _safe_relative(relative) or not _safe_relative(skill_path):
         raise MarketplaceIndexError(f"{row['id']}: docs.steps {relative!r} must stay inside {skill_path}")
     folder = (steps_root / skill_path).resolve()
+    if not folder.is_relative_to(steps_root.resolve()):
+        raise MarketplaceIndexError(f"{row['id']}: path {skill_path!r} resolves outside the marketplace")
     candidate = (folder / relative).resolve()
     if not candidate.is_relative_to(folder):
         raise MarketplaceIndexError(f"{row['id']}: docs.steps {relative!r} resolves outside {skill_path}")
@@ -460,38 +530,61 @@ def _steps_text(row: dict[str, Any], steps_root: Path | None) -> str | None:
 
 # ------------------------------------------------------------------------------------------ markdown
 
-_FENCE = re.compile(r"^```\s*([A-Za-z0-9_+-]*)\s*$")
+#: A fence opens with three or more backticks or tildes after at most three spaces; the info string's first word
+#: is the language (``bash title=x`` is still a bash fence); a backtick fence's info string holds no backtick.
+_FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})[ \t]*([A-Za-z0-9_+.-]*)(?:[ \t][^`]*)?$")
 _HEADING = re.compile(r"^(#{1,6})\s+(.*\S)\s*$")
-_BULLET = re.compile(r"^[-*]\s+(.*)$")
+_BULLET = re.compile(r"^( *)[-*]\s+(.*)$")
+_ORDERED = re.compile(r"^( *)\d+[.)]\s+(.*)$")
 _CODE_SPAN = re.compile(r"(`[^`]+`)")
 _STRONG = re.compile(r"\*\*([^*]+)\*\*")
+_LINK = re.compile(r"\[([^\]]+)\]\(([^)\s]+)\)")
+
+
+def _link(match: re.Match[str]) -> str:
+    """``[text](url)`` as a link for an ``http(s)`` or relative target; any other scheme stays literal text."""
+    text, url = match.group(1), match.group(2)
+    scheme = url.split(":", 1)[0].lower() if ":" in url.split("/", 1)[0] else ""
+    if scheme and scheme not in ("http", "https"):
+        return match.group(0)
+    return f'<a href="{url}">{text}</a>'
 
 
 def _inline(text: str) -> str:
-    """Escaped text with ``code`` spans and ``**strong**``; nothing else is markup."""
+    """Escaped text with ``code`` spans, ``**strong**`` and ``[text](url)`` links; nothing else is markup."""
     rendered: list[str] = []
     for part in _CODE_SPAN.split(html.escape(text)):
         if len(part) >= 2 and part.startswith("`") and part.endswith("`"):
             rendered.append(f"<code>{part[1:-1]}</code>")
         else:
-            rendered.append(_STRONG.sub(r"<strong>\1</strong>", part))
+            rendered.append(_LINK.sub(_link, _STRONG.sub(r"<strong>\1</strong>", part)))
     return "".join(rendered)
 
 
-def render_markdown(text: str) -> str:
-    """A deterministic minimal renderer for ``steps.md`` (review 2026-10-28, row 5).
+def _closes(line: str, marker: str) -> bool:
+    stripped = line.strip()
+    return stripped.startswith(marker[0]) and set(stripped) == {marker[0]} and len(stripped) >= len(marker)
 
-    Recognised: ATX headings (demoted one level, so the card keeps its one
-    ``h1``), fenced code blocks, ``-``/``*`` bullet lists (an indented
-    following line continues the item), blank-line-separated paragraphs,
-    inline ``code`` spans and ``**strong**``. Everything is HTML-escaped
-    first; raw HTML, links and images stay literal text. Pure: the same
-    text renders the same bytes.
+
+def render_markdown(text: str, *, heading_offset: int = 1) -> str:
+    """A deterministic minimal renderer for ``steps.md`` (review 2026-10-28, row 5; loop 2, row 25).
+
+    Recognised: ATX headings (demoted by ``heading_offset`` levels, so the
+    card keeps its one ``h1``), fenced code blocks (backtick or tilde, an
+    info string, up to three spaces of indent, closed by a fence of the same
+    marker), ``-``/``*`` bullet and ``1.`` ordered lists (one level of
+    nesting by indent; an indented following line continues the item; a
+    fence inside a list closes the list), blank-line-separated paragraphs,
+    inline ``code`` spans, ``**strong**`` and ``[text](url)`` links to
+    ``http(s)`` or relative targets. Everything is HTML-escaped first; raw
+    HTML and images stay literal text. Pure: the same text renders the same
+    bytes.
     """
     lines = text.splitlines()
     out: list[str] = []
     paragraph: list[str] = []
-    items: list[str] = []
+    # Each list item: (ordered?, text, nested items).
+    items: list[tuple[bool, str, list[str]]] = []
 
     def flush_paragraph() -> None:
         if paragraph:
@@ -499,22 +592,31 @@ def render_markdown(text: str) -> str:
             paragraph.clear()
 
     def flush_list() -> None:
-        if items:
-            out.append("<ul>" + "".join(f"<li>{_inline(item)}</li>" for item in items) + "</ul>")
-            items.clear()
+        if not items:
+            return
+        ordered = items[0][0]
+        tag = "ol" if ordered else "ul"
+        parts = []
+        for _ordered, item, nested in items:
+            inner = "".join(f"<li>{_inline(child)}</li>" for child in nested)
+            parts.append(f"<li>{_inline(item)}{f'<ul>{inner}</ul>' if inner else ''}</li>")
+        out.append(f"<{tag}>" + "".join(parts) + f"</{tag}>")
+        items.clear()
 
     index = 0
     while index < len(lines):
         line = lines[index]
-        fence = _FENCE.match(line)
+        fence = _FENCE.match(line.lstrip() if items else line)
         if fence:
             flush_paragraph()
             flush_list()
-            language = fence.group(1)
+            marker, language = fence.group(1), fence.group(2)
+            indent = len(line) - len(line.lstrip())  # a fence under a list item: its lines lose that indent
             code: list[str] = []
             index += 1
-            while index < len(lines) and not lines[index].startswith("```"):
-                code.append(lines[index])
+            while index < len(lines) and not _closes(lines[index], marker):
+                body = lines[index]
+                code.append(body[indent:] if body[:indent].strip() == "" else body.lstrip())
                 index += 1
             index += 1  # the closing fence, or the end of the text
             attribute = f' class="language-{language}"' if language else ""
@@ -524,18 +626,29 @@ def render_markdown(text: str) -> str:
         if heading:
             flush_paragraph()
             flush_list()
-            level = min(len(heading.group(1)) + 1, 6)
+            level = min(len(heading.group(1)) + heading_offset, 6)
             out.append(f"<h{level}>{_inline(heading.group(2))}</h{level}>")
             index += 1
             continue
-        bullet = _BULLET.match(line)
-        if bullet:
+        listed = _BULLET.match(line) or _ORDERED.match(line)
+        if listed:
             flush_paragraph()
-            items.append(bullet.group(1).strip())
+            ordered = _ORDERED.match(line) is not None
+            indent, body = len(listed.group(1)), listed.group(2).strip()
+            if items and indent >= 2:
+                items[-1][2].append(body)
+            else:
+                if items and items[0][0] != ordered:
+                    flush_list()
+                items.append((ordered, body, []))
             index += 1
             continue
         if items and line.startswith("  ") and line.strip():
-            items[-1] = f"{items[-1]} {line.strip()}"
+            ordered, body, nested = items[-1]
+            if nested:
+                nested[-1] = f"{nested[-1]} {line.strip()}"
+            else:
+                items[-1] = (ordered, f"{body} {line.strip()}", nested)
             index += 1
             continue
         if not line.strip():
@@ -594,13 +707,15 @@ def render_skill_card(row: dict[str, Any], *, steps_text: str | None = None) -> 
     tier_bit = f"tier {html.escape(str(tier))} · " if tier else ""
     href = _card_href(row)
     up = "../" * href.count("/")
+    jobs = row.get("jobs") or []
+    jobs_bit = (" · jobs " + ", ".join(html.escape(str(job)) for job in jobs)) if jobs else ""
     bits = [
         f'<p><a href="{up}index.html">Marketplace</a></p>',
         f"<h1>{html.escape(title)}</h1>",
         f'<p class="meta">{html.escape(str(row["kind"]))} · '
         f"{html.escape(str(row['name']))} · version {html.escape(str(row.get('version') or 'unversioned'))}</p>",
         f'<p class="meta">{tier_bit}trust {html.escape(trust)} · source {html.escape(str(row["source"]))} · '
-        f"{html.escape(_verified_text(row))}</p>",
+        f"{html.escape(_verified_text(row))}{jobs_bit}</p>",
     ]
     if tier == "community":
         bits.append('<p class="meta">No review record. community maps to unverified until a CODEOWNER promotes it.</p>')
@@ -625,10 +740,11 @@ def render_skill_card(row: dict[str, Any], *, steps_text: str | None = None) -> 
         bits.append(
             f"<p>The rolling <code>{html.escape(RELEASE_TAG)}</code> release carries <code>{plugin}.zip</code> "
             f"with <code>{plugin}.zip.sha256</code> beside it while the marketplace flag is on for that deploy. "
-            f"The zip holds the <code>{plugin}/</code> folder, so <code>unzip {plugin}.zip -d .claude/skills/</code> "
-            "lands it in place; the folder holds "
+            f"The zip holds the <code>{plugin}/</code> folder with "
             + ", ".join(f"<code>{name}</code>" for name in SKILL_FILES)
-            + " and <code>references/</code> when the skill has one.</p>"
+            + f" and <code>{REFERENCES_DIR}/</code> when the skill has one. Check and unpack it where both files "
+            f"were downloaded: <code>sha256sum -c {plugin}.zip.sha256 &amp;&amp; unzip {plugin}.zip -d .claude/skills/</code>, "
+            f"and the same with <code>-d .agents/skills/</code>.</p>"
         )
         bits.append(
             "<p><code>marketplace.json</code> (the Claude marketplace file) is a discovery pointer for this listing; "
@@ -645,16 +761,10 @@ def render_skill_card(row: dict[str, Any], *, steps_text: str | None = None) -> 
         bits.append(_sources_html(row))
     if steps_text:
         bits.append("<h2>Steps</h2>")
-        bits.append(
-            "<p>Rendered from <code>steps.md</code>. "
-            "The 2026-10-20 paper card's lock command is sample data and is not this runbook.</p>"
-        )
-        bits.append(render_markdown(steps_text))
+        # The runbook's own ``#`` sits two levels down, so its steps are ``<h4>`` under this one ``<h2>``.
+        bits.append(render_markdown(steps_text, heading_offset=2))
     elif row.get("kind") == "skill":
         bits.append("<h2>Steps</h2><p>This card has no <code>steps.md</code> to render.</p>")
-    jobs = row.get("jobs") or []
-    if jobs:
-        bits.append("<p>Jobs: " + ", ".join(html.escape(str(job)) for job in jobs) + "</p>")
     related = row.get("related") or []
     if isinstance(related, list) and related:
         items = "".join(f"<li>{html.escape(str(item))}</li>" for item in related)
@@ -796,6 +906,25 @@ def render_url_marketplace(
     return _marketplace_document(rows, source_for)
 
 
+def render_codex_marketplace(rows: list[dict[str, Any]]) -> str:
+    """Codex's ``.agents/plugins/marketplace.json`` for the marketplace directory (review loop 2, row 21).
+
+    The shape ``CatalogEngine.manifests`` writes for the v1 catalog: ``name``, ``interface.displayName`` and one
+    ``local`` plugin per skill, so ``codex plugin marketplace add <marketplace dir>`` reaches the three listings.
+    """
+    plugins = [
+        {
+            "name": _plugin_name(row),
+            "source": {"source": "local", "path": f"./skills/{row['scope']}/{row['slug']}"},
+            "policy": {"installation": "AVAILABLE"},
+            "category": "skill",
+        }
+        for row in _skill_rows(rows)
+    ]
+    document = {"name": MARKETPLACE_NAME, "interface": {"displayName": "BMAD marketplace"}, "plugins": plugins}
+    return json.dumps(document, indent=2) + "\n"
+
+
 def _skill_folders(marketplace: Path) -> list[Path]:
     """Every ``skills/<scope>/<slug>/`` directory, sorted."""
     skills = marketplace / "skills"
@@ -860,6 +989,18 @@ def render_site(
     return documents
 
 
+def _is_generated_site(site_dir: Path) -> bool:
+    """A tree this module wrote: ``listings.json`` at its root with this schema (review loop 2, row 22)."""
+    listings = site_dir / "listings.json"
+    if not listings.is_file():
+        return False
+    try:
+        payload = json.loads(listings.read_text(encoding="utf-8"))
+    except OSError, ValueError:
+        return False
+    return isinstance(payload, dict) and payload.get("schema") == SCHEMA_ID
+
+
 def write_site(
     rows: list[dict[str, Any]],
     site_dir: Path,
@@ -879,9 +1020,16 @@ def write_site(
     documents = render_site(rows, steps_root=steps_root)
     if steps_root is not None and steps_root.resolve().is_relative_to(site_dir.resolve()):
         raise MarketplaceIndexError(f"site directory {site_dir} would replace the listings under {steps_root}")
+    if site_dir.is_symlink():
+        raise MarketplaceIndexError(f"site directory {site_dir} is a symlink; refusing to replace it")
     if site_dir.exists():
         if not site_dir.is_dir():
             raise MarketplaceIndexError(f"site directory {site_dir} is not a directory")
+        if any(site_dir.iterdir()) and not _is_generated_site(site_dir):
+            raise MarketplaceIndexError(
+                f"site directory {site_dir} is not a generated site (no listings.json with schema {SCHEMA_ID}); "
+                "refusing to replace it"
+            )
         shutil.rmtree(site_dir)
     site_dir.mkdir(parents=True)
     written: list[Path] = []
@@ -922,10 +1070,36 @@ def write_plugin_manifest(
 ) -> Path:
     """Write the relative-path ``marketplace.json`` a ``github`` or ``git`` source reads."""
     _require_enabled(flags_path, "manifest")
-    text = render_relative_marketplace(load_listings(index_path, root=index_path.parent))
+    rows = load_listings(index_path, root=index_path.parent)
+    _check_folders_declared(rows, index_path.parent)
+    text = render_relative_marketplace(rows)
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(text, encoding="utf-8")
     return dest
+
+
+def write_codex_manifest(
+    index_path: Path,
+    dest: Path,
+    *,
+    flags_path: Path | str | None = None,
+) -> Path:
+    """Write Codex's ``.agents/plugins/marketplace.json`` (``CODEX_MANIFEST_RELATIVE``) for the marketplace directory."""
+    _require_enabled(flags_path, "Codex manifest")
+    rows = load_listings(index_path, root=index_path.parent)
+    _check_folders_declared(rows, index_path.parent)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(render_codex_marketplace(rows), encoding="utf-8")
+    return dest
+
+
+def write_plugin_manifests(index_path: Path, *, flags_path: Path | str | None = None) -> list[Path]:
+    """Both manifests beside the index: ``.claude-plugin/marketplace.json`` and ``.agents/plugins/marketplace.json``."""
+    root = index_path.parent
+    return [
+        write_plugin_manifest(index_path, root / ".claude-plugin" / "marketplace.json", flags_path=flags_path),
+        write_codex_manifest(index_path, root / CODEX_MANIFEST_RELATIVE, flags_path=flags_path),
+    ]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -943,6 +1117,14 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if not args.flag_env:
         parser.error("--flag-env is the one verb")
+    if cutover_root.resolve_flags_path(None) is None:
+        # Off plus no mount is a valid pages-check state, so a silent 0 would drop /marketplace/ from a deploy
+        # with a green workflow (review loop 2, row 37).
+        sys.stderr.write(
+            f"{FLAG_KEY}: no flag tree found (set PYFORGE_FLAGS_PATH or run from the repository root, whose "
+            "src/platform/config/flags.json is the tree); refusing to print a build line\n"
+        )
+        return 2
     sys.stdout.write(f"{FLAG_ENV}={'1' if pages_enabled() else '0'}\n")
     return 0
 

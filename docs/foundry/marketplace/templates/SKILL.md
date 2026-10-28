@@ -13,11 +13,8 @@ description: >
 
 Marketplace id `scope/slug`. Install this folder into both
 `.agents/skills/<name>/` and `.claude/skills/<name>/`.
-Claude Code's documented project skill path is `.claude/skills/`. Devin's is
-`.agents/skills/`. The tool matrix does not confirm the other directory for
-either of those two tools.
-The human steps are [steps.md](steps.md). The verified tool versions are
-recorded there, not here.
+The human runbook is [steps.md](steps.md); the verified tool versions live
+there. Which directory each tool reads is on the card and in the README.
 
 Run from the teammate's project directory. Do not `cd` into local-recipes.
 Do not prefix commands with a pixi environment selector.

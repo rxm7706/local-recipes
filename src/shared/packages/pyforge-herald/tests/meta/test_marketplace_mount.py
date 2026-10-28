@@ -43,6 +43,15 @@ def plant(root: Path) -> Path:
     write(root / "skills/README.md", "not a skill folder\n")
     write(root / "README.md", "not mounted\n")
     write(root / "index.yaml", "not mounted\n")
+    # loop 2, row 23: a symlink (file or directory, dangling or not) never mounts; a folder outside the slug
+    # grammar never mounts
+    write(root.parent / "outside.txt", "secret\n")
+    (skill / "references" / "link.md").symlink_to(root.parent / "outside.txt")
+    (skill / "references" / "dangling.md").symlink_to(root.parent / "missing.txt")
+    (skill / "references" / "linked-dir").symlink_to(root.parent)
+    write(root / "skills/Mason/Env/SKILL.md", "# bad case\n")
+    write(root / "skills/.hidden/slug/SKILL.md", "# dot scope\n")
+    write(root / "skills/mason/environment.bak/SKILL.md", "# bad slug\n")
     return root
 
 
@@ -139,3 +148,21 @@ def test_the_build_reads_the_flag_through_flags_ts_and_the_tree_reader_is_gone()
     for source in (DOCS_SITE / "src" / "lib").glob("*.ts"):
         text = source.read_text(encoding="utf-8")
         assert "src/platform/config/flags.json" not in text, source.name
+
+
+def test_the_mounts_allowlist_and_slug_grammar_are_the_validators() -> None:
+    """Loop 2, row 23: one allowlist and one slug grammar, shared with ``pyforge.steward.marketplace_pages``."""
+    ts = MARKETPLACE_TS.read_text(encoding="utf-8")
+    py = (DOCS_SITE.parent / "src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py").read_text(
+        encoding="utf-8"
+    )
+    ts_files = re.search(r"SKILL_FILES: readonly string\[\] = \[([^\]]+)\]", ts).group(1)
+    py_files = re.search(r"SKILL_FILES = \(([^)]+)\)", py).group(1)
+    assert [n.strip().strip("'") for n in ts_files.split(",")] == [n.strip().strip('"') for n in py_files.split(",")]
+    assert re.search(r"export const SLUG = /\^\[a-z0-9\]\[a-z0-9-\]\*\$/;", ts)
+    assert 'SLUG = re.compile(r"^[a-z0-9][a-z0-9-]*$")' in py
+    assert re.search(r"export const SKILL_REFERENCES_DIR = 'references';", ts) and 'REFERENCES_DIR = "references"' in py
+    assert (
+        "export const SCHEMA_ID = 'pyforge.bmad-marketplace/v1';" in ts
+        and 'SCHEMA_ID = "pyforge.bmad-marketplace/v1"' in py
+    )

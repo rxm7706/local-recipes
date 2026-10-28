@@ -26,6 +26,10 @@ export const MARKETPLACE_NAME = 'pyforge-bmad-marketplace';
 export const SKILL_FILES: readonly string[] = ['SKILL.md', 'steps.md', 'listing.yaml'];
 /** The one subdirectory of a skill folder that ships. */
 export const SKILL_REFERENCES_DIR = 'references';
+/** `scope` and `slug`, as `pyforge.steward.marketplace_pages.SLUG` holds them: a folder outside it never mounts. */
+export const SLUG = /^[a-z0-9][a-z0-9-]*$/;
+/** The listings document's schema (`pyforge.steward.marketplace_pages.SCHEMA_ID`). */
+export const SCHEMA_ID = 'pyforge.bmad-marketplace/v1';
 
 type Env = Record<string, string | undefined>;
 
@@ -57,15 +61,28 @@ export interface MountedFile {
   data: Buffer;
 }
 
+/** Every regular file under `dir`, `/`-joined and sorted; a symlink (file or directory) never mounts, so nothing
+ * outside the tree is read (the review of 2026-10-28, loop 2, row 23). */
 function filesUnder(dir: string): string[] {
-  if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
+  if (!fs.existsSync(dir) || fs.lstatSync(dir).isSymbolicLink() || !fs.statSync(dir).isDirectory()) {
     return [];
   }
-  return fs
-    .readdirSync(dir, { recursive: true, encoding: 'utf8' })
-    .map((rel) => rel.split(path.sep).join('/'))
-    .filter((rel) => fs.statSync(path.join(dir, rel)).isFile())
-    .sort();
+  const out: string[] = [];
+  const walk = (sub: string): void => {
+    for (const entry of fs.readdirSync(sub, { withFileTypes: true })) {
+      const abs = path.join(sub, entry.name);
+      if (entry.isSymbolicLink()) {
+        continue;
+      }
+      if (entry.isDirectory()) {
+        walk(abs);
+      } else if (entry.isFile()) {
+        out.push(path.relative(dir, abs).split(path.sep).join('/'));
+      }
+    }
+  };
+  walk(dir);
+  return out.sort();
 }
 
 /** The files the mount writes under `marketplace/`, in order, from the marketplace tree at `marketplaceDir`. */
@@ -82,10 +99,87 @@ export function marketplaceMount(marketplaceDir: string, env: Env = process.env)
   const skills = path.join(marketplaceDir, 'skills');
   for (const rel of filesUnder(skills)) {
     const [scope, slug, ...rest] = rel.split('/');
-    if (!scope || !slug || !rest.length || !isShippedSkillFile(rest.join('/'))) {
+    if (!scope || !slug || !SLUG.test(scope) || !SLUG.test(slug) || !rest.length || !isShippedSkillFile(rest.join('/'))) {
       continue;
     }
     out.push({ rel: `skills/${rel}`, data: fs.readFileSync(path.join(skills, rel)) });
+  }
+  return out;
+}
+
+const SKILL_FOLDER_PATH = /^marketplace\/skills\/([^/]+)\/([^/]+)\/(.+)$/;
+const CARD_PATH = /^marketplace\/skills\/([^/]+)\/([^/]+)\.html$/;
+
+/**
+ * The converse of {@link marketplaceManifestFindings} (loop 2, row 27): the artifact held to the manifest and the
+ * listings. `marketplace/listings.json` parses with this schema; every mounted skill folder and card is a listing
+ * and a plugin; every mounted skill file is one the folder ships; no plugin name repeats. `all` is the artifact's
+ * file list, `/`-joined and relative to its root.
+ */
+export function marketplaceArtifactFindings(listingsText: string, manifestText: string, all: string[]): string[] {
+  const out: string[] = [];
+  let listed = new Set<string>();
+  try {
+    const doc = JSON.parse(listingsText) as { schema?: unknown; listings?: unknown };
+    if (doc.schema !== SCHEMA_ID) {
+      out.push(`marketplace/listings.json: schema is not ${SCHEMA_ID}`);
+    }
+    if (Array.isArray(doc.listings)) {
+      listed = new Set(
+        (doc.listings as Array<{ kind?: unknown; scope?: unknown; slug?: unknown }>)
+          .filter((row) => row?.kind === 'skill' && typeof row.scope === 'string' && typeof row.slug === 'string')
+          .map((row) => `${row.scope}/${row.slug}`),
+      );
+    } else {
+      out.push('marketplace/listings.json: listings is not a list');
+    }
+  } catch {
+    out.push('marketplace/listings.json is not JSON');
+  }
+  let plugins = new Set<string>();
+  try {
+    const doc = JSON.parse(manifestText) as { plugins?: unknown };
+    if (Array.isArray(doc.plugins)) {
+      const names = (doc.plugins as Array<{ name?: unknown; source?: { path?: unknown } }>).map((plugin) =>
+        typeof plugin?.name === 'string' ? plugin.name : '',
+      );
+      const repeated = names.filter((name, index) => name && names.indexOf(name) !== index);
+      for (const name of [...new Set(repeated)]) {
+        out.push(`marketplace/marketplace.json: plugin name ${name} repeats`);
+      }
+      plugins = new Set(
+        (doc.plugins as Array<{ source?: { path?: unknown } }>)
+          .map((plugin) => (typeof plugin?.source === 'object' && typeof plugin.source?.path === 'string' ? plugin.source.path : ''))
+          .map((p) => p.replace(/^docs\/foundry\/marketplace\/skills\//, ''))
+          .filter(Boolean),
+      );
+    }
+  } catch {
+    // marketplaceManifestFindings names a manifest that is not JSON
+  }
+  const mounted = new Set<string>();
+  for (const rel of all) {
+    const folder = SKILL_FOLDER_PATH.exec(rel);
+    if (folder) {
+      const [, scope, slug, inside] = folder;
+      mounted.add(`${scope}/${slug}`);
+      if (!isShippedSkillFile(inside)) {
+        out.push(`${rel} is mounted but is not a file a skill folder ships (SKILL.md, steps.md, listing.yaml, references/**)`);
+      }
+      continue;
+    }
+    const card = CARD_PATH.exec(rel);
+    if (card) {
+      mounted.add(`${card[1]}/${card[2]}`);
+    }
+  }
+  for (const key of [...mounted].sort()) {
+    if (!listed.has(key)) {
+      out.push(`marketplace/skills/${key} is mounted but marketplace/listings.json lists no skill ${key}`);
+    }
+    if (!plugins.has(key)) {
+      out.push(`marketplace/skills/${key} is mounted but marketplace/marketplace.json has no plugin for it`);
+    }
   }
   return out;
 }

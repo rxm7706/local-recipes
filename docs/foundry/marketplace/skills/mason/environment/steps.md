@@ -36,16 +36,19 @@ conda-lock lock -f pyproject.toml --lockfile conda-lock.yml
 
 This is the argv `pyforge.mason.engines.condalock` assembles: the binary
 `conda-lock`, then `lock`, then one `-f` per manifest, then `--lockfile`.
-The station discovers manifests in this order: `pyproject.toml`,
-`environment.yml`, each `requirements*.txt`, `pixi.toml`. Substitute the
+`conda-lock` reads `pyproject.toml` and `environment.yml`. Substitute the
 manifests your project holds; `conda-lock` exits non-zero on a file that is
 not there:
 
 - `pyproject.toml` only: the command as written.
 - `environment.yml` only: `conda-lock lock -f environment.yml --lockfile conda-lock.yml`.
 - `pyproject.toml` and `environment.yml`: `conda-lock lock -f pyproject.toml -f environment.yml --lockfile conda-lock.yml`.
-- a `requirements.txt` or `pixi.toml` beside them: one more `-f <file>` each,
-  in the discovery order above.
+
+A `requirements.txt` or `pixi.toml` beside them is not a `conda-lock` input:
+do not pass it with `-f` (`conda-lock` fails to parse it). The station's
+discovery hands those files to the engine today, so step 1 inherits that
+failure until `pyforge-mason` fixes it; the pip requirements belong in
+`pyproject.toml` or `environment.yml` (`pip:` section) for the lock.
 
 Add one `-p` per platform only when you need to name them, for example
 `-p linux-64 -p osx-arm64`.

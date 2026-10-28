@@ -266,20 +266,18 @@ jobs:
               --title "Pages site (rolling)" --notes "$notes"
           fi
           gh release upload pages-site "$RUNNER_TEMP/pages-site.zip" --clobber
-          # Story 109.3, the 102.5 release step (its review of 2026-10-28, row 9): one zip per skill
-          # folder the mount copied under marketplace/skills/<scope>/<slug>/ while the marketplace flag
-          # is on, absent when it is off. Each zip is made from the parent, so it holds the
-          # <scope>-<slug>/ folder and `unzip <scope>-<slug>.zip -d .claude/skills/` lands it in place;
-          # it carries only SKILL.md, steps.md, listing.yaml and references/** (the mount's allowlist,
-          # docs-site/src/lib/marketplace.ts), and a .sha256 sits beside it. The per-skill assets of
-          # the previous deploy are deleted first, so a renamed or dropped skill leaves no stale zip;
-          # pages-site.zip is never deleted.
-          for asset in $(gh release view pages-site --json assets --jq '.assets[].name'); do
-            case "$asset" in
-              pages-site.zip) ;;
-              *.zip|*.zip.sha256) gh release delete-asset pages-site "$asset" --yes ;;
-            esac
-          done
+          # Story 109.3, the 102.5 release step (its review of 2026-10-28, row 9; loop 2, rows 23 and
+          # 24): one zip per skill folder the mount copied under marketplace/skills/<scope>/<slug>/ while
+          # the marketplace flag is on, absent when it is off. Each zip is made from the parent, so it
+          # holds the <scope>-<slug>/ folder and `unzip <scope>-<slug>.zip -d .claude/skills/` lands it
+          # in place; it carries only SKILL.md, steps.md, listing.yaml and references/** with no dot
+          # entry and no followed symlink (the mount's allowlist, docs-site/src/lib/marketplace.ts), and a
+          # .sha256 sits beside it. Every zip is built first; then the previous deploy's per-skill
+          # assets that are not in the new set are deleted (a failed asset listing fails the step, so a
+          # stale zip never survives silently; pages-site.zip is never deleted); then the new set is
+          # uploaded, so no deploy opens a window with no skill zips.
+          outdir="$RUNNER_TEMP/skill-zips-out"
+          rm -rf "$outdir" && mkdir -p "$outdir"
           if [ -d pages-site/marketplace/skills ]; then
             stage="$RUNNER_TEMP/skill-zips"
             find pages-site/marketplace/skills -mindepth 2 -maxdepth 2 -type d | sort | while read -r dir; do
@@ -288,8 +286,17 @@ jobs:
               name="${scope}-${slug}"
               rm -rf "$stage/$name" && mkdir -p "$stage/$name"
               cp -R "$dir/." "$stage/$name/"
-              (cd "$stage" && zip -qr "$RUNNER_TEMP/$name.zip" "$name" -i "$name/SKILL.md" "$name/steps.md" "$name/listing.yaml" "$name/references/*")
-              (cd "$RUNNER_TEMP" && sha256sum "$name.zip" > "$name.zip.sha256")
-              gh release upload pages-site "$RUNNER_TEMP/$name.zip" "$RUNNER_TEMP/$name.zip.sha256" --clobber
+              (cd "$stage" && zip -qry "$outdir/$name.zip" "$name" -i "$name/SKILL.md" "$name/steps.md" "$name/listing.yaml" "$name/references/*" -x '*/.*')
+              (cd "$outdir" && sha256sum "$name.zip" > "$name.zip.sha256")
             done
+          fi
+          assets=$(gh release view pages-site --json assets --jq '.assets[].name') || exit 1
+          for asset in $assets; do
+            case "$asset" in
+              pages-site.zip) ;;
+              *.zip|*.zip.sha256) [ -f "$outdir/$asset" ] || gh release delete-asset pages-site "$asset" --yes ;;
+            esac
+          done
+          if [ -n "$(ls -A "$outdir")" ]; then
+            gh release upload pages-site "$outdir"/* --clobber
           fi

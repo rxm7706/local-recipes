@@ -36,17 +36,20 @@ A skill is the folder under `skills/<scope>/<slug>/`. Copy it into both
 
 The table is the 2026-10-20 tool matrix
 (`planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/tool-support-matrix.md`).
-A teammate with no AI tool uses the card and `steps.md`.
 
 The rolling `pages-site` release carries one `<scope>-<slug>.zip` per skill,
 with `<scope>-<slug>.zip.sha256` beside it, while the marketplace flag is on
 for that deploy. Each zip holds the `<scope>-<slug>/` folder, so
-`unzip <scope>-<slug>.zip -d .claude/skills/` lands it in place; it carries
-`SKILL.md`, `steps.md`, `listing.yaml` and `references/` and nothing else.
+`sha256sum -c <scope>-<slug>.zip.sha256 && unzip <scope>-<slug>.zip -d .claude/skills/`
+checks and lands it in place; it carries `SKILL.md`, `steps.md`,
+`listing.yaml` and text files under `references/` and nothing else (no dot
+entry, no symlink; `validate_listing` refuses any other content, a file over
+1 MiB, or a folder over 4 MiB).
 
-`.claude-plugin/marketplace.json` is a discovery pointer for each listing:
-Round 0 of `MANUAL-CHECKLIST.md` records whether `/plugin install` exposes
-the skill. Until it does, the folder copy above is the install.
+`.claude-plugin/marketplace.json` (Claude Code) and `.agents/plugins/marketplace.json`
+(Codex) are discovery pointers for each listing: Round 0 of
+`MANUAL-CHECKLIST.md` records whether `/plugin install` exposes the skill.
+Until it does, the folder copy above is the install.
 
 ## Layout
 
@@ -57,6 +60,7 @@ skills/<scope>/<slug>/SKILL.md     the skill folder a teammate copies
 skills/<scope>/<slug>/steps.md     the human runbook; the paper card's sample commands are not this file
 skills/<scope>/<slug>/references/  optional; the only subdirectory that ships
 .claude-plugin/marketplace.json    the Claude marketplace file for a github or git source (plugin entries are relative paths), generated
+.agents/plugins/marketplace.json   the Codex marketplace file (`codex plugin marketplace add <this directory>`), generated
 site/index.html                    static index, generated
 site/listings.json                 the same listings, generated
 site/marketplace.json              the Pages URL form of the marketplace file (plugin entries are git-subdir), generated
@@ -68,13 +72,13 @@ MANUAL-CHECKLIST.md                Round 0 desk test and the Wizard-of-Oz pilot
 
 The contribution PR template is `.github/PULL_REQUEST_TEMPLATE/marketplace-skill.md`
 at the repository root, because GitHub reads templates from there and not from
-this tree; open the pull request with `?template=marketplace-skill.md` on the
-compare URL, or paste its body by hand.
+this tree; `gh pr create --repo rxm7706/local-recipes --template marketplace-skill.md`
+applies it, as does `?template=marketplace-skill.md` on the web compare URL.
 
 The v1 catalog manifests stay at
 `src/shared/packages/pyforge-steward/catalog/.claude-plugin/marketplace.json`
-and `.agents/plugins/marketplace.json`. `CatalogEngine.render` does not write
-this tree. Per-tool skill-directory formats are not generated.
+and `.agents/plugins/marketplace.json`; this tree's two manifests are
+generated here, by `write_plugin_manifests`.
 
 ## Index schema
 
@@ -104,13 +108,13 @@ targets are `.agents/skills`, `.claude/skills` or one folder under either;
 
 Copy `templates/SKILL.md` and `templates/steps.md` into
 `skills/<scope>/<slug>/`, write the `listing.yaml` row and append it to
-`index.yaml`, regenerate the site (below), and open a pull request with
-`?template=marketplace-skill.md`. The template's first section is the lane:
-`instructions-only` (markdown and the index row, no package) or
-`code-backed` (the listing names the package the skill calls, published or
-flagged unpublished). `MANUAL-CHECKLIST.md` is the Round 0 desk test and the
-Wizard-of-Oz pilot a contribution is read against; `bmp new` and
-`@bmp/skillify` are not built, so a person helps shape the folder.
+`index.yaml`, regenerate the site and both manifests (below), and open a pull
+request with `gh pr create --repo rxm7706/local-recipes --template
+marketplace-skill.md` (or `?template=marketplace-skill.md` on the web compare
+URL). Tick the lane in the template's first section. `MANUAL-CHECKLIST.md`
+is the Round 0 desk test and the Wizard-of-Oz pilot a contribution is read
+against; `bmp new` and `@bmp/skillify` are not built, so a person helps shape
+the folder.
 
 ## Regenerate the site
 
@@ -130,15 +134,16 @@ run elsewhere, `write_site` refuses naming the missing tree), with
 ```bash
 pixi run --frozen -e pyforge-steward python -c "
 from pathlib import Path
-from pyforge.steward.marketplace_pages import write_plugin_manifest, write_site_from_index
+from pyforge.steward.marketplace_pages import write_plugin_manifests, write_site_from_index
 root = Path('docs/foundry/marketplace')
 write_site_from_index(root / 'index.yaml', root / 'site')
-write_plugin_manifest(root / 'index.yaml', root / '.claude-plugin' / 'marketplace.json')
+write_plugin_manifests(root / 'index.yaml')
 "
 ```
 
 `site/` is replaced by a fresh tree on every render, so a card whose listing
-was dropped or renamed does not survive; the test compares the committed tree
+was dropped or renamed does not survive; `write_site` refuses to replace a
+directory that is not a generated site. The test compares the committed tree
 to the render file for file. `CatalogEngine.render` is a different command.
 Do not use it to refresh `site/`.
 

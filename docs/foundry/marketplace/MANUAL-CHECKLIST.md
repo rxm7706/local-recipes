@@ -17,8 +17,6 @@ Do this in a repository that is not local-recipes.
 - [ ] Confirm no step asked for `pixi run -e` or a path inside local-recipes
 - [ ] Confirm the card's unpublished-package list matches what the desk test hit
 
-The cross-skill audit ("`conda-lock`, `pyproject-build` or `python -m build`, `pixi build`, `deptry`, and `osv-scanner` are the only published commands the three pilot skills ask a teammate to run; `warden scan` / `pyforge mason` stay behind the unpublished packages") is a reviewer check per pull request, in the PR template's §Folder, not a desk-test row.
-
 ## Wizard-of-Oz pilot (P4)
 
 Who: two or three teammates, not rxm7706, drawn from this audience: Claude Code, Cursor, GitHub Copilot in VS Code, Google Gemini, Devin (Cognition AI), and a teammate with no AI tool yet. P4's examples are T1 Cursor and conda or pip, T2 Copilot or Gemini who publishes packages, and T3 no AI tool. Claude Code and Devin are the same audience.
@@ -32,7 +30,7 @@ Faked until the exit criteria below: `bmp install`, search, lint and CI, review 
 - [ ] A teammate asks to find a skill. A person replies with the card URL or the folder path. No CLI is required for the reply
 - [ ] A teammate asks to install it. A person copies the folder into `.agents/skills/<scope>-<slug>/` and `.claude/skills/<scope>-<slug>/` and says which package is still unpublished
 - [ ] A teammate follows `steps.md` on a real task. T3 does that from the steps alone
-- [ ] A teammate asks to add a skill. A person uses `templates/SKILL.md`, `templates/steps.md` and the PR template (`.github/PULL_REQUEST_TEMPLATE/marketplace-skill.md`) and does not publish. That stand-in is `@bmp/skillify` until `bmp new` exists
+- [ ] A teammate asks to add a skill. A person uses `templates/SKILL.md`, `templates/steps.md` and the PR template (`.github/PULL_REQUEST_TEMPLATE/marketplace-skill.md`, applied with `gh pr create --repo rxm7706/local-recipes --template marketplace-skill.md` or `?template=marketplace-skill.md`, else pasted by hand) and does not publish. That stand-in is `@bmp/skillify` until `bmp new` exists
 - [ ] Fill one feedback grid per teammate per task (likes, questions, ideas, changes), plus completed y/n, stuck point, tool, source, and operator interventions
 - [ ] Write down the questions the person had to answer that the card did not
 

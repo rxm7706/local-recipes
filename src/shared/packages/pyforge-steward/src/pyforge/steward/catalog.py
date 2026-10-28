@@ -348,9 +348,13 @@ def _load_mirrors(document_path: Path, raw: object) -> tuple[Mirror, ...]:
                 f"{document_path}: '{where}.host' must be a hostname with an optional :port "
                 f"(no scheme, path, user, query or fragment), got {host!r}"
             )
+        _, colon, port = host.strip().rpartition(":")
+        if colon and not 1 <= int(port) <= 65535:
+            raise CatalogConfigError(f"{document_path}: '{where}.host' port {port} is not in 1-65535, got {host!r}")
         if not isinstance(repo, str) or _github_owner_repo(repo) != repo.strip():
             raise CatalogConfigError(f"{document_path}: '{where}.repo' must be an owner/repo string, got {repo!r}")
-        key = (host.strip().lower(), repo.strip())
+        # GitHub hosts and owner/repo names are case-insensitive, so the duplicate key folds both.
+        key = (host.strip().lower(), repo.strip().lower())
         if key in seen:
             raise CatalogConfigError(f"{document_path}: '{where}' repeats mirror {host.strip()}/{repo.strip()}")
         seen.add(key)
@@ -1749,6 +1753,8 @@ class CatalogEngine:
                 "until Round 0 confirms a plugin install exposes the skill."
             )
         quoted_dir = shlex.quote(str(abs_dir))  # a path with a space must paste intact
+        marketplace_dir = (self.repo_root / MARKETPLACE_ROOT_RELATIVE).resolve()
+        quoted_marketplace = shlex.quote(str(marketplace_dir))
         return {
             "catalog_dir": str(abs_dir),
             "custom_source": f"bmad-method install --custom-source {quoted_dir}",
@@ -1759,13 +1765,16 @@ class CatalogEngine:
             "mirror_git_marketplaces": mirror_forms,
             "mirrors": [{"host": mirror.host, "repo": mirror.repo} for mirror in self.config.edit_store.mirrors],
             "claude_plugin_add": f"/plugin marketplace add {quoted_dir}",
-            # The local-directory form Codex documents: that directory holds .agents/plugins/marketplace.json.
-            # The owner/repo form reads the same file at the repository root, which does not exist
-            # (review 2026-10-28, row 13), so it is not printed.
-            "codex_plugin_add": f"codex plugin marketplace add {quoted_dir}",
+            # The local-directory form Codex documents, pointed at the marketplace directory, whose
+            # .agents/plugins/marketplace.json names the skill listings (review 2026-10-28, row 13; loop 2, row 21:
+            # the catalog directory's manifest is the v1 estate catalog with no plugins). The owner/repo form reads
+            # the same file at the repository root, which does not exist, so it is not printed.
+            "codex_plugin_add": f"codex plugin marketplace add {quoted_marketplace}",
+            "codex_marketplace_dir": str(marketplace_dir),
             "codex_note": (
-                f"codex plugin marketplace add {repo} (the owner/repo form) needs "
-                f"{CODEX_ROOT_MANIFEST_RELATIVE} at the repository root; none exists, so the directory form is printed"
+                f"that directory's {CODEX_ROOT_MANIFEST_RELATIVE} lists the skill listings (written by "
+                f"pyforge.steward.marketplace_pages.write_codex_manifest); codex plugin marketplace add {repo} "
+                f"(the owner/repo form) needs {CODEX_ROOT_MANIFEST_RELATIVE} at the repository root, and none exists"
             ),
             "github_note": github_note,
             # Verified live 2026-09-19 (bmad-method 6.12.0): the installer resolves
@@ -1836,7 +1845,7 @@ def format_pointers(pointers: dict[str, object]) -> str:
             "Claude Code — one session:",
             f"  {pointers['claude_plugin_add']}",
             "",
-            "Codex (reads .agents/plugins/marketplace.json in the directory named):",
+            "Codex (reads .agents/plugins/marketplace.json in the marketplace directory named):",
             f"  {pointers['codex_plugin_add']}",
             f"  note: {pointers['codex_note']}",
             "",

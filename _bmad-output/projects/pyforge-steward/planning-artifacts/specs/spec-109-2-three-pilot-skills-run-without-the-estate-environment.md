@@ -2,7 +2,7 @@
 title: '109.2: Three pilot skills run without the estate environment'
 type: 'docs'
 created: '2026-10-21'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '53aed16fe1957ab340c6146cb7bf0c3f810c1746'
 flag-exempt: docs-only
 review_loop_iteration: 2
@@ -104,3 +104,14 @@ Verdict: failed, narrowly. Every loop-1 row is closed in the tree (the verifier'
 | 11 | structure (editorial, non-blocking) | Environment `SKILL.md:43-60` repeats `steps.md:37-51,59-63` verbatim (the argv, the `-f`/`-p` rules, the temporary-copy sentence); package `SKILL.md:40-42` repeats the `BackendUnavailable` precondition. Package `steps.md:21-24` carries reviewer provenance ("what the local-recipes `pixi.lock` pins, both re-read on 2026-10-28") inside the portable runbook, the category row 7 moved out. | Condense each `SKILL.md` to the argv, "one `-f` per manifest — `steps.md` step 2", and the one `--check-input-hash` rule; condense the pixi bullet to "`pixi` 0.81.0 (re-read 2026-10-28)". |
 | 12 | structure (editorial, non-blocking) | The ~55-word install-orientation paragraph (both directories, the matrix caveat) is repeated in `templates/SKILL.md:14-20` and each pilot `SKILL.md`, read by the teammate's tool after install; the card and README hold the same text for the human before install. | Decide: condense `SKILL.md` to "Marketplace id `scope/slug`. The human runbook is [steps.md](steps.md); verified tool versions live there." and leave the paths to the card and README, or keep the duplicate deliberately. |
 | 13 | tea-test-review (advisory) | `test_pilot_skills_name_the_commands_that_were_verified` asserts across all three pilots in one test, so the first failing assertion masks the rest. | One test per skill and a parametrized test over `_texts()` for the per-file `404` + `2026-10-21` rule. |
+
+### Fixes (2026-10-28, loop 2)
+
+Every loop-2 row landed on PR #2274 on 2026-10-28; the story moves to `in-review`.
+
+- Row 8: environment `steps.md` step 2 offers only `pyproject.toml` and `environment.yml` as `-f` substitutions and says a `requirements.txt` or `pixi.toml` is not a `conda-lock` input (the station's discovery still hands them to the engine, and step 1 inherits that failure until `pyforge-mason` fixes it); `SKILL.md`'s project-directory line names the two parseable manifests. `test_environment_steps_name_the_verified_commands` refuses `-f requirements` and `-f pixi.toml`.
+- Row 9: `test_pilot_steps_install_the_published_tools_first` reads the pixi version from `pixi.lock`'s `linux-64` pin and asserts the runbook states that one.
+- Row 10: package `SKILL.md`'s Upload block is `### Upload` under `## When pyforge-mason is installed`, so its H2 set matches `templates/SKILL.md`.
+- Row 11: environment `SKILL.md` keeps the argv, defers the substitutions and the `-p` rule to `steps.md` step 2, and keeps the one `--check-input-hash` rule; package `SKILL.md` defers the backend precondition to step 0; the pixi bullet reads "`pixi` 0.81.0 (re-read 2026-10-28)".
+- Row 12 (decided): each `SKILL.md` and the template keep the two install directories and drop the tool-matrix caveat; the card and the README hold which directory each tool reads.
+- Row 13: one test per skill (`test_environment_steps_name_the_verified_commands`, `test_package_steps_name_the_verified_commands`, `test_warden_scan_steps_name_the_verified_commands`) and a parametrized `test_every_pilot_file_records_the_404_and_its_date`.

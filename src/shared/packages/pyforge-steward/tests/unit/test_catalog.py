@@ -25,6 +25,7 @@ from pyforge.steward.catalog import (
     FRAME_INDEX_RELATIVE,
     KIND_FRAME,
     KIND_MODULE,
+    MARKETPLACE_ROOT_RELATIVE,
     PUBLISH_TRUST_TIERS,
     STATES,
     TIER_BMAD_CERTIFIED,
@@ -40,6 +41,7 @@ from pyforge.steward.catalog import (
     EstateListingsSource,
     GitBundleBackend,
     Listing,
+    Mirror,
     ObjectStorageBackend,
     ShipBackendPlugin,
     SourceContext,
@@ -47,6 +49,7 @@ from pyforge.steward.catalog import (
     _github_owner_repo,
     default_catalog_dir,
     load_config,
+    mirror_git_url,
 )
 from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, EXIT_USAGE, build_parser, main, resolve_duty
 from pyforge.steward.frames import EXPECTED_COUNT, preflight_frames
@@ -276,28 +279,43 @@ def test_load_config_rejects_dedicated_repo(tmp_path: Path) -> None:
         load_config(catalog_dir / "catalog.yaml")
 
 
+def _mirrors(*entries: str) -> str:
+    """The ``mirrors:`` block at ``edit_store``'s indent (a mis-indented block is a YAML error, not a grammar test)."""
+    return "mirrors:\n" + "".join(f"    - {entry}\n" for entry in entries)
+
+
 @pytest.mark.parametrize(
-    "value",
+    ("value", "needle"),
     [
-        "mirrors: https://github.com/x/y\n",
-        "mirrors:\n  - host: https://git.example\n    repo: acme/local-recipes\n",
-        "mirrors:\n  - host: git.example/org\n    repo: acme/local-recipes\n",
-        "mirrors:\n  - host: git.example\n    repo: not-a-repo\n",
-        "mirrors:\n  - host: git.example\n    repo: acme/local-recipes\n    path: extra\n",
-        "mirrors:\n  - git.example\n",
+        ("mirrors: https://github.com/x/y\n", "must be a list"),
+        (_mirrors("{host: https://git.example, repo: acme/local-recipes}"), "host' must be a hostname"),
+        (_mirrors("{host: git.example/org, repo: acme/local-recipes}"), "host' must be a hostname"),
+        (_mirrors("{host: git.example, repo: not-a-repo}"), "repo' must be an owner/repo"),
+        (_mirrors("{host: git.example, repo: acme/local-recipes, path: extra}"), "unknown key"),
+        (_mirrors("git.example"), "must be a mapping"),
         # review 2026-10-28, row 15: userinfo, a query, a fragment, a bad label, a bad port, a duplicate
-        "mirrors:\n  - host: ci:TOKEN@ghe.example\n    repo: acme/local-recipes\n",
-        "mirrors:\n  - host: ghe.example?x=1\n    repo: acme/local-recipes\n",
-        "mirrors:\n  - host: ghe.example#frag\n    repo: acme/local-recipes\n",
-        "mirrors:\n  - host: -ghe.example\n    repo: acme/local-recipes\n",
-        "mirrors:\n  - host: ghe.example:port\n    repo: acme/local-recipes\n",
-        "mirrors:\n  - host: ghe.example\n    repo: acme/local-recipes\n  - host: GHE.example\n    repo: acme/local-recipes\n",
+        (_mirrors("{host: 'ci:TOKEN@ghe.example', repo: acme/local-recipes}"), "host' must be a hostname"),
+        (_mirrors("{host: 'ghe.example?x=1', repo: acme/local-recipes}"), "host' must be a hostname"),
+        (_mirrors("{host: 'ghe.example#frag', repo: acme/local-recipes}"), "host' must be a hostname"),
+        (_mirrors("{host: -ghe.example, repo: acme/local-recipes}"), "host' must be a hostname"),
+        (_mirrors("{host: 'ghe.example:port', repo: acme/local-recipes}"), "host' must be a hostname"),
+        (
+            _mirrors("{host: ghe.example, repo: acme/local-recipes}", "{host: GHE.example, repo: acme/local-recipes}"),
+            "repeats mirror",
+        ),
+        # loop 2, row 28: the port is bounded, and the duplicate key folds the repo's case too
+        (_mirrors("{host: 'ghe.example:0', repo: acme/local-recipes}"), "port 0 is not in 1-65535"),
+        (_mirrors("{host: 'ghe.example:99999', repo: acme/local-recipes}"), "port 99999 is not in 1-65535"),
+        (
+            _mirrors("{host: ghe.example, repo: acme/local-recipes}", "{host: ghe.example, repo: Acme/Local-Recipes}"),
+            "repeats mirror",
+        ),
     ],
 )
-def test_load_config_mirrors_must_be_host_and_owner_repo(tmp_path: Path, value: str) -> None:
+def test_load_config_mirrors_must_be_host_and_owner_repo(tmp_path: Path, value: str, needle: str) -> None:
     header = _HEADER.replace("mirrors: []\n", value)
     catalog_dir = _write_catalog(tmp_path, "", header=header)
-    with pytest.raises(CatalogConfigError, match="mirrors"):
+    with pytest.raises(CatalogConfigError, match=needle):
         load_config(catalog_dir / "catalog.yaml")
 
 
@@ -1129,7 +1147,8 @@ def test_pointers_name_every_consumer_form_and_edit_nothing(tmp_path: Path, caps
     # Codex (review 2026-10-28, row 13): the local-directory form, which holds .agents/plugins/marketplace.json;
     # the owner/repo form would need that file at the repository root, and the note says so.
     printed = [line.strip() for line in out.splitlines() if line.strip().startswith("codex plugin marketplace add")]
-    assert printed == [f"codex plugin marketplace add {catalog_dir.resolve()}"]
+    marketplace_dir = (repo_root() / MARKETPLACE_ROOT_RELATIVE).resolve()  # the duty runs at the repository root
+    assert printed == [f"codex plugin marketplace add {marketplace_dir}"]
     assert "needs .agents/plugins/marketplace.json at the repository root" in out
     assert '"source": "github"' in out
     assert "docs/foundry/marketplace/.claude-plugin/marketplace.json" in out
@@ -1176,6 +1195,33 @@ def test_pointers_quote_a_catalog_path_with_a_space(tmp_path: Path) -> None:
     assert pointers["catalog_dir"] == str(spaced.resolve())  # the raw path stays raw
 
 
+@pytest.mark.parametrize(
+    ("host", "url"),
+    [
+        ("ghe.example:8443", "https://ghe.example:8443/acme/local-recipes.git"),
+        ("GHE.example", "https://GHE.example/acme/local-recipes.git"),
+        ("localhost", "https://localhost/acme/local-recipes.git"),
+    ],
+)
+def test_load_config_accepts_a_port_and_a_mixed_case_host(tmp_path: Path, host: str, url: str) -> None:
+    """Loop 2, row 28: the positive cases the grammar must keep accepting."""
+    header = _HEADER.replace("mirrors: []\n", _mirrors(f"{{host: '{host}', repo: acme/local-recipes}}"))
+    catalog_dir = _write_catalog(tmp_path, "", header=header)
+    config = load_config(catalog_dir / "catalog.yaml")
+    assert config.edit_store.mirrors == (Mirror(host=host, repo="acme/local-recipes"),)
+    assert mirror_git_url(config.edit_store.mirrors[0]) == url
+
+
+def test_load_config_names_a_repeated_mirror(tmp_path: Path) -> None:
+    header = _HEADER.replace(
+        "mirrors: []\n",
+        _mirrors("{host: ghe.example, repo: acme/local-recipes}", "{host: GHE.EXAMPLE, repo: Acme/local-recipes}"),
+    )
+    catalog_dir = _write_catalog(tmp_path, "", header=header)
+    with pytest.raises(CatalogConfigError, match="repeats mirror"):
+        load_config(catalog_dir / "catalog.yaml")
+
+
 def test_pointers_print_a_full_git_url_for_each_mirror(tmp_path: Path) -> None:
     header = _HEADER.replace(
         "mirrors: []",
@@ -1185,7 +1231,10 @@ def test_pointers_print_a_full_git_url_for_each_mirror(tmp_path: Path) -> None:
     engine = CatalogEngine(tmp_path, load_config(catalog_dir / "catalog.yaml"), catalog_dir=catalog_dir)
     pointers = engine.pointers()
     assert pointers["mirrors"] == [{"host": "git.example", "repo": "acme/local-recipes"}]
-    assert pointers["codex_plugin_add"] == f"codex plugin marketplace add {catalog_dir.resolve()}"
+    assert (
+        pointers["codex_plugin_add"]
+        == f"codex plugin marketplace add {(tmp_path / MARKETPLACE_ROOT_RELATIVE).resolve()}"
+    )
     mirror = pointers["mirror_git_marketplaces"][0]["extraKnownMarketplaces"]["pyforge-bmad-marketplace"]
     assert mirror["source"] == {
         "source": "git",
@@ -1313,11 +1362,15 @@ def test_real_tree_pointers_use_the_repo_relative_directory_form(capsys) -> None
     ]
     assert payload["mirrors"] == []
     assert payload["mirror_git_marketplaces"] == []
-    # The printed Codex form names a directory that holds the manifest Codex reads; an owner/repo form would
+    # The printed Codex form names the marketplace directory, whose manifest lists the skill listings (loop 2,
+    # row 21: the catalog directory's manifest is the v1 estate catalog with no plugins); an owner/repo form would
     # have to resolve to a root manifest, which this repository does not carry.
-    catalog_dir = (repo_root() / CATALOG_RELATIVE).resolve()
-    assert payload["codex_plugin_add"] == f"codex plugin marketplace add {catalog_dir}"
-    assert (catalog_dir / ".agents" / "plugins" / "marketplace.json").is_file()
+    marketplace_dir = (repo_root() / MARKETPLACE_ROOT_RELATIVE).resolve()
+    assert payload["codex_plugin_add"] == f"codex plugin marketplace add {marketplace_dir}"
+    assert payload["codex_marketplace_dir"] == str(marketplace_dir)
+    manifest = json.loads((marketplace_dir / ".agents" / "plugins" / "marketplace.json").read_text(encoding="utf-8"))
+    assert manifest["name"] == "pyforge-bmad-marketplace"
+    assert [plugin["name"] for plugin in manifest["plugins"]] == ["mason-environment", "mason-package", "warden-scan"]
     assert not (repo_root() / ".agents" / "plugins" / "marketplace.json").exists()
     assert "rxm7706/local-recipes (the owner/repo form)" in payload["codex_note"]
     assert payload["catalog_dir"] == str((repo_root() / CATALOG_RELATIVE).resolve())

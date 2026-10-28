@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
@@ -44,31 +45,43 @@ def test_pilot_skills_do_not_invoke_the_estate_environment() -> None:
         assert "pixi run --frozen -e" not in text, path
 
 
-def test_pilot_skills_name_the_commands_that_were_verified() -> None:
-    by_path = dict(_texts())
-    environment = by_path["mason/environment/steps.md"]
+def test_environment_steps_name_the_verified_commands() -> None:
+    environment = dict(_texts())["mason/environment/steps.md"]
     assert "conda-lock lock -f pyproject.toml --lockfile conda-lock.yml" in environment
     assert "env.lock" not in environment
     assert "--conda environment.yml" not in environment
     assert "conda-lock, version 4.0.2" in environment or "conda-lock` 4.0.2" in environment
     # AC3: the station check uses a temporary copy, and the runbook says so.
     assert "temporary copy of the lockfile" in environment
-    package = by_path["mason/package/steps.md"]
+    # loop 2, row 8: only the manifests conda-lock parses are offered as -f substitutions
+    assert "-f environment.yml" in environment
+    assert "-f requirements" not in environment and "-f pixi.toml" not in environment
+    assert "not a `conda-lock` input" in environment
+
+
+def test_package_steps_name_the_verified_commands() -> None:
+    package = dict(_texts())["mason/package/steps.md"]
     assert "pyproject-build --no-isolation" in package
     assert "pixi build --output-dir dist" in package
     # AC4: the two upload commands are named, and the reader is told not to run them.
     assert "twine upload" in package and "pixi upload" in package
     assert "Do not run `twine upload` or `pixi upload`" in package
-    warden = by_path["warden/scan/steps.md"]
+
+
+def test_warden_scan_steps_name_the_verified_commands() -> None:
+    warden = dict(_texts())["warden/scan/steps.md"]
     assert "warden scan ." in warden
     assert "deptry" in warden
     assert "osv-scanner" in warden
     # AC5: the engines' output is not a warden verdict, in those words.
     assert "`deptry` and `osv-scanner` are not a warden verdict" in warden
-    for path, text in _texts():
-        # AC6: every file records the 404 and its date.
-        assert "404" in text, path
-        assert "2026-10-21" in text, path
+
+
+@pytest.mark.parametrize(("path", "text"), _texts(), ids=[path for path, _ in _texts()])
+def test_every_pilot_file_records_the_404_and_its_date(path: str, text: str) -> None:
+    # AC6: every file records the 404 and its date.
+    assert "404" in text, path
+    assert "2026-10-21" in text, path
 
 
 def test_pilot_skills_read_without_the_station_source() -> None:
@@ -102,7 +115,13 @@ def test_pilot_steps_install_the_published_tools_first() -> None:
     package = by_path["mason/package/steps.md"]
     assert "conda install -c conda-forge python-build" in package
     assert "BackendUnavailable" in package
-    assert "`pixi` 0.81.0" in package and "0.82.0" not in package
+    # loop 2, row 9: the pixi version the runbook states is the one pixi.lock pins, read from the lock
+    lock = (repo_root() / "pixi.lock").read_text(encoding="utf-8")
+    pinned = sorted({m for m in re.findall(r"/linux-64/pixi-(\d+\.\d+\.\d+)-", lock)})
+    assert pinned, "pixi.lock pins no linux-64 pixi"
+    assert len(pinned) == 1, pinned
+    assert f"`pixi` {pinned[0]}" in package
+    assert "0.82.0" not in package
     warden = by_path["warden/scan/steps.md"]
     assert "conda install -c conda-forge deptry" in warden
     assert "conda install -c conda-forge osv-scanner" in warden

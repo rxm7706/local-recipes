@@ -272,6 +272,50 @@ def test_the_font_licences_ship_with_the_faces(built: Path) -> None:
     assert (built / "favicon.svg").read_text(encoding="utf-8").count(SITE["favicon"]) == 1
 
 
+MARKETPLACE_ENV = {**STATUS_ENV, "PYFORGE_MARKETPLACE_PAGES": "1"}
+
+
+@pytest.fixture(scope="module")
+def built_with_marketplace(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """The tracked tree built with steward's marketplace flag on as well (Story 109.3, its loop-2 review row 34)."""
+    tmp = tmp_path_factory.mktemp("one-generator-marketplace")
+    out = tmp / "site"
+    done = astro_build(
+        out, status=True, tile=True, inputs=_inputs(tmp / "inputs"), extra_env={**_CI, "PYFORGE_MARKETPLACE_PAGES": "1"}
+    )
+    assert done.returncode == 0, done.stdout[-3000:] + done.stderr[-3000:]
+    return out
+
+
+@needs_astro
+def test_109_3_the_marketplace_mounts_and_is_linked_only_with_its_flag(
+    built: Path, built_with_marketplace: Path
+) -> None:
+    """With ``PYFORGE_MARKETPLACE_PAGES=1`` the build mounts ``docs/foundry/marketplace/`` at ``marketplace/`` (the
+    generated site, the shipped skill files), the menu carries the section, ``llms.txt`` lists the two surfaces and
+    ``pages-check`` passes; without it none of that is in the artifact."""
+    on = built_with_marketplace
+    for rel in (
+        "marketplace/index.html",
+        "marketplace/listings.json",
+        "marketplace/marketplace.json",
+        "marketplace/skills/mason/environment.html",
+        "marketplace/skills/mason/environment/SKILL.md",
+        "marketplace/skills/mason/environment/steps.md",
+        "marketplace/skills/mason/environment/listing.yaml",
+    ):
+        assert (on / rel).is_file(), rel
+    assert pages_check(on, env=MARKETPLACE_ENV, repo_root=REPO_ROOT) == []
+    menu = (on / "index.html").read_text(encoding="utf-8")
+    assert 'href="/local-recipes/marketplace/">Marketplace</a>' in menu
+    llms = (on / "llms.txt").read_text(encoding="utf-8")
+    assert "(https://rxm7706.github.io/local-recipes/marketplace/)" in llms
+    assert "(https://rxm7706.github.io/local-recipes/marketplace/listings.json)" in llms
+    assert not (built / "marketplace").exists()
+    assert "marketplace/" not in (built / "index.html").read_text(encoding="utf-8")
+    assert "/marketplace/" not in (built / "llms.txt").read_text(encoding="utf-8")
+
+
 @needs_astro
 def test_llms_txt_lists_every_gallery_and_family_page_with_its_text(built: Path) -> None:
     index = (built / "llms.txt").read_text(encoding="utf-8")

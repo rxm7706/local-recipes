@@ -7,7 +7,10 @@ AC1 and AC2 read ``.github/workflows/pages.yml`` as YAML; AC6 reads the protecte
 from __future__ import annotations
 
 import json
+import os
 import re
+import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -204,26 +207,100 @@ def test_the_marketplace_flag_reaches_the_build_env_beside_heralds_lines() -> No
     assert "PYFORGE_ENVIRONMENT" not in PAGES_WORKFLOW.read_text(encoding="utf-8").replace("# PYFORGE_ENVIRONMENT", "")
 
 
-def test_the_per_skill_zips_hold_the_folder_carry_a_checksum_and_replace_stale_assets() -> None:
-    """Each zip is made from the parent of the staged ``<scope>-<slug>/`` copy (``unzip -d .claude/skills/`` lands
-    the folder), carries only the shipped files, gets a ``.sha256`` beside it, and the previous deploy's per-skill
-    assets are deleted before the upload; ``pages-site.zip`` is never deleted."""
+def _zip_step_lines() -> list[str]:
     run = next(step["run"] for step in _steps("deploy") if pages.RELEASE_ASSET in str(step.get("run", "")))
-    lines = [line.strip() for line in run.splitlines()]
-    zipped = next(line for line in lines if line.startswith('(cd "$stage" && zip -qr'))
+    return [line.strip() for line in run.splitlines()]
+
+
+def test_the_per_skill_zips_are_built_first_then_stale_assets_pruned_then_uploaded() -> None:
+    """Loop 2, row 24: every zip is built before the release is touched; the asset listing's failure fails the
+    step; only per-skill names not in the new set are deleted; ``pages-site.zip`` is never deleted."""
+    lines = _zip_step_lines()
+    zipped = next(line for line in lines if line.startswith('(cd "$stage" && zip -qry'))
     assert zipped == (
-        '(cd "$stage" && zip -qr "$RUNNER_TEMP/$name.zip" "$name" -i "$name/SKILL.md" "$name/steps.md" '
-        '"$name/listing.yaml" "$name/references/*")'
+        '(cd "$stage" && zip -qry "$outdir/$name.zip" "$name" -i "$name/SKILL.md" "$name/steps.md" '
+        '"$name/listing.yaml" "$name/references/*" -x \'*/.*\')'
     )
     assert 'cp -R "$dir/." "$stage/$name/"' in lines
-    assert '(cd "$RUNNER_TEMP" && sha256sum "$name.zip" > "$name.zip.sha256")' in lines
-    assert 'gh release upload pages-site "$RUNNER_TEMP/$name.zip" "$RUNNER_TEMP/$name.zip.sha256" --clobber' in lines
-    assert "pages-site.zip) ;;" in lines
-    delete = lines.index('*.zip|*.zip.sha256) gh release delete-asset pages-site "$asset" --yes ;;')
+    assert '(cd "$outdir" && sha256sum "$name.zip" > "$name.zip.sha256")' in lines
+    listing = lines.index("assets=$(gh release view pages-site --json assets --jq '.assets[].name') || exit 1")
+    delete = lines.index(
+        '*.zip|*.zip.sha256) [ -f "$outdir/$asset" ] || gh release delete-asset pages-site "$asset" --yes ;;'
+    )
+    upload = lines.index('gh release upload pages-site "$outdir"/* --clobber')
     site_upload = lines.index('gh release upload pages-site "$RUNNER_TEMP/pages-site.zip" --clobber')
-    loop = lines.index("if [ -d pages-site/marketplace/skills ]; then")
-    assert site_upload < delete < loop < lines.index(zipped)
-    assert 'zip -qr "$zip_path" .' not in run  # the old form zipped the folder's contents loose
+    assert "pages-site.zip) ;;" in lines
+    assert site_upload < lines.index(zipped) < listing < delete < upload
+    assert "for asset in $(gh release view" not in " ".join(lines)  # a failed listing fails the step
+    assert 'zip -qr "$zip_path" .' not in " ".join(lines)  # the old form zipped the folder's contents loose
+
+
+def test_the_zip_allowlist_is_the_mounts_and_the_validators() -> None:
+    """Loop 2, row 23: one allowlist in three places (the workflow's -i list, ``marketplace.ts``, ``SKILL_FILES``)."""
+    from pyforge.steward.marketplace_pages import REFERENCES_DIR, SKILL_FILES
+
+    zipped = next(line for line in _zip_step_lines() if line.startswith('(cd "$stage" && zip -qry'))
+    patterns = re.findall(r'-i ((?:"\$name/[^"]+" ?)+)', zipped)[0].split()
+    assert patterns == [f'"$name/{name}"' for name in SKILL_FILES] + [f'"$name/{REFERENCES_DIR}/*"']
+    ts = (REPO_ROOT / "docs-site" / "src" / "lib" / "marketplace.ts").read_text(encoding="utf-8")
+    assert re.search(r"export const SKILL_FILES: readonly string\[\] = \[([^\]]+)\];", ts)
+    ts_files = [
+        name.strip().strip("'\"")
+        for name in re.search(r"SKILL_FILES: readonly string\[\] = \[([^\]]+)\]", ts).group(1).split(",")
+    ]
+    assert ts_files == list(SKILL_FILES)
+    assert f"export const SKILL_REFERENCES_DIR = '{REFERENCES_DIR}';" in ts
+
+
+@pytest.mark.skipif(shutil.which("zip") is None or shutil.which("unzip") is None, reason="zip and unzip on PATH")
+def test_the_workflows_zip_line_ships_the_folder_and_only_the_allowlist(tmp_path: Path) -> None:
+    """Loop 2, row 24: the workflow's own zip line, run over a planted folder, holds ``<scope>-<slug>/`` at the
+    root with the shipped files, carries nested ``references/``, and drops a stray file, a dot entry and a
+    symlink; the checksum line verifies."""
+    zipped = next(line for line in _zip_step_lines() if line.startswith('(cd "$stage" && zip -qry'))
+    checksum = '(cd "$outdir" && sha256sum "$name.zip" > "$name.zip.sha256")'
+    stage = tmp_path / "stage"
+    name = "mason-environment"
+    folder = stage / name
+    (folder / "references" / "deep").mkdir(parents=True)
+    for rel, text in (
+        ("SKILL.md", "# skill\n"),
+        ("steps.md", "# steps\n"),
+        ("listing.yaml", "id: mason/environment\n"),
+        ("references/deep/more.md", "# more\n"),
+        ("notes.txt", "stray\n"),
+        (".DS_Store", "x"),
+        ("references/.hidden", "x"),
+    ):
+        (folder / rel).write_text(text, encoding="utf-8")
+    (tmp_path / "outside.txt").write_text("secret\n", encoding="utf-8")
+    (folder / "references" / "link.md").symlink_to(tmp_path / "outside.txt")
+    outdir = tmp_path / "out"
+    outdir.mkdir()
+    env = {**os.environ, "stage": str(stage), "name": name, "outdir": str(outdir)}
+    for line in (zipped, checksum):
+        done = subprocess.run(
+            ["bash", "-euo", "pipefail", "-c", line], env=env, capture_output=True, text=True, check=False
+        )
+        assert done.returncode == 0, done.stderr
+    listed = subprocess.run(
+        ["unzip", "-Z1", str(outdir / f"{name}.zip")], capture_output=True, text=True, check=True
+    ).stdout.split()
+    assert sorted(entry for entry in listed if not entry.endswith("/")) == [
+        f"{name}/SKILL.md",
+        f"{name}/listing.yaml",
+        f"{name}/references/deep/more.md",
+        f"{name}/references/link.md",  # stored as a link (-y), never the target's bytes
+        f"{name}/steps.md",
+    ]
+    extracted = tmp_path / "extracted"
+    subprocess.run(["unzip", "-q", str(outdir / f"{name}.zip"), "-d", str(extracted)], check=True)
+    assert (extracted / name / "references" / "link.md").is_symlink()
+    assert not (extracted / name / "notes.txt").exists()
+    verify = subprocess.run(
+        ["sha256sum", "-c", f"{name}.zip.sha256"], cwd=outdir, capture_output=True, text=True, check=False
+    )
+    assert verify.returncode == 0, verify.stdout + verify.stderr
 
 
 # --- AC6: protected refs ----------------------------------------------------------------------
