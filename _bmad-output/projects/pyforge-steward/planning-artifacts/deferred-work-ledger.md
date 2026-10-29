@@ -6711,3 +6711,63 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-10-29 — recorded by hand in the loop-6 fix pass of PR #2274
   status: open
+
+### DW-steward-109-3-5: A manifest destination that is a FIFO, a directory or a hard link, or a path through an unwritable or non-directory component, hangs or raises raw
+
+- source_spec: `planning-artifacts/specs/spec-109-3-a-marketplace-tree-renders-a-pages-index-from-listings.md`
+  summary: `_contained_dest` checks the components before the last; an existing final component that is a FIFO blocks `write_text`, a directory raises a raw `IsADirectoryError`, and a hard link to a file outside the tree has that file overwritten (the written path is in the tree; git carries no hard link). A 000-mode directory or `index.yaml/../` on the way raises a raw `PermissionError` or `NotADirectoryError` from `mkdir`.
+  evidence: Loop-7 review row 118 (2026-10-29), probed by the edge-case-hunter and adversarial lenses and the row verifier; `080ce9f012` behaves the same. No write outside the tree from a git checkout, no injection, no silent-off deploy.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py (`_contained_dest`, `write_plugin_manifest`, `write_codex_manifest`)
+  fix: refuse an existing final component that is not a regular file; write through a temp file in the destination's directory and `os.replace`; turn an `OSError` from `mkdir` into a `MarketplaceIndexError`; a case each.
+  origin: loop-7 review row 118; deferred under the story spec's § Review contract for loop 7
+  severity: low
+  promoted: 2026-10-29 — recorded by hand in the loop-7 review of PR #2274
+  status: open
+
+### DW-steward-109-3-6: `**` inside a link destination puts `<strong>` inside the href
+
+- source_spec: `planning-artifacts/specs/spec-109-3-a-marketplace-tree-renders-a-pages-index-from-listings.md`
+  summary: `_inline` substitutes `**strong**` before links, so `[a](https://e.test/**b**)` renders `href="https://e.test/<strong>b</strong>"` and `**[c](https://e.test/x**)` leaves an unclosed `<strong>` the HTML parser carries past the paragraph. No quote can enter the attribute.
+  evidence: Loop-7 review row 119 (2026-10-29), probed by the adversarial lens; `080ce9f012` behaves the same. Malformed markup from the author's own `**`, not injection.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py (`_inline`)
+  fix: substitute links first (placeholders), then strong; two cases.
+  origin: loop-7 review row 119; deferred under the story spec's § Review contract for loop 7
+  severity: low
+  promoted: 2026-10-29 — recorded by hand in the loop-7 review of PR #2274
+  status: open
+
+### DW-steward-109-3-7: Loop-7 test gaps: six surviving mutants, two indirect cases and TEA's four pre-existing advisories
+
+- source_spec: `planning-artifacts/specs/spec-109-3-a-marketplace-tree-renders-a-pages-index-from-listings.md`
+  summary: Mutants that survive the steward suites at `8d47df4f50`: the non-directory check widened to the last part (every rewrite of an existing manifest refused, loudly); the `is_symlink()` half of `_load_yaml`'s guard dropped; the fence-item prefix expanded with `expandtabs(8)`; `_expand_leading` counting a tab as four spaces (input ` ```\nx\n  \t```\ny` distinguishes it); `DISABLED` matched case-sensitively; `_contained_dest`'s final resolve check dropped (equivalent but for `dest == root`). The directory and absent index cases are tested through `load_listings` only. TEA's pre-existing advisories on `test_marketplace_pages.py`: 1,354 lines (H5), a multi-subject manifest test at `:1173` (M3), hand-written malformed flag-tree JSON at `:740` (M2), an unnamed byte cap at `:610` (L6).
+  evidence: Loop-7 review row 120 (2026-10-29): the verification-gap lens's 34 mutants on a scratch worktree, the adversarial lens's in-process mutants, the row verifier, TEA (`Approve`, gating score 100, nothing introduced).
+  location: src/shared/packages/pyforge-steward/tests/unit/test_marketplace_pages.py; src/shared/packages/pyforge-steward/tests/unit/test_marketplace_markdown.py
+  fix: a case per survivor, from the distinguishing inputs the lenses give; the TEA items when the file is split.
+  origin: loop-7 review row 120; deferred under the story spec's § Review contract for loop 7
+  severity: low
+  promoted: 2026-10-29 — recorded by hand in the loop-7 review of PR #2274
+  status: open
+
+### DW-steward-109-3-8: Refusals rows 98 and 101 asked for reject a symlinked index and a sparse overlay that the parent and core accepted
+
+- source_spec: `planning-artifacts/specs/spec-109-3-a-marketplace-tree-renders-a-pages-index-from-listings.md`
+  summary: `_load_yaml` refuses a symlinked `index.yaml` (also `/dev/fd/N`) that `080ce9f012` read; `main --flag-env` refuses, under staging or production, a sparse overlay that names the flag only where it differs from the tree default, which `pyforge.core.flags` supports ("unnamed keys keep the tree's"). The estate overlay is dense and `pages.yml` resolves dev, so no deploy is affected.
+  evidence: Loop-7 review row 121 (2026-10-29), probed by the adversarial lens against HEAD and the parent; the refusals are the ones loop-6 rows 98 and 101 asked for, so the loop-7 reading of the contract does not count them as regressions.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py (`_load_yaml`, `main`)
+  fix: decide per refusal whether it stays (a symlinked index whose target is a regular file inside the tree could be read; a sparse overlay could fall back to the tree default off dev) and say which in README § Regenerate the site.
+  origin: loop-7 review row 121; deferred under the story spec's § Review contract for loop 7
+  severity: low
+  promoted: 2026-10-29 — recorded by hand in the loop-7 review of PR #2274
+  status: open
+
+### DW-steward-109-3-9: The loop-7 contract's readings, README's layer paragraph and five smaller text items
+
+- source_spec: `planning-artifacts/specs/spec-109-3-a-marketplace-tree-renders-a-pages-index-from-listings.md`
+  summary: The loop-7 structure lens found the review contract ambiguous (which commit is "the parent", what "verified" means, (b)'s second clause without "with the flag on", whether the adversarial ten-finding floor stands, "the site directory" and "injection", DW numbering and dedupe, the failing branch, no pointer from § Verification); loop 7 recorded the readings it used in its verdict. README § Regenerate's "What each layer refuses" credits `validate_listing` with the cross-row rules (`_check_rows`, `_check_folders_declared`) and "what stands between the folders" reads broader than the scan; the PR template's card-name row reads better with parentheses; the § Fixes (loop 6) intro restates the deferral map; the § Verification `--basetemp` note rides inside one bullet; DW-steward-109-3-4's "Seventeen" is not checkable from its list; the row-109 Verification command skips without the Astro install unless `HERALD_DOCS_SITE_REQUIRED=1` is set.
+  evidence: Loop-7 review row 122 (2026-10-29), the structure lens's table with word counts, and the adversarial lens's read of `pages_astro.py:44,85`.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-109-3-a-marketplace-tree-renders-a-pages-index-from-listings.md; docs/foundry/marketplace/README.md; .github/PULL_REQUEST_TEMPLATE/marketplace-skill.md
+  fix: the operator confirms or amends the contract readings into the contract text; the other items as the lens lays them out; prefix the row-109 command with `HERALD_DOCS_SITE_REQUIRED=1`.
+  origin: loop-7 review row 122; deferred under the story spec's § Review contract for loop 7
+  severity: low
+  promoted: 2026-10-29 — recorded by hand in the loop-7 review of PR #2274
+  status: open
