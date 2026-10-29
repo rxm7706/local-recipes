@@ -6680,7 +6680,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "f1c3736ddc111710b8aa68c836e80cee6b6f7322"
+  "memlog": "8cfa537bf9366e6c9ce07ba956e0910051529f4e"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
