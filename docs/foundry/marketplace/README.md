@@ -56,8 +56,10 @@ carry the site asset's name.
 `.claude-plugin/marketplace.json` (Claude Code) and `.agents/plugins/marketplace.json`
 (Codex) list each skill as a plugin. Round 0 of `MANUAL-CHECKLIST.md` has a
 row for each tool with a plugin install and records whether that install
-exposes the skill. For Claude Code it does (Round 0, 2026-10-29): `/plugin
-marketplace add <checkout>/docs/foundry/marketplace`, then `/plugin install
+exposes the skill. For Claude Code it does (Round 0, 2026-10-29, run on
+`@warden/scan` with the `claude plugin` CLI at local scope, not in an
+interactive session): `/plugin marketplace add
+<checkout>/docs/foundry/marketplace`, then `/plugin install
 <scope>-<slug>@pyforge-bmad-marketplace`, lists the skill as
 `<scope>-<slug>:<scope>-<slug>`. Use the plugin or the folder copy in one
 project, not both; with both, the skill is likely listed twice (not tested).

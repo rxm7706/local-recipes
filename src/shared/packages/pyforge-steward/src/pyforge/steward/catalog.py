@@ -1744,16 +1744,24 @@ class CatalogEngine:
             github_note = (
                 "this monorepo hosts the marketplace; the github source points at "
                 f"{repo}. Each edit_store.mirrors entry is a git source with a full https URL. "
-                "git-subdir is a plugin source, not a marketplace source."
+                "git-subdir is a plugin source, not a marketplace source. "
             )
         else:
             github_note = (
                 "this monorepo hosts the marketplace; the github source points at "
                 f"{repo}. edit_store.mirrors is empty until an internal mirror is named. "
                 "git-subdir is a plugin source, not a marketplace source. "
-                "marketplace.json is a discovery pointer for each listing; the folder copy is the install "
-                "until Round 0 confirms a plugin install exposes the skill."
             )
+        # Round 0's Claude Code leg (2026-10-29) ran this install on @warden/scan from a local checkout (Story 109.6).
+        github_note += (
+            "Round 0 (Claude Code 2.1.311, 2026-10-29, run on @warden/scan with the claude plugin CLI at local scope, "
+            "not in an interactive session) found that a plugin install from "
+            f"{MARKETPLACE_JSON_RELATIVE} exposes a listing's skill as <scope>-<slug>:<scope>-<slug>: "
+            f"/plugin marketplace add <checkout>/{MARKETPLACE_ROOT_RELATIVE} (a local checkout, not the estate "
+            "catalog the one-session line adds; the github and git sources were not exercised), then "
+            f"/plugin install <scope>-<slug>@{MARKETPLACE_NAME}. Use the plugin or the folder copy in one project, "
+            "not both; with both, the skill is likely listed twice (not tested)."
+        )
         quoted_dir = shlex.quote(str(abs_dir))  # a path with a space must paste intact
         marketplace_dir = (self.repo_root / MARKETPLACE_ROOT_RELATIVE).resolve()
         quoted_marketplace = shlex.quote(str(marketplace_dir))

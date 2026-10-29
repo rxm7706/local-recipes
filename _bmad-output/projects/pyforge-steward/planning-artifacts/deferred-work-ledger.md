@@ -6788,3 +6788,15 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-10-29 — recorded by hand in the loop-8 verification pass of PR #2274
   status: open
+
+### DW-steward-109-6-1: A card prints `<plugin>:<plugin>` without checking the SKILL.md `name` is the plugin name
+
+- source_spec: `planning-artifacts/specs/spec-109-6-the-cards-and-the-catalog-note-carry-claude-codes-round-0-result.md`
+  summary: Claude Code lists a plugin's skill as `<plugin>:<skill-name>`, where the skill name is the SKILL.md `name`. The card renders the second half from the plugin name (`<scope>-<slug>`). That is true for the three committed listings (`mason-environment`, `mason-package`, `warden-scan`), and `templates/SKILL.md` sets `name: scope-slug`, but no rule refuses a listing whose SKILL.md `name` differs, so a contributed skill could get a card that names a listing Claude Code does not show.
+  evidence: Story 109.6 loop-2 verification row 2 (2026-10-29), non-blocking: the three committed SKILL.md names match their plugin names.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py (`render_skill_card`, `validate_listing`); docs/foundry/marketplace/templates/SKILL.md
+  fix: have `validate_listing` (or the folder scan) refuse a skill listing whose SKILL.md frontmatter `name` is not `<scope>-<slug>`, with a test; or render the card's second half from the SKILL.md `name`.
+  origin: Story 109.6 loop-2 verification row 2; deferred because it adds a refusal to the listing validator, which is new behaviour outside a `type: fix` text story
+  severity: low
+  promoted: 2026-10-29 — recorded by hand in the Story 109.6 loop-2 verification pass
+  status: open

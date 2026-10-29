@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 660
+# stories: 661
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -56,6 +56,7 @@ development_status:
   109-3-a-marketplace-tree-renders-a-pages-index-from-listings: done
   109-4-the-teammate-cli-bmp-shares-the-catalog-engine: backlog
   109-5-contribution-lanes-wait-on-a-desk-test-and-a-wizard-of-oz-pilot: in-progress
+  109-6-the-cards-and-the-catalog-note-carry-claude-codes-round-0-result: done
   11-1-langflow-joins-as-a-pluggable-app: done
   11-2-db-gpt-joins-via-its-configured-integration-pattern: done
   11-3-async-work-never-blocks-django: done
