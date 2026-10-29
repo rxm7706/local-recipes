@@ -5,7 +5,7 @@ created: '2026-10-21'
 status: 'in-review'
 baseline_revision: '53aed16fe1957ab340c6146cb7bf0c3f810c1746'
 flag-exempt: docs-only
-review_loop_iteration: 3
+review_loop_iteration: 4
 followup_review_recommended: false
 context:
   - .claude/skills/mason-environment/SKILL.md
@@ -146,4 +146,8 @@ The three editorial rows landed on PR #2274 on 2026-10-28 with the 109.3 loop-3 
 - Row 14: the sentence "Which directory each tool reads is on the card and in the README" is cut from the three pilot `SKILL.md` and `templates/SKILL.md`; `test_pilot_skills_read_without_the_station_source` asserts its absence.
 - Row 15: the station-defect note moved into environment `steps.md`'s **Before you start** ("When `pyforge-mason` is published, its `lock` still hands a `requirements.txt` or `pixi.toml` it discovers to `conda-lock`, which cannot parse them; step 2 says which manifests to keep"); step 2 keeps "not a `conda-lock` input: do not pass it with `-f`" and the `pip:` guidance. `test_the_environment_runbooks_station_defect_sits_before_the_steps` pins the order.
 - Row 16: package `SKILL.md` § Until names the two argv with `steps.md` step 2 / step 0 / step 3 pointers, and its `### Upload` block ends with "What not to run from this skill is `steps.md` step 4"; warden `SKILL.md` § Until names the two probes with `steps.md` step 2. AC2–AC6 and the 404 + date rule still hold (13 passed).
+
+## Review (2026-10-29, independent, loop 4)
+
+Verdict: passed (confirmation). The three loop-3 editorial rows are closed in the tree, checked by an independent row verifier without the § Fixes text: row 14 (the pointer sentence absent from the three pilot `SKILL.md` and the template; `test_pilot_skills.py:99-103`), row 15 (environment `steps.md:11-13` carries the discovery note in **Before you start**, step 2 `:49-52` keeps the two guidances; `test_pilot_skills.py:106-116`), row 16 (package `SKILL.md:47-55` and warden `SKILL.md:40-43` are argv plus `steps.md` pointers). The Verification command exits 0 (14 passed). One editorial residue, carried by 109.3's loop-4 row 79 and not blocking: environment `SKILL.md:48-52` still repeats `steps.md` step 3 (the temporary-copy sentence) and package `SKILL.md:41-44` still repeats step 4's after-`--yes` sentence. The story stays `in-review` for the operator's ledger flip; no further review loop is recommended for 109.2 itself. Source: the loop-4 structure lens and row verifier over `git diff c05521b877..636258ec79`.
 
