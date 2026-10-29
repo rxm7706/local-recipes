@@ -1,17 +1,16 @@
 # Manual checklist — Round 0 and the Wizard-of-Oz pilot
 
 Automation of install and publish waits on this list (Story 109.5, CAP-173).
-The pages are a reading surface. They are not an install button.
 
 ## Round 0 desk test (one person, one project)
 
 Do this in a repository that is not local-recipes.
 
-- [ ] Read `site/index.html` (or `/marketplace/` on the docs site while the flag is on) and open one skill card without a local server
+- [ ] Read `site/index.html` (or `/marketplace/` on the docs site while the flag is on) and open one skill card without a local server. In `site/` the card's relative links into the skill folder do not resolve (no folder sits beside the card there): open `skills/<scope>/<slug>/` by hand
 - [ ] Copy that skill's folder into `.agents/skills/<scope>-<slug>/` and `.claude/skills/<scope>-<slug>/`
 - [ ] Confirm your tool picks the folder up from the directory in the README's tool table (`tool-support-matrix.md` in the design-thinking folder is the source; it records a `Driveable` outcome per tool)
 - [ ] Claude Code only: `/plugin marketplace add <checkout>/docs/foundry/marketplace`, then `/plugin install <scope>-<slug>@pyforge-bmad-marketplace`, then `/skills`. Record whether the skill appears. If it does not, `marketplace.json` stays a discovery pointer and the folder copy is the install
-- [ ] Codex only: `codex plugin marketplace add <checkout>/docs/foundry/marketplace`, then install `<scope>-<slug>`. Record whether the skill appears. If it does not, `.agents/plugins/marketplace.json` stays a discovery pointer and the folder copy is the install
+- [ ] Codex only: `codex plugin marketplace add <checkout>/docs/foundry/marketplace`. The install and list verbs are unverified: record the exact commands you ran (the Codex CLI's own help names them) and whether `<scope>-<slug>` appears as a skill. If it does not, `.agents/plugins/marketplace.json` stays a discovery pointer and the folder copy is the install
 - [ ] Follow `steps.md` from the top
 - [ ] Record which step ran, and which step stopped because a `pyforge-*` package is unpublished
 - [ ] Record a tool that cannot be driven at all as `tool: <name> — not driveable: <reason>` (an auth wall, a login loop). That is a tool outcome, not a skill failure
@@ -22,9 +21,9 @@ Do this in a repository that is not local-recipes.
 
 Who: two or three teammates, not rxm7706, drawn from this audience: Claude Code, Cursor, GitHub Copilot in VS Code, Google Gemini, Devin (Cognition AI), and a teammate with no AI tool yet. P4's examples are T1 Cursor and conda or pip, T2 Copilot or Gemini who publishes packages, and T3 no AI tool. Claude Code and Devin are the same audience.
 
-Script: `planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/prototypes/p4-wizard-of-oz-pilot.md`. The path each tool reads is `tool-support-matrix.md` in that folder.
+Script: `planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/prototypes/p4-wizard-of-oz-pilot.md`.
 
-Real: the three skill folders in this monorepo, the static cards at `/marketplace/` on the docs site, one Artifactory package when one exists, and a real pull request. The open question is which internal mirror of local-recipes, not a separate marketplace repository.
+Real: the three skill folders in this monorepo, the static cards at `/marketplace/` on the docs site, one Artifactory package when one exists, and a real pull request.
 
 Faked until the exit criteria below: `bmp install`, search, lint and CI, review and promotion, `@bmp/skillify` (a person helps shape `templates/SKILL.md`), and outdated notices.
 
@@ -59,6 +58,6 @@ Success:
 - [ ] `DW-FU-60-1-4` — `bmad-method install --custom-source` still finds 0 modules. Copying a skill folder is a different path and does not close it
 - [ ] `DW-FRR-60-1` — Story 60.1 still wants an independent follow-up review. This checklist is not that review
 
-## Re-check log
+## Runbooks
 
-Re-checked 2026-10-25 (`81f66ee411`) and 2026-10-27 (`b306864227`) against `origin/main`; the steps are the same. The current runbooks are `planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/analysis-against-main-2026-10-27.md`. 2026-10-28 (the review of PR #2274, loop 1): this file gained the not-driveable outcome, the Claude Code plugin-install row and the grouped exit criteria; the cross-skill command audit moved to the PR template.
+The current Round 0 and Round 1 runbooks are `planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/analysis-against-main-2026-10-27.md`; this file's own history is git's and the 109.3 story spec's.

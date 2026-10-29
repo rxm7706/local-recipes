@@ -28,8 +28,8 @@ warden scan --doctor
 
 `warden scan .` prints the compliance report. `--format json` prints one
 JSON report. `--warn-only` does not block. `--doctor` checks the scanner
-environment and exits 0 when healthy, else 2. It never exits 1, and it is
-not a second subcommand.
+environment (its exit codes are `steps.md` step 1) and is not a second
+subcommand.
 
 `pyforge warden` forwards to the `warden` console script
 (`pyforge.core.dispatch`). Do not import `pyforge.warden`. Do not treat

@@ -7,8 +7,9 @@ description: >
   Replace with that one sentence.
 ---
 
-<!-- Author instructions are HTML comments like this one. Lines without a comment are copied as written,
-     with scope, slug and the station name filled in. Delete every comment before opening the pull request. -->
+<!-- Author instructions are comments: the YAML comment in the frontmatter above, and HTML comments like this one
+     below it. Lines without a comment are copied as written, with scope, slug and the station name filled in.
+     Delete every comment before opening the pull request. -->
 
 # @scope/slug
 

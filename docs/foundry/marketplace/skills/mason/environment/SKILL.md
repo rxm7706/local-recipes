@@ -46,10 +46,8 @@ conda-lock lock -f pyproject.toml --lockfile conda-lock.yml
 ```
 
 One `-f` per manifest the project holds; the substitutions and the `-p`
-platform rule are `steps.md` step 2. Do not point `--check-input-hash` at
-the real lockfile: the station's check uses a temporary copy, and that
-check is the `pyforge mason environment check` command, which waits on the
-unpublished package.
+platform rule are `steps.md` step 2; the check, and why not to run
+`--check-input-hash` against the real lockfile, is step 3.
 
 ## What this skill is not
 

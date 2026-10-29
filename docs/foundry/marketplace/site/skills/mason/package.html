@@ -21,9 +21,9 @@ article{border-top:1px solid #d6d3d1;padding-top:1rem;margin-top:1rem}
 <p>Build a wheel and sdist from the project directory. Upload stays behind an explicit confirm. No pixi environment name and no path inside local-recipes.</p>
 <p>Owners: @rxm7706</p>
 <h2>Install</h2>
-<p>Copy the folder <code>skills/mason/package</code> into <code>.agents/skills/mason-package</code>, <code>.claude/skills/mason-package</code>. Claude Code's documented project skill path is <code>.claude/skills/</code>. Devin's is <code>.agents/skills/</code>. The tool matrix marks Claude Code reading <code>.agents/skills/</code> as uncertain and does not list <code>.claude/skills/</code> for Devin. <code>bmp install</code> is not built; this page is not an install button.</p>
+<p>Copy the folder <code>skills/mason/package</code> into <code>.agents/skills/mason-package</code>, <code>.claude/skills/mason-package</code>. Claude Code's documented project skill path is <code>.claude/skills/</code>. Devin's is <code>.agents/skills/</code>. The <a href="https://github.com/rxm7706/local-recipes/blob/main/_bmad-output/projects/pyforge-steward/planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/tool-support-matrix.md">tool matrix</a> marks Claude Code reading <code>.agents/skills/</code> as uncertain and does not list <code>.claude/skills/</code> for Devin. <code>bmp install</code> is not built; this page is not an install button.</p>
 <p>The rolling <code>pages-site</code> release carries <code>mason-package.zip</code> with <code>mason-package.zip.sha256</code> beside it while the marketplace flag is on for that deploy. The zip holds the <code>mason-package/</code> folder with <code>SKILL.md</code>, <code>steps.md</code>, <code>listing.yaml</code> and <code>references/</code> when the skill has one. Check and unpack it where both files were downloaded: <code>sha256sum -c mason-package.zip.sha256 &amp;&amp; unzip mason-package.zip -d .claude/skills/</code>, and the same with <code>-d .agents/skills/</code>.</p>
-<p><code>marketplace.json</code> (the Claude marketplace file) is a discovery pointer for this listing; the folder copy above is the install until Round 0 confirms a plugin install exposes the skill.</p>
+<p><code>marketplace.json</code> (the Claude marketplace file) is a discovery pointer for this listing; the folder copy above is the install until <a href="https://github.com/rxm7706/local-recipes/blob/main/docs/foundry/marketplace/MANUAL-CHECKLIST.md">Round 0</a> confirms a plugin install exposes the skill.</p>
 <h2>Unpublished packages</h2><ul><li>pyforge-mason: PyPI, conda-forge, and SelfExplainML returned 404 on 2026-10-21</li><li>pyforge-core: Required by pyforge mason dispatch; same 404 check</li></ul>
 <h2>Sources</h2><ul><li>GitHub release: not published</li><li>Artifactory conda: not published</li><li>Artifactory pip: not published</li></ul>
 <h2>Steps</h2>
@@ -49,7 +49,7 @@ article{border-top:1px solid #d6d3d1;padding-top:1rem;margin-top:1rem}
 <p><code>pyforge mason package ship --to pypi-test</code> is a dry run until <code>--yes</code>. After <code>--yes</code> the station runs <code>twine upload</code> (<code>twine</code> 7.0.0 was present on the verifying host) or <code>pixi upload prefix --channel &lt;name&gt;</code>. Do not run <code>twine upload</code> or <code>pixi upload</code> from these steps. <code>pypi</code> publishes permanently.</p>
 <h3>5. Stop</h3>
 <p>A conda-forge recipe is a different skill. Do not open a feedstock from here.</p>
-<h2>Related</h2><ul><li>@mason/environment</li><li>@warden/scan</li></ul>
-<h2>Contribute</h2><p>Lane: code-backed. A pull request is the publish path; the lanes are defined in the marketplace README.</p>
+<h2>Related</h2><ul><li><a href="environment.html">@mason/environment</a></li><li><a href="../warden/scan.html">@warden/scan</a></li></ul>
+<h2>Contribute</h2><p>Lane: code-backed. A pull request is the publish path; the lanes are defined in the marketplace <a href="https://github.com/rxm7706/local-recipes/blob/main/docs/foundry/marketplace/README.md">README</a>.</p>
 </body>
 </html>

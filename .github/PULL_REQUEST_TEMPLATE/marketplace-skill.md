@@ -2,15 +2,17 @@
 
 ## Lane
 
-- [ ] `instructions-only`: the listing names no package; the diff is markdown and the index row
-- [ ] `code-backed`: the listing names the package the skill calls, and that package is either published or flagged `published: false`
+- [ ] `instructions-only`
+- [ ] `code-backed`
+
+The two lanes are defined in the README's § Index schema, **Lanes** (`docs/foundry/marketplace/README.md`).
 
 ## Listing
 
 - [ ] `skills/<scope>/<slug>/listing.yaml` matches the `index.yaml` row
 - [ ] Row fields: `id`, `kind`, `scope`, `slug`, `name`, `title`, `description`, `version`, `tier`, `trust_tier`, `source`, `jobs`, `path`, `lane`
 - [ ] `kind` is `skill`, `module`, `agent`, or `bundle`
-- [ ] `scope` and `slug` are lower-case letters, digits and hyphens; `id` is `<scope>/<slug>`; `path` is `skills/<scope>/<slug>` and that folder exists with its `SKILL.md`
+- [ ] `scope` and `slug` are lower-case letters, digits and hyphens, matched whole (no surrounding whitespace, no trailing newline; `id`, `path`, `kind`, `trust_tier`, `source` and `name` are compared whole too); `id` is `<scope>/<slug>`; `path` is `skills/<scope>/<slug>`, a folder inside this tree with no symlink at any level, with its `SKILL.md`; `<scope>-<slug>` is not `pages-site`
 - [ ] `tier` maps onto `trust_tier`: `community` → `unverified`, `estate-reviewed` → `community-reviewed`, `bmad-certified` → `bmad-certified`
 - [ ] `trust_tier` is `unverified`, `community-reviewed`, or `bmad-certified`
 - [ ] `source` names the producer (`estate-listings` until a second source is reviewed)
@@ -24,7 +26,7 @@
 - [ ] `steps.md` is readable without the station source open: an engine is named by its module (`pyforge.<station>.engines.<name>`), never by a source path, and "this repo" does not appear
 - [ ] No `pixi run -e` and no path inside local-recipes
 - [ ] Install targets named in the skill are `.agents/skills/` and `.claude/skills/`
-- [ ] The folder keeps to the folder rule in the README's § Install (`validate_listing` refuses each breach; the mount and the release zip ship exactly that set)
+- [ ] The folder keeps to the folder rule in the README's § Install
 
 ## Generated site
 

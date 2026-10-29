@@ -38,11 +38,10 @@ pyforge mason package ship --to pypi-test --yes
 ```
 
 `--to` accepts `pypi-test`, `pypi`, `channel:<name>`, and `conda-forge`.
-After `--yes` the station runs `twine upload --non-interactive
---disable-progress-bar` for a PyPI target and `pixi upload prefix --channel
-<name>` for a channel. `TWINE_USERNAME` and `TWINE_PASSWORD` must already be
-set before a PyPI or TestPyPI target builds. What not to run from this skill
-is `steps.md` step 4.
+After `--yes` the station uploads; `TWINE_USERNAME` and `TWINE_PASSWORD`
+must already be set before a PyPI or TestPyPI target builds. `steps.md`
+step 4 names what the station runs then, and what not to run from this
+skill.
 
 ## Until that package is published
 

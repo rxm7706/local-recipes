@@ -56,14 +56,19 @@ export function isShippedSkillFile(rel: string): boolean {
   return parts[0] === SKILL_REFERENCES_DIR && SHIPPED_TEXT_SUFFIXES.includes(suffix);
 }
 
-/** `marketplace.json` for the host that runs the build: GitHub Actions names it, and the public URL is replaced. */
+/** The public repository URL the cards link documents under (`REPOSITORY_BLOB_URL`'s root). */
+export const PUBLIC_REPOSITORY_URL = PUBLIC_MARKETPLACE_GIT_URL.replace(/\.git$/, '');
+
+/** `marketplace.json` and the cards for the host that runs the build: GitHub Actions names it, and the public
+ * clone URL and the public repository's `blob` links are replaced (loop 4, row 76: a card links the README, the
+ * checklist and the tool matrix, which the mount does not carry). */
 export function rewriteMarketplaceGitUrl(text: string, env: Env = process.env): string {
   const server = (env.GITHUB_SERVER_URL ?? '').trim().replace(/\/+$/, '');
   const repo = (env.GITHUB_REPOSITORY ?? '').trim();
   if (!server || !repo) {
     return text;
   }
-  return text.split(PUBLIC_MARKETPLACE_GIT_URL).join(`${server}/${repo}.git`);
+  return text.split(PUBLIC_MARKETPLACE_GIT_URL).join(`${server}/${repo}.git`).split(`${PUBLIC_REPOSITORY_URL}/`).join(`${server}/${repo}/`);
 }
 
 export interface MountedFile {
@@ -102,7 +107,7 @@ export function marketplaceMount(marketplaceDir: string, env: Env = process.env)
   const site = path.join(marketplaceDir, 'site');
   for (const rel of filesUnder(site)) {
     let data = fs.readFileSync(path.join(site, rel));
-    if (rel === 'marketplace.json') {
+    if (rel === 'marketplace.json' || rel.endsWith('.html')) {
       data = Buffer.from(rewriteMarketplaceGitUrl(data.toString('utf8'), env), 'utf8');
     }
     out.push({ rel, data });
@@ -132,7 +137,11 @@ export function marketplaceMount(marketplaceDir: string, env: Env = process.env)
 
 const SKILL_FOLDER_PATH = /^marketplace\/skills\/([^/]+)\/([^/]+)\/(.+)$/;
 const CARD_PATH = /^marketplace\/skills\/([^/]+)\/([^/]+)\.html$/;
-const OTHER_CARD_PATH = /^marketplace\/(modules|agents|bundles)\/([^/]+)\.html$/;
+/** The non-skill kinds' card directories, from the one map (loop 4, row 72: a kind added to `KIND_DIRS` is admitted). */
+export const OTHER_CARD_DIRS: readonly string[] = Object.keys(KIND_DIRS)
+  .filter((kind) => kind !== 'skill')
+  .map((kind) => KIND_DIRS[kind]);
+const OTHER_CARD_PATH = new RegExp(`^marketplace/(${OTHER_CARD_DIRS.join('|')})/([^/]+)\\.html$`);
 const SITE_DOCUMENTS = ['marketplace/index.html', 'marketplace/listings.json', 'marketplace/marketplace.json'];
 
 type ListingRow = { id?: unknown; kind?: unknown; scope?: unknown; slug?: unknown; name?: unknown };
@@ -143,7 +152,8 @@ function listingCard(row: unknown): string | null {
     return null;
   }
   const { id, kind, scope, slug, name } = row as ListingRow;
-  if (typeof id !== 'string' || typeof kind !== 'string' || !(kind in KIND_DIRS)) {
+  // Object.hasOwn: `kind in KIND_DIRS` admits `constructor` and the other prototype names (loop 4, row 72)
+  if (typeof id !== 'string' || typeof kind !== 'string' || !Object.hasOwn(KIND_DIRS, kind)) {
     return null;
   }
   if (kind === 'skill') {
@@ -173,6 +183,7 @@ export function marketplaceArtifactFindings(
   const out: string[] = [];
   const listed = new Set<string>();
   const otherCards = new Set<string>();
+  const seenIds = new Set<string>();
   try {
     const doc = JSON.parse(listingsText) as { schema?: unknown; listings?: unknown };
     if (doc.schema !== SCHEMA_ID) {
@@ -183,7 +194,16 @@ export function marketplaceArtifactFindings(
         const card = listingCard(row);
         if (!card) {
           out.push(`marketplace/listings.json: listing ${index} is not a well-formed row (id, kind, scope/slug or name)`);
-        } else if ((row as ListingRow).kind === 'skill') {
+          return;
+        }
+        // a doubled row is a finding here too (loop 4, row 73): the render refuses a duplicate id, the artifact must
+        const id = (row as ListingRow).id as string;
+        if (seenIds.has(id) || (card !== null && ((row as ListingRow).kind === 'skill' ? listed.has(`${(row as ListingRow).scope}/${(row as ListingRow).slug}`) : otherCards.has(card)))) {
+          out.push(`marketplace/listings.json: id ${id} repeats (card ${card})`);
+          return;
+        }
+        seenIds.add(id);
+        if ((row as ListingRow).kind === 'skill') {
           listed.add(`${(row as ListingRow).scope}/${(row as ListingRow).slug}`);
         } else {
           otherCards.add(card);
@@ -220,6 +240,7 @@ export function marketplaceArtifactFindings(
   const folders = new Set<string>();
   const cards = new Set<string>();
   const mountedOtherCards = new Set<string>();
+  const folderBytes = new Map<string, number>();
   for (const rel of all) {
     if (!rel.startsWith('marketplace/')) {
       continue;
@@ -235,8 +256,12 @@ export function marketplaceArtifactFindings(
         out.push(
           `${rel} is mounted but is not a file a skill folder ships (SKILL.md, steps.md, listing.yaml, text files under references/)`,
         );
-      } else if (sizeOf && sizeOf(rel) > MAX_SHIPPED_FILE_BYTES) {
-        out.push(`${rel} is mounted but is over ${MAX_SHIPPED_FILE_BYTES} bytes`);
+      } else if (sizeOf) {
+        const bytes = sizeOf(rel);
+        if (bytes > MAX_SHIPPED_FILE_BYTES) {
+          out.push(`${rel} is mounted but is over ${MAX_SHIPPED_FILE_BYTES} bytes`);
+        }
+        folderBytes.set(`${scope}/${slug}`, (folderBytes.get(`${scope}/${slug}`) ?? 0) + bytes);
       }
       continue;
     }
@@ -250,6 +275,12 @@ export function marketplaceArtifactFindings(
       continue;
     }
     out.push(`${rel} is mounted under marketplace/ but is not a site document, a card or a skill folder file`);
+  }
+  // the validator's folder cap, held at the artifact too (loop 4, row 75)
+  for (const [key, bytes] of [...folderBytes].sort()) {
+    if (bytes > MAX_SHIPPED_FOLDER_BYTES) {
+      out.push(`marketplace/skills/${key}/ is mounted but ships ${bytes} bytes; the cap is ${MAX_SHIPPED_FOLDER_BYTES}`);
+    }
   }
   for (const key of [...new Set([...folders, ...cards])].sort()) {
     if (!listed.has(key)) {
@@ -284,6 +315,8 @@ export function marketplaceArtifactFindings(
 }
 
 const GIT_URL = /^https:\/\/[^/\s]+\/[^/\s]+\/[^/\s]+\.git$/;
+/** The rolling release's own asset stem (`pyforge.steward.pages.RELEASE_TAG`): never a plugin name (loop 4, row 60). */
+export const RELEASE_ASSET_STEM = 'pages-site';
 const PLUGIN_PATH = /^docs\/foundry\/marketplace\/skills\/([^/]+)\/([^/]+)$/;
 
 /**
@@ -327,6 +360,9 @@ export function marketplaceManifestFindings(text: string, has: (rel: string) => 
     const [, scope, slug] = match;
     if (plugin.name !== `${scope}-${slug}`) {
       out.push(`${label}: name is not ${scope}-${slug}`);
+    }
+    if (plugin.name === RELEASE_ASSET_STEM) {
+      out.push(`${label}: name is the site release's own asset (${RELEASE_ASSET_STEM}.zip)`);
     }
     for (const rel of [`marketplace/skills/${scope}/${slug}/SKILL.md`, `marketplace/skills/${scope}/${slug}.html`]) {
       if (!has(rel)) {

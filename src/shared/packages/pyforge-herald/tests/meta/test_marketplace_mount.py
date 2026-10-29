@@ -25,11 +25,14 @@ MOUNT = "return m.marketplaceMount(inp.dir, inp.env).map((f) => [f.rel, f.data.t
 pytestmark = needs_node
 
 
+BLOB = "https://github.com/rxm7706/local-recipes/blob/main/docs/foundry/marketplace/README.md"
+
+
 def plant(root: Path) -> Path:
     write(root / "site/index.html", "<p>index</p>")
     write(root / "site/listings.json", "{}\n")
     write(root / "site/marketplace.json", f'{{"url": "{PUBLIC_GIT}"}}\n')
-    write(root / "site/skills/mason/environment.html", "<p>card</p>")
+    write(root / "site/skills/mason/environment.html", f'<p>card <a href="{BLOB}">README</a></p>')
     skill = root / "skills/mason/environment"
     write(skill / "SKILL.md", "# skill\n")
     write(skill / "steps.md", "# steps\n")
@@ -74,6 +77,7 @@ def test_the_mount_is_the_site_plus_the_shipped_skill_files_in_order(tmp_path: P
     ]
     assert dict(mounted)["skills/mason/environment/SKILL.md"] == "# skill\n"
     assert dict(mounted)["marketplace.json"] == f'{{"url": "{PUBLIC_GIT}"}}\n'  # no host named: no rewrite
+    assert dict(mounted)["skills/mason/environment.html"] == f'<p>card <a href="{BLOB}">README</a></p>'
 
 
 def test_an_absent_or_empty_tree_mounts_nothing(tmp_path: Path) -> None:
@@ -102,8 +106,10 @@ def test_marketplace_json_is_rewritten_to_the_deploying_host(tmp_path: Path, env
     root = plant(tmp_path / "marketplace")
     mounted = dict(ts(MARKETPLACE_TS, MOUNT, dir=str(root), env=env))
     assert mounted["marketplace.json"] == f'{{"url": "{url}"}}\n'
-    # the cards and the skill files are never rewritten
-    assert mounted["skills/mason/environment.html"] == "<p>card</p>"
+    # the cards' repository links follow the clone URL to the deploying host (loop 4, row 76); skill files never
+    blob = BLOB.replace("https://github.com/rxm7706/local-recipes/", url.removesuffix(".git") + "/")
+    assert mounted["skills/mason/environment.html"] == f'<p>card <a href="{blob}">README</a></p>'
+    assert mounted["skills/mason/environment/SKILL.md"] == "# skill\n"
     rewritten = ts(
         MARKETPLACE_TS,
         "return m.rewriteMarketplaceGitUrl(inp.text, inp.env);",
@@ -201,19 +207,28 @@ def test_the_mounts_allowlist_and_slug_grammar_are_the_validators() -> None:
         'KIND_DIRS: dict[str, str] = {"skill": "skills", "module": "modules", "agent": "agents", "bundle": "bundles"}'
         in py
     )
+    # loop 4, row 72: the non-skill card directories come from the map; row 60: the site asset's stem is the tag
+    assert ts(MARKETPLACE_TS, "return m.OTHER_CARD_DIRS;") == ["modules", "agents", "bundles"]
+    assert "export const RELEASE_ASSET_STEM = 'pages-site';" in ts_text
+    pages_py = (DOCS_SITE.parent / "src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py").read_text(
+        encoding="utf-8"
+    )
+    assert 'RELEASE_TAG = "pages-site"' in pages_py
 
 
 def test_the_mount_fails_the_build_on_a_file_or_folder_over_its_cap(tmp_path: Path) -> None:
     """Loop 3, row 48: the validator's caps hold at the mount too; a breach throws, naming it, rather than ships."""
+    file_cap = ts(MARKETPLACE_TS, "return m.MAX_SHIPPED_FILE_BYTES;")  # the module's own caps (loop 4, row 80)
+    folder_cap = ts(MARKETPLACE_TS, "return m.MAX_SHIPPED_FOLDER_BYTES;")
+    assert isinstance(file_cap, int) and isinstance(folder_cap, int) and folder_cap == 4 * file_cap
     root = plant(tmp_path / "marketplace")
     skill = root / "skills/mason/environment"
-    (skill / "references" / "big.md").write_bytes(b"x" * (1_048_576 + 1))
+    (skill / "references" / "big.md").write_bytes(b"x" * (file_cap + 1))
     thrown = ts(MARKETPLACE_TS, MOUNT, dir=str(root), env={})
-    assert (
-        isinstance(thrown, dict) and "skills/mason/environment/references/big.md is 1048577 bytes" in thrown["message"]
-    )
+    assert isinstance(thrown, dict)
+    assert f"skills/mason/environment/references/big.md is {file_cap + 1} bytes" in thrown["message"]
     (skill / "references" / "big.md").unlink()
     for n in range(5):
-        (skill / "references" / f"{n}.md").write_bytes(b"x" * (1_048_576 - 1))
+        (skill / "references" / f"{n}.md").write_bytes(b"x" * (file_cap - 1))
     thrown = ts(MARKETPLACE_TS, MOUNT, dir=str(root), env={})
-    assert isinstance(thrown, dict) and "skills/mason/environment ships over 4194304 bytes" in thrown["message"]
+    assert isinstance(thrown, dict) and f"skills/mason/environment ships over {folder_cap} bytes" in thrown["message"]

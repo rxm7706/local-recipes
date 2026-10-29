@@ -227,6 +227,9 @@ def test_the_per_skill_zips_are_built_first_then_stale_assets_pruned_then_everyt
     assert "zip -qry" not in " ".join(lines)  # no -y: a symlink fails the step before zip runs (row 50)
     assert 'cp -R "$dir/." "$stage/$name/"' in lines
     assert '(cd "$outdir" && sha256sum "$name.zip" > "$name.zip.sha256")' in lines
+    name_refusal = lines.index(
+        'if [ "$name" = "pages-site" ]; then echo "::error::$name: a skill folder named like the site asset"; exit 1; fi'
+    )
     symlink_refusal = lines.index(
         'if [ -n "$(find "$stage/$name" -type l -print -quit)" ]; '
         'then echo "::error::$name: a symlink in the skill folder"; exit 1; fi'
@@ -235,17 +238,24 @@ def test_the_per_skill_zips_are_built_first_then_stale_assets_pruned_then_everyt
         'if [ -n "$(find "$stage/$name" -type f -size +1048576c -print -quit)" ]; '
         'then echo "::error::$name: a file over 1 MiB"; exit 1; fi'
     )
-    assert lines.index('cp -R "$dir/." "$stage/$name/"') < symlink_refusal < size_refusal < lines.index(zipped)
+    folder_refusal = lines.index(
+        "if ! find \"$stage/$name\" -type f -printf '%s\\n' | awk -v cap=4194304 '{ s += $1 } END { exit (s > cap) ? 1 : 0 }'; "
+        'then echo "::error::$name: the folder ships over 4 MiB"; exit 1; fi'
+    )
+    assert name_refusal < lines.index('cp -R "$dir/." "$stage/$name/"') < symlink_refusal < size_refusal
+    assert size_refusal < folder_refusal < lines.index(zipped)
     tag_move = lines.index(
         'gh api -X PATCH "repos/$GH_REPO/git/refs/tags/pages-site" -f sha="$GITHUB_SHA" -F force=true >/dev/null'
     )
     listing = lines.index("assets=$(gh release view pages-site --json assets --jq '.assets[].name') || exit 1")
     loop = lines.index("while IFS= read -r asset; do")
-    delete = lines.index('gh release delete-asset pages-site "$asset" --yes')
+    delete = lines.index(
+        'gh release delete-asset pages-site "$asset" --yes </dev/null'
+    )  # row 74: never the loop's stdin
     loop_end = lines.index('done <<< "$assets"')
     upload = lines.index('gh release upload pages-site "${uploads[@]}" --clobber')
     assert lines.index(zipped) < tag_move < listing < loop < delete < loop_end < upload
-    assert "pages-site.zip) ;;" in lines
+    assert "pages-site.zip|pages-site.zip.sha256) ;;" in lines  # row 60: the site asset and its sidecar shielded
     # the prune arm: the per-skill shape, membership against the new set, nothing else (row 49)
     assert (
         '*) if [[ "$asset" =~ ^[a-z0-9][a-z0-9-]*-[a-z0-9][a-z0-9-]*\\.zip(\\.sha256)?$ ]] '
@@ -265,27 +275,32 @@ def test_the_per_skill_zips_are_built_first_then_stale_assets_pruned_then_everyt
     assert 'zip -qr "$zip_path" .' not in " ".join(lines)  # the old form zipped the folder's contents loose
 
 
+def _deleted(asset: str) -> list[str]:
+    return [f"release delete-asset pages-site {asset} --yes"]
+
+
 @pytest.mark.parametrize(
-    ("asset", "deleted"),
+    ("asset", "expected_calls"),
     [
-        ("mason-environment.zip", True),
-        ("mason-environment.zip.sha256", True),
-        ("a-b-c.zip", True),
-        ("pages-site.zip", False),  # the site zip, the first case arm
-        ("kept-one.zip", False),  # in the new set (planted in $outdir)
-        ("release-notes.txt", False),  # not a zip
-        ("Mason-Env.zip", False),  # outside the slug grammar
-        ("nohyphen.zip", False),  # not <scope>-<slug>
-        ("my notes.zip", False),  # a space: not the shape, and never split into two words
-        ("x.zip.sha256.bak", False),
-        ("", False),
+        ("mason-environment.zip", _deleted("mason-environment.zip")),
+        ("mason-environment.zip.sha256", _deleted("mason-environment.zip.sha256")),
+        ("a-b-c.zip", _deleted("a-b-c.zip")),
+        ("pages-site.zip", []),  # the site zip, the first case arm
+        ("pages-site.zip.sha256", []),  # loop 4, row 60: its sidecar, should one ever exist
+        ("kept-one.zip", []),  # in the new set (planted in $outdir)
+        ("release-notes.txt", []),  # not a zip
+        ("Mason-Env.zip", []),  # outside the slug grammar
+        ("nohyphen.zip", []),  # not <scope>-<slug>
+        ("my notes.zip", []),  # a space: not the shape, and never split into two words
+        ("x.zip.sha256.bak", []),
+        ("", []),
     ],
 )
 def test_the_prune_loop_deletes_only_per_skill_names_not_in_the_new_set(
-    tmp_path: Path, asset: str, deleted: bool
+    tmp_path: Path, asset: str, expected_calls: list[str]
 ) -> None:
     """Loop 3, row 49: the workflow's own prune loop, run over a listing with ``gh`` stubbed, deletes exactly the
-    per-skill assets that are not in ``$outdir``."""
+    per-skill assets that are not in ``$outdir`` (the expectation is the row's own, loop 4 row 80)."""
     lines = _zip_step_lines()
     start = lines.index("while IFS= read -r asset; do")
     end = lines.index('done <<< "$assets"')
@@ -305,7 +320,7 @@ def test_the_prune_loop_deletes_only_per_skill_names_not_in_the_new_set(
     )
     assert done.returncode == 0, done.stderr
     calls = log.read_text(encoding="utf-8").splitlines() if log.exists() else []
-    assert calls == ([f"release delete-asset pages-site {asset} --yes"] if deleted else [])
+    assert calls == expected_calls
 
 
 def test_the_zip_allowlist_is_the_mounts_and_the_validators() -> None:
@@ -338,30 +353,63 @@ def test_the_zip_allowlist_is_the_mounts_and_the_validators() -> None:
     assert sorted(ts_suffixes) == sorted(SHIPPED_TEXT_SUFFIXES)
     assert f"export const MAX_SHIPPED_FILE_BYTES = {MAX_SHIPPED_FILE_BYTES};" in ts
     assert f"export const MAX_SHIPPED_FOLDER_BYTES = {MAX_SHIPPED_FOLDER_BYTES};" in ts
-    # the workflow's refusals name the same cap and the same suffix set
+    # the workflow's refusals name the same caps and the same suffix set, matched without regard to case as the
+    # validator (.suffix.lower()) and the mount (toLowerCase()) do (loop 4, row 59); the site asset is never a name
     assert f'find "$stage/$name" -type f -size +{MAX_SHIPPED_FILE_BYTES}c -print -quit' in " ".join(lines)
+    assert f"awk -v cap={MAX_SHIPPED_FOLDER_BYTES} " in " ".join(lines)
     suffix_line = next(line for line in lines if 'find "$stage/$name/references" -type f !' in line)
-    assert sorted(re.findall(r"-name '\*(\.[a-z]+)'", suffix_line)) == sorted(SHIPPED_TEXT_SUFFIXES)
+    assert sorted(re.findall(r"-iname '\*(\.[a-z]+)'", suffix_line)) == sorted(SHIPPED_TEXT_SUFFIXES)
+    assert "-name '*." not in suffix_line  # every suffix pattern is -iname
+    assert f'if [ "$name" = "{pages.RELEASE_TAG}" ]; then' in " ".join(lines)
+    assert f"export const RELEASE_ASSET_STEM = '{pages.RELEASE_TAG}';" in ts
 
 
 def _refusal_lines() -> list[str]:
     lines = _zip_step_lines()
-    return [line for line in lines if line.startswith('if [ -n "$(find "$stage/$name')]
+    return [
+        line
+        for line in lines
+        if line.startswith(
+            ('if [ -n "$(find "$stage/$name', 'if ! find "$stage/$name"', 'if [ "$name" = "pages-site" ]')
+        )
+    ]
 
 
-def _plant_stage(tmp_path: Path, name: str = "mason-environment") -> Path:
+@pytest.mark.skipif(shutil.which("zip") is None, reason="zip on PATH")
+def test_the_workflow_refuses_a_skill_folder_named_like_the_site_asset(tmp_path: Path) -> None:
+    """Loop 4, row 60: a ``skills/pages/site/`` folder would yield ``pages-site.zip``; the validator refuses the
+    listing and the step refuses the name before anything is staged."""
+    lines = _zip_step_lines()
+    zipped = next(line for line in lines if line.startswith('(cd "$stage" && zip -qr'))
+    stage = _plant_stage(tmp_path, "pages-site")
+    outdir = tmp_path / "out"
+    outdir.mkdir()
+    env = {**os.environ, "stage": str(stage), "name": "pages-site", "outdir": str(outdir)}
+    done = _run_step_lines([*_refusal_lines(), zipped], env)
+    assert done.returncode == 1, done.stderr + done.stdout
+    assert "::error::pages-site: a skill folder named like the site asset" in done.stdout
+    assert not (outdir / "pages-site.zip").exists()
+
+
+def _plant_stage(tmp_path: Path, name: str = "mason-environment", *, references: bool = True) -> Path:
     stage = tmp_path / "stage"
     folder = stage / name
-    (folder / "references" / "deep").mkdir(parents=True)
-    for rel, text in (
+    folder.mkdir(parents=True)
+    files = [
         ("SKILL.md", "# skill\n"),
         ("steps.md", "# steps\n"),
         ("listing.yaml", "id: mason/environment\n"),
-        ("references/deep/more.md", "# more\n"),
         ("notes.txt", "stray\n"),
         (".DS_Store", "x"),
-        ("references/.hidden", "x"),
-    ):
+    ]
+    if references:
+        (folder / "references" / "deep").mkdir(parents=True)
+        files += [
+            ("references/deep/more.md", "# more\n"),
+            ("references/NOTES.MD", "# upper-case suffix (loop 4, row 59)\n"),
+            ("references/.hidden", "x"),
+        ]
+    for rel, text in files:
         (folder / rel).write_text(text, encoding="utf-8")
     return stage
 
@@ -393,6 +441,7 @@ def test_the_workflows_zip_lines_ship_the_folder_and_only_the_allowlist(tmp_path
     assert sorted(entry for entry in listed if not entry.endswith("/")) == [
         f"{name}/SKILL.md",
         f"{name}/listing.yaml",
+        f"{name}/references/NOTES.MD",
         f"{name}/references/deep/more.md",
         f"{name}/steps.md",
     ]
@@ -403,6 +452,30 @@ def test_the_workflows_zip_lines_ship_the_folder_and_only_the_allowlist(tmp_path
         ["sha256sum", "-c", f"{name}.zip.sha256"], cwd=outdir, capture_output=True, text=True, check=False
     )
     assert verify.returncode == 0, verify.stdout + verify.stderr
+
+
+@pytest.mark.skipif(shutil.which("zip") is None or shutil.which("unzip") is None, reason="zip and unzip on PATH")
+def test_the_workflows_zip_lines_run_clean_over_the_committed_shape_with_no_references(tmp_path: Path) -> None:
+    """Loop 4, row 71: the three committed skills carry no ``references/``; the refusal, zip and checksum lines run
+    clean over that shape and the zip holds exactly the three files."""
+    lines = _zip_step_lines()
+    zipped = next(line for line in lines if line.startswith('(cd "$stage" && zip -qr'))
+    checksum = '(cd "$outdir" && sha256sum "$name.zip" > "$name.zip.sha256")'
+    name = "mason-environment"
+    stage = _plant_stage(tmp_path, references=False)
+    outdir = tmp_path / "out"
+    outdir.mkdir()
+    env = {**os.environ, "stage": str(stage), "name": name, "outdir": str(outdir)}
+    done = _run_step_lines([*_refusal_lines(), zipped, checksum], env)
+    assert done.returncode == 0, done.stderr + done.stdout
+    listed = subprocess.run(
+        ["unzip", "-Z1", str(outdir / f"{name}.zip")], capture_output=True, text=True, check=True
+    ).stdout.split()
+    assert sorted(entry for entry in listed if not entry.endswith("/")) == [
+        f"{name}/SKILL.md",
+        f"{name}/listing.yaml",
+        f"{name}/steps.md",
+    ]
 
 
 @pytest.mark.skipif(shutil.which("zip") is None, reason="zip on PATH")
@@ -423,13 +496,19 @@ def test_the_workflows_zip_lines_ship_the_folder_and_only_the_allowlist(tmp_path
             lambda folder, outside: (folder / "references" / "deep" / "tool.whl").write_bytes(b"x"),
             "references/ ships text files only",
         ),
+        (
+            lambda folder, outside: [
+                (folder / "references" / f"{n}.md").write_bytes(b"x" * (1_048_576 - 1)) for n in range(5)
+            ],
+            "the folder ships over 4 MiB",  # loop 4, row 75: the validator's folder cap, at the zip step too
+        ),
     ],
 )
 def test_the_workflow_refuses_a_symlink_an_oversized_file_and_a_binary_reference_before_zip(
     tmp_path: Path, plant, message: str
 ) -> None:
-    """Loop 3, rows 48 and 50: the zip step fails, naming the breach, rather than storing a link entry, an
-    oversized file or a binary under ``references/``; nothing is zipped."""
+    """Loop 3, rows 48 and 50; loop 4, row 75: the zip step fails, naming the breach, rather than storing a link
+    entry, an oversized file, an over-cap folder or a binary under ``references/``; nothing is zipped."""
     lines = _zip_step_lines()
     zipped = next(line for line in lines if line.startswith('(cd "$stage" && zip -qr'))
     name = "mason-environment"

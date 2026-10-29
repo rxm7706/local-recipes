@@ -10,6 +10,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 import os
+import shutil
 from pathlib import Path
 
 import pytest
@@ -21,6 +22,7 @@ from pyforge.steward.marketplace_pages import (
     FLAG_KEY,
     INDEX_VERSION,
     MAX_SHIPPED_FOLDER_BYTES,
+    REPOSITORY_BLOB_URL,
     SCHEMA_ID,
     MarketplaceIndexError,
     MarketplacePagesDisabled,
@@ -167,7 +169,7 @@ def test_an_estate_module_row_becomes_a_module_listing() -> None:
     validate_listing(row)
 
 
-@pytest.mark.parametrize("name", ["../Builder", "Builder", "a b", "x/y"])
+@pytest.mark.parametrize("name", ["../Builder", "Builder", "a b", "x/y", "bmad\n", " bmad"])  # loop 4, row 77: raw
 def test_an_estate_module_name_must_be_a_slug(name: str) -> None:
     with pytest.raises(MarketplaceIndexError, match="must match"):
         listing_from_estate_module({"name": name})
@@ -222,6 +224,12 @@ def test_a_skill_whose_path_does_not_match_scope_and_slug_is_refused(tmp_path: P
         ({"id": " mason/environment"}, "surrounding whitespace"),
         ({"id": "mason/environment\n"}, "surrounding whitespace"),
         ({"path": "skills/mason/environment "}, "surrounding whitespace"),
+        # loop 4, row 66: every enumerated or rendered field is compared raw
+        ({"kind": " skill"}, "surrounding whitespace"),
+        ({"trust_tier": "unverified "}, "surrounding whitespace"),
+        ({"source": " estate-listings"}, "surrounding whitespace"),
+        ({"name": "@mason/environment\n"}, "surrounding whitespace"),
+        ({"requires": {"packages": [{"name": " pyforge-mason", "published": False}]}}, "surrounding whitespace"),
     ],
 )
 def test_each_listing_rule_refuses_its_breach(edit: dict, needle: str) -> None:
@@ -266,6 +274,13 @@ def test_a_module_or_agent_card_is_written_under_its_own_directory(tmp_path: Pat
     [
         ({}, "duplicate id"),
         ({"id": "Mason/environment", "scope": "Mason", "path": "skills/Mason/environment"}, "scope"),
+        # loop 4, row 60: the site release's own asset name is never a plugin and zip name
+        (
+            {"id": "pages/site", "scope": "pages", "slug": "site", "path": "skills/pages/site"},
+            "site release's own asset",
+        ),
+        # loop 4, row 76: a related @scope/slug names a listing
+        ({"id": "mason/x", "slug": "x", "path": "skills/mason/x", "related": ["@warden/scan"]}, "names no listing"),
     ],
 )
 def test_duplicate_ids_and_plugin_names_are_refused(second: dict, needle: str) -> None:
@@ -300,6 +315,9 @@ def _module(name: str, **extra: object) -> dict:
     ("row", "needle"),
     [
         (_module("../x"), "names the card"),
+        # loop 4, row 70: the non-skill name rule is observed (a trailing newline is now row 66's, caught earlier)
+        (dict(_module("x"), name="x y"), "names the card"),
+        (dict(_module("x"), name="x\n"), "surrounding whitespace"),
         (dict(_module("x"), kind="agent", id="agent/x", slug="../x"), "slug"),
         (_module("x", path="/etc"), "path"),
         (_module("x", path="../../.."), "path"),
@@ -374,6 +392,34 @@ def test_a_symlinked_listing_folder_at_any_level_is_refused_and_nothing_is_writt
     # the renderer's own defence, past the validator: resolve and contain
     with pytest.raises(MarketplaceIndexError, match="resolves outside the marketplace"):
         _steps_text(_listing(), root)
+
+
+def test_the_folder_scan_refuses_a_symlinked_scope_or_slug_before_reading_it(tmp_path: Path) -> None:
+    """Loop 4, row 64: ``_skill_folders`` followed a link and parsed an outside ``listing.yaml`` before the validator
+    could refuse the folder; a malformed one surfaced as a raw ``yaml`` error."""
+    root = tmp_path / "marketplace"
+    (root / "skills" / "mason").mkdir(parents=True)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "listing.yaml").write_text(": : not yaml [", encoding="utf-8")
+    (root / "skills" / "mason" / "linked").symlink_to(outside)
+    with pytest.raises(MarketplaceIndexError, match="skills/mason/linked is a symlink"):
+        listings_from_skill_folders(root)
+    (root / "skills" / "mason" / "linked").unlink()
+    (root / "skills" / "other").symlink_to(outside)
+    with pytest.raises(MarketplaceIndexError, match="skills/other is a symlink"):
+        listings_from_skill_folders(root)
+    (root / "skills" / "other").unlink()
+    (root / "skills").rmdir() if False else None
+    # a malformed listing.yaml in a real folder, and a malformed index, are listing errors, never a raw yaml error
+    real = root / "skills" / "mason" / "environment"
+    real.mkdir()
+    (real / "listing.yaml").write_text(": : not yaml [", encoding="utf-8")
+    with pytest.raises(MarketplaceIndexError, match="not valid YAML"):
+        listings_from_skill_folders(root)
+    (root / "index.yaml").write_text(": : not yaml [", encoding="utf-8")
+    with pytest.raises(MarketplaceIndexError, match="not valid YAML"):
+        load_listings(root / "index.yaml", root=root)
 
 
 def test_a_symlinked_or_absent_non_skill_folder_is_refused(tmp_path: Path) -> None:
@@ -577,6 +623,26 @@ def test_flag_env_prints_the_build_line_for_the_resolved_environment(
         ('{"flags": {"pyforge.other": {}}}', "declares no such flag"),
         ('{"flags": []}', "declares no such flag"),
         ("[]", "declares no such flag"),
+        # loop 4, row 63: a declared entry read_boolean would default on is refused too
+        ('{"flags": {"%s": "yes"}}' % FLAG_KEY, "a shape the reader would default on"),
+        ('{"flags": {"%s": null}}' % FLAG_KEY, "a shape the reader would default on"),
+        (
+            '{"flags": {"%s": {"defaultVariant": "off", "metadata": {}}}}' % FLAG_KEY,
+            "a shape the reader would default on",
+        ),
+        (
+            '{"flags": {"%s": {"variants": {"on": true}, "defaultVariant": "off", "metadata": {}}}}' % FLAG_KEY,
+            "a shape the reader would default on",
+        ),
+        (
+            '{"flags": {"%s": {"variants": {"on": "yes", "off": false}, "defaultVariant": "on", "metadata": {}}}}'
+            % FLAG_KEY,
+            "a shape the reader would default on",
+        ),
+        (
+            '{"flags": {"%s": {"variants": {"on": true, "off": false}, "defaultVariant": "off"}}}' % FLAG_KEY,
+            "a shape the reader would default on",
+        ),
     ],
 )
 def test_flag_env_refuses_a_tree_that_does_not_declare_the_flag(
@@ -592,6 +658,30 @@ def test_flag_env_refuses_a_tree_that_does_not_declare_the_flag(
     assert main(["--flag-env"]) == 2
     captured = capsys.readouterr()
     assert captured.out == "" and needle in captured.err
+
+
+def test_flag_env_refuses_an_overlay_the_reader_refuses(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Loop 4, row 63: an overlay document the reader raises on is exit 2 with its message, never a traceback."""
+    from pyforge.steward.marketplace_pages import main
+
+    on = _flags_tree(tmp_path / "flags", dev="on")
+    (tmp_path / "flags" / "flag-overlays.json").write_text("{not json", encoding="utf-8")
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(on))
+    assert main(["--flag-env"]) == 2
+    captured = capsys.readouterr()
+    assert captured.out == "" and "refusing to print a build line" in captured.err
+    # the reader's own metadata check (it runs when an overlay is composed): exit 2 with its message, no traceback
+    tree = json.loads(on.read_text(encoding="utf-8"))
+    tree["flags"][FLAG_KEY]["metadata"] = {}
+    on.write_text(json.dumps(tree), encoding="utf-8")
+    (tmp_path / "flags" / "flag-overlays.json").write_text(
+        json.dumps({"dev": {FLAG_KEY: "on"}, "staging": {}, "production": {}}), encoding="utf-8"
+    )
+    assert main(["--flag-env"]) == 2
+    captured = capsys.readouterr()
+    assert captured.out == "" and "metadata" in captured.err and "refusing to print a build line" in captured.err
 
 
 # --- the site tree (AC4) -------------------------------------------------------------------------
@@ -641,7 +731,7 @@ def test_write_site_refuses_a_generated_site_that_holds_a_file_its_listings_do_n
     (site / "deep").mkdir()
     (site / "deep" / "more.txt").write_text("keep too", encoding="utf-8")
     with pytest.raises(
-        MarketplaceIndexError, match=r"no render of its listings.json produces \(deep/more.txt, precious.txt\)"
+        MarketplaceIndexError, match=r"no render of its listings.json produces \(deep/, deep/more.txt, precious.txt\)"
     ):
         write_site([_skill()], site, flags_path=on)
     assert (site / "precious.txt").read_text(encoding="utf-8") == "keep"
@@ -655,6 +745,31 @@ def test_write_site_refuses_a_generated_site_that_holds_a_file_its_listings_do_n
         write_site([_skill()], site, flags_path=on)
     (site / "skills/mason/link.html").unlink()
     write_site([_skill()], site, flags_path=on)  # clean again: replaced
+    # loop 4, row 62: an empty stray directory is foreign too, and survives
+    (site / "precious").mkdir()
+    with pytest.raises(MarketplaceIndexError, match=r"produces \(precious/\)"):
+        write_site([_skill()], site, flags_path=on)
+    assert (site / "precious").is_dir()
+
+
+def test_the_inventory_holds_the_markers_rows_to_the_slug_grammar(tmp_path: Path) -> None:
+    """Loop 4, row 62: a crafted ``listings.json`` whose row has ``scope: "x/y"`` accounted for any card-shaped file
+    under a kind directory; a row with no scope yielded ``skills/None/...``. Both read as not a generated site."""
+    on = _flags_tree(tmp_path / "flags", dev="on")
+    for rows in (
+        [{"kind": "skill", "scope": "x/y", "slug": "precious"}],
+        [{"kind": "skill", "slug": "precious"}],
+        [{"kind": "module", "name": "../precious"}],
+        [{"kind": "agent", "slug": "Precious"}],
+    ):
+        target = tmp_path / "target"
+        shutil.rmtree(target, ignore_errors=True)
+        (target / "skills" / "x" / "y").mkdir(parents=True)
+        (target / "skills" / "x" / "y" / "precious.html").write_text("keep", encoding="utf-8")
+        (target / "listings.json").write_text(json.dumps({"schema": SCHEMA_ID, "listings": rows}), encoding="utf-8")
+        with pytest.raises(MarketplaceIndexError, match="is not a generated site"):
+            write_site([_skill()], target, flags_path=on)
+        assert (target / "skills" / "x" / "y" / "precious.html").read_text(encoding="utf-8") == "keep"
 
 
 @pytest.mark.parametrize(
@@ -782,8 +897,8 @@ def test_committed_environment_card_renders_steps_md_not_the_paper_sample(tmp_pa
     assert card.index("<h2>Steps</h2>") < card.index("<h3>0. Install the published tools</h3>")
     # the lane is named, not defined, on the card (row 55)
     assert (
-        "Lane: code-backed. A pull request is the publish path; the lanes are defined in the marketplace README."
-        in card
+        "Lane: code-backed. A pull request is the publish path; the lanes are defined in the marketplace "
+        f'<a href="{REPOSITORY_BLOB_URL}/docs/foundry/marketplace/README.md">README</a>.' in card
     )
     assert "An instructions-only skill has none" not in card
     assert "· jobs find, install, create</p>" in card and "<p>Jobs:" not in card
@@ -812,11 +927,44 @@ def test_a_verified_listing_shows_its_date_on_the_card_and_the_index() -> None:
 def test_a_card_escapes_what_a_listing_says() -> None:
     row = _skill()
     row["description"] = "<script>alert(1)</script> & co"
-    card = render_skill_card(row, steps_text="# title\n\n## <b>x</b>\n\n<img src=x onerror=alert(1)>\n")
+    card = render_skill_card(
+        row, steps_text='# title\n\n## <b>x</b>\n\n<img src=x onerror=alert(1)>\n\n```a"onmouseover="alert(1)\nx\n```\n'
+    )
     assert "<script>" not in card and "<img" not in card
+    assert 'onmouseover="' not in card and "language-a&quot;onmouseover=&quot;alert(1)" in card  # loop 4, row 69
     assert "&lt;script&gt;alert(1)&lt;/script&gt; &amp; co" in card
     assert "<h3>&lt;b&gt;x&lt;/b&gt;</h3>" in card  # the runbook's headings sit one level under the card's Steps
     assert "<h2>title</h2>" not in card and "<h3>title</h3>" not in card
+
+
+def test_a_module_with_a_runbook_renders_and_keeps_its_relative_links_literal(tmp_path: Path) -> None:
+    """Loop 4, row 58: ``render_skill_card`` read ``row['slug']`` for every card, so a module with ``docs.steps``
+    raised ``KeyError``; its relative links stay text because the mount ships no module folder."""
+    root = tmp_path / "marketplace"
+    (root / "modules" / "x").mkdir(parents=True)
+    (root / "modules" / "x" / "steps.md").write_text(
+        "# t\n\nSee [s](steps.md) and [d](https://e.test/d).\n", encoding="utf-8"
+    )
+    module = _module("x", path="modules/x", docs={"steps": "steps.md"})
+    documents = render_site([module], steps_root=root)
+    card = documents["modules/x.html"]
+    assert "[s](steps.md)" in card and '<a href="https://e.test/d">d</a>' in card
+    assert 'href="steps.md"' not in card and 'href="x/steps.md"' not in card
+
+
+def test_a_card_links_the_documents_the_mount_does_not_carry_and_the_sibling_cards() -> None:
+    """Loop 4, row 76: the README, Round 0 and the tool matrix are repository links; a related skill is its card."""
+    row = _skill()
+    row["related"] = ["@warden/scan", "a note"]
+    card = render_skill_card(row)
+    assert f'<a href="{REPOSITORY_BLOB_URL}/docs/foundry/marketplace/README.md">README</a>' in card
+    assert f'<a href="{REPOSITORY_BLOB_URL}/docs/foundry/marketplace/MANUAL-CHECKLIST.md">Round 0</a>' in card
+    assert f'<a href="{REPOSITORY_BLOB_URL}/_bmad-output/projects/pyforge-steward/planning-artifacts/' in card
+    assert 'tool-support-matrix.md">tool matrix</a>' in card
+    assert '<h2>Related</h2><ul><li><a href="../warden/scan.html">@warden/scan</a></li><li>a note</li></ul>' in card
+    assert REPOSITORY_BLOB_URL == "https://github.com/rxm7706/local-recipes/blob/main"
+    module = _module("x", related=["@mason/environment"])
+    assert '<li><a href="../skills/mason/environment.html">@mason/environment</a></li>' in render_skill_card(module)
 
 
 def test_a_cards_relative_runbook_link_points_into_the_mounted_folder() -> None:
@@ -892,6 +1040,25 @@ def test_committed_codex_manifest_names_the_three_listings(tmp_path: Path) -> No
         "source": "local",
         "path": "./skills/mason/environment",
     }
+
+
+@pytest.mark.parametrize("link", [".agents", ".agents/plugins", ".claude-plugin"])
+def test_the_manifests_are_not_written_through_a_symlink(tmp_path: Path, link: str) -> None:
+    """Loop 4, row 65: ``root/.agents -> /elsewhere`` took the Codex manifest outside the tree while the returned
+    path was the in-tree one."""
+    root = _marketplace(tmp_path)
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    (root / link).parent.mkdir(parents=True, exist_ok=True)
+    (root / link).symlink_to(elsewhere)
+    on = _flags_tree(tmp_path / "flags", dev="on")
+    with pytest.raises(MarketplaceIndexError, match="is a symlink; refusing to write through it"):
+        write_plugin_manifests(root / "index.yaml", flags_path=on)
+    assert not list(elsewhere.rglob("*"))
+    assert not (root / ".claude-plugin" / "marketplace.json").exists() or link != ".claude-plugin"
+    # a destination outside the tree (a test's temp file) is the caller's and still written
+    written = write_plugin_manifest(root / "index.yaml", tmp_path / "out" / "m.json", flags_path=on)
+    assert written.is_file()
 
 
 def test_the_manifests_refuse_a_folder_the_index_does_not_declare(tmp_path: Path) -> None:

@@ -398,19 +398,40 @@ def test_109_3_the_manifest_is_the_url_form_and_every_plugin_is_mounted(site: Pa
             "marketplace/modules/x.html is mounted but marketplace/listings.json lists no such card",
         ),
         (
+            lambda root: _listings(root, [("mason", "environment")], modules=["x"]),
+            "marketplace/listings.json lists a card at marketplace/modules/x.html but it is not mounted",
+        ),
+        # loop 4, rows 72, 73, 75 and 60: a prototype-named kind is malformed, a doubled row is a finding, a folder
+        # over the cap is a finding, the site asset's stem is never a plugin name
+        (
             lambda root: write(
                 root / "marketplace/listings.json",
                 json.dumps(
                     {
                         "schema": "pyforge.bmad-marketplace/v1",
-                        "listings": [
-                            {"id": "mason/environment", "kind": "skill", "scope": "mason", "slug": "environment"},
-                            {"id": "module/x", "kind": "module", "name": "x"},
-                        ],
+                        "listings": [{"id": "x", "kind": "constructor", "name": "y"}],
                     }
                 ),
             ),
-            "marketplace/listings.json lists a card at marketplace/modules/x.html but it is not mounted",
+            "marketplace/listings.json: listing 0 is not a well-formed row",
+        ),
+        (
+            lambda root: _listings(root, [("mason", "environment"), ("mason", "environment")]),
+            "marketplace/listings.json: id mason/environment repeats (card marketplace/skills/mason/environment.html)",
+        ),
+        (
+            lambda root: [
+                write(root / f"marketplace/skills/mason/environment/references/{n}.md", "x" * (1_048_576 - 1))
+                for n in range(5)
+            ],
+            "marketplace/skills/mason/environment/ is mounted but ships 5242883 bytes; the cap is 4194304",  # + SKILL.md
+        ),
+        (
+            lambda root: write(
+                root / "marketplace/marketplace.json",
+                _manifest([_plugin("mason", "environment"), _plugin("pages", "site")]),
+            ),
+            "plugin pages-site: name is the site release's own asset (pages-site.zip)",
         ),
         (
             lambda root: write(root / "marketplace/skills/mason/environment/references/pic.png", "png"),
@@ -472,6 +493,7 @@ def test_109_3_a_mount_with_a_module_card_and_text_references_passes(site: Path)
                     {"id": "mason/environment", "kind": "skill", "scope": "mason", "slug": "environment"},
                     {"id": "module/x", "kind": "module", "name": "x"},
                     {"id": "agent/y", "kind": "agent", "slug": "y", "name": "Y"},
+                    {"id": "bundle/z", "kind": "bundle", "name": "z"},
                 ],
             }
         )
@@ -479,13 +501,17 @@ def test_109_3_a_mount_with_a_module_card_and_text_references_passes(site: Path)
     )
     write(site / "marketplace/modules/x.html", "<!doctype html><p>card</p>")
     write(site / "marketplace/agents/y.html", "<!doctype html><p>card</p>")
+    write(site / "marketplace/bundles/z.html", "<!doctype html><p>card</p>")  # loop 4, row 72: every KIND_DIRS value
     for name in ("a.md", "b.txt", "c.yaml", "d.yml", "e.json", "deep/F.MD"):
         write(site / f"marketplace/skills/mason/environment/references/{name}", "x\n")
     assert pages_check(site, env=MARKETPLACE_ON, origins=False) == []
 
 
-def _listings(root: Path, skills: list[tuple[str, str]]) -> None:
-    rows = [{"id": f"{scope}/{slug}", "kind": "skill", "scope": scope, "slug": slug} for scope, slug in skills]
+def _listings(root: Path, skills: list[tuple[str, str]], *, modules: list[str] | None = None) -> None:
+    rows: list[dict] = [
+        {"id": f"{scope}/{slug}", "kind": "skill", "scope": scope, "slug": slug} for scope, slug in skills
+    ]
+    rows += [{"id": f"module/{name}", "kind": "module", "name": name} for name in modules or []]
     write(
         root / "marketplace/listings.json",
         json.dumps({"schema": "pyforge.bmad-marketplace/v1", "listings": rows}) + "\n",

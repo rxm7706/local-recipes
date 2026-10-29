@@ -259,15 +259,19 @@ jobs:
           # Each zip is made from the parent, so it holds the <scope>-<slug>/ folder and
           # `unzip <scope>-<slug>.zip -d .claude/skills/` lands it in place; it carries only SKILL.md,
           # steps.md, listing.yaml and text files under references/ with no dot entry (the mount's
-          # allowlist, docs-site/src/lib/marketplace.ts), and a .sha256 sits beside it. A symlink, a
-          # file over 1 MiB or a references/ file outside the text suffixes fails the step before zip
-          # runs (the validator's rules, pyforge.steward.marketplace_pages._validate_skill_folder).
-          # Every zip is built before the release is touched; then the tag and the release move; then
-          # the previous deploy's per-skill assets (names of the <scope>-<slug>.zip or .zip.sha256
-          # shape, never pages-site.zip or any other asset) that are not in the new set are deleted (a
+          # allowlist, docs-site/src/lib/marketplace.ts), and a .sha256 sits beside it. The mount has
+          # already dropped every non-shipped file and failed the build on a size cap, so the four
+          # refusals below (a symlink, a file over 1 MiB, a folder over 4 MiB, a references/ file
+          # outside the text suffixes, case-folded like the validator's) are defence in depth over the
+          # mount's output: the validator (pyforge.steward.marketplace_pages._validate_skill_folder,
+          # the steward live lane) is where a contribution is refused first. Every zip is built before
+          # the release is touched; then the tag and the release move; then the previous deploy's
+          # per-skill assets (names of the <scope>-<slug>.zip or .zip.sha256 shape, never
+          # pages-site.zip, its .sha256 or any other asset) that are not in the new set are deleted (a
           # failed asset listing fails the step, so a stale zip never survives silently); then the site
           # zip and the new set go up in one upload, so no deploy leaves a new site beside stale skill
-          # zips.
+          # zips. pages-site is never a plugin name (the validator refuses it), so no skill zip can
+          # carry the site asset's name.
           outdir="$RUNNER_TEMP/skill-zips-out"
           rm -rf "$outdir" && mkdir -p "$outdir"
           if [ -d pages-site/marketplace/skills ]; then
@@ -276,11 +280,13 @@ jobs:
               scope=$(basename "$(dirname "$dir")")
               slug=$(basename "$dir")
               name="${scope}-${slug}"
+              if [ "$name" = "pages-site" ]; then echo "::error::$name: a skill folder named like the site asset"; exit 1; fi
               rm -rf "$stage/$name" && mkdir -p "$stage/$name"
               cp -R "$dir/." "$stage/$name/"
               if [ -n "$(find "$stage/$name" -type l -print -quit)" ]; then echo "::error::$name: a symlink in the skill folder"; exit 1; fi
               if [ -n "$(find "$stage/$name" -type f -size +1048576c -print -quit)" ]; then echo "::error::$name: a file over 1 MiB"; exit 1; fi
-              if [ -n "$(find "$stage/$name/references" -type f ! -name '.*' ! \( -name '*.md' -o -name '*.txt' -o -name '*.yaml' -o -name '*.yml' -o -name '*.json' \) -print -quit 2>/dev/null)" ]; then echo "::error::$name: references/ ships text files only"; exit 1; fi
+              if ! find "$stage/$name" -type f -printf '%s\n' | awk -v cap=4194304 '{ s += $1 } END { exit (s > cap) ? 1 : 0 }'; then echo "::error::$name: the folder ships over 4 MiB"; exit 1; fi
+              if [ -n "$(find "$stage/$name/references" -type f ! -name '.*' ! \( -iname '*.md' -o -iname '*.txt' -o -iname '*.yaml' -o -iname '*.yml' -o -iname '*.json' \) -print -quit 2>/dev/null)" ]; then echo "::error::$name: references/ ships text files only"; exit 1; fi
               (cd "$stage" && zip -qr "$outdir/$name.zip" "$name" -i "$name/SKILL.md" "$name/steps.md" "$name/listing.yaml" "$name/references/*" -x '*/.*')
               (cd "$outdir" && sha256sum "$name.zip" > "$name.zip.sha256")
             done
@@ -300,9 +306,9 @@ jobs:
           assets=$(gh release view pages-site --json assets --jq '.assets[].name') || exit 1
           while IFS= read -r asset; do
             case "$asset" in
-              pages-site.zip) ;;
+              pages-site.zip|pages-site.zip.sha256) ;;
               *) if [[ "$asset" =~ ^[a-z0-9][a-z0-9-]*-[a-z0-9][a-z0-9-]*\.zip(\.sha256)?$ ]] && [ ! -f "$outdir/$asset" ]; then
-                   gh release delete-asset pages-site "$asset" --yes
+                   gh release delete-asset pages-site "$asset" --yes </dev/null
                  fi ;;
             esac
           done <<< "$assets"

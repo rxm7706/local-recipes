@@ -74,10 +74,38 @@ from pyforge.steward.marketplace_pages import render_markdown
         ("- a\n  5. five", '<ul><li>a<ol start="5"><li>five</li></ol></li></ul>'),
         ("2026. The year", "<p>2026. The year</p>"),
         ("10. ten", '<ol start="10"><li>ten</li></ol>'),
+        # loop 4, row 68: tabs count as four columns (a tab-indented close is code, a tab-indented nested item nests);
+        # a nested run of mixed markers takes one list per run; an item whose text opens a fence is that fence
+        ("```\nx\n\t```\ny\n```\nafter", "<pre><code>x\n    ```\ny\n</code></pre>\n<p>after</p>"),
+        ("- a\n\t- b\n- c", "<ul><li>a<ul><li>b</li></ul></li><li>c</li></ul>"),
+        ("1. a\n  - x\n  2. y\n2. b", '<ol><li>a<ul><li>x</li></ul><ol start="2"><li>y</li></ol></li><li>b</li></ol>'),
+        (
+            "- ```bash\n  cmd\n  ```\n- next",
+            '<pre><code class="language-bash">cmd\n</code></pre>\n<ul><li>next</li></ul>',
+        ),
+        ("\t```\nx\n\t```\nafter", "<pre><code>x\n</code></pre>\n<p>after</p>"),
+        # loop 4, row 69: the fence language is an attribute, so its quotes and angle brackets are escaped
+        (
+            '```a"onmouseover="alert(1)\nx\n```',
+            '<pre><code class="language-a&quot;onmouseover=&quot;alert(1)">x\n</code></pre>',
+        ),
+        ("```<b>&x\nx\n```", '<pre><code class="language-&lt;b&gt;&amp;x">x\n</code></pre>'),
+        # loop 4, row 61: encoded dots are dots to the browser; a leading ./ names the same folder
+        (
+            "[a](%2e%2e/x) [b](.%2e/x) [c](%2E%2E/x) [d](./steps.md)",
+            '<p>[a](%2e%2e/x) [b](.%2e/x) [c](%2E%2E/x) <a href="steps.md">d</a></p>',
+        ),
     ],
 )
 def test_render_markdown(text: str, expected: str) -> None:
     assert render_markdown(text) == expected
+
+
+def test_a_non_skill_card_leaves_relative_links_literal() -> None:
+    """Loop 4, row 58: with no mounted folder beside the card (``link_base=None``), a relative target is text."""
+    assert render_markdown("[s](steps.md) [h](https://e.test/x) [f](#top)", link_base=None) == (
+        '<p>[s](steps.md) <a href="https://e.test/x">h</a> <a href="#top">f</a></p>'
+    )
 
 
 def test_a_relative_link_is_prefixed_with_the_link_base_and_nothing_else_is() -> None:
@@ -90,8 +118,13 @@ def test_a_relative_link_is_prefixed_with_the_link_base_and_nothing_else_is() ->
 
 
 def test_skip_leading_h1_drops_only_a_first_line_h1() -> None:
-    """Loop 3, row 55: the runbook's title is the card's h1 already; its steps sit one level under Steps."""
+    """Loop 3, row 55: the runbook's title is the card's h1 already; its steps sit one level under Steps. Loop 4,
+    row 67: a tab-separated, indented or empty level-1 heading is the title too."""
     assert render_markdown("# Title\n\n## 1. Step\n\ntext", skip_leading_h1=True) == "<h3>1. Step</h3>\n<p>text</p>"
+    assert render_markdown("#\tTitle\n\n## Step", skip_leading_h1=True) == "<h3>Step</h3>"
+    assert render_markdown("   # Title\n\n## Step", skip_leading_h1=True) == "<h3>Step</h3>"
+    assert render_markdown("# \n\n## Step", skip_leading_h1=True) == "<h3>Step</h3>"
+    assert render_markdown("#Title\n\n## Step", skip_leading_h1=True) == "<p>#Title</p>\n<h3>Step</h3>"
     assert render_markdown("\n\n# Title\n\n## 1. Step", skip_leading_h1=True) == "<h3>1. Step</h3>"
     assert render_markdown("intro\n\n# Title", skip_leading_h1=True) == "<p>intro</p>\n<h2>Title</h2>"
     assert render_markdown("## Not an h1", skip_leading_h1=True) == "<h3>Not an h1</h3>"
