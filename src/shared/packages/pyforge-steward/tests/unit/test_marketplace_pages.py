@@ -834,53 +834,47 @@ def test_flag_env_refuses_an_overlay_the_reader_refuses(
     assert captured.out == "" and "metadata" in captured.err and "refusing to print a build line" in captured.err
 
 
-def _flag_tree_shapes() -> list[tuple[str, object, str]]:
-    """Trees the flag reader's OpenFeature file provider refuses as a whole, though every earlier check passes, and
-    the refusal each gets: the flag's own state is held to the provider's two values before the reader runs; a
-    sibling's shape reaches the reader, which falls back to its default after an eight-second readiness wait, so
-    one case covers that path."""
-
-    def own(key: str, value: object):
-        def edit(flags: dict) -> None:
-            if value is None:
-                flags[FLAG_KEY].pop(key)
-            else:
-                flags[FLAG_KEY][key] = value
-
-        return edit
-
-    def sibling(key: str, value: object):
-        def edit(flags: dict) -> None:
-            flags["pyforge.other"] = dict(flags[FLAG_KEY], **{key: value})
-
-        return edit
-
-    return [
-        ("own state lower-case", own("state", "enabled"), "accepts ENABLED or DISABLED only"),
-        ("own state absent", own("state", None), "accepts ENABLED or DISABLED only"),
-        ("sibling state PAUSED", sibling("state", "PAUSED"), "the reader fell back to its default"),
-    ]
-
-
-@pytest.mark.parametrize(
-    ("label", "edit", "needle"), _flag_tree_shapes(), ids=[label for label, _, _ in _flag_tree_shapes()]
-)
-def test_flag_env_never_prints_a_value_the_reader_defaulted(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], label: str, edit, needle: str
+@pytest.mark.parametrize(("state", "present"), [("enabled", True), (None, False)], ids=["lower-case", "absent"])
+def test_flag_env_refuses_a_state_the_flag_reader_does_not_accept(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], state: object, present: bool
 ) -> None:
-    """Loop 7, row 113: the reader falls back to off when its file provider refuses the tree (a state other than
-    ``ENABLED``/``DISABLED``, or any flag's unknown key), and the step printed ``=0`` with exit 0 while the dev
-    overlay was on. The state is held to the provider's two values and the reader's value to the composed one."""
+    """Loop 7, row 113: the flag reader's OpenFeature file provider accepts a state of exactly ``ENABLED`` or
+    ``DISABLED`` and falls back to off on anything else, so the step printed ``=0`` with exit 0 while the dev overlay
+    was on. The state is now refused before the reader runs."""
     from pyforge.steward.marketplace_pages import main
 
     on = _flags_tree(tmp_path / "flags", dev="on")
     tree = json.loads(on.read_text(encoding="utf-8"))
-    edit(tree["flags"])
+    if present:
+        tree["flags"][FLAG_KEY]["state"] = state
+    else:
+        tree["flags"][FLAG_KEY].pop("state")
     on.write_text(json.dumps(tree), encoding="utf-8")
     monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(on))
     assert main(["--flag-env"]) == 2
     captured = capsys.readouterr()
-    assert captured.out == "" and needle in captured.err and "refusing to print a build line" in captured.err
+    assert captured.out == "" and "accepts ENABLED or DISABLED only" in captured.err
+
+
+def test_flag_env_never_prints_a_value_the_reader_defaulted(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Loop 7, row 113: a sibling flag the file provider cannot parse (``state: PAUSED``, or an unknown key) makes the
+    reader fall back to off for every flag, and the step printed ``=0`` with exit 0 while the dev overlay was on. The
+    reader's value is now compared with the composed one. The reader is replaced by its fallback here: the real one
+    would pin the process-wide OpenFeature provider to a tree flagd cannot parse, and the next test on the worker to
+    restore its provider would raise at teardown (loop 8; the real fallback was probed against flagd in loop 8)."""
+    import pyforge.steward.marketplace_pages as marketplace_pages
+
+    on = _flags_tree(tmp_path / "flags", dev="on")
+    tree = json.loads(on.read_text(encoding="utf-8"))
+    tree["flags"]["pyforge.other"] = dict(tree["flags"][FLAG_KEY], state="PAUSED")
+    on.write_text(json.dumps(tree), encoding="utf-8")
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(on))
+    monkeypatch.setattr(marketplace_pages, "pages_enabled", lambda **_: False)
+    assert marketplace_pages.main(["--flag-env"]) == 2
+    captured = capsys.readouterr()
+    assert captured.out == "" and "the reader fell back to its default" in captured.err
 
 
 @pytest.mark.parametrize("value", [["on"], {"v": "on"}])
