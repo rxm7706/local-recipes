@@ -6267,8 +6267,8 @@
    "archive/docs/dreams/mcp-host-real-station-tools.md": "869ce61760359304efd4a6e8fa5c152d70ec752f",
    "docs/foundry/marketplace/.agents/plugins/marketplace.json": "f3fa48201ae2823be8bc650517aed405847240f9",
    "docs/foundry/marketplace/.claude-plugin/marketplace.json": "c32d65342e18ba4a03fd2f33c43425608202e933",
-   "docs/foundry/marketplace/MANUAL-CHECKLIST.md": "4464575c011f6a31d9ff6bf9539e77083d997c7a",
-   "docs/foundry/marketplace/README.md": "bbb5394ede54ac3284b5b8ef2d0fec63390ad856",
+   "docs/foundry/marketplace/MANUAL-CHECKLIST.md": "dcedf39d2fef455133e7f0cffba6ebb9d4ea7d14",
+   "docs/foundry/marketplace/README.md": "22c73b9f43c788f9771e0058ba35eb294107f7af",
    "docs/foundry/marketplace/index.yaml": "1c97ba51d08f723e8269fe7e71bb7fc21fdac133",
    "docs/foundry/marketplace/site/index.html": "1f20059e58bb7e5a91fa5b4a17c6e1283b990d9e",
    "docs/foundry/marketplace/site/listings.json": "efbf4e9d0c8aa4f9af318c4e504e3f06bcceabdc",
@@ -6680,7 +6680,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "1b8d01199345b7d3eb04f72a48377010b66c7ce3"
+  "memlog": "ef140e70c779d2dac15b76855397a876d9f55cd7"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},

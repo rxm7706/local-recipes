@@ -16,6 +16,7 @@ The product brief is
 | [design-thinking-2026-10-20.md](design-thinking-2026-10-20.md) | Full session record. Concepts A–F were all selected. Success signal: a teammate other than rxm7706 contributes a skill, and a different teammate installs and uses it |
 | [station-inventory.md](station-inventory.md) | Eight stations. First listings: warden scan, mason environment, mason package |
 | [tool-support-matrix.md](tool-support-matrix.md) | Six tools read `SKILL.md`. Install into `.agents/skills/` and `.claude/skills/` |
+| [round0-desk-test-2026-10-29.md](round0-desk-test-2026-10-29.md) | Story 109.5. Round 0 desk test, one section per tool. Claude Code leg: driveable, reads `.claude/skills/` only, the plugin install exposes the skill |
 
 ## Prototypes
 

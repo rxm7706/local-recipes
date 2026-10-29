@@ -1,10 +1,11 @@
 # Tool support matrix — Agent Skills, AGENTS.md, subagents, MCP, plugin marketplaces
 
 Official docs read 2026-10-20 (via web search/fetch). "Uncertain" = not confirmed in an official doc this session.
+Cells marked "Round 0" come from the desk test, not the docs: [round0-desk-test-2026-10-29.md](round0-desk-test-2026-10-29.md).
 
 | Tool | SKILL.md skills | Skill paths (project / user) | AGENTS.md | Custom agents / subagents | MCP | Plugin marketplace | Driveable (Round 0) |
 |---|---|---|---|---|---|---|---|
-| **Claude Code** | Yes | `.claude/skills/` / `~/.claude/skills/` [1]; reads `.agents/skills/`: **uncertain** | Yes, conditional: read when no CLAUDE.md exists; else `@AGENTS.md` import or a setting [2] | Yes (`agents/` in plugins [3]; standalone path not re-checked) | Yes (in plugins [3]) | Yes: `.claude-plugin/marketplace.json` in any git repo/dir; sources: relative path, github, git-subdir, any-host git `url`, https archive, npm; private repos OK [4] | untested |
+| **Claude Code** | Yes | `.claude/skills/` / `~/.claude/skills/` [1]; reads `.agents/skills/`: **uncertain** in the docs; **not read** in Round 0 (2.1.311, 2026-10-29) | Yes, conditional: read when no CLAUDE.md exists; else `@AGENTS.md` import or a setting [2] | Yes (`agents/` in plugins [3]; standalone path not re-checked) | Yes (in plugins [3]) | Yes: `.claude-plugin/marketplace.json` in any git repo/dir; sources: relative path, github, git-subdir, any-host git `url`, https archive, npm; private repos OK [4]; Round 0: a local-scope plugin install exposes the skill as `<plugin>:<skill>` | yes |
 | **Cursor** | Yes (2.4+, Jan 2026) | `.agents/skills/`, `.cursor/skills/` / `~/.agents/skills/`, `~/.cursor/skills/`; **also loads `.claude/skills/`, `.codex/skills/`** [5] | Yes (root + nested) [6] | Yes: `.cursor/agents/*.md` / `~/.cursor/agents/` [7]; forum (Jan 2026): subagents can't use skills [8] | Yes | Yes, Cursor Marketplace plugins (skills, subagents, rules, MCP, hooks) [9]; private/self-hosted team marketplace: **uncertain** | untested |
 | **GitHub Copilot (VS Code)** | Yes (also Copilot CLI, cloud agent, JetBrains) | `.github/skills/`, `.claude/skills/`, `.agents/skills/` / `~/.copilot/skills/`, `~/.claude/skills/`, `~/.agents/skills/` [10][11] | Yes (VS Code customization docs [12]) | Yes: `.github/agents/*.agent.md` / `~/.copilot/agents/` [13] | Yes | Yes: "agent plugins" via git `marketplace.json`, `chat.plugins.marketplaces: ["owner/repo"]` [14]; GHE/GitLab hosts: **uncertain**; `gh skill` installs skills from GitHub repos [11] | untested |
 | **Devin** | Yes | `.agents/skills/<name>/SKILL.md` in connected repos; plus plugin skills at personal/org/enterprise scope [15] | Yes (first 16 KiB auto-injected) [16] | Yes: plugin `agents/<name>.md` — "CLI/Desktop-only today" [17] | Yes (stdio/SSE/HTTP; MCP marketplace) [18] | Yes: team marketplace repo with `.devin-plugin/plugin.json`, required/optional/forbidden lists; private repo via your Git integration [19] | untested |
@@ -21,7 +22,7 @@ driven is a tool outcome, not a skill failure (the review of 2026-10-28, row 18)
 
 - **One SKILL.md folder is the common unit.** Every AI tool above reads the Agent Skills format.
 - **`.agents/skills/` is read by Cursor, Copilot, Devin, Gemini CLI and Codex** (5 of 6). Claude Code is documented on
-  `.claude/skills/`; Cursor and Copilot also read `.claude/skills/`. **Installing each skill into both `.agents/skills/` and
+  `.claude/skills/`, and Round 0 found it does not read `.agents/skills/`; Cursor and Copilot also read `.claude/skills/`. **Installing each skill into both `.agents/skills/` and
   `.claude/skills/` covers all six** — no per-tool rewrite of the skill itself.
 - **AGENTS.md** reaches all six, but conditionally for Claude Code (only without CLAUDE.md) and Gemini (needs a setting).
 - **Marketplaces do not converge**: five different manifests (Claude `.claude-plugin/marketplace.json`, Codex
