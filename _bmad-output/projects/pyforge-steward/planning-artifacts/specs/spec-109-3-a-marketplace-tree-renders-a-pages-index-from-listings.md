@@ -2,7 +2,7 @@
 title: '109.3: A marketplace tree renders a Pages index from listings'
 type: 'feature'
 created: '2026-10-21'
-status: 'in-review'
+status: 'done'
 baseline_revision: '53aed16fe1957ab340c6146cb7bf0c3f810c1746'
 flag:
   key: pyforge.steward.marketplace_pages
@@ -656,3 +656,9 @@ Source: a fresh row-verifier subagent and a fresh differential-probe subagent, b
 
 - Row 123: `main --flag-env` keeps the overlay's value and computes the expected value only after `pages_enabled()` has validated the overlay, so a list or object value is refused by the reader by name (exit 2), as at `b16ee6c0b0`. `test_flag_env_refuses_an_overlay_value_that_is_no_variant_name_by_name` covers a list and an object. The differential probe's flag-env corpus re-ran against the fix: the two inputs now match the parent byte for byte, every other run matches its earlier result, and no run prints a wrong line with exit 0.
 - Test isolation (found by `pr-preflight`'s `pyforge-steward-live-test` lane on the loop-8 push). The loop-7 sibling-`PAUSED` case ran the real flag reader, which pins `pyforge.core.flags`'s process-wide OpenFeature provider to the tree it read. Pinned to a tree flagd cannot parse, the next test on that xdist worker to restore its provider (`pyforge.testing_kit.flags.installed_flags`, in `test_preflight_ci.py`) raised a `ParseError` at teardown. That case now replaces the reader with its fallback (`pages_enabled` returning off), the behaviour loop 8 probed against flagd, so no test leaves the provider on an unparseable tree. The own-state cases are `test_flag_env_refuses_a_state_the_flag_reader_does_not_accept`, refused before any read. The steward live-tree lane (1,621 passed) and the unit lane (1,667 passed) are green.
+
+## Operator rulings (2026-10-29, closeout)
+
+- Row 35: closed by the operator ("the dev-on deploy is fine for the pilot; a merge may publish /marketplace/"). `pages.yml` keeps resolving the dev overlay, where `pyforge.steward.marketplace_pages` is on, so the Pages deploy from `main` mounts `/marketplace/` on the public site for the pilot; turning it off is an overlay edit (`production`/`staging` are already off) or a `PYFORGE_ENVIRONMENT` on the deploy step.
+- The story moves to `done` with 109.2 in the same landing (PR #2274, merged with the marshal subject `Merge pyforge-steward/109-3 into main`). Open after it: `DW-steward-109-3-1` to `-10`, the mirror host (`catalog.yaml` `edit_store.mirrors`), and Stories 109.4 and 109.5 (`backlog`).
+

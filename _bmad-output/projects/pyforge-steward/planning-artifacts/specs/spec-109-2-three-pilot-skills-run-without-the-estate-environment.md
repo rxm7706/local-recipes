@@ -2,7 +2,7 @@
 title: '109.2: Three pilot skills run without the estate environment'
 type: 'docs'
 created: '2026-10-21'
-status: 'in-review'
+status: 'done'
 baseline_revision: '53aed16fe1957ab340c6146cb7bf0c3f810c1746'
 flag-exempt: docs-only
 review_loop_iteration: 7
@@ -167,3 +167,8 @@ Verdict: passed (confirmation). The two loop-5 editorial residues landed with 10
 ## Review (2026-10-29, independent, loop 7)
 
 Verdict: passed (confirmation). The loop-6 fix commit `8d47df4f50` touches none of 109.2's files; the Verification command exits 0 (14 passed). 109.2's two editorial residues are carried by `DW-steward-109-3-4`. Acceptance criteria 1-6 hold unchanged; the story stays `in-review` for the operator's ledger flip, and no further loop is recommended for it. Source: the loop-7 lenses and row verifier over `git diff 080ce9f012..8d47df4f50`.
+
+## Operator ruling (2026-10-29, closeout)
+
+The story moves to `done` with 109.3 in the same landing (PR #2274), after the loop-3 pass and the loop-4 to loop-7 confirmations; its two editorial residues are carried by `DW-steward-109-3-4`.
+

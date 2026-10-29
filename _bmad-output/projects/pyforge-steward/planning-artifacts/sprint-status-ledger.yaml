@@ -52,8 +52,8 @@ development_status:
   107-1-a-stranded-preflight-lane-is-refused-and-pr-preflight-lanes-resolves-under-pixi: done
   108-1-estate-reconcile-reds-on-a-failed-generator-and-a-retired-ci-row-is-never-paused-by-the-master: done
   109-1-the-reset-marketplace-has-a-product-brief: in-progress
-  109-2-three-pilot-skills-run-without-the-estate-environment: in-progress
-  109-3-a-marketplace-tree-renders-a-pages-index-from-listings: in-progress
+  109-2-three-pilot-skills-run-without-the-estate-environment: done
+  109-3-a-marketplace-tree-renders-a-pages-index-from-listings: done
   109-4-the-teammate-cli-bmp-shares-the-catalog-engine: backlog
   109-5-contribution-lanes-wait-on-a-desk-test-and-a-wizard-of-oz-pilot: backlog
   11-1-langflow-joins-as-a-pluggable-app: done
