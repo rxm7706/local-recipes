@@ -950,10 +950,11 @@ def render_skill_card(row: dict[str, Any], *, steps_text: str | None = None) -> 
         bits.append("<h2>Install</h2>")
         bits.append(
             f"<p>Copy the folder <code>{html.escape(str(row['path']))}</code> into {targets}. "
-            "Claude Code's documented project skill path is <code>.claude/skills/</code>. "
-            "Devin's is <code>.agents/skills/</code>. "
-            f'The <a href="{REPOSITORY_BLOB_URL}/{TOOL_MATRIX_RELATIVE}">tool matrix</a> marks Claude Code reading '
-            "<code>.agents/skills/</code> as uncertain and does not list <code>.claude/skills/</code> for Devin. "
+            "Claude Code's documented project skill path is <code>.claude/skills/</code>, and Round 0 "
+            "(Claude Code 2.1.311, 2026-10-29) found it does not read <code>.agents/skills/</code>. "
+            "Devin's is <code>.agents/skills/</code>; the "
+            f'<a href="{REPOSITORY_BLOB_URL}/{TOOL_MATRIX_RELATIVE}">tool matrix</a> does not list '
+            "<code>.claude/skills/</code> for Devin. "
             "<code>bmp install</code> is not built; this page is not an install button.</p>"
         )
         bits.append(
@@ -965,10 +966,19 @@ def render_skill_card(row: dict[str, Any], *, steps_text: str | None = None) -> 
             f"were downloaded: <code>sha256sum -c {plugin}.zip.sha256 &amp;&amp; unzip {plugin}.zip -d .claude/skills/</code>, "
             f"and the same with <code>-d .agents/skills/</code>.</p>"
         )
+        # Round 0's Claude Code leg (2026-10-29) ran this plugin install on @warden/scan only; Codex's row has not
+        # run (Story 109.6).
         bits.append(
-            "<p><code>marketplace.json</code> (the Claude marketplace file) is a discovery pointer for this listing; "
-            f'the folder copy above is the install until <a href="{REPOSITORY_BLOB_URL}/{MARKETPLACE_ROOT_RELATIVE}/'
-            'MANUAL-CHECKLIST.md">Round 0</a> confirms a plugin install exposes the skill.</p>'
+            "<p>For Claude Code, a plugin install exposes the skill "
+            f'(<a href="{REPOSITORY_BLOB_URL}/{MARKETPLACE_ROOT_RELATIVE}/MANUAL-CHECKLIST.md">Round 0</a>, '
+            "2026-10-29, run on <code>@warden/scan</code> with the <code>claude plugin</code> CLI at local scope, "
+            "not in an interactive session): "
+            f"<code>/plugin marketplace add &lt;checkout&gt;/{MARKETPLACE_ROOT_RELATIVE}</code>, then "
+            f"<code>/plugin install {plugin}@{MARKETPLACE_NAME}</code>, lists it as <code>{plugin}:{plugin}</code>. "
+            "Use the plugin or the folder copy in one project, not both; with both, the skill is likely listed twice "
+            "(not tested). For Codex, "
+            "<code>.agents/plugins/marketplace.json</code> stays a discovery pointer until its Round 0 row runs, "
+            "and the folder copy above is the install.</p>"
         )
     hint = row.get("install_hint")
     if hint:

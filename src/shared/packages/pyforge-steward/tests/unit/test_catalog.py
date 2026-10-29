@@ -1154,6 +1154,17 @@ def test_pointers_name_every_consumer_form_and_edit_nothing(tmp_path: Path, caps
     assert "docs/foundry/marketplace/.claude-plugin/marketplace.json" in out
     assert "sparsePaths" in out
     assert "edit_store.mirrors is empty" in out
+    # Story 109.6: the note carries Round 0's Claude Code result instead of waiting on it
+    assert (
+        "a plugin install from docs/foundry/marketplace/.claude-plugin/marketplace.json exposes a listing's skill "
+        "as <scope>-<slug>:<scope>-<slug>" in out
+    )
+    assert "/plugin install <scope>-<slug>@pyforge-bmad-marketplace" in out
+    # loop 1, rows 1 and 2: the tested skill and source are named, and the untested ones are said to be untested
+    assert "run on @warden/scan" in out and "the github and git sources were not exercised" in out
+    assert "not the estate catalog the one-session line adds" in out
+    assert "Use the plugin or the folder copy in one project, not both" in out
+    assert "until Round 0 confirms" not in out
     assert ".claude/settings.json is not edited" in out
     # verified live 2026-09-19: bmad-method 6.12.0 resolves the dir but "Found 0 modules"
     assert "Found 0 modules" in out and "steward catalog ship" in out
@@ -1250,6 +1261,10 @@ def test_pointers_print_a_full_git_url_for_each_mirror(tmp_path: Path) -> None:
     }
     assert "git-subdir" not in json.dumps(mirror)
     assert "full https URL" in pointers["github_note"]
+    # Story 109.6: the Round 0 sentence holds with a mirror named too
+    assert pointers["github_note"].endswith("with both, the skill is likely listed twice (not tested).")
+    assert "Round 0 (Claude Code 2.1.311, 2026-10-29, run on @warden/scan" in pointers["github_note"]
+    assert "with the claude plugin CLI at local scope, not in an interactive session" in pointers["github_note"]
 
 
 def test_backends_read_declared_options_and_treat_null_as_absent() -> None:

@@ -3672,7 +3672,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/__main__.py": "7eab06cf561194d0771633640c92848341a77907",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/bootstrap.py": "aa6a25c8b0ea0b221664e5e138f7f94f82ee62f4",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/budget.py": "33b01ae0b77ef15e73849e830eb7ab35b350573e",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/catalog.py": "6f138f3509cc1d9943d9f73b22f91d6919b74ca7",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/catalog.py": "2a4c99dfbe758c1e5e57cecce67ae57a1daaf354",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/ci.py": "8e079439ac8e424f7bcfb8c2429a88912a4c9194",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py": "dcc146e871a5a5c4ad1247c8c9909f6f3436cbc3",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/corridor.py": "db52677f24d7358844d8a233b376f5645350b74e",
@@ -3730,7 +3730,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/guards.py": "19371de66ce1fef6726753cc3b6d9c87b86f8565",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/interfaces.py": "885fe0a72e7fd2bdf18215a1780b09327ff0bcca",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py": "55c74e6a35205b13ed861dd4e16c0ac3dfb248ee",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py": "9457c2d5a343f1e77168f209ffe23a6434eb3ed4",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py": "73fcc8620697b9ec14369f0765f600b7abbcb922",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/measures.py": "36eff3e94bef60c27d3f8f856c0108aef55fcb83",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py": "ed0aa191a3089c710b4de22710493ebf016f8fd7",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/pages_duty.py": "782142b699528425c3d093175cf220f942e8449f",
@@ -3800,7 +3800,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "4e5d53ec73cdb0e1bb74c3912a0918efbff6411b"
+  "memlog": "5bfa888c5641183eb5fb61970e6d6aa53cbd4894"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -6268,14 +6268,14 @@
    "docs/foundry/marketplace/.agents/plugins/marketplace.json": "f3fa48201ae2823be8bc650517aed405847240f9",
    "docs/foundry/marketplace/.claude-plugin/marketplace.json": "c32d65342e18ba4a03fd2f33c43425608202e933",
    "docs/foundry/marketplace/MANUAL-CHECKLIST.md": "dcedf39d2fef455133e7f0cffba6ebb9d4ea7d14",
-   "docs/foundry/marketplace/README.md": "22c73b9f43c788f9771e0058ba35eb294107f7af",
+   "docs/foundry/marketplace/README.md": "7ec492250882342a57a41bba62c2f10a01d84c32",
    "docs/foundry/marketplace/index.yaml": "1c97ba51d08f723e8269fe7e71bb7fc21fdac133",
    "docs/foundry/marketplace/site/index.html": "1f20059e58bb7e5a91fa5b4a17c6e1283b990d9e",
    "docs/foundry/marketplace/site/listings.json": "efbf4e9d0c8aa4f9af318c4e504e3f06bcceabdc",
    "docs/foundry/marketplace/site/marketplace.json": "08892798594d672e73a3cdf9036a727ad63cb6ed",
-   "docs/foundry/marketplace/site/skills/mason/environment.html": "5eaff4bce9c215289714b29dfb793228746fc3ee",
-   "docs/foundry/marketplace/site/skills/mason/package.html": "2663c2ecc79e7f870c24775298718f6cc5a4497a",
-   "docs/foundry/marketplace/site/skills/warden/scan.html": "036da821300dd5ed308e5d3ff546b3c53d7488ed",
+   "docs/foundry/marketplace/site/skills/mason/environment.html": "0a81ea6426b82127c7d20f3a3d7f08280f3b5997",
+   "docs/foundry/marketplace/site/skills/mason/package.html": "a2f8cabbbf5b2df833bb9af02765dc1825f76659",
+   "docs/foundry/marketplace/site/skills/warden/scan.html": "eb46e26c02add11754793f0ea5dc2643c73db498",
    "docs/foundry/marketplace/skills/mason/environment/SKILL.md": "d923ed66482e2c0a168c908e78a0a9f17ac06d4f",
    "docs/foundry/marketplace/skills/mason/environment/listing.yaml": "f37ee4b2303066537559c36ff38774a6623dc35f",
    "docs/foundry/marketplace/skills/mason/environment/steps.md": "1fc01188cf491237204ffcd1a6538d409a336f24",
@@ -6433,7 +6433,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/__main__.py": "7eab06cf561194d0771633640c92848341a77907",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/bootstrap.py": "aa6a25c8b0ea0b221664e5e138f7f94f82ee62f4",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/budget.py": "33b01ae0b77ef15e73849e830eb7ab35b350573e",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/catalog.py": "6f138f3509cc1d9943d9f73b22f91d6919b74ca7",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/catalog.py": "2a4c99dfbe758c1e5e57cecce67ae57a1daaf354",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/ci.py": "8e079439ac8e424f7bcfb8c2429a88912a4c9194",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py": "dcc146e871a5a5c4ad1247c8c9909f6f3436cbc3",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/corridor.py": "db52677f24d7358844d8a233b376f5645350b74e",
@@ -6488,7 +6488,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/guards.py": "19371de66ce1fef6726753cc3b6d9c87b86f8565",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/interfaces.py": "885fe0a72e7fd2bdf18215a1780b09327ff0bcca",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py": "55c74e6a35205b13ed861dd4e16c0ac3dfb248ee",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py": "9457c2d5a343f1e77168f209ffe23a6434eb3ed4",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py": "73fcc8620697b9ec14369f0765f600b7abbcb922",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/measures.py": "36eff3e94bef60c27d3f8f856c0108aef55fcb83",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py": "ed0aa191a3089c710b4de22710493ebf016f8fd7",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/pages_duty.py": "782142b699528425c3d093175cf220f942e8449f",
@@ -6553,7 +6553,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_budget_check.py": "bb0cdadbdda44e67c4c9b0650fc6534f3a295d9e",
    "src/shared/packages/pyforge-steward/tests/unit/test_budget_set.py": "a37933e90a8b2d17482e303f48ff74906d3a93d2",
    "src/shared/packages/pyforge-steward/tests/unit/test_budget_show.py": "96ce4521fed3373d4febc52e41ebdf23d2e372b3",
-   "src/shared/packages/pyforge-steward/tests/unit/test_catalog.py": "e96cd508b5c4a8aa8c0cdee7af3272b56f7107de",
+   "src/shared/packages/pyforge-steward/tests/unit/test_catalog.py": "9c127fb6b36dd35fee475e54c7f4710a36a067bf",
    "src/shared/packages/pyforge-steward/tests/unit/test_ci_pause.py": "a7e48bf693fe94277fc5544371ffb8d606da7ccb",
    "src/shared/packages/pyforge-steward/tests/unit/test_ci_status.py": "5230aa8edf20d5d8c3823d73a53aafb60843c4cf",
    "src/shared/packages/pyforge-steward/tests/unit/test_cli.py": "85b2226685e200843e7c0db8bd0f7ff166f728f8",
@@ -6596,7 +6596,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_lint_types_mypy_cache.py": "289934673ea010c050d3c845aa02c4258caa884c",
    "src/shared/packages/pyforge-steward/tests/unit/test_lint_types_not_yet_clean.py": "28691500c306a5f506b81d5131e9e990e6086956",
    "src/shared/packages/pyforge-steward/tests/unit/test_marketplace_markdown.py": "47a99931ffc10a3a4b233fbcf9d38e189e54ef94",
-   "src/shared/packages/pyforge-steward/tests/unit/test_marketplace_pages.py": "cb2fd11b3c8b621d07a3a1d74ef2dadd355d0cc2",
+   "src/shared/packages/pyforge-steward/tests/unit/test_marketplace_pages.py": "b1ef12d0442b85c33a2c09f38e1bc7c2f0e16a69",
    "src/shared/packages/pyforge-steward/tests/unit/test_measures.py": "ad38b82e87911c044f3b0eee3e5f4ed02e07b463",
    "src/shared/packages/pyforge-steward/tests/unit/test_pages.py": "81b3c28c886f15e85b84c1406fe57fd878628afb",
    "src/shared/packages/pyforge-steward/tests/unit/test_pages_duty.py": "1db7d70c594ee325e868a5354f1f1939d9119cf0",
@@ -6680,7 +6680,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "ef140e70c779d2dac15b76855397a876d9f55cd7"
+  "memlog": "0bc74994059ae1d001dcb6c1943ee9457b0412d7"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},

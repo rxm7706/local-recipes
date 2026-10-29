@@ -1177,7 +1177,18 @@ def test_committed_environment_card_renders_steps_md_not_the_paper_sample(tmp_pa
     assert "<li>pyforge-core: Required by pyforge mason dispatch; same 404 check</li>" in card
     assert "never verified" in card
     assert "mason-environment.zip" in card and "mason-environment.zip.sha256" in card
-    assert "discovery pointer" in card
+    # Story 109.6: the Install section carries Round 0's Claude Code result; Codex's manifest stays a pointer
+    assert "found it does not read <code>.agents/skills/</code>" in card
+    assert "<code>/plugin marketplace add &lt;checkout&gt;/docs/foundry/marketplace</code>" in card
+    assert "<code>/plugin install mason-environment@pyforge-bmad-marketplace</code>" in card
+    assert "lists it as <code>mason-environment:mason-environment</code>" in card
+    assert "Use the plugin or the folder copy in one project, not both; with both" in card
+    # loop 1, row 1: Round 0 ran the plugin install on @warden/scan only, and the card says so
+    assert "Round 0</a>, 2026-10-29, run on <code>@warden/scan</code>" in card
+    # loop 2, row 1: the commands ran as the claude plugin CLI, not as the slash commands the card prints
+    assert "with the <code>claude plugin</code> CLI at local scope, not in an interactive session" in card
+    assert "<code>.agents/plugins/marketplace.json</code> stays a discovery pointer until its Round 0 row runs" in card
+    assert "as uncertain" not in card and "confirms a plugin install" not in card
     index_html = (site / "index.html").read_text(encoding="utf-8")
     assert index_html.count("never verified") == 3
 
