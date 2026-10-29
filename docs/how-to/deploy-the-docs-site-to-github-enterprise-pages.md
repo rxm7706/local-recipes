@@ -98,7 +98,7 @@ The zip is built for the public github.io URL, so its absolute internal links ca
 
 ## 7. Add the BMAD marketplace from an internal mirror
 
-This monorepo hosts the marketplace at `docs/foundry/marketplace/`; its `README.md` holds the 2026-10-21 decision and the flag semantics. While the flag is on, the Pages build mounts the generated site at `/marketplace/` in the same artifact as the docs shelf; off, `/marketplace/` is absent from the artifact (a 404, not a stale page). This section is what differs on an enterprise host. With a site URL of `https://pages.ghe.example` and a base path of `/org/local-recipes`, the index is:
+This monorepo hosts the marketplace at `docs/foundry/marketplace/`; its `README.md` holds the flag semantics (§ Regenerate the site) and the 2026-10-21 decision (§ Provenance). While the flag is on, the Pages build mounts the generated site at `/marketplace/` in the same artifact as the docs shelf; off, `/marketplace/` is absent from the artifact (a 404, not a stale page). This section is what differs on an enterprise host. With a site URL of `https://pages.ghe.example` and a base path of `/org/local-recipes`, the index is:
 
 ```text
 https://pages.ghe.example/org/local-recipes/marketplace/

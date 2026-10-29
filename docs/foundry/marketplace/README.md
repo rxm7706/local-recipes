@@ -146,8 +146,9 @@ write_plugin_manifests(root / 'index.yaml')
 ```
 
 What each layer refuses: `validate_listing` refuses every breach of the
-listing rules and the folder rule at render, and the steward live lane runs
-it over this tree; the Pages mount (`docs-site/src/lib/marketplace.ts`) ships
+listing rules and of the folder rule inside a skill folder, and the folder
+scan (`write_site_from_index` and the manifest writers) refuses what stands
+between the folders; the steward live lane runs both over this tree; the Pages mount (`docs-site/src/lib/marketplace.ts`) ships
 only the folder rule's set, fails the build on a size cap, and `pages-check`
 reports a mounted file or folder over its cap; the release zip step refuses
 a symlink, a cap breach or a non-text `references/` file over the mount's
@@ -175,9 +176,10 @@ are repository links of the form `https://github.com/rxm7706/local-recipes/blob/
 The mount rewrites two forms and nothing else: that `blob/main/` form, to
 the deploying host and its deployed commit, and the public clone URL
 (`https://github.com/rxm7706/local-recipes.git`, in `marketplace.json` and
-wherever a card carries it), to the deploying host's. Any other repository
-link a runbook carries (an issue link, the bare repository URL) is left as
-written.
+wherever a card carries it, as a whole URL), to the deploying host's. Any
+other repository link a runbook carries (an issue link, the bare repository
+URL, a URL the clone URL only begins) is left as written. A host, repository
+or commit outside the shape GitHub Actions sets fails the build.
 
 ## Not built yet
 

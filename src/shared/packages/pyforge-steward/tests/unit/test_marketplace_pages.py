@@ -11,6 +11,7 @@ import datetime as dt
 import json
 import os
 import shutil
+import threading
 from pathlib import Path
 
 import pytest
@@ -459,6 +460,44 @@ def test_the_folder_scan_refuses_a_symlinked_scope_or_slug_before_reading_it(tmp
         load_listings(root / "index.yaml", root=root)
 
 
+@pytest.mark.skipif(not hasattr(os, "mkfifo"), reason="no FIFOs on this platform")
+def test_a_listing_that_is_not_a_regular_file_is_refused_before_it_is_read(tmp_path: Path) -> None:
+    """Loop 6, row 98: ``read_text`` on a FIFO ``index.yaml`` blocked the render forever, before row 86's wrap could
+    fire; a directory where the index should be is refused the same way, and an absent index is the read's own
+    listing error (row 102: the ``OSError`` half of row 86, observed)."""
+    root = _marketplace(tmp_path)
+    (root / "index.yaml").unlink()
+    os.mkfifo(root / "index.yaml")
+    outcome: dict[str, BaseException] = {}
+
+    def load() -> None:
+        try:
+            load_listings(root / "index.yaml", root=root)
+        except BaseException as exc:  # noqa: BLE001 -- the thread reports whatever the call raised
+            outcome["exc"] = exc
+
+    reader = threading.Thread(target=load, daemon=True)
+    reader.start()
+    reader.join(5)
+    if reader.is_alive():
+        os.close(os.open(root / "index.yaml", os.O_WRONLY | os.O_NONBLOCK))  # end the blocked read with EOF
+        reader.join(5)
+        pytest.fail("load_listings blocked reading a FIFO index")
+    assert isinstance(outcome.get("exc"), MarketplaceIndexError)
+    assert "not a regular file" in str(outcome["exc"])
+    on = _flags_tree(tmp_path / "flags", dev="on")
+    with pytest.raises(MarketplaceIndexError, match="not a regular file"):
+        write_site_from_index(root / "index.yaml", tmp_path / "site", flags_path=on)
+    (root / "index.yaml").unlink()
+    (root / "index.yaml").mkdir()
+    with pytest.raises(MarketplaceIndexError, match="not a regular file"):
+        load_listings(root / "index.yaml", root=root)
+    (root / "index.yaml").rmdir()
+    with pytest.raises(MarketplaceIndexError, match="not a readable UTF-8 text file"):
+        load_listings(root / "index.yaml", root=root)
+    assert not (tmp_path / "site").exists()
+
+
 def test_the_folder_scan_refuses_a_symlinked_skills_directory_before_reading_it(tmp_path: Path) -> None:
     """Loop 5, row 91: the ``skills/`` level of the scan's refusal, reached through the scan itself (the validator's
     own ``[skills]`` case reaches its refusal through ``_contained_folder``)."""
@@ -793,6 +832,30 @@ def test_flag_env_refuses_an_overlay_the_reader_refuses(
     assert main(["--flag-env"]) == 2
     captured = capsys.readouterr()
     assert captured.out == "" and "metadata" in captured.err and "refusing to print a build line" in captured.err
+
+
+@pytest.mark.parametrize("overlays", [{}, {"dev": {}}, {"dev": {"pyforge.other": "on"}, "staging": {}}])
+def test_flag_env_refuses_an_overlay_file_with_no_value_for_the_flag(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], overlays: dict
+) -> None:
+    """Loop 6, row 101: an overlay file that exists but names no value for the flag under the resolved environment
+    read the base default and printed ``=0`` with exit 0, the silent-off row 87 refused for an absent file. A killed
+    flag keeps its tree default, so it needs no overlay value."""
+    from pyforge.steward.marketplace_pages import FLAG_ENV, main
+
+    on = _flags_tree(tmp_path / "flags", dev="on")
+    tree = json.loads(on.read_text(encoding="utf-8"))
+    if "pyforge.other" in json.dumps(overlays):
+        tree["flags"]["pyforge.other"] = dict(tree["flags"][FLAG_KEY])
+        on.write_text(json.dumps(tree), encoding="utf-8")
+    (tmp_path / "flags" / "flag-overlays.json").write_text(json.dumps(overlays), encoding="utf-8")
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(on))
+    assert main(["--flag-env"]) == 2
+    captured = capsys.readouterr()
+    assert captured.out == "" and "names no value for the flag under dev" in captured.err
+    tree["flags"][FLAG_KEY]["state"] = "DISABLED"
+    on.write_text(json.dumps(tree), encoding="utf-8")
+    assert main(["--flag-env"]) == 0 and capsys.readouterr().out == f"{FLAG_ENV}=0\n"
 
 
 # --- the site tree (AC4) -------------------------------------------------------------------------
@@ -1230,6 +1293,50 @@ def test_a_dot_dot_destination_is_read_lexically_for_both_manifests(
     with pytest.raises(MarketplaceIndexError, match=".claude-plugin is a symlink; refusing to write through it"):
         writer(root / "index.yaml", root / "skills" / ".." / ".claude-plugin" / "marketplace.json", flags_path=on)
     assert not list(elsewhere.rglob("*"))
+
+
+@pytest.mark.parametrize(
+    ("writer", "name"),
+    [
+        (write_plugin_manifest, ".claude-plugin/marketplace.json"),
+        (write_codex_manifest, ".agents/plugins/marketplace.json"),
+    ],
+)
+def test_a_dot_dot_after_a_symlinked_directory_is_refused_for_both_manifests(tmp_path: Path, writer, name: str) -> None:
+    """Loop 6, row 96: the loop-5 lexical reading collapsed ``linkdir/..`` before the symlink walk, while the OS
+    follows ``linkdir`` first, so ``root/linkdir/../<manifest>`` was written under ``linkdir``'s target's parent;
+    ``4e1ac45dbc`` refused it. A tree reached under another spelling (``link -> root``) is the tree: a destination
+    spelled through either name is held to the symlink rule."""
+    root = _marketplace(tmp_path)
+    on = _flags_tree(tmp_path / "flags", dev="on")
+    (tmp_path / "elsewhere" / "sub").mkdir(parents=True)
+    (root / "linkdir").symlink_to(tmp_path / "elsewhere" / "sub")
+    with pytest.raises(MarketplaceIndexError, match="steps back out of a symlink with '..'"):
+        writer(root / "index.yaml", root / "linkdir" / ".." / name, flags_path=on)
+    assert not list((tmp_path / "elsewhere").rglob("*.json")) and not (root / name).exists()
+    (root / "linkdir").unlink()
+    first = name.split("/", 1)[0]
+    (root / first).symlink_to(tmp_path / "elsewhere")
+    (tmp_path / "link").symlink_to(root)
+    for index, dest in (
+        (tmp_path / "link" / "index.yaml", root / name),
+        (root / "index.yaml", tmp_path / "link" / name),
+    ):
+        with pytest.raises(MarketplaceIndexError, match=f"{first} is a symlink; refusing to write through it"):
+            writer(index, dest, flags_path=on)
+    assert not list((tmp_path / "elsewhere").rglob("*.json"))
+
+
+@pytest.mark.parametrize("writer", [write_plugin_manifest, write_codex_manifest])
+def test_a_manifest_under_a_file_is_a_listing_error(tmp_path: Path, writer) -> None:
+    """Loop 6, row 97: a destination whose parent is a regular file in the tree raised a raw ``FileExistsError``
+    from ``mkdir``; every containment refusal is a ``MarketplaceIndexError``."""
+    root = _marketplace(tmp_path)
+    on = _flags_tree(tmp_path / "flags", dev="on")
+    for dest in (root / "index.yaml" / "m.json", root / "index.yaml" / "deeper" / "m.json"):
+        with pytest.raises(MarketplaceIndexError, match="index.yaml is not a directory; refusing to write under it"):
+            writer(root / "index.yaml", dest, flags_path=on)
+    assert (root / "index.yaml").is_file()
 
 
 def test_the_manifests_refuse_a_folder_the_index_does_not_declare(tmp_path: Path) -> None:

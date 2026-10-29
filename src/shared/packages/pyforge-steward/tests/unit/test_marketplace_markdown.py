@@ -112,6 +112,14 @@ from pyforge.steward.marketplace_pages import render_markdown
             '<ul><li>item</li></ul>\n<pre><code class="language-make">all:\n\tgcc\n</code></pre>',
         ),
         ("\t```\n\t\tx\n\t```", "<pre><code>\tx\n</code></pre>"),
+        # loop 6, row 99: a tab between a list marker and a fence opener reaches the next four-column stop
+        ("-\t```sh\n\tcmd\n\t```\nafter", '<pre><code class="language-sh">cmd\n</code></pre>\n<p>after</p>'),
+        ("1.\t```sh\n\tcmd\n\t```", '<pre><code class="language-sh">cmd\n</code></pre>'),
+        # loop 6, row 100: a tab after spaces reaches the next stop, and a tab that crosses the fence's indent leaves
+        # its remaining columns as spaces; tabs after leading spaces count on a structural line too
+        ("  ```\n \tgcc\n  ```", "<pre><code>  gcc\n</code></pre>"),
+        ("  ```\n\tx\n  ```", "<pre><code>  x\n</code></pre>"),
+        ("  \t```\n  \tcmd\n  \t```", "<pre><code>cmd\n</code></pre>"),
     ],
 )
 def test_render_markdown(text: str, expected: str) -> None:
@@ -131,6 +139,11 @@ def test_the_empty_link_base_resolves_a_relative_target_beside_the_page() -> Non
     assert render_markdown("[a](<steps.md>) [b](<https://e.test/x>) [c](<>) [d](<../up>)", link_base="e/") == (
         '<p><a href="e/steps.md">a</a> <a href="https://e.test/x">b</a> [c](&lt;&gt;) [d](&lt;../up&gt;)</p>'
     )
+    # loop 6, row 107: a half-bracketed or nested destination is no file name, and stays literal under every base
+    for base in (None, "", "e/"):
+        assert render_markdown(
+            "[a](<steps.md) [b](steps.md>) [c](<a>b) [d](<./javascript:alert(1)>)", link_base=base
+        ) == ("<p>[a](&lt;steps.md) [b](steps.md&gt;) [c](&lt;a&gt;b) [d](&lt;./javascript:alert(1)&gt;)</p>")
 
 
 def test_a_non_skill_card_leaves_relative_links_literal() -> None:

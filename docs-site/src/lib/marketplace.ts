@@ -63,12 +63,25 @@ export const PUBLIC_REPOSITORY_URL = PUBLIC_MARKETPLACE_GIT_URL.replace(/\.git$/
 /** The card's repository links, as `pyforge.steward.marketplace_pages.REPOSITORY_BLOB_URL` renders them. */
 export const PUBLIC_BLOB_URL = `${PUBLIC_REPOSITORY_URL}/blob/main/`;
 
+/** The public clone URL as a whole token: a URL it merely begins (`…/local-recipes.github.io/…`) is another link
+ * (loop 6, row 106). A trailing `.` ends a sentence, not the URL. */
+const PUBLIC_CLONE_URL_TOKEN = new RegExp(
+  PUBLIC_MARKETPLACE_GIT_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![A-Za-z0-9_~/?#%-])',
+  'g',
+);
+/** The shapes GitHub Actions gives the three names the rewrite splices into every card's links (loop 6, row 106: an
+ * unvalidated `GITHUB_SHA` such as `abc"onmouseover="…` became markup inside each `href`). */
+const DEPLOY_SERVER = /^https?:\/\/[A-Za-z0-9.-]+(?::\d+)?(?:\/[A-Za-z0-9._~-]+)*$/;
+const DEPLOY_REPOSITORY = /^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/;
+const DEPLOY_SHA = /^[0-9a-f]{7,64}$/;
+
 /** `marketplace.json` and the cards for the host that runs the build: GitHub Actions names it, and exactly the two
  * forms the renderer emits are replaced, the public clone URL and the public repository's `blob/main/` links (loop 4,
  * row 76: a card links the README, the checklist and the tool matrix, which the mount does not carry). A `blob/main/`
  * link moves to the deployed commit when `GITHUB_SHA` is set (loop 5, row 89: `main` on a mirror may not hold the
- * targets, or exist), and any other repository link on a runbook -- an issue, a `git clone` line -- is left as it is
- * (row 88). */
+ * targets, or exist), and any other repository link on a runbook -- an issue, the bare repository URL, a URL the
+ * clone URL only begins -- is left as it is (rows 88 and 106). A server, repository or commit outside the shape
+ * Actions sets throws: the build fails rather than ship cards with a malformed or injected link (row 106). */
 export function rewriteMarketplaceGitUrl(text: string, env: Env = process.env): string {
   const server = (env.GITHUB_SERVER_URL ?? '').trim().replace(/\/+$/, '');
   const repo = (env.GITHUB_REPOSITORY ?? '').trim();
@@ -76,8 +89,17 @@ export function rewriteMarketplaceGitUrl(text: string, env: Env = process.env): 
     return text;
   }
   const sha = (env.GITHUB_SHA ?? '').trim();
+  if (!DEPLOY_SERVER.test(server)) {
+    throw new Error(`GITHUB_SERVER_URL ${JSON.stringify(server)} is not an http(s) origin; refusing to rewrite the marketplace links`);
+  }
+  if (!DEPLOY_REPOSITORY.test(repo)) {
+    throw new Error(`GITHUB_REPOSITORY ${JSON.stringify(repo)} is not owner/name; refusing to rewrite the marketplace links`);
+  }
+  if (sha && !DEPLOY_SHA.test(sha)) {
+    throw new Error(`GITHUB_SHA ${JSON.stringify(sha)} is not a commit hash; refusing to rewrite the marketplace links`);
+  }
   const blob = `${server}/${repo}/blob/${sha || 'main'}/`;
-  return text.split(PUBLIC_MARKETPLACE_GIT_URL).join(`${server}/${repo}.git`).split(PUBLIC_BLOB_URL).join(blob);
+  return text.replace(PUBLIC_CLONE_URL_TOKEN, `${server}/${repo}.git`).split(PUBLIC_BLOB_URL).join(blob);
 }
 
 export interface MountedFile {

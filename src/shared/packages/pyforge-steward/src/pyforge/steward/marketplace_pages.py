@@ -41,7 +41,7 @@ from typing import Any
 
 import yaml
 from pyforge.core import cutover_root
-from pyforge.core.flags import FlagConfigError, overlays_path_for, read_boolean
+from pyforge.core.flags import FlagConfigError, current_environment, load_overlays, overlays_path_for, read_boolean
 
 from pyforge.steward.catalog import (
     CODEX_MANIFEST_RELATIVE,
@@ -514,7 +514,10 @@ def listings_from_document(document: dict[str, Any], *, root: Path | None = None
 
 def _load_yaml(path: Path) -> Any:
     """``yaml.safe_load`` of ``path``, a listing error (not a raw ``yaml.YAMLError``) when it does not parse, and
-    (loop 5, row 86) when it is not UTF-8 text or cannot be read."""
+    (loop 5, row 86) when it is not UTF-8 text or cannot be read. A path that exists but is not a regular file (a
+    FIFO, which blocked the read forever; a directory; a symlink) is refused before any read (loop 6, row 98)."""
+    if path.is_symlink() or (path.exists() and not path.is_file()):
+        raise MarketplaceIndexError(f"{path}: not a regular file; a listing is read from a regular file only")
     try:
         text = path.read_text(encoding="utf-8")
     except (UnicodeDecodeError, OSError) as exc:
@@ -668,9 +671,12 @@ def _inline(text: str, link_base: str | None = None) -> str:
 
     def link(match: re.Match[str]) -> str:
         target = match.group(2)
-        if target.startswith("&lt;") and target.endswith("&gt;"):
+        if len(target) >= 8 and target.startswith("&lt;") and target.endswith("&gt;"):
             # a CommonMark <destination>, escaped already (loop 5, row 93): the brackets are not part of the target
             target = target[4:-4]
+        if "&lt;" in target or "&gt;" in target:
+            # loop 6, row 107: a half-bracketed or nested destination is no file name; it stays literal text
+            return match.group(0)
         href = _link_href(target, link_base)
         return match.group(0) if href is None else f'<a href="{href}">{match.group(1)}</a>'
 
@@ -841,7 +847,9 @@ def render_markdown(
             if _opens(inner):
                 # an item whose text is a fence opener is a fence at the text's column (row 68): re-read the line
                 # as one, so its closer closes it instead of opening a block that swallows the rest
-                lines[index] = " " * (len(line.rstrip()) - len(inner)) + inner
+                # the opener's column in four-column stops (loop 6, row 99: `-\t```sh` counted the tab as one)
+                prefix = line.rstrip()[: -len(inner)]
+                lines[index] = " " * len(prefix.expandtabs(4)) + inner
                 continue
             if items and indent >= 2:
                 items[-1][3].append((ordered, number, body))
@@ -1362,26 +1370,42 @@ def write_site_from_index(
 
 
 def _contained_dest(root: Path, dest: Path, what: str) -> None:
-    """A manifest under ``root`` is written only where no symlink stands between ``root`` and it and its parent
-    resolves inside the tree (loop 4, row 65: ``root/.agents -> /elsewhere`` took the Codex manifest outside the
-    marketplace while the returned path was the in-tree one). A ``dest`` outside ``root`` is the caller's. Both
-    sides are normalised lexically first (loop 5, row 85: a relative ``root`` with an absolute ``dest`` made
-    ``relative_to`` raise and the check return, and ``root/../x`` was read as inside the tree), and the parent's
-    resolution is judged whether or not it exists yet."""
+    """A manifest under ``root`` is written only where no symlink stands between ``root`` and it, every directory
+    on the way is a directory, and its parent resolves inside the tree (loop 4, row 65: ``root/.agents ->
+    /elsewhere`` took the Codex manifest outside the marketplace while the returned path was the in-tree one). A
+    ``dest`` outside ``root`` is the caller's. Both sides are normalised lexically (loop 5, row 85: a relative
+    ``root`` with an absolute ``dest`` made ``relative_to`` raise and the check return), so a ``dest`` whose
+    lexical and physical parents differ (loop 6, row 96: ``root/linkdir/../.claude-plugin``, where the OS follows
+    ``linkdir`` before the ``..``) is refused, and the tree is found under any spelling of it (row 96: an index
+    read through ``link -> root`` with a ``dest`` spelled through ``root``)."""
     root_abs = Path(os.path.abspath(root))
     dest_abs = Path(os.path.abspath(dest))
-    try:
-        relative = dest_abs.relative_to(root_abs)
-    except ValueError:
-        return
-    probe = root_abs
-    for part in relative.parts:
+    if Path(dest).parent.resolve() != dest_abs.parent.resolve():
+        raise MarketplaceIndexError(
+            f"{what}: {Path(dest).as_posix()} steps back out of a symlink with '..'; refusing to write through it"
+        )
+    root_real = root_abs.resolve()
+    if dest_abs.is_relative_to(root_abs):
+        base = root_abs
+    else:
+        found = next((parent for parent in dest_abs.parents if parent.resolve() == root_real), None)
+        if found is None:
+            return
+        base = found
+    relative = dest_abs.relative_to(base)
+    probe = base
+    for index, part in enumerate(relative.parts):
         probe = probe / part
         if probe.is_symlink():
             raise MarketplaceIndexError(
-                f"{what}: {probe.relative_to(root_abs).as_posix()} is a symlink; refusing to write through it"
+                f"{what}: {probe.relative_to(base).as_posix()} is a symlink; refusing to write through it"
             )
-    if not dest_abs.parent.resolve().is_relative_to(root_abs.resolve()):
+        if index < len(relative.parts) - 1 and probe.exists() and not probe.is_dir():
+            # loop 6, row 97: mkdir(parents=True) raised a raw FileExistsError
+            raise MarketplaceIndexError(
+                f"{what}: {probe.relative_to(base).as_posix()} is not a directory; refusing to write under it"
+            )
+    if not dest_abs.parent.resolve().is_relative_to(root_real):
         raise MarketplaceIndexError(f"{what}: {relative.as_posix()} resolves outside the marketplace")
 
 
@@ -1486,7 +1510,8 @@ def main(argv: list[str] | None = None) -> int:
             "build line\n"
         )
         return 2
-    if overlays_path_for(tree) is None:
+    overlays_path = overlays_path_for(tree)
+    if overlays_path is None:
         # The environment's value lives in the overlay (dev is on there and nowhere else); a tree with no overlay
         # file beside it reads the base default and prints 0 with exit 0 (row 87).
         sys.stderr.write(
@@ -1494,6 +1519,22 @@ def main(argv: list[str] | None = None) -> int:
             "to print a build line\n"
         )
         return 2
+    state = entry.get("state")
+    if not (isinstance(state, str) and state.upper() == "DISABLED"):
+        # loop 6, row 101: an overlay file with no value for the flag under this environment ({} or {"dev": {}})
+        # read the base default and printed 0 with exit 0; a killed flag keeps its tree default, so it needs none
+        try:
+            environment = current_environment()
+            named = load_overlays(overlays_path).get(environment)
+        except FlagConfigError as exc:
+            sys.stderr.write(f"{FLAG_KEY}: {exc}; refusing to print a build line\n")
+            return 2
+        if not isinstance(named, dict) or FLAG_KEY not in named:
+            sys.stderr.write(
+                f"{FLAG_KEY}: {overlays_path} names no value for the flag under {environment} (the build line's "
+                "value is the overlay's); refusing to print a build line\n"
+            )
+            return 2
     try:
         enabled = pages_enabled()
     except FlagConfigError as exc:  # an overlay or metadata the reader refuses: never a defaulted line

@@ -6663,3 +6663,51 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-10-26 — the retrofit chain commit
   status: open
+
+### DW-steward-109-3-1: A `related` entry with surrounding whitespace, an empty entry, a repeated entry or a self-reference passes the listing rules
+
+- source_spec: `planning-artifacts/specs/spec-109-3-a-marketplace-tree-renders-a-pages-index-from-listings.md`
+  summary: `_validate_related` holds an entry that starts with `@` to `@<scope>/<slug>` and `_check_rows` resolves it against the skill rows, but `" @warden/scan"` and `"\t@warden/scan"` pass as text and render unlinked (a trailing space is refused), `""`, `" "` and `"\t"` render empty list items, a repeated reference renders the sibling twice, and a row naming its own id links the card to itself. Every other string field refuses surrounding whitespace through `_require_exact`.
+  evidence: Loop-6 review row 104 (2026-10-29), probed by the adversarial and edge-case-hunter lenses and re-run by the reviewer through `render_skill_card`. Escaped text only; no write outside the tree, no injection, no silent-off deploy, so the loop-7 review contract defers it.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py (`_validate_related`, `_check_rows`)
+  fix: refuse an entry that is empty, carries surrounding whitespace or repeats, and a reference to the row's own id; a refusal case for each in `test_each_listing_rule_refuses_its_breach`.
+  origin: loop-6 review row 104; deferred by the operator ruling of 2026-10-29 (the story spec's § Review contract for loop 7)
+  severity: low
+  promoted: 2026-10-29 — recorded by hand in the loop-6 fix pass of PR #2274
+  status: open
+
+### DW-steward-109-3-2: An empty or non-slug directory between the skill folders, or `skills` as a regular file, passes the folder scan
+
+- source_spec: `planning-artifacts/specs/spec-109-3-a-marketplace-tree-renders-a-pages-index-from-listings.md`
+  summary: `_skill_folders` refuses a non-directory under `skills/` or `skills/<scope>/` and a symlink at every level, but an empty `skills/empty/`, an empty `skills/Bad Scope/` or an empty `skills/.git/` passes the scan, `write_site_from_index` and the manifests, and `skills` as a regular file beside a modules-only index yields no folders and renders. README § Install's "directories only" is met by a directory that is nobody's.
+  evidence: Loop-6 review row 105 (2026-10-29), probed by the adversarial and edge-case-hunter lenses and re-run by the reviewer. Nothing is read from such a directory and the mount skips a folder outside the slug grammar, so the loop-7 review contract defers it.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py (`_skill_folders`)
+  fix: refuse a `skills` that exists and is not a directory, hold scope and slug directory names to `SLUG`, refuse an empty scope directory; a case per shape through the scan and `write_site_from_index`.
+  origin: loop-6 review row 105; deferred by the operator ruling of 2026-10-29 (the story spec's § Review contract for loop 7)
+  severity: low
+  promoted: 2026-10-29 — recorded by hand in the loop-6 fix pass of PR #2274
+  status: open
+
+### DW-steward-109-3-3: A nested list marker before plain item text stays in the item's text
+
+- source_spec: `planning-artifacts/specs/spec-109-3-a-marketplace-tree-renders-a-pages-index-from-listings.md`
+  summary: `render_markdown("- - x")` renders `<ul><li>- x</li></ul>`; the loop-5 nested-marker strip applies only to the fence-item re-read, so a runbook line `- - x` shows its inner marker as text where CommonMark nests a list.
+  evidence: Loop-6 review row 110 (2026-10-29), found by the row verifier and re-run by the reviewer. Pre-existing, escaped text; the three committed runbooks carry no such line.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py (`render_markdown`, the list branch)
+  fix: read a nested marker in item text as a nested item (the renderer already nests by indentation), or document it as unsupported; a case.
+  origin: loop-6 review row 110; deferred by the operator ruling of 2026-10-29 (the story spec's § Review contract for loop 7)
+  severity: low
+  promoted: 2026-10-29 — recorded by hand in the loop-6 fix pass of PR #2274
+  status: open
+
+### DW-steward-109-3-4: Seventeen editorial placement rows on the marketplace documents and cards
+
+- source_spec: `planning-artifacts/specs/spec-109-3-a-marketplace-tree-renders-a-pages-index-from-listings.md`
+  summary: The loop-6 structure lens found the nine marketplace documents structurally sound and listed placement work, none blocking: the release-order paragraph in README § Install; two H3s for § Regenerate the site; the PR template's appended § Listing rows; MANUAL-CHECKLIST § Runbooks at the top; how-to § 7 as a second task; the three `SKILL.md` leading with the "when installed" section; 55 words of the README lede for § Provenance; the tier mapping restated; warden `steps.md` step 2's doubled sentence; the cards' Sources block and Lane line (renderer); the Epic-60 checkboxes that can never be ticked; "the matrix" without an antecedent; the "Index schema" heading; the how-to's hardcoded zip names. 109.2's two residues are in this list.
+  evidence: Loop-6 review row 112 (2026-10-29), the structure lens's table with word counts from `word_metrics.py`; the full list is the story spec's row 112.
+  location: docs/foundry/marketplace/README.md; docs/foundry/marketplace/MANUAL-CHECKLIST.md; .github/PULL_REQUEST_TEMPLATE/marketplace-skill.md; docs/foundry/marketplace/skills/*/*/SKILL.md; docs/how-to/deploy-the-docs-site-to-github-enterprise-pages.md
+  fix: the moves and condensations as the lens lays them out; the `SKILL.md`/`steps.md` command copies and the two install-button lines stay.
+  origin: loop-6 review row 112; deferred by the operator ruling of 2026-10-29 (the story spec's § Review contract for loop 7)
+  severity: low
+  promoted: 2026-10-29 — recorded by hand in the loop-6 fix pass of PR #2274
+  status: open
