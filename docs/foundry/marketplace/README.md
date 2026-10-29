@@ -17,7 +17,7 @@ A skill is the folder under `skills/<scope>/<slug>/`. Copy it into both
 
 | Tool | Reads the skill from |
 |---|---|
-| Claude Code | `.claude/skills/` (documented); `.agents/skills/` uncertain |
+| Claude Code | `.claude/skills/` (documented); not `.agents/skills/` (Round 0, 2026-10-29) |
 | Devin (Cognition AI) | `.agents/skills/` (documented); `.claude/skills/` not listed |
 | Cursor | both |
 | GitHub Copilot in VS Code | both |
@@ -26,7 +26,11 @@ A skill is the folder under `skills/<scope>/<slug>/`. Copy it into both
 | No AI tool | `steps.md` in the folder (its skill card renders it; § Regenerate the site) |
 
 The table is the 2026-10-20 tool matrix
-(`planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/tool-support-matrix.md`).
+(`planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/tool-support-matrix.md`),
+with each tool's Round 0 result as it is recorded in
+`planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/round0-desk-test-2026-10-29.md`.
+Copy into both directories even for one tool: Claude Code 2.1.311 did not
+read `.agents/skills/`, and five of the other tools read it.
 
 <!-- The folder rule's one home: the PR template, the how-to, the cards and the validator point here. -->
 **The folder rule.** A skill folder holds `SKILL.md`, `steps.md`,
@@ -50,10 +54,15 @@ stale skill zips. `pages-site` is never a plugin name, so no skill zip can
 carry the site asset's name.
 
 `.claude-plugin/marketplace.json` (Claude Code) and `.agents/plugins/marketplace.json`
-(Codex) are discovery pointers for each listing: Round 0 of
-`MANUAL-CHECKLIST.md` has a row for each tool with a plugin install (Claude
-Code, Codex) and records whether that install exposes the skill. Until it
-does, the folder copy above is the install.
+(Codex) list each skill as a plugin. Round 0 of `MANUAL-CHECKLIST.md` has a
+row for each tool with a plugin install and records whether that install
+exposes the skill. For Claude Code it does (Round 0, 2026-10-29): `/plugin
+marketplace add <checkout>/docs/foundry/marketplace`, then `/plugin install
+<scope>-<slug>@pyforge-bmad-marketplace`, lists the skill as
+`<scope>-<slug>:<scope>-<slug>`. Use the plugin or the folder copy in one
+project, not both; with both, the skill is likely listed twice (not tested).
+For Codex the manifest stays a discovery pointer until its Round 0 row runs,
+and the folder copy above is the install.
 
 ## Layout
 

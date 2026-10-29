@@ -17,6 +17,16 @@ Do this in a repository that is not local-recipes.
 - [ ] Confirm no step asked for `pixi run -e` or a path inside local-recipes
 - [ ] Confirm the card's unpublished-package list matches what the desk test hit
 
+**2026-10-29, Claude Code leg.** An agent session ran Round 0 with Claude
+Code 2.1.311 and `@warden/scan` in three scratch repositories outside
+local-recipes. Claude Code was driveable. It read the `.claude/skills/` copy
+and not the `.agents/skills/` one. The plugin install exposed the skill as
+`warden-scan:warden-scan`. Step 1 stopped: `warden scan .` exits 127 because
+`pyforge-warden` is unpublished. Step 2's version probes ran. The record, with
+what failed and what the leg did not cover, is
+`planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/round0-desk-test-2026-10-29.md`.
+The other tools' legs are still to run.
+
 ## Wizard-of-Oz pilot (P4)
 
 Who: two or three teammates, not rxm7706, drawn from this audience: Claude Code, Cursor, GitHub Copilot in VS Code, Google Gemini, Devin (Cognition AI), and a teammate with no AI tool yet. P4's examples are T1 Cursor and conda or pip, T2 Copilot or Gemini who publishes packages, and T3 no AI tool. Claude Code and Devin are the same audience.

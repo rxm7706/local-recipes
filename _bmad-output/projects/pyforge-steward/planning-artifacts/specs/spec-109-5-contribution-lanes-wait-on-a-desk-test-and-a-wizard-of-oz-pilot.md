@@ -2,7 +2,7 @@
 title: '109.5: Contribution lanes wait on a desk test and a Wizard-of-Oz pilot'
 type: 'docs'
 created: '2026-10-21'
-status: 'backlog'
+status: 'in-progress'
 baseline_revision: '53aed16fe1957ab340c6146cb7bf0c3f810c1746'
 flag-exempt: docs-only
 review_loop_iteration: 0
@@ -49,3 +49,7 @@ declared_low_risk: false
 **Manual checks:**
 
 - The Round 0 and Wizard-of-Oz notes exist and name a repository that is not local-recipes.
+
+## Progress
+
+- 2026-10-29: Round 0's Claude Code leg ran in three scratch repositories outside local-recipes (Claude Code 2.1.311, `@warden/scan`, `main` at `cb601ac369`). Claude Code is driveable. It reads `.claude/skills/` and not `.agents/skills/`, so the Approach's "Claude Code picks the skill up from `.claude/skills/`" holds and the matrix's "uncertain" cell is now "not read". The plugin install exposes the skill as `warden-scan:warden-scan`. Step 1 stopped on the unpublished `pyforge-warden` (exit 127). The record is `planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/round0-desk-test-2026-10-29.md`; the dated note is in `MANUAL-CHECKLIST.md` § Round 0. The README's tool table and plugin paragraph and the matrix's Claude Code row moved with it. The other tools' Round 0 legs, Devin's `.agents/skills/` check among them, and the Wizard-of-Oz pilot have not run, so acceptance criterion 1 is open. No automation was added and the three Epic 60 rows stay open.
