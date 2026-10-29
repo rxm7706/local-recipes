@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 757139f973eebb4d
-story_count: 421
-test_file_count: 145
+source_fingerprint: 3dba8c59804afc66
+story_count: 426
+test_file_count: 148
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 421
-- **Epics parsed:** 116
-- **Test files inventoried:** 145 under `src/shared/packages/pyforge-steward/tests/`
+- **Stories parsed:** 426
+- **Epics parsed:** 117
+- **Test files inventoried:** 148 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `757139f973eebb4d`
+- **Source fingerprint:** `3dba8c59804afc66`
 
 ## Risk Assessment
 
@@ -134,6 +134,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 106: The two `mypy` lanes keep separate caches (fix under spec-pyforge-steward CAP-159; no CAP)
 - Epic 107: The preflight refuses a stranded lane, and its serial reference resolves under pixi (fix under spec-pyforge-steward CAP-159; no CAP)
 - Epic 108: `estate reconcile` and `ci status` report what happened (fixes under spec-pyforge-steward CAP-167 and CAP-166; no CAP)
+- Epic 109: The reset BMAD marketplace is a skill store on the catalog engine (spec-pyforge-steward CAP-169..CAP-173)
 - Epic 110: The steward PRD's first 31 FRs name the capabilities the Spec carries
 - Epic 111: The steward Spec's capability text is whole again, and the foundry inherits the amended rule (spec-one-chain-per-station CAP-5 amended, CAP-7)
 - Epic 112: The Platform CI `test` job's budget covers a slow mirror (spec-pyforge-steward CAP-174 / FR-48)
@@ -182,6 +183,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/meta/test_steward_persona.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_steward_single_flag_tree.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_workflow_path_filters_match.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_workflows_have_no_duplicate_keys.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_bootstrap.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_bootstrap_remedies.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_bootstrap_setup.py` | unit | none observed |
@@ -231,6 +233,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_keys_rotate.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_lint_types_mypy_cache.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_lint_types_not_yet_clean.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_marketplace_pages.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_measures.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_pages.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_pages_duty.py` | unit | none observed |
@@ -241,6 +244,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_pages_release.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_pages_release_flag_states.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_passport_mint.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_pilot_skills.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_concurrency.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_env_sync.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_killed_holder.py` | unit | none observed |
@@ -701,6 +705,11 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 106.1 | The two `mypy` lanes keep separate caches | none observed |
 | 107.1 | A stranded preflight lane is refused, and pr-preflight-lanes resolves under pixi | none observed |
 | 108.1 | `estate reconcile` reds on a failed generator, and a retired CI row is never ... | none observed |
+| 109.1 | The reset marketplace has a product brief | none observed |
+| 109.2 | Three pilot skills run without the estate environment | none observed |
+| 109.3 | A marketplace tree renders a Pages index from listings | none observed |
+| 109.4 | The teammate CLI bmp shares the catalog engine | none observed |
+| 109.5 | Contribution lanes wait on a desk test and a Wizard-of-Oz pilot | none observed |
 | 110.1 | Every steward PRD FR arrow names the Spec capability that realizes it | none observed |
 | 111.1 | The steward Spec's fold-cut capability text is restored, and the foundry inhe... | none observed |
 | 112.1 | The Platform CI `test` job installs only what its runner image lacks, and its... | none observed |

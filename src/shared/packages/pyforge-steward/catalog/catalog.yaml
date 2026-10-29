@@ -22,11 +22,12 @@ catalog:
     kind: git
     repo: rxm7706/local-recipes
     path: src/shared/packages/pyforge-steward/catalog
-    # No dedicated GitHub catalog repo is minted: the `github` pointer forms
-    # (Claude `extraKnownMarketplaces` github / `codex plugin marketplace add
-    # <owner/repo>`) wait on operator confirm. `steward catalog pointers`
-    # prints the `directory` / `--custom-source` forms that work today.
-    dedicated_repo: null
+    # This monorepo hosts the marketplace (decision 2026-10-21). There is no
+    # dedicated catalog repository. Teammates on an internal GitHub or GHES
+    # use a mirror of local-recipes. Each mirror is {host, repo}. Empty until
+    # an operator names one. `steward catalog pointers` prints the Claude
+    # github source against `repo` and one full-git-URL source per mirror.
+    mirrors: []
 
 # Ship backends (execution layer). Git is never a ship backend.
 # 60.1 declares them with the shared snapshot interface (`snapshot_target`);

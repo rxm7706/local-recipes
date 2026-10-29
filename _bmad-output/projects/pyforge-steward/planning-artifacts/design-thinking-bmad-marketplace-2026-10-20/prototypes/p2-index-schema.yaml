@@ -1,0 +1,132 @@
+# P2 — Marketplace index entry format (paper prototype, SAMPLE DATA)
+# One listing per folder as listing.yaml; CI concatenates them into index.yaml / index.json on Pages.
+# Superset of the upstream bmad-plugins-marketplace registry schema used by v1's registry/estate.yaml:
+#   upstream keys kept as-is: name, display_name, code, description, repository, module_definition,
+#   npm_package, author, license, type, category, subcategory, keywords, version, trust_tier
+#   new keys (bmp/...): scope, kind, summary, tasks, owners, tier, requires, install, adapters,
+#   sources, checksums, verified_at, ci, docs, lane, bundles
+index_version: 1
+generated_at: "2026-10-20T19:10:00-05:00"
+generated_by: bmp index build      # or steward catalog render (same library)
+listings:
+
+# ── 1. Skill (code-backed lane) ─────────────────────────────────────────────
+- name: "@mason/environment"         # bmp name = @scope/slug
+  scope: mason                       # station or teammate handle
+  slug: environment
+  kind: skill                        # skill | agent | module | bundle
+  display_name: Mason — environment lock & check
+  version: 1.2.0
+  summary: Lock mixed conda + pip requirements into one lockfile and check it isn't stale.
+  description: >-                    # upstream `description` (one sentence) kept for compat
+    Resolves conda and pip manifests into one lockfile and verifies it on every change.
+  tasks: [lock-env, check-env-drift, reproduce-env]   # task-based search
+  keywords: [conda, pip, lockfile, artifactory]       # upstream key
+  category: development              # upstream category/subcategory slugs
+  subcategory: environments
+  owners: ["@rxm7706"]               # GitHub handles; drives CODEOWNERS
+  author: rxm7706                    # upstream key
+  license: MIT                       # SAMPLE — real licence to decide
+  type: community                    # upstream enum: bmad-org | community | experimental
+  tier: estate-reviewed              # bmp tiers: bmad-certified | estate-reviewed | community
+  trust_tier: community-reviewed     # upstream enum, derived from `tier` (see p2-index-schema.md)
+  review: {record: reviews/mason-environment.yaml, by: "@rxm7706", at: "2026-10-18"}
+  lane: code-backed                  # instructions-only | code-backed (scripts or a package)
+  requires:
+    - {kind: python, spec: ">=3.10"}
+    - {kind: package, name: pyforge-mason, spec: ">=0.2", installed_by: bmp}   # from the same source
+  install:
+    targets: [.agents/skills/mason-environment, .claude/skills/mason-environment]
+    entry: SKILL.md
+  adapters: {}                       # skills need none: all six tools read SKILL.md folders
+  sources:
+    github:
+      release: https://github.example.com/team/bmad-marketplace/releases/download/mason-environment-v{version}/mason-environment-{version}.zip
+    artifactory:
+      conda: {channel: https://artifactory.example.com/api/conda/conda-internal, package: bmp-skill-mason-environment, version: "1.2.0"}
+      pip:   {index: https://artifactory.example.com/api/pypi/pypi-internal/simple, package: bmp-skill-mason-environment, version: "1.2.0"}
+  checksums:
+    zip: sha256:3f1c0000000000000000000000000000000000000000000000000000000000a9   # SAMPLE
+  verified_at: "2026-10-19T03:12:00-05:00"
+  ci:
+    status: passing                  # passing | failing | stale (no pass in N days)
+    run: https://github.example.com/team/bmad-marketplace/actions/runs/123456
+    platforms: {linux-64: pass, osx-arm64: pass, win-64: untested}
+  docs:
+    card: https://pages.example.com/bmad-marketplace/skills/mason/environment/
+    steps: steps.md                  # human-readable runbook; rendered on the card for no-AI teammates
+  bundles: [python-env-starter, new-hire-pack]
+  repository: https://github.example.com/team/bmad-marketplace   # upstream key (source repo)
+
+# ── 2. Agent (BMAD-built persona) ───────────────────────────────────────────
+- name: "@scribe/agent"
+  scope: scribe
+  slug: agent
+  kind: agent
+  display_name: Scribe — team memory agent
+  version: 0.3.0
+  summary: Ask "why did we decide X?" and get a cited answer; capture new decisions as you work.
+  tasks: [recall-decision, capture-decision]
+  owners: ["@rxm7706"]
+  tier: community                    # not yet reviewed in the pilot
+  trust_tier: unverified
+  lane: code-backed
+  requires:
+    - {kind: python, spec: ">=3.10"}
+    - {kind: package, name: pyforge-scribe, spec: ">=0.4", installed_by: bmp}
+    - {kind: service, name: scribe-station-mcp, url_default: "http://localhost:8000/stations/scribe/mcp",
+       optional: true, degraded_mode: cli-only}
+    - {kind: bmad-project, path: _bmad/, optional: true, create_with: "bmp init --bmad"}
+  install:
+    targets: [.agents/skills/scribe-agent, .claude/skills/scribe-agent]   # persona-as-skill: the portable core
+    entry: SKILL.md
+  adapters:                          # generated from the persona SKILL.md + customize.toml at install time
+    claude-code: {path: .claude/agents/scribe.md, format: claude-subagent-md, confirmed: false}   # standalone path not re-checked
+    cursor:      {path: .cursor/agents/scribe.md, format: cursor-subagent-md, confirmed: true}
+    copilot:     {path: .github/agents/scribe.agent.md, format: vscode-agent-md, confirmed: true}
+    devin:       {path: null, note: "plugin agents are CLI/Desktop-only; ship as skill", confirmed: true}
+    gemini:      {path: .gemini/agents/scribe.md, format: gemini-subagent-md, confirmed: true}  # per search summary
+    codex:       {path: .codex/agents/scribe.toml, format: codex-agent-toml, confirmed: true}  # per search summary
+  sources:
+    github:
+      release: https://github.example.com/team/bmad-marketplace/releases/download/scribe-agent-v{version}/scribe-agent-{version}.zip
+    artifactory:
+      pip: {index: https://artifactory.example.com/api/pypi/pypi-internal/simple, package: bmp-agent-scribe, version: "0.3.0"}
+  checksums: {zip: "sha256:SAMPLE"}
+  verified_at: null                  # never passed clean-machine CI yet
+  ci: {status: pending}
+  docs: {card: https://pages.example.com/bmad-marketplace/agents/scribe/agent/, steps: steps.md}
+
+# ── 3. Upstream module, re-listed (bmad-certified) ──────────────────────────
+- name: "@bmad/creative-intelligence-suite"
+  scope: bmad
+  kind: module
+  display_name: BMad Creative Intelligence Suite
+  code: cis                          # upstream key
+  version: 0.3.2
+  summary: Facilitated design thinking, brainstorming, problem solving, innovation strategy and storytelling.
+  tasks: [design-thinking, brainstorm, problem-solving]
+  owners: ["bmad-code-org"]
+  author: BMad Code                  # upstream key
+  type: bmad-org
+  tier: bmad-certified               # = upstream trust_tier, already wielded in the estate suite
+  trust_tier: bmad-certified
+  source_listing: wielded-suite      # v1 catalog.yaml source name
+  lane: instructions-only
+  requires: []
+  install:
+    targets: [.agents/skills/, .claude/skills/]       # 10 skills: bmad-cis-* (6 agents, 4 workflows)
+    expands_to: [bmad-cis-design-thinking, bmad-cis-problem-solving, bmad-cis-innovation-strategy,
+                 bmad-cis-storytelling, bmad-cis-agent-brainstorming-coach, bmad-cis-agent-creative-problem-solver,
+                 bmad-cis-agent-design-thinking-coach, bmad-cis-agent-innovation-strategist,
+                 bmad-cis-agent-presentation-master, bmad-cis-agent-storyteller]
+  sources:
+    github:
+      upstream: https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite/archive/refs/tags/v0.3.2.tar.gz
+    artifactory:
+      conda: {channel: https://artifactory.example.com/api/conda/conda-internal, package: bmad-creative-intelligence-suite, version: "0.3.2"}
+  checksums:
+    tarball: sha256:3431c9fe5d1606d9178160bb01d2ea07e862b0dbaf1409c96b07deaea1b3d210   # from recipes/bmad-creative-intelligence-suite/recipe.yaml
+  repository: https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite
+  verified_at: "2026-10-19T03:12:00-05:00"   # SAMPLE
+  ci: {status: passing}

@@ -5307,6 +5307,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  carried: 2026-10-21 — Epic 109 does not touch recipe or frame CI triggers. Story 109.3 renders marketplace pages from index.yaml and does not close this row.
   verified: 2026-10-01 — STANDS — .github/workflows/pyforge-station-tests.yml's `paths:` blocks (lines 27-42 and 47-62) list only src/shared/packages/pyforge-*/**, pixi.toml, pixi.lock, Containerfile, .dockerignore, scripts/container-gates -- no recipes/** or docs/foundry/frames/**; grep across .github/workflows/*.yml for 'steward catalog render' / 'catalog check' finds nothing. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-60-1-2: The `test_track.py` `_SCHEMA` path fix (`_PKG.parents[1]` → `_PKG.parent`) is never executed in either CI lane: `test_schema_accepts_assembled_track` opens with `pytest.importorskip("jsonschema")` and `jsonschema` is not a `pyforge-steward` feature dependency, so the track-schema contract stays unpinned in CI exactly as before.
@@ -5343,6 +5344,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  carried: 2026-10-21 — Epic 109 copies skill folders into .agents/skills and .claude/skills. That is a different path from bmad-method install --custom-source. Story 109.4 must not claim this row closed.
   verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-steward/catalog/ contains only catalog.yaml, registry/estate.yaml, .claude-plugin/marketplace.json and .agents/plugins/marketplace.json -- no vendored per-module trees; catalog.py's pointers() (line 991) still returns the installer_note workaround message, not a fixed discovery path. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-62-1: The "First cut (all `on`, 2026-09-15)" section heading in measure-catalog.md duplicates the new per-row `State` values with nothing forcing the heading to update once Story 62.2's add/switch/archive config flips an individual row.
@@ -6158,6 +6160,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
   status: open
+  carried: 2026-10-21 — Epic 109 is a product reset, not the independent follow-up review of Story 60.1. The row stays open; implementation and review stay separate.
 
 ### DW-FRR-61-1: Follow-up review still recommended for story 61.1
 
@@ -6659,4 +6662,129 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: spec-deferred — recorded by hand in the CAP-7 retrofit PR (operator ruling R7, 2026-10-26)
   severity: low
   promoted: 2026-10-26 — the retrofit chain commit
+  status: open
+
+### DW-steward-109-3-1: A `related` entry with surrounding whitespace, an empty entry, a repeated entry or a self-reference passes the listing rules
+
+- source_spec: `planning-artifacts/specs/spec-109-3-a-marketplace-tree-renders-a-pages-index-from-listings.md`
+  summary: `_validate_related` holds an entry that starts with `@` to `@<scope>/<slug>` and `_check_rows` resolves it against the skill rows, but `" @warden/scan"` and `"\t@warden/scan"` pass as text and render unlinked (a trailing space is refused), `""`, `" "` and `"\t"` render empty list items, a repeated reference renders the sibling twice, and a row naming its own id links the card to itself. Every other string field refuses surrounding whitespace through `_require_exact`.
+  evidence: Loop-6 review row 104 (2026-10-29), probed by the adversarial and edge-case-hunter lenses and re-run by the reviewer through `render_skill_card`. Escaped text only; no write outside the tree, no injection, no silent-off deploy, so the loop-7 review contract defers it.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py (`_validate_related`, `_check_rows`)
+  fix: refuse an entry that is empty, carries surrounding whitespace or repeats, and a reference to the row's own id; a refusal case for each in `test_each_listing_rule_refuses_its_breach`.
+  origin: loop-6 review row 104; deferred by the operator ruling of 2026-10-29 (the story spec's § Review contract for loop 7)
+  severity: low
+  promoted: 2026-10-29 — recorded by hand in the loop-6 fix pass of PR #2274
+  status: open
+
+### DW-steward-109-3-2: An empty or non-slug directory between the skill folders, or `skills` as a regular file, passes the folder scan
+
+- source_spec: `planning-artifacts/specs/spec-109-3-a-marketplace-tree-renders-a-pages-index-from-listings.md`
+  summary: `_skill_folders` refuses a non-directory under `skills/` or `skills/<scope>/` and a symlink at every level, but an empty `skills/empty/`, an empty `skills/Bad Scope/` or an empty `skills/.git/` passes the scan, `write_site_from_index` and the manifests, and `skills` as a regular file beside a modules-only index yields no folders and renders. README § Install's "directories only" is met by a directory that is nobody's.
+  evidence: Loop-6 review row 105 (2026-10-29), probed by the adversarial and edge-case-hunter lenses and re-run by the reviewer. Nothing is read from such a directory and the mount skips a folder outside the slug grammar, so the loop-7 review contract defers it.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py (`_skill_folders`)
+  fix: refuse a `skills` that exists and is not a directory, hold scope and slug directory names to `SLUG`, refuse an empty scope directory; a case per shape through the scan and `write_site_from_index`.
+  origin: loop-6 review row 105; deferred by the operator ruling of 2026-10-29 (the story spec's § Review contract for loop 7)
+  severity: low
+  promoted: 2026-10-29 — recorded by hand in the loop-6 fix pass of PR #2274
+  status: open
+
+### DW-steward-109-3-3: A nested list marker before plain item text stays in the item's text
+
+- source_spec: `planning-artifacts/specs/spec-109-3-a-marketplace-tree-renders-a-pages-index-from-listings.md`
+  summary: `render_markdown("- - x")` renders `<ul><li>- x</li></ul>`; the loop-5 nested-marker strip applies only to the fence-item re-read, so a runbook line `- - x` shows its inner marker as text where CommonMark nests a list.
+  evidence: Loop-6 review row 110 (2026-10-29), found by the row verifier and re-run by the reviewer. Pre-existing, escaped text; the three committed runbooks carry no such line.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py (`render_markdown`, the list branch)
+  fix: read a nested marker in item text as a nested item (the renderer already nests by indentation), or document it as unsupported; a case.
+  origin: loop-6 review row 110; deferred by the operator ruling of 2026-10-29 (the story spec's § Review contract for loop 7)
+  severity: low
+  promoted: 2026-10-29 — recorded by hand in the loop-6 fix pass of PR #2274
+  status: open
+
+### DW-steward-109-3-4: Seventeen editorial placement rows on the marketplace documents and cards
+
+- source_spec: `planning-artifacts/specs/spec-109-3-a-marketplace-tree-renders-a-pages-index-from-listings.md`
+  summary: The loop-6 structure lens found the nine marketplace documents structurally sound and listed placement work, none blocking: the release-order paragraph in README § Install; two H3s for § Regenerate the site; the PR template's appended § Listing rows; MANUAL-CHECKLIST § Runbooks at the top; how-to § 7 as a second task; the three `SKILL.md` leading with the "when installed" section; 55 words of the README lede for § Provenance; the tier mapping restated; warden `steps.md` step 2's doubled sentence; the cards' Sources block and Lane line (renderer); the Epic-60 checkboxes that can never be ticked; "the matrix" without an antecedent; the "Index schema" heading; the how-to's hardcoded zip names. 109.2's two residues are in this list.
+  evidence: Loop-6 review row 112 (2026-10-29), the structure lens's table with word counts from `word_metrics.py`; the full list is the story spec's row 112.
+  location: docs/foundry/marketplace/README.md; docs/foundry/marketplace/MANUAL-CHECKLIST.md; .github/PULL_REQUEST_TEMPLATE/marketplace-skill.md; docs/foundry/marketplace/skills/*/*/SKILL.md; docs/how-to/deploy-the-docs-site-to-github-enterprise-pages.md
+  fix: the moves and condensations as the lens lays them out; the `SKILL.md`/`steps.md` command copies and the two install-button lines stay.
+  origin: loop-6 review row 112; deferred by the operator ruling of 2026-10-29 (the story spec's § Review contract for loop 7)
+  severity: low
+  promoted: 2026-10-29 — recorded by hand in the loop-6 fix pass of PR #2274
+  status: open
+
+### DW-steward-109-3-5: A manifest destination that is a FIFO, a directory or a hard link, or a path through an unwritable or non-directory component, hangs or raises raw
+
+- source_spec: `planning-artifacts/specs/spec-109-3-a-marketplace-tree-renders-a-pages-index-from-listings.md`
+  summary: `_contained_dest` checks the components before the last; an existing final component that is a FIFO blocks `write_text`, a directory raises a raw `IsADirectoryError`, and a hard link to a file outside the tree has that file overwritten (the written path is in the tree; git carries no hard link). A 000-mode directory or `index.yaml/../` on the way raises a raw `PermissionError` or `NotADirectoryError` from `mkdir`.
+  evidence: Loop-7 review row 118 (2026-10-29), probed by the edge-case-hunter and adversarial lenses and the row verifier; `080ce9f012` behaves the same. No write outside the tree from a git checkout, no injection, no silent-off deploy.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py (`_contained_dest`, `write_plugin_manifest`, `write_codex_manifest`)
+  fix: refuse an existing final component that is not a regular file; write through a temp file in the destination's directory and `os.replace`; turn an `OSError` from `mkdir` into a `MarketplaceIndexError`; a case each.
+  origin: loop-7 review row 118; deferred under the story spec's § Review contract for loop 7
+  severity: low
+  promoted: 2026-10-29 — recorded by hand in the loop-7 review of PR #2274
+  status: open
+
+### DW-steward-109-3-6: `**` inside a link destination puts `<strong>` inside the href
+
+- source_spec: `planning-artifacts/specs/spec-109-3-a-marketplace-tree-renders-a-pages-index-from-listings.md`
+  summary: `_inline` substitutes `**strong**` before links, so `[a](https://e.test/**b**)` renders `href="https://e.test/<strong>b</strong>"` and `**[c](https://e.test/x**)` leaves an unclosed `<strong>` the HTML parser carries past the paragraph. No quote can enter the attribute.
+  evidence: Loop-7 review row 119 (2026-10-29), probed by the adversarial lens; `080ce9f012` behaves the same. Malformed markup from the author's own `**`, not injection.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py (`_inline`)
+  fix: substitute links first (placeholders), then strong; two cases.
+  origin: loop-7 review row 119; deferred under the story spec's § Review contract for loop 7
+  severity: low
+  promoted: 2026-10-29 — recorded by hand in the loop-7 review of PR #2274
+  status: open
+
+### DW-steward-109-3-7: Loop-7 test gaps: six surviving mutants, two indirect cases and TEA's four pre-existing advisories
+
+- source_spec: `planning-artifacts/specs/spec-109-3-a-marketplace-tree-renders-a-pages-index-from-listings.md`
+  summary: Mutants that survive the steward suites at `8d47df4f50`: the non-directory check widened to the last part (every rewrite of an existing manifest refused, loudly); the `is_symlink()` half of `_load_yaml`'s guard dropped; the fence-item prefix expanded with `expandtabs(8)`; `_expand_leading` counting a tab as four spaces (input ` ```\nx\n  \t```\ny` distinguishes it); `DISABLED` matched case-sensitively; `_contained_dest`'s final resolve check dropped (equivalent but for `dest == root`). The directory and absent index cases are tested through `load_listings` only. TEA's pre-existing advisories on `test_marketplace_pages.py`: 1,354 lines (H5), a multi-subject manifest test at `:1173` (M3), hand-written malformed flag-tree JSON at `:740` (M2), an unnamed byte cap at `:610` (L6).
+  evidence: Loop-7 review row 120 (2026-10-29): the verification-gap lens's 34 mutants on a scratch worktree, the adversarial lens's in-process mutants, the row verifier, TEA (`Approve`, gating score 100, nothing introduced).
+  location: src/shared/packages/pyforge-steward/tests/unit/test_marketplace_pages.py; src/shared/packages/pyforge-steward/tests/unit/test_marketplace_markdown.py
+  fix: a case per survivor, from the distinguishing inputs the lenses give; the TEA items when the file is split.
+  origin: loop-7 review row 120; deferred under the story spec's § Review contract for loop 7
+  severity: low
+  promoted: 2026-10-29 — recorded by hand in the loop-7 review of PR #2274
+  status: open
+
+### DW-steward-109-3-8: Refusals rows 98 and 101 asked for reject a symlinked index and a sparse overlay that the parent and core accepted
+
+- source_spec: `planning-artifacts/specs/spec-109-3-a-marketplace-tree-renders-a-pages-index-from-listings.md`
+  summary: `_load_yaml` refuses a symlinked `index.yaml` (also `/dev/fd/N`) that `080ce9f012` read; `main --flag-env` refuses, under staging or production, a sparse overlay that names the flag only where it differs from the tree default, which `pyforge.core.flags` supports ("unnamed keys keep the tree's"). The estate overlay is dense and `pages.yml` resolves dev, so no deploy is affected.
+  evidence: Loop-7 review row 121 (2026-10-29), probed by the adversarial lens against HEAD and the parent; the refusals are the ones loop-6 rows 98 and 101 asked for, so the loop-7 reading of the contract does not count them as regressions.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py (`_load_yaml`, `main`)
+  fix: decide per refusal whether it stays (a symlinked index whose target is a regular file inside the tree could be read; a sparse overlay could fall back to the tree default off dev) and say which in README § Regenerate the site.
+  origin: loop-7 review row 121; deferred under the story spec's § Review contract for loop 7
+  severity: low
+  promoted: 2026-10-29 — recorded by hand in the loop-7 review of PR #2274
+  status: open
+
+### DW-steward-109-3-9: The loop-7 contract's readings, README's layer paragraph and five smaller text items
+
+- source_spec: `planning-artifacts/specs/spec-109-3-a-marketplace-tree-renders-a-pages-index-from-listings.md`
+  summary: The loop-7 structure lens found the review contract ambiguous (which commit is "the parent", what "verified" means, (b)'s second clause without "with the flag on", whether the adversarial ten-finding floor stands, "the site directory" and "injection", DW numbering and dedupe, the failing branch, no pointer from § Verification); loop 7 recorded the readings it used in its verdict. README § Regenerate's "What each layer refuses" credits `validate_listing` with the cross-row rules (`_check_rows`, `_check_folders_declared`) and "what stands between the folders" reads broader than the scan; the PR template's card-name row reads better with parentheses; the § Fixes (loop 6) intro restates the deferral map; the § Verification `--basetemp` note rides inside one bullet; DW-steward-109-3-4's "Seventeen" is not checkable from its list; the row-109 Verification command skips without the Astro install unless `HERALD_DOCS_SITE_REQUIRED=1` is set.
+  evidence: Loop-7 review row 122 (2026-10-29), the structure lens's table with word counts, and the adversarial lens's read of `pages_astro.py:44,85`.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-109-3-a-marketplace-tree-renders-a-pages-index-from-listings.md; docs/foundry/marketplace/README.md; .github/PULL_REQUEST_TEMPLATE/marketplace-skill.md
+  fix: the operator confirms or amends the contract readings into the contract text; the other items as the lens lays them out; prefix the row-109 command with `HERALD_DOCS_SITE_REQUIRED=1`.
+  origin: loop-7 review row 122; deferred under the story spec's § Review contract for loop 7
+  severity: low
+  promoted: 2026-10-29 — recorded by hand in the loop-7 review of PR #2274
+  status: open
+
+### DW-steward-109-3-10: Loop-8 residue: three test gaps, a `~`/`%` boundary note, a targeting-rule message and two destination edge forms
+
+- source_spec: `planning-artifacts/specs/spec-109-3-a-marketplace-tree-renders-a-pages-index-from-listings.md`
+  summary: The loop-8 verification pass found these, none a regression or unclosed row:
+  - Test gaps. Row 113's own-unknown-key and sibling-unknown-key shapes are probed but not tested. Row 116's `DEPLOY_SERVER` `^`, its IPv6 class (a `\[[^\]]+\]` widening would admit `https://[a"onmouseover="b]`), the owner-side `.`/`..` lookahead and the `{4,}` upper bound survive mutation; the code as written throws on each injection input. Row 117's `""` base for `[r](a<b.md)` and `[b](steps.md>)` is probed, not tested. The `_`, `-` and `.`+digit members of the clone-URL lookahead are unpinned.
+  - `~` and `%` after the clone URL are rewritten under row 115's regex, so README § Regenerate's "a URL the clone URL only begins" overstates for them. A GitHub repository name holds neither.
+  - A targeting rule that evaluates off is refused with a message naming a fallback that did not happen. No estate flag uses targeting.
+  - A destination equal to the root raises a raw `IsADirectoryError` (the `DW-steward-109-3-5` family).
+  - An outside alias of an in-tree symlink writes where that symlink points; its resolution never lies inside the root, and the parent does the same.
+  evidence: Loop-8 review row 124 (2026-10-29): the row verifier's probes and mutants, and the differential probe's corpora against `b16ee6c0b0`.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py; docs-site/src/lib/marketplace.ts; docs/foundry/marketplace/README.md; the steward and herald marketplace tests
+  fix: a case per test gap; either add `~%` to the lookahead's class or say in README that they continue the URL; name a targeting rule in the flag-env message; refuse a directory destination by name.
+  origin: loop-8 review row 124; deferred under the story spec's § Review contract for loop 8
+  severity: low
+  promoted: 2026-10-29 — recorded by hand in the loop-8 verification pass of PR #2274
   status: open

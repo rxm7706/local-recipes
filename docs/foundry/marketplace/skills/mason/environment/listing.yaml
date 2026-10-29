@@ -1,0 +1,76 @@
+# One listing. index.yaml is the committed concatenation of these files
+# until bmp index build. Sample P2 checksums and hosts are not in this row.
+# The 2026-10-20 paper card (prototypes/p3-skill-card.html) is sample data;
+# its lock command is not the runbook. steps.md is the runbook.
+id: mason/environment
+kind: skill
+scope: mason
+slug: environment
+name: '@mason/environment'
+display_name: Lock and check one environment
+title: Lock and check one environment
+summary: Lock a project into one conda-lock file and check that lockfile.
+description: Resolve a teammate project's conda and pip manifests into one lockfile,
+  then check that lockfile. No pixi environment name and no path inside local-recipes.
+version: 0.1.0
+tasks:
+- lock-environment
+- check-lockfile
+keywords:
+- conda
+- pip
+- lockfile
+category: development
+subcategory: environments
+owners:
+- '@rxm7706'
+author: rxm7706
+type: community
+tier: community
+trust_tier: unverified
+source: estate-listings
+jobs:
+- find
+- install
+- create
+lane: code-backed
+contribution_lane: code-backed
+path: skills/mason/environment
+adapters: {}
+requires:
+- kind: package
+  name: pyforge-mason
+  published: false
+  installed_by: folder-copy
+  note: PyPI, conda-forge, and SelfExplainML returned 404 on 2026-10-21
+- kind: package
+  name: pyforge-core
+  published: false
+  installed_by: folder-copy
+  note: Required by pyforge mason dispatch; same 404 check
+install:
+  targets:
+  - .agents/skills/mason-environment
+  - .claude/skills/mason-environment
+  entry: SKILL.md
+  origins:
+  - github
+  - artifactory
+sources:
+  github:
+    kind: release
+    published: false
+  artifactory:
+    conda:
+      published: false
+    pip:
+      published: false
+verified_at: null
+ci:
+  status: pending
+docs:
+  steps: steps.md
+  card: skills/mason/environment.html
+related:
+- '@mason/package'
+- '@warden/scan'

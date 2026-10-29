@@ -25,6 +25,8 @@ _EXPECTED_PATHS = {
     "docs/404.md",
     "docs/map.yaml",
     "docs/dashboard/**",  # tracked `deploy static` boards publish from here (102.4's review kept it)
+    "docs/foundry/marketplace/**",  # Story 109.3: the monorepo marketplace mounts at /marketplace/
+    "src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py",
     "scripts/pages_*.py",
     "src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py",
     # herald Story 43.7's review: the build's flag export, `python -m pyforge.herald.pages_env`

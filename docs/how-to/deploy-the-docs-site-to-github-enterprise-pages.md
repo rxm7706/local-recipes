@@ -95,3 +95,39 @@ A host whose runners cannot reach a conda mirror can skip sections 1–4 and tak
 4. Serve the `pages-site/` tree as static files from any internal web server. This is the recommended path: nothing is rebuilt, so the bytes are the ones the public deploy published.
 
 The zip is built for the public github.io URL, so its absolute internal links carry the `/local-recipes/` base path: serve it at that path (for example `https://docs.internal.example/local-recipes/`). To publish the same tree through the enterprise host's own GitHub Pages instead, `pages.yml` would need an input that takes a prebuilt tree in place of a build; it has none today, so on a host that can run the workflow, sections 1–4 (which rebuild for the host's own URL) are the GitHub Actions path.
+
+## 7. Add the BMAD marketplace from an internal mirror
+
+This monorepo hosts the marketplace at `docs/foundry/marketplace/`; its `README.md` holds the flag semantics (§ Regenerate the site) and the 2026-10-21 decision (§ Provenance). While the flag is on, the Pages build mounts the generated site at `/marketplace/` in the same artifact as the docs shelf; off, `/marketplace/` is absent from the artifact (a 404, not a stale page). This section is what differs on an enterprise host. With a site URL of `https://pages.ghe.example` and a base path of `/org/local-recipes`, the index is:
+
+```text
+https://pages.ghe.example/org/local-recipes/marketplace/
+```
+
+The same build serves `marketplace.json` at `/marketplace/marketplace.json`. That file is the URL form: a Claude `url` marketplace source downloads only the file, so each plugin entry uses `git-subdir` (`url` and `path`). `git-subdir` is a plugin source, not a marketplace source. On GitHub Actions the build rewrites the plugin `url` from `https://github.com/rxm7706/local-recipes.git` to `https://<this host>/<this repo>.git`.
+
+The form that works against the mirror's git repository, without Pages, is a Claude `git` marketplace source. `path` is the marketplace file inside the repository. `sparsePaths` is the sparse checkout. Both fields are documented for the `git` and `github` marketplace sources (Claude Code marketplace reference, checked 2026-10-21). Do not put `git-subdir` on this object.
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "pyforge-bmad-marketplace": {
+      "source": {
+        "source": "git",
+        "url": "https://ghe.example/org/local-recipes.git",
+        "path": "docs/foundry/marketplace/.claude-plugin/marketplace.json",
+        "sparsePaths": [
+          "docs/foundry/marketplace/.agents",
+          "docs/foundry/marketplace/.claude-plugin",
+          "docs/foundry/marketplace/site",
+          "docs/foundry/marketplace/skills"
+        ]
+      }
+    }
+  }
+}
+```
+
+Replace `ghe.example/org/local-recipes` with the mirror you were told to use. `steward catalog pointers` prints this block once that mirror is an `edit_store.mirrors` entry, and it prints the `github` source (`repo: rxm7706/local-recipes`, the same `path` and `sparsePaths`) for the public repository. The sparse set carries both generated manifests, so the Codex pointer the duty prints (`codex plugin marketplace add <checkout>/docs/foundry/marketplace`) finds `.agents/plugins/marketplace.json` on a sparse checkout too. Paste the block into `.claude/settings.json` yourself. The duty does not edit that file.
+
+The rolling `pages-site` release also carries one zip per skill folder (`mason-environment.zip`, `mason-package.zip`, `warden-scan.zip`), each with a `<name>.zip.sha256` beside it, when the marketplace flag is on for that deploy; what each holds, how it is checked and how the release is pruned and uploaded are the README's § Install. On an enterprise host the cards' repository links point at the mirror's own blob view of the deployed commit (which links the mount rewrites is the README's § Regenerate the site).

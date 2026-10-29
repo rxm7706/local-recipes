@@ -645,6 +645,21 @@
         "cleanup_by": ""
       }
     },
+    "pyforge.steward.marketplace_pages": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "steward",
+        "story": "109-3-a-marketplace-tree-renders-a-pages-index-from-listings",
+        "created": "2026-10-21",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
     "pyforge.marshal.front_door_environment": {
       "state": "ENABLED",
       "variants": {

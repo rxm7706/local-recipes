@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scan a project for dependency hygiene</title>
+<style>
+body{font-family:Georgia,serif;margin:2rem auto;max-width:46rem;line-height:1.45;color:#1c1917;background:#fafaf9}
+a{color:#1d4ed8} code{font-family:ui-monospace,monospace;font-size:.95em}
+pre{background:#f5f5f4;border:1px solid #d6d3d1;padding:.75rem;overflow-x:auto}
+article{border-top:1px solid #d6d3d1;padding-top:1rem;margin-top:1rem}
+.meta{color:#44403c;font-size:.95rem}
+</style>
+</head>
+<body>
+<p><a href="../../index.html">Marketplace</a></p>
+<h1>Scan a project for dependency hygiene</h1>
+<p class="meta">skill · @warden/scan · version 0.1.0</p>
+<p class="meta">tier community · trust unverified · source estate-listings · never verified · jobs find, install</p>
+<p class="meta">No review record. community maps to unverified until a CODEOWNER promotes it.</p>
+<p>Run the warden scan gate on the current project. Engine probes are not a second verdict. No pixi environment name and no path inside local-recipes.</p>
+<p>Owners: @rxm7706</p>
+<h2>Install</h2>
+<p>Copy the folder <code>skills/warden/scan</code> into <code>.agents/skills/warden-scan</code>, <code>.claude/skills/warden-scan</code>. Claude Code's documented project skill path is <code>.claude/skills/</code>. Devin's is <code>.agents/skills/</code>. The <a href="https://github.com/rxm7706/local-recipes/blob/main/_bmad-output/projects/pyforge-steward/planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/tool-support-matrix.md">tool matrix</a> marks Claude Code reading <code>.agents/skills/</code> as uncertain and does not list <code>.claude/skills/</code> for Devin. <code>bmp install</code> is not built; this page is not an install button.</p>
+<p>The rolling <code>pages-site</code> release carries <code>warden-scan.zip</code> with <code>warden-scan.zip.sha256</code> beside it while the marketplace flag is on for that deploy. The zip holds the <code>warden-scan/</code> folder with <code>SKILL.md</code>, <code>steps.md</code>, <code>listing.yaml</code> and <code>references/</code> when the skill has one. Check and unpack it where both files were downloaded: <code>sha256sum -c warden-scan.zip.sha256 &amp;&amp; unzip warden-scan.zip -d .claude/skills/</code>, and the same with <code>-d .agents/skills/</code>.</p>
+<p><code>marketplace.json</code> (the Claude marketplace file) is a discovery pointer for this listing; the folder copy above is the install until <a href="https://github.com/rxm7706/local-recipes/blob/main/docs/foundry/marketplace/MANUAL-CHECKLIST.md">Round 0</a> confirms a plugin install exposes the skill.</p>
+<h2>Unpublished packages</h2><ul><li>pyforge-warden: PyPI, conda-forge, and SelfExplainML returned 404 on 2026-10-21</li><li>pyforge-core: Required by pyforge warden dispatch; same 404 check</li></ul>
+<h2>Steps</h2>
+<p>Run these from the project you want to scan. Verified 2026-10-21 against <code>warden scan --help</code> and the tools on the verifying host. Each version below is what that tool&#x27;s <code>--version</code> printed on that host on 2026-10-21.</p>
+<p><strong>Before you start.</strong> <code>pyforge-warden</code> 0.1.0 and <code>pyforge-core</code> returned HTTP 404 on PyPI, conda-forge, and SelfExplainML on 2026-10-21. Step 1 waits on those packages, and no published command produces the compliance report in its place. Steps 0 and 2 run today; they produce probes, not a report.</p>
+<h3>0. Install the published tools</h3>
+<ul><li><code>deptry</code> 0.25.1: <code>pip install deptry</code> (PyPI <code>deptry</code>) or <code>conda install -c conda-forge deptry</code>.</li><li><code>osv-scanner</code> 2.4.0: <code>conda install -c conda-forge osv-scanner</code>, or the binary from the osv-scanner GitHub release page.</li></ul>
+<h3>1. Scan with the station command (waits on <code>pyforge-warden</code>)</h3>
+<p>When <code>pyforge-warden</code> is on your <code>PATH</code>:</p>
+<pre><code class="language-bash">warden scan .
+</code></pre>
+<p>The same argv through dispatch:</p>
+<pre><code class="language-bash">pyforge warden scan .
+</code></pre>
+<p>Environment self-check, not a scan:</p>
+<pre><code class="language-bash">warden scan --doctor
+</code></pre>
+<p><code>--doctor</code> exits 0 or 2, never 1. Verified: <code>warden scan --help</code> lists <code>--doctor</code> on <code>scan</code>.</p>
+<h3>2. Probe the engines, and stop there</h3>
+<pre><code class="language-bash">deptry --version
+osv-scanner --version
+</code></pre>
+<p><code>deptry</code> and <code>osv-scanner</code> are not a warden verdict. The warden CLI calls <code>deptry</code> and <code>osv-scanner scan --offline</code> itself. Do not paste their output into a review as a warden verdict.</p>
+<h3>3. Stop</h3>
+<p>Nothing else runs from this runbook.</p>
+<h2>Related</h2><ul><li><a href="../mason/environment.html">@mason/environment</a></li><li><a href="../mason/package.html">@mason/package</a></li></ul>
+<h2>Sources</h2><ul><li>GitHub release: not published</li><li>Artifactory conda: not published</li><li>Artifactory pip: not published</li></ul>
+<h2>Contribute</h2><p>Lane: code-backed. A pull request is the publish path; the lanes are defined in the marketplace <a href="https://github.com/rxm7706/local-recipes/blob/main/docs/foundry/marketplace/README.md">README</a>.</p>
+</body>
+</html>

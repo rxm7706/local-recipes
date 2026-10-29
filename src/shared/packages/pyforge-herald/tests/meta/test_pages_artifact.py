@@ -175,6 +175,402 @@ def test_the_status_pages_follow_their_flag(tmp_path: Path) -> None:
     _one(pages_check(off, env={"PYFORGE_STATUS_PAGES": "1"}, origins=False), "missing required path status/index.html")
 
 
+# --- the marketplace mount (steward Story 109.3; its review of 2026-10-28, rows 6 to 8) ---------------------------
+
+MARKETPLACE_ON = {"PYFORGE_MARKETPLACE_PAGES": "1"}
+PUBLIC_GIT = "https://github.com/rxm7706/local-recipes.git"
+
+
+def _plugin(scope: str, slug: str, *, url: str = PUBLIC_GIT, path: str | None = None, name: str | None = None) -> dict:
+    return {
+        "name": name if name is not None else f"{scope}-{slug}",
+        "description": "",
+        "version": "0.1.0",
+        "source": {
+            "source": "git-subdir",
+            "url": url,
+            "path": path or f"docs/foundry/marketplace/skills/{scope}/{slug}",
+        },
+    }
+
+
+def _manifest(plugins: list[dict], *, name: str = "pyforge-bmad-marketplace") -> str:
+    return json.dumps({"name": name, "owner": {"name": "rxm7706"}, "plugins": plugins}, indent=2) + "\n"
+
+
+def plant_marketplace(
+    root: Path, plugins: list[dict] | None = None, *, cards: bool = True, folders: bool = True
+) -> None:
+    """The mount as `populate-public` writes it with the flag on: the three documents, one card and one folder per
+    plugin of the manifest."""
+    plugins = [_plugin("mason", "environment")] if plugins is None else plugins
+    write(root / "marketplace/index.html", "<!doctype html><p>index</p>")
+    rows = [
+        {
+            "id": "/".join(p["name"].split("-", 1)),
+            "kind": "skill",
+            "scope": p["name"].split("-", 1)[0],
+            "slug": p["name"].split("-", 1)[1],
+        }
+        for p in plugins
+    ]
+    write(
+        root / "marketplace/listings.json",
+        json.dumps({"schema": "pyforge.bmad-marketplace/v1", "listings": rows}) + "\n",
+    )
+    write(root / "marketplace/marketplace.json", _manifest(plugins))
+    for plugin in plugins:
+        scope, slug = plugin["name"].split("-", 1)
+        if cards:
+            write(root / f"marketplace/skills/{scope}/{slug}.html", "<!doctype html><p>card</p>")
+        if folders:
+            write(root / f"marketplace/skills/{scope}/{slug}/SKILL.md", "# skill\n")
+
+
+def test_109_3_with_the_marketplace_flag_the_mount_passes(site: Path) -> None:
+    plant_marketplace(site)
+    assert pages_check(site, env=MARKETPLACE_ON, origins=False) == []
+
+
+def test_109_3_an_empty_plugin_list_is_a_valid_manifest(site: Path) -> None:
+    plant_marketplace(site, [])
+    assert pages_check(site, env=MARKETPLACE_ON, origins=False) == []
+
+
+def test_109_3_the_mount_follows_its_flag(site: Path, tmp_path: Path) -> None:
+    """The flag reaches the check as PYFORGE_MARKETPLACE_PAGES alone (the Python side resolves the environment):
+    no variable is off, whatever the tree says, and on with no mount names each missing document."""
+    plant_marketplace(site)
+    _one(
+        pages_check(site, origins=False),
+        "marketplace/ exists in the artifact but pyforge.steward.marketplace_pages is off",
+    )
+    _one(
+        pages_check(site, env={"PYFORGE_MARKETPLACE_PAGES": "0", "PYFORGE_ENVIRONMENT": "dev"}, origins=False),
+        "marketplace/ exists in the artifact but pyforge.steward.marketplace_pages is off",
+    )
+    off = plant(tmp_path / "off")
+    findings = pages_check(off, env=MARKETPLACE_ON, origins=False)
+    for rel in ("marketplace/index.html", "marketplace/listings.json", "marketplace/marketplace.json"):
+        _one(findings, f"pyforge.steward.marketplace_pages is on but {rel} is missing")
+
+
+@pytest.mark.parametrize(
+    ("plant", "finding"),
+    [
+        (
+            lambda root: plant_marketplace(root, cards=False),
+            "plugin mason-environment: marketplace/skills/mason/environment.html is not mounted",
+        ),
+        (
+            lambda root: plant_marketplace(root, folders=False),
+            "plugin mason-environment: marketplace/skills/mason/environment/SKILL.md is not mounted",
+        ),
+        (
+            lambda root: (plant_marketplace(root), write(root / "marketplace/marketplace.json", "{not json")),
+            "marketplace/marketplace.json is not JSON",
+        ),
+        (
+            lambda root: (
+                plant_marketplace(root),
+                write(
+                    root / "marketplace/marketplace.json", _manifest([_plugin("mason", "environment")], name="other")
+                ),
+            ),
+            "marketplace/marketplace.json: name is not pyforge-bmad-marketplace",
+        ),
+        (
+            lambda root: (
+                plant_marketplace(root),
+                write(
+                    root / "marketplace/marketplace.json",
+                    json.dumps(
+                        {
+                            "name": "pyforge-bmad-marketplace",
+                            "plugins": [{"name": "mason-environment", "source": "./skills/mason/environment"}],
+                        }
+                    ),
+                ),
+            ),
+            "plugin mason-environment: source is not git-subdir with url and path (the URL form)",
+        ),
+        (
+            lambda root: (
+                plant_marketplace(root),
+                write(
+                    root / "marketplace/marketplace.json",
+                    _manifest([_plugin("mason", "environment", url="git@github.com:rxm7706/local-recipes.git")]),
+                ),
+            ),
+            'plugin mason-environment: url "git@github.com:rxm7706/local-recipes.git" is not https://<host>/<owner>/<repo>.git',
+        ),
+        (
+            lambda root: (
+                plant_marketplace(root),
+                write(
+                    root / "marketplace/marketplace.json",
+                    _manifest([_plugin("mason", "environment", path="skills/mason/environment")]),
+                ),
+            ),
+            'plugin mason-environment: path "skills/mason/environment" is not docs/foundry/marketplace/skills/<scope>/<slug>',
+        ),
+        (
+            lambda root: (
+                plant_marketplace(root),
+                write(
+                    root / "marketplace/marketplace.json",
+                    _manifest([_plugin("mason", "environment", name="environment")]),
+                ),
+            ),
+            "plugin environment: name is not mason-environment",
+        ),
+    ],
+)
+def test_109_3_the_manifest_is_the_url_form_and_every_plugin_is_mounted(site: Path, plant, finding: str) -> None:
+    plant(site)
+    _one(pages_check(site, env=MARKETPLACE_ON, origins=False), finding)
+
+
+@pytest.mark.parametrize(
+    ("plant", "finding"),
+    [
+        (
+            lambda root: write(root / "marketplace/skills/mason/package/SKILL.md", "# skill\n"),
+            "marketplace/skills/mason/package is mounted but marketplace/listings.json lists no skill mason/package",
+        ),
+        (
+            lambda root: write(root / "marketplace/skills/mason/package.html", "<p>card</p>"),
+            "marketplace/skills/mason/package is mounted but marketplace/marketplace.json has no plugin for it",
+        ),
+        (
+            lambda root: write(root / "marketplace/skills/mason/environment/notes.txt", "stray"),
+            "marketplace/skills/mason/environment/notes.txt is mounted but is not a file a skill folder ships",
+        ),
+        (
+            lambda root: write(root / "marketplace/listings.json", "{not json"),
+            "marketplace/listings.json is not JSON",
+        ),
+        (
+            lambda root: write(root / "marketplace/listings.json", '{"schema": "other", "listings": []}'),
+            "marketplace/listings.json: schema is not pyforge.bmad-marketplace/v1",
+        ),
+        (
+            lambda root: write(
+                root / "marketplace/marketplace.json",
+                _manifest([_plugin("mason", "environment"), _plugin("mason", "environment")]),
+            ),
+            "marketplace/marketplace.json: plugin name mason-environment repeats",
+        ),
+        # loop 3, row 48: the converse in both directions and the whole prefix
+        (
+            lambda root: _listings(root, [("mason", "environment"), ("warden", "scan")]),
+            "marketplace/listings.json lists skill warden/scan but marketplace/skills/warden/scan/ is not mounted",
+        ),
+        (
+            lambda root: (
+                _listings(root, [("mason", "environment"), ("warden", "scan")]),
+                write(root / "marketplace/skills/warden/scan/SKILL.md", "# skill\n"),
+            ),
+            "marketplace/listings.json lists skill warden/scan but marketplace/skills/warden/scan.html is not mounted",
+        ),
+        (
+            lambda root: (
+                _listings(root, [("mason", "environment"), ("warden", "scan")]),
+                write(root / "marketplace/skills/warden/scan/SKILL.md", "# skill\n"),
+                write(root / "marketplace/skills/warden/scan.html", "<p>card</p>"),
+            ),
+            "marketplace/listings.json lists skill warden/scan but marketplace/marketplace.json has no plugin for it",
+        ),
+        (
+            lambda root: write(root / "marketplace/notes.txt", "stray"),
+            "marketplace/notes.txt is mounted under marketplace/ but is not a site document, a card or a skill folder file",
+        ),
+        (
+            lambda root: write(root / "marketplace/skills/mason/stray.txt", "stray"),
+            "marketplace/skills/mason/stray.txt is mounted under marketplace/ but is not a site document",
+        ),
+        (
+            lambda root: write(root / "marketplace/skills/README.md", "stray"),
+            "marketplace/skills/README.md is mounted under marketplace/ but is not a site document",
+        ),
+        (
+            lambda root: write(root / "marketplace/modules/x.html", "<p>card</p>"),
+            "marketplace/modules/x.html is mounted but marketplace/listings.json lists no such card",
+        ),
+        (
+            lambda root: _listings(root, [("mason", "environment")], modules=["x"]),
+            "marketplace/listings.json lists a card at marketplace/modules/x.html but it is not mounted",
+        ),
+        # loop 4, rows 72, 73, 75 and 60: a prototype-named kind is malformed, a doubled row is a finding, a folder
+        # over the cap is a finding, the site asset's stem is never a plugin name
+        (
+            lambda root: write(
+                root / "marketplace/listings.json",
+                json.dumps(
+                    {
+                        "schema": "pyforge.bmad-marketplace/v1",
+                        "listings": [{"id": "x", "kind": "constructor", "name": "y"}],
+                    }
+                ),
+            ),
+            "marketplace/listings.json: listing 0 is not a well-formed row",
+        ),
+        (
+            lambda root: _listings(root, [("mason", "environment"), ("mason", "environment")]),
+            "marketplace/listings.json: id mason/environment repeats (card marketplace/skills/mason/environment.html)",
+        ),
+        # loop 5, row 91: each half of the doubled-row rule names what repeats
+        (
+            lambda root: _listing_rows(
+                root,
+                [
+                    {"id": "mason/environment", "kind": "skill", "scope": "mason", "slug": "environment"},
+                    {"id": "agent/x", "kind": "agent", "slug": "x", "name": "X"},
+                    {"id": "agent/x", "kind": "agent", "slug": "y", "name": "Y"},
+                ],
+            ),
+            "marketplace/listings.json: id agent/x repeats (card marketplace/agents/y.html)",
+        ),
+        (
+            lambda root: _listing_rows(
+                root,
+                [
+                    {"id": "mason/environment", "kind": "skill", "scope": "mason", "slug": "environment"},
+                    {"id": "agent/x", "kind": "agent", "slug": "x", "name": "X"},
+                    {"id": "agent/y", "kind": "agent", "slug": "x", "name": "Y"},
+                ],
+            ),
+            "marketplace/listings.json: card marketplace/agents/x.html repeats (id agent/y)",
+        ),
+        (
+            lambda root: _listing_rows(
+                root,
+                [
+                    {"id": "mason/environment", "kind": "skill", "scope": "mason", "slug": "environment"},
+                    {"id": "module/a", "kind": "module", "name": "x"},
+                    {"id": "module/b", "kind": "module", "name": "x"},
+                ],
+            ),
+            "marketplace/listings.json: card marketplace/modules/x.html repeats (id module/b)",
+        ),
+        (
+            lambda root: [
+                write(root / f"marketplace/skills/mason/environment/references/{n}.md", "x" * (1_048_576 - 1))
+                for n in range(5)
+            ],
+            "marketplace/skills/mason/environment/ is mounted but ships 5242883 bytes; the cap is 4194304",  # + SKILL.md
+        ),
+        (
+            lambda root: write(
+                root / "marketplace/marketplace.json",
+                _manifest([_plugin("mason", "environment"), _plugin("pages", "site")]),
+            ),
+            "plugin pages-site: name is the site release's own asset (pages-site.zip)",
+        ),
+        (
+            lambda root: write(root / "marketplace/skills/mason/environment/references/pic.png", "png"),
+            "marketplace/skills/mason/environment/references/pic.png is mounted but is not a file a skill folder ships",
+        ),
+        (
+            lambda root: (root / "marketplace/skills/mason/environment/steps.md").write_bytes(b"x" * (1_048_576 + 1)),
+            "marketplace/skills/mason/environment/steps.md is mounted but is over 1048576 bytes",
+        ),
+        (
+            lambda root: write(
+                root / "marketplace/listings.json",
+                json.dumps({"schema": "pyforge.bmad-marketplace/v1", "listings": [{"id": "mason/environment"}]}),
+            ),
+            "marketplace/listings.json: listing 0 is not a well-formed row",
+        ),
+        (
+            lambda root: write(
+                root / "marketplace/listings.json",
+                json.dumps(
+                    {
+                        "schema": "pyforge.bmad-marketplace/v1",
+                        "listings": [{"id": "other/x", "kind": "skill", "scope": "mason", "slug": "environment"}],
+                    }
+                ),
+            ),
+            "marketplace/listings.json: listing 0 is not a well-formed row",
+        ),
+    ],
+)
+def test_109_3_the_artifact_is_held_to_the_listings_and_the_manifest(site: Path, plant, finding: str) -> None:
+    """Loop 2, row 27; loop 3, row 48: the converse of the manifest check in both directions -- a mounted folder
+    or card with no listing or plugin, a listed skill with no folder, card or plugin, a mounted file outside the
+    allowlist or over the file cap, a stray path under the prefix, a non-skill card with no listing and the
+    reverse, a listings document that is not this schema or holds a malformed row, a repeated plugin name."""
+    plant_marketplace(site)
+    _listings(site, [("mason", "environment")])
+    plant(site)
+    _one(pages_check(site, env=MARKETPLACE_ON, origins=False), finding)
+
+
+def test_109_3_a_manifest_whose_plugins_is_not_a_list_is_named_once(site: Path) -> None:
+    """Loop 3, row 48: the shape finding, with no per-folder 'has no plugin' finding on top of it."""
+    plant_marketplace(site, [_plugin("mason", "environment"), _plugin("warden", "scan")])
+    _listings(site, [("mason", "environment"), ("warden", "scan")])
+    write(site / "marketplace/marketplace.json", json.dumps({"name": "pyforge-bmad-marketplace", "plugins": "none"}))
+    findings = pages_check(site, env=MARKETPLACE_ON, origins=False)
+    assert findings == ["marketplace/marketplace.json: plugins is not a list"]
+
+
+def test_109_3_a_mount_with_a_module_card_and_text_references_passes(site: Path) -> None:
+    plant_marketplace(site, [_plugin("mason", "environment")])
+    write(
+        site / "marketplace/listings.json",
+        json.dumps(
+            {
+                "schema": "pyforge.bmad-marketplace/v1",
+                "listings": [
+                    {"id": "mason/environment", "kind": "skill", "scope": "mason", "slug": "environment"},
+                    {"id": "module/x", "kind": "module", "name": "x"},
+                    {"id": "agent/y", "kind": "agent", "slug": "y", "name": "Y"},
+                    {"id": "bundle/z", "kind": "bundle", "name": "z"},
+                ],
+            }
+        )
+        + "\n",
+    )
+    write(site / "marketplace/modules/x.html", "<!doctype html><p>card</p>")
+    write(site / "marketplace/agents/y.html", "<!doctype html><p>card</p>")
+    write(site / "marketplace/bundles/z.html", "<!doctype html><p>card</p>")  # loop 4, row 72: every KIND_DIRS value
+    for name in ("a.md", "b.txt", "c.yaml", "d.yml", "e.json", "deep/F.MD"):
+        write(site / f"marketplace/skills/mason/environment/references/{name}", "x\n")
+    assert pages_check(site, env=MARKETPLACE_ON, origins=False) == []
+
+
+def _listing_rows(root: Path, rows: list[dict]) -> None:
+    write(
+        root / "marketplace/listings.json",
+        json.dumps({"schema": "pyforge.bmad-marketplace/v1", "listings": rows}) + "\n",
+    )
+
+
+def _listings(root: Path, skills: list[tuple[str, str]], *, modules: list[str] | None = None) -> None:
+    rows: list[dict] = [
+        {"id": f"{scope}/{slug}", "kind": "skill", "scope": scope, "slug": slug} for scope, slug in skills
+    ]
+    rows += [{"id": f"module/{name}", "kind": "module", "name": name} for name in modules or []]
+    write(
+        root / "marketplace/listings.json",
+        json.dumps({"schema": "pyforge.bmad-marketplace/v1", "listings": rows}) + "\n",
+    )
+
+
+def test_109_3_a_mount_that_matches_its_listings_and_manifest_passes(site: Path) -> None:
+    plant_marketplace(site, [_plugin("mason", "environment"), _plugin("warden", "scan")])
+    _listings(site, [("mason", "environment"), ("warden", "scan")])
+    write(site / "marketplace/skills/warden/scan/references/deep/more.md", "# ref\n")
+    assert pages_check(site, env=MARKETPLACE_ON, origins=False) == []
+
+
+def test_109_3_an_enterprise_hosts_rewritten_url_passes(site: Path) -> None:
+    plant_marketplace(site, [_plugin("mason", "environment", url="https://ghe.example/org/local-recipes.git")])
+    assert pages_check(site, env=MARKETPLACE_ON, origins=False) == []
+
+
 def test_the_dashboard_is_exactly_the_build_inputs_mount(site: Path, tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     write(repo / "docs/dashboard/README.md", "# never mounted\n")

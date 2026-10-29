@@ -1,0 +1,29 @@
+{
+  "name": "pyforge-bmad-marketplace",
+  "owner": {
+    "name": "rxm7706"
+  },
+  "metadata": {
+    "description": "BMAD skills, modules, and agents hosted in this monorepo at docs/foundry/marketplace/."
+  },
+  "plugins": [
+    {
+      "name": "mason-environment",
+      "description": "Resolve a teammate project's conda and pip manifests into one lockfile, then check that lockfile. No pixi environment name and no path inside local-recipes.",
+      "version": "0.1.0",
+      "source": "./skills/mason/environment"
+    },
+    {
+      "name": "mason-package",
+      "description": "Build a wheel and sdist from the project directory. Upload stays behind an explicit confirm. No pixi environment name and no path inside local-recipes.",
+      "version": "0.1.0",
+      "source": "./skills/mason/package"
+    },
+    {
+      "name": "warden-scan",
+      "description": "Run the warden scan gate on the current project. Engine probes are not a second verdict. No pixi environment name and no path inside local-recipes.",
+      "version": "0.1.0",
+      "source": "./skills/warden/scan"
+    }
+  ]
+}

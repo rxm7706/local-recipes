@@ -1,0 +1,76 @@
+# One listing. index.yaml is the committed concatenation of these files
+# until bmp index build. Sample P2 checksums and hosts are not in this row.
+# The 2026-10-20 paper card (prototypes/p3-skill-card.html) is sample data;
+# its lock command is not the runbook. steps.md is the runbook.
+id: mason/package
+kind: skill
+scope: mason
+slug: package
+name: '@mason/package'
+display_name: Build a package locally
+title: Build a package locally
+summary: Build a wheel and sdist in the project directory. Do not upload.
+description: Build a wheel and sdist from the project directory. Upload stays behind
+  an explicit confirm. No pixi environment name and no path inside local-recipes.
+version: 0.1.0
+tasks:
+- build-wheel
+- build-sdist
+keywords:
+- wheel
+- sdist
+- build
+category: development
+subcategory: packaging
+owners:
+- '@rxm7706'
+author: rxm7706
+type: community
+tier: community
+trust_tier: unverified
+source: estate-listings
+jobs:
+- find
+- install
+- create
+lane: code-backed
+contribution_lane: code-backed
+path: skills/mason/package
+adapters: {}
+requires:
+- kind: package
+  name: pyforge-mason
+  published: false
+  installed_by: folder-copy
+  note: PyPI, conda-forge, and SelfExplainML returned 404 on 2026-10-21
+- kind: package
+  name: pyforge-core
+  published: false
+  installed_by: folder-copy
+  note: Required by pyforge mason dispatch; same 404 check
+install:
+  targets:
+  - .agents/skills/mason-package
+  - .claude/skills/mason-package
+  entry: SKILL.md
+  origins:
+  - github
+  - artifactory
+sources:
+  github:
+    kind: release
+    published: false
+  artifactory:
+    conda:
+      published: false
+    pip:
+      published: false
+verified_at: null
+ci:
+  status: pending
+docs:
+  steps: steps.md
+  card: skills/mason/package.html
+related:
+- '@mason/environment'
+- '@warden/scan'

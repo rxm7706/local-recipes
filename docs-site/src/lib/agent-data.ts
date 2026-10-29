@@ -17,6 +17,8 @@ import path from 'node:path';
 import { getCollection, getEntry } from 'astro:content';
 import { parse as parseYaml } from 'yaml';
 
+import { marketplacePages } from './flags.ts';
+
 import {
   BuildInputShapeError,
   CHANGES_INPUT,
@@ -220,6 +222,20 @@ export async function llmsSections(site: URL): Promise<{ title: string; summary:
             title: 'Runs and progress',
             url: new URL('status/runs/', site).href,
             description: 'one row per loop home and the latest progress record per station, a build-time snapshot',
+          },
+        ]
+      : []),
+    ...(marketplacePages()
+      ? [
+          {
+            title: 'BMAD marketplace',
+            url: new URL('marketplace/', site).href,
+            description: 'skills, modules and agents hosted in this monorepo, one card per listing; a reading surface, not an install button',
+          },
+          {
+            title: 'Marketplace listings',
+            url: new URL('marketplace/listings.json', site).href,
+            description: 'the same listings as JSON (schema pyforge.bmad-marketplace/v1)',
           },
         ]
       : []),

@@ -339,6 +339,11 @@ sections:
     href: dashboard/vizro/
     owner: atlas
     order: 40
+  - key: marketplace
+    label: Marketplace
+    href: marketplace/
+    owner: steward
+    order: 45
   - key: changes
     label: Changes
     href: changes/

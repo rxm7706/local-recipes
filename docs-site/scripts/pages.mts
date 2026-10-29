@@ -31,6 +31,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { ARTIFACT_DOSSIER, NOT_PAGES } from '../src/lib/artifact.ts';
 import { BUILT_FROM_OPEN } from '../src/lib/built-from.ts';
 import { envFlagOn } from '../src/lib/flags.ts';
+import { marketplaceArtifactFindings, marketplaceManifestFindings } from '../src/lib/marketplace.ts';
 import { DASHBOARD_EXPORTS, holdsAFile } from '../src/lib/nav.ts';
 
 const DOCS_SITE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -463,6 +464,32 @@ export function check(root: string, options: CheckOptions = {}): string[] {
   } else if (all.some((rel) => rel.startsWith('kedro-viz/'))) {
     out.push('kedro-viz/ exists in the artifact but no Kedro-Viz export is mounted at dashboard/kedro-viz/');
   }
+  // Steward Story 109.3: /marketplace/ is the generated site, mounted only while pyforge.steward.marketplace_pages
+  // is on -- PYFORGE_MARKETPLACE_PAGES, the one way a flag reaches this build (the review of 2026-10-28 retired the
+  // TypeScript reader of the flag tree). Off, the prefix is absent. On, the three documents are there, the manifest
+  // is the URL form and every plugin's folder and card are mounted (src/lib/marketplace.ts).
+  const marketplaceOn = envFlagOn('PYFORGE_MARKETPLACE_PAGES', env);
+  const marketplaceFiles = all.filter((rel) => rel.startsWith('marketplace/'));
+  if (marketplaceOn) {
+    for (const rel of ['marketplace/index.html', 'marketplace/listings.json', 'marketplace/marketplace.json']) {
+      if (!has(rel)) {
+        out.push(`pyforge.steward.marketplace_pages is on but ${rel} is missing`);
+      }
+    }
+    if (has('marketplace/marketplace.json')) {
+      out.push(...marketplaceManifestFindings(read('marketplace/marketplace.json'), has));
+      if (has('marketplace/listings.json')) {
+        out.push(
+          ...marketplaceArtifactFindings(read('marketplace/listings.json'), read('marketplace/marketplace.json'), all, (rel) =>
+            fs.statSync(path.join(root, rel)).size,
+          ),
+        );
+      }
+    }
+  } else if (marketplaceFiles.length) {
+    out.push('marketplace/ exists in the artifact but pyforge.steward.marketplace_pages is off');
+  }
+
   if (mounted.includes('vizro')) {
     let manifest: unknown = null;
     try {

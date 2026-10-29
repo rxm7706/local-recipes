@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build a package locally</title>
+<style>
+body{font-family:Georgia,serif;margin:2rem auto;max-width:46rem;line-height:1.45;color:#1c1917;background:#fafaf9}
+a{color:#1d4ed8} code{font-family:ui-monospace,monospace;font-size:.95em}
+pre{background:#f5f5f4;border:1px solid #d6d3d1;padding:.75rem;overflow-x:auto}
+article{border-top:1px solid #d6d3d1;padding-top:1rem;margin-top:1rem}
+.meta{color:#44403c;font-size:.95rem}
+</style>
+</head>
+<body>
+<p><a href="../../index.html">Marketplace</a></p>
+<h1>Build a package locally</h1>
+<p class="meta">skill · @mason/package · version 0.1.0</p>
+<p class="meta">tier community · trust unverified · source estate-listings · never verified · jobs find, install, create</p>
+<p class="meta">No review record. community maps to unverified until a CODEOWNER promotes it.</p>
+<p>Build a wheel and sdist from the project directory. Upload stays behind an explicit confirm. No pixi environment name and no path inside local-recipes.</p>
+<p>Owners: @rxm7706</p>
+<h2>Install</h2>
+<p>Copy the folder <code>skills/mason/package</code> into <code>.agents/skills/mason-package</code>, <code>.claude/skills/mason-package</code>. Claude Code's documented project skill path is <code>.claude/skills/</code>. Devin's is <code>.agents/skills/</code>. The <a href="https://github.com/rxm7706/local-recipes/blob/main/_bmad-output/projects/pyforge-steward/planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/tool-support-matrix.md">tool matrix</a> marks Claude Code reading <code>.agents/skills/</code> as uncertain and does not list <code>.claude/skills/</code> for Devin. <code>bmp install</code> is not built; this page is not an install button.</p>
+<p>The rolling <code>pages-site</code> release carries <code>mason-package.zip</code> with <code>mason-package.zip.sha256</code> beside it while the marketplace flag is on for that deploy. The zip holds the <code>mason-package/</code> folder with <code>SKILL.md</code>, <code>steps.md</code>, <code>listing.yaml</code> and <code>references/</code> when the skill has one. Check and unpack it where both files were downloaded: <code>sha256sum -c mason-package.zip.sha256 &amp;&amp; unzip mason-package.zip -d .claude/skills/</code>, and the same with <code>-d .agents/skills/</code>.</p>
+<p><code>marketplace.json</code> (the Claude marketplace file) is a discovery pointer for this listing; the folder copy above is the install until <a href="https://github.com/rxm7706/local-recipes/blob/main/docs/foundry/marketplace/MANUAL-CHECKLIST.md">Round 0</a> confirms a plugin install exposes the skill.</p>
+<h2>Unpublished packages</h2><ul><li>pyforge-mason: PyPI, conda-forge, and SelfExplainML returned 404 on 2026-10-21</li><li>pyforge-core: Required by pyforge mason dispatch; same 404 check</li></ul>
+<h2>Steps</h2>
+<p>Run these from the project you want to build. Verified 2026-10-21 against the engine modules <code>pyforge.mason.engines.pep517</code> and <code>pyforge.mason.engines.pixi</code> and the tools on the verifying host. Each version below is what that tool&#x27;s <code>--version</code> printed on that host on 2026-10-21, unless the step says otherwise.</p>
+<p><strong>Before you start.</strong> <code>pyforge-mason</code> 0.1.0 and <code>pyforge-core</code> returned HTTP 404 on PyPI, conda-forge, and SelfExplainML on 2026-10-21. Steps 1 and 4 wait on those packages. Steps 0, 2, and 3 run today.</p>
+<h3>0. Install the published tools</h3>
+<ul><li><code>build</code> 1.6.1: <code>pip install build</code> (PyPI <code>build</code>) or <code>conda install -c conda-forge python-build</code>. It installs the <code>pyproject-build</code> command.</li><li>Your project&#x27;s build backend, the package named under <code>[build-system] requires</code> in <code>pyproject.toml</code> (for example <code>hatchling</code> or <code>setuptools</code>), in the same environment. <code>pyproject-build --no-isolation</code> does not install it and stops with <code>BackendUnavailable</code> when it is missing.</li><li><code>pixi</code> 0.81.0 (re-read 2026-10-28), for step 3 only: <code>conda install -c conda-forge pixi</code>, or the installer at https://pixi.sh.</li></ul>
+<h3>1. See the station command (waits on <code>pyforge-mason</code>)</h3>
+<p>When <code>pyforge-mason</code> is on your <code>PATH</code>:</p>
+<pre><code class="language-bash">pyforge mason package build . --target library
+</code></pre>
+<p>That build uploads nothing. <code>--target library</code> is the v1 target.</p>
+<h3>2. Build a wheel and sdist with the engine the station calls</h3>
+<p>From the project directory:</p>
+<pre><code class="language-bash">pyproject-build --no-isolation
+</code></pre>
+<p>That is the argv in <code>pyforge.mason.engines.pep517</code>. The same module says the console script is <code>python -m build --no-isolation --outdir dist</code>.</p>
+<h3>3. Optional conda artifact</h3>
+<pre><code class="language-bash">pixi build --output-dir dist
+</code></pre>
+<p>That is the build argv in <code>pyforge.mason.engines.pixi</code> (<code>pixi build --output-dir</code>). This is not a pixi environment run.</p>
+<h3>4. Do not upload in the pilot (waits on <code>pyforge-mason</code>)</h3>
+<p><code>pyforge mason package ship --to pypi-test</code> is a dry run until <code>--yes</code>. After <code>--yes</code> the station runs <code>twine upload --non-interactive --disable-progress-bar</code> for a PyPI target (<code>twine</code> 7.0.0 was present on the verifying host) or <code>pixi upload prefix --channel &lt;name&gt;</code> for a channel. Do not run <code>twine upload</code> or <code>pixi upload</code> from these steps. <code>pypi</code> publishes permanently.</p>
+<h3>5. Stop</h3>
+<p>A conda-forge recipe is a different skill. Do not open a feedstock from here.</p>
+<h2>Related</h2><ul><li><a href="environment.html">@mason/environment</a></li><li><a href="../warden/scan.html">@warden/scan</a></li></ul>
+<h2>Sources</h2><ul><li>GitHub release: not published</li><li>Artifactory conda: not published</li><li>Artifactory pip: not published</li></ul>
+<h2>Contribute</h2><p>Lane: code-backed. A pull request is the publish path; the lanes are defined in the marketplace <a href="https://github.com/rxm7706/local-recipes/blob/main/docs/foundry/marketplace/README.md">README</a>.</p>
+</body>
+</html>

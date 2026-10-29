@@ -802,6 +802,12 @@ _SHIPPED_BOOLEANS = {
         "staging": False,
         "production": False,
     },
+    # Story 109.3 (CAP-171); default off, dev on (spec flag.default).
+    "pyforge.steward.marketplace_pages": {
+        "dev": True,
+        "staging": False,
+        "production": False,
+    },
     # Story 117.3 (CAP-175): critical-path admission; a kill switch ON everywhere.
     "pyforge.steward.preflight_critical_path": {
         "dev": True,

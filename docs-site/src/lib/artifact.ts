@@ -30,7 +30,10 @@ export const BUILT_DOSSIER = 'herald/dossier/index.html';
 /** The families the dossier reads, the only faces the artifact inlines (the Jinja artifact's three). */
 export const ARTIFACT_FONT_FAMILIES = ['Big Shoulders Display', 'IBM Plex Sans', 'IBM Plex Mono'];
 /** Output the CSP pass never touches: no page of the build's own. */
-export const NOT_PAGES = ['herald/twins/', 'herald/artifact/', 'dashboard/', 'pagefind/'];
+// Mounted static trees are not docs pages: no built-from line, no site menu.
+// dashboard/ is the Kedro-Viz and Vizro exports. marketplace/ is the BMAD
+// marketplace site, judged by the marketplace block in pages.mts.
+export const NOT_PAGES = ['herald/twins/', 'herald/artifact/', 'dashboard/', 'pagefind/', 'marketplace/'];
 
 const CSP_META = /<meta\s+http-equiv=["']Content-Security-Policy["']/i;
 const REFRESH = /<meta\s+http-equiv=["']refresh["']/i;
