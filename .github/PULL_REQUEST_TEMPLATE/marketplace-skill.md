@@ -18,6 +18,10 @@ The two lanes are defined in the README's § Index schema, **Lanes** (`docs/foun
 - [ ] `source` names the producer (`estate-listings` until a second source is reviewed)
 - [ ] `lane` matches `contribution_lane` when both are set, and the packages under `requires` match the lane ticked above (each with a `name` and a bool `published`)
 - [ ] `docs.steps` is a file inside the folder (`steps.md`); `docs.card` is `skills/<scope>/<slug>.html`; `verified_at` is a quoted `YYYY-MM-DD` or `null`
+- [ ] A module row's `name` is lower-case letters, digits and hyphens (it names the card)
+- [ ] Every folder under `skills/<scope>/` is a row of `index.yaml`, and `skills/` and `skills/<scope>/` hold directories only
+- [ ] The `id`, the card path and the `<scope>-<slug>` plugin name repeat no other row's
+- [ ] `related`, when present, is a list of strings; an entry `@<scope>/<slug>` is spelled whole and names a skill row of the index (anything else is text on the card)
 
 ## Folder
 
@@ -31,7 +35,7 @@ The two lanes are defined in the README's § Index schema, **Lanes** (`docs/foun
 ## Generated site
 
 - [ ] `site/`, `.claude-plugin/marketplace.json` and `.agents/plugins/marketplace.json` were regenerated with `pyforge.steward.marketplace_pages` on (dev) and match `index.yaml` file for file
-- [ ] The card renders `steps.md`, names every requires package whose `published` is false, and shows the verified date or "never verified"
+- [ ] The regenerated card shows what the README's § Regenerate the site says a card shows
 - [ ] No sample checksum, example host, or paper-card command was copied into the listing
 
 ## Not in this pull request

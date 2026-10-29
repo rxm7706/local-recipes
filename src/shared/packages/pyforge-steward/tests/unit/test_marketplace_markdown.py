@@ -41,9 +41,9 @@ from pyforge.steward.marketplace_pages import render_markdown
             "- item\n  ```sh\n  cmd\n  ```\n- next",
             '<ul><li>item</li></ul>\n<pre><code class="language-sh">cmd\n</code></pre>\n<ul><li>next</li></ul>',
         ),
-        (
+        (  # loop 5, row 81: the default link_base is None, so a relative target is literal unless a folder is mounted
             "[steps](steps.md) and [docs](https://example.test/x)",
-            '<p><a href="steps.md">steps</a> and <a href="https://example.test/x">docs</a></p>',
+            '<p>[steps](steps.md) and <a href="https://example.test/x">docs</a></p>',
         ),
         ("[j](javascript:alert(1)) [d](data:text/html,x)", "<p>[j](javascript:alert(1)) [d](data:text/html,x)</p>"),
         ("`[not](a-link)`", "<p><code>[not](a-link)</code></p>"),
@@ -76,7 +76,7 @@ from pyforge.steward.marketplace_pages import render_markdown
         ("10. ten", '<ol start="10"><li>ten</li></ol>'),
         # loop 4, row 68: tabs count as four columns (a tab-indented close is code, a tab-indented nested item nests);
         # a nested run of mixed markers takes one list per run; an item whose text opens a fence is that fence
-        ("```\nx\n\t```\ny\n```\nafter", "<pre><code>x\n    ```\ny\n</code></pre>\n<p>after</p>"),
+        ("```\nx\n\t```\ny\n```\nafter", "<pre><code>x\n\t```\ny\n</code></pre>\n<p>after</p>"),
         ("- a\n\t- b\n- c", "<ul><li>a<ul><li>b</li></ul></li><li>c</li></ul>"),
         ("1. a\n  - x\n  2. y\n2. b", '<ol><li>a<ul><li>x</li></ul><ol start="2"><li>y</li></ol></li><li>b</li></ol>'),
         (
@@ -90,22 +90,55 @@ from pyforge.steward.marketplace_pages import render_markdown
             '<pre><code class="language-a&quot;onmouseover=&quot;alert(1)">x\n</code></pre>',
         ),
         ("```<b>&x\nx\n```", '<pre><code class="language-&lt;b&gt;&amp;x">x\n</code></pre>'),
-        # loop 4, row 61: encoded dots are dots to the browser; a leading ./ names the same folder
+        # loop 4, row 61: encoded dots are dots to the browser (a leading ./ names the same folder: the link_base test)
         (
             "[a](%2e%2e/x) [b](.%2e/x) [c](%2E%2E/x) [d](./steps.md)",
-            '<p>[a](%2e%2e/x) [b](.%2e/x) [c](%2E%2E/x) <a href="steps.md">d</a></p>',
+            "<p>[a](%2e%2e/x) [b](.%2e/x) [c](%2E%2E/x) [d](./steps.md)</p>",
         ),
+        # loop 5, row 81: a ./ before a scheme is not a file; row 93: a nested marker before a fence opener
+        (
+            "[x](./javascript:alert%281%29) [y](./data:text/html,x)",
+            "<p>[x](./javascript:alert%281%29) [y](./data:text/html,x)</p>",
+        ),
+        (
+            "- - ```bash\n  cmd\n  ```\n## after",
+            '<pre><code class="language-bash">cmd\n</code></pre>\n<h3>after</h3>',
+        ),
+        # loop 5, row 82: a tab inside a fence body or a code span is emitted as it is; a leading tab is four columns
+        ("```make\nall:\n\tgcc a.c\n```", '<pre><code class="language-make">all:\n\tgcc a.c\n</code></pre>'),
+        ("`a\tb` c\td", "<p><code>a\tb</code> c\td</p>"),
+        (
+            "- item\n  ```make\n  all:\n  \tgcc\n  ```",
+            '<ul><li>item</li></ul>\n<pre><code class="language-make">all:\n\tgcc\n</code></pre>',
+        ),
+        ("\t```\n\t\tx\n\t```", "<pre><code>\tx\n</code></pre>"),
     ],
 )
 def test_render_markdown(text: str, expected: str) -> None:
     assert render_markdown(text) == expected
 
 
-def test_a_non_skill_card_leaves_relative_links_literal() -> None:
-    """Loop 4, row 58: with no mounted folder beside the card (``link_base=None``), a relative target is text."""
-    assert render_markdown("[s](steps.md) [h](https://e.test/x) [f](#top)", link_base=None) == (
-        '<p>[s](steps.md) <a href="https://e.test/x">h</a> <a href="#top">f</a></p>'
+def test_the_empty_link_base_resolves_a_relative_target_beside_the_page() -> None:
+    """Loop 4, row 61 under ``link_base=""``: a leading ``./`` names the same folder; loop 5, row 81: a ``./`` before
+    a scheme stays literal under every base; row 93: an angle-bracket destination is unwrapped."""
+    assert render_markdown("[s](steps.md) [d](./steps.md) [e](././x.md)", link_base="") == (
+        '<p><a href="steps.md">s</a> <a href="steps.md">d</a> <a href="x.md">e</a></p>'
     )
+    for base in ("", "e/"):
+        assert render_markdown(
+            "[x](./javascript:alert%281%29) [y](./data:text/html,x) [z](./https://e.test/x)", link_base=base
+        ) == ("<p>[x](./javascript:alert%281%29) [y](./data:text/html,x) [z](./https://e.test/x)</p>")
+    assert render_markdown("[a](<steps.md>) [b](<https://e.test/x>) [c](<>) [d](<../up>)", link_base="e/") == (
+        '<p><a href="e/steps.md">a</a> <a href="https://e.test/x">b</a> [c](&lt;&gt;) [d](&lt;../up&gt;)</p>'
+    )
+
+
+def test_a_non_skill_card_leaves_relative_links_literal() -> None:
+    """Loop 4, row 58: with no mounted folder beside the card (``link_base=None``), a relative target is text; loop
+    5, row 81: that is the default."""
+    expected = '<p>[s](steps.md) <a href="https://e.test/x">h</a> <a href="#top">f</a></p>'
+    assert render_markdown("[s](steps.md) [h](https://e.test/x) [f](#top)", link_base=None) == expected
+    assert render_markdown("[s](steps.md) [h](https://e.test/x) [f](#top)") == expected
 
 
 def test_a_relative_link_is_prefixed_with_the_link_base_and_nothing_else_is() -> None:

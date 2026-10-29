@@ -323,6 +323,33 @@ def test_the_prune_loop_deletes_only_per_skill_names_not_in_the_new_set(
     assert calls == expected_calls
 
 
+def test_the_prune_loop_never_hands_its_listing_to_the_delete(tmp_path: Path) -> None:
+    """Loop 5, row 91 (row 74's redirect, observed): a ``gh`` that reads its stdin would eat the rest of the listing
+    the loop reads, so only the first stale asset would be deleted; ``</dev/null`` on the delete keeps every line."""
+    lines = _zip_step_lines()
+    start = lines.index("while IFS= read -r asset; do")
+    end = lines.index('done <<< "$assets"')
+    loop = "\n".join(lines[start : end + 1])
+    outdir = tmp_path / "out"
+    outdir.mkdir()
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    log = tmp_path / "gh.log"
+    (bin_dir / "gh").write_text(f'#!/bin/bash\ncat >/dev/null\nprintf \'%s\\n\' "$*" >> "{log}"\n', encoding="utf-8")
+    (bin_dir / "gh").chmod(0o755)
+    script = f"assets=$'a-b.zip\\nc-d.zip\\ne-f.zip.sha256'\n{loop}\n"
+    env = {**os.environ, "PATH": f"{bin_dir}:{os.environ['PATH']}", "outdir": str(outdir)}
+    done = subprocess.run(
+        ["bash", "-euo", "pipefail", "-c", script], env=env, capture_output=True, text=True, check=False
+    )
+    assert done.returncode == 0, done.stderr
+    assert log.read_text(encoding="utf-8").splitlines() == [
+        *_deleted("a-b.zip"),
+        *_deleted("c-d.zip"),
+        *_deleted("e-f.zip.sha256"),
+    ]
+
+
 def test_the_zip_allowlist_is_the_mounts_and_the_validators() -> None:
     """Loop 2, row 23; loop 3, row 48: one allowlist, one suffix set and two caps in three places (the workflow's
     -i list and refusals, ``marketplace.ts``, the validator's constants)."""

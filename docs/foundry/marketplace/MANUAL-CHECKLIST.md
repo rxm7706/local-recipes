@@ -8,7 +8,7 @@ Do this in a repository that is not local-recipes.
 
 - [ ] Read `site/index.html` (or `/marketplace/` on the docs site while the flag is on) and open one skill card without a local server. In `site/` the card's relative links into the skill folder do not resolve (no folder sits beside the card there): open `skills/<scope>/<slug>/` by hand
 - [ ] Copy that skill's folder into `.agents/skills/<scope>-<slug>/` and `.claude/skills/<scope>-<slug>/`
-- [ ] Confirm your tool picks the folder up from the directory in the README's tool table (`tool-support-matrix.md` in the design-thinking folder is the source; it records a `Driveable` outcome per tool)
+- [ ] Confirm your tool picks the folder up from the directory in the README's tool table, and record the `Driveable` outcome the matrix defines per tool
 - [ ] Claude Code only: `/plugin marketplace add <checkout>/docs/foundry/marketplace`, then `/plugin install <scope>-<slug>@pyforge-bmad-marketplace`, then `/skills`. Record whether the skill appears. If it does not, `marketplace.json` stays a discovery pointer and the folder copy is the install
 - [ ] Codex only: `codex plugin marketplace add <checkout>/docs/foundry/marketplace`. The install and list verbs are unverified: record the exact commands you ran (the Codex CLI's own help names them) and whether `<scope>-<slug>` appears as a skill. If it does not, `.agents/plugins/marketplace.json` stays a discovery pointer and the folder copy is the install
 - [ ] Follow `steps.md` from the top
@@ -60,4 +60,4 @@ Success:
 
 ## Runbooks
 
-The current Round 0 and Round 1 runbooks are `planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/analysis-against-main-2026-10-27.md`; this file's own history is git's and the 109.3 story spec's.
+The current Round 0 runbook, and the Round 1 runbook (the two-or-three-teammate pass that follows Round 0, the pilot above), are `planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/analysis-against-main-2026-10-27.md`; this file's own history is git's and the 109.3 story spec's.

@@ -7,15 +7,8 @@ the reset marketplace (steward Epic 109, CAP-171); the product brief is
 It lives at `docs/foundry/marketplace/` because that directory is the foundry
 target for published indexes (`frames/` and `browse.yaml` are its neighbours).
 The portable skill folders are listings in that index, not station skills
-under `skills/{stations,personas,domain}/`.
-
-Decision 2026-10-21: this monorepo hosts and publishes the marketplace. There
-is no separate marketplace repository. Teammates use an internal mirror of
-local-recipes. `catalog.yaml`'s `edit_store.mirrors` is a list of
-`{host, repo}` and starts empty.
-
-Foundry rebuilds this tree at cutover. Nothing moves, and nothing changes at
-the `cutover_root` flip.
+under `skills/{stations,personas,domain}/`. Where the marketplace is hosted,
+and what the cutover does to it, is § Provenance at the end.
 
 ## Install
 
@@ -30,7 +23,7 @@ A skill is the folder under `skills/<scope>/<slug>/`. Copy it into both
 | GitHub Copilot in VS Code | both |
 | Google Gemini CLI | `.agents/skills/` |
 | Codex | `.agents/skills/` |
-| No AI tool | the card at `/marketplace/` and `steps.md` |
+| No AI tool | `steps.md` in the folder (its skill card renders it; § Regenerate the site) |
 
 The table is the 2026-10-20 tool matrix
 (`planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/tool-support-matrix.md`).
@@ -39,19 +32,16 @@ The table is the 2026-10-20 tool matrix
 **The folder rule.** A skill folder holds `SKILL.md`, `steps.md`,
 `listing.yaml` and text files (`.md`, `.txt`, `.yaml`, `.yml`, `.json`, in
 any letter case) under `references/`, and nothing else: regular files only
-(no symlink, no dot entry), no file over 1 MiB, the folder under 4 MiB. Each
-layer refuses what it can see: `validate_listing` refuses every breach at
-render, and the steward live lane runs it over this tree; the Pages mount
-(`docs-site/src/lib/marketplace.ts`) ships only that set, fails the build on
-a size cap, and `pages-check` reports a mounted file or folder over its cap;
-the release zip step refuses a symlink, a cap breach or a non-text
-`references/` file over the mount's output, as defence in depth.
+(no symlink, no dot entry), no file over 1 MiB, the folder under 4 MiB.
+Between the folders, `skills/` and `skills/<scope>/` hold directories only.
+What each layer refuses is under § Regenerate the site.
 
 The rolling `pages-site` release carries one `<scope>-<slug>.zip` per skill,
 with `<scope>-<slug>.zip.sha256` beside it, while the marketplace flag is on
 for that deploy. Each zip holds the `<scope>-<slug>/` folder with that set,
 so `sha256sum -c <scope>-<slug>.zip.sha256 && unzip <scope>-<slug>.zip -d .claude/skills/`
-checks and lands it in place. Every zip is built before the release is
+checks and lands it in place, and the same with `-d .agents/skills/` lands
+the other copy. Every zip is built before the release is
 touched; the previous deploy's per-skill assets of the `<scope>-<slug>.zip`
 shape that are not in the new set are then deleted (a failed asset listing
 fails the step), and the site zip and the new set go up in one upload, so a
@@ -106,17 +96,12 @@ generated here, by `write_plugin_manifests`.
 markdown and the index row. `code-backed`: the listing names the package the
 skill calls, each with `published: true` or `false`. A skill's lane is what
 its packages say; a module's package is the module. The card names the
-listing's lane and links here. The three pilots are `community` /
-`unverified` (no review record) and `code-backed`.
+listing's lane. The three pilots are `community` / `unverified` (no review
+record) and `code-backed`.
 
 The listing rules `validate_listing` enforces are the PR template's
 § Listing, one checkbox each (`.github/PULL_REQUEST_TEMPLATE/marketplace-skill.md`);
-the folder rule is § Install above. In short: `scope`, `slug` and a module's
-`name` are lower-case letters, digits and hyphens; a skill's `id` is
-`<scope>/<slug>` and its `path` is `skills/<scope>/<slug>`, a folder that
-exists with its `SKILL.md`; every skill folder is a row; ids, cards and
-`<scope>-<slug>` plugin names are unique; a `related` entry of the form
-`@<scope>/<slug>` names a listing.
+the folder rule is § Install above.
 
 ## Contribute
 
@@ -160,6 +145,14 @@ write_plugin_manifests(root / 'index.yaml')
 "
 ```
 
+What each layer refuses: `validate_listing` refuses every breach of the
+listing rules and the folder rule at render, and the steward live lane runs
+it over this tree; the Pages mount (`docs-site/src/lib/marketplace.ts`) ships
+only the folder rule's set, fails the build on a size cap, and `pages-check`
+reports a mounted file or folder over its cap; the release zip step refuses
+a symlink, a cap breach or a non-text `references/` file over the mount's
+output, as defence in depth.
+
 `site/` is replaced by a fresh tree on every render, so a card whose listing
 was dropped or renamed does not survive; `write_site` replaces a non-empty
 directory only when every file and directory in it is one its own
@@ -171,15 +164,20 @@ compares the committed tree to the render file for file.
 
 A card renders `steps.md` (its own `#` title skipped, its steps as `<h3>`
 under the card's one `Steps` heading), names both install directories and
-every unpublished package, links the sibling cards under Related, and shows
+every unpublished package, links the sibling skill cards under Related
+(a `related` entry `@<scope>/<slug>` names a skill listing), and shows
 the listing's `verified_at` date or "never verified". A relative link on a
 skill's runbook, one whose target is `steps.md` or `references/x.md`, points
 into the mounted folder beside the card, so it resolves on the Pages mount
-and not in the checked-in `site/` tree, which has no folder beside the card
-(Round 0 reads `site/index.html` and opens the folder by hand). The card's
-links to this README, `MANUAL-CHECKLIST.md` and the tool matrix are
-repository links; the mount rewrites them to the deploying host, as it
-rewrites `marketplace.json`'s clone URL.
+and not in the checked-in `site/` tree, which has no folder beside the card.
+The card's links to this README, `MANUAL-CHECKLIST.md` and the tool matrix
+are repository links of the form `https://github.com/rxm7706/local-recipes/blob/main/…`.
+The mount rewrites two forms and nothing else: that `blob/main/` form, to
+the deploying host and its deployed commit, and the public clone URL
+(`https://github.com/rxm7706/local-recipes.git`, in `marketplace.json` and
+wherever a card carries it), to the deploying host's. Any other repository
+link a runbook carries (an issue link, the bare repository URL) is left as
+written.
 
 ## Not built yet
 
@@ -195,3 +193,13 @@ rewrites `marketplace.json`'s clone URL.
 - Which internal GitHub or GHES mirror of local-recipes teammates use
   (`edit_store.mirrors`), and whether mirroring the full repository is
   allowed at work.
+
+## Provenance
+
+Decision 2026-10-21: this monorepo hosts and publishes the marketplace. There
+is no separate marketplace repository. Teammates use an internal mirror of
+local-recipes. `catalog.yaml`'s `edit_store.mirrors` is a list of
+`{host, repo}` and starts empty.
+
+Foundry rebuilds this tree at cutover. Nothing moves, and nothing changes at
+the `cutover_root` flip.

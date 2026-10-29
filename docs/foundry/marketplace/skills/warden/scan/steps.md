@@ -52,4 +52,4 @@ into a review as a warden verdict.
 
 ## 3. Stop
 
-Do not add a second gate, and do not import `pyforge.warden`.
+Nothing else runs from this runbook.

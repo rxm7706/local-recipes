@@ -25,7 +25,6 @@ article{border-top:1px solid #d6d3d1;padding-top:1rem;margin-top:1rem}
 <p>The rolling <code>pages-site</code> release carries <code>warden-scan.zip</code> with <code>warden-scan.zip.sha256</code> beside it while the marketplace flag is on for that deploy. The zip holds the <code>warden-scan/</code> folder with <code>SKILL.md</code>, <code>steps.md</code>, <code>listing.yaml</code> and <code>references/</code> when the skill has one. Check and unpack it where both files were downloaded: <code>sha256sum -c warden-scan.zip.sha256 &amp;&amp; unzip warden-scan.zip -d .claude/skills/</code>, and the same with <code>-d .agents/skills/</code>.</p>
 <p><code>marketplace.json</code> (the Claude marketplace file) is a discovery pointer for this listing; the folder copy above is the install until <a href="https://github.com/rxm7706/local-recipes/blob/main/docs/foundry/marketplace/MANUAL-CHECKLIST.md">Round 0</a> confirms a plugin install exposes the skill.</p>
 <h2>Unpublished packages</h2><ul><li>pyforge-warden: PyPI, conda-forge, and SelfExplainML returned 404 on 2026-10-21</li><li>pyforge-core: Required by pyforge warden dispatch; same 404 check</li></ul>
-<h2>Sources</h2><ul><li>GitHub release: not published</li><li>Artifactory conda: not published</li><li>Artifactory pip: not published</li></ul>
 <h2>Steps</h2>
 <p>Run these from the project you want to scan. Verified 2026-10-21 against <code>warden scan --help</code> and the tools on the verifying host. Each version below is what that tool&#x27;s <code>--version</code> printed on that host on 2026-10-21.</p>
 <p><strong>Before you start.</strong> <code>pyforge-warden</code> 0.1.0 and <code>pyforge-core</code> returned HTTP 404 on PyPI, conda-forge, and SelfExplainML on 2026-10-21. Step 1 waits on those packages, and no published command produces the compliance report in its place. Steps 0 and 2 run today; they produce probes, not a report.</p>
@@ -48,8 +47,9 @@ osv-scanner --version
 </code></pre>
 <p><code>deptry</code> and <code>osv-scanner</code> are not a warden verdict. The warden CLI calls <code>deptry</code> and <code>osv-scanner scan --offline</code> itself. Do not paste their output into a review as a warden verdict.</p>
 <h3>3. Stop</h3>
-<p>Do not add a second gate, and do not import <code>pyforge.warden</code>.</p>
+<p>Nothing else runs from this runbook.</p>
 <h2>Related</h2><ul><li><a href="../mason/environment.html">@mason/environment</a></li><li><a href="../mason/package.html">@mason/package</a></li></ul>
+<h2>Sources</h2><ul><li>GitHub release: not published</li><li>Artifactory conda: not published</li><li>Artifactory pip: not published</li></ul>
 <h2>Contribute</h2><p>Lane: code-backed. A pull request is the publish path; the lanes are defined in the marketplace <a href="https://github.com/rxm7706/local-recipes/blob/main/docs/foundry/marketplace/README.md">README</a>.</p>
 </body>
 </html>

@@ -7,7 +7,9 @@
  *
  * - every file of `docs/foundry/marketplace/site/` (the generated index, listings, cards and the URL-form
  *   `marketplace.json`), the last with its public git URL rewritten to the deploying host's
- *   (`GITHUB_SERVER_URL` / `GITHUB_REPOSITORY`, so an enterprise mirror's deploy points at itself);
+ *   (`GITHUB_SERVER_URL` / `GITHUB_REPOSITORY`, so an enterprise mirror's deploy points at itself), and the cards
+ *   with the two forms the renderer emits rewritten the same way: the clone URL and the public repository's
+ *   `blob/main/` links, the latter to the deployed commit (`GITHUB_SHA`) on that host;
  * - of each `skills/<scope>/<slug>/` folder only `SKILL.md`, `steps.md`, `listing.yaml` and text files under
  *   `references/` (the review of 2026-10-28, row 9; loop 3, row 48: the suffix set and the two size caps are the
  *   validator's, `pyforge.steward.marketplace_pages`): a dotfile, a cache, a binary or a stray file in a
@@ -58,17 +60,24 @@ export function isShippedSkillFile(rel: string): boolean {
 
 /** The public repository URL the cards link documents under (`REPOSITORY_BLOB_URL`'s root). */
 export const PUBLIC_REPOSITORY_URL = PUBLIC_MARKETPLACE_GIT_URL.replace(/\.git$/, '');
+/** The card's repository links, as `pyforge.steward.marketplace_pages.REPOSITORY_BLOB_URL` renders them. */
+export const PUBLIC_BLOB_URL = `${PUBLIC_REPOSITORY_URL}/blob/main/`;
 
-/** `marketplace.json` and the cards for the host that runs the build: GitHub Actions names it, and the public
- * clone URL and the public repository's `blob` links are replaced (loop 4, row 76: a card links the README, the
- * checklist and the tool matrix, which the mount does not carry). */
+/** `marketplace.json` and the cards for the host that runs the build: GitHub Actions names it, and exactly the two
+ * forms the renderer emits are replaced, the public clone URL and the public repository's `blob/main/` links (loop 4,
+ * row 76: a card links the README, the checklist and the tool matrix, which the mount does not carry). A `blob/main/`
+ * link moves to the deployed commit when `GITHUB_SHA` is set (loop 5, row 89: `main` on a mirror may not hold the
+ * targets, or exist), and any other repository link on a runbook -- an issue, a `git clone` line -- is left as it is
+ * (row 88). */
 export function rewriteMarketplaceGitUrl(text: string, env: Env = process.env): string {
   const server = (env.GITHUB_SERVER_URL ?? '').trim().replace(/\/+$/, '');
   const repo = (env.GITHUB_REPOSITORY ?? '').trim();
   if (!server || !repo) {
     return text;
   }
-  return text.split(PUBLIC_MARKETPLACE_GIT_URL).join(`${server}/${repo}.git`).split(`${PUBLIC_REPOSITORY_URL}/`).join(`${server}/${repo}/`);
+  const sha = (env.GITHUB_SHA ?? '').trim();
+  const blob = `${server}/${repo}/blob/${sha || 'main'}/`;
+  return text.split(PUBLIC_MARKETPLACE_GIT_URL).join(`${server}/${repo}.git`).split(PUBLIC_BLOB_URL).join(blob);
 }
 
 export interface MountedFile {
@@ -196,10 +205,16 @@ export function marketplaceArtifactFindings(
           out.push(`marketplace/listings.json: listing ${index} is not a well-formed row (id, kind, scope/slug or name)`);
           return;
         }
-        // a doubled row is a finding here too (loop 4, row 73): the render refuses a duplicate id, the artifact must
+        // a doubled row is a finding here too (loop 4, row 73): the render refuses a duplicate id, the artifact must;
+        // each half names what repeats (loop 5, row 91: two ids on one card said the id repeated)
         const id = (row as ListingRow).id as string;
-        if (seenIds.has(id) || (card !== null && ((row as ListingRow).kind === 'skill' ? listed.has(`${(row as ListingRow).scope}/${(row as ListingRow).slug}`) : otherCards.has(card)))) {
+        if (seenIds.has(id)) {
           out.push(`marketplace/listings.json: id ${id} repeats (card ${card})`);
+          return;
+        }
+        // a well-formed skill row's card is its id, so only another kind's card can repeat under a second id
+        if (otherCards.has(card)) {
+          out.push(`marketplace/listings.json: card ${card} repeats (id ${id})`);
           return;
         }
         seenIds.add(id);

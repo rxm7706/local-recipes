@@ -54,8 +54,9 @@ That is the build argv in `pyforge.mason.engines.pixi`
 ## 4. Do not upload in the pilot (waits on `pyforge-mason`)
 
 `pyforge mason package ship --to pypi-test` is a dry run until `--yes`.
-After `--yes` the station runs `twine upload` (`twine` 7.0.0 was present on
-the verifying host) or `pixi upload prefix --channel <name>`.
+After `--yes` the station runs `twine upload --non-interactive
+--disable-progress-bar` for a PyPI target (`twine` 7.0.0 was present on the
+verifying host) or `pixi upload prefix --channel <name>` for a channel.
 Do not run `twine upload` or `pixi upload` from these steps. `pypi`
 publishes permanently.
 

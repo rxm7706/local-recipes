@@ -25,7 +25,6 @@ article{border-top:1px solid #d6d3d1;padding-top:1rem;margin-top:1rem}
 <p>The rolling <code>pages-site</code> release carries <code>mason-environment.zip</code> with <code>mason-environment.zip.sha256</code> beside it while the marketplace flag is on for that deploy. The zip holds the <code>mason-environment/</code> folder with <code>SKILL.md</code>, <code>steps.md</code>, <code>listing.yaml</code> and <code>references/</code> when the skill has one. Check and unpack it where both files were downloaded: <code>sha256sum -c mason-environment.zip.sha256 &amp;&amp; unzip mason-environment.zip -d .claude/skills/</code>, and the same with <code>-d .agents/skills/</code>.</p>
 <p><code>marketplace.json</code> (the Claude marketplace file) is a discovery pointer for this listing; the folder copy above is the install until <a href="https://github.com/rxm7706/local-recipes/blob/main/docs/foundry/marketplace/MANUAL-CHECKLIST.md">Round 0</a> confirms a plugin install exposes the skill.</p>
 <h2>Unpublished packages</h2><ul><li>pyforge-mason: PyPI, conda-forge, and SelfExplainML returned 404 on 2026-10-21</li><li>pyforge-core: Required by pyforge mason dispatch; same 404 check</li></ul>
-<h2>Sources</h2><ul><li>GitHub release: not published</li><li>Artifactory conda: not published</li><li>Artifactory pip: not published</li></ul>
 <h2>Steps</h2>
 <p>Run these from the project you want to lock. Verified 2026-10-21 against the engine module <code>pyforge.mason.engines.condalock</code> and the tools on the verifying host. Each version below is what that tool&#x27;s <code>--version</code> printed on that host on 2026-10-21.</p>
 <p><strong>Before you start.</strong> <code>pyforge-mason</code> 0.1.0 and <code>pyforge-core</code> returned HTTP 404 on PyPI, conda-forge, and the SelfExplainML channel on 2026-10-21. Steps 1 and 3 wait on those packages and do not run on a teammate machine until they are published. Steps 0 and 2 run today. When <code>pyforge-mason</code> is published, its <code>lock</code> still hands a <code>requirements.txt</code> or <code>pixi.toml</code> it discovers to <code>conda-lock</code>, which cannot parse them; step 2 says which manifests to keep.</p>
@@ -51,6 +50,7 @@ article{border-top:1px solid #d6d3d1;padding-top:1rem;margin-top:1rem}
 <h3>4. Stop</h3>
 <p>If the work becomes a conda-forge recipe, stop and use the conda-forge-expert procedure. Do not invent a recipe from this skill.</p>
 <h2>Related</h2><ul><li><a href="package.html">@mason/package</a></li><li><a href="../warden/scan.html">@warden/scan</a></li></ul>
+<h2>Sources</h2><ul><li>GitHub release: not published</li><li>Artifactory conda: not published</li><li>Artifactory pip: not published</li></ul>
 <h2>Contribute</h2><p>Lane: code-backed. A pull request is the publish path; the lanes are defined in the marketplace <a href="https://github.com/rxm7706/local-recipes/blob/main/docs/foundry/marketplace/README.md">README</a>.</p>
 </body>
 </html>

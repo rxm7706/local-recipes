@@ -230,6 +230,15 @@ def test_a_skill_whose_path_does_not_match_scope_and_slug_is_refused(tmp_path: P
         ({"source": " estate-listings"}, "surrounding whitespace"),
         ({"name": "@mason/environment\n"}, "surrounding whitespace"),
         ({"requires": {"packages": [{"name": " pyforge-mason", "published": False}]}}, "surrounding whitespace"),
+        # loop 5, row 84: related is a list of strings; an @ entry is a whole @<scope>/<slug>
+        ({"related": 5}, "related must be a list of strings"),
+        ({"related": "@warden/scan"}, "related must be a list of strings"),
+        ({"related": {"a": 1}}, "related must be a list of strings"),
+        ({"related": [5]}, "related must be a list of strings"),
+        ({"related": ["@Warden/Scan"]}, "must be @<scope>/<slug>"),
+        ({"related": ["@warden/scan/extra"]}, "must be @<scope>/<slug>"),
+        ({"related": ["@warden/scan\n"]}, "must be @<scope>/<slug>"),
+        ({"related": ["@"]}, "must be @<scope>/<slug>"),
     ],
 )
 def test_each_listing_rule_refuses_its_breach(edit: dict, needle: str) -> None:
@@ -280,7 +289,10 @@ def test_a_module_or_agent_card_is_written_under_its_own_directory(tmp_path: Pat
             "site release's own asset",
         ),
         # loop 4, row 76: a related @scope/slug names a listing
-        ({"id": "mason/x", "slug": "x", "path": "skills/mason/x", "related": ["@warden/scan"]}, "names no listing"),
+        (
+            {"id": "mason/x", "slug": "x", "path": "skills/mason/x", "related": ["@warden/scan"]},
+            "names no skill listing",
+        ),
     ],
 )
 def test_duplicate_ids_and_plugin_names_are_refused(second: dict, needle: str) -> None:
@@ -288,6 +300,25 @@ def test_duplicate_ids_and_plugin_names_are_refused(second: dict, needle: str) -
     other.update(second)
     with pytest.raises(MarketplaceIndexError, match=needle):
         listings_from_document({"schema": SCHEMA_ID, "listings": [_skill(), other]})
+
+
+def test_a_related_reference_names_a_skill_listing_not_a_module() -> None:
+    """Loop 5, row 83: ``@module/bmad`` passed the cross-reference against the module's id and the card linked
+    ``skills/module/bmad.html``, which no render produces (the module's card is ``modules/bmad.html``); a whole-value
+    match, so a trailing newline is refused by the listing rule before the cross-reference runs."""
+    skill = _skill()
+    skill["related"] = ["@module/bmad"]
+    with pytest.raises(MarketplaceIndexError, match="related @module/bmad names no skill listing"):
+        listings_from_document({"schema": SCHEMA_ID, "listings": [skill, _module("bmad")]})
+    skill["related"] = ["@warden/scan\n"]
+    with pytest.raises(MarketplaceIndexError, match="must be @<scope>/<slug>"):
+        listings_from_document({"schema": SCHEMA_ID, "listings": [skill, _module("bmad")]})
+    other = _skill()
+    other.update({"id": "warden/scan", "scope": "warden", "slug": "scan", "path": "skills/warden/scan"})
+    skill["related"] = ["@warden/scan", "warden/scan"]  # the second is text, not a reference
+    rows = listings_from_document({"schema": SCHEMA_ID, "listings": [skill, other]})
+    card = render_skill_card(rows[0])
+    assert '<li><a href="../warden/scan.html">@warden/scan</a></li><li>warden/scan</li>' in card
 
 
 def test_distinct_scope_slug_and_plugin_name_are_accepted() -> None:
@@ -410,7 +441,6 @@ def test_the_folder_scan_refuses_a_symlinked_scope_or_slug_before_reading_it(tmp
     with pytest.raises(MarketplaceIndexError, match="skills/other is a symlink"):
         listings_from_skill_folders(root)
     (root / "skills" / "other").unlink()
-    (root / "skills").rmdir() if False else None
     # a malformed listing.yaml in a real folder, and a malformed index, are listing errors, never a raw yaml error
     real = root / "skills" / "mason" / "environment"
     real.mkdir()
@@ -420,6 +450,50 @@ def test_the_folder_scan_refuses_a_symlinked_scope_or_slug_before_reading_it(tmp
     (root / "index.yaml").write_text(": : not yaml [", encoding="utf-8")
     with pytest.raises(MarketplaceIndexError, match="not valid YAML"):
         load_listings(root / "index.yaml", root=root)
+    # loop 5, row 86: a listing that is not UTF-8 is a listing error too, never a raw UnicodeDecodeError
+    (real / "listing.yaml").write_bytes(b"id: \xff\n")
+    with pytest.raises(MarketplaceIndexError, match="not a readable UTF-8 text file"):
+        listings_from_skill_folders(root)
+    (root / "index.yaml").write_bytes(b"id: \xff\n")
+    with pytest.raises(MarketplaceIndexError, match="not a readable UTF-8 text file"):
+        load_listings(root / "index.yaml", root=root)
+
+
+def test_the_folder_scan_refuses_a_symlinked_skills_directory_before_reading_it(tmp_path: Path) -> None:
+    """Loop 5, row 91: the ``skills/`` level of the scan's refusal, reached through the scan itself (the validator's
+    own ``[skills]`` case reaches its refusal through ``_contained_folder``)."""
+    outside = _marketplace(tmp_path / "outside")
+    root = tmp_path / "marketplace"
+    root.mkdir()
+    (root / "skills").symlink_to(outside / "skills")
+    with pytest.raises(MarketplaceIndexError, match="^skills is a symlink"):
+        listings_from_skill_folders(root)
+
+
+@pytest.mark.parametrize(
+    ("stray", "needle"),
+    [
+        ("skills/stray.txt", "skills/stray.txt is not a directory; only skill folders sit under skills/"),
+        (
+            "skills/mason/README.md",
+            "skills/mason/README.md is not a directory; only skill folders sit under skills/mason/",
+        ),
+        ("skills/.DS_Store", "skills/.DS_Store is not a directory"),
+    ],
+)
+def test_a_stray_file_between_the_skill_folders_is_refused(tmp_path: Path, stray: str, needle: str) -> None:
+    """Loop 5, row 90: a non-directory under ``skills/`` or ``skills/<scope>/`` was skipped silently by the scan, so a
+    stray between the folders was nobody's (the validator sees inside a folder; ``pages-check`` sees the mount)."""
+    root = _marketplace(tmp_path)
+    (root / stray).write_text("stray\n", encoding="utf-8")
+    on = _flags_tree(tmp_path / "flags", dev="on")
+    with pytest.raises(MarketplaceIndexError, match=needle):
+        listings_from_skill_folders(root)
+    with pytest.raises(MarketplaceIndexError, match=needle):
+        write_site_from_index(root / "index.yaml", tmp_path / "site", flags_path=on)
+    assert not (tmp_path / "site").exists()
+    with pytest.raises(MarketplaceIndexError, match=needle):
+        write_plugin_manifests(root / "index.yaml", flags_path=on)
 
 
 def test_a_symlinked_or_absent_non_skill_folder_is_refused(tmp_path: Path) -> None:
@@ -643,6 +717,16 @@ def test_flag_env_prints_the_build_line_for_the_resolved_environment(
             '{"flags": {"%s": {"variants": {"on": true, "off": false}, "defaultVariant": "off"}}}' % FLAG_KEY,
             "a shape the reader would default on",
         ),
+        # loop 5, row 87: the overlay selects the variant the build reads, so every variant must be a bool
+        (
+            '{"flags": {"%s": {"variants": {"off": false, "on": "yes"}, "defaultVariant": "off", "metadata": {}}}}'
+            % FLAG_KEY,
+            "a shape the reader would default on",
+        ),
+        (
+            '{"flags": {"%s": {"variants": {}, "defaultVariant": "off", "metadata": {}}}}' % FLAG_KEY,
+            "a shape the reader would default on",
+        ),
     ],
 )
 def test_flag_env_refuses_a_tree_that_does_not_declare_the_flag(
@@ -658,6 +742,33 @@ def test_flag_env_refuses_a_tree_that_does_not_declare_the_flag(
     assert main(["--flag-env"]) == 2
     captured = capsys.readouterr()
     assert captured.out == "" and needle in captured.err
+
+
+def test_flag_env_refuses_a_non_bool_variant_the_overlay_selects_and_a_missing_overlay_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Loop 5, row 87: with ``on: "yes"`` under a bool default and the dev overlay naming ``on``, the reader WARNed
+    and the step printed ``=0`` with exit 0; so did a tree with no ``flag-overlays.json`` beside it, though dev's
+    ``on`` lives only in the overlay. The real tree prints ``=1``."""
+    from pyforge.steward.marketplace_pages import FLAG_ENV, main
+
+    on = _flags_tree(tmp_path / "flags", dev="on")
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(on))
+    assert main(["--flag-env"]) == 0 and capsys.readouterr().out == f"{FLAG_ENV}=1\n"
+    tree = json.loads(on.read_text(encoding="utf-8"))
+    tree["flags"][FLAG_KEY]["variants"] = {"off": False, "on": "yes"}
+    on.write_text(json.dumps(tree), encoding="utf-8")
+    assert main(["--flag-env"]) == 2
+    captured = capsys.readouterr()
+    assert captured.out == "" and "a shape the reader would default on" in captured.err
+    _flags_tree(tmp_path / "flags", dev="on")
+    (tmp_path / "flags" / "flag-overlays.json").unlink()
+    assert main(["--flag-env"]) == 2
+    captured = capsys.readouterr()
+    assert captured.out == "" and "no flag-overlays.json beside" in captured.err
+    real = repo_root() / "src" / "platform" / "config" / "flags.json"
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(real))
+    assert main(["--flag-env"]) == 0 and capsys.readouterr().out == f"{FLAG_ENV}=1\n"
 
 
 def test_flag_env_refuses_an_overlay_the_reader_refuses(
@@ -750,6 +861,18 @@ def test_write_site_refuses_a_generated_site_that_holds_a_file_its_listings_do_n
     with pytest.raises(MarketplaceIndexError, match=r"produces \(precious/\)"):
         write_site([_skill()], site, flags_path=on)
     assert (site / "precious").is_dir()
+
+
+def test_a_generated_site_holding_a_module_card_is_replaced_by_the_next_render(tmp_path: Path) -> None:
+    """Loop 5, row 91: the inventory reads a module row's card from its ``name`` (no ``slug``), so a site that holds
+    a module card is a generated site to the next ``write_site``; every other write-twice case uses skill rows."""
+    on = _flags_tree(tmp_path / "flags", dev="on")
+    site = tmp_path / "site"
+    rows = [_module("x"), _module("y", slug="why")]
+    write_site(rows, site, flags_path=on)
+    assert (site / "modules" / "x.html").is_file() and (site / "modules" / "why.html").is_file()
+    write_site([_module("x")], site, flags_path=on)  # replaced, not refused as a foreign tree
+    assert (site / "modules" / "x.html").is_file() and not (site / "modules" / "why.html").exists()
 
 
 def test_the_inventory_holds_the_markers_rows_to_the_slug_grammar(tmp_path: Path) -> None:
@@ -906,6 +1029,9 @@ def test_committed_environment_card_renders_steps_md_not_the_paper_sample(tmp_pa
     assert "-d .agents/skills/" in card
     # the two spec-named items come before the runbook, and the unpublished list names both packages
     assert card.index("<h2>Install</h2>") < card.index("<h2>Unpublished packages</h2>") < card.index("<h2>Steps</h2>")
+    # the sources sit after the runbook and its siblings, before Contribute (loop 5, row 94)
+    assert card.index("<h2>Steps</h2>") < card.index("<h2>Related</h2>") < card.index("<h2>Sources</h2>")
+    assert card.index("<h2>Sources</h2>") < card.index("<h2>Contribute</h2>")
     assert "<li>pyforge-mason: PyPI, conda-forge, and SelfExplainML returned 404 on 2026-10-21</li>" in card
     assert "<li>pyforge-core: Required by pyforge mason dispatch; same 404 check</li>" in card
     assert "never verified" in card
@@ -1045,7 +1171,8 @@ def test_committed_codex_manifest_names_the_three_listings(tmp_path: Path) -> No
 @pytest.mark.parametrize("link", [".agents", ".agents/plugins", ".claude-plugin"])
 def test_the_manifests_are_not_written_through_a_symlink(tmp_path: Path, link: str) -> None:
     """Loop 4, row 65: ``root/.agents -> /elsewhere`` took the Codex manifest outside the tree while the returned
-    path was the in-tree one."""
+    path was the in-tree one. The Claude manifest is written first, so it exists exactly when the link is not its
+    own directory (loop 5, row 92)."""
     root = _marketplace(tmp_path)
     elsewhere = tmp_path / "elsewhere"
     elsewhere.mkdir()
@@ -1055,10 +1182,54 @@ def test_the_manifests_are_not_written_through_a_symlink(tmp_path: Path, link: s
     with pytest.raises(MarketplaceIndexError, match="is a symlink; refusing to write through it"):
         write_plugin_manifests(root / "index.yaml", flags_path=on)
     assert not list(elsewhere.rglob("*"))
-    assert not (root / ".claude-plugin" / "marketplace.json").exists() or link != ".claude-plugin"
+    assert (root / ".claude-plugin" / "marketplace.json").is_file() == (link != ".claude-plugin")
+    assert not (root / ".agents" / "plugins" / "marketplace.json").exists()
     # a destination outside the tree (a test's temp file) is the caller's and still written
     written = write_plugin_manifest(root / "index.yaml", tmp_path / "out" / "m.json", flags_path=on)
     assert written.is_file()
+
+
+def test_the_manifests_are_not_written_through_a_symlink_when_the_root_is_relative(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Loop 5, row 85: a relative root (the README snippet's ``Path('docs/foundry/marketplace')``) with an absolute
+    destination made ``relative_to`` raise and the containment return, so the manifest went through the link."""
+    root = _marketplace(tmp_path)
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    (root / ".agents").symlink_to(elsewhere)
+    on = _flags_tree(tmp_path / "flags", dev="on")
+    monkeypatch.chdir(tmp_path)
+    index = Path("marketplace") / "index.yaml"
+    with pytest.raises(MarketplaceIndexError, match=".agents is a symlink; refusing to write through it"):
+        write_codex_manifest(index, root / ".agents" / "plugins" / "marketplace.json", flags_path=on)
+    with pytest.raises(MarketplaceIndexError, match=".agents is a symlink; refusing to write through it"):
+        write_codex_manifest(root / "index.yaml", Path("marketplace") / ".agents" / "plugins" / "m.json", flags_path=on)
+    assert not list(elsewhere.rglob("*"))
+
+
+@pytest.mark.parametrize("writer", [write_plugin_manifest, write_codex_manifest])
+@pytest.mark.parametrize("parent_exists", [False, True])
+def test_a_dot_dot_destination_is_read_lexically_for_both_manifests(
+    tmp_path: Path, writer, parent_exists: bool
+) -> None:
+    """Loop 5, row 85: ``root/../out/m.json`` was inside the tree to ``relative_to`` and judged by its resolved parent
+    only when that parent existed, so the same destination was written when ``out/`` was absent and refused when it
+    was present. Normalised, it is outside the tree either way: the caller's, written where it names."""
+    root = _marketplace(tmp_path)
+    on = _flags_tree(tmp_path / "flags", dev="on")
+    if parent_exists:
+        (tmp_path / "out").mkdir()
+    written = writer(root / "index.yaml", root / ".." / "out" / "m.json", flags_path=on)
+    assert written.resolve() == (tmp_path / "out" / "m.json") and written.is_file()
+    assert not (root / "out").exists()
+    # a .. that stays inside the tree is held to the symlink rule on the normalised path
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir(exist_ok=True)
+    (root / ".claude-plugin").symlink_to(elsewhere)
+    with pytest.raises(MarketplaceIndexError, match=".claude-plugin is a symlink; refusing to write through it"):
+        writer(root / "index.yaml", root / "skills" / ".." / ".claude-plugin" / "marketplace.json", flags_path=on)
+    assert not list(elsewhere.rglob("*"))
 
 
 def test_the_manifests_refuse_a_folder_the_index_does_not_declare(tmp_path: Path) -> None:

@@ -32,8 +32,7 @@ environment (its exit codes are `steps.md` step 1) and is not a second
 subcommand.
 
 `pyforge warden` forwards to the `warden` console script
-(`pyforge.core.dispatch`). Do not import `pyforge.warden`. Do not treat
-another tool's exit code as this gate.
+(`pyforge.core.dispatch`). Do not import `pyforge.warden`.
 
 ## Until that package is published
 

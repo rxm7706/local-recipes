@@ -26,13 +26,20 @@ pytestmark = needs_node
 
 
 BLOB = "https://github.com/rxm7706/local-recipes/blob/main/docs/foundry/marketplace/README.md"
+#: What a runbook may carry beside the renderer's blob form (loop 5, row 88): an issue link and the bare repository
+#: URL are not rewritten; a clone line carries the clone URL, the other rewritten form, so it follows the host.
+OTHER_LINKS = (
+    '<a href="https://github.com/rxm7706/local-recipes/issues/12">issue</a> '
+    f"<code>git clone {PUBLIC_GIT}</code> https://github.com/rxm7706/local-recipes"
+)
+CARD = f'<p>card <a href="{BLOB}">README</a> {OTHER_LINKS}</p>'
 
 
 def plant(root: Path) -> Path:
     write(root / "site/index.html", "<p>index</p>")
     write(root / "site/listings.json", "{}\n")
     write(root / "site/marketplace.json", f'{{"url": "{PUBLIC_GIT}"}}\n')
-    write(root / "site/skills/mason/environment.html", f'<p>card <a href="{BLOB}">README</a></p>')
+    write(root / "site/skills/mason/environment.html", CARD)
     skill = root / "skills/mason/environment"
     write(skill / "SKILL.md", "# skill\n")
     write(skill / "steps.md", "# steps\n")
@@ -77,7 +84,7 @@ def test_the_mount_is_the_site_plus_the_shipped_skill_files_in_order(tmp_path: P
     ]
     assert dict(mounted)["skills/mason/environment/SKILL.md"] == "# skill\n"
     assert dict(mounted)["marketplace.json"] == f'{{"url": "{PUBLIC_GIT}"}}\n'  # no host named: no rewrite
-    assert dict(mounted)["skills/mason/environment.html"] == f'<p>card <a href="{BLOB}">README</a></p>'
+    assert dict(mounted)["skills/mason/environment.html"] == CARD
 
 
 def test_an_absent_or_empty_tree_mounts_nothing(tmp_path: Path) -> None:
@@ -100,15 +107,37 @@ def test_an_absent_or_empty_tree_mounts_nothing(tmp_path: Path) -> None:
         ({"GITHUB_SERVER_URL": "https://github.com", "GITHUB_REPOSITORY": "rxm7706/local-recipes"}, PUBLIC_GIT),
         ({"GITHUB_SERVER_URL": "https://ghe.example"}, PUBLIC_GIT),  # no repository: unchanged
         ({"GITHUB_REPOSITORY": "org/local-recipes"}, PUBLIC_GIT),  # no server: unchanged
+        (  # loop 5, row 89: the deployed commit replaces main in the blob links when the build names one
+            {
+                "GITHUB_SERVER_URL": "https://ghe.example",
+                "GITHUB_REPOSITORY": "org/local-recipes",
+                "GITHUB_SHA": "abc123",
+            },
+            "https://ghe.example/org/local-recipes.git",
+        ),
+        (
+            {
+                "GITHUB_SERVER_URL": "https://github.com",
+                "GITHUB_REPOSITORY": "rxm7706/local-recipes",
+                "GITHUB_SHA": "abc123",
+            },
+            PUBLIC_GIT,
+        ),
     ],
 )
 def test_marketplace_json_is_rewritten_to_the_deploying_host(tmp_path: Path, env: dict, url: str) -> None:
     root = plant(tmp_path / "marketplace")
     mounted = dict(ts(MARKETPLACE_TS, MOUNT, dir=str(root), env=env))
     assert mounted["marketplace.json"] == f'{{"url": "{url}"}}\n'
-    # the cards' repository links follow the clone URL to the deploying host (loop 4, row 76); skill files never
-    blob = BLOB.replace("https://github.com/rxm7706/local-recipes/", url.removesuffix(".git") + "/")
-    assert mounted["skills/mason/environment.html"] == f'<p>card <a href="{blob}">README</a></p>'
+    # the cards' blob links follow the clone URL to the deploying host (loop 4, row 76) and its commit (loop 5, row
+    # 89); the runbook's other repository links stay as written (row 88); skill files never change
+    rewritten = url != PUBLIC_GIT or "GITHUB_SHA" in env
+    ref = env.get("GITHUB_SHA", "main") if rewritten else "main"
+    blob = BLOB.replace(
+        "https://github.com/rxm7706/local-recipes/blob/main/", f"{url.removesuffix('.git')}/blob/{ref}/"
+    )
+    others = OTHER_LINKS.replace(PUBLIC_GIT, url)
+    assert mounted["skills/mason/environment.html"] == f'<p>card <a href="{blob}">README</a> {others}</p>'
     assert mounted["skills/mason/environment/SKILL.md"] == "# skill\n"
     rewritten = ts(
         MARKETPLACE_TS,

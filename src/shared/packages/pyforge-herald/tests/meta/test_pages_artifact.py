@@ -419,6 +419,40 @@ def test_109_3_the_manifest_is_the_url_form_and_every_plugin_is_mounted(site: Pa
             lambda root: _listings(root, [("mason", "environment"), ("mason", "environment")]),
             "marketplace/listings.json: id mason/environment repeats (card marketplace/skills/mason/environment.html)",
         ),
+        # loop 5, row 91: each half of the doubled-row rule names what repeats
+        (
+            lambda root: _listing_rows(
+                root,
+                [
+                    {"id": "mason/environment", "kind": "skill", "scope": "mason", "slug": "environment"},
+                    {"id": "agent/x", "kind": "agent", "slug": "x", "name": "X"},
+                    {"id": "agent/x", "kind": "agent", "slug": "y", "name": "Y"},
+                ],
+            ),
+            "marketplace/listings.json: id agent/x repeats (card marketplace/agents/y.html)",
+        ),
+        (
+            lambda root: _listing_rows(
+                root,
+                [
+                    {"id": "mason/environment", "kind": "skill", "scope": "mason", "slug": "environment"},
+                    {"id": "agent/x", "kind": "agent", "slug": "x", "name": "X"},
+                    {"id": "agent/y", "kind": "agent", "slug": "x", "name": "Y"},
+                ],
+            ),
+            "marketplace/listings.json: card marketplace/agents/x.html repeats (id agent/y)",
+        ),
+        (
+            lambda root: _listing_rows(
+                root,
+                [
+                    {"id": "mason/environment", "kind": "skill", "scope": "mason", "slug": "environment"},
+                    {"id": "module/a", "kind": "module", "name": "x"},
+                    {"id": "module/b", "kind": "module", "name": "x"},
+                ],
+            ),
+            "marketplace/listings.json: card marketplace/modules/x.html repeats (id module/b)",
+        ),
         (
             lambda root: [
                 write(root / f"marketplace/skills/mason/environment/references/{n}.md", "x" * (1_048_576 - 1))
@@ -505,6 +539,13 @@ def test_109_3_a_mount_with_a_module_card_and_text_references_passes(site: Path)
     for name in ("a.md", "b.txt", "c.yaml", "d.yml", "e.json", "deep/F.MD"):
         write(site / f"marketplace/skills/mason/environment/references/{name}", "x\n")
     assert pages_check(site, env=MARKETPLACE_ON, origins=False) == []
+
+
+def _listing_rows(root: Path, rows: list[dict]) -> None:
+    write(
+        root / "marketplace/listings.json",
+        json.dumps({"schema": "pyforge.bmad-marketplace/v1", "listings": rows}) + "\n",
+    )
 
 
 def _listings(root: Path, skills: list[tuple[str, str]], *, modules: list[str] | None = None) -> None:
