@@ -12,7 +12,7 @@ description: >
 Marketplace id `mason/package`. Install this folder into both
 `.agents/skills/mason-package/` and `.claude/skills/mason-package/`.
 The human runbook is [steps.md](steps.md); the verified tool versions live
-there. Which directory each tool reads is on the card and in the README.
+there.
 
 Run from the teammate's project directory. Do not `cd` into local-recipes.
 Do not prefix commands with a pixi environment selector.
@@ -41,9 +41,8 @@ pyforge mason package ship --to pypi-test --yes
 After `--yes` the station runs `twine upload --non-interactive
 --disable-progress-bar` for a PyPI target and `pixi upload prefix --channel
 <name>` for a channel. `TWINE_USERNAME` and `TWINE_PASSWORD` must already be
-set before a PyPI or TestPyPI target builds. `pypi` is irreversible once the
-upload succeeds. Do not run `twine upload` or `pixi upload` from this skill:
-running them publishes. This pilot does not run a real upload.
+set before a PyPI or TestPyPI target builds. What not to run from this skill
+is `steps.md` step 4.
 
 ## Until that package is published
 
@@ -51,13 +50,9 @@ running them publishes. This pilot does not run a real upload.
 SelfExplainML (404 on 2026-10-21). The wheel and sdist command the station
 assembles, from the engine module `pyforge.mason.engines.pep517`, is
 `pyproject-build --no-isolation` with the project directory as the working
-directory. The same module documents that console script as
-`python -m build --no-isolation --outdir dist`. The build-backend
-precondition is `steps.md` step 0.
-
+directory (`steps.md` step 2; the build-backend precondition is step 0).
 The conda artifact command, from the engine module
-`pyforge.mason.engines.pixi`, is `pixi build --output-dir <dir>`. That build
-is local. It is not a pixi environment run.
+`pyforge.mason.engines.pixi`, is `pixi build --output-dir <dir>` (step 3).
 
 ## What this skill is not
 

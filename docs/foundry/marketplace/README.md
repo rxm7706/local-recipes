@@ -37,19 +37,26 @@ A skill is the folder under `skills/<scope>/<slug>/`. Copy it into both
 The table is the 2026-10-20 tool matrix
 (`planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/tool-support-matrix.md`).
 
+**The folder rule** (the one home; the PR template, the how-to and the
+validator point here). A skill folder holds `SKILL.md`, `steps.md`,
+`listing.yaml` and text files (`.md`, `.txt`, `.yaml`, `.yml`, `.json`)
+under `references/`, and nothing else: regular files only (no symlink, no
+dot entry), no file over 1 MiB, the folder under 4 MiB. `validate_listing`
+refuses each breach at render; the Pages mount
+(`docs-site/src/lib/marketplace.ts`) and the release zip step ship exactly
+this set and fail on a breach rather than ship a slimmed copy.
+
 The rolling `pages-site` release carries one `<scope>-<slug>.zip` per skill,
 with `<scope>-<slug>.zip.sha256` beside it, while the marketplace flag is on
-for that deploy. Each zip holds the `<scope>-<slug>/` folder, so
-`sha256sum -c <scope>-<slug>.zip.sha256 && unzip <scope>-<slug>.zip -d .claude/skills/`
-checks and lands it in place; it carries `SKILL.md`, `steps.md`,
-`listing.yaml` and text files under `references/` and nothing else (no dot
-entry, no symlink; `validate_listing` refuses any other content, a file over
-1 MiB, or a folder over 4 MiB).
+for that deploy. Each zip holds the `<scope>-<slug>/` folder with that set,
+so `sha256sum -c <scope>-<slug>.zip.sha256 && unzip <scope>-<slug>.zip -d .claude/skills/`
+checks and lands it in place.
 
 `.claude-plugin/marketplace.json` (Claude Code) and `.agents/plugins/marketplace.json`
 (Codex) are discovery pointers for each listing: Round 0 of
-`MANUAL-CHECKLIST.md` records whether `/plugin install` exposes the skill.
-Until it does, the folder copy above is the install.
+`MANUAL-CHECKLIST.md` has one row per tool and records whether a plugin
+install exposes the skill. Until it does, the folder copy above is the
+install.
 
 ## Layout
 
@@ -72,8 +79,7 @@ MANUAL-CHECKLIST.md                Round 0 desk test and the Wizard-of-Oz pilot
 
 The contribution PR template is `.github/PULL_REQUEST_TEMPLATE/marketplace-skill.md`
 at the repository root, because GitHub reads templates from there and not from
-this tree; `gh pr create --repo rxm7706/local-recipes --template marketplace-skill.md`
-applies it, as does `?template=marketplace-skill.md` on the web compare URL.
+this tree; § Contribute below says how to apply it.
 
 The v1 catalog manifests stay at
 `src/shared/packages/pyforge-steward/catalog/.claude-plugin/marketplace.json`
@@ -90,31 +96,43 @@ generated here, by `write_plugin_manifests`.
 `bmad-certified` (the PR template's §Listing carries the same mapping). The
 three pilots are `community` / `unverified` (no review record) and
 `code-backed` (each requires a package). An instructions-only skill has no
-package. A card renders `steps.md`, names both install directories and every
-unpublished package, and shows the listing's `verified_at` date or "never
-verified".
+package. A card renders `steps.md` (its own `#` title skipped, its steps as
+`<h3>` under the card's one `Steps` heading; a relative link such as
+`[steps.md](steps.md)` points into the mounted folder beside the card),
+names both install directories and every unpublished package, and shows the
+listing's `verified_at` date or "never verified".
 
-The listing rules `validate_listing` enforces: `scope`, `slug` and a module's
-`name` are lower-case letters, digits and hyphens; a skill's `id` is
-`<scope>/<slug>` and its `path` is `skills/<scope>/<slug>`, a folder that
-exists with its `SKILL.md`; every skill folder is a row; ids, cards and
-`<scope>-<slug>` plugin names are unique; each package under `requires` has a
-`name` and a bool `published`, and the packages match the lane; install
-targets are `.agents/skills`, `.claude/skills` or one folder under either;
-`docs.steps` stays inside the folder; `docs.card` is `skills/<scope>/<slug>.html`;
-`verified_at` is a quoted `YYYY-MM-DD` or `null`.
+The listing rules `validate_listing` enforces are the PR template's
+§ Listing, one checkbox each (`.github/PULL_REQUEST_TEMPLATE/marketplace-skill.md`);
+the folder rule is § Install above. In short: `scope`, `slug` and a module's
+`name` are lower-case letters, digits and hyphens, whole (no surrounding
+whitespace, no trailing newline); a skill's `id` is `<scope>/<slug>` and its
+`path` is `skills/<scope>/<slug>`, a folder that exists inside this tree
+(no symlink at any level) with its `SKILL.md`; every skill folder is a row;
+ids, cards and `<scope>-<slug>` plugin names are unique.
+
+**Lanes.** `instructions-only`: the listing names no package; the diff is
+markdown and the index row. `code-backed`: the listing names the package the
+skill calls, each with `published: true` or `false`. A skill's lane is what
+its packages say; a module's package is the module. The card names the
+listing's lane and points here.
 
 ## Contribute
 
 Copy `templates/SKILL.md` and `templates/steps.md` into
 `skills/<scope>/<slug>/`, write the `listing.yaml` row and append it to
 `index.yaml`, regenerate the site and both manifests (below), and open a pull
-request with `gh pr create --repo rxm7706/local-recipes --template
-marketplace-skill.md` (or `?template=marketplace-skill.md` on the web compare
-URL). Tick the lane in the template's first section. `MANUAL-CHECKLIST.md`
-is the Round 0 desk test and the Wizard-of-Oz pilot a contribution is read
-against; `bmp new` and `@bmp/skillify` are not built, so a person helps shape
-the folder.
+request with the contribution template:
+
+```bash
+gh pr create --repo rxm7706/local-recipes --template marketplace-skill.md
+```
+
+(or `?template=marketplace-skill.md` on the web compare URL, or paste the
+template's body by hand). Tick the lane in the template's first section.
+`MANUAL-CHECKLIST.md` is the Round 0 desk test and the Wizard-of-Oz pilot a
+contribution is read against; `bmp new` and `@bmp/skillify` are not built,
+so a person helps shape the folder.
 
 ## Regenerate the site
 
@@ -142,10 +160,12 @@ write_plugin_manifests(root / 'index.yaml')
 ```
 
 `site/` is replaced by a fresh tree on every render, so a card whose listing
-was dropped or renamed does not survive; `write_site` refuses to replace a
-directory that is not a generated site. The test compares the committed tree
-to the render file for file. `CatalogEngine.render` is a different command.
-Do not use it to refresh `site/`.
+was dropped or renamed does not survive; `write_site` replaces a non-empty
+directory only when every file in it is one its own `listings.json` accounts
+for (the three documents and one card per listing), so a stray file beside
+the marker is refused, not deleted. The test compares the committed tree to
+the render file for file. `CatalogEngine.render` is a different command. Do
+not use it to refresh `site/`.
 
 ## Not built yet
 

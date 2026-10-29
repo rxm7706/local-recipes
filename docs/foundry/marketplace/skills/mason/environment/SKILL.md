@@ -13,7 +13,7 @@ description: >
 Marketplace id `mason/environment`. Install this folder into both
 `.agents/skills/mason-environment/` and `.claude/skills/mason-environment/`.
 The human runbook is [steps.md](steps.md); the verified tool versions live
-there. Which directory each tool reads is on the card and in the README.
+there.
 
 Run every command from the teammate's project directory (the directory that
 holds `pyproject.toml` or `environment.yml`). Do not `cd` into a

@@ -52,6 +52,9 @@ def plant(root: Path) -> Path:
     write(root / "skills/Mason/Env/SKILL.md", "# bad case\n")
     write(root / "skills/.hidden/slug/SKILL.md", "# dot scope\n")
     write(root / "skills/mason/environment.bak/SKILL.md", "# bad slug\n")
+    # loop 3, row 48: a references/ file outside the text suffixes never mounts
+    (skill / "references" / "pic.png").write_bytes(b"\x89PNG")
+    write(skill / "references" / "tool.whl", "x")
     return root
 
 
@@ -118,6 +121,15 @@ def test_marketplace_json_is_rewritten_to_the_deploying_host(tmp_path: Path, env
         ("listing.yaml", True),
         ("references/a.md", True),
         ("references/deep/b.md", True),
+        ("references/a.txt", True),
+        ("references/a.yaml", True),
+        ("references/a.yml", True),
+        ("references/a.json", True),
+        ("references/A.MD", True),  # the suffix is matched case-insensitively, as the validator does
+        ("references/pic.png", False),  # loop 3, row 48: the validator's text-suffix rule
+        ("references/tool.whl", False),
+        ("references/deep/script.sh", False),
+        ("references/noext", False),
         ("notes.txt", False),
         (".DS_Store", False),
         ("references/.hidden", False),
@@ -151,18 +163,57 @@ def test_the_build_reads_the_flag_through_flags_ts_and_the_tree_reader_is_gone()
 
 
 def test_the_mounts_allowlist_and_slug_grammar_are_the_validators() -> None:
-    """Loop 2, row 23: one allowlist and one slug grammar, shared with ``pyforge.steward.marketplace_pages``."""
-    ts = MARKETPLACE_TS.read_text(encoding="utf-8")
+    """Loop 2, row 23; loop 3, row 48: one allowlist, one slug grammar, one suffix set, two caps and one kind map,
+    shared with ``pyforge.steward.marketplace_pages``."""
+    ts_text = MARKETPLACE_TS.read_text(encoding="utf-8")
     py = (DOCS_SITE.parent / "src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py").read_text(
         encoding="utf-8"
     )
-    ts_files = re.search(r"SKILL_FILES: readonly string\[\] = \[([^\]]+)\]", ts).group(1)
+    ts_files = re.search(r"SKILL_FILES: readonly string\[\] = \[([^\]]+)\]", ts_text).group(1)
     py_files = re.search(r"SKILL_FILES = \(([^)]+)\)", py).group(1)
     assert [n.strip().strip("'") for n in ts_files.split(",")] == [n.strip().strip('"') for n in py_files.split(",")]
-    assert re.search(r"export const SLUG = /\^\[a-z0-9\]\[a-z0-9-\]\*\$/;", ts)
+    assert re.search(r"export const SLUG = /\^\[a-z0-9\]\[a-z0-9-\]\*\$/;", ts_text)
     assert 'SLUG = re.compile(r"^[a-z0-9][a-z0-9-]*$")' in py
-    assert re.search(r"export const SKILL_REFERENCES_DIR = 'references';", ts) and 'REFERENCES_DIR = "references"' in py
+    assert "SLUG.match(" not in py  # loop 3, row 57: matched whole, as the TypeScript regex is
     assert (
-        "export const SCHEMA_ID = 'pyforge.bmad-marketplace/v1';" in ts
+        re.search(r"export const SKILL_REFERENCES_DIR = 'references';", ts_text)
+        and 'REFERENCES_DIR = "references"' in py
+    )
+    assert (
+        "export const SCHEMA_ID = 'pyforge.bmad-marketplace/v1';" in ts_text
         and 'SCHEMA_ID = "pyforge.bmad-marketplace/v1"' in py
     )
+    ts_suffixes = re.search(r"SHIPPED_TEXT_SUFFIXES: readonly string\[\] = \[([^\]]+)\]", ts_text).group(1)
+    py_suffixes = re.search(r"SHIPPED_TEXT_SUFFIXES = frozenset\(\{([^}]+)\}\)", py).group(1)
+    assert sorted(n.strip().strip("'") for n in ts_suffixes.split(",")) == sorted(
+        n.strip().strip('"') for n in py_suffixes.split(",")
+    )
+    assert "export const MAX_SHIPPED_FILE_BYTES = 1048576;" in ts_text and "MAX_SHIPPED_FILE_BYTES = 1_048_576" in py
+    assert (
+        "export const MAX_SHIPPED_FOLDER_BYTES = 4194304;" in ts_text
+        and "MAX_SHIPPED_FOLDER_BYTES = 4 * 1_048_576" in py
+    )
+    assert (
+        "KIND_DIRS: Readonly<Record<string, string>> = { skill: 'skills', module: 'modules', agent: 'agents', bundle: 'bundles' };"
+        in ts_text
+    )
+    assert (
+        'KIND_DIRS: dict[str, str] = {"skill": "skills", "module": "modules", "agent": "agents", "bundle": "bundles"}'
+        in py
+    )
+
+
+def test_the_mount_fails_the_build_on_a_file_or_folder_over_its_cap(tmp_path: Path) -> None:
+    """Loop 3, row 48: the validator's caps hold at the mount too; a breach throws, naming it, rather than ships."""
+    root = plant(tmp_path / "marketplace")
+    skill = root / "skills/mason/environment"
+    (skill / "references" / "big.md").write_bytes(b"x" * (1_048_576 + 1))
+    thrown = ts(MARKETPLACE_TS, MOUNT, dir=str(root), env={})
+    assert (
+        isinstance(thrown, dict) and "skills/mason/environment/references/big.md is 1048577 bytes" in thrown["message"]
+    )
+    (skill / "references" / "big.md").unlink()
+    for n in range(5):
+        (skill / "references" / f"{n}.md").write_bytes(b"x" * (1_048_576 - 1))
+    thrown = ts(MARKETPLACE_TS, MOUNT, dir=str(root), env={})
+    assert isinstance(thrown, dict) and "skills/mason/environment ships over 4194304 bytes" in thrown["message"]

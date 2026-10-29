@@ -479,7 +479,11 @@ export function check(root: string, options: CheckOptions = {}): string[] {
     if (has('marketplace/marketplace.json')) {
       out.push(...marketplaceManifestFindings(read('marketplace/marketplace.json'), has));
       if (has('marketplace/listings.json')) {
-        out.push(...marketplaceArtifactFindings(read('marketplace/listings.json'), read('marketplace/marketplace.json'), all));
+        out.push(
+          ...marketplaceArtifactFindings(read('marketplace/listings.json'), read('marketplace/marketplace.json'), all, (rel) =>
+            fs.statSync(path.join(root, rel)).size,
+          ),
+        );
       }
     }
   } else if (marketplaceFiles.length) {

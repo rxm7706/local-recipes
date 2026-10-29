@@ -27,12 +27,11 @@ article{border-top:1px solid #d6d3d1;padding-top:1rem;margin-top:1rem}
 <h2>Unpublished packages</h2><ul><li>pyforge-warden: PyPI, conda-forge, and SelfExplainML returned 404 on 2026-10-21</li><li>pyforge-core: Required by pyforge warden dispatch; same 404 check</li></ul>
 <h2>Sources</h2><ul><li>GitHub release: not published</li><li>Artifactory conda: not published</li><li>Artifactory pip: not published</li></ul>
 <h2>Steps</h2>
-<h3>Steps — @warden/scan</h3>
 <p>Run these from the project you want to scan. Verified 2026-10-21 against <code>warden scan --help</code> and the tools on the verifying host. Each version below is what that tool&#x27;s <code>--version</code> printed on that host on 2026-10-21.</p>
 <p><strong>Before you start.</strong> <code>pyforge-warden</code> 0.1.0 and <code>pyforge-core</code> returned HTTP 404 on PyPI, conda-forge, and SelfExplainML on 2026-10-21. Step 1 waits on those packages, and no published command produces the compliance report in its place. Steps 0 and 2 run today; they produce probes, not a report.</p>
-<h4>0. Install the published tools</h4>
+<h3>0. Install the published tools</h3>
 <ul><li><code>deptry</code> 0.25.1: <code>pip install deptry</code> (PyPI <code>deptry</code>) or <code>conda install -c conda-forge deptry</code>.</li><li><code>osv-scanner</code> 2.4.0: <code>conda install -c conda-forge osv-scanner</code>, or the binary from the osv-scanner GitHub release page.</li></ul>
-<h4>1. Scan with the station command (waits on <code>pyforge-warden</code>)</h4>
+<h3>1. Scan with the station command (waits on <code>pyforge-warden</code>)</h3>
 <p>When <code>pyforge-warden</code> is on your <code>PATH</code>:</p>
 <pre><code class="language-bash">warden scan .
 </code></pre>
@@ -43,15 +42,14 @@ article{border-top:1px solid #d6d3d1;padding-top:1rem;margin-top:1rem}
 <pre><code class="language-bash">warden scan --doctor
 </code></pre>
 <p><code>--doctor</code> exits 0 or 2, never 1. Verified: <code>warden scan --help</code> lists <code>--doctor</code> on <code>scan</code>.</p>
-<h4>2. Probe the engines, and stop there</h4>
+<h3>2. Probe the engines, and stop there</h3>
 <pre><code class="language-bash">deptry --version
 osv-scanner --version
 </code></pre>
 <p><code>deptry</code> and <code>osv-scanner</code> are not a warden verdict. The warden CLI calls <code>deptry</code> and <code>osv-scanner scan --offline</code> itself. Do not paste their output into a review as a warden verdict.</p>
-<h4>3. Stop</h4>
+<h3>3. Stop</h3>
 <p>Do not add a second gate, and do not import <code>pyforge.warden</code>.</p>
 <h2>Related</h2><ul><li>@mason/environment</li><li>@mason/package</li></ul>
-<h2>Contribute</h2><p>Lane: code-backed. A pull request is the publish path.</p>
-<p>Code-backed: this listing requires a package. An instructions-only skill has none.</p>
+<h2>Contribute</h2><p>Lane: code-backed. A pull request is the publish path; the lanes are defined in the marketplace README.</p>
 </body>
 </html>

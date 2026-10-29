@@ -1174,6 +1174,7 @@ def test_pointers_name_every_consumer_form_and_edit_nothing(tmp_path: Path, caps
         "repo": "tester/repo",
         "path": "docs/foundry/marketplace/.claude-plugin/marketplace.json",
         "sparsePaths": [
+            "docs/foundry/marketplace/.agents",
             "docs/foundry/marketplace/.claude-plugin",
             "docs/foundry/marketplace/site",
             "docs/foundry/marketplace/skills",
@@ -1241,6 +1242,7 @@ def test_pointers_print_a_full_git_url_for_each_mirror(tmp_path: Path) -> None:
         "url": "https://git.example/acme/local-recipes.git",
         "path": "docs/foundry/marketplace/.claude-plugin/marketplace.json",
         "sparsePaths": [
+            "docs/foundry/marketplace/.agents",
             "docs/foundry/marketplace/.claude-plugin",
             "docs/foundry/marketplace/site",
             "docs/foundry/marketplace/skills",
@@ -1356,6 +1358,7 @@ def test_real_tree_pointers_use_the_repo_relative_directory_form(capsys) -> None
     assert source["repo"] == "rxm7706/local-recipes"
     assert source["path"] == "docs/foundry/marketplace/.claude-plugin/marketplace.json"
     assert source["sparsePaths"] == [
+        "docs/foundry/marketplace/.agents",
         "docs/foundry/marketplace/.claude-plugin",
         "docs/foundry/marketplace/site",
         "docs/foundry/marketplace/skills",
@@ -1373,7 +1376,29 @@ def test_real_tree_pointers_use_the_repo_relative_directory_form(capsys) -> None
     assert [plugin["name"] for plugin in manifest["plugins"]] == ["mason-environment", "mason-package", "warden-scan"]
     assert not (repo_root() / ".agents" / "plugins" / "marketplace.json").exists()
     assert "rxm7706/local-recipes (the owner/repo form)" in payload["codex_note"]
+    # loop 3, row 52: the note names the Round 0 outcome that decides whether the manifest is more than a pointer
+    assert "Round 0 of docs/foundry/marketplace/MANUAL-CHECKLIST.md" in payload["codex_note"]
+    assert "the folder copy is the install" in payload["codex_note"]
     assert payload["catalog_dir"] == str((repo_root() / CATALOG_RELATIVE).resolve())
+
+
+def test_the_sparse_checkout_carries_every_directory_a_generated_manifest_lives_under() -> None:
+    """Loop 3, row 51: a teammate on the sparse checkout the pointers print has both manifests, so the Codex
+    pointer resolves there too."""
+    from pyforge.steward.catalog import (
+        CODEX_MANIFEST_RELATIVE,
+        MARKETPLACE_JSON_RELATIVE,
+        MARKETPLACE_ROOT_RELATIVE,
+        MARKETPLACE_SPARSE_PATHS,
+    )
+
+    manifests = [MARKETPLACE_JSON_RELATIVE, f"{MARKETPLACE_ROOT_RELATIVE}/{CODEX_MANIFEST_RELATIVE.as_posix()}"]
+    for manifest in manifests:
+        assert any(manifest.startswith(f"{sparse}/") for sparse in MARKETPLACE_SPARSE_PATHS), manifest
+    assert f"{MARKETPLACE_ROOT_RELATIVE}/.agents" in MARKETPLACE_SPARSE_PATHS
+    assert list(MARKETPLACE_SPARSE_PATHS) == sorted(MARKETPLACE_SPARSE_PATHS)
+    for sparse in MARKETPLACE_SPARSE_PATHS:
+        assert (repo_root() / sparse).is_dir(), sparse
 
 
 def test_real_tree_browse_indexes_are_in_sync() -> None:

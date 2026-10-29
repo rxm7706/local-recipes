@@ -1,6 +1,4 @@
-<!-- A marketplace skill contribution (docs/foundry/marketplace/). Open the pull request with
-     `gh pr create --repo rxm7706/local-recipes --template marketplace-skill.md`, or with ?template=marketplace-skill.md
-     on the web compare URL, or paste this body by hand. -->
+<!-- A marketplace skill contribution (docs/foundry/marketplace/; its README's § Contribute says how to apply this template). -->
 
 ## Lane
 
@@ -26,7 +24,7 @@
 - [ ] `steps.md` is readable without the station source open: an engine is named by its module (`pyforge.<station>.engines.<name>`), never by a source path, and "this repo" does not appear
 - [ ] No `pixi run -e` and no path inside local-recipes
 - [ ] Install targets named in the skill are `.agents/skills/` and `.claude/skills/`
-- [ ] The folder holds only `SKILL.md`, `steps.md`, `listing.yaml` and text files (`.md`, `.txt`, `.yaml`, `.yml`, `.json`) under `references/`: no other file, no dot entry, no symlink, no file over 1 MiB, the folder under 4 MiB (`validate_listing` refuses each; the mount and the release zip ship exactly this set)
+- [ ] The folder keeps to the folder rule in the README's § Install (`validate_listing` refuses each breach; the mount and the release zip ship exactly that set)
 
 ## Generated site
 
@@ -38,5 +36,5 @@
 
 - [ ] No new GitHub repository
 - [ ] No change to `registry/estate.yaml` unless a module row is the listing
-- [ ] No change to `CatalogEngine.render` or the committed `.claude-plugin` / `.agents` manifests
+- [ ] No change to `CatalogEngine.render` or the v1 catalog manifests under `src/shared/packages/pyforge-steward/catalog/` (its `.claude-plugin/marketplace.json` and `.agents/plugins/marketplace.json`; this tree's two are regenerated above)
 - [ ] No upload (`twine upload`, `pixi upload`, feedstock, or upstream PR)

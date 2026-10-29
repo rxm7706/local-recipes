@@ -27,32 +27,30 @@ article{border-top:1px solid #d6d3d1;padding-top:1rem;margin-top:1rem}
 <h2>Unpublished packages</h2><ul><li>pyforge-mason: PyPI, conda-forge, and SelfExplainML returned 404 on 2026-10-21</li><li>pyforge-core: Required by pyforge mason dispatch; same 404 check</li></ul>
 <h2>Sources</h2><ul><li>GitHub release: not published</li><li>Artifactory conda: not published</li><li>Artifactory pip: not published</li></ul>
 <h2>Steps</h2>
-<h3>Steps — @mason/environment</h3>
 <p>Run these from the project you want to lock. Verified 2026-10-21 against the engine module <code>pyforge.mason.engines.condalock</code> and the tools on the verifying host. Each version below is what that tool&#x27;s <code>--version</code> printed on that host on 2026-10-21.</p>
-<p><strong>Before you start.</strong> <code>pyforge-mason</code> 0.1.0 and <code>pyforge-core</code> returned HTTP 404 on PyPI, conda-forge, and the SelfExplainML channel on 2026-10-21. Steps 1 and 3 wait on those packages and do not run on a teammate machine until they are published. Steps 0 and 2 run today.</p>
-<h4>0. Install the published tools</h4>
+<p><strong>Before you start.</strong> <code>pyforge-mason</code> 0.1.0 and <code>pyforge-core</code> returned HTTP 404 on PyPI, conda-forge, and the SelfExplainML channel on 2026-10-21. Steps 1 and 3 wait on those packages and do not run on a teammate machine until they are published. Steps 0 and 2 run today. When <code>pyforge-mason</code> is published, its <code>lock</code> still hands a <code>requirements.txt</code> or <code>pixi.toml</code> it discovers to <code>conda-lock</code>, which cannot parse them; step 2 says which manifests to keep.</p>
+<h3>0. Install the published tools</h3>
 <ul><li><code>conda-lock</code> 4.0.2: <code>pip install conda-lock</code> (PyPI <code>conda-lock</code>) or <code>conda install -c conda-forge conda-lock</code>.</li></ul>
 <p>Check: <code>conda-lock --version</code> prints <code>conda-lock, version 4.0.2</code> or newer.</p>
-<h4>1. See the station command (waits on <code>pyforge-mason</code>)</h4>
+<h3>1. See the station command (waits on <code>pyforge-mason</code>)</h3>
 <p>When <code>pyforge-mason</code> is on your <code>PATH</code>:</p>
 <pre><code class="language-bash">pyforge mason environment --help
 </code></pre>
 <p>That help lists <code>lock</code> and <code>check</code>. <code>lock</code> requires <code>--output</code>. <code>check</code> requires <code>--lockfile</code>.</p>
-<h4>2. Lock with the engine the station calls</h4>
+<h3>2. Lock with the engine the station calls</h3>
 <pre><code class="language-bash">conda-lock lock -f pyproject.toml --lockfile conda-lock.yml
 </code></pre>
 <p>This is the argv <code>pyforge.mason.engines.condalock</code> assembles: the binary <code>conda-lock</code>, then <code>lock</code>, then one <code>-f</code> per manifest, then <code>--lockfile</code>. <code>conda-lock</code> reads <code>pyproject.toml</code> and <code>environment.yml</code>. Substitute the manifests your project holds; <code>conda-lock</code> exits non-zero on a file that is not there:</p>
 <ul><li><code>pyproject.toml</code> only: the command as written.</li><li><code>environment.yml</code> only: <code>conda-lock lock -f environment.yml --lockfile conda-lock.yml</code>.</li><li><code>pyproject.toml</code> and <code>environment.yml</code>: <code>conda-lock lock -f pyproject.toml -f environment.yml --lockfile conda-lock.yml</code>.</li></ul>
-<p>A <code>requirements.txt</code> or <code>pixi.toml</code> beside them is not a <code>conda-lock</code> input: do not pass it with <code>-f</code> (<code>conda-lock</code> fails to parse it). The station&#x27;s discovery hands those files to the engine today, so step 1 inherits that failure until <code>pyforge-mason</code> fixes it; the pip requirements belong in <code>pyproject.toml</code> or <code>environment.yml</code> (<code>pip:</code> section) for the lock.</p>
+<p>A <code>requirements.txt</code> or <code>pixi.toml</code> beside them is not a <code>conda-lock</code> input: do not pass it with <code>-f</code> (<code>conda-lock</code> fails to parse it). The pip requirements belong in <code>pyproject.toml</code> or <code>environment.yml</code> (<code>pip:</code> section) for the lock.</p>
 <p>Add one <code>-p</code> per platform only when you need to name them, for example <code>-p linux-64 -p osx-arm64</code>.</p>
-<h4>3. Check (waits on <code>pyforge-mason</code>)</h4>
+<h3>3. Check (waits on <code>pyforge-mason</code>)</h3>
 <pre><code class="language-bash">pyforge mason environment check --lockfile conda-lock.yml
 </code></pre>
 <p>A non-zero exit means the lockfile is stale or conda-lock failed. The station check runs <code>conda-lock lock --check-input-hash</code> against a temporary copy of the lockfile, not against the lockfile in place. There is no separate published command that performs the station&#x27;s temporary-copy check safely.</p>
-<h4>4. Stop</h4>
+<h3>4. Stop</h3>
 <p>If the work becomes a conda-forge recipe, stop and use the conda-forge-expert procedure. Do not invent a recipe from this skill.</p>
 <h2>Related</h2><ul><li>@mason/package</li><li>@warden/scan</li></ul>
-<h2>Contribute</h2><p>Lane: code-backed. A pull request is the publish path.</p>
-<p>Code-backed: this listing requires a package. An instructions-only skill has none.</p>
+<h2>Contribute</h2><p>Lane: code-backed. A pull request is the publish path; the lanes are defined in the marketplace README.</p>
 </body>
 </html>

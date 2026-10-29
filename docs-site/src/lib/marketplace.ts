@@ -8,9 +8,11 @@
  * - every file of `docs/foundry/marketplace/site/` (the generated index, listings, cards and the URL-form
  *   `marketplace.json`), the last with its public git URL rewritten to the deploying host's
  *   (`GITHUB_SERVER_URL` / `GITHUB_REPOSITORY`, so an enterprise mirror's deploy points at itself);
- * - of each `skills/<scope>/<slug>/` folder only `SKILL.md`, `steps.md`, `listing.yaml` and `references/**`
- *   (the review of 2026-10-28, row 9): a dotfile, a cache or a stray file in a contribution never ships. The
- *   release zips in `.github/workflows/pages.yml` carry the same four.
+ * - of each `skills/<scope>/<slug>/` folder only `SKILL.md`, `steps.md`, `listing.yaml` and text files under
+ *   `references/` (the review of 2026-10-28, row 9; loop 3, row 48: the suffix set and the two size caps are the
+ *   validator's, `pyforge.steward.marketplace_pages`): a dotfile, a cache, a binary or a stray file in a
+ *   contribution never ships, and a file or folder over its cap fails the build. The release zips in
+ *   `.github/workflows/pages.yml` carry the same set.
  */
 
 import fs from 'node:fs';
@@ -26,6 +28,14 @@ export const MARKETPLACE_NAME = 'pyforge-bmad-marketplace';
 export const SKILL_FILES: readonly string[] = ['SKILL.md', 'steps.md', 'listing.yaml'];
 /** The one subdirectory of a skill folder that ships. */
 export const SKILL_REFERENCES_DIR = 'references';
+/** What a file under `references/` may be (`pyforge.steward.marketplace_pages.SHIPPED_TEXT_SUFFIXES`). */
+export const SHIPPED_TEXT_SUFFIXES: readonly string[] = ['.md', '.txt', '.yaml', '.yml', '.json'];
+/** One shipped file's cap in bytes (`MAX_SHIPPED_FILE_BYTES`). */
+export const MAX_SHIPPED_FILE_BYTES = 1048576;
+/** A skill folder's cap in bytes (`MAX_SHIPPED_FOLDER_BYTES`). */
+export const MAX_SHIPPED_FOLDER_BYTES = 4194304;
+/** Each kind's card directory under the site root (`pyforge.steward.marketplace_pages.KIND_DIRS`). */
+export const KIND_DIRS: Readonly<Record<string, string>> = { skill: 'skills', module: 'modules', agent: 'agents', bundle: 'bundles' };
 /** `scope` and `slug`, as `pyforge.steward.marketplace_pages.SLUG` holds them: a folder outside it never mounts. */
 export const SLUG = /^[a-z0-9][a-z0-9-]*$/;
 /** The listings document's schema (`pyforge.steward.marketplace_pages.SCHEMA_ID`). */
@@ -42,7 +52,8 @@ export function isShippedSkillFile(rel: string): boolean {
   if (parts.length === 1) {
     return SKILL_FILES.includes(parts[0]);
   }
-  return parts[0] === SKILL_REFERENCES_DIR;
+  const suffix = path.posix.extname(parts[parts.length - 1]).toLowerCase();
+  return parts[0] === SKILL_REFERENCES_DIR && SHIPPED_TEXT_SUFFIXES.includes(suffix);
 }
 
 /** `marketplace.json` for the host that runs the build: GitHub Actions names it, and the public URL is replaced. */
@@ -97,46 +108,94 @@ export function marketplaceMount(marketplaceDir: string, env: Env = process.env)
     out.push({ rel, data });
   }
   const skills = path.join(marketplaceDir, 'skills');
+  const totals = new Map<string, number>();
   for (const rel of filesUnder(skills)) {
     const [scope, slug, ...rest] = rel.split('/');
     if (!scope || !slug || !SLUG.test(scope) || !SLUG.test(slug) || !rest.length || !isShippedSkillFile(rest.join('/'))) {
       continue;
     }
-    out.push({ rel: `skills/${rel}`, data: fs.readFileSync(path.join(skills, rel)) });
+    const data = fs.readFileSync(path.join(skills, rel));
+    // the validator's caps (loop 3, row 48): a folder past them fails the build rather than ships a slimmed copy
+    if (data.length > MAX_SHIPPED_FILE_BYTES) {
+      throw new Error(`skills/${rel} is ${data.length} bytes; one shipped file is at most ${MAX_SHIPPED_FILE_BYTES}`);
+    }
+    const key = `${scope}/${slug}`;
+    const total = (totals.get(key) ?? 0) + data.length;
+    if (total > MAX_SHIPPED_FOLDER_BYTES) {
+      throw new Error(`skills/${key} ships over ${MAX_SHIPPED_FOLDER_BYTES} bytes; the cap is ${MAX_SHIPPED_FOLDER_BYTES}`);
+    }
+    totals.set(key, total);
+    out.push({ rel: `skills/${rel}`, data });
   }
   return out;
 }
 
 const SKILL_FOLDER_PATH = /^marketplace\/skills\/([^/]+)\/([^/]+)\/(.+)$/;
 const CARD_PATH = /^marketplace\/skills\/([^/]+)\/([^/]+)\.html$/;
+const OTHER_CARD_PATH = /^marketplace\/(modules|agents|bundles)\/([^/]+)\.html$/;
+const SITE_DOCUMENTS = ['marketplace/index.html', 'marketplace/listings.json', 'marketplace/marketplace.json'];
+
+type ListingRow = { id?: unknown; kind?: unknown; scope?: unknown; slug?: unknown; name?: unknown };
+
+/** A listing row's card path relative to the artifact root, or `null` when the row is not a well-formed row. */
+function listingCard(row: unknown): string | null {
+  if (!row || typeof row !== 'object') {
+    return null;
+  }
+  const { id, kind, scope, slug, name } = row as ListingRow;
+  if (typeof id !== 'string' || typeof kind !== 'string' || !(kind in KIND_DIRS)) {
+    return null;
+  }
+  if (kind === 'skill') {
+    if (typeof scope !== 'string' || typeof slug !== 'string' || !SLUG.test(scope) || !SLUG.test(slug) || id !== `${scope}/${slug}`) {
+      return null;
+    }
+    return `marketplace/skills/${scope}/${slug}.html`;
+  }
+  const leaf = typeof slug === 'string' ? slug : typeof name === 'string' ? name : '';
+  return SLUG.test(leaf) ? `marketplace/${KIND_DIRS[kind]}/${leaf}.html` : null;
+}
 
 /**
- * The converse of {@link marketplaceManifestFindings} (loop 2, row 27): the artifact held to the manifest and the
- * listings. `marketplace/listings.json` parses with this schema; every mounted skill folder and card is a listing
- * and a plugin; every mounted skill file is one the folder ships; no plugin name repeats. `all` is the artifact's
- * file list, `/`-joined and relative to its root.
+ * The converse of {@link marketplaceManifestFindings} (loop 2, row 27; loop 3, row 48): the artifact held to the
+ * listings and the manifest. `marketplace/listings.json` parses with this schema and well-formed rows; every listed
+ * skill has its folder, its card and its plugin, and every other listing its card; every mounted skill folder and
+ * card is a listing and a plugin; every mounted skill file is one the folder ships and under the file cap; nothing
+ * else sits under `marketplace/`; no plugin name repeats. `all` is the artifact's file list, `/`-joined and relative
+ * to its root; `sizeOf` gives a file's bytes (absent, the caps are not judged).
  */
-export function marketplaceArtifactFindings(listingsText: string, manifestText: string, all: string[]): string[] {
+export function marketplaceArtifactFindings(
+  listingsText: string,
+  manifestText: string,
+  all: string[],
+  sizeOf?: (rel: string) => number,
+): string[] {
   const out: string[] = [];
-  let listed = new Set<string>();
+  const listed = new Set<string>();
+  const otherCards = new Set<string>();
   try {
     const doc = JSON.parse(listingsText) as { schema?: unknown; listings?: unknown };
     if (doc.schema !== SCHEMA_ID) {
       out.push(`marketplace/listings.json: schema is not ${SCHEMA_ID}`);
     }
     if (Array.isArray(doc.listings)) {
-      listed = new Set(
-        (doc.listings as Array<{ kind?: unknown; scope?: unknown; slug?: unknown }>)
-          .filter((row) => row?.kind === 'skill' && typeof row.scope === 'string' && typeof row.slug === 'string')
-          .map((row) => `${row.scope}/${row.slug}`),
-      );
+      doc.listings.forEach((row, index) => {
+        const card = listingCard(row);
+        if (!card) {
+          out.push(`marketplace/listings.json: listing ${index} is not a well-formed row (id, kind, scope/slug or name)`);
+        } else if ((row as ListingRow).kind === 'skill') {
+          listed.add(`${(row as ListingRow).scope}/${(row as ListingRow).slug}`);
+        } else {
+          otherCards.add(card);
+        }
+      });
     } else {
       out.push('marketplace/listings.json: listings is not a list');
     }
   } catch {
     out.push('marketplace/listings.json is not JSON');
   }
-  let plugins = new Set<string>();
+  let plugins: Set<string> | null = null;
   try {
     const doc = JSON.parse(manifestText) as { plugins?: unknown };
     if (Array.isArray(doc.plugins)) {
@@ -154,31 +213,71 @@ export function marketplaceArtifactFindings(listingsText: string, manifestText: 
           .filter(Boolean),
       );
     }
+    // plugins not a list: marketplaceManifestFindings names it once; no per-folder finding on top (row 48)
   } catch {
     // marketplaceManifestFindings names a manifest that is not JSON
   }
-  const mounted = new Set<string>();
+  const folders = new Set<string>();
+  const cards = new Set<string>();
+  const mountedOtherCards = new Set<string>();
   for (const rel of all) {
+    if (!rel.startsWith('marketplace/')) {
+      continue;
+    }
+    if (SITE_DOCUMENTS.includes(rel)) {
+      continue;
+    }
     const folder = SKILL_FOLDER_PATH.exec(rel);
     if (folder) {
       const [, scope, slug, inside] = folder;
-      mounted.add(`${scope}/${slug}`);
-      if (!isShippedSkillFile(inside)) {
-        out.push(`${rel} is mounted but is not a file a skill folder ships (SKILL.md, steps.md, listing.yaml, references/**)`);
+      folders.add(`${scope}/${slug}`);
+      if (!SLUG.test(scope) || !SLUG.test(slug) || !isShippedSkillFile(inside)) {
+        out.push(
+          `${rel} is mounted but is not a file a skill folder ships (SKILL.md, steps.md, listing.yaml, text files under references/)`,
+        );
+      } else if (sizeOf && sizeOf(rel) > MAX_SHIPPED_FILE_BYTES) {
+        out.push(`${rel} is mounted but is over ${MAX_SHIPPED_FILE_BYTES} bytes`);
       }
       continue;
     }
     const card = CARD_PATH.exec(rel);
     if (card) {
-      mounted.add(`${card[1]}/${card[2]}`);
+      cards.add(`${card[1]}/${card[2]}`);
+      continue;
     }
+    if (OTHER_CARD_PATH.test(rel)) {
+      mountedOtherCards.add(rel);
+      continue;
+    }
+    out.push(`${rel} is mounted under marketplace/ but is not a site document, a card or a skill folder file`);
   }
-  for (const key of [...mounted].sort()) {
+  for (const key of [...new Set([...folders, ...cards])].sort()) {
     if (!listed.has(key)) {
       out.push(`marketplace/skills/${key} is mounted but marketplace/listings.json lists no skill ${key}`);
     }
-    if (!plugins.has(key)) {
+    if (plugins && !plugins.has(key)) {
       out.push(`marketplace/skills/${key} is mounted but marketplace/marketplace.json has no plugin for it`);
+    }
+  }
+  for (const key of [...listed].sort()) {
+    if (!folders.has(key)) {
+      out.push(`marketplace/listings.json lists skill ${key} but marketplace/skills/${key}/ is not mounted`);
+    }
+    if (!cards.has(key)) {
+      out.push(`marketplace/listings.json lists skill ${key} but marketplace/skills/${key}.html is not mounted`);
+    }
+    if (plugins && !plugins.has(key)) {
+      out.push(`marketplace/listings.json lists skill ${key} but marketplace/marketplace.json has no plugin for it`);
+    }
+  }
+  for (const card of [...otherCards].sort()) {
+    if (!mountedOtherCards.has(card)) {
+      out.push(`marketplace/listings.json lists a card at ${card} but it is not mounted`);
+    }
+  }
+  for (const card of [...mountedOtherCards].sort()) {
+    if (!otherCards.has(card)) {
+      out.push(`${card} is mounted but marketplace/listings.json lists no such card`);
     }
   }
   return out;

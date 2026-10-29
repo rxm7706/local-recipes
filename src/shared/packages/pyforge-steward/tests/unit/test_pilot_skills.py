@@ -96,6 +96,24 @@ def test_pilot_skills_read_without_the_station_source() -> None:
         skill = dict(_texts())[f"{relative}/SKILL.md"]
         for version in ("4.0.2", "1.6.1", "0.81.0", "7.0.0", "0.25.1", "2.4.0"):
             assert version not in skill, (relative, version)
+        # loop 3, row 14: an installed folder has no card and no README to point at
+        assert "on the card and in the README" not in skill, relative
+    assert "on the card and in the README" not in (
+        repo_root() / "docs/foundry/marketplace/templates/SKILL.md"
+    ).read_text(encoding="utf-8")
+
+
+def test_the_environment_runbooks_station_defect_sits_before_the_steps() -> None:
+    """Loop 3, row 15: the note about what the station's own discovery does is in **Before you start**, not on the
+    engine step, whose command never discovers anything."""
+    environment = dict(_texts())["mason/environment/steps.md"]
+    before = environment.index("**Before you start.**")
+    step0 = environment.index("## 0.")
+    step2 = environment.index("## 2.")
+    note = environment.index("hands a `requirements.txt` or `pixi.toml` it discovers")
+    assert before < note < step0
+    assert "inherits that failure" not in environment
+    assert environment.index("not a `conda-lock` input") > step2
 
 
 def test_pilot_steps_install_the_published_tools_first() -> None:

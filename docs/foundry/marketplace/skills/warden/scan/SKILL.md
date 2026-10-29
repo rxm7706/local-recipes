@@ -13,7 +13,7 @@ description: >
 Marketplace id `warden/scan`. Install this folder into both
 `.agents/skills/warden-scan/` and `.claude/skills/warden-scan/`.
 The human runbook is [steps.md](steps.md); the verified tool versions live
-there. Which directory each tool reads is on the card and in the README.
+there.
 
 Run from the teammate's project directory. Do not `cd` into local-recipes.
 Do not prefix commands with a pixi environment selector.
@@ -39,9 +39,8 @@ another tool's exit code as this gate.
 
 `pyforge-warden` and `pyforge-core` are not on PyPI, conda-forge, or
 SelfExplainML (404 on 2026-10-21). The scan command cannot be replaced by
-a hand-run of its engines. The CLI calls `deptry .` (with its own
-requirements file) and `osv-scanner scan --offline`. Those binaries can be
-probed. Their stdout is not a warden report.
+a hand-run of its engines; `deptry --version` and `osv-scanner --version`
+are the probes that run today (`steps.md` step 2).
 
 ## What this skill is not
 

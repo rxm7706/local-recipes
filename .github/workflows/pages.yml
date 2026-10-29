@@ -253,6 +253,38 @@ jobs:
           export GH_HOST="${GITHUB_SERVER_URL#*://}"
           test -f pages-site/build.json
           (cd pages-site && zip -qr "$RUNNER_TEMP/pages-site.zip" .)
+          # Story 109.3, the 102.5 release step (its review of 2026-10-28, row 9; loop 2, rows 23 and
+          # 24; loop 3, rows 48 to 50): one zip per skill folder the mount copied under
+          # marketplace/skills/<scope>/<slug>/ while the marketplace flag is on, absent when it is off.
+          # Each zip is made from the parent, so it holds the <scope>-<slug>/ folder and
+          # `unzip <scope>-<slug>.zip -d .claude/skills/` lands it in place; it carries only SKILL.md,
+          # steps.md, listing.yaml and text files under references/ with no dot entry (the mount's
+          # allowlist, docs-site/src/lib/marketplace.ts), and a .sha256 sits beside it. A symlink, a
+          # file over 1 MiB or a references/ file outside the text suffixes fails the step before zip
+          # runs (the validator's rules, pyforge.steward.marketplace_pages._validate_skill_folder).
+          # Every zip is built before the release is touched; then the tag and the release move; then
+          # the previous deploy's per-skill assets (names of the <scope>-<slug>.zip or .zip.sha256
+          # shape, never pages-site.zip or any other asset) that are not in the new set are deleted (a
+          # failed asset listing fails the step, so a stale zip never survives silently); then the site
+          # zip and the new set go up in one upload, so no deploy leaves a new site beside stale skill
+          # zips.
+          outdir="$RUNNER_TEMP/skill-zips-out"
+          rm -rf "$outdir" && mkdir -p "$outdir"
+          if [ -d pages-site/marketplace/skills ]; then
+            stage="$RUNNER_TEMP/skill-zips"
+            find pages-site/marketplace/skills -mindepth 2 -maxdepth 2 -type d | sort | while read -r dir; do
+              scope=$(basename "$(dirname "$dir")")
+              slug=$(basename "$dir")
+              name="${scope}-${slug}"
+              rm -rf "$stage/$name" && mkdir -p "$stage/$name"
+              cp -R "$dir/." "$stage/$name/"
+              if [ -n "$(find "$stage/$name" -type l -print -quit)" ]; then echo "::error::$name: a symlink in the skill folder"; exit 1; fi
+              if [ -n "$(find "$stage/$name" -type f -size +1048576c -print -quit)" ]; then echo "::error::$name: a file over 1 MiB"; exit 1; fi
+              if [ -n "$(find "$stage/$name/references" -type f ! -name '.*' ! \( -name '*.md' -o -name '*.txt' -o -name '*.yaml' -o -name '*.yml' -o -name '*.json' \) -print -quit 2>/dev/null)" ]; then echo "::error::$name: references/ ships text files only"; exit 1; fi
+              (cd "$stage" && zip -qr "$outdir/$name.zip" "$name" -i "$name/SKILL.md" "$name/steps.md" "$name/listing.yaml" "$name/references/*" -x '*/.*')
+              (cd "$outdir" && sha256sum "$name.zip" > "$name.zip.sha256")
+            done
+          fi
           notes="built_from $GITHUB_SHA, run $GITHUB_RUN_ID"
           # Move the tag first, release or not: `gh release create --target` adopts an existing tag where it
           # stands, so a tag left without its release would otherwise keep a stale commit.
@@ -265,38 +297,15 @@ jobs:
             gh release create pages-site --prerelease --target "$GITHUB_SHA" \
               --title "Pages site (rolling)" --notes "$notes"
           fi
-          gh release upload pages-site "$RUNNER_TEMP/pages-site.zip" --clobber
-          # Story 109.3, the 102.5 release step (its review of 2026-10-28, row 9; loop 2, rows 23 and
-          # 24): one zip per skill folder the mount copied under marketplace/skills/<scope>/<slug>/ while
-          # the marketplace flag is on, absent when it is off. Each zip is made from the parent, so it
-          # holds the <scope>-<slug>/ folder and `unzip <scope>-<slug>.zip -d .claude/skills/` lands it
-          # in place; it carries only SKILL.md, steps.md, listing.yaml and references/** with no dot
-          # entry and no followed symlink (the mount's allowlist, docs-site/src/lib/marketplace.ts), and a
-          # .sha256 sits beside it. Every zip is built first; then the previous deploy's per-skill
-          # assets that are not in the new set are deleted (a failed asset listing fails the step, so a
-          # stale zip never survives silently; pages-site.zip is never deleted); then the new set is
-          # uploaded, so no deploy opens a window with no skill zips.
-          outdir="$RUNNER_TEMP/skill-zips-out"
-          rm -rf "$outdir" && mkdir -p "$outdir"
-          if [ -d pages-site/marketplace/skills ]; then
-            stage="$RUNNER_TEMP/skill-zips"
-            find pages-site/marketplace/skills -mindepth 2 -maxdepth 2 -type d | sort | while read -r dir; do
-              scope=$(basename "$(dirname "$dir")")
-              slug=$(basename "$dir")
-              name="${scope}-${slug}"
-              rm -rf "$stage/$name" && mkdir -p "$stage/$name"
-              cp -R "$dir/." "$stage/$name/"
-              (cd "$stage" && zip -qry "$outdir/$name.zip" "$name" -i "$name/SKILL.md" "$name/steps.md" "$name/listing.yaml" "$name/references/*" -x '*/.*')
-              (cd "$outdir" && sha256sum "$name.zip" > "$name.zip.sha256")
-            done
-          fi
           assets=$(gh release view pages-site --json assets --jq '.assets[].name') || exit 1
-          for asset in $assets; do
+          while IFS= read -r asset; do
             case "$asset" in
               pages-site.zip) ;;
-              *.zip|*.zip.sha256) [ -f "$outdir/$asset" ] || gh release delete-asset pages-site "$asset" --yes ;;
+              *) if [[ "$asset" =~ ^[a-z0-9][a-z0-9-]*-[a-z0-9][a-z0-9-]*\.zip(\.sha256)?$ ]] && [ ! -f "$outdir/$asset" ]; then
+                   gh release delete-asset pages-site "$asset" --yes
+                 fi ;;
             esac
-          done
-          if [ -n "$(ls -A "$outdir")" ]; then
-            gh release upload pages-site "$outdir"/* --clobber
-          fi
+          done <<< "$assets"
+          shopt -s nullglob
+          uploads=("$RUNNER_TEMP/pages-site.zip" "$outdir"/*)
+          gh release upload pages-site "${uploads[@]}" --clobber

@@ -8,7 +8,9 @@ on 2026-10-21.
 **Before you start.** `pyforge-mason` 0.1.0 and `pyforge-core` returned HTTP
 404 on PyPI, conda-forge, and the SelfExplainML channel on 2026-10-21. Steps 1
 and 3 wait on those packages and do not run on a teammate machine until they
-are published. Steps 0 and 2 run today.
+are published. Steps 0 and 2 run today. When `pyforge-mason` is published,
+its `lock` still hands a `requirements.txt` or `pixi.toml` it discovers to
+`conda-lock`, which cannot parse them; step 2 says which manifests to keep.
 
 ## 0. Install the published tools
 
@@ -45,10 +47,9 @@ not there:
 - `pyproject.toml` and `environment.yml`: `conda-lock lock -f pyproject.toml -f environment.yml --lockfile conda-lock.yml`.
 
 A `requirements.txt` or `pixi.toml` beside them is not a `conda-lock` input:
-do not pass it with `-f` (`conda-lock` fails to parse it). The station's
-discovery hands those files to the engine today, so step 1 inherits that
-failure until `pyforge-mason` fixes it; the pip requirements belong in
-`pyproject.toml` or `environment.yml` (`pip:` section) for the lock.
+do not pass it with `-f` (`conda-lock` fails to parse it). The pip
+requirements belong in `pyproject.toml` or `environment.yml` (`pip:`
+section) for the lock.
 
 Add one `-p` per platform only when you need to name them, for example
 `-p linux-64 -p osx-arm64`.

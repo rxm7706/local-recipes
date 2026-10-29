@@ -11,6 +11,7 @@ Do this in a repository that is not local-recipes.
 - [ ] Copy that skill's folder into `.agents/skills/<scope>-<slug>/` and `.claude/skills/<scope>-<slug>/`
 - [ ] Confirm your tool picks the folder up from the directory in the README's tool table (`tool-support-matrix.md` in the design-thinking folder is the source; it records a `Driveable` outcome per tool)
 - [ ] Claude Code only: `/plugin marketplace add <checkout>/docs/foundry/marketplace`, then `/plugin install <scope>-<slug>@pyforge-bmad-marketplace`, then `/skills`. Record whether the skill appears. If it does not, `marketplace.json` stays a discovery pointer and the folder copy is the install
+- [ ] Codex only: `codex plugin marketplace add <checkout>/docs/foundry/marketplace`, then install `<scope>-<slug>`. Record whether the skill appears. If it does not, `.agents/plugins/marketplace.json` stays a discovery pointer and the folder copy is the install
 - [ ] Follow `steps.md` from the top
 - [ ] Record which step ran, and which step stopped because a `pyforge-*` package is unpublished
 - [ ] Record a tool that cannot be driven at all as `tool: <name> — not driveable: <reason>` (an auth wall, a login loop). That is a tool outcome, not a skill failure
@@ -30,7 +31,7 @@ Faked until the exit criteria below: `bmp install`, search, lint and CI, review 
 - [ ] A teammate asks to find a skill. A person replies with the card URL or the folder path. No CLI is required for the reply
 - [ ] A teammate asks to install it. A person copies the folder into `.agents/skills/<scope>-<slug>/` and `.claude/skills/<scope>-<slug>/` and says which package is still unpublished
 - [ ] A teammate follows `steps.md` on a real task. T3 does that from the steps alone
-- [ ] A teammate asks to add a skill. A person uses `templates/SKILL.md`, `templates/steps.md` and the PR template (`.github/PULL_REQUEST_TEMPLATE/marketplace-skill.md`, applied with `gh pr create --repo rxm7706/local-recipes --template marketplace-skill.md` or `?template=marketplace-skill.md`, else pasted by hand) and does not publish. That stand-in is `@bmp/skillify` until `bmp new` exists
+- [ ] A teammate asks to add a skill. A person uses `templates/SKILL.md`, `templates/steps.md` and the PR template, applied as the README's § Contribute says, and does not publish. That stand-in is `@bmp/skillify` until `bmp new` exists
 - [ ] Fill one feedback grid per teammate per task (likes, questions, ideas, changes), plus completed y/n, stuck point, tool, source, and operator interventions
 - [ ] Write down the questions the person had to answer that the card did not
 

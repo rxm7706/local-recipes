@@ -21,7 +21,10 @@ from pyforge.steward.marketplace_pages import render_markdown
         ("```bash\necho <x>\n```", '<pre><code class="language-bash">echo &lt;x&gt;\n</code></pre>'),
         ("```\n# not a heading\n**not bold**\n```", "<pre><code># not a heading\n**not bold**\n</code></pre>"),
         ("```\nunterminated", "<pre><code>unterminated\n</code></pre>"),
-        ("<b>raw</b> & ![img](x.png)", '<p>&lt;b&gt;raw&lt;/b&gt; &amp; !<a href="x.png">img</a></p>'),
+        (
+            "<b>raw</b> & ![img](x.png)",
+            "<p>&lt;b&gt;raw&lt;/b&gt; &amp; ![img](x.png)</p>",
+        ),  # loop 3, row 47: images stay literal
         # loop 2, row 25
         (
             "```bash title=x\necho hi\n```\nafter",
@@ -46,10 +49,53 @@ from pyforge.steward.marketplace_pages import render_markdown
         ("`[not](a-link)`", "<p><code>[not](a-link)</code></p>"),
         ("", ""),
         ("\n\n", ""),
+        # loop 3, row 46: the info-string grammar is CommonMark's (first word, cut at , or {), any indent opens,
+        # a backtick fence's info holds no backtick, a deeper-indented backtick line inside the fence is code
+        ("```c#\nx\n```\nafter", '<pre><code class="language-c#">x\n</code></pre>\n<p>after</p>'),
+        ("```{r}\nx\n```\nafter", "<pre><code>x\n</code></pre>\n<p>after</p>"),
+        ("```python,linenos\nx\n```\nafter", '<pre><code class="language-python">x\n</code></pre>\n<p>after</p>'),
+        ("```bash:1\nx\n```\nafter", '<pre><code class="language-bash:1">x\n</code></pre>\n<p>after</p>'),
+        ("```bash{.cls}\nx\n```\nafter", '<pre><code class="language-bash">x\n</code></pre>\n<p>after</p>'),
+        ("    ```\n    x\n    ```\nafter", "<pre><code>x\n</code></pre>\n<p>after</p>"),
+        ("~~~ `tick`\nx\n~~~\nafter", '<pre><code class="language-`tick`">x\n</code></pre>\n<p>after</p>'),
+        ("```x`y\nz", "<p>``<code>x</code>y z</p>"),  # not a fence: a backtick in a backtick fence's info string
+        ("```\nx\n      ```\ny\n```\nafter", "<pre><code>x\n      ```\ny\n</code></pre>\n<p>after</p>"),
+        ("   ```\nx\n   ```\nafter", "<pre><code>x\n</code></pre>\n<p>after</p>"),
+        # loop 3, row 47: //host and /rooted targets, a traversing path and an image stay literal; a fragment passes
+        (
+            "[a](//evil.example/p) [b](/root) [e](../x) [f](#frag)",
+            '<p>[a](//evil.example/p) [b](/root) [e](../x) <a href="#frag">f</a></p>',
+        ),
+        ("[h](HTTPS://e.test/x) [m](mailto:x@y)", '<p><a href="HTTPS://e.test/x">h</a> [m](mailto:x@y)</p>'),
+        # row 47: nested lists keep their own tag, an <ol> carries start, a four-digit marker is a paragraph
+        ("- a\n  1. one\n  2. two\n- b", "<ul><li>a<ol><li>one</li><li>two</li></ol></li><li>b</li></ul>"),
+        ("1. a\n   - x\n   - y\n2. b", "<ol><li>a<ul><li>x</li><li>y</li></ul></li><li>b</li></ol>"),
+        ("3. three\n4. four", '<ol start="3"><li>three</li><li>four</li></ol>'),
+        ("- a\n  5. five", '<ul><li>a<ol start="5"><li>five</li></ol></li></ul>'),
+        ("2026. The year", "<p>2026. The year</p>"),
+        ("10. ten", '<ol start="10"><li>ten</li></ol>'),
     ],
 )
 def test_render_markdown(text: str, expected: str) -> None:
     assert render_markdown(text) == expected
+
+
+def test_a_relative_link_is_prefixed_with_the_link_base_and_nothing_else_is() -> None:
+    """Loop 3, row 47: the card sits beside the mounted skill folder, so a runbook's relative link points into it."""
+    text = "[s](steps.md) [r](references/x.md#top) [h](https://e.test/x) [f](#frag) [a](/abs) [p](//h/x) [t](../up)"
+    assert render_markdown(text, link_base="environment/") == (
+        '<p><a href="environment/steps.md">s</a> <a href="environment/references/x.md#top">r</a> '
+        '<a href="https://e.test/x">h</a> <a href="#frag">f</a> [a](/abs) [p](//h/x) [t](../up)</p>'
+    )
+
+
+def test_skip_leading_h1_drops_only_a_first_line_h1() -> None:
+    """Loop 3, row 55: the runbook's title is the card's h1 already; its steps sit one level under Steps."""
+    assert render_markdown("# Title\n\n## 1. Step\n\ntext", skip_leading_h1=True) == "<h3>1. Step</h3>\n<p>text</p>"
+    assert render_markdown("\n\n# Title\n\n## 1. Step", skip_leading_h1=True) == "<h3>1. Step</h3>"
+    assert render_markdown("intro\n\n# Title", skip_leading_h1=True) == "<p>intro</p>\n<h2>Title</h2>"
+    assert render_markdown("## Not an h1", skip_leading_h1=True) == "<h3>Not an h1</h3>"
+    assert render_markdown("# Title\n\n## Step", skip_leading_h1=False) == "<h2>Title</h2>\n<h3>Step</h3>"
 
 
 def test_render_markdown_is_deterministic_and_closes_every_block() -> None:

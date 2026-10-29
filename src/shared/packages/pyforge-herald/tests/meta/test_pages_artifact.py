@@ -361,15 +361,127 @@ def test_109_3_the_manifest_is_the_url_form_and_every_plugin_is_mounted(site: Pa
             ),
             "marketplace/marketplace.json: plugin name mason-environment repeats",
         ),
+        # loop 3, row 48: the converse in both directions and the whole prefix
+        (
+            lambda root: _listings(root, [("mason", "environment"), ("warden", "scan")]),
+            "marketplace/listings.json lists skill warden/scan but marketplace/skills/warden/scan/ is not mounted",
+        ),
+        (
+            lambda root: (
+                _listings(root, [("mason", "environment"), ("warden", "scan")]),
+                write(root / "marketplace/skills/warden/scan/SKILL.md", "# skill\n"),
+            ),
+            "marketplace/listings.json lists skill warden/scan but marketplace/skills/warden/scan.html is not mounted",
+        ),
+        (
+            lambda root: (
+                _listings(root, [("mason", "environment"), ("warden", "scan")]),
+                write(root / "marketplace/skills/warden/scan/SKILL.md", "# skill\n"),
+                write(root / "marketplace/skills/warden/scan.html", "<p>card</p>"),
+            ),
+            "marketplace/listings.json lists skill warden/scan but marketplace/marketplace.json has no plugin for it",
+        ),
+        (
+            lambda root: write(root / "marketplace/notes.txt", "stray"),
+            "marketplace/notes.txt is mounted under marketplace/ but is not a site document, a card or a skill folder file",
+        ),
+        (
+            lambda root: write(root / "marketplace/skills/mason/stray.txt", "stray"),
+            "marketplace/skills/mason/stray.txt is mounted under marketplace/ but is not a site document",
+        ),
+        (
+            lambda root: write(root / "marketplace/skills/README.md", "stray"),
+            "marketplace/skills/README.md is mounted under marketplace/ but is not a site document",
+        ),
+        (
+            lambda root: write(root / "marketplace/modules/x.html", "<p>card</p>"),
+            "marketplace/modules/x.html is mounted but marketplace/listings.json lists no such card",
+        ),
+        (
+            lambda root: write(
+                root / "marketplace/listings.json",
+                json.dumps(
+                    {
+                        "schema": "pyforge.bmad-marketplace/v1",
+                        "listings": [
+                            {"id": "mason/environment", "kind": "skill", "scope": "mason", "slug": "environment"},
+                            {"id": "module/x", "kind": "module", "name": "x"},
+                        ],
+                    }
+                ),
+            ),
+            "marketplace/listings.json lists a card at marketplace/modules/x.html but it is not mounted",
+        ),
+        (
+            lambda root: write(root / "marketplace/skills/mason/environment/references/pic.png", "png"),
+            "marketplace/skills/mason/environment/references/pic.png is mounted but is not a file a skill folder ships",
+        ),
+        (
+            lambda root: (root / "marketplace/skills/mason/environment/steps.md").write_bytes(b"x" * (1_048_576 + 1)),
+            "marketplace/skills/mason/environment/steps.md is mounted but is over 1048576 bytes",
+        ),
+        (
+            lambda root: write(
+                root / "marketplace/listings.json",
+                json.dumps({"schema": "pyforge.bmad-marketplace/v1", "listings": [{"id": "mason/environment"}]}),
+            ),
+            "marketplace/listings.json: listing 0 is not a well-formed row",
+        ),
+        (
+            lambda root: write(
+                root / "marketplace/listings.json",
+                json.dumps(
+                    {
+                        "schema": "pyforge.bmad-marketplace/v1",
+                        "listings": [{"id": "other/x", "kind": "skill", "scope": "mason", "slug": "environment"}],
+                    }
+                ),
+            ),
+            "marketplace/listings.json: listing 0 is not a well-formed row",
+        ),
     ],
 )
 def test_109_3_the_artifact_is_held_to_the_listings_and_the_manifest(site: Path, plant, finding: str) -> None:
-    """Loop 2, row 27: the converse of the manifest check -- a mounted folder or card with no listing or plugin, a
-    mounted file outside the allowlist, a listings document that is not this schema, a repeated plugin name."""
+    """Loop 2, row 27; loop 3, row 48: the converse of the manifest check in both directions -- a mounted folder
+    or card with no listing or plugin, a listed skill with no folder, card or plugin, a mounted file outside the
+    allowlist or over the file cap, a stray path under the prefix, a non-skill card with no listing and the
+    reverse, a listings document that is not this schema or holds a malformed row, a repeated plugin name."""
     plant_marketplace(site)
     _listings(site, [("mason", "environment")])
     plant(site)
     _one(pages_check(site, env=MARKETPLACE_ON, origins=False), finding)
+
+
+def test_109_3_a_manifest_whose_plugins_is_not_a_list_is_named_once(site: Path) -> None:
+    """Loop 3, row 48: the shape finding, with no per-folder 'has no plugin' finding on top of it."""
+    plant_marketplace(site, [_plugin("mason", "environment"), _plugin("warden", "scan")])
+    _listings(site, [("mason", "environment"), ("warden", "scan")])
+    write(site / "marketplace/marketplace.json", json.dumps({"name": "pyforge-bmad-marketplace", "plugins": "none"}))
+    findings = pages_check(site, env=MARKETPLACE_ON, origins=False)
+    assert findings == ["marketplace/marketplace.json: plugins is not a list"]
+
+
+def test_109_3_a_mount_with_a_module_card_and_text_references_passes(site: Path) -> None:
+    plant_marketplace(site, [_plugin("mason", "environment")])
+    write(
+        site / "marketplace/listings.json",
+        json.dumps(
+            {
+                "schema": "pyforge.bmad-marketplace/v1",
+                "listings": [
+                    {"id": "mason/environment", "kind": "skill", "scope": "mason", "slug": "environment"},
+                    {"id": "module/x", "kind": "module", "name": "x"},
+                    {"id": "agent/y", "kind": "agent", "slug": "y", "name": "Y"},
+                ],
+            }
+        )
+        + "\n",
+    )
+    write(site / "marketplace/modules/x.html", "<!doctype html><p>card</p>")
+    write(site / "marketplace/agents/y.html", "<!doctype html><p>card</p>")
+    for name in ("a.md", "b.txt", "c.yaml", "d.yml", "e.json", "deep/F.MD"):
+        write(site / f"marketplace/skills/mason/environment/references/{name}", "x\n")
+    assert pages_check(site, env=MARKETPLACE_ON, origins=False) == []
 
 
 def _listings(root: Path, skills: list[tuple[str, str]]) -> None:

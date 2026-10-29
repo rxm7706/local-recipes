@@ -27,31 +27,29 @@ article{border-top:1px solid #d6d3d1;padding-top:1rem;margin-top:1rem}
 <h2>Unpublished packages</h2><ul><li>pyforge-mason: PyPI, conda-forge, and SelfExplainML returned 404 on 2026-10-21</li><li>pyforge-core: Required by pyforge mason dispatch; same 404 check</li></ul>
 <h2>Sources</h2><ul><li>GitHub release: not published</li><li>Artifactory conda: not published</li><li>Artifactory pip: not published</li></ul>
 <h2>Steps</h2>
-<h3>Steps — @mason/package</h3>
 <p>Run these from the project you want to build. Verified 2026-10-21 against the engine modules <code>pyforge.mason.engines.pep517</code> and <code>pyforge.mason.engines.pixi</code> and the tools on the verifying host. Each version below is what that tool&#x27;s <code>--version</code> printed on that host on 2026-10-21, unless the step says otherwise.</p>
 <p><strong>Before you start.</strong> <code>pyforge-mason</code> 0.1.0 and <code>pyforge-core</code> returned HTTP 404 on PyPI, conda-forge, and SelfExplainML on 2026-10-21. Steps 1 and 4 wait on those packages. Steps 0, 2, and 3 run today.</p>
-<h4>0. Install the published tools</h4>
+<h3>0. Install the published tools</h3>
 <ul><li><code>build</code> 1.6.1: <code>pip install build</code> (PyPI <code>build</code>) or <code>conda install -c conda-forge python-build</code>. It installs the <code>pyproject-build</code> command.</li><li>Your project&#x27;s build backend, the package named under <code>[build-system] requires</code> in <code>pyproject.toml</code> (for example <code>hatchling</code> or <code>setuptools</code>), in the same environment. <code>pyproject-build --no-isolation</code> does not install it and stops with <code>BackendUnavailable</code> when it is missing.</li><li><code>pixi</code> 0.81.0 (re-read 2026-10-28), for step 3 only: <code>conda install -c conda-forge pixi</code>, or the installer at https://pixi.sh.</li></ul>
-<h4>1. See the station command (waits on <code>pyforge-mason</code>)</h4>
+<h3>1. See the station command (waits on <code>pyforge-mason</code>)</h3>
 <p>When <code>pyforge-mason</code> is on your <code>PATH</code>:</p>
 <pre><code class="language-bash">pyforge mason package build . --target library
 </code></pre>
 <p>That build uploads nothing. <code>--target library</code> is the v1 target.</p>
-<h4>2. Build a wheel and sdist with the engine the station calls</h4>
+<h3>2. Build a wheel and sdist with the engine the station calls</h3>
 <p>From the project directory:</p>
 <pre><code class="language-bash">pyproject-build --no-isolation
 </code></pre>
 <p>That is the argv in <code>pyforge.mason.engines.pep517</code>. The same module says the console script is <code>python -m build --no-isolation --outdir dist</code>.</p>
-<h4>3. Optional conda artifact</h4>
+<h3>3. Optional conda artifact</h3>
 <pre><code class="language-bash">pixi build --output-dir dist
 </code></pre>
 <p>That is the build argv in <code>pyforge.mason.engines.pixi</code> (<code>pixi build --output-dir</code>). This is not a pixi environment run.</p>
-<h4>4. Do not upload in the pilot (waits on <code>pyforge-mason</code>)</h4>
+<h3>4. Do not upload in the pilot (waits on <code>pyforge-mason</code>)</h3>
 <p><code>pyforge mason package ship --to pypi-test</code> is a dry run until <code>--yes</code>. After <code>--yes</code> the station runs <code>twine upload</code> (<code>twine</code> 7.0.0 was present on the verifying host) or <code>pixi upload prefix --channel &lt;name&gt;</code>. Do not run <code>twine upload</code> or <code>pixi upload</code> from these steps. <code>pypi</code> publishes permanently.</p>
-<h4>5. Stop</h4>
+<h3>5. Stop</h3>
 <p>A conda-forge recipe is a different skill. Do not open a feedstock from here.</p>
 <h2>Related</h2><ul><li>@mason/environment</li><li>@warden/scan</li></ul>
-<h2>Contribute</h2><p>Lane: code-backed. A pull request is the publish path.</p>
-<p>Code-backed: this listing requires a package. An instructions-only skill has none.</p>
+<h2>Contribute</h2><p>Lane: code-backed. A pull request is the publish path; the lanes are defined in the marketplace README.</p>
 </body>
 </html>

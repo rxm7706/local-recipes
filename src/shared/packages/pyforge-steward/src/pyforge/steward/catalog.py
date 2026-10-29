@@ -134,8 +134,10 @@ MARKETPLACE_NAME = "pyforge-bmad-marketplace"
 MARKETPLACE_ROOT_RELATIVE = "docs/foundry/marketplace"
 MARKETPLACE_JSON_RELATIVE = "docs/foundry/marketplace/.claude-plugin/marketplace.json"
 # ``site`` is in the sparse set so a teammate who follows Round 0 from a sparse
-# checkout has ``site/index.html`` to open (review 2026-10-28, row 11).
+# checkout has ``site/index.html`` to open (review 2026-10-28, row 11); ``.agents``
+# so the Codex pointer below finds its manifest there too (loop 3, row 51).
 MARKETPLACE_SPARSE_PATHS = (
+    "docs/foundry/marketplace/.agents",
     "docs/foundry/marketplace/.claude-plugin",
     "docs/foundry/marketplace/site",
     "docs/foundry/marketplace/skills",
@@ -1774,7 +1776,9 @@ class CatalogEngine:
             "codex_note": (
                 f"that directory's {CODEX_ROOT_MANIFEST_RELATIVE} lists the skill listings (written by "
                 f"pyforge.steward.marketplace_pages.write_codex_manifest); codex plugin marketplace add {repo} "
-                f"(the owner/repo form) needs {CODEX_ROOT_MANIFEST_RELATIVE} at the repository root, and none exists"
+                f"(the owner/repo form) needs {CODEX_ROOT_MANIFEST_RELATIVE} at the repository root, and none exists. "
+                "Round 0 of docs/foundry/marketplace/MANUAL-CHECKLIST.md records whether a Codex install exposes the "
+                "skill; until it does, that manifest is a discovery pointer and the folder copy is the install"
             ),
             "github_note": github_note,
             # Verified live 2026-09-19 (bmad-method 6.12.0): the installer resolves

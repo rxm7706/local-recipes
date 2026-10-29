@@ -17,7 +17,11 @@ install targets and ``docs.steps`` that cannot leave the skill folder;
 against the packages; the folder and its ``SKILL.md`` present; every folder
 declared; unique ids, cards and plugin names; a kind-to-directory map; a
 quoted ``verified_at``; every document rendered before the site directory
-is touched, and the site written into a fresh tree.
+is touched, and the site written into a fresh tree. Loop 3 of that review
+(rows 42-57) made containment the validator's (a symlinked parent, a FIFO),
+the previous ``listings.json`` the inventory ``write_site`` may replace,
+the fence and link grammar CommonMark-shaped, and the build line refused on
+a tree that does not declare the flag.
 """
 
 from __future__ import annotations
@@ -115,7 +119,7 @@ def listing_from_estate_module(row: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(name, str) or not name.strip():
         raise MarketplaceIndexError("an estate module row needs a name")
     name = name.strip()
-    if not SLUG.match(name):
+    if not SLUG.fullmatch(name):
         raise MarketplaceIndexError(f"an estate module name must match {SLUG.pattern}, got {name!r}")
     trust = row.get("trust_tier") or "unverified"
     source = row.get("source") or "estate-listings"
@@ -148,10 +152,20 @@ def _require_str(row: dict[str, Any], key: str, where: str) -> str:
     return value.strip()
 
 
+def _require_exact(row: dict[str, Any], key: str, where: str) -> str:
+    """A non-empty string with no surrounding whitespace: ``id`` and ``path`` flow raw into ``listings.json`` and the
+    folder lookup, so a stripped comparison would admit ``" mason/environment"`` (loop 3, row 53)."""
+    value = _require_str(row, key, where)
+    if row.get(key) != value:
+        raise MarketplaceIndexError(f"{where}: {key} {row.get(key)!r} carries surrounding whitespace")
+    return value
+
+
 def _require_slug(row: dict[str, Any], key: str, where: str) -> str:
-    """The raw value must match ``SLUG``: a stripped match would let ``" mason"`` flow into hrefs and zip names."""
+    """The raw value must match ``SLUG`` whole: a stripped match would let ``" mason"`` flow into hrefs and zip names,
+    and ``re.match`` against ``$`` would let ``"mason\\n"`` (a double-quoted YAML scalar) through (loop 3, row 57)."""
     value = row.get(key)
-    if not isinstance(value, str) or not SLUG.match(value):
+    if not isinstance(value, str) or not SLUG.fullmatch(value):
         raise MarketplaceIndexError(f"{where}: {key} {value!r} must match {SLUG.pattern}")
     return value
 
@@ -164,7 +178,7 @@ def validate_listing(row: dict[str, Any], *, root: Path | None = None) -> None:
     """
     if not isinstance(row, dict):
         raise MarketplaceIndexError("a listing must be a mapping")
-    ident = _require_str(row, "id", "listing")
+    ident = _require_exact(row, "id", "listing")
     kind = _require_str(row, "kind", ident)
     if kind not in KINDS:
         raise MarketplaceIndexError(f"{ident}: kind {kind!r} is not one of {sorted(KINDS)}")
@@ -207,16 +221,14 @@ def validate_listing(row: dict[str, Any], *, root: Path | None = None) -> None:
     if kind == "skill":
         scope = _require_slug(row, "scope", ident)
         slug = _require_slug(row, "slug", ident)
-        path = _require_str(row, "path", ident)
+        path = _require_exact(row, "path", ident)
         expected = f"skills/{scope}/{slug}"
         if path != expected:
             raise MarketplaceIndexError(f"{ident}: path {path!r} must be {expected!r}")
         if ident != f"{scope}/{slug}":
             raise MarketplaceIndexError(f"{ident}: a skill's id must be {scope}/{slug}")
         if root is not None:
-            folder = root / path
-            if folder.is_symlink() or not folder.is_dir():
-                raise MarketplaceIndexError(f"{ident}: folder {path} is not a directory in {root}")
+            folder = _contained_folder(root, path, ident)
             if not (folder / "SKILL.md").is_file():
                 raise MarketplaceIndexError(f"{ident}: {path}/SKILL.md is missing")
             _validate_skill_folder(folder, ident)
@@ -224,7 +236,7 @@ def validate_listing(row: dict[str, Any], *, root: Path | None = None) -> None:
         for key in ("scope", "slug"):
             if row.get(key) is not None:
                 _require_slug(row, key, ident)
-        if row.get("slug") is None and not SLUG.match(str(row["name"])):
+        if row.get("slug") is None and not SLUG.fullmatch(str(row["name"])):
             raise MarketplaceIndexError(f"{ident}: name {row['name']!r} names the card; it must match {SLUG.pattern}")
         # A non-skill row's folder, when it names one, sits under its kind's directory (review loop 2, row 20).
         kind_path = row.get("path")
@@ -232,15 +244,32 @@ def validate_listing(row: dict[str, Any], *, root: Path | None = None) -> None:
             expected = f"{KIND_DIRS[kind]}/{row.get('slug') or row['name']}"
             if not isinstance(kind_path, str) or not _safe_relative(kind_path) or kind_path != expected:
                 raise MarketplaceIndexError(f"{ident}: path {kind_path!r} must be {expected!r}")
-            if root is not None and (root / kind_path).is_symlink():
-                raise MarketplaceIndexError(f"{ident}: folder {kind_path} is a symlink")
-            if root is not None and not (root / kind_path).is_dir():
-                raise MarketplaceIndexError(f"{ident}: folder {kind_path} is not a directory in {root}")
+            if root is not None:
+                _contained_folder(root, kind_path, ident)
     _validate_docs(row, ident)
     try:
         json.dumps(row)
     except TypeError as exc:
         raise MarketplaceIndexError(f"{ident}: a value is not JSON (an unquoted YAML date or time?): {exc}") from exc
+
+
+def _contained_folder(root: Path, relative: str, ident: str) -> Path:
+    """The listing's folder under ``root``: a directory, not a symlink at any level, whose resolved path stays inside
+    the resolved marketplace (loop 3, row 42: ``skills/linked -> /outside`` passed the leaf-only check, so both
+    manifests were written for a folder outside the tree)."""
+    folder = root / relative
+    probe = root
+    for part in relative.split("/"):
+        probe = probe / part
+        if probe.is_symlink():
+            raise MarketplaceIndexError(
+                f"{ident}: {probe.relative_to(root).as_posix()} is a symlink; folder {relative} is refused"
+            )
+    if not folder.is_dir():
+        raise MarketplaceIndexError(f"{ident}: folder {relative} is not a directory in {root}")
+    if not folder.resolve().is_relative_to(root.resolve()):
+        raise MarketplaceIndexError(f"{ident}: folder {relative} resolves outside the marketplace")
+    return folder
 
 
 def _validate_requires(row: dict[str, Any], ident: str) -> list[dict[str, Any]]:
@@ -297,7 +326,7 @@ def _allowed_install_target(target: str) -> bool:
     head = "/".join(parts[:2])
     if head not in INSTALL_TARGETS or len(parts) > 3:
         return False
-    return len(parts) == 2 or SLUG.match(parts[2]) is not None
+    return len(parts) == 2 or SLUG.fullmatch(parts[2]) is not None
 
 
 def _safe_relative(value: str) -> bool:
@@ -310,7 +339,7 @@ def _safe_relative(value: str) -> bool:
 
 def _validate_skill_folder(folder: Path, ident: str) -> None:
     """What a skill folder may hold (review loop 2, rows 23 and 38): ``SKILL.md``, ``steps.md``, ``listing.yaml``
-    and text files under ``references/``; no symlink, no dot entry, no other file; one file under
+    and text files under ``references/``; regular files only (no symlink, no FIFO), no dot entry, no other file; one file under
     :data:`MAX_SHIPPED_FILE_BYTES` and the folder under :data:`MAX_SHIPPED_FOLDER_BYTES`. The mount and the release
     zip ship exactly this set, so the folder a teammate copies from git is the same skill."""
     total = 0
@@ -329,6 +358,9 @@ def _validate_skill_folder(folder: Path, ident: str) -> None:
                     f"{', '.join(SKILL_FILES)} and {REFERENCES_DIR}/"
                 )
             continue
+        if not entry.is_file():
+            # a FIFO, a socket or a device node (loop 3, row 43): read_text would block or throw on it
+            raise MarketplaceIndexError(f"{ident}: {rel} is not a regular file")
         if len(parts) == 1:
             if parts[0] not in SKILL_FILES:
                 raise MarketplaceIndexError(f"{ident}: {rel} is not one of {', '.join(SKILL_FILES)}; it does not ship")
@@ -530,96 +562,161 @@ def _steps_text(row: dict[str, Any], steps_root: Path | None) -> str | None:
 
 # ------------------------------------------------------------------------------------------ markdown
 
-#: A fence opens with three or more backticks or tildes after at most three spaces; the info string's first word
-#: is the language (``bash title=x`` is still a bash fence); a backtick fence's info string holds no backtick.
-_FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})[ \t]*([A-Za-z0-9_+.-]*)(?:[ \t][^`]*)?$")
+#: A fence opens with three or more backticks or tildes (matched after the line's indent is taken off, so a fence
+#: under a list item or indented four spaces still opens); the info string's first word, cut at the first ``,`` or
+#: ``{``, is the language (``bash title=x``, ``python,linenos`` and ``bash{.cls}`` are still bash and python fences;
+#: ``{r}`` has none); a backtick fence's info string holds no backtick (loop 3, row 46).
+_FENCE = re.compile(r"^(`{3,}|~{3,})[ \t]*(\S*)(.*)$")
 _HEADING = re.compile(r"^(#{1,6})\s+(.*\S)\s*$")
 _BULLET = re.compile(r"^( *)[-*]\s+(.*)$")
-_ORDERED = re.compile(r"^( *)\d+[.)]\s+(.*)$")
+#: An ordered marker is one or two digits (loop 3, row 47: ``2026. The year`` is a paragraph, not a list).
+_ORDERED = re.compile(r"^( *)(\d{1,2})[.)]\s+(.*)$")
 _CODE_SPAN = re.compile(r"(`[^`]+`)")
 _STRONG = re.compile(r"\*\*([^*]+)\*\*")
-_LINK = re.compile(r"\[([^\]]+)\]\(([^)\s]+)\)")
+#: ``[text](url)``; a preceding ``!`` (an image) leaves the whole thing literal.
+_LINK = re.compile(r"(?<!!)\[([^\]]+)\]\(([^)\s]+)\)")
 
 
-def _link(match: re.Match[str]) -> str:
-    """``[text](url)`` as a link for an ``http(s)`` or relative target; any other scheme stays literal text."""
-    text, url = match.group(1), match.group(2)
-    scheme = url.split(":", 1)[0].lower() if ":" in url.split("/", 1)[0] else ""
-    if scheme and scheme not in ("http", "https"):
-        return match.group(0)
-    return f'<a href="{url}">{text}</a>'
+def _link_href(url: str, link_base: str) -> str | None:
+    """The ``href`` for a markdown target, or ``None`` when it stays literal text (loop 3, row 47).
+
+    ``http(s)`` targets pass through. A relative target (no scheme, not ``/``-rooted, not protocol-relative, no
+    ``..`` or empty segment) is prefixed with ``link_base`` so a card beside the mounted skill folder points into
+    it. A fragment-only target passes through. Any other scheme, ``//host``, ``/rooted`` and a traversing path
+    stay literal.
+    """
+    if url.startswith("#"):
+        return url
+    head = url.split("/", 1)[0]
+    scheme = url.split(":", 1)[0].lower() if ":" in head else ""
+    if scheme:
+        return url if scheme in ("http", "https") and url.lower().startswith(f"{scheme}://") else None
+    if url.startswith("/"):
+        return None
+    path = url.split("#", 1)[0].split("?", 1)[0]
+    if not _safe_relative(path):
+        return None
+    return f"{link_base}{url}"
 
 
-def _inline(text: str) -> str:
+def _inline(text: str, link_base: str = "") -> str:
     """Escaped text with ``code`` spans, ``**strong**`` and ``[text](url)`` links; nothing else is markup."""
+
+    def link(match: re.Match[str]) -> str:
+        href = _link_href(match.group(2), link_base)
+        return match.group(0) if href is None else f'<a href="{href}">{match.group(1)}</a>'
+
     rendered: list[str] = []
-    for part in _CODE_SPAN.split(html.escape(text)):
-        if len(part) >= 2 and part.startswith("`") and part.endswith("`"):
+    # re.split with one group alternates text and code span; the odd parts are the spans (a bare "``" in text is
+    # text, loop 3's non-fence case)
+    for index, part in enumerate(_CODE_SPAN.split(html.escape(text))):
+        if index % 2:
             rendered.append(f"<code>{part[1:-1]}</code>")
         else:
-            rendered.append(_LINK.sub(_link, _STRONG.sub(r"<strong>\1</strong>", part)))
+            rendered.append(_LINK.sub(link, _STRONG.sub(r"<strong>\1</strong>", part)))
     return "".join(rendered)
 
 
-def _closes(line: str, marker: str) -> bool:
+def _opens(line: str) -> tuple[str, str, int] | None:
+    """``(marker, language, indent)`` when ``line`` opens a fence, else ``None``."""
+    stripped = line.lstrip()
+    fence = _FENCE.match(stripped)
+    if not fence:
+        return None
+    marker, info, tail = fence.group(1), fence.group(2), fence.group(3)
+    if marker[0] == "`" and "`" in info + tail:
+        return None
+    language = re.split(r"[,{]", info, maxsplit=1)[0]
+    return marker, language, len(line) - len(stripped)
+
+
+def _closes(line: str, marker: str, indent: int) -> bool:
+    """A closing fence: the opening marker's character, at least as long, nothing else, indented at most three
+    spaces past the opening fence (loop 3, row 46: a deeper-indented backtick line is code, not the close)."""
     stripped = line.strip()
-    return stripped.startswith(marker[0]) and set(stripped) == {marker[0]} and len(stripped) >= len(marker)
+    leading = len(line) - len(line.lstrip(" "))
+    return (
+        leading <= indent + 3
+        and stripped.startswith(marker[0])
+        and set(stripped) == {marker[0]}
+        and len(stripped) >= len(marker)
+    )
 
 
-def render_markdown(text: str, *, heading_offset: int = 1) -> str:
-    """A deterministic minimal renderer for ``steps.md`` (review 2026-10-28, row 5; loop 2, row 25).
+#: One list item: ordered?, the marker's number (1 for a bullet), text, nested items ``(ordered?, number, text)``.
+_Item = tuple[bool, int, str, list[tuple[bool, int, str]]]
+
+
+def _list_html(ordered: bool, start: int, rows: list[str]) -> str:
+    tag = "ol" if ordered else "ul"
+    attribute = f' start="{start}"' if ordered and start != 1 else ""
+    return f"<{tag}{attribute}>" + "".join(rows) + f"</{tag}>"
+
+
+def render_markdown(text: str, *, heading_offset: int = 1, link_base: str = "", skip_leading_h1: bool = False) -> str:
+    """A deterministic minimal renderer for ``steps.md`` (review 2026-10-28, row 5; loop 2, row 25; loop 3, rows
+    46, 47 and 55).
 
     Recognised: ATX headings (demoted by ``heading_offset`` levels, so the
-    card keeps its one ``h1``), fenced code blocks (backtick or tilde, an
-    info string, up to three spaces of indent, closed by a fence of the same
-    marker), ``-``/``*`` bullet and ``1.`` ordered lists (one level of
-    nesting by indent; an indented following line continues the item; a
-    fence inside a list closes the list), blank-line-separated paragraphs,
-    inline ``code`` spans, ``**strong**`` and ``[text](url)`` links to
-    ``http(s)`` or relative targets. Everything is HTML-escaped first; raw
-    HTML and images stay literal text. Pure: the same text renders the same
-    bytes.
+    card keeps its one ``h1``; with ``skip_leading_h1`` the text's first line,
+    when it is a ``#`` heading, is dropped), fenced code blocks (backtick or
+    tilde, an info string, any indent, closed by a fence of the same marker
+    indented at most three spaces past the opening), ``-``/``*`` bullet and
+    ``1.`` ordered lists (one level of nesting by indent, each level with its
+    own tag and an ``<ol>`` carrying ``start`` when its first marker is not
+    1; an indented following line continues the item; a fence inside a list
+    closes the list), blank-line-separated paragraphs, inline ``code``
+    spans, ``**strong**`` and ``[text](url)`` links to ``http(s)`` or
+    relative targets, the relative ones prefixed with ``link_base``.
+    Everything is HTML-escaped first; raw HTML, images, ``//host`` and
+    ``/rooted`` links stay literal text. Pure: the same text renders the
+    same bytes.
     """
     lines = text.splitlines()
+    if skip_leading_h1:
+        first = next((i for i, line in enumerate(lines) if line.strip()), None)
+        if first is not None and _HEADING.match(lines[first]) and lines[first].startswith("# "):
+            lines = lines[first + 1 :]
     out: list[str] = []
     paragraph: list[str] = []
-    # Each list item: (ordered?, text, nested items).
-    items: list[tuple[bool, str, list[str]]] = []
+    items: list[_Item] = []
+
+    def inline(part: str) -> str:
+        return _inline(part, link_base)
 
     def flush_paragraph() -> None:
         if paragraph:
-            out.append(f"<p>{_inline(' '.join(paragraph))}</p>")
+            out.append(f"<p>{inline(' '.join(paragraph))}</p>")
             paragraph.clear()
 
     def flush_list() -> None:
         if not items:
             return
-        ordered = items[0][0]
-        tag = "ol" if ordered else "ul"
-        parts = []
-        for _ordered, item, nested in items:
-            inner = "".join(f"<li>{_inline(child)}</li>" for child in nested)
-            parts.append(f"<li>{_inline(item)}{f'<ul>{inner}</ul>' if inner else ''}</li>")
-        out.append(f"<{tag}>" + "".join(parts) + f"</{tag}>")
+        rows = []
+        for _ordered, _number, item, nested in items:
+            inner = ""
+            if nested:
+                inner = _list_html(nested[0][0], nested[0][1], [f"<li>{inline(child)}</li>" for _, _, child in nested])
+            rows.append(f"<li>{inline(item)}{inner}</li>")
+        out.append(_list_html(items[0][0], items[0][1], rows))
         items.clear()
 
     index = 0
     while index < len(lines):
         line = lines[index]
-        fence = _FENCE.match(line.lstrip() if items else line)
-        if fence:
+        opened = _opens(line)
+        if opened:
             flush_paragraph()
             flush_list()
-            marker, language = fence.group(1), fence.group(2)
-            indent = len(line) - len(line.lstrip())  # a fence under a list item: its lines lose that indent
+            marker, language, indent = opened  # a fence under a list item: its lines lose that indent
             code: list[str] = []
             index += 1
-            while index < len(lines) and not _closes(lines[index], marker):
+            while index < len(lines) and not _closes(lines[index], marker, indent):
                 body = lines[index]
                 code.append(body[indent:] if body[:indent].strip() == "" else body.lstrip())
                 index += 1
             index += 1  # the closing fence, or the end of the text
-            attribute = f' class="language-{language}"' if language else ""
+            attribute = f' class="language-{html.escape(language, quote=True)}"' if language else ""
             out.append(f"<pre><code{attribute}>{html.escape(chr(10).join(code))}\n</code></pre>")
             continue
         heading = _HEADING.match(line)
@@ -627,28 +724,33 @@ def render_markdown(text: str, *, heading_offset: int = 1) -> str:
             flush_paragraph()
             flush_list()
             level = min(len(heading.group(1)) + heading_offset, 6)
-            out.append(f"<h{level}>{_inline(heading.group(2))}</h{level}>")
+            out.append(f"<h{level}>{inline(heading.group(2))}</h{level}>")
             index += 1
             continue
-        listed = _BULLET.match(line) or _ORDERED.match(line)
-        if listed:
+        bullet, numbered = _BULLET.match(line), _ORDERED.match(line)
+        if bullet or numbered:
             flush_paragraph()
-            ordered = _ORDERED.match(line) is not None
-            indent, body = len(listed.group(1)), listed.group(2).strip()
+            ordered = numbered is not None
+            if numbered:
+                indent, number, body = len(numbered.group(1)), int(numbered.group(2)), numbered.group(3).strip()
+            else:
+                assert bullet is not None
+                indent, number, body = len(bullet.group(1)), 1, bullet.group(2).strip()
             if items and indent >= 2:
-                items[-1][2].append(body)
+                items[-1][3].append((ordered, number, body))
             else:
                 if items and items[0][0] != ordered:
                     flush_list()
-                items.append((ordered, body, []))
+                items.append((ordered, number, body, []))
             index += 1
             continue
         if items and line.startswith("  ") and line.strip():
-            ordered, body, nested = items[-1]
+            ordered, number, body, nested = items[-1]
             if nested:
-                nested[-1] = f"{nested[-1]} {line.strip()}"
+                child_ordered, child_number, child = nested[-1]
+                nested[-1] = (child_ordered, child_number, f"{child} {line.strip()}")
             else:
-                items[-1] = (ordered, f"{body} {line.strip()}", nested)
+                items[-1] = (ordered, number, f"{body} {line.strip()}", nested)
             index += 1
             continue
         if not line.strip():
@@ -695,10 +797,11 @@ def _page(title: str, body: str) -> str:
 def render_skill_card(row: dict[str, Any], *, steps_text: str | None = None) -> str:
     """One self-contained skill card.
 
-    Order (the review of 2026-10-28, row 5): what it is, Install, Unpublished
-    packages, Sources, the verified date, then Steps (``steps.md`` rendered
-    with :func:`render_markdown`), Jobs, Related, Contribute. The paper
-    prototype's sample commands are not rendered.
+    Order (the review of 2026-10-28, row 5; loop 2, row 26): the header meta
+    lines carry the verified date and the jobs, then what it is, Install,
+    Unpublished packages, Sources, Steps (``steps.md`` rendered with
+    :func:`render_markdown`), Related, Contribute. The paper prototype's
+    sample commands are not rendered.
     """
     validate_listing(row)
     title = str(row.get("title") or row.get("display_name") or row["name"])
@@ -761,8 +864,10 @@ def render_skill_card(row: dict[str, Any], *, steps_text: str | None = None) -> 
         bits.append(_sources_html(row))
     if steps_text:
         bits.append("<h2>Steps</h2>")
-        # The runbook's own ``#`` sits two levels down, so its steps are ``<h4>`` under this one ``<h2>``.
-        bits.append(render_markdown(steps_text, heading_offset=2))
+        # The runbook's own ``#`` (its title, the card's h1 already names the skill) is skipped and the rest demoted
+        # one level, so its steps are ``<h3>`` under this one ``<h2>`` (loop 3, row 55); a relative link on the
+        # runbook points into the mounted folder beside this card (row 47).
+        bits.append(render_markdown(steps_text, heading_offset=1, link_base=f"{row['slug']}/", skip_leading_h1=True))
     elif row.get("kind") == "skill":
         bits.append("<h2>Steps</h2><p>This card has no <code>steps.md</code> to render.</p>")
     related = row.get("related") or []
@@ -771,9 +876,11 @@ def render_skill_card(row: dict[str, Any], *, steps_text: str | None = None) -> 
         bits.append(f"<h2>Related</h2><ul>{items}</ul>")
     lane = _listing_lane(row)
     if lane:
-        bits.append(f"<h2>Contribute</h2><p>Lane: {html.escape(lane)}. A pull request is the publish path.</p>")
-        if lane == "code-backed":
-            bits.append("<p>Code-backed: this listing requires a package. An instructions-only skill has none.</p>")
+        # The lanes are defined once, in the marketplace README (loop 3, row 55); the card names this listing's.
+        bits.append(
+            f"<h2>Contribute</h2><p>Lane: {html.escape(lane)}. A pull request is the publish path; "
+            "the lanes are defined in the marketplace README.</p>"
+        )
     return _page(title, "\n".join(bits))
 
 
@@ -989,16 +1096,53 @@ def render_site(
     return documents
 
 
-def _is_generated_site(site_dir: Path) -> bool:
-    """A tree this module wrote: ``listings.json`` at its root with this schema (review loop 2, row 22)."""
+def _generated_site_inventory(site_dir: Path) -> set[str] | None:
+    """The files a tree this module wrote may hold, read from its ``listings.json`` (review loop 2, row 22; loop 3,
+    row 45): the three documents plus one card per listing of that file. ``None`` when there is no such file, it is
+    not JSON, or its schema is not this module's."""
     listings = site_dir / "listings.json"
-    if not listings.is_file():
-        return False
+    if listings.is_symlink() or not listings.is_file():
+        return None
     try:
         payload = json.loads(listings.read_text(encoding="utf-8"))
     except OSError, ValueError:
-        return False
-    return isinstance(payload, dict) and payload.get("schema") == SCHEMA_ID
+        return None
+    if (
+        not isinstance(payload, dict)
+        or payload.get("schema") != SCHEMA_ID
+        or not isinstance(payload.get("listings"), list)
+    ):
+        return None
+    inventory = {"index.html", "listings.json", "marketplace.json"}
+    for row in payload["listings"]:
+        if not isinstance(row, dict) or not isinstance(row.get("kind"), str) or row["kind"] not in KIND_DIRS:
+            return None
+        try:
+            inventory.add(_card_href(row))
+        except MarketplaceIndexError:
+            return None
+    return inventory
+
+
+def _check_generated_site(site_dir: Path) -> None:
+    """Refuse to replace ``site_dir`` unless every entry in it is one a render of its own ``listings.json`` produces:
+    the marker alone is not ownership (loop 3, row 45: ``precious.txt`` beside a marker was deleted)."""
+    inventory = _generated_site_inventory(site_dir)
+    if inventory is None:
+        raise MarketplaceIndexError(
+            f"site directory {site_dir} is not a generated site (no listings.json with schema {SCHEMA_ID}); "
+            "refusing to replace it"
+        )
+    foreign = sorted(
+        path.relative_to(site_dir).as_posix()
+        for path in site_dir.rglob("*")
+        if path.is_symlink() or (not path.is_dir() and path.relative_to(site_dir).as_posix() not in inventory)
+    )
+    if foreign:
+        raise MarketplaceIndexError(
+            f"site directory {site_dir} holds files no render of its listings.json produces "
+            f"({', '.join(foreign)}); refusing to replace it"
+        )
 
 
 def write_site(
@@ -1014,7 +1158,9 @@ def write_site(
     is off or no flag tree is found. ``flags_path`` is for tests; production
     reads the estate tree. Every document is rendered first; then
     ``site_dir`` is replaced by a fresh tree, so a card whose listing was
-    dropped or renamed does not survive (review 2026-10-28, row 4).
+    dropped or renamed does not survive (review 2026-10-28, row 4). A
+    non-empty ``site_dir`` is replaced only when every file in it is one its
+    own ``listings.json`` accounts for (loop 2, row 22; loop 3, row 45).
     """
     _require_enabled(flags_path, "pages")
     documents = render_site(rows, steps_root=steps_root)
@@ -1025,11 +1171,8 @@ def write_site(
     if site_dir.exists():
         if not site_dir.is_dir():
             raise MarketplaceIndexError(f"site directory {site_dir} is not a directory")
-        if any(site_dir.iterdir()) and not _is_generated_site(site_dir):
-            raise MarketplaceIndexError(
-                f"site directory {site_dir} is not a generated site (no listings.json with schema {SCHEMA_ID}); "
-                "refusing to replace it"
-            )
+        if any(site_dir.iterdir()):
+            _check_generated_site(site_dir)
         shutil.rmtree(site_dir)
     site_dir.mkdir(parents=True)
     written: list[Path] = []
@@ -1117,13 +1260,27 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if not args.flag_env:
         parser.error("--flag-env is the one verb")
-    if cutover_root.resolve_flags_path(None) is None:
+    tree = cutover_root.resolve_flags_path(None)
+    if tree is None:
         # Off plus no mount is a valid pages-check state, so a silent 0 would drop /marketplace/ from a deploy
         # with a green workflow (review loop 2, row 37).
         sys.stderr.write(
             f"{FLAG_KEY}: no flag tree found (set PYFORGE_FLAGS_PATH or run from the repository root, whose "
             "src/platform/config/flags.json is the tree); refusing to print a build line\n"
         )
+        return 2
+    # The same silent 0 through read_boolean's WARN-and-default on a tree that resolves but is unreadable, not
+    # JSON or missing the key (loop 3, row 53): the key must be declared before a line is printed.
+    try:
+        document = json.loads(Path(tree).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        sys.stderr.write(
+            f"{FLAG_KEY}: {tree} is not a readable JSON flag tree ({exc}); refusing to print a build line\n"
+        )
+        return 2
+    flags = document.get("flags") if isinstance(document, dict) else None
+    if not isinstance(flags, dict) or FLAG_KEY not in flags:
+        sys.stderr.write(f"{FLAG_KEY}: {tree} declares no such flag; refusing to print a build line\n")
         return 2
     sys.stdout.write(f"{FLAG_ENV}={'1' if pages_enabled() else '0'}\n")
     return 0
