@@ -883,6 +883,25 @@ def test_flag_env_never_prints_a_value_the_reader_defaulted(
     assert captured.out == "" and needle in captured.err and "refusing to print a build line" in captured.err
 
 
+@pytest.mark.parametrize("value", [["on"], {"v": "on"}])
+def test_flag_env_refuses_an_overlay_value_that_is_no_variant_name_by_name(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], value: object
+) -> None:
+    """Loop 8, row 123: the loop-7 comparison read the overlay value before the reader had validated it, so a list or
+    object value raised a raw ``TypeError`` (exit 1) where ``b16ee6c0b0`` refused it by name (exit 2)."""
+    from pyforge.steward.marketplace_pages import main
+
+    on = _flags_tree(tmp_path / "flags", dev="on")
+    overlays = {"dev": {FLAG_KEY: value}, "staging": {FLAG_KEY: "off"}, "production": {FLAG_KEY: "off"}}
+    (tmp_path / "flags" / "flag-overlays.json").write_text(json.dumps(overlays), encoding="utf-8")
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(on))
+    assert main(["--flag-env"]) == 2
+    captured = capsys.readouterr()
+    assert (
+        captured.out == "" and "not a variant name" in captured.err and "refusing to print a build line" in captured.err
+    )
+
+
 def test_flag_env_reads_the_overlay_of_the_resolved_environment(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

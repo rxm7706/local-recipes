@@ -11,8 +11,8 @@ flag:
   scope: global
   fallback: 'write_site writes nothing and the committed site/ stays in git; the Pages build mounts no /marketplace/ (absent, not stale)'
   cleanup: 90 days after ON in every environment (Q4)
-review_loop_iteration: 7
-followup_review_recommended: true
+review_loop_iteration: 8
+followup_review_recommended: false
 context:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py
   - src/shared/packages/pyforge-steward/tests/unit/test_marketplace_pages.py
@@ -609,3 +609,49 @@ Operator go-ahead of 2026-10-29: this pass lands the five failing-class rows (11
 ### Review contract for loop 8 (operator go-ahead 2026-10-29)
 
 Loop 8 is a verification pass, not a full review. An independent row verifier, reading the tree without this § Fixes text or the commit message, checks that rows 113-117 are closed. A differential probe runs the same inputs (the renderer, the manifest writers, the flag-env step, the rewrite) through the loop-7 fix commit and its parent and reports every input the parent handled correctly that the fix commit does not. No adversarial, edge-case, structure or TEA lens runs. The story fails only on a row the tree does not close or a verified regression (the loop-7 readings of "parent", "verified" and "regression" hold); any other finding is a deferred-work row and does not fail the story. When loop 8 passes, 109.3 stays `in-review` for the operator's decisions (row 35 first, then the ledger flip and the merge), and no further review loop runs.
+
+## Review (2026-10-29, verification pass, loop 8)
+
+Verdict: passed after one fix. Two checks ran under § Review contract for loop 8.
+
+The row verifier read the tree at `4d36cab17b` without the § Fixes text or the commit message. It found rows 113-117 closed: 114 and 115 closed, and 113, 116 and 117 closed as asked with a test gap each. It found no regression.
+
+The differential probe ran the same inputs through `4d36cab17b` and its parent `b16ee6c0b0`:
+
+| Area | Inputs per module |
+|---|---|
+| Renderer | 540,072 renders over four generated corpora, plus the committed runbooks |
+| Manifest writers | 44 shapes and 90 writer calls |
+| Flag-env step | 62 runs |
+| Rewrite | 44,604 environment combinations and 126,120 texts |
+
+Every renderer, writer and rewrite difference is the change rows 114-117 asked for. The committed site, manifests and mount are byte-identical. HEAD never prints a wrong build line with exit 0, and never writes outside the tree while returning an in-tree path.
+
+The probe found one regression, row 123: a list or object overlay value under dev raised a raw `TypeError` (exit 1) where the parent refused it by name (exit 2). It failed closed both ways, since no build line was printed either way. It was fixed in the same pass (§ Fixes (loop 8)). The probe then re-ran its flag-env corpus against the fix: both inputs exit 2 with the parent's named refusal, and every other run matches its earlier result.
+
+The loop-8 contract fails the story on a verified regression and names no failing branch. This regression was fixed and re-probed by the same probe in the same pass, so 109.3 stays `in-review` and no further review loop is recommended. The operator may hold the merge for another verification pass instead. Every other finding is deferred as `DW-steward-109-3-10`.
+
+What remains is the operator's: row 35 (a merge publishes `/marketplace/` on the public Pages site, because `pages.yml` resolves the dev overlay, where the flag is on), the ledger flip of 109.2 and 109.3, the PR's draft state and the merge.
+
+Source: a fresh row-verifier subagent and a fresh differential-probe subagent, both read-only on the tree. The probe compared HEAD with the parent's modules taken by `git show b16ee6c0b0:<path>`. The reviewer is the session that implemented loops 6 and 7.
+
+### Loop-7 rows
+
+| # | Verdict | Evidence / remaining gap |
+|---|---|---|
+| 113 | closed as asked (gap: two of the five named shapes are probed, not tested) | `marketplace_pages.py` `main --flag-env`: the exact-state refusal, the composed value and the comparison after the reader. Tests: the parametrized lower-case, absent and sibling-`PAUSED` cases and the staging case. Probed on copies of the real tree: own `state` lower-case and absent, own and sibling unknown keys, sibling `PAUSED` and `disabled`, and a list in metadata each exit 2. The real tree prints `=1` under dev and `=0` under staging and production; `DISABLED` prints `=0`. |
+| 114 | closed | `_contained_dest` walks the destination as spelled. Each case the row named was probed against HEAD and the parent, for both writers: the alias into the tree, `rootalias/loop`, `linkdir/..`, `a/link/../index.yaml` (restored, byte-identical manifests) and the outside `outlink/../m.json`. Every legitimate write lands in-tree. |
+| 115 | closed | The lookahead is `(?![A-Za-z0-9_-]\|\.[A-Za-z0-9])`, as asked. The `#`, `?` and `/` forms follow the host; `.bak`, `.github.io`, `.git.github.io` and `.gitx` stay; a sentence's `.` ends the URL. Mutants that restore the loop-6 class, or drop or widen the `.` rule, are killed. |
+| 116 | closed as asked (gap: `DEPLOY_SERVER`'s `^`, the IPv6 class, the owner-side `.`/`..` lookahead and `{4,}` survive mutation) | The shapes accept every value the row named and throw on each quote-suffixed value and on `../..` and `org/..`. The listed `$`, class and bound mutants are killed. The code as written throws on the survivors' injection inputs. |
+| 117 | closed as asked (gap: the `""` base for `[r](a<b.md)` and `[b](steps.md>)` is probed, not tested) | The four plain forms are links under `e/` and `""`; the three `<`-started forms stay literal under every base; micromark agrees on the links. |
+
+### New findings
+
+| # | Lens | Class | Finding | Fix |
+|---|---|---|---|---|
+| 123 | differential probe | regression (fixed in this pass) | The loop-7 comparison computed the expected value from `named[FLAG_KEY]` before `pages_enabled()` had validated the overlay. A list or object value (`["on"]`, `{"v": "on"}`) under dev therefore raised `TypeError: cannot use 'list' as a dict key` (exit 1), where `b16ee6c0b0` refused it with "is list, not a variant name" (exit 2). It failed closed both ways. | § Fixes (loop 8). |
+| 124 | row verifier, differential probe | deferred (`DW-steward-109-3-10`) | Loop-8 residue: the test gaps in rows 113, 116 and 117 above; `~` and `%` after the clone URL are rewritten under row 115's regex, so README's "a URL the clone URL only begins" overstates for them (a GitHub repository name holds neither); a targeting rule that evaluates off is refused with a message that names a fallback that did not happen (no estate flag uses targeting); a destination equal to the root raises a raw `IsADirectoryError` (the parent's message called it outside the tree; the `DW-steward-109-3-5` family); an outside alias of an in-tree symlink writes where that symlink points (its resolution never lies inside the root; the parent does the same). | As `DW-steward-109-3-10` lays out. |
+
+### Fixes (2026-10-29, loop 8)
+
+- Row 123: `main --flag-env` keeps the overlay's value and computes the expected value only after `pages_enabled()` has validated the overlay, so a list or object value is refused by the reader by name (exit 2), as at `b16ee6c0b0`. `test_flag_env_refuses_an_overlay_value_that_is_no_variant_name_by_name` covers a list and an object. The differential probe's flag-env corpus re-ran against the fix: the two inputs now match the parent byte for byte, every other run matches its earlier result, and no run prints a wrong line with exit 0.

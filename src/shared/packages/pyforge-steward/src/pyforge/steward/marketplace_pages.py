@@ -1516,7 +1516,7 @@ def main(argv: list[str] | None = None) -> int:
             "refusing to print a build line\n"
         )
         return 2
-    expected: object = False  # a killed flag reads off whatever its overlay names
+    named_variant: object = None  # a killed flag reads off whatever its overlay names
     if state == "ENABLED":
         # loop 6, row 101: an overlay file with no value for the flag under this environment ({} or {"dev": {}})
         # read the base default and printed 0 with exit 0; a killed flag keeps its tree default, so it needs none
@@ -1532,12 +1532,15 @@ def main(argv: list[str] | None = None) -> int:
                 "value is the overlay's); refusing to print a build line\n"
             )
             return 2
-        expected = variants.get(named[FLAG_KEY])
+        named_variant = named[FLAG_KEY]
     try:
         enabled = pages_enabled()
     except FlagConfigError as exc:  # an overlay or metadata the reader refuses: never a defaulted line
         sys.stderr.write(f"{FLAG_KEY}: {exc}; refusing to print a build line\n")
         return 2
+    # the overlay value is read only after the reader has validated it (loop 8, row 123: a list or object value
+    # raised a raw TypeError here before the reader could refuse it by name)
+    expected = False if state == "DISABLED" else variants.get(named_variant) if isinstance(named_variant, str) else None
     if enabled is not expected:
         # loop 7, row 113: the reader falls back to its default when its file provider refuses the tree (any flag's
         # unknown key or state), so a value that differs from what the tree and the overlay compose is never printed

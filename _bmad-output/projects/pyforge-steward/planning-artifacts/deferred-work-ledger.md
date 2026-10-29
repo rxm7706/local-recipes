@@ -6771,3 +6771,20 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-10-29 — recorded by hand in the loop-7 review of PR #2274
   status: open
+
+### DW-steward-109-3-10: Loop-8 residue: three test gaps, a `~`/`%` boundary note, a targeting-rule message and two destination edge forms
+
+- source_spec: `planning-artifacts/specs/spec-109-3-a-marketplace-tree-renders-a-pages-index-from-listings.md`
+  summary: The loop-8 verification pass found these, none a regression or unclosed row:
+  - Test gaps. Row 113's own-unknown-key and sibling-unknown-key shapes are probed but not tested. Row 116's `DEPLOY_SERVER` `^`, its IPv6 class (a `\[[^\]]+\]` widening would admit `https://[a"onmouseover="b]`), the owner-side `.`/`..` lookahead and the `{4,}` upper bound survive mutation; the code as written throws on each injection input. Row 117's `""` base for `[r](a<b.md)` and `[b](steps.md>)` is probed, not tested. The `_`, `-` and `.`+digit members of the clone-URL lookahead are unpinned.
+  - `~` and `%` after the clone URL are rewritten under row 115's regex, so README § Regenerate's "a URL the clone URL only begins" overstates for them. A GitHub repository name holds neither.
+  - A targeting rule that evaluates off is refused with a message naming a fallback that did not happen. No estate flag uses targeting.
+  - A destination equal to the root raises a raw `IsADirectoryError` (the `DW-steward-109-3-5` family).
+  - An outside alias of an in-tree symlink writes where that symlink points; its resolution never lies inside the root, and the parent does the same.
+  evidence: Loop-8 review row 124 (2026-10-29): the row verifier's probes and mutants, and the differential probe's corpora against `b16ee6c0b0`.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py; docs-site/src/lib/marketplace.ts; docs/foundry/marketplace/README.md; the steward and herald marketplace tests
+  fix: a case per test gap; either add `~%` to the lookahead's class or say in README that they continue the URL; name a targeting rule in the flag-env message; refuse a directory destination by name.
+  origin: loop-8 review row 124; deferred under the story spec's § Review contract for loop 8
+  severity: low
+  promoted: 2026-10-29 — recorded by hand in the loop-8 verification pass of PR #2274
+  status: open
