@@ -5,8 +5,8 @@ created: '2026-10-21'
 status: 'in-review'
 baseline_revision: '53aed16fe1957ab340c6146cb7bf0c3f810c1746'
 flag-exempt: docs-only
-review_loop_iteration: 2
-followup_review_recommended: true
+review_loop_iteration: 3
+followup_review_recommended: false
 context:
   - .claude/skills/mason-environment/SKILL.md
   - .claude/skills/mason-package/SKILL.md
@@ -115,3 +115,26 @@ Every loop-2 row landed on PR #2274 on 2026-10-28; the story moves to `in-review
 - Row 11: environment `SKILL.md` keeps the argv, defers the substitutions and the `-p` rule to `steps.md` step 2, and keeps the one `--check-input-hash` rule; package `SKILL.md` defers the backend precondition to step 0; the pixi bullet reads "`pixi` 0.81.0 (re-read 2026-10-28)".
 - Row 12 (decided): each `SKILL.md` and the template keep the two install directories and drop the tool-matrix caveat; the card and the README hold which directory each tool reads.
 - Row 13: one test per skill (`test_environment_steps_name_the_verified_commands`, `test_package_steps_name_the_verified_commands`, `test_warden_scan_steps_name_the_verified_commands`) and a parametrized `test_every_pilot_file_records_the_404_and_its_date`.
+
+## Review (2026-10-28, independent, loop 3)
+
+Verdict: passed. Every loop-2 row is closed in the tree (the verifier's table below); the six pilot files hold the commands the acceptance criteria name, read without the station source, and the test suite pins each criterion's wording and the lock's pixi version. Three editorial rows remain and do not block: two are one-line pointer errors the loop-2 rewrite introduced in 109.2's files, one is duplication; the 109.3 loop-3 pass, which edits the same README and cards, carries them. The story stays `in-review` for the operator's ledger flip; no further review loop is recommended. Source: five lenses (adversarial, edge-case-hunter, verification-gap, structure, tea-test-review) as fresh subagents over `git diff d2702f1f8f..80d46a5f31`, plus an independent row verifier reading the tree against the loop-2 table without the § Fixes text. Line numbers are `80d46a5f31`'s.
+
+### Loop-2 rows
+
+| # | Verdict | Evidence |
+|---|---|---|
+| 8 | closed | environment `steps.md:39-45` offers `pyproject.toml`, `environment.yml` and both; `:47-51` "not a `conda-lock` input"; `grep -c -- '-f requirements\|-f pixi.toml'` → 0; `test_pilot_skills.py:57-59` refuses both; 13 passed. |
+| 9 | closed | `test_pilot_skills.py:119-124` reads the `linux-64` pin from `pixi.lock` (`:263` pins 0.81.0) and asserts the runbook states it. |
+| 10 | closed | package `SKILL.md:20` installed section → `:30` `### Upload` → `:48` until-published → `:62` what-not; the H2 set matches `templates/SKILL.md`. |
+| 11 | closed | environment `SKILL.md:44-52` keeps the argv and defers the substitutions and the `-p` rule to step 2; package `SKILL.md:55-56` defers the backend precondition to step 0; package `steps.md:21` reads "`pixi` 0.81.0 (re-read 2026-10-28)". |
+| 12 | closed (hybrid) | The matrix caveat condensed to a pointer in each `SKILL.md` and the template; the two install paths stay. See row 14 for the pointer. |
+| 13 | closed | `test_pilot_skills.py:48,62,71` one test per skill; `:80-84` parametrized over `_texts()` for the `404` + `2026-10-21` rule. |
+
+### New findings (editorial, non-blocking)
+
+| # | Lens | Finding | Required fix |
+|---|---|---|---|
+| 14 | structure | Each pilot `SKILL.md` (environment `:13-16`, package `:12-15`, warden `:13-16`) and `templates/SKILL.md:14-17` end the install paragraph with "Which directory each tool reads is on the card and in the README": inside an installed folder or the release zip there is no card and no README, and the tool reading `SKILL.md` after install does not need the per-tool directory. | Cut the sentence (or link the card URL once `/marketplace/` is live). |
+| 15 | structure | environment `steps.md:47-51` says "the station's discovery hands those files to the engine today, so step 1 inherits that failure": step 1 on this runbook is `--help`, which discovers nothing; the engine step (148 words, three times any other) carries a note about a command it does not run. | Move the station-defect sentence into **Before you start** (which already lists what waits on `pyforge-mason`); step 2 keeps "not a `conda-lock` input: do not pass it with `-f`" and the `pip:` guidance. |
+| 16 | structure | package `SKILL.md:54-56,58-60` and warden `SKILL.md:42-44` repeat their `steps.md` sentences verbatim (the console-script note, "not a pixi environment run", the engines' stdout); row 11 landed on environment only. The `### Upload` block's three closing sentences repeat `steps.md` step 4. | Condense each § Until to the argv plus "`steps.md` step N"; trim the Upload block's repeats. |
