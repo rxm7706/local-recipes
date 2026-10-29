@@ -5,7 +5,7 @@ created: '2026-10-21'
 status: 'in-review'
 baseline_revision: '53aed16fe1957ab340c6146cb7bf0c3f810c1746'
 flag-exempt: docs-only
-review_loop_iteration: 4
+review_loop_iteration: 5
 followup_review_recommended: false
 context:
   - .claude/skills/mason-environment/SKILL.md
@@ -151,3 +151,7 @@ The three editorial rows landed on PR #2274 on 2026-10-28 with the 109.3 loop-3 
 
 Verdict: passed (confirmation). The three loop-3 editorial rows are closed in the tree, checked by an independent row verifier without the § Fixes text: row 14 (the pointer sentence absent from the three pilot `SKILL.md` and the template; `test_pilot_skills.py:99-103`), row 15 (environment `steps.md:11-13` carries the discovery note in **Before you start**, step 2 `:49-52` keeps the two guidances; `test_pilot_skills.py:106-116`), row 16 (package `SKILL.md:47-55` and warden `SKILL.md:40-43` are argv plus `steps.md` pointers). The Verification command exits 0 (14 passed). One editorial residue, carried by 109.3's loop-4 row 79 and not blocking: environment `SKILL.md:48-52` still repeats `steps.md` step 3 (the temporary-copy sentence) and package `SKILL.md:41-44` still repeats step 4's after-`--yes` sentence. The story stays `in-review` for the operator's ledger flip; no further review loop is recommended for 109.2 itself. Source: the loop-4 structure lens and row verifier over `git diff c05521b877..636258ec79`.
 
+
+## Review (2026-10-29, independent, loop 5)
+
+Verdict: passed (confirmation). The loop-4 edits to the three pilot `SKILL.md` files (109.3 row 79: environment `SKILL.md:48-50` and package `SKILL.md:41-44` point at `steps.md` steps 2/3 and 4, warden `SKILL.md` at step 1) each land on a step that carries the fact, checked by the loop-5 structure lens and row verifier without the § Fixes text; the Verification command exits 0 (14 passed). Two editorial residues, carried by 109.3's loop-5 row 94 and not blocking: the loop-4 edit dropped the two `twine upload` flags (`--non-interactive --disable-progress-bar`) from package `SKILL.md` and `steps.md` step 4 names only `twine upload`, so the pointer promises more than its home carries; warden `steps.md:55` carries an agent instruction (do not import `pyforge.warden`) in the human runbook, and the not-a-second-verdict fact has five homes across the pair. Acceptance criteria 1-6 hold unchanged. The story stays `in-review` for the operator's ledger flip; no further review loop is recommended for 109.2 itself. Source: the loop-5 structure and edge-case-hunter lenses and row verifier over `git diff 46e9179b56..40758c33bf`.
