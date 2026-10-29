@@ -97,10 +97,11 @@ generated here, by `write_plugin_manifests`.
 three pilots are `community` / `unverified` (no review record) and
 `code-backed` (each requires a package). An instructions-only skill has no
 package. A card renders `steps.md` (its own `#` title skipped, its steps as
-`<h3>` under the card's one `Steps` heading; a relative link such as
-`[steps.md](steps.md)` points into the mounted folder beside the card),
-names both install directories and every unpublished package, and shows the
-listing's `verified_at` date or "never verified".
+`<h3>` under the card's one `Steps` heading; a relative link on the runbook,
+one whose target is `steps.md` or `references/x.md`, points into the mounted
+folder beside the card), names both install directories and every
+unpublished package, and shows the listing's `verified_at` date or "never
+verified".
 
 The listing rules `validate_listing` enforces are the PR template's
 § Listing, one checkbox each (`.github/PULL_REQUEST_TEMPLATE/marketplace-skill.md`);
