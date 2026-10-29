@@ -834,6 +834,71 @@ def test_flag_env_refuses_an_overlay_the_reader_refuses(
     assert captured.out == "" and "metadata" in captured.err and "refusing to print a build line" in captured.err
 
 
+def _flag_tree_shapes() -> list[tuple[str, object, str]]:
+    """Trees the flag reader's OpenFeature file provider refuses as a whole, though every earlier check passes, and
+    the refusal each gets: the flag's own state is held to the provider's two values before the reader runs; a
+    sibling's shape reaches the reader, which falls back to its default after an eight-second readiness wait, so
+    one case covers that path."""
+
+    def own(key: str, value: object):
+        def edit(flags: dict) -> None:
+            if value is None:
+                flags[FLAG_KEY].pop(key)
+            else:
+                flags[FLAG_KEY][key] = value
+
+        return edit
+
+    def sibling(key: str, value: object):
+        def edit(flags: dict) -> None:
+            flags["pyforge.other"] = dict(flags[FLAG_KEY], **{key: value})
+
+        return edit
+
+    return [
+        ("own state lower-case", own("state", "enabled"), "accepts ENABLED or DISABLED only"),
+        ("own state absent", own("state", None), "accepts ENABLED or DISABLED only"),
+        ("sibling state PAUSED", sibling("state", "PAUSED"), "the reader fell back to its default"),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("label", "edit", "needle"), _flag_tree_shapes(), ids=[label for label, _, _ in _flag_tree_shapes()]
+)
+def test_flag_env_never_prints_a_value_the_reader_defaulted(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], label: str, edit, needle: str
+) -> None:
+    """Loop 7, row 113: the reader falls back to off when its file provider refuses the tree (a state other than
+    ``ENABLED``/``DISABLED``, or any flag's unknown key), and the step printed ``=0`` with exit 0 while the dev
+    overlay was on. The state is held to the provider's two values and the reader's value to the composed one."""
+    from pyforge.steward.marketplace_pages import main
+
+    on = _flags_tree(tmp_path / "flags", dev="on")
+    tree = json.loads(on.read_text(encoding="utf-8"))
+    edit(tree["flags"])
+    on.write_text(json.dumps(tree), encoding="utf-8")
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(on))
+    assert main(["--flag-env"]) == 2
+    captured = capsys.readouterr()
+    assert captured.out == "" and needle in captured.err and "refusing to print a build line" in captured.err
+
+
+def test_flag_env_reads_the_overlay_of_the_resolved_environment(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Loop 7, row 113: the overlay value is read for ``PYFORGE_ENVIRONMENT``, not for ``dev``; an overlay naming the
+    flag under dev only is refused under staging (loop 7 found a mutant reading ``dev`` always surviving)."""
+    from pyforge.steward.marketplace_pages import main
+
+    on = _flags_tree(tmp_path / "flags", dev="on")
+    (tmp_path / "flags" / "flag-overlays.json").write_text(json.dumps({"dev": {FLAG_KEY: "on"}}), encoding="utf-8")
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(on))
+    monkeypatch.setenv("PYFORGE_ENVIRONMENT", "staging")
+    assert main(["--flag-env"]) == 2
+    captured = capsys.readouterr()
+    assert captured.out == "" and "names no value for the flag under staging" in captured.err
+
+
 @pytest.mark.parametrize("overlays", [{}, {"dev": {}}, {"dev": {"pyforge.other": "on"}, "staging": {}}])
 def test_flag_env_refuses_an_overlay_file_with_no_value_for_the_flag(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], overlays: dict
@@ -1305,13 +1370,14 @@ def test_a_dot_dot_destination_is_read_lexically_for_both_manifests(
 def test_a_dot_dot_after_a_symlinked_directory_is_refused_for_both_manifests(tmp_path: Path, writer, name: str) -> None:
     """Loop 6, row 96: the loop-5 lexical reading collapsed ``linkdir/..`` before the symlink walk, while the OS
     follows ``linkdir`` first, so ``root/linkdir/../<manifest>`` was written under ``linkdir``'s target's parent;
-    ``4e1ac45dbc`` refused it. A tree reached under another spelling (``link -> root``) is the tree: a destination
-    spelled through either name is held to the symlink rule."""
+    ``4e1ac45dbc`` refused it, and since loop 7 (row 114) the walk refuses it at ``linkdir`` again. A tree reached
+    under another spelling (``link -> root``) is the tree: a destination spelled through either name is held to the
+    symlink rule."""
     root = _marketplace(tmp_path)
     on = _flags_tree(tmp_path / "flags", dev="on")
     (tmp_path / "elsewhere" / "sub").mkdir(parents=True)
     (root / "linkdir").symlink_to(tmp_path / "elsewhere" / "sub")
-    with pytest.raises(MarketplaceIndexError, match="steps back out of a symlink with '..'"):
+    with pytest.raises(MarketplaceIndexError, match="linkdir is a symlink; refusing to write through it"):
         writer(root / "index.yaml", root / "linkdir" / ".." / name, flags_path=on)
     assert not list((tmp_path / "elsewhere").rglob("*.json")) and not (root / name).exists()
     (root / "linkdir").unlink()
@@ -1325,6 +1391,48 @@ def test_a_dot_dot_after_a_symlinked_directory_is_refused_for_both_manifests(tmp
         with pytest.raises(MarketplaceIndexError, match=f"{first} is a symlink; refusing to write through it"):
             writer(index, dest, flags_path=on)
     assert not list((tmp_path / "elsewhere").rglob("*.json"))
+
+
+@pytest.mark.parametrize("writer", [write_plugin_manifest, write_codex_manifest])
+def test_the_destination_is_walked_as_spelled(tmp_path: Path, writer) -> None:
+    """Loop 7, row 114: the walk enters the tree at the first prefix that resolves inside it, whatever spelling
+    reaches it. An alias of an in-tree directory followed by an in-tree symlink out, and an alias of the root through
+    ``.claude-plugin -> root``, were written or passed; a destination that never enters the tree, or leaves it by
+    ``..``, is the caller's and is written where the OS puts it."""
+    root = _marketplace(tmp_path)
+    on = _flags_tree(tmp_path / "flags", dev="on")
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    (root / "inner").mkdir()
+    (root / "inner" / "x").symlink_to(elsewhere)
+    (tmp_path / "alias").symlink_to(root / "inner")
+    with pytest.raises(MarketplaceIndexError, match="^[^:]+: inner/x is a symlink; refusing to write through it"):
+        writer(root / "index.yaml", tmp_path / "alias" / "x" / "m.json", flags_path=on)
+    assert not list(elsewhere.rglob("*"))
+    (root / "loop").symlink_to(root)
+    (tmp_path / "rootalias").symlink_to(root)
+    with pytest.raises(MarketplaceIndexError, match="loop is a symlink; refusing to write through it"):
+        writer(root / "index.yaml", tmp_path / "rootalias" / "loop" / "m.json", flags_path=on)
+    assert not (root / "m.json").exists()
+    (tmp_path / "out" / "sub").mkdir(parents=True)
+    (tmp_path / "outlink").symlink_to(tmp_path / "out" / "sub")
+    written = writer(root / "index.yaml", tmp_path / "outlink" / ".." / "m.json", flags_path=on)
+    assert written.resolve() == tmp_path / "out" / "m.json" and written.is_file()
+
+
+def test_an_index_spelled_through_a_symlink_and_dot_dot_writes_beside_the_index_it_read(tmp_path: Path) -> None:
+    """Loop 7, row 114: loop 6's lexical compare refused ``a/link/../index.yaml`` (``link -> root/inner``), which
+    ``080ce9f012`` wrote beside the index it read; the walk follows the ``..`` as the OS does."""
+    root = _marketplace(tmp_path)
+    on = _flags_tree(tmp_path / "flags", dev="on")
+    (root / "inner").mkdir()
+    (tmp_path / "a").mkdir()
+    (tmp_path / "a" / "link").symlink_to(root / "inner")
+    written = write_plugin_manifests(tmp_path / "a" / "link" / ".." / "index.yaml", flags_path=on)
+    assert [path.resolve() for path in written] == [
+        root / ".claude-plugin" / "marketplace.json",
+        root / ".agents" / "plugins" / "marketplace.json",
+    ]
 
 
 @pytest.mark.parametrize("writer", [write_plugin_manifest, write_codex_manifest])

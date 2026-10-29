@@ -63,17 +63,21 @@ export const PUBLIC_REPOSITORY_URL = PUBLIC_MARKETPLACE_GIT_URL.replace(/\.git$/
 /** The card's repository links, as `pyforge.steward.marketplace_pages.REPOSITORY_BLOB_URL` renders them. */
 export const PUBLIC_BLOB_URL = `${PUBLIC_REPOSITORY_URL}/blob/main/`;
 
-/** The public clone URL as a whole token: a URL it merely begins (`…/local-recipes.github.io/…`) is another link
- * (loop 6, row 106). A trailing `.` ends a sentence, not the URL. */
+/** The public clone URL as a whole token: a URL it merely begins (`…/local-recipes.github.io/…`, `….git.bak`) is
+ * another link (loop 6, row 106); a `#`, `?` or `/` after it continues the clone URL (`git+….git#subdirectory=…`),
+ * which is rewritten as it was before loop 6 (loop 7, row 115); a trailing `.` ends a sentence, not the URL. */
 const PUBLIC_CLONE_URL_TOKEN = new RegExp(
-  PUBLIC_MARKETPLACE_GIT_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![A-Za-z0-9_~/?#%-])',
+  PUBLIC_MARKETPLACE_GIT_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![A-Za-z0-9_-]|\\.[A-Za-z0-9])',
   'g',
 );
-/** The shapes GitHub Actions gives the three names the rewrite splices into every card's links (loop 6, row 106: an
- * unvalidated `GITHUB_SHA` such as `abc"onmouseover="…` became markup inside each `href`). */
-const DEPLOY_SERVER = /^https?:\/\/[A-Za-z0-9.-]+(?::\d+)?(?:\/[A-Za-z0-9._~-]+)*$/;
-const DEPLOY_REPOSITORY = /^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/;
-const DEPLOY_SHA = /^[0-9a-f]{7,64}$/;
+/** The shapes the three names the rewrite splices into every card's links may take (loop 6, row 106: an unvalidated
+ * `GITHUB_SHA` such as `abc"onmouseover="…` became markup inside each `href`): an http(s) server, any letter case,
+ * with a host name or a bracketed IPv6 literal, an optional port and path; `owner/name` with neither `.` nor `..` as
+ * a segment; a hexadecimal commit of 4 to 64 digits, any letter case (loop 7, row 116: the loop-6 shapes refused
+ * values the rewrite had handled). Each is anchored at both ends. */
+const DEPLOY_SERVER = /^https?:\/\/(?:[A-Za-z0-9._-]+|\[[0-9A-Fa-f:.]+\])(?::\d+)?(?:\/[A-Za-z0-9._~-]+)*$/i;
+const DEPLOY_REPOSITORY = /^(?!\.\.?\/)[A-Za-z0-9._-]+\/(?!\.\.?$)[A-Za-z0-9._-]+$/;
+const DEPLOY_SHA = /^[0-9a-fA-F]{4,64}$/;
 
 /** `marketplace.json` and the cards for the host that runs the build: GitHub Actions names it, and exactly the two
  * forms the renderer emits are replaced, the public clone URL and the public repository's `blob/main/` links (loop 4,

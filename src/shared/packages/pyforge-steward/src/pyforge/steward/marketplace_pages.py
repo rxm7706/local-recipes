@@ -30,7 +30,6 @@ import argparse
 import datetime as _dt
 import html
 import json
-import os
 import posixpath
 import re
 import shutil
@@ -671,12 +670,14 @@ def _inline(text: str, link_base: str | None = None) -> str:
 
     def link(match: re.Match[str]) -> str:
         target = match.group(2)
-        if len(target) >= 8 and target.startswith("&lt;") and target.endswith("&gt;"):
-            # a CommonMark <destination>, escaped already (loop 5, row 93): the brackets are not part of the target
-            target = target[4:-4]
-        if "&lt;" in target or "&gt;" in target:
-            # loop 6, row 107: a half-bracketed or nested destination is no file name; it stays literal text
-            return match.group(0)
+        if target.startswith("&lt;"):
+            # a CommonMark <destination>, escaped already (loop 5, row 93): whole-bracketed with no bracket inside,
+            # else literal text (loop 6, row 107). A destination that does not start with `<` is a plain one, where
+            # CommonMark admits `<` and `>` (loop 7, row 117: `?q=<a>` was left literal)
+            inner = target[4:-4] if len(target) >= 8 and target.endswith("&gt;") else None
+            if inner is None or "&lt;" in inner or "&gt;" in inner:
+                return match.group(0)
+            target = inner
         href = _link_href(target, link_base)
         return match.group(0) if href is None else f'<a href="{href}">{match.group(1)}</a>'
 
@@ -1370,43 +1371,30 @@ def write_site_from_index(
 
 
 def _contained_dest(root: Path, dest: Path, what: str) -> None:
-    """A manifest under ``root`` is written only where no symlink stands between ``root`` and it, every directory
-    on the way is a directory, and its parent resolves inside the tree (loop 4, row 65: ``root/.agents ->
-    /elsewhere`` took the Codex manifest outside the marketplace while the returned path was the in-tree one). A
-    ``dest`` outside ``root`` is the caller's. Both sides are normalised lexically (loop 5, row 85: a relative
-    ``root`` with an absolute ``dest`` made ``relative_to`` raise and the check return), so a ``dest`` whose
-    lexical and physical parents differ (loop 6, row 96: ``root/linkdir/../.claude-plugin``, where the OS follows
-    ``linkdir`` before the ``..``) is refused, and the tree is found under any spelling of it (row 96: an index
-    read through ``link -> root`` with a ``dest`` spelled through ``root``)."""
-    root_abs = Path(os.path.abspath(root))
-    dest_abs = Path(os.path.abspath(dest))
-    if Path(dest).parent.resolve() != dest_abs.parent.resolve():
-        raise MarketplaceIndexError(
-            f"{what}: {Path(dest).as_posix()} steps back out of a symlink with '..'; refusing to write through it"
-        )
-    root_real = root_abs.resolve()
-    if dest_abs.is_relative_to(root_abs):
-        base = root_abs
-    else:
-        found = next((parent for parent in dest_abs.parents if parent.resolve() == root_real), None)
-        if found is None:
-            return
-        base = found
-    relative = dest_abs.relative_to(base)
-    probe = base
-    for index, part in enumerate(relative.parts):
-        probe = probe / part
-        if probe.is_symlink():
-            raise MarketplaceIndexError(
-                f"{what}: {probe.relative_to(base).as_posix()} is a symlink; refusing to write through it"
-            )
-        if index < len(relative.parts) - 1 and probe.exists() and not probe.is_dir():
-            # loop 6, row 97: mkdir(parents=True) raised a raw FileExistsError
-            raise MarketplaceIndexError(
-                f"{what}: {probe.relative_to(base).as_posix()} is not a directory; refusing to write under it"
-            )
-    if not dest_abs.parent.resolve().is_relative_to(root_real):
-        raise MarketplaceIndexError(f"{what}: {relative.as_posix()} resolves outside the marketplace")
+    """A manifest is written only where no symlink inside the marketplace stands on its way and every directory on
+    its way is a directory (loop 4, row 65: ``root/.agents -> /elsewhere`` took the Codex manifest outside the tree
+    while the returned path was the in-tree one; loop 6, row 97: a file on the way raised a raw ``FileExistsError``).
+
+    The destination is walked as spelled, made absolute but not normalised (loop 7, row 114): the walk is inside the
+    tree from the first prefix that resolves inside the resolved root, whatever spelling reaches it (an alias of the
+    root or of a directory in it), and a ``..`` is followed as the OS follows it. So ``root/linkdir/../x`` is refused
+    at ``linkdir`` when that is a symlink, an index spelled ``a/link/../index.yaml`` writes beside the index it read,
+    and a destination that never enters the tree, or leaves it by ``..``, is the caller's."""
+    root_real = Path(root).resolve()
+    parts = Path(dest).absolute().parts
+    current = Path(parts[0])
+    inside = current.resolve().is_relative_to(root_real)
+    last = len(parts) - 1
+    for index, part in enumerate(parts[1:], start=1):
+        candidate = current / part
+        if inside and part != "..":
+            where = (current.resolve() / part).relative_to(root_real).as_posix()
+            if candidate.is_symlink():
+                raise MarketplaceIndexError(f"{what}: {where} is a symlink; refusing to write through it")
+            if index < last and candidate.exists() and not candidate.is_dir():
+                raise MarketplaceIndexError(f"{what}: {where} is not a directory; refusing to write under it")
+        current = candidate
+        inside = current.resolve().is_relative_to(root_real)
 
 
 def write_plugin_manifest(
@@ -1520,7 +1508,16 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 2
     state = entry.get("state")
-    if not (isinstance(state, str) and state.upper() == "DISABLED"):
+    if state not in ("ENABLED", "DISABLED"):
+        # loop 7, row 113: the flag reader's OpenFeature file provider refuses any other state (or none), then reads
+        # its default, off
+        sys.stderr.write(
+            f"{FLAG_KEY}: {tree} gives the flag state {state!r}; the flag reader accepts ENABLED or DISABLED only; "
+            "refusing to print a build line\n"
+        )
+        return 2
+    expected: object = False  # a killed flag reads off whatever its overlay names
+    if state == "ENABLED":
         # loop 6, row 101: an overlay file with no value for the flag under this environment ({} or {"dev": {}})
         # read the base default and printed 0 with exit 0; a killed flag keeps its tree default, so it needs none
         try:
@@ -1535,10 +1532,19 @@ def main(argv: list[str] | None = None) -> int:
                 "value is the overlay's); refusing to print a build line\n"
             )
             return 2
+        expected = variants.get(named[FLAG_KEY])
     try:
         enabled = pages_enabled()
     except FlagConfigError as exc:  # an overlay or metadata the reader refuses: never a defaulted line
         sys.stderr.write(f"{FLAG_KEY}: {exc}; refusing to print a build line\n")
+        return 2
+    if enabled is not expected:
+        # loop 7, row 113: the reader falls back to its default when its file provider refuses the tree (any flag's
+        # unknown key or state), so a value that differs from what the tree and the overlay compose is never printed
+        sys.stderr.write(
+            f"{FLAG_KEY}: the flag reader read {enabled} where {tree} and its overlay compose {expected}; the reader "
+            "fell back to its default; refusing to print a build line\n"
+        )
         return 2
     sys.stdout.write(f"{FLAG_ENV}={'1' if enabled else '0'}\n")
     return 0

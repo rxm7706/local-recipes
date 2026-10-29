@@ -139,11 +139,21 @@ def test_the_empty_link_base_resolves_a_relative_target_beside_the_page() -> Non
     assert render_markdown("[a](<steps.md>) [b](<https://e.test/x>) [c](<>) [d](<../up>)", link_base="e/") == (
         '<p><a href="e/steps.md">a</a> <a href="https://e.test/x">b</a> [c](&lt;&gt;) [d](&lt;../up&gt;)</p>'
     )
-    # loop 6, row 107: a half-bracketed or nested destination is no file name, and stays literal under every base
+    # loop 6, row 107: a half-bracketed or nested <destination> is no file name, and stays literal under every base
     for base in (None, "", "e/"):
-        assert render_markdown(
-            "[a](<steps.md) [b](steps.md>) [c](<a>b) [d](<./javascript:alert(1)>)", link_base=base
-        ) == ("<p>[a](&lt;steps.md) [b](steps.md&gt;) [c](&lt;a&gt;b) [d](&lt;./javascript:alert(1)&gt;)</p>")
+        assert render_markdown("[a](<steps.md) [c](<a>b) [d](<./javascript:alert(1)>)", link_base=base) == (
+            "<p>[a](&lt;steps.md) [c](&lt;a&gt;b) [d](&lt;./javascript:alert(1)&gt;)</p>"
+        )
+    # loop 7, row 117: a destination that does not start with `<` is a plain one, where CommonMark admits `<` and `>`
+    # (micromark renders each of these a link; 080ce9f012 did too)
+    for base in (None, "", "e/"):
+        assert render_markdown("[x](https://e.test/?q=<a>) [q](https://e.test/a->b)", link_base=base) == (
+            '<p><a href="https://e.test/?q=&lt;a&gt;">x</a> <a href="https://e.test/a-&gt;b">q</a></p>'
+        )
+    assert render_markdown("[r](a<b.md) [b](steps.md>)", link_base="e/") == (
+        '<p><a href="e/a&lt;b.md">r</a> <a href="e/steps.md&gt;">b</a></p>'
+    )
+    assert render_markdown("[r](a<b.md) [b](steps.md>)") == "<p>[r](a&lt;b.md) [b](steps.md&gt;)</p>"
 
 
 def test_a_non_skill_card_leaves_relative_links_literal() -> None:

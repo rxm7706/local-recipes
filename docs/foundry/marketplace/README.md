@@ -176,10 +176,13 @@ are repository links of the form `https://github.com/rxm7706/local-recipes/blob/
 The mount rewrites two forms and nothing else: that `blob/main/` form, to
 the deploying host and its deployed commit, and the public clone URL
 (`https://github.com/rxm7706/local-recipes.git`, in `marketplace.json` and
-wherever a card carries it, as a whole URL), to the deploying host's. Any
-other repository link a runbook carries (an issue link, the bare repository
-URL, a URL the clone URL only begins) is left as written. A host, repository
-or commit outside the shape GitHub Actions sets fails the build.
+wherever a card carries it, as a whole URL; a `#`, `?` or `/` after it, as in
+a `git+…#subdirectory=` install line, is part of it), to the deploying
+host's. Any other repository link a runbook carries (an issue link, the bare
+repository URL, a URL the clone URL only begins, such as `….github.io/…`) is
+left as written. A server that is not an http(s) origin, a repository that is
+not `owner/name`, or a commit that is not 4 to 64 hexadecimal digits fails the
+build.
 
 ## Not built yet
 

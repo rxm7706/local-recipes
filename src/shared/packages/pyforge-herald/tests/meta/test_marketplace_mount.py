@@ -160,6 +160,15 @@ def test_marketplace_json_is_rewritten_to_the_deploying_host(tmp_path: Path, env
         ({"GITHUB_REPOSITORY": "a/b/c"}, "GITHUB_REPOSITORY"),
         ({"GITHUB_SERVER_URL": "javascript:alert(1)"}, "GITHUB_SERVER_URL"),
         ({"GITHUB_SERVER_URL": "ghe.example"}, "GITHUB_SERVER_URL"),
+        # loop 7, row 116: a valid prefix followed by a quote, so a loosened anchor or class shows; and the floors
+        ({"GITHUB_SHA": f'{SHA}"x'}, "GITHUB_SHA"),
+        ({"GITHUB_SHA": f'"x{SHA}'}, "GITHUB_SHA"),
+        ({"GITHUB_SHA": "abc"}, "GITHUB_SHA"),
+        ({"GITHUB_SERVER_URL": 'https://ghe.example"x'}, "GITHUB_SERVER_URL"),
+        ({"GITHUB_SERVER_URL": 'https://ghe.example/a"x'}, "GITHUB_SERVER_URL"),
+        ({"GITHUB_REPOSITORY": 'org/local-recipes"x'}, "GITHUB_REPOSITORY"),
+        ({"GITHUB_REPOSITORY": "../.."}, "GITHUB_REPOSITORY"),
+        ({"GITHUB_REPOSITORY": "org/.."}, "GITHUB_REPOSITORY"),
     ],
 )
 def test_the_mount_refuses_a_host_name_outside_the_shape_actions_sets(tmp_path: Path, bad: dict, needle: str) -> None:
@@ -169,6 +178,55 @@ def test_the_mount_refuses_a_host_name_outside_the_shape_actions_sets(tmp_path: 
     env = {"GITHUB_SERVER_URL": "https://ghe.example", "GITHUB_REPOSITORY": "org/local-recipes", "GITHUB_SHA": SHA}
     thrown = ts(MARKETPLACE_TS, MOUNT, dir=str(root), env={**env, **bad})
     assert isinstance(thrown, dict) and needle in thrown["message"] and "refusing to rewrite" in thrown["message"]
+
+
+@pytest.mark.parametrize(
+    ("override", "prefix", "ref"),
+    [
+        ({"GITHUB_SHA": "abc123"}, "https://ghe.example/org/local-recipes", "abc123"),
+        ({"GITHUB_SHA": SHA.upper()}, "https://ghe.example/org/local-recipes", SHA.upper()),
+        ({"GITHUB_SERVER_URL": "HTTPS://ghe.example"}, "HTTPS://ghe.example/org/local-recipes", SHA),
+        ({"GITHUB_SERVER_URL": "https://[::1]:8443"}, "https://[::1]:8443/org/local-recipes", SHA),
+        ({"GITHUB_SERVER_URL": "https://ghe_int.corp"}, "https://ghe_int.corp/org/local-recipes", SHA),
+        ({"GITHUB_SERVER_URL": "https://ghe.example:8443"}, "https://ghe.example:8443/org/local-recipes", SHA),
+        ({"GITHUB_SERVER_URL": "https://ghe.example/github"}, "https://ghe.example/github/org/local-recipes", SHA),
+        ({"GITHUB_REPOSITORY": "my.org/local_recipes"}, "https://ghe.example/my.org/local_recipes", SHA),
+    ],
+)
+def test_the_rewrite_accepts_the_host_names_a_deploy_can_carry(override: dict, prefix: str, ref: str) -> None:
+    """Loop 7, row 116: loop 6's shapes threw on a short or upper-case commit and on servers the rewrite had handled
+    (an upper-case scheme, an IPv6 literal, an underscore host); a port and a path prefix are a GHES deploy's."""
+    env = {"GITHUB_SERVER_URL": "https://ghe.example", "GITHUB_REPOSITORY": "org/local-recipes", "GITHUB_SHA": SHA}
+    out = ts(
+        MARKETPLACE_TS, "return m.rewriteMarketplaceGitUrl(inp.text, inp.env);", text=BLOB, env={**env, **override}
+    )
+    assert out == f"{prefix}/blob/{ref}/docs/foundry/marketplace/README.md"
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        (f"git+{PUBLIC_GIT}#subdirectory=src/x", "git+{host}#subdirectory=src/x"),
+        (f"{PUBLIC_GIT}?ref=main", "{host}?ref=main"),
+        (f"git clone {PUBLIC_GIT}/", "git clone {host}/"),
+        (f"see {PUBLIC_GIT}.", "see {host}."),
+        (f'"{PUBLIC_GIT}"', '"{host}"'),
+        (f"{PUBLIC_GIT}.bak", f"{PUBLIC_GIT}.bak"),
+        (
+            "https://github.com/rxm7706/local-recipes.github.io/x",
+            "https://github.com/rxm7706/local-recipes.github.io/x",
+        ),
+        (f"{PUBLIC_GIT}x", f"{PUBLIC_GIT}x"),
+    ],
+)
+def test_the_clone_url_is_rewritten_as_a_whole_url(text: str, expected: str) -> None:
+    """Loop 6, row 106 and loop 7, row 115: the clone URL is matched whole; a `#`, `?` or `/` after it continues it
+    (a pip `git+…#subdirectory=` line follows the host, as before loop 6), a `.` and more characters make another
+    URL, a sentence's `.` ends it."""
+    host = "https://ghe.example/org/local-recipes.git"
+    env = {"GITHUB_SERVER_URL": "https://ghe.example", "GITHUB_REPOSITORY": "org/local-recipes", "GITHUB_SHA": SHA}
+    out = ts(MARKETPLACE_TS, "return m.rewriteMarketplaceGitUrl(inp.text, inp.env);", text=text, env=env)
+    assert out == expected.replace("{host}", host)
 
 
 def test_the_committed_cards_follow_the_deploying_host_and_commit() -> None:
