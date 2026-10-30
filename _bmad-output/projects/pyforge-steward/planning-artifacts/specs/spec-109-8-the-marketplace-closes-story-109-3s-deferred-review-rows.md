@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-30'
 status: 'done'
 baseline_revision: '2c40d7c5f9'
-review_loop_iteration: 2
+review_loop_iteration: 3
 followup_review_recommended: false
 context:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py
@@ -194,7 +194,36 @@ branch coverage under the marketplace tests. Four non-blocking rows:
 - Row 11: both fallback tests assert `"targeting rule" not in` the message; the mutant is killed.
 - Row 12: `_inline` no longer replaces U+0000; its docstring says `render_markdown` has.
 - Row 13: the tier test moved to `test_marketplace_listing.py`; the note says "site, card and committed-index tests".
-- Row 14: a failing `os.fdopen` closes the descriptor (`test_a_failed_fdopen_closes_the_temporary_descriptor`, its
-  mutant killed); the cleanup `unlink` is suppressed so the original error is reported; the docstring names the
-  14-byte limit.
+- Row 14: closed by the delegation below (the primitive closes the `mkstemp` descriptor before writing and suppresses
+  a failing cleanup `unlink`, so the original error is reported); the docstring names the 14-byte limit.
+
+## Pre-push check (2026-10-30)
+
+The full-scope `pr-preflight` refused the push: `pyforge-core`'s
+`tests/meta/test_atomic_write_sole_ownership.py` found `_write_manifest` holding a second temp-file-then-`os.replace`
+implementation outside `pyforge-core` (spec-pyforge-core CAP-2 and CAP-7). `_write_manifest` now keeps its refusals
+and its mode rule and delegates the write to `pyforge.core.atomic_write.atomic_write_text`, handing it the destination's resolved
+directory (`mkstemp` reads `..` lexically). `test_a_failed_move_leaves_no_temporary_file` fails `os.replace` inside
+that one call only (the flag reader writes through the same primitive); the loop-2 `os.fdopen` test is gone with the
+code it pinned.
+
+## Review (loop 3)
+
+2026-10-30, independent and narrow: a fresh subagent over the post-loop-2 delta (the delegation above) against AC4,
+loop-1 rows 4-6 and loop-2 row 14. Verdict **PASS**. 49 in-process probes through both writers held (the refusals,
+the hard link, every `OSError` path named with no temporary file left, the rewrite, the mode under umask 022 and 077,
+the `link/..` index, the symlink rules, the 14-byte limit); the sole-ownership meta-test exits 0 (625); the
+marketplace tests exit 0 (334) and three in-process mutants of the delegation are killed; ruff exits 0. Two
+non-blocking rows:
+
+| Row | Blocking | Location | Finding | Fix asked |
+|---|---|---|---|---|
+| 15 | no | the docstring, this spec, the ledger line | `pyforge.core.atomic_write_text` is not an importable name; the module is `pyforge.core.atomic_write` | Spell the module path |
+| 16 | no | `test_a_stale_temporary_file_does_not_block_the_write` | The planted names use the loop-1 separator, not the primitive's `.<name>-` prefix | Plant one of the primitive's shape too |
+
+## Fixes (loop 3)
+
+- Row 15: the docstring and this spec name `pyforge.core.atomic_write.atomic_write_text`; the ledger line names the
+  module too.
+- Row 16: the test also plants a `.marketplace.json-<x>.tmp` symlink and checks its target stays uncreated.
 

@@ -27,23 +27,21 @@ a tree that does not declare the flag.
 from __future__ import annotations
 
 import argparse
-import contextlib
 import datetime as _dt
 import html
 import json
-import os
 import posixpath
 import re
 import shutil
 import stat
 import sys
-import tempfile
 import urllib.parse
 from pathlib import Path
 from typing import Any
 
 import yaml
 from pyforge.core import cutover_root
+from pyforge.core.atomic_write import atomic_write_text
 from pyforge.core.flags import FlagConfigError, current_environment, load_overlays, overlays_path_for, read_boolean
 
 from pyforge.steward.catalog import (
@@ -1527,12 +1525,14 @@ def _write_manifest(root: Path, dest: Path, text: str, what: str) -> Path:
 
     The way is ``_contained_dest``'s. An existing destination that is not a regular file (a FIFO, whose open blocked
     forever; a directory; the root itself; a device such as ``/dev/null``) is refused by name before anything is
-    opened. The text goes to a fresh temporary file beside the destination (``mkstemp``: a new name, never an
-    existing one followed or reused, and gone again if the write fails) and is moved over it with ``os.replace``, so
-    a hard link's other name keeps its bytes and a reader never sees half a manifest. The new file keeps an existing
-    destination's mode bits, else ``0o644``. An ``OSError`` on the way (an unwritable directory, a file where a
-    directory is spelled) is a listing error naming the destination. The temporary name adds 14 bytes to the
-    destination's, so a destination name within 14 bytes of the filesystem's limit is refused that way too.
+    opened. The write is ``pyforge.core.atomic_write.atomic_write_text``, the one atomic-write primitive
+    (spec-pyforge-core CAP-2): a fresh ``mkstemp`` file beside the destination, moved over it with ``os.replace`` and removed if
+    anything fails, so a hard link's other name keeps its bytes and a reader never sees half a manifest. The
+    directory is handed to it resolved, because ``mkstemp`` reads ``..`` lexically and an index read through
+    ``link/..`` writes beside the index it read (loop 7, row 114). The file keeps an existing destination's mode bits,
+    else ``0o644``. An ``OSError`` on the way (an unwritable directory, a file where a directory is spelled) is a
+    listing error naming the destination. The temporary name adds 14 bytes to the destination's, so a destination
+    name within 14 bytes of the filesystem's limit is refused that way too.
 
     A destination that never enters the tree, including an outside alias of an in-tree symlink, is the caller's, as
     ``_contained_dest`` says; because the name is replaced, a symlink there as the last component is replaced by the
@@ -1543,24 +1543,7 @@ def _write_manifest(root: Path, dest: Path, text: str, what: str) -> Path:
     try:
         dest.parent.mkdir(parents=True, exist_ok=True)
         mode = stat.S_IMODE(dest.stat().st_mode) if dest.is_file() else 0o644
-        # the directory as the OS reaches it: mkstemp normalises ``..`` lexically, and an index read through
-        # ``link/..`` writes beside the index it read (loop 7, row 114)
-        handle, name = tempfile.mkstemp(dir=dest.parent.resolve(), prefix=f".{dest.name}.", suffix=".tmp")
-        temp = Path(name)
-        try:
-            try:
-                stream = os.fdopen(handle, "w", encoding="utf-8")
-            except BaseException:
-                os.close(handle)  # fdopen did not take the descriptor (review loop 2, row 14)
-                raise
-            with stream:
-                stream.write(text)
-            temp.chmod(mode)
-            os.replace(temp, dest)
-        except BaseException:
-            with contextlib.suppress(OSError):  # the original error is the one to report
-                temp.unlink(missing_ok=True)
-            raise
+        atomic_write_text(dest.parent.resolve() / dest.name, text, mode=mode)
     except OSError as exc:
         raise MarketplaceIndexError(f"{what}: cannot write {dest} ({exc})") from exc
     return dest

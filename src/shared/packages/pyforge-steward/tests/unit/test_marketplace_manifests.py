@@ -11,6 +11,7 @@ import threading
 import types
 from pathlib import Path
 
+import pyforge.core.atomic_write as core_atomic_write
 import pytest
 from marketplace_testkit import _flags_tree, _marketplace
 
@@ -373,7 +374,8 @@ def test_an_unwritable_directory_on_the_way_is_a_listing_error(tmp_path: Path, w
 
 @pytest.mark.parametrize("writer", [write_plugin_manifest, write_codex_manifest])
 def test_a_failed_move_leaves_no_temporary_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, writer) -> None:
-    """Review loop 1, row 4: the temporary file is removed when the move over the destination fails."""
+    """Review loop 1, row 4: the temporary file is removed when the move over the destination fails, and the failure
+    is a listing error naming the destination (``pyforge.core.atomic_write`` re-raises the ``OSError`` unchanged)."""
     root = _marketplace(tmp_path)
     on = _flags_tree(tmp_path / "flags", dev="on")
     dest = root / "out" / "marketplace.json"
@@ -381,8 +383,15 @@ def test_a_failed_move_leaves_no_temporary_file(tmp_path: Path, monkeypatch: pyt
     def refuse(*_: object) -> None:
         raise OSError(28, "No space left on device")
 
-    # only the module under test loses its os.replace; the flag reader keeps the real one
-    monkeypatch.setattr(marketplace_pages, "os", types.SimpleNamespace(**{**vars(os), "replace": refuse}))
+    real = marketplace_pages.atomic_write_text
+
+    def failing(path: Path, text: str, **kwargs: object) -> None:
+        # os.replace fails only inside the manifest's own write; the flag reader writes through the same primitive
+        with monkeypatch.context() as scoped:
+            scoped.setattr(core_atomic_write, "os", types.SimpleNamespace(**{**vars(os), "replace": refuse}))
+            real(path, text, **kwargs)
+
+    monkeypatch.setattr(marketplace_pages, "atomic_write_text", failing)
     with pytest.raises(MarketplaceIndexError, match="cannot write .*No space left on device"):
         writer(root / "index.yaml", dest, flags_path=on)
     assert not dest.exists() and _leftovers(dest.parent) == []
@@ -399,9 +408,13 @@ def test_a_stale_temporary_file_does_not_block_the_write(tmp_path: Path, writer)
     stale.write_text("stale", encoding="utf-8")
     planted = root / ".marketplace.json.planted.tmp"
     planted.symlink_to(tmp_path / "never-created")
+    # the primitive's own naming (``.<name>-<random>.tmp``) too (review loop 3, row 16)
+    own = root / ".marketplace.json-planted.tmp"
+    own.symlink_to(tmp_path / "never-created-either")
     writer(root / "index.yaml", dest, flags_path=on)
     assert dest.is_file() and stale.read_text(encoding="utf-8") == "stale"
     assert planted.is_symlink() and not (tmp_path / "never-created").exists()
+    assert own.is_symlink() and not (tmp_path / "never-created-either").exists()
 
 
 @pytest.mark.parametrize("writer", [write_plugin_manifest, write_codex_manifest])
@@ -416,24 +429,3 @@ def test_the_manifest_keeps_an_existing_mode_and_is_0o644_when_new(tmp_path: Pat
     kept.chmod(0o640)
     writer(root / "index.yaml", kept, flags_path=on)
     assert kept.stat().st_mode & 0o777 == 0o640
-
-
-@pytest.mark.skipif(not Path("/proc/self/fd").is_dir(), reason="needs /proc/self/fd to count descriptors")
-@pytest.mark.parametrize("writer", [write_plugin_manifest, write_codex_manifest])
-def test_a_failed_fdopen_closes_the_temporary_descriptor(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, writer
-) -> None:
-    """Review loop 2, row 14: when ``os.fdopen`` raised, the descriptor ``mkstemp`` opened stayed open."""
-    root = _marketplace(tmp_path)
-    on = _flags_tree(tmp_path / "flags", dev="on")
-    dest = root / "marketplace.json"
-
-    def refuse(*_: object, **__: object) -> None:
-        raise OSError(24, "Too many open files")
-
-    monkeypatch.setattr(marketplace_pages, "os", types.SimpleNamespace(**{**vars(os), "fdopen": refuse}))
-    before = len(os.listdir("/proc/self/fd"))
-    with pytest.raises(MarketplaceIndexError, match="cannot write .*Too many open files"):
-        writer(root / "index.yaml", dest, flags_path=on)
-    assert len(os.listdir("/proc/self/fd")) == before
-    assert not dest.exists() and _leftovers(root) == []

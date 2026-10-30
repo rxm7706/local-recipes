@@ -6727,7 +6727,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: loop-7 review row 118; deferred under the story spec's § Review contract for loop 7
   severity: low
   promoted: 2026-10-29 — recorded by hand in the loop-7 review of PR #2274
-  closed: 2026-10-30 — steward Story 109.8 (spec `planning-artifacts/specs/spec-109-8-the-marketplace-closes-story-109-3s-deferred-review-rows.md`): the manifest writers go through `_write_manifest`: an existing destination that is not a regular file (a FIFO, a directory, the root) is refused by name before it is opened; the text goes to a temporary file beside the destination and `os.replace`, so a hard link's other name keeps its bytes; an `OSError` on the way is a listing error naming the destination (`test_marketplace_manifests.py`, Story 109.8 section).
+  closed: 2026-10-30 — steward Story 109.8 (spec `planning-artifacts/specs/spec-109-8-the-marketplace-closes-story-109-3s-deferred-review-rows.md`): the manifest writers go through `_write_manifest`: an existing destination that is not a regular file (a FIFO, a directory, the root) is refused by name before it is opened; the text is written through `pyforge.core.atomic_write.atomic_write_text` (a temporary file beside the destination, then `os.replace`), so a hard link's other name keeps its bytes; an `OSError` on the way is a listing error naming the destination (`test_marketplace_manifests.py`, Story 109.8 section).
   status: closed
 
 ### DW-steward-109-3-6: `**` inside a link destination puts `<strong>` inside the href
