@@ -66,9 +66,13 @@ declared_low_risk: false
 - `pixi run --frozen -e pyforge-steward python -m pytest src/shared/packages/pyforge-steward/tests/unit/test_marketplace_pages.py src/shared/packages/pyforge-steward/tests/unit/test_catalog.py -q` — expected: exit 0. `src/shared/packages/pyforge-steward/tests/unit/test_marketplace_pages.py` is the two-state test: `test_write_site_refuses_when_the_flag_is_off_and_writes_when_it_is_on`.
 - `pixi run --frozen -e pyforge-steward python -m pytest src/shared/packages/pyforge-steward/tests/unit/test_marketplace_markdown.py src/shared/packages/pyforge-steward/tests/unit/test_pages_release.py -q` — expected: exit 0 (the card's markdown renderer; the per-skill zip step and the flag export line in `pages.yml`).
 - `pixi run --frozen -e pyforge-herald python -m pytest src/shared/packages/pyforge-herald/tests/meta/test_marketplace_mount.py src/shared/packages/pyforge-herald/tests/meta/test_pages_artifact.py src/shared/packages/pyforge-herald/tests/unit/test_docs_site_nav.py -q` — expected: exit 0 (the mount, the rewrite, the allowlist, `pages-check`'s marketplace block in both flag states, the gated nav section).
-- `pixi run --frozen -e pyforge-herald python -m pytest "src/shared/packages/pyforge-herald/tests/meta/test_one_generator.py::test_109_3_the_marketplace_mounts_and_is_linked_only_with_its_flag" -q` — expected: exit 0 (loop-6 row 109: the build with the flag on mounts `/marketplace/`, links it from the menu and both `llms.txt` files and passes `pages-check`; the build with it off holds none of that). The two herald commands need `--basetemp` on a disk-backed directory when `/tmp` is a tmpfs (Astro's `EXDEV`).
+- `HERALD_DOCS_SITE_REQUIRED=1 pixi run --frozen -e pyforge-herald python -m pytest "src/shared/packages/pyforge-herald/tests/meta/test_one_generator.py::test_109_3_the_marketplace_mounts_and_is_linked_only_with_its_flag" -q` — expected: exit 0 (loop-6 row 109: the build with the flag on mounts `/marketplace/`, links it from the menu and both `llms.txt` files and passes `pages-check`; the build with it off holds none of that). Without `HERALD_DOCS_SITE_REQUIRED=1` the test skips when the Astro install is absent (`DW-steward-109-3-9`).
+- Both herald commands need `--basetemp` on a disk-backed directory when `/tmp` is a tmpfs (Astro's `EXDEV`).
 - `pixi run --frozen -e pyforge-core python -m pytest src/shared/packages/pyforge-core/tests/unit/test_flags.py -q` — expected: exit 0.
 - `pixi run --frozen -e platform-ci-test python -m pytest src/platform/tests/test_openfeature_file_flags.py -q` — expected: exit 0 (loop-2 correction: `pyforge-guild` carries no `structlog`, so `src/platform/conftest.py` fails to import there and pytest exits 4; the platform suite's env is `platform-ci-test`).
+
+Review loops 7 and 8 judged these commands' results under § Review contract for loop 7, whose readings the
+operator confirmed on 2026-10-30.
 
 **Manual checks:**
 
@@ -499,7 +503,7 @@ Verdict: failed. Every loop-5 row is closed in the tree (the verifier's table be
 
 ### Fixes (2026-10-29, loop 6)
 
-Operator ruling of 2026-10-29: this pass lands the rows that can write outside the tree, inject into a page, turn the deploy off silently or regress against the parent commit (96, 98, 99, 101, 106, 107) and the cheap rows in the same functions, tests and documents (97, 100, 102, 103, 108, 109, 111); rows 104, 105, 110 and 112 are deferred-work rows `DW-steward-109-3-1` to `-4` in the steward ledger; the story moves to `in-review` for loop 7 under § Review contract for loop 7 below. `marketplace_pages.py` is `src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py`; `marketplace.ts` is `docs-site/src/lib/marketplace.ts`.
+Operator ruling of 2026-10-29: this pass lands the rows that can write outside the tree, inject into a page, turn the deploy off silently or regress against the parent commit (96, 98, 99, 101, 106, 107) and the cheap rows in the same functions, tests and documents (97, 100, 102, 103, 108, 109, 111); the deferred rows are the table's; the story moves to `in-review` for loop 7 under § Review contract for loop 7 below. `marketplace_pages.py` is `src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py`; `marketplace.ts` is `docs-site/src/lib/marketplace.ts`.
 
 - Row 96: `_contained_dest` refuses a destination whose lexical and physical parents differ ("steps back out of a symlink with '..'"), so `root/linkdir/../<manifest>` is refused as `4e1ac45dbc` refused it; the tree is found under any spelling (the destination under the root as given, else its nearest ancestor that resolves to the root), so an index read through `link -> root` with a destination through the root, and the reverse, are held to the symlink rule. `test_a_dot_dot_after_a_symlinked_directory_is_refused_for_both_manifests` (both writers, both alias directions).
 - Row 97: the containment walk refuses an existing non-directory on the way ("is not a directory; refusing to write under it"). `test_a_manifest_under_a_file_is_a_listing_error` (both writers, one and two levels under `index.yaml`).
@@ -525,6 +529,16 @@ Six loops found 19, 22, 16, 23, 15 and 17 new rows. The count does not fall: the
 - Every other finding (whole-value gaps, renderer edge forms, test structure, editorial placement, TEA advisories) is recorded by the review as a deferred-work row `DW-steward-109-3-<n>` in `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md` and does not fail the story.
 - The loop-7 table classifies each finding as (a), (b), (c) or deferred. When none is (a), (b) or (c), 109.3 passes, stays `in-review` for the operator's ledger flip, and no further loop is recommended.
 
+**Readings (operator-confirmed 2026-10-30, Story 109.8, `DW-steward-109-3-9`).** Loop 7 recorded how it read this
+contract (§ Review (loop 7), "How loop 7 read the contract"); the operator confirmed those readings as the contract's:
+
+- "the parent commit" is the parent of the reviewed fix commit (`080ce9f012` for loop 7);
+- a finding is verified when the review reproduced it by running the input against the tree;
+- class (b)'s second clause means the build with the flag on;
+- a refusal a loop-6 row explicitly asked for is not a (c) regression;
+- a change beyond what the row asked, which breaks an input the parent handled correctly, is a (c) regression;
+- the rows the operator owns or the contract defers (35, 104, 105, 110 and 112) are outside (c).
+
 ## Review (2026-10-29, independent, loop 7)
 
 Verdict: failed under § Review contract for loop 7. Every loop-6 row is closed in the tree or deferred as ruled (the verifier's table below; 106 and 109 closed as asked with a gap each; 104, 105, 110 and 112 carried by `DW-steward-109-3-1` to `-4`). The six Verification commands exit 0 (276, 111, 208, 1, 163 and 52 passed; the pilot-skill test 14), as do the three docs-site validators and `pages-check` in both flag states. CI on `8d47df4f50` is green (36 passing, 9 skipped), TEA approves (gating score 100, nothing introduced), and every legitimate input the verifier tried still works (the real index, both manifests and the README snippet on a copy of the tree, the real flag tree `=1`, the rewrite on github.com and on a GHES host with a port, `[a](<steps.md>)`, the committed cards byte-identical to a fresh render).
@@ -537,7 +551,7 @@ Five verified findings fall in the failing classes; the reviewer re-ran each aga
 
 The (a) and (b) findings are the same at `080ce9f012`; the contract counts them because they are in its first two classes. Every other finding is deferred as `DW-steward-109-3-5` to `-9`. The story returns to in-progress (review loop iteration 7).
 
-**How loop 7 read the contract.** The structure lens found the contract ambiguous; these are the readings this loop used, recorded for the operator to confirm or amend:
+**How loop 7 read the contract.** The structure lens found the contract ambiguous; these are the readings this loop used, recorded for the operator to confirm or amend (confirmed 2026-10-30 and written into § Review contract for loop 7):
 
 - "the parent commit" is `080ce9f012`, the parent of the reviewed fix commit;
 - a finding is verified when the review reproduced it by running the input against the tree;

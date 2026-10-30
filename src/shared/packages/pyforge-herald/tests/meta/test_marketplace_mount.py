@@ -169,6 +169,12 @@ def test_marketplace_json_is_rewritten_to_the_deploying_host(tmp_path: Path, env
         ({"GITHUB_REPOSITORY": 'org/local-recipes"x'}, "GITHUB_REPOSITORY"),
         ({"GITHUB_REPOSITORY": "../.."}, "GITHUB_REPOSITORY"),
         ({"GITHUB_REPOSITORY": "org/.."}, "GITHUB_REPOSITORY"),
+        # Story 109.8 (DW-steward-109-3-10): each part of the shapes survived mutation; a case that only it refuses
+        ({"GITHUB_SERVER_URL": "javascript:https://ghe.example"}, "GITHUB_SERVER_URL"),  # the leading anchor
+        ({"GITHUB_SERVER_URL": 'https://[a"onmouseover="b]'}, "GITHUB_SERVER_URL"),  # the IPv6 literal's class
+        ({"GITHUB_REPOSITORY": "../local-recipes"}, "GITHUB_REPOSITORY"),  # the owner-side lookahead
+        ({"GITHUB_REPOSITORY": "./local-recipes"}, "GITHUB_REPOSITORY"),
+        ({"GITHUB_SHA": "a" * 65}, "GITHUB_SHA"),  # the 64-digit upper bound
     ],
 )
 def test_the_mount_refuses_a_host_name_outside_the_shape_actions_sets(tmp_path: Path, bad: dict, needle: str) -> None:
@@ -191,6 +197,7 @@ def test_the_mount_refuses_a_host_name_outside_the_shape_actions_sets(tmp_path: 
         ({"GITHUB_SERVER_URL": "https://ghe.example:8443"}, "https://ghe.example:8443/org/local-recipes", SHA),
         ({"GITHUB_SERVER_URL": "https://ghe.example/github"}, "https://ghe.example/github/org/local-recipes", SHA),
         ({"GITHUB_REPOSITORY": "my.org/local_recipes"}, "https://ghe.example/my.org/local_recipes", SHA),
+        ({"GITHUB_SHA": "a" * 64}, "https://ghe.example/org/local-recipes", "a" * 64),  # Story 109.8: the bound itself
     ],
 )
 def test_the_rewrite_accepts_the_host_names_a_deploy_can_carry(override: dict, prefix: str, ref: str) -> None:
@@ -217,6 +224,13 @@ def test_the_rewrite_accepts_the_host_names_a_deploy_can_carry(override: dict, p
             "https://github.com/rxm7706/local-recipes.github.io/x",
         ),
         (f"{PUBLIC_GIT}x", f"{PUBLIC_GIT}x"),
+        # Story 109.8 (DW-steward-109-3-10): every member of the lookahead's class, and the two characters README
+        # says continue the URL (a GitHub repository name holds neither)
+        (f"{PUBLIC_GIT}_x", f"{PUBLIC_GIT}_x"),
+        (f"{PUBLIC_GIT}-x", f"{PUBLIC_GIT}-x"),
+        (f"{PUBLIC_GIT}.1", f"{PUBLIC_GIT}.1"),
+        (f"{PUBLIC_GIT}~x", "{host}~x"),
+        (f"{PUBLIC_GIT}%2Fx", "{host}%2Fx"),
     ],
 )
 def test_the_clone_url_is_rewritten_as_a_whole_url(text: str, expected: str) -> None:

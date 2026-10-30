@@ -627,7 +627,7 @@
    "docs/how-to/air-gapped-mirror-setup.md": "6863f9df663f3c2de6772907a750249e5a71fc68",
    "docs/how-to/antigravity-developer-startup.md": "fd96e8b305773757d1c2070bebeb547b7c77cdfc",
    "docs/how-to/configure-your-coding-agent.md": "1c0bcc19927ad3062efa54fdecc37e1a1fad4c8a",
-   "docs/how-to/deploy-the-docs-site-to-github-enterprise-pages.md": "21b0a05be2a2d16bb5c82529fc7964a0e2c24c15",
+   "docs/how-to/deploy-the-docs-site-to-github-enterprise-pages.md": "19c6f974de19f0239c5854a0ae337a48d2563e5b",
    "docs/how-to/detect-concurrent-agent-activity.md": "b64945dc5f8e830e12fdde014f5e137b7ef1b7a6",
    "docs/how-to/disaster-recovery.md": "25ab786aec06baf5c3a4415cfb7b34bee86c0a24",
    "docs/how-to/driving-a-pyforge-station-backlog.md": "03bae8808a5a4ad902f9edd1cd250bac8ceb8847",
@@ -870,7 +870,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "4c57ac81a71bc2e21c94c95ec37c3ffe83e48a6b"
+  "memlog": "3a89a4354f6998dfa1dc8275dbc0d5ee30ebc499"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
@@ -1775,7 +1775,7 @@
    "docs-site/src/lib/dossier-blocks.ts": "e69ae3510ec0216b355c9e6cdc773142745e6e35",
    "docs-site/src/lib/flags.ts": "65e966af4677f0bd6d04e693458842075214df28",
    "docs-site/src/lib/herald-pages.ts": "ab1fe7393560928a567149ebc9fd5fda8bad6f4c",
-   "docs-site/src/lib/marketplace.ts": "fde518f0ea12a4c61af75b9567f9c4480d170019",
+   "docs-site/src/lib/marketplace.ts": "aa82c9ba8c9ccea0313cf3525866cf9d3a58fd0e",
    "docs-site/src/lib/md-inline.ts": "073bc3137652a1dff4b5dd1f2067d99c22668d7a",
    "docs-site/src/lib/nav.ts": "f81f58af3edc667b92dc0cfe856961bfef763de6",
    "docs-site/src/lib/redirects.ts": "2e6e58fec65dd3adffe305635b36ec466dda0a10",
@@ -2773,7 +2773,7 @@
    "src/shared/packages/pyforge-herald/tests/meta/test_docsite_zero_origin.py": "89fffdf5d6b965211fe4ca0a1e17c562674f009d",
    "src/shared/packages/pyforge-herald/tests/meta/test_dossier_golden.py": "346292b8df2ade3e17148f462749cf519de42eec",
    "src/shared/packages/pyforge-herald/tests/meta/test_herald_pages_model.py": "d00ee71dd5d64b8740e5837fe299f0d0a334c888",
-   "src/shared/packages/pyforge-herald/tests/meta/test_marketplace_mount.py": "17f5c69ffec78a8c2ff076283fb79313957edddf",
+   "src/shared/packages/pyforge-herald/tests/meta/test_marketplace_mount.py": "7657d11ff77b3dcdff6e31b790bf5bcef8328812",
    "src/shared/packages/pyforge-herald/tests/meta/test_one_generator.py": "1b9fdaa82cdf5c181c675c767467d36e416e8be4",
    "src/shared/packages/pyforge-herald/tests/meta/test_pages_artifact.py": "f8d9a4f60feef28b34635404110bcc9377607dea",
    "src/shared/packages/pyforge-herald/tests/meta/test_pages_site_url.py": "dbb7d5de855bf8c08dfb1bb0c4ae811ee45cd8dc",
@@ -2887,7 +2887,7 @@
    "src/shared/packages/pyforge-herald/web/src/test/setup.js": "1d74541c291183bb6027ebb5bf6de480115262ea",
    "src/shared/packages/pyforge-herald/web/vite.config.js": "bcd53f517a2d51fe2992404dd852b2599b15d84f"
   },
-  "memlog": "94a549b99c042b18d8c7880da2d37e12f447b7ad"
+  "memlog": "91e8a7f41603c2b224981316feb8218532acf080"
  },
  "pyforge-herald/spec-pyforge-pages": {
   "files": {
@@ -3730,7 +3730,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/guards.py": "19371de66ce1fef6726753cc3b6d9c87b86f8565",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/interfaces.py": "885fe0a72e7fd2bdf18215a1780b09327ff0bcca",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py": "55c74e6a35205b13ed861dd4e16c0ac3dfb248ee",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py": "afcb21d19c1b92661d1b93417cfb9199f63a5e85",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py": "8fa77653cfb66e71ea9fcb54cdc218dacf2bdde2",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/measures.py": "36eff3e94bef60c27d3f8f856c0108aef55fcb83",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py": "ed0aa191a3089c710b4de22710493ebf016f8fd7",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/pages_duty.py": "782142b699528425c3d093175cf220f942e8449f",
@@ -3800,7 +3800,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "ec6ad2b6a1b573a599a7321e79c574c66d1c5614"
+  "memlog": "32f2c6abd85749a8cc9b25c58a4cc26b7ccc73a2"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -6267,25 +6267,25 @@
    "archive/docs/dreams/mcp-host-real-station-tools.md": "869ce61760359304efd4a6e8fa5c152d70ec752f",
    "docs/foundry/marketplace/.agents/plugins/marketplace.json": "f3fa48201ae2823be8bc650517aed405847240f9",
    "docs/foundry/marketplace/.claude-plugin/marketplace.json": "841935d9449ce931804907524a89f7135345c5f0",
-   "docs/foundry/marketplace/MANUAL-CHECKLIST.md": "dcedf39d2fef455133e7f0cffba6ebb9d4ea7d14",
-   "docs/foundry/marketplace/README.md": "0a15f3226fea0caae51c187d5ea9f06fada4c0c5",
+   "docs/foundry/marketplace/MANUAL-CHECKLIST.md": "c8c0204884f4bd0372b30f64880ea45ee77a3f6e",
+   "docs/foundry/marketplace/README.md": "ae133293ab449839c884e688ea6f8cce1d90cb25",
    "docs/foundry/marketplace/index.yaml": "53c158ca577771df1b077ccd687cc22658c8d6b0",
    "docs/foundry/marketplace/site/index.html": "78eedc40aa6a22c1d39aa0373c2bb72fbeb18c59",
    "docs/foundry/marketplace/site/listings.json": "b882931d53904c21cd91fa44de40571476b6553c",
    "docs/foundry/marketplace/site/marketplace.json": "6b1ed3d2710218500bd8e4d65d51af41ba59815c",
-   "docs/foundry/marketplace/site/skills/mason/environment.html": "bd259020643b605c3a42c1e7c2c48f71ff3e0a92",
-   "docs/foundry/marketplace/site/skills/mason/package.html": "917ca4c9c10e021cc7f292a7003de97037e8c3d1",
-   "docs/foundry/marketplace/site/skills/warden/scan.html": "16bf9b3c2cf7525b74f3ec970cd36d4d78388bef",
-   "docs/foundry/marketplace/skills/mason/environment/SKILL.md": "2c16060fc9f21f194b16f24e7a79dbf3f36a3518",
+   "docs/foundry/marketplace/site/skills/mason/environment.html": "95c912403e829e741680049b1bf610189d61b5eb",
+   "docs/foundry/marketplace/site/skills/mason/package.html": "f8813ffe46c7dcdf7a25b23cdc72b89fe1aa5e6d",
+   "docs/foundry/marketplace/site/skills/warden/scan.html": "b83912bbe362bd0116680bffcb42832d9da4f661",
+   "docs/foundry/marketplace/skills/mason/environment/SKILL.md": "5e611fc3c6bf09084a29915457821b0c8180d12f",
    "docs/foundry/marketplace/skills/mason/environment/listing.yaml": "cca0dede0c60082b11918e5970fbb460b8bf9499",
    "docs/foundry/marketplace/skills/mason/environment/steps.md": "1fc01188cf491237204ffcd1a6538d409a336f24",
-   "docs/foundry/marketplace/skills/mason/package/SKILL.md": "8d1f63ef0b5e2ff92ab3e7fcf383a8ae27834870",
+   "docs/foundry/marketplace/skills/mason/package/SKILL.md": "f65ddbb332633305512189ba47daa808c0dcfff6",
    "docs/foundry/marketplace/skills/mason/package/listing.yaml": "6d2032de7f35119a98391b322356e3ebdd2bd2bd",
    "docs/foundry/marketplace/skills/mason/package/steps.md": "d8fed563a986970f11b597ae8466c0dee716486a",
-   "docs/foundry/marketplace/skills/warden/scan/SKILL.md": "d60445f16b8a177a6af11c48d3ae26328e080623",
+   "docs/foundry/marketplace/skills/warden/scan/SKILL.md": "e0ab02f0559da36f6efa26da869d956841435e0a",
    "docs/foundry/marketplace/skills/warden/scan/listing.yaml": "469e33706ace2cb82a81bca2227b2635f50f0a99",
-   "docs/foundry/marketplace/skills/warden/scan/steps.md": "8e1240f26433a8ab53d8fc0a71ff6b02fa5a007d",
-   "docs/foundry/marketplace/templates/SKILL.md": "05daef52987b25e6626e025657f0c7c0fc17e1f1",
+   "docs/foundry/marketplace/skills/warden/scan/steps.md": "5795e2e589d4fff8c76cf02e2fff5a23eab536af",
+   "docs/foundry/marketplace/templates/SKILL.md": "69623822bf8f44ed178e4603ec34ba2972c944c0",
    "docs/foundry/marketplace/templates/steps.md": "e5756762c452b4f280acc26806fbd00eb1ffed26",
    "docs/foundry/sbom-gaps.md": "7077ffb487494817d24d82f2f9f9ecf015b39111",
    "docs/foundry/upstream-drafts/crm-parse-crash-on-valid-indentation.md": "4bd82f28e161063e31f583f3ed6f1ddac4c910dd",
@@ -6488,7 +6488,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/guards.py": "19371de66ce1fef6726753cc3b6d9c87b86f8565",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/interfaces.py": "885fe0a72e7fd2bdf18215a1780b09327ff0bcca",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py": "55c74e6a35205b13ed861dd4e16c0ac3dfb248ee",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py": "afcb21d19c1b92661d1b93417cfb9199f63a5e85",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py": "8fa77653cfb66e71ea9fcb54cdc218dacf2bdde2",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/measures.py": "36eff3e94bef60c27d3f8f856c0108aef55fcb83",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py": "ed0aa191a3089c710b4de22710493ebf016f8fd7",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/pages_duty.py": "782142b699528425c3d093175cf220f942e8449f",
@@ -6546,6 +6546,7 @@
    "src/shared/packages/pyforge-steward/tests/meta/test_steward_single_flag_tree.py": "5d8d08af8b2208cfa79006a39233a49a91a090f6",
    "src/shared/packages/pyforge-steward/tests/meta/test_workflow_path_filters_match.py": "a5948609cce742745ecc8d403b56dd3a5527dd7d",
    "src/shared/packages/pyforge-steward/tests/meta/test_workflows_have_no_duplicate_keys.py": "983563030e135122ae3d0caa322a3bbe44a3d245",
+   "src/shared/packages/pyforge-steward/tests/unit/marketplace_testkit.py": "c5401dc97c4b89d9854825b64e385d54f5304929",
    "src/shared/packages/pyforge-steward/tests/unit/test_bootstrap.py": "38970fcacbef29e6f45440c88a23ef795ea5a0a1",
    "src/shared/packages/pyforge-steward/tests/unit/test_bootstrap_remedies.py": "9e857ee76b661874d9a1510f560f6fc9d4fc09db",
    "src/shared/packages/pyforge-steward/tests/unit/test_bootstrap_setup.py": "f033aae0d49b64fcf6918a1d1622d6be5adc4a96",
@@ -6595,8 +6596,11 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_keys_rotate.py": "fe213b45e8e4e12422e4ad07c44b17bea5b4785b",
    "src/shared/packages/pyforge-steward/tests/unit/test_lint_types_mypy_cache.py": "289934673ea010c050d3c845aa02c4258caa884c",
    "src/shared/packages/pyforge-steward/tests/unit/test_lint_types_not_yet_clean.py": "28691500c306a5f506b81d5131e9e990e6086956",
-   "src/shared/packages/pyforge-steward/tests/unit/test_marketplace_markdown.py": "47a99931ffc10a3a4b233fbcf9d38e189e54ef94",
-   "src/shared/packages/pyforge-steward/tests/unit/test_marketplace_pages.py": "907ec9ae2f41de37f5e3df72f973049bbdd36459",
+   "src/shared/packages/pyforge-steward/tests/unit/test_marketplace_flag_env.py": "8a3394d7aef727121fea23dd4937b78685bcf182",
+   "src/shared/packages/pyforge-steward/tests/unit/test_marketplace_listing.py": "c046b5762efd83dd5be9d33e1583edc1315306c0",
+   "src/shared/packages/pyforge-steward/tests/unit/test_marketplace_manifests.py": "6be421b7dafc3e5ec115e54a39eef95bebd823ef",
+   "src/shared/packages/pyforge-steward/tests/unit/test_marketplace_markdown.py": "04fe65b2e121133dca0c010db594eec5ebf24ae7",
+   "src/shared/packages/pyforge-steward/tests/unit/test_marketplace_pages.py": "d260aaf86093cd8885ebf498c41fa47a8edced57",
    "src/shared/packages/pyforge-steward/tests/unit/test_measures.py": "ad38b82e87911c044f3b0eee3e5f4ed02e07b463",
    "src/shared/packages/pyforge-steward/tests/unit/test_pages.py": "81b3c28c886f15e85b84c1406fe57fd878628afb",
    "src/shared/packages/pyforge-steward/tests/unit/test_pages_duty.py": "1db7d70c594ee325e868a5354f1f1939d9119cf0",
@@ -6680,7 +6684,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "d6172d67bf576259743ab2d1886e498b2aeaa4ca"
+  "memlog": "49e9d663890db6b5a48ffc9fadd5aac0788b1209"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},

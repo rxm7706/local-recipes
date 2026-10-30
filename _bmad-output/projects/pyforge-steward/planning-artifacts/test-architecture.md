@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 58afced780f1752c
-story_count: 428
-test_file_count: 149
+source_fingerprint: 3d2bc7e22f5adac1
+story_count: 429
+test_file_count: 152
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 428
+- **Stories parsed:** 429
 - **Epics parsed:** 117
-- **Test files inventoried:** 149 under `src/shared/packages/pyforge-steward/tests/`
+- **Test files inventoried:** 152 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `58afced780f1752c`
+- **Source fingerprint:** `3d2bc7e22f5adac1`
 
 ## Risk Assessment
 
@@ -233,6 +233,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_keys_rotate.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_lint_types_mypy_cache.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_lint_types_not_yet_clean.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_marketplace_flag_env.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_marketplace_listing.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_marketplace_manifests.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_marketplace_markdown.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_marketplace_pages.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_measures.py` | unit | none observed |
@@ -713,6 +716,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 109.5 | Contribution lanes wait on a desk test and a Wizard-of-Oz pilot | none observed |
 | 109.6 | The cards and the catalog note carry Claude Code's Round 0 result | none observed |
 | 109.7 | The pilot skills and cards fix what Round 0 found | none observed |
+| 109.8 | The marketplace closes Story 109.3's deferred review rows | none observed |
 | 110.1 | Every steward PRD FR arrow names the Spec capability that realizes it | none observed |
 | 111.1 | The steward Spec's fold-cut capability text is restored, and the foundry inhe... | none observed |
 | 112.1 | The Platform CI `test` job installs only what its runner image lacks, and its... | none observed |

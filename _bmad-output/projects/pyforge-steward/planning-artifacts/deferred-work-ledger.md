@@ -6674,7 +6674,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: loop-6 review row 104; deferred by the operator ruling of 2026-10-29 (the story spec's § Review contract for loop 7)
   severity: low
   promoted: 2026-10-29 — recorded by hand in the loop-6 fix pass of PR #2274
-  status: open
+  closed: 2026-10-30 — steward Story 109.8 (spec `planning-artifacts/specs/spec-109-8-the-marketplace-closes-story-109-3s-deferred-review-rows.md`): `_validate_related` refuses an entry that is empty, carries surrounding whitespace or repeats, and `_check_rows` refuses a reference to the row's own id, each by name; cases in `test_each_listing_rule_refuses_its_breach` and `test_a_related_reference_to_its_own_listing_is_refused` (`test_marketplace_listing.py`).
+  status: closed
 
 ### DW-steward-109-3-2: An empty or non-slug directory between the skill folders, or `skills` as a regular file, passes the folder scan
 
@@ -6686,7 +6687,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: loop-6 review row 105; deferred by the operator ruling of 2026-10-29 (the story spec's § Review contract for loop 7)
   severity: low
   promoted: 2026-10-29 — recorded by hand in the loop-6 fix pass of PR #2274
-  status: open
+  closed: 2026-10-30 — steward Story 109.8 (spec `planning-artifacts/specs/spec-109-8-the-marketplace-closes-story-109-3s-deferred-review-rows.md`): `_skill_folders` refuses a `skills` that is not a directory, a scope or slug directory outside `SLUG` and an empty scope directory, by name; each shape through the scan and `write_site_from_index` (`test_every_directory_between_the_skill_folders_is_somebodys`, `test_skills_as_a_regular_file_is_refused`).
+  status: closed
 
 ### DW-steward-109-3-3: A nested list marker before plain item text stays in the item's text
 
@@ -6698,7 +6700,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: loop-6 review row 110; deferred by the operator ruling of 2026-10-29 (the story spec's § Review contract for loop 7)
   severity: low
   promoted: 2026-10-29 — recorded by hand in the loop-6 fix pass of PR #2274
-  status: open
+  closed: 2026-10-30 — steward Story 109.8 (spec `planning-artifacts/specs/spec-109-8-the-marketplace-closes-story-109-3s-deferred-review-rows.md`): a marker before a top-level item's text opens its nested list (`- - x` renders `<ul><li><ul><li>x</li></ul></li></ul>`); past the one nesting level a marker stays text, as the docstring says (`test_a_marker_before_a_top_level_items_text_nests`).
+  status: closed
 
 ### DW-steward-109-3-4: Seventeen editorial placement rows on the marketplace documents and cards
 
@@ -6711,7 +6714,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-10-29 — recorded by hand in the loop-6 fix pass of PR #2274
   partial: 2026-10-29 — steward Story 109.7 fixed the cards' Sources block contradicting the rolling `pages-site` pre-release under Install (it now names a versioned GitHub release of the listing and says what the pre-release is); the Sources block's placement as a second unpublished list, and every other item here, stay open
-  status: open
+  closed: 2026-10-30 — steward Story 109.8 (spec `planning-artifacts/specs/spec-109-8-the-marketplace-closes-story-109-3s-deferred-review-rows.md`): the README's release paragraph moved under § Regenerate the site (*The release zips*), which also has *What a card shows* and *What each layer refuses*; the lede's location paragraph moved to § Provenance; the tier mapping's one home is the PR template; "Index schema" became § The index and its lanes; the PR template's § Listing rows sit with their neighbours; MANUAL-CHECKLIST's runbook line is at the top naming the pilot, "the matrix" names the tool support matrix, the two plugin rows share one tail row and the Epic-60 items are bullets; the three `SKILL.md` files and the template lead with the unpublished state; warden step 2 says the not-a-verdict fact once; the card carries its lane in the header and its versioned sources as one paragraph under Install; the how-to's intro names § 7's audience and § 7 names no zip by hand. The `SKILL.md`/`steps.md` command copies and the install lines are unchanged.
+  status: closed
 
 ### DW-steward-109-3-5: A manifest destination that is a FIFO, a directory or a hard link, or a path through an unwritable or non-directory component, hangs or raises raw
 
@@ -6723,7 +6727,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: loop-7 review row 118; deferred under the story spec's § Review contract for loop 7
   severity: low
   promoted: 2026-10-29 — recorded by hand in the loop-7 review of PR #2274
-  status: open
+  closed: 2026-10-30 — steward Story 109.8 (spec `planning-artifacts/specs/spec-109-8-the-marketplace-closes-story-109-3s-deferred-review-rows.md`): the manifest writers go through `_write_manifest`: an existing destination that is not a regular file (a FIFO, a directory, the root) is refused by name before it is opened; the text is written through `pyforge.core.atomic_write.atomic_write_text` (a temporary file beside the destination, then `os.replace`), so a hard link's other name keeps its bytes; an `OSError` on the way is a listing error naming the destination (`test_marketplace_manifests.py`, Story 109.8 section).
+  status: closed
 
 ### DW-steward-109-3-6: `**` inside a link destination puts `<strong>` inside the href
 
@@ -6735,7 +6740,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: loop-7 review row 119; deferred under the story spec's § Review contract for loop 7
   severity: low
   promoted: 2026-10-29 — recorded by hand in the loop-7 review of PR #2274
-  status: open
+  closed: 2026-10-30 — steward Story 109.8 (spec `planning-artifacts/specs/spec-109-8-the-marketplace-closes-story-109-3s-deferred-review-rows.md`): `_inline` substitutes links before `**strong**` with placeholders, and U+0000 renders as U+FFFD (`test_links_are_substituted_before_strong`).
+  status: closed
 
 ### DW-steward-109-3-7: Loop-7 test gaps: six surviving mutants, two indirect cases and TEA's four pre-existing advisories
 
@@ -6747,7 +6753,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: loop-7 review row 120; deferred under the story spec's § Review contract for loop 7
   severity: low
   promoted: 2026-10-29 — recorded by hand in the loop-7 review of PR #2274
-  status: open
+  closed: 2026-10-30 — steward Story 109.8 (spec `planning-artifacts/specs/spec-109-8-the-marketplace-closes-story-109-3s-deferred-review-rows.md`): a killing case for each survivor (rewrite in place; a symlinked index to a regular file; the fence-item tab; the leading tab; lower-case `disabled`; the root destination), the directory and absent index through `write_site_from_index` and the manifest writers, all ten re-run as mutants on 2026-10-30 and killed; `test_marketplace_pages.py` split by subject into it, `test_marketplace_listing.py`, `test_marketplace_flag_env.py` and `test_marketplace_manifests.py` with `marketplace_testkit.py` (no test lost); M3's manifest test is four tests, M2's flag trees are built by `_with_entry`, L6's cap is `MAX_SHIPPED_FILE_BYTES`.
+  status: closed
 
 ### DW-steward-109-3-8: Refusals rows 98 and 101 asked for reject a symlinked index and a sparse overlay that the parent and core accepted
 
@@ -6759,7 +6766,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: loop-7 review row 121; deferred under the story spec's § Review contract for loop 7
   severity: low
   promoted: 2026-10-29 — recorded by hand in the loop-7 review of PR #2274
-  status: open
+  closed: 2026-10-30 — steward Story 109.8 (spec `planning-artifacts/specs/spec-109-8-the-marketplace-closes-story-109-3s-deferred-review-rows.md`): both refusals stay (operator ruling 2026-10-30): a symlinked `index.yaml` and, while the flag is `ENABLED`, an overlay that does not name the flag for the resolved environment; README § Regenerate the site, *What each layer refuses*, says so and why.
+  status: closed
 
 ### DW-steward-109-3-9: The loop-7 contract's readings, README's layer paragraph and five smaller text items
 
@@ -6771,7 +6779,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: loop-7 review row 122; deferred under the story spec's § Review contract for loop 7
   severity: low
   promoted: 2026-10-29 — recorded by hand in the loop-7 review of PR #2274
-  status: open
+  closed: 2026-10-30 — steward Story 109.8 (spec `planning-artifacts/specs/spec-109-8-the-marketplace-closes-story-109-3s-deferred-review-rows.md`): the six readings are written into Story 109.3's § Review contract for loop 7 as operator-confirmed (ruling 2026-10-30); the § Fixes (loop 6) intro no longer restates the deferral map; the `--basetemp` note is its own Verification bullet and the row-109 command carries `HERALD_DOCS_SITE_REQUIRED=1`; § Verification points at the contract; README's layer paragraph credits `_check_rows` and the folder scan with their own rules; the PR template's card-name row uses parentheses; `-4`'s closed line lists what it closed.
+  status: closed
 
 ### DW-steward-109-3-10: Loop-8 residue: three test gaps, a `~`/`%` boundary note, a targeting-rule message and two destination edge forms
 
@@ -6788,7 +6797,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: loop-8 review row 124; deferred under the story spec's § Review contract for loop 8
   severity: low
   promoted: 2026-10-29 — recorded by hand in the loop-8 verification pass of PR #2274
-  status: open
+  closed: 2026-10-30 — steward Story 109.8 (spec `planning-artifacts/specs/spec-109-8-the-marketplace-closes-story-109-3s-deferred-review-rows.md`): cases for each test gap (both unknown-key shapes, the targeting message, the `DEPLOY_SERVER` anchor and IPv6 class, the owner-side lookahead, the 64-digit bound, the empty-base angle-bracket links, and the clone-URL lookahead's `_`, `-` and `.`-digit members); README says `~` and `%` continue the clone URL; `--flag-env` names a targeting rule; a root or directory destination is refused by name. An outside alias of an in-tree symlink stays the caller's destination, as `_write_manifest` and `_contained_dest` say.
+  status: closed
 
 ### DW-steward-109-6-1: A card prints `<plugin>:<plugin>` without checking the SKILL.md `name` is the plugin name
 

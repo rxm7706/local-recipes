@@ -15,7 +15,7 @@ article{border-top:1px solid #d6d3d1;padding-top:1rem;margin-top:1rem}
 <body>
 <p><a href="../../index.html">Marketplace</a></p>
 <h1>Scan a project for dependency hygiene</h1>
-<p class="meta">skill · @warden/scan · version 0.1.0</p>
+<p class="meta">skill · @warden/scan · version 0.1.0 · lane code-backed</p>
 <p class="meta">tier community · trust unverified · source estate-listings · never verified · jobs find, install</p>
 <p class="meta">No review record. community maps to unverified until a CODEOWNER promotes it.</p>
 <p>Run the warden scan gate on the current project. Engine probes are not a second verdict. No pixi environment name.</p>
@@ -23,6 +23,7 @@ article{border-top:1px solid #d6d3d1;padding-top:1rem;margin-top:1rem}
 <h2>Install</h2>
 <p>Copy the folder <code>skills/warden/scan</code> into <code>.agents/skills/warden-scan</code>, <code>.claude/skills/warden-scan</code>. Claude Code's documented project skill path is <code>.claude/skills/</code>, and Round 0 (Claude Code 2.1.311, 2026-10-29) found it does not read <code>.agents/skills/</code>. Devin's is <code>.agents/skills/</code>; the <a href="https://github.com/rxm7706/local-recipes/blob/main/_bmad-output/projects/pyforge-steward/planning-artifacts/design-thinking-bmad-marketplace-2026-10-20/tool-support-matrix.md">tool matrix</a> does not list <code>.claude/skills/</code> for Devin. <code>bmp install</code> is not built; this page is not an install button.</p>
 <p>The rolling <code>pages-site</code> pre-release carries <code>warden-scan.zip</code> with <code>warden-scan.zip.sha256</code> beside it while the marketplace flag is on for that deploy. The zip holds the <code>warden-scan/</code> folder with <code>SKILL.md</code>, <code>steps.md</code>, <code>listing.yaml</code> and <code>references/</code> when the skill has one. Check and unpack it where both files were downloaded: <code>sha256sum -c warden-scan.zip.sha256 &amp;&amp; unzip warden-scan.zip -d .claude/skills/</code>, and the same with <code>-d .agents/skills/</code>.</p>
+<p>Versioned sources, not published: a versioned GitHub release of this listing, Artifactory conda, Artifactory pip. The rolling <code>pages-site</code> pre-release above moves with every deploy and is not a versioned release of this listing.</p>
 <p>For Claude Code, a plugin install exposes the skill (<a href="https://github.com/rxm7706/local-recipes/blob/main/docs/foundry/marketplace/MANUAL-CHECKLIST.md">Round 0</a>, 2026-10-29, run on <code>@warden/scan</code> with the <code>claude plugin</code> CLI at local scope, not in an interactive session): <code>/plugin marketplace add &lt;checkout&gt;/docs/foundry/marketplace</code>, then <code>/plugin install warden-scan@pyforge-bmad-marketplace</code>, lists it as <code>warden-scan:warden-scan</code>. Use the plugin or the folder copy in one project, not both; with both, the skill is likely listed twice (not tested). For Codex, <code>.agents/plugins/marketplace.json</code> stays a discovery pointer until its Round 0 row runs, and the folder copy above is the install.</p>
 <h2>Unpublished packages</h2><ul><li>pyforge-warden: PyPI, conda-forge, and SelfExplainML returned 404 on 2026-10-21</li><li>pyforge-core: Required by pyforge warden dispatch; same 404 check</li></ul>
 <h2>Steps</h2>
@@ -46,11 +47,10 @@ article{border-top:1px solid #d6d3d1;padding-top:1rem;margin-top:1rem}
 <pre><code class="language-bash">deptry --version
 osv-scanner --version
 </code></pre>
-<p><code>deptry</code> and <code>osv-scanner</code> are not a warden verdict. The warden CLI calls <code>deptry</code> and <code>osv-scanner scan --offline</code> itself. Do not paste their output into a review as a warden verdict.</p>
+<p><code>deptry</code> and <code>osv-scanner</code> are not a warden verdict: the warden CLI calls <code>deptry</code> and <code>osv-scanner scan --offline</code> itself, so do not paste their output into a review as one.</p>
 <h3>3. Stop</h3>
 <p>Nothing else runs from this runbook.</p>
 <h2>Related</h2><ul><li><a href="../mason/environment.html">@mason/environment</a></li><li><a href="../mason/package.html">@mason/package</a></li></ul>
-<h2>Sources</h2><ul><li>Versioned GitHub release of this listing: not published; the rolling <code>pages-site</code> pre-release under Install moves with every deploy and is not a versioned release of this listing</li><li>Artifactory conda: not published</li><li>Artifactory pip: not published</li></ul>
-<h2>Contribute</h2><p>Lane: code-backed. A pull request is the publish path; the lanes are defined in the marketplace <a href="https://github.com/rxm7706/local-recipes/blob/main/docs/foundry/marketplace/README.md">README</a>.</p>
+<h2>Contribute</h2><p>A pull request is the publish path; the lanes are defined in the marketplace <a href="https://github.com/rxm7706/local-recipes/blob/main/docs/foundry/marketplace/README.md">README</a>.</p>
 </body>
 </html>

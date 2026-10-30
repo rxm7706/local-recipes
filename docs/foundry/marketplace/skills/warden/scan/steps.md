@@ -52,9 +52,9 @@ deptry --version
 osv-scanner --version
 ```
 
-`deptry` and `osv-scanner` are not a warden verdict. The warden CLI calls
-`deptry` and `osv-scanner scan --offline` itself. Do not paste their output
-into a review as a warden verdict.
+`deptry` and `osv-scanner` are not a warden verdict: the warden CLI calls
+`deptry` and `osv-scanner scan --offline` itself, so do not paste their
+output into a review as one.
 
 ## 3. Stop
 

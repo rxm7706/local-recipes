@@ -18,6 +18,13 @@ there.
 Run from the teammate's project directory.
 Do not prefix commands with a pixi environment selector.
 
+## Until pyforge-warden is published
+
+`pyforge-warden` and `pyforge-core` are not on PyPI, conda-forge, or
+SelfExplainML (404 on 2026-10-21). The scan command cannot be replaced by
+a hand-run of its engines; `deptry --version` and `osv-scanner --version`
+are the probes that run today (`steps.md` step 2).
+
 ## When pyforge-warden is installed
 
 ```bash
@@ -33,13 +40,6 @@ subcommand.
 
 `pyforge warden` forwards to the `warden` console script
 (`pyforge.core.dispatch`). Do not import `pyforge.warden`.
-
-## Until that package is published
-
-`pyforge-warden` and `pyforge-core` are not on PyPI, conda-forge, or
-SelfExplainML (404 on 2026-10-21). The scan command cannot be replaced by
-a hand-run of its engines; `deptry --version` and `osv-scanner --version`
-are the probes that run today (`steps.md` step 2).
 
 ## What this skill is not
 
