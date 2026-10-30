@@ -245,6 +245,7 @@ def validate_listing(row: dict[str, Any], *, root: Path | None = None) -> None:
             if not (folder / "SKILL.md").is_file():
                 raise MarketplaceIndexError(f"{ident}: {path}/SKILL.md is missing")
             _validate_skill_folder(folder, ident)
+            _validate_skill_name(folder / "SKILL.md", f"{scope}-{slug}", ident)
     else:
         for key in ("scope", "slug"):
             if row.get(key) is not None:
@@ -444,6 +445,36 @@ def _validate_verified_at(row: dict[str, Any], ident: str) -> None:
         raise MarketplaceIndexError(f"{ident}: verified_at {value!r} is not a calendar date") from exc
 
 
+def _validate_skill_name(skill_md: Path, expected: str, ident: str) -> None:
+    """The ``SKILL.md`` frontmatter ``name`` is the plugin name ``<scope>-<slug>``, compared raw: Claude Code lists a
+    plugin's skill as ``<plugin>:<name>``, and the card prints ``<plugin>:<plugin>`` (Story 109.7,
+    ``DW-steward-109-6-1``). Called after ``_validate_skill_folder``, so the file is a regular, contained file."""
+    try:
+        text = skill_md.read_text(encoding="utf-8")
+    except (UnicodeDecodeError, OSError) as exc:
+        raise MarketplaceIndexError(
+            f"{ident}: SKILL.md is not a readable UTF-8 text file ({exc}); its name must be {expected!r}"
+        ) from exc
+    if text.startswith("\ufeff"):
+        raise MarketplaceIndexError(
+            f"{ident}: SKILL.md starts with a byte-order mark; its frontmatter opens on line 1 and its name must be "
+            f"{expected!r}"
+        )
+    lines = text.splitlines()
+    end = next((i for i, line in enumerate(lines[1:], 1) if line.rstrip() == "---"), None)
+    if not lines or lines[0].rstrip() != "---" or end is None:
+        raise MarketplaceIndexError(f"{ident}: SKILL.md has no YAML frontmatter; its name must be {expected!r}")
+    try:
+        meta = yaml.safe_load("\n".join(lines[1:end]))
+    except (yaml.YAMLError, RecursionError) as exc:
+        raise MarketplaceIndexError(
+            f"{ident}: SKILL.md frontmatter is not valid YAML ({exc}); its name must be {expected!r}"
+        ) from exc
+    name = meta.get("name") if isinstance(meta, dict) else None
+    if name != expected:
+        raise MarketplaceIndexError(f"{ident}: SKILL.md name {name!r} must be {expected!r}, the plugin name")
+
+
 def _plugin_name(row: dict[str, Any]) -> str:
     return f"{row['scope']}-{row['slug']}"
 
@@ -523,7 +554,7 @@ def _load_yaml(path: Path) -> Any:
         raise MarketplaceIndexError(f"{path}: not a readable UTF-8 text file ({exc})") from exc
     try:
         return yaml.safe_load(text)
-    except yaml.YAMLError as exc:
+    except (yaml.YAMLError, RecursionError) as exc:  # a deeply nested document is named too (Story 109.7)
         raise MarketplaceIndexError(f"{path}: not valid YAML ({exc})") from exc
 
 
@@ -958,7 +989,7 @@ def render_skill_card(row: dict[str, Any], *, steps_text: str | None = None) -> 
             "<code>bmp install</code> is not built; this page is not an install button.</p>"
         )
         bits.append(
-            f"<p>The rolling <code>{html.escape(RELEASE_TAG)}</code> release carries <code>{plugin}.zip</code> "
+            f"<p>The rolling <code>{html.escape(RELEASE_TAG)}</code> pre-release carries <code>{plugin}.zip</code> "
             f"with <code>{plugin}.zip.sha256</code> beside it while the marketplace flag is on for that deploy. "
             f"The zip holds the <code>{plugin}/</code> folder with "
             + ", ".join(f"<code>{name}</code>" for name in SKILL_FILES)
@@ -1025,15 +1056,23 @@ def render_skill_card(row: dict[str, Any], *, steps_text: str | None = None) -> 
 
 
 def _sources_html(row: dict[str, Any]) -> str:
-    """Name GitHub release and Artifactory conda/pip without inventing URLs."""
+    """Name a versioned GitHub release and Artifactory conda/pip without inventing URLs. Only a skill card renders this
+    block, so an unpublished versioned release says what the rolling pre-release under Install is, and the card gives
+    one answer (Story 109.7)."""
     sources = row.get("sources")
     if not isinstance(sources, dict):
-        return "<p>Sources: a GitHub release or Artifactory, when this listing is published.</p>"
+        return "<p>Sources: a versioned GitHub release or Artifactory, when this listing is published.</p>"
     lines: list[str] = []
     github = sources.get("github")
     if isinstance(github, dict):
-        state = "published" if github.get("published") is True else "not published"
-        lines.append(f"<li>GitHub release: {state}</li>")
+        if github.get("published") is True:
+            lines.append("<li>Versioned GitHub release of this listing: published</li>")
+        else:
+            lines.append(
+                "<li>Versioned GitHub release of this listing: not published; the rolling "
+                f"<code>{html.escape(RELEASE_TAG)}</code> pre-release under Install moves with every deploy and is not a "
+                "versioned release of this listing</li>"
+            )
     artifactory = sources.get("artifactory")
     if isinstance(artifactory, dict):
         for channel in ("conda", "pip"):
@@ -1042,7 +1081,7 @@ def _sources_html(row: dict[str, Any]) -> str:
                 state = "published" if entry.get("published") is True else "not published"
                 lines.append(f"<li>Artifactory {channel}: {state}</li>")
     if not lines:
-        return "<p>Sources: a GitHub release or Artifactory, when this listing is published.</p>"
+        return "<p>Sources: a versioned GitHub release or Artifactory, when this listing is published.</p>"
     return "<h2>Sources</h2><ul>" + "".join(lines) + "</ul>"
 
 

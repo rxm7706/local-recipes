@@ -1,8 +1,8 @@
 ---
 name: warden-scan
 description: >
-  Scan the current project with the warden CLI. No pixi environment name
-  and no path inside local-recipes. The station command is warden scan
+  Scan the current project with the warden CLI, from the project directory
+  and with no pixi environment name. The station command is warden scan
   (or pyforge warden scan). pyforge-warden is not published yet. deptry
   and osv-scanner are the engines the CLI calls; their output is not a
   warden verdict.
@@ -15,7 +15,7 @@ Marketplace id `warden/scan`. Install this folder into both
 The human runbook is [steps.md](steps.md); the verified tool versions live
 there.
 
-Run from the teammate's project directory. Do not `cd` into local-recipes.
+Run from the teammate's project directory.
 Do not prefix commands with a pixi environment selector.
 
 ## When pyforge-warden is installed
@@ -43,5 +43,4 @@ are the probes that run today (`steps.md` step 2).
 
 ## What this skill is not
 
-Not a conda-forge recipe skill. Not a second PR gate. This folder does not
-replace the estate procedure under `.claude/skills/pyforge-warden/`.
+Not a conda-forge recipe skill. Not a second PR gate.

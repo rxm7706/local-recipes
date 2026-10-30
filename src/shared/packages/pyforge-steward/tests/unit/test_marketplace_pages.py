@@ -125,7 +125,9 @@ def _marketplace(tmp_path: Path, rows: list[dict] | None = None, *, steps: str =
         if row.get("kind") == "skill":
             folder = root / row["path"]
             folder.mkdir(parents=True, exist_ok=True)
-            (folder / "SKILL.md").write_text("# skill\n", encoding="utf-8")
+            (folder / "SKILL.md").write_text(
+                f"---\nname: {row['scope']}-{row['slug']}\n---\n\n# skill\n", encoding="utf-8"
+            )
             (folder / "steps.md").write_text(steps, encoding="utf-8")
             (folder / "listing.yaml").write_text(yaml.safe_dump(row, sort_keys=False), encoding="utf-8")
     root.mkdir(parents=True, exist_ok=True)
@@ -646,6 +648,90 @@ def test_a_skill_folder_may_hold_text_references(tmp_path: Path) -> None:
     assert [row["id"] for row in load_listings(root / "index.yaml", root=root)] == ["mason/environment"]
 
 
+@pytest.mark.parametrize(
+    ("skill_md", "needle"),
+    [
+        ("# skill\n", "has no YAML frontmatter; its name must be 'mason-environment'"),
+        ("---\nname: mason-environment\n", "has no YAML frontmatter; its name must be 'mason-environment'"),
+        ("---\nname: [unclosed\n---\n", "(?s)frontmatter is not valid YAML .*must be 'mason-environment'"),
+        ("\ufeff---\nname: mason-environment\n---\n", "starts with a byte-order mark.*must be 'mason-environment'"),
+        ("---\nname: " + "[" * 5000 + "\n---\n", "frontmatter is not valid YAML"),
+        ("---\nname: Mason-Environment\n---\n", "name 'Mason-Environment' must be"),
+        ("---\ndescription: x\n---\n", "name None must be 'mason-environment'"),
+        ("---\nname: environment\n---\n", "name 'environment' must be 'mason-environment', the plugin name"),
+        ("---\nname: 'mason-environment '\n---\n", "name 'mason-environment ' must be"),
+        ("---\n- a list\n---\n", "name None must be"),
+    ],
+)
+def test_a_skill_md_name_that_is_not_the_plugin_name_is_refused(tmp_path: Path, skill_md: str, needle: str) -> None:
+    """Story 109.7 (DW-steward-109-6-1): Claude Code lists a plugin's skill as ``<plugin>:<name>`` and the card prints
+    ``<plugin>:<plugin>``, so the frontmatter ``name`` is the plugin name, compared raw."""
+    root = _marketplace(tmp_path)
+    (root / "skills/mason/environment/SKILL.md").write_text(skill_md, encoding="utf-8")
+    with pytest.raises(MarketplaceIndexError, match=needle):
+        load_listings(root / "index.yaml", root=root)
+
+
+def test_the_committed_skill_md_names_are_the_plugin_names() -> None:
+    """Story 109.7: the three pilots pass the name rule over the committed tree."""
+    root = repo_root() / _MARKETPLACE
+    rows = load_listings(root / "index.yaml", root=root)
+    assert sorted(f"{row['scope']}-{row['slug']}" for row in rows) == [
+        "mason-environment",
+        "mason-package",
+        "warden-scan",
+    ]
+
+
+def test_a_skill_md_that_is_not_utf8_is_refused_by_name(tmp_path: Path) -> None:
+    """Story 109.7: an unreadable SKILL.md is a named refusal that says what the name must be, never a raw error."""
+    root = _marketplace(tmp_path)
+    (root / "skills/mason/environment/SKILL.md").write_bytes(b"---\nname: \xff\n---\n")
+    with pytest.raises(MarketplaceIndexError, match="(?s)not a readable UTF-8 text file .*must be 'mason-environment'"):
+        load_listings(root / "index.yaml", root=root)
+
+
+def test_a_deeply_nested_index_is_refused_by_name(tmp_path: Path) -> None:
+    """Story 109.7: ``_load_yaml`` names a document nested past the recursion limit, never a raw ``RecursionError``."""
+    index = tmp_path / "index.yaml"
+    index.write_text("listings: " + "[" * 5000 + "\n", encoding="utf-8")
+    with pytest.raises(MarketplaceIndexError, match="not valid YAML"):
+        load_listings(index)
+
+
+def test_a_skill_with_no_sources_names_the_versioned_release() -> None:
+    """Story 109.7: the fallback names the listing's own versioned release too."""
+    row = _skill()
+    row.pop("sources", None)
+    card = render_skill_card(row)
+    assert "<p>Sources: a versioned GitHub release or Artifactory, when this listing is published.</p>" in card
+
+
+def test_an_empty_sources_mapping_names_the_versioned_release() -> None:
+    """Story 109.7: the second fallback, a ``sources`` mapping with neither entry, says the same."""
+    row = _skill()
+    row["sources"] = {}
+    card = render_skill_card(row)
+    assert "<p>Sources: a versioned GitHub release or Artifactory, when this listing is published.</p>" in card
+
+
+def test_the_readme_calls_pages_site_a_pre_release_as_the_cards_do() -> None:
+    """Story 109.7: the README, the card's Install section and its Sources block use one word for ``pages-site``."""
+    readme = (repo_root() / _MARKETPLACE / "README.md").read_text(encoding="utf-8")
+    assert "The rolling `pages-site` pre-release carries one `<scope>-<slug>.zip` per skill," in readme
+    assert "The rolling `pages-site` release carries" not in readme
+    assert "- A versioned GitHub release of the listing and Artifactory conda and pip are" in readme
+
+
+def test_a_published_versioned_release_reads_published() -> None:
+    """Story 109.7: the pre-release pointer is for an unpublished versioned release only."""
+    row = _skill()
+    row["sources"] = {"github": {"kind": "release", "published": True}}
+    card = render_skill_card(row)
+    assert "<li>Versioned GitHub release of this listing: published</li>" in card
+    assert "is not a versioned release" not in card
+
+
 def test_a_declared_docs_steps_that_is_missing_is_refused(tmp_path: Path) -> None:
     row = _listing()
     root = _marketplace(tmp_path, [row])
@@ -1141,7 +1227,13 @@ def test_committed_environment_card_renders_steps_md_not_the_paper_sample(tmp_pa
     assert "conda-lock lock -f pyproject.toml --lockfile conda-lock.yml" in card
     assert "env.lock" not in card
     assert "paper card" not in card  # loop 2, row 26: reviewer provenance stays in the listing comments
-    assert "GitHub release: not published" in card
+    # Story 109.7: the Sources block names a versioned release and says what the rolling pre-release is: one answer
+    assert (
+        "<li>Versioned GitHub release of this listing: not published; the rolling <code>pages-site</code> pre-release "
+        "under Install moves with every deploy and is not a versioned release of this listing</li>" in card
+    )
+    assert "<li>GitHub release: not published</li>" not in card
+    assert "rolling <code>pages-site</code> pre-release carries <code>mason-environment.zip</code>" in card
     assert "Artifactory conda: not published" in card
     assert ".agents/skills/mason-environment" in card
     assert ".claude/skills/mason-environment" in card

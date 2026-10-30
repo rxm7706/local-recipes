@@ -11,9 +11,15 @@ its place. Steps 0 and 2 run today; they produce probes, not a report.
 
 ## 0. Install the published tools
 
-- `deptry` 0.25.1: `pip install deptry` (PyPI `deptry`) or
-  `conda install -c conda-forge deptry`.
-- `osv-scanner` 2.4.0: `conda install -c conda-forge osv-scanner`, or the
+Install both in the ranges `pyforge-warden` pins for its engines, so the
+versions you probe are the ones warden accepts once it is published.
+`osv-scanner` 2.5 or later (conda-forge served 2.7.0 on 2026-10-29) is outside
+that range.
+
+- `deptry` 0.25.1, range `>=0.25.1,<0.26`: `pip install "deptry>=0.25.1,<0.26"`
+  (PyPI `deptry`) or `conda install -c conda-forge "deptry>=0.25.1,<0.26"`.
+- `osv-scanner` 2.4.0, range `>=2.4.0,<2.5`:
+  `conda install -c conda-forge "osv-scanner>=2.4.0,<2.5"`, or the v2.4.0
   binary from the osv-scanner GitHub release page.
 
 ## 1. Scan with the station command (waits on `pyforge-warden`)

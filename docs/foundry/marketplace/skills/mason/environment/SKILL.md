@@ -2,8 +2,8 @@
 name: mason-environment
 description: >
   Lock a teammate project's manifests into one conda-lock file, then check
-  that lockfile, without a pixi environment name and without a path inside
-  local-recipes. The station command is pyforge mason environment. Until
+  that lockfile, from the project directory and without a pixi environment
+  name. The station command is pyforge mason environment. Until
   pyforge-mason is published, the lock step is the conda-lock command that
   station assembles.
 ---
@@ -16,9 +16,8 @@ The human runbook is [steps.md](steps.md); the verified tool versions live
 there.
 
 Run every command from the teammate's project directory (the directory that
-holds `pyproject.toml` or `environment.yml`). Do not `cd` into a
-local-recipes checkout. Do not prefix the command with a pixi environment
-selector.
+holds `pyproject.toml` or `environment.yml`). Do not prefix the command
+with a pixi environment selector.
 
 ## When pyforge-mason is installed
 
@@ -51,5 +50,4 @@ platform rule are `steps.md` step 2; the check, and why not to run
 
 ## What this skill is not
 
-Recipe authoring stays in conda-forge-expert. This folder does not replace
-the estate procedure under `.claude/skills/mason-environment/`.
+Recipe authoring stays in conda-forge-expert.

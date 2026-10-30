@@ -21,6 +21,7 @@ The two lanes are defined in the README's § Index schema, **Lanes** (`docs/foun
 - [ ] A non-skill row's card name, its `slug` or its `name` when it has no `slug`, is lower-case letters, digits and hyphens
 - [ ] Every folder under `skills/<scope>/` is a row of `index.yaml`
 - [ ] The `id`, the card path and the `<scope>-<slug>` plugin name repeat no other row's
+- [ ] `SKILL.md` opens with YAML frontmatter on line 1 whose `name` is exactly `<scope>-<slug>`
 - [ ] `related`, when present, is a list of strings; an entry `@<scope>/<slug>` is spelled whole and names a skill row of the index (anything else is text on the card)
 
 ## Folder

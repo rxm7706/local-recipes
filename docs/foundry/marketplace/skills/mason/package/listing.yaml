@@ -11,7 +11,7 @@ display_name: Build a package locally
 title: Build a package locally
 summary: Build a wheel and sdist in the project directory. Do not upload.
 description: Build a wheel and sdist from the project directory. Upload stays behind
-  an explicit confirm. No pixi environment name and no path inside local-recipes.
+  an explicit confirm. No pixi environment name.
 version: 0.1.0
 tasks:
 - build-wheel

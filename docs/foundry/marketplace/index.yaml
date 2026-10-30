@@ -28,8 +28,7 @@ listings:
     summary: Lock a project into one conda-lock file and check that lockfile.
     description: >-
       Resolve a teammate project's conda and pip manifests into one lockfile,
-      then check that lockfile. No pixi environment name and no path inside
-      local-recipes.
+      then check that lockfile. No pixi environment name.
     version: "0.1.0"
     tasks: [lock-environment, check-lockfile]
     keywords: [conda, pip, lockfile]
@@ -89,8 +88,7 @@ listings:
     summary: Build a wheel and sdist in the project directory. Do not upload.
     description: >-
       Build a wheel and sdist from the project directory. Upload stays behind
-      an explicit confirm. No pixi environment name and no path inside
-      local-recipes.
+      an explicit confirm. No pixi environment name.
     version: "0.1.0"
     tasks: [build-wheel, build-sdist]
     keywords: [wheel, sdist, build]
@@ -150,8 +148,7 @@ listings:
     summary: Run warden scan on the current project. Probes are not a verdict.
     description: >-
       Run the warden scan gate on the current project. Engine probes are not
-      a second verdict. No pixi environment name and no path inside
-      local-recipes.
+      a second verdict. No pixi environment name.
     version: "0.1.0"
     tasks: [scan-dependencies]
     keywords: [dependencies, scan]

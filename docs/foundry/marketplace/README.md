@@ -40,7 +40,7 @@ any letter case) under `references/`, and nothing else: regular files only
 Between the folders, `skills/` and `skills/<scope>/` hold directories only.
 What each layer refuses is under § Regenerate the site.
 
-The rolling `pages-site` release carries one `<scope>-<slug>.zip` per skill,
+The rolling `pages-site` pre-release carries one `<scope>-<slug>.zip` per skill,
 with `<scope>-<slug>.zip.sha256` beside it, while the marketplace flag is on
 for that deploy. Each zip holds the `<scope>-<slug>/` folder with that set,
 so `sha256sum -c <scope>-<slug>.zip.sha256 && unzip <scope>-<slug>.zip -d .claude/skills/`
@@ -200,8 +200,8 @@ build.
 - `bmp install` is Story 109.4 and is not this tree; the pages are a reading
   surface, not an install button.
 - Per-tool skill-directory formats and adapters are not generated.
-- GitHub release and Artifactory conda and pip are the sources once a listing
-  is published. These three are not published, so the card has no download
+- A versioned GitHub release of the listing and Artifactory conda and pip are
+  the sources once a listing is published. These three are not published, so the card has no download
   URL of its own; the rolling `pages-site` zips above are the only artifact.
 - `pyforge-mason`, `pyforge-warden`, and `pyforge-core` were not on PyPI,
   conda-forge, or SelfExplainML on 2026-10-21. Each pilot skill says so in
