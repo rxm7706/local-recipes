@@ -21,18 +21,19 @@ there.
 Run from the teammate's project directory.
 Do not prefix commands with a pixi environment selector.
 
+## Until the station package is published
+
+<!-- Replace this section's body: name the package, the indexes that 404, and the date of the check. If the
+     station assembles a published command, give that argv and name the engine by its module
+     (pyforge.<station>.engines.<name>), never by a source path. If no published command produces the
+     station's report, say that. Do not invent a command. Do not write "this repo". Delete the section when
+     every package the skill calls is published. -->
+
 ## When the station package is installed
 
 ```bash
 # Replace: the real argv, copied from the station's --help or its engine module
 ```
-
-## Until that package is published
-
-<!-- Replace this section's body: name the package, the indexes that 404, and the date of the check. If the
-     station assembles a published command, give that argv and name the engine by its module
-     (pyforge.<station>.engines.<name>), never by a source path. If no published command produces the
-     station's report, say that. Do not invent a command. Do not write "this repo". -->
 
 ## What this skill is not
 

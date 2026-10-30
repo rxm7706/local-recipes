@@ -198,3 +198,77 @@ def test_render_markdown_is_deterministic_and_closes_every_block() -> None:
 
 def test_heading_offset_demotes_every_heading_and_stops_at_h6() -> None:
     assert render_markdown("# a\n\n## b\n\n##### c", heading_offset=2) == "<h3>a</h3>\n<h4>b</h4>\n<h6>c</h6>"
+
+
+# --- Story 109.8 ------------------------------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("- - x", "<ul><li><ul><li>x</li></ul></li></ul>"),
+        ("* - x", "<ul><li><ul><li>x</li></ul></li></ul>"),
+        ("1. - x", "<ol><li><ul><li>x</li></ul></li></ol>"),
+        ("- 3. x", '<ul><li><ol start="3"><li>x</li></ol></li></ul>'),
+        ("- - x\n  - y", "<ul><li><ul><li>x</li><li>y</li></ul></li></ul>"),
+        ("- a\n- - b", "<ul><li>a</li><li><ul><li>b</li></ul></li></ul>"),
+        # past the one nesting level a marker stays text
+        ("- a\n  - - b", "<ul><li>a<ul><li>- b</li></ul></li></ul>"),
+        ("- - - x", "<ul><li><ul><li>- x</li></ul></li></ul>"),
+        # strong text is not a marker
+        ("- **b** x", "<ul><li><strong>b</strong> x</li></ul>"),
+    ],
+)
+def test_a_marker_before_a_top_level_items_text_nests(text: str, expected: str) -> None:
+    """DW-steward-109-3-3: ``- - x`` rendered its inner marker as item text where CommonMark nests a list."""
+    assert render_markdown(text) == expected
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("[a](https://e.test/**b**)", '<p><a href="https://e.test/**b**">a</a></p>'),
+        ("**[c](https://e.test/x**)", '<p>**<a href="https://e.test/x**">c</a></p>'),
+        ("**see [a](https://e.test/)**", '<p><strong>see <a href="https://e.test/">a</a></strong></p>'),
+        ("[**a**](https://e.test/)", '<p><a href="https://e.test/"><strong>a</strong></a></p>'),
+        ("[x](javascript:**b**)", "<p>[x](javascript:<strong>b</strong>)</p>"),  # a literal link stays text
+        ("a\x00b", "<p>a\ufffdb</p>"),
+        ("a \x000\x00 b [l](https://e.test/)", '<p>a \ufffd0\ufffd b <a href="https://e.test/">l</a></p>'),
+    ],
+)
+def test_links_are_substituted_before_strong(text: str, expected: str) -> None:
+    """DW-steward-109-3-6: ``**strong**`` ran before links, so a ``**`` in a destination put ``<strong>`` inside the
+    ``href`` and an unbalanced one left an open ``<strong>``; U+0000 is the placeholder's delimiter."""
+    assert render_markdown(text, link_base="scan/") == expected
+
+
+def test_a_tab_after_a_list_marker_reaches_the_four_column_stop() -> None:
+    """DW-steward-109-3-7: ``-\t```sh`` opens its fence at column 4 (``expandtabs(4)``), so a close indented eight
+    spaces is code; at ``expandtabs(8)`` it closed the fence."""
+    text = "-\t```sh\n    x\n        ```\nafter"
+    assert render_markdown(text) == '<pre><code class="language-sh">x\n    ```\nafter\n</code></pre>'
+
+
+def test_a_leading_tab_reaches_the_next_four_column_stop() -> None:
+    """DW-steward-109-3-7: two spaces and a tab are four columns, not six, so the line closes the fence; counting the
+    tab as four spaces kept it open."""
+    assert render_markdown(" ```\nx\n  \t```\ny") == "<pre><code>x\n</code></pre>\n<p>y</p>"
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("[r](a<b.md)", '<p><a href="a&lt;b.md">r</a></p>'),
+        ("[b](steps.md>)", '<p><a href="steps.md&gt;">b</a></p>'),
+    ],
+)
+def test_a_plain_destination_with_an_angle_bracket_takes_an_empty_base(text: str, expected: str) -> None:
+    """DW-steward-109-3-10 (loop 7, row 117): an empty ``link_base`` prefixes nothing, and a plain destination keeps
+    its escaped ``<`` or ``>``."""
+    assert render_markdown(text, link_base="") == expected
+
+
+def test_u0000_renders_as_ufffd_in_a_fence_and_its_info_string_too() -> None:
+    """Review loop 1, row 10: the replacement ran in ``_inline`` only, so a fence carried U+0000 into its body and
+    its ``class`` attribute."""
+    assert render_markdown("```a\x00b\nx\x00y\n```") == '<pre><code class="language-a\ufffdb">x\ufffdy\n</code></pre>'

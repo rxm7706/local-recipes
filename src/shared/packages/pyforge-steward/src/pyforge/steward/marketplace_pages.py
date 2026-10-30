@@ -27,13 +27,17 @@ a tree that does not declare the flag.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import datetime as _dt
 import html
 import json
+import os
 import posixpath
 import re
 import shutil
+import stat
 import sys
+import tempfile
 import urllib.parse
 from pathlib import Path
 from typing import Any
@@ -272,13 +276,23 @@ def _validate_related(row: dict[str, Any], ident: str) -> None:
     """``related`` is a list of strings; an entry that starts with ``@`` is a whole ``@<scope>/<slug>`` reference
     (loop 5, row 84: an int raised a raw ``TypeError`` from the cross-reference, a bare string was iterated character
     by character, and ``@Warden/Scan`` or ``@warden/scan/extra`` passed as free text, so the rule held only for a
-    reference spelled right). Whether the reference names a skill listing is ``_check_rows``'s."""
+    reference spelled right). Whether the reference names a skill listing, and not this one, is ``_check_rows``'s.
+    An entry is held whole like every other string field: not empty, no surrounding whitespace (``" @warden/scan"``
+    passed the ``@`` test as text and rendered unlinked), and no entry twice (Story 109.8, ``DW-steward-109-3-1``)."""
     related = row.get("related")
     if related is None:
         return
     if not isinstance(related, list) or any(not isinstance(item, str) for item in related):
         raise MarketplaceIndexError(f"{ident}: related must be a list of strings")
+    seen: set[str] = set()
     for item in related:
+        if not item.strip():
+            raise MarketplaceIndexError(f"{ident}: related {item!r} is empty")
+        if item != item.strip():
+            raise MarketplaceIndexError(f"{ident}: related {item!r} carries surrounding whitespace")
+        if item in seen:
+            raise MarketplaceIndexError(f"{ident}: related {item!r} appears twice")
+        seen.add(item)
         if item.startswith("@") and not _RELATED_SKILL.fullmatch(item):
             raise MarketplaceIndexError(f"{ident}: related {item!r} must be @<scope>/<slug> ({SLUG.pattern} each)")
 
@@ -511,6 +525,9 @@ def _check_rows(rows: list[dict[str, Any]]) -> None:
             match = _RELATED_SKILL.fullmatch(str(item))
             if match and f"{match.group(1)}/{match.group(2)}" not in skills:
                 raise MarketplaceIndexError(f"{row['id']}: related {item} names no skill listing")
+            if match and f"{match.group(1)}/{match.group(2)}" == str(row["id"]):
+                # the card would link itself (Story 109.8, DW-steward-109-3-1)
+                raise MarketplaceIndexError(f"{row['id']}: related {item} names this listing itself")
 
 
 def listings_from_document(document: dict[str, Any], *, root: Path | None = None) -> list[dict[str, Any]]:
@@ -697,7 +714,14 @@ def _link_href(url: str, link_base: str | None) -> str | None:
 
 
 def _inline(text: str, link_base: str | None = None) -> str:
-    """Escaped text with ``code`` spans, ``**strong**`` and ``[text](url)`` links; nothing else is markup."""
+    """Escaped text with ``code`` spans, ``**strong**`` and ``[text](url)`` links; nothing else is markup.
+
+    Links are substituted before ``**strong**`` and held as placeholders while it runs, so a ``**`` inside a
+    destination stays in the ``href`` and an unbalanced one leaves no open ``<strong>`` (Story 109.8,
+    ``DW-steward-109-3-6``); a strong span around a link still wraps it, and a link's own text still takes strong.
+    U+0000 is the placeholder's delimiter; ``render_markdown``, the one caller, has replaced it with U+FFFD already
+    (CommonMark's rule; review loop 2, row 12)."""
+    anchors: list[str] = []
 
     def link(match: re.Match[str]) -> str:
         target = match.group(2)
@@ -710,7 +734,11 @@ def _inline(text: str, link_base: str | None = None) -> str:
                 return match.group(0)
             target = inner
         href = _link_href(target, link_base)
-        return match.group(0) if href is None else f'<a href="{href}">{match.group(1)}</a>'
+        if href is None:
+            return match.group(0)
+        label = _STRONG.sub(r"<strong>\1</strong>", match.group(1))
+        anchors.append(f'<a href="{href}">{label}</a>')
+        return f"\x00{len(anchors) - 1}\x00"
 
     rendered: list[str] = []
     # re.split with one group alternates text and code span; the odd parts are the spans (a bare "``" in text is
@@ -719,7 +747,8 @@ def _inline(text: str, link_base: str | None = None) -> str:
         if index % 2:
             rendered.append(f"<code>{part[1:-1]}</code>")
         else:
-            rendered.append(_LINK.sub(link, _STRONG.sub(r"<strong>\1</strong>", part)))
+            held = _STRONG.sub(r"<strong>\1</strong>", _LINK.sub(link, part))
+            rendered.append(re.sub(r"\x00(\d+)\x00", lambda found: anchors[int(found.group(1))], held))
     return "".join(rendered)
 
 
@@ -786,17 +815,23 @@ def render_markdown(
     when it is a ``#`` heading, is dropped), fenced code blocks (backtick or
     tilde, an info string, any indent, closed by a fence of the same marker
     indented at most three spaces past the opening), ``-``/``*`` bullet and
-    ``1.`` ordered lists (one level of nesting by indent, each level with its
-    own tag and an ``<ol>`` carrying ``start`` when its first marker is not
-    1; an indented following line continues the item; a fence inside a list
-    closes the list), blank-line-separated paragraphs, inline ``code``
-    spans, ``**strong**`` and ``[text](url)`` links to ``http(s)`` or
+    ``1.`` ordered lists (one level of nesting, by indent or by a marker
+    before a top-level item's text as in ``- - x``, each level with its own
+    tag and an ``<ol>`` carrying ``start`` when its first marker is not 1;
+    past that one level a marker stays text, and an item indented deeper
+    than the nested one joins the nested list; an indented following line
+    continues the item; a fence inside a list closes the list),
+    blank-line-separated paragraphs, inline ``code`` spans, ``**strong**``
+    and ``[text](url)`` links to ``http(s)`` or
     relative targets, the relative ones prefixed with ``link_base`` (the
     default ``None`` leaves a relative target literal, loop 5, row 81).
     Everything is HTML-escaped first; raw HTML, images, ``//host`` and
     ``/rooted`` links stay literal text. Pure: the same text renders the
     same bytes.
     """
+    # U+0000 is _inline's placeholder delimiter; CommonMark renders it as U+FFFD everywhere, a fence and its info
+    # string included (Story 109.8, review loop 1, row 10)
+    text = text.replace("\x00", "\ufffd")
     # a leading tab counts as four columns, so a tab-indented close, nested item or fence behaves like a
     # space-indented one (loop 4, row 68); a tab inside a line, in a fence body or a code span, is emitted as it is
     # (loop 5, row 82: expanding every tab rewrote a Makefile fence)
@@ -884,11 +919,21 @@ def render_markdown(
                 lines[index] = " " * len(prefix.expandtabs(4)) + inner
                 continue
             if items and indent >= 2:
+                # past the one nesting level a marker before the text stays text (Story 109.8)
                 items[-1][3].append((ordered, number, body))
             else:
                 if items and items[0][0] != ordered:
                     flush_list()
-                items.append((ordered, number, body, []))
+                # a marker before a top-level item's text opens its nested list, as CommonMark nests `- - x`
+                # (Story 109.8, DW-steward-109-3-3: the inner marker was item text)
+                inner_marker = _BULLET.match(body) or _ORDERED.match(body)
+                if inner_marker:
+                    inner_ordered = inner_marker.re is _ORDERED
+                    inner_number = int(inner_marker.group(2)) if inner_ordered else 1
+                    inner_text = inner_marker.group(inner_marker.re.groups)
+                    items.append((ordered, number, "", [(inner_ordered, inner_number, inner_text)]))
+                else:
+                    items.append((ordered, number, body, []))
             index += 1
             continue
         if items and line.startswith("  ") and line.strip():
@@ -944,11 +989,12 @@ def _page(title: str, body: str) -> str:
 def render_skill_card(row: dict[str, Any], *, steps_text: str | None = None) -> str:
     """One self-contained skill card.
 
-    Order (the review of 2026-10-28, row 5; loop 2, row 26; loop 5, row 94):
-    the header meta lines carry the verified date and the jobs, then what it
-    is, Install, Unpublished packages, Steps (``steps.md`` rendered with
-    :func:`render_markdown`), Related, Sources, Contribute. The paper
-    prototype's sample commands are not rendered.
+    Order (the review of 2026-10-28, row 5; loop 2, row 26; loop 5, row 94;
+    Story 109.8): the header meta lines carry the lane, the verified date and
+    the jobs, then what it is, Install (with the versioned sources as one
+    paragraph after the rolling pre-release), Unpublished packages, Steps
+    (``steps.md`` rendered with :func:`render_markdown`), Related,
+    Contribute. The paper prototype's sample commands are not rendered.
     """
     validate_listing(row)
     title = str(row.get("title") or row.get("display_name") or row["name"])
@@ -959,11 +1005,14 @@ def render_skill_card(row: dict[str, Any], *, steps_text: str | None = None) -> 
     up = "../" * href.count("/")
     jobs = row.get("jobs") or []
     jobs_bit = (" · jobs " + ", ".join(html.escape(str(job)) for job in jobs)) if jobs else ""
+    lane = _listing_lane(row)
+    # the lane is listing metadata, so it sits in the header beside the kind (Story 109.8, DW-steward-109-3-4)
+    lane_bit = f" · lane {html.escape(lane)}" if lane else ""
     bits = [
         f'<p><a href="{up}index.html">Marketplace</a></p>',
         f"<h1>{html.escape(title)}</h1>",
         f'<p class="meta">{html.escape(str(row["kind"]))} · '
-        f"{html.escape(str(row['name']))} · version {html.escape(str(row.get('version') or 'unversioned'))}</p>",
+        f"{html.escape(str(row['name']))} · version {html.escape(str(row.get('version') or 'unversioned'))}{lane_bit}</p>",
         f'<p class="meta">{tier_bit}trust {html.escape(trust)} · source {html.escape(str(row["source"]))} · '
         f"{html.escape(_verified_text(row))}{jobs_bit}</p>",
     ]
@@ -997,6 +1046,7 @@ def render_skill_card(row: dict[str, Any], *, steps_text: str | None = None) -> 
             f"were downloaded: <code>sha256sum -c {plugin}.zip.sha256 &amp;&amp; unzip {plugin}.zip -d .claude/skills/</code>, "
             f"and the same with <code>-d .agents/skills/</code>.</p>"
         )
+        bits.append(_sources_html(row))  # what the pre-release above is not (Story 109.8)
         # Round 0's Claude Code leg (2026-10-29) ran this plugin install on @warden/scan only; Codex's row has not
         # run (Story 109.6).
         bits.append(
@@ -1042,47 +1092,49 @@ def render_skill_card(row: dict[str, Any], *, steps_text: str | None = None) -> 
             else:
                 rendered.append(f"<li>{html.escape(str(item))}</li>")
         bits.append("<h2>Related</h2><ul>" + "".join(rendered) + "</ul>")
-    if row.get("kind") == "skill":
-        bits.append(_sources_html(row))  # after the runbook and its siblings (loop 5, row 94)
-    lane = _listing_lane(row)
     if lane:
-        # The lanes are defined once, in the marketplace README (loop 3, row 55); the card names this listing's and
-        # links the definition (loop 4, row 76).
+        # The lanes are defined once, in the marketplace README (loop 3, row 55); the header names this listing's and
+        # this section links the definition (loop 4, row 76).
         bits.append(
-            f"<h2>Contribute</h2><p>Lane: {html.escape(lane)}. A pull request is the publish path; the lanes are "
-            f'defined in the marketplace <a href="{REPOSITORY_BLOB_URL}/{MARKETPLACE_ROOT_RELATIVE}/README.md">README</a>.</p>'
+            "<h2>Contribute</h2><p>A pull request is the publish path; the lanes are defined in the marketplace "
+            f'<a href="{REPOSITORY_BLOB_URL}/{MARKETPLACE_ROOT_RELATIVE}/README.md">README</a>.</p>'
         )
     return _page(title, "\n".join(bits))
 
 
 def _sources_html(row: dict[str, Any]) -> str:
-    """Name a versioned GitHub release and Artifactory conda/pip without inventing URLs. Only a skill card renders this
-    block, so an unpublished versioned release says what the rolling pre-release under Install is, and the card gives
-    one answer (Story 109.7)."""
+    """The versioned sources, a GitHub release of the listing and Artifactory conda/pip, without inventing URLs: one
+    paragraph under Install, after the rolling pre-release it is not (Story 109.7; Story 109.8,
+    ``DW-steward-109-3-4``: a second list under its own heading read as another unpublished list). While the release is
+    not published the paragraph says what the pre-release is, so the card gives one answer."""
     sources = row.get("sources")
-    if not isinstance(sources, dict):
-        return "<p>Sources: a versioned GitHub release or Artifactory, when this listing is published.</p>"
-    lines: list[str] = []
-    github = sources.get("github")
-    if isinstance(github, dict):
-        if github.get("published") is True:
-            lines.append("<li>Versioned GitHub release of this listing: published</li>")
-        else:
-            lines.append(
-                "<li>Versioned GitHub release of this listing: not published; the rolling "
-                f"<code>{html.escape(RELEASE_TAG)}</code> pre-release under Install moves with every deploy and is not a "
-                "versioned release of this listing</li>"
-            )
-    artifactory = sources.get("artifactory")
-    if isinstance(artifactory, dict):
-        for channel in ("conda", "pip"):
-            entry = artifactory.get(channel)
-            if isinstance(entry, dict):
-                state = "published" if entry.get("published") is True else "not published"
-                lines.append(f"<li>Artifactory {channel}: {state}</li>")
-    if not lines:
-        return "<p>Sources: a versioned GitHub release or Artifactory, when this listing is published.</p>"
-    return "<h2>Sources</h2><ul>" + "".join(lines) + "</ul>"
+    release = "a versioned GitHub release of this listing"
+    published: list[str] = []
+    unpublished: list[str] = []
+    if isinstance(sources, dict):
+        github = sources.get("github")
+        if isinstance(github, dict):
+            (published if github.get("published") is True else unpublished).append(release)
+        artifactory = sources.get("artifactory")
+        if isinstance(artifactory, dict):
+            for channel in ("conda", "pip"):
+                entry = artifactory.get(channel)
+                if isinstance(entry, dict):
+                    (published if entry.get("published") is True else unpublished).append(f"Artifactory {channel}")
+    if not published and not unpublished:
+        return f"<p>Versioned sources: {release} or Artifactory, once the listing is published.</p>"
+    parts = []
+    if published:
+        parts.append("published: " + ", ".join(published))
+    if unpublished:
+        parts.append("not published: " + ", ".join(unpublished))
+    text = f"<p>Versioned sources, {'; '.join(parts)}."
+    if release in unpublished:
+        text += (
+            f" The rolling <code>{html.escape(RELEASE_TAG)}</code> pre-release above moves with every deploy and is "
+            "not a versioned release of this listing."
+        )
+    return text + "</p>"
 
 
 def render_index(rows: list[dict[str, Any]]) -> str:
@@ -1214,14 +1266,20 @@ def render_codex_marketplace(rows: list[dict[str, Any]]) -> str:
 def _skill_folders(marketplace: Path) -> list[Path]:
     """Every ``skills/<scope>/<slug>/`` directory, sorted; a symlink at any of the three levels is refused before
     anything under it is read (loop 4, row 64: ``is_dir()`` follows links, so ``listing.yaml`` was parsed from
-    outside the tree before the validator could refuse the folder)."""
+    outside the tree before the validator could refuse the folder).
+
+    Between the folders every entry is somebody's (Story 109.8, ``DW-steward-109-3-2``): ``skills`` is a directory
+    when it exists, a scope or slug directory's name matches ``SLUG`` whole (``Bad Scope`` and ``.git`` passed empty),
+    and a scope directory holds at least one skill folder."""
     skills = marketplace / "skills"
     if skills.is_symlink():
         raise MarketplaceIndexError("skills is a symlink; a skill folder is never reached through a link")
-    if not skills.is_dir():
+    if not skills.exists():
         return []
+    if not skills.is_dir():
+        raise MarketplaceIndexError("skills is not a directory; skill folders sit under a skills/ directory")
     folders: list[Path] = []
-    for scope in sorted(skills.iterdir()):
+    for scope in _entries(skills, "skills"):
         if scope.is_symlink():
             raise MarketplaceIndexError(
                 f"skills/{scope.name} is a symlink; a skill folder is never reached through a link"
@@ -1230,7 +1288,12 @@ def _skill_folders(marketplace: Path) -> list[Path]:
             # loop 5, row 90: a stray between the folders was nobody's (the validator sees inside a folder, the
             # mount skips what is not a folder); only scope directories sit under skills/
             raise MarketplaceIndexError(f"skills/{scope.name} is not a directory; only skill folders sit under skills/")
-        for slug in sorted(scope.iterdir()):
+        if not SLUG.fullmatch(scope.name):
+            raise MarketplaceIndexError(f"skills/{scope.name} is not a scope name; it must match {SLUG.pattern}")
+        slugs = _entries(scope, f"skills/{scope.name}")
+        if not slugs:
+            raise MarketplaceIndexError(f"skills/{scope.name} is an empty scope directory; it holds no skill folder")
+        for slug in slugs:
             if slug.is_symlink():
                 raise MarketplaceIndexError(
                     f"skills/{scope.name}/{slug.name} is a symlink; a skill folder is never reached through a link"
@@ -1239,8 +1302,21 @@ def _skill_folders(marketplace: Path) -> list[Path]:
                 raise MarketplaceIndexError(
                     f"skills/{scope.name}/{slug.name} is not a directory; only skill folders sit under skills/{scope.name}/"
                 )
+            if not SLUG.fullmatch(slug.name):
+                raise MarketplaceIndexError(
+                    f"skills/{scope.name}/{slug.name} is not a slug name; it must match {SLUG.pattern}"
+                )
             folders.append(slug)
     return folders
+
+
+def _entries(directory: Path, relative: str) -> list[Path]:
+    """``directory``'s entries, sorted; an unreadable directory is a listing error naming it, not a raw
+    ``PermissionError`` (Story 109.8, review loop 1, row 8)."""
+    try:
+        return sorted(directory.iterdir())
+    except OSError as exc:
+        raise MarketplaceIndexError(f"{relative} cannot be read ({exc.strerror or exc})") from exc
 
 
 def listings_from_skill_folders(marketplace: Path) -> list[dict[str, Any]]:
@@ -1446,6 +1522,50 @@ def _contained_dest(root: Path, dest: Path, what: str) -> None:
         inside = current.resolve().is_relative_to(root_real)
 
 
+def _write_manifest(root: Path, dest: Path, text: str, what: str) -> Path:
+    """Write ``text`` to ``dest`` inside the marketplace ``root`` (Story 109.8, ``DW-steward-109-3-5`` and ``-10``).
+
+    The way is ``_contained_dest``'s. An existing destination that is not a regular file (a FIFO, whose open blocked
+    forever; a directory; the root itself; a device such as ``/dev/null``) is refused by name before anything is
+    opened. The text goes to a fresh temporary file beside the destination (``mkstemp``: a new name, never an
+    existing one followed or reused, and gone again if the write fails) and is moved over it with ``os.replace``, so
+    a hard link's other name keeps its bytes and a reader never sees half a manifest. The new file keeps an existing
+    destination's mode bits, else ``0o644``. An ``OSError`` on the way (an unwritable directory, a file where a
+    directory is spelled) is a listing error naming the destination. The temporary name adds 14 bytes to the
+    destination's, so a destination name within 14 bytes of the filesystem's limit is refused that way too.
+
+    A destination that never enters the tree, including an outside alias of an in-tree symlink, is the caller's, as
+    ``_contained_dest`` says; because the name is replaced, a symlink there as the last component is replaced by the
+    new file rather than written through (review loop 1, row 6)."""
+    _contained_dest(root, dest, what)
+    if dest.exists() and not dest.is_file():
+        raise MarketplaceIndexError(f"{what}: {dest} exists and is not a regular file; refusing to write over it")
+    try:
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        mode = stat.S_IMODE(dest.stat().st_mode) if dest.is_file() else 0o644
+        # the directory as the OS reaches it: mkstemp normalises ``..`` lexically, and an index read through
+        # ``link/..`` writes beside the index it read (loop 7, row 114)
+        handle, name = tempfile.mkstemp(dir=dest.parent.resolve(), prefix=f".{dest.name}.", suffix=".tmp")
+        temp = Path(name)
+        try:
+            try:
+                stream = os.fdopen(handle, "w", encoding="utf-8")
+            except BaseException:
+                os.close(handle)  # fdopen did not take the descriptor (review loop 2, row 14)
+                raise
+            with stream:
+                stream.write(text)
+            temp.chmod(mode)
+            os.replace(temp, dest)
+        except BaseException:
+            with contextlib.suppress(OSError):  # the original error is the one to report
+                temp.unlink(missing_ok=True)
+            raise
+    except OSError as exc:
+        raise MarketplaceIndexError(f"{what}: cannot write {dest} ({exc})") from exc
+    return dest
+
+
 def write_plugin_manifest(
     index_path: Path,
     dest: Path,
@@ -1457,10 +1577,7 @@ def write_plugin_manifest(
     rows = load_listings(index_path, root=index_path.parent)
     _check_folders_declared(rows, index_path.parent)
     text = render_relative_marketplace(rows)
-    _contained_dest(index_path.parent, dest, "manifest")
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    dest.write_text(text, encoding="utf-8")
-    return dest
+    return _write_manifest(index_path.parent, dest, text, "manifest")
 
 
 def write_codex_manifest(
@@ -1474,10 +1591,7 @@ def write_codex_manifest(
     rows = load_listings(index_path, root=index_path.parent)
     _check_folders_declared(rows, index_path.parent)
     text = render_codex_marketplace(rows)
-    _contained_dest(index_path.parent, dest, "Codex manifest")
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    dest.write_text(text, encoding="utf-8")
-    return dest
+    return _write_manifest(index_path.parent, dest, text, "Codex manifest")
 
 
 def write_plugin_manifests(index_path: Path, *, flags_path: Path | str | None = None) -> list[Path]:
@@ -1590,6 +1704,17 @@ def main(argv: list[str] | None = None) -> int:
     # the overlay value is read only after the reader has validated it (loop 8, row 123: a list or object value
     # raised a raw TypeError here before the reader could refuse it by name)
     expected = False if state == "DISABLED" else variants.get(named_variant) if isinstance(named_variant, str) else None
+    if enabled is not expected and "targeting" in entry:
+        # a targeting rule picks the variant the reader returns, and the compose above does not evaluate it; the
+        # reader may also have fallen back to its default when its provider refused the tree, so the refusal names
+        # both causes rather than one that may not have happened (Story 109.8, DW-steward-109-3-10; review loop 1)
+        sys.stderr.write(
+            f"{FLAG_KEY}: {tree} gives the flag a targeting rule; the flag reader read {enabled} where the tree and "
+            f"its overlay compose {expected}, either because the rule selected that variant or because the reader "
+            "fell back to its default when its provider refused the tree; the build line does not evaluate "
+            "targeting; refusing to print a build line\n"
+        )
+        return 2
     if enabled is not expected:
         # loop 7, row 113: the reader falls back to its default when its file provider refuses the tree (any flag's
         # unknown key or state), so a value that differs from what the tree and the overlay compose is never printed

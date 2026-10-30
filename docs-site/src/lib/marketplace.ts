@@ -65,7 +65,8 @@ export const PUBLIC_BLOB_URL = `${PUBLIC_REPOSITORY_URL}/blob/main/`;
 
 /** The public clone URL as a whole token: a URL it merely begins (`…/local-recipes.github.io/…`, `….git.bak`) is
  * another link (loop 6, row 106); a `#`, `?` or `/` after it continues the clone URL (`git+….git#subdirectory=…`),
- * which is rewritten as it was before loop 6 (loop 7, row 115); a trailing `.` ends a sentence, not the URL. */
+ * which is rewritten as it was before loop 6 (loop 7, row 115); a trailing `.` ends a sentence, not the URL. A `~` or
+ * `%` continues it too: a GitHub repository name holds neither (Story 109.8). */
 const PUBLIC_CLONE_URL_TOKEN = new RegExp(
   PUBLIC_MARKETPLACE_GIT_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![A-Za-z0-9_-]|\\.[A-Za-z0-9])',
   'g',

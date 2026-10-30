@@ -3,12 +3,8 @@
 Skills, modules, and agents. Find, install, create, and publish. This tree is
 the reset marketplace (steward Epic 109, CAP-171); the product brief is
 `_bmad-output/projects/pyforge-steward/planning-artifacts/briefs/brief-bmad-marketplace-reset-2026-10-21/brief.md`.
-
-It lives at `docs/foundry/marketplace/` because that directory is the foundry
-target for published indexes (`frames/` and `browse.yaml` are its neighbours).
-The portable skill folders are listings in that index, not station skills
-under `skills/{stations,personas,domain}/`. Where the marketplace is hosted,
-and what the cutover does to it, is § Provenance at the end.
+Why it lives here, where it is hosted, and what the cutover does to it is
+§ Provenance at the end.
 
 ## Install
 
@@ -37,21 +33,18 @@ read `.agents/skills/`, and five of the other tools read it.
 `listing.yaml` and text files (`.md`, `.txt`, `.yaml`, `.yml`, `.json`, in
 any letter case) under `references/`, and nothing else: regular files only
 (no symlink, no dot entry), no file over 1 MiB, the folder under 4 MiB.
-Between the folders, `skills/` and `skills/<scope>/` hold directories only.
-What each layer refuses is under § Regenerate the site.
+Between the folders, `skills/` is a directory and holds scope directories
+only, each a slug-named directory holding at least one skill folder, each
+skill folder slug-named. What each layer refuses is § Regenerate the site,
+*What each layer refuses*.
 
 The rolling `pages-site` pre-release carries one `<scope>-<slug>.zip` per skill,
 with `<scope>-<slug>.zip.sha256` beside it, while the marketplace flag is on
 for that deploy. Each zip holds the `<scope>-<slug>/` folder with that set,
 so `sha256sum -c <scope>-<slug>.zip.sha256 && unzip <scope>-<slug>.zip -d .claude/skills/`
 checks and lands it in place, and the same with `-d .agents/skills/` lands
-the other copy. Every zip is built before the release is
-touched; the previous deploy's per-skill assets of the `<scope>-<slug>.zip`
-shape that are not in the new set are then deleted (a failed asset listing
-fails the step), and the site zip and the new set go up in one upload, so a
-renamed skill leaves no stale zip and no deploy leaves a new site beside
-stale skill zips. `pages-site` is never a plugin name, so no skill zip can
-carry the site asset's name.
+the other copy. How a deploy builds and replaces the zips is § Regenerate the
+site, *The release zips*.
 
 `.claude-plugin/marketplace.json` (Claude Code) and `.agents/plugins/marketplace.json`
 (Codex) list each skill as a plugin. Round 0 of `MANUAL-CHECKLIST.md` has a
@@ -94,20 +87,18 @@ The v1 catalog manifests stay at
 and `.agents/plugins/marketplace.json`; this tree's two manifests are
 generated here, by `write_plugin_manifests`.
 
-## Index schema
+## The index and its lanes
 
 `index.yaml` declares `compatible_with: registry/estate.yaml`. An empty
 `modules:` list is zero module listings. A module row maps through
 `listing_from_estate_module` in `pyforge.steward.marketplace_pages`. bmp
-`tier` maps onto the v1 names: `community` → `unverified`,
-`estate-reviewed` → `community-reviewed`, `bmad-certified` →
-`bmad-certified` (the PR template's §Listing carries the same mapping).
+`tier` maps onto the v1 trust tiers as the PR template's § Listing says.
 
 **Lanes.** `instructions-only`: the listing names no package; the diff is
 markdown and the index row. `code-backed`: the listing names the package the
 skill calls, each with `published: true` or `false`. A skill's lane is what
 its packages say; a module's package is the module. The card names the
-listing's lane. The three pilots are `community` / `unverified` (no review
+listing's lane in its header. The three pilots are `community` / `unverified` (no review
 record) and `code-backed`.
 
 The listing rules `validate_listing` enforces are the PR template's
@@ -156,15 +147,6 @@ write_plugin_manifests(root / 'index.yaml')
 "
 ```
 
-What each layer refuses: `validate_listing` refuses every breach of the
-listing rules and of the folder rule inside a skill folder, and the folder
-scan (`write_site_from_index` and the manifest writers) refuses what stands
-between the folders; the steward live lane runs both over this tree; the Pages mount (`docs-site/src/lib/marketplace.ts`) ships
-only the folder rule's set, fails the build on a size cap, and `pages-check`
-reports a mounted file or folder over its cap; the release zip step refuses
-a symlink, a cap breach or a non-text `references/` file over the mount's
-output, as defence in depth.
-
 `site/` is replaced by a fresh tree on every render, so a card whose listing
 was dropped or renamed does not survive; `write_site` replaces a non-empty
 directory only when every file and directory in it is one its own
@@ -174,26 +156,69 @@ compares the committed tree to the render file for file.
 `CatalogEngine.render` is a different command. Do not use it to refresh
 `site/`.
 
-A card renders `steps.md` (its own `#` title skipped, its steps as `<h3>`
-under the card's one `Steps` heading), names both install directories and
-every unpublished package, links the sibling skill cards under Related
-(a `related` entry `@<scope>/<slug>` names a skill listing), and shows
-the listing's `verified_at` date or "never verified". A relative link on a
-skill's runbook, one whose target is `steps.md` or `references/x.md`, points
-into the mounted folder beside the card, so it resolves on the Pages mount
-and not in the checked-in `site/` tree, which has no folder beside the card.
+### What a card shows
+
+A card's header names the kind, the listing, its version and its lane, then
+the tier, trust, source, `verified_at` date (or "never verified") and jobs.
+Install names both install directories, the rolling `pages-site` zip, the
+versioned sources (published or not), and the plugin install. Then come the
+unpublished packages, `steps.md` (its own `#` title skipped, its steps as
+`<h3>` under the card's one `Steps` heading), the sibling skill cards under
+Related (a `related` entry `@<scope>/<slug>` names another skill listing),
+and where the lanes are defined. A relative link on a skill's runbook, one
+whose target is `steps.md` or `references/x.md`, points into the mounted
+folder beside the card, so it resolves on the Pages mount and not in the
+checked-in `site/` tree, which has no folder beside the card.
+
 The card's links to this README, `MANUAL-CHECKLIST.md` and the tool matrix
 are repository links of the form `https://github.com/rxm7706/local-recipes/blob/main/…`.
 The mount rewrites two forms and nothing else: that `blob/main/` form, to
 the deploying host and its deployed commit, and the public clone URL
 (`https://github.com/rxm7706/local-recipes.git`, in `marketplace.json` and
-wherever a card carries it, as a whole URL; a `#`, `?` or `/` after it, as in
-a `git+…#subdirectory=` install line, is part of it), to the deploying
-host's. Any other repository link a runbook carries (an issue link, the bare
-repository URL, a URL the clone URL only begins, such as `….github.io/…`) is
-left as written. A server that is not an http(s) origin, a repository that is
-not `owner/name`, or a commit that is not 4 to 64 hexadecimal digits fails the
+wherever a card carries it, as a whole URL; a `#`, `?`, `/`, `~` or `%`
+after it, as in a `git+…#subdirectory=` install line, is part of it, and a
+GitHub repository name holds neither `~` nor `%`), to the deploying host's.
+Any other repository link a runbook carries (an issue link, the bare
+repository URL, a URL that continues the clone URL's name with a letter,
+a digit, `_`, `-`, or a `.` followed by a letter or digit, such as
+`….github.io/…`) is left as written. A server that is not an http(s) origin, a repository that is not
+`owner/name`, or a commit that is not 4 to 64 hexadecimal digits fails the
 build.
+
+### What each layer refuses
+
+`validate_listing` refuses every breach of the listing rules one row can
+break, and of the folder rule inside a skill folder. `_check_rows` refuses
+what rows break together: a repeated id, card or plugin name, and a
+`related` reference that names no skill listing or the row itself. The
+folder scan (`write_site_from_index` and the manifest writers, through
+`_check_folders_declared`) refuses what stands between the folders: a
+`skills` that is not a directory, a scope or skill directory outside the
+slug grammar, an empty scope directory, a symlink or a stray file, and a
+folder the index does not declare. The steward live lane runs all three over
+this tree. The Pages mount (`docs-site/src/lib/marketplace.ts`) ships only
+the folder rule's set and fails the build on a size cap, and `pages-check`
+reports a mounted file or folder over its cap; the release zip step refuses
+a symlink, a cap breach or a non-text `references/` file over the mount's
+output, as defence in depth.
+
+Two refusals stay by decision (2026-10-30). An `index.yaml` that is a
+symlink is refused even when it points at a regular file inside the tree: a
+listing is read from a regular file only, so no link can swap the index a
+review read. And while the flag's state is `ENABLED`, `--flag-env` refuses
+an overlay file that does not name the flag for the resolved environment,
+even under staging or production where the tree's default would give the
+same value: the build line's value is the overlay's, and the estate overlay
+names the flag in every environment.
+
+### The release zips
+
+Every zip is built before the release is touched; the previous deploy's
+per-skill assets of the `<scope>-<slug>.zip` shape that are not in the new
+set are then deleted (a failed asset listing fails the step), and the site
+zip and the new set go up in one upload, so a renamed skill leaves no stale
+zip and no deploy leaves a new site beside stale skill zips. `pages-site` is
+never a plugin name, so no skill zip can carry the site asset's name.
 
 ## Not built yet
 
@@ -211,6 +236,11 @@ build.
   allowed at work.
 
 ## Provenance
+
+The marketplace lives at `docs/foundry/marketplace/` because that directory
+is the foundry target for published indexes (`frames/` and `browse.yaml` are
+its neighbours). Its skill folders are listings in that index, not station
+skills under `skills/{stations,personas,domain}/`.
 
 Decision 2026-10-21: this monorepo hosts and publishes the marketplace. There
 is no separate marketplace repository. Teammates use an internal mirror of

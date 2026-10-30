@@ -17,6 +17,16 @@ there.
 Run from the teammate's project directory.
 Do not prefix commands with a pixi environment selector.
 
+## Until pyforge-mason is published
+
+`pyforge-mason` and `pyforge-core` are not on PyPI, conda-forge, or
+SelfExplainML (404 on 2026-10-21). The wheel and sdist command the station
+assembles, from the engine module `pyforge.mason.engines.pep517`, is
+`pyproject-build --no-isolation` with the project directory as the working
+directory (`steps.md` step 2; the build-backend precondition is step 0).
+The conda artifact command, from the engine module
+`pyforge.mason.engines.pixi`, is `pixi build --output-dir <dir>` (step 3).
+
 ## When pyforge-mason is installed
 
 Build writes artifacts and uploads nothing:
@@ -42,16 +52,6 @@ After `--yes` the station uploads; `TWINE_USERNAME` and `TWINE_PASSWORD`
 must already be set before a PyPI or TestPyPI target builds. `steps.md`
 step 4 names what the station runs then, and what not to run from this
 skill.
-
-## Until that package is published
-
-`pyforge-mason` and `pyforge-core` are not on PyPI, conda-forge, or
-SelfExplainML (404 on 2026-10-21). The wheel and sdist command the station
-assembles, from the engine module `pyforge.mason.engines.pep517`, is
-`pyproject-build --no-isolation` with the project directory as the working
-directory (`steps.md` step 2; the build-backend precondition is step 0).
-The conda artifact command, from the engine module
-`pyforge.mason.engines.pixi`, is `pixi build --output-dir <dir>` (step 3).
 
 ## What this skill is not
 
