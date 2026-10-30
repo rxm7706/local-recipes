@@ -1,8 +1,8 @@
 ---
 name: scope-slug
 # Author instruction (delete it): description is one sentence a teammate can act on. Name the station
-# command. Say that the skill does not use a pixi environment name and does not use a path inside
-# local-recipes. If a pyforge-* package is unpublished, say so.
+# command. Say that the skill runs from the teammate's project directory without a pixi environment
+# name. If a pyforge-* package is unpublished, say so.
 description: >
   Replace with that one sentence.
 ---
@@ -18,7 +18,7 @@ Marketplace id `scope/slug`. Install this folder into both
 The human runbook is [steps.md](steps.md); the verified tool versions live
 there.
 
-Run from the teammate's project directory. Do not `cd` into local-recipes.
+Run from the teammate's project directory.
 Do not prefix commands with a pixi environment selector.
 
 ## When the station package is installed

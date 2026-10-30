@@ -15,6 +15,7 @@ pytestmark = pytest.mark.live_tree
 
 _SKILLS = Path("docs/foundry/marketplace/skills")
 _PILOTS = ("mason/environment", "mason/package", "warden/scan")
+_WARDEN_PINS = Path("src/shared/packages/pyforge-warden/pixi.toml")  # warden's engine ranges (Story 109.7)
 
 
 def _texts() -> list[tuple[str, str]]:
@@ -75,6 +76,33 @@ def test_warden_scan_steps_name_the_verified_commands() -> None:
     assert "osv-scanner" in warden
     # AC5: the engines' output is not a warden verdict, in those words.
     assert "`deptry` and `osv-scanner` are not a warden verdict" in warden
+    # Story 109.7: step 0 installs the engines in the ranges pyforge-warden pins, not whatever is newest
+    assert 'pip install "deptry>=0.25.1,<0.26"' in warden
+    assert 'conda install -c conda-forge "deptry>=0.25.1,<0.26"' in warden
+    assert 'conda install -c conda-forge "osv-scanner>=2.4.0,<2.5"' in warden
+    assert "`conda install -c conda-forge osv-scanner`" not in warden
+    assert "`osv-scanner` 2.5 or later (conda-forge served 2.7.0 on 2026-10-29) is outside\nthat range." in warden
+    pins = (repo_root() / _WARDEN_PINS).read_text(encoding="utf-8")
+    assert 'deptry = ">=0.25.1,<0.26"' in pins and 'osv-scanner = ">=2.4.0,<2.5"' in pins
+
+
+def test_no_pilot_text_names_local_recipes() -> None:
+    """Story 109.7 (Round 0 observation 3): a teammate has no local-recipes, and Claude Code relayed the guard to
+    one as "no cd into local-recipes"; the skill, its listing and the template say where to run instead."""
+    root = repo_root() / _SKILLS
+    for relative in _PILOTS:
+        for name in ("SKILL.md", "steps.md", "listing.yaml"):
+            assert "local-recipes" not in (root / relative / name).read_text(encoding="utf-8"), (relative, name)
+        skill = (root / relative / "SKILL.md").read_text(encoding="utf-8")
+        assert "project directory" in skill, relative
+        assert (
+            "\nRun from the teammate's project directory" in skill or "\nRun every command from the teammate's" in skill
+        )
+        assert "pixi environment selector" in skill, relative
+        assert "estate procedure" not in skill and "does not replace" not in skill, relative
+    marketplace = repo_root() / "docs/foundry/marketplace"
+    assert "local-recipes" not in (marketplace / "templates/SKILL.md").read_text(encoding="utf-8")
+    assert "local-recipes" not in (marketplace / "index.yaml").read_text(encoding="utf-8")
 
 
 @pytest.mark.parametrize(("path", "text"), _texts(), ids=[path for path, _ in _texts()])
@@ -141,5 +169,5 @@ def test_pilot_steps_install_the_published_tools_first() -> None:
     assert f"`pixi` {pinned[0]}" in package
     assert "0.82.0" not in package
     warden = by_path["warden/scan/steps.md"]
-    assert "conda install -c conda-forge deptry" in warden
-    assert "conda install -c conda-forge osv-scanner" in warden
+    assert 'conda install -c conda-forge "deptry>=0.25.1,<0.26"' in warden  # Story 109.7: in warden's ranges
+    assert 'conda install -c conda-forge "osv-scanner>=2.4.0,<2.5"' in warden

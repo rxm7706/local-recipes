@@ -11,7 +11,7 @@ display_name: Lock and check one environment
 title: Lock and check one environment
 summary: Lock a project into one conda-lock file and check that lockfile.
 description: Resolve a teammate project's conda and pip manifests into one lockfile,
-  then check that lockfile. No pixi environment name and no path inside local-recipes.
+  then check that lockfile. No pixi environment name.
 version: 0.1.0
 tasks:
 - lock-environment

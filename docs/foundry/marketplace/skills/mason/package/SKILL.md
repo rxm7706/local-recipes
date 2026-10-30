@@ -2,9 +2,9 @@
 name: mason-package
 description: >
   Build a wheel and sdist from a teammate project directory without a pixi
-  environment name and without a path inside local-recipes. Upload is a
-  separate confirmed command. The station command is pyforge mason package.
-  Until pyforge-mason is published, the local build is pyproject-build.
+  environment name. Upload is a separate confirmed command. The station
+  command is pyforge mason package. Until pyforge-mason is published, the
+  local build is pyproject-build.
 ---
 
 # @mason/package
@@ -14,7 +14,7 @@ Marketplace id `mason/package`. Install this folder into both
 The human runbook is [steps.md](steps.md); the verified tool versions live
 there.
 
-Run from the teammate's project directory. Do not `cd` into local-recipes.
+Run from the teammate's project directory.
 Do not prefix commands with a pixi environment selector.
 
 ## When pyforge-mason is installed
@@ -55,5 +55,4 @@ The conda artifact command, from the engine module
 
 ## What this skill is not
 
-Recipe submission stays in conda-forge-expert. This folder does not replace
-the estate procedure under `.claude/skills/mason-package/`.
+Recipe submission stays in conda-forge-expert.

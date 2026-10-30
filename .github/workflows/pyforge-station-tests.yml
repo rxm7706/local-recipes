@@ -392,6 +392,7 @@ jobs:
           )
           steward_live_paths=(
             src/shared/packages/pyforge-steward
+            src/shared/packages/pyforge-warden/pixi.toml
             .claude/hooks/pre-shell.py
             .claude/hooks/session-start.sh
             .claude/memory/MEMORY.md

@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: f6d9625798695f25
-story_count: 427
+source_fingerprint: 58afced780f1752c
+story_count: 428
 test_file_count: 149
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 427
+- **Stories parsed:** 428
 - **Epics parsed:** 117
 - **Test files inventoried:** 149 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `f6d9625798695f25`
+- **Source fingerprint:** `58afced780f1752c`
 
 ## Risk Assessment
 
@@ -712,6 +712,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 109.4 | The teammate CLI bmp shares the catalog engine | none observed |
 | 109.5 | Contribution lanes wait on a desk test and a Wizard-of-Oz pilot | none observed |
 | 109.6 | The cards and the catalog note carry Claude Code's Round 0 result | none observed |
+| 109.7 | The pilot skills and cards fix what Round 0 found | none observed |
 | 110.1 | Every steward PRD FR arrow names the Spec capability that realizes it | none observed |
 | 111.1 | The steward Spec's fold-cut capability text is restored, and the foundry inhe... | none observed |
 | 112.1 | The Platform CI `test` job installs only what its runner image lacks, and its... | none observed |

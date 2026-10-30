@@ -11,7 +11,7 @@ display_name: Scan a project for dependency hygiene
 title: Scan a project for dependency hygiene
 summary: Run warden scan on the current project. Probes are not a verdict.
 description: Run the warden scan gate on the current project. Engine probes are not
-  a second verdict. No pixi environment name and no path inside local-recipes.
+  a second verdict. No pixi environment name.
 version: 0.1.0
 tasks:
 - scan-dependencies

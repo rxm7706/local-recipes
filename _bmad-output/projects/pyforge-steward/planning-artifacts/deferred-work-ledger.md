@@ -6710,6 +6710,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: loop-6 review row 112; deferred by the operator ruling of 2026-10-29 (the story spec's § Review contract for loop 7)
   severity: low
   promoted: 2026-10-29 — recorded by hand in the loop-6 fix pass of PR #2274
+  partial: 2026-10-29 — steward Story 109.7 fixed the cards' Sources block contradicting the rolling `pages-site` pre-release under Install (it now names a versioned GitHub release of the listing and says what the pre-release is); the Sources block's placement as a second unpublished list, and every other item here, stay open
   status: open
 
 ### DW-steward-109-3-5: A manifest destination that is a FIFO, a directory or a hard link, or a path through an unwritable or non-directory component, hangs or raises raw
@@ -6799,4 +6800,5 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: Story 109.6 loop-2 verification row 2; deferred because it adds a refusal to the listing validator, which is new behaviour outside a `type: fix` text story
   severity: low
   promoted: 2026-10-29 — recorded by hand in the Story 109.6 loop-2 verification pass
-  status: open
+  closed: 2026-10-29 — steward Story 109.7 (spec `planning-artifacts/specs/spec-109-7-the-pilot-skills-and-cards-fix-what-round-0-found.md`): `validate_listing` refuses, by name, a skill whose `SKILL.md` has no frontmatter on line 1, unparsable frontmatter or a `name` that is not exactly `<scope>-<slug>`; the PR template's § Listing carries the rule
+  status: closed
