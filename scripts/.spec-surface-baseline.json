@@ -609,7 +609,7 @@
  },
  "pyforge-doctor/spec-pyforge-doctor": {
   "files": {
-   "docs/MAP.md": "c699e3ef1c0984ac5021ff9890fc8cc51ce46ac7",
+   "docs/MAP.md": "fbc56b700ce0968efcf1361839c0dee79a569104",
    "docs/_STYLE_GUIDE.md": "e6990a6bfdc55d153bfcad31dd5c457eba39b327",
    "docs/explanation/README.md": "81b1b482086c5e46ff8536f0e22e69866da460b5",
    "docs/explanation/airgap-distribution-contract.md": "02160d11cded02af845a6d238562b99ae3a29df8",
@@ -655,7 +655,7 @@
    "docs/how-to/track-upstream-todos.md": "7a014743c99a267591f736aeb0e62f1763b89f9d",
    "docs/how-to/troubleshoot-bmad-agent-loops.md": "35226d71ab0aa713ece20d72a9d6ce3cc7bf146c",
    "docs/how-to/troubleshooting-recipe-builds.md": "74ae1f42e23b84bbdbfbd9e2b5eec92898e6bd96",
-   "docs/map.yaml": "8eff1289fbbfc9c7f3732345ff8a1c1630882789",
+   "docs/map.yaml": "68fd0ff1798b599d7787568416fda1c67484c09e",
    "docs/tutorials/README.md": "a4cf8a6bb251adc83cb88349e2d6803c4269f9d2",
    "docs/tutorials/getting-started.md": "9512c037ee900086236de08a42ec8fa22e3274b2",
    "docs/tutorials/local-platform-development.md": "20f2fd8fd6075686e772250ae612e69cc7f6e2a6",
@@ -871,7 +871,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "1977f3a71c64569597edfb3331d33507320fa0f7"
+  "memlog": "12ae6b9edf84f4129dac5e247ddccd626586bacf"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
