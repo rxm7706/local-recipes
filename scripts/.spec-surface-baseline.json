@@ -5506,16 +5506,16 @@
    ".claude/scripts/conda-forge-expert/version_downloads.py": "9f43097f135c2e1d5e3de22c25caa7f9e71b2db0",
    ".claude/scripts/conda-forge-expert/vulnerability_scanner.py": "07fe4cbc13a3546b873e3a7358d8651728ff62fd",
    ".claude/scripts/conda-forge-expert/whodepends.py": "7a9bc588b5cb5f69bd3660f303721583f99a5e6d",
-   ".claude/skills/conda-forge-expert/CHANGELOG.md": "79e0217839cf1bb71ac971e4f7c536d327005509",
+   ".claude/skills/conda-forge-expert/CHANGELOG.md": "a792a139afb5338601ec06ba2adab3044ff2c6b7",
    ".claude/skills/conda-forge-expert/INDEX.md": "a1333e8de9215c7bc92557f4c1ea55a698d744f8",
-   ".claude/skills/conda-forge-expert/MANIFEST.yaml": "61a4c744966140841f474abe3a6ce77f0232f1df",
-   ".claude/skills/conda-forge-expert/SKILL.md": "1429c19407ea3f5723bda229c5bd5187e86f91e3",
+   ".claude/skills/conda-forge-expert/MANIFEST.yaml": "25145317431b14c862fcde40251f4fc79069f398",
+   ".claude/skills/conda-forge-expert/SKILL.md": "ffce7630e3c472b05e1dd494e37bcfecb120c82d",
    ".claude/skills/conda-forge-expert/automation/README.md": "f7e16917a03d32b6c675f0ea263caaeb756bd336",
    ".claude/skills/conda-forge-expert/automation/quarterly-audit.prompt.md": "04895c94e0cf55c8478e00a83bcc7ccfba0d25fc",
    ".claude/skills/conda-forge-expert/automation/run-audit-local.sh": "36f61c4161b975c02c1887bcfa195428661305f1",
    ".claude/skills/conda-forge-expert/config/enterprise-config.yaml.template": "225c86735a71fe113215e48e95fe567471d232a8",
    ".claude/skills/conda-forge-expert/config/failure-catalog.yaml": "b689b838bf1d8a3c000763df4fe748b15c556484",
-   ".claude/skills/conda-forge-expert/config/skill-config.yaml": "a2ef5e3f71242f20ce4772004ac6517ab74e9ec5",
+   ".claude/skills/conda-forge-expert/config/skill-config.yaml": "d192e9ed653736618555c66f4d2c7d8aea701bc9",
    ".claude/skills/conda-forge-expert/data/cwe_categories_seed.json": "06fe1a29ebfffeb2b73c0a310984d2485bdda931",
    ".claude/skills/conda-forge-expert/data/lts-registry.yaml": "34596b425dc6b860f3b8ec80d7ba832137f1780b",
    ".claude/skills/conda-forge-expert/data/spdx.schema.json": "c6d952e956a9f81678ff4bf8001780560e6c5c00",
@@ -5977,7 +5977,7 @@
    "src/shared/packages/pyforge-mason/tests/unit/test_render.py": "d312702d1da3dd0b848414a7ab832d3172bf0d5d",
    "src/shared/packages/pyforge-mason/tests/unit/test_resolve.py": "063aeacbcbc3cbe066e6b35d13baf9624935959f"
   },
-  "memlog": "7b51602663fd86c404ee67347116174d444556ce"
+  "memlog": "7d50b118d3440a90e69f99388b0a5a90131e1bfc"
  },
  "pyforge-mason/spec-pyforge-mason-recipe-validator": {
   "files": {},
