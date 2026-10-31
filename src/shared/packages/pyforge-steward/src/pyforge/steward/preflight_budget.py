@@ -1,6 +1,8 @@
-"""Read ``pr-preflight`` journal runs and judge CAP-159 wall-clock budget (Story 71.7).
+"""Read ``pr-preflight`` journal runs and report per-lane budget drift (Stories 71.7, 117.5).
 
 Separate from ``run_preflight`` — never changes its verdict, not a detector or PR gate.
+Story 117.5 (CAP-175): budgets live in ``docs/governance/preflight-budgets.toml``; each
+lane's median over the last five green runs is compared to 1.5× its budget. Warn only (D3).
 """
 
 from __future__ import annotations
@@ -9,15 +11,18 @@ import argparse
 import json
 import os
 import sys
-from collections.abc import Sequence
+import tomllib
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from pyforge.steward.preflight import JOURNAL_RELATIVE, lane_label
+from pyforge.steward.preflight import JOURNAL_RELATIVE, lane_label, lane_medians
 
-DEFAULT_BUDGET_SECONDS = 60
-CAP_CITATION = "CAP-159 (FR-32)"
+CAP_CITATION = "CAP-175 (FR-49)"
+LEGACY_CAP_CITATION = "CAP-159 (FR-32)"
+OVER_BUDGET_RATIO = 1.5
+BUDGETS_RELATIVE = Path("docs/governance/preflight-budgets.toml")
 
 STATION_TOKENS: tuple[str, ...] = (
     "atlas",
@@ -39,6 +44,13 @@ _INSTALL_LANE = "install"
 
 
 @dataclass(frozen=True)
+class BudgetConfig:
+    single_station_default: float
+    full_default: float
+    lanes: Mapping[str, float]
+
+
+@dataclass(frozen=True)
 class ParsedJournal:
     runs: tuple[dict[str, Any], ...]
     install_by_run: dict[str, list[float]]
@@ -53,6 +65,21 @@ class BudgetJudgement:
 
 def _repo_root() -> Path:
     return Path(os.environ.get("PIXI_PROJECT_ROOT", ".")).resolve()
+
+
+def budgets_toml_path(repo_root: Path) -> Path:
+    return repo_root / BUDGETS_RELATIVE
+
+
+def load_budget_config(repo_root: Path) -> BudgetConfig:
+    path = budgets_toml_path(repo_root)
+    data = tomllib.loads(path.read_text(encoding="utf-8"))
+    defaults = data.get("defaults") or {}
+    single = float(defaults.get("single_station", 90))
+    full = float(defaults.get("full", 240))
+    raw_lanes = data.get("lanes") or {}
+    lanes = {str(key): float(value) for key, value in raw_lanes.items()}
+    return BudgetConfig(single_station_default=single, full_default=full, lanes=lanes)
 
 
 def _read_journal(path: Path) -> ParsedJournal:
@@ -151,44 +178,92 @@ def _format_lane_list(lanes: Sequence[tuple[str, float]]) -> str:
     return ", ".join(f"{name} {seconds:.1f}s" for name, seconds in lanes)
 
 
+def _budget_seconds_for_label(config: BudgetConfig, label: str, *, single_station: bool) -> float:
+    if label in config.lanes:
+        return config.lanes[label]
+    return config.single_station_default if single_station else config.full_default
+
+
+def _run_lane_keys(run: dict[str, Any]) -> list[tuple[str, str, str]]:
+    """``(task, environment, label)`` for each ok lane in the run."""
+    keys: list[tuple[str, str, str]] = []
+    lanes = run.get("lanes")
+    if not isinstance(lanes, list):
+        return keys
+    for entry in lanes:
+        if not isinstance(entry, dict):
+            continue
+        if entry.get("status") not in ("ok",):
+            continue
+        task = str(entry.get("task", "unknown"))
+        environment = str(entry.get("environment", ""))
+        label = _timing_label(entry)
+        keys.append((task, environment, label))
+    return keys
+
+
 def judge_run(
     run: dict[str, Any],
     *,
     budget_seconds: float,
     install_seconds: Sequence[float],
+    medians: Mapping[tuple[str, str], float] | None = None,
+    config: BudgetConfig | None = None,
 ) -> BudgetJudgement:
+    """Per-lane budget report for one journaled run (Story 117.5).
+
+    ``budget_seconds`` is kept for Story 71.7 call sites; per-lane budgets come from
+    ``config`` when supplied. Exit code is always :data:`EXIT_OK` when the run is judged
+    (operator ruling D3).
+    """
     run_id = str(run.get("run_id", "unknown"))
     wall = float(run.get("total_seconds", 0.0))
-    cores = run.get("logical_cores")
     selection = run.get("selection")
     if not isinstance(selection, dict):
         selection = {}
+
+    single = is_single_station_budget(selection)
+    if config is None:
+        config = BudgetConfig(
+            single_station_default=budget_seconds,
+            full_default=budget_seconds,
+            lanes={},
+        )
+
+    medians = medians or {}
+    over_rows: list[str] = []
+    checked = 0
+    for task, environment, label in _run_lane_keys(run):
+        if label == _INSTALL_LANE:
+            continue
+        checked += 1
+        median = medians.get((task, environment))
+        if median is None:
+            continue
+        budget = _budget_seconds_for_label(config, label, single_station=single)
+        threshold = OVER_BUDGET_RATIO * budget
+        if median > threshold:
+            delta = median - threshold
+            over_rows.append(
+                f"preflight-budget: lane {label} over budget: median {median:.1f}s > "
+                f"{OVER_BUDGET_RATIO:g}× budget {budget:g}s ({CAP_CITATION}); delta +{delta:.1f}s"
+            )
+
+    if over_rows:
+        header = (
+            f"preflight-budget: run {run_id} wall {wall:.1f}s; "
+            f"{len(over_rows)} lane(s) over {OVER_BUDGET_RATIO:g}× budget ({CAP_CITATION})"
+        )
+        return BudgetJudgement(EXIT_OK, (header, *over_rows))
 
     timings = _lane_timings(run, install_seconds)
     slowest = _slowest_lanes(timings, 1)
     slowest_name = slowest[0][0] if slowest else "unknown"
     slowest_sec = slowest[0][1] if slowest else 0.0
-
-    single = is_single_station_budget(selection)
-
-    if single:
-        if wall <= budget_seconds:
-            msg = (
-                f"preflight-budget: run {run_id} wall {wall:.1f}s "
-                f"(budget {budget_seconds:g}s {CAP_CITATION}); slowest lane {slowest_name} {slowest_sec:.1f}s"
-            )
-            return BudgetJudgement(EXIT_OK, (msg,))
-        top3 = _slowest_lanes(timings, 3)
-        core_text = str(cores) if cores is not None else "unknown"
-        msg = (
-            f"preflight-budget: run {run_id} over budget: wall {wall:.1f}s > {budget_seconds:g}s "
-            f"({CAP_CITATION}); logical_cores {core_text}; slowest lanes: {_format_lane_list(top3)}"
-        )
-        return BudgetJudgement(EXIT_OVER_BUDGET, (msg,))
-
     msg = (
-        f"preflight-budget: run {run_id} shared-surface (not a single-station budget); "
-        f"wall {wall:.1f}s bounded by slowest lane {slowest_name} {slowest_sec:.1f}s"
+        f"preflight-budget: run {run_id} wall {wall:.1f}s; "
+        f"{checked} lane(s) within budget ({CAP_CITATION}); "
+        f"slowest lane {slowest_name} {slowest_sec:.1f}s"
     )
     return BudgetJudgement(EXIT_OK, (msg,))
 
@@ -196,7 +271,7 @@ def judge_run(
 def evaluate_budget(
     repo_root: Path,
     *,
-    budget_seconds: float = DEFAULT_BUDGET_SECONDS,
+    budget_seconds: float = 90,
     run_id: str | None = None,
     journal_path: Path | None = None,
 ) -> BudgetJudgement:
@@ -224,7 +299,15 @@ def evaluate_budget(
 
     rid = str(run["run_id"])
     installs = parsed.install_by_run.get(rid, [])
-    return judge_run(run, budget_seconds=budget_seconds, install_seconds=installs)
+    config = load_budget_config(repo_root)
+    medians = lane_medians(path)
+    return judge_run(
+        run,
+        budget_seconds=budget_seconds,
+        install_seconds=installs,
+        medians=medians,
+        config=config,
+    )
 
 
 def _parse_args(argv: Sequence[str]) -> argparse.Namespace:
@@ -232,13 +315,16 @@ def _parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser.add_argument(
         "--budget",
         action="store_true",
-        help=f"judge journaled wall time against {DEFAULT_BUDGET_SECONDS}s ({CAP_CITATION})",
+        help=f"report lanes over {OVER_BUDGET_RATIO:g}× their journal-derived budget ({CAP_CITATION})",
     )
     parser.add_argument(
         "--seconds",
         type=float,
-        default=DEFAULT_BUDGET_SECONDS,
-        help=f"budget in seconds (default: {DEFAULT_BUDGET_SECONDS:g}, {CAP_CITATION})",
+        default=None,
+        help=(
+            f"legacy single-station default when the budgets file is missing a lane "
+            f"({LEGACY_CAP_CITATION}; ignored when [defaults] is present)"
+        ),
     )
     parser.add_argument(
         "--run",
@@ -254,9 +340,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     if not args.budget:
         print("preflight-budget: pass --budget to judge the journal", file=sys.stderr)
         return EXIT_CANNOT_EVALUATE
+    repo = _repo_root()
+    config = load_budget_config(repo)
+    fallback = args.seconds if args.seconds is not None else config.single_station_default
     result = evaluate_budget(
-        _repo_root(),
-        budget_seconds=args.seconds,
+        repo,
+        budget_seconds=fallback,
         run_id=args.run_id,
     )
     for line in result.lines:

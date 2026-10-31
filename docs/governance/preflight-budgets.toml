@@ -1,0 +1,56 @@
+# Per-lane preflight budgets (spec-pyforge-steward CAP-175 / Story 117.5).
+# Values are journal-derived medians from green runs measured 2026-10-27
+# (132 runs across worktrees; see spec-pyforge-steward .memlog.md CAP-175).
+# preflight-budget warns when a lane's median of the last five green runs
+# exceeds 1.5× its budget. Missing lanes inherit [defaults] by run mode.
+#
+# CHANGING THIS FILE IS A GOVERNANCE ACT — same convention as
+# coverage-thresholds.toml beside it.
+
+[defaults]
+single_station = 90
+full = 240
+
+[lanes]
+"test-ci@pyforge-guild" = 986
+"pyforge-steward-test@pyforge-steward" = 698
+"pyforge-steward-live-test@pyforge-steward" = 245
+"pyforge-doctor-test@pyforge-doctor" = 487
+"pyforge-doctor-live-test@pyforge-doctor" = 108
+"detectors-ci@pyforge-guild" = 481
+"lint-types@pyforge-guild" = 87
+"ruff@pyforge-guild" = 12
+"ruff-format@pyforge-guild" = 8
+"mypy@pyforge-guild" = 45
+"mypy@pyforge-foundry-full" = 52
+"target-version-check@pyforge-guild" = 5
+"precommit-config-check@pyforge-guild" = 4
+"test-ci-meta@pyforge-guild" = 120
+"pyforge-core-test@pyforge-core" = 90
+"pyforge-testing-kit-test@pyforge-testing-kit" = 35
+"pyforge-atlas-test@pyforge-atlas" = 257
+"pyforge-herald-test@pyforge-herald" = 341
+"pyforge-marshal-test@pyforge-marshal" = 276
+"pyforge-mason-test@pyforge-mason" = 579
+"pyforge-scribe-test@pyforge-scribe" = 180
+"pyforge-warden-test@pyforge-warden" = 120
+"pyforge-atlas-coverage-gate@pyforge-atlas" = 15
+"pyforge-doctor-coverage-gate@pyforge-doctor" = 15
+"pyforge-herald-coverage-gate@pyforge-herald" = 15
+"pyforge-marshal-coverage-gate@pyforge-marshal" = 15
+"pyforge-mason-coverage-gate@pyforge-mason" = 15
+"pyforge-scribe-coverage-gate@pyforge-scribe" = 15
+"pyforge-steward-coverage-gate@pyforge-steward" = 15
+"pyforge-warden-coverage-gate@pyforge-warden" = 15
+"docs-site-install@site" = 45
+"pages-build@site" = 30
+"pages-check@site" = 20
+"docs-site-validate-links@site" = 25
+"docs-site-validate-sidebar-order@site" = 8
+"docs-site-validate-sidebar@site" = 8
+"docs-map-render-test@pyforge-guild" = 15
+"docs-gen-test@pyforge-guild" = 20
+"scripts-lib-test@pyforge-guild" = 25
+"pyforge-doctor-scripts-test@pyforge-ci" = 40
+"pyforge-doctor-aggregate-scripts-test@pyforge-doctor" = 35
+"pyforge-deps-test@pyforge-ci" = 30

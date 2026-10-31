@@ -2,7 +2,8 @@
 title: "117.5: preflight-budget names every lane over its journal-derived budget"
 type: 'feature'
 created: '2026-10-27'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: 'c66c5f855d8301f45e996f036a1fe8a741932623'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
