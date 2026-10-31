@@ -545,7 +545,7 @@ def test_ac5_nothing_of_the_old_path_stays_importable() -> None:
         "_tracked_ledger_refusal",
     ):
         assert not hasattr(deploy, name), name
-    assert deploy._DEPLOY_VERBS == ("perimeter", "static")
+    assert deploy._DEPLOY_VERBS == ("perimeter", "static", "nic")
 
 
 def test_ac5_deploy_static_help_says_a_pull_request_lands_the_file(capsys) -> None:
