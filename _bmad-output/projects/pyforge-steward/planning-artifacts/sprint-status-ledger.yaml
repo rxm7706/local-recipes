@@ -91,7 +91,7 @@ development_status:
   117-8-the-cfe-regression-net-leaves-the-pull-request-path-and-the-pr-keeps-its-meta-suite: done
   117-9-the-steward-suite-s-slowest-tests-shed-their-subprocesses-repos-and-sleeps: backlog
   118-1-steward-deploy-nic-brings-up-and-tears-down-an-nkp-cluster-on-local-kind: done
-  118-2-nebi-pack-and-the-data-science-pack-reach-healthy-on-kind-and-a-notebook-spawns: backlog
+  118-2-nebi-pack-and-the-data-science-pack-reach-healthy-on-kind-and-a-notebook-spawns: done
   118-3-the-gitops-branch-of-the-monorepo-is-the-gitops-source-and-a-hetzner-cluster-runs-on-it: backlog
   118-4-steward-deploy-nic-down-tears-the-cluster-down-without-a-prompt: done
   12-1-the-vanilla-chart-with-an-ocp-overlay: done
