@@ -85,7 +85,7 @@ development_status:
   117-2-a-station-s-coverage-floor-is-judged-from-its-own-suite-s-run-and-coverage-gates-yml-retires: done
   117-3-the-preflight-admits-lanes-longest-first-by-the-cores-they-will-use: done
   117-4-each-station-suite-runs-as-its-package-local-and-live-tree-halves: done
-  117-5-preflight-budget-names-every-lane-over-its-journal-derived-budget: backlog
+  117-5-preflight-budget-names-every-lane-over-its-journal-derived-budget: done
   117-6-image-builds-leave-the-pull-request-path-for-main-and-the-nightly-canary: done
   117-7-the-ci-workflows-run-what-the-diff-touches-with-pinned-tools-and-parallel-detectors: done
   117-8-the-cfe-regression-net-leaves-the-pull-request-path-and-the-pr-keeps-its-meta-suite: done
