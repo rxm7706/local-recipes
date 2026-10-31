@@ -132,3 +132,6 @@ if ! pixi run --frozen -e pyforge-guild pr-preflight; then
   echo "[pre-push] pr-preflight is red -- push refused. Fix locally, or PYFORGE_PREFLIGHT_SKIP=1 with PYFORGE_PREFLIGHT_SKIP_REASON set." >&2
   exit 1
 fi
+
+# Story 117.5 (CAP-175): per-lane budget report from the journal — warn only, never blocks the push (D3).
+pixi run --frozen -e pyforge-guild preflight --budget || true

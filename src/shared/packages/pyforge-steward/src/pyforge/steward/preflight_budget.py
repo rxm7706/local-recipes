@@ -196,7 +196,7 @@ def _run_lane_keys(run: dict[str, Any]) -> list[tuple[str, str, str]]:
         if entry.get("status") not in ("ok",):
             continue
         task = str(entry.get("task", "unknown"))
-        environment = str(entry.get("environment", ""))
+        environment = str(entry.get("environment"))  # match lane_medians keying
         label = _timing_label(entry)
         keys.append((task, environment, label))
     return keys

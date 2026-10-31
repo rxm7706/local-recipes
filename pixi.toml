@@ -1723,7 +1723,7 @@ description = "Story 71.1 (spec-pyforge-steward CAP-159): run pr-preflight-lanes
 cmd = "python -m pyforge.steward.preflight"
 
 [feature.guild-tasks.tasks.preflight-budget]
-description = "Story 71.7 (spec-pyforge-steward CAP-159 FR-32): read .steward/preflight-runs.jsonl and judge the newest run (or --run <id>) against the one-minute wall-clock budget for single-station branches. Exit 0 under budget or for shared-surface runs, 1 when a single-station run exceeds --seconds (default 60), 2 when the journal cannot be evaluated. Never part of pr-preflight, not a detector or PR gate."
+description = "Story 117.5 (spec-pyforge-steward CAP-175): read .steward/preflight-runs.jsonl and report lanes whose journal median exceeds 1.5× docs/governance/preflight-budgets.toml (newest run, or --run <id>). Exit 0 when evaluable (warn only, D3), 2 when the journal cannot be evaluated. pre_push_preflight.sh runs this after a green pr-preflight; not a detector or PR gate."
 cmd = "python -m pyforge.steward.preflight --budget"
 
 [feature.local-recipes.tasks.eval-quality-smoke]
