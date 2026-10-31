@@ -416,9 +416,7 @@ def test_budget_lines_name_each_lane_with_its_environment() -> None:
         ("mypy", "pyforge-guild"): 10.0,
         ("legacy", "None"): 5.0,
     }
-    judgement = preflight_budget.judge_run(
-        run, budget_seconds=60, install_seconds=[], medians=medians, config=config
-    )
+    judgement = preflight_budget.judge_run(run, budget_seconds=60, install_seconds=[], medians=medians, config=config)
     assert judgement.exit_code == preflight_budget.EXIT_OK
     (line,) = judgement.lines
     assert "slowest lane mypy@pyforge-foundry-full 70.0s" in line
