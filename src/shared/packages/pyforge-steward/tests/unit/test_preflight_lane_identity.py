@@ -410,10 +410,16 @@ def test_budget_lines_name_each_lane_with_its_environment() -> None:
             {"task": "legacy", "seconds": 5.0, "status": "ok"},
         ],
     }
-    judgement = preflight_budget.judge_run(run, budget_seconds=60, install_seconds=[])
-    assert judgement.exit_code == preflight_budget.EXIT_OVER_BUDGET
+    config = preflight_budget.BudgetConfig(single_station_default=60, full_default=240, lanes={})
+    medians = {
+        ("mypy", "pyforge-foundry-full"): 70.0,
+        ("mypy", "pyforge-guild"): 10.0,
+        ("legacy", "None"): 5.0,
+    }
+    judgement = preflight_budget.judge_run(run, budget_seconds=60, install_seconds=[], medians=medians, config=config)
+    assert judgement.exit_code == preflight_budget.EXIT_OK
     (line,) = judgement.lines
-    assert "slowest lanes: mypy@pyforge-foundry-full 70.0s, mypy@pyforge-guild 10.0s, legacy 5.0s" in line
+    assert "slowest lane mypy@pyforge-foundry-full 70.0s" in line
 
 
 def test_xdist_shares_are_keyed_by_lane() -> None:

@@ -577,6 +577,9 @@ def test_the_budget_reads_records_with_and_without_the_scope(tmp_path: Path) -> 
             **extra,
         }
 
+    budgets = tmp_path / "docs/governance/preflight-budgets.toml"
+    budgets.parent.mkdir(parents=True, exist_ok=True)
+    budgets.write_text("[defaults]\nsingle_station = 90\nfull = 240\n\n[lanes]\n", encoding="utf-8")
     journal = tmp_path / "runs.jsonl"
     old, new = (
         record("old"),
