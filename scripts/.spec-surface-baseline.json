@@ -3301,7 +3301,7 @@
    "src/shared/packages/pyforge-core/tests/unit/test_cutover_root.py": "101475d65160b49c9ef311d035b38af01e85b6b1",
    "src/shared/packages/pyforge-core/tests/unit/test_dispatch.py": "491f422edc51af21e0ea1b7dee1ee89daca95f61",
    "src/shared/packages/pyforge-core/tests/unit/test_errors.py": "cb0d234990797d401f15f4b59a247a96537648a9",
-   "src/shared/packages/pyforge-core/tests/unit/test_flags.py": "2a8f0c0ee9a58ce2a193c6961a41f608c858d3e2",
+   "src/shared/packages/pyforge-core/tests/unit/test_flags.py": "55a168adec20b3c5cd6b794c4f3eda36ce99107e",
    "src/shared/packages/pyforge-core/tests/unit/test_hooks.py": "5ac71315e295d61831cd8b3794e2535cfcf11971",
    "src/shared/packages/pyforge-core/tests/unit/test_landing_evidence.py": "115c10aa12674d205a1d76dc560c0fde5996d098",
    "src/shared/packages/pyforge-core/tests/unit/test_league_measure.py": "9bd6766e602674c54cb06dd67647707f0c442fdd",
@@ -3719,7 +3719,8 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/data/track.schema.json": "0cfbe13cd5e3a8c057b6e858a3eab33533fb95f1",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/deck_integrity.py": "a8918de3bc30f1efdcafe9d9e98be12515ce72fa",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/deploy.py": "4112c00190b1b4b2f80bc77be58ee89cddacb494",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/deploy_nic.py": "78284a6f4fb9814c5c01519cb5d30eeec28ed97a",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/deploy_nic.py": "856b48860949916b193956d86ec1700cad939ac4",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/deploy_nic_packs.py": "14318c2f14845fdd970de089e2aab51cb2c89808",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/deploy_profiles.py": "9fb725c40539dcc2a0350b7346009f86a240c85d",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/estate.py": "e222222dcd925d63065cfbb955f479babbe990f1",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/estate_realize.py": "ebf4ac0d7882848fdd7628517c89bd3aba5ece0d",
@@ -3802,7 +3803,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "6e797c39ae6404bde9912d80de75a004342532f8"
+  "memlog": "64f43cb24077385ccbae928c0e49c557712efe04"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
