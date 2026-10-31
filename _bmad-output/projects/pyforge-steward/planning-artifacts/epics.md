@@ -7612,7 +7612,7 @@ So that a green local run still means a green CI run, and both answer in minutes
 **When** the budget file names a default per mode and a budget per lane, `judge_run` prints every lane whose journal median of the last five green runs exceeds 1.5× its budget with the delta, and the pre-push hook prints the report after a green preflight (operator ruling D3, 2026-10-27: warn only)
 **Then** a lane that grows past its budget is named in the next pre-push output with its median and budget, the exit code of `preflight-budget` and of the hook is unchanged by the report, and the budgets file is the one declared source
 **And** `test_preflight_budget.py` covers an over-budget lane, an unknown lane and an empty journal; the report reads only the journal, never a second timer
-**Status:** backlog
+**Status:** done
 
 ### Story 117.6: Image builds leave the pull-request path for main and the nightly canary
 
