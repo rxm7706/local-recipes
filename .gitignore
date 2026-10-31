@@ -992,6 +992,7 @@ _bmad-output/projects/*/_root-fallback-fork-*/
 # Story 66.2: the pre-push hook journals every PYFORGE_PREFLIGHT_SKIP=1 here.
 .steward/preflight-skips.log
 .steward/preflight-runs.jsonl
+.steward/nic-deploy.jsonl
 .steward/preflight/
 .steward/estate-verify/
 .steward/workspace-archive/

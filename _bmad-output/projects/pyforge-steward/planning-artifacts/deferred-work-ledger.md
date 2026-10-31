@@ -6812,3 +6812,14 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-10-29 — recorded by hand in the Story 109.6 loop-2 verification pass
   closed: 2026-10-29 — steward Story 109.7 (spec `planning-artifacts/specs/spec-109-7-the-pilot-skills-and-cards-fix-what-round-0-found.md`): `validate_listing` refuses, by name, a skill whose `SKILL.md` has no frontmatter on line 1, unparsable frontmatter or a `name` that is not exactly `<scope>-<slug>`; the PR template's § Listing carries the rule
   status: closed
+
+### DW-steward-118-1: Attended kind bring-up through Healthy ArgoCD apps, Keycloak sign-in, and tear-down (AC2) was not executed in this unattended run.
+
+- source_spec: `planning-artifacts/specs/spec-118-1-steward-deploy-nic-brings-up-and-tears-down-an-nkp-cluster-on-local-kind.md`
+  summary: Attended kind bring-up through Healthy ArgoCD apps, Keycloak sign-in, and tear-down (AC2) was not executed in this unattended run.
+  evidence: `deploy nic validate` on the tracked config exited 0; full `up`/`down` and kubectl health checks require operator Docker, sysctl/port setup, and secrets in untracked `.env`.
+  location: src/platform/deploy/nic/my-nebari-local.yaml
+  origin: spec-deferred 5500208d957b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: high (unverified)
+  promoted: 2026-10-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

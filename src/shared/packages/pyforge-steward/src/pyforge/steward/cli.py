@@ -147,7 +147,8 @@ _HELP = {
     "keys": "credential lifecycle — encrypt/decrypt/rotate/list/audit/revoke/exec",
     "deploy": (
         "perimeter: AD-5 shareability + daphne/nginx manifests; static: CAP-8/AD-10 "
-        "static-export publish (the Pages artifact itself is `steward pages`)"
+        "static-export publish (the Pages artifact itself is `steward pages`); "
+        "nic: CAP-176 NKP bring-up on kind (behind pyforge.steward.nkp_deploy)"
     ),
     "provision": (
         "environment and substrate provisioning; non-module suite pieces "
@@ -251,6 +252,7 @@ RETROFIT_KEY_VERBS: dict[str, tuple[tuple[str, ...], ...]] = {
     "pyforge.steward.workspace_clean": (("workspace", "clean"),),  # CAP-107, Story 114.3
     "pyforge.steward.workspace_own_worktrees_only": (("workspace", "clean"),),  # CAP-108, Story 114.4
     "pyforge.steward.deploy_perimeter": (("deploy", "perimeter"),),  # CAP-114, Story 114.5
+    "pyforge.steward.nkp_deploy": (("deploy", "nic"),),  # CAP-176, Story 118.1
     "pyforge.steward.setup_hooks": (("setup",),),  # CAP-154, Story 114.6
     "pyforge.steward.workspace_full_refs": (  # CAP-158, Story 114.7
         ("workspace", "start"),
@@ -994,7 +996,7 @@ def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
     `dashboard` and `status` (the Pages artifact is `steward pages`); a call
     to either is a usage error.
     """
-    deploy_subs = deploy_parser.add_subparsers(dest="deploy_verb", metavar="{perimeter,static}")
+    deploy_subs = deploy_parser.add_subparsers(dest="deploy_verb", metavar="{perimeter,static,nic}")
 
     perimeter = deploy_subs.add_parser(
         "perimeter",
@@ -1102,6 +1104,23 @@ def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
             "publishing, since static export cannot honor row-level access"
         ),
     )
+
+    nic_help = retrofit_help(
+        ("deploy", "nic"),
+        "wrap nic validate|deploy|kubeconfig|outputs|destroy for an NKP cluster (CAP-176, Story 118.1)",
+    )
+    nic = deploy_subs.add_parser("nic", help=nic_help, description=nic_help)
+    nic_subs = nic.add_subparsers(dest="deploy_nic_verb", metavar="{validate,up,kubeconfig,outputs,down}")
+    config_help = "tracked NIC config (for example src/platform/deploy/nic/my-nebari-local.yaml)"
+    for action, blurb in (
+        ("validate", "run nic validate on the config"),
+        ("up", "run nic deploy (cluster bring-up)"),
+        ("kubeconfig", "run nic kubeconfig"),
+        ("outputs", "run nic outputs"),
+        ("down", "run nic destroy (tear down the cluster)"),
+    ):
+        sub = nic_subs.add_parser(action, help=blurb, description=blurb)
+        sub.add_argument("-f", "--config", required=True, metavar="PATH", help=config_help)
 
 
 def _add_provision_subparsers(provision_parser: argparse.ArgumentParser) -> None:

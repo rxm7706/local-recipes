@@ -60,6 +60,10 @@ pages:
     quadrant: how-to
     owner: fleet
     kind: authored
+  - path: how-to/host-nebari.md
+    quadrant: how-to
+    owner: pyforge-steward
+    kind: authored
   - path: how-to/launch-a-cost-saving-interactive-session.md
     quadrant: how-to
     owner: fleet
@@ -92,8 +96,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-10-27T11:45:02-05:00'
-      tree: 6d8a74eabc67d2135ec7a3f914e41d0ec5077870-dirty
+      derived_at: '2026-10-31T05:26:04-05:00'
+      tree: b29d64344426830537105a34b25b34ffb4e7f0d9-dirty
   - path: how-to/pause-ci.md
     quadrant: how-to
     owner: pyforge-steward
@@ -197,8 +201,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-10-27T11:45:02-05:00'
-      tree: 6d8a74eabc67d2135ec7a3f914e41d0ec5077870-dirty
+      derived_at: '2026-10-31T05:26:04-05:00'
+      tree: b29d64344426830537105a34b25b34ffb4e7f0d9-dirty
   - path: reference/github-workflows.md
     quadrant: reference
     owner: fleet

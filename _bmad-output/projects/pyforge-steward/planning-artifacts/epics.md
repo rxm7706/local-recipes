@@ -7979,7 +7979,7 @@ So that the first Nebari cluster is a repeatable attended command, not a hand-ru
 **When** `pixi run -e pyforge-steward pyforge steward deploy nic validate|up|kubeconfig|outputs|down -f src/platform/deploy/nic/my-nebari-local.yaml` wraps the five `nic` verbs by subprocess, reads secrets through `keys` from an untracked `.env`, journals the run under `.steward/`, and the operator has applied the unprivileged-port sysctl or the config's port override
 **Then** `up` reaches every NKP ArgoCD Application `Healthy` (`kubectl get applications -n argocd`), `outputs` prints `nebari.local` and the Keycloak issuer, `https://nebari.local` signs in as `admin`, and `down` removes the cluster; the attended run is recorded in the story spec's Auto Run Result with the measured minutes
 **And** the flag's two states are tested, `flag-gate-check`, `detectors-ci` and `pyforge-steward-test` exit 0, and `environment.yaml` is regenerated in the same PR
-**Status:** backlog
+**Status:** done
 
 ### Story 118.2: nebi-pack and the data-science pack reach Healthy on kind and a notebook spawns
 

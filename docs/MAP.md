@@ -216,6 +216,7 @@ marketplace mounted from `docs/foundry/marketplace/`) only with `pyforge.steward
 | [`how-to/feedstock-failure-remediation.md`](how-to/feedstock-failure-remediation.md) | fleet | authored |
 | [`how-to/feedstock-platform-expansion.md`](how-to/feedstock-platform-expansion.md) | fleet | authored |
 | [`how-to/github-actions-recipe-ci.md`](how-to/github-actions-recipe-ci.md) | fleet | authored |
+| [`how-to/host-nebari.md`](how-to/host-nebari.md) | pyforge-steward | authored |
 | [`how-to/launch-a-cost-saving-interactive-session.md`](how-to/launch-a-cost-saving-interactive-session.md) | fleet | authored |
 | [`how-to/manage-worktrees-with-bmad.md`](how-to/manage-worktrees-with-bmad.md) | fleet | authored |
 | [`how-to/manticore-studio.md`](how-to/manticore-studio.md) | fleet | authored |
