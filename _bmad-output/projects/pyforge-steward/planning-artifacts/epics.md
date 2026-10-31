@@ -7995,7 +7995,7 @@ So that JupyterHub, jhub-apps and Nebi are one tracked config away, signed in th
 **When** `deploy nic up` writes one ArgoCD Application per pack into the GitOps source, nebi-pack first in namespace `nebi`, then the data-science pack with `keycloak.hostname: keycloak.nebari.local`, `sharedStorage.nfsServer.enabled: true` and `nebi.remote.enabled: true`, labels both namespaces `nebari.dev/managed=true`, and waits for `Healthy`
 **Then** `https://hub.nebari.local` signs in through Keycloak, a `small-instance` server spawns with `/shared` mounted, the landing page shows the JupyterHub and Nebi cards, the Keycloak bootstrap job completes, and both Applications read `Healthy`; the Keycloak-on-kind question (NIC issue #613) is answered on the memlog from this run
 **And** the flag's two states are tested; `flag-gate-check`, `detectors-ci` and `pyforge-steward-test` exit 0; Warden's digest policy names the pulled charts and images
-**Status:** backlog
+**Status:** done
 
 ### Story 118.3: The gitops branch of the monorepo is the GitOps source and a Hetzner cluster runs on it
 

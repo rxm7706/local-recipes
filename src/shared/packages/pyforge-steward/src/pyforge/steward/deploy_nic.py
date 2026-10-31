@@ -234,7 +234,7 @@ def _production_deps(root: Path) -> NicDeps:
     )
 
 
-def _load_config(config_path: Path) -> tuple[object | None, DutyResult | None]:
+def _load_config(config_path: Path) -> tuple[dict[str, Any] | None, DutyResult | None]:
     from .cli import EXIT_USAGE
 
     if not config_path.is_file():
@@ -313,7 +313,29 @@ def run_nic(deps: NicDeps, *, action: str, config: Path) -> DutyResult:
     details: dict[str, Any] = {"argv": argv, "journal": record}
     if proc.returncode != 0:
         details["exit_code"] = proc.returncode
-    return DutyResult(ok=proc.returncode == 0, summary=summary, details=details)
+    result = DutyResult(ok=proc.returncode == 0, summary=summary, details=details)
+    if action == "up" and proc.returncode == 0:
+        from .deploy_nic_packs import PackDeps, _Completed, apply_nkp_packs
+
+        def _pack_runner(argv: list[str], cwd: Path | None, env: dict[str, str] | None) -> _Completed:
+            child_env = {**os.environ, **(env or {})}
+            proc = deps.runner(argv, cwd or deps.root, child_env)
+            return _Completed(proc.returncode, proc.stdout, proc.stderr)
+
+        pack_outcome = apply_nkp_packs(
+            repo_root=deps.root,
+            document=document,
+            pack_deps=PackDeps(gitops_root=deps.root, runner=_pack_runner),
+        )
+        if pack_outcome is not None and not pack_outcome.ok:
+            return pack_outcome
+        if pack_outcome is not None and pack_outcome.ok:
+            result = DutyResult(
+                ok=True,
+                summary=f"{summary}; {pack_outcome.summary}",
+                details={**details, **(pack_outcome.details or {})},
+            )
+    return result
 
 
 def run_deploy_nic(ns: Any) -> DutyResult:

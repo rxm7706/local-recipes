@@ -1409,6 +1409,21 @@
         "on_everywhere": "2026-10-31",
         "cleanup_by": "2027-01-29"
       }
+    },
+    "pyforge.steward.nkp_packs": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "steward",
+        "story": "118-2-nebi-pack-and-the-data-science-pack-reach-healthy-on-kind-and-a-notebook-spawns",
+        "created": "2026-10-31",
+        "on_everywhere": "2026-10-31",
+        "cleanup_by": "2027-01-29"
+      }
     }
   }
 }

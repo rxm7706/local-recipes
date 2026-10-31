@@ -2,10 +2,27 @@
 title: "118.2: nebi-pack and the data-science pack reach Healthy on kind and a notebook spawns"
 type: 'feature'
 created: '2026-10-31'
-status: 'backlog'
-review_loop_iteration: 0
+status: 'done'
+baseline_revision: '9cff05faea33a8ca70a85969607391f3d3f0b434'
+review_loop_iteration: 1
 followup_review_recommended: false
 declared_low_risk: false
+deferred:
+  - summary: >-
+      Attended kind AC2 (hub OAuth, notebook spawn, landing cards, Keycloak bootstrap job) not run in this session.
+    evidence: |-
+      Same deferral pattern as Story 118.1: the unattended floor is unit tests plus validate; the operator runs
+      `deploy nic up` on rootless Docker/kind when ready.
+    location: >-
+      docs/how-to/host-nebari.md
+    severity: medium
+  - summary: >-
+      Keycloak-on-kind (#613) decision not recorded on spec-pyforge-steward memlog yet.
+    evidence: |-
+      docs/how-to/host-nebari.md documents the open question; a `(decision)` memlog entry waits on the attended pack run.
+    location: >-
+      _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md
+    severity: medium (unverified)
 flag:
   key: pyforge.steward.nkp_packs
   provider: openfeature-file
@@ -92,9 +109,24 @@ Parent: `spec-pyforge-steward` CAP-177
 
 ## Auto Run Result
 
-Status: backlog
+Status: done
 
-Summary: not started.
+Summary: After successful `deploy nic up`, `deploy_nic_packs` writes nebi-pack (0.1.0) and data-science-pack (0.1.7) OCI Applications into NIC GitOps `apps/`, commits them, waits for Argo CD `Healthy`, labels pack namespaces, and journals chart refs/digests behind `pyforge.steward.nkp_packs`.
+
+Files changed:
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/deploy_nic_packs.py` — pack Application render, GitOps commit, kubectl wait/label, journal
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/deploy_nic.py` — hook pack install after `up`; inherit parent env for pack subprocesses
+- `src/shared/packages/pyforge-steward/tests/unit/test_deploy_nic_packs.py` — flag states, ordering, mocked `up` path
+- `src/platform/deploy/nic/my-nebari-local.yaml` — `packs:` block with pinned chart versions
+- `src/platform/config/flags.json`, `flag-overlays.json`, shipped-flag tests — `pyforge.steward.nkp_packs`
+- `docs/how-to/host-nebari.md` — pack switch and chart pins; Keycloak-on-kind still open
+- `.gitignore` — `.steward/nkp-pack-deploy.jsonl`
+
+Review: patches applied for pack subprocess env inheritance, Argo CD project `foundational`, sync-wave ordering (10/11), wait-before-label, and `helm pull` digests. AC2 and AC3 memlog decision deferred (attended run).
+
+Verification: `pytest test_deploy_nic_packs.py` and full `pyforge-steward-test` exit 0; `python scripts/spec_surface_reconcile.py` exit 0 after memlog reconcile on spec-pyforge-steward, spec-pyforge-unifying-strategy, spec-pyforge-core, spec-pyforge-doctor.
+
+Residual risks: live `up` needs `kubectl`, `helm`, and kubeconfig on PATH; nebi-pack OCI is 0.1.0 (not 0.1.7) per quay.io publish state.
 
 ## Spec Change Log
 
@@ -104,4 +136,14 @@ Summary: not started.
 
 ## Review Triage Log
 
-- (none yet)
+### 2026-10-31 — Review pass
+- verdicts: 8 findings — high 2, medium 3, low 2, false 0, maybe-false 1
+- findings:
+  - `[high]` `[patch]` Pack subprocesses received empty env — fixed by merging `os.environ` in `_pack_runner`.
+  - `[high]` `[patch]` Namespace labels before namespaces existed — fixed by waiting for `Healthy` before `kubectl label`.
+  - `[medium]` `[patch]` Warden digest journal empty from `helm show chart` — fixed with `helm pull` digest parse.
+  - `[medium]` `[patch]` Parallel sync-wave for both packs — nebi wave 10, data-science wave 11.
+  - `[medium]` `[patch]` Argo CD project should be `foundational` on NIC clusters — Application spec updated.
+  - `[medium]` `[defer]` Shallow unit assertions on kubectl argv — acceptable for unattended floor; attended run covers integration.
+  - `[low]` `[reject]` Duplicate managedNamespaceMetadata vs manual label — manual label satisfies AC1; both kept.
+  - `[low]` `[defer]` Partial `packs:` map allowed — operator config is the full kind profile with both packs.

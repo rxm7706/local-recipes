@@ -993,6 +993,7 @@ _bmad-output/projects/*/_root-fallback-fork-*/
 .steward/preflight-skips.log
 .steward/preflight-runs.jsonl
 .steward/nic-deploy.jsonl
+.steward/nkp-pack-deploy.jsonl
 .steward/preflight/
 .steward/estate-verify/
 .steward/workspace-archive/
