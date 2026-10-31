@@ -20,6 +20,10 @@ context:
   - docs/dreams/pyforge-steward.md
   - src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py
   - recipes/nebari-infrastructure-core/recipe.yaml
+  - docs/how-to/host-nebari.md
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-118-1-steward-deploy-nic-brings-up-and-tears-down-an-nkp-cluster-on-local-kind.md
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/deploy_nic.py
+  - src/platform/deploy/nic/my-nebari-local.yaml
 ---
 
 <intent-contract>
@@ -51,6 +55,7 @@ Type / Effort / Deps: feature / L / S-118.1.
 
 **Always:**
 - Install nebi-pack before the data-science pack; keep `nebi.remote.enabled: true` (operator ruling 2 of 2026-10-31).
+- Read `docs/how-to/host-nebari.md` § *What the attended run looked like* and Story 118.1's spec § *Attended run 2026-10-31 (AC2)* before touching the cluster: this host runs rootless Docker (the inotify limit is set; the gateway is a MetalLB address reached by `kubectl port-forward`; Keycloak needs `JAVA_OPTS_KC_HEAP`), the pixi env ships NIC 0.14.0 (`nic` has no `init`; `deploy nic down` passes `--auto-approve`), the data-science pack needs a RWX StorageClass (the chart's transitional NFS server on kind) and `keycloak.hostname: keycloak.nebari.local`, and an attended AC (AC2) may be deferred the way 118.1 deferred its cluster AC, with `validate` and the unit suite as the unattended floor.
 - Render the Applications from the config; never hand-apply a manifest to the cluster.
 
 **Never:**
@@ -93,6 +98,7 @@ Summary: not started.
 
 ## Spec Change Log
 
+- 2026-10-31 (later): `context:` gains the how-to, Story 118.1's spec, `deploy_nic.py` and the tracked kind config; one Always bullet points the session at the attended-run record (rootless Docker, NIC 0.14.0, RWX storage, the deferrable attended AC).
 - 2026-10-31 (later): `## Verification` → `**Commands:**` bound to the station's policy verify command so the dispatch gate (`check_spec_binding`, MRS-GATE-011) admits it; the story's own checks moved under their own label.
 - 2026-10-31: minted from the station Dream's 2026-10-31 section (Nebari hosted: NKP on kind, then Hetzner, with the data-science pack) and the operator's four rulings of the same date.
 
