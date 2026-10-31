@@ -285,7 +285,7 @@ def run_nic(deps: NicDeps, *, action: str, config: Path) -> DutyResult:
             details={"exit_code": EXIT_USAGE},
         )
     subcommand = _NIC_SUBCOMMAND[action]
-    argv = [nic, subcommand, str(config_path)]
+    argv = [nic, subcommand, "-f", str(config_path)]
     child_env = {k: v for k, v in os.environ.items() if k not in secret_env and k not in required}
     child_env.update(secret_env)
     started = deps.monotonic()

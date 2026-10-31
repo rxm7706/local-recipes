@@ -1,0 +1,2 @@
+{"config": "src/platform/deploy/nic/my-nebari-local.yaml", "exit": 1, "seconds": 0.03, "verb": "validate"}
+{"config": "src/platform/deploy/nic/my-nebari-local.yaml", "exit": 0, "seconds": 0.032, "verb": "validate"}

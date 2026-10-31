@@ -116,6 +116,16 @@ def test_pyforge_steward_deploy_perimeter(
     )
 
 
+@flag_states("pyforge.steward.nkp_deploy")
+def test_pyforge_steward_nkp_deploy(
+    flag_provider: dict[str, bool], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """NKP deploy nic (CAP-176, Story 118.1): `steward deploy nic` is listed disabled and refuses with usage code 2."""
+    _assert_duty_switch(
+        "pyforge.steward.nkp_deploy", flag_provider["pyforge.steward.nkp_deploy"], tmp_path, monkeypatch
+    )
+
+
 @flag_states("pyforge.steward.setup_hooks")
 def test_pyforge_steward_setup_hooks(
     flag_provider: dict[str, bool], tmp_path: Path, monkeypatch: pytest.MonkeyPatch

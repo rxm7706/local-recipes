@@ -617,6 +617,9 @@ pyjwt = ">=2.15.0"                # Story 48.6: EventsStreamConsumer verifies RS
 redis-py = ">=8.1.0"              # Story 48.6: browser relay tail-read tests (imports as `redis`)
 bmad-eval-quality = ">=4.3.0"     # DW-OPS-2026-09-20-1 (2026-09-20): steward WIELDS eval-quality (suite.py's adoption-register live probe, Story 45.1) but the CLI was pinned only in local-recipes + pyforge-guild, so under `-e pyforge-steward` shutil.which never saw it and suite.py fell back to <repo>/.pixi/envs/local-recipes/bin -- present on the primary checkout, absent in every fresh worktree (test_wired_column_agrees_with_live_pipeline_truth failed there, 2026-09-20). Same floor as the Guild/local-recipes pins; keep the three in step.
 
+[feature.pyforge-steward.target.linux-64.dependencies]
+nebari-infrastructure-core = { version = ">=0.14.0,<0.18", channel = "SelfExplainML" }  # Story 118.1 (CAP-176): `nic` from the estate SelfExplainML channel (linux-64 only today); floor tracks publish until 0.17.0 lands beside recipes/nebari-infrastructure-core
+
 [feature.pyforge-steward.tasks.pyforge-steward-build-conda]
 description = "Build the pyforge-steward conda package via pixi-build-python."
 cmd = "pixi build --output-dir dist-conda"

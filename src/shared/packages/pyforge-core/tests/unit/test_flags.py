@@ -1084,6 +1084,7 @@ _SHIPPED_CLOCKS = {
     "pyforge.steward.marketplace_pages": ("steward", "109-3-", "2026-10-21", "", ""),
     # Story 117.3 (CAP-175): critical-path lane admission; a kill switch ON everywhere from mint day, due 2027-01-25.
     "pyforge.steward.preflight_critical_path": ("steward", "117-3-", "2026-10-27", "2026-10-27", "2027-01-25"),
+    "pyforge.steward.nkp_deploy": ("steward", "118-1-", "2026-10-31", "2026-10-31", "2027-01-29"),
 }
 
 
@@ -1126,6 +1127,7 @@ _RETROFIT_KILL_SWITCHES = frozenset(
 )
 _LATER_KILL_SWITCHES = {
     "pyforge.steward.preflight_critical_path": "2027-01-25",  # steward Story 117.3 (CAP-175), minted 2026-10-27
+    "pyforge.steward.nkp_deploy": "2027-01-29",  # steward Story 118.1 (CAP-176), minted 2026-10-31
 }
 
 
@@ -1220,6 +1222,7 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.steward.marketplace_pages": {"dev": True, "staging": False, "production": False},
         # Story 117.3 (CAP-175): critical-path lane admission, a kill switch ON in every environment.
         "pyforge.steward.preflight_critical_path": {"dev": True, "staging": True, "production": True},
+        "pyforge.steward.nkp_deploy": {"dev": True, "staging": True, "production": True},
         "pyforge.marshal.verify_fix_loop": {"dev": True, "staging": True, "production": False},
         "pyforge.marshal.landing_ci_pauses": {"dev": True, "staging": False, "production": False},
         "pyforge.atlas.dependency_history_sensor": {"dev": True, "staging": True, "production": False},
