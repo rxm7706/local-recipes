@@ -8,11 +8,10 @@ from pathlib import Path
 import pytest
 import yaml
 from pyforge.testing_kit import make_flag_provider_fixture
-from pyforge.testing_kit.flags import flag_states, flagd_tree
+from pyforge.testing_kit.flags import flag_states
 
 from pyforge.steward.deploy_nic import NicDeps, run_nic
 from pyforge.steward.deploy_nic_packs import (
-    NKP_PACKS_FLAG,
     PACK_JOURNAL_RELATIVE,
     PackDeps,
     PackSpec,
@@ -198,16 +197,18 @@ def test_git_commit_applications_refuses_missing_gitops(tmp_path: Path) -> None:
 
 
 def test_apply_nkp_packs_surfaces_parse_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    tree = flagd_tree(tmp_path, {NKP_PACKS_FLAG: "on"})
-    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(tree))
+    # Patch the reader, never pin PYFORGE_FLAGS_PATH to a one-key tree: the FILE provider stays
+    # pinned to that tree for later tests in the same worker and every other flag reads WARN.
+    monkeypatch.setattr("pyforge.core.flags.read_boolean", lambda _key, default=False, **_kw: True)
     outcome = apply_nkp_packs(repo_root=tmp_path, document={"packs": {}})
     assert outcome is not None
     assert outcome.ok is False
 
 
 def test_apply_nkp_packs_uses_custom_journal_callback(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    tree = flagd_tree(tmp_path, {NKP_PACKS_FLAG: "on"})
-    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(tree))
+    # Patch the reader, never pin PYFORGE_FLAGS_PATH to a one-key tree: the FILE provider stays
+    # pinned to that tree for later tests in the same worker and every other flag reads WARN.
+    monkeypatch.setattr("pyforge.core.flags.read_boolean", lambda _key, default=False, **_kw: True)
     gitops = tmp_path / "gitops"
     gitops.mkdir()
     document = {
@@ -291,8 +292,7 @@ def test_apply_nkp_packs_flag_off_skips(
 ) -> None:
     if flag_provider["pyforge.steward.nkp_packs"]:
         pytest.skip("only meaningful when flag is off")
-    tree = flagd_tree(tmp_path, {NKP_PACKS_FLAG: "off"})
-    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(tree))
+    monkeypatch.setattr("pyforge.core.flags.read_boolean", lambda _key, default=False, **_kw: False)
     document = yaml.safe_load(_pack_config(tmp_path).read_text(encoding="utf-8"))
     calls: list[list[str]] = []
 
