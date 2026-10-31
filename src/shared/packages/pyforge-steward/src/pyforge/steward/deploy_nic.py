@@ -6,7 +6,10 @@ config under ``src/platform/deploy/nic/``. Operator credentials are read from an
 file decrypted through ``keys.decrypt_file`` (CAP-1) — never ``os.environ[NAME]`` on the
 parent process. Each run appends ``{verb, config, seconds, exit}`` to
 ``.steward/nic-deploy.jsonl``. Returns ``DutyResult`` only (AD-8); the kill switch is
-``pyforge.steward.nkp_deploy`` (wired through ``cli.RETROFIT_KEY_VERBS``).
+``pyforge.steward.nkp_deploy`` (wired through ``cli.RETROFIT_KEY_VERBS``). ``down`` runs
+``nic destroy --auto-approve``: ``nic destroy`` otherwise asks ``Type 'yes' to confirm`` and
+dies with ``failed to read user input: EOF`` under a subprocess, and the explicit ``down``
+action behind the kill switch is the consent (Story 118.4).
 """
 
 from __future__ import annotations
@@ -35,6 +38,9 @@ _NIC_SUBCOMMAND: dict[str, str] = {
     "kubeconfig": "kubeconfig",
     "outputs": "outputs",
     "down": "destroy",
+}
+_NIC_EXTRA_ARGS: dict[str, tuple[str, ...]] = {
+    "down": ("--auto-approve",),
 }
 
 
@@ -282,7 +288,7 @@ def run_nic(deps: NicDeps, *, action: str, config: Path) -> DutyResult:
             details={"exit_code": EXIT_USAGE},
         )
     subcommand = _NIC_SUBCOMMAND[action]
-    argv = [nic, subcommand, "-f", str(config_path)]
+    argv = [nic, subcommand, "-f", str(config_path), *_NIC_EXTRA_ARGS.get(action, ())]
     child_env = {k: v for k, v in os.environ.items() if k not in secret_env and k not in required}
     child_env.update(secret_env)
     started = deps.monotonic()

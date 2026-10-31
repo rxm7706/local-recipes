@@ -121,8 +121,21 @@ Verification:
 
 Residual risk: SelfExplainML still ships `nebari-infrastructure-core` 0.14.0; floor raises when 0.17.0 publishes beside `recipes/nebari-infrastructure-core`.
 
+### Attended run 2026-10-31 (AC2)
+
+Host: rootless Docker 29.9.1, cgroup v2, NIC 0.14.0 (SelfExplainML), kind node `kindest/node:v1.36.1`, kubectl 1.34.3 from `platform-dev`. Config: `src/platform/deploy/nic/my-nebari-local.yaml`, untouched.
+
+- `deploy nic validate` — exit 0 (0.03 s). `deploy nic up` — exit 0 in 354 s to a Ready node; one nic WARN (`Could not retrieve load balancer endpoint` after 5m) because MetalLB was crash-looping.
+- Host settings the run needed (both `sudo`, operator-run): `fs.inotify.max_user_instances=1024` — at 128 cloudnative-pg, envoy-gateway and metallb-controller crash-looped with `too many open files` (uid 1000 held all 128); `net.ipv4.ip_unprivileged_port_start=0` turned out unnecessary for 0.14.0 (kind publishes 6443 only; the gateway is a MetalLB address on the kind Docker network, reached from the host through `kubectl port-forward`).
+- ArgoCD: the keycloak and metallb-config syncs had failed on the missing webhooks and auto-sync does not retry a failed revision; a manual sync (`operation.sync` patch) after the restarts moved them on. Keycloak 26.5.0 was then `OOMKilled` at 2Gi in its build phase: inside the pod JDK 21 logs `controller memory is not enabled` (host `/proc/cgroups` has no `memory` row) and sizes the heap from host RAM; `JAVA_OPTS_KC_HEAP=-Xms256m -Xmx1280m` committed in `~/.nic/gitops/my-nebari-local/values/keycloak/base.yaml` (ArgoCD's `file://` source) fixed it. Final state: 14/14 Applications `Healthy`, 12 `Synced`; `gateway-config` and `httproutes` `OutOfSync` on server-side-apply drift after a successful sync.
+- `deploy nic kubeconfig` — exit 0; `kubectl get applications -n argocd` read through it. `deploy nic outputs` — exit 0: `Domain nebari.local`, `Keycloak issuer URL https://keycloak.nebari.local`, `Gateway address 192.168.1.100`, passwords redacted.
+- Sign-in: through `kubectl port-forward` on 127.0.0.1:443, `https://nebari.local` served `Nebari | Launchpad` (HTTP 301 from port 80), and an authorization-code + PKCE flow against realm `nebari` (client `nebari-system-nebari-landing-spa`, the landing page's) signed in as `admin`: 302 back to `https://nebari.local/` with `code`, `KEYCLOAK_IDENTITY` set, token `preferred_username=admin`, realm roles include `admin`.
+- `deploy nic down` — exit 1 in 0.03 s: `nic destroy` prompts `Type 'yes' to confirm`; `failed to read user input: EOF`. `nic destroy --auto-approve` removed the node in 5 s. Fix: Story 118.4.
+- Wall clock: `up` 06:39–06:45 (CDT); first Healthy Keycloak 07:08; sign-in 07:12; tear-down 07:17 — 38 min attended, of which 30 min were the two host settings and the Keycloak heap. Journal: `.steward/nic-deploy.jsonl` (validate 0.033 s, up 353.6 s, kubeconfig 0.19 s, outputs 0.20 s, down exit 1).
+
 ## Spec Change Log
 
+- 2026-10-31 (attended): AC2 run on this host recorded under `## Auto Run Result` § *Attended run 2026-10-31 (AC2)*; DW-steward-118-1 closed; the `down` defect it found is Story 118.4.
 - 2026-10-31 (later): `## Verification` → `**Commands:**` bound to the station's policy verify command so the dispatch gate (`check_spec_binding`, MRS-GATE-011) admits it; the story's own checks moved under their own label.
 - 2026-10-31: minted from the station Dream's 2026-10-31 section (Nebari hosted: NKP on kind, then Hetzner, with the data-science pack) and the operator's four rulings of the same date.
 

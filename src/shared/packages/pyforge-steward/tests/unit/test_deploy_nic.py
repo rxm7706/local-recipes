@@ -202,17 +202,19 @@ def test_each_action_runs_one_nic_subprocess_and_journals(
         nic_executable=lambda: "/usr/bin/nic",
         journal=journal.append,
     )
-    for action, nic_verb in (
-        ("validate", "validate"),
-        ("up", "deploy"),
-        ("kubeconfig", "kubeconfig"),
-        ("outputs", "outputs"),
-        ("down", "destroy"),
+    # ``destroy`` alone carries ``--auto-approve``: nic prompts ``Type 'yes' to confirm`` on a
+    # terminal and exits 1 with ``failed to read user input: EOF`` without one (Story 118.4).
+    for action, nic_verb, extra in (
+        ("validate", "validate", []),
+        ("up", "deploy", []),
+        ("kubeconfig", "kubeconfig", []),
+        ("outputs", "outputs", []),
+        ("down", "destroy", ["--auto-approve"]),
     ):
         calls.clear()
         result = run_nic(deps, action=action, config=config)
         assert result.ok is True
-        assert calls == [["/usr/bin/nic", nic_verb, "-f", str(config)]]
+        assert calls == [["/usr/bin/nic", nic_verb, "-f", str(config), *extra]]
         assert journal[-1]["verb"] == action
         assert journal[-1]["exit"] == 0
         assert "seconds" in journal[-1]

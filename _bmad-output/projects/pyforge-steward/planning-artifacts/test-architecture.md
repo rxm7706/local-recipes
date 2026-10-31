@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: e53fe73dd66b3513
-story_count: 432
-test_file_count: 152
+source_fingerprint: 04572371124946e8
+story_count: 433
+test_file_count: 153
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 432
+- **Stories parsed:** 433
 - **Epics parsed:** 118
-- **Test files inventoried:** 152 under `src/shared/packages/pyforge-steward/tests/`
+- **Test files inventoried:** 153 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `e53fe73dd66b3513`
+- **Source fingerprint:** `04572371124946e8`
 
 ## Risk Assessment
 
@@ -209,6 +209,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_dashboard_navigation.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_dashboard_views.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_deck_drift_duty.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_deploy_nic.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_deploy_perimeter.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_deploy_profile_plugins.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_deploy_static.py` | unit | none observed |
@@ -748,6 +749,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 118.1 | steward deploy nic brings up and tears down an NKP cluster on local kind | none observed |
 | 118.2 | nebi-pack and the data-science pack reach Healthy on kind and a notebook spawns | none observed |
 | 118.3 | The gitops branch of the monorepo is the GitOps source and a Hetzner cluster ... | none observed |
+| 118.4 | steward deploy nic down tears the cluster down without a prompt | none observed |
 
 ## Quality Gates
 
