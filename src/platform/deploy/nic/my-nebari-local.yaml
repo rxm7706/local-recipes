@@ -1,0 +1,17 @@
+project_name: my-nebari-local
+domain: nebari.local
+certificate:
+  type: selfsigned
+
+cluster:
+  local:
+    node_selectors:
+      general:
+        kubernetes.io/os: linux
+      user:
+        kubernetes.io/os: linux
+      worker:
+        kubernetes.io/os: linux
+
+repository:
+  local: {}

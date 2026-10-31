@@ -1151,11 +1151,11 @@ def _run_static(ns: argparse.Namespace) -> DutyResult:
 
 # ── DeployDuty (Duty-protocol adapter) ──────────────────────────────────────
 
-_DEPLOY_VERBS: tuple[str, ...] = ("perimeter", "static")
+_DEPLOY_VERBS: tuple[str, ...] = ("perimeter", "static", "nic")
 
 
 class DeployDuty:
-    """The real `deploy` duty — dispatches the `perimeter`/`static` verbs.
+    """The real `deploy` duty — dispatches the `perimeter`/`static`/`nic` verbs.
 
     Bare `steward deploy` (no verb) degrades to `DutyResult(ok=True, ...)`
     naming the available verbs (AD-7), matching `KeysDuty`'s identical
@@ -1177,6 +1177,10 @@ class DeployDuty:
         try:
             if verb == "perimeter":
                 return _run_perimeter(ns)
+            if verb == "nic":
+                from .deploy_nic import run_deploy_nic
+
+                return run_deploy_nic(ns)
             return _run_static(ns)
         except subprocess.CalledProcessError as exc:
             stderr = (exc.stderr or "").strip()
