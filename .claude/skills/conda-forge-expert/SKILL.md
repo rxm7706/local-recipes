@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.102.1
+version: 8.102.2
 allowed-tools: [conda_forge_server]
 ---
 
@@ -4629,6 +4629,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.102.2** (Oct 31, 2026) — **Recipe refresh retro: `nebari-infrastructure-core` 0.14.0 → 0.17.0; go.mod now needs `go 1.26.10`, which only conda-forge's go-nocgo 1.27 line satisfies (PATCH; CHANGELOG and version carriers only).** See `CHANGELOG.md`.
 - **v8.102.1** (Oct 27, 2026) — **mason Story 36.1 Rule-2 retro: three meta-test docstrings name the archived paths they cite. `spec-pyforge-mason` now governs this skill's surface with normal drift, so a CFE edit needs a mason memlog line and a scoped stamp (PATCH; docstrings only).** See `CHANGELOG.md`.
 - **v8.102.0** (Oct 26, 2026) — **mason Story 34.1 Rule-2 retro: the atlas reads the conda-forge bot's split graph repos; G123 (a redirected repo serves another repo's archive) (MINOR).** See `CHANGELOG.md`.
 - **v8.101.4** (Oct 22, 2026) — **mason Story 26.2 Rule-2 retro: CFE's tests never fetch conda-smithy's remote lint data (PATCH; tests only).** See `CHANGELOG.md`.
