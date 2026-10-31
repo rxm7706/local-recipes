@@ -4661,9 +4661,7 @@ paper says matters most, but it should be stated, not assumed.
    (`dd7c4e7eb7`) landed on 2026-09-07, two days before this Dream recorded the lane. What
    remains of shape 5 is only whether either goes to conda-forge, which needs an explicit ask.)*
 6. **Foundry Platform as a Nebari Software Pack; NIC as a steward deployment profile.** *(candidate
-   added 2026-09-09 from RB-3; not chosen. **Its NIC-profile half was chosen on 2026-10-31**, amended:
-   NKP is hosted as a platform beside the Foundry, with the data-science pack as its first Capability,
-   and the Foundry-as-a-pack half stays unchosen — see § *2026-10-31 — Nebari hosted*.)* The Foundry Helm chart gains one optional
+   added 2026-09-09 from RB-3; not chosen.)* The Foundry Helm chart gains one optional
    `nebariapp.yaml` template — `auth.enforceAtGateway: false`, so `django-allauth` keeps OIDC and
    the nebari-operator only provisions the Keycloak client and its Secret; `routing.publicRoutes`
    for `/ht/` and `/api/health`; a `deviceFlowClient` for the `pyforge` CLI; a Launchpad card — and
@@ -4677,6 +4675,11 @@ paper says matters most, but it should be stated, not assumed.
    versioned, rollback-able environment artifacts — the enterprise-mirror / air-gap story on the
    Nebi that exists today (environment management), not a pixi replacement. Nebi's roadmap SBOM and
    compliance checks overlap Warden: watch, do not adopt.
+
+*Addendum 2026-10-31 — shape 6's NIC-profile half was chosen, amended: NKP is hosted as a platform
+beside the Foundry, with the data-science pack as its first Capability; the Foundry-as-a-pack half
+stays unchosen. The four rulings are in § 2026-10-31 — Nebari hosted. The list above is the
+2026-09-09 text, kept verbatim.*
 
 ## How alignment with the Unifying Strategy would proceed — candidate, not a decision (2026-09-09)
 
@@ -4780,18 +4783,23 @@ contract chooses among the candidates above before any code.
 - **One PR verdict.** Warden stays the sole gate; doctor findings stay advisory; "Guard" language must
   not mint a second verdict.
 - **No implied platform adoption.** Naming Nebari/Nebi here does not adopt them; the Unifying Strategy
-  owns the platform shape. *(Amended 2026-10-31: the operator adopted NKP as a hosted platform beside
-  the Foundry, under the four rulings in § 2026-10-31 — Nebari hosted; the Foundry's own shape is
-  unchanged and the Unifying Strategy still owns it.)*
+  owns the platform shape.
 - **No new `docs/specs/` file; no external PRs; no outward dispatch without operator confirmation.**
+
+*Addendum 2026-10-31 — the "No implied platform adoption" ruling above carries a dated exception: the
+operator adopted NKP as a hosted platform beside the Foundry, under the four rulings in
+§ 2026-10-31 — Nebari hosted. The Foundry's own shape is unchanged and the Unifying Strategy still
+owns it. The table and list above are the 2026-09-09 text, kept verbatim.*
 
 ## Non-goals
 
 - Building a marketplace or a Desktop/Web Application.
-- Replacing the Foundry with a Nebari deployment, or `conda-forge-expert` with anything. *(Still true
-  after 2026-10-31: NKP runs beside the Foundry, not instead of it.)*
+- Replacing the Foundry with a Nebari deployment, or `conda-forge-expert` with anything.
 - Endorsing or marketing OpenTeams; this is an architecture-and-vocabulary seed.
 - Reproducing the whitepaper — this file summarises it; readers who need the text go to the source.
+
+*Addendum 2026-10-31 — "Replacing the Foundry with a Nebari deployment" still holds: NKP runs beside
+the Foundry, not instead of it (§ 2026-10-31 — Nebari hosted).*
 
 ## Open questions for the Spec
 
