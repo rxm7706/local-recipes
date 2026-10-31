@@ -4,8 +4,8 @@
 # verified-in-foundry is a claim on a rebuild row (needs a 54.1 case-list id), not a mode.
 # Do not flip 44.1 or any Epic 44 blocked key.
 schema: pyforge.capability-ledger/v0
-updated: "2026-10-27"
-source_sha: d81e55d288d7d997ee970ee89cce7c447db33be8
+updated: "2026-10-31"
+source_sha: 5066b013facf67e1b0b205d9ffa2659ea0e1af98
 extract: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-capability-ledger/extract.md
 modes:
   - rebuild
@@ -4508,6 +4508,25 @@ capabilities:
     spec: pyforge-steward
     station: pyforge-steward
     heading: "the preflight and a PR's CI answer within a measured budget, and a station suite runs once, as its package-local and live-tree halves"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  # 2026-10-31 Nebari hosted (Epic 118): B rebuilds the NKP deploy profile, the pack layer and the gitops-branch contract once the foundry has a deploy station; A is the oracle until verified-in-foundry.
+  - id: pyforge-steward:CAP-176
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "an NKP cluster is brought up, torn down and reported from one tracked config through steward deploy nic"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-177
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "nebi-pack, then the data-science pack, install from the same config as ArgoCD Applications on the cluster CAP-176 brings up"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-178
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the GitOps source is NIC's local directory on kind, or the monorepo on a branch that only nic writes"
     mode: rebuild
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - id: pyforge-warden:CAP-1

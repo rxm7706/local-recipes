@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 3d2bc7e22f5adac1
-story_count: 429
+source_fingerprint: e53fe73dd66b3513
+story_count: 432
 test_file_count: 152
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 429
-- **Epics parsed:** 117
+- **Stories parsed:** 432
+- **Epics parsed:** 118
 - **Test files inventoried:** 152 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `3d2bc7e22f5adac1`
+- **Source fingerprint:** `e53fe73dd66b3513`
 
 ## Risk Assessment
 
@@ -143,6 +143,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 114: Every pre-rule steward runtime capability sits behind a kill switch (8 flags, one per CAP; the Guild flag rule's retrofit capability, Q6)
 - Epic 116: The absorbed steward Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
 - Epic 117: The preflight and a PR's CI answer within a measured budget, and a station suite runs once (spec-pyforge-steward CAP-175 / FR-49)
+- Epic 118: An NKP cluster with the data-science pack runs from one tracked config (spec-pyforge-steward CAP-176..CAP-178 / FR-50..FR-52)
 
 ### Low-risk epics
 
@@ -744,6 +745,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 117.10 | Each station suite runs as N sharded jobs whose coverage the gate merges | none observed |
 | 117.11 | The changes gate and the gate diffs run on shallow fetches of the PR base | none observed |
 | 117.12 | The platform suite runs under xdist, its checks in a parallel job | none observed |
+| 118.1 | steward deploy nic brings up and tears down an NKP cluster on local kind | none observed |
+| 118.2 | nebi-pack and the data-science pack reach Healthy on kind and a notebook spawns | none observed |
+| 118.3 | The gitops branch of the monorepo is the GitOps source and a Hetzner cluster ... | none observed |
 
 ## Quality Gates
 
