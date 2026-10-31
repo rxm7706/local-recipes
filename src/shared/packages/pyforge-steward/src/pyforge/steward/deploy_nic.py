@@ -234,7 +234,7 @@ def _production_deps(root: Path) -> NicDeps:
     )
 
 
-def _load_config(config_path: Path) -> tuple[object | None, DutyResult | None]:
+def _load_config(config_path: Path) -> tuple[dict[str, Any] | None, DutyResult | None]:
     from .cli import EXIT_USAGE
 
     if not config_path.is_file():
