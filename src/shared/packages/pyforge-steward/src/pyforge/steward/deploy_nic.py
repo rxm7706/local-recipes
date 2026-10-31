@@ -15,7 +15,7 @@ import json
 import os
 import shutil
 import time
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
@@ -159,8 +159,7 @@ def load_secret_env(
             return None, DutyResult(
                 ok=False,
                 summary=(
-                    f"deploy nic: refused — {DOTENV_RELATIVE} does not map {name!r} "
-                    "to an age-encrypted secret path"
+                    f"deploy nic: refused — {DOTENV_RELATIVE} does not map {name!r} to an age-encrypted secret path"
                 ),
                 details={"exit_code": EXIT_USAGE},
             )
@@ -271,9 +270,7 @@ def run_nic(deps: NicDeps, *, action: str, config: Path) -> DutyResult:
     assert document is not None
     required = operator_env_names(document)
     env_file = deps.root / DOTENV_RELATIVE
-    secret_env, failure = load_secret_env(
-        deps.root, env_file=env_file, required=required, decrypt=deps.decrypt
-    )
+    secret_env, failure = load_secret_env(deps.root, env_file=env_file, required=required, decrypt=deps.decrypt)
     if failure is not None:
         return failure
     assert secret_env is not None
