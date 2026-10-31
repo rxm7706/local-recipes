@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.14.0"
+  version: "0.17.0"
   go_mod: github.com/nebari-dev/nebari-infrastructure-core
   ldflags: "-s -w -X ${{ go_mod }}/internal/cli.version=${{ version }}"
 
@@ -12,7 +12,7 @@ package:
 
 source:
   url: https://github.com/nebari-dev/nebari-infrastructure-core/releases/download/v${{ version }}/nebari-infrastructure-core-${{ version }}-source.tar.gz
-  sha256: 3090113f1ec93bc4070750788fbb861409277b25122d64adca7add7014bc1c58
+  sha256: 9dc0aac3d17517c1bdd7a08f5708335f7a162a23ba5e43cf4283a3af2331c028
 
 build:
   number: 0
@@ -85,11 +85,11 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-09-07T00:00:00Z
+  cfe-last-checked: 2026-10-31T08:00:00Z
   cfe-generated-by-version: 8.86.4
   cfe-generated-at-datetime: 2026-09-07T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-09-07T10:30:00Z
+  cfe-local-build-datetime: 2026-10-31T07:59:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -108,13 +108,20 @@ extra:
 #    # archive/refs/tags GitHub-generated archive: it is an UPLOADED asset
 #    # (byte-stable, so not exposed to the G61 re-gzip sha256 drift that affects
 #    # generated archives), it is covered by upstream's own checksums.txt, and it
-#    # carries a sigstore attestation. sha256 verified twice 2026-09-07 -- streamed
-#    # download AND the GitHub release-asset digest field both report
-#    # 3090113f1ec93bc4070750788fbb861409277b25122d64adca7add7014bc1c58.
+#    # carries a sigstore attestation. 0.17.0's sha256 verified three ways on
+#    # 2026-10-31 -- upstream checksums.txt, the GitHub release-asset digest
+#    # field, and a streamed download -- all report
+#    # 9dc0aac3d17517c1bdd7a08f5708335f7a162a23ba5e43cf4283a3af2331c028
+#    # (0.14.0 was 3090113f1ec93bc4070750788fbb861409277b25122d64adca7add7014bc1c58,
+#    # verified the same way on 2026-09-07).
 #    # NOTE the archive has NO top-level wrapper directory: entries extract flat
 #    # into the work dir, so build paths are ./cmd/nic, not <pkg>-<ver>/cmd/nic.
 # build:
 #  script:
+#    # 0.17.0's go.mod declares `go 1.26.10`. conda-forge's go-nocgo 1.26 line
+#    # stops at 1.26.7, so the toolchain has to come from the 1.27 line; the
+#    # unpinned compiler macro resolves to the newest go-nocgo and the
+#    # 2026-10-31 build used 1.27.3. Do not pin go-nocgo to 1.26.*.
 #    # Pure Go: the upstream Makefile and .goreleaser.yml both build with
 #    # CGO_ENABLED=0, so this uses compiler("go-nocgo") and -- per the SKILL.md
 #    # go-nocgo exception -- correctly omits stdlib("c").
