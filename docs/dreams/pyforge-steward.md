@@ -4661,7 +4661,9 @@ paper says matters most, but it should be stated, not assumed.
    (`dd7c4e7eb7`) landed on 2026-09-07, two days before this Dream recorded the lane. What
    remains of shape 5 is only whether either goes to conda-forge, which needs an explicit ask.)*
 6. **Foundry Platform as a Nebari Software Pack; NIC as a steward deployment profile.** *(candidate
-   added 2026-09-09 from RB-3; not chosen.)* The Foundry Helm chart gains one optional
+   added 2026-09-09 from RB-3; not chosen. **Its NIC-profile half was chosen on 2026-10-31**, amended:
+   NKP is hosted as a platform beside the Foundry, with the data-science pack as its first Capability,
+   and the Foundry-as-a-pack half stays unchosen — see § *2026-10-31 — Nebari hosted*.)* The Foundry Helm chart gains one optional
    `nebariapp.yaml` template — `auth.enforceAtGateway: false`, so `django-allauth` keeps OIDC and
    the nebari-operator only provisions the Keycloak client and its Secret; `routing.publicRoutes`
    for `/ht/` and `/api/health`; a `deviceFlowClient` for the `pyforge` CLI; a Launchpad card — and
@@ -4778,13 +4780,16 @@ contract chooses among the candidates above before any code.
 - **One PR verdict.** Warden stays the sole gate; doctor findings stay advisory; "Guard" language must
   not mint a second verdict.
 - **No implied platform adoption.** Naming Nebari/Nebi here does not adopt them; the Unifying Strategy
-  owns the platform shape.
+  owns the platform shape. *(Amended 2026-10-31: the operator adopted NKP as a hosted platform beside
+  the Foundry, under the four rulings in § 2026-10-31 — Nebari hosted; the Foundry's own shape is
+  unchanged and the Unifying Strategy still owns it.)*
 - **No new `docs/specs/` file; no external PRs; no outward dispatch without operator confirmation.**
 
 ## Non-goals
 
 - Building a marketplace or a Desktop/Web Application.
-- Replacing the Foundry with a Nebari deployment, or `conda-forge-expert` with anything.
+- Replacing the Foundry with a Nebari deployment, or `conda-forge-expert` with anything. *(Still true
+  after 2026-10-31: NKP runs beside the Foundry, not instead of it.)*
 - Endorsing or marketing OpenTeams; this is an architecture-and-vocabulary seed.
 - Reproducing the whitepaper — this file summarises it; readers who need the text go to the source.
 
@@ -7850,3 +7855,158 @@ Steward is done when:
 4. Bulk maintenance workflow tested: 20-feedstock group update completes in <30 min
 5. Health dashboard live: operators see maintenance status at a glance
 6. Integration with Doctor: stale dependency detection triggers update PRs automatically
+
+## 2026-10-31 — Nebari hosted: NKP on kind, then Hetzner, with the data-science pack
+
+*Appended 2026-10-31 as a dated section (CHAIN-STANDARD § 3, step 1). It realises the NIC-profile
+half of candidate shape 6 in the 2026-09-17 intelligence-hub section above, chosen today by the four
+operator rulings recorded below, and it amends that section's "No implied platform adoption" standing
+ruling with a dated exception. Nothing here changes the Foundry's shape; the Unifying Strategy owns it.*
+
+### The Dream
+
+The estate runs a Nebari platform of its own: a Nebari Kubernetes Platform (NKP) brought up by
+`nic` from one tracked config file, with the data-science pack (JupyterHub, jhub-apps, nebi) as its
+first installed Capability. A steward verb brings it up, tears it down and reports on it the way
+`workspace` and `estate` already do for worktrees and pins. The first cluster is this laptop
+(kind); the second is Hetzner. Operators sign in through Keycloak, open JupyterHub from the landing
+page, spawn a notebook with a shared, versioned environment, and nothing about that path is hand-run.
+
+### What is real (verified 2026-10-31)
+
+- **Upstream has moved.** `nebari-dev/nebari` is now *nebari-classic* (JupyterHub + Dask Gateway via
+  Terraform and Helm): feature development paused, security patches through the end of 2026. The
+  successor is NIC, `nebari-dev/nebari-infrastructure-core` (Go; v0.17.0 published 2026-10-30;
+  README: "under heavy development and very unstable"). `nic deploy` provisions the cluster, creates
+  the GitOps repository and installs ArgoCD; ArgoCD then installs cert-manager, Envoy Gateway,
+  Keycloak (`keycloakx`), an OpenTelemetry Collector, `nebari-operator` and `nebari-landing`. The
+  operator reconciles a `NebariApp` resource into an `HTTPRoute`, a `Certificate`, a Keycloak OIDC
+  client and a landing-page card. NIC pins the `argo-cd` chart 9.7.1 (ArgoCD 3.4.4, Helm 3.19.4).
+  Providers: `aws` (EKS, OpenTofu), `gcp`, `azure`, `hetzner` (k3s via hetzner-k3s), `local` (kind,
+  Docker required) and `existing`.
+- **The data-science pack** is the Helm chart `nebari-data-science-pack` 0.1.7: JupyterHub 5.4.3 (the
+  `jupyterhub` chart 4.4.0) plus jhub-apps and a `nebi` init container; images
+  `quay.io/nebari/nebari-data-science-pack-{jupyterhub,jupyterlab}`. Level `beta`. It needs Helm 3.17
+  or newer (ArgoCD 3.0+, which NIC satisfies), the namespace label `nebari.dev/managed=true`, a default
+  ReadWriteOnce StorageClass, a ReadWriteMany StorageClass for `/shared` (Longhorn on Hetzner; the
+  chart's transitional in-cluster NFS server on kind), and `keycloak.hostname` as its only required
+  value. It lists `nebi-pack` (chart `nebari-nebi-pack`, beta: the nebi server, PostgreSQL, Keycloak
+  SSO) deployed in namespace `nebi` as a prerequisite; `nebi.remote.enabled: false` is the
+  documented way to run without it. A pack installs as an ArgoCD `Application` committed to the
+  GitOps repository; the docs show no Application YAML, so the first story derives it from NIC's
+  `docs/` or the pack's own CI.
+- **The GitOps repository** is either `repository.local` (NIC creates `~/.nic/gitops/<project_name>`
+  and mounts it into the kind node; no Git host involved) or `repository.existing` with `url`,
+  `branch`, an optional `path` subdirectory and auth from an environment variable (SSH key or token).
+  `nic deploy` commits generated manifests on every run; `GIT_TOKEN` (a fine-grained PAT, Contents
+  read and write on that repository) is what it writes with; `ARGOCD_GIT_TOKEN` (read-only) is
+  optional and unnecessary for a public repository.
+- **kind, per NIC's own provider guide:** single node, no backups, a self-signed certificate,
+  `/etc/hosts` lines per hostname, and "packs that talk to Keycloak directly should be tested on a
+  real cluster for now" (NIC issue #613). ArgoCD does not sign in through Keycloak on kind.
+- **On the estate:** `recipes/nebari-infrastructure-core` 0.17.0 (PR #2343, 2026-10-31) and
+  `recipes/nebari-frames` 0.1.7 (CAP-56's lane); `kubernetes-helm` and `kubernetes-client` in pixi;
+  CI's `gke-portability-smoke` already creates a kind v0.32.0 cluster and installs the platform chart
+  (AD-16's named system exception); `src/platform/deploy/charts/platform/` ships Keycloak;
+  `platform-deploy.yml` only renders by digest and never applies. Steward's duties already include
+  `provision`, `deploy`, `keys` and `estate`. The host: 16 cores, 60 GB RAM, 191 GB free at 90 %
+  disk use, Docker 29.9.1 **rootless** on cgroup v2, podman 5.7; `kubectl`, `helm`, `kind`, `tofu`
+  and `nic` are not on `PATH`. The repository's pack is 546 MiB, which is what ArgoCD clones per
+  cluster when the monorepo is the GitOps source.
+
+### Operator rulings (2026-10-31)
+
+1. **Target.** Local kind first, as an attended bring-up of the same class as Story 12.7 on CRC;
+   Hetzner k3s (1 master + 2 workers `cpx31`, Longhorn RWX, Let's Encrypt, a real domain) is the
+   second story, never the first.
+2. **nebi-pack is in from day one:** installed before the data-science pack, so the pack runs as
+   upstream ships it (`nebi.remote.enabled: true`).
+3. **Chain shape:** this dated section on the station Dream; no standalone Dream, no fold exemption.
+   `bmad-spec` mints the capabilities on `spec-pyforge-steward`; the stories live in steward's
+   `epics.md`.
+4. **GitOps repository: the monorepo, on a branch of its own.** kind uses `repository.local`. A
+   cloud cluster uses `repository.existing` pointed at `rxm7706/local-recipes`, `branch:
+   gitops/<project_name>` and `path: gitops/<project_name>`. That branch is written by `nic` and
+   nothing else: never `main` (NIC's commits bypass PRs, `detectors-ci` and the commit-msg hook),
+   read-only for agents, and it needs a `protected-refs` rule of its own before the first cloud
+   deploy. The config file lives on `main` at `src/platform/deploy/nic/<project_name>.yaml`. The
+   repository is public, so ArgoCD reads it anonymously and the cluster's manifests are public too;
+   secrets stay in-cluster.
+
+### What it looks like when real
+
+- `pyforge steward deploy --profile nic` (the verb shape is the Spec's to settle) wraps `nic validate`,
+  `nic deploy`, `nic kubeconfig`, `nic outputs` and `nic destroy` over a tracked config, with
+  secrets read through `keys` from an untracked `.env`.
+- On this host: `kubectl get applications -n argocd` shows every NKP application and both packs
+  `Healthy`; `https://hub.nebari.local` signs in through Keycloak; a `small-instance` server spawns
+  with `/shared` mounted; the landing page shows the JupyterHub and Nebi cards.
+- On Hetzner: the same config shape with `cluster.hetzner`, Longhorn as the RWX class, a Let's
+  Encrypt certificate, and the `gitops/<project_name>` branch as ArgoCD's source.
+- Later, optionally: a scheduled canary through `nebari-dev/deploy-nebari-action` (it destroys what
+  it deploys by default).
+
+### Constraints
+
+- The infra-kinds lock holds (PostgreSQL + Redis + Kubernetes): NKP *is* Kubernetes; Longhorn and the
+  NFS server are StorageClasses, not a fourth kind; no MinIO.
+- AD-16: CLIs are pixi-provisioned. `nic` comes from the estate's own recipe (or the
+  `prefix.dev/github-releases` channel, a Spec question); `kubectl` and `helm` are already pinned;
+  Docker stays the one system tool. kind needs no OpenTofu; cloud providers get conda-forge
+  `opentofu` through `NIC_TOFU_PATH` (the 2026-09-09 air-gap ruling above).
+- Rootless Docker must bind ports 80 and 443 for kind: `net.ipv4.ip_unprivileged_port_start=0`, or
+  the port override in `local-config.yaml`. The host's disk is at 90 %; the kind node image and the
+  pack images are tens of GB.
+- One PR verdict: Warden's digest policy covers the charts and images ArgoCD pulls from OpenTeams
+  repositories; `provenance-collector-pack` stays a candidate Warden plugin source (shape 4 above).
+- No secret ever enters `src/platform/deploy/nic/` or the `gitops/*` branch.
+- No outward dispatch: no new repository, no upstream PR, nothing on Hetzner, without the operator.
+- The capability-ledger mode (`A-only` with an expiry, or `rebuild` on B) is the Spec's first
+  decision; this section does not pre-empt it.
+
+### Non-goals
+
+- The Foundry as a Nebari Software Pack (shape 6's other half).
+- Replacing the Foundry, or any platform service it already runs, with NKP.
+- nebari-classic, Dask Gateway, or any pack other than nebi-pack and the data-science pack in the
+  first two stories.
+- AWS, GCP or Azure before Hetzner has run.
+- Promoting NKP past a dev or pilot posture while NIC's README still says "not yet suitable for
+  production".
+
+### Operator-owned, never dispatched
+
+The `GIT_TOKEN` PAT and its scope; `HETZNER_TOKEN` and Hetzner spend; the domain and its DNS; the
+`protected-refs` rule for `gitops/**`; the `/etc/hosts` lines and the unprivileged-port sysctl on
+this host; the ruling on the capability-ledger mode.
+
+### Open questions for the Spec
+
+1. The steward verb: `deploy --profile nic` beside the OCP profile, or `provision --substrate nic`?
+2. How a pack's ArgoCD `Application` is authored and versioned: hand-written under the tracked
+   config, or regenerated by `nic deploy --regen-apps`?
+3. `nic` provisioning: the local recipe published to the estate channel, or the upstream
+   `prefix.dev/github-releases` channel pinned in `pixi.toml`?
+4. Keycloak on kind: does the hub's direct OAuth (and nebi-pack's) need the chart's
+   `keycloak.backchannelURL` split-horizon, or a real cluster (NIC #613)?
+5. Which steward epic carries the two stories, and whether the Hetzner story is `blocked` until the
+   operator-owned items exist.
+
+### Kinships
+
+- [`pyforge-unifying-strategy.md`](pyforge-unifying-strategy.md) — the infra-kinds lock; its
+  sequencing note already places "the NIC profile" in the Foundry's first run.
+- [`pyforge-mason.md`](pyforge-mason.md) — the `nic` and `frames` recipes (CAP-56's lane) and the
+  environment that pins them.
+- [`pyforge-warden.md`](pyforge-warden.md) — the digest policy on ArgoCD-pulled charts and images.
+- [`pyforge-atlas.md`](pyforge-atlas.md) — an SBOM and vulnerability read of the pack images.
+- The 2026-09-17 intelligence-hub section above — shape 6, the RB-2 and RB-3 reads, the standing
+  rulings this section amends.
+
+### Realization log
+
+- **2026-10-31** — Seeded by the four operator rulings after a verified read of NIC 0.17.0, the
+  data-science pack 0.1.7, nebi-pack and NIC's provider guides. `recipes/nebari-infrastructure-core`
+  moved to 0.17.0 the same day (PR #2343). Next: the `spec-pyforge-steward` memlog entry, then
+  `bmad-spec` mints the capabilities, then the PRD requirement, the deploy-profile AD and the two
+  stories.
