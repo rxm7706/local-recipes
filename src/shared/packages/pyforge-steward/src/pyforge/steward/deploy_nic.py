@@ -318,7 +318,8 @@ def run_nic(deps: NicDeps, *, action: str, config: Path) -> DutyResult:
         from .deploy_nic_packs import PackDeps, _Completed, apply_nkp_packs
 
         def _pack_runner(argv: list[str], cwd: Path | None, env: dict[str, str] | None) -> _Completed:
-            proc = deps.runner(argv, cwd or deps.root, env if env is not None else {})
+            child_env = {**os.environ, **(env or {})}
+            proc = deps.runner(argv, cwd or deps.root, child_env)
             return _Completed(proc.returncode, proc.stdout, proc.stderr)
 
         pack_outcome = apply_nkp_packs(

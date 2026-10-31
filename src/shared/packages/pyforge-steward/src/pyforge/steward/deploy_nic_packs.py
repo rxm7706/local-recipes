@@ -197,6 +197,12 @@ def gitops_root_for(document: Mapping[str, Any]) -> tuple[Path | None, DutyResul
     )
 
 
+_SYNC_WAVE: dict[str, str] = {
+    "nebi-pack": "10",
+    "data-science-pack": "11",
+}
+
+
 def render_application(spec: PackSpec) -> dict[str, Any]:
     source: dict[str, Any] = {
         "repoURL": f"oci://{OCI_CHARTS}/{spec.chart}",
@@ -215,11 +221,11 @@ def render_application(spec: PackSpec) -> dict[str, Any]:
                 "app.kubernetes.io/managed-by": "pyforge-steward",
                 "app.kubernetes.io/part-of": "nebari-pack-layer",
             },
-            "annotations": {"argocd.argoproj.io/sync-wave": "10"},
+            "annotations": {"argocd.argoproj.io/sync-wave": _SYNC_WAVE.get(spec.name, "10")},
             "finalizers": ["resources-finalizer.argocd.argoproj.io"],
         },
         "spec": {
-            "project": "default",
+            "project": "foundational",
             "source": source,
             "destination": {
                 "server": "https://kubernetes.default.svc",
@@ -349,20 +355,24 @@ _DIGEST_RE = re.compile(r"^Digest:\s*(sha256:[a-f0-9]+)\s*$", re.MULTILINE)
 
 
 def chart_digest(deps: PackDeps, spec: PackSpec) -> str | None:
-    proc = _run(
-        deps,
-        [
-            "helm",
-            "show",
-            "chart",
-            f"oci://{OCI_CHARTS}/{spec.chart}",
-            "--version",
-            spec.version,
-        ],
-    )
+    import tempfile
+
+    with tempfile.TemporaryDirectory(prefix="nkp-pack-") as tmp:
+        proc = _run(
+            deps,
+            [
+                "helm",
+                "pull",
+                f"oci://{OCI_CHARTS}/{spec.chart}",
+                "--version",
+                spec.version,
+                "-d",
+                tmp,
+            ],
+        )
     if proc.returncode != 0:
         return None
-    match = _DIGEST_RE.search(proc.stdout or "")
+    match = _DIGEST_RE.search((proc.stdout or "") + (proc.stderr or ""))
     return match.group(1) if match else None
 
 
@@ -418,12 +428,12 @@ def apply_nkp_packs(
     commit = git_commit_applications(pack_deps, paths)
     if not commit.ok:
         return commit
-    label = label_pack_namespaces(pack_deps, specs)
-    if not label.ok:
-        return label
     healthy = wait_applications_healthy(pack_deps, specs)
     if not healthy.ok:
         return healthy
+    label = label_pack_namespaces(pack_deps, specs)
+    if not label.ok:
+        return label
     digests = {spec.name: chart_digest(pack_deps, spec) for spec in specs}
     record = {
         "packs": [spec.name for spec in specs],
