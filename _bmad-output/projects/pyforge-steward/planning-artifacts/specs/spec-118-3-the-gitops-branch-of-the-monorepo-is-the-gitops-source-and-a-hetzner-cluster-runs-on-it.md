@@ -74,6 +74,9 @@ Parent: `spec-pyforge-steward` CAP-178
 ## Verification
 
 **Commands:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: exit 0 (the station suite; the gate's binding, MRS-GATE-010/011).
+
+**Story checks (the session runs these; they are not the gate's binding):**
 - `pixi run --frozen -e pyforge-steward pytest src/shared/packages/pyforge-steward/tests/unit/test_deploy_nic_gitops.py src/shared/packages/pyforge-steward/tests/unit/test_protected_refs.py -q` — expected: pass (both flag states, the branch refusal, the roster entry).
 - `pixi run -e pyforge-steward pyforge steward deploy nic validate -f src/platform/deploy/nic/<project_name>.yaml` — expected: exit 0 on `gitops/<project_name>`, usage code 2 on `main`.
 - `python scripts/flag_gate_check.py --spec _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-118-3-the-gitops-branch-of-the-monorepo-is-the-gitops-source-and-a-hetzner-cluster-runs-on-it.md` — expected: exit 0 once `status: 'done'`.
@@ -90,6 +93,7 @@ Summary: not started.
 
 ## Spec Change Log
 
+- 2026-10-31 (later): `## Verification` → `**Commands:**` bound to the station's policy verify command so the dispatch gate (`check_spec_binding`, MRS-GATE-011) admits it; the story's own checks moved under their own label.
 - 2026-10-31: minted from the station Dream's 2026-10-31 section (Nebari hosted: NKP on kind, then Hetzner, with the data-science pack) and the operator's four rulings of the same date.
 
 ## Review Triage Log
