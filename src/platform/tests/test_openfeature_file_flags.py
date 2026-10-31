@@ -819,6 +819,11 @@ _SHIPPED_BOOLEANS = {
         "staging": True,
         "production": True,
     },
+    "pyforge.steward.nkp_packs": {
+        "dev": True,
+        "staging": True,
+        "production": True,
+    },
     "pyforge.marshal.verify_fix_loop": {
         "dev": True,
         "staging": True,

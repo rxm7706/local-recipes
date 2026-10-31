@@ -313,7 +313,20 @@ def run_nic(deps: NicDeps, *, action: str, config: Path) -> DutyResult:
     details: dict[str, Any] = {"argv": argv, "journal": record}
     if proc.returncode != 0:
         details["exit_code"] = proc.returncode
-    return DutyResult(ok=proc.returncode == 0, summary=summary, details=details)
+    result = DutyResult(ok=proc.returncode == 0, summary=summary, details=details)
+    if action == "up" and proc.returncode == 0:
+        from .deploy_nic_packs import apply_nkp_packs
+
+        pack_outcome = apply_nkp_packs(repo_root=deps.root, document=document)
+        if pack_outcome is not None and not pack_outcome.ok:
+            return pack_outcome
+        if pack_outcome is not None and pack_outcome.ok:
+            result = DutyResult(
+                ok=True,
+                summary=f"{summary}; {pack_outcome.summary}",
+                details={**details, **(pack_outcome.details or {})},
+            )
+    return result
 
 
 def run_deploy_nic(ns: Any) -> DutyResult:

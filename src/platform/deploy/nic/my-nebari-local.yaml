@@ -15,3 +15,22 @@ cluster:
 
 repository:
   local: {}
+
+packs:
+  nebi-pack:
+    chart: nebari-nebi-pack
+    version: "0.1.0"
+    namespace: nebi
+  data-science-pack:
+    chart: nebari-data-science-pack
+    version: "0.1.7"
+    namespace: data-science
+    values:
+      keycloak:
+        hostname: keycloak.nebari.local
+      sharedStorage:
+        nfsServer:
+          enabled: true
+      nebi:
+        remote:
+          enabled: true

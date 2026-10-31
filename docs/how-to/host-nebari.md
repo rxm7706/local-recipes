@@ -40,6 +40,13 @@ Each run appends `{verb, config, seconds, exit}` to `.steward/nic-deploy.jsonl`.
 
 The kill switch is `pyforge.steward.nkp_deploy` (ON in dev, staging, and production by default).
 
+Pack Applications (`nebi-pack`, then `data-science-pack`) install after a successful `up` when the
+config declares `packs:` and `pyforge.steward.nkp_packs` is ON (also ON by default). With the pack
+switch OFF, `up` stops at the NKP core. The kind profile pins `nebari-nebi-pack` 0.1.0 and
+`nebari-data-science-pack` 0.1.7 on `quay.io/nebari/charts`. Keycloak-on-kind for direct OAuth
+(hub and packs) is still an open question (NIC issue #613); record the attended outcome on
+`spec-pyforge-steward` and update this section when resolved.
+
 ## What the attended run looked like (2026-10-31, NIC 0.14.0, kind v1.36.1)
 
 - `up`: 354 s to a Ready node with ArgoCD 3.4.4, cert-manager, MetalLB, Envoy Gateway, CloudNativePG, Keycloak 26.5.0, the nebari-operator and the landing page as 14 ArgoCD Applications. Three controllers crash-looped until the inotify limit above was raised; their ArgoCD syncs had failed on the missing webhooks and needed a manual sync (`kubectl patch application -n argocd <app> --type merge -p '{"operation":{"sync":{}}}'`), since auto-sync does not retry a failed revision.

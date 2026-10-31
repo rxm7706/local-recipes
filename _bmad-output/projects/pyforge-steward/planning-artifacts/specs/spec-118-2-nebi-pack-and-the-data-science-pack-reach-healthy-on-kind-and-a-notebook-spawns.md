@@ -2,7 +2,8 @@
 title: "118.2: nebi-pack and the data-science pack reach Healthy on kind and a notebook spawns"
 type: 'feature'
 created: '2026-10-31'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '9cff05faea33a8ca70a85969607391f3d3f0b434'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
