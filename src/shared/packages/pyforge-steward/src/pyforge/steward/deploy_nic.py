@@ -315,9 +315,17 @@ def run_nic(deps: NicDeps, *, action: str, config: Path) -> DutyResult:
         details["exit_code"] = proc.returncode
     result = DutyResult(ok=proc.returncode == 0, summary=summary, details=details)
     if action == "up" and proc.returncode == 0:
-        from .deploy_nic_packs import apply_nkp_packs
+        from .deploy_nic_packs import PackDeps, _Completed, apply_nkp_packs
 
-        pack_outcome = apply_nkp_packs(repo_root=deps.root, document=document)
+        def _pack_runner(argv: list[str], cwd: Path | None, env: dict[str, str] | None) -> _Completed:
+            proc = deps.runner(argv, cwd or deps.root, env if env is not None else {})
+            return _Completed(proc.returncode, proc.stdout, proc.stderr)
+
+        pack_outcome = apply_nkp_packs(
+            repo_root=deps.root,
+            document=document,
+            pack_deps=PackDeps(gitops_root=deps.root, runner=_pack_runner),
+        )
         if pack_outcome is not None and not pack_outcome.ok:
             return pack_outcome
         if pack_outcome is not None and pack_outcome.ok:

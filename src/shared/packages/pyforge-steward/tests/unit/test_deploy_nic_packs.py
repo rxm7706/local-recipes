@@ -158,6 +158,8 @@ def test_run_nic_up_with_packs_writes_apps_labels_and_waits(
             return _Proc()
         if argv[:2] == ["kubectl", "wait"]:
             return _Proc()
+        if argv[:1] == ["helm"]:
+            return _Proc(stdout="Digest: sha256:deadbeef\n")
         if len(argv) >= 2 and argv[1] == "deploy":
             return _Proc()
         return _Proc()
