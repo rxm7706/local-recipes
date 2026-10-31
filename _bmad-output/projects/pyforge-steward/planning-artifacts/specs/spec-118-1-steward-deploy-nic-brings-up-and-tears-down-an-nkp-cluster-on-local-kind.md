@@ -2,7 +2,7 @@
 title: "118.1: steward deploy nic brings up and tears down an NKP cluster on local kind"
 type: 'feature'
 created: '2026-10-31'
-status: 'backlog'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
