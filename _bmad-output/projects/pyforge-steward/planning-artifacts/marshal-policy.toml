@@ -1518,6 +1518,17 @@ verify_commands = [
   "docs/governance/spec-feature-flag-governance/**",
 ]
 
+"118" = [  # CAP-176..CAP-178: an NKP cluster, its packs and the gitops branch from one tracked config, added 2026-10-31.
+  "src/shared/packages/pyforge-steward/**",
+  "src/platform/deploy/nic/**",
+  "src/platform/config/flags.json",
+  "docs/governance/guild-roster.json",
+  "docs/governance/rulesets/protected-refs.json",
+  "docs/how-to/host-nebari.md",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+]
 "117" = [  # CAP-175: the preflight and a PR's CI answer within a measured budget; each station suite runs as two halves, added 2026-10-27.
   "src/shared/packages/pyforge-steward/**",
   "scripts/coverage_gates_ci.py",

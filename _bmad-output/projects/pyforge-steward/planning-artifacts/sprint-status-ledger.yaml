@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 663
+# stories: 668
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -90,6 +90,9 @@ development_status:
   117-7-the-ci-workflows-run-what-the-diff-touches-with-pinned-tools-and-parallel-detectors: done
   117-8-the-cfe-regression-net-leaves-the-pull-request-path-and-the-pr-keeps-its-meta-suite: done
   117-9-the-steward-suite-s-slowest-tests-shed-their-subprocesses-repos-and-sleeps: backlog
+  118-1-steward-deploy-nic-brings-up-and-tears-down-an-nkp-cluster-on-local-kind: backlog
+  118-2-nebi-pack-and-the-data-science-pack-reach-healthy-on-kind-and-a-notebook-spawns: backlog
+  118-3-the-gitops-branch-of-the-monorepo-is-the-gitops-source-and-a-hetzner-cluster-runs-on-it: backlog
   12-1-the-vanilla-chart-with-an-ocp-overlay: done
   12-2-gke-as-a-portability-profile: done
   12-3-air-gap-parity-is-a-failing-check: done
@@ -485,6 +488,8 @@ development_status:
   epic-116-retrospective: optional
   epic-117: in-progress
   epic-117-retrospective: optional
+  epic-118: backlog
+  epic-118-retrospective: optional
   epic-12: done
   epic-12-retrospective: optional
   epic-13: done

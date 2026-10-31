@@ -2,7 +2,7 @@
 id: SPEC-steward
 spec: pyforge-steward
 status: ready
-updated: "2026-10-30"
+updated: "2026-10-31"
 owner-dream: docs/dreams/pyforge-steward.md
 covers-dreams:
   - docs/dreams/pyforge-steward.md
@@ -914,6 +914,38 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
 - **CAP-173 — contribution lanes wait on a desk test** ← Story 109.5 (in-progress)
   - **intent:** The instructions-only lane (no package) and the code-backed lane (a package), and any automation of publish, wait on the Round 0 desk test and the Wizard-of-Oz pilot in `prototypes/p4-wizard-of-oz-pilot.md`, whose manual form is `docs/foundry/marketplace/MANUAL-CHECKLIST.md`.
   - **success:** Story 109.5 does not automate install or publish in the 2026-10-21 change; the checklist records P4's gates (`bmp install` after two teammates, lint after three pull requests that caught a real problem, `bmp publish` / `new` after one merge by someone other than rxm7706); `DW-FU-60-1`, `DW-FU-60-1-4`, and `DW-FRR-60-1` stay open with a `carried:` line pointing at Epic 109.
+- **CAP-176 — an NKP cluster is brought up, torn down and reported from one tracked config through `steward deploy nic`** ← spec-pyforge-steward CAP-176 (ready 2026-10-31; extends CAP-62, CAP-65; works with CAP-1, CAP-3, CAP-56, CAP-178)
+  - **intent:** `steward deploy nic validate|up|kubeconfig|outputs|down` wraps `nic validate|deploy|kubeconfig|outputs|destroy` by
+    subprocess over `src/platform/deploy/nic/<project_name>.yaml`; `GIT_TOKEN` and the provider credentials come through `keys`
+    from an untracked `.env`; `nic` comes from the pixi environment and `opentofu` from conda-forge through `NIC_TOFU_PATH` for
+    cloud providers (kind needs none); the providers land in this order: local kind first, hetzner second; a config whose
+    operator-owned inputs are missing is refused; each run is journaled under `.steward/`; the verb returns a `DutyResult` (AD-8)
+    and sits behind `pyforge.steward.nkp_deploy` (a kill switch, ON in dev, staging and production; OFF makes the verb refuse with
+    usage code 2). The Dream's 2026-10-31 section carries the four operator rulings and what was verified upstream (NIC 0.17.0,
+    the kind caveats, NIC issue #613).
+  - **success:** an attended kind run on the operator's host (rootless Docker, the unprivileged-port sysctl or the port override
+    in the config) reaches every NKP ArgoCD Application `Healthy` under `kubectl get applications -n argocd`; `nic outputs`
+    reports the domain and the Keycloak issuer; `down` removes the cluster; `flag-gate-check` passes with both flag states tested.
+- **CAP-177 — nebi-pack, then the data-science pack, install from the same config as ArgoCD Applications on the cluster CAP-176 brings up** ← spec-pyforge-steward CAP-177 (ready 2026-10-31; extends CAP-176; works with CAP-178, spec-pyforge-warden)
+  - **intent:** the config names the packs and their values — `keycloak.hostname`; `sharedStorage.storageClass`, the chart's
+    transitional NFS server on kind and `longhorn` on hetzner; `nebi.remote.enabled: true` with nebi-pack in namespace `nebi`
+    installed first — and the verb writes each pack's ArgoCD `Application` into the GitOps source (CAP-178), labels the pack
+    namespaces `nebari.dev/managed=true` and waits for both Applications to reach `Healthy`; Warden's digest policy covers the
+    charts and images ArgoCD pulls; behind `pyforge.steward.nkp_packs` (a kill switch, ON).
+  - **success:** on kind, `https://hub.<domain>` signs in through Keycloak, a `small-instance` server spawns with `/shared`
+    mounted, the landing page shows the JupyterHub and Nebi cards, the pack's Keycloak bootstrap job completes and both
+    Applications read `Healthy`; both flag states are tested.
+- **CAP-178 — the GitOps source is NIC's local directory on kind, or the monorepo on a branch that only `nic` writes** ← spec-pyforge-steward CAP-178 (ready 2026-10-31; extends CAP-165; works with CAP-1, CAP-176)
+  - **intent:** a kind config uses `repository.local`; a cloud config uses `repository.existing` on `rxm7706/local-recipes` with
+    `branch: gitops/<project_name>` and `path: gitops/<project_name>`; `refs/heads/gitops/` joins `docs/governance/guild-roster.json`
+    `protected_refs` as an `operational-branch`, so the session hook denies its deletion and force-push and no agent commits
+    there; the verb refuses a config whose `existing` branch is `main` or any branch outside `gitops/`; `GIT_TOKEN` is a
+    fine-grained PAT (Contents read and write on that repository) read through `keys`; the public repository is read anonymously
+    by ArgoCD and its generated manifests are public, secrets stay in-cluster; behind `pyforge.steward.nkp_gitops_branch` (a kill
+    switch, ON).
+  - **success:** the roster test and CAP-165's live-ruleset proof cover `refs/heads/gitops/**`; `steward deploy nic validate`
+    refuses `branch: main` and accepts `gitops/<project_name>`; after a cloud deploy `origin/main` carries no commit authored by
+    `nic` and `gitops/<project_name>` holds the generated Applications; both flag states are tested.
 
 ## Constraints
 
@@ -972,7 +1004,8 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
 
 - No standing secrets-manager service (Vault/Infisical/OpenBao-class server) — `keys` is a CLI + encrypted files only.
 - No Backstage-class software catalog or scaffolder platform — `provision` is a CLI face over pixi, not a new IDP.
-- No ArgoCD/Flux-class GitOps control plane — `deploy`'s reconciliation is CLI-invoked, not a standing controller.
+- No ArgoCD/Flux-class GitOps control plane — `deploy`'s reconciliation is CLI-invoked, not a standing controller. *(2026-10-31: NKP's own ArgoCD, installed by `nic` on the hosted cluster for CAP-176..CAP-178, is upstream's component on that cluster, not steward's reconciliation engine for the platform.)*
+- No Foundry-as-a-Nebari-pack, no nebari-classic, no AWS, GCP or Azure before Hetzner has run, and no production posture for NKP while NIC's README says "not yet suitable for production" (2026-10-31, CAP-176..CAP-178).
 - No Kubecost/OpenCost/Infracost-class cost-allocation integration in v1 — no live cloud spend exists to allocate against yet.
 - No third-party credential-revocation API integration (JFrog, GitHub, Anthropic) — `keys revoke` records intent and guides manual remediation, it does not call provider APIs.
 - No `presenton-pixi-image` on OpenShift or air-gap bundle install support in v1 — `deploy`'s v1 scope is the Pages dashboard only.
@@ -1048,3 +1081,7 @@ The `JFROG_API_KEY` cross-host leak pattern has a passing, named regression test
 - Should the atlas job in `pyforge-station-tests.yml`, which runs `playwright install --with-deps chromium`
   unconditionally and so takes the same apt mirror, take CAP-174's launch-then-fallback step? Another workflow, out
   of CAP-174's scope; the operator's.
+- Keycloak on kind for CAP-177: does the hub's direct OAuth (and nebi-pack's) need the chart's `keycloak.backchannelURL`
+  split-horizon, or a real cluster (NIC issue #613)? Settled by Story 118.2's attended run.
+- `nic` provisioning for CAP-176: the local recipe published to the estate channel, or the upstream `prefix.dev/github-releases`
+  channel pinned in `pixi.toml`? Story 118.1 decides and records it on this memlog.

@@ -8017,4 +8017,6 @@ this host; the ruling on the capability-ledger mode.
   data-science pack 0.1.7, nebi-pack and NIC's provider guides. `recipes/nebari-infrastructure-core`
   moved to 0.17.0 the same day (PR #2343). Next: the `spec-pyforge-steward` memlog entry, then
   `bmad-spec` mints the capabilities, then the PRD requirement, the deploy-profile AD and the two
-  stories.
+  stories. → **Minted the same day:** CAP-176..CAP-178 on `spec-pyforge-steward` (the cluster, the packs,
+  the gitops branch), FR-50..FR-52, no AD moves, Epic 118 / Stories 118.1–118.3 (`backlog`); the Spec's Open
+  Questions carry the Keycloak-on-kind and `nic`-channel questions for the stories to settle.
