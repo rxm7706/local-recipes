@@ -2,7 +2,8 @@
 title: "117.5: preflight-budget names every lane over its journal-derived budget"
 type: 'feature'
 created: '2026-10-27'
-status: 'in-progress'
+status: 'done'
+followup_review_recommended: false
 baseline_revision: 'c66c5f855d8301f45e996f036a1fe8a741932623'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -80,16 +81,37 @@ Parent: `spec-pyforge-steward` CAP-175
 
 ## Auto Run Result
 
-Status: backlog
+Status: done
 
-Summary: not started.
+Summary: Added `docs/governance/preflight-budgets.toml` with mode defaults and journal-derived per-lane budgets; `preflight_budget` compares `preflight.lane_medians` at 1.5× budget (warn-only, exit 0); `pre_push_preflight.sh` runs `preflight --budget` after a green pr-preflight; tests and memlogs updated; `pyforge-steward-test` and `spec_surface_reconcile.py` green.
+
+Files changed:
+- `docs/governance/preflight-budgets.toml` — declared per-lane budgets (CAP-175 measurement baseline 2026-10-27).
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_budget.py` — load TOML, per-lane report, D3 exit codes.
+- `scripts/pre_push_preflight.sh` — post-green budget report (`|| true`).
+- `src/shared/packages/pyforge-steward/tests/unit/test_preflight_budget.py` — AC2/AC3/unknown lane/empty journal.
+- `src/shared/packages/pyforge-steward/tests/unit/test_preflight_lane_identity.py` — warn-only judge_run line.
+- `pixi.toml`, `environment.yaml`, derived docs — preflight-budget task description.
+
+Review: 2026-10-31 pass — 0 findings (self-review against AC1–AC4; steward suite 1744 passed).
+
+Verification:
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — exit 0.
+- `python scripts/spec_surface_reconcile.py` — exit 0.
+- `chain-completeness-check`, `story-status-check`, `flag-gate-check`, `spec-surface-check` — exit 0 each.
+
+Residual risk: lane budgets in TOML are static until refreshed from new journal medians; over-budget signal depends on five green runs in `.steward/preflight-runs.jsonl`.
 
 ## Spec Change Log
 
+- 2026-10-31: Implemented AC1–AC4 (build-auto); baseline `c66c5f855d`.
 - 2026-10-31: Commands rebound to the policy verify command (`pyforge-steward-test`) before dispatch; the story's own checks moved under Manual checks (MRS-GATE-011 otherwise).
 
 - 2026-10-27: minted from the station Dream's entry of 2026-10-27 and the operator's rulings D1–D4 of the same date.
 
 ## Review Triage Log
 
-- (none yet)
+### 2026-10-31 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings:
+  - (none)
