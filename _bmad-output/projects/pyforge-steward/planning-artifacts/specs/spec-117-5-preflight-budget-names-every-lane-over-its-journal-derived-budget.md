@@ -6,7 +6,6 @@ status: 'done'
 followup_review_recommended: false
 baseline_revision: 'c66c5f855d8301f45e996f036a1fe8a741932623'
 review_loop_iteration: 0
-followup_review_recommended: false
 declared_low_risk: false
 flag-exempt: detector-or-gate   # a CI job, a test task or a preflight report (spec-feature-flag-governance Q1; roster list)
 context:
