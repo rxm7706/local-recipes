@@ -8012,3 +8012,19 @@ So that the second cluster has a real domain, Longhorn storage and Let's Encrypt
 **Then** `gitops/<project_name>` holds the generated Applications, `origin/main` carries no commit authored by `nic`, every Application and both packs read `Healthy` on the Hetzner cluster, `https://hub.<domain>` signs in, and `down` removes the cluster and its load balancer; the live-ruleset proof lists `refs/heads/gitops/**`
 **And** the flag's two states are tested; `flag-gate-check`, `detectors-ci`, `pyforge-steward-test` and the roster tests exit 0; the operator-owned inputs are named in the story spec and never in git
 **Status:** backlog
+
+### Story 118.4: steward deploy nic down tears the cluster down without a prompt
+
+As the operator who wants a Nebari platform the estate runs itself,
+I want `steward deploy nic down` to run `nic destroy --auto-approve`,
+So that the one attended tear-down verb removes the cluster instead of dying on a confirmation prompt it cannot answer.
+
+**Type:** fix • **Effort:** S • **Deps:** S-118.1 • **FR/AD:** spec-pyforge-steward CAP-176 / FR-50 (the tear-down half of the verb); lands on AD-1 (wrap, never reimplement) and AD-8 (`DutyResult` only); no AD moves.
+**Flag:** `pyforge.steward.nkp_deploy` (unchanged: Story 118.1's kill switch still gates every `deploy nic` action, `down` included)
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/deploy_nic.py` (the `down` argv), `src/shared/packages/pyforge-steward/tests/unit/test_deploy_nic.py` (the argv pin), `docs/how-to/host-nebari.md` (the rootless-Docker prerequisites the attended run needed), `planning-artifacts/deferred-work-ledger.md` (DW-steward-118-1 closes on the attended run's evidence)
+**Spec:** `planning-artifacts/specs/spec-118-4-steward-deploy-nic-down-tears-the-cluster-down-without-a-prompt.md`
+**Given** Story 118.1's attended run of 2026-10-31 brought the kind cluster to every NKP ArgoCD Application `Healthy`, `outputs` printed `nebari.local` and `https://keycloak.nebari.local`, and `https://nebari.local` signed in as `admin`, but `deploy nic down` exited 1 with `failed to read user input: EOF` because `nic destroy` asks `Type 'yes' to confirm` and the adapter runs it without a terminal
+**When** the adapter passes `--auto-approve` on `destroy` and on no other verb (the kill switch and the explicit `down` action are the consent)
+**Then** `deploy nic down` removes the kind cluster and journals `{verb: down, exit: 0}`, the argv test pins `--auto-approve` on `destroy` and its absence on the other four verbs, the how-to names the inotify limit and the loopback port-forward the rootless host needed, and DW-steward-118-1 closes with the run's measured minutes
+**And** `pyforge-steward-test` exits 0; the flag's two states stay tested by Story 118.1's suite
+**Status:** done
