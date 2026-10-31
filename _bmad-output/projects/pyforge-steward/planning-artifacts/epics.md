@@ -8028,3 +8028,19 @@ So that the one attended tear-down verb removes the cluster instead of dying on 
 **Then** `deploy nic down` removes the kind cluster and journals `{verb: down, exit: 0}`, the argv test pins `--auto-approve` on `destroy` and its absence on the other four verbs, the how-to names the inotify limit and the loopback port-forward the rootless host needed, and DW-steward-118-1 closes with the run's measured minutes
 **And** `pyforge-steward-test` exits 0; the flag's two states stay tested by Story 118.1's suite
 **Status:** done
+
+### Story 118.5: deploy nic up installs the packs under nebari-apps and waits for the sync it rendered
+
+As the operator who wants a Nebari platform the estate runs itself,
+I want `steward deploy nic up` to install nebi-pack and the data-science pack under NIC's `nebari-apps` Argo CD project and to return only when the sync of the Applications it rendered is `Succeeded` and `Healthy`,
+So that the one verb Story 118.2 promised installs the packs on a real cluster instead of being refused by the `foundational` project, failing on an Application Argo CD has not created yet, or exiting 0 while the hub is still syncing.
+
+**Type:** fix • **Effort:** M • **Deps:** S-118.2 • **FR/AD:** spec-pyforge-steward CAP-177 / FR-51 (the install half of the verb) and CAP-178 (the GitOps source it commits to); lands on AD-1 (wrap, never reimplement) and AD-8 (`DutyResult` only); no AD moves.
+**Flag:** `pyforge.steward.nkp_packs` (unchanged: Story 118.2's kill switch still gates the pack step)
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/deploy_nic_packs.py` (the project, the root refresh, the existence poll, the source-matched health poll, `helm.values`), `src/shared/packages/pyforge-steward/tests/unit/test_deploy_nic_packs.py`, `src/platform/deploy/nic/my-nebari-local.yaml` (the kind-profile values the attended run proved), `docs/how-to/host-nebari.md` (the attended pack run; the Keycloak-on-kind answer), `planning-artifacts/deferred-work-ledger.md` (DW-steward-118-2 and DW-steward-118-2-2 close on the attended run's evidence)
+**Spec:** `planning-artifacts/specs/spec-118-5-deploy-nic-up-installs-the-packs-under-nebari-apps-and-waits-for-the-sync-it-rendered.md`
+**Given** Story 118.2's attended run of 2026-10-31 on this host found the merged `up` refused by Argo CD (`application repo oci://quay.io/nebari/charts/nebari-nebi-pack is not permitted in project 'foundational'`), failing at once on `applications.argoproj.io "nebi-pack" not found`, exiting 0 on a transient `Healthy` and on the previous sync's `Succeeded`, and unable to delete a chart default through `valuesObject` (`.spec.landingPage.iconDark: field not declared in schema` on the NIC 0.14.0 operator's NebariApp CRD)
+**When** the Applications name project `nebari-apps`, `up` refreshes `nebari-root` after the commit, polls until each Application exists and until a `Succeeded` operation whose `syncResult.source` equals the rendered source reads `Healthy`, values travel as a `helm.values` string, and the kind profile carries the hostname, split-horizon OIDC, icon-null, iptables and shared-storage values the run needed
+**Then** `deploy nic up` on the tracked config exits 0 with both packs `Healthy` only after their sync, `https://hub.nebari.local` signs in through Keycloak and spawns a `small-instance` server, the landing page shows the JupyterHub and Nebi cards, the pack's Keycloak bootstrap job completes, the Keycloak-on-kind decision is one memlog entry and a how-to section, and DW-steward-118-2 / DW-steward-118-2-2 close with the run's evidence
+**And** `pyforge-steward-test` exits 0; the flag's two states stay tested by Story 118.2's suite
+**Status:** done

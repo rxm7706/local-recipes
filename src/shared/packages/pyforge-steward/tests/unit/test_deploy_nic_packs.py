@@ -13,6 +13,8 @@ from pyforge.testing_kit.flags import flag_states
 from pyforge.steward.deploy_nic import NicDeps, run_nic
 from pyforge.steward.deploy_nic_packs import (
     PACK_JOURNAL_RELATIVE,
+    PACK_PROJECT,
+    ROOT_APPLICATION,
     PackDeps,
     PackSpec,
     apply_nkp_packs,
@@ -22,7 +24,9 @@ from pyforge.steward.deploy_nic_packs import (
     gitops_root_for,
     label_pack_namespaces,
     parse_packs,
+    refresh_root_application,
     render_application,
+    wait_applications_exist,
     wait_applications_healthy,
     write_pack_applications,
 )
@@ -138,16 +142,168 @@ def test_label_pack_namespaces_surfaces_kubectl_failure() -> None:
     assert "forbidden" in result.summary
 
 
+def _app_json(
+    health: str,
+    phase: str | None = None,
+    sync: str = "OutOfSync",
+    conditions: list | None = None,
+    source: dict | None = None,
+    name: str | None = None,
+) -> str:
+    """An Argo CD Application status as ``kubectl get -o json`` prints it.
+
+    ``source`` is what the last operation applied (``syncResult.source``); when omitted it is the
+    source ``render_application`` gives the pack called ``name`` (the test specs below), so a
+    ``Succeeded`` state counts as current.
+    """
+    status: dict[str, object] = {"health": {"status": health}, "sync": {"status": sync}}
+    if phase is not None:
+        if source is None and name is not None:
+            source = render_application(_SPECS[name])["spec"]["source"]
+        status["operationState"] = {"phase": phase, "message": f"op {phase}", "syncResult": {"source": source or {}}}
+    if conditions:
+        status["conditions"] = conditions
+    return json.dumps({"status": status})
+
+
+_SPECS: dict[str, PackSpec] = {
+    "nebi-pack": PackSpec(name="nebi-pack", chart="c", version="1.0.0", namespace="nebi"),
+    "data-science-pack": PackSpec(name="data-science-pack", chart="c", version="1.0.0", namespace="data-science"),
+}
+
+
+def _spec_source_for(argv: list[str], document: dict) -> dict:
+    """The rendered source of the pack ``kubectl get application/<name>`` asks for."""
+    specs, _ = parse_packs(document)
+    name = argv[2].split("/", 1)[1]
+    return render_application(next(s for s in specs or [] if s.name == name))["spec"]["source"]
+
+
 def test_wait_applications_healthy_surfaces_timeout() -> None:
     def runner(argv: list[str], _cwd: Path | None, _env: dict[str, str] | None) -> _Proc:
-        if argv[:2] == ["kubectl", "wait"]:
-            return _Proc(returncode=1, stderr="timed out")
+        if argv[:2] == ["kubectl", "get"]:
+            return _Proc(stdout=_app_json("Progressing", "Running", name="nebi-pack"))
         return _Proc()
 
-    spec = PackSpec(name="nebi-pack", chart="c", version="1.0.0", namespace="nebi")
-    result = wait_applications_healthy(PackDeps(gitops_root=Path("/tmp"), runner=runner), [spec], timeout_s=1)
+    result = wait_applications_healthy(
+        PackDeps(gitops_root=Path("/tmp"), runner=runner),
+        [_SPECS["nebi-pack"]],
+        timeout_s=20,
+        poll_s=10,
+        sleep=lambda _s: None,
+    )
     assert result.ok is False
-    assert "timed out" in result.summary
+    assert "did not reach Healthy within 20s" in result.summary
+    assert "health=Progressing" in result.summary and "phase=Running" in result.summary
+
+
+def test_wait_applications_healthy_waits_for_the_sync_that_applied_the_rendered_values() -> None:
+    # Attended run 2026-10-31, re-run on a converged cluster: the previous sync still reads
+    # Succeeded + Healthy while Argo CD has not picked up the new Helm values; ``up`` must not
+    # return until a sync of the source this run rendered has succeeded.
+    spec = PackSpec(
+        name="data-science-pack",
+        chart="c",
+        version="1.0.0",
+        namespace="data-science",
+        values={"keycloak": {"backchannelURL": "http://kc.keycloak.svc:8080"}},
+    )
+    stale = render_application(_SPECS["data-science-pack"])["spec"]["source"]
+    states = iter(
+        [
+            _app_json("Healthy", "Succeeded", source=stale),
+            _app_json("Progressing", "Running", source=stale),
+            _app_json("Healthy", "Succeeded", source=render_application(spec)["spec"]["source"]),
+        ]
+    )
+
+    def runner(argv: list[str], _cwd: Path | None, _env: dict[str, str] | None) -> _Proc:
+        if argv[:2] == ["kubectl", "get"]:
+            return _Proc(stdout=next(states))
+        return _Proc()
+
+    slept: list[float] = []
+    result = wait_applications_healthy(
+        PackDeps(gitops_root=Path("/tmp"), runner=runner), [spec], timeout_s=60, poll_s=10, sleep=slept.append
+    )
+    assert result.ok is True
+    assert slept == [10, 10]
+
+
+def test_wait_applications_healthy_ignores_the_transient_healthy_before_the_first_sync() -> None:
+    # Attended run 2026-10-31: a just-created Application reads Healthy with no operation yet;
+    # ``up`` must not take that as the pack being up (Story 118.5).
+    reads: list[str] = []
+    states = iter(
+        [
+            _app_json("Healthy"),
+            _app_json("Missing", "Running", name="data-science-pack"),
+            _app_json("Healthy", "Succeeded", name="data-science-pack"),
+        ]
+    )
+
+    def runner(argv: list[str], _cwd: Path | None, _env: dict[str, str] | None) -> _Proc:
+        if argv[:2] == ["kubectl", "get"]:
+            reads.append(argv[2])
+            return _Proc(stdout=next(states))
+        return _Proc()
+
+    spec = _SPECS["data-science-pack"]
+    slept: list[float] = []
+    result = wait_applications_healthy(
+        PackDeps(gitops_root=Path("/tmp"), runner=runner), [spec], timeout_s=60, poll_s=10, sleep=slept.append
+    )
+    assert result.ok is True
+    assert reads == ["application/data-science-pack"] * 3
+    assert slept == [10, 10]
+
+
+def test_wait_applications_healthy_leaves_a_sync_error_to_argocd_retry() -> None:
+    # Attended run 2026-10-31: a terminated sync leaves ``SyncError`` on the Application until the
+    # next successful sync; the next auto-sync clears it, so the poll goes on.
+    sync_error = [{"type": "SyncError", "message": "Failed last sync attempt: Operation terminated"}]
+    states = iter(
+        [
+            _app_json("Progressing", "Failed", conditions=sync_error, name="data-science-pack"),
+            _app_json("Healthy", "Succeeded", name="data-science-pack"),
+        ]
+    )
+
+    def runner(argv: list[str], _cwd: Path | None, _env: dict[str, str] | None) -> _Proc:
+        if argv[:2] == ["kubectl", "get"]:
+            return _Proc(stdout=next(states))
+        return _Proc()
+
+    spec = _SPECS["data-science-pack"]
+    result = wait_applications_healthy(
+        PackDeps(gitops_root=Path("/tmp"), runner=runner), [spec], timeout_s=60, poll_s=10, sleep=lambda _s: None
+    )
+    assert result.ok is True
+
+
+def test_wait_applications_healthy_fails_fast_on_an_argocd_error_condition() -> None:
+    conditions = [
+        {
+            "type": "InvalidSpecError",
+            "message": "application repo oci://quay.io/nebari/charts/nebari-nebi-pack is not permitted in project 'foundational'",
+        }
+    ]
+
+    def runner(argv: list[str], _cwd: Path | None, _env: dict[str, str] | None) -> _Proc:
+        if argv[:2] == ["kubectl", "get"]:
+            return _Proc(stdout=_app_json("Unknown", conditions=conditions))
+        return _Proc()
+
+    result = wait_applications_healthy(
+        PackDeps(gitops_root=Path("/tmp"), runner=runner),
+        [_SPECS["nebi-pack"]],
+        timeout_s=1800,
+        poll_s=10,
+        sleep=lambda _s: None,
+    )
+    assert result.ok is False
+    assert "refused by Argo CD" in result.summary
+    assert "not permitted in project 'foundational'" in result.summary
 
 
 def test_chart_digest_parses_helm_output() -> None:
@@ -196,6 +352,70 @@ def test_git_commit_applications_refuses_missing_gitops(tmp_path: Path) -> None:
     assert "does not exist" in result.summary
 
 
+def test_wait_applications_exist_polls_until_argocd_creates_the_application() -> None:
+    # Story 118.5: ``kubectl wait`` on an Application Argo CD has not created yet fails at once
+    # with NotFound, so the pack step polls for existence first.
+    gets: list[list[str]] = []
+    slept: list[float] = []
+
+    def runner(argv: list[str], _cwd: Path | None, _env: dict[str, str] | None) -> _Proc:
+        if argv[:2] == ["kubectl", "get"]:
+            gets.append(argv)
+            if len(gets) < 3:
+                return _Proc(
+                    returncode=1, stderr='Error from server (NotFound): applications.argoproj.io "nebi-pack" not found'
+                )
+            return _Proc(stdout="application.argoproj.io/nebi-pack\n")
+        return _Proc()
+
+    spec = PackSpec(name="nebi-pack", chart="c", version="1.0.0", namespace="nebi")
+    result = wait_applications_exist(
+        PackDeps(gitops_root=Path("/tmp"), runner=runner), [spec], timeout_s=30, poll_s=5, sleep=slept.append
+    )
+    assert result.ok is True
+    assert len(gets) == 3
+    assert gets[0][:3] == ["kubectl", "get", "application/nebi-pack"]
+    assert slept == [5, 5]
+
+
+def test_wait_applications_exist_reports_a_missing_application() -> None:
+    def runner(argv: list[str], _cwd: Path | None, _env: dict[str, str] | None) -> _Proc:
+        if argv[:2] == ["kubectl", "get"]:
+            return _Proc(returncode=1, stderr="NotFound")
+        return _Proc()
+
+    spec = PackSpec(name="nebi-pack", chart="c", version="1.0.0", namespace="nebi")
+    result = wait_applications_exist(
+        PackDeps(gitops_root=Path("/tmp"), runner=runner), [spec], timeout_s=10, poll_s=5, sleep=lambda _s: None
+    )
+    assert result.ok is False
+    assert "did not appear" in result.summary
+    assert ROOT_APPLICATION in result.summary
+
+
+def test_refresh_root_application_annotates_nebari_root() -> None:
+    calls: list[list[str]] = []
+
+    def runner(argv: list[str], _cwd: Path | None, _env: dict[str, str] | None) -> _Proc:
+        calls.append(argv)
+        return _Proc()
+
+    result = refresh_root_application(PackDeps(gitops_root=Path("/tmp"), runner=runner))
+    assert result.ok is True
+    assert calls == [
+        [
+            "kubectl",
+            "annotate",
+            "application",
+            "nebari-root",
+            "-n",
+            "argocd",
+            "argocd.argoproj.io/refresh=normal",
+            "--overwrite",
+        ]
+    ]
+
+
 def test_apply_nkp_packs_surfaces_parse_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     # Patch the reader, never pin PYFORGE_FLAGS_PATH to a one-key tree: the FILE provider stays
     # pinned to that tree for later tests in the same worker and every other flag reads WARN.
@@ -227,8 +447,8 @@ def test_apply_nkp_packs_uses_custom_journal_callback(tmp_path: Path, monkeypatc
     def runner(argv: list[str], _cwd: Path | None, _env: dict[str, str] | None) -> _Proc:
         if argv[:2] == ["git", "status"]:
             return _Proc(stdout="")
-        if argv[:2] == ["kubectl", "wait"]:
-            return _Proc()
+        if argv[:2] == ["kubectl", "get"] and argv[-1] == "json":
+            return _Proc(stdout=_app_json("Healthy", "Succeeded", source=_spec_source_for(argv, document)))
         if argv[:2] == ["kubectl", "label"]:
             return _Proc()
         if argv[:2] == ["helm", "pull"]:
@@ -257,6 +477,28 @@ def test_render_application_uses_oci_and_namespace() -> None:
     assert app["metadata"]["name"] == "nebi-pack"
     assert app["spec"]["source"]["repoURL"] == "oci://quay.io/nebari/charts/nebari-nebi-pack"
     assert app["spec"]["destination"]["namespace"] == "nebi"
+    # NIC's ``foundational`` AppProject admits only its own namespaces and chart repos; packs
+    # go through the ``nebari-apps`` project NIC creates for them (attended run 2026-10-31).
+    assert PACK_PROJECT == "nebari-apps"
+    assert app["spec"]["project"] == PACK_PROJECT
+    assert "helm" not in app["spec"]["source"]
+
+
+def test_render_application_keeps_null_values_as_a_helm_values_string() -> None:
+    # A ``key: null`` deletes a chart default (Helm); through ``valuesObject`` the apiserver drops
+    # the null before Argo CD renders, so the values travel as a YAML string (Story 118.5).
+    spec = PackSpec(
+        name="data-science-pack",
+        chart="nebari-data-science-pack",
+        version="0.1.7",
+        namespace="data-science",
+        values={"nebariapp": {"landingPage": {"iconLight": None, "iconDark": None}}},
+    )
+    helm = render_application(spec)["spec"]["source"]["helm"]
+    assert "valuesObject" not in helm
+    rendered = yaml.safe_load(helm["values"])
+    assert rendered == {"nebariapp": {"landingPage": {"iconLight": None, "iconDark": None}}}
+    assert "iconDark: null" in helm["values"]
 
 
 def test_write_pack_applications_orders_nebi_before_data_science(tmp_path: Path) -> None:
@@ -316,6 +558,7 @@ def test_run_nic_up_with_packs_writes_apps_labels_and_waits(
     if not flag_provider["pyforge.steward.nkp_packs"]:
         pytest.skip("requires pack kill switch on")
     config = _pack_config(tmp_path)
+    document = yaml.safe_load(config.read_text(encoding="utf-8"))
     gitops = tmp_path / "gitops"
     gitops.mkdir()
     import subprocess
@@ -335,8 +578,8 @@ def test_run_nic_up_with_packs_writes_apps_labels_and_waits(
             return _Proc()
         if argv[:2] == ["kubectl", "label"]:
             return _Proc()
-        if argv[:2] == ["kubectl", "wait"]:
-            return _Proc()
+        if argv[:2] == ["kubectl", "get"] and argv[-1] == "json":
+            return _Proc(stdout=_app_json("Healthy", "Succeeded", source=_spec_source_for(argv, document)))
         if argv[:2] == ["helm", "pull"]:
             return _Proc(stderr="Pulled: oci://quay.io/nebari/charts/x:0.1.0\nDigest: sha256:deadbeef\n")
         if len(argv) >= 2 and argv[1] == "deploy":
@@ -358,7 +601,11 @@ def test_run_nic_up_with_packs_writes_apps_labels_and_waits(
     assert (gitops / "apps" / "nebi-pack.yaml").is_file()
     assert (gitops / "apps" / "data-science-pack.yaml").is_file()
     assert any(cmd[:3] == ["kubectl", "label", "namespace"] for cmd in calls)
-    assert any(cmd[:2] == ["kubectl", "wait"] for cmd in calls)
+    assert not any(cmd[:2] == ["kubectl", "wait"] for cmd in calls)
+    kubectl_verbs = [cmd[1] for cmd in calls if cmd[0] == "kubectl"]
+    assert kubectl_verbs.index("annotate") < kubectl_verbs.index("get") < kubectl_verbs.index("label")
+    health_reads = [cmd for cmd in calls if cmd[:2] == ["kubectl", "get"] and cmd[-1] == "json"]
+    assert [cmd[2] for cmd in health_reads] == ["application/nebi-pack", "application/data-science-pack"]
     journal_path = tmp_path / PACK_JOURNAL_RELATIVE
     assert journal_path.is_file()
     record = json.loads(journal_path.read_text(encoding="utf-8").splitlines()[-1])

@@ -6835,7 +6835,9 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: spec-deferred 328eedb65ee0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-10-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: 2026-10-31 — RESOLVED by the attended run (Story 118.5 lands the defects it found): with the fixes, `deploy nic up` on the tracked config exits 0 with `nebi-pack` and `data-science-pack` `Healthy` after their sync; `https://hub.nebari.local` signs in through Keycloak (split-horizon OIDC: `keycloak.backchannelURL`, `KC_REALM_API_URL`, `auth.oidc.discoveryURL`), a `small-instance` server spawns in 20 s, the landing page lists the JupyterHub and Nebi cards (`healthy`), and the pack's Keycloak bootstrap job is `Complete`. The `/shared/<group>` mount cannot be proven on this host: the chart's NFS server cannot start inside the rootless kind node's user namespace (`rpc.nfsd: Unable to access /proc/fs/nfsd`) and the kernel NFS client answers `mount.nfs: Operation not permitted`; the kind profile disables shared storage and says why. Record: Story 118.2's spec § *Attended run 2026-10-31 (AC2, AC3)*; `docs/how-to/host-nebari.md` § *What the attended pack run looked like*.
+  verified: 2026-10-31 — RESOLVED — attended on this host (rootless Docker 29.9.1, NIC 0.14.0, kind v1.36.1): `pixi run -e pyforge-steward pyforge steward deploy nic up -f src/platform/deploy/nic/my-nebari-local.yaml` exit 0 (74 s, both packs Healthy); `python3 -I hub_signin.py <user> <password> --spawn` exit 0 (OAuth callback 302, `/hub/api/user` as `admin`, server ready); `python3 -I landing_cards.py` exit 0 (2 cards, both `healthy`); `kubectl -n keycloak get jobs -l app.kubernetes.io/instance=data-science-pack` → `Complete 1/1`; `pixi run -e pyforge-steward pyforge steward deploy nic down -f src/platform/deploy/nic/my-nebari-local.yaml` exit 0. Fix: src/shared/packages/pyforge-steward/src/pyforge/steward/deploy_nic_packs.py:220.
 
 ### DW-steward-118-2-2: Keycloak-on-kind (#613) decision not recorded on spec-pyforge-steward memlog yet.
 
@@ -6846,4 +6848,6 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: spec-deferred 2793aa55413a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium (unverified)
   promoted: 2026-10-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: 2026-10-31 — RESOLVED: the decision is on `spec-pyforge-steward`'s memlog (`(decision) 2026-10-31 Keycloak-on-kind …`) and in `docs/how-to/host-nebari.md`: direct OAuth does not work on kind because pods cannot resolve `*.nebari.local` (hub: `HTTP 599: Could not resolve host: keycloak.nebari.local`; nebi: `lookup keycloak.nebari.local on 10.96.0.10:53: server misbehaving`); split-horizon OIDC through the in-cluster Keycloak Service works, and NIC's operator already does the same for gateway-enforced apps. No real cluster needed for OAuth.
+  verified: 2026-10-31 — RESOLVED — `python3 -I hub_signin.py <user> <password>` exit 5 before the fix (`/hub/oauth_callback` 500) and exit 0 after `keycloak.backchannelURL` landed in src/platform/deploy/nic/my-nebari-local.yaml:40; `grep -n 'Keycloak-on-kind' _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md` exit 0.

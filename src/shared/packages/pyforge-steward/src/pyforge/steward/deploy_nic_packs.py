@@ -1,8 +1,12 @@
 """NKP pack Applications after ``deploy nic up`` (CAP-177, Story 118.2).
 
-Writes nebi-pack then data-science-pack into the NIC GitOps ``apps/`` tree, labels pack
-namespaces, waits for Argo CD ``Healthy``, and journals OCI chart digests for Warden.
-Gated by ``pyforge.steward.nkp_packs``; a config without ``packs:`` is unchanged.
+Writes nebi-pack then data-science-pack into the NIC GitOps ``apps/`` tree under NIC's
+``nebari-apps`` AppProject (``foundational`` admits only NIC's own namespaces and repos),
+refreshes the ``nebari-root`` Application so Argo CD reads the commit now rather than on its
+next repo poll, polls until each pack Application exists (``kubectl wait`` on a resource that
+is not there yet fails at once with ``NotFound``), waits for ``Healthy``, labels pack
+namespaces, and journals OCI chart digests for Warden. Gated by ``pyforge.steward.nkp_packs``;
+a config without ``packs:`` is unchanged. Attended run 2026-10-31 (Story 118.5).
 """
 
 from __future__ import annotations
@@ -10,6 +14,7 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import time
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -22,6 +27,9 @@ from .interfaces import DutyResult
 NKP_PACKS_FLAG = "pyforge.steward.nkp_packs"
 PACK_JOURNAL_RELATIVE = Path(".steward/nkp-pack-deploy.jsonl")
 OCI_CHARTS = "quay.io/nebari/charts"
+PACK_PROJECT = "nebari-apps"
+ROOT_APPLICATION = "nebari-root"
+ARGOCD_NAMESPACE = "argocd"
 ALLOWED_PACKS: tuple[str, ...] = ("nebi-pack", "data-science-pack")
 _DEFAULT_DATA_SCIENCE_VALUES: dict[str, Any] = {
     "keycloak": {"hostname": "keycloak.nebari.local"},
@@ -210,7 +218,12 @@ def render_application(spec: PackSpec) -> dict[str, Any]:
         "path": ".",
     }
     if spec.values:
-        source["helm"] = {"valuesObject": dict(spec.values)}
+        # ``helm.values`` (a YAML string), not ``valuesObject``: the apiserver drops null-valued
+        # entries from the stored Application, so a ``key: null`` meant to delete a chart default
+        # (Helm's documented deletion form) never reaches Helm through ``valuesObject``. The
+        # attended run of 2026-10-31 needed exactly that to drop two fields the NIC 0.14.0
+        # operator's NebariApp CRD does not declare.
+        source["helm"] = {"values": yaml.safe_dump(dict(spec.values), sort_keys=False)}
     return {
         "apiVersion": "argoproj.io/v1alpha1",
         "kind": "Application",
@@ -225,7 +238,7 @@ def render_application(spec: PackSpec) -> dict[str, Any]:
             "finalizers": ["resources-finalizer.argocd.argoproj.io"],
         },
         "spec": {
-            "project": "foundational",
+            "project": PACK_PROJECT,
             "source": source,
             "destination": {
                 "server": "https://kubernetes.default.svc",
@@ -327,26 +340,142 @@ def label_pack_namespaces(deps: PackDeps, specs: Sequence[PackSpec]) -> DutyResu
     return DutyResult(ok=True, summary="deploy nic packs: pack namespaces labelled")
 
 
-def wait_applications_healthy(deps: PackDeps, specs: Sequence[PackSpec], *, timeout_s: int = 1800) -> DutyResult:
+def refresh_root_application(deps: PackDeps) -> DutyResult:
+    """Ask Argo CD to re-read the GitOps source now (best effort: the poll below still covers it)."""
+    proc = _run(
+        deps,
+        [
+            "kubectl",
+            "annotate",
+            "application",
+            ROOT_APPLICATION,
+            "-n",
+            ARGOCD_NAMESPACE,
+            "argocd.argoproj.io/refresh=normal",
+            "--overwrite",
+        ],
+    )
+    if proc.returncode != 0:
+        tail = (proc.stderr or proc.stdout).strip().splitlines()
+        hint = tail[-1] if tail else f"exit {proc.returncode}"
+        return DutyResult(ok=False, summary=f"deploy nic packs: refresh of {ROOT_APPLICATION} refused: {hint}")
+    return DutyResult(ok=True, summary=f"deploy nic packs: {ROOT_APPLICATION} refreshed")
+
+
+def wait_applications_exist(
+    deps: PackDeps,
+    specs: Sequence[PackSpec],
+    *,
+    timeout_s: int = 300,
+    poll_s: float = 5.0,
+    sleep: Callable[[float], None] = time.sleep,
+) -> DutyResult:
+    """Poll until Argo CD has created each pack Application from the committed manifest."""
+    attempts = max(1, int(timeout_s // poll_s))
     for spec in specs:
-        proc = _run(
-            deps,
-            [
-                "kubectl",
-                "wait",
-                f"application/{spec.name}",
-                "-n",
-                "argocd",
-                "--for=jsonpath={.status.health.status}=Healthy",
-                f"--timeout={timeout_s}s",
-            ],
-        )
-        if proc.returncode != 0:
-            tail = (proc.stderr or proc.stdout).strip().splitlines()
-            hint = tail[-1] if tail else f"exit {proc.returncode}"
+        for attempt in range(attempts):
+            proc = _run(
+                deps,
+                ["kubectl", "get", f"application/{spec.name}", "-n", ARGOCD_NAMESPACE, "-o", "name"],
+            )
+            if proc.returncode == 0:
+                break
+            if attempt + 1 < attempts:
+                sleep(poll_s)
+        else:
             return DutyResult(
                 ok=False,
-                summary=f"deploy nic packs: Application {spec.name!r} did not reach Healthy: {hint}",
+                summary=(
+                    f"deploy nic packs: Application {spec.name!r} did not appear in {ARGOCD_NAMESPACE} "
+                    f"within {timeout_s}s ({ROOT_APPLICATION} has not picked up the GitOps commit)"
+                ),
+            )
+    return DutyResult(ok=True, summary="deploy nic packs: pack Applications exist")
+
+
+# Conditions that no retry clears: the manifest, chart or AppProject is wrong. ``SyncError``
+# (a failed or terminated sync attempt) is left to Argo CD's own retry.
+_ARGOCD_FATAL_CONDITIONS = frozenset({"InvalidSpecError", "ComparisonError"})
+
+
+def _application_state(deps: PackDeps, name: str) -> tuple[dict[str, Any] | None, str]:
+    proc = _run(deps, ["kubectl", "get", f"application/{name}", "-n", ARGOCD_NAMESPACE, "-o", "json"])
+    if proc.returncode != 0:
+        tail = (proc.stderr or proc.stdout).strip().splitlines()
+        return None, (tail[-1] if tail else f"exit {proc.returncode}")
+    try:
+        document = json.loads(proc.stdout or "{}")
+    except json.JSONDecodeError as exc:
+        return None, f"unreadable Application JSON: {exc}"
+    status = document.get("status") if isinstance(document, dict) else None
+    return (status if isinstance(status, dict) else {}), ""
+
+
+def _source_fingerprint(source: Mapping[str, Any]) -> tuple[str, str, str]:
+    helm = source.get("helm") or {}
+    values = helm.get("values") if isinstance(helm, Mapping) else None
+    return (
+        str(source.get("repoURL", "")),
+        str(source.get("targetRevision", "")),
+        str(values or "").strip(),
+    )
+
+
+def wait_applications_healthy(
+    deps: PackDeps,
+    specs: Sequence[PackSpec],
+    *,
+    timeout_s: int = 1800,
+    poll_s: float = 10.0,
+    sleep: Callable[[float], None] = time.sleep,
+) -> DutyResult:
+    """Poll each pack Application until a ``Succeeded`` sync of the rendered source is ``Healthy``.
+
+    ``kubectl wait --for=jsonpath={.status.health.status}=Healthy`` is not enough: a freshly
+    created Application reads ``Healthy`` for a moment before its first comparison, and on a
+    re-run the previous sync still reads ``Succeeded`` while Argo CD has not yet picked up the
+    new values — the attended run of 2026-10-31 saw ``up`` exit 0 both ways. So the last
+    operation's ``syncResult.source`` (chart, version, Helm values) must equal what this run
+    rendered. An ``InvalidSpecError`` or ``ComparisonError`` condition fails at once; a
+    ``SyncError`` or a ``Failed`` operation is left to Argo CD's own retry until the timeout.
+    """
+    attempts = max(1, int(timeout_s // poll_s))
+    for spec in specs:
+        expected = _source_fingerprint(render_application(spec)["spec"]["source"])
+        last = "not yet read"
+        for attempt in range(attempts):
+            status, problem = _application_state(deps, spec.name)
+            if status is None:
+                last = problem
+            else:
+                errors = [
+                    f"{c.get('type')}: {c.get('message', '')}"
+                    for c in status.get("conditions", [])
+                    if isinstance(c, dict) and c.get("type") in _ARGOCD_FATAL_CONDITIONS
+                ]
+                if errors:
+                    return DutyResult(
+                        ok=False,
+                        summary=f"deploy nic packs: Application {spec.name!r} refused by Argo CD: {'; '.join(errors)}",
+                    )
+                health = str(status.get("health", {}).get("status", ""))
+                operation = status.get("operationState") or {}
+                phase = str(operation.get("phase", ""))
+                message = str(operation.get("message", ""))
+                applied = operation.get("syncResult", {}).get("source") or {}
+                current = _source_fingerprint(applied) == expected
+                last = (
+                    f"health={health or '?'} sync={status.get('sync', {}).get('status', '?')} "
+                    f"phase={phase or '?'} applied-source={'current' if current else 'stale'} {message}"
+                ).strip()
+                if health == "Healthy" and phase == "Succeeded" and current:
+                    break
+            if attempt + 1 < attempts:
+                sleep(poll_s)
+        else:
+            return DutyResult(
+                ok=False,
+                summary=f"deploy nic packs: Application {spec.name!r} did not reach Healthy within {timeout_s}s: {last}",
             )
     return DutyResult(ok=True, summary="deploy nic packs: pack Applications Healthy")
 
@@ -428,6 +557,10 @@ def apply_nkp_packs(
     commit = git_commit_applications(pack_deps, paths)
     if not commit.ok:
         return commit
+    refresh_root_application(pack_deps)
+    exist = wait_applications_exist(pack_deps, specs)
+    if not exist.ok:
+        return exist
     healthy = wait_applications_healthy(pack_deps, specs)
     if not healthy.ok:
         return healthy
