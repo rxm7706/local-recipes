@@ -68,7 +68,9 @@ Parent: `spec-pyforge-steward` CAP-175
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-steward pytest src/shared/packages/pyforge-steward/tests/unit/test_preflight_budget.py -q` — expected: pass.
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass; `tests/unit/test_preflight_budget.py` is in the suite.
+
+**Manual checks (the Commands bind to the policy verify command; these are the story's own proof):**
 - `pixi run -e pyforge-guild preflight-budget` — expected: exit 0; the report lists any lane over budget.
 
 **Run before the push:**
@@ -82,6 +84,8 @@ Status: backlog
 Summary: not started.
 
 ## Spec Change Log
+
+- 2026-10-31: Commands rebound to the policy verify command (`pyforge-steward-test`) before dispatch; the story's own checks moved under Manual checks (MRS-GATE-011 otherwise).
 
 - 2026-10-27: minted from the station Dream's entry of 2026-10-27 and the operator's rulings D1–D4 of the same date.
 
