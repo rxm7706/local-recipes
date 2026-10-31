@@ -3,10 +3,18 @@ title: "118.1: steward deploy nic brings up and tears down an NKP cluster on loc
 type: 'feature'
 created: '2026-10-31'
 baseline_revision: 'b9e221eb909e01b0a7511a27220f5d16992503a8'
-status: 'in-progress'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
+deferred:
+  - summary: >-
+      Attended kind bring-up through Healthy ArgoCD apps, Keycloak sign-in, and tear-down (AC2) was not executed in this unattended run.
+    evidence: |-
+      `deploy nic validate` on the tracked config exited 0; full `up`/`down` and kubectl health checks require operator Docker, sysctl/port setup, and secrets in untracked `.env`.
+    location: >-
+      src/platform/deploy/nic/my-nebari-local.yaml
+    severity: high (unverified)
 flag:
   key: pyforge.steward.nkp_deploy
   provider: openfeature-file
@@ -89,9 +97,29 @@ Parent: `spec-pyforge-steward` CAP-176
 
 ## Auto Run Result
 
-Status: backlog
+Status: done
 
-Summary: not started.
+Summary: Added `steward deploy nic validate|up|kubeconfig|outputs|down` wrapping `nic` by subprocess with keys-backed `.env` secrets, `pyforge.steward.nkp_deploy` kill switch, tracked kind config, SelfExplainML `nic` pin (linux-64), tests, and `docs/how-to/host-nebari.md`.
+
+Files changed:
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/deploy_nic.py` — NIC duty adapter, journaling, secrets through keys
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/{cli,deploy}.py` — CLI wiring and dispatch
+- `src/shared/packages/pyforge-steward/tests/unit/test_deploy_nic.py` — unit coverage (flag, journal, subprocess mapping, refusal)
+- `src/platform/deploy/nic/my-nebari-local.yaml` — tracked kind config
+- `src/platform/config/{flags.json,flag-overlays.json}` + shipped-flag tests — `pyforge.steward.nkp_deploy`
+- `pixi.toml` / `pixi.lock` / `environment.yaml` — `nebari-infrastructure-core` on SelfExplainML (linux-64)
+- `docs/how-to/host-nebari.md` — operator runbook
+- `.gitignore` — ignore `.steward/nic-deploy.jsonl`
+
+Review: 3 findings — 2 patched (journal must stay gitignored; regenerate `environment.yaml`), 1 deferred (AC2 attended cluster). Rejected: none.
+
+Verification:
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — exit 0 (1697 + 33 tests)
+- `pytest src/shared/packages/pyforge-steward/tests/unit/test_deploy_nic.py -q` — 7 passed
+- `pyforge steward deploy nic validate -f src/platform/deploy/nic/my-nebari-local.yaml` — exit 0
+- `python scripts/spec_surface_reconcile.py` — OK
+
+Residual risk: SelfExplainML still ships `nebari-infrastructure-core` 0.14.0; floor raises when 0.17.0 publishes beside `recipes/nebari-infrastructure-core`.
 
 ## Spec Change Log
 
@@ -100,4 +128,9 @@ Summary: not started.
 
 ## Review Triage Log
 
-- (none yet)
+### 2026-10-31 — Review pass
+- verdicts: 3 findings — high 0, medium 1, low 0, false 0, maybe-false 2
+- findings:
+  - `[medium]` `[patch]` Local `.steward/nic-deploy.jsonl` from validate was tracked — added `.gitignore` entry and removed from git index.
+  - `[maybe-false]` `[defer]` AC2 attended kind cluster Healthy/sign-in/tear-down not run in unattended session — deferred with `location: src/platform/deploy/nic/my-nebari-local.yaml`.
+  - `[maybe-false]` `[patch]` `environment.yaml` not regenerated after `pixi.toml` change — exported with `pixi workspace export conda-environment -e build environment.yaml`.
