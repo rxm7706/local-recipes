@@ -21,6 +21,15 @@ packs:
     chart: nebari-nebi-pack
     version: "0.1.0"
     namespace: nebi
+    values:
+      nebariapp:
+        hostname: nebi.nebari.local
+      auth:
+        oidc:
+          # kind: pods cannot resolve *.nebari.local (NIC 0.14.0 adds no CoreDNS entry for the
+          # domain), so OIDC discovery and JWKS go to Keycloak's in-cluster Service; the token
+          # "iss" is still validated against the public issuer.
+          discoveryURL: http://keycloak-keycloakx-http.keycloak.svc.cluster.local:8080/realms/nebari
   data-science-pack:
     chart: nebari-data-science-pack
     version: "0.1.7"
@@ -28,9 +37,45 @@ packs:
     values:
       keycloak:
         hostname: keycloak.nebari.local
+        # kind: the hub's token and userinfo legs run in-cluster (split-horizon OIDC); the browser
+        # legs keep the public hostname. Without this the callback dies with
+        # `HTTP 599: Could not resolve host: keycloak.nebari.local` (attended run 2026-10-31).
+        backchannelURL: http://keycloak-keycloakx-http.keycloak.svc.cluster.local:8080
+      nebariapp:
+        landingPage:
+          # NIC 0.14.0 ships nebari-operator 0.1.0-alpha.20, whose NebariApp CRD declares
+          # landingPage.icon only; chart 0.1.7 also renders iconLight/iconDark and Argo CD's
+          # server-side apply refuses a field the schema does not declare. null drops them.
+          iconLight: null
+          iconDark: null
       sharedStorage:
+        # kind under rootless Docker cannot serve or mount NFS: the chart's transitional NFS
+        # server dies with `rpc.nfsd: Unable to access /proc/fs/nfsd` inside the node's user
+        # namespace and the kernel NFS client answers `mount.nfs: Operation not permitted`, so a
+        # spawn that mounts /shared/<group> hangs on FailedMount (attended run 2026-10-31).
+        # Flip to true on rootful Docker (keep nfsvers=3 for kind's overlayfs) or on a cluster
+        # with an RWX StorageClass (set storageClass, leave nfsServer.enabled false).
+        enabled: false
         nfsServer:
           enabled: true
+          mountOptions: ["nfsvers=3"]
       nebi:
         remote:
           enabled: true
+      rbac:
+        bootstrap:
+          # kind: NIC's realm bootstrap creates argocd-admins (admin is a member) and argocd-viewers
+          # only; the shared-mount role goes to the first so /shared/<group> has a group to mount.
+          sharedMountGroups: ["/argocd-admins"]
+      jupyterhub:
+        hub:
+          extraEnv:
+            # kind: the hub's role-gated /shared lookups derive the Keycloak admin API URL from the
+            # public issuer, which pods cannot resolve; backchannelURL does not cover it.
+            KC_REALM_API_URL: http://keycloak-keycloakx-http.keycloak.svc.cluster.local:8080/admin/realms/nebari
+        singleuser:
+          cloudMetadata:
+            # kind under rootless Docker: the z2jh `block-cloud-metadata` init container fails with
+            # `iptables: can't initialize iptables table 'filter': Table does not exist`; there is
+            # no cloud metadata server to block on a laptop (attended run 2026-10-31).
+            blockWithIptables: false

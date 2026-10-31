@@ -43,9 +43,29 @@ The kill switch is `pyforge.steward.nkp_deploy` (ON in dev, staging, and product
 Pack Applications (`nebi-pack`, then `data-science-pack`) install after a successful `up` when the
 config declares `packs:` and `pyforge.steward.nkp_packs` is ON (also ON by default). With the pack
 switch OFF, `up` stops at the NKP core. The kind profile pins `nebari-nebi-pack` 0.1.0 and
-`nebari-data-science-pack` 0.1.7 on `quay.io/nebari/charts`. Keycloak-on-kind for direct OAuth
-(hub and packs) is still an open question (NIC issue #613); record the attended outcome on
-`spec-pyforge-steward` and update this section when resolved.
+`nebari-data-science-pack` 0.1.7 on `quay.io/nebari/charts`. Each pack is one Argo CD Application
+under NIC's `nebari-apps` project (its `foundational` project admits only NIC's own namespaces and
+chart repositories), committed to the GitOps source; `up` refreshes `nebari-root`, waits for the
+Applications to exist, then for the sync of the source it rendered to be `Succeeded` and `Healthy`
+(Story 118.5). `up` on a running cluster is how a pack value changes: `nic deploy` reuses the kind
+cluster, and the pack step commits the new Applications and waits again (62–106 s on 2026-10-31).
+
+Keycloak-on-kind (NIC issue #613), answered on the attended run of 2026-10-31: direct OAuth does not
+work on kind because pods cannot resolve `*.nebari.local` (NIC 0.14.0 adds no CoreDNS entry for the
+domain); it works with split-horizon OIDC, which the kind profile carries — the data-science pack's
+`keycloak.backchannelURL` (the hub's token and userinfo legs) and `KC_REALM_API_URL` (its role-gated
+`/shared` lookups), nebi-pack's `auth.oidc.discoveryURL` (its token verifier), all pointing at
+`http://keycloak-keycloakx-http.keycloak.svc.cluster.local:8080`. NIC's operator already does the
+same for gateway-enforced apps (the landing page, Nebi): their SecurityPolicy's `issuer` and
+`tokenEndpoint` are the in-cluster URL while `authorizationEndpoint` stays public. A real cluster
+whose CoreDNS resolves the domain can drop the three values.
+
+## What the attended pack run looked like (2026-10-31, chart 0.1.7 / nebi-pack 0.1.0, operator 0.1.0-alpha.20)
+
+- Every pack value the kind profile carries was found on this run, each with its error beside it in the config: nebi-pack refuses to render without `nebariapp.hostname`; chart 0.1.7 renders `landingPage.iconLight`/`iconDark`, which the operator's NebariApp CRD does not declare and server-side apply refuses (`field not declared in schema`), so both are `null` — and a `null` only reaches Helm through `helm.values` (the apiserver drops null entries from `valuesObject`); the z2jh `block-cloud-metadata` init container fails on rootless kind (`iptables ... can't initialize iptables table 'filter'`), so `blockWithIptables: false`; the chart's transitional NFS server cannot start inside the node's user namespace (`rpc.nfsd: Unable to access /proc/fs/nfsd`) and the node's kernel NFS client answers `mount.nfs: Operation not permitted`, so `sharedStorage.enabled: false` on rootless Docker — `/shared/<group>` needs rootful Docker (keep `nfsvers=3` for kind's overlayfs) or a cluster with an RWX StorageClass.
+- Proven with those values: `up` exit 0 with both Applications `Healthy`; `https://hub.nebari.local` → Keycloak → `/hub/oauth_callback` 302 → `/hub/api/user` as `admin` (groups `/argocd-admins`); a `small-instance` server ready about 20 s after `POST /hub/spawn` (1 CPU / 2 GiB, the `nebi` init container copied the binary); the landing page's `/api/v1/services` lists JupyterHub and Nebi, both `healthy`; the pack's Keycloak bootstrap job `Complete` (it skips `view-groups`, absent in Keycloak 26.5, and assigned the shared-mount role to `/argocd-admins`, NIC's bootstrap admin group); `nebi` reports `OIDC authentication enabled`.
+- Argo CD on this cluster: a pack sync that waits for the hub Deployment while the hub crash-loops stays `Running` (no operation timeout) and blocks the next auto-sync; `kubectl patch application -n argocd data-science-pack --type merge -p '{"status":{"operationState":{"phase":"Terminating"}}}'` ends it. `nebi-pack` stays `OutOfSync` while `Healthy` on its postgres StatefulSet (server-side-apply drift), which is why `up` never waits for `Synced`.
+- Wall clock: 11:20–12:10 CDT attended, eleven `up` runs (the first core bring-up 6 min; each later config change 62–106 s); `down` after the run. Journals: `.steward/nic-deploy.jsonl`, `.steward/nkp-pack-deploy.jsonl` (chart digests for Warden).
 
 ## What the attended run looked like (2026-10-31, NIC 0.14.0, kind v1.36.1)
 
