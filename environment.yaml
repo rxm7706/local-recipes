@@ -25,3 +25,4 @@ dependencies:
 - rattler-build-conda-compat >=1.2.0,<2.0.0a0
 - pip >=26.2.1
 - uv >=0.13.0
+
