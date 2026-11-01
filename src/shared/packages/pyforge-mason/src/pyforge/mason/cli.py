@@ -88,6 +88,7 @@ import os
 import sys
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
 from . import __version__, doctor, environment, package, recipe, render
 from .errors import CfeUnresolvedError, MasonError
@@ -144,11 +145,11 @@ _PACKAGE_SHIP_HELP = (
 )
 _ENVIRONMENT_LOCK_HELP = (
     "resolve one or more dependency manifests into a single lockfile via conda-lock "
-    "(--platform comma-separated; omit for conda-lock's own default; CFE-independent)"
+    "(--platform repeatable and/or comma-separated; omit for conda-lock's own default; CFE-independent)"
 )
 _ENVIRONMENT_CHECK_HELP = (
     "check whether an existing lockfile is stale relative to one or more manifests via "
-    "conda-lock (--platform comma-separated; pass the same platforms the lockfile was "
+    "conda-lock (--platform repeatable and/or comma-separated; pass the same platforms the lockfile was "
     "locked with; exit code is non-zero when the lockfile is stale OR the check itself "
     "failed; CFE-independent)"
 )
@@ -434,6 +435,35 @@ def _build_global_flags_parser() -> argparse.ArgumentParser:
     return parent
 
 
+class _StoreOnceAction(argparse.Action):
+    """A plain store that refuses a second occurrence (Story 4.5, MAS-D-C3).
+
+    `package ship --to` and the `package --ship` alias name an outward ship's
+    targets. A plain store let a repeated flag silently keep only its last
+    value, narrowing the ship with no warning; appending would widen it
+    instead. Either way a repeat is a mistake, so it is an argparse usage
+    error naming the flag (exit 2), raised during parsing -- before anything
+    is built, checked or shipped. Every target goes in ONE comma-separated
+    value. Relies on the flag's own default being `None` (both registrations
+    in `_add_ship_flags` use it), so any earlier value -- `""` included --
+    counts as the first occurrence.
+    """
+
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: str | Sequence[Any] | None,
+        option_string: str | None = None,
+    ) -> None:
+        if getattr(namespace, self.dest, None) is not None:
+            raise argparse.ArgumentError(
+                self,
+                "may be given only once -- name every target in one comma-separated value (e.g. pypi-test,pypi)",
+            )
+        setattr(namespace, self.dest, values)
+
+
 def _add_ship_flags(parser: argparse.ArgumentParser, *, targets_flag: str) -> None:
     """Register `ship`'s four flags onto `parser` (Story 3.9, FR-16, FR-24,
     FR-50, D-12): `--target`, `--yes`, `--recipe-path`, and one flag named
@@ -483,6 +513,10 @@ def _add_ship_flags(parser: argparse.ArgumentParser, *, targets_flag: str) -> No
     nothing for a missing value to clobber), and `--ship` is registered
     exactly ONCE, only on the noun parser, so there is no second
     registration for its `default=None` to ever disagree with.
+
+    Story 4.5: both targets flags use `_StoreOnceAction`, so a repeated
+    `--to`/`--ship` is a usage error rather than a silent drop of every
+    target but the last.
     """
     parser.add_argument(
         "--target",
@@ -507,16 +541,19 @@ def _add_ship_flags(parser: argparse.ArgumentParser, *, targets_flag: str) -> No
     if targets_flag == "--to":
         parser.add_argument(
             "--to",
+            action=_StoreOnceAction,
             required=True,
             metavar="TARGETS",
-            help="comma-separated ship targets: pypi, pypi-test, conda-forge, channel:<name>",
+            help="comma-separated ship targets: pypi, pypi-test, conda-forge, channel:<name> (give the flag once)",
         )
     else:
         parser.add_argument(
             targets_flag,
+            action=_StoreOnceAction,
             default=None,
             metavar="TARGETS",
-            help="comma-separated ship targets -- same vocabulary as `package ship --to` (D-12 bare-noun alias)",
+            help="comma-separated ship targets -- same vocabulary as `package ship --to` (D-12 bare-noun "
+            "alias; give the flag once)",
         )
 
 
@@ -857,11 +894,12 @@ def build_parser() -> argparse.ArgumentParser:
     # (parents=[global_flags], for the same "a global flag given after the
     # verb and its positionals" reason documented on that registration
     # above). `--output`/`-o` mirrors `recipe new --output`'s exact
-    # required-flag shape (Story 2.4). `--platform` is optional and takes a
-    # single comma-separated string, mirroring `--to`'s established
-    # "repeatable via comma-separation" idiom -- no `action="append"`
-    # precedent exists anywhere in this file (spec Always boundary);
-    # `environment.lock()` does the splitting, not this registration.
+    # required-flag shape (Story 2.4). `--platform` is optional and takes
+    # both forms (Story 4.5, CAP-4 "platform targeting is repeatable"): a
+    # repeated flag and comma-separated values, mixed freely. It is
+    # `action="append"`; `main()` joins the values in order
+    # (`_join_platform_flags`) into the one comma-separated string
+    # `environment.lock()` splits, so a repeat never drops a platform.
     #
     # Story 4.2: `manifest_path` is `nargs="*"` -- when the caller gives
     # none, `main()`'s own dispatch branch below calls `environment.
@@ -889,10 +927,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     environment_lock_parser.add_argument(
         "--platform",
+        action="append",
         metavar="PLATFORMS",
         default=None,
-        help="comma-separated platforms to lock for (e.g. linux-64,osx-arm64); omit to let "
-        "conda-lock apply its own default",
+        help="platforms to lock for: repeat the flag, give comma-separated values, or both "
+        "(e.g. --platform linux-64 --platform osx-arm64, or --platform linux-64,osx-arm64); "
+        "omit to let conda-lock apply its own default",
     )
 
     # Story 4.4: mason environment check <manifest_path>... --lockfile/-l PATH
@@ -906,9 +946,9 @@ def build_parser() -> argparse.ArgumentParser:
     # deliberately not `--output`/`-o` -- nothing is written to it, and that
     # name would misleadingly imply a write, spec Always boundary); there is
     # no `--output` flag on this verb at all. `--platform` mirrors `lock`'s
-    # own identical single comma-separated-flag idiom exactly --
-    # `environment.check()` does the splitting, not this registration, same
-    # as `lock`'s own.
+    # own registration exactly (Story 4.5: repeated and comma forms, joined
+    # by the same `_join_platform_flags`) -- `environment.check()` does the
+    # splitting, same as `lock`'s own.
     #
     # Story 4.2: `manifest_path` is `nargs="*"`, same discovery fallback as
     # `lock` above -- see that registration's comment for the rationale.
@@ -934,9 +974,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     environment_check_parser.add_argument(
         "--platform",
+        action="append",
         metavar="PLATFORMS",
         default=None,
-        help="comma-separated platforms to check (e.g. linux-64,osx-arm64); pass the same "
+        help="platforms to check: repeat the flag, give comma-separated values, or both "
+        "(e.g. --platform linux-64 --platform osx-arm64, or --platform linux-64,osx-arm64); pass the same "
         "platforms the lockfile was locked with -- omitting this delegates to conda-lock's "
         "own default (linux-64,osx-arm64,osx-64,win-64 when the manifests name none), which "
         "reports a narrower lockfile as stale",
@@ -947,6 +989,21 @@ def build_parser() -> argparse.ArgumentParser:
     _noun_verbs["environment"].metavar = "{" + ",".join(_noun_verbs["environment"].choices) + "}"
 
     return parser
+
+
+def _join_platform_flags(values: Sequence[str] | None) -> str | None:
+    """Join every `--platform` value, in the order given, into the one
+    comma-separated string `environment.lock()`/`environment.check()` parse
+    (Story 4.5). Both verbs register `--platform` with `action="append"`,
+    so `--platform linux-64 --platform osx-arm64` and `--platform
+    linux-64,osx-arm64` reach the use-case layer as the same
+    `"linux-64,osx-arm64"`, and a mix (`linux-64,osx-arm64` then `win-64`)
+    keeps all three. The split, strip and empty-token drop stay in
+    `environment.py` -- one parser for both verbs, no platform vocabulary
+    in Mason (AD-6). `None` (flag omitted) stays `None`, so conda-lock's own
+    default applies, as before.
+    """
+    return None if values is None else ",".join(values)
 
 
 def _dispatch_package_ship(ns: argparse.Namespace, *, raw_targets: str) -> int:
@@ -1511,7 +1568,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             if not manifest_paths:
                 manifest_paths = environment.discover_manifests(Path.cwd())
                 print(f"discovered manifests: {', '.join(manifest_paths)}", file=sys.stderr)
-            result = environment.lock(manifest_paths, ns.output, platforms=ns.platform)
+            result = environment.lock(manifest_paths, ns.output, platforms=_join_platform_flags(ns.platform))
             # A non-zero delegated engine returncode is DATA on `result`,
             # never raised (AD-4): the JSON envelope's `status` stays "ok"
             # and carries the returncode, while the exit code projects it --
@@ -1568,7 +1625,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             if not manifest_paths:
                 manifest_paths = environment.discover_manifests(Path.cwd())
                 print(f"discovered manifests: {', '.join(manifest_paths)}", file=sys.stderr)
-            result = environment.check(ns.lockfile, manifest_paths, platforms=ns.platform)
+            result = environment.check(ns.lockfile, manifest_paths, platforms=_join_platform_flags(ns.platform))
             render.write(
                 fmt,
                 sys.stdout,

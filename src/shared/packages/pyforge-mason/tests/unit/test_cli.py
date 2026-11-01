@@ -156,6 +156,7 @@ from pyforge.mason.cli import (
 )
 from pyforge.mason.doctor import DoctorReport
 from pyforge.mason.engines import EngineStatus
+from pyforge.mason.engines.condalock import CondaLockCheckResult, CondaLockResult
 from pyforge.mason.errors import (
     CfeImportFloorError,
     CfeTimeoutError,
@@ -3671,6 +3672,51 @@ def test_package_ship_combined_with_an_explicit_verb_is_a_usage_error(argv, caps
     mock_build.assert_not_called()
 
 
+# --- Story 4.5: a repeated ship-targets flag is refused, never appended -----
+
+
+@pytest.mark.parametrize(
+    ("argv", "flag"),
+    [
+        pytest.param(["package", "ship", "--to", "pypi-test", "--to", "pypi"], "--to", id="to"),
+        pytest.param(["package", "ship", "--to", "pypi-test", "--to", "pypi", "--yes"], "--to", id="to-yes"),
+        pytest.param(["package", "ship", "--to=pypi-test", "--to=pypi"], "--to", id="to-equals"),
+        pytest.param(["package", "--ship", "pypi-test", "--ship", "pypi"], "--ship", id="ship-alias"),
+        pytest.param(["package", "--ship", "pypi-test", "--ship", "pypi", "--yes"], "--ship", id="ship-alias-yes"),
+    ],
+)
+def test_package_ship_repeated_targets_flag_is_a_usage_error(argv, flag, capsys):
+    """MAS-D-C3's twin on an outward verb: `--to`/`--ship` used to be a plain
+    store, so a second occurrence silently dropped every target but the
+    last. An outward ship takes its targets from ONE flag only -- a repeat is
+    an argparse usage error naming the flag, before anything is built,
+    checked or shipped."""
+    with patch("pyforge.mason.cli.package.ship") as mock_ship, patch("pyforge.mason.cli.package.build") as mock_build:
+        rc = main(argv)
+
+    assert rc == EXIT_USAGE
+    err = capsys.readouterr().err
+    assert f"argument {flag}:" in err
+    assert "only once" in err
+    mock_ship.assert_not_called()
+    mock_build.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        pytest.param(["package", "ship", "--to", "pypi-test,pypi"], id="to"),
+        pytest.param(["package", "--ship", "pypi-test,pypi"], id="ship-alias"),
+    ],
+)
+def test_package_ship_single_targets_flag_still_names_every_target(argv):
+    """Story 4.5: refusing a repeat leaves the one-flag comma form intact."""
+    with patch("pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS) as mock_ship:
+        assert main(argv) == EXIT_OK
+
+    assert mock_ship.call_args.args == ("pypi-test,pypi",)
+
+
 # --- Story 4.3: `environment lock` verb dispatch -----------------------------
 
 _FIXED_LOCK_RESULT = LockResult(
@@ -3736,16 +3782,30 @@ def test_environment_lock_happy_path_json_mode(capsys):
     assert doc["data"] == _json_roundtripped(_FIXED_LOCK_RESULT)
 
 
-def test_environment_lock_passes_platform_flag_through_unparsed(capsys):
+# Story 4.5: `--platform` repeats (`action="append"`); `cli.py` joins every
+# value, in the order given, into the ONE comma-separated string
+# `environment.lock()`/`environment.check()` already parse -- so the comma
+# form passes through unchanged and the repeated and mixed forms flatten to it.
+_PLATFORM_FLAG_FLATTENING = [
+    pytest.param(["--platform", "linux-64,osx-arm64"], "linux-64,osx-arm64", id="comma"),
+    pytest.param(["--platform", "linux-64", "--platform", "osx-arm64"], "linux-64,osx-arm64", id="repeated"),
+    pytest.param(
+        ["--platform", "linux-64,osx-arm64", "--platform", "win-64"],
+        "linux-64,osx-arm64,win-64",
+        id="mixed",
+    ),
+]
+
+
+@pytest.mark.parametrize(("platform_argv", "expected"), _PLATFORM_FLAG_FLATTENING)
+def test_environment_lock_passes_platform_flag_through_unparsed(platform_argv, expected, capsys):
     with patch(
         "pyforge.mason.cli.environment.lock",
         return_value=_FIXED_LOCK_RESULT,
     ) as mock_lock:
-        main(
-            ["environment", "lock", "environment.yml", "-o", "lock.yml", "--platform", "linux-64,osx-arm64"],
-        )
+        main(["environment", "lock", "environment.yml", "-o", "lock.yml", *platform_argv])
 
-    assert mock_lock.call_args.kwargs["platforms"] == "linux-64,osx-arm64"
+    assert mock_lock.call_args.kwargs["platforms"] == expected
 
 
 # --- Story 4.2: `environment lock` manifest-discovery dispatch --------------
@@ -4044,16 +4104,16 @@ def test_environment_check_stale_result_returns_exit_failed_json_mode(capsys):
     assert doc["data"]["stale"] is True
 
 
-def test_environment_check_passes_platform_flag_through_unparsed(capsys):
+@pytest.mark.parametrize(("platform_argv", "expected"), _PLATFORM_FLAG_FLATTENING)
+def test_environment_check_passes_platform_flag_through_unparsed(platform_argv, expected, capsys):
+    """Story 4.5: the same flattening rule as `environment lock` above."""
     with patch(
         "pyforge.mason.cli.environment.check",
         return_value=_FIXED_CHECK_RESULT_CURRENT,
     ) as mock_check:
-        main(
-            ["environment", "check", "environment.yml", "-l", "lock.yml", "--platform", "linux-64,osx-arm64"],
-        )
+        main(["environment", "check", "environment.yml", "-l", "lock.yml", *platform_argv])
 
-    assert mock_check.call_args.kwargs["platforms"] == "linux-64,osx-arm64"
+    assert mock_check.call_args.kwargs["platforms"] == expected
 
 
 def test_environment_check_renders_populated_platforms(capsys):
@@ -4310,3 +4370,86 @@ def test_environment_check_stale_and_nonzero_returncode_together_still_exit_fail
     doc = json.loads(capsys.readouterr().out)
     assert doc["data"]["stale"] is True
     assert doc["data"]["returncode"] == 1
+
+
+# --- Story 4.5: a repeated `--platform` keeps every value -------------------
+#
+# End to end through the REAL `environment.lock()`/`environment.check()`: only
+# the conda-lock adapter is mocked (at its `environment.py` call site), so
+# these pin what the engine receives and what the envelope reports, not the
+# shape `cli.py` hands the use-case layer (the `_passes_platform_flag_through_
+# unparsed` pair above pins that).
+
+_ENGINE_LOCK_RESULT = CondaLockResult(
+    returncode=0,
+    lockfile_path="lock.yml",
+    engine_name="conda-lock",
+    engine_version="4.0.2",
+    stdout="",
+)
+
+_ENGINE_CHECK_RESULT = CondaLockCheckResult(
+    stale=False,
+    returncode=0,
+    engine_name="conda-lock",
+    engine_version="4.0.2",
+    stdout="",
+)
+
+_ENVIRONMENT_VERBS = [
+    pytest.param(
+        ["environment", "lock", "environment.yml", "-o", "lock.yml"],
+        "pyforge.mason.environment.condalock.lock",
+        _ENGINE_LOCK_RESULT,
+        id="lock",
+    ),
+    pytest.param(
+        ["environment", "check", "environment.yml", "-l", "lock.yml"],
+        "pyforge.mason.environment.condalock.check",
+        _ENGINE_CHECK_RESULT,
+        id="check",
+    ),
+]
+
+_PLATFORM_FORMS = [
+    pytest.param(["--platform", "linux-64", "--platform", "osx-arm64"], ("linux-64", "osx-arm64"), id="repeated"),
+    pytest.param(["--platform", "linux-64,osx-arm64"], ("linux-64", "osx-arm64"), id="comma"),
+    pytest.param(
+        ["--platform", "linux-64,osx-arm64", "--platform", "win-64"],
+        ("linux-64", "osx-arm64", "win-64"),
+        id="mixed",
+    ),
+    pytest.param(["--platform", "osx-arm64", "--platform", "linux-64"], ("osx-arm64", "linux-64"), id="order-kept"),
+    pytest.param(["--platform", "linux-64,,"], ("linux-64",), id="empty-tokens"),
+    pytest.param([], (), id="no-flag"),
+]
+
+
+@pytest.mark.parametrize(("verb_argv", "engine_target", "engine_result"), _ENVIRONMENT_VERBS)
+@pytest.mark.parametrize(("platform_argv", "expected"), _PLATFORM_FORMS)
+def test_environment_engine_receives_every_platform_in_order(
+    verb_argv, engine_target, engine_result, platform_argv, expected, capsys
+):
+    """ACs 1-4: `lock` and `check` share one flattening rule -- the engine
+    gets every platform, in the order given, and the JSON envelope names
+    them all; no flag means no platform list (conda-lock's own default)."""
+    with patch(engine_target, return_value=engine_result) as mock_engine:
+        rc = main([*verb_argv, *platform_argv, "--format", "json"])
+
+    assert rc == EXIT_OK
+    mock_engine.assert_called_once()
+    assert mock_engine.call_args.kwargs["platforms"] == expected
+    doc = json.loads(capsys.readouterr().out)
+    assert doc["data"]["platforms"] == list(expected)
+
+
+@pytest.mark.parametrize(("verb_argv", "engine_target", "engine_result"), _ENVIRONMENT_VERBS)
+def test_environment_text_output_names_every_repeated_platform(verb_argv, engine_target, engine_result, capsys):
+    """AC 1: the rendered text output names both platforms of a repeated flag."""
+    with patch(engine_target, return_value=engine_result):
+        rc = main([*verb_argv, "--platform", "linux-64", "--platform", "osx-arm64"])
+
+    assert rc == EXIT_OK
+    out = capsys.readouterr().out
+    assert "linux-64" in out
+    assert "osx-arm64" in out

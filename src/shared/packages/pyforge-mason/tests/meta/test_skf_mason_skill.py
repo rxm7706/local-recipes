@@ -1,7 +1,14 @@
-"""Story 19.1: SKF domain skill compiled from the mason station package."""
+"""Story 19.1: SKF domain skill compiled from the mason station package.
+
+Story 19.6 (spec-pyforge-mason CAP-29) adds grammar coverage: every verb
+``build_parser()`` registers appears in the station ``SKILL.md``. A miss is
+fixed by regenerating the skill with ``skf-update-skill`` from
+``.claude/skills/pyforge-mason/skill-brief.yaml``, never by hand (canopy:AD-17).
+"""
 
 from __future__ import annotations
 
+import argparse
 import json
 import subprocess
 import sys
@@ -13,6 +20,8 @@ from pyforge.testing_kit import (
     pyforge_import_offenders,
     unsanctioned_commits,
 )
+
+from pyforge.mason.cli import build_parser
 
 STATION = "mason"
 SKILL_NAME = f"pyforge-{STATION}"
@@ -110,6 +119,55 @@ def test_compiled_skill_is_agentskills_compliant_with_provenance():
     assert "pyforge mason doctor" in body
     assert "/stations/mason/mcp" in body
     assert "conda-forge-expert" in body
+
+
+VERB_NOUNS = ("recipe", "package", "environment")
+
+
+def _subparsers(parser: argparse.ArgumentParser) -> argparse._SubParsersAction | None:
+    for action in parser._actions:
+        if isinstance(action, argparse._SubParsersAction):
+            return action
+    return None
+
+
+def registered_verbs(parser: argparse.ArgumentParser) -> list[tuple[str, str]]:
+    """Every ``(noun, verb)`` pair the parser registers, in registration order."""
+    nouns = _subparsers(parser)
+    assert nouns is not None, "build_parser() registers no nouns"
+    pairs: list[tuple[str, str]] = []
+    for noun, noun_parser in nouns.choices.items():
+        verbs = _subparsers(noun_parser)
+        if verbs is not None:
+            pairs.extend((noun, verb) for verb in verbs.choices)
+    return pairs
+
+
+def verbs_missing_from(skill_text: str, pairs: list[tuple[str, str]]) -> list[str]:
+    return [f"{noun} {verb}" for noun, verb in pairs if f"{noun} {verb}" not in skill_text]
+
+
+def test_station_skill_documents_every_registered_verb():
+    """Story 19.6 (CAP-29): the station skill documents the whole `mason` grammar."""
+    pairs = registered_verbs(build_parser())
+    assert {noun for noun, _ in pairs} == set(VERB_NOUNS), pairs
+    body = (_skill_package(_repo_root()) / "SKILL.md").read_text(encoding="utf-8")
+    missing = verbs_missing_from(body, pairs)
+    assert not missing, (
+        f"{SKILL_NAME} SKILL.md does not document {missing}; regenerate it with skf-update-skill from "
+        f".claude/skills/{SKILL_NAME}/skill-brief.yaml (never hand-edit the compiled skill)"
+    )
+
+
+def test_grammar_coverage_check_is_not_vacuous():
+    parser = build_parser()
+    nouns = _subparsers(parser)
+    assert nouns is not None
+    recipe_verbs = _subparsers(nouns.choices["recipe"])
+    assert recipe_verbs is not None
+    recipe_verbs.add_parser("planted-verb")
+    body = (_skill_package(_repo_root()) / "SKILL.md").read_text(encoding="utf-8")
+    assert verbs_missing_from(body, registered_verbs(parser)) == ["recipe planted-verb"]
 
 
 def test_context_files_not_hand_edited():
