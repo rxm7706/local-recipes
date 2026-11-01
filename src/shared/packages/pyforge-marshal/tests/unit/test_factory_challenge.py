@@ -302,12 +302,6 @@ def test_compose_carries_the_block_and_drops_a_malformed_one() -> None:
     assert effective.challenge.value == {} and any(f.code == "MRS-POLICY-002" for f in findings)
 
 
-def test_the_repo_default_ships_no_block() -> None:
-    root = Path(__file__).resolve().parents[6]
-    text = (root / "_bmad-output/policy-defaults.toml").read_text(encoding="utf-8")
-    assert "[challenge]" not in [line.strip() for line in text.splitlines()]
-
-
 # --- 113.3: the dispatch hook (pyforge.marshal.egm_dispatch_readiness) ---------------------------------
 
 

@@ -54,7 +54,7 @@ Type / Effort / Deps: feature / M / 113.1.
 - **AC4 — Refusals at render.** `model` equal to the dispatching session's model, a `reviewers` entry naming `structural` or `style`, or a `standards` entry under EGM's `document_standards/`, refuses at policy render with the usage code and a reason.
 - **AC5 — OFF.** With the key off the block is ignored at composition and `factory challenge` refuses with the usage code.
 - **AC6 — Both states.** One test runs the key ON and OFF (`src/shared/packages/pyforge-marshal/tests/unit/test_factory_challenge.py`, `test_pyforge_marshal_egm_policy_block`); the same file pins AC3 and AC4.
-- **AC7 — Defaults ship off.** `_bmad-output/policy-defaults.toml` carries no `[challenge]` block; `marshal-policy.toml` carries a documenting comment and no block.
+- **AC7 — Defaults ship off.** `_bmad-output/policy-defaults.toml` carries no `[challenge]` block; `marshal-policy.toml` carries a documenting comment and no block. Checked at review, not by a live-tree test: a marshal test reading `_bmad-output/policy-defaults.toml` would need that path in `pyforge-station-tests.yml`'s marshal filters (steward's trigger-map check, 2026-11-01).
 
 ## Boundaries & Constraints
 

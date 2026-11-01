@@ -4300,7 +4300,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_durability.py": "f94ef466c03174e00805e82a774e9f48251d44bb",
    "src/shared/packages/pyforge-marshal/tests/unit/test_egress.py": "3490ecbf7dc375b21b2fcffe4248cd3dba51624c",
    "src/shared/packages/pyforge-marshal/tests/unit/test_engine_preserve.py": "0fffb14f723bd0159aa21ffe9572d1b9c237ad71",
-   "src/shared/packages/pyforge-marshal/tests/unit/test_factory_challenge.py": "4263a51de9c741cb5c57b6194ac17fbc24794519",
+   "src/shared/packages/pyforge-marshal/tests/unit/test_factory_challenge.py": "16e9766095a5a42426293b448048562f333efb4c",
    "src/shared/packages/pyforge-marshal/tests/unit/test_fold.py": "6d7c764d05006443c6b80d2658c395948ae92b30",
    "src/shared/packages/pyforge-marshal/tests/unit/test_forge_gh.py": "8498472ba286099043164d76c4a85a74519510b7",
    "src/shared/packages/pyforge-marshal/tests/unit/test_fs_local.py": "8582a03e8cc807fcfac3082bc00fa270dbb85157",
@@ -4435,7 +4435,7 @@
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e",
    "tests/scripts/test_tea_playwright_check.py": "be266df25acac99bc9a8a317e4e3f4f68374844b"
   },
-  "memlog": "85005785501264b588ae7bd45775d2b2357618a1"
+  "memlog": "3362640bc89b98c71f3182eb7383d8bcf3ee619f"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
