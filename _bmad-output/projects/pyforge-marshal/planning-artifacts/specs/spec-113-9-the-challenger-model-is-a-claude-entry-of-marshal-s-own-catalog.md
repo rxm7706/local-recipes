@@ -148,7 +148,7 @@ Parent: `spec-pyforge-marshal` CAP-299 (a fix; no CAP minted)
 
 ## Auto Run Result
 
-Status: in-review (2026-11-01). The code meets AC1, AC2, AC3, AC4 (as amended 2026-11-01), AC6 and AC7. AC5 belongs
+Status: done (independent review passed 2026-11-01; see Review Triage Log)
 to the session owner's re-derive phase (`bmad-spec`, the cascade re-stamp and the scoped stamp).
 
 **The ruling (2026-11-01).** The session owner answered the Ask-first question below with option 2, under the

@@ -227,7 +227,7 @@ Parent: spec-pyforge-doctor CAP-91
 
 ## Auto Run Result
 
-Status: in-review (built in-PR on `egm-audit-2026-11`, 2026-11-01; nothing committed, staged or stamped by the build).
+Status: done (independent review passed 2026-11-01; see Review Triage Log)
 
 **What changed**
 

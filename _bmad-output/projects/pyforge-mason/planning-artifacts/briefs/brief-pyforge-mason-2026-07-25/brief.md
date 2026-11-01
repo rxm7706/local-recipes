@@ -2,7 +2,7 @@
 title: "Product Brief: Mason (pyforge-mason)"
 status: draft
 created: 2026-07-25
-updated: 2026-08-26
+updated: 2026-11-01
 project: pyforge-mason
 dream: docs/dreams/packaging-factory.md
 adopted_kernel: _bmad-output/projects/local-recipes/planning-artifacts/specs/spec-packaging-factory/SPEC.md
@@ -281,6 +281,38 @@ gate, machine-checked recipe knowledge, the pixi base-layer convention, workflow
 air-gap contract socket, the build-engine hook, and the station persona + `/stations/mason/`
 portal slice) — the station is more than the CLI this brief pitched, and the brief remains the
 record of the CLI's own pitch.
+
+## Currency reconciliation — 2026-11-01
+
+*Trigger: the chain-currency `research→brief` edge. `research/egm-audit-2026-11-01.md` landed on
+2026-11-01: the residue of the EGM fleet audit (marshal Story 113.7, `spec-pyforge-marshal:CAP-302`).*
+
+**What the research carries.** Fresh-context reviewers read CAP-29 and CAP-35 (the mint stage) and
+Epics 19 and 25 (the decompose stage): 30 findings, 23 accepted, 7 rejected, none deferred (mint 18:
+16 accepted, 2 rejected; decompose 12: 7 accepted, 5 rejected). Three rules-stage findings on the
+mason skills' `--yes` wording (RUL-Z6, RUL-D1, RUL-C6) were accepted onto this station's Spec too.
+
+**What moved upstream.**
+- `spec-pyforge-mason` re-derived CAP-29 and CAP-35 on 2026-11-01; no CAP was added, dropped or
+  renumbered. CAP-29: Mason's skill tier is six skills, five of its own plus `conda-forge-expert`,
+  and its success names `pyforge-mason-test` and the widened skill-tier meta-tests, with no skill
+  count or version pinned. CAP-35: the scope comes from one named atlas query and is compared to it,
+  the published version is the atlas's `latest_conda_version` within `<atlas_max_age_d>`, and every
+  recipe ends in the ruled outcome set, with G95 a local end state. CFE diff-apply regeneration and
+  platform expansion left CAP-35 by operator ruling 2026-11-01. Open Question 14 records three gate
+  results no ruling names.
+- Fix stories: 4.5 (a repeated `--platform` keeps every value; a repeated `package ship --to` is a
+  usage error) and 19.6 (the skill meta-tests scan every skill file, G-id and CLI verb) are done;
+  25.17 (Epic 25's build records) and 25.18 (Wave A's residue) are at backlog.
+- The `pyforge-mason` and `mason-package` skills now say `--yes` is outward work, run only on the
+  operator's explicit ask.
+
+**What this brief keeps.** The CLI's pitch stands: three verb families, dual-ship with asymmetric
+receipts, and every recipe judgement delegated to CFE. The audit touched the skill tier and the
+feedstock campaign, which grew past this brief under other contracts (above), and one CLI fact:
+`mason environment lock|check` now takes `--platform` repeated as well as comma-separated. No pitch
+claim, success criterion or open question here moves, and no architecture decision moved.
+**Content changed:** this section and `updated:`.
 
 ---
 

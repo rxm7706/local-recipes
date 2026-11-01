@@ -2,7 +2,7 @@
 title: 'Product Brief: Atlas (pyforge-atlas)'
 status: complete
 created: 2026-07-25
-updated: "2026-08-26"
+updated: "2026-11-01"
 inputs:
   - 'docs/dreams/pyforge-atlas.md'
   - 'docs/dreams/pyforge-charter.md § 3 Atlas'
@@ -13,6 +13,7 @@ inputs:
   - '_bmad-output/projects/pyforge-atlas/planning-artifacts/research/technical-kedro-dagster-duckdb-stack-currency-research-2026-07-25.md'
   - '_bmad-output/projects/pyforge-atlas/planning-artifacts/research/technical-atlas-post-ship-debt-and-cross-station-integration-research-2026-08-08.md  # folded in 2026-08-26'
   - '_bmad-output/projects/pyforge-atlas/planning-artifacts/research/technical-kedro-ecosystem-and-stack-currency-research-2026-08-08.md  # folded in 2026-08-26'
+  - '_bmad-output/projects/pyforge-atlas/planning-artifacts/research/egm-audit-2026-11-01.md  # folded in 2026-11-01'
   - 'src/shared/packages/pyforge-atlas/ (shipped package — README.md, pyproject.toml, tests/)'
 note: 'RETROSPECTIVE brief — Atlas shipped 2026-07-18 (32/32 stories, PRs #58-#105) before the factory adopted the research-first convention (2026-07-25 campaign). This brief backfills the missing product-brief tier and describes what was actually built and why it was worth building, grounded in the real, shipped evidence — it is not a pre-build planning input.'
 ---
@@ -305,6 +306,35 @@ instead of a vibes-based watch. `kedro-mcp` staying non-load-bearing is vindicat
 archived planning records. The unifying-strategy Spec names their revival an
 explicit non-goal ("Not a lakehouse product or Unity / Wasm satellite revival"), so
 neither satellite is pending work of this station.
+
+## Currency reconciliation — 2026-11-01
+
+*Trigger: `research→brief`. The research file `research/egm-audit-2026-11-01.md` is
+newer than this brief.* It is the residue of the one-time EGM fleet audit (marshal
+Story 113.7, `spec-pyforge-marshal:CAP-302`). The audit read CAP-64..CAP-69 and Epics
+34–37 and raised 30 findings: 18 at the mint stage and 12 at the decompose stage.
+The operator accepted 23, rejected 6 and deferred 1. What moved upstream:
+
+- **The Spec re-derived six capabilities on 2026-11-01** (the `.memlog.md` capability
+  entries of that date). CAP-64: a plain run is `__default__`, each public source's
+  floor is a row in `live-sources.md`, and the network-blocked run is a second run over
+  a filled root. CAP-65: five registries are batched, and a plain run fills GitLab,
+  Codeberg and the registries. CAP-66: the Basilisk population is ≈ the distinct conda
+  names. CAP-67: the `identity_source` values are named. CAP-68: stays deferred, because
+  no steward story owns the export it reads (`DW-steward-egm-2026-11-1`). CAP-69: the 28
+  boards are listed by page id. A `glossary.md` companion was added. No CAP was added,
+  removed or renumbered.
+- **Three fix stories were minted and are done:** 34.14 (a plain run on a fresh data
+  root exits 0; closes `DW-atlas-37-2-1`), 34.15 (the three core sources keep last-good
+  when the network is refused) and 35.5 (the legacy VCS branch honours the
+  credentialed switch).
+- **What it changes for this brief:** the problem, the users and the success framing
+  hold as written. The audit adds one fact this brief predates: a plain run now fills
+  the public datasets in-package on a fresh data root, and keeps last-good when
+  offline. Credentialed sources stay opt-in and attended.
+  The estate source stays deferred.
+- **Architecture:** the spine's reconciliation of the same date amends AD-3's as-built
+  pipeline count for Story 34.14. No AD rule moves.
 
 ---
 

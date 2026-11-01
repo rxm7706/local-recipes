@@ -792,9 +792,15 @@ Folded topic Dreams: [[artifactory-download-intelligence]], [[atlas-kedro-catalo
   spec-pyforge-marshal:CAP-302) read CAP-64..CAP-69 and Epics 34-37: 30 findings, 23 accepted, 6 rejected, 1
   deferred; residue `_bmad-output/projects/pyforge-atlas/planning-artifacts/research/egm-audit-2026-11-01.md`.
   Most accepted findings are Spec text the later stories outgrew; the CAPs re-derive in the 113.7 PR. Fixed in
-  the same PR: Story 34.14 (a plain run on a fresh data root exits 0, CAP-64) and Story 35.5 (the legacy VCS
-  branch honours the credentialed switch, CAP-65). Still open: CAP-68's missing steward export owner, deferred
-  with a steward deferred-work row.
+  the same PR: Story 34.14 (a plain run on a fresh data root exits 0, CAP-64), Story 34.15 (the three core
+  sources keep last-good when the network is refused, CAP-64) and Story 35.5 (the legacy VCS branch honours the
+  credentialed switch, CAP-65). **Ruled** (operator, 2026-11-01): CAP-64's parity tolerance is a per-row floor,
+  the story-close measurement against the same-day legacy figure, recorded in the Spec's `live-sources.md`
+  companion; this amends the 2026-10-18 entry's "recorded per story". Also realized since that entry: Story 36.1
+  (the Basilisk population runs, CAP-66). The 2026-10-18 probe found the advisory endpoints answer 401
+  (`www-authenticate: Bearer`), so the advisory drivers send a token from `PYFORGE_ATLAS_BASILISK_TOKEN` only
+  under the credentialed opt-in, and the advisories stay stale until the operator adds one (`DW-atlas-36-1-1`).
+  Still open: CAP-68's missing steward export owner, deferred with a steward deferred-work row.
 
 ## 2026-10-26 — An enterprise Artifactory mirror's own download telemetry joins the universe picture (folded from artifactory-download-intelligence)
 

@@ -174,7 +174,7 @@ Parent: spec-pyforge-doctor CAP-89
 
 ## Auto Run Result
 
-Status: in-review (implemented 2026-11-01 in the EGM audit landing worktree, branch `egm-audit-2026-11`; not
+Status: done (independent review passed 2026-11-01; see Review Triage Log)
 committed, not stamped — the session owner commits, reconciles co-governors and stamps).
 
 **What changed**

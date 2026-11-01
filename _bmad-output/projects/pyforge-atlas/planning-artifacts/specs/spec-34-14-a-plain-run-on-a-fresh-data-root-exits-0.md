@@ -142,7 +142,7 @@ fail; revert.
 
 ## Auto Run Result
 
-Status: in-review (resumed 2026-11-01 in the landing worktree `egm-audit-2026-11` after the session owner's ruling
+Status: done (independent review passed 2026-11-01; see Review Triage Log)
 moved AC3 to Story 34.15; not committed). AC3 is that story's; every other AC is met here.
 
 **What changed:**

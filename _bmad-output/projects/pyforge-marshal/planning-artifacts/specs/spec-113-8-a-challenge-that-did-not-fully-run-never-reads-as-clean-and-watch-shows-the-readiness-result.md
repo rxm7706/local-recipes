@@ -148,7 +148,7 @@ Parent: `spec-pyforge-marshal` CAP-298, CAP-300 and CAP-302 (a fix; no CAP minte
 
 ## Auto Run Result
 
-Status: in-review
+Status: done (independent review passed 2026-11-01; see Review Triage Log)
 
 Summary: implemented 2026-11-01 in the Story 113.7 landing worktree (`egm-audit-2026-11`); uncommitted, for the
 session owner to land.

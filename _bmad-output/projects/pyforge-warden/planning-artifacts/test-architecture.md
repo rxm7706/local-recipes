@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: warden
-source_fingerprint: 0f7c3cd0255e0d1b
+source_fingerprint: f2d4e80e4dcc5320
 story_count: 76
-test_file_count: 80
+test_file_count: 83
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -21,10 +21,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Station:** `pyforge-warden`
 - **Stories parsed:** 76
 - **Epics parsed:** 23
-- **Test files inventoried:** 80 under `src/shared/packages/pyforge-warden/tests/`
+- **Test files inventoried:** 83 under `src/shared/packages/pyforge-warden/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `0f7c3cd0255e0d1b`
+- **Source fingerprint:** `f2d4e80e4dcc5320`
 
 ## Risk Assessment
 
@@ -48,7 +48,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 12: A promotion gate that has seen what it ships
 - Epic 13: The TEA advisory reviews the diff from the remote-tracking ref (spec-pyforge-warden CAP-23)
 - Epic 14: The fix-PR actuator finishes the fix on the estate's repos (spec-pyforge-warden CAP-24)
-- Epic 16: Warden scans the enterprise fleet on GitHub Enterprise (spec-pyforge-warden CAP-26)
+- Epic 16: Warden scans the enterprise fleet, one verdict per repo (spec-pyforge-warden CAP-26)
 - Epic 17: Phase 4+5 of the deferral burn-down: warden's open medium and low deferrals
 - Epic 18: The leak guard keeps the fleet target private, not the organisation's public name (fix under spec-pyforge-warden CAP-26)
 - Epic 19: The warden PRD's FR arrows name the capabilities the Spec carries
@@ -76,6 +76,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-warden/tests/integration/test_epss_enrichment.py` | integration | none observed |
 | `src/shared/packages/pyforge-warden/tests/integration/test_extraction_oracle.py` | integration | none observed |
 | `src/shared/packages/pyforge-warden/tests/integration/test_fix_pr_actuator.py` | integration | none observed |
+| `src/shared/packages/pyforge-warden/tests/integration/test_fix_solver_real_pixi.py` | integration | none observed |
 | `src/shared/packages/pyforge-warden/tests/integration/test_kev_enrichment.py` | integration | none observed |
 | `src/shared/packages/pyforge-warden/tests/integration/test_lockfile_oracle.py` | integration | none observed |
 | `src/shared/packages/pyforge-warden/tests/integration/test_osv_engine.py` | integration | none observed |
@@ -97,6 +98,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-warden/tests/unit/test_actuator.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_actuator_draft_pr_estate.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_actuator_github_client.py` | unit | none observed |
+| `src/shared/packages/pyforge-warden/tests/unit/test_actuator_require_manifest_fix.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_advisory_lenses.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_cli_bypass.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_cli_doctor.py` | unit | none observed |
@@ -125,6 +127,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-warden/tests/unit/test_lockfiles_extractor.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_manifest_edit.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_manifest_fixup.py` | unit | none observed |
+| `src/shared/packages/pyforge-warden/tests/unit/test_manifest_locations.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_mapping.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_meta_v0_extractor.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_models.py` | unit | none observed |

@@ -168,7 +168,8 @@ is live" sentence, and "Snapshot captured at F" once on the dossier page and onc
 
 Minted: backlog (minted 2026-11-01 by the EGM fleet audit, marshal Story 113.7; mode in-PR).
 
-Status: in-review (implemented 2026-11-01 in the landing worktree, branch `egm-audit-2026-11`; not committed).
+Status: done (implemented 2026-11-01 in the landing worktree, branch `egm-audit-2026-11`, and committed there in
+`bd154aaa17`; the independent review of 2026-11-01 passed it, `in-review` -> `done`, in the Review Triage Log below).
 
 **What changed.** Tests only; no generator edit (every pinned line renders as AC1-AC3 state, so the Change Log
 carries no generator entry), `ci-status.json` untouched.

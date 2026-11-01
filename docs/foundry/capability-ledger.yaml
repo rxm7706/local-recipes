@@ -4729,7 +4729,7 @@ capabilities:
   - id: pyforge-warden:CAP-26
     spec: pyforge-warden
     station: pyforge-warden
-    heading: "Warden scans the enterprise fleet on GitHub Enterprise"
+    heading: "Warden scans the enterprise fleet, one verdict per repo"
     mode: rebuild
     path: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
   # atlas one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs

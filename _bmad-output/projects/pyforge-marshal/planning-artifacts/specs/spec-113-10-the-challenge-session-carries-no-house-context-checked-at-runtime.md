@@ -127,7 +127,7 @@ Parent: `spec-pyforge-marshal` CAP-299 (a fix; no CAP minted)
 
 ## Auto Run Result
 
-Status: in-review
+Status: done (independent review passed 2026-11-01; see Review Triage Log)
 
 Summary: the challenge session now carries no house context at runtime. Its `--settings` turn every hook off, drop the
 `instructionFiles` plugin config, deny `Read` on the repo's instruction files, memlogs and team memory (the target

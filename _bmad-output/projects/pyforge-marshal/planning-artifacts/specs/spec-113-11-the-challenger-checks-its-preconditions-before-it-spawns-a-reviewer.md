@@ -150,7 +150,7 @@ Parent: `spec-pyforge-marshal` CAP-298 and CAP-299 (a fix; no CAP minted)
 
 ## Auto Run Result
 
-Status: in-review (2026-11-01). The code meets AC1, AC2, AC3, AC5 and AC6 (AC6 with three failures that are not
+Status: done (independent review passed 2026-11-01; see Review Triage Log)
 this story's; see below). AC4 belongs to the re-derive phase: the `bmad-spec` re-derive, the FR-244 text, the cascade
 re-stamp and the scoped stamp are the session owner's, and the memlog events it reads are on `spec-pyforge-marshal`.
 

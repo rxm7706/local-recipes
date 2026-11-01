@@ -2,7 +2,7 @@
 title: 'Product Brief: Warden (pyforge-warden)'
 status: complete
 created: 2026-07-25
-updated: "2026-08-26"
+updated: "2026-11-01"
 inputs:
   - 'docs/dreams/pyforge-warden.md'
   - 'docs/dreams/pyforge-charter.md § 4 Warden'
@@ -12,6 +12,7 @@ inputs:
   - '_bmad-output/projects/pyforge-warden/planning-artifacts/research/market-dependency-compliance-sca-landscape-research-2026-07-25.md'
   - '_bmad-output/projects/pyforge-warden/planning-artifacts/research/domain-dependency-compliance-verdict-semantics-research-2026-07-25.md'
   - '_bmad-output/projects/pyforge-warden/planning-artifacts/research/technical-warden-dependency-gate-refresh-2026-08-08.md (folded 2026-08-26)'
+  - '_bmad-output/projects/pyforge-warden/planning-artifacts/research/egm-audit-2026-11-01.md (folded 2026-11-01)'
   - '_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/ (SPEC.md, stack.md, convergence.md — folded 2026-08-26)'
   - 'src/shared/packages/pyforge-warden/ (shipped package — README.md, pyproject.toml, src/pyforge/warden/*.py, tests/)'
 note: 'RETROSPECTIVE brief — Warden shipped its complete v1 on 2026-07-25 (31/31 stories, PR #110 merged) before the factory adopted the research-first convention (same-day campaign). This brief backfills the missing product-brief tier and describes what was actually built and why it was worth building, grounded in the real, shipped evidence — it is not a pre-build planning input.'
@@ -275,3 +276,39 @@ upstream org move (`osprey-oss`) is recorded in its 2026-08-26 reconciliation; t
 Charter "6-Axis" framing note still stands (axes 5–6 provenance/maintenance remain
 Vision-tier, unbuilt as of 2026-08-26); the Snyk expiry-field verification remains
 unperformed.
+
+## Currency reconciliation — 2026-11-01
+
+*Trigger: the chain-currency `research→brief` edge. `research/egm-audit-2026-11-01.md`, the EGM fleet audit
+(marshal Story 113.7), is dated 2026-11-01 while this brief sat at 2026-08-26.* The body and the 2026-08-26 section
+above stay as written. This pass folds in what that research records and what moved because of it.
+
+**1. The research.** Fresh-context reviewers read Warden's newest capability slice (the Dream's 2026-09-27 and
+2026-09-28 night entries, CAP-23..CAP-26, Epics 13–16) against `main` at `03a7aff5d9`. They raised 30 findings: 18 at
+the mint stage, all accepted, and 12 at the decompose stage, 10 accepted and 2 rejected (WAR-D-R6, WAR-D-C4). None was
+deferred. Four were audited as Blockers; after verification one stayed a Blocker (WAR-D-C1: the fleet approve path
+delivered no fix). The 28 accepted findings route to a Spec re-derive (12), code carried by fix stories (11), an
+operator decision (2) and append-only story notes (3).
+
+**2. What this brief's frame now misses.** The out-of-v1 list above names "the fleet control plane". Since 2026-09-28
+Warden carries four more capabilities. The TEA advisory reads the remote-tracking ref (CAP-23). The fix-PR actuator
+delivers the fix as a draft PR on the estate's own repos (CAP-24). Opengrep joins as an optional SAST plugin with
+estate-owned rules (CAP-25). An operator-started fleet run scans each repo of an operator-designated github.com
+organisation, one verdict per repo and never a fleet verdict (CAP-26). The negative promise holds: none of them adds a
+rung, a status or an exit code.
+
+**3. The Spec re-derive.** On 2026-11-01 `spec-pyforge-warden` re-derived CAP-23..CAP-26 from the accepted findings,
+the operator's rulings of that date and the fix stories. The rulings: the fleet export carries `head_sha`; a
+non-Python repo's license and currency rows report what ran; a finding outside PyPI and conda queues no fix proposal.
+Each success clause now names its command and exit code. The *No silent egress* Constraint is scoped by process, the
+*Runtime shape* pixi floor is 0.80.0 (the workspace's `requires-pixi`), and npm, Go and Cargo components report
+license and currency `unknown`, never `clean`. The CAP ids are unchanged; CAP-26's title drops "on GitHub Enterprise".
+
+**4. The fix stories.** Eight were minted: 13.2 (a skipped TEA run reaches the report), 14.4 (the default solver
+shares the fix's edit path and is bounded), 15.2 (the shipped estate rules, telemetry off), and 16.6–16.10 (the fleet
+approve re-solves and delivers; time bounds and an approve-time re-scan; per-ecosystem offline databases; license and
+currency rows report what ran; the export carries `head_sha`). All eight are `done` on the EGM audit branch but not yet
+on `main`, so CAP-23..CAP-26 keep `(ready <date>)`. The ledger reads 76 of 76 stories and 23 of 23 epics done.
+
+**5. No architecture decision moved.** The fix stories land on the spine's 2026-09-28 Decision 1 (pixi runs only
+inside the actuator's real path) and Decision 2 (the fleet lives in `django-warden`).

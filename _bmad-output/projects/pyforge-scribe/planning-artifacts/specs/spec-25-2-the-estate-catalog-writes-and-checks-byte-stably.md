@@ -167,7 +167,7 @@ See `epics.md` § Story 25.2 for the full Given / When / Then / And.
 
 ## Auto Run Result
 
-Status: in-review
+Status: done (independent review passed 2026-11-01; see Review Triage Log)
 
 **What changed**
 

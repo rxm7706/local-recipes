@@ -2,7 +2,7 @@
 id: SPEC-pyforge-warden
 spec: pyforge-warden
 status: ready
-updated: "2026-11-01"   # AMENDED 2026-11-01 (EGM fleet audit, marshal Story 113.7): CAP-23 (an enabled TEA run that skipped reaches the report as one advisory skip record; Story 13.2), CAP-24 (the estate allowlist and its per-call fleet authorization, the bounded solver sharing the fix's own edit, every failure path in actuation; Story 14.4), CAP-25 (the shipped estate rules, the telemetry-off argv and env pinned by test; Story 15.2) and CAP-26 (an operator-started fleet run over an operator-designated github.com organisation read through the gh login, the export pinned with head_sha, job and proposal statuses never a verdict, time bounds, approve-time expiry, re-scan and re-solve, no non-PyPI/conda proposal, per-ecosystem offline DBs, unknown-then-warn license and currency; title drops 'on GitHub Enterprise'; Stories 16.6-16.10) amended, each success naming its command and exit code (CHAIN-STANDARD section 2); the No-silent-egress Constraint re-scoped by process, the Runtime-shape pixi floor (0.80.0, the workspace requires-pixi) and scope sentence and the fleet-verdict Non-goal re-worded; glossary.md added to companions; markers stay (ready <date>) until the fix stories land on main; findings WAR-M-Z1..Z6, WAR-M-D1..D6, WAR-M-C1..C6, WAR-D-C1, WAR-D-C2, WAR-D-C5, WAR-D-C6, WAR-D-R1, WAR-D-R3, WAR-D-R4. Prior "2026-09-28"
+updated: "2026-11-01"   # AMENDED 2026-11-01 (EGM fleet audit, marshal Story 113.7): CAP-23 (an enabled TEA run that skipped reaches the report as one advisory skip record; Story 13.2), CAP-24 (the estate allowlist and its per-call fleet authorization, the bounded solver sharing the fix's own edit, every failure path in actuation; Story 14.4), CAP-25 (the shipped estate rules, the telemetry-off argv and env pinned by test; Story 15.2) and CAP-26 (an operator-started fleet run over an operator-designated github.com organisation read through the gh login, the export pinned with head_sha, job and proposal statuses never a verdict, time bounds, approve-time expiry, re-scan and re-solve, no non-PyPI/conda proposal, per-ecosystem offline DBs, unknown-then-warn license and currency; title drops 'on GitHub Enterprise'; Stories 16.6-16.10) amended, each success naming its command and exit code (CHAIN-STANDARD section 2); the No-silent-egress Constraint re-scoped by process, the Runtime-shape pixi floor (0.80.0, the workspace requires-pixi) and scope sentence and the fleet-verdict Non-goal re-worded; glossary.md added to companions; the legacy source cited at its archive path and spec-one-chain-per-station:CAP-3 qualified twice; markers stay (ready <date>) until the fix stories land on main; findings WAR-M-Z1..Z6, WAR-M-D1..D6, WAR-M-C1..C6, WAR-D-C1, WAR-D-C2, WAR-D-C5, WAR-D-C6, WAR-D-R1, WAR-D-R3, WAR-D-R4. Prior "2026-09-28"
 owner-dream: docs/dreams/pyforge-warden.md
 covers-dreams:
   - docs/dreams/pyforge-warden.md
@@ -28,14 +28,14 @@ companions:
   - glossary.md
 sources:
   - ../../../../../../docs/dreams/pyforge-warden.md
-  - ../../../../../../docs/specs/pyforge-warden.md   # LEGACY Tier-1 intake spec — superseded by this Tier-2 Spec; absorbed, not adopted
+  - ../../../../../../archive/docs/specs/pyforge-warden.md   # LEGACY Tier-1 intake spec — superseded by this Tier-2 Spec; absorbed, not adopted; at docs/specs/ until doctor Story 23.3 (2026-09-18)
   - ../../prds/prd-pyforge-warden-2026-07-14/prd.md
   - ../../architecture/architecture-pyforge-warden-2026-07-14/ARCHITECTURE-SPINE.md
   - ../../epics.md
 open_questions: []   # all three answered 2026-09-14 by operator ruling — see § Open Questions.
 ---
 
-> **Canonical contract.** Derived from `.memlog.md` and the folded Specs on 2026-09-17 (one-chain-per-station CAP-3 / warden fold). Companions stay record. Do not hand-edit — append the memlog and re-derive.
+> **Canonical contract.** Derived from `.memlog.md` and the folded Specs on 2026-09-17 (spec-one-chain-per-station:CAP-3 / warden fold). Companions stay record. Do not hand-edit — append the memlog and re-derive.
 
 # Warden — the compliance gate that never false-greens
 
@@ -344,7 +344,7 @@ codes and produced files alone.
 
 ## Fold provenance (2026-09-17)
 
-One-chain fold (spec-one-chain-per-station CAP-3 / CHAIN-STANDARD §7). This heading is the INV-A citation window: `spec-pyforge-warden` CAP-1..22. Absorbed folders keep pointer + memlog + companions. Satellite Dreams archived in place into [[pyforge-warden]].
+One-chain fold (spec-one-chain-per-station:CAP-3 / CHAIN-STANDARD §7). This heading is the INV-A citation window: `spec-pyforge-warden` CAP-1..22. Absorbed folders keep pointer + memlog + companions. Satellite Dreams archived in place into [[pyforge-warden]].
 
 ## Assumptions
 
@@ -368,7 +368,7 @@ explicitly *"resolve with the operator"* — so they could not be closed by infe
 - **What becomes of the legacy Tier-1 spec?** → **Re-stamped shipped and marked superseded**,
   matching what `claude-team-memory`, `copilot-bridge-vscode-extension` and
   `bmad-copilot-adapter-upstream` already did in the same phasing-out tier. *The question's premise
-  was stale:* `docs/specs/pyforge-warden.md` was corrected to `status: shipped` on 2026-09-03, so
+  was stale:* `docs/specs/pyforge-warden.md` (now `archive/docs/specs/pyforge-warden.md`, doctor Story 23.3) was corrected to `status: shipped` on 2026-09-03, so
   only the `superseded_by:` pointer was ever missing. Its Goals prose is kept as written — its own
   § *Release buckets* already records D12's move of the former v1.1 content into v1, making the
   text dated rather than wrong, and historical prose keeps its original wording.

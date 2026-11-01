@@ -143,7 +143,7 @@ fail; revert.
 
 ## Auto Run Result
 
-Status: in-review (built 2026-11-01 in the landing worktree `egm-audit-2026-11`, after Story 34.14's registry change;
+Status: done (independent review passed 2026-11-01; see Review Triage Log)
 not committed).
 
 **What changed:**

@@ -91,7 +91,7 @@ Parent: `spec-pyforge-unifying-strategy` CAP-15
 
 ### Second attempt (2026-11-01, option (b): in place at 0.1.0)
 
-Status: in-review. Each of the four skills is recompiled in place at `0.1.0` by SKF helpers and source read
+Status: done (independent review passed 2026-11-01; see Review Triage Log)
 (Boundaries, amended); the `0.1.0` folders and the `active` symlinks are unchanged.
 
 - **AC1.** Each `skill-brief.yaml` `scope.include` gains the AC1 modules; `skf-validate-brief-schema.py` reads each

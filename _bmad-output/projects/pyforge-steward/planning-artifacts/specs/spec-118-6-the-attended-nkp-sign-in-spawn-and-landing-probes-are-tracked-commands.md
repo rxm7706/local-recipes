@@ -85,7 +85,7 @@ Parent: `spec-pyforge-steward` CAP-177
 
 ## Auto Run Result
 
-Status: in-review
+Status: done (independent review passed 2026-11-01; see Review Triage Log)
 
 Summary: implemented 2026-11-01 in the EGM audit landing worktree (`egm-audit-2026-11`). Not committed. The attended run on a live cluster is still the operator's.
 
