@@ -161,7 +161,10 @@ Scribe is registered as a pixi workspace member (per this repo's dual-ecosystem,
 chat through `chat.useAgentsMdFile`, and Cursor / Codex / the Copilot cloud agent / Devin / Jules
 natively. Per-tool files are addenda; team memory is cited as `.claude/memory/` paths that exist and
 filled with `scribe capture`. A scribe meta-test reds a missing pointer, a duplicated section, an
-oversized per-tool file or a dangling memory path.
+oversized per-tool file, a dangling memory path, or the 2026-09-26 end state regressing: an SKF managed
+block in `CLAUDE.md`, an SKF `ides` list other than `[other]`, or an `AGENTS.md` that no longer says
+`detectors-ci` and `pr-preflight` run `governance-currency` (amended 2026-11-01 with CAP-27, EGM fleet
+audit, Story 23.2).
 
 #### FR-17: `scribe capture` and `scribe recall` run from the session default environment ← CAP-28
 The scribe core package is a member of the `pyforge-guild` feature (the default every harness's

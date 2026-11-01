@@ -847,7 +847,7 @@ So that a stopped cluster here never reads as a failure because another checkout
 **When** `scribe-pg-down` runs in a checkout whose data directory holds `PG_VERSION` and no `postmaster.pid`
 **Then** it prints `[scribe-pg] not running` and exits 0 without calling `pg_ctl`; with `postmaster.pid` present it stops this checkout's cluster as today; with no `PG_VERSION` it prints `no cluster to stop` and exits 0 as today
 **And** one offline test in `tests/scripts/test_scribe_pg.py` builds a data directory with `PG_VERSION` and no `postmaster.pid`, patches `_run` and `_is_up` (true: another checkout's server answers), asserts exit 0, the message and that `pg_ctl` never ran, and fails when the new branch is removed (mutation); `pixi run --frozen -e pyforge-ci python -m pytest tests/scripts/test_scribe_pg.py` green; port 5433, the conftest DSN and the reuse of another checkout's listener in `up()` are unchanged; CAP-31's oracle text is re-derived in marshal Story 113.7's PR (a memlog event, then `bmad-spec`), never here; co-governor reconcile: a memlog entry on every Spec `spec-surface-check` names, then a scoped stamp per Spec, never a bare `--write-baseline`
-**Status:** backlog
+**Status:** done
 
 ## Epic 23: The instruction surface loads once (spec-pyforge-scribe CAP-27)
 
@@ -977,7 +977,7 @@ So that the catalog never churns a date-only diff into a PR and no invocation re
 **When** this story lands
 **Then** `digests()` skips `pipeline-truth` (the section still renders, with no digest line), so a write with `--pipeline-truth` then a bare check exits 0 and a bare write then `--check --pipeline-truth` exits 0; `write()` takes `today: date | None = None`, parses the committed `Generated:` date, renders with it and leaves the file untouched when the bytes are identical, else renders with `today`, so two writes with different `today` values and no source moved give identical bytes, while a moved source or a template-prose change re-stamps the date
 **And** a section missing from the file still reds (the check loops over the fresh digests, `catalog.py`:873-877); the `SECTION_SOURCES` assertion (`test_catalog_bmad_estate.py`:272) follows the digest set; `docs/reference/bmad-estate-llms-full.md` is regenerated with `pixi run -e pyforge-guild scribe catalog bmad-estate --write` and `pixi run -e pyforge-guild bmad-estate-check` exits 0; Story 25.1's criterion is not reworded (the deviation note is this story's memlog event); `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green; co-governor reconcile: a memlog entry on `spec-pyforge-scribe`, `spec-pyforge-core` and `spec-pyforge-unifying-strategy` as `spec-surface-check` names them, then a scoped stamp per Spec, never a bare `--write-baseline`
-**Status:** backlog
+**Status:** done
 
 ## Epic 26: Phase 4+5 of the deferral burn-down: scribe's open medium and low deferrals
 

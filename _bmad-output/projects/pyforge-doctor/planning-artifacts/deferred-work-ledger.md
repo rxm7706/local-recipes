@@ -3157,16 +3157,3 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: low
   promoted: 2026-10-26 — the retrofit chain commit
   status: open
-
-### DW-doctor-egm-2026-11-1: `pixi.toml`'s `fr-without-cap-check` description and the generated `docs/how-to/pixi-tasks.md` omit the two findings doctor Story 50.2 added.
-
-- source_spec: `planning-artifacts/specs/spec-50-2-fr-baseline-json-grows-only-through-its-script.md` (CAP-92); EGM fleet audit 2026-11-01 (marshal Story 113.7)
-  summary: Story 50.2 added FAIL `fr-baseline-grown` (a projects id or findings key added since the merge-base with `refs/remotes/origin/main` that no forced record written by `scripts/fr_baseline.py` names) and WARN `fr-baseline-base-unread`. The task description in `pixi.toml` and the page `docs/how-to/pixi-tasks.md` that `scripts/docs_pixi_tasks.py` generates from it still list only the earlier findings. The fix is one description string plus a regenerated page; it rides the next change that touches `pixi.toml`, because any `pixi.toml` edit needs a surface reconcile and a scoped stamp on each of its fourteen governing Specs.
-  evidence: Story 50.2 independent review, 2026-11-01 (advisory); the fix was written and reverted in the EGM-audit landing PR.
-  location: pixi.toml (`[feature.guild-tasks.tasks.fr-without-cap-check]` description)
-  origin: doctor Story 50.2 independent review, 2026-11-01
-  owner: doctor
-  severity: low
-  promoted: 2026-11-01 — EGM audit landing
-  status: open
-  reason: Rides the next `pixi.toml` change; the description is documentation, and the detector itself reports both findings.

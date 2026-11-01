@@ -155,6 +155,62 @@ Status: in-review (built 2026-11-01 in the landing worktree `egm-audit-2026-11`;
   worktree. Atlas, django-atlas and every other package's ruff passed. The task stops after its ruff stage, so the
   atlas format and mypy slices were run directly (above).
 
+**Review follow-up 2 (2026-11-01).** A later review (EGM audit, ATL-M-D4) found the same gap on another path. With
+`pyforge.atlas.live_vcs_universe` off, `GitHubRequestDataset.save()` runs `fetch_repo_health`. Its
+`_fetch_batch_with_retry` in `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/request_datasets.py` built
+its request with `credentials=self._credentials`, whatever the switch said. The code and tests show that this gap was
+latent, not a live send. kedro's `APIDataset.load()` refuses a POST before it sends anything, and
+`test_flag_off_keeps_the_path_this_story_found` pins `sent == []` and an "Only GET" row. The path was still fixed, so
+that the rule holds by construction and not because of how kedro handles a POST.
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/credentials.py`: a new
+  `catalog_request(timeout, credentials, /, **load_args)` now holds this story's flag-off rule in one place. With the
+  switch, it returns `load_args`, the timeout and the credential, as before. Without it, it returns no credential and
+  `public_sources.request_args`' no-op auth, so `~/.netrc` stays out. The switch is read when the request is built.
+  The module docstring names the three call sites.
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/vcs_sources.py` `_request_kwargs`: the flag-off
+  branch returns `credential_switch.catalog_request(timeout, credentials)`. Its output is byte-identical, and this
+  story's tests pass unchanged. The flag-on branch is untouched.
+- `request_datasets.py` `_fetch_batch_with_retry`: the POST is built from
+  `catalog_request(self._timeout_seconds, self._credentials, json=body)`.
+- `request_datasets.py` `_RequestParameterizedAPIDataset.fetch_one` was found by the grep. GitHubRequestDataset and
+  AnacondaDownloadsDataset inherit it. It passed `self._credentials` without the switch, and it now builds its request
+  from `catalog_request`. The timeout is the catalog's `load_args` timeout, else `DEFAULT_REFRESH_TIMEOUT_SECONDS`
+  (900 s); before, the request had none. For the catalog's GitHub entry, `fetch_one` never reached the network,
+  because the entry is a POST. AnacondaDownloadsDataset has no catalog credential. But an instance built as a GET with
+  a credential sent it as Basic auth without the switch.
+- The grep covered every catalog entry with `credentials:`, plus each class's paths.
+  - `vcs_gitlab_api_raw`, `vcs_codeberg_api_raw` and the npm, crates, rubygems and nuget registries go through
+    `_request_kwargs`.
+  - `vcs_github_api_raw` takes the two paths above, and with the flag on it uses `github_auth`.
+  - `openteams_project_1_board_raw` and `discovery_staged_recipes_prs_raw` use `github_auth` only.
+  - `pypi_bigquery_downloads_raw` discards its credential. Basilisk reads its token through `basilisk_auth`.
+  - No other dataset is given a catalog credential. The core, JSON and PyPI request classes pass through a
+    `credentials` argument their catalog entries never set. They were left as they are.
+  - The base class's `self._inner` is built with the credential but never loaded: every subclass overrides `load()`.
+- `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_credentialed_switch.py` has two new tests.
+  - `test_the_flag_off_github_batch_hands_over_the_credential_only_with_the_switch` covers the switch unset, `""`,
+    `0`, `true` and `1`. It records the `APIDataset` arguments that the flag-off `save()` batch builds, because the
+    POST never reaches a transport. Only `1` gets the credential; every other value gets no credential and the no-op
+    auth.
+  - `test_a_request_dataset_fetch_one_sends_its_credential_only_with_the_switch` runs a GitHub request built as a GET
+    and an AnacondaDownloadsDataset over `fake_transport`, with the switch off and on. A `NETRC` file holds
+    credentials for both hosts. Only the switch sends the catalog pair, never netrc's, and the timeout is pinned.
+- Commands (exit codes read from `$?`):
+  - The new tests, run against the code before the change, exit 1. Eight fail: the four non-`1` batch cases and the
+    two switch-off `fetch_one` cases, where the guard fires. The two switch-on `fetch_one` cases fail on the new
+    timeout pin only.
+  - After the change, the five dataset test files (`test_credentialed_switch.py`, `test_request_datasets.py`,
+    `test_vcs_sources.py`, `test_hosts_and_registries.py` and `test_github_versions_health.py`) exit 0 (224 passed).
+  - Mutants of `catalog_request` ran as a scratch pytest plugin, and each exits 1. `drop-check` fails 12 tests,
+    `never-send` fails 6 and `drop-noop` fails 12.
+  - `TMPDIR=$HOME/.cache/pyforge-preflight-tmp COVERAGE_FILE=$HOME/.cache/pyforge-preflight-tmp/atlas-cov/.coverage
+    pixi run --frozen -e pyforge-atlas pyforge-atlas-test` exits 0 (3327 passed and 17 skipped, 221 passed and 1
+    skipped, 103 passed).
+  - From the package dir, the guild `ruff check` and `ruff format --check` on the four files exit 0 and 0. On
+    `src tests` they also exit 0 and 0. `mypy --cache-dir .mypy_cache/pyforge-guild -p pyforge.atlas` exits 0
+    (150 files).
+  - No flag, flag overlay, CAP, gate or workflow was touched.
+
 ## Spec Change Log
 
 - 2026-11-01: minted from the EGM audit's finding ATL-M-D4 at the operator's ruling of 2026-11-01 (fix the code to
@@ -195,6 +251,53 @@ Status: in-review (built 2026-11-01 in the landing worktree `egm-audit-2026-11`;
   - Observation (not an AC failure): the module docstring in `datasets/credentials.py` still says "OFF, a dataset
     keeps the path it had before this story". That is now true of the flag-off VCS and registry branch only for the
     switch-on case, so the line is worth a touch the next time someone edits that file.
+- 2026-11-01 (reviewer: independent session, review follow-up 2; read `git diff 03a7aff5d9` on `credentials.py`,
+  `vcs_sources.py`, `request_datasets.py` and `test_credentialed_switch.py` against the ACs, Boundaries and the
+  Constraint, not the follow-up's own account). Verdict: **pass**, no failures.
+  - One rule: `credential_switch.catalog_request` is the only place a catalog credential handed to requests as the
+    catalog gives it is gated. It reads `credentialed()` when the request is built. Its three callers are
+    `vcs_sources._request_kwargs` (flag off), `GitHubRequestDataset._fetch_batch_with_retry` (no `auth`) and
+    `_RequestParameterizedAPIDataset.fetch_one`. Every other credentialed request goes through a switch-gated auth:
+    `github_auth` (the flag-on batch `_post`, `OpenTeamsBoardDataset`, `StagedRecipesPRDataset`), `gitlab_auth`
+    (`VcsHostSeedDataset._get`) and `basilisk_auth`. `PyPIBigQueryDownloadsDataset` discards its credential.
+  - Grep of `credentials=` and `APIDataset(` in `src/pyforge/atlas/datasets`. A `credentials` pass-through with no
+    switch remains in `core_sources.py` (:706, :752, :794, :1028, :1098, :1144, :1184), `json_sources.py:79` and
+    `PyPIJsonRequestDataset.fetch_one` (`request_datasets.py:1180`). None of them can get a catalog credential: the
+    catalog's `credentials:` entries equal `CREDENTIAL_ALLOWLIST`, which
+    `tests/unit/catalog/test_credential_scoping.py::test_credentials_attach_only_where_the_host_requires_them`
+    pins, and no entry for those classes is on it. A credential added to one of them reds that test first.
+    `incremental_parquet.py:132` and `degrading_parquet.py:41` are `ParquetDataset` storage options, not requests.
+  - Flag on: `_request_kwargs`' flag-on return is byte-identical to `03a7aff5d9`. On the flag-off branch,
+    `catalog_request(timeout, credentials)` returns exactly what this story's first build returned. The flag-on
+    GitHub batch always has a `BearerAuth` and takes `_post`, which is unchanged. The base `fetch_one` has no flag
+    branch, so its change applies in both states: the timeout, and without the switch no credential plus the no-op
+    auth. No `src` code calls it. `AnacondaDownloadsDataset.load_many` and `GitHubRequestDataset.fetch_one` have no
+    production caller, so no live request changes (observation, not a failure).
+  - Timeout: `fetch_one` now passes the catalog `load_args` timeout, else `DEFAULT_REFRESH_TIMEOUT_SECONDS` (900 s,
+    `refresh.py:91`); before, it passed none, an unbounded request. The positional-only `/` lets a catalog `timeout`
+    in `load_args` pass through without a keyword clash. Nothing in `src` or the suite relies on an unbounded
+    request.
+  - The new tests fail without the change. `request_datasets.py` was taken from `03a7aff5d9` into a scratch
+    `PYTHONPATH` copy, and the import was checked to resolve there; the tree was not edited. Run with the new
+    tests, it exits 1 with 8 failures: batch switch unset, `""`, `0` and `true` (the pair is handed over);
+    `fetch_one` switch-off on GitHub and Anaconda (the guard fires); and `fetch_one` switch-on (`[None] == [900]`,
+    the timeout pin only). Batch `1` passes, as AC2 expects.
+  - Mutants of `catalog_request` and the timeout default ran as a scratch pytest plugin over `tests/unit/datasets`.
+    The baseline exits 0 (1298 passed). Every mutant exits 1: `drop-check` with 12 failures, `never-send` with 6,
+    `drop-noop` with 12, `no-timeout` with 4, `batch-bypass` (only the batch keeps the old send) with 4, and
+    `pre-change` with 14.
+  - Commands (exit codes read from `$?`):
+    - `pixi run --frozen -e pyforge-atlas pytest src/shared/packages/pyforge-atlas/tests/unit/datasets -q`: exit 0
+      (1298 passed).
+    - From the package dir with the guild binaries, `ruff check` and `ruff format --check` on the four files exit 0
+      and 0, and on `src tests` exit 0 and 0. `mypy --cache-dir .mypy_cache/pyforge-guild -p pyforge.atlas` exits
+      0 (150 files).
+    - `TMPDIR=$HOME/.cache/pyforge-preflight-tmp pixi run --frozen -e pyforge-atlas pyforge-atlas-test`: exit 0
+      (3327 passed and 17 skipped, 221 passed and 1 skipped, 103 passed) (AC5).
+  - Boundaries: no flag overlay, flag, CAP, gate or workflow changes. The one workflow diff since `03a7aff5d9`
+    (`pyforge-station-tests.yml`) only adds sparse-checkout paths. The only `+` line in `src` that names
+    `PYFORGE_ATLAS_CREDENTIALED` is the `vcs_sources.py` docstring. No token is logged. The batch's failure text on
+    the uncredentialed path is kedro's "Only GET" message.
 
 ## Dev Notes
 

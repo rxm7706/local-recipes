@@ -352,9 +352,9 @@ def test_the_flag_off_github_batch_hands_over_the_credential_only_with_the_switc
     switch is exactly ``1``; without it, no credential and the no-op auth that keeps ``~/.netrc`` out.
     kedro's ``APIDataset.load()`` refuses a POST before it sends anything, so the request is checked
     where it is built."""
-    import pyforge.atlas.datasets.request_datasets as RD
     from kedro.io import DatasetError
 
+    import pyforge.atlas.datasets.request_datasets as RD
     from pyforge.atlas.datasets import public_sources
 
     if switch is not None:
@@ -422,7 +422,8 @@ def test_a_request_dataset_fetch_one_sends_its_credential_only_with_the_switch(
         ds.fetch_one("conda-forge/numpy")
 
     assert len(fake_transport.sent) == 1
-    headers = {h: fake_transport.sent[0].headers.get(h) for h in _CREDENTIAL_HEADERS if fake_transport.sent[0].headers.get(h)}
+    sent = fake_transport.sent[0].headers
+    headers = {h: sent.get(h) for h in _CREDENTIAL_HEADERS if sent.get(h)}
     if switch:  # the catalog pair, never netrc's
         assert headers == {"Authorization": "Basic " + base64.b64encode(":".join(pair).encode()).decode()}
     else:
