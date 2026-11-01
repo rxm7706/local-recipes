@@ -151,6 +151,8 @@ _TIER3_RUN_ARTIFACT_PATTERNS: tuple[tuple[str, str], ...] = (
     # `marshal gate evaluate` without `--run-id`: sessions/<id>/gate-records/<story>/.
     (r"^implementation-artifacts/sessions/[A-Za-z0-9._-]+/.*", "local:run-journal"),
     (r"^implementation-artifacts/dispatch-runs-quarantine/.*", "local:run-journal"),
+    # marshal Epic 113 (spec-pyforge-marshal:CAP-298): the EGM challenger's runs, reports and audits.
+    (r"^implementation-artifacts/egm/.*", "local:run-journal"),
     (r"^implementation-artifacts/token-economy-benchmark-[A-Za-z0-9._-]+\.json", "local:benchmark"),
     (
         r"^implementation-artifacts/token-economy-benchmark-per-layer-[A-Za-z0-9._-]+\.json",
