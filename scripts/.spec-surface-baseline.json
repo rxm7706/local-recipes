@@ -4238,7 +4238,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_bmad_loop_status_vocabulary.py": "bca99f04e9c6e6c5c7209dae0f436ebd25bdcfbe",
    "src/shared/packages/pyforge-marshal/tests/unit/test_chain_regen.py": "3da1f48cf8dbb61d8ad205952a3d590dffcb84bd",
    "src/shared/packages/pyforge-marshal/tests/unit/test_challenge_core.py": "e3d564a90f0e67f072a7a40986838043a66b06ab",
-   "src/shared/packages/pyforge-marshal/tests/unit/test_challenge_harness.py": "cd0b850a05196d9e69aaba41a05ddacb329ac0da",
+   "src/shared/packages/pyforge-marshal/tests/unit/test_challenge_harness.py": "b3c08945380f1180ef76e5fb70383f923d6f318d",
    "src/shared/packages/pyforge-marshal/tests/unit/test_check.py": "d1b062e568d5f6b70bb74d0c77cb47901e1d7a7f",
    "src/shared/packages/pyforge-marshal/tests/unit/test_checkpoint_cli.py": "9cd15b015bfe26b159dc10686216072999b26cc6",
    "src/shared/packages/pyforge-marshal/tests/unit/test_cli.py": "01f0f973a4abaf986dbe5fabf465d95c4ac75445",
@@ -4435,7 +4435,7 @@
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e",
    "tests/scripts/test_tea_playwright_check.py": "be266df25acac99bc9a8a317e4e3f4f68374844b"
   },
-  "memlog": "6cca99d458f6df22d0845deedc858e1496fef771"
+  "memlog": "086d9e9aee7bce20b66a4b986cf223401d131122"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
