@@ -2021,6 +2021,8 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-DISP-065",
         # Story 100.1 (CAP-292): landing could not update the PR body with the CI pause line — WARN, merge proceeds.
         "MRS-DISP-066",
+        # Story 113.3 (CAP-300): the EGM readiness challenge reported findings, or could not run — WARN, launch proceeds.
+        "MRS-DISP-067",
         # Story 28.2, the same layer on the OTHER engine: `marshal factory
         # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
         # launches the coding CLI, so marshal's harness-seam wrapper has no

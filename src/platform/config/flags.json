@@ -150,6 +150,96 @@
         "cleanup_by": ""
       }
     },
+    "pyforge.marshal.egm_challenge": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "marshal",
+        "story": "113-1-marshal-factory-challenge-runs-a-fresh-context-review-of-one-chain-artifact",
+        "created": "2026-11-01",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
+    "pyforge.marshal.egm_policy_block": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "marshal",
+        "story": "113-2-the-challenge-policy-block-configures-the-challenger-and-absent-means-off",
+        "created": "2026-11-01",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
+    "pyforge.marshal.egm_dispatch_readiness": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "marshal",
+        "story": "113-3-dispatch-runs-the-readiness-stage-before-the-dev-session-starts",
+        "created": "2026-11-01",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
+    "pyforge.marshal.egm_retro_drift": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "marshal",
+        "story": "113-4-the-drift-stage-reads-an-epic-s-code-against-its-spec-at-retro-time",
+        "created": "2026-11-01",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
+    "pyforge.marshal.egm_audit": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "marshal",
+        "story": "113-5-one-audit-sweep-reports-where-the-fleet-stands",
+        "created": "2026-11-01",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
+    "pyforge.marshal.egm_resolve_bridge": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "marshal",
+        "story": "113-6-an-accepted-finding-travels-the-chain-s-only-write-path",
+        "created": "2026-11-01",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
     "pyforge.atlas.dependency_history_sensor": {
       "state": "ENABLED",
       "variants": {

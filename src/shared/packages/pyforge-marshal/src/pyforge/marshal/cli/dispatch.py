@@ -3057,6 +3057,54 @@ def run_dispatch(
     return _emit(args, dict(attempt.data), list(attempt.findings))
 
 
+def _readiness_challenge_before_launch(
+    *,
+    repo_root: Path,
+    slug: str,
+    spec_path: Path,
+    effective_policy: policy.EffectivePolicy,
+    findings: list[Finding],
+    runner=None,
+) -> dict[str, object] | None:
+    """Story 113.3 (CAP-300): the EGM readiness stage reads the story spec cold
+    before the dispatch run exists. Off -- either switch, or no ``readiness`` in
+    the station's ``[challenge]`` block -- it returns ``None`` and the dispatch is
+    byte-identical. On, the challenge run journals its own intent/outcome pair
+    under ``implementation-artifacts/egm/`` and this returns the payload the
+    dispatch-launch intent carries (report path, counts); a red or refused review
+    is ``MRS-DISP-067`` (WARN). It runs before the run is minted so a long review
+    never leaves a half-launched run that reads as failed, and it never moves a
+    status, writes a ledger or refuses the dispatch."""
+    try:
+        from .challenge import readiness_for_dispatch, readiness_payload
+
+        result = readiness_for_dispatch(
+            root=repo_root, slug=slug, story_spec=spec_path, effective=effective_policy, runner=runner
+        )
+        if not result.ran:
+            return None
+        payload = readiness_payload(result)
+        error = result.error
+    except Exception as exc:  # the challenger is never the reason a dispatch stops
+        payload = {"error": f"readiness challenge failed: {exc}"}
+        error = str(payload["error"])
+        result = None
+    if error or (result is not None and result.findings):
+        findings.append(
+            Finding(
+                code="MRS-DISP-067",
+                severity=Severity.WARN,
+                message=(
+                    f"readiness challenge: {error}"
+                    if error
+                    else f"readiness challenge reported {result.findings} finding(s), {result.high} high: "
+                    f"{result.report_path}"
+                ),
+            )
+        )
+    return payload
+
+
 def dispatch_once(
     *,
     slug: str,
@@ -3723,6 +3771,12 @@ def dispatch_once(
         )
         return _done()
 
+    readiness_challenge = _readiness_challenge_before_launch(
+        repo_root=repo_root, slug=slug, spec_path=spec_path, effective_policy=effective_policy, findings=findings
+    )
+    if readiness_challenge is not None:
+        data["readiness_challenge"] = readiness_challenge
+
     writer_id = _writer_id()
     mint_moment = _now_utc()
     run_id = mint_run_id(slug, _format_utc_compact(mint_moment), _random_token())
@@ -3808,6 +3862,7 @@ def dispatch_once(
             **(followup_review.to_intent_payload() if followup_review is not None else {}),
             **({"spec_status_rewrite": spec_status_rewrite} if spec_status_rewrite is not None else {}),
             **({HOLD_LANDING_PAYLOAD_KEY: True} if hold_landing else {}),
+            **({"readiness_challenge": readiness_challenge} if readiness_challenge is not None else {}),
         },
     )
     try:

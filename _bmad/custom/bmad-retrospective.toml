@@ -1,0 +1,13 @@
+# Team override for bmad-retrospective — local-recipes / PyForge estate.
+# Personal overrides go in bmad-retrospective.user.toml (gitignored).
+#
+# Marshal Story 113.4 (spec-pyforge-marshal CAP-301): a retro on a marshal epic cites a
+# cold read of the epic's code against its Spec. Lives here, not in the installer-owned
+# .claude/skills/bmad-retrospective/customize.toml ("DO NOT EDIT -- overwritten on every
+# update"), the same reason bmad-build-auto's override does.
+
+[workflow]
+
+activation_steps_append = [
+  "EGM drift stage (marshal Story 113.4, CAP-301): when the epic belongs to `pyforge-marshal` and the flag `pyforge.marshal.egm_retro_drift` is on, run `pixi run -e pyforge-guild marshal factory challenge --project pyforge-marshal --stage drift --epic <n>` from the repo root before the review, and cite the report path it prints as an input. The report is advisory; a refusal (flag off, no enabled `[challenge]` block, plugin not installed) means skip this step and say so in one line.",
+]

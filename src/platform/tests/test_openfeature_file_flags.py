@@ -837,6 +837,13 @@ _SHIPPED_BOOLEANS = {
     },
     # Stories 87.3/87.7/87.15; default off (spec flag.default).
     "pyforge.marshal.preserve_refs": False,
+    # Epic 113 (CAP-298..CAP-303): the EGM challenger's six switches, default off everywhere.
+    "pyforge.marshal.egm_challenge": False,
+    "pyforge.marshal.egm_policy_block": False,
+    "pyforge.marshal.egm_dispatch_readiness": False,
+    "pyforge.marshal.egm_retro_drift": False,
+    "pyforge.marshal.egm_audit": False,
+    "pyforge.marshal.egm_resolve_bridge": False,
     "pyforge.herald.deck_publish": {
         "dev": True,
         "staging": True,

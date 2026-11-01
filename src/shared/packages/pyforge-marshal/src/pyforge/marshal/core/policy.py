@@ -2,7 +2,7 @@
 architecture spine AD-10/AD-16/AD-26/AD-35).
 
 ``compose()`` is the pure fold ``defaults -> repo_defaults -> project -> flags,
-last wins`` (AD-16) over Marshal's own CLOSED 35-key policy vocabulary
+last wins`` (AD-16) over Marshal's own CLOSED 36-key policy vocabulary
 (FR-49/50/51/53/54, plus FR-12's ``idle_threshold_minutes`` (Story 3.5),
 FR-13's 4 budget ceilings (Story 3.6), AD-27's ``epic_surfaces`` (Story 2.3),
 AD-40's 4 landing keys (Story 4.7), FR-184's ``max_parallel`` (Story
@@ -220,12 +220,13 @@ from types import MappingProxyType
 
 from pyforge.core.flags import kill_switch_on
 
+from . import challenge as challenge_core
 from . import protected_refs
 from .landing import LandingRule, landing_rule_to_dict
 from .model import Finding, Severity
 from .refs import ORIGIN
 
-# --- the closed 35-key vocabulary -------------------------------------------
+# --- the closed 36-key vocabulary -------------------------------------------
 
 _STATIC_KEYS: frozenset[str] = frozenset(
     {
@@ -322,6 +323,10 @@ _STATIC_KEYS: frozenset[str] = frozenset(
         # one key whose layers union instead of last-wins, so no layer can
         # drop another's addition; see `_merge_protected_ref_prefixes`.
         "protected_ref_prefixes",
+        # Story 113.2's 19th STATIC key, the vocabulary's 36th (CAP-299): the
+        # EGM challenger's one configuration. STATIC -- a declared block, never
+        # narrowed by a journal entry; absent means off, exactly as `context`.
+        "challenge",
     }
 )
 _SEED_KEYS: frozenset[str] = frozenset(
@@ -724,6 +729,8 @@ DEFAULT_POLICY: Mapping[str, object] = {
     # protects `main`, `loop/*` and every tag regardless, so the default adds
     # nothing to it.
     "protected_ref_prefixes": (),
+    # Story 113.2 (CAP-299): no `[challenge]` block means the challenger is off.
+    "challenge": {},
 }
 
 # Secret redaction (Boundaries & Constraints): a case-insensitive suffix
@@ -1125,6 +1132,15 @@ def _valid_context_block(value: object) -> dict[str, object] | None:
             entry["aggressiveness"] = aggressiveness
         result[layer_name] = entry
     return result
+
+
+def _valid_challenge_block(value: object) -> dict[str, object] | None:
+    """``challenge`` (Story 113.2, CAP-299): the EGM challenger's block --
+    ``enabled``, ``stages``, ``reviewers``, ``model``, ``standards``,
+    ``artifact_dir``, ``plugin_version``. The shape check is
+    ``core.challenge.valid_challenge_block``'s; the semantic refusals that need
+    the dispatching session's model run at render (``render_refusals``)."""
+    return challenge_core.valid_challenge_block(value)
 
 
 def _valid_model_cost_catalog(value: object) -> dict[str, object] | None:
@@ -1997,7 +2013,7 @@ def _compose_worktree_seed_paths(
 
 @dataclass(frozen=True)
 class EffectivePolicy:
-    """The composed, immutable policy value (AD-10): 18 public STATIC
+    """The composed, immutable policy value (AD-10): 19 public STATIC
     ``PolicyField`` attributes plus a private ``_seed`` mapping holding the
     17 SEED fields (AD-26). ``seed_view()`` is the sole whitelisted accessor
     for ``_seed`` -- ``tests/meta/test_ad26_seed_field_access_guard.py``
@@ -2028,6 +2044,7 @@ class EffectivePolicy:
     model_cost_catalog: PolicyField
     dispatch: PolicyField
     protected_ref_prefixes: PolicyField
+    challenge: PolicyField
     _seed: Mapping[str, PolicyField]
 
     def __post_init__(self) -> None:
@@ -2050,6 +2067,7 @@ class EffectivePolicy:
             "model_cost_catalog",
             "dispatch",
             "protected_ref_prefixes",
+            "challenge",
         ):
             value = getattr(self, name)
             if not isinstance(value, PolicyField):
@@ -2103,6 +2121,7 @@ class EffectivePolicy:
                 "model_cost_catalog",
                 "dispatch",
                 "protected_ref_prefixes",
+                "challenge",
             )
         )
         seed = ", ".join(f"{key!r}: {_field_repr(key, field)}" for key, field in sorted(self._seed.items()))
@@ -2159,6 +2178,7 @@ class EffectivePolicy:
             "model_cost_catalog": _field_payload(self.model_cost_catalog),
             "dispatch": _field_payload(self.dispatch),
             "protected_ref_prefixes": _field_payload(self.protected_ref_prefixes),
+            "challenge": _field_payload(self.challenge),
         }
         payload.update({key: _field_payload(field) for key, field in self._seed.items()})
         canonical = json.dumps(payload, sort_keys=True)
@@ -2319,7 +2339,7 @@ def compose(
     flags: Mapping[str, object],
 ) -> tuple[EffectivePolicy, tuple[Finding, ...]]:
     """The pure fold ``defaults -> repo_defaults -> project -> flags``, last
-    wins (AD-16), over Marshal's closed 35-key policy vocabulary. Never reads a
+    wins (AD-16), over Marshal's closed 36-key policy vocabulary. Never reads a
     file or an env var -- ``repo_defaults``/``project``/``flags`` arrive as
     already-parsed mappings; the CLI boundary (``cli/config.py``) does the
     file/env I/O and calls this. The ``repo_defaults`` parameter was added in
@@ -2524,6 +2544,16 @@ def compose(
         "MRS-POLICY-002",
     )
     protected_ref_prefixes = _merge_protected_ref_prefixes(repo_defaults, project, flags, findings)
+    challenge = _merge_field(
+        "challenge",
+        _valid_challenge_block,
+        DEFAULT_POLICY["challenge"],
+        repo_defaults,
+        project,
+        flags,
+        findings,
+        "MRS-POLICY-002",
+    )
     seed = {
         "gate_mode": _merge_field(
             "gate_mode",
@@ -2730,6 +2760,7 @@ def compose(
         model_cost_catalog=model_cost_catalog,
         dispatch=dispatch,
         protected_ref_prefixes=protected_ref_prefixes,
+        challenge=challenge,
         _seed=seed,
     )
     return effective, tuple(findings)

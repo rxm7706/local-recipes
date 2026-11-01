@@ -958,6 +958,12 @@ _SHIPPED_CLOCKS = {
     ),
     "pyforge.marshal.verify_fix_loop": ("marshal", "85-1-", "2026-10-03", "", ""),
     "pyforge.marshal.landing_ci_pauses": ("marshal", "100-1-", "2026-10-14", "", ""),
+    "pyforge.marshal.egm_challenge": ("marshal", "113-1-", "2026-11-01", "", ""),
+    "pyforge.marshal.egm_policy_block": ("marshal", "113-2-", "2026-11-01", "", ""),
+    "pyforge.marshal.egm_dispatch_readiness": ("marshal", "113-3-", "2026-11-01", "", ""),
+    "pyforge.marshal.egm_retro_drift": ("marshal", "113-4-", "2026-11-01", "", ""),
+    "pyforge.marshal.egm_audit": ("marshal", "113-5-", "2026-11-01", "", ""),
+    "pyforge.marshal.egm_resolve_bridge": ("marshal", "113-6-", "2026-11-01", "", ""),
     # Stories 87.3/87.7/87.15 share this key (default off in every environment).
     "pyforge.marshal.preserve_refs": ("marshal", "87-3-", "2026-10-04", "", ""),
     "pyforge.warden.fix_target_resolution": (
@@ -1159,6 +1165,12 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.steward.ledger_query_jira_github_matrix": False,
         "pyforge.steward.glass_export": False,
         "pyforge.marshal.preserve_refs": False,
+        "pyforge.marshal.egm_challenge": False,
+        "pyforge.marshal.egm_policy_block": False,
+        "pyforge.marshal.egm_dispatch_readiness": False,
+        "pyforge.marshal.egm_retro_drift": False,
+        "pyforge.marshal.egm_audit": False,
+        "pyforge.marshal.egm_resolve_bridge": False,
     }
     # Story 84.4 / 85.3 / 74.2: per-environment booleans (object_store_consumer, sync_github_only_marker and
     # verify_fix_loop on in dev/staging, off in production).

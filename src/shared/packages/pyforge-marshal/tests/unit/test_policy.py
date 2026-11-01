@@ -2296,6 +2296,7 @@ def test_effective_policy_rejects_non_policy_field_static_attribute():
             model_cost_catalog=PolicyField(value={}, layer="default", raw_source={}),
             dispatch=PolicyField(value={"max_parallel": 1}, layer="default", raw_source={"max_parallel": 1}),
             protected_ref_prefixes=PolicyField(value=(), layer="default", raw_source=()),
+            challenge=PolicyField(value={}, layer="default", raw_source={}),
             _seed=seed,
         )
 
@@ -2321,6 +2322,7 @@ def test_effective_policy_rejects_incomplete_seed_mapping():
             model_cost_catalog=PolicyField(value={}, layer="default", raw_source={}),
             dispatch=PolicyField(value={"max_parallel": 1}, layer="default", raw_source={"max_parallel": 1}),
             protected_ref_prefixes=PolicyField(value=(), layer="default", raw_source=()),
+            challenge=PolicyField(value={}, layer="default", raw_source={}),
             _seed={"gate_mode": PolicyField(value="none", layer="default", raw_source="none")},
         )
 
@@ -2346,6 +2348,7 @@ def test_effective_policy_rejects_non_policy_field_seed_value():
             model_cost_catalog=PolicyField(value={}, layer="default", raw_source={}),
             dispatch=PolicyField(value={"max_parallel": 1}, layer="default", raw_source={"max_parallel": 1}),
             protected_ref_prefixes=PolicyField(value=(), layer="default", raw_source=()),
+            challenge=PolicyField(value={}, layer="default", raw_source={}),
             _seed={
                 # All 16 seed keys present (an INCOMPLETE mapping would
                 # raise for that reason instead, never reaching the
@@ -2423,6 +2426,7 @@ def test_schema_file_declares_every_policy_key():
         "model_cost_catalog",
         "dispatch",
         "protected_ref_prefixes",
+        "challenge",
     }
     assert set(schema["properties"].keys()) == set(schema["required"])
     # Self-correcting: the schema tracks the live vocabulary, whatever its size.
