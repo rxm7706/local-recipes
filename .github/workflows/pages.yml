@@ -94,7 +94,7 @@ jobs:
           # passes pages-check, because an absent download directory lists nothing.
           fetch-depth: 1
 
-      - uses: prefix-dev/setup-pixi@v0.10.2
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           pixi-version: v0.80.0
           environments: site

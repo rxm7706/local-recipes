@@ -535,7 +535,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
-      - uses: prefix-dev/setup-pixi@v0.10.2
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           environments: pyforge-core
           cache: true
@@ -559,7 +559,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-      - uses: prefix-dev/setup-pixi@v0.10.2
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           environments: pyforge-testing-kit
           cache: true
@@ -590,7 +590,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
-      - uses: prefix-dev/setup-pixi@v0.10.2
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           environments: pyforge-atlas
           cache: true
@@ -638,7 +638,7 @@ jobs:
       # Story 117.10: this shard's report; the atlas-gate job merges every shard's and judges the floor.
       - name: Name this shard's coverage report
         run: mv .steward/coverage/atlas-unit.json .steward/coverage/atlas-unit-${{ matrix.group }}.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: coverage-atlas-unit-${{ matrix.group }}
           path: .steward/coverage/atlas-unit-${{ matrix.group }}.json
@@ -658,11 +658,11 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
-      - uses: prefix-dev/setup-pixi@v0.10.2
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           environments: pyforge-atlas
           cache: true
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: coverage-atlas-*
           path: .steward/coverage
@@ -697,13 +697,13 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
-      - uses: prefix-dev/setup-pixi@v0.10.2
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           environments: pyforge-doctor
           cache: true
       - run: pixi run --frozen -e pyforge-doctor pyforge-doctor-test
       # Story 117.4: the package half's report, merged with the live-tree half's by the doctor-gate job.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: coverage-doctor-unit
           path: .steward/coverage/doctor-unit.json
@@ -733,7 +733,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
-      - uses: prefix-dev/setup-pixi@v0.10.2
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           environments: pyforge-doctor
           cache: true
@@ -741,7 +741,7 @@ jobs:
       # Story 117.4: the live-tree half's report, merged with the package half's by the doctor-gate job.
       - name: Name this shard's coverage report
         run: mv .steward/coverage/doctor-live.json .steward/coverage/doctor-live-${{ matrix.group }}.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: coverage-doctor-live-${{ matrix.group }}
           path: .steward/coverage/doctor-live-${{ matrix.group }}.json
@@ -761,11 +761,11 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
-      - uses: prefix-dev/setup-pixi@v0.10.2
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           environments: pyforge-doctor
           cache: true
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: coverage-doctor-*
           path: .steward/coverage
@@ -812,7 +812,7 @@ jobs:
       # Herald Story 45.1: the last step runs pyforge-herald-test-built, docs-site-install (npm ci in the site env)
       # then herald's suite, so its built-site tests build Astro here instead of skipping; setting up `site` beside
       # herald caches that env. pyforge-herald-test itself stays npm-free for the SBOM laptop gate (fnd:CAP-13).
-      - uses: prefix-dev/setup-pixi@v0.10.2
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           environments: pyforge-herald site
           cache: true
@@ -853,7 +853,7 @@ jobs:
       # Story 117.10: this shard's report; the herald-gate job merges every shard's and judges the floor.
       - name: Name this shard's coverage report
         run: mv .steward/coverage/herald-unit.json .steward/coverage/herald-unit-${{ matrix.group }}.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: coverage-herald-unit-${{ matrix.group }}
           path: .steward/coverage/herald-unit-${{ matrix.group }}.json
@@ -873,11 +873,11 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
-      - uses: prefix-dev/setup-pixi@v0.10.2
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           environments: pyforge-herald
           cache: true
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: coverage-herald-*
           path: .steward/coverage
@@ -921,7 +921,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
-      - uses: prefix-dev/setup-pixi@v0.10.2
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           environments: pyforge-marshal
           cache: true
@@ -934,7 +934,7 @@ jobs:
       # Story 117.10: this shard's report; the marshal-gate job merges every shard's and judges the floor.
       - name: Name this shard's coverage report
         run: mv .steward/coverage/marshal-unit.json .steward/coverage/marshal-unit-${{ matrix.group }}.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: coverage-marshal-unit-${{ matrix.group }}
           path: .steward/coverage/marshal-unit-${{ matrix.group }}.json
@@ -954,11 +954,11 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
-      - uses: prefix-dev/setup-pixi@v0.10.2
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           environments: pyforge-marshal
           cache: true
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: coverage-marshal-*
           path: .steward/coverage
@@ -993,7 +993,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
-      - uses: prefix-dev/setup-pixi@v0.10.2
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           environments: pyforge-mason
           cache: true
@@ -1056,7 +1056,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
-      - uses: prefix-dev/setup-pixi@v0.10.2
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           environments: pyforge-scribe
           cache: true
@@ -1106,7 +1106,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
-      - uses: prefix-dev/setup-pixi@v0.10.2
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           environments: pyforge-steward
           cache: true
@@ -1114,7 +1114,7 @@ jobs:
       # Story 117.4: the package half's report, merged with the live-tree half's by the steward-gate job.
       - name: Name this shard's coverage report
         run: mv .steward/coverage/steward-unit.json .steward/coverage/steward-unit-${{ matrix.group }}.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: coverage-steward-unit-${{ matrix.group }}
           path: .steward/coverage/steward-unit-${{ matrix.group }}.json
@@ -1144,7 +1144,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
-      - uses: prefix-dev/setup-pixi@v0.10.2
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           environments: pyforge-steward
           cache: true
@@ -1152,7 +1152,7 @@ jobs:
       # Story 117.4: the live-tree half's report, merged with the package half's by the steward-gate job.
       - name: Name this shard's coverage report
         run: mv .steward/coverage/steward-live.json .steward/coverage/steward-live-${{ matrix.group }}.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: coverage-steward-live-${{ matrix.group }}
           path: .steward/coverage/steward-live-${{ matrix.group }}.json
@@ -1172,11 +1172,11 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
-      - uses: prefix-dev/setup-pixi@v0.10.2
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           environments: pyforge-steward
           cache: true
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: coverage-steward-*
           path: .steward/coverage
@@ -1211,7 +1211,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 2  # Story 117.11: the merge commit and its parents; a gate's three-dot diff needs no more
-      - uses: prefix-dev/setup-pixi@v0.10.2
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           environments: pyforge-warden
           cache: true
@@ -1275,7 +1275,7 @@ jobs:
           sudo docker image prune -af >/dev/null 2>&1 || true
           df -h / | tail -1
 
-      - uses: prefix-dev/setup-pixi@v0.10.2
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           environments: pyforge-steward
           cache: true
