@@ -11012,7 +11012,7 @@ So that what the house assumes and never wrote down becomes visible without anyo
 **Spec:** `planning-artifacts/specs/spec-113-1-marshal-factory-challenge-runs-a-fresh-context-review-of-one-chain-artifact.md`
 **Given** the EGM plugin is pinned in `.claude/settings.json` at the version the cache holds and `pyforge.marshal.egm_challenge` is on
 **When** `marshal factory challenge --project <station> --target <path> --stage {mint,decompose,readiness,drift,rules}` runs
-**Then** the stage's reviewer group (`egm:egm-zoom-out`, `egm:egm-design-critic`, `egm:egm-comprehension`, `egm:egm-implementation-readiness`, `egm:egm-codebase-details`, `egm:egm-synthesizer`, as the stage selects) is spawned through the harness session, one flat deficiency report lands under `implementation-artifacts/egm/<run>/`, the run journal carries an intent entry before the first spawn and an outcome after the last, and the exit code is 0 whatever the findings say
+**Then** the stage's reviewer group (`egm:egm-zoom-out`, `egm:egm-design`, `egm:egm-comprehension`, `egm:egm-implementation-readiness`, `egm:egm-codebase-details`, `egm:egm-synthesizer`, as the stage selects) is spawned through the harness session, one flat deficiency report lands under `implementation-artifacts/egm/<run>/`, the run journal carries an intent entry before the first spawn and an outcome after the last, and the exit code is 0 whatever the findings say
 **And** with the plugin absent or unpinned, or the switch off, the verb refuses with the usage code before any spawn and writes nothing; a test covers both flag states and the refusal
 **Status:** backlog
 

@@ -13763,7 +13763,7 @@ Found live the same day:
 | No challenger concept exists | `challenger` appears only in deep-recon candidate selection and party-mode |
 | `bmad-review` lenses inherit the house | spawned as ordinary subagents; the instruction files and memory index load first |
 | The isolation is Claude Code's, not EGM's | `.claude-plugin/agents/*.md`: `omitClaudeMd: true`, `tools: [Read, Grep, Glob]`, `model: inherit` (the Agent tool's `model` override lets a different model challenge what one model wrote) |
-| A harness cannot `Skill`-invoke EGM | every `SKILL.md` is `disable-model-invocation: true`; the harness spawns the registered reviewer agents (`egm:egm-zoom-out`, `egm:egm-design-critic`, `egm:egm-comprehension`, `egm:egm-implementation-readiness`, `egm:egm-codebase-details`, `egm:egm-synthesizer`) directly, or follows a `SKILL.md` in the main thread |
+| A harness cannot `Skill`-invoke EGM | every `SKILL.md` is `disable-model-invocation: true`; the harness spawns the registered reviewer agents (`egm:egm-zoom-out`, `egm:egm-design`, `egm:egm-comprehension`, `egm:egm-implementation-readiness`, `egm:egm-codebase-details`, `egm:egm-synthesizer`) directly, or follows a `SKILL.md` in the main thread |
 | The personas live outside the repo | `~/.claude/plugins/cache/egm/egm/<version>/`; headless runs need `Read(...)` rules on `agents/`, `docs/`, `resources/`, `skills/` |
 | Young upstream | v0.1.0 released 2026-10-27; README: "not an officially supported Google product" |
 | Every Spec already ships the goldfish context | `planning-artifacts/specs/spec-pyforge-<station>/glossary.md`, "Glossary-first by design" |
