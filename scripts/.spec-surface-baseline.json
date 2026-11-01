@@ -700,7 +700,7 @@
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/docs_currency.py": "ffdd4da1f89775bba5acef864940944ad1f61f9f",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/docs_map_hygiene.py": "a961e46a8cd71e9fa3e269a1d48787499fb8aee7",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/docs_shelf.py": "45599757345f93ce7b7a23f14c45434c0673785e",
-   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py": "7eb40b6a27854b19d75fa90173656699dfe04ba6",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py": "40a5c8c47f6a38eca95e03860e754a5edc1e687a",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/feed_status.py": "81d64f1870df943fef2c2736b91610f10bd0a58d",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/frontmatter_duplicate_keys.py": "4c24ed88799340eec321b23e258510aba108dd02",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/frozen_path.py": "aa11ab5e20a8d6265802a6dd8959c12451f70417",
@@ -772,7 +772,7 @@
    "src/shared/packages/pyforge-doctor/tests/fixtures/status_body/unparseable-dream.md": "ea8bddfe1b339861b19fbc29aaedb410fc613537",
    "src/shared/packages/pyforge-doctor/tests/fixtures/status_body/unresolvable-dream.md": "4f3db2901ed5e409ff6542b05729a25cf31956cd",
    "src/shared/packages/pyforge-doctor/tests/meta/test_atlas_sole_mcp_import.py": "63146952aed874f1f7a0f04edcb6f5b73657aded",
-   "src/shared/packages/pyforge-doctor/tests/meta/test_bmad_drift_tier3_marshal_shapes.py": "e3001c2d8f9a9440f61dc930d8f02ab0caf9da72",
+   "src/shared/packages/pyforge-doctor/tests/meta/test_bmad_drift_tier3_marshal_shapes.py": "a14c4d0d4ff92ca2c178b8bbeb67d3cd6e6d204e",
    "src/shared/packages/pyforge-doctor/tests/meta/test_cli_bridge_sole_subprocess.py": "c52782a2a7683e23b0dd5e4b7a33b1af648be8f3",
    "src/shared/packages/pyforge-doctor/tests/meta/test_coverage_gate_stays_outside_every_station.py": "8bcb49fb424c35f4410059bd6b382e2b276ba606",
    "src/shared/packages/pyforge-doctor/tests/meta/test_docs_currency_generator_trust.py": "5d886dc11e3c6dce7cf40dc5eef6865d1e0a5233",
@@ -871,7 +871,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "0ed1a9252e501a60d82e2f1a096dfd21485c2461"
+  "memlog": "6a71f5203f091c7afba146e3a8621a45dbb8eecc"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
@@ -3343,7 +3343,7 @@
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/docs_currency.py": "ffdd4da1f89775bba5acef864940944ad1f61f9f",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/docs_map_hygiene.py": "a961e46a8cd71e9fa3e269a1d48787499fb8aee7",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/docs_shelf.py": "45599757345f93ce7b7a23f14c45434c0673785e",
-   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py": "7eb40b6a27854b19d75fa90173656699dfe04ba6",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py": "40a5c8c47f6a38eca95e03860e754a5edc1e687a",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/feed_status.py": "81d64f1870df943fef2c2736b91610f10bd0a58d",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/frontmatter_duplicate_keys.py": "4c24ed88799340eec321b23e258510aba108dd02",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/frozen_path.py": "aa11ab5e20a8d6265802a6dd8959c12451f70417",
@@ -3806,7 +3806,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "6059f2bd5d49a57ebeefc5b50dd311d24daa50e0"
+  "memlog": "e92084592693361c48da5749140b49d4ff842074"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
