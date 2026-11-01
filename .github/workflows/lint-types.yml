@@ -49,7 +49,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-      - uses: prefix-dev/setup-pixi@v0.10.2
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           pixi-version: v0.80.0
           environments: pyforge-guild pyforge-foundry-full
@@ -60,7 +60,7 @@ jobs:
       # <package>/.mypy_cache/<environment> (Story 106.1), gitignored, so restoring those directories is safe
       # and a warm run only re-checks the modules whose sources or dependencies moved.
       - name: Restore the per-environment mypy caches
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: src/shared/packages/*/.mypy_cache
           key: mypy-${{ runner.os }}-${{ hashFiles('pixi.lock') }}-${{ hashFiles('src/shared/packages/*/src/**/*.py', 'src/shared/packages/*/src/**/*.pyi') }}

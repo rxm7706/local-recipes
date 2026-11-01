@@ -91,7 +91,7 @@ jobs:
           # shallow clone the PR's synthetic merge commit has no parents, reads
           # as a root commit that 'touches' the whole tree, and both suites go red.
           fetch-depth: 0
-      - uses: prefix-dev/setup-pixi@v0.10.2
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           environments: pyforge-ci pyforge-doctor pyforge-guild
           cache: true
@@ -158,7 +158,7 @@ jobs:
       - name: Set up pixi (primary)
         id: pixi
         continue-on-error: true
-        uses: prefix-dev/setup-pixi@v0.10.2
+        uses: prefix-dev/setup-pixi@v0.11.2
         with:
           pixi-version: v0.80.0
           environments: detectors

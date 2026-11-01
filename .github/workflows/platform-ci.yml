@@ -837,7 +837,7 @@ jobs:
       # activate-environment puts the env's bin on PATH for the steps below;
       # scripts/platform-golden-path-promotion.sh calls `warden` bare and
       # died with "warden is required (pyforge-warden env)" without it.
-      - uses: prefix-dev/setup-pixi@v0.10.2
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           pixi-version: v0.80.0
           environments: pyforge-warden
@@ -1199,7 +1199,7 @@ jobs:
       # single-environment usage, which activates it onto PATH so later
       # steps invoke `helm`/`kubectl` directly (no `pixi run -e` prefix
       # needed).
-      - uses: prefix-dev/setup-pixi@v0.10.2
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           pixi-version: v0.80.0
           environments: platform-dev
@@ -1448,7 +1448,7 @@ jobs:
         with:
           name: platform-ci-image
 
-      - uses: prefix-dev/setup-pixi@v0.10.2
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           pixi-version: v0.80.0
           environments: platform-dev
@@ -1691,7 +1691,7 @@ jobs:
       # script below) and is DELIBERATELY evicted and reinstalled later,
       # under the egress block, as the actual AD-13 proof -- see "Evict the
       # pixi cache" below for why a second install is needed at all.
-      - uses: prefix-dev/setup-pixi@v0.10.2
+      - uses: prefix-dev/setup-pixi@v0.11.2
         with:
           pixi-version: v0.80.0
           environments: platform-dev
