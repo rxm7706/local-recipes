@@ -15,7 +15,7 @@ An active BMAD project (`scripts/bmad-switch --current`) and familiarity with th
 
 ## How do I check status without spending anything?
 
-Run `pixi run -e pyforge-guild fleet-picture`. It's read-only and never gates anything, so there's no cost to checking before you decide whether a task is even worth dispatching. Cross-reference against the station's own `sprint-status-ledger.yaml` for exact story keys and current status (`backlog`, `in-progress`, `blocked`, `in-review`, `done`).
+Run `pixi run -e pyforge-guild fleet-picture`. It's read-only and never gates anything, so there's no cost to checking before you decide whether a task is even worth dispatching. Cross-reference against the station's own `sprint-status-ledger.yaml` for exact story keys and current status (`backlog`, `in-progress`, `blocked`, `done`, and `optional` on a retrospective key; `in-review` is a story-spec status, never a ledger one, per [`CHAIN-STANDARD.md`](../governance/spec-one-chain-per-station/CHAIN-STANDARD.md) § 4).
 
 Don't assume a story marked `backlog` still needs full work, and don't assume one marked `done` is trustworthy without checking what actually landed. Both directions bite: content can be further along than the ledger admits (local work merged but never pushed to an external system), or a "done" can be a false self-report from an abandoned session that never produced a merged PR.
 

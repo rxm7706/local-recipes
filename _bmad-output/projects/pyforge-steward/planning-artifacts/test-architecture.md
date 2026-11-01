@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 75d34dcb9625ec0c
-story_count: 434
+source_fingerprint: 3fa5fc2096f11c04
+story_count: 438
 test_file_count: 154
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 434
+- **Stories parsed:** 438
 - **Epics parsed:** 118
 - **Test files inventoried:** 154 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `75d34dcb9625ec0c`
+- **Source fingerprint:** `3fa5fc2096f11c04`
 
 ## Risk Assessment
 
@@ -442,6 +442,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 29.1 | SKF domain skills from station packages | none observed |
 | 29.2 | Personas act only through grammar and MCP | none observed |
 | 29.3 | Five-tier check | none observed |
+| 29.4 | The station skills are recompiled to cover the verbs the contract names | none observed |
 | 30.1 | Remaining console surfaces have a home | none observed |
 | 30.2 | Delete the generator and its inbound refs | none observed |
 | 31.1 | Class-keyed playbook is the operator path | none observed |
@@ -752,6 +753,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 118.3 | The gitops branch of the monorepo is the GitOps source and a Hetzner cluster ... | none observed |
 | 118.4 | steward deploy nic down tears the cluster down without a prompt | none observed |
 | 118.5 | deploy nic up installs the packs under nebari-apps and waits for the sync it ... | none observed |
+| 118.6 | The attended NKP sign-in, spawn and landing probes are tracked commands | none observed |
+| 118.7 | deploy nic finds kubectl and helm in the pyforge-steward environment | none observed |
+| 118.8 | The gitops branch has one named writer, enforced | none observed |
 
 ## Quality Gates
 

@@ -100,6 +100,7 @@ Summary: built by hand in the single Epic 113 PR (2026-11-01, operator direction
 
 - 2026-11-01: minted from the station Dream's entry of 2026-11-01 (EGM challenger); operator answers 1 (different model) and 2 (plugin pin) bind here.
 - 2026-11-01: built. The block's tests live in `tests/unit/test_factory_challenge.py` beside the verb's (one fixture repo for all six switches) instead of a separate `test_policy_challenge.py`; a model the catalog does not list is refused, including an empty catalog (review nit); `MEMORY.md` and `.claude/memory/` join the forbidden context (review S9); a station with no `glossary.md` yet runs with the glossary left out (review B2).
+- 2026-11-01: amended in place, append-only (operator ruling 2026-11-01; EGM audit MAR-D-R1, MAR-M-C2, MAR-D-R4, MAR-M-Z2, `_bmad-output/projects/pyforge-marshal/planning-artifacts/research/egm-audit-2026-11-01.md`): the goldfish context rule binds the context and never the target (a rules target may be `AGENTS.md`); a rules target takes `docs/dreams/one-chain-per-station.md`; the whole station Dream is passed, with no entry selector; `glossary.md` is passed when present; the standards are `default_standards` in `cli/challenge.py`, and no five-field-shape file is passed (Approach bullet 3 and AC2 trail it; Story 113.12 re-derives CAP-299 and adds the mint template); `epics.md` Story 113.2's Then carries the same dated note. No AC body, status or key moved.
 
 ## Review Triage Log
 

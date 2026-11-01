@@ -114,6 +114,10 @@ pages:
     quadrant: how-to
     owner: marshal
     kind: authored
+  - path: how-to/reach-a-station-mcp-endpoint.md
+    quadrant: how-to
+    owner: steward
+    kind: authored
   - path: how-to/recipe-testing-and-builds.md
     quadrant: how-to
     owner: fleet

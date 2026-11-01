@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: scribe
-# stories: 113
+# stories: 117
 development_status:
   1-1-package-scaffold-direct-capture-into-team-memory: done
   1-2-claude-md-wiring-team-memory-loads-automatically: done
@@ -31,6 +31,7 @@ development_status:
   19-1-one-agents-md-reached-natively-or-by-a-one-line-pointer-from-every-harness: done
   19-2-scribe-capture-and-recall-run-from-the-session-default-environment: done
   19-3-the-instruction-surface-is-version-aware-claude-code-s-built-in-agents-md-mod: done
+  19-4-every-doc-that-teaches-capture-or-recall-names-the-session-env-and-a-guard-holds-it: backlog
   2-1-graphstore-port-flat-file-v1-adapter: done
   2-2-nightly-compile-from-named-tool-surfaces: done
   2-3-fact-supersession-in-the-compiled-graph: done
@@ -39,11 +40,14 @@ development_status:
   21-1-agents-md-opens-with-what-this-repository-is: done
   21-2-agents-md-says-what-runs-governance-currency: done
   22-1-scribe-pg-up-succeeds-from-a-long-path-worktree: done
+  22-2-scribe-pg-down-stops-only-this-checkout-s-cluster: backlog
   23-1-the-skf-managed-block-lives-in-agents-md-only: done
+  23-2-the-instruction-surface-guards-prove-every-clause-they-claim: backlog
   24-1-the-bmad-estate-catalog-is-generated-not-written: done
   24-2-the-catalog-cannot-drift-silently: done
   24-3-every-harness-is-pointed-at-the-catalog-once: done
   25-1-the-estate-catalog-skips-skill-directories-git-ignores: done
+  25-2-the-estate-catalog-writes-and-checks-byte-stably: backlog
   26-1-recall-breaks-ties-by-recency-and-scribe-s-other-open-deferrals-close: done
   27-1-the-instruction-surface-carries-the-requirement-arrow-rule: done
   28-1-scribe-s-sixteen-archived-dreams-leave-the-live-tree: done
@@ -87,7 +91,7 @@ development_status:
   epic-17-retrospective: optional
   epic-18: done
   epic-18-retrospective: optional
-  epic-19: done
+  epic-19: in-progress
   epic-19-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
@@ -95,13 +99,13 @@ development_status:
   epic-20-retrospective: optional
   epic-21: done
   epic-21-retrospective: optional
-  epic-22: done
+  epic-22: in-progress
   epic-22-retrospective: optional
-  epic-23: done
+  epic-23: in-progress
   epic-23-retrospective: optional
   epic-24: done
   epic-24-retrospective: optional
-  epic-25: done
+  epic-25: in-progress
   epic-25-retrospective: optional
   epic-26: done
   epic-26-retrospective: optional

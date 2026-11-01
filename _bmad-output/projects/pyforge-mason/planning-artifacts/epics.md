@@ -13,12 +13,12 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-mason/planning-artifacts/research/technical-mason-cli-seam-research-2026-07-25.md"
 project_name: pyforge-mason
 epicCount: 36  # 2026-10-27 (absorbed Spec folders to the archive home): Epic 36 appended (a chore under spec-one-chain-per-station:CAP-11; Story 36.1); 36 epic keys in the ledger after this commit's sync (measured). Earlier: # 2026-10-26 (one archive home): Epic 35 appended (a chore under spec-one-chain-per-station:CAP-11; Story 35.1); 35 epic keys in the ledger after this commit's sync (measured). Earlier: # 2026-10-26: Epic 34 minted (a fix under spec-pyforge-mason CAP-24; Story 34.1); measured after this commit's sync. Earlier: # 2026-10-26: Epic 33 minted (a chore under spec-one-chain-per-station CAP-5 as amended and CAP-3; Story 33.1, Story 33.2); measured after this commit's sync. Earlier: # 2026-10-25: Epic 32 minted (a chore under spec-one-chain-per-station CAP-5 and CAP-3; Story 32.1); 32 epic keys in the ledger after this commit's sync (measured), restating a count last bumped at 14. Earlier 2026-09-06: Epic 14 added (spec-bmad-suite-lifecycle mason relay); Epic 13 (2026-09-03) had not bumped this from 12.
-storyCount: 120  # 2026-10-27 (absorbed Spec folders to the archive home): +1 for Story 36.1 (chore, no CAP, no flag); 120 story keys in the ledger after this commit's sync (measured). Earlier: # 2026-10-26 (one archive home): +1 for Story 35.1 (chore, no CAP, no flag); 119 story keys in the ledger after this commit's sync (measured). Earlier: # 2026-10-26: +1 for Story 34.1 (fix under CAP-24, no new CAP, no flag); measured after this commit's sync. Earlier: # 2026-10-26: +2 for Story 33.1, Story 33.2 (chore, no CAP, no flag); measured after this commit's sync. Earlier: # 2026-10-25: +1 for Story 32.1; 115 story keys in the ledger after this commit's sync (measured), restating a count last set at 59. Earlier 2026-09-06: 58 + Story 14.1 (dated snapshot; the ledger enumerates).
+storyCount: 124  # 2026-11-01 (EGM fleet audit, marshal Story 113.7): +4 for Stories 4.5, 19.6, 25.17 and 25.18 (fixes, no CAP, no flag); 124 story keys in the ledger after this commit's sync (measured). Earlier: # 2026-10-27 (absorbed Spec folders to the archive home): +1 for Story 36.1 (chore, no CAP, no flag); 120 story keys in the ledger after this commit's sync (measured). Earlier: # 2026-10-26 (one archive home): +1 for Story 35.1 (chore, no CAP, no flag); 119 story keys in the ledger after this commit's sync (measured). Earlier: # 2026-10-26: +1 for Story 34.1 (fix under CAP-24, no new CAP, no flag); measured after this commit's sync. Earlier: # 2026-10-26: +2 for Story 33.1, Story 33.2 (chore, no CAP, no flag); measured after this commit's sync. Earlier: # 2026-10-25: +1 for Story 32.1; 115 story keys in the ledger after this commit's sync (measured), restating a count last set at 59. Earlier 2026-09-06: 58 + Story 14.1 (dated snapshot; the ledger enumerates).
 frCount: 50
 status: complete
 revision: 2
 revisionNote: "r2 tracks PRD revision 2 (adversarial-review fixes). Added S-1.10 (config+logging), S-3.9 (ship verb + TestPyPI rehearsal), S-5.6 removed in favour of folding FR-47 into S-5.5; corrected S-3.6, S-5.1, S-5.2, S-2.2 for the D-10/D-12/FR-44/FR-45 resolutions."
-updated: "2026-10-31"   # RE-STAMPED 2026-10-31: arch->epics cascade for the spine's re-stamp of the same date (the CFE v8.102.2 retro of the nebari-infrastructure-core recipe refresh; no mason story); no epic or story moved. Prior "2026-10-27"   # AMENDED 2026-10-27 (absorbed Spec folders to the archive home): Epic 36 / Story 36.1 minted in-progress under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 11 absorbed Spec folders move to archive/<original path>; keys 36-1, epic-36 (in-progress) and epic-36-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync. Prior "2026-10-26"   # AMENDED 2026-10-26 (one archive home): Epic 35 / Story 35.1 minted done under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 12 archived satellite Dreams left docs/dreams/ for archive/docs/dreams/, their bodies verbatim in the station Dream; keys 35-1, epic-35 (done) and epic-35-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync. Prior "2026-10-26"   # AMENDED 2026-10-26 (the atlas reads the bot's split graph repos): Epic 34 / Story 34.1 minted done under spec-pyforge-mason CAP-24 (a fix; no new CAP, no FR moves, no flag); keys 34-1, epic-34 (done) and epic-34-retrospective (optional) added; no other epic or story moved. Prior "2026-10-26"   # AMENDED 2026-10-26 (every requirement derives from a capability): Epic 33 / Story 33.1 (in-progress), Story 33.2 (backlog) minted under spec-one-chain-per-station CAP-5 as amended and CAP-3 (no CAP, no flag); keys 33-1, 33-2, epic-33 (in-progress) and epic-33-retrospective (optional) added; no other epic or story moved. Prior "2026-10-25"   # AMENDED 2026-10-25 (latest): Story 32.1 and Epic 32 promoted to done in the five-station FR-arrow chain PR after its independent review (Status lines, story spec and ledger keys through the Tier-3 feed and sprint-ledger-sync); no other epic or story moved. Earlier 2026-10-25: RE-STAMPED 2026-10-25 (the PRD's section 4.7 arrows were mapped by section, not traced): Epic 32 / Story 32.1 added (a chore under spec-one-chain-per-station CAP-5 and CAP-3, no CAP, no flag; operator ruling "Do rows 1-5 in one PR"): three mason PRD FR arrows are re-pointed at the Spec capabilities that realize them; keys 32-1 (backlog), epic-32 (backlog) and epic-32-retrospective (optional) added; epicCount and storyCount restated from the ledger; arch->epics cascade for the spine's re-stamp of the same date; no other epic or story moved. Prior "2026-10-22"   # RE-STAMPED 2026-10-22: Story 26.2 minted done under done Epic 26 (a fix under spec-pyforge-mason CAP-34; no new CAP, no FR moves, no flag): CFE's tests never fetch conda-smithy's remote lint data (hints.toml and the conda-forge.yml bot schema). Prior "2026-10-10"   # RE-STAMPED 2026-10-10: Story 25.16 minted under Epic 25 (a fix under spec-pyforge-mason CAP-35 / FR-57, CAP-20, CAP-23; no new CAP, no FR moves, no flag) and Story 25.15 re-scoped, on two operator rulings of 2026-10-09 on 25.15's open questions ("Retire recipes/dbt-core"; "Fix in a story"). 25.15 retires six directories (the five lfx* copies, and recipes/dbt-core into recipes/dbt) and restores recipes/dbt's feedstock patch file; its title changes, its ledger key stands. 25.16 re-mirrors recipes/dbt-bigquery, recipes/dbt-postgres and recipes/dbt-redshift from their own feedstocks. Story 25.5 re-points its dbt-core row to recipes/dbt, drops dbt-bigquery (11 recipes) and gains Deps S-25.15; Story 25.7's AC 12 is corrected to langflow-feedstock's patch_deps.py; Story 25.13's boundary line names the new dbt owners. Prior "2026-10-09"   # RE-STAMPED 2026-10-09 (night, latest): Story 25.15 minted under Epic 25 (a fix under spec-pyforge-mason CAP-35 / FR-57, CAP-20, CAP-23; no new CAP, no FR moves, no flag) on two operator rulings: Wave F's 18 outputs stay inside their feedstocks' mirrors ("Yes, inside the mirrors"), and the duplicate recipe directories retire in a fix story ("Retire in a fix story"). 25.15 retires the five lfx* copies into recipes/langflow; recipes/dbt is kept, verified at mint as the recipes/<feedstock>/ mirror of conda-forge/dbt-feedstock. Story 25.7's batch drops recipes/lfx (10 recipes); Story 25.14 gains Deps S-25.15. Prior "2026-10-09"   # RE-STAMPED 2026-10-09 (night, later): Stories 25.13-25.14 minted under Epic 25 (Wave F, operator ruling "create them" on Track B Q2; spec-pyforge-mason CAP-35 / FR-57, CAP-20, CAP-23; no new CAP, no FR moves): 25.13 mirrors dbt-snowflake and zxing-cpp-python, 25.14 keeps the 18 dbgpt-*/langflow-* outputs in recipes/db-gpt and recipes/langflow; Story 25.9 gains a dated note and AC 13 (zxing-cpp-feedstock repurposed to the C++ library). Prior "2026-10-09"   # RE-STAMPED 2026-10-09 (night): Story 25.2 re-scoped to Wave A, Wave 0 and its four Track B pilots (operator ruling "Land 25.2 now, split rest"); Stories 25.4-25.12 minted under Epic 25 (25.4 a fix for the 14 Wave 0 leftovers; 25.5-25.12 eight Track B batches of 11-12 named recipes; spec-pyforge-mason CAP-35 / FR-57, CAP-20, CAP-23; no new CAP, no FR moves). Prior "2026-10-09"   # RE-STAMPED 2026-10-09: Epic 28 / Story 28.1 minted (fix under spec-pyforge-mason CAP-16, no new CAP, no FR moves, no flag): the CFE-rebuild guard reads a SHA field whatever type YAML gives it. Prior "2026-10-09"   # RE-STAMPED 2026-10-09: Story 25.3 minted (feature under spec-pyforge-mason CAP-35 / FR-57, CAP-20, CAP-23; no new CAP, no FR moves) and given a --repair mode; Story 25.2 Deps S-25.3 and a Wave 0 that repairs Story 25.1's landing; § Currency reconciliation — 2026-10-09 (later) appended. Prior "2026-10-09"   # RE-STAMPED 2026-10-09: Stories 22.3 and 22.4 minted blocked (fixes under spec-pyforge-mason CAP-32, FR-54), split from Story 22.1 by two operator rulings; § Currency reconciliation — 2026-10-09 appended. Prior 2026-10-03   # RE-STAMPED 2026-10-03 (Phase 4+5): Epic 27 / Stories 27.1-27.2 minted from the operator's Phase 4+5 ruling (fix, no CAP; 61 open medium/low deferrals). Prior 2026-10-02   # RE-STAMPED 2026-10-02: Epic 26 / Story 26.1 minted (a fix under spec-pyforge-mason CAP-34, FR-56). Prior 2026-09-29 (evening)   # RE-STAMPED 2026-09-29 (evening): Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-mason CAP-35, FR-57); § Currency reconciliation — 2026-09-29 (evening). Prior 2026-09-29 (later)   # RE-STAMPED 2026-09-29 (later): Epic 24 / Story 24.1 minted (spec-pyforge-mason CAP-34, FR-56); § Currency reconciliation — 2026-09-29 (later). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 23 / Stories 23.1-23.3 minted (spec-pyforge-mason CAP-33, FR-55); § Currency reconciliation — 2026-09-29. Prior 2026-09-28 (night, later)   # RE-STAMPED 2026-09-28 (night, later): Epic 22 / Stories 22.1-22.2 minted (spec-pyforge-mason CAP-32, FR-54); § Currency reconciliation — 2026-09-28 (night, later) appended. Prior 2026-09-28 (night): Epic 21 / Stories 21.1-21.5 minted (spec-pyforge-mason CAP-31, FR-53); § Currency reconciliation — 2026-09-28 (night) appended. Prior 2026-09-28 (later): Epic 20 / Story 20.1 minted (spec-pyforge-mason CAP-30, FR-52); § Currency reconciliation — 2026-09-28 (later) appended. Prior 2026-09-28: Epic 19 / Stories 19.1-19.5 minted (spec-pyforge-mason CAP-29, FR-51); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (night): Epic 18 / Story 18.1 minted (spec-pyforge-mason CAP-28). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
+updated: "2026-11-01"   # AMENDED 2026-11-01 (EGM fleet audit, marshal Story 113.7): Stories 4.5, 19.6, 25.17 and 25.18 minted (fixes, no CAP, no flag; 25.17 and 25.18 record flag-exempt: recipe-build; in-PR: 4.5 under CAP-4, 19.6 under CAP-29; backlog: 25.17 and 25.18 under CAP-35, parked by operator ruling); append-only notes on Stories 19.4; keys through the Tier-3 feed and sprint-ledger-sync, which reopens epic-4, epic-19 and epic-25 to in-progress (doctor Story 41.5); no other epic or story moved. Prior "2026-10-31"   # RE-STAMPED 2026-10-31: arch->epics cascade for the spine's re-stamp of the same date (the CFE v8.102.2 retro of the nebari-infrastructure-core recipe refresh; no mason story); no epic or story moved. Prior "2026-10-27"   # AMENDED 2026-10-27 (absorbed Spec folders to the archive home): Epic 36 / Story 36.1 minted in-progress under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 11 absorbed Spec folders move to archive/<original path>; keys 36-1, epic-36 (in-progress) and epic-36-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync. Prior "2026-10-26"   # AMENDED 2026-10-26 (one archive home): Epic 35 / Story 35.1 minted done under spec-one-chain-per-station:CAP-11 (chore; no CAP, no FR, no flag): the station's 12 archived satellite Dreams left docs/dreams/ for archive/docs/dreams/, their bodies verbatim in the station Dream; keys 35-1, epic-35 (done) and epic-35-retrospective (optional) through the Tier-3 feed and sprint-ledger-sync. Prior "2026-10-26"   # AMENDED 2026-10-26 (the atlas reads the bot's split graph repos): Epic 34 / Story 34.1 minted done under spec-pyforge-mason CAP-24 (a fix; no new CAP, no FR moves, no flag); keys 34-1, epic-34 (done) and epic-34-retrospective (optional) added; no other epic or story moved. Prior "2026-10-26"   # AMENDED 2026-10-26 (every requirement derives from a capability): Epic 33 / Story 33.1 (in-progress), Story 33.2 (backlog) minted under spec-one-chain-per-station CAP-5 as amended and CAP-3 (no CAP, no flag); keys 33-1, 33-2, epic-33 (in-progress) and epic-33-retrospective (optional) added; no other epic or story moved. Prior "2026-10-25"   # AMENDED 2026-10-25 (latest): Story 32.1 and Epic 32 promoted to done in the five-station FR-arrow chain PR after its independent review (Status lines, story spec and ledger keys through the Tier-3 feed and sprint-ledger-sync); no other epic or story moved. Earlier 2026-10-25: RE-STAMPED 2026-10-25 (the PRD's section 4.7 arrows were mapped by section, not traced): Epic 32 / Story 32.1 added (a chore under spec-one-chain-per-station CAP-5 and CAP-3, no CAP, no flag; operator ruling "Do rows 1-5 in one PR"): three mason PRD FR arrows are re-pointed at the Spec capabilities that realize them; keys 32-1 (backlog), epic-32 (backlog) and epic-32-retrospective (optional) added; epicCount and storyCount restated from the ledger; arch->epics cascade for the spine's re-stamp of the same date; no other epic or story moved. Prior "2026-10-22"   # RE-STAMPED 2026-10-22: Story 26.2 minted done under done Epic 26 (a fix under spec-pyforge-mason CAP-34; no new CAP, no FR moves, no flag): CFE's tests never fetch conda-smithy's remote lint data (hints.toml and the conda-forge.yml bot schema). Prior "2026-10-10"   # RE-STAMPED 2026-10-10: Story 25.16 minted under Epic 25 (a fix under spec-pyforge-mason CAP-35 / FR-57, CAP-20, CAP-23; no new CAP, no FR moves, no flag) and Story 25.15 re-scoped, on two operator rulings of 2026-10-09 on 25.15's open questions ("Retire recipes/dbt-core"; "Fix in a story"). 25.15 retires six directories (the five lfx* copies, and recipes/dbt-core into recipes/dbt) and restores recipes/dbt's feedstock patch file; its title changes, its ledger key stands. 25.16 re-mirrors recipes/dbt-bigquery, recipes/dbt-postgres and recipes/dbt-redshift from their own feedstocks. Story 25.5 re-points its dbt-core row to recipes/dbt, drops dbt-bigquery (11 recipes) and gains Deps S-25.15; Story 25.7's AC 12 is corrected to langflow-feedstock's patch_deps.py; Story 25.13's boundary line names the new dbt owners. Prior "2026-10-09"   # RE-STAMPED 2026-10-09 (night, latest): Story 25.15 minted under Epic 25 (a fix under spec-pyforge-mason CAP-35 / FR-57, CAP-20, CAP-23; no new CAP, no FR moves, no flag) on two operator rulings: Wave F's 18 outputs stay inside their feedstocks' mirrors ("Yes, inside the mirrors"), and the duplicate recipe directories retire in a fix story ("Retire in a fix story"). 25.15 retires the five lfx* copies into recipes/langflow; recipes/dbt is kept, verified at mint as the recipes/<feedstock>/ mirror of conda-forge/dbt-feedstock. Story 25.7's batch drops recipes/lfx (10 recipes); Story 25.14 gains Deps S-25.15. Prior "2026-10-09"   # RE-STAMPED 2026-10-09 (night, later): Stories 25.13-25.14 minted under Epic 25 (Wave F, operator ruling "create them" on Track B Q2; spec-pyforge-mason CAP-35 / FR-57, CAP-20, CAP-23; no new CAP, no FR moves): 25.13 mirrors dbt-snowflake and zxing-cpp-python, 25.14 keeps the 18 dbgpt-*/langflow-* outputs in recipes/db-gpt and recipes/langflow; Story 25.9 gains a dated note and AC 13 (zxing-cpp-feedstock repurposed to the C++ library). Prior "2026-10-09"   # RE-STAMPED 2026-10-09 (night): Story 25.2 re-scoped to Wave A, Wave 0 and its four Track B pilots (operator ruling "Land 25.2 now, split rest"); Stories 25.4-25.12 minted under Epic 25 (25.4 a fix for the 14 Wave 0 leftovers; 25.5-25.12 eight Track B batches of 11-12 named recipes; spec-pyforge-mason CAP-35 / FR-57, CAP-20, CAP-23; no new CAP, no FR moves). Prior "2026-10-09"   # RE-STAMPED 2026-10-09: Epic 28 / Story 28.1 minted (fix under spec-pyforge-mason CAP-16, no new CAP, no FR moves, no flag): the CFE-rebuild guard reads a SHA field whatever type YAML gives it. Prior "2026-10-09"   # RE-STAMPED 2026-10-09: Story 25.3 minted (feature under spec-pyforge-mason CAP-35 / FR-57, CAP-20, CAP-23; no new CAP, no FR moves) and given a --repair mode; Story 25.2 Deps S-25.3 and a Wave 0 that repairs Story 25.1's landing; § Currency reconciliation — 2026-10-09 (later) appended. Prior "2026-10-09"   # RE-STAMPED 2026-10-09: Stories 22.3 and 22.4 minted blocked (fixes under spec-pyforge-mason CAP-32, FR-54), split from Story 22.1 by two operator rulings; § Currency reconciliation — 2026-10-09 appended. Prior 2026-10-03   # RE-STAMPED 2026-10-03 (Phase 4+5): Epic 27 / Stories 27.1-27.2 minted from the operator's Phase 4+5 ruling (fix, no CAP; 61 open medium/low deferrals). Prior 2026-10-02   # RE-STAMPED 2026-10-02: Epic 26 / Story 26.1 minted (a fix under spec-pyforge-mason CAP-34, FR-56). Prior 2026-09-29 (evening)   # RE-STAMPED 2026-09-29 (evening): Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-mason CAP-35, FR-57); § Currency reconciliation — 2026-09-29 (evening). Prior 2026-09-29 (later)   # RE-STAMPED 2026-09-29 (later): Epic 24 / Story 24.1 minted (spec-pyforge-mason CAP-34, FR-56); § Currency reconciliation — 2026-09-29 (later). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 23 / Stories 23.1-23.3 minted (spec-pyforge-mason CAP-33, FR-55); § Currency reconciliation — 2026-09-29. Prior 2026-09-28 (night, later)   # RE-STAMPED 2026-09-28 (night, later): Epic 22 / Stories 22.1-22.2 minted (spec-pyforge-mason CAP-32, FR-54); § Currency reconciliation — 2026-09-28 (night, later) appended. Prior 2026-09-28 (night): Epic 21 / Stories 21.1-21.5 minted (spec-pyforge-mason CAP-31, FR-53); § Currency reconciliation — 2026-09-28 (night) appended. Prior 2026-09-28 (later): Epic 20 / Story 20.1 minted (spec-pyforge-mason CAP-30, FR-52); § Currency reconciliation — 2026-09-28 (later) appended. Prior 2026-09-28: Epic 19 / Stories 19.1-19.5 minted (spec-pyforge-mason CAP-29, FR-51); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (night): Epic 18 / Story 18.1 minted (spec-pyforge-mason CAP-28). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
 currency_review: "Reviewed 2026-09-14 (chain-currency sweep cascade, arch->epics edge) — validation note appended at end of file (§ Validation note — 2026-09-14): ledger re-measured with the real parser at 70/70 stories done across 17/17 epics; Epic 16's two realization-gate stories confirmed landed against live evidence (the pyforge-mason-recipe-build-smoke pixi task is wired into pyforge-station-tests.yml:228); the PRD's new FR-14 as-built divergence is recorded as owing a Dream/Spec, NOT minted as a story here. No epic or story restructured. Reviewed 2026-09-06 (Epic 14 added: spec-bmad-suite-lifecycle mason relay — bmad-eval-quality __win variant, Story 14.1; CFE Rule 1 + Rule 2 apply). Reviewed 2026-08-26 — validated against the ARCHITECTURE-SPINE as truth-upped the same day and the as-built code: all 50 stories across 11 epics are done in the tracked ledger (station complete per fleet ledger 2026-08-21). Counts corrected 6/42 -> 11/50 (Epics 6-11 had grown past the r2 snapshot). No story headings or statuses changed; see the appended Validation note. Prior review 2026-08-02 (AD binding check)."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -1212,6 +1212,37 @@ to synthesize one; resolved 2026-08-15, story 4.4 escalation)
 
 *Effort: S. Realizes FR-28.*
 
+### Story 4.5: A repeated --platform keeps every value
+
+As a user locking or checking an environment for several platforms,
+I want `--platform` to keep every value I pass, repeated or comma-separated, and a repeated `package ship --to` refused,
+So that a lock never silently covers fewer platforms than I named, and an outward ship never targets fewer than I meant.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-4 (FR-27); a fix, no new CAP; AD-6
+**Flag:** none (a fix carries no flag, `spec-feature-flag-governance` Q1)
+**Surface:** `src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py` (the `environment lock` and `environment check`
+`--platform` registrations, and the ship targets flag in `_add_ship_flags`);
+`src/shared/packages/pyforge-mason/src/pyforge/mason/environment.py` (only if the token flattening lives there);
+`src/shared/packages/pyforge-mason/tests/unit/test_cli.py`; `src/shared/packages/pyforge-mason/tests/unit/test_environment.py`
+(only with `environment.py`); `.claude/skills/mason-environment/SKILL.md` (only if its wording changes) and
+`.claude/skills/pyforge-mason/**` (only through `skf-update-skill`); one dated Change Log line on
+`_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-4-3-mason-environment-lock.md`.
+**Spec:** `planning-artifacts/specs/spec-4-5-a-repeated-platform-keeps-every-value.md`
+**Given** CAP-4's success, FR-27 and Story 19.3 call `--platform` repeatable, while `cli.py` registers it on
+`environment lock` and `environment check` as a plain store, so `--platform linux-64 --platform osx-arm64` locks
+`osx-arm64` alone, with no warning (EGM audit MAS-D-R4, MAS-D-C3)
+**When** both verbs collect every `--platform` value (`action="append"`) and flatten each value's comma-split tokens, in
+the order given, before calling `environment.lock` and `environment.check`
+**Then** `--platform linux-64 --platform osx-arm64`, `--platform linux-64,osx-arm64` and a mix of both lock and check
+every platform named, in order; empty tokens are still dropped, and no `--platform` still leaves conda-lock's own
+default and reports it
+**And** a second `--to` on `package ship`, or a second targets flag on the `package --ship` alias, exits 2 with a usage
+error naming the flag and builds or ships nothing, while a single `--to pypi-test,pypi` still targets both; the new
+tests in `src/shared/packages/pyforge-mason/tests/unit/test_cli.py` fail against `main`'s `cli.py` first; CAP-4 is not
+re-derived and the PRD is not edited; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green and
+`pyforge-mason-coverage-gate` holds the touched-module floor
+**Status:** backlog
+
 ---
 
 ## Epic 5: Prove the seam holds
@@ -2114,7 +2145,11 @@ campaigns); canopy:AD-17
 (new: `SKILL.md` carrying the how-to's parameterized body, `references/worked-examples.md` carrying its Worked Examples);
 `docs/how-to/feedstock-platform-expansion.md` and `docs/how-to/feedstock-failure-remediation.md` (each becomes a short
 pointer to its skill, frontmatter kept); `docs/how-to/feedstock-platform-expansion.md` and
-`docs/how-to/feedstock-failure-remediation.md` (the stubs point at the skill); `CLAUDE.md` (the two legacy-index rows'
+`docs/how-to/feedstock-failure-remediation.md` (the stubs point at the skill) (amended 2026-11-01 in place: this
+second pair named the `docs/specs/` stubs at mint; doctor Story 37.1 repointed it at the how-tos the line already
+lists when `docs/specs/` retired, and the stubs now live at `archive/docs/specs/feedstock-platform-expansion.md` and
+`archive/docs/specs/feedstock-failure-remediation.md` under spec-one-chain-per-station:CAP-11, each still pointing at
+its skill, EGM audit MAS-D-C6); `CLAUDE.md` (the two legacy-index rows'
 descriptions); `src/shared/packages/pyforge-mason/tests/meta/test_mason_skills.py` (extended);
 `docs/reference/skills-catalog.md` (regenerated); `docs/reference/agent-instruction-notes.md` § *Skill Reference* (two rows).
 **Given** the two how-tos are the orchestration layer over CFE's procedure — in their own words CFE "owns the procedural
@@ -2148,6 +2183,39 @@ carries a dated minor-version entry naming Epic 19 (a "guidance held" entry if n
 **And** the commit subject is `retro(cfe): …` and touches only the CFE surface; mason's sanctioned-retro meta-test and the
 CFE suite stay green; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
 **Status:** done
+
+### Story 19.6: Mason's skill meta-tests scan every skill file, G-id and CLI verb
+
+As an agent who edits a Mason skill,
+I want the mason meta-tests to read every file of every Mason skill, every G-id it cites and every verb the CLI has,
+So that a restated CFE gotcha, a dangling gotcha pointer or an undocumented verb fails a test instead of passing unseen.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-29 (FR-51); a fix, no new CAP; canopy:AD-17
+**Flag:** none (a fix carries no flag, `spec-feature-flag-governance` Q1)
+**Surface:** `src/shared/packages/pyforge-mason/tests/meta/test_mason_skills.py`,
+`src/shared/packages/pyforge-mason/tests/meta/test_skf_mason_skill.py` and
+`src/shared/packages/pyforge-mason/tests/meta/test_persona_consults_cfe.py` (tests only);
+`.claude/skills/pyforge-mason/**` only if a verb is missing, regenerated with `skf-update-skill` from
+`.claude/skills/pyforge-mason/skill-brief.yaml`, never hand-edited. `AGENTS.md`'s SKF block is `skf-export-skill`'s and
+is not touched.
+**Spec:** `planning-artifacts/specs/spec-19-6-mason-s-skill-meta-tests-scan-every-skill-file-g-id-and-cli-verb.md`
+**Given** `test_mason_skills.py` reads only the four hand-authored `SKILL.md` files, and only for a `### G<n>.` heading;
+nothing reads their `references/*.md`, the station skill, the how-to pointers or the CLI's verbs; and
+`test_persona_consults_cfe.py:401-402` pins the literals `8 skills` and `v0.1.0` (EGM audit MAS-M-Z4, MAS-M-D5)
+**When** the gotcha check reads every `*.md` under `.claude/skills/mason-package/`, `.claude/skills/mason-environment/`,
+`.claude/skills/mason-feedstock-platform-expansion/`, `.claude/skills/mason-feedstock-failure-remediation/` and
+`.claude/skills/pyforge-mason/active/pyforge-mason/`
+**Then** a `### G<n>.` heading in any of them fails the test, and so does a cited G-id with no `### G<n>.` heading in
+`.claude/skills/conda-forge-expert/SKILL.md`; a G-id cited with a one-line gist is a pointer and passes (so
+`.claude/skills/mason-feedstock-failure-remediation/references/worked-examples.md` keeps its pointers); a planted
+heading and a planted dangling G-id in a `references/` file each prove the check is not vacuous
+**And** a test asserts that `docs/how-to/feedstock-platform-expansion.md`, `docs/how-to/feedstock-failure-remediation.md`,
+`archive/docs/specs/feedstock-platform-expansion.md` and `archive/docs/specs/feedstock-failure-remediation.md` each link
+their skill, and that `docs/reference/agent-instruction-notes.md` names `pyforge-mason` as an SKF skill;
+`test_skf_mason_skill.py` asserts every verb `build_parser()` registers appears in the station `SKILL.md` (all 12 do at
+`03a7aff5d9`), a planted missing verb failing it; `test_persona_consults_cfe.py` requires a `[pyforge-mason v` entry,
+not a literal count or version; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
 
 ## Epic 20: No station or environment caps pixi (spec-pyforge-mason CAP-30)
 
@@ -3294,6 +3362,83 @@ outside `rxm7706/local-recipes`, no `mason recipe submit` or `mason package ship
 `prepare_submission_branch`. The `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry, and
 `pixi run --frozen -e pyforge-mason pyforge-mason-test` is green
 **Status:** done
+
+### Story 25.17: Epic 25's recipes carry the build records their stories claim
+
+As the maintainer who reads a done Epic 25 story's run table,
+I want each recipe it names to carry `cfe-local-build-*` fields its own build wrote,
+So that a run table that says built agrees with the recipe's own record, and a recipe that still fails says why.
+
+**Type:** fix • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-35 (FR-57); a fix, no new CAP; AD-1;
+AD-15; CFE Rule 1 + Rule 2; CFE G52, G53, G65, G95
+**Flag:** none (a fix carries no flag, `spec-feature-flag-governance` Q1); its spec records `flag-exempt: recipe-build`
+**Recipes (26, read at `03a7aff5d9`):** the twelve that record `failed` (`pillow-heif`, `django-silk`, `import-linter`,
+`grafana-client`, `fastmcp-slim`, `tree-sitter-php`, `vlmrun`, `wagtail`, `robocorp-workitems`, `StringZilla`,
+`django-grpc`, `django-csvimport`); `zxing-cpp` (`not-attempted`, no reason); `langflow` (a `success` dated
+2026-09-03); and every recipe whose `cfe-local-build-datetime` is the shared hand stamp `2026-10-10T08:35:31Z` (14,
+among them `solvor`, `pixitainer` and `py-yaml12`, the three gate reds Story 25.4 left without a reason).
+**Parked (operator ruling 2026-11-01):** recipe-factory work in `-e local-recipes` with its own CFE retro; it stays
+`backlog` and is not built in the EGM landing PR (marshal Story 113.7).
+**Surface:** `recipes/{pillow-heif,django-silk,import-linter,grafana-client,fastmcp-slim,tree-sitter-php,vlmrun,wagtail,robocorp-workitems,StringZilla,django-grpc,django-csvimport,zxing-cpp,langflow,solvor,pixitainer,py-yaml12,django-weasyprint,django-lasuite,microsoft-agents-m365copilot,py3langid,robocorp-storage,robocorp-vault,wagtail-autocomplete,wagtail-json-widget,wagtailtables}/recipe.yaml`;
+an appended *Correction (Story 25.17)* section on
+`_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-4-wave-0-s-leftover-recipes-end-repaired-or-carry-a-recorded-reason.md`,
+`_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-6-track-b-batch-2-refreshes-django-fsm-log-through-import-linter.md`,
+`_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-7-track-b-batch-3-refreshes-jhub-apps-through-niquests.md`,
+`_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-8-track-b-batch-4-refreshes-ocrmypdf-through-pysqlite3.md`,
+`_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-9-track-b-batch-5-refreshes-redshift-connector-through-zxing-cpp.md`
+and
+`_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-14-wave-f-s-other-18-packages-are-built-by-their-feedstock-s-own-mirror.md`;
+the CFE retro surface (`.claude/skills/conda-forge-expert/{SKILL.md,CHANGELOG.md}` and its version carriers, and
+`.claude/skills/conda-forge-expert/scripts/refresh_wave.py` only if a record field is not written by the build),
+committed alone as `retro(cfe): …`.
+**Spec:** `planning-artifacts/specs/spec-25-17-epic-25-s-recipes-carry-the-build-records-their-stories-claim.md`
+**Given** done Stories 25.4, 25.6, 25.7, 25.8, 25.9 and 25.14 report their recipes built, while the recipes' own
+records say `failed`, `not-attempted` with no reason, a stale `success`, or one hand stamp shared by 14 recipes (EGM
+audit MAS-D-C1; Major, since the records are local and no gate reads them)
+**When** the story invokes `conda-forge-expert` first and rebuilds each recipe on linux-64 through
+`pixi run -e local-recipes refresh-wave <manifest> --gates --build --report-dir <dir>`, local only
+**Then** every `cfe-local-build-*` field of each recipe is written by its own build, never by hand, and each recipe ends
+in CAP-35's outcome set: a green isolated linux-64 build, a recorded G95 block (a local end state, operator ruling
+2026-11-01), or `needs-review` with its reason; 25.4's three gate reds carry their reasons, and the conda-smithy
+recipe-lint its AC 6 left out has run for them
+**And** each of the six run tables gains a dated *Correction (Story 25.17)* section, appended, never rewritten, and no
+done story's status moves; the scope is Epic 25's recipes only (the 495 `failed` records estate-wide are not this
+story's); nothing leaves the local repo; the `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry teaching CFE
+to read a run table back against the recipe's own record; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
+
+### Story 25.18: Wave A's no-refresh recipes are re-bucketed live from the atlas
+
+As the maintainer of the co-maintained mirrors,
+I want the recipes Wave A bucketed as needing no refresh re-derived live from the atlas, by feedstock and by each
+output's own version,
+So that no recipe stays behind its feedstock because Wave A read the wrong directory or the first version line.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-35 (FR-57); a fix, no new CAP; AD-1;
+AD-15; CFE Rule 1 + Rule 2; CFE G52, G53, G72
+**Flag:** none (a fix carries no flag, `spec-feature-flag-governance` Q1); its spec records `flag-exempt: recipe-build`
+**Recipes (168, Wave A's no-refresh buckets of 2026-10-09):** 162 `v1-current`, the 4 `v1-ahead` left after Story
+25.14 re-checked the four `lfx-*` bundles, and 2 `other-non-pep440`. Wave A's baseline file and script were never
+committed, so the names are re-derived live, not replayed.
+**Parked (operator ruling 2026-11-01):** it stays `backlog`, and `DW-mason-25-14` stays open until it lands.
+**Surface:** `recipes/<name>/recipe.yaml` for each recipe the re-bucket finds behind; the story spec's bucket record;
+`_bmad-output/projects/pyforge-mason/planning-artifacts/deferred-work-ledger.md` (`DW-mason-25-14` closed with a cited
+`verified:` line); the CFE retro surface (`.claude/skills/conda-forge-expert/CHANGELOG.md` and its version carriers),
+committed alone as `retro(cfe): …`, shared with Story 25.17 if both land together.
+**Spec:** `planning-artifacts/specs/spec-25-18-wave-a-s-no-refresh-recipes-are-re-bucketed-live-from-the-atlas.md`
+**Given** Wave A (Story 25.2) bucketed each co-maintained package by a `recipes/<name>/` match and the first version line,
+misread the four `lfx-*` bundles as `v1-ahead` that way, and Story 25.14 re-checked only its 22 names, so 168 recipes
+stand unverified (EGM audit MAS-D-C4)
+**When** the story invokes `conda-forge-expert` first and re-derives them live from the atlas, mapping each package to
+its feedstock through `packages.feedstock_name` (`DW-mason-25-14`; Wave A step A3) and comparing each output's own
+`context` version with its feedstock's published one
+**Then** the story spec records the live count before any refresh, and every recipe with its bucket and the reason; a
+multi-output recipe is judged by each output, never by its first version line; each recipe found behind is refreshed
+with `pixi run -e local-recipes refresh-wave` to an end state in CAP-35's outcome set, keeping every co-maintainer (G53)
+**And** `DW-mason-25-14` closes with a cited `verified:` line once the mapping is applied; nothing leaves the local repo;
+the `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry (shared with Story 25.17's if both land together);
+`pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+**Status:** backlog
 
 ## Epic 26: CFE's tests never ask GitHub whether a recipe maintainer exists (spec-pyforge-mason CAP-34)
 

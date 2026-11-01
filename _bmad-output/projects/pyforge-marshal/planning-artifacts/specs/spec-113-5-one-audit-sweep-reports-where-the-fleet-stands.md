@@ -96,6 +96,7 @@ Summary: built by hand in the single Epic 113 PR (2026-11-01, operator direction
 
 - 2026-11-01: minted from the station Dream's entry of 2026-11-01 (EGM challenger); the operator's audit condition binds here.
 - 2026-11-01: built. The sweep writes one JSON report per target, one Markdown summary per station and `fleet.md`; it is resumable per target (review S8); stations with no `glossary.md` yet (six of eight on 2026-11-01) run with the glossary left out instead of being refused (review B2).
+- 2026-11-01: amended in place, append-only (operator ruling 2026-11-01; EGM audit MAR-E1, MAR-D-C1, `_bmad-output/projects/pyforge-marshal/planning-artifacts/research/egm-audit-2026-11-01.md`): SKF compiles each station skill to `.claude/skills/pyforge-<station>/active/pyforge-<station>/SKILL.md`, which `station_skill_path` reads first, with the flat path as a fallback (Approach bullet 1 trails it; Story 113.11 re-derives CAP-302 and FR-244); `epics.md` Story 113.5's Then carries the same dated note. No AC body, status or key moved.
 
 ## Review Triage Log
 

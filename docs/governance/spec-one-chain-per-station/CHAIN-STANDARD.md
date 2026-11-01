@@ -4,7 +4,7 @@ type: companion
 spec: one-chain-per-station
 status: ready
 created: "2026-09-16"
-updated: "2026-10-26"   # AMENDED 2026-10-26 (CAP-5): a requirement cites defined CAPs only — §2, §6 (NFR families), §12 (the ruling and the arrows it reverses). Prior "2026-09-17"
+updated: "2026-11-01"   # AMENDED 2026-11-01 (EGM audit, marshal Story 113.7; operator rulings 2026-11-01): § 0 terms and provenance; CAP date markers (ready <date>)/(shipped <date>), qualified spec-<x>:CAP-n cites and success clauses that name their command and exit code (§§ 1-4); the story-spec ladder (§ 4); station long and short forms (§ 5); B named rxm7706/python-foundry; § 11 item 3 dated done; counts read at their amendment; fr-baseline.json's one writer (§ 12). Prior "2026-10-26": AMENDED 2026-10-26 (CAP-5): a requirement cites defined CAPs only — §2, §6 (NFR families), §12 (the ruling and the arrows it reverses). Prior "2026-09-17"
 ---
 
 # The chain standard
@@ -18,16 +18,54 @@ comes from — nothing here is new vocabulary; it is the existing rulings with
 their grandfathering removed (operator, 2026-09-16: *"don't make the operator
 think"*).
 
-Applies to `local-recipes` now and `pyforge-foundry` on cutover (Spec CAP-7).
+Applies to `local-recipes` (A) now and to B, `rxm7706/python-foundry`, on cutover (Spec CAP-7).
 
 ---
+
+## 0. Terms and provenance
+
+Each term this page uses, defined once (operator ruling 2026-11-01). A count on
+this page is the figure read at the amendment that wrote it — the 2026-09-16
+rebase unless its section is dated otherwise — never a live figure; measure
+again before relying on one.
+
+| Term | Meaning |
+|---|---|
+| Station, Smith | The eight stations: atlas, doctor, herald, marshal, mason, scribe, steward, warden. *Smith* is the brand word for a station's agent (Charter § *The Lexicon*). A station has a long and a short form; § 5 says which a place takes. |
+| Charter | The constitutive Dream `docs/dreams/pyforge-charter.md` and its Spec `docs/governance/spec-pyforge-charter/`; *Charter §n* is a numbered section of that Dream. |
+| `CAP-n` | A capability in a Spec: an intent and a success clause. Everything below the Spec cites one (§ 2). |
+| `FR-n`, `NFR-n` | A functional or non-functional requirement in a station PRD; each cites the CAPs it realizes or bounds (§ 2, § 6, § 12). |
+| `AD-n`; `canopy:`, `pap:`, `fnd:` | An architecture decision in a spine, cited with its spine prefix: `canopy` for steward's spine (the Canopy, the platform's modular monolith), `pap` for the platform host's (python-agent-platform), `fnd` for the foundry cutover's (folded into the steward spine on 2026-09-08). |
+| A, B | A is `rxm7706/local-recipes`, this repository; B is `rxm7706/python-foundry`, the root the cutover moves to. |
+| Frame | The Intelligence Hub's word for a scoped, versioned text artifact that carries context and policy (`docs/dreams/pyforge-steward.md`, *The whitepaper, distilled* § 4.3). B rebuilds its engines from Frame and Spec. |
+| CFE | The `conda-forge-expert` skill (`.claude/skills/conda-forge-expert/`), which owns recipe semantics. |
+| Twin | The tracked `sprint-status-ledger.yaml`, which `sprint-ledger-sync` (`scripts/promote_sprint_status.py`) generates from the gitignored Tier-3 sprint feed. |
+| Tier 0, 2, 3 | Dream; Spec and planning; execution output (AGENTS.md § *The tiers*). Tier 1, the legacy intake specs under `docs/specs/`, was retired on 2026-10-10 (§ 11 item 3). |
+| The rebase | The one-time fold that brought each station to one chain: the marshal pilot on 2026-09-16, the other seven stations on 2026-09-17. "Retired at the rebase" means retired then. |
+| Path B | A station persona that acts only through the `pyforge <station> …` grammar and its `POST /stations/<station>/mcp` face (`spec-pyforge-unifying-strategy:CAP-16`). |
+| Lane 1 | The Wagtail CMS at `/`, the platform's front door. Lane 2 is the station portals at `/stations/<name>/` (`docs/explanation/pyforge-estate-overview.md`). |
+
+**Where a citation resolves.**
+
+- *Lesson N*: the numbered fold lessons in this folder's
+  `docs/governance/spec-one-chain-per-station/.memlog.md` (its 2026-09-16 and
+  2026-09-17 `note` entries).
+- *Vocabulary CAP-n*, and *Q14* (that Spec's open question 14): the absorbed
+  `spec-vocabulary-one-name-one-job`, whose pointer and memlog are under
+  `archive/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-vocabulary-one-name-one-job/`.
+  Its capabilities live on as `spec-pyforge-steward:CAP-132` to `spec-pyforge-steward:CAP-138`; their
+  `← spec-vocabulary-one-name-one-job CAP-n` provenance lines are in
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md`.
+- *Spec CAP-n*: this folder's Spec, `docs/governance/spec-one-chain-per-station/SPEC.md`.
+- *README*: `docs/dreams/README.md`, the Dream status vocabulary.
+- *Roster*: `docs/governance/guild-roster.json` (`fold_exemptions`, `session_denials`).
 
 ## 1. The hierarchy — one of each, per station
 
 ```
 docs/dreams/pyforge-<s>.md                                   Dream        status: specified   (forever)
 _bmad-output/projects/pyforge-<s>/planning-artifacts/
-  specs/spec-pyforge-<s>/SPEC.md  +  .memlog.md               Spec         status: ready       (forever; CAP-n carry their own met dates)
+  specs/spec-pyforge-<s>/SPEC.md  +  .memlog.md               Spec         status: ready       (forever; each CAP-n reads (ready <date>), then (shipped <date>))
   specs/spec-<E>-<S>-<slug>.md                               story spec   one file per story, named by the ledger key
   prds/prd-pyforge-<s>-<created>/prd.md                      PRD          FR-n  ← CAP-m  (traced, never numbered)
   architecture/architecture-pyforge-<s>-<created>/           spine        AD-n  (prefixed: canopy:AD-n, pap:AD-n, fnd:AD-n)
@@ -62,9 +100,17 @@ Dream § dated section  →  CAP-n  →  FR-n  →  AD-n  →  Story E.S  →  l
        (why)              (what)    (PRD)    (how)     (work)         (state)        (contract)
 ```
 
-- A **CAP** cites the Dream section it realizes (memlog `capability` entry).
+- A **CAP** cites the Dream section it realizes, in its memlog `capability`
+  entry. It reads `(ready <date>)` until it is met and `(shipped <date>)`
+  once it is (operator ruling 2026-11-01).
+- A CAP's **success** clause names the command or test that proves it and the
+  exit code that proves it, and that command fails when the capability is
+  absent (operator ruling 2026-11-01; rule text only — no detector checks it
+  yet).
+- A citation of another Spec's capability is always qualified:
+  `spec-<x>:CAP-n` (operator ruling 2026-11-01).
 - A **requirement** (`FR-n`, `NFR-n`) cites one or more *defined* CAPs —
-  `← CAP-m`, or `← spec-<x> CAP-m` for another Spec's capability — and
+  `← CAP-m`, or `← spec-<x>:CAP-m` for another Spec's capability — and
   nothing else: never a Spec Constraint, a Charter clause, an AD or a
   decision id (Spec CAP-5 as amended 2026-10-26; `fr-without-cap`; §12).
   The arrow is traced from the cited CAP's intent and success, never
@@ -92,7 +138,7 @@ Dream § dated section  →  CAP-n  →  FR-n  →  AD-n  →  Story E.S  →  l
 | 4 | solutioning | append an AD only if the *how* changed | spine AD-n |
 | 5 | implementation | mint the Story (heading + ledger key + story spec, one function) | `epics.md`, ledger, `spec-<key>.md` |
 | 6 | implementation | build in a worktree; land by PR | code |
-| 7 | implementation | story `done`; CAP gains its met date; Dream log entry | ledger → `SPEC.md` → Dream |
+| 7 | implementation | story `done`; the CAP's `(ready <date>)` becomes `(shipped <date>)`; Dream log entry | ledger → `SPEC.md` → Dream |
 
 No step is skipped for a "small fix" (AGENTS.md Dream-first §5). Steps 3–4
 may be no-ops (recorded as such in the memlog), never absent.
@@ -102,8 +148,24 @@ may be no-ops (recorded as such in the memlog), never absent.
 | Tier | Enum (closed) | The living value | Retired at the rebase |
 |---|---|---|---|
 | Dream | `dreamt · pitched · specified · realized · archived` | station Dream = **`specified`** | — (`living` rejected: an ongoing state in an act-based ladder; README + roster) |
-| Spec | `draft · ready · shipped · archived · absorbed · superseded · extension-point` | station Spec = **`ready`** — "the contract binds", forever; CAPs carry `(Met <date>)` | **`in-progress`** — 17 live uses → 0 (vocabulary CAP-1/2 said "grandfathered only, never write new"; the rebase ends the grandfathering) |
+| Spec | `draft · ready · shipped · archived · absorbed · superseded · extension-point` | station Spec = **`ready`** — "the contract binds", forever; each CAP reads `(ready <date>)` until met and `(shipped <date>)` once met | **`in-progress`** — 17 uses at this amendment → 0 (vocabulary CAP-1/2 said "grandfathered only, never write new"; the rebase ends the grandfathering) |
 | Story (ledger) | `backlog · in-progress · done · blocked · optional` | — | — (`optional` is BMAD's retrospective lattice, vocabulary CAP-3; `blocked` is operator-flipped only) |
+| Story spec (frontmatter) | `draft · ready-for-dev · in-progress · in-review · done · blocked · superseded` | — | — (a story's own ladder, `.claude/skills/bmad-build-auto/spec-template.md`; not the ledger enum) |
+
+**The story-spec ladder is not mapped onto the ledger.** No code translates
+one into the other. `scripts/promote_sprint_status.py` never reads story-spec
+frontmatter: it copies the Tier-3 feed's story values into the twin unchanged, keeps
+`done` terminal and story `blocked` sticky, and ranks feed values
+(`_STORY_PROGRESS_RANK`: `backlog` 0, `ready-for-dev` 1, `in-progress` 2,
+`review` 3, `done` 4) only to roll up epics and to pick between a stale and a
+current key. The one place story-spec values are read is a landing
+(`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py`,
+`PRE_DONE_SPEC_STATUSES` and `TERMINAL_SPEC_STATUSES`, applied by
+`dispatch_land_finalize`): a merged story's tracked spec at `draft`,
+`ready-for-dev`, `in-progress` or `in-review` (or at the ledger words
+`backlog`, `ready` or `review` that older specs carry) is set to `done`;
+`done`, `blocked` and `superseded` are left alone, as deliberate states; any
+other value is a warning.
 
 Coupling: Dream `specified` ⇔ its Spec at `ready` or beyond (README). Spec
 `shipped` ≠ story `done` ≠ Dream `realized` (vocabulary CAP-3). A station Dream
@@ -114,8 +176,8 @@ and story-level facts (Spec CAP-6).
 
 | Concept | Form | Source |
 |---|---|---|
-| Station, long | `pyforge-<s>` — paths, packages, pixi envs, project slugs | vocabulary CAP-7 |
-| Station, short | `<s>` — `owner:`, `Source`, prose, `--project` keys | vocabulary CAP-7 |
+| Station, long | `pyforge-<s>` — paths (`_bmad-output/projects/pyforge-<s>/`), packages, pixi envs (`-e pyforge-<s>`), the BMAD project slug (`BMAD_ACTIVE_PROJECT`, `scripts/bmad-switch`) and `marshal … --project` | vocabulary CAP-7; amended 2026-11-01 |
+| Station, short | `<s>` — `owner:`, `Source`, prose, ids, and `sprint-ledger-sync --project` (a dashboard key: it refuses the long form) | vocabulary CAP-7; amended 2026-11-01 |
 | Station token | `<s>` — the short name, **the same token** in CLI, URL, distribution, skill, persona and ids; uppercased inside an id (`DW-MARSHAL-n`) | steward spine § Station token; vocabulary CAP-6 |
 | Epic heading | `## Epic E: <Title>` | live convention, all eight |
 | Story heading | `### Story E.S: <Title>` — human-canonical | vocabulary CAP-6 |
@@ -130,7 +192,8 @@ and story-level facts (Spec CAP-6).
 
 **The 53 story-spelling divergences vocabulary CAP-6 left in place are gone at
 the rebase** — every renumbered story is minted through the one function, so
-heading, key and filename agree for all 1,445 stories, not only new ones.
+heading, key and filename agree for all 1,445 stories at this amendment, not
+only new ones.
 
 ## 6. Identifiers — one family per job
 
@@ -146,8 +209,8 @@ heading, key and filename agree for all 1,445 stories, not only new ones.
 | CFE gotcha | `G-nn` | recipe domain only | CFE skill |
 | Station rule / finding id | `<STATION>-<n>` — **one** family per station (`MARSHAL-033`); scope is prose, not id | per station | **new at the rebase** — replaces the 14-prefix long tail (`MRS-DISP-`, `HER-`, `GATE-`, `SM-`, `LB-`, `BS-`, `SC-`, `FU-`, `RB-`, `PORT-`, `DC-`, `DRAIN-`, `ATLAS-`, `MEM-`) |
 
-**Eventual consistency for code-cited ids** (Spec Constraint): `MRS-*` (100
-files), `GATE-*` (27), `FU-*` (22), `SC-*` (15), `ATLAS-*` (9), `DRAIN-*` (6)
+**Eventual consistency for code-cited ids** (Spec Constraint): at this
+amendment, `MRS-*` (100 files), `GATE-*` (27), `FU-*` (22), `SC-*` (15), `ATLAS-*` (9), `DRAIN-*` (6)
 are cited in `src/`. The planning artifacts re-key in the fold PR; the code
 citations migrate when their module is next touched, each with a memlog line.
 A planning artifact never waits on code to conform.
@@ -272,7 +335,10 @@ is all that is left to do.
    stays. `docs/specs/`, whose legacy tier retires once its last files are
    carried into a station chain or archived. `CLAUDE.md`'s legacy index,
    `AGENTS.md`'s Tier 1 row and doctor's `check_spec_indexed` go in the same
-   PR that empties the directory.
+   PR that empties the directory. *(Done 2026-10-10, doctor Story 37.1:
+   `docs/specs/` is empty and gone, its files under `archive/docs/specs/`, and
+   the index, the Tier 1 row and `check_spec_indexed` went with it;
+   `docs/intake/` keeps only its README.)*
 
 **Readers follow the move.** Anything that lists Dreams (the console's
 Archived column, the deck facts, scribe's compile, the sibling-drift check)
@@ -284,8 +350,9 @@ changes land as Stories before the first fold PR moves a file.
 
 **The rule.** A requirement (`FR-n`, `NFR-n`, or a lettered NFR family)
 cites one or more *defined* CAPs and nothing else. `← CAP-m` resolves
-against the station Spec's capability *definition* lines; `← spec-<x> CAP-m`
-resolves against the named Spec's. A Spec Constraint is realized by an AD
+against the station Spec's capability *definition* lines; `← spec-<x>:CAP-m`
+resolves against the named Spec's (the detector also reads the older
+space-separated `spec-<x> CAP-m`; new arrows use the colon, § 2). A Spec Constraint is realized by an AD
 that names the Constraint by its bolded lead; a Constraint that promises a
 user- or operator-visible guarantee is minted as a CAP through `bmad-spec`
 (the Constraint is its provenance) and requirements cite that CAP; a line
@@ -294,8 +361,8 @@ PRD's *Constraints and Guardrails* section naming its AD. Arrows are traced
 from the cited CAP's intent and success, never numbered in sequence.
 
 **Why.** §2 and §6 already required `← CAP-m` and this page's preamble says
-the artifact moves; Spec CAP-7 names FR ← CAP as pyforge-foundry's starting
-discipline; the capability ledger (`docs/foundry/capability-ledger.yaml`)
+the artifact moves; Spec CAP-7 names FR ← CAP as B's (`rxm7706/python-foundry`)
+starting discipline; the capability ledger (`docs/foundry/capability-ledger.yaml`)
 routes only capabilities, so a requirement sourced from a Constraint has no
 rebuild/retire decision anywhere; Constraints have no stable id, so a
 quoted-text arrow breaks on the first rewording and no detector can resolve
@@ -328,6 +395,12 @@ outside the grammar: `NFR-R3a`, `NFR-R3b`, `NFR-P-warm`, `NFR-P-cold`,
 cites the CAP(s) it bounds; the 82 enter `docs/governance/fr-baseline.json`
 as the pre-rule population and leave it as each station's backfill story
 lands (atlas 41.3, marshal 108.2, mason 33.2, warden 20.2).
+
+**One writer.** `docs/governance/fr-baseline.json` changes only through
+`scripts/fr_baseline.py`, never by hand: `--prune` is the routine verb and only
+removes entries; the file grows only through that script's one-time acts
+(`--snapshot-findings`, and `--project pyforge-<s>` at a station's fold PR).
+Doctor Story 50.2 adds the guard that refuses any other edit.
 
 **Enforced, not asserted.** `fr-without-cap` (doctor CAP-92, Story 50.1)
 fails, on new findings against a baseline that only shrinks: a post-date

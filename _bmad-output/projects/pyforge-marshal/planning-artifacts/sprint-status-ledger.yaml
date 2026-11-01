@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 737
+# stories: 744
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -93,12 +93,19 @@ development_status:
   111-1-marshal-s-54-archived-dreams-leave-the-live-tree: done
   112-1-marshal-s-absorbed-spec-folders-move-to-the-archive-home: done
   113-1-marshal-factory-challenge-runs-a-fresh-context-review-of-one-chain-artifact: done
+  113-10-the-challenge-session-carries-no-house-context-checked-at-runtime: backlog
+  113-11-the-challenger-checks-its-preconditions-before-it-spawns-a-reviewer: backlog
+  113-12-each-stage-names-its-standard-and-decompose-reads-its-spec-s-capability-range: backlog
+  113-13-resolve-writes-only-marshal-s-spec-and-prints-the-memlog-command-for-any-other: backlog
+  113-14-a-challenge-run-has-a-ceiling-and-audit-a-section-selector: backlog
   113-2-the-challenge-policy-block-configures-the-challenger-and-absent-means-off: done
   113-3-dispatch-runs-the-readiness-stage-before-the-dev-session-starts: done
   113-4-the-drift-stage-reads-an-epic-s-code-against-its-spec-at-retro-time: done
   113-5-one-audit-sweep-reports-where-the-fleet-stands: done
   113-6-an-accepted-finding-travels-the-chain-s-only-write-path: done
   113-7-the-first-fleet-audit-runs-and-lands-its-residue: backlog
+  113-8-a-challenge-that-did-not-fully-run-never-reads-as-clean-and-watch-shows-the-readiness-result: backlog
+  113-9-the-challenger-model-is-a-claude-entry-of-marshal-s-own-catalog: backlog
   12-1-full-pixi-wiring-distribution-and-repo-gate-compliance: done
   12-2-the-local-recipes-empty-plan-oracle-critical: done
   12-3-offline-operation-and-the-egress-counter: done

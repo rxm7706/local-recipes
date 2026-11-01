@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: warden
-# stories: 114
+# stories: 122
 development_status:
   1-1-frozen-contract-verdict-lattice-projection-safety: done
   1-2-interfaces-null-engine-regression-harness-socket-deny: done
@@ -35,15 +35,23 @@ development_status:
   12-5-the-verdict-is-honest-and-specific: done
   12-6-deploy-gates-on-the-verdict-preserve-the-clean-only-promotion-gate: done
   13-1-the-tea-advisory-diffs-from-the-remote-tracking-ref: done
+  13-2-a-tea-skip-on-a-missing-ref-reaches-the-report: backlog
   14-1-the-actuator-resolves-the-lowest-osv-fixed-release-the-estate-s-solver-accepts: done
   14-2-the-actuator-edits-the-manifest-and-re-solves-the-lock-in-a-throwaway-copy: done
   14-3-the-actuator-opens-the-fix-as-a-draft-pr-on-an-estate-repo: done
+  14-4-the-default-solver-shares-the-manifest-edit-path-and-is-bounded: backlog
   15-1-opengrep-is-an-optional-sast-scanner-that-informs-never-publishes-the-verdict: done
+  15-2-opengrep-runs-estate-authored-rules-and-its-offline-flags-are-pinned-by-test: backlog
   16-1-warden-inventories-a-ghe-organisation-s-repos: done
+  16-10-the-fleet-export-carries-each-repo-s-head-sha: backlog
   16-2-a-fleet-run-scans-each-inventoried-repo-one-verdict-per-repo: done
   16-3-each-fleet-fix-waits-in-a-proposal-queue-for-operator-approval: done
   16-4-non-python-lockfiles-scan-through-osv-scanner-s-own-parsers: done
   16-5-warden-inventories-the-items-of-the-operator-designated-github-projects: done
+  16-6-fleet-approve-re-solves-and-delivers-the-fix-it-queued: backlog
+  16-7-a-fleet-run-is-time-bounded-and-an-approval-re-scans-before-it-opens: backlog
+  16-8-the-fleet-worker-scans-non-python-lockfiles-against-provisioned-offline-dbs: backlog
+  16-9-a-non-python-repo-s-license-and-currency-rows-report-what-ran: backlog
   17-1-eligibility-records-its-policy-and-warden-s-other-open-deferrals-close: done
   18-1-the-leak-guard-forbids-the-listed-terms-everywhere-and-the-organisation-s-name-in-warden-s-files: done
   19-1-every-warden-prd-fr-arrow-names-the-spec-capability-that-realizes-it: done
@@ -90,13 +98,13 @@ development_status:
   epic-11-retrospective: optional
   epic-12: done
   epic-12-retrospective: optional
-  epic-13: done
+  epic-13: in-progress
   epic-13-retrospective: optional
-  epic-14: done
+  epic-14: in-progress
   epic-14-retrospective: optional
-  epic-15: done
+  epic-15: in-progress
   epic-15-retrospective: optional
-  epic-16: done
+  epic-16: in-progress
   epic-16-retrospective: optional
   epic-17: done
   epic-17-retrospective: optional

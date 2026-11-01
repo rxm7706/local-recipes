@@ -166,3 +166,7 @@ Status: done
 **Verification:** `pyforge-warden-test` 2217 passed; `python scripts/spec_surface_reconcile.py` OK; memlog entries on `spec-pyforge-warden` and `spec-feature-flag-governance`.
 
 **Residual risks:** Non-npm lockfile kinds wired but npm-proven only; flag-OFF byte identity not golden-tested; mixed-stack merge only exercised npm-only path in CI.
+
+## Spec Change Log
+
+- 2026-11-01: amended in place (append-only, EGM audit 2026-11-01, marshal Story 113.7): the `epics.md` Story 16.4 Surface line now names `native_lockfiles.py`, `interfaces.py`, `report.py`, `cli.py` and `models.py`, where the scan landed (merge `de5a1331f9`), notes that `routing.py` and `engines.py` hold none of it and that `go.sum` is read through the sibling `go.mod` parser, with every path in full, and a **Spec:** line links this file (EGM audit WAR-D-C3, WAR-D-R2). No AC, status, heading or key moved; residue `_bmad-output/projects/pyforge-warden/planning-artifacts/research/egm-audit-2026-11-01.md`.

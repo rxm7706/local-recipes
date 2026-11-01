@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: atlas
-# stories: 245
+# stories: 247
 development_status:
   1-1-generate-legacy-contextual-skill: done
   10-1-restore-atlas-dependency-completeness-so-the-suite-can-collect: done
@@ -113,6 +113,7 @@ development_status:
   34-11-the-phase-c-mapping-fills-legacy-s-name-coincidence-and-recipe-source-tiers: done
   34-12-a-vulnerability-feed-that-cannot-be-reached-keeps-its-last-good-copy: done
   34-13-atlas-declares-the-brotli-its-nixpkgs-store-decodes: done
+  34-14-a-plain-run-on-a-fresh-data-root-exits-0: backlog
   34-2-the-phase-c-mapping-fills-from-the-conda-forge-bot-s-name-mapping: done
   34-3-dependencies-feedstock-health-and-maintainers-read-the-bot-s-split-graph-repos: done
   34-4-the-download-tables-fill-from-anaconda-s-monthly-parquet: done
@@ -125,6 +126,7 @@ development_status:
   35-2-the-vcs-batches-come-from-the-whole-universe: done
   35-3-upstream-versions-and-feedstock-health-come-from-github: done
   35-4-gitlab-codeberg-and-the-eight-registries-fill: done
+  35-5-the-legacy-vcs-branch-honours-the-credentialed-switch: backlog
   36-1-the-basilisk-population-runs: done
   36-2-the-openteams-board-and-the-staged-recipes-prs-fill-on-opt-in: done
   36-3-the-query-plane-estate-source-has-a-producer: blocked
@@ -225,9 +227,9 @@ development_status:
   epic-32-retrospective: done
   epic-33: done
   epic-33-retrospective: done
-  epic-34: done
+  epic-34: in-progress
   epic-34-retrospective: done
-  epic-35: done
+  epic-35: in-progress
   epic-35-retrospective: done
   epic-36: in-progress
   epic-36-retrospective: optional

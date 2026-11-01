@@ -381,3 +381,8 @@ with the flag test running both states
     `test_ac2_one_station_s_surplus_never_hides_another_s_missing_rows`,
     `test_ac2_a_surplus_reads_as_listed_and_counted_never_as_x_of_fewer`,
     `test_ac2_a_listed_story_no_station_row_counts_is_named`, `test_ac2_a_station_whose_counts_are_unknown_is_not_compared`.
+- 2026-11-01 (EGM fleet audit, marshal Story 113.7; append-only, no AC body edited, no status moved): `epics.md`
+  Story 42.1's Then line gains a dated in-place note that each status page links `lane1.href` only when it is an
+  absolute `http(s)` URL and none otherwise, as AC3 reads after the 2026-10-15 re-review above (open operator row
+  `DW-herald-42-1-1`); AC3's body stays the dated record. EGM audit HER-D-C2 (cluster HER-K7), residue
+  `_bmad-output/projects/pyforge-herald/planning-artifacts/research/egm-audit-2026-11-01.md`.

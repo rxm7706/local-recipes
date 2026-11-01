@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: db4bdee52b2c15d2
-story_count: 157
+source_fingerprint: 172a7164ca6c9732
+story_count: 159
 test_file_count: 188
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 157
+- **Stories parsed:** 159
 - **Epics parsed:** 44
 - **Test files inventoried:** 188 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `db4bdee52b2c15d2`
+- **Source fingerprint:** `172a7164ca6c9732`
 
 ## Risk Assessment
 
@@ -403,10 +403,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 34.11 | The Phase C mapping fills legacy's name-coincidence and recipe-source tiers | none observed |
 | 34.12 | A vulnerability feed that cannot be reached keeps its last good copy | none observed |
 | 34.13 | Atlas declares the brotli its nixpkgs store decodes | none observed |
+| 34.14 | A plain run on a fresh data root exits 0 | none observed |
 | 35.1 | One opt-in switch, and GitHub authenticates | none observed |
 | 35.2 | The VCS batches come from the whole universe | none observed |
 | 35.3 | Upstream versions and feedstock health come from GitHub | none observed |
 | 35.4 | GitLab, Codeberg and the eight registries fill | none observed |
+| 35.5 | The legacy VCS branch honours the credentialed switch | none observed |
 | 36.1 | The Basilisk population runs | none observed |
 | 36.2 | The OpenTeams board and the staged-recipes PRs fill on opt-in | none observed |
 | 36.3 | The query-plane estate source has a producer | none observed |

@@ -284,3 +284,11 @@ files finds nothing; `pyforge-herald-test` and `flag-gate-check` are green
   now lists `src/platform/tests/test_openfeature_file_flags.py` and
   `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, the tree-wide flag pins 42.1 and this story edited;
   atlas's Epic 30 surface lists them too (30.2's key).
+- 2026-11-01 (EGM fleet audit, marshal Story 113.7; append-only, no AC body edited, no status moved): `epics.md`
+  Story 42.3's Then and And lines gain dated in-place notes, as its Surface line: `docs-site/scripts/pages.mts` now
+  does what `pages_second_host.py` (renamed `pages_site_url.py`, retired with `docsite/` by Story 43.7) did, and the
+  absence check is scoped by inclusion, `git grep -l pages_second_host -- src scripts docs-site .github docs/how-to
+  docs/governance/flag-inventory pixi.toml ':(exclude)src/shared/packages/pyforge-herald/tests/meta/test_pages_site_url.py'
+  ':(exclude)scripts/.spec-surface-baseline.json'` exiting 1 (verified at `03a7aff5d9`). AC5's body stays the dated
+  record. EGM audit HER-D-R5 and HER-D-C4 (clusters HER-K2, HER-K7), residue
+  `_bmad-output/projects/pyforge-herald/planning-artifacts/research/egm-audit-2026-11-01.md`.

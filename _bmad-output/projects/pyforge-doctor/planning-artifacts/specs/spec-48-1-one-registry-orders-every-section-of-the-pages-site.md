@@ -256,6 +256,14 @@ untouched, and `pyforge-doctor-test` and `detectors-ci` are green
   the 2026-10-13 rulings and herald's Epic 43 (Story 43.7's Deps). `type: feature`, `flag-exempt: docs-only` by the
   coordinator's assignment (memlog 2026-10-14). The Dream's two stories (the registry in M2, the MAP rows in M1) are this
   one story: same two files, one check that reads both.
+- 2026-11-01 (append-only note, EGM audit DOC-D-C4, marshal Story 113.7; status stays `done`, no AC rewritten): later
+  stories retired what this spec's ACs name. Herald Story 43.7 (`fa6e11d4e4`) retired `docsite/`,
+  `docsite/content/site.yml` and `docs-site/scripts/sidebar_from_map.py`, so `docs/MAP.md` names `docs-site/` and
+  `presentations/` and no `docsite/` row; steward Story 102.1 (`f7a658ccc3`, landed by `df8096a2ce`) renamed
+  `dashboard.yml` to `.github/workflows/pages.yml`, now the one deploy caller; steward Stories 109.2 and 109.3
+  (`aa964e0ceb`) added `marketplace`, and `docs/map.yaml` holds six sections (`herald`, `status`, `pipelines`,
+  `dashboards`, `marketplace`, `changes`). § *Named, not fixed here* foresaw the renderer and the later rows;
+  `spec-pyforge-doctor/.memlog.md` line 788 records herald 43.7's consumer sweep.
 
 ## Review Triage Log
 

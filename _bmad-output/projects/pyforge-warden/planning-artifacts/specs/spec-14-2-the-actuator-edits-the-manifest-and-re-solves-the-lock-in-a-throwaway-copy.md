@@ -146,3 +146,7 @@ Status: done
 **Verification:** `pixi run --frozen -e pyforge-warden pyforge-warden-test` — 2195 passed; `pixi run -e pyforge-guild python scripts/spec_surface_reconcile.py` — OK; memlogs updated on `spec-pyforge-warden` and `spec-pyforge-unifying-strategy` (no `--write-baseline`).
 
 **Residual risks:** Production solver still uses 14.1 TOML probe for target resolution; manifest edit is separate on the PR path. Real `pixi lock` not exercised in CI (mocked in unit tests).
+
+## Spec Change Log
+
+- 2026-11-01: amended in place (append-only, EGM audit 2026-11-01, marshal Story 113.7): the `epics.md` Story 14.2 Surface line now names `manifest_fixup.py`, where the copy, the edit and the re-solve landed, and the two test files, with every path in full, and a **Spec:** line links this file (EGM audit WAR-D-C3, WAR-D-R2). No AC, status, heading or key moved; residue `_bmad-output/projects/pyforge-warden/planning-artifacts/research/egm-audit-2026-11-01.md`.

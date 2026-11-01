@@ -183,6 +183,7 @@ Deps: S-16.1.
 
 - 2026-10-11: minted `ready-for-dev` (ledger `backlog`, Deps S-16.1) from the operator's rulings of that date, which
   chose "Whole org + 2 projects". Bound to CAP-26 (FR-43). The flag is `pyforge.warden.fleet_project_items`.
+- 2026-11-01: amended in place (append-only, EGM audit 2026-11-01, marshal Story 113.7): the `epics.md` Story 16.5 Surface line now also names `django_warden_fabric/fleet_project_items.py`, `pyforge/warden/fleet_github_graphql.py` and Story 16.1's `fleet_inventory.py`, where the work landed, in full paths (EGM audit WAR-D-C3). No AC, status, heading or key moved; residue `_bmad-output/projects/pyforge-warden/planning-artifacts/research/egm-audit-2026-11-01.md`.
 
 ## Review Triage Log
 

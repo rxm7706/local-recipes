@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: mason
-# stories: 192
+# stories: 196
 development_status:
   1-1-workspace-member-scaffold-and-dual-artifact-build: done
   1-10-configuration-surface-logging-and-child-output-streaming: done
@@ -53,6 +53,7 @@ development_status:
   19-3-the-environment-craft-skill-teaches-mason-environment-lock-and-check: done
   19-4-the-two-feedstock-campaigns-become-mason-skills: done
   19-5-the-closing-rule-2-retro-teaches-conda-forge-expert-it-is-one-of-mason-s-skills: done
+  19-6-mason-s-skill-meta-tests-scan-every-skill-file-g-id-and-cli-verb: backlog
   2-1-the-cfe-port: done
   2-10-mason-recipe-update: done
   2-2-the-seam-guard: done
@@ -85,6 +86,8 @@ development_status:
   25-14-wave-f-s-other-18-packages-are-built-by-their-feedstock-s-own-mirror: done
   25-15-five-duplicate-langflow-suite-directories-retire-into-recipes-langflow: done
   25-16-three-dbt-adapter-recipes-are-re-mirrored-from-their-own-feedstocks: done
+  25-17-epic-25-s-recipes-carry-the-build-records-their-stories-claim: backlog
+  25-18-wave-a-s-no-refresh-recipes-are-re-bucketed-live-from-the-atlas: backlog
   25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work: done
   25-3-cfe-gains-a-tracked-bulk-recipe-refresh-driver-that-the-refresh-waves-run-through: done
   25-4-wave-0-s-leftover-recipes-end-repaired-or-carry-a-recorded-reason: done
@@ -120,6 +123,7 @@ development_status:
   4-2-manifest-discovery: done
   4-3-mason-environment-lock: done
   4-4-mason-environment-check: done
+  4-5-a-repeated-platform-keeps-every-value: backlog
   5-1-cfe-independence-test: done
   5-2-governance-test: done
   5-3-delegation-fidelity-test: done
@@ -154,7 +158,7 @@ development_status:
   epic-17-retrospective: optional
   epic-18: done
   epic-18-retrospective: optional
-  epic-19: done
+  epic-19: in-progress
   epic-19-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
@@ -168,7 +172,7 @@ development_status:
   epic-23-retrospective: optional
   epic-24: done
   epic-24-retrospective: optional
-  epic-25: done
+  epic-25: in-progress
   epic-25-retrospective: optional
   epic-26: done
   epic-26-retrospective: optional
@@ -194,7 +198,7 @@ development_status:
   epic-35-retrospective: optional
   epic-36: done
   epic-36-retrospective: optional
-  epic-4: done
+  epic-4: in-progress
   epic-4-retrospective: optional
   epic-5: done
   epic-5-retrospective: optional

@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: warden
-source_fingerprint: 5af67278e8192695
-story_count: 68
+source_fingerprint: 0f7c3cd0255e0d1b
+story_count: 76
 test_file_count: 80
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,18 +19,18 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-warden`
-- **Stories parsed:** 68
+- **Stories parsed:** 76
 - **Epics parsed:** 23
 - **Test files inventoried:** 80 under `src/shared/packages/pyforge-warden/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `5af67278e8192695`
+- **Source fingerprint:** `0f7c3cd0255e0d1b`
 
 ## Risk Assessment
 
 ### High-risk epics
 
-- none observed
+- Epic 15: SAST joins as an optional plugin: opengrep with estate-owned rules (spec-pyforge-warden CAP-25)
 
 ### Medium-risk epics
 
@@ -48,7 +48,6 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 12: A promotion gate that has seen what it ships
 - Epic 13: The TEA advisory reviews the diff from the remote-tracking ref (spec-pyforge-warden CAP-23)
 - Epic 14: The fix-PR actuator finishes the fix on the estate's repos (spec-pyforge-warden CAP-24)
-- Epic 15: SAST joins as an optional plugin: opengrep with estate-owned rules (spec-pyforge-warden CAP-25)
 - Epic 16: Warden scans the enterprise fleet on GitHub Enterprise (spec-pyforge-warden CAP-26)
 - Epic 17: Phase 4+5 of the deferral burn-down: warden's open medium and low deferrals
 - Epic 18: The leak guard keeps the fleet target private, not the organisation's public name (fix under spec-pyforge-warden CAP-26)
@@ -202,15 +201,23 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 12.5 | The verdict is honest and specific | none observed |
 | 12.6 | Deploy gates on the verdict — preserve the clean-only promotion gate | none observed |
 | 13.1 | The TEA advisory diffs from the remote-tracking ref | none observed |
+| 13.2 | A TEA skip on a missing ref reaches the report | none observed |
 | 14.1 | The actuator resolves the lowest OSV-fixed release the estate's solver accepts | none observed |
 | 14.2 | The actuator edits the manifest and re-solves the lock in a throwaway copy | none observed |
 | 14.3 | The actuator opens the fix as a draft PR on an estate repo | none observed |
+| 14.4 | The default solver shares the manifest edit path and is bounded | none observed |
 | 15.1 | Opengrep is an optional SAST scanner that informs, never publishes, the verdict | none observed |
+| 15.2 | Opengrep runs estate-authored rules, and its offline flags are pinned by test | none observed |
 | 16.1 | Warden inventories an operator-designated GitHub organisation's repos | none observed |
 | 16.2 | A fleet run scans each inventoried repo, one verdict per repo | none observed |
 | 16.3 | Each fleet fix waits in a proposal queue for operator approval | none observed |
 | 16.4 | Non-Python lockfiles scan through osv-scanner's own parsers | none observed |
 | 16.5 | Warden inventories the items of the operator-designated GitHub Projects | none observed |
+| 16.6 | Fleet approve re-solves and delivers the fix it queued | none observed |
+| 16.7 | A fleet run is time-bounded, and an approval re-scans before it opens | none observed |
+| 16.8 | The fleet worker scans non-Python lockfiles against provisioned offline DBs | none observed |
+| 16.9 | A non-Python repo's license and currency rows report what ran | none observed |
+| 16.10 | The fleet export carries each repo's head_sha | none observed |
 | 17.1 | Eligibility records its policy, and warden's other open deferrals close | none observed |
 | 18.1 | The leak guard forbids the listed terms everywhere and the organisation's nam... | none observed |
 | 19.1 | Every warden PRD FR arrow names the Spec capability that realizes it | none observed |

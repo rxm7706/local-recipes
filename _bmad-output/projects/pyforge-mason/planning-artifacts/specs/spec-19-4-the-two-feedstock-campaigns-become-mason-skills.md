@@ -133,3 +133,7 @@ Review: 2 medium patches applied (worked-example append targets); 1 defer (basel
 Verification: `pyforge-mason-test` pass; `docs-skills-catalog --check` pass; `bmad-drift-check` pass (no spec-unindexed); `governance-currency` pass; `python scripts/spec_surface_reconcile.py` pass after memlog reconcile.
 
 Follow-up review recommended: false
+
+## Spec Change Log
+
+- 2026-11-01: append-only note (EGM audit MAS-D-C6, marshal Story 113.7): the two legacy `docs/specs/feedstock-*.md` stubs this story pointed at its skills now live at `archive/docs/specs/feedstock-platform-expansion.md` and `archive/docs/specs/feedstock-failure-remediation.md` (spec-one-chain-per-station:CAP-11), each still linking its skill; doctor Story 37.1 repointed the epics.md Surface entry for them at the how-tos, which the line already lists, and that entry carries a dated note. Body, ACs and status unchanged.

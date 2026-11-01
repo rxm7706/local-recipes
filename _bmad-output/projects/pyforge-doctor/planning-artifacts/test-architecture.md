@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: 93d3b09c2c7c974d
-story_count: 169
+source_fingerprint: 6adc96276cd7c116
+story_count: 172
 test_file_count: 99
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 169
+- **Stories parsed:** 172
 - **Epics parsed:** 54
 - **Test files inventoried:** 99 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `93d3b09c2c7c974d`
+- **Source fingerprint:** `6adc96276cd7c116`
 
 ## Risk Assessment
 
@@ -355,12 +355,15 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 44.1 | The doctor check speed budget is judged on the CPU the check spends | none observed |
 | 45.1 | Doctor names every CI surface that drifted, stuck or outlived its review date | none observed |
 | 45.3 | The fleet-picture meta-test names every probe `main()` calls | none observed |
+| 45.4 | The ci-pause relay keeps steward's reason | none observed |
 | 46.1 | The env-hygiene scan walks each tree once and skips test code | none observed |
 | 47.1 | The aggregate scripts test checks scope filtering without gathering | none observed |
 | 48.1 | One registry orders every section of the Pages site | none observed |
 | 48.2 | A Pages deploy more than a day behind its inputs is named in fleet-picture | none observed |
+| 48.3 | pages-liveness reads its published inputs from pages.yml | none observed |
 | 49.1 | A detector's task is the one that runs its script | none observed |
 | 50.1 | fr-without-cap resolves every arrow against a defined capability and names a ... | none observed |
+| 50.2 | fr-baseline.json grows only through its script | none observed |
 | 51.1 | the flag inventory and the gate measure the retrofit as ruled | none observed |
 | 53.1 | Doctor's fourteen archived Dreams leave the live tree, and a Kinship wikilink... | none observed |
 | 54.1 | Doctor's absorbed Spec folders move to the archive home | none observed |

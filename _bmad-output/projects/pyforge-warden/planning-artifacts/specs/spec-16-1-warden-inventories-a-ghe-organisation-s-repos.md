@@ -291,6 +291,7 @@ Deps: — (steward Story 75.1 no longer required, 2026-10-11).
     is too short for a whole organisation's pagination; 240 s covers well over 100 pages (10,000+ repos at 100 a
     page, 1-2 s a page). A request timeout of 30 s, below the soft limit, makes a stalled response fail as a typed
     `TimeoutError` instead of `SoftTimeLimitExceeded` raised inside urllib. `gh auth token` keeps its own 30 s.
+- 2026-11-01: amended in place (append-only, EGM audit 2026-11-01, marshal Story 113.7): the `epics.md` Story 16.1 Surface line now also names `django_warden_fabric/fleet_inventory.py` and `pyforge/warden/fleet_github_rest.py`, where the listing client, the credential provider and the export landed (this spec's 2026-10-11 placement entry), in full paths (EGM audit WAR-D-C3). No AC, status, heading or key moved; residue `_bmad-output/projects/pyforge-warden/planning-artifacts/research/egm-audit-2026-11-01.md`.
 
 ## Review Triage Log
 

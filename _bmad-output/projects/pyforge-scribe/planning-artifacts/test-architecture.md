@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: scribe
-source_fingerprint: 756bc46e0875b7a1
-story_count: 53
+source_fingerprint: 3c400b7444dc1276
+story_count: 57
 test_file_count: 24
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-scribe`
-- **Stories parsed:** 53
+- **Stories parsed:** 57
 - **Epics parsed:** 30
 - **Test files inventoried:** 24 under `src/shared/packages/pyforge-scribe/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `756bc46e0875b7a1`
+- **Source fingerprint:** `3c400b7444dc1276`
 
 ## Risk Assessment
 
@@ -50,7 +50,6 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 16: Recall names the surface, not a kind bag
 - Epic 17: One owner for “where is this symbol?”
 - Epic 18: Planning retrieve names the planning surface
-- Epic 19: The session contract reaches every harness
 - Epic 20: The managed instruction block carries no aspiration (spec-pyforge-scribe CAP-30)
 - Epic 21: The instruction surface names the estate first (spec-python-foundry-cutover fnd:CAP-15)
 - Epic 22: The local Postgres cluster starts from any checkout (spec-pyforge-scribe CAP-31)
@@ -67,6 +66,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 
 - Epic 7: Scribe keeps the docs with three utility skills
 - Epic 14: Named docs extras, never the docs tree
+- Epic 19: The session contract reaches every harness
 
 ## Test Inventory
 
@@ -139,15 +139,19 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 19.1 | One AGENTS.md, reached natively or by a one-line pointer from every harness | none observed |
 | 19.2 | scribe capture and recall run from the session default environment | none observed |
 | 19.3 | The instruction surface is version-aware — Claude Code's built-in agents-md mod | none observed |
+| 19.4 | Every doc that teaches capture or recall names the session env, and a guard h... | none observed |
 | 20.1 | The parity meta-test reds a TODO inside the managed block | none observed |
 | 21.1 | `AGENTS.md` opens with what this repository is | none observed |
 | 21.2 | `AGENTS.md` says what runs `governance-currency` | none observed |
 | 22.1 | `scribe-pg-up` succeeds from a long-path worktree | none observed |
+| 22.2 | `scribe-pg-down` stops only this checkout's cluster | none observed |
 | 23.1 | The SKF managed block lives in `AGENTS.md` only | none observed |
+| 23.2 | The instruction-surface guards prove every clause they claim | none observed |
 | 24.1 | The BMAD estate catalog is generated, not written | none observed |
 | 24.2 | The catalog cannot drift silently | none observed |
 | 24.3 | Every harness is pointed at the catalog once | none observed |
 | 25.1 | The estate catalog skips skill directories git ignores | none observed |
+| 25.2 | The estate catalog writes and checks byte-stably | none observed |
 | 26.1 | Recall breaks ties by recency, and scribe's other open deferrals close | none observed |
 | 27.1 | The instruction surface carries the requirement-arrow rule | none observed |
 | 28.1 | Scribe's sixteen archived Dreams leave the live tree | none observed |

@@ -122,3 +122,7 @@ Deps: S-16.1.
 
 Status: done
 Verification: `pixi run --frozen -e pyforge-warden pyforge-warden-test` passed; `tests/test_warden_fleet_run.py` (9/9) with ephemeral PostgreSQL; `python -m db.sqlmigrate_extraction` ok; `python scripts/spec_surface_reconcile.py` ok after memlog reconciles.
+
+## Spec Change Log
+
+- 2026-11-01: amended in place (append-only, EGM audit 2026-11-01, marshal Story 113.7): in `epics.md`, a **Spec:** line links this file (EGM audit WAR-D-R2). No AC, status, heading or key moved; residue `_bmad-output/projects/pyforge-warden/planning-artifacts/research/egm-audit-2026-11-01.md`.

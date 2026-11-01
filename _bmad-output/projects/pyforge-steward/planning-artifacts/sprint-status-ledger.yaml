@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 670
+# stories: 674
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -95,6 +95,9 @@ development_status:
   118-3-the-gitops-branch-of-the-monorepo-is-the-gitops-source-and-a-hetzner-cluster-runs-on-it: backlog
   118-4-steward-deploy-nic-down-tears-the-cluster-down-without-a-prompt: done
   118-5-deploy-nic-up-installs-the-packs-under-nebari-apps-and-waits-for-the-sync-it-rendered: done
+  118-6-the-attended-nkp-sign-in-spawn-and-landing-probes-are-tracked-commands: backlog
+  118-7-deploy-nic-finds-kubectl-and-helm-in-the-pyforge-steward-environment: backlog
+  118-8-the-gitops-branch-has-one-named-writer-enforced: backlog
   12-1-the-vanilla-chart-with-an-ocp-overlay: done
   12-2-gke-as-a-portability-profile: done
   12-3-air-gap-parity-is-a-failing-check: done
@@ -172,6 +175,7 @@ development_status:
   29-1-skf-domain-skills-from-station-packages: done
   29-2-personas-act-only-through-grammar-and-mcp: done
   29-3-five-tier-check: done
+  29-4-the-station-skills-are-recompiled-to-cover-the-verbs-the-contract-names: backlog
   3-1-any-named-pixi-environment-materializes-with-one-command: done
   3-2-a-bmad-loop-runner-and-its-environment-materialize-together: done
   3-3-the-operator-can-see-every-environment-that-exists-before-picking-one: done
@@ -528,7 +532,7 @@ development_status:
   epic-27-retrospective: optional
   epic-28: done
   epic-28-retrospective: optional
-  epic-29: done
+  epic-29: in-progress
   epic-29-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional

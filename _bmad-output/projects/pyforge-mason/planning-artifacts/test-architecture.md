@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: 49091ace2a380502
-story_count: 120
+source_fingerprint: 5f35c2222b278156
+story_count: 124
 test_file_count: 43
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 120
+- **Stories parsed:** 124
 - **Epics parsed:** 36
 - **Test files inventoried:** 43 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `49091ace2a380502`
+- **Source fingerprint:** `5f35c2222b278156`
 
 ## Risk Assessment
 
@@ -159,6 +159,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 4.2 | Manifest discovery | none observed |
 | 4.3 | `mason environment lock` | none observed |
 | 4.4 | `mason environment check` | none observed |
+| 4.5 | A repeated --platform keeps every value | none observed |
 | 5.1 | CFE-independence test | none observed |
 | 5.2 | Governance test | none observed |
 | 5.3 | Delegation-fidelity test | none observed |
@@ -202,6 +203,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 19.3 | The environment craft skill teaches mason environment lock and check | none observed |
 | 19.4 | The two feedstock campaigns become Mason skills | none observed |
 | 19.5 | The closing Rule-2 retro teaches conda-forge-expert it is one of Mason's skills | none observed |
+| 19.6 | Mason's skill meta-tests scan every skill file, G-id and CLI verb | none observed |
 | 20.1 | Mason's pixi run-dependency is a floor, and a guard reds any pixi ceiling | none observed |
 | 21.1 | git-pkgs builds green from source as a local recipe | none observed |
 | 21.2 | forge builds green from source as a local recipe | none observed |
@@ -232,6 +234,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 25.14 | Wave F's other 18 packages are built by their feedstock's own mirror | none observed |
 | 25.15 | Six duplicate recipe directories retire into recipes/langflow and recipes/dbt | none observed |
 | 25.16 | Three dbt adapter recipes are re-mirrored from their own feedstocks | none observed |
+| 25.17 | Epic 25's recipes carry the build records their stories claim | none observed |
+| 25.18 | Wave A's no-refresh recipes are re-bucketed live from the atlas | none observed |
 | 26.1 | CFE's tests never ask GitHub whether a recipe maintainer exists | none observed |
 | 26.2 | CFE's tests never fetch conda-smithy's remote lint data | none observed |
 | 27.1 | Mason's package and the repo tooling it owns close their open deferrals | none observed |

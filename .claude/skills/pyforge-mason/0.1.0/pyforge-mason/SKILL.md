@@ -80,6 +80,13 @@ command failure.
 
 <!-- [MANUAL:additional-notes] -->
 <!-- Add custom notes here. This section is preserved during skill updates. -->
+**Outward work.** `--yes` on `package ship` and `recipe submit` publishes
+outside this repository (PyPI, a conda channel, a staged-recipes PR). Run the
+dry run; run `--yes` only on the operator's explicit ask. The rule is
+`AGENTS.md` § Policy and the `outward-package-submission` entry of
+`docs/governance/guild-roster.json` `session_denials`. The session hook
+enforces it on Claude Code and Cursor only; on any other harness this note is
+the guard.
 <!-- [/MANUAL:additional-notes] -->
 
 ## Common Workflows

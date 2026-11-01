@@ -126,3 +126,7 @@ Status: done
 **Verification:** `pixi run --frozen -e pyforge-warden pyforge-warden-test` — 2204 passed; `python scripts/spec_surface_reconcile.py` — OK after memlog reconciles.
 
 **Residual risks:** Attended real-repo draft PR check remains operator-only per spec. Q4 flag cleanup date not set until flag is ON everywhere per metadata clock rules.
+
+## Spec Change Log
+
+- 2026-11-01: amended in place (append-only, EGM audit 2026-11-01, marshal Story 113.7): in `epics.md`, a **Spec:** line links this file (EGM audit WAR-D-R2). No AC, status, heading or key moved; residue `_bmad-output/projects/pyforge-warden/planning-artifacts/research/egm-audit-2026-11-01.md`.

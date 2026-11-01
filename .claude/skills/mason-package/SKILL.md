@@ -65,6 +65,11 @@ Invalid tokens fail the **whole command** before any target runs.
 - **Default is dry run** — without **`--yes`**, Mason builds (when needed for the plan),
   prints what would happen, and **does not upload**.
 - **`--yes`** confirms a real ship for the named targets.
+- **`--yes` is outward work** (PyPI, a conda channel, a staged-recipes PR): run the
+  dry run, and run `--yes` only on the operator's explicit ask. The rule is
+  `AGENTS.md` § Policy and the `outward-package-submission` entry of
+  `docs/governance/guild-roster.json` `session_denials`; the session hook enforces it
+  on Claude Code and Cursor only, so on any other harness this line is the guard.
 - **`TWINE_USERNAME`** and **`TWINE_PASSWORD`** must be present (non-empty) in the
   environment **before** PyPI or TestPyPI builds run; missing credentials fail that
   target with a clear error, not mid-upload.

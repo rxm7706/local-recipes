@@ -227,6 +227,7 @@ marketplace mounted from `docs/foundry/marketplace/`) only with `pyforge.steward
 | [`how-to/pixi-tasks.md`](how-to/pixi-tasks.md) | steward | generated |
 | [`how-to/presentation-deck.md`](how-to/presentation-deck.md) | fleet | authored |
 | [`how-to/purge-preserved-refs.md`](how-to/purge-preserved-refs.md) | marshal | authored |
+| [`how-to/reach-a-station-mcp-endpoint.md`](how-to/reach-a-station-mcp-endpoint.md) | steward | authored |
 | [`how-to/recipe-testing-and-builds.md`](how-to/recipe-testing-and-builds.md) | fleet | authored |
 | [`how-to/reconcile-spec-surface.md`](how-to/reconcile-spec-surface.md) | doctor | authored |
 | [`how-to/refresh-the-estate.md`](how-to/refresh-the-estate.md) | steward | authored |
