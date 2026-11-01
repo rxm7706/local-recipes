@@ -13896,3 +13896,13 @@ row; the `steward setup` read rules) · [[pyforge-scribe]] (the
   `research/egm-audit-<date>.md` per station. The plugin was installed at
   user scope the same day so the next interactive session can run the ad hoc
   audit, Tier-3 output only. Next act: `bmad-spec` under `pyforge-marshal`.
+- **2026-11-01 (the audit lands)** — The one-time audit ran by hand on 2026-11-01 (the operator ruled it
+  counts as Story 113.7's run): rules over AGENTS.md, CHAIN-STANDARD.md and the eight station skills, mint and
+  decompose over each station's newest CAP slice. 269 findings (42 Blocker, 205 Major, 22 Nit as audited; 1
+  Blocker after verification) were re-verified on main 03a7aff5d9 and triaged 226 accepted, 41 rejected, 2
+  deferred; the operator accepted every recommendation the same day. Residue: one
+  research/egm-audit-2026-11-01.md per station, rules and fleet totals in
+  `_bmad-output/projects/pyforge-marshal/planning-artifacts/research/egm-audit-2026-11-01.md`. Fixed in the
+  113.7 PR: marshal Stories 113.8-113.13 (the challenger's partial-run, model, isolation, precondition,
+  stage-standard and resolve defects) and 22 fix stories on the other stations; parked at backlog: 113.14 (a
+  size ceiling and section selector, after which the first automated --audit runs).

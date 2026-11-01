@@ -717,6 +717,13 @@ Folded Dreams: [[bmad-drift-new-artifact-shape]], [[bmad-method-version-drift]],
   skipped or re-marked; `doctor_paths` is never narrowed by hand. Owner: doctor. Fixes under CAP-42 (the hygiene sweep) and
   CAP-20 (the sweep detector); the task and the two halves relay `spec-pyforge-steward:CAP-175` (Stories 117.3, 117.4). No
   doctor CAP, no FR, no `SPEC.md` change. → Epic 55 / Stories 55.1–55.4, minted 2026-10-27.
+- **2026-11-01 (the EGM fleet audit) — Found:** the one-time fresh-context audit (marshal Story 113.7,
+  spec-pyforge-marshal:CAP-302) read CAP-89..CAP-93 and Epics 45, 48, 50: 30 findings, 24 accepted, 6
+  rejected; residue
+  `_bmad-output/projects/pyforge-doctor/planning-artifacts/research/egm-audit-2026-11-01.md`. Fixed in the
+  same PR: Stories 45.4 (the ci-pause relay keeps steward's reason, CAP-89), 48.3 (pages-liveness reads its
+  inputs from pages.yml, CAP-91) and 50.2 (fr-baseline.json grows only through its script, CAP-92); CAP-93's
+  owner clause narrows to the REGISTRY refusal.
 
 ## 2026-10-26 — A spike report is not a corrupt file, and the classifier can't yet tell the difference (folded from bmad-drift-new-artifact-shape)
 
