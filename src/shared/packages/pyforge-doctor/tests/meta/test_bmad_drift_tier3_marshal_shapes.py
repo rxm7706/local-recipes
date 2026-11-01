@@ -49,6 +49,7 @@ _EXPECTED_MARSHAL_SEGMENTS = frozenset(
         "deferred-work.md",
         "dispatch-runs",
         "dispatch-runs-quarantine",
+        "egm",
         "epic-{}-context.md",
         "epic-{}-continuity.md",
         "fleet-drain-runs",
@@ -97,6 +98,13 @@ _SHAPE_TABLE: tuple[_ShapeRow, ...] = (
         "local:run-journal",
         MARSHAL_SRC / "core" / "dispatch_stale.py",
         "dispatch-runs-quarantine",
+    ),
+    _ShapeRow(
+        ("egm",),
+        "implementation-artifacts/egm/pyforge-marshal-20261101T120000000Z-abcd1234/report.json",
+        "local:run-journal",
+        MARSHAL_SRC / "core" / "challenge.py",
+        "DEFAULT_ARTIFACT_DIR",
     ),
     _ShapeRow(
         ("epic-{}-continuity.md",),
@@ -257,6 +265,7 @@ _WRITER_TOKENS: dict[str, str | tuple[str, ...]] = {
     r"^implementation-artifacts/session-advisories/[A-Za-z0-9._-]+/.*": "_SESSION_ADVISORIES_DIRNAME",
     r"^implementation-artifacts/sessions/[A-Za-z0-9._-]+/.*": '/ "sessions" / session_id',
     r"^implementation-artifacts/dispatch-runs-quarantine/.*": "implementation-artifacts/dispatch-runs-quarantine/",
+    r"^implementation-artifacts/egm/.*": "implementation-artifacts/egm/",
     r"^implementation-artifacts/token-economy-benchmark-[A-Za-z0-9._-]+\.json": "token-economy-benchmark-{stamp}",
     r"^implementation-artifacts/token-economy-benchmark-per-layer-[A-Za-z0-9._-]+\.json": (
         "token-economy-benchmark-per-layer-{stamp}"

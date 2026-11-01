@@ -2,7 +2,7 @@
 title: "113.4: the drift stage reads an epic's code against its Spec at retro time"
 type: 'feature'
 created: '2026-11-01'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
@@ -38,7 +38,7 @@ Type / Effort / Deps: feature / M / 113.1, 113.2.
 
 ### Living CAP citations
 
-- **CAP-301** — the capability this story realizes.
+- **`spec-pyforge-marshal` CAP-301** — the capability this story realizes.
 - **CAP-298** / **CAP-299** — the verb and the block (Stories 113.1, 113.2).
 - **`spec-feature-flag-governance:CAP-1`** — the flag block; Q3, Q4, Q6.
 
@@ -63,9 +63,9 @@ Type / Effort / Deps: feature / M / 113.1, 113.2.
 
 ## Binding
 
-- Parent capability: CAP-301.
+- Parent capability: `spec-pyforge-marshal` CAP-301.
 
-Parent: CAP-301
+Parent: `spec-pyforge-marshal` CAP-301
 
 - Dream: `docs/dreams/pyforge-marshal.md` § *Realization log*, the 2026-11-01 entry.
 - Epic: Epic 113, minted with this story.
@@ -86,14 +86,15 @@ Parent: CAP-301
 
 ## Auto Run Result
 
-Status: backlog
+Status: done
 
-Summary: not yet dispatched.
+Summary: built by hand in the single Epic 113 PR (2026-11-01, operator direction: one PR, the 113.1 dispatch stopped before any push); independently reviewed, review findings fixed.
 
 ## Spec Change Log
 
 - 2026-11-01: minted from the station Dream's entry of 2026-11-01 (EGM challenger); operator answer 3 (all five stages in v1) binds here.
+- 2026-11-01: built. The retro override is `_bmad/custom/bmad-retrospective.toml` (`[workflow] activation_steps_append`), not the installer-owned `.claude/skills/bmad-retrospective/customize.toml`; the drift target is a Tier-3 file listing the epic's story specs and the `src/` paths its Surface lines name.
 
 ## Review Triage Log
 
-- (none yet)
+- 2026-11-01: independent review (fresh subagent, read the diff against this spec) returned FAIL with blockers B1 (two named test files absent) and B2 (the audit refused six stations with no glossary) and should-fix S1-S11; every finding was fixed in the same PR except S7 (`marshal watch` display), recorded as DW-marshal-113-3-1. See the Spec memlog's 2026-11-01 review entry.

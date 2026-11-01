@@ -1243,6 +1243,10 @@ def add_factory_subparser(subparsers: argparse._SubParsersAction) -> None:
     )
     checkpoint_parser.set_defaults(handler=run_factory_checkpoint)
 
+    from .challenge import add_factory_challenge_subparser
+
+    add_factory_challenge_subparser(factory_subparsers)
+
 
 def _spawn_supervisor_sidecar(
     process: ProcessPort,

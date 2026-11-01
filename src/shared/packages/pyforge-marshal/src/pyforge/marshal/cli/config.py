@@ -288,6 +288,9 @@ _FIELD_ORDER: tuple[str, ...] = (
     # (AD-10/AD-16); `marshal-policy.toml`/repo-defaults only, no `--set`
     # surface (list-typed).
     "protected_ref_prefixes",
+    # Story 113.2's `challenge` (CAP-299) -- the EGM challenger's block;
+    # `marshal-policy.toml`/repo-defaults only, no `--set` surface (mapping-typed).
+    "challenge",
     "gate_mode",
     "frozen_surfaces",
     "max_dev_attempts",

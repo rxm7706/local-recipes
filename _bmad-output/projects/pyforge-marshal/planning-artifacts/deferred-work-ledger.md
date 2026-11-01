@@ -9163,3 +9163,14 @@ status: open
   severity: low
   promoted: 2026-10-26 — the retrofit chain commit
   status: open
+
+### DW-marshal-113-3-1: `marshal watch` and `marshal status` do not show a dispatch's readiness challenge; it is visible only as `MRS-DISP-067` in the dispatch envelope and as `readiness_challenge` on the launch intent.
+
+- source_spec: `planning-artifacts/specs/spec-113-3-dispatch-runs-the-readiness-stage-before-the-dev-session-starts.md`
+  summary: CAP-300's success line says a red readiness report "is visible in `marshal watch` and the run journal". Story 113.3 ships the journal half (the launch intent's `readiness_challenge` payload, the challenge run's own intent/outcome journal under `implementation-artifacts/egm/`) and the `MRS-DISP-067` WARN in the dispatch envelope; no reader of `marshal watch` or `marshal status` reads the payload yet.
+  evidence: The independent review of Epic 113 (2026-11-01, finding S7). Showing it needs a `readiness_challenge` field on `DispatchJournalFacts` (`cli/dispatch.py` `gather_dispatch_journal_facts`), the `marshal status` dispatch overlay row, the `WatchPorts`/`_gather_station` path and the watch text renderer, each with its tests -- a change across four readers, out of the Epic 113 single PR's fix pass.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/watch.py; src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py; src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py
+  origin: spec-deferred — recorded by hand in the Epic 113 build PR (2026-11-01)
+  severity: low
+  promoted: 2026-11-01 — the Epic 113 build commit
+  status: open

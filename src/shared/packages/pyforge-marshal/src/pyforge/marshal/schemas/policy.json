@@ -40,7 +40,8 @@
     "review_min_score",
     "model_cost_catalog",
     "dispatch",
-    "protected_ref_prefixes"
+    "protected_ref_prefixes",
+    "challenge"
   ],
   "properties": {
     "verify_commands": {
@@ -182,6 +183,10 @@
     "protected_ref_prefixes": {
       "$ref": "#/$defs/policyField",
       "description": "STATIC (Story 87.6, spec-pyforge-marshal CAP-287, AD-47 as amended 2026-10-04). A tuple of refname prefixes (each a non-empty str starting refs/, default empty) a policy layer ADDS to the protected list marshal retire excludes before evidence-gathering, on top of the code floor (refs/heads/main, refs/heads/loop/, refs/tags/) that no layer can remove. The layers union rather than last-wins, so a later layer can only extend an earlier one's additions; a re-declared floor entry is a no-op. A layer that tries to remove a floor entry (a leading ! or ^) is refused with MRS-POLICY-010 naming the entry; any other malformed value is refused with MRS-POLICY-009; either refusal makes marshal retire refuse the project."
+    },
+    "challenge": {
+      "$ref": "#/$defs/policyField",
+      "description": "STATIC (Story 113.2, spec-pyforge-marshal CAP-299). The EGM challenger's one configuration: {enabled: bool, stages: [mint|decompose|readiness|drift|rules], reviewers: {stage: [persona]}, model: model_cost_catalog entry, standards: {stage: [repo path]}, artifact_dir: str, plugin_version: str}. Absent or enabled=false means every stage off and every hook a no-op; read only while pyforge.marshal.egm_policy_block is on."
     }
   },
   "$defs": {

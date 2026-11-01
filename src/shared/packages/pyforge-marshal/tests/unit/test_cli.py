@@ -253,7 +253,7 @@ def test_config_defaults_only_exits_zero(capsys, monkeypatch):
 
 
 def test_config_prints_every_policy_key(capsys, monkeypatch):
-    """AC: every one of the 35 policy keys (Story 87.6's
+    """AC: every one of the 36 policy keys (Story 113.2's `challenge` and Story 87.6's
     `protected_ref_prefixes` joining Story 33.8's `dispatch`, Story 31.3's
     `review_min_score`, …) prints its effective value and winning layer —
     checked exhaustively."""
@@ -299,7 +299,7 @@ def test_config_prints_every_policy_key(capsys, monkeypatch):
         "protected_ref_prefixes",
     ):
         assert f"{key}:" in captured.out, f"marshal config did not print {key!r}"
-    assert captured.out.count("(layer=") == 35
+    assert captured.out.count("(layer=") == 36
 
 
 def test_config_redacts_a_secret_shaped_field(capsys, monkeypatch):

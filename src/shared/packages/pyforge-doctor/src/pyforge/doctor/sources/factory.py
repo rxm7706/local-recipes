@@ -432,6 +432,14 @@ TIER3_RUN_ARTIFACTS: tuple[Tier3RunArtifactRule, ...] = (
         "local:run-journal",
         f"{_MARSHAL_SRC_REL}/core/dispatch_stale.py::_dispatch_stale_quarantine_remedy",
     ),
+    # The EGM challenger's run records, reports and audit summaries (marshal Story 113.1,
+    # spec-pyforge-marshal:CAP-298): `implementation-artifacts/egm/<run>/` (journal.jsonl,
+    # report.json, session.log), `egm/audit-<date>/`, `egm/drift/`. Tier-3, never tracked.
+    _tier3_run_rule(
+        r"^implementation-artifacts/egm/.*",
+        "local:run-journal",
+        f"{_MARSHAL_SRC_REL}/cli/challenge.py::__doc__",
+    ),
     # `marshal benchmark` default artifact paths.
     _tier3_run_rule(
         r"^implementation-artifacts/token-economy-benchmark-[A-Za-z0-9._-]+\.json",

@@ -2,7 +2,7 @@
 title: "113.5: one audit sweep reports where the fleet stands"
 type: 'feature'
 created: '2026-11-01'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
@@ -40,7 +40,7 @@ Type / Effort / Deps: feature / M / 113.1, 113.2.
 
 ### Living CAP citations
 
-- **CAP-302** — the capability this story realizes.
+- **`spec-pyforge-marshal` CAP-302** — the capability this story realizes.
 - **CAP-298** / **CAP-299** — the verb and the block (Stories 113.1, 113.2).
 - **`spec-feature-flag-governance:CAP-1`** — the flag block; Q3, Q4, Q6.
 
@@ -51,7 +51,7 @@ Type / Effort / Deps: feature / M / 113.1, 113.2.
 - **AC3 — Nothing tracked moves.** `git status` is clean after a sweep; a test pins it on a fixture fleet.
 - **AC4 — OFF.** With the key off `--audit` refuses with the usage code; single-target stages are unaffected.
 - **AC5 — Both states.** One test runs the key ON and OFF (`src/shared/packages/pyforge-marshal/tests/unit/test_factory_challenge.py`) on a fixture fleet with the harness session stubbed.
-- **AC6 — Resumable.** A station whose report already exists under the same `audit-<date>/` is skipped unless `--force`; the journal names the skip.
+- **AC6 — Resumable.** A target whose report already exists under the same `audit-<date>/` is skipped unless `--force`, and the audit journal names each skip; a corrupt existing report is re-run, never a crash.
 
 ## Boundaries & Constraints
 
@@ -65,9 +65,9 @@ Type / Effort / Deps: feature / M / 113.1, 113.2.
 
 ## Binding
 
-- Parent capability: CAP-302.
+- Parent capability: `spec-pyforge-marshal` CAP-302.
 
-Parent: CAP-302
+Parent: `spec-pyforge-marshal` CAP-302
 
 - Dream: `docs/dreams/pyforge-marshal.md` § *Realization log*, the 2026-11-01 entry.
 - Epic: Epic 113, minted with this story.
@@ -88,14 +88,15 @@ Parent: CAP-302
 
 ## Auto Run Result
 
-Status: backlog
+Status: done
 
-Summary: not yet dispatched.
+Summary: built by hand in the single Epic 113 PR (2026-11-01, operator direction: one PR, the 113.1 dispatch stopped before any push); independently reviewed, review findings fixed.
 
 ## Spec Change Log
 
 - 2026-11-01: minted from the station Dream's entry of 2026-11-01 (EGM challenger); the operator's audit condition binds here.
+- 2026-11-01: built. The sweep writes one JSON report per target, one Markdown summary per station and `fleet.md`; it is resumable per target (review S8); stations with no `glossary.md` yet (six of eight on 2026-11-01) run with the glossary left out instead of being refused (review B2).
 
 ## Review Triage Log
 
-- (none yet)
+- 2026-11-01: independent review (fresh subagent, read the diff against this spec) returned FAIL with blockers B1 (two named test files absent) and B2 (the audit refused six stations with no glossary) and should-fix S1-S11; every finding was fixed in the same PR except S7 (`marshal watch` display), recorded as DW-marshal-113-3-1. See the Spec memlog's 2026-11-01 review entry.

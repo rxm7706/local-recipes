@@ -2,7 +2,7 @@
 title: "113.3: dispatch runs the readiness stage before the dev session starts"
 type: 'feature'
 created: '2026-11-01'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
@@ -38,17 +38,17 @@ Type / Effort / Deps: feature / M / 113.1, 113.2.
 
 ### Living CAP citations
 
-- **CAP-300** — the capability this story realizes.
+- **`spec-pyforge-marshal` CAP-300** — the capability this story realizes.
 - **CAP-298** / **CAP-299** — the verb and the block the hook reads (Stories 113.1, 113.2).
 - **`spec-feature-flag-governance:CAP-1`** — the flag block; Q3, Q4, Q6.
 
 ## Acceptance Criteria
 
 - **AC1 — The key.** `pyforge.marshal.egm_dispatch_readiness` is in `flags.json` (`defaultVariant: off`) and `flag-overlays.json` (`off` everywhere) with the clock fields; `test_flags.py` and `flag-inventory` name it against CAP-300.
-- **AC2 — ON.** With the key on and `readiness` in the materialized stages, dispatch runs the readiness stage on the story spec before launch; the journal carries the intent and the outcome; the run record carries the report path; `marshal watch` shows a red report.
+- **AC2 — ON.** With the key on and `readiness` in the materialized stages, dispatch runs the readiness stage on the story spec before the run is minted; the challenge run journals its own intent and outcome under `implementation-artifacts/egm/`; the dispatch-launch intent carries `readiness_challenge` (report path, counts, error); a red or refused review is `MRS-DISP-067` (WARN) in the dispatch envelope. `marshal watch` display is DW-marshal-113-3-1.
 - **AC3 — Report only.** The story spec's `status` and every ledger are byte-identical before and after the hook, red or green; a test pins both.
-- **AC4 — OFF.** With the key off, or `readiness` absent from the stages, the launch sequence is byte-identical to today's (the journal has no challenge entries).
-- **AC5 — Both states.** One test runs the key ON and OFF (`src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_readiness_hook.py`), with the harness session stubbed.
+- **AC4 — OFF.** With the key off, `egm_policy_block` off, or `readiness` absent from the stages, the hook returns nothing and writes nothing: the launch intent carries no `readiness_challenge` key and no challenge run exists.
+- **AC5 — Both states.** One test runs the key ON and OFF (`src/shared/packages/pyforge-marshal/tests/unit/test_factory_challenge.py`, `test_pyforge_marshal_egm_dispatch_readiness`), with the harness session stubbed.
 - **AC6 — The domain.** No new exit code; a hook refusal (plugin absent) is journaled and the dispatch proceeds as if the hook were off.
 
 ## Boundaries & Constraints
@@ -63,9 +63,9 @@ Type / Effort / Deps: feature / M / 113.1, 113.2.
 
 ## Binding
 
-- Parent capability: CAP-300.
+- Parent capability: `spec-pyforge-marshal` CAP-300.
 
-Parent: CAP-300
+Parent: `spec-pyforge-marshal` CAP-300
 
 - Dream: `docs/dreams/pyforge-marshal.md` § *Realization log*, the 2026-11-01 entry.
 - Epic: Epic 113, minted with this story.
@@ -80,20 +80,21 @@ Parent: CAP-300
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass.
 
 **Run before the push:**
-- Two-state flag coverage: `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_readiness_hook.py` — `@flag_states("pyforge.marshal.egm_dispatch_readiness")`.
+- Two-state flag coverage: `src/shared/packages/pyforge-marshal/tests/unit/test_factory_challenge.py` — `@flag_states("pyforge.marshal.egm_dispatch_readiness")`.
 - `pixi run --frozen -e pyforge-guild flag-gate-check` — expected: exit 0.
 - `pixi run --frozen -e pyforge-guild flag-inventory` — expected: exit 0; the row names this story's key.
 
 ## Auto Run Result
 
-Status: backlog
+Status: done
 
-Summary: not yet dispatched.
+Summary: built by hand in the single Epic 113 PR (2026-11-01, operator direction: one PR, the 113.1 dispatch stopped before any push); independently reviewed, review findings fixed.
 
 ## Spec Change Log
 
 - 2026-11-01: minted from the station Dream's entry of 2026-11-01 (EGM challenger); session default 4 (report only in v1) binds here.
+- 2026-11-01: built. Review S1 moved the hook ahead of the run mint (a review of up to an hour never leaves a half-launched run that reads as failed), so the intent/outcome pair is the challenge run's own and the launch intent carries the result; review S2 made the off paths write nothing; the hook body never raises. `marshal watch` display deferred as DW-marshal-113-3-1 (four readers to change).
 
 ## Review Triage Log
 
-- (none yet)
+- 2026-11-01: independent review (fresh subagent, read the diff against this spec) returned FAIL with blockers B1 (two named test files absent) and B2 (the audit refused six stations with no glossary) and should-fix S1-S11; every finding was fixed in the same PR except S7 (`marshal watch` display), recorded as DW-marshal-113-3-1. See the Spec memlog's 2026-11-01 review entry.

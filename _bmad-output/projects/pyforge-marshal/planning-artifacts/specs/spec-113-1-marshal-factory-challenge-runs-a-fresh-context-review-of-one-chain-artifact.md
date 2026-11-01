@@ -2,7 +2,7 @@
 title: "113.1: marshal factory challenge runs a fresh-context review of one chain artifact"
 type: 'feature'
 created: '2026-11-01'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
@@ -42,7 +42,7 @@ Type / Effort / Deps: feature / L / none.
 
 ### Living CAP citations
 
-- **CAP-298** — the capability this story realizes: one verb, five stages, Tier-3 report, journal, exit 0, plugin-absent refusal, kill switch.
+- **`spec-pyforge-marshal` CAP-298** — the capability this story realizes: one verb, five stages, Tier-3 report, journal, exit 0, plugin-absent refusal, kill switch.
 - **CAP-299** — the goldfish context rule the built-in default group obeys until Story 113.2 lands the policy block.
 - **`spec-feature-flag-governance:CAP-1`** — the flag block; Q3 (a flag-off verb stays listed and refuses with the usage code), Q4 (the 90-day clock), Q6 (one flag per CAP).
 
@@ -53,8 +53,8 @@ Type / Effort / Deps: feature / L / none.
 - **AC3 — OFF.** With the key off the verb stays listed and refuses with the usage code before any spawn; nothing is written.
 - **AC4 — Refusals.** Plugin absent, or the cache version not the one `.claude/settings.json` pins, refuses with the usage code before any spawn; the refusal reason is in the journal.
 - **AC5 — Both states.** One test runs the key ON and OFF (`src/shared/packages/pyforge-marshal/tests/unit/test_factory_challenge.py`), with the harness session stubbed; a second test pins the refusal paths.
-- **AC6 — The pin.** `.claude/settings.json` pins `egm@egm` and its marketplace; the claude harness profile's dispatch `--settings` carries the four `Read(...)` rules on the plugin cache with `*` for the version segment; a test asserts both.
-- **AC7 — The domain.** The station's frozen exit-code domain is unchanged: every refusal is the usage code 2; the CLI duty count assertions in `tests/unit/test_cli.py` gain the new duty.
+- **AC6 — The pin.** `.claude/settings.json` enables `egm@egm` and its marketplace; the version pin is `[challenge].plugin_version` (default `0.1.0`), checked against Claude Code's `installed_plugins.json` and the cache manifest; the challenge session's own `--settings` carries the four `Read(...)` rules on the plugin cache with `*` for the version segment, read-only tools plus `Agent`, one `Write` rule confined to the run folder and an explicit deny list, under `--permission-mode default`; tests assert both.
+- **AC7 — The domain.** The station's frozen exit-code domain is unchanged: every refusal is the usage code 2, a session that fails or writes no valid report is unevaluable (1); marshal counts no factory sub-verbs, so no count assertion moves.
 
 ## Boundaries & Constraints
 
@@ -69,9 +69,9 @@ Type / Effort / Deps: feature / L / none.
 
 ## Binding
 
-- Parent capability: CAP-298.
+- Parent capability: `spec-pyforge-marshal` CAP-298.
 
-Parent: CAP-298
+Parent: `spec-pyforge-marshal` CAP-298
 
 - Dream: `docs/dreams/pyforge-marshal.md` § *Realization log*, the 2026-11-01 (A stranger reads the chain) entry.
 - Epic: Epic 113, minted with this story.
@@ -89,18 +89,19 @@ Parent: CAP-298
 - Two-state flag coverage (the testing kit's `flag_states`): `src/shared/packages/pyforge-marshal/tests/unit/test_factory_challenge.py` — `@flag_states("pyforge.marshal.egm_challenge")`.
 - `pixi run --frozen -e pyforge-guild flag-gate-check` — expected: exit 0.
 - `pixi run --frozen -e pyforge-guild flag-inventory` — expected: exit 0; the row names this story's key.
-- `pixi run --frozen -e pyforge-core pyforge-core-test` — expected: pass (`test_flags.py`'s shipped-flag tables).
+- `pixi run --frozen -e pyforge-core pyforge-core-test` — expected: pass (`src/shared/packages/pyforge-core/tests/unit/test_flags.py`'s shipped-flag tables).
 
 ## Auto Run Result
 
-Status: backlog
+Status: done
 
-Summary: not yet dispatched.
+Summary: built by hand in the single Epic 113 PR (2026-11-01, operator direction: one PR, the 113.1 dispatch stopped before any push); independently reviewed, review findings fixed.
 
 ## Spec Change Log
 
 - 2026-11-01: minted from the station Dream's entry of 2026-11-01 (EGM challenger) at the operator's direction: full integration, everything reversible and behind flags, ad hoc or integrated, a one-time audit.
+- 2026-11-01: built. Deviations (Spec memlog, 2026-11-01): the version pin lives in `[challenge].plugin_version` because `enabledPlugins` carries no version; the plugin-cache Read rules sit in the challenge session's own `--settings` (`adapters/challenge_harness.py`), never in `claude.toml`'s shared dispatch argv; the challenger always runs on the packaged claude profile; the design-critic agent is `egm:egm-design`; review fixes add the adapter isolation check (`omitClaudeMd`, read-only tools), the installed-version check, a journaled refusal, a working-tree change check and a restricted orchestrator session.
 
 ## Review Triage Log
 
-- (none yet)
+- 2026-11-01: independent review (fresh subagent, read the diff against this spec) returned FAIL with blockers B1 (two named test files absent) and B2 (the audit refused six stations with no glossary) and should-fix S1-S11; every finding was fixed in the same PR except S7 (`marshal watch` display), recorded as DW-marshal-113-3-1. See the Spec memlog's 2026-11-01 review entry.
