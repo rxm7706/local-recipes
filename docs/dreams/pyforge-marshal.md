@@ -13705,3 +13705,194 @@ for symbols) · [[pyforge-marshal]] (the station).
   CAP-19..CAP-24, dispatch home marshal Epic 46 (46.1–46.10). The superseded
   folder keeps the eleven-entry decision memlog (OQ answers, multi-harness
   matrix, adversarial review, substrate-primary reordering).
+
+## 2026-11-01 — A stranger reads the chain: EGM goldfish as the fleet's challenger
+
+### The Dream
+
+The chain has two kinds of verifier, and both are blind the same way. The
+detectors count — every CAP has a story, every story a ledger key, every
+governed path a hash — and never read. The review lenses read, but they were
+raised in the house: every `bmad-review` subagent loads `CLAUDE.md`,
+`AGENTS.md` and the team-memory index before it sees the artifact, so a wrong
+idea the whole house shares is invisible to them too. Nobody on the floor can
+ask whether the Spec actually covers the Dream entry it cites, whether a
+story's acceptance criteria exhaust its CAP's success line, whether the code
+still means what the Spec says, or whether `AGENTS.md` says what its authors
+think it says.
+
+The Dream is a **challenger**: a reviewer that walks in cold, is handed one
+artifact, the station's `glossary.md` and the Dream entry the artifact claims
+to realize — and nothing else: no instruction files, no conversation, no
+memory, read-only tools — and reports what does not make sense, what is
+assumed but never written, what is promised but never tested. Then it forgets
+everything. Google's Elephant-Goldfish Model
+(`google/elephant-goldfish-model`, Apache-2.0; a markdown-only Claude Code
+plugin of seven skills and nine reviewer personas, each persona declaring
+`omitClaudeMd: true` and `tools: [Read, Grep, Glob]`) is the first stranger
+the fleet hires. The elephant stays marshal.
+
+Three ways to run it, one switch each, all off by default. **Ad hoc**: the
+operator points the challenger at one artifact from an interactive session and
+reads the report. **Integrated**: `marshal factory dispatch` asks the
+challenger whether a story spec is ready before a dev session starts, and
+`bmad-retrospective` asks it whether the code drifted from the Spec at epic
+close. **Audit**: one sweep over everything that already exists — every
+station's Dream, Spec, `epics.md` and story specs, plus the repo's own rules
+(`AGENTS.md`, `CHAIN-STANDARD.md`, the station `SKILL.md`s) — to say where the
+fleet stands before any new chain is minted.
+
+> A reviewer that knows the rules cannot tell you the rules are wrong.
+
+### Why now
+
+Operator answers, 2026-11-01: a dispatched story bounces on a Spec gap or
+contradiction most weeks (a bmad-loop CRITICAL escalation, a review send-back,
+or a post-merge fix story); every blind spot matters — meaning, mechanics,
+code drift and the rules themselves; the challenger may question the repo's
+own rules, not only the artifact under review; and the operator chose full
+integration over a trial, on three conditions: everything reversible and
+behind feature flags with a configuration off-switch, runnable ad hoc or
+integrated, and a one-time audit over the existing stations, the repo rules
+and the current state.
+
+Found live the same day:
+
+| Finding | Where it is visible |
+|---|---|
+| No challenger concept exists | `challenger` appears only in deep-recon candidate selection and party-mode |
+| `bmad-review` lenses inherit the house | spawned as ordinary subagents; the instruction files and memory index load first |
+| The isolation is Claude Code's, not EGM's | `.claude-plugin/agents/*.md`: `omitClaudeMd: true`, `tools: [Read, Grep, Glob]`, `model: inherit` (the Agent tool's `model` override lets a different model challenge what one model wrote) |
+| A harness cannot `Skill`-invoke EGM | every `SKILL.md` is `disable-model-invocation: true`; the harness spawns the registered reviewer agents (`egm:egm-zoom-out`, `egm:egm-design`, `egm:egm-comprehension`, `egm:egm-implementation-readiness`, `egm:egm-codebase-details`, `egm:egm-synthesizer`) directly, or follows a `SKILL.md` in the main thread |
+| The personas live outside the repo | `~/.claude/plugins/cache/egm/egm/<version>/`; headless runs need `Read(...)` rules on `agents/`, `docs/`, `resources/`, `skills/` |
+| Young upstream | v0.1.0 released 2026-10-27; README: "not an officially supported Google product" |
+| Every Spec already ships the goldfish context | `planning-artifacts/specs/spec-pyforge-<station>/glossary.md`, "Glossary-first by design" |
+
+### What it looks like when real
+
+- **One verb, five stages, exit 0.** `marshal factory challenge --project
+  <station> --target <path> --stage {mint,decompose,readiness,drift,rules}`
+  spawns the configured reviewer group, writes a flat deficiency report to
+  Tier 3 (`implementation-artifacts/egm/<run>/`), journals the run beside the
+  dispatch runs, and always exits 0: findings are data, never a verdict (the
+  mason `doctor` pattern; doctor's and warden's rule that nothing becomes a
+  second PR gate).
+- **Goldfish context is the glossary and the Dream entry.** A reviewer
+  receives the artifact, the Spec's `glossary.md`, the Dream entry the
+  artifact cites, and the standard it is judged against — `CHAIN-STANDARD.md`
+  and the five-field Spec shape for a Spec, the story-spec template for a
+  story spec. Never `AGENTS.md`, never `CLAUDE.md`, never the memlog, never
+  chat. EGM's own `document_standards/` are not used; its `structural` and
+  `style` personas are not dispatched.
+- **Ad hoc is the same verb.** An interactive session runs `marshal factory
+  challenge` by hand, or reads `egm-review/SKILL.md` and follows it; the
+  report lands in the same Tier-3 folder; nothing tracked changes until a
+  finding is accepted.
+- **Integrated is a policy block plus a flag per hook.** `marshal-policy.toml`
+  gains `[challenge]` (`enabled`, `stages`, `reviewers`, `model`, `standards`,
+  `artifact_dir`); absent means off, exactly as `[context]` does. The dispatch
+  readiness hook and the retro drift hook each sit behind their own
+  `pyforge.marshal.egm_*` kill switch, `defaultVariant: off`, one per CAP (the
+  Guild flag rule, Epic 110). A red readiness report moves the story spec to
+  `status: draft` with the findings recorded in it; the challenger never
+  writes a ledger.
+- **Audit is a sweep, once.** `marshal factory challenge --audit` runs the
+  `rules` stage over `AGENTS.md`, `CHAIN-STANDARD.md` and every station
+  `SKILL.md`, and the `mint` and `decompose` stages over every station's
+  Dream, Spec and `epics.md`, and writes one fleet report and one per-station
+  report to Tier 3. The durable residue is a dated
+  `planning-artifacts/research/egm-audit-<date>.md` per station and a memlog
+  entry on each Spec whose findings were accepted, landed in the PR that acts
+  on them (a memlog or research file alone trips chain-currency).
+- **Accepted findings travel the only write path.** `egm-resolve` proposes;
+  the operator accepts; the fix is a memlog append plus a `bmad-spec`
+  re-derive, or a story-spec edit — never a hand edit of `SPEC.md`, never a
+  ledger write (behavioural guidelines 6 and 7). Rejected findings are
+  recorded as rejected in the report, nowhere else.
+- **Reversible to zero.** Turning it off is `enabled = false` or the flag;
+  removing it is `claude plugin uninstall egm@egm`, deleting the Tier-3
+  folder, and retiring the flags by their `cleanup_by` date. No governed file,
+  detector, gate or ledger depends on EGM being installed; with the plugin
+  absent the verb refuses with its own exit code and dispatch proceeds as if
+  the hook were off.
+- **Pinned and recorded.** The plugin is pinned to a version in the tracked
+  `.claude/settings.json` `enabledPlugins`; the headless read rules on the
+  plugin cache go in marshal's dispatch `--settings`; the pin is a steward
+  estate row with a refresh verb, not a hand-edited path.
+
+### Constraints / Non-goals
+
+- **No second PR gate.** The challenger's report never fails CI, never writes
+  a ledger, never flips `blocked`. The gate stays `detectors-ci` + warden.
+- **Does not replace the chain's writers.** The Dream stays the operator's;
+  the Spec stays `bmad-spec`'s output (the portability contract); stories
+  stay `bmad-create-epics-and-stories`'s; per-story review stays
+  `bmad-review`. `egm-brainstorm` and `egm-draft` are not wired;
+  `bmad-forge-idea` already owns pre-Dream ideation.
+- **`egm-bootstrap` is never run on this repo.** A README sweep across the
+  tree reds `governance-currency` and the docs map.
+- **Off by default, everywhere.** Policy block absent = off; every flag
+  `defaultVariant: off`; a station opts in per stage.
+- **Cost is per event, not per PR.** Mint and decompose run once per Spec
+  change; readiness once per dispatch with one reviewer; drift once per epic
+  close; the audit once.
+- **Context isolation, not filesystem isolation.** Reviewers can read any
+  accessible file; the harness passes absolute paths and never URLs
+  (reviewers cannot open them).
+- **One owner.** Marshal owns the verb, the hooks, the policy block and the
+  flags. The doctor advisory source, the steward pin row and the scribe
+  instruction-surface line are Kinship entries on those stations' Dreams,
+  minted when their stories are reached, not from this entry.
+
+### Open questions (for `bmad-spec`, not answered here)
+
+1. Which model challenges: `inherit`, or a fixed different model from the
+   `model_cost_catalog` so the author model never reviews itself?
+2. Vendor the nine Apache-2.0 personas into the repo (a `.claude/agents/`
+   twin with `omitClaudeMd`) so the challenger survives the plugin's absence,
+   or depend on the plugin cache and pin?
+3. v1 stages: all five, or `rules` + `mint` + `readiness` first, with
+   `decompose` and `drift` as a second wave?
+4. Does a red readiness report move the story spec to `draft` automatically
+   under dispatch, or only report and leave the move to the operator?
+5. Where does the audit's fleet summary live durably — one `research/` file
+   per station, or a single herald fact-ledger entry?
+
+### Kinships
+
+[[pyforge-marshal]] (the station; the verb, hooks, policy block and flags are
+its) · [[pyforge-doctor]] (an advisory `egm-challenge` source for
+`fleet-picture`, later) · [[pyforge-steward]] (the plugin pin as an estate
+row; the `steward setup` read rules) · [[pyforge-scribe]] (the
+`EGM artifact directory:` line and the instruction-surface parity test; the
+`rules` stage reads scribe's surface cold) · [[one-chain-per-station]]
+(`CHAIN-STANDARD.md` is the standard the mint stage judges against) ·
+[[feature-flag-governance]] (one kill switch per CAP, `cleanup_by`) ·
+[[pyforge-charter]] (the Lexicon the glossary-first context inherits).
+
+### Realization log
+
+- **2026-11-01** — Seeded. The operator asked whether
+  `google/elephant-goldfish-model` could be installed and used, then whether
+  it could serve as the chain's independent challenger, then answered the four
+  deciding questions (bounces most weeks; every blind spot; rules too; full
+  integration) and set three conditions: reversible and behind flags with a
+  configuration off-switch; runnable ad hoc or integrated; a one-time audit
+  over the existing stations, repo rules and current state. Live join as in
+  § *Why now*. Owner **marshal**. Next act: `bmad-spec` under
+  `pyforge-marshal` after the five open questions are answered — do not mint
+  an epic or install the plugin into the tracked settings from this seed
+  alone. The audit may run ad hoc at user scope before the Spec exists, Tier-3
+  output only; its durable residue waits for its story.
+- **2026-11-01 (answers)** — The open questions answered the same day.
+  (1) A fixed, different model: the challenger model comes from
+  `marshal-policy.toml`'s `model_cost_catalog` and is never the author
+  session's model. (2) Plugin pin, no vendoring: the personas stay in the
+  plugin cache, pinned and refreshed by steward. (3) All five stages in v1,
+  including `drift` and the retro hook. (4) Session default, operator
+  informed: a red readiness report only reports in v1; the automatic move of
+  the story spec to `draft` is wave 2 behind its own flag. (5) Session
+  default, operator informed: the audit's durable residue is one
+  `research/egm-audit-<date>.md` per station. The plugin was installed at
+  user scope the same day so the next interactive session can run the ad hoc
+  audit, Tier-3 output only. Next act: `bmad-spec` under `pyforge-marshal`.

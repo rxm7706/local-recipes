@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 728
+# stories: 737
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -92,6 +92,13 @@ development_status:
   110-9-adopt-onto-a-living-repo-sits-behind-a-kill-switch: done
   111-1-marshal-s-54-archived-dreams-leave-the-live-tree: done
   112-1-marshal-s-absorbed-spec-folders-move-to-the-archive-home: done
+  113-1-marshal-factory-challenge-runs-a-fresh-context-review-of-one-chain-artifact: backlog
+  113-2-the-challenge-policy-block-configures-the-challenger-and-absent-means-off: backlog
+  113-3-dispatch-runs-the-readiness-stage-before-the-dev-session-starts: backlog
+  113-4-the-drift-stage-reads-an-epic-s-code-against-its-spec-at-retro-time: backlog
+  113-5-one-audit-sweep-reports-where-the-fleet-stands: backlog
+  113-6-an-accepted-finding-travels-the-chain-s-only-write-path: backlog
+  113-7-the-first-fleet-audit-runs-and-lands-its-residue: backlog
   12-1-full-pixi-wiring-distribution-and-repo-gate-compliance: done
   12-2-the-local-recipes-empty-plan-oracle-critical: done
   12-3-offline-operation-and-the-egress-counter: done
@@ -554,6 +561,8 @@ development_status:
   epic-111-retrospective: optional
   epic-112: done
   epic-112-retrospective: optional
+  epic-113: backlog
+  epic-113-retrospective: optional
   epic-12: done
   epic-12-retrospective: optional
   epic-13: done

@@ -433,6 +433,15 @@ holds:
   owner: pyforge-steward
   until: unknown
   cap: "<42"
+- package: nebari-infrastructure-core
+  hold: channel
+  channel: SelfExplainML
+  features:
+  - pyforge-steward.target.linux-64
+  reason: nic ships only from the estate SelfExplainML channel (linux-64); no version cap (operator ruling 2026-11-01)
+  authority: spec-118-1
+  owner: pyforge-steward
+  until: 0.17.0 publishes beside recipes/nebari-infrastructure-core, then review
 - package: opengrep
   hold: channel
   channel: SelfExplainML

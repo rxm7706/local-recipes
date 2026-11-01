@@ -863,6 +863,15 @@ HTTP & APIs:
   own transitive pin. Check which env you are in before assuming which one resolves.
 - **gql** (>=4.0.0) — GraphQL client (v4+ drops the websockets dep).
 
+Kubernetes hosting (steward, linux-64 only):
+- **nebari-infrastructure-core** (>=0.14.0) — `nic` CLI: Nebari's infrastructure core
+  (validate / up / kubeconfig / outputs / down against a kind or cloud cluster). Declared in
+  `[feature.pyforge-steward.target.linux-64.dependencies]` ONLY, from the estate
+  `SelfExplainML` channel (steward Story 118.1, `spec-pyforge-steward` CAP-176: `pyforge steward
+  deploy nic` wraps it with a keys-backed `.env`). Latest-up, no hold (operator ruling
+  2026-11-01); the floor rises once 0.17.0 publishes beside `recipes/nebari-infrastructure-core`.
+  Never import it; drive it through the steward verb.
+
 ---
 
 ## 14. Developer tooling: lint, type-check, test, terminal

@@ -936,6 +936,20 @@ verify_commands = [
 # trigger_mode = "exclude": fires when at least one changed path is OUTSIDE
 # `recipes/**` (corrected in review, 2026-08-06 -- see core/landing.py).
 
+"113" = [  # the EGM challenger (spec-pyforge-marshal CAP-298..CAP-303; Dream entry 2026-11-01), added 2026-11-01.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/**",
+  "_bmad-output/projects/*/planning-artifacts/research/egm-audit-*.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/*/.memlog.md",
+  "_bmad-output/policy-defaults.toml",
+  ".claude/settings.json",
+  ".claude/skills/bmad-retrospective/customize.toml",
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
+  "docs/governance/flag-inventory/pyforge-marshal.md",
+  "docs/dreams/pyforge-marshal.md",
+]
 "110" = [  # the CAP-7 retrofit: every pre-rule marshal runtime capability sits behind a kill switch (spec-feature-flag-governance CAP-7), added 2026-10-26.
   "src/shared/packages/pyforge-marshal/**",
   "src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py",

@@ -4,7 +4,7 @@
 # verified-in-foundry is a claim on a rebuild row (needs a 54.1 case-list id), not a mode.
 # Do not flip 44.1 or any Epic 44 blocked key.
 schema: pyforge.capability-ledger/v0
-updated: "2026-10-31"
+updated: "2026-11-01"
 source_sha: 5066b013facf67e1b0b205d9ffa2659ea0e1af98
 extract: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-capability-ledger/extract.md
 modes:
@@ -3380,6 +3380,43 @@ capabilities:
     spec: pyforge-marshal
     station: pyforge-marshal
     heading: "`seed version` reports the CLI clock and the model clock"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  # 2026-11-01 minted from the marshal Dream entry of the same date (EGM goldfish challenger); FR-240..FR-245 <- CAP-298..CAP-303; Epic 113
+  - id: pyforge-marshal:CAP-298
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "`marshal factory challenge` runs a fresh-context review of one chain artifact"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-299
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "the `[challenge]` policy block is the one configuration of the challenger, and absent means off"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-300
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "dispatch asks the challenger whether a story spec is ready before the dev session starts"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-301
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "the drift stage reads an epic's code against its Spec at retro time"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-302
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "one audit sweep says where the fleet stands"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-303
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "an accepted finding travels the chain's only write path"
     mode: rebuild
     path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   # 2026-09-19 spec-pyforge-core draft→ready (Epic 14 realized CAP-1..7 in August; CAP-8/9 minted for Epic 52)
