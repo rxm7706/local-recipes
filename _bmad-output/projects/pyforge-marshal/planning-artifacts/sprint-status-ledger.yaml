@@ -103,7 +103,7 @@ development_status:
   113-4-the-drift-stage-reads-an-epic-s-code-against-its-spec-at-retro-time: done
   113-5-one-audit-sweep-reports-where-the-fleet-stands: done
   113-6-an-accepted-finding-travels-the-chain-s-only-write-path: done
-  113-7-the-first-fleet-audit-runs-and-lands-its-residue: backlog
+  113-7-the-first-fleet-audit-runs-and-lands-its-residue: done
   113-8-a-challenge-that-did-not-fully-run-never-reads-as-clean-and-watch-shows-the-readiness-result: done
   113-9-the-challenger-model-is-a-claude-entry-of-marshal-s-own-catalog: done
   12-1-full-pixi-wiring-distribution-and-repo-gate-compliance: done

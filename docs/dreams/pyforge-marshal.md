@@ -13904,7 +13904,7 @@ row; the `steward setup` read rules) · [[pyforge-scribe]] (the
   research/egm-audit-2026-11-01.md per station, rules and fleet totals in
   `_bmad-output/projects/pyforge-marshal/planning-artifacts/research/egm-audit-2026-11-01.md`. Fixed in the
   113.7 PR: marshal Stories 113.8-113.13 (the challenger's partial-run, model, isolation, precondition,
-  stage-standard and resolve defects) and 22 fix stories on the other stations; parked at backlog: 113.14 (a
+  stage-standard and resolve defects) and 23 fix stories on the other stations; parked at backlog: 113.14 (a
   size ceiling and section selector, after which the first automated --audit runs).
 - **2026-11-01 (the synthesizer)** — As built, the challenger never spawns `egm:egm-synthesizer`: it dispatches
   five reviewer agents (zoom-out, design, comprehension, implementation-readiness, codebase-details) in the
