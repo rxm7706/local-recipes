@@ -7114,7 +7114,7 @@
    "src/platform/tests/test_observability_contract.py": "c07d564e98effc905a6d59c4889dc99263085adb",
    "src/platform/tests/test_oidc_identity.py": "fb3c7cc461270441acb767e6135f418e84f0b726",
    "src/platform/tests/test_one_duckdb_writer.py": "a568e50035338660989b3d751540d8d214231fe7",
-   "src/platform/tests/test_openfeature_file_flags.py": "3cbd6d4063e8e39107efbf1d65ceb76d72ec0eaf",
+   "src/platform/tests/test_openfeature_file_flags.py": "56e4f3e80f04d81faac7f8641dada0cceadbd1e9",
    "src/platform/tests/test_postgres_backup.py": "709603ae00c655363c736a86de3be1d523d22b98",
    "src/platform/tests/test_redis_cache_eviction_broker_survival.py": "6dccdb6e0c544263dc95127f602fe10d4829d404",
    "src/platform/tests/test_restarts_reconcile.py": "392c9496e5b212e125f147db04d558b6aeb25c01",
@@ -7902,7 +7902,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "c8955c9728c276299ed108072bf5a5f9158f1e4b"
+  "memlog": "62d9d3b9e930a613fd693d36c9cff7d87dd62935"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {},
