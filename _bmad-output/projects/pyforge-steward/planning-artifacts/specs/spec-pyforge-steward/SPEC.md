@@ -2,7 +2,7 @@
 id: SPEC-steward
 spec: pyforge-steward
 status: ready
-updated: "2026-10-31"
+updated: "2026-11-01"   # AMENDED 2026-11-01 (EGM fleet audit, marshal Story 113.7): CAP-176 amended (the rootless host's preconditions: the inotify limit and a loopback port-forward, no port override; .env and the age identity only when the config names an env: secret; the refusals the verb enforces; nic from SelfExplainML at a floor with no version cap; down passes --auto-approve; a Hetzner success, attended and operator-gated) and CAP-177 amended (/shared under three keys, waived on rootless kind by the operator's 2026-11-01 ruling and proven on rootful Docker or an RWX cluster by Story 118.3 AC3; split-horizon OIDC on kind; the nebari-apps Application contract; the Warden clause narrowed to the chart digests steward journals, spec-pyforge-warden dropped from works-with; success through the pyforge-steward-nkp-probes task), each success naming its command and exit code; both Open Questions settled and one opened for Story 118.8; companion glossary.md added; CAP-178 unchanged (Story 118.8). Prior "2026-10-31"
 owner-dream: docs/dreams/pyforge-steward.md
 covers-dreams:
   - docs/dreams/pyforge-steward.md
@@ -157,6 +157,7 @@ companions:
   - vocabulary-map.md         # live companion carried 2026-10-27 from spec-intelligence-hub (spec-one-chain-per-station:CAP-11)
   - failure-modes.md          # live companion carried 2026-10-27 from spec-bmad-method-core-upgrade (spec-one-chain-per-station:CAP-11)
   - cluster-bringup-facts.md  # live companion carried 2026-10-27 from spec-local-ocp-hybrid-environment (spec-one-chain-per-station:CAP-11)
+  - glossary.md               # station terms, pointer-only; added 2026-11-01 (EGM fleet audit STW-M-C5)
 sources:
   - ../../../../../../docs/dreams/pyforge-steward.md
 ---
@@ -914,27 +915,64 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
 - **CAP-173 — contribution lanes wait on a desk test** ← Story 109.5 (in-progress)
   - **intent:** The instructions-only lane (no package) and the code-backed lane (a package), and any automation of publish, wait on the Round 0 desk test and the Wizard-of-Oz pilot in `prototypes/p4-wizard-of-oz-pilot.md`, whose manual form is `docs/foundry/marketplace/MANUAL-CHECKLIST.md`.
   - **success:** Story 109.5 does not automate install or publish in the 2026-10-21 change; the checklist records P4's gates (`bmp install` after two teammates, lint after three pull requests that caught a real problem, `bmp publish` / `new` after one merge by someone other than rxm7706); `DW-FU-60-1`, `DW-FU-60-1-4`, and `DW-FRR-60-1` stay open with a `carried:` line pointing at Epic 109.
-- **CAP-176 — an NKP cluster is brought up, torn down and reported from one tracked config through `steward deploy nic`** ← spec-pyforge-steward CAP-176 (ready 2026-10-31; extends CAP-62, CAP-65; works with CAP-1, CAP-3, CAP-56, CAP-178)
-  - **intent:** `steward deploy nic validate|up|kubeconfig|outputs|down` wraps `nic validate|deploy|kubeconfig|outputs|destroy` by
-    subprocess over `src/platform/deploy/nic/<project_name>.yaml`; `GIT_TOKEN` and the provider credentials come through `keys`
-    from an untracked `.env`; `nic` comes from the pixi environment and `opentofu` from conda-forge through `NIC_TOFU_PATH` for
-    cloud providers (kind needs none); the providers land in this order: local kind first, hetzner second; a config whose
-    operator-owned inputs are missing is refused; each run is journaled under `.steward/`; the verb returns a `DutyResult` (AD-8)
-    and sits behind `pyforge.steward.nkp_deploy` (a kill switch, ON in dev, staging and production; OFF makes the verb refuse with
-    usage code 2). The Dream's 2026-10-31 section carries the four operator rulings and what was verified upstream (NIC 0.17.0,
-    the kind caveats, NIC issue #613).
-  - **success:** an attended kind run on the operator's host (rootless Docker, the unprivileged-port sysctl or the port override
-    in the config) reaches every NKP ArgoCD Application `Healthy` under `kubectl get applications -n argocd`; `nic outputs`
-    reports the domain and the Keycloak issuer; `down` removes the cluster; `flag-gate-check` passes with both flag states tested.
-- **CAP-177 — nebi-pack, then the data-science pack, install from the same config as ArgoCD Applications on the cluster CAP-176 brings up** ← spec-pyforge-steward CAP-177 (ready 2026-10-31; extends CAP-176; works with CAP-178, spec-pyforge-warden)
-  - **intent:** the config names the packs and their values — `keycloak.hostname`; `sharedStorage.storageClass`, the chart's
-    transitional NFS server on kind and `longhorn` on hetzner; `nebi.remote.enabled: true` with nebi-pack in namespace `nebi`
-    installed first — and the verb writes each pack's ArgoCD `Application` into the GitOps source (CAP-178), labels the pack
-    namespaces `nebari.dev/managed=true` and waits for both Applications to reach `Healthy`; Warden's digest policy covers the
-    charts and images ArgoCD pulls; behind `pyforge.steward.nkp_packs` (a kill switch, ON).
-  - **success:** on kind, `https://hub.<domain>` signs in through Keycloak, a `small-instance` server spawns with `/shared`
-    mounted, the landing page shows the JupyterHub and Nebi cards, the pack's Keycloak bootstrap job completes and both
-    Applications read `Healthy`; both flag states are tested.
+- **CAP-176 — an NKP cluster is brought up, torn down and reported from one tracked config through `steward deploy nic`** ← spec-pyforge-steward CAP-176 (ready 2026-10-31; amended 2026-11-01; extends CAP-62, CAP-65; works with CAP-1, CAP-3, CAP-56, CAP-178)
+  - **intent:** `steward deploy nic validate|up|kubeconfig|outputs|down` wraps `nic validate|deploy|kubeconfig|outputs|destroy`
+    by subprocess over `src/platform/deploy/nic/<project_name>.yaml`, `down` passing `--auto-approve` (the kill switch and the
+    explicit action are the consent); each secret the config names in an `env:` field (`auth.*.env`: `GIT_TOKEN`, the provider
+    credentials) is decrypted through `keys` from the age-encrypted file the untracked `.env` maps it to, so `.env` and an age
+    identity (`SOPS_AGE_KEY_FILE`, or an issued row in `.steward/keys-inventory.yaml`) are needed only when the config names one
+    (a `repository.existing` or cloud config; the tracked kind config names none); `nic` comes from the pixi environment (the
+    SelfExplainML channel, floor `>=0.14.0`, no version cap, the channel held by its `docs/governance/pin-policy.yaml` row) and
+    `opentofu` from conda-forge through `NIC_TOFU_PATH` for cloud providers (kind needs none); the providers land in this order:
+    local kind first, hetzner second; before `nic` starts, the verb refuses with usage code 2 a config that is missing, not YAML
+    or not a mapping, a named secret that `.env` does not map, whose age file is missing or that `keys` cannot decrypt, a
+    missing `.env` or age identity when a secret is named, and a missing `nic`; each run is journaled to
+    `.steward/nic-deploy.jsonl`; the verb returns a `DutyResult` (AD-8) and sits behind `pyforge.steward.nkp_deploy` (a kill
+    switch, ON in dev, staging and production; OFF makes the verb refuse with usage code 2). The Dream's 2026-10-31 section
+    carries the four operator rulings and what was verified upstream (NIC 0.17.0, the kind caveats, NIC issue #613).
+  - **success:** on the operator's rootless-Docker host, with `fs.inotify.max_user_instances=1024` (at the default 128 the
+    cloudnative-pg, envoy-gateway and metallb controllers crash-loop) and no host-port publish (NIC 0.14.0's local provider
+    publishes 6443 alone and the gateway is a MetalLB address on the kind Docker network, reached by a loopback
+    `kubectl port-forward`; the config carries no port override and `net.ipv4.ip_unprivileged_port_start` is not needed), the
+    attended `pixi run -e pyforge-steward pyforge steward deploy nic up -f src/platform/deploy/nic/my-nebari-local.yaml` exits 0
+    and `kubectl get applications -n argocd` lists every NKP ArgoCD Application `Healthy`; `deploy nic outputs` on the same
+    config exits 0 and prints the domain and the Keycloak issuer; `deploy nic down` exits 0 and the cluster is gone. On Hetzner
+    (attended and operator-gated: Story 118.3 AC3, run only once the operator-owned inputs exist), `up`, `outputs` and `down`
+    over the Hetzner config (`cluster.hetzner`: one master and two `cpx31` workers) each exit 0, every Application reads
+    `Healthy`, `outputs` names the real domain and issuer, and `down` leaves no server, volume or load balancer.
+    `pixi run --frozen -e pyforge-steward pyforge-steward-test` exits 0 with `tests/unit/test_deploy_nic.py` pinning the
+    action-to-argv map (`down`'s `--auto-approve` included), each refusal with usage code 2 and the journal, and
+    `tests/unit/test_retrofit_flags.py` building both states of `pyforge.steward.nkp_deploy`; `flag-gate-check` exits 0; without
+    the `deploy_nic` module those tests fail.
+- **CAP-177 — nebi-pack, then the data-science pack, install from the same config as ArgoCD Applications on the cluster CAP-176 brings up** ← spec-pyforge-steward CAP-177 (ready 2026-10-31; amended 2026-11-01; extends CAP-176; works with CAP-178)
+  - **intent:** the config names the packs and their values — `keycloak.hostname`; `nebi.remote.enabled: true` with nebi-pack in
+    namespace `nebi` installed first; `/shared` under three keys, `sharedStorage.enabled` the gate,
+    `sharedStorage.nfsServer.enabled` for the chart's transitional NFS server on rootful-Docker kind and
+    `sharedStorage.storageClass` for an RWX class (`longhorn` on hetzner); and on kind, whose pods cannot resolve `*.<domain>`
+    (NIC 0.14.0 adds no CoreDNS entry for the domain), split-horizon OIDC through Keycloak's in-cluster Service: the
+    data-science pack's `keycloak.backchannelURL` and `jupyterhub.hub.extraEnv.KC_REALM_API_URL`, and nebi-pack's
+    `auth.oidc.discoveryURL` (`src/platform/deploy/nic/my-nebari-local.yaml`; a cluster whose DNS resolves the domain drops
+    them). The verb writes each pack's ArgoCD `Application` (project `nebari-apps`, values as a `helm.values` string) into the
+    GitOps source (CAP-178), labels the pack namespaces `nebari.dev/managed=true`, refreshes `nebari-root`, and waits for each
+    Application to exist and then to read `Healthy` on a sync of the source it rendered; it journals each pulled chart's ref and
+    digest to `.steward/nkp-pack-deploy.jsonl` — no image digest is collected and no Warden policy reads the journal (a Warden
+    reader is a future kinship, not this capability); behind `pyforge.steward.nkp_packs` (a kill switch, ON).
+  - **success:** on rootless-Docker kind, where `sharedStorage.enabled` is `false` (the operator ratified the waiver on
+    2026-11-01: the chart's NFS server cannot start inside a rootless node's user namespace and the kernel NFS client answers
+    `mount.nfs: Operation not permitted`), the attended
+    `pixi run -e pyforge-steward pyforge steward deploy nic up -f src/platform/deploy/nic/my-nebari-local.yaml` exits 0 with
+    both Applications `Healthy`; `pixi run -e pyforge-steward pyforge-steward-nkp-probes` (Story 118.6) then exits 0 with no
+    probe skipped — the landing SPA signs in as `admin` through Keycloak's auth-code + PKCE flow, `https://hub.<domain>` signs
+    in and a `small-instance` server spawns to ready without `/shared` and is stopped, and the landing page lists the JupyterHub
+    and Nebi cards `healthy` (with no reachable cluster every probe skips and the task still exits 0, so a skipped run proves
+    nothing); `kubectl -n keycloak get jobs -l app.kubernetes.io/instance=data-science-pack` shows the pack's Keycloak bootstrap
+    job `Complete`. `/shared` is proven on rootful Docker or an RWX cluster, by Story 118.3 AC3 on Hetzner (attended and
+    operator-gated): over the Hetzner config (`sharedStorage.enabled: true`, `storageClass: longhorn`) the same probe task,
+    given that config through `--nkp-config`, exits 0 with no probe skipped, its TLS check verifying the Let's Encrypt
+    certificate and its spawn reaching ready with `/shared` mounted (a spawn whose `/shared` cannot mount hangs on `FailedMount`
+    and the probe fails). `pixi run --frozen -e pyforge-steward pyforge-steward-test` exits 0 with
+    `tests/unit/test_deploy_nic_packs.py` pinning the Application render, the nebi-first order, the wait cases, the digest
+    journal and both flag states; without the `deploy_nic_packs` module those tests fail.
 - **CAP-178 — the GitOps source is NIC's local directory on kind, or the monorepo on a branch that only `nic` writes** ← spec-pyforge-steward CAP-178 (ready 2026-10-31; extends CAP-165; works with CAP-1, CAP-176)
   - **intent:** a kind config uses `repository.local`; a cloud config uses `repository.existing` on `rxm7706/local-recipes` with
     `branch: gitops/<project_name>` and `path: gitops/<project_name>`; `refs/heads/gitops/` joins `docs/governance/guild-roster.json`
@@ -1081,7 +1119,9 @@ The `JFROG_API_KEY` cross-host leak pattern has a passing, named regression test
 - Should the atlas job in `pyforge-station-tests.yml`, which runs `playwright install --with-deps chromium`
   unconditionally and so takes the same apt mirror, take CAP-174's launch-then-fallback step? Another workflow, out
   of CAP-174's scope; the operator's.
-- Keycloak on kind for CAP-177: does the hub's direct OAuth (and nebi-pack's) need the chart's `keycloak.backchannelURL`
-  split-horizon, or a real cluster (NIC issue #613)? Settled by Story 118.2's attended run.
-- `nic` provisioning for CAP-176: the local recipe published to the estate channel, or the upstream `prefix.dev/github-releases`
-  channel pinned in `pixi.toml`? Story 118.1 decides and records it on this memlog.
+- Where does `nic` 0.17.0's `repository.existing` clone, and does its regeneration commit stage files `nic` did not
+  generate (CAP-178, with CAP-176 and CAP-177)? Story 118.8 reads the nic source read-only and records the answer on
+  this memlog. The operator ruled on 2026-11-01 that `nic` alone writes `gitops/<project_name>` under its own deploy
+  key and that a non-local `deploy nic up` needs `--yes` behind a `session_denials` entry; until Story 118.8 lands,
+  CAP-178's writer and enforcement, CAP-177's write location on a cloud config and CAP-176's consent gate stay as
+  minted, the Dream's no-secret rule is not yet in this Spec, and Story 118.3 stays `backlog` behind S-118.8.

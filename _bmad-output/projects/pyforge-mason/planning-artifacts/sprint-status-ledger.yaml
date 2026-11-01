@@ -53,7 +53,7 @@ development_status:
   19-3-the-environment-craft-skill-teaches-mason-environment-lock-and-check: done
   19-4-the-two-feedstock-campaigns-become-mason-skills: done
   19-5-the-closing-rule-2-retro-teaches-conda-forge-expert-it-is-one-of-mason-s-skills: done
-  19-6-mason-s-skill-meta-tests-scan-every-skill-file-g-id-and-cli-verb: backlog
+  19-6-mason-s-skill-meta-tests-scan-every-skill-file-g-id-and-cli-verb: done
   2-1-the-cfe-port: done
   2-10-mason-recipe-update: done
   2-2-the-seam-guard: done
@@ -123,7 +123,7 @@ development_status:
   4-2-manifest-discovery: done
   4-3-mason-environment-lock: done
   4-4-mason-environment-check: done
-  4-5-a-repeated-platform-keeps-every-value: backlog
+  4-5-a-repeated-platform-keeps-every-value: done
   5-1-cfe-independence-test: done
   5-2-governance-test: done
   5-3-delegation-fidelity-test: done
@@ -158,7 +158,7 @@ development_status:
   epic-17-retrospective: optional
   epic-18: done
   epic-18-retrospective: optional
-  epic-19: in-progress
+  epic-19: done
   epic-19-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
@@ -198,7 +198,7 @@ development_status:
   epic-35-retrospective: optional
   epic-36: done
   epic-36-retrospective: optional
-  epic-4: in-progress
+  epic-4: done
   epic-4-retrospective: optional
   epic-5: done
   epic-5-retrospective: optional

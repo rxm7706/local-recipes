@@ -2,7 +2,7 @@
 title: '25.2: The estate catalog writes and checks byte-stably'
 type: 'fix'
 created: '2026-11-01'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -163,7 +163,103 @@ See `epics.md` § Story 25.2 for the full Given / When / Then / And.
 ## Spec Change Log
 
 - 2026-11-01 — minted `backlog` from the EGM fleet audit (marshal Story 113.7; operator triage 2026-11-01).
+- 2026-11-01 — implemented (EGM audit fix pass); `in-review`.
 
 ## Auto Run Result
 
-Status: backlog
+Status: in-review
+
+**What changed**
+
+- `src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py`:
+  - `Estate.section_facts()` no longer lists `pipeline-truth`, and `SECTION_SOURCES` drops its entry. So `digests()`
+    records no digest for the optional section. Section 8 still renders, with the table when `--pipeline-truth` is
+    passed and the "Not rendered" note when it is not. `check()` is unchanged: the fresh-digest loop still reds a
+    dropped section (AC6).
+  - `write()` gains `today: date | None = None`. It reads the target and parses its `> Generated: YYYY-MM-DD.` line
+    (new `_GENERATED_RE` and `_generated_date()`). It renders with that date, and when the text is identical it returns
+    without writing. Otherwise it renders with `today` (default `date.today()`) and writes atomically as before. A
+    missing, unreadable or undated target, or a date that does not parse (for example `2026-13-45`), falls through to
+    the `today` render and never raises.
+  - The module docstring names both rules.
+- `src/shared/packages/pyforge-scribe/tests/unit/test_catalog_bmad_estate.py`: the pipeline-truth JSON fixture moves
+  into a `_truth_file()` helper that the existing stage-column test reuses. Seven new tests:
+  - `test_25_2_ac1_written_with_pipeline_truth_checks_clean_without_it` (CLI)
+  - `test_25_2_ac2_written_bare_checks_clean_with_pipeline_truth` (CLI)
+  - `test_25_2_ac3_pipeline_truth_renders_but_records_no_digest`
+  - `test_25_2_ac4_a_no_op_write_on_a_new_day_leaves_the_file_untouched` (identical bytes, same inode and `mtime_ns`)
+  - `test_25_2_ac5_a_moved_source_or_a_prose_change_re_stamps_the_date`
+  - `test_25_2_an_unparsable_committed_date_renders_with_today` (three cases)
+  - `test_25_2_ac6_a_section_removed_from_the_file_reds_the_check` (CLI, exit 1 naming `harness` and its source)
+- `docs/reference/bmad-estate-llms-full.md`: regenerated with `pixi run -e pyforge-guild scribe catalog bmad-estate
+  --write`, not by hand. The diff is the dropped `pipeline-truth=44136fa355b3` digest line and `Generated: 2026-11-01`.
+  Every other byte is unchanged (Epic 25's byte-identical boundary).
+- Story 25.1's criterion in `epics.md` is not reworded. The deviation note is in the `spec-pyforge-scribe` memlog
+  surface-reconcile event.
+
+**Commands (exit codes)**
+
+- Red first: the 25.2 tests against the unfixed `catalog.py` gave 8 failed and 1 passed. The pass was AC6, which is
+  already true. Exit 1.
+- `pixi run --frozen -e pyforge-scribe python -m pytest src/shared/packages/pyforge-scribe/tests/unit/test_catalog_bmad_estate.py`
+  gave 24 passed. Exit 0.
+- AC8 mutation, through a scratch pytest plugin with no tracked file touched:
+  - Putting `pipeline-truth` back into `section_facts`/`SECTION_SOURCES` fails AC1, AC2 and AC3. Exit 1.
+  - Making `_generated_date` always return `None` fails AC4. Exit 1.
+- `pixi run -e pyforge-scribe-pg scribe-pg-up` exits 0. Then `pixi run --frozen -e pyforge-scribe pyforge-scribe-test`
+  gives 460 passed and 12 skipped. Exit 0. `catalog.py` coverage is 93.1%, and no line of the new code is missed.
+- Ruff, run from the package root in `-e pyforge-guild` over the two changed files: `ruff check` exits 0 and
+  `ruff format --check` exits 0.
+- `mypy --cache-dir .mypy_cache/pyforge-guild -p pyforge.scribe` (the `lint-types` mypy slice for this package) exits 0.
+- `pixi run -e pyforge-guild scribe catalog bmad-estate --write` exits 0. A second write, and a
+  `catalog.write(root, today=date(2026, 11, 2))` next-day write, left the file's md5, inode and mtime unchanged.
+- `pixi run -e pyforge-guild bmad-estate-check` exits 0.
+- Manual check: `pixi run -e pyforge-steward pyforge steward suite pipeline-truth --json` exits 0, then
+  `scribe catalog bmad-estate --check --pipeline-truth <scratch>/pt.json` exits 0.
+- `pixi run --frozen -e pyforge-guild python -m pytest tests/scripts/test_bmad_estate_check.py tests/scripts/test_docs_bmad_estate.py`
+  gave 13 passed. Exit 0.
+- `pixi run --frozen -e pyforge-guild spec-surface-check` exits 0 before any stamp.
+
+**Left to the session owner**
+
+- Co-governor reconciles and the scoped stamps. Per this spec's Boundaries, `catalog.py` is co-governed by
+  `spec-pyforge-core` (pyforge-marshal) and `spec-pyforge-unifying-strategy` (pyforge-steward), and the test file by
+  `spec-pyforge-unifying-strategy`. Each one needs its memlog line, then `git add`, then one
+  `--write-baseline --spec <project>/<spec>`. Only this station's `spec-pyforge-scribe` memlog was appended: one
+  surface-reconcile event and one CAP-32 success event.
+- The `pyforge-scribe-test` task description in `pixi.toml` mentions "later segments", but its `cmd` runs a single
+  pytest segment. This was noted, not changed, because it is outside this story's surface.
+
+## Review Triage Log
+
+### 2026-11-01 — Independent review (reviewer: independent session) — PASS
+
+Judged against this spec's ACs and Boundaries from `git diff HEAD` of `catalog.py`, `test_catalog_bmad_estate.py` and
+`docs/reference/bmad-estate-llms-full.md`, not the implementer's summary. Every verdict read from the exit code.
+
+- AC1 / AC2 — hold. `test_25_2_ac1_…` and `test_25_2_ac2_…` drive the CLI (`--write [--pipeline-truth]`, then
+  `--check [--pipeline-truth]`), exit 0 each. Live: `pyforge steward suite pipeline-truth --json` exit 0, then
+  `scribe catalog bmad-estate --check --pipeline-truth <scratch>/pt.json` exit 0.
+- AC3 — holds. `section_facts()` and `SECTION_SOURCES` drop `pipeline-truth`; section 8 still renders;
+  `test_25_2_ac3_…` asserts no digest line and recorded digests == `SECTION_SOURCES`.
+- AC4 — holds. `test_25_2_ac4_…` asserts same bytes, inode and `mtime_ns`. Live: `catalog.write(root, output=<scratch
+  copy of the committed file>, today=date(2026, 11, 2))` left bytes, inode and mtime unchanged (tracked file untouched).
+- AC5 — holds. `test_25_2_ac5_…` covers a moved manifest version and a template-prose change, each re-stamped.
+  The unparsable-date edge case is pinned (three ids) and never raises.
+- AC6 — holds. `test_25_2_ac6_…`: a removed section digest reds `--check` (exit 1) naming `harness` and its source.
+- AC7 — holds. `pixi run -e pyforge-guild bmad-estate-check` exit 0; the committed file's diff is exactly the dropped
+  `pipeline-truth=44136fa355b3` line and `Generated: 2026-11-01` (no other byte). `pyforge-scribe-test` exit 0
+  (460 passed, 12 skipped).
+- AC8 — holds, re-observed via scratch pytest plugins (no tracked file touched): restoring `pipeline-truth` in
+  `section_facts`/`SECTION_SOURCES` fails AC1, AC2, AC3 (exit 1); `_generated_date` → `None` fails AC4 (exit 1).
+- Boundaries — held: offline generator, exit domain 0/1/2 and the prose exemption unchanged, no completeness clause,
+  Story 25.1 not reworded (deviation note is in the memlog event), catalog regenerated not hand-edited.
+- Callers: CLI `--write` goes through `catalog.write()`; `scripts/bmad_estate_check.py`, `scripts/docs_bmad_estate.py`
+  and steward `estate_reconcile` shell the CLI unchanged; `realization_register_lib.py` imports only `read_pins`.
+  `pixi run --frozen -e pyforge-guild python -m pytest tests/scripts/test_bmad_estate_check.py tests/scripts/test_docs_bmad_estate.py`
+  exit 0 (13 passed).
+- Lint/types: ruff check and format --check from the package dir over `src tests` exit 0 / 0; `mypy -p pyforge.scribe`
+  (guild cache) exit 0. `except OSError, ValueError:` is PEP 758 form, valid on the py314 floor every scribe env runs.
+- `pixi run -e pyforge-guild spec-surface-check` exit 0 (co-governor stamps are the session owner's).
+
+Failures: none.

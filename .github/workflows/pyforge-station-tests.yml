@@ -250,6 +250,7 @@ jobs:
             .claude/scripts
             .claude/skills
             .github/workflows/detectors.yml
+            .github/workflows/pages.yml
             AGENTS.md
             CLAUDE.md
             _bmad
@@ -263,6 +264,7 @@ jobs:
             docs/dreams
             docs/explanation
             docs/foundry/frames/pyforge.frame.md
+            docs/foundry/marketplace
             docs/governance
             docs/how-to
             docs/index.md
@@ -313,6 +315,7 @@ jobs:
             _bmad-output/projects/pyforge-marshal
             docs/dreams
             docs/governance/preserve-purge-list.json
+            docs/governance/spec-one-chain-per-station
             docs/how-to/troubleshoot-bmad-agent-loops.md
             docs/reference/story-spec-flag-block.md
             scripts/.spec-surface-baseline.json
@@ -346,6 +349,11 @@ jobs:
             CLAUDE.md
             _bmad/scripts/resolve_customization.py
             _bmad/skf
+            archive/docs/specs/feedstock-failure-remediation.md
+            archive/docs/specs/feedstock-platform-expansion.md
+            docs/how-to/feedstock-failure-remediation.md
+            docs/how-to/feedstock-platform-expansion.md
+            docs/reference/agent-instruction-notes.md
             recipes/click-help-colors
             scripts/cfe_rebuild_guard_check.py
             src/platform
@@ -373,8 +381,10 @@ jobs:
             GEMINI.md
             _bmad-output/projects/pyforge-warden
             _bmad/scripts/resolve_customization.py
+            _bmad/skf/config.yaml
             docs/dreams/README.md
             docs/how-to/README.md
+            docs/how-to/one-chain-station-ops.md
             docs/how-to/pixi-tasks.md
             docs/reference/library-llms-full.md
             docs/tutorials/getting-started.md

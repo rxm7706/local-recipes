@@ -37,27 +37,26 @@ def _count_package_occurrences(text: str, package: str, *, kind: str) -> int:
 
 
 def _edit_pixi_toml(text: str, package: str, floor: str) -> tuple[str, int]:
+    """Set one ``pkg = "<spec>"`` value (bare or quoted key) to ``>=floor``.
+
+    Story 14.4: the value keeps its own quote style and any trailing comment,
+    and only spaces and tabs are matched around it, so the edit never consumes
+    a line break -- the file's final-newline state is unchanged and the result
+    is still TOML. An unquoted value is never written.
+    """
+    key = rf'(?:"{re.escape(package)}"|{re.escape(package)})'
     patterns = (
         re.compile(
-            rf'^(\s*"{re.escape(package)}"\s*=\s*")([^"]*)(")\s*$',
+            rf'^([ \t]*{key}[ \t]*=[ \t]*")([^"\r\n]*)("[ \t]*(?:#[^\r\n]*)?\r?)$',
             re.MULTILINE,
         ),
         re.compile(
-            rf"^(\s*{re.escape(package)}\s*=\s*')([^']*)(')\s*$",
-            re.MULTILINE,
-        ),
-        re.compile(
-            rf"^(\s*{re.escape(package)}\s*=\s*\")([^\"]*)(\")\s*$",
-            re.MULTILINE,
-        ),
-        re.compile(
-            rf"^(\s*{re.escape(package)}\s*=\s*)([^\s#]+)(\s*(?:#.*)?)$",
+            rf"^([ \t]*{key}[ \t]*=[ \t]*')([^'\r\n]*)('[ \t]*(?:#[^\r\n]*)?\r?)$",
             re.MULTILINE,
         ),
     )
-    replacement = rf"\1>={floor}\3"
     for pattern in patterns:
-        updated, count = pattern.subn(replacement, text, count=1)
+        updated, count = pattern.subn(lambda match: f"{match.group(1)}>={floor}{match.group(3)}", text, count=1)
         if count:
             return updated, count
     return text, 0
@@ -85,15 +84,20 @@ def _edit_recipe_requirement_line(text: str, package: str, floor: str) -> tuple[
     return updated, count
 
 
+_MANIFEST_KINDS = {
+    "pixi.toml": "pixi",
+    "pyproject.toml": "pyproject",
+    "meta.yaml": "recipe",
+    "recipe.yaml": "recipe",
+}
+
+# The file names ``edit_requirement_to_floor`` edits (lower-cased), for callers
+# that look for the declaring manifest themselves (Story 14.4's solver probe).
+MANIFEST_FILE_NAMES = frozenset(_MANIFEST_KINDS)
+
+
 def _manifest_kind(path: Path) -> str | None:
-    name = path.name.lower()
-    if name == "pixi.toml":
-        return "pixi"
-    if name == "pyproject.toml":
-        return "pyproject"
-    if name in {"meta.yaml", "recipe.yaml"}:
-        return "recipe"
-    return None
+    return _MANIFEST_KINDS.get(path.name.lower())
 
 
 def _line_declares_package(line: str, package: str, *, kind: str) -> bool:
@@ -120,7 +124,8 @@ def edit_requirement_to_floor(
     kind = _manifest_kind(manifest_path)
     if kind is None:
         return ManifestEditResult(ok=False, failure_reason=f"unsupported manifest kind: {manifest_path.name}")
-    text = manifest_path.read_text(encoding="utf-8")
+    # newline="": the edit keeps the file's own line endings (no CRLF -> LF rewrite).
+    text = manifest_path.read_text(encoding="utf-8", newline="")
     if _count_package_occurrences(text, package, kind=kind) > 1:
         return ManifestEditResult(ok=False, failure_reason="requirement appears in more than one place")
     for line in text.splitlines():
@@ -134,7 +139,7 @@ def edit_requirement_to_floor(
         updated, count = _edit_recipe_requirement_line(text, package, floor)
     if count == 0:
         return ManifestEditResult(ok=False, failure_reason="could not scope edit to one requirement")
-    manifest_path.write_text(updated, encoding="utf-8")
+    manifest_path.write_text(updated, encoding="utf-8", newline="")
     return ManifestEditResult(ok=True)
 
 

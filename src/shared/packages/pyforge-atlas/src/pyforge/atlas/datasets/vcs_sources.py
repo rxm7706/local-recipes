@@ -105,12 +105,15 @@ def _request_kwargs(timeout: int, credentials: Any) -> dict[str, Any]:
     """Story 35.1: with ``pyforge.atlas.live_vcs_universe`` on, a host or registry request sends no
     credential (legacy Phases K and L read these hosts unauthenticated; Story 35.4 decides which
     may authenticate, and only under the switch), and a no-op auth keeps ``~/.netrc`` out. Off,
-    the request is the one this story found."""
+    the request is the one this story found, except that (Story 35.5) the catalog credential
+    rides only when the operator set ``PYFORGE_ATLAS_CREDENTIALED=1``; without the switch the
+    request sends no credential and the same no-op auth (``credential_switch.catalog_request``,
+    the one rule the GitHub batch in ``request_datasets`` reads too)."""
     if credential_switch.live_vcs_universe():
         # Story 35.4: an identifying User-Agent, as legacy Phase L sends; crates.io answers
         # requests' default agent with a 403.
         return {"load_args": {**public_sources.request_args(timeout), "headers": {"User-Agent": USER_AGENT}}}
-    return {"load_args": {"timeout": timeout}, "credentials": credentials}
+    return credential_switch.catalog_request(timeout, credentials)
 
 
 @dataclass(frozen=True)

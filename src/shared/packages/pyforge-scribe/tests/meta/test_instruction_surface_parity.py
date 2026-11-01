@@ -13,10 +13,15 @@ dangling team-memory path reds the scribe suite. Research (every harness's live 
 from __future__ import annotations
 
 import json
+import os
 import re
+import stat
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 
 def _repo_root() -> Path:
@@ -127,13 +132,33 @@ def test_pointer_file_points_at_agents_md_and_stays_thin(rel: str) -> None:
     assert n <= POINTER_MAX_LINES, f"{rel} is {n} lines; a per-tool file is an addendum (<= {POINTER_MAX_LINES})"
 
 
-@pytest.mark.parametrize("rel", POINTER_FILES + tuple(CURSOR_RULES))
+#: Story 23.2 (CAP-29): the duplicate guard also reads CLAUDE.md, the file whose
+#: duplicate motivated CAP-29. CLAUDE.md stays out of POINTER_FILES: the 60-line
+#: thin rule is CAP-27's for the per-tool addenda, not for CLAUDE.md.
+DUPLICATE_GUARD_FILES = tuple(dict.fromkeys(POINTER_FILES + tuple(CURSOR_RULES) + ("CLAUDE.md",)))
+
+
+def _duplicate_h2(agents_text: str, tool_text: str) -> list[str]:
+    """The normalised H2s a per-tool file shares with AGENTS.md."""
+    return sorted(_h2_headings(agents_text) & _h2_headings(tool_text))
+
+
+@pytest.mark.parametrize("rel", DUPLICATE_GUARD_FILES)
 def test_per_tool_file_repeats_no_agents_md_section(rel: str) -> None:
     """The duplication guard: a per-tool file may not carry an H2 that AGENTS.md also carries."""
-    agents_h2 = _h2_headings(AGENTS.read_text(encoding="utf-8"))
-    tool_h2 = _h2_headings((ROOT / rel).read_text(encoding="utf-8"))
-    dup = sorted(agents_h2 & tool_h2)
+    dup = _duplicate_h2(AGENTS.read_text(encoding="utf-8"), (ROOT / rel).read_text(encoding="utf-8"))
     assert not dup, f"{rel} repeats AGENTS.md section(s) {dup}; move the content to AGENTS.md and point at it"
+
+
+def test_duplicate_guard_reports_a_planted_normalised_duplicate_in_claude_md() -> None:
+    """Story 23.2: the guard path itself, not only the normaliser, flags the CAP-29 duplicate."""
+    agents = AGENTS.read_text(encoding="utf-8")
+    assert "## Behavioural guidelines (every harness)" in agents
+    claude = (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
+    assert _duplicate_h2(agents, claude) == []
+    planted = claude + "\n## Behavioral Guidelines\n\n1. Think before coding.\n"
+    assert _duplicate_h2(agents, planted) == [_normalise_heading("Behavioural guidelines (every harness)")]
+    assert "CLAUDE.md" in DUPLICATE_GUARD_FILES and "CLAUDE.md" not in POINTER_FILES
 
 
 def test_agents_md_names_the_team_memory_boot_read_and_the_way_in() -> None:
@@ -225,22 +250,65 @@ def test_claude_md_does_not_restate_the_behavioural_guidelines() -> None:
     assert "Behavioural guidelines (every harness)" in text
 
 
+_PRINCIPLE = re.compile(r"^\d+\. \*\*(.+?)\*\*", re.M)
+
+
+def _agents_md_principles(agents_text: str) -> list[str]:
+    """The bolded principle names in AGENTS.md § Behavioural guidelines (every harness)."""
+    section = agents_text.split("## Behavioural guidelines (every harness)", 1)[1].split("\n## ", 1)[0]
+    return _PRINCIPLE.findall(section)
+
+
 def test_project_settings_custom_instructions_point_at_agents_md() -> None:
-    import json as _json
-
-    settings = _json.loads((ROOT / ".claude" / "settings.json").read_text(encoding="utf-8"))
-    joined = " ".join(settings.get("customInstructions", []))
+    """Story 23.2 (operator ruling 2026-11-01): one sentence pointing at the AGENTS.md
+    section, never a list of its principles -- a list goes stale (it named five of eight)."""
+    settings = json.loads((ROOT / ".claude" / "settings.json").read_text(encoding="utf-8"))
+    entries = settings.get("customInstructions", [])
+    joined = " ".join(entries)
     assert "AGENTS.md" in joined and "CLAUDE.md" not in joined
+    assert len(entries) == 1, f"customInstructions is one pointer sentence, got {len(entries)} entries"
+    sentence = entries[0].strip()
+    assert "AGENTS.md § Behavioural guidelines (every harness)" in sentence
+    assert len(re.findall(r"[.!?](?:\s|$)", sentence)) == 1 and ":" not in sentence, (
+        f"customInstructions must be one sentence with no list: {sentence!r}"
+    )
+    principles = _agents_md_principles(AGENTS.read_text(encoding="utf-8"))
+    assert len(principles) >= 8, principles
+    listed = [p for p in principles if p.casefold() in sentence.casefold()]
+    assert not listed, f"customInstructions restates AGENTS.md principles {listed}; point at the section instead"
 
 
-def test_runtime_mode_check_is_registered_and_silent_without_claude(tmp_path) -> None:
+SCRIPT = ROOT / "scripts" / "claude_instruction_mode_check.py"
+_PINNED_SETTINGS = {
+    "pluginConfigs": {"agents-md@builtin": {"options": {"instructionFiles": "claude-md-and-agents-md"}}}
+}
+
+
+def _run_mode_check(path_dir: Path, settings: Path, *extra: str) -> subprocess.CompletedProcess[str]:
+    """Run the check with PATH holding only ``path_dir``, so ``shutil.which`` sees a stub or nothing."""
+    env = {**os.environ, "PATH": str(path_dir)}
+    return subprocess.run(
+        [sys.executable, str(SCRIPT), "--settings", str(settings), *extra],
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=60,
+    )
+
+
+def _stub_claude(bin_dir: Path, version: str) -> None:
+    bin_dir.mkdir(parents=True, exist_ok=True)
+    stub = bin_dir / "claude"
+    stub.write_text(f"#!{sys.executable}\nprint({version + ' (Claude Code)'!r})\n", encoding="utf-8")
+    stub.chmod(stub.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+
+def test_runtime_mode_check_is_registered() -> None:
     """The currency signal for the operator's own runtime: a runtime-scope
-    detector with a pixi task, silent when no claude binary exists."""
+    detector with a pixi task."""
     import importlib.util as _ilu
-    import subprocess as _sp
-    import sys as _sys
 
-    script = ROOT / "scripts" / "claude_instruction_mode_check.py"
+    script = SCRIPT
     assert script.is_file()
     assert "[feature.guild-tasks.tasks.claude-instruction-mode-check]" in (ROOT / "pixi.toml").read_text(
         encoding="utf-8"
@@ -258,19 +326,45 @@ def test_runtime_mode_check_is_registered_and_silent_without_claude(tmp_path) ->
     )
     assert mod.configured_mode({"projectInstructions": "both"}) == "claude-md-and-agents-md"
     assert mod.configured_mode({}) is None
-    absent = _sp.run(
-        [
-            _sys.executable,
-            str(script),
-            "--claude",
-            str(tmp_path / "no-such-claude"),
-            "--settings",
-            str(tmp_path / "none.json"),
-        ],
-        capture_output=True,
-        text=True,
-    )
-    assert absent.returncode == 2 and "could-not-run" in absent.stdout
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="the stub claude is a shebang script")
+def test_runtime_mode_check_is_silent_without_claude_on_path(tmp_path: Path) -> None:
+    """Story 23.2 (CAP-29): the no-binary branch -- exit 0, empty stdout."""
+    empty = tmp_path / "empty-bin"
+    empty.mkdir()
+    absent = _run_mode_check(empty, tmp_path / "none.json")
+    assert absent.returncode == 0, absent.stdout + absent.stderr
+    assert absent.stdout == "", f"the no-claude branch must stay silent, printed {absent.stdout!r}"
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="the stub claude is a shebang script")
+@pytest.mark.parametrize(
+    ("version", "pinned", "expected_rc", "needle"),
+    (
+        ("2.1.276", True, 1, "predates the built-in agents-md mod"),
+        ("2.1.300", False, 1, "pins instructionFiles=default"),
+        ("2.1.300", True, 0, "ok -- Claude Code 2.1.300 with instructionFiles=claude-md-and-agents-md"),
+    ),
+    ids=("old-runtime-warns", "unpinned-mode-warns", "pinned-current-ok"),
+)
+def test_runtime_mode_check_branches_with_a_stub_claude(
+    tmp_path: Path, version: str, pinned: bool, expected_rc: int, needle: str
+) -> None:
+    """Story 23.2 (CAP-29): both warn branches and the ok branch, end to end."""
+    bin_dir = tmp_path / "bin"
+    _stub_claude(bin_dir, version)
+    settings = tmp_path / "settings.json"
+    settings.write_text(json.dumps(_PINNED_SETTINGS if pinned else {}), encoding="utf-8")
+    run = _run_mode_check(bin_dir, settings)
+    assert run.returncode == expected_rc, run.stdout + run.stderr
+    assert needle in run.stdout, run.stdout
+
+
+def test_runtime_mode_check_could_not_run_on_a_missing_claude_path(tmp_path: Path) -> None:
+    """An explicit ``--claude`` that does not exist is the could-not-run branch (exit 2)."""
+    run = _run_mode_check(tmp_path, tmp_path / "none.json", "--claude", str(tmp_path / "no-such-claude"))
+    assert run.returncode == 2 and "could-not-run" in run.stdout, run.stdout + run.stderr
 
 
 # --- Story 20.1 (spec-pyforge-scribe CAP-30): the managed block carries no aspiration ---
@@ -310,3 +404,132 @@ def test_aspiration_guard_reads_only_between_the_markers() -> None:
     assert _aspiration_lines(planted) == ["- Do the thing. TODO: wire the hook later."]
     clean = planted.replace(" TODO: wire the hook later.", "")
     assert _aspiration_lines(clean) == []
+
+
+@pytest.mark.parametrize(
+    "line",
+    (
+        "- The hook. FIXME: wire it later.",
+        "- The relay is not yet landed.",
+        "- The relay is not landed.",
+    ),
+    ids=("fixme", "not-yet-landed", "not-landed"),
+)
+def test_aspiration_guard_reports_every_branch_inside_and_ignores_it_outside(line: str) -> None:
+    """Story 23.2 (CAP-30): each regex branch has a planted case, so dropping one reds."""
+    inside = f"# x\n<!-- bmad:context -->\n## Policy\n{line}\n- Fine line.\n<!-- /bmad:context -->\n"
+    assert _aspiration_lines(inside) == [line]
+    outside = f"# x\n<!-- bmad:context -->\n## Policy\n- Fine line.\n<!-- /bmad:context -->\n\n{line}\n"
+    assert _aspiration_lines(outside) == []
+
+
+# --- Story 23.2 (spec-pyforge-scribe CAP-32): the managed block types no derived count ---
+#
+# The estate catalog (docs/reference/bmad-estate-llms-full.md) derives the suite-member and
+# skill-family counts; a count typed into the bmad:context block ("13 members", "16 skf ones")
+# goes stale on the next roster move. The block points at the catalog instead.
+
+_TYPED_COUNT = re.compile(
+    r"\b\d+\s+(?:(?:active|adopted|installed|bmad-suite|suite|bmad|skf)\s+)*"
+    r"(?:members?|ones|skills?|skill[- ]famil(?:y|ies))\b",
+    re.I,
+)
+
+
+def _typed_counts(text: str) -> list[str]:
+    return [line.strip() for line in _managed_block(text).splitlines() if _TYPED_COUNT.search(line)]
+
+
+def test_managed_block_types_no_suite_member_or_skill_family_count() -> None:
+    hits = _typed_counts(AGENTS.read_text(encoding="utf-8"))
+    assert not hits, (
+        "AGENTS.md's bmad:context block types a count the estate catalog derives; point at "
+        "docs/reference/bmad-estate-llms-full.md instead (spec-pyforge-scribe CAP-32):\n  " + "\n  ".join(hits)
+    )
+
+
+@pytest.mark.parametrize(
+    "line",
+    (
+        "- bmad-suite member wiring (which of the 13 members is adopted, its wielding station).",
+        "- It removes every skill dir, not the 16 skf ones.",
+    ),
+    ids=("13-members", "16-skf-ones"),
+)
+def test_typed_count_guard_reports_a_planted_count_inside_the_block(line: str) -> None:
+    inside = f"# x\n<!-- bmad:context -->\n## Where things are\n{line}\n<!-- /bmad:context -->\n"
+    assert _typed_counts(inside) == [line]
+    outside = f"# x\n<!-- bmad:context -->\n## Where things are\n<!-- /bmad:context -->\n\n{line}\n"
+    assert _typed_counts(outside) == []
+
+
+# --- Story 23.2 (spec-pyforge-scribe CAP-27): the 2026-09-26 end state holds ---
+#
+# The SKF managed block lives in AGENTS.md only (scribe Story 23.1): CLAUDE.md carries none,
+# skf exports to `other` only, and AGENTS.md says which runners carry governance-currency.
+# skf 3.0 still lists `claude-code` in its platform codes, so a hand reinstall would put the
+# block back into CLAUDE.md; steward's upgrade restores _bmad/skf/config.yaml, and this test
+# reds the regression either way. That AGENTS.md carries the block is mason's assert
+# (tests/meta/test_persona_consults_cfe.py), not repeated here.
+
+SKF_CONFIG = ROOT / "_bmad" / "skf" / "config.yaml"
+
+
+def _governance_currency_bullet(agents_text: str) -> str:
+    """The Pre-PR item 10 bullet that says where governance-currency runs, continuation lines joined."""
+    lines = agents_text.splitlines()
+    for i, line in enumerate(lines):
+        if line.lstrip().startswith("- `governance-currency` reds"):
+            indent = len(line) - len(line.lstrip())
+            out = [line.strip()]
+            for nxt in lines[i + 1 :]:
+                stripped = nxt.lstrip()
+                if not stripped or len(nxt) - len(stripped) <= indent or stripped.startswith("- "):
+                    break
+                out.append(stripped)
+            return " ".join(out)
+    return ""
+
+
+def _skf_end_state_breaks(claude_md: str, skf_ides: object, agents_md: str) -> list[str]:
+    breaks = []
+    if "<!-- SKF:BEGIN" in claude_md:
+        breaks.append("CLAUDE.md carries an SKF managed block (<!-- SKF:BEGIN); it lives in AGENTS.md only")
+    if skf_ides != ["other"]:
+        breaks.append(
+            f"_bmad/skf/config.yaml ides is {skf_ides!r}, not ['other']; claude-code puts the block in CLAUDE.md"
+        )
+    bullet = _governance_currency_bullet(agents_md)
+    for runner in ("`detectors-ci`", "`pr-preflight`"):
+        if runner not in bullet:
+            breaks.append(f"AGENTS.md's governance-currency line (Pre-PR item 10) does not name {runner} as a runner")
+    return breaks
+
+
+def _live_skf_end_state() -> tuple[str, object, str]:
+    ides = yaml.safe_load(SKF_CONFIG.read_text(encoding="utf-8")).get("ides")
+    return (ROOT / "CLAUDE.md").read_text(encoding="utf-8"), ides, AGENTS.read_text(encoding="utf-8")
+
+
+def test_the_2026_09_26_skf_end_state_holds() -> None:
+    breaks = _skf_end_state_breaks(*_live_skf_end_state())
+    assert not breaks, "CAP-27's 2026-09-26 end state regressed:\n  " + "\n  ".join(breaks)
+
+
+@pytest.mark.parametrize(
+    ("mutate", "clause"),
+    (
+        (lambda c, i, a: (c + "\n<!-- SKF:BEGIN updated:2026-11-01 -->\n<!-- SKF:END -->\n", i, a), "CLAUDE.md"),
+        (lambda c, i, a: (c, ["other", "claude-code"], a), "ides"),
+        (lambda c, i, a: (c, i, a.replace("so `detectors-ci` and", "so")), "`detectors-ci`"),
+        (lambda c, i, a: (c, i, a.replace("and a full-scope `pr-preflight` run", "runs")), "`pr-preflight`"),
+    ),
+    ids=("claude-md-skf-block", "ides-claude-code", "drops-detectors-ci", "drops-pr-preflight"),
+)
+def test_skf_end_state_guard_names_each_broken_clause(mutate, clause: str) -> None:
+    """AC9 mutation: break one clause on the live inputs; exactly that clause is reported."""
+    live = _live_skf_end_state()
+    mutated = mutate(*live)
+    assert mutated != live, "the mutation did not change its input; the planted text drifted"
+    breaks = _skf_end_state_breaks(*mutated)
+    assert len(breaks) == 1 and clause in breaks[0], breaks

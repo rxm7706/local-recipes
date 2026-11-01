@@ -49,9 +49,13 @@
 
 # --- external sources (layer raw) ---
 
+# Story 34.15 (CAP-64, AD-13): keeps the last frame that parsed to rows as <filepath>/last_good.parquet;
+# a failed fetch, an HTTP error or a body that does not parse serves that copy (or, on a fresh root,
+# the empty frame) under .staleness.json, and the run goes on. No flag, no credential.
 core_repodata_raw:
   type: pyforge.atlas.datasets.CondaRepodataDataset
   url: ${globals:endpoint_bases.CONDA_FORGE_BASE_URL}
+  filepath: ${globals:paths.data_root}/raw/core_repodata_raw
   metadata:
     layer: raw
 
@@ -83,10 +87,11 @@ core_anaconda_main_channeldata_raw:
 # Phase B.5 canonical 1:N package->feedstock source. Live route verified:
 # _download_feedstock_outputs_archive() -> resolve_github_urls (GITHUB_BASE_URL,
 # archive main.zip) — the drafting inventory's GITHUB_RAW claim is corrected
-# (recorded in the Dev Agent Record).
+# (recorded in the Dev Agent Record). Story 34.15: last-good under the AD-13 marker, as core_repodata_raw.
 core_feedstock_outputs_raw:
   type: pyforge.atlas.datasets.FeedstockOutputsArchiveDataset
   url: ${globals:endpoint_bases.GITHUB_BASE_URL}/conda-forge/feedstock-outputs/archive/refs/heads/main.zip
+  filepath: ${globals:paths.data_root}/raw/core_feedstock_outputs_raw
   metadata:
     layer: raw
 
@@ -239,9 +244,11 @@ core_feedstock_health:
 
 # --- external sources (layer raw) ---
 
+# Story 34.15: last-good under the AD-13 marker, as core_repodata_raw.
 pypi_simple_index_raw:
   type: pyforge.atlas.datasets.PyPISimpleIndexDataset
   url: ${globals:endpoint_bases.PYPI_BASE_URL}
+  filepath: ${globals:paths.data_root}/raw/pypi_simple_index_raw
   metadata:
     layer: raw
 

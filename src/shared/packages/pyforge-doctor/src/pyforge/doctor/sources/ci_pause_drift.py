@@ -132,12 +132,12 @@ def _findings_for_row(row: dict[str, Any]) -> tuple[Finding, ...]:
     switch = row.get("switch")
     owner = _owner_label(row.get("owner"))
     verdict = row["verdict"]
+    # Story 45.4: steward's reason sits right after the surface and the rule, before the switch and the owner,
+    # on every finding the row yields, so it survives fleet-picture's 110-character ATTENTION cut.
+    reason = _reason(row.get("detail"))
 
     if verdict == "drift":
-        msg = f"CI surface {row_id!r} drifted (switch {switch!r}, owner {owner})"
-        detail = row.get("detail")
-        if isinstance(detail, str) and detail:
-            msg = f"{msg}: {detail}"
+        msg = f"CI surface {row_id!r} drifted{reason} (switch {switch!r}, owner {owner})"
         findings.append(
             Finding(
                 source=Source.CI_PAUSE_DRIFT,
@@ -149,7 +149,7 @@ def _findings_for_row(row: dict[str, Any]) -> tuple[Finding, ...]:
         )
     elif verdict == "stuck":
         last_green = row.get("last_green_run")
-        msg = f"CI surface {row_id!r} stuck (switch {switch!r}, owner {owner}, last_green_run {last_green!r})"
+        msg = f"CI surface {row_id!r} stuck{reason} (switch {switch!r}, owner {owner}, last_green_run {last_green!r})"
         findings.append(
             Finding(
                 source=Source.CI_PAUSE_DRIFT,
@@ -165,7 +165,7 @@ def _findings_for_row(row: dict[str, Any]) -> tuple[Finding, ...]:
         review_by = row.get("review_by")
         overdue_days = -days_left
         msg = (
-            f"CI surface {row_id!r} past review date (switch {switch!r}, owner {owner}, "
+            f"CI surface {row_id!r} past review date{reason} (switch {switch!r}, owner {owner}, "
             f"review_by {review_by!r}, {overdue_days} day(s) overdue)"
         )
         findings.append(
@@ -179,6 +179,13 @@ def _findings_for_row(row: dict[str, Any]) -> tuple[Finding, ...]:
         )
 
     return tuple(findings)
+
+
+def _reason(detail: object) -> str:
+    """``": <detail>"`` for a non-empty string ``detail``; ``""`` otherwise, so a row without one reads as before."""
+    if isinstance(detail, str) and detail:
+        return f": {detail}"
+    return ""
 
 
 def _owner_label(owner: object) -> str:

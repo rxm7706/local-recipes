@@ -2,7 +2,7 @@
 title: "14.4: The default solver shares the manifest edit path and is bounded"
 type: 'fix'
 created: '2026-11-01'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
@@ -138,9 +138,66 @@ Parent: CAP-24
 
 ## Auto Run Result
 
-Status: backlog
+Status: done
 
-Summary: not yet dispatched.
+Summary: implemented 2026-11-01 in the EGM audit landing worktree (branch `egm-audit-2026-11`, uncommitted; the
+session owner commits). Every AC is met in code and tests; the CAP-24 success re-derive (AC7's last clause) is
+recorded as a memlog decision and waits for the session's `bmad-spec` re-derive phase.
+
+What changed:
+- `fix_solver.py` — `_probe_pixi_toml_floor` and its two regexes are gone. `default_pixi_lock_solver` copies the scan
+  target, walks the copy for `pixi.toml` / `pyproject.toml` / `meta.yaml` / `recipe.yaml`
+  (`manifest_edit.MANIFEST_FILE_NAMES`) and sets the floor through `edit_requirement_to_floor`, the edit path
+  `prepare_manifest_fix` takes; exactly one edited manifest is required (a package declared in two manifests is
+  refused, as the fix refuses it), then `pixi lock` runs (AC1). `resolve_fix_target` gains `max_candidates`
+  (`MAX_FIX_CANDIDATES = 5`), `solve_budget_seconds` (`FIX_SOLVE_BUDGET_SECONDS = 1800.0`, per finding),
+  `pixi_lock_timeout_seconds` and an injectable `clock`: it starts no solve once the budget is spent, stops after the
+  cap, and returns `target=None` with a `failure_detail` naming the bound, which the actuator turns into a `failed`
+  outcome (AC3). The default solver's lock timeout is `min(pixi_lock_timeout_seconds, remaining budget)`.
+- `manifest_fixup.py` — new `copy_scan_target` (`copytree` with `.pixi` and `.git` ignored), used by both the solver
+  probe and `prepare_manifest_fix` (AC4); the plan reads the edited manifest with `newline=""`.
+- `manifest_edit.py` — `_edit_pixi_toml` matches a bare or quoted key with a double- or single-quoted value and an
+  optional trailing comment, using only `[ \t]` around the value, so the quotes and comment survive and no line break
+  is consumed (the old `\s*$` ate the final newline and a following blank line; the old fourth pattern wrote
+  `pkg = >=x  # note`, invalid TOML). An unquoted value is never written. `edit_requirement_to_floor` reads and
+  writes with `newline=""`, so a CRLF manifest stays CRLF (AC2).
+- `engines.py` — `PIXI_VERSION_RANGE` is `>=0.80.0,<0.82` (admits CI's 0.80.0 and the workspace 0.81.0, still closed
+  before 0.82); `run_pixi_lock(cwd, timeout=PIXI_LOCK_TIMEOUT_SECONDS)` makes the timeout configurable and runs
+  `pixi lock --manifest-path <cwd>`. Found while building AC6: under a `pixi run` parent, `pixi lock` in a copy with no
+  `pixi.toml` / `pyproject.toml` falls back to the exported `PIXI_PROJECT_MANIFEST` and re-solves the host workspace's
+  own lock; recipe-only and pyproject-only probes now reach `pixi lock`, so the pin is required (AC5, Boundary: the
+  scanned tree and host are never written).
+- Range drift (AC5) is held by a test, not a `scripts/pixi_version_registry.py` entry: a registry floor site would be
+  bumped by `bump-pixi-version` without its `<0.82` ceiling, producing an empty range; the test reds both directions
+  instead. `scripts/pixi_version_registry.py` is unchanged, so `pixi-version-check` is not owed.
+- Tests: `tests/unit/test_fix_solver_seam.py` (AC1 four declaration forms with a spy on `edit_requirement_to_floor`
+  and `run_pixi_lock` stubbed; two-manifest refusal; AC4 lean copy plus byte-identical scan tree; AC3 cap, budget and
+  timeout-never-outruns-budget); `tests/unit/test_manifest_edit.py` (AC2: trailing comment, last line without
+  newline, final newline, blank line after, literal string, CRLF — each parsed by `tomllib` — and no unquoted write);
+  `tests/unit/test_manifest_fixup.py` (fix path lean copy, CRLF kept in the plan); `tests/unit/test_fix_target_resolution.py`
+  (cap is a `failed` actuation outcome); `tests/unit/test_engine_env_deptry.py` (`--manifest-path` argv, timeout
+  pass-through); `tests/meta/test_engine_version_range_sync.py` (range floor equals `requires-pixi`'s floor; 0.80.0 and
+  0.81.0 in, 0.82.0 out); `tests/integration/test_fix_solver_real_pixi.py` (AC6, `@pytest.mark.slow`, skipped without
+  pixi: the real `pixi lock` re-solves a hermetic local `file://` channel fixture's copy at floor 1.3.0, rejects an
+  unsolvable 9.9.9, and refuses a manifest-less copy without touching the host `pixi.lock`). The old code fails the
+  AC2 trailing-comment, final-newline and blank-line cases (checked against `HEAD`'s `_edit_pixi_toml`).
+- Records (AC7): `DW-warden-14-1` carries `resolution:` this story's key and `verified:` citing
+  `src/shared/packages/pyforge-warden/tests/integration/test_fix_solver_real_pixi.py:73`, status `closed`;
+  `spec-pyforge-warden/.memlog.md` has the surface-reconcile event and a decision naming the bound for the CAP-24
+  re-derive.
+
+Commands run (exit codes read from `$?`):
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — 0 (2201 unit+meta passed, 265 integration/other passed).
+- `pixi run --frozen -e pyforge-warden pytest …/test_fix_solver_seam.py …/test_manifest_edit.py …/test_manifest_fixup.py …/test_fix_target_resolution.py -q` — 0 (53 passed).
+- `pixi run --frozen -e pyforge-warden pytest src/shared/packages/pyforge-warden/tests/integration/test_fix_solver_real_pixi.py -m slow -q` — 0 (3 passed, real pixi 0.81.0).
+- `pixi run --frozen -e pyforge-warden pytest …/tests/meta/test_engine_version_range_sync.py …/tests/unit/test_engine_env_deptry.py -q` — 0 (61 passed).
+- Unit coverage of the touched modules (private `--cov-report` run): `fix_solver.py` 98%, `manifest_edit.py` 92%,
+  `manifest_fixup.py` 83%, `engines.py` 81% — all above the 80% touched-module floor.
+- `ruff check` and `ruff format --check` (pyforge-guild's ruff, warden's `[tool.ruff]`) over the 11 changed Python
+  files — 0 / 0.
+- `pixi run --frozen -e pyforge-guild lint-types` — 1, from the `ruff` verb on `pyforge-doctor` alone (an import-order
+  finding in another station's in-flight test file, not this story's); `pyforge-warden` ruff ok.
+  `python scripts/lint_types.py ruff-format` — 0; `python scripts/lint_types.py mypy` — 0 (all ten packages, warden ok).
 
 ## Spec Change Log
 
@@ -149,4 +206,12 @@ Summary: not yet dispatched.
 
 ## Review Triage Log
 
-- (none yet)
+- **Review 1 (2026-11-01, reviewer: independent session) — PASS.**
+  - Checked: the diffs of `fix_solver.py`, `manifest_edit.py`, `manifest_fixup.py`, `engines.py`, the seven test files and the deferred-work ledger against AC1-AC8 and the Boundaries; callers of `run_pixi_lock`, `resolve_fix_target` and `default_pixi_lock_solver` (only the actuator and `prepare_manifest_fix`).
+  - Common evidence (one run for all eight stories, exit codes read from `$?`): `pixi run --frozen -e pyforge-warden pyforge-warden-test` exit 0 (2255 unit+meta, 265 other); the twelve touched warden unit/meta test files together exit 0 (290 passed, 0 skipped; opengrep 1.30.2 and osv-scanner present); `ruff check` and `ruff format --check` over every changed warden, django-warden and platform test file exit 0; `python scripts/lint_types.py ruff-format` exit 0 and `python scripts/lint_types.py mypy` exit 0 (`pyforge-warden ok`); `pixi run --frozen -e pyforge-guild lint-types` exit 1 only from `pyforge-doctor`'s I001 in `tests/unit/test_sources_pages_liveness.py`, another station's in-flight file (`pyforge-warden` and `django-warden` ruff legs ok); `pixi run -e pyforge-guild platform-ci-local -- --test` (private ports) exit 0, RESULT: PASS, 1377 passed / 14 skipped; touched warden modules' unit coverage all at or above 81%. Mutations ran on scratch copies only (warden via `PYTHONPATH`, django-warden via `pytest -o pythonpath=`), never on the worktree.
+  - AC6: `pytest src/shared/packages/pyforge-warden/tests/integration/test_fix_solver_real_pixi.py -m slow` exit 0 (3 passed, real pixi 0.81.0); the root `pixi.lock` mtime and size were unchanged after it. The default loop excludes it (`-m "not slow"`).
+  - Mutations: HEAD's `_edit_pixi_toml` turns 5 AC2 cases red (trailing-comment, final-newline, blank-line-after, literal-string, crlf; last-line-no-newline already passed under the old code); dropping the `[:max_candidates]` slice turns 2 red; dropping the `.pixi`/`.git` ignore turns 2 red; disabling the budget check turns 1 red.
+  - AC5: the range admits 0.81.0 and the meta test reds a floor drift from `requires-pixi` (test route, not a registry entry, as the AC allows). AC7: `DW-warden-14-1` carries `resolution:` and `verified:` citing `test_fix_solver_real_pixi.py:73`, the test's `def` line.
+  - Carried forward, not held against the story: the CAP success-line change is recorded on `spec-pyforge-warden/.memlog.md`; `SPEC.md` is unchanged, as required, and the line waits for the session owner's `bmad-spec` re-derive.
+  - Observations for the session owner, not failures: (a) the probe walks every `pixi.toml` / `pyproject.toml` / `meta.yaml` / `recipe.yaml` in the copy and refuses a package declared in more than one, while `prepare_manifest_fix` decides from the scan's `manifest_locations`, so a second declaring manifest the scan does not attribute (a vendored or fixture directory) makes the solver refuse a fix the edit could make; (b) a recipe-only or pyproject-only repo with no pixi workspace still never gets `accepted` from the real `pixi lock` (AC1 holds with the lock stubbed, as written); (c) the copy has no `.git`, so a pixi path dependency whose version comes from VCS (setuptools-scm, hatch-vcs) cannot be locked there (the Approach mandates the ignore); (d) the 1800 s per-finding budget is above the fleet approve task's 240 s soft limit (Story 16.7), so on the fleet path the Celery limit is the effective bound.
+  - Failures: none.

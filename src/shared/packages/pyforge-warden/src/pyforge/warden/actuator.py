@@ -18,9 +18,9 @@ the ``test_verdict_sole_ownership.py`` guard stays green.
 Closed remediation mapping (every other finding family yields NO proposal):
 
 * ``vuln:<advisory>:<pkg>@<ver>``    -> ``upgrade`` PR (cites the advisory +
-  current vulnerable version; does NOT compute a target version -- the OSV
-  fixed bound is discarded upstream and ``Finding`` is schema-frozen, so
-  precise target resolution + manifest editing are deferred to the ledger).
+  current vulnerable version; behind their flags, the lowest OSV-fixed release
+  the solver accepts is the target (Story 14.1) and the declaring manifest is
+  edited in a throwaway copy (Story 14.2)).
 * ``hygiene:DEP002:<pkg>``           -> ``removal`` PR (deptry unused dep).
 """
 
@@ -33,7 +33,7 @@ import re
 import urllib.request
 from collections.abc import Mapping, Sequence
 from contextvars import ContextVar
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 from urllib.error import HTTPError
@@ -98,6 +98,10 @@ class PROutcome:
     detail: str | None = None
     fix_resolution: FixTargetResolution | None = None
     manifest_fix: ManifestFixPlan | None = None
+    # Story 16.8: the ecosystem of a native non-Python lockfile's finding
+    # (``npm``, ``golang``, ...), set by ``label_outcome_ecosystems``; ``None``
+    # for every other finding (a PyPI or conda component's).
+    ecosystem: str | None = None
 
 
 @dataclass(frozen=True)
@@ -138,10 +142,31 @@ class Actuation:
                         if outcome.manifest_fix is not None
                         else {}
                     ),
+                    **({"ecosystem": outcome.ecosystem} if outcome.ecosystem is not None else {}),
                 }
                 for outcome in sorted(self.outcomes, key=lambda outcome: outcome.finding_id)
             ],
         }
+
+
+def label_outcome_ecosystems(actuation: Actuation, ecosystem_by_finding_id: Mapping[str, str]) -> Actuation:
+    """Name the ecosystem on each outcome whose finding id is in the map (Story 16.8).
+
+    ``cli`` passes the ``vuln:`` findings its native non-Python lockfile scans
+    produced, so a consumer of the report (the fleet's proposal queue) can tell
+    an npm, Go or Cargo finding from a PyPI or conda one; every other outcome
+    is returned unchanged."""
+    if not ecosystem_by_finding_id:
+        return actuation
+    return replace(
+        actuation,
+        outcomes=tuple(
+            replace(outcome, ecosystem=ecosystem_by_finding_id[outcome.finding_id])
+            if outcome.finding_id in ecosystem_by_finding_id
+            else outcome
+            for outcome in actuation.outcomes
+        ),
+    )
 
 
 class ForgeResolutionError(PyforgeError, RuntimeError):
@@ -577,6 +602,20 @@ def _prepare_manifest_fix_for_proposal(
     return outcome.plan, None
 
 
+def _no_manifest_fix_reason(
+    proposal: RemediationProposal,
+    manifest_edit_on: bool,
+    manifest_locations: Mapping[str, Sequence[str]] | None,
+) -> str:
+    if proposal.action != _ACTION_UPGRADE:
+        return f"a {proposal.action} fix has no manifest edit"
+    if not manifest_edit_on:
+        return f"the manifest edit is off ({FIX_MANIFEST_EDIT_FLAG})"
+    if manifest_locations is None:
+        return "no manifest location map"
+    return "the manifest edit produced no change"
+
+
 def run_actuator(
     findings: Sequence[Finding],
     *,
@@ -592,6 +631,7 @@ def run_actuator(
     manifest_locations: Mapping[str, Sequence[str]] | None = None,
     estate_repos: frozenset[str] | None = None,
     authorized_fleet_repo: str | None = None,
+    require_manifest_fix: bool = False,
 ) -> Actuation:
     """Build the closed-mapping plan and act on it. Dry-run records
     ``planned`` for every proposal and instantiates/calls NO client (no
@@ -599,7 +639,11 @@ def run_actuator(
     environment (a resolution failure is a single ``failed`` outcome), then per
     proposal dedups via ``existing_open_pr`` (``skipped``) before
     ``open_pull_request`` (``opened``) -- every exception is captured into a
-    ``failed`` outcome, never raised, never a rung, never an exit code."""
+    ``failed`` outcome, never raised, never a rung, never an exit code.
+
+    ``require_manifest_fix`` (Story 16.6, the fleet approve path): a proposal
+    whose real path prepared no manifest edit records a ``failed`` outcome
+    naming why, before any forge call -- never a PR carrying an empty tree."""
     flag_on = (
         fix_target_resolution_enabled
         if fix_target_resolution_enabled is not None
@@ -713,6 +757,18 @@ def run_actuator(
                 )
                 continue
             manifest_fix = plan
+        if require_manifest_fix and (manifest_fix is None or not manifest_fix.files):
+            outcomes.append(
+                PROutcome(
+                    finding_id=proposal.finding_id,
+                    action=proposal.action,
+                    subject=proposal.subject,
+                    status="failed",
+                    detail=f"no manifest fix: {_no_manifest_fix_reason(proposal, manifest_edit_on, manifest_locations)}",
+                    fix_resolution=resolution_by_id.get(proposal.finding_id),
+                )
+            )
+            continue
         forge_repo: str | None = getattr(client, "repo_slug", None)
         fleet_authorized = (
             authorized_fleet_repo is not None and forge_repo is not None and forge_repo == authorized_fleet_repo

@@ -68,7 +68,7 @@ SOCKET_PATH_MAX = 103 if sys.platform == "darwin" else 107
 
 
 def _run(args: list[str], **kw) -> subprocess.CompletedProcess:
-    return subprocess.run(args, capture_output=True, text=True, **kw)
+    return subprocess.run(args, check=False, capture_output=True, text=True, **kw)
 
 
 def _need(binary: str) -> str:
@@ -283,6 +283,11 @@ def up() -> int:
 def down() -> int:
     if not (CLUSTER / "PG_VERSION").is_file():
         print("[scribe-pg] no cluster to stop")
+        return 0
+    # No PID file: this checkout's cluster is already stopped. A server on :5433 is then
+    # another checkout's, which `up` reuses and `down` never touches (Story 22.2).
+    if not (CLUSTER / "postmaster.pid").is_file():
+        print("[scribe-pg] not running")
         return 0
     _need("pg_ctl")
     r = _run(["pg_ctl", "-D", str(CLUSTER), "-m", "fast", "-w", "stop"])

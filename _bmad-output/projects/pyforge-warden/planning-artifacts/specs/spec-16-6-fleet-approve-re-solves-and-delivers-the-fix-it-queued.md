@@ -2,7 +2,7 @@
 title: "16.6: Fleet approve re-solves and delivers the fix it queued"
 type: 'fix'
 created: '2026-11-01'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
@@ -126,15 +126,86 @@ Parent: CAP-26
 
 ## Auto Run Result
 
-Status: backlog
+Status: done
 
-Summary: not yet dispatched.
+Summary: implemented 2026-11-01 in the EGM audit landing worktree (branch `egm-audit-2026-11`, not committed).
+The fleet approve now re-solves on the fresh clone and delivers the fix it queued, or records `failed` with zero
+forge writes.
+
+What changed:
+- `src/shared/packages/pyforge-warden/src/pyforge/warden/manifest_locations.py` (new): the public helper.
+  `manifest_locations_from_inventory(inventory)` is the one builder (canonical subject keys, same-name provenance
+  unioned, the `pypi_identity` second key), moved verbatim out of `cli.py`. `manifest_locations_for_target(target)`
+  discovers and extracts a tree's Python manifests (best effort: an unparsable manifest gives no location) and calls
+  it. It only reads.
+- `src/shared/packages/pyforge-warden/src/pyforge/warden/cli.py`: `warden scan` calls the helper (AC4). The unused
+  `_canonical_subject_key` import and the stale docstring line are updated.
+- `src/shared/packages/pyforge-warden/src/pyforge/warden/actuator.py`: `run_actuator(..., require_manifest_fix=False)`.
+  When it is true, a proposal with no prepared manifest edit records `failed` with the reason (`no manifest fix: a
+  removal fix has no manifest edit` / `the manifest edit is off (pyforge.warden.fix_manifest_edit)` / `no manifest
+  location map`) before any forge call. The default is unchanged. The module docstring's line saying that target
+  resolution is deferred, stale since Story 14.1, is fixed.
+- `src/shared/packages/django-warden/src/django_warden_fabric/proposals.py`: `FixProposal.target` is the dry-run
+  `fix_resolution.target`, or `""` when there is none (a removal, or resolution off). It is never the package name
+  (AC1). Only paths go in `planned_paths_json`, never a diff.
+- `src/shared/packages/django-warden/src/django_warden_fabric/tasks.py`: `_run_fix_actuator` passes the scan's stored
+  candidates (`_stored_fix_candidates`), `manifest_locations_for_target(clone_dir)`, the solver seam
+  `_fleet_fix_solver()` (`None` means the default pixi solver) and `require_manifest_fix=True` (AC2, AC3).
+- Tests: `src/shared/packages/pyforge-warden/tests/unit/test_manifest_locations.py` (new, 5 tests; the CLI test spies
+  that `warden scan` hands the helper's map to the actuator and that the approve builder reads the same tree to the
+  same map). `src/shared/packages/pyforge-warden/tests/unit/test_actuator_require_manifest_fix.py` (new, 5 tests).
+  `src/platform/tests/test_warden_fleet_proposals.py`: the patched `_run_fix_actuator` test is replaced. There is a
+  new AC1 test, an AC2 test that drives the real `run_actuator` on a real `file://` clone and asserts one draft PR
+  whose head is the `warden/fix/` ref and whose one commit's one blob carries `"requests>=2.32.0",`, and an AC3 test
+  over three cases (no candidate accepted, no declaring manifest, removal) that asserts `failed` with the reason and
+  zero forge calls.
+- AC5: a decision entry on `spec-pyforge-warden/.memlog.md` records the queue-then-re-solve handoff and the CAP-26
+  approve success it now promises. A surface-reconcile event names every changed path. `SPEC.md` was not edited.
+
+Deviation, recorded: AC2 and the Approach say "a fake forge client passed through its `client` parameter".
+`src/platform/` never imports `pyforge.*` (AGENTS.md § Policy), and three warden meta guards fail on any such import
+in the diff (`test_src_platform_has_no_pyforge_import`, both `test_story_does_not_add_pyforge_under_src_platform`).
+So the platform test cannot build a forge client object. The fake forge sits one layer lower, at the HTTP seam the
+real `GitHubForgeClient` calls (`urllib.request.urlopen`, with a test `GITHUB_TOKEN` and
+`GITHUB_API_URL=https://forge.invalid`). It records every Git Data call. This is stricter than a protocol fake: it
+proves the real client's branch, blob, tree, commit and draft-pull sequence. The solver is stubbed through the
+`django_warden_fabric.tasks._fleet_fix_solver` seam. Only the forge is faked; the actuator is not patched.
+
+Decision taken (flags): the approve respects `pyforge.warden.fix_target_resolution` and
+`pyforge.warden.fix_manifest_edit`, the same way the queue's dry-run does. It does not force them on. With either
+flag off, an approve records `failed` ("no manifest fix: ...") and opens nothing.
+`fix_draft_pr_estate_enabled=True` stays forced, as Story 16.3 set it. No flag was added.
+
+Commands run (exit codes read from `$?`):
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test`: 0 (2226 passed; 265 passed). The first run was 1
+  because the platform test imported `pyforge.warden`; that import was removed and the run was repeated.
+- `pixi run -e pyforge-guild platform-ci-local -- --test`: 0 (`RESULT: PASS`: manage.py check, ruff, ruff format,
+  mypy, the policy suite 98 passed, the full suite 1359 passed and 14 skipped). Two earlier runs exited 1: one raced
+  a mid-edit file, and one had a URL-prefix assertion bug in the new test.
+- `pixi run --frozen -e pyforge-guild lint-types`: 1, from one finding outside this story: ruff I001 in
+  `src/shared/packages/pyforge-doctor/tests/unit/test_sources_pages_liveness.py`, another station's in-flight file in
+  this shared worktree. Every lint-types leg for this story's packages passes: `ruff` django-warden and
+  pyforge-warden ok; `python scripts/lint_types.py ruff-format` 0; `python scripts/lint_types.py mypy` 0 (all ten
+  pyforge-* ok).
+- `src/platform` ruff check and ruff format --check on `tests/test_warden_fleet_proposals.py`: 0.
+- Manual check: `grep -n "_run_fix_actuator" src/platform/tests/test_warden_fleet_proposals.py`: no match (exit 1),
+  so there is no `patch(` of it.
 
 ## Spec Change Log
 
 - 2026-11-01: minted `backlog` from the EGM fleet audit (marshal Story 113.7): cluster WAR-CL-1, findings WAR-D-C1
   (Blocker) and WAR-D-R3, accepted by the operator; the live-approve credential stays the operator's; mode in-PR.
+- 2026-11-01: implemented (in-review). The fake forge for AC2 sits at the HTTP seam rather than the `client`
+  parameter, because `src/platform/` never imports `pyforge.*`. The approve respects the two actuator fix flags.
 
 ## Review Triage Log
 
-- (none yet)
+- **Review 1 (2026-11-01, reviewer: independent session) — PASS.**
+  - Checked: `manifest_locations.py` (new), the `cli.py`, `actuator.py`, `proposals.py` and `tasks.py` diffs and the tests against AC1-AC6 and the Boundaries; manual check `grep -n _run_fix_actuator src/platform/tests/test_warden_fleet_proposals.py` has no match (exit 1); no changed platform test imports `pyforge`.
+  - Common evidence (one run for all eight stories, exit codes read from `$?`): `pixi run --frozen -e pyforge-warden pyforge-warden-test` exit 0 (2255 unit+meta, 265 other); the twelve touched warden unit/meta test files together exit 0 (290 passed, 0 skipped; opengrep 1.30.2 and osv-scanner present); `ruff check` and `ruff format --check` over every changed warden, django-warden and platform test file exit 0; `python scripts/lint_types.py ruff-format` exit 0 and `python scripts/lint_types.py mypy` exit 0 (`pyforge-warden ok`); `pixi run --frozen -e pyforge-guild lint-types` exit 1 only from `pyforge-doctor`'s I001 in `tests/unit/test_sources_pages_liveness.py`, another station's in-flight file (`pyforge-warden` and `django-warden` ruff legs ok); `pixi run -e pyforge-guild platform-ci-local -- --test` (private ports) exit 0, RESULT: PASS, 1377 passed / 14 skipped; touched warden modules' unit coverage all at or above 81%. Mutations ran on scratch copies only (warden via `PYTHONPATH`, django-warden via `pytest -o pythonpath=`), never on the worktree.
+  - The four warden platform test files alone, against a private PostgreSQL: 106 passed, 1 skipped (the designated-organisation leak guard, which needs an operator-local `.warden/fleet-target.toml`).
+  - Mutations: dropping `fixed_version_candidates=` turns 4 red, including the AC2 delivery test; dropping `require_manifest_fix=True` turns the AC3 removal case red; dropping `manifest_locations=` turns 3 red; storing the subject as the target turns the AC1 and AC2 tests red.
+  - Deviation accepted: the fake forge sits at the `urllib` seam instead of `run_actuator`'s `client` parameter, because `src/platform` must not import `pyforge.*`; it records the real client's Git Data sequence (one blob, tree, commit, `warden/fix/` ref, draft pull).
+  - AC5: the memlog decision records the queue-then-re-solve handoff; no `SPEC.md` edit.
+  - Observations for the session owner, not failures: the queue still creates removal (`hygiene:DEP002`) proposals that no approve can now deliver (each records `failed`, 'a removal fix has no manifest edit'); the approve can open at a higher floor than `FixProposal.target` shows when the re-solve rejects the stored lowest candidate.
+  - Failures: none.

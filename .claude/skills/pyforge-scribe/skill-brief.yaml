@@ -7,7 +7,8 @@ source_authority: internal
 language: python
 description: >
   Direct-capture CLI for checked-in team memory. Agents use the scribe CLI
-  (capture, graph compile, recall) rather than importing pyforge.scribe internals.
+  (capture, graph compile, recall, index, catalog bmad-estate) rather than
+  importing pyforge.scribe internals.
 forge_tier: Quick
 created: '2026-08-25'
 created_by: skf-create-skill
@@ -20,6 +21,7 @@ scope:
     - src/pyforge/scribe/compile.py
     - src/pyforge/scribe/recall.py
     - src/pyforge/scribe/graph_store_plugins.py
+    - src/pyforge/scribe/catalog.py
     - README.md
   exclude:
     - tests/**
@@ -27,6 +29,8 @@ scope:
   notes: >
     CAP-15 proof compile for a station with no skill on origin/main.
     Public contract is the scribe CLI (AD-7). Portal django-scribe is out of scope.
+    Scope widened 2026-11-01 (steward Story 29.4, EGM audit RUL-CL2): catalog.py
+    is the scribe catalog command's module; recompiled in place at 0.1.0.
   rationale:
     recommended: specific-modules
     chosen: specific-modules

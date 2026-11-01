@@ -5183,7 +5183,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: implementer finding, atlas Story 37.2 live verification
   severity: medium
   promoted: 2026-10-21 -- atlas Story 37.2; blocked on Story 36.3 (the estate source's producer)
-  status: open
+  resolved: 2026-11-01 (Story 34.14: `pipeline_registry.NAMED_RUN_ONLY_PIPELINES` keeps `query_plane_cache` and `universal_sbom` out of `__default__`, the same two the `pyforge-atlas-bootstrap` task leaves out, so a plain `pyforge atlas run` on a fresh data root no longer reaches `query_plane_estate_source`; both stay reachable by name, and Story 36.3 takes `query_plane_cache` back when the estate source has a producer. `tests/integration/test_plain_run_fresh_root.py` runs `__default__` over an empty data root, the public fetches served from recorded responses, and it runs to the end; Story 34.15 keeps the same run green with every fetch refused)
+  status: closed
 
 ### DW-atlas-37-4-1: `core_dependencies.depends_on` keeps unparsed requirement specs.
 
@@ -5289,4 +5290,16 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred — recorded by hand in the CAP-7 retrofit PR (operator ruling R7, 2026-10-26)
   severity: low
   promoted: 2026-10-26 — the retrofit chain commit
+  status: open
+
+### DW-atlas-egm-2026-11-1: A repodata subdir that answers with a JSON object holding no packages counts as a good fetch, so the other subdirs' rows can replace last-good.
+
+- source_spec: `planning-artifacts/specs/spec-34-15-the-three-core-sources-keep-last-good-when-the-network-is-refused.md` (CAP-64); EGM fleet audit 2026-11-01 (marshal Story 113.7)
+  summary: Story 34.15 gives `CondaRepodataDataset` an AD-13 last-good store, and its review follow-up makes a 200 answer with a non-JSON body a failed fetch for that subdir. A body that parses as JSON but carries no `packages` or `packages.conda` (for example `{}`) still adds no rows without counting as a failure, so a run where one subdir answers that way writes a smaller universe over `last_good.parquet`. Deciding whether an empty subdir is a failure needs a floor per subdir, which CAP-64's per-row floor (operator ruling 2026-11-01) can supply.
+  evidence: Story 34.15 review follow-up, 2026-11-01 (noted in its spec's dev notes).
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/core_sources.py (`CondaRepodataDataset`)
+  origin: atlas Story 34.15 review follow-up, 2026-11-01
+  owner: atlas
+  severity: low
+  promoted: 2026-11-01 — EGM audit landing
   status: open

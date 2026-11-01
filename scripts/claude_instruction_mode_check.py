@@ -26,6 +26,7 @@ EXIT
        (findings are advisory: the import still works)
     2  ``claude --version`` ran but its output could not be parsed
 """
+
 from __future__ import annotations
 
 # Registry declaration — see scripts/detectors.py. `runtime`: reads the host's
@@ -85,22 +86,37 @@ def read_settings(path: Path) -> dict:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--settings", type=Path, default=Path.home() / ".claude" / "settings.json")
-    parser.add_argument("--claude", default=None, help="claude binary (default: PATH lookup)")
+    parser.add_argument(
+        "--settings", type=Path, default=Path.home() / ".claude" / "settings.json"
+    )
+    parser.add_argument(
+        "--claude", default=None, help="claude binary (default: PATH lookup)"
+    )
     args = parser.parse_args(argv)
 
     binary = args.claude or shutil.which("claude")
     if not binary:
-        print("[claude-instruction-mode] ok -- no claude binary on this host; nothing to check")
+        # Silent by contract (CAP-29, scribe Story 23.2): no claude, nothing to check.
+        # scripts/detectors.py reads exit 0 as pass whatever stdout says.
         return 0
     try:
-        out = subprocess.run([binary, "--version"], capture_output=True, text=True, timeout=30).stdout
+        out = subprocess.run(
+            [binary, "--version"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        ).stdout
     except (OSError, subprocess.SubprocessError) as exc:
-        print(f"[claude-instruction-mode] could-not-run -- `claude --version` failed: {exc}")
+        print(
+            f"[claude-instruction-mode] could-not-run -- `claude --version` failed: {exc}"
+        )
         return 2
     version = parse_version(out)
     if version is None:
-        print(f"[claude-instruction-mode] could-not-run -- unparseable `claude --version` output: {out.strip()!r}")
+        print(
+            f"[claude-instruction-mode] could-not-run -- unparseable `claude --version` output: {out.strip()!r}"
+        )
         return 2
 
     findings = 0
@@ -114,7 +130,10 @@ def main(argv: list[str] | None = None) -> int:
         findings += 1
     mode = configured_mode(read_settings(args.settings))
     if mode != PINNED_MODE:
-        shown = mode or "default (claude-md-or-agents-md — stays out of a project with a CLAUDE.md)"
+        shown = (
+            mode
+            or "default (claude-md-or-agents-md — stays out of a project with a CLAUDE.md)"
+        )
         print(
             f"[claude-instruction-mode] warn -- {args.settings} pins instructionFiles={shown!s}, "
             f"not {PINNED_MODE!r}; interactive sessions will not load nested AGENTS.md files. "
@@ -124,7 +143,9 @@ def main(argv: list[str] | None = None) -> int:
         findings += 1
     if findings == 0:
         v = ".".join(map(str, version))
-        print(f"[claude-instruction-mode] ok -- Claude Code {v} with instructionFiles={PINNED_MODE}")
+        print(
+            f"[claude-instruction-mode] ok -- Claude Code {v} with instructionFiles={PINNED_MODE}"
+        )
         return 0
     return 1
 

@@ -147,6 +147,9 @@ class DispatchJournalFacts:
     # the group-read error the supervisor's latest heartbeat (or the completion INTENT) recorded, else ``None``.
     harness_profile: str | None = None
     session_liveness_error: str | None = None
+    # Story 113.8 (CAP-300): the EGM readiness result the launch INTENT carries (``readiness_challenge``: report
+    # path, counts, error), else ``None`` -- the switch off, or a run launched before the hook existed.
+    readiness_challenge: dict[str, object] | None = None
 
 
 #: Story 83.1: how far a process's start time may sit from its journaled launch before the pid is judged reused.

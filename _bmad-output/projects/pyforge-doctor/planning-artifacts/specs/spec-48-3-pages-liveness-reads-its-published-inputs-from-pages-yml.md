@@ -2,7 +2,7 @@
 title: "48.3: pages-liveness reads its published inputs from pages.yml"
 type: 'fix'
 created: '2026-11-01'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
@@ -227,14 +227,189 @@ Parent: spec-pyforge-doctor CAP-91
 
 ## Auto Run Result
 
-Status: backlog
+Status: in-review (built in-PR on `egm-audit-2026-11`, 2026-11-01; nothing committed, staged or stamped by the build).
+
+**What changed**
+
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/pages_liveness.py` — `PUBLISHED_INPUTS` gains
+  `docs/foundry/marketplace` (eleven pathspecs, in `pages.yml`'s order). The comment above it names
+  `.github/workflows/pages.yml`'s `on.push.paths`, the five exclusions and herald Story 43.7's `docsite` drop; the
+  comment above `STALE_AFTER` (still `timedelta(hours=24)`) names the `pages` row's
+  `stuck_rules.deploy_waiting_hours` in `docs/governance/ci-surfaces.yaml`, which no Doctor code reads. A module
+  clock `now` (default `_utc_now`, aware UTC) is replaced by tests as `urlopen` is. The rule: stale only when
+  `last-modified` is before the input commit's date (`pending`) and `now - commit_date > STALE_AFTER`; the stale
+  WARN reads `Pages input waited <N|more than N> hours: last-modified …, inputs … (published-input commit <sha> on
+  origin/main, undeployed at <now>), <url>` (the 2026-10-06 replay's evidence ends at character 107); the OK row
+  ends `deployed after it (clock <now>)` or `not yet deployed, waiting within 24 hours (clock <now>)`. Evidence
+  keeps `lag_hours` (commit against header) and gains `now` and `waited_hours` (whole hours; 0 when deployed after
+  the commit). The git argv, the HTTP path and every unavailable case are unchanged.
+- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_pages_liveness.py` — the literal-tuple test is
+  replaced by `test_the_published_inputs_are_pages_yml_s_filter_less_the_named_exclusions` (reads `pages.yml` with
+  `yaml.safe_load`, `data.get("on", data.get(True))`, drops `/**`, removes the five exclusions, refuses duplicates,
+  names each path missing on either side, and fails when a named exclusion leaves the filter); URL and
+  `STALE_AFTER` assertions kept in `test_the_url_and_the_threshold_are_constants`. New: AC4's five cases, a
+  deployed-after-it row at four clocks, a commit at the deploy's own second, the clock-injection mutation test, the
+  marketplace and no-excluded-path mutation tests, the comment test (AC3) and `test_every_fixture_that_reaches_the_rule_names_its_clock`
+  (AC5). The every-fixture test asserts one clock read when a fixture names `now` and none otherwise.
+- `src/shared/packages/pyforge-doctor/tests/fixtures/pages_liveness/` — `commit_{23,25,exactly_24}_hours_newer.json`
+  replaced by `input_waited_23_hours.json`, `input_waited_exactly_24_hours.json`,
+  `input_waited_24_hours_and_one_second.json`, `input_waited_25_hours.json` (deploy T, commit T+2 h, `now` measured
+  from the commit) and `fresh_input_on_a_two_day_old_deploy.json`; `site_newer_than_commit.json`,
+  `head_405_get_200.json` and `replay_2026_10_06.json` name their `now` (the replay's is six days after the deploy:
+  waited 78 h, lag still 65 h). The eight unavailable fixtures are unchanged and name no `now`.
+- `.github/workflows/pyforge-station-tests.yml` (outside the Surface; allowlisted, not Spec-governed) —
+  `doctor_live_paths` gains `.github/workflows/pages.yml` and `docs/foundry/marketplace`. AC8's premise that
+  `.github/workflows` is a `doctor_paths` root no longer holds since steward Story 117.4 split the live-tree half,
+  and steward's trigger-map meta-test reds both new reads of the pin test until the live half fires on them; with
+  the two rows the pin test runs on any `pages.yml` filter change. `.github/workflows/pages.yml` is not edited.
+- `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/.memlog.md` — one surface
+  reconcile event (every path above as a full literal path) and the AC9 `(decision)` restating CAP-91 (a)–(f).
+
+**Not done here (session owner):** AC7 — `DW-doctor-48-2-1` is closed by the session owner at promotion (this
+build does not edit `deferred-work-ledger.md`); AC10 — the `spec-pyforge-core` co-governor reconcile for
+`pages_liveness.py` and both scoped stamps (`spec-pyforge-doctor`, `spec-pyforge-core`) after `git add`.
+
+**Commands (exit codes)**
+
+- `pixi run --frozen -e pyforge-doctor python -m pytest src/shared/packages/pyforge-doctor/tests/unit/test_sources_pages_liveness.py -q` — 0 (98 passed).
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — 0 (1213 passed).
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-live-test` — 0 (2719 + 4 passed).
+- `pixi run --frozen -e pyforge-doctor python -m pytest src/shared/packages/pyforge-doctor/tests/meta/test_cli_bridge_sole_subprocess.py -q` — 0 (11 passed).
+- `pixi run --frozen -e pyforge-guild python -m pytest tests/scripts/test_fleet_picture_pages_liveness.py -q` — 0 (6 passed, file unchanged).
+- `pixi run --frozen -e pyforge-steward python -m pytest src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py -q` — 1 before the workflow rows (doctor_live: `.github/workflows/pages.yml`, `docs/foundry/marketplace`); after them 1 still, but only on concurrent mason (`test_mason_skills.py`) and scribe (`test_guild_env_membership.py`, `test_instruction_surface_parity.py`) reads from other stations' in-flight stories in this worktree — no doctor row.
+- `ruff check` / `ruff format --check` (pyforge-guild's ruff, the doctor package's `[tool.ruff]`) on both Python files — 0 / 0.
+- `mypy --cache-dir .mypy_cache/pyforge-guild -p pyforge.doctor` from the package root (lint-types' doctor slice) — 0.
+- `pixi run --frozen -e pyforge-guild spec-surface-check` — 0.
+- AC6 mutations, each on a scratch copy of the package (never the shared tree), each failing its named test and restored (restored copy: 98 passed):
+  1. rule reverted to `lag > STALE_AFTER` — fails `test_an_input_waiting_25_hours_is_one_stale_warn_naming_both_dates_the_sha_and_the_wait`, `test_mutation_a_fresh_input_on_a_two_day_old_deploy_is_the_ok_row` (11 failed);
+  2. `>=` for `>` — fails `test_mutation_a_wait_of_exactly_24_hours_is_the_ok_row_not_stale` (3 failed);
+  3. `docs/foundry/marketplace` dropped — fails `test_mutation_the_marketplace_tree_is_a_published_input` and the pin (2 failed);
+  4. `scripts/pages_*.py` added — fails `test_mutation_no_excluded_path_is_a_published_input` and the pin (2 failed);
+  5. `datetime.now(UTC)` for `now()` — fails `test_mutation_the_rule_reads_the_injected_clock_never_the_real_one` (25 failed).
+
+**Review follow-up 2026-11-01** (both reviews' advisory): `src/shared/packages/pyforge-doctor/src/pyforge/doctor/models.py`'s
+`PAGES_LIVENESS` comment now states the clock-aware rule (an input that landed after the deploy and has waited more
+than 24 hours is one WARN, an input the site was deployed after is the OK row, an unreadable side is one WARN) in
+place of the retired "a deploy more than 24 hours behind its inputs"; `tests/scripts/test_fleet_picture_pages_liveness.py`'s
+`_STALE` comment calls its message the retired 48.2 shape, kept as a fixture because fleet-picture only cuts a message
+at 110 characters (comment only; the fixture and the six tests are unchanged). Surface reconcile on the
+`spec-pyforge-doctor` memlog; `spec-pyforge-core`'s for `models.py` is the session owner's. `pyforge-doctor-test` 0
+(1213 passed); `pytest tests/scripts/test_fleet_picture_pages_liveness.py` (pyforge-guild) 0 (6 passed); ruff check
+and format on `models.py` (doctor `[tool.ruff]`) 0 / 0.
 
 ## Spec Change Log
 
 - 2026-11-01: minted `backlog` (in-PR) from the EGM audit's cluster DOC-CL-6 (findings DOC-M-Z4, DOC-M-D2, DOC-M-C5,
   DOC-D-C2) at the operator's ruling of 2026-11-01 (pin to `pages.yml` with named exclusions; `STALE_AFTER` a
   constant; fold `DW-doctor-48-2-1`); marshal Story 113.7's landing.
+- 2026-11-01: built in-PR, `in-review`. Deviation: AC8's trigger-map clause needed two `doctor_live_paths` rows in
+  `.github/workflows/pyforge-station-tests.yml` (`.github/workflows/pages.yml`, `docs/foundry/marketplace`), outside
+  the Surface; the premise that `.github/workflows` is a `doctor_paths` root predates steward Story 117.4's live-tree
+  split. AC7 and AC10's stamps are left to the session owner.
+- 2026-11-01: `in-review` -> `in-progress` — independent review failed (Review Triage Log): `lint-types` ruff I001 in
+  `test_sources_pages_liveness.py`, and AC7's `DW-doctor-48-2-1` still open.
+- 2026-11-01: `in-progress` -> `done` — second independent review passed (Review Triage Log): the I001 blank line is
+  back and `DW-doctor-48-2-1` reads `status: closed` with a `closed:` line citing this story.
 
 ## Review Triage Log
 
-- (none yet)
+- 2026-11-01 — reviewer: independent session (did not write this code; judged the diff against this spec, not the
+  Auto Run Result). **Verdict: fail — back to `in-progress`.**
+  - **Failure 1 — `lint-types` is red on this story's test file.** `pixi run --frozen -e pyforge-guild python
+    scripts/lint_types.py ruff` (the task `lint-types.yml` and `pr-preflight` call verbatim; it runs `ruff check`
+    from the package dir) exits 1 for pyforge-doctor with `I001 Import block is un-sorted or un-formatted` at
+    `src/shared/packages/pyforge-doctor/tests/unit/test_sources_pages_liveness.py:9`: the diff dropped the blank
+    line between the third-party block (`import pytest`, the new `import yaml`) and the first-party
+    `from pyforge.doctor …` imports. It is the only ruff finding in pyforge-doctor. The Auto Run Result's
+    "`ruff check` … 0" does not reproduce. Fix: put the blank line back after `import yaml`.
+  - **Failure 2 — AC7 is not met.** `DW-doctor-48-2-1`
+    (`_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md:3029`) still reads
+    `status: open` with no `closed:` line. The ledger is in this story's Surface, and a closure citing the story
+    in-PR has precedent on the same ledger (the `closed:` line at `:3117`, doctor Story 49.1). Close it citing this
+    story; `deferred-work-check` is green today (exit 0) and must stay so.
+  - Held, with evidence: AC1 (the pin reads `pages.yml` with `yaml.safe_load`, `data.get("on", data.get(True))`,
+    drops `/**`, removes the five exclusions, refuses duplicates, names each side); AC2 (`docs/foundry/marketplace`
+    in `PUBLISHED_INPUTS`; the argv test passes); AC3 (comments name `pages.yml`, the exclusions and the `pages` row;
+    no `dashboard.deploy` / M1; `STALE_AFTER` 24 h; no read of `ci-surfaces.yaml`); AC4 and AC5 (fixtures checked by
+    hand: T 12:00, input T+2 h, clocks at +23 h / +24 h / +24 h 1 s / +25 h; a 47 h 45 min lag at 15 min wait;
+    the eight unavailable fixtures name no `now` and read no clock); AC8 (`pages.yml` unedited;
+    `tests/scripts/test_fleet_picture_pages_liveness.py` unchanged and passing; the steward trigger-map meta-test
+    exits 1 only on mason and scribe rows from other stations' in-flight stories, no doctor row); AC9 (the memlog
+    decision covers (a)–(f)). The out-of-Surface `pyforge-station-tests.yml` rows are a recorded deviation and
+    allowlisted (`.github/**`).
+  - Commands (exit codes read from `$?`): `pytest …/test_sources_pages_liveness.py` 0 (98 passed);
+    `pyforge-doctor-test` 0 (1213); `pyforge-doctor-live-test` 0 (2728 + 4); `pytest …/test_cli_bridge_sole_subprocess.py`
+    0 (11); `pytest tests/scripts/test_fleet_picture_pages_liveness.py` (pyforge-guild) 0 (6); trigger-map meta-test
+    1 (foreign rows only); `deferred-work-check` 0; `lint_types.py ruff` 1 (Failure 1); `ruff-format` 0; `mypy` 0;
+    `spec-surface-check` 0.
+  - AC6 mutations, each on a scratch mirror (`PYTHONPATH` to the mirror's `src`, `pages.yml` copied), restored each
+    time: rule reverted to `lag > STALE_AFTER` → 11 failed (incl.
+    `test_an_input_waiting_25_hours_is_one_stale_warn_…`, `test_mutation_a_fresh_input_on_a_two_day_old_deploy_…`);
+    `>=` for `>` → 3 failed (incl. `test_mutation_a_wait_of_exactly_24_hours_is_the_ok_row_not_stale`);
+    `docs/foundry/marketplace` dropped → the marketplace test and the pin; `scripts/pages_*.py` added → the
+    no-excluded-path test and the pin; `datetime.now(UTC)` for `now()` → 25 failed (incl.
+    `test_mutation_the_rule_reads_the_injected_clock_never_the_real_one`).
+  - Advisory (no AC; fix while here, healed tissue): `src/shared/packages/pyforge-doctor/src/pyforge/doctor/models.py:222-225`
+    still says "a deploy more than 24 hours behind its inputs is one WARN", the retired rule; and
+    `tests/scripts/test_fleet_picture_pages_liveness.py:24-29` labels the retired "Pages deploy more than 65 hours
+    behind" message "The source's own shape" (AC8 keeps that file unchanged, so only its comment is in question).
+  - Left to the session owner (reserved by this workflow, not judged): AC10's `spec-pyforge-core` co-governor
+    reconcile and the scoped stamps; `detectors-ci` and the full `pr-preflight`.
+- 2026-11-01 — reviewer: independent session, second review (did not write this code; judged the working-tree diff
+  of `pages_liveness.py`, its unit test, its fixtures and `deferred-work-ledger.md` against this spec, not the Auto
+  Run Result). **Verdict: pass — `done`.**
+  - **First-review Failure 1 (ruff I001) — fixed.** The blank line after `import yaml` is back
+    (`test_sources_pages_liveness.py:25-27`). `.pixi/envs/pyforge-guild/bin/ruff check .` and `ruff format --check`
+    from inside `src/shared/packages/pyforge-doctor` exit 0 / 0; `pixi run --frozen -e pyforge-guild python
+    scripts/lint_types.py ruff` exits 0 (all 19 packages ok), `… ruff-format` 0, `… mypy` 0.
+  - **First-review Failure 2 (AC7) — fixed.** `DW-doctor-48-2-1` (`deferred-work-ledger.md:3029-3039`) reads
+    `status: closed` and carries a `closed: 2026-11-01 — doctor Story 48.3 (spec …)` line naming the story, its spec,
+    Epic 48, the rule and its fixtures, and "CAP-91 re-derives in the same PR". No merge SHA can exist before the
+    landing, and the in-PR closure precedent on the same ledger (`:3118`, doctor Story 49.1) cites none either;
+    held. `pixi run --frozen -e pyforge-guild deferred-work-check` exits 0.
+  - Held, re-checked: AC1 (`test_the_published_inputs_are_pages_yml_s_filter_less_the_named_exclusions` reads
+    `pages.yml` with `yaml.safe_load` and `data.get("on", data.get(True))`, takes `on.push.paths` (the `*pages_paths`
+    alias, 16 entries), drops `/**`, removes the five exclusions, refuses duplicates, names each side; the old
+    literal-tuple test is gone; URL and `STALE_AFTER` asserted in `test_the_url_and_the_threshold_are_constants`);
+    AC2 (`docs/foundry/marketplace` in `PUBLISHED_INPUTS`; the argv test still equals the pathspecs after
+    `--first-parent` and the full refname); AC3 (comments name `.github/workflows/pages.yml`, the five exclusions and
+    the `pages` row's `stuck_rules.deploy_waiting_hours` — that row is `docs/governance/ci-surfaces.yaml:53-63`, value
+    24; no `dashboard.deploy` or M1 in the doctor source tree; `STALE_AFTER` is `timedelta(hours=24)`; the only
+    `ci-surfaces.yaml` hits are the comment and a string assertion on the source text, no read of the file); AC4
+    (fixtures checked by hand: deploy 2026-10-13T12:00Z, input T+2 h, clock +23 h → OK, +24 h → OK, +24 h 1 s →
+    stale, +25 h → stale "waited 25 hours"; a 2026-10-12 deploy with an input 15 min before the clock → OK with
+    `lag_hours` 47; an input before or at `last-modified` → OK at four clocks up to a year out); AC5 (every fixture
+    with a verdict names `now`, the eight unavailable fixtures name none, and the every-fixture test asserts one
+    clock read or none); AC8 (`pages.yml` unedited; the rule adds no request and no subprocess; the
+    sole-subprocess meta-test passes; `tests/scripts/test_fleet_picture_pages_liveness.py` and `fleet_picture.py`'s
+    pages probe unchanged and passing; the steward trigger-map meta-test exits 1 on eight foreign rows only —
+    marshal `test_factory_challenge.py`, mason `test_mason_skills.py` / `test_persona_consults_cfe.py`, scribe
+    `test_instruction_surface_parity.py` / `test_guild_env_membership.py` — and no doctor row); AC9 (the memlog
+    `(decision)` covers (a)–(f), beside the surface-reconcile event).
+  - AC6, re-run by this reviewer on a scratch mirror of the package (`PYTHONPATH` to the mirror's `src`, confirmed by
+    `pages_liveness.__file__`; `pages.yml` copied to the mirror root), each restored and the restored copy 98 passed:
+    rule reverted to `lag > STALE_AFTER` → 11 failed (incl.
+    `test_an_input_waiting_25_hours_is_one_stale_warn_naming_both_dates_the_sha_and_the_wait`,
+    `test_mutation_a_fresh_input_on_a_two_day_old_deploy_is_the_ok_row`); `>=` for `>` → 3 failed (incl.
+    `test_mutation_a_wait_of_exactly_24_hours_is_the_ok_row_not_stale`); `docs/foundry/marketplace` dropped → 2
+    failed (`test_mutation_the_marketplace_tree_is_a_published_input` and the pin); `"scripts/pages_*.py"` added → 2
+    failed (`test_mutation_no_excluded_path_is_a_published_input` and the pin); `clock = datetime.now(UTC)` for
+    `now()` → 25 failed (incl. `test_mutation_the_rule_reads_the_injected_clock_never_the_real_one`).
+  - Commands (exit codes read from `$?`, output to files): `pytest …/test_sources_pages_liveness.py` (pyforge-doctor)
+    0 (98 passed); `pyforge-doctor-test` 0 (1213 passed); `pytest …/test_cli_bridge_sole_subprocess.py` 0 (11);
+    `pytest tests/scripts/test_fleet_picture_pages_liveness.py` (pyforge-guild) 0 (6); `deferred-work-check` 0;
+    `lint_types.py ruff` 0, `ruff-format` 0, `mypy` 0; `spec-surface-check` 0; trigger-map meta-test 1 (foreign rows
+    only, above); `pyforge-doctor-live-test` 1 (2729 passed, 1 failed), the one failure foreign:
+    `tests/meta/test_portal_fleet_pulse.py::test_story_does_not_add_pyforge_under_src_platform` reds on
+    `src/platform/tests/test_warden_fleet_proposals.py: import urllib.request`, another station's in-flight edit in
+    this worktree, none of this story's files. The session owner should clear it before the push: it is a doctor
+    meta-test and will red doctor's live lane on this PR.
+  - Advisory, unchanged since the first review (no AC; outside this story's file list):
+    `src/shared/packages/pyforge-doctor/src/pyforge/doctor/models.py:222-225` still describes the retired rule ("a
+    deploy more than 24 hours behind its inputs is one WARN"), and `tests/scripts/test_fleet_picture_pages_liveness.py:24`
+    still calls the retired "Pages deploy more than 65 hours behind" message "The source's own shape".
+  - Left to the session owner (reserved, not judged): AC10. `scripts/.spec-surface-baseline.json` lists
+    `pages_liveness.py` under both `pyforge-doctor/spec-pyforge-doctor` and `pyforge-marshal/spec-pyforge-core`; the
+    doctor memlog carries the 48.3 reconcile event, the `spec-pyforge-core` memlog
+    (`_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/.memlog.md`) carries none yet,
+    and neither Spec is stamped. Also reserved: `detectors-ci` and the full `pr-preflight`.

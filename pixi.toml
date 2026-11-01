@@ -646,6 +646,11 @@ description = "Story 117.4 (spec-pyforge-steward CAP-175, ruling D4): the live-t
 cmd = "pytest src/shared/packages/pyforge-steward/tests/unit src/shared/packages/pyforge-steward/tests/meta -q -m \"live_tree and not slow\" -n auto --dist loadgroup --ignore=src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py --ignore=src/shared/packages/pyforge-steward/tests/unit/test_preflight_scope.py --ignore=src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py --cov=pyforge.steward --cov-branch --cov-report=json:.steward/coverage/steward-live.json && pytest src/shared/packages/pyforge-steward/tests/unit/test_preflight_scope.py src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py -q"
 env = { PYTHONPATH = "src/shared/packages/pyforge-steward/src:scripts" }
 
+[feature.pyforge-steward.tasks.pyforge-steward-nkp-probes]
+description = "Story 118.6 (spec-pyforge-steward CAP-177): the attended NKP probes, tests/integration alone -- the landing SPA's Keycloak auth-code + PKCE sign-in as the bootstrap admin, the hub's OAuth sign-in and a small-instance spawn that reaches ready (then stopped), the landing page's JupyterHub and Nebi cards both healthy -- plus their offline checks. The domain and the admin password come from `nic outputs --show-secrets -f <config>` at run time and are never stored or printed. With no reachable kubeconfig every probe skips with its reason and the task exits 0. Another config: `-- --nkp-config <path>`; a gateway reached through kubectl port-forward: `-- --nkp-connect-to 127.0.0.1`. pyforge-steward-test, pyforge-steward-live-test and CI never collect tests/integration: the probes are attended."
+cmd = "pytest src/shared/packages/pyforge-steward/tests/integration -q -rs -p no:cacheprovider"
+env = { PYTHONPATH = "src/shared/packages/pyforge-steward/src:scripts" }
+
 [feature.pyforge-steward.tasks.frame-preflight]
 description = "Story 53.2/53.6 (spec-intelligence-hub CAP-2): in-repo Frame Spec v0.3 preflight for docs/foundry/frames/ (type/identifier/name/description/visibility + maintainer; identity is the qualified-ref identifier, station Frames inherit pyforge/company, repeatable fields must be sequences). Not a gate: never joins detectors/detectors-ci — Warden stays the sole PR verdict."
 cmd = "python -m pyforge.steward.frames"
@@ -665,7 +670,9 @@ depends-on = [{ task = "pyforge-steward-test", environment = "pyforge-steward" }
 
 [feature.pyforge-steward.tasks.pyforge-steward-test-coverage]
 description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-steward. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage."
-cmd = "python scripts/run_station_coverage_gate.py --station steward"
+# Story 118.6: steward's tests/integration holds the attended NKP probes (pyforge-steward-nkp-probes), which measure
+# no module and must not run under a coverage evaluate, so this gate stays on the unit suite (unit + meta).
+cmd = "python scripts/run_station_coverage_gate.py --station steward --suites unit"
 
 [feature.pyforge-steward.tasks.sprint-ledger-postgres-sync]
 description = "Mint Work Passport UUIDs and sync estate sprint ledger items to PostgreSQL / Django ORM (Story 65.1; WorkPassport model, migration 0002). Lives in the pyforge-steward feature -- the one env with both django ([dashboard] extra) and the steward CLI -- NOT in guild-tasks, where it could only ever refuse (no env carrying guild-tasks has django; found at PR #1507's review). Flag-gated: pass `-- --flag enable_postgres_sync=true` or `-- --flag pyforge.steward.ledger_query_postgres_sync=true`, else it refuses with exit 1; needs DJANGO_SETTINGS_MODULE set, else `refused` on stderr, exit 1 -- never a silent exit-0 no-op."

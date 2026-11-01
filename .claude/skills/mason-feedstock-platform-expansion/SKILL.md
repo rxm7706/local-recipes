@@ -283,7 +283,7 @@ Artifact lands under
 
 **Acceptance**: at least one Python variant (or one build variant for
 non-Python recipes) produces a green build with passing tests. Per
-skill **G8b**: `.conda` file existence overrides
+skill **G85**: `.conda` file existence overrides
 `get_build_summary status: unknown` false-negatives.
 
 ---
@@ -519,7 +519,7 @@ go in the Worked Example.
   (diff-before-apply)"
 - CFE `SKILL.md` § Critical Constraints — schema header,
   `python_min` policy, `stdlib` required, never-mix-formats
-- CFE `SKILL.md` § G1 / G8b / G12 — relevant gotchas
+- CFE `SKILL.md` § G1 / G85 / G12 — relevant gotchas
 - CFE `reference/conda-forge-yml-reference.md` — `provider:`,
   `workflow_settings.store_build_artifacts:` (replaces deprecated
   `azure.store_build_artifacts`), bot config keys, `noarch_platforms`,

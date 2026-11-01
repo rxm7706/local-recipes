@@ -271,8 +271,9 @@ Ownership decisions recorded:
   the existing ``render_text(...)`` call ONLY (never ``render_json``/
   ``assemble_report`` — the frozen v1 contract stays untouched).
   ``manifest_locations`` is built ONCE, right after ``inventory`` resolves,
-  from ``inventory.components`` (``name -> tuple(f"{p.manifest}
-  [{p.section}]" for p in component.provenance)``); ``fixed_versions``
+  by ``manifest_locations.manifest_locations_from_inventory`` (Story 16.6:
+  the one builder; ``name -> tuple(f"{p.manifest} [{p.section}]" for p in
+  component.provenance)``, canonically keyed); ``fixed_versions``
   merges ``EngineResult.fixed_versions`` across every ``engine_results``
   entry (first engine-registration-order occurrence wins on a rare key
   collision, mirroring ``interfaces.DefaultPolicy``'s own engine-vs-engine
@@ -298,7 +299,7 @@ from pathlib import Path
 from pyforge.core.flags import read_boolean
 
 from . import __version__
-from .actuator import run_actuator
+from .actuator import label_outcome_ecosystems, run_actuator
 from .config import (
     ConfigLoader,
     ConfigParseError,
@@ -325,6 +326,7 @@ from .hooks import (
 from .hygiene import has_adjacent_python_source
 from .interfaces import DefaultPolicy, Engine, EngineResult, _sanitize_id_segment
 from .inventory import Component, ResolvedInventory, merge_components
+from .manifest_locations import manifest_locations_from_inventory
 from .models import (
     AXIS_HYGIENE,
     AXIS_INGESTION,
@@ -343,11 +345,11 @@ from .native_lockfiles import (
     NON_PYTHON_ECOSYSTEMS_FLAG,
     is_native_lockfile_kind,
     merge_native_scans_into_vuln_result,
+    native_vuln_ecosystems,
     scan_native_lockfile,
 )
 from .report import (
     TOOL_NAME,
-    _canonical_subject_key,
     _single_line,
     assemble_report,
     render_json,
@@ -1272,39 +1274,13 @@ def _run_scan(args: argparse.Namespace) -> int:
         resolved_scan_set=manifests,
     )
     # Story 5.1 (AC1): the manifest+location lookup render_text's
-    # remediation lines consult -- built ONCE, straight from the post-merge
-    # inventory (never re-derived per finding). A finding's own `subject` is
-    # the raw component name (e.g. vuln._indeterminate_finding, hygiene's/
-    # license's/currency's own producers), so this dict is keyed the same
-    # way; a subject with no entry here (e.g. report.py's own synthetic
-    # indeterminate:coverage-floor:<axis> finding, whose subject is an axis
-    # name) simply gets no manifest clause -- report.py handles that
-    # gracefully. Review finding (2026-07-24): two components can
-    # legitimately share one name at different versions post-merge
-    # (inventory.py's own docstring: "distinct versions ... stay distinct")
-    # -- a plain per-component dict build would let the LAST one silently
-    # clobber an earlier one's provenance, misattributing a finding's
-    # location. Every same-named component's provenance is unioned instead
-    # (sorted, deduplicated) -- an honest "every place this name is
-    # declared" rather than a wrong single guess. Also keyed additionally by
-    # `pypi_identity.name` when present: vuln findings' `subject` is
-    # osv-scanner's own echoed package name, which mirrors the SYNTHESIZED
-    # pypi identity (vuln._synthesize_requirements), not necessarily
-    # `component.name` for a conda-sourced component -- without this second
-    # key, a conda/PyPI name divergence would silently miss the lookup even
-    # though the location data is present.
-    manifest_locations: dict[str, tuple[str, ...]] = {}
-    for component in inventory.components:
-        locations = tuple(f"{p.manifest} [{p.section}]" for p in component.provenance)
-        # Keys canonicalized (review finding 2026-07-24) so a manifest's
-        # non-normalized spelling (Foo_Bar) still matches osv-scanner's
-        # normalized echo -- _manifest_clause canonicalizes its lookup with
-        # the same report._canonical_subject_key.
-        keys = [_canonical_subject_key(component.name)]
-        if component.pypi_identity is not None:
-            keys.append(_canonical_subject_key(component.pypi_identity.name))
-        for key in keys:
-            manifest_locations[key] = tuple(sorted(set(manifest_locations.get(key, ())) | set(locations)))
+    # remediation lines and the actuator's manifest edit consult -- built
+    # ONCE, straight from the post-merge inventory (never re-derived per
+    # finding). Story 16.6: the builder is manifest_locations' public helper,
+    # the one the fleet approve task also runs on its fresh clone; its
+    # docstring carries the keying rules (canonical subject, unioned
+    # provenance, the pypi_identity second key).
+    manifest_locations = manifest_locations_from_inventory(inventory)
     if manifests and manifests_parsed > 0 and not inventory.components:
         # A parsed manifest with nothing extractable must be distinguishable
         # on stderr from the empty-dir case (the coverage block already
@@ -1654,6 +1630,8 @@ def _run_scan(args: argparse.Namespace) -> int:
                 manifest_locations=manifest_locations,
                 estate_repos=frozenset(config.fix_pr_estate_repos),
             )
+            # Story 16.8: name the ecosystem of each native non-Python lockfile finding.
+            actuation = label_outcome_ecosystems(actuation, native_vuln_ecosystems(native_scans))
             actuation_payload = actuation.to_json_dict()
             failed = [outcome for outcome in actuation.outcomes if outcome.status == "failed"]
             if failed:

@@ -1888,23 +1888,30 @@ five-tier rule; `spec-pyforge-steward:CAP-161`, the Guild environment that answe
 
 #### FR-51: Mason has its own skills, and conda-forge-expert is one of them ← CAP-29
 
-An agent doing Mason's work loads Mason's skills: a station skill for the grammar, two craft skills and two campaign
-skills, with `conda-forge-expert` still the recipe skill.
+An agent doing Mason's work loads Mason's skills, six in all: a station skill for the grammar, two craft skills, two
+campaign skills, and `conda-forge-expert`, still the recipe skill.
 
 **Consequences (testable):**
 - `pyforge-mason`, the station skill, is SKF-compiled from `src/shared/packages/pyforge-mason/` like the other seven
   stations' and documents `pyforge mason recipe|package|environment|doctor` and `POST /stations/mason/mcp`, sending every
-  recipe question to `conda-forge-expert`; `AGENTS.md`'s SKF block lists it as the eighth skill, written only by
-  `skf-export-skill`.
+  recipe question to `conda-forge-expert`; `AGENTS.md`'s SKF block lists it, written only by `skf-export-skill`, and no
+  test pins the block's skill count or the skill's version.
 - `mason-package` and `mason-environment` are hand-authored skills that walk the native crafts (`package build|ship`,
   `environment lock|check`); `mason-feedstock-platform-expansion` and `mason-feedstock-failure-remediation` carry the two
-  feedstock campaigns moved verbatim from `docs/how-to/`, linking CFE's guides for the timeless workflow.
-- No Mason skill carries a CFE gotcha heading; a meta-test proves the check with a planted one. CFE is never replaced,
-  forked or demoted, and stays hand-authored and un-nested.
+  feedstock campaigns moved verbatim from `docs/how-to/`, linking CFE's guides for the timeless workflow; each how-to
+  and its `archive/docs/specs/` stub links its skill.
+- No `*.md` in the Mason skill tier (the four hand-authored skills with their `references/`, and the station skill)
+  carries a CFE gotcha heading, a copied CFE fix sentence or a G-id CFE's `SKILL.md` does not define, and the station
+  skill names every verb `build_parser()` registers; `pyforge-mason-test`'s meta-tests prove each check with a planted
+  violation. CFE is never replaced, forked or demoted, and stays hand-authored and un-nested.
 - The Mason persona consults `pyforge-mason` and CFE and acts only through `pyforge mason …` and
   `POST /stations/mason/mcp`.
 - The effort closes with a Rule-2 retro and a CFE `CHANGELOG.md` semver entry (FR-47's rule, applied to this effort).
 - The skills are `A-only` until `pyforge.cutover_root` flips to `foundry`; B rebuilds them under `skills/stations/`.
+
+*(Amended 2026-11-01, EGM fleet audit, marshal Story 113.7: CAP-29 re-derived — the skill tier counts six skills
+(MAS-M-D6, MAS-M-C1), and the SKF-block, pointer and gotcha consequences follow the meta-tests mason Story 19.6 widened
+(MAS-M-Z4, MAS-M-D5). No FR renumbered; the arrow stays `← CAP-29`.)*
 
 **ONE FR space now FR-1..FR-51** (FR-52 = next free id).
 
@@ -2108,13 +2115,27 @@ changes. FR-47's rule (every conda-forge effort closes with a Rule-2 retro) appl
 The feedstock refresh campaign runs as Mason stories, one per track, each against a scope counted live.
 
 **Consequences (testable):**
-- Each track's story records its scope, counted live from the atlas, before it starts.
-- Every recipe in scope reaches its feedstock's published version, with `validate_recipe`, `optimize_recipe` and the
-  CI-parity lint green and either a local build or a recorded G95 test block.
-- Track B drops no co-maintainer from any `recipe-maintainers` list (G53), and authors a local mirror where none exists.
+- Before it starts, each track's story records its scope from one named atlas query (the feedstocks that list
+  `rxm7706` as a maintainer, each mapped to its feedstock through `packages.feedstock_name`), with the atlas's as-of
+  date and count, and compares its own count to it; a feedstock is covered when `recipes/<feedstock>/` declares the
+  package.
+- Every recipe in scope ends `refreshed` (its feedstock's published version — the atlas's `latest_conda_version` from a
+  refresh within `<atlas_max_age_d>` — with a green linux-64 build, a recorded G95 block, or `not-attempted` with a
+  host-blocked reason), `already-current`, or `needs-review` with its reason; none records `failed`. `refresh-wave
+  --apply --gates --build` exits 0. `validate_recipe`, `optimize_recipe` and the G65 CI-parity lint pass, admitting only
+  STD-002 on a C1 recipe and an unresolvable virtual package, each with its reason. A G95 block is a local end state;
+  its static gate applies only before shipping.
+- Every refreshed recipe's `recipe-maintainers` is a superset of the deployed feedstock's (G53) and its pins match the
+  feedstock's (G96); Track B authors a local mirror where none exists.
 - No feedstock or staged-recipes PR is opened without an explicit ask. Each story lands a `retro(cfe):` commit with a CFE
   `CHANGELOG.md` semver entry.
-- `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` becomes a companion of `spec-pyforge-mason` in the PR that empties `docs/specs/`.
+- `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` has been a companion of `spec-pyforge-mason` since 2026-10-10 (doctor Story 37.1).
+
+*(Amended 2026-11-01, EGM fleet audit, marshal Story 113.7: CAP-35 re-derived — the scope query and its compared count,
+the pinned published version and the ruled outcome set with G95 as a local end state (MAS-M-Z1, MAS-M-D3, MAS-M-Z2,
+MAS-M-D2, MAS-D-C2), G96 (MAS-M-Z2), and the companion move in the past tense (MAS-M-C6). CFE diff-apply regeneration
+and platform expansion leave CAP-35 by operator ruling 2026-11-01; this FR never named them. No FR renumbered; the
+arrow stays `← CAP-35`.)*
 
 **ONE FR space now FR-1..FR-57** (FR-58 = next free id).
 

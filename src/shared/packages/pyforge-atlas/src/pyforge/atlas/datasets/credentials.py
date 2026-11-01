@@ -5,7 +5,12 @@ A request that carries a credential runs only when the operator sets
 ``PYFORGE_ATLAS_CREDENTIALED=1`` for the run. The switch is read at the moment a dataset would
 fetch, never at import: Dagster builds every dataset when it imports the definitions, long
 before a run decides whether it is credentialed. ``pyforge.atlas.live_vcs_universe`` gates the
-new behaviour; OFF, a dataset keeps the path it had before this story.
+new behaviour; OFF, a dataset keeps the path it had before this story, with one exception: a
+request that hands its catalog credential to requests as the catalog gives it reads the switch
+too, through :func:`catalog_request` (Story 35.5) -- the legacy VCS host and registry branch
+(``vcs_sources._request_kwargs``), the flag-off GitHub batch and the request datasets' shared
+``fetch_one`` (``request_datasets``) -- so the credential rides only when the switch is set and,
+without it, the request sends no credential and a no-op auth that keeps ``~/.netrc`` out.
 
 No ``requests`` import (the no-inline-IO scan): requests calls any callable ``auth`` with the
 prepared request, so :class:`BearerAuth` is a plain class.
@@ -19,6 +24,8 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from pyforge.core.flags import read_boolean
+
+from . import public_sources
 
 SWITCH = "PYFORGE_ATLAS_CREDENTIALED"
 FLAG_KEY = "pyforge.atlas.live_vcs_universe"
@@ -36,6 +43,17 @@ def credentialed() -> bool:
 def live_vcs_universe() -> bool:
     """Whether Epic 35's behaviour is on. ``False`` when the flag tree is missing or unreadable."""
     return read_boolean(FLAG_KEY, default=False)
+
+
+def catalog_request(timeout: int, credentials: Any, /, **load_args: Any) -> dict[str, Any]:
+    """Story 35.5: the ``APIDataset`` arguments for a request that hands its catalog credential to
+    requests as the catalog gives it (no per-host auth of its own). With the switch, ``load_args``,
+    the timeout and the credential, as before the story; without it, no credential and
+    :func:`public_sources.request_args`' no-op auth, so ``~/.netrc`` stays out too. Read when the
+    request is built, never at import."""
+    if credentialed():
+        return {"load_args": {**load_args, "timeout": timeout}, "credentials": credentials}
+    return {"load_args": {**load_args, **public_sources.request_args(timeout)}}
 
 
 def token_of(credentials: Any) -> str | None:

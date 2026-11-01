@@ -2,7 +2,7 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM challenger, Epic 113): chain-currency cascade (spec -> PRD) for CAP-298..CAP-303; FR-240..FR-245 registered. See § 47. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (CAP-7 retrofit, Epic 110): the station memlog gained the retrofit decision; no requirement changes. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 108.1): FR-101 <- CAP-15; FR-120 <- CAP-14, CAP-15; FR-121 <- CAP-14, CAP-15, CAP-12; FR-125 <- CAP-17, CAP-13; FR-126 <- CAP-13, on the operator ruling of 2026-10-26 that a requirement cites defined capabilities only (reverses the 2026-10-25 "cite the constraint" rulings for Story 106.1); no FR added, renumbered or amended; the 33 lettered NFR lines (no arrows) are Story 108.2's. See § Currency reconciliation — 2026-10-26 (Story 108.1). Prior "2026-10-25"   # RE-STAMPED 2026-10-25 (Story 106.2): spec -> PRD for CAP-293..CAP-296, the four detector self-verification capabilities the 2026-09-16 fold dropped, restored on the operator's ruling; FR-144..FR-147 now cite them (they read the counted CAP-102..CAP-105); DW-marshal-105-1 closed; no FR text, number or NFR moves. See § 46. Earlier 2026-10-25: RE-STAMPED 2026-10-25 (Story 106.1): section 15's 62 seed-installer FRs (FR-66..FR-127), which never had arrows, now name the capabilities that realize them (CAP-8, CAP-10..CAP-18), or, for FR-120, FR-121, FR-125 and FR-126, the Spec constraint that states them (operator ruling "Cite the constraint"), with FR-101 citing CAP-15 and its constraint (review ruling); no FR text, number or NFR moves. See § 45. Earlier 2026-10-25: RE-STAMPED 2026-10-25 (Story 105.1): 71 FR heading arrows the 2026-09-16 fold counted are re-mapped to the spec-pyforge-marshal (or cross-Spec) capabilities that realize them; FR-144..FR-147 wait on a source-capability decision (DW-marshal-105-1); no FR text, number or NFR moves. See § 44. Earlier 2026-10-25: RE-STAMPED 2026-10-25: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-24..25 entries (doctor Story 30.5's surface reconcile; Story 103.1 under CAP-1, CAP-21 and CAP-22 / FR-5, FR-153, FR-154, marshal-mcp on the official SDK and a preflight handshake); no FR registered. See § 43. Prior "2026-10-22"   # RE-STAMPED 2026-10-22: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-15..23 entries (Story 102.1, the 2026-10-22 surface reconciles, Stories 87.17 and 87.18 under CAP-287 / FR-234); no FR registered. See § 42. Prior "2026-10-14"   # RE-STAMPED 2026-10-14 (CAP-292): chain-currency cascade (spec -> PRD) for CAP-292 (Epic 100); FR-239 registered -- a dispatch landing records which CI surfaces were paused when it merged. See section 41. Earlier 2026-10-12: RE-STAMPED 2026-10-12 (Story 97.1): Extraction Manifest COPIED · MANAGED / COPIED · SEEDED tables move detector-registry, dreams-readme and detectors-ci-workflow to seeded (operator ruling 2026-10-12); no FR registered. See section Currency reconciliation — 2026-10-12 (Story 97.1). Earlier 2026-10-11 (recall fold): spec-marshal-recall-in-the-loop folded into spec-pyforge-marshal; FR-235..FR-238 registered from CAP-288..CAP-291 (Epic 93). See section Currency reconciliation — 2026-10-11 (recall fold). Earlier 2026-10-11: RE-STAMPED 2026-10-11: chain-currency cascade (spec -> PRD -> spine -> epics) after the memlog reconcile of marshal Story 90.1's code revert (its psutil group read held every dispatch live); no CAP/FR/AD/story moved. Prior: RE-STAMPED 2026-10-08: chain-currency behind-code (code -> PRD) truth-up for Story 46.9 as built (CAP-196, per-layer benchmark legs with cache-hit rates) and the cli.benchmark refusal fix that let its attr-defined mypy override go (MRS-BENCH-001..005); the spec memlog's entries since section 38 folded (Stories 22.18-22.21); no FR registered; two divergences and one FR-tag defect recorded. See section 39. Earlier 2026-10-07: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 34 entries since section 37 (fix stories 83.22, 83.23, 85.5, 70.2, 22.13-22.17, 53.4 and 85.6, their landings and surface reconciles); no FR registered. See section 38. Earlier 2026-10-04: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for CAP-287 (Epic 87); FR-234 registered; FR-59, FR-62 and FR-63 gain dated consequences. See section 37. Earlier 2026-10-03: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for CAP-286 (Epic 85); FR-233 registered. See section 36. Earlier 2026-10-02: RE-STAMPED 2026-10-02: chain-currency cascade (spec -> PRD) for CAP-285 (Epic 84); FR-232 registered. See section 35. Earlier 2026-10-01: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD) for CAP-284 (Epic 80); FR-231 registered. See section 34. Earlier 2026-09-30: RE-STAMPED 2026-09-30: chain-currency cascade (spec -> PRD) for CAP-283 (Epic 78); FR-230 registered. See section 33. Earlier 2026-09-29: RE-STAMPED 2026-09-29: chain-currency cascade (spec -> PRD) for CAP-282 (Epic 77); FR-229 registered. See section 32. Earlier 2026-09-28: RE-STAMPED (night): Epic 74 recorded for spec-feature-flag-governance CAP-3, CAP-4 and CAP-6 (the Guild's CAPs; no FR registered, the doctor Epic 24/25/32 relay). No AD amended. See section 31.11. Earlier: AMENDED (evening, cont. 6): operator rulings -- FR-225 (CAP-279, the loop-home scope for .bmad-loop/policy.toml), FR-227 (CAP-280 widened to dispatch land's ALREADY_LANDED read) and FR-228 (CAP-281, the per-campaign follow-up cap) amended in place; AD-55 amended in place on the spine. See § 31.10. Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade (spec -> PRD) for FR-228 / CAP-281 (Epic 73). No AD amended. See § 31.9. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade (spec -> PRD) for FR-227 / CAP-280 (Epic 72). No AD amended. See § 31.8. Earlier: AMENDED (evening, cont. 3): FR-211 re-scoped with CAP-265 (operator ruling; Story 54.1, key kept). No AD amended. See § 22 and § 31.7. Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade (spec -> PRD) for FR-226 / spec-pyforge-core CAP-11 (Epic 71). No AD amended. See § 31.6. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-225 / CAP-279 (Epic 70). No AD amended. See § 31.5. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-224 / CAP-278 (Epic 69). No AD amended. See § 31.4. Earlier: RE-STAMPED (later): chain-currency cascade (spec -> PRD) for FR-223 / CAP-277 (Epic 68). No AD amended. See § 31.3. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended. See § 31. Prior 2026-09-27
+updated: "2026-11-01"   # RE-STAMPED 2026-11-01 (Story 113.13): spec -> PRD for the CAP-303 re-derive; the FR-245 body follows (resolve takes --project and derives the owning Spec from it or from a rules target's governor, never from the report; --accept ID[:NOTE], --reject ID[:REASON], --type event; marshal writes only its own Spec's memlog and prints the exact memlog.py command for any other owning Spec; the story-spec-edit route dropped). See § 52. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (Story 113.12): spec -> PRD for the CAP-299, CAP-301 re-derive; the FR-241 and FR-243 bodies follow (the context rule binds the context, never the target; glossary.md when present; the Dream each target takes; the five-stage table of reviewer groups and standards as code fallbacks a block overrides; --target optional with --epic and --audit; the drift form names --project). See § 51. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (Story 113.11): spec -> PRD for the CAP-298, CAP-299, CAP-300, CAP-302 re-derive; the FR-240, FR-241, FR-242 and FR-244 bodies follow (the [challenge].plugin_version pin, the Claude Code 2.1.271 floor, the switch matrix, plugin-absent dispatch, the compiled active/ skill path, story specs out of the audit). See § 50. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (Story 113.10): spec -> PRD for the CAP-299 re-derive; the FR-241 body follows (beyond its context paths a reviewer's context is the adapter frontmatter and the challenge session's own settings, checked at runtime). See § 49. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (Story 113.8): spec -> PRD for the CAP-298, CAP-300, CAP-302 re-derive; FR-240, FR-242, FR-244 bodies follow (an unevaluable session or sweep exits 1; the readiness result in marshal status and marshal watch). See § 48. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM challenger, Epic 113): chain-currency cascade (spec -> PRD) for CAP-298..CAP-303; FR-240..FR-245 registered. See § 47. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (CAP-7 retrofit, Epic 110): the station memlog gained the retrofit decision; no requirement changes. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 108.1): FR-101 <- CAP-15; FR-120 <- CAP-14, CAP-15; FR-121 <- CAP-14, CAP-15, CAP-12; FR-125 <- CAP-17, CAP-13; FR-126 <- CAP-13, on the operator ruling of 2026-10-26 that a requirement cites defined capabilities only (reverses the 2026-10-25 "cite the constraint" rulings for Story 106.1); no FR added, renumbered or amended; the 33 lettered NFR lines (no arrows) are Story 108.2's. See § Currency reconciliation — 2026-10-26 (Story 108.1). Prior "2026-10-25"   # RE-STAMPED 2026-10-25 (Story 106.2): spec -> PRD for CAP-293..CAP-296, the four detector self-verification capabilities the 2026-09-16 fold dropped, restored on the operator's ruling; FR-144..FR-147 now cite them (they read the counted CAP-102..CAP-105); DW-marshal-105-1 closed; no FR text, number or NFR moves. See § 46. Earlier 2026-10-25: RE-STAMPED 2026-10-25 (Story 106.1): section 15's 62 seed-installer FRs (FR-66..FR-127), which never had arrows, now name the capabilities that realize them (CAP-8, CAP-10..CAP-18), or, for FR-120, FR-121, FR-125 and FR-126, the Spec constraint that states them (operator ruling "Cite the constraint"), with FR-101 citing CAP-15 and its constraint (review ruling); no FR text, number or NFR moves. See § 45. Earlier 2026-10-25: RE-STAMPED 2026-10-25 (Story 105.1): 71 FR heading arrows the 2026-09-16 fold counted are re-mapped to the spec-pyforge-marshal (or cross-Spec) capabilities that realize them; FR-144..FR-147 wait on a source-capability decision (DW-marshal-105-1); no FR text, number or NFR moves. See § 44. Earlier 2026-10-25: RE-STAMPED 2026-10-25: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-24..25 entries (doctor Story 30.5's surface reconcile; Story 103.1 under CAP-1, CAP-21 and CAP-22 / FR-5, FR-153, FR-154, marshal-mcp on the official SDK and a preflight handshake); no FR registered. See § 43. Prior "2026-10-22"   # RE-STAMPED 2026-10-22: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-15..23 entries (Story 102.1, the 2026-10-22 surface reconciles, Stories 87.17 and 87.18 under CAP-287 / FR-234); no FR registered. See § 42. Prior "2026-10-14"   # RE-STAMPED 2026-10-14 (CAP-292): chain-currency cascade (spec -> PRD) for CAP-292 (Epic 100); FR-239 registered -- a dispatch landing records which CI surfaces were paused when it merged. See section 41. Earlier 2026-10-12: RE-STAMPED 2026-10-12 (Story 97.1): Extraction Manifest COPIED · MANAGED / COPIED · SEEDED tables move detector-registry, dreams-readme and detectors-ci-workflow to seeded (operator ruling 2026-10-12); no FR registered. See section Currency reconciliation — 2026-10-12 (Story 97.1). Earlier 2026-10-11 (recall fold): spec-marshal-recall-in-the-loop folded into spec-pyforge-marshal; FR-235..FR-238 registered from CAP-288..CAP-291 (Epic 93). See section Currency reconciliation — 2026-10-11 (recall fold). Earlier 2026-10-11: RE-STAMPED 2026-10-11: chain-currency cascade (spec -> PRD -> spine -> epics) after the memlog reconcile of marshal Story 90.1's code revert (its psutil group read held every dispatch live); no CAP/FR/AD/story moved. Prior: RE-STAMPED 2026-10-08: chain-currency behind-code (code -> PRD) truth-up for Story 46.9 as built (CAP-196, per-layer benchmark legs with cache-hit rates) and the cli.benchmark refusal fix that let its attr-defined mypy override go (MRS-BENCH-001..005); the spec memlog's entries since section 38 folded (Stories 22.18-22.21); no FR registered; two divergences and one FR-tag defect recorded. See section 39. Earlier 2026-10-07: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 34 entries since section 37 (fix stories 83.22, 83.23, 85.5, 70.2, 22.13-22.17, 53.4 and 85.6, their landings and surface reconciles); no FR registered. See section 38. Earlier 2026-10-04: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for CAP-287 (Epic 87); FR-234 registered; FR-59, FR-62 and FR-63 gain dated consequences. See section 37. Earlier 2026-10-03: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for CAP-286 (Epic 85); FR-233 registered. See section 36. Earlier 2026-10-02: RE-STAMPED 2026-10-02: chain-currency cascade (spec -> PRD) for CAP-285 (Epic 84); FR-232 registered. See section 35. Earlier 2026-10-01: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD) for CAP-284 (Epic 80); FR-231 registered. See section 34. Earlier 2026-09-30: RE-STAMPED 2026-09-30: chain-currency cascade (spec -> PRD) for CAP-283 (Epic 78); FR-230 registered. See section 33. Earlier 2026-09-29: RE-STAMPED 2026-09-29: chain-currency cascade (spec -> PRD) for CAP-282 (Epic 77); FR-229 registered. See section 32. Earlier 2026-09-28: RE-STAMPED (night): Epic 74 recorded for spec-feature-flag-governance CAP-3, CAP-4 and CAP-6 (the Guild's CAPs; no FR registered, the doctor Epic 24/25/32 relay). No AD amended. See section 31.11. Earlier: AMENDED (evening, cont. 6): operator rulings -- FR-225 (CAP-279, the loop-home scope for .bmad-loop/policy.toml), FR-227 (CAP-280 widened to dispatch land's ALREADY_LANDED read) and FR-228 (CAP-281, the per-campaign follow-up cap) amended in place; AD-55 amended in place on the spine. See § 31.10. Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade (spec -> PRD) for FR-228 / CAP-281 (Epic 73). No AD amended. See § 31.9. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade (spec -> PRD) for FR-227 / CAP-280 (Epic 72). No AD amended. See § 31.8. Earlier: AMENDED (evening, cont. 3): FR-211 re-scoped with CAP-265 (operator ruling; Story 54.1, key kept). No AD amended. See § 22 and § 31.7. Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade (spec -> PRD) for FR-226 / spec-pyforge-core CAP-11 (Epic 71). No AD amended. See § 31.6. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-225 / CAP-279 (Epic 70). No AD amended. See § 31.5. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-224 / CAP-278 (Epic 69). No AD amended. See § 31.4. Earlier: RE-STAMPED (later): chain-currency cascade (spec -> PRD) for FR-223 / CAP-277 (Epic 68). No AD amended. See § 31.3. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended. See § 31. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED (late night, cont.): chain-currency cascade (spec -> PRD) for FR-220 / CAP-274 (Epic 65). No AD amended. See § 30.2. Earlier: RE-STAMPED (late night): chain-currency cascade (spec -> PRD) for FR-219 / CAP-273 (Epic 64). No AD amended. See § 30. Earlier: RE-STAMPED (late, cont.): chain-currency cascade (spec -> PRD) for FR-218 / CAP-272 (Epic 62). No AD amended. See § 29. Earlier: RE-STAMPED (late): chain-currency cascade (spec -> PRD) for FR-217 / CAP-271 (Epic 61). No AD amended. See § 28. Earlier: RE-STAMPED (night): chain-currency cascade (spec -> PRD) for FR-216 / CAP-270 (Epic 60). No AD amended. See § 27. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-215 / CAP-269 (Epic 59). No AD amended. See § 26. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-214 / CAP-268 (Epic 58). No AD amended. See § 25. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57), § 24; FR-212 / CAP-266 (Epic 56), § 23. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency (spec->prd, behind-code) — bmad-loop cap widened to <0.13 (spec-pyforge-marshal memlog 2026-09-26); Stack literal corrected in place; no FR change. Prior 2026-09-24
 # 2026-09-19  # currency reconciliation (§ 21): FR-201..FR-210 registered from spec-pyforge-marshal CAP-249..256 (Epic 51, the landing self-drives — second round) and spec-pyforge-core CAP-8..9 (Epic 52, the shared floor is a PR gate).
@@ -3564,48 +3564,249 @@ PRD stood at 2026-10-26, six days behind the Spec's memlog.
 
 #### FR-240: One verb runs a fresh-context review of one chain artifact ← CAP-298
 `marshal factory challenge --project <station> --target <path> --stage {mint,decompose,readiness,drift,rules}` spawns
-the stage's goldfish reviewer group (the plugin's registered agents, never a `Skill` invocation), writes one flat
-deficiency report under Tier 3 `implementation-artifacts/egm/<run>/`, journals the run with an intent entry before the
-first spawn and an outcome after the last, and exits 0 whatever the findings say; with the plugin absent, or not at
-the version `.claude/settings.json` pins, the verb refuses with the usage code before any spawn. Behind
-`pyforge.marshal.egm_challenge`, default off; off, the verb stays listed and refuses with the usage code.
+the stage's goldfish reviewer group (the plugin's registered reviewer agents, never `egm:egm-synthesizer` and never a
+`Skill` invocation) through one synchronous Claude Code session from the packaged `claude` profile that orchestrates
+the Agent-tool spawns and assembles the report itself, the reviewers on their EGM adapters' `model: inherit` (§ 50),
+writes one challenge report, `report.json`, under Tier 3 `implementation-artifacts/egm/<run>/` (`stage`, `target`,
+`project`, `spec_workspace`, `reviewers` and `findings`, each finding an `id` unique within the report, `F<n>` by
+convention, its `reviewer`, a `high`, `medium` or `low` `severity`, a `claim` and its `evidence`; § 53), journals the
+run with an intent entry before the first spawn and an outcome after the last, and exits 0 whatever the findings say
+once every dispatched
+reviewer has reported; a session that failed or left no valid report, or whose report omits a dispatched reviewer,
+lists none or names another stage, is unevaluable and exits 1 (§ 48); with the plugin absent, or not at the version
+the `[challenge].plugin_version` policy key pins (default `0.1.0`), or with Claude Code below 2.1.271 or a version it
+cannot read (§ 50), the verb refuses with the usage code and a journaled `challenge-refused` entry before any spawn.
+Behind `pyforge.marshal.egm_challenge`, default off; off, the verb stays listed and refuses with the usage code.
 
 #### FR-241: The `[challenge]` policy block configures the challenger, and absent means off ← CAP-299
 `marshal-policy.toml` and `_bmad-output/policy-defaults.toml` accept `[challenge]` (`enabled`, `stages`, `reviewers`,
-`model`, `standards`, `artifact_dir`); absent, or `enabled = false`, means every stage off and every hook a no-op;
-`model` names a `model_cost_catalog` entry and the render refuses the dispatching session's own model; a reviewer
-receives exactly the target, the Spec's `glossary.md`, the cited Dream entry and the stage's standard as absolute
-paths, never `AGENTS.md`, `CLAUDE.md`, a memlog, a URL or session text; every spawn asserts `omitClaudeMd: true` and
-the read-only tool list; EGM's `structural` and `style` personas and its `document_standards/` are never dispatched.
-Behind `pyforge.marshal.egm_policy_block`, default off.
+`model`, `standards`, `artifact_dir`, `plugin_version`), the repo default composing at its own layer under a station's
+block (§ 50); absent, or `enabled = false`, means every stage off and every hook a no-op, and neither the repo default
+nor `marshal-policy.toml` ships a block (§ 53); `model` names an `anthropic` entry of marshal's own
+`model_cost_catalog`, read for every station, and the render refuses another provider's id, an id the catalog lacks,
+and any of the station's session models (its `model_tier_map`, `[adapter]` and `[adapter.review]` models and, in a
+dispatch, the run's launch model), aliases normalised (§ 53); a reviewer
+receives exactly the target, which the context rule never binds, and its context (the Spec's `glossary.md` when
+present, the Dream the target takes and the stage's standard, § 51) as absolute paths, never `AGENTS.md`,
+`CLAUDE.md`, a memlog, a URL or session text; every spawn asserts the EGM adapter's `omitClaudeMd: true` and
+the read-only tool list; beyond those paths a reviewer's context is exactly the EGM adapter's frontmatter and the challenge
+session's own `--settings`, checked at runtime (§ 49); EGM's `structural` and `style` personas and its
+`document_standards/` are never dispatched. Each stage's reviewer group and standard default in code
+(`DEFAULT_REVIEWERS`, `default_standards`) only as fallbacks a block entry for that stage overrides, and `--target`
+is optional with `--epic` and `--audit` (§ 51). Behind `pyforge.marshal.egm_policy_block`, default off; the six
+switches, the block and `stages` combine as one matrix, and `stages` gates only the dispatch hook (§ 50).
 
 #### FR-242: Dispatch runs the readiness stage on a story spec before the dev session starts ← CAP-300
 When `[challenge].stages` includes `readiness`, `marshal factory dispatch` runs the `readiness` stage
 (`implementation-readiness` alone) on the story spec before the harness launches, journals it as an intent/outcome
 pair and attaches the report path to the run record; in v1 the report only reports — no `status` move, no ledger
-write — and a red report is visible in `marshal watch` and the journal. Behind `pyforge.marshal.egm_dispatch_readiness`,
-default off; off, dispatch proceeds as if no hook existed.
+write — and the result (the report path, and `MRS-DISP-067` when red: a finding, or a review that was refused, failed
+or left an unevaluable report, a WARN that never blocks the dispatch, § 53) is visible in `marshal status`,
+`marshal watch` and the journal (§ 48); with the plugin absent or refused, or the
+challenger model refused, the hook spawns nothing, records an `MRS-DISP-067` WARN and the dispatch proceeds (§ 50).
+Behind `pyforge.marshal.egm_dispatch_readiness`, default off; off, dispatch proceeds as if no hook existed.
 
 #### FR-243: The drift stage reads an epic's code against its Spec at retro time ← CAP-301
-`marshal factory challenge --stage drift --epic <n>` runs `codebase-details` and `zoom-out` over the epic's story specs
-and the `src/` paths they name and writes the report under Tier 3; `bmad-retrospective`'s customization names the verb
-as an activation step so a retro on a marshal epic cites the report; `spec-surface` and `bmad-drift` are unchanged and
-the report is advisory. Behind `pyforge.marshal.egm_retro_drift`, default off.
+`marshal factory challenge --project <station> --stage drift --epic <n>` (§ 51) runs `codebase-details` and
+`zoom-out` over the epic's story specs and the `src/` paths they name and writes the report under Tier 3;
+`bmad-retrospective`'s team override `_bmad/custom/bmad-retrospective.toml` names the verb and the
+`pyforge.marshal.egm_retro_drift` switch as an activation step, so a retro on a marshal epic cites the report (that
+citation is checked at review, § 53); `spec-surface` and `bmad-drift` are unchanged and the report is advisory. Behind
+`pyforge.marshal.egm_retro_drift`, default off.
 
 #### FR-244: One audit sweep reports where the fleet stands ← CAP-302
-`marshal factory challenge --audit` runs `rules` over `AGENTS.md`, `CHAIN-STANDARD.md` and every
-`.claude/skills/pyforge-<station>/SKILL.md`, and `mint` and `decompose` over every station's Dream, `SPEC.md` and
-`epics.md`, writes one fleet report and one per station under Tier 3, and exits 0; the durable residue is one
-`planning-artifacts/research/egm-audit-<date>.md` per station plus a memlog entry per accepted finding, landed in the
-PR that acts on them. Behind `pyforge.marshal.egm_audit`, default off.
+`marshal factory challenge --audit` runs `rules` over `AGENTS.md`, `CHAIN-STANDARD.md` and every station's compiled
+skill `.claude/skills/pyforge-<station>/active/pyforge-<station>/SKILL.md` (SKF-compiled from `skill-brief.yaml`, never
+hand-edited), and `mint` and `decompose` over every station's Dream, `SPEC.md` and `epics.md`, never a story spec,
+which the `readiness` stage reads (§ 50), writes one fleet report and one per station under Tier 3, and exits 0 when every station reported
+(whatever the findings) and 1 when any station's session errored (§ 48); a sweep resumes in its
+`implementation-artifacts/egm/audit-<date>/` folder, re-running only a target with no complete kept report unless
+`--force`, so "one-time" is how the operator uses the audit (§ 53); the durable residue is one
+`planning-artifacts/research/egm-audit-<date>.md` per station plus a memlog entry per accepted finding, written by the
+story that lands the audit (Story 113.7 for 2026-11-01) and landed in the PR that acts on them, which is checked at
+review (§ 53). Behind `pyforge.marshal.egm_audit`, default off.
 
 #### FR-245: An accepted finding travels the chain's only write path ← CAP-303
-`marshal factory challenge resolve --report <path> --accept <id>... --reject <id>...` appends one `memlog.py` entry
-per accepted finding to the owning Spec's `.memlog.md`, writes rejected ids and reasons back into the report, and
-never edits `SPEC.md`, a ledger or a story spec's `status`; a `bmad-spec` re-derive follows in the same change.
-Behind `pyforge.marshal.egm_resolve_bridge`, default off; off, the subverb refuses with the usage code.
+`marshal factory challenge resolve --project <station> --report <path> [--accept ID[:NOTE]]... [--reject
+ID[:REASON]]...` derives the owning Spec from `--project`, or, for a `rules` report that records an owner override,
+from the code's per-target governor (§ 52), never from the report, and refuses with the usage code, writing nothing,
+a report whose `spec_workspace` names neither. When the owning Spec is `spec-pyforge-marshal` it appends one
+`memlog.py` `--type event` line per accepted finding to that `.memlog.md`; for any other owning Spec it writes nothing
+there and prints, per accepted finding, the exact shell-quoted `uv run _bmad/scripts/memlog.py append --workspace
+<spec-folder> --type event --text "<acceptance text>"` command the operator runs. Either way it writes the accepted
+and rejected ids, with the notes and reasons, back into the report, and never edits `SPEC.md`, a ledger or a story
+spec; when it accepted a finding it names the next step, a `bmad-spec` re-derive of the owning Spec in the same
+change, which stays the operator's (§ 53). Behind `pyforge.marshal.egm_resolve_bridge`, default off; off, the subverb
+refuses with the usage code.
 
 **ONE FR space now FR-1..FR-245** (FR-246 = next free id). No NFR changes.
 
 **Content changed:** this section. No other FR line moves. The spine's § Currency reconciliation — 2026-11-01
 (EGM challenger) checks FR-240..FR-245 against its ADs.
+
+## 48. Currency reconciliation — 2026-11-01 (Story 113.8: CAP-298, CAP-300, CAP-302 re-derived)
+
+`spec-pyforge-marshal`'s memlog (2026-11-01) carries Story 113.8's behaviour and the re-derive decision for CAP-298,
+CAP-300 and CAP-302, from the EGM audit's findings MAR-M-D1 and MAR-M-Z4 (`research/egm-audit-2026-11-01.md`):
+
+- **FR-240 ← CAP-298:** an unevaluable session exits 1 — it failed or left no valid report, or its report omits a
+  reviewer the stage dispatched, lists none or names another stage. Findings still never change the exit code.
+- **FR-242 ← CAP-300:** the readiness result shows in `marshal status` and `marshal watch`, not only the journal: the
+  report path, and `MRS-DISP-067` when red. Red means a finding, or a review that could not run. A launch intent
+  without `readiness_challenge` renders as before.
+- **FR-244 ← CAP-302:** a sweep in which any station's session errored is unevaluable and exits 1. Before, only a
+  sweep in which every station errored did.
+
+**Content changed:** this section, the three FR bodies above, and `updated:`. No FR is added or renumbered. Every
+arrow is unchanged, and the FR space stays FR-1..FR-245.
+
+## 49. Currency reconciliation — 2026-11-01 (Story 113.10: CAP-299 re-derived)
+
+`spec-pyforge-marshal`'s memlog (2026-11-01) carries Story 113.10's behaviour and the re-derive decision for CAP-299,
+from the EGM audit's findings MAR-M-D2 and MAR-E3 (`research/egm-audit-2026-11-01.md`):
+
+- **FR-241 ← CAP-299:** "receives exactly" covers the session as well as the paths. Beyond its context paths, a
+  reviewer's context is the adapter's frontmatter and the challenge session's own `--settings`, checked at runtime.
+  The session launches from a temporary directory outside the repo with every hook off, no `instructionFiles` plugin
+  config and `egm@egm` enabled in that scope. `Read` is denied on the repo's `AGENTS.md`, `CLAUDE.md`, memlogs and
+  `.claude/memory/`, the target excepted. Neither the orchestrator session nor a reviewer loads `CLAUDE.md`,
+  `AGENTS.md` or the git status. Managed (policy) settings and their hooks, and user-scope settings, still load; they
+  are what still reaches a reviewer.
+
+**Content changed:** this section, the FR-241 body above, and `updated:`. No FR is added or renumbered. Every arrow is
+unchanged, and the FR space stays FR-1..FR-245.
+
+## 50. Currency reconciliation — 2026-11-01 (Story 113.11: CAP-298, CAP-299, CAP-300, CAP-302 re-derived)
+
+`spec-pyforge-marshal`'s memlog (2026-11-01) carries Story 113.11's behaviour and the re-derive decision for CAP-298,
+CAP-299, CAP-300, CAP-302 and the EGM Assumption, from the EGM audit's findings MAR-M-Z6, MAR-M-D3, MAR-M-C3, MAR-M-C4,
+MAR-D-C4, MAR-D-R6, MAR-E1 and MAR-D-C1 (`research/egm-audit-2026-11-01.md`) and the operator's ruling of 2026-11-01
+that story specs stay out of the audit:
+
+- **FR-240 ← CAP-298:** the EGM version pin is the `[challenge].plugin_version` policy key (default `0.1.0`, checked
+  against Claude Code's `installed_plugins.json` and the cached plugin's `plugin.json`), not a `.claude/settings.json`
+  pin. One synchronous Claude Code session from the packaged `claude` profile orchestrates the Agent-tool spawns and
+  assembles the report; it never spawns `egm:egm-synthesizer`. Reviewers run on their adapters' `model: inherit`, so
+  on the session's `--model`, and the session's own `--settings` carries the plugin-cache `Read` rules. Claude Code
+  below 2.1.271, or a version it cannot read, is refused with the usage code and a journaled `challenge-refused` entry
+  before any spawn, on the ad hoc, drift and audit paths.
+- **FR-241 ← CAP-299:** `plugin_version` joins the block's keys, and a repo-default block composes at its own layer
+  (`REPO_DEFAULTS` provenance) with a station's block winning. The switch matrix: an ad hoc stage needs
+  `egm_challenge`, `egm_policy_block` and an enabled block; `drift` adds `egm_retro_drift`; `--audit` adds `egm_audit`;
+  `resolve` needs `egm_challenge` and `egm_resolve_bridge` and reads no block; the dispatch readiness hook needs
+  `egm_challenge`, `egm_dispatch_readiness`, `egm_policy_block`, an enabled block and `readiness` in `stages`.
+  `stages` gates only that hook.
+- **FR-242 ← CAP-300:** a plugin absent or refused (the Claude Code floor among the refusals), or a refused challenger
+  model, spawns nothing; the hook records the refusal as the readiness result with an `MRS-DISP-067` WARN, and the
+  dispatch proceeds.
+- **FR-244 ← CAP-302:** a station's rules target is its compiled skill,
+  `.claude/skills/pyforge-<station>/active/pyforge-<station>/SKILL.md` (SKF-compiled from `skill-brief.yaml`, never
+  hand-edited; the flat `.claude/skills/pyforge-<station>/SKILL.md`, which SKF never writes, is read only as a
+  fallback). The audit never targets a story spec; the `readiness` stage reads those, one dispatch at a time.
+
+**Content changed:** this section, the FR-240, FR-241, FR-242 and FR-244 bodies above, and `updated:`. No FR is added
+or renumbered. Every arrow is unchanged, and the FR space stays FR-1..FR-245.
+
+## 51. Currency reconciliation — 2026-11-01 (Story 113.12: CAP-299, CAP-301 re-derived)
+
+`spec-pyforge-marshal`'s memlog (2026-11-01) carries Story 113.12's behaviour and the re-derive decision for CAP-299
+and CAP-301, from the EGM audit's findings MAR-M-Z2, MAR-D-R4 and MAR-E2 (cluster MAR-CL2) and MAR-D-R1 and MAR-M-C2
+(cluster MAR-CL1) (`research/egm-audit-2026-11-01.md`). CAP-298 already reads as built after § 50: five reviewer
+agents, never `egm:egm-synthesizer`, and the orchestrating session assembles the report.
+
+- **FR-241 ← CAP-299:** the goldfish context rule binds the context and never the target, so a `rules` run reads
+  `AGENTS.md`, `CHAIN-STANDARD.md` or a station skill cold as its target. The context is the run station Spec's
+  `glossary.md` when present (six of eight stations have none), the `--project` station's whole Dream, and the
+  stage's standard. In the `--audit` sweep a repo-rules target (`AGENTS.md`, `CHAIN-STANDARD.md`) runs under marshal
+  and takes `docs/dreams/one-chain-per-station.md` with marshal's glossary, and a station skill takes its whole
+  station Dream. Each stage's reviewer group and standard:
+
+  | Stage | Reviewers | Standard |
+  |---|---|---|
+  | `mint` | `zoom-out`, `design`, `comprehension` | `CHAIN-STANDARD.md`, `.claude/skills/bmad-spec/assets/spec-template.md` (the five-field shape) |
+  | `decompose` | `implementation-readiness`, `codebase-details` | `CHAIN-STANDARD.md`, the station `SPEC.md` whose capability range its stories claim |
+  | `readiness` | `implementation-readiness` | `.claude/skills/bmad-build-auto/spec-template.md` |
+  | `drift` | `codebase-details`, `zoom-out` | the station `SPEC.md` |
+  | `rules` | `zoom-out`, `design`, `comprehension` | `CHAIN-STANDARD.md` |
+
+  The code holds these only as fallbacks (`DEFAULT_REVIEWERS` in `core/challenge.py`, `default_standards` in
+  `cli/challenge.py`); a block's `reviewers` or `standards` entry for that stage overrides them, so the block stays
+  the one configuration. `--target` is required for an ad hoc stage and optional, and unread, with `--epic` and
+  `--audit`.
+- **FR-243 ← CAP-301:** the drift form names `--project`:
+  `marshal factory challenge --project <station> --stage drift --epic <n>`, as `_bmad/custom/bmad-retrospective.toml`
+  already passes it.
+
+**Content changed:** this section, the FR-241 and FR-243 bodies above, and `updated:`. No FR is added or renumbered.
+Every arrow is unchanged, and the FR space stays FR-1..FR-245.
+
+## 52. Currency reconciliation — 2026-11-01 (Story 113.13: CAP-303 re-derived)
+
+`spec-pyforge-marshal`'s memlog (2026-11-01) carries Story 113.13's behaviour and the re-derive decision for CAP-303,
+from the EGM audit's findings MAR-M-Z5 and MAR-M-C5 (cluster MAR-CL8, `research/egm-audit-2026-11-01.md`) and the
+operator's ruling of 2026-11-01 that `resolve` writes only marshal's own Spec and prints the exact `memlog.py` command
+for any other owning Spec:
+
+- **FR-245 ← CAP-303:** `resolve` takes `--project` (required, before or after the subverb) and derives the owning
+  Spec from it. A `rules` run on `AGENTS.md` or `CHAIN-STANDARD.md`, ad hoc or in the `--audit` sweep, stamps that
+  file's governor as the report's `spec_workspace` and records it as `owner_override`:
+
+  | Rules target | Owning Spec |
+  |---|---|
+  | `AGENTS.md` | `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe` |
+  | `CHAIN-STANDARD.md` | `docs/governance/spec-one-chain-per-station` |
+  | a station skill, every `mint` and `decompose` target | the run station's own Spec |
+
+  The governor comes from the code's table, never from the report; a report whose `spec_workspace` names neither the
+  `--project` Spec nor that governor is refused with the usage code, and nothing is written. Only
+  `spec-pyforge-marshal` gets a memlog line from Marshal (`--type event`, one per accepted finding: the finding id,
+  stage, severity, reviewer, claim and evidence, the operator's note and the report path); for any other owning Spec
+  the same text is printed as a paste-ready `memlog.py` command, so the Spec's Constraints that Marshal never edits
+  another project's artifacts and writes into no other station's artifacts stand as written. The story-spec-edit
+  route the first wording named had no code path and no check, and is dropped.
+
+**Content changed:** this section, the FR-245 body above, and `updated:`. No FR is added or renumbered. Every arrow is
+unchanged, and the FR space stays FR-1..FR-245.
+
+## 53. Currency reconciliation — 2026-11-01 (EGM fleet audit, Story 113.7: CAP-298..CAP-303 re-derived)
+
+`spec-pyforge-marshal`'s memlog (2026-11-01) carries amended capability entries for CAP-298..CAP-303 and the re-derive
+decision. Their sources are Story 113.9's behaviour event (cluster MAR-CL5: MAR-M-Z3, MAR-M-D5, MAR-D-C3, with the
+operator's ruling of 2026-11-01 on the catalog), cluster MAR-CL3 (MAR-M-C1, MAR-M-D4, with MAR-M-Z4 and MAR-D-R6) and
+cluster MAR-CL11 (MAR-M-C6) (`research/egm-audit-2026-11-01.md`). Each amended CAP success clause now names the tests
+that pin it and the exit code of `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`.
+
+- **FR-240 ← CAP-298:** the report is `report.json`. The orchestrator session writes `stage`, `target`, `reviewers`
+  and `findings`. The verb stamps `project`, `spec_workspace` and, for a `rules` target another Spec governs,
+  `owner_override`. Each finding carries an `id` unique within the report (`F<n>` by convention; `parse_report`
+  enforces uniqueness only), its `reviewer`, a `high`, `medium` or `low` `severity`, a `claim` and its `evidence`.
+  A file that is not that JSON, or carries an empty or repeated id or another severity, is no valid report, so the run
+  is unevaluable. The reviewers run on their EGM adapters' (the persona agent files') `model: inherit`.
+- **FR-241 ← CAP-299:** `model` must be an `anthropic` entry of marshal's own `model_cost_catalog`, read for every
+  station, because the challenger always runs on the packaged `claude` profile. The render refuses with the usage
+  code an id another provider declares, an id the catalog lacks, and, with aliases normalised through the `claude`
+  profile, any of the station's session models: its `model_tier_map`, `[adapter]` and `[adapter.review]` models and,
+  in a dispatch, the run's launch model. "Absent means off" holds because neither the repo default nor
+  `marshal-policy.toml` ships a block; the latter shows the shape only as a comment, whose example
+  (`claude-fable-5-1`) renders on the seven other stations and refuses on marshal. Every spawn asserts the EGM
+  adapter's frontmatter.
+- **FR-242 ← CAP-300:** red is one rule for the launch hook, `marshal status` and `marshal watch`: a finding, or a
+  review that was refused, failed or left an unevaluable report. Red raises `MRS-DISP-067` as a WARN that never
+  blocks the dispatch.
+- **FR-243 ← CAP-301:** the retro override `_bmad/custom/bmad-retrospective.toml` names the drift verb and its
+  switch, and a test pins both. That a retro cites the report is checked at review, never by a command.
+- **FR-244 ← CAP-302:** a sweep keeps its reports in `implementation-artifacts/egm/audit-<date>/` and resumes there the
+  same day, re-running only a target with no complete kept report unless `--force`. "One-time" describes how the
+  operator uses the audit, not a limit the verb enforces. No verb writes the research file: the story that lands the
+  audit does (Story 113.7 for 2026-11-01). `chain-currency` reads the research file and the memlog together; that
+  both land in one PR is checked at review.
+- **FR-245 ← CAP-303:** when `resolve` accepted a finding, its last line names the next step, a `bmad-spec` re-derive
+  of the owning Spec in the same change. The re-derive is the operator's step, checked at review, and the verb never
+  runs it.
+
+Not rendered: Story 113.14's run ceiling, policy-held timeout and section selector (MAR-M-D6, MAR-E4) are backlog, so
+FR-244 still sweeps whole files.
+
+**Content changed:** this section and the FR-240..FR-245 bodies in § 47. No FR is added or renumbered. Every arrow is
+unchanged, and the FR space stays FR-1..FR-245. The `updated:` re-stamp follows in the cascade after the `SPEC.md`
+render.

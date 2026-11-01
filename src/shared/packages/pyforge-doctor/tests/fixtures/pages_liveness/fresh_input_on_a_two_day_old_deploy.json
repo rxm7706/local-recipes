@@ -1,0 +1,7 @@
+{
+  "case": "The last deploy is two days old and a published input landed fifteen minutes before now: its normal build-and-deploy window, not stale.",
+  "head": {"status": 200, "headers": {"last-modified": "Mon, 12 Oct 2026 12:00:00 GMT"}},
+  "git_log": "d4e5f6a708192a3b4c5d6e7f8091a2b3c4d5e6f7 2026-10-14T11:45:00+00:00",
+  "now": "2026-10-14T12:00:00Z",
+  "expect": {"check": "pages-liveness", "status": "ok", "requests": ["HEAD"], "waited_hours": 0}
+}

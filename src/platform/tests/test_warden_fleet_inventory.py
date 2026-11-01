@@ -1,5 +1,8 @@
 """Story 16.1 — fleet inventory from github.com (fixture organisation only).
 
+Story 16.10 — each export row carries its repo's default-branch tip, ``head_sha``,
+the key Atlas's dependency-history sensor refuses a row without.
+
 No test reaches GitHub or runs ``gh``: the real listing client runs against a
 stub urllib transport (``github_wire``), and the root conftest's autouse
 ``real_gh_attempts`` guard fails any test that reaches the real ``gh`` runner.
@@ -55,6 +58,7 @@ from django_warden_fabric.fleet_inventory import FLEET_INVENTORY_REQUEST_TIMEOUT
 from django_warden_fabric.fleet_inventory import FLEET_INVENTORY_SOFT_TIME_LIMIT_SECONDS
 from django_warden_fabric.fleet_inventory import FLEET_INVENTORY_TIME_LIMIT_SECONDS
 from django_warden_fabric.fleet_inventory import GH_AUTH_TOKEN_TIMEOUT_SECONDS
+from django_warden_fabric.fleet_inventory import ExportRowWithoutHeadShaError
 from django_warden_fabric.fleet_inventory import FleetTargetConfigError
 from django_warden_fabric.fleet_inventory import GhAuthTokenProvider
 from django_warden_fabric.fleet_inventory import GhBinaryMissingError
@@ -126,6 +130,34 @@ _EMPTY_CHANGED: frozenset[str] = frozenset()
 _API = "https://api.github.com"
 _FIRST_PAGE = f"{_API}/orgs/{_EXAMPLE_ORG}/repos?type=all&per_page=100"
 _SECOND_PAGE = f"{_FIRST_PAGE}&page=2"
+# Story 16.10: the export's pinned row keys (spec-pyforge-warden CAP-26), and the
+# Atlas sensor that reads the export as data (spec-pyforge-atlas:CAP-61).
+_EXPORT_ROW_KEYS = {"full_name", "default_branch", "clone_url", "archived", "head_sha"}
+_ATLAS_SENSOR = (
+    _PACKAGES
+    / "pyforge-atlas"
+    / "src"
+    / "pyforge"
+    / "atlas"
+    / "orchestration"
+    / "fleet_inventory_sensor.py"
+)
+
+
+def _tip(name: str) -> str:
+    """A fixture repo's default-branch tip: 40 hex digits, distinct per repo."""
+    return name.encode().hex().ljust(40, "0")[:40]
+
+
+def _ref_url(name: str, branch: str = "main") -> str:
+    return f"{_API}/repos/{_EXAMPLE_ORG}/{name}/git/ref/heads/{branch}"
+
+
+_FIXTURE_REF_URLS = [
+    _ref_url("alpha"),
+    _ref_url("beta", "develop"),
+    _ref_url("archived-one"),
+]
 
 
 # --- fixture listing (no pyforge import: the platform host never imports pyforge.*) ---
@@ -137,6 +169,7 @@ class _FixtureRepo:
     default_branch: str
     clone_url: str
     archived: bool
+    head_sha: str
 
 
 @dataclass(frozen=True)
@@ -169,12 +202,15 @@ class _FixtureListingClient:
         )
 
 
-def _fixture_repo(name: str, *, branch: str = "main", archived: bool = False):
+def _fixture_repo(
+    name: str, *, branch: str = "main", archived: bool = False, head_sha: str = ""
+):
     return _FixtureRepo(
         full_name=f"{_EXAMPLE_ORG}/{name}",
         default_branch=branch,
         clone_url=f"https://github.com/{_EXAMPLE_ORG}/{name}.git",
         archived=archived,
+        head_sha=head_sha or _tip(name),
     )
 
 
@@ -217,6 +253,16 @@ def _page(repos: list[dict], *, next_url: str | None = None) -> bytes:
         headers["Link"] = f'<{next_url}>; rel="next"'
     return _http_response(
         HTTPStatus.OK, body=json.dumps(repos).encode(), headers=headers
+    )
+
+
+def _ref_answer(sha: str) -> bytes:
+    """GitHub's answer to ``GET /repos/{owner}/{repo}/git/ref/heads/{branch}``."""
+    body = {"ref": "refs/heads/main", "object": {"type": "commit", "sha": sha}}
+    return _http_response(
+        HTTPStatus.OK,
+        body=json.dumps(body).encode(),
+        headers={"Content-Type": "application/json"},
     )
 
 
@@ -304,6 +350,10 @@ class _GitHubWire:
             next_url=_SECOND_PAGE,
         )
         self.routes[_SECOND_PAGE] = _page([_api_repo("archived-one", archived=True)])
+        for name, url in zip(
+            ("alpha", "beta", "archived-one"), _FIXTURE_REF_URLS, strict=True
+        ):
+            self.routes[url] = _ref_answer(_tip(name))
 
     def script(self, url: str, head: bytes, then: BaseException | None) -> None:
         self.routes[url] = lambda: _ScriptedReader(head, then, self)
@@ -415,7 +465,8 @@ def test_inventory_three_repos(inventory_paths: tuple[Path, Path]) -> None:
     payload = json.loads(export.read_text(encoding="utf-8"))
     assert payload == document
     for entry in payload["repos"]:
-        assert {"full_name", "default_branch", "clone_url", "archived"} <= set(entry)
+        assert set(entry) == _EXPORT_ROW_KEYS
+        assert entry["head_sha"] == _tip(entry["full_name"].partition("/")[2])
     archived = next(
         e for e in payload["repos"] if e["full_name"].endswith("/archived-one")
     )
@@ -480,6 +531,132 @@ def test_incomplete_listing_entries_are_named_in_the_export(
         },
     ]
     assert not FleetRepo.objects.filter(full_name=f"{_EXAMPLE_ORG}/no-branch").exists()
+
+
+# --- Story 16.10: head_sha on every row; Atlas's sensor accepts the export as data ---
+
+
+def _atlas_sensor_row_keys() -> set[str]:
+    """The keys Atlas's ``parse_fleet_inventory`` requires of a row, from its source.
+
+    Read as data (an AST), never imported: no station imports another for the export.
+    """
+    tree = ast.parse(_ATLAS_SENSOR.read_text(encoding="utf-8"))
+    parse = next(
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef) and node.name == "parse_fleet_inventory"
+    )
+    return {
+        call.args[0].value
+        for call in ast.walk(parse)
+        if isinstance(call, ast.Call)
+        and isinstance(call.func, ast.Attribute)
+        and call.func.attr == "get"
+        and isinstance(call.func.value, ast.Name)
+        and call.func.value.id == "item"
+        and call.args
+        and isinstance(call.args[0], ast.Constant)
+        and isinstance(call.args[0].value, str)
+    }
+
+
+def _imported_modules(path: Path) -> set[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    modules: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            modules.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            modules.add(node.module)
+    return modules
+
+
+@pytest.mark.django_db
+def test_export_meets_the_atlas_sensor_acceptance_rule(
+    inventory_paths: tuple[Path, Path],
+    github_wire: _GitHubWire,
+) -> None:
+    """AC4: the real client's export, read back as JSON, meets the sensor's row rule."""
+    _config, export = inventory_paths
+    github_wire.serve_fixture_org()
+    with patch("django_warden_fabric.tasks.GhAuthTokenProvider", _SentinelProvider):
+        run_fleet_inventory("run-id", _EXAMPLE_ORG)
+    required = _atlas_sensor_row_keys()
+    # The rule this story was cut for; a key the sensor adds must reach the export.
+    assert required >= {"full_name", "head_sha"}
+    assert required <= _EXPORT_ROW_KEYS
+    payload = json.loads(export.read_text(encoding="utf-8"))
+    assert isinstance(payload["repos"], list)
+    assert len(payload["repos"]) == _FIXTURE_REPO_COUNT
+    for row in payload["repos"]:
+        assert isinstance(row, dict)
+        assert all(row.get(key) for key in required), row
+    assert not {
+        module
+        for module in _imported_modules(_ATLAS_SENSOR)
+        if module.startswith(("django_warden_fabric", "pyforge.warden"))
+    }
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "status",
+    [HTTPStatus.CONFLICT, HTTPStatus.NOT_FOUND],
+    ids=["empty-repository", "no-default-branch"],
+)
+def test_a_repo_with_no_tip_is_skipped_never_listed(
+    inventory_paths: tuple[Path, Path],
+    github_wire: _GitHubWire,
+    status: HTTPStatus,
+) -> None:
+    """AC3: a repo with no commits is listed under ``skipped`` with its reason."""
+    _config, export = inventory_paths
+    github_wire.serve_fixture_org()
+    github_wire.routes[_ref_url("beta", "develop")] = _http_response(
+        status, body=b'{"message": "Git Repository is empty."}'
+    )
+    with patch("django_warden_fabric.tasks.GhAuthTokenProvider", _SentinelProvider):
+        run_fleet_inventory("run-id", _EXAMPLE_ORG)
+    payload = json.loads(export.read_text(encoding="utf-8"))
+    assert [row["full_name"] for row in payload["repos"]] == [
+        f"{_EXAMPLE_ORG}/alpha",
+        f"{_EXAMPLE_ORG}/archived-one",
+    ]
+    assert all(row["head_sha"] for row in payload["repos"])
+    assert payload["skipped"] == [
+        {
+            "page": 1,
+            "position": 2,
+            "full_name": f"{_EXAMPLE_ORG}/beta",
+            "reason": f"no default-branch tip to read (GitHub API HTTP {int(status)})",
+        },
+    ]
+    assert not FleetRepo.objects.filter(full_name=f"{_EXAMPLE_ORG}/beta").exists()
+
+
+@pytest.mark.django_db
+def test_a_listed_repo_without_head_sha_writes_no_export(
+    inventory_paths: tuple[Path, Path],
+) -> None:
+    """A listing handing over a row with no tip is refused whole, before any upsert."""
+    _config, export = inventory_paths
+    no_tip = _FixtureRepo(
+        full_name=f"{_EXAMPLE_ORG}/beta",
+        default_branch="main",
+        clone_url=f"https://github.com/{_EXAMPLE_ORG}/beta.git",
+        archived=False,
+        head_sha="",
+    )
+    client = _FixtureListingClient(
+        repos_by_org={_EXAMPLE_ORG: (_fixture_repo("alpha"), no_tip)}
+    )
+    with pytest.raises(ExportRowWithoutHeadShaError, match="listed repo 1 has no"):
+        run_fleet_inventory_sync(
+            organisation=_EXAMPLE_ORG, listing_client=client, export_path=export
+        )
+    assert not export.exists()
+    assert not FleetRepo.objects.filter(organisation=_EXAMPLE_ORG).exists()
 
 
 # --- AC4: keys-not-blobs ---
@@ -1460,7 +1637,11 @@ def test_real_client_run_is_get_only_and_never_persists_the_token(
     github_wire.serve_fixture_org()
     with patch("django_warden_fabric.tasks.GhAuthTokenProvider", _SentinelProvider):
         run_fleet_inventory("run-id", _EXAMPLE_ORG)
-    assert [e.url for e in github_wire.exchanges] == [_FIRST_PAGE, _SECOND_PAGE]
+    assert [e.url for e in github_wire.exchanges] == [
+        _FIRST_PAGE,
+        _SECOND_PAGE,
+        *_FIXTURE_REF_URLS,
+    ]
     assert {e.method for e in github_wire.exchanges} == {"GET"}
     assert {e.authorization for e in github_wire.exchanges} == {f"Bearer {_SENTINEL}"}
     assert {e.timeout for e in github_wire.exchanges} == {
@@ -1469,6 +1650,9 @@ def test_real_client_run_is_get_only_and_never_persists_the_token(
     assert github_wire.stack_leaks == []
     payload = json.loads(export.read_text(encoding="utf-8"))
     assert len(payload["repos"]) == _FIXTURE_REPO_COUNT
+    assert [row["head_sha"] for row in payload["repos"]] == [
+        _tip(name) for name in ("alpha", "beta", "archived-one")
+    ]
     assert _SENTINEL not in export.read_text(encoding="utf-8")
     assert _SENTINEL not in caplog.text
     for row in FleetRepo.objects.filter(organisation=_EXAMPLE_ORG):
@@ -1479,8 +1663,12 @@ def test_real_client_run_is_get_only_and_never_persists_the_token(
 @pytest.mark.django_db
 @pytest.mark.parametrize(
     "case",
-    [("http-503", "HTTP 503", 1), ("connect-refused", "request failed", 0)],
-    ids=["http-error", "url-error"],
+    [
+        ("http-503", "HTTP 503", 1),
+        ("connect-refused", "request failed", 0),
+        ("tip-503", "HTTP 503", 3),
+    ],
+    ids=["http-error", "url-error", "tip-read-http-error"],
 )
 def test_real_client_failure_never_carries_the_token(
     inventory_paths: tuple[Path, Path],
@@ -1493,6 +1681,13 @@ def test_real_client_failure_never_carries_the_token(
     caplog.set_level(logging.DEBUG)
     if fault == "http-503":
         github_wire.routes[_FIRST_PAGE] = _http_response(
+            HTTPStatus.SERVICE_UNAVAILABLE, body=b'{"message": "down"}'
+        )
+    elif fault == "tip-503":
+        # Story 16.10: the listing reads every page, then fails on the first tip read;
+        # no partial export is written and no row is upserted.
+        github_wire.serve_fixture_org()
+        github_wire.routes[_FIXTURE_REF_URLS[0]] = _http_response(
             HTTPStatus.SERVICE_UNAVAILABLE, body=b'{"message": "down"}'
         )
     else:

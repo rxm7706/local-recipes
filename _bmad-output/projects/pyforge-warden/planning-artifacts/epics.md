@@ -880,7 +880,7 @@ So that a skipped review no longer looks the same as a scan with TEA never enabl
 **Then** the report's `advisory` carries one `tea-test-review` record that names the skip and its `skipped_reason` (`tea-test-review exited 2 -- verdict not trusted`), with no score and no recommendation, and a run with TEA not enabled carries no TEA record
 **And** the status and the exit code equal the same run with TEA disabled; the record is never a finding, a rung or the exit code; an absent binary still omits (Story 9.3) and a roster without `tea` still refuses loudly (`TeaRosterMissingError`)
 **And** a memlog decision on spec-pyforge-warden records that an enabled run that skipped now reaches the report, superseding spec-11-2's "no note" row for that case (Story 11.2 is not edited), and CAP-23 success names the effect through a `bmad-spec` re-derive; `pixi run --frozen -e pyforge-warden pyforge-warden-test` is green
-**Status:** backlog
+**Status:** done
 
 ## Epic 14: The fix-PR actuator finishes the fix on the estate's repos (spec-pyforge-warden CAP-24)
 
@@ -941,7 +941,7 @@ So that a real `--open-fix-prs` run works on the estate's own manifests and can 
 **Then** it edits its copy through `manifest_edit.edit_requirement_to_floor` (the path `prepare_manifest_fix` uses), so every form is probed rather than rejected; the edit keeps the quotes before a trailing comment and keeps the file's final newline, or its absence, and the result parses as TOML
 **And** the candidate list is capped and a total solve budget bounds the loop; an overrun is a `failed` outcome in `actuation`, never a rung or an exit code; `PIXI_LOCK_TIMEOUT_SECONDS` is configurable; the per-candidate copy skips `.pixi/` and `.git`
 **And** `PIXI_VERSION_RANGE` admits the workspace pixi (0.81.0 today, which `<0.81` excludes), and a test or a `scripts/pixi_version_registry.py` entry ties it to `pixi.toml`'s `requires-pixi` so it cannot drift silently; an opt-in integration test runs the real `pixi lock`; DW-warden-14-1 closes with a `resolution:` naming this story and a cited `verified:` line; a memlog decision on spec-pyforge-warden names the bound, and CAP-24 success names it through a `bmad-spec` re-derive; `pixi run --frozen -e pyforge-warden pyforge-warden-test` is green
-**Status:** backlog
+**Status:** done
 
 ## Epic 15: SAST joins as an optional plugin: opengrep with estate-owned rules (spec-pyforge-warden CAP-25)
 
@@ -977,7 +977,7 @@ So that the SAST scanner detects real patterns and its offline posture cannot re
 **Then** the bundled rules are estate-authored rules drawn from the Spec's constraints (`subprocess` with `shell=True`, unsafe `yaml.load`, `eval`/`exec`), each with a fixture that trips it, and the planted marker sits under the tests' fixtures, every test that used it passing `rules_dir`
 **And** `test_opengrep_engine_argv_capture` captures `kwargs["env"]` and asserts `--disable-version-check`, `SEMGREP_SEND_METRICS=off` and `OPENGREP_ENABLE_VERSION_CHECK=0`, so dropping any one turns it red
 **And** `test_cli_filters_opengrep_when_flag_off` drives `warden scan` with `WARDEN_OPTIONAL_SCANNERS=opengrep` and the flag off, and pins what the code does today (opengrep stripped, no error); the advisory notes never change the status or the exit code; CAP-25 success names the telemetry-off argv and env through a `bmad-spec` re-derive; `pixi run --frozen -e pyforge-warden pyforge-warden-test` is green
-**Status:** backlog
+**Status:** done
 
 ## Epic 16: Warden scans the enterprise fleet on GitHub Enterprise (spec-pyforge-warden CAP-26)
 
@@ -1074,7 +1074,7 @@ So that an approved proposal delivers the fix it queued instead of an empty or a
 **Then** the queued `FixProposal.target` is the resolved version, not the package name; the approve re-clones, builds `manifest_locations` on the clone through the public helper, passes the stored `fixed_version_candidates`, and the real `run_actuator`, driven through its `client` parameter with a fake forge client, opens one draft PR on a `warden/fix/` branch whose one commit carries the manifest edit
 **And** an approve that yields no `manifest_fix` records a `failed` actuation on the proposal and opens no PR; the queue records only the dry-run target and candidates, never a diff (Stories 14.1 and 14.2 run no solver under dry-run)
 **And** the test no longer patches `_run_fix_actuator`; a memlog decision on spec-pyforge-warden records the queue-then-re-solve handoff, superseding Story 16.3's "planned diff summary" through this story (Story 16.3 is not edited); no live approve runs, since the credential ruling stays the operator's; `pixi run --frozen -e pyforge-warden pyforge-warden-test` and `pixi run -e pyforge-guild platform-ci-local -- --test` are green
-**Status:** backlog
+**Status:** done
 
 ### Story 16.7: A fleet run is time-bounded, and an approval re-scans before it opens
 
@@ -1091,7 +1091,7 @@ So that a hung clone cannot leave a run RUNNING forever, and a stale approval ne
 **Then** `scan_fleet_repo` and `open_fix_proposal` carry soft and hard time limits on `run_fleet_inventory`'s pattern, `shallow_clone` gives `git clone` a timeout, the hung repo's row ends `FAILED`, and the run row records its failed and skipped repo counts while the run itself ends `SUCCEEDED` as a job (Story 16.2's decision)
 **And** the approve re-scans the fresh clone and refuses a vanished finding with a `failed` actuation and no forge write; a proposal older than the configured approval expiry is refused the same way; double-approve and dismiss stay as `proposals.py` handles them
 **And** the `0004` migration ships with its covering Liquibase changeset and a `sqlmigrate-map.yaml` entry, and `makemigrations --check` reports no change for `warden_fabric`; a memlog decision on spec-pyforge-warden names the bounds and the approve-time re-scan, and CAP-26 success names them through a `bmad-spec` re-derive; `pixi run -e pyforge-guild platform-ci-local -- --test` and `pixi run --frozen -e pyforge-warden pyforge-warden-test` are green
-**Status:** backlog
+**Status:** done
 
 ### Story 16.8: The fleet worker scans non-Python lockfiles against provisioned offline DBs
 
@@ -1108,7 +1108,7 @@ So that a non-Python repo gets a real security-axis answer instead of `indetermi
 **Then** osv-scanner reads the npm database offline through the worker's cache setting, and the security axis reports the `vuln:` finding instead of `offline-db-unavailable-ecosystem` (`native_lockfiles.py` about :220-221); with no database for an ecosystem the axis stays `indeterminate`, never `clean`
 **And** the run queues no proposal for that npm finding: only a `vuln:` finding on a PyPI or conda component queues one (the operator's 2026-11-01 ruling, recorded on the spec-pyforge-warden memlog)
 **And** the scan stays `--offline` with no socket opened and the tests stay hermetic (fixture databases); CAP-26 success names the per-ecosystem offline database as a precondition, and the ruled non-Python proposal outcome, through a `bmad-spec` re-derive; `pixi run -e pyforge-guild platform-ci-local -- --test` and `pixi run --frozen -e pyforge-warden pyforge-warden-test` are green
-**Status:** backlog
+**Status:** done
 
 ### Story 16.9: A non-Python repo's license and currency rows report what ran
 
@@ -1125,7 +1125,7 @@ So that a row never reads `deps_total=0` while the same scan carries `license:un
 **Then** the license and currency rows count the npm components that drew `license:unknown` and `currency:unknown` findings instead of `deps_total=0`; those findings warn when the axis is ungated and route to `indeterminate` when it is gated; the test pins the composed status of both fixtures
 **And** the `interfaces.py` comment that calls those axes not-applicable for native lockfile components says what the code does
 **And** the clean lock is probed for an empty inventory: if osv-scanner without `--all-packages` inventories 0 components and the scan hits the empty-extraction `indeterminate` (`cli.py` about :1482), the argv gains `--all-packages` under the tested osv range; CAP-26's "the other axes honestly not-applicable" becomes today's unknown-then-warn behaviour through the spec-pyforge-warden `bmad-spec` re-derive, never a hand edit; `pixi run --frozen -e pyforge-warden pyforge-warden-test` is green
-**Status:** backlog
+**Status:** done
 
 ### Story 16.10: The fleet export carries each repo's head_sha
 
@@ -1142,7 +1142,7 @@ So that atlas's fleet-inventory sensor accepts the export instead of rejecting i
 **Then** each `repos[]` row carries `full_name`, `default_branch`, `clone_url`, `archived` and `head_sha`, the default branch's tip read through the `GET`-only client; a repo whose tip cannot be read (an empty repo) is listed under `skipped` with its reason, never as a row without `head_sha`
 **And** a test proves the export meets the acceptance rule of atlas's `parse_fleet_inventory` (`fleet_inventory_sensor.py` about :62-65: every row has a non-empty `full_name` and `head_sha`), reading the export as data; no station imports `django_warden_fabric` or `pyforge.warden` for it, and the leak guard stays green
 **And** CAP-26 success pins the export fields (`full_name`, `default_branch`, `clone_url`, `archived`, `head_sha`) through the spec-pyforge-warden `bmad-spec` re-derive; `pixi run --frozen -e pyforge-warden pyforge-warden-test` and `pixi run -e pyforge-guild platform-ci-local -- --test` are green
-**Status:** backlog
+**Status:** done
 
 ## Epic 17: Phase 4+5 of the deferral burn-down: warden's open medium and low deferrals
 

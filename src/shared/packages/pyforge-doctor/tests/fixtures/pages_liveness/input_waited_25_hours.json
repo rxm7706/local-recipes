@@ -1,0 +1,7 @@
+{
+  "case": "Deployed at T; a published input landed at T+2 h and has waited 25 hours by now (T+2 h+25 h): the stall within a day of the last good deploy, stale.",
+  "head": {"status": 200, "headers": {"last-modified": "Tue, 13 Oct 2026 12:00:00 GMT"}},
+  "git_log": "c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f7 2026-10-13T14:00:00+00:00",
+  "now": "2026-10-14T15:00:00Z",
+  "expect": {"check": "pages-liveness-stale", "status": "warn", "requests": ["HEAD"], "waited_hours": 25}
+}

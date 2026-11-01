@@ -9173,4 +9173,5 @@ status: open
   origin: spec-deferred — recorded by hand in the Epic 113 build PR (2026-11-01)
   severity: low
   promoted: 2026-11-01 — the Epic 113 build commit
-  status: open
+  resolved: 2026-11-01 (marshal Story 113.8, spec-pyforge-marshal CAP-300) — `gather_dispatch_journal_facts` reads the launch intent's `readiness_challenge` into `DispatchJournalFacts.readiness_challenge`; `marshal status`'s dispatch row carries `dispatch_readiness_challenge` (JSON) and ` READINESS=` (text), and `marshal watch`'s station sections carry `readiness_challenge` and a `**Readiness Challenge:**` line, each with the report path and `MRS-DISP-067` when red (a finding or a review that could not run); with no `readiness_challenge` on the intent both render as before (`tests/unit/test_status.py`, `tests/unit/test_watch.py`).
+  status: closed

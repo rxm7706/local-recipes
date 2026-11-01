@@ -1129,13 +1129,18 @@ dossier and the Kedro-Viz dashboard ride in the same artifact.
 - `pr-preflight` runs `pages-check` (in place of `site-check`, which it subsumes) only when a diff touches `docsite-check.yml`'s own `paths`
 - The selection is read from the workflow file by steward Story 71.2 (`spec-pyforge-steward:CAP-159`); no second path list exists. A diff touching only `src/shared/packages/pyforge-marshal/` leaves it unselected, and one touching `docs/how-to/x.md` selects it (operator ruling 2026-09-27, D8). Story 27.5, whose ledger key is `blocked` until 71.2 lands; the operator flips it.
 
-**FR-8.6: The docs site and the herald pages share one menu** ← CAP-58 *(added 2026-10-12)*
-- The docs left menu lists the four quadrants in `docs/map.yaml` order, then a first-level **Herald** group: Overview,
-  Dossier, Infographics, Decks, Kedro-Viz.
-- Every docs page and every herald page carries one top menu: Docs, Overview, Dossier, Infographics, Decks, Kedro-Viz.
-- Both menus come from herald's one navigation list (`docsite/content/site.yml`); adding an entry there adds it to both.
-- Every menu link resolves under the configured base path on every host (FR-10.5), and `pages-check` fails a link that
-  does not resolve. No page moves. Story 40.1.
+**FR-8.6: The docs site and the herald pages share one menu** ← CAP-58 *(added 2026-10-12; amended 2026-10-15 by
+FR-12.4, restated 2026-11-01 with CAP-58: EGM audit HER-K1, findings HER-M-Z3, HER-M-D1, HER-M-C1, HER-D-C4)*
+- The docs left menu lists the four quadrants in `docs/map.yaml` order, then one group per visible `map.yaml` section;
+  the **Herald** group holds Overview, Dossier, Infographics, Decks.
+- Every docs page and every herald page carries one top menu: Docs, then each visible section's entries in `map.yaml`
+  order, Herald flattened to its four. Kedro-Viz and Dashboards show only when atlas's exports are mounted (FR-12.2),
+  Status and Marketplace only with their flags on.
+- The left menu, the top menu and the home's doors all come from doctor's `docs/map.yaml` `sections:`
+  (`spec-pyforge-doctor:CAP-90`); herald's `site.yml` nav list retired (FR-12.4). A new section appears in all three
+  with no other edit.
+- Every menu link resolves under the configured base path on every host, with no flag (FR-12.3), and `pages-check`
+  fails a menu link that lands on no file, or a page whose menu differs from the docs root's. No page moves. Story 40.1.
 
 **ONE FR space now Feature Groups 1–8** (FR-9.1 is the next free id).
 
@@ -1498,19 +1503,25 @@ Group 8 is the docs site's build, navigation and gates, and the tile is dossier 
 Moment 2's promise that factory motion is visible.
 
 **FR-11.1: The dossier shows every CI surface that is not live, from steward's status answer** ← CAP-59
+*(amended 2026-11-01 with CAP-59: EGM audit HER-K4 and the operator's ruling of that day; the current paths, the
+refresh rule, the capture-time line)*
 - The dossier's A→B control-plane section carries one CI surfaces tile, rendered at build time from
-  `docsite/content/ci-status.json`, a committed copy of `pyforge steward ci status --json` as printed. The operator
-  refreshes it by running that command; nobody edits it by hand.
+  `docs-site/src/content/ci-status.json` (`docsite/content/` until 2026-10-15), a committed copy of
+  `pyforge steward ci status --json` as printed. The operator refreshes it by running that command at each CI pause and
+  resume and committing its output; nobody edits it by hand, and no scheduled job refreshes it (operator ruling
+  2026-11-01).
 - One line per surface whose verdict is not `live`: surface id, verdict, switch, `paused_since`, `review_by` with days
   left or days overdue, owner, and the detail when present. Lines run `drift`, `stuck`, `overdue`, `paused`,
   `paused-manually`, `opt-in-off`, `retired`, by id within a verdict. A verdict the tile does not know still shows,
   after those, and is never read as live. When every surface is live, one all-live line.
-- The tile names the snapshot's `fetched_at`. A snapshot missing `fetched_at` or `rows`, or a row missing `id` or
-  `verdict`, fails `site-check`, naming the snapshot and the row; with the flag on, so does a missing snapshot. Extra
-  keys are ignored, because steward's schema grows only by addition.
+- The tile names the snapshot's `fetched_at` in a "Snapshot captured at <fetched_at>" line, on the dossier page and in
+  its artifact build, so a stale snapshot reads as stale (Story 42.4 pins the line). A snapshot missing `fetched_at` or
+  `rows`, or a row missing `id` or `verdict`, fails `pages-check` (`site-check` until 2026-10-15), naming the snapshot
+  and the row; with the flag on, so does a missing snapshot. Extra keys are ignored, because steward's schema grows
+  only by addition.
 - Herald never imports `pyforge.steward`, and neither herald code nor the Pages build calls `gh`; the verdict is
-  steward's, never re-derived. The `site` env gains no pyforge dependency, and `dashboard.yml` stays the one deploy
-  caller (FR-8.2).
+  steward's, never re-derived. The `site` env gains no pyforge dependency, and steward's `pages.yml` (`dashboard.yml`
+  until steward Story 102.1) stays the one deploy caller (FR-8.2).
 - Flag `pyforge.herald.ci_surfaces_tile`; off, the dossier renders as it does today. Story 39.1.
 
 **ONE FR space now Feature Groups 1–11** (FR-12.1 is the next free id).
@@ -1535,14 +1546,20 @@ doctor's (`pyforge-doctor:CAP-90`, pyforge-doctor:CAP-91; Epic 48). Herald's sha
 
 ### Feature Group 12: The Pages site, redesigned (registered 2026-10-14)
 
-**FR-12.1: The fleet board and the guild status page render at build** ← CAP-60
+**FR-12.1: The fleet board and the guild status page render at build** ← CAP-60 *(amended 2026-11-01 with CAP-60:
+EGM audit HER-K4; the Lane 1 link, `/status/ci/`'s snapshot rule, the input envelope, the flag state)*
 - `/status/` shows, per station, epics, done/total, in progress, backlog and blocked with a bar, an attention block of
-  the blocked and backlog keys, the snapshot time and a "live view on Lane 1" link, rendered from a build input written
-  by a Guild step of steward's workflow from `sprint-ledger-query --format json` (the counts agree with
-  `fleet_scan.parse_sprint_status`). `/status/ci/` renders every row of the committed `ci-status.json` snapshot
-  (FR-11.1) with its switch, dates, owner and detail.
-- Nothing on either page is live; each names its snapshot time. Herald imports no `pyforge.steward` and calls no `gh`;
-  the `site` env gains no pyforge dependency. Flag `pyforge.herald.status_pages`. Story 42.1.
+  the blocked and backlog keys and the snapshot time, rendered from the build input `fleet-status.json` (`generated_at`,
+  `stations[]`, `stories[]` with `story_id` and `status`) written by a Guild step of steward's workflow from
+  `sprint-ledger-query --format json` (the counts agree with `fleet_scan.parse_sprint_status`). `/status/ci/` renders
+  every row of the committed `ci-status.json` snapshot (FR-11.1) with its switch, dates, owner and detail, in FR-11.1's
+  order with `live` last, under FR-11.1's refresh rule whatever the tile flag's state.
+- Both pages link the live view on Lane 1 only when `site.yml`'s `lane1.href` is an absolute `http(s)` URL; a
+  root-absolute `/console/` gives no link (operator ruling 2026-10-15; `DW-herald-42-1-1`).
+- Nothing on either page is live; each names its snapshot time, and `/status/ci/` says so in words. Herald imports no
+  `pyforge.steward` and calls no `gh`; the `site` env gains no pyforge dependency. Flag `pyforge.herald.status_pages`,
+  handed to the build as `PYFORGE_STATUS_PAGES` (on in the dev overlay `pages.yml` resolves; a build without it renders
+  no `/status/` page). Story 42.1; Story 42.4 pins the capture-time and not-live lines.
 
 **FR-12.2: The Kedro-Viz mount is an artifact handoff that tolerates absence** ← CAP-60
 - The build fills `/dashboard/kedro-viz/` from atlas's `kedro-viz-export` artifact (`pyforge-atlas:CAP-62`) that
@@ -1557,7 +1574,8 @@ doctor's (`pyforge-doctor:CAP-90`, pyforge-doctor:CAP-91; Epic 48). Herald's sha
   Story 42.3.
 
 **FR-12.4: One generator renders every prefix** ← CAP-61
-- Astro renders the dossier from `dossier.yml` (a content collection; fourteen block components), the overview, the
+- Astro renders the dossier from `dossier.yml` (a content collection; fifteen block types drawn by one renderer, the
+  mint's fourteen plus CAP-59's `ci_surfaces`, amended 2026-11-01 with CAP-61, EGM audit HER-M-C6), the overview, the
   gallery and the deck family pages (over `presentations/` and `facts.yaml`), mounts the design twins and the downloaded
   dashboard exports through `publicDir`, carries the 44 legacy redirects and `/kedro-viz/` as a redirects map (kept, no
   sunset), loads fonts through `@fontsource`, indexes docs and herald pages in one Pagefind index, and takes its nav from
@@ -1570,7 +1588,9 @@ doctor's (`pyforge-doctor:CAP-90`, pyforge-doctor:CAP-91; Epic 48). Herald's sha
 
 **FR-12.5: Every number is measured, every page says what built it, and agents can read the site** ← CAP-61
 - Every dossier stat with `check:` is computed at build by the measurer (`verify_claims.py` becomes a producer); each
-  section carries the date its prose was measured; every page's footer names the commit, time and run that built it.
+  section carries the date its prose was measured; every page of the build's own carries one footer naming the commit,
+  time and run that built it, or `local build` with no `GITHUB_SHA`, while redirect stubs and the mounted trees carry
+  none (amended 2026-11-01 with CAP-61, EGM audit HER-K3).
 - `/llms.txt`, `/llms-full.txt` and `/facts.json` exist at the root; `/changes/` lists the last 30 days of merges to
   `main` with an RSS feed, from a Guild-step input, until a CalVer tag exists; `/status/runs/` renders `marshal status
   --format json` and `herald progress --json` inputs. Stories 43.5, 43.6.

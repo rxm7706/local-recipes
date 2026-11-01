@@ -2,7 +2,7 @@
 title: "13.2: A TEA skip on a missing ref reaches the report"
 type: 'fix'
 created: '2026-11-01'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
@@ -109,15 +109,75 @@ Parent: CAP-23
 
 ## Auto Run Result
 
-Status: backlog
+Status: done
 
-Summary: not yet dispatched.
+Summary: built in the EGM audit landing worktree (`egm-audit-2026-11`), 2026-11-01, uncommitted for the session owner
+to land. `TeaAdvisoryScanPlugin._contribute` no longer drops a started-then-skipped TEA run at its bare
+`if not result.ran: return`: it appends one advisory record `{"tool": "tea-test-review", "skipped": true, "reason":
+<skipped_reason>, "summary": "skipped: <skipped_reason>"}`, with no `score` and no `recommendation` key. The only skip
+still omitted is the `shutil.which` miss (new module constant `_BINARY_ABSENT_REASON`, the same text as before;
+Story 9.3). `TeaRosterMissingError` still propagates. `run_tea_test_review`, the runner seam and `TeaAdvisoryResult`
+are unchanged.
+
+### Dev notes
+
+- **Files changed:** `src/shared/packages/pyforge-warden/src/pyforge/warden/tea_advisory.py` (the `_contribute`
+  branch, `_BINARY_ABSENT_REASON`, and the docstrings that said a runner error "contributes nothing");
+  `src/shared/packages/pyforge-warden/tests/unit/test_tea_advisory.py` (six new tests; the Story 11.2 plugin test
+  `test_enabled_plugin_runner_error_never_propagates_and_adds_no_note` is renamed `..._adds_a_skip_record_only` and
+  now expects the record, as the superseded row requires).
+- **Which skips report.** "A run that started" is read as "the binary was found" (the Approach's own criterion):
+  a non-0/1 exit, an unparsable, missing or non-object verdict, TEA's own `skipped`/`promptOnly`, and a runner that
+  raises (a timeout, an engine error). Story 11.2's "Runner errors" row named exit 2/3, timeout and unparsable JSON
+  together; all of them now report. Only the PATH miss stays silent.
+- **AC1 reason text.** The runner is unchanged (Approach), so the record's `reason` is the result's `skipped_reason`
+  verbatim: `tea-test-review run failed: RuntimeError: tea-test-review exited 2 -- verdict not trusted`. It carries
+  the AC1 text as its suffix, and the tests assert `endswith`. Making it exactly the AC1 string would mean changing
+  `run_tea_test_review`, which the Approach rules out.
+- **Text format.** The record carries a `summary` so the unchanged `[advisory]` text renderer prints the skip
+  (`score=unknown recommendation=unknown -- skipped: <reason>`). `report.py` and `report-schema.json` are untouched:
+  `advisory` is an open array.
+- **Tests (each fails without the change):** `test_enabled_plugin_exit_2_adds_exactly_one_skip_record`,
+  `test_enabled_plugin_tea_own_skip_adds_a_skip_record_with_tea_reason`,
+  `test_enabled_plugin_non_object_verdict_adds_a_skip_record`,
+  `test_full_scan_with_a_missing_base_ref_reports_the_skip_and_keeps_the_verdict` (AC1 and AC3: rc and every report
+  key except `advisory` equal the TEA-disabled run), `test_full_scan_with_tea_not_enabled_carries_no_tea_record`
+  (AC2), `test_full_scan_with_the_binary_absent_writes_no_record` (AC4); the existing
+  `test_full_scan_with_roster_missing_refuses_not_a_silent_pass` keeps AC4's loud path.
+- **Mutations (run in place, file restored byte-identical with `cmp`):** restoring the bare `if not result.ran:
+  return` reds 5 tests, including the AC1 plugin and end-to-end tests; dropping the PATH-miss exclusion reds 2
+  (`test_full_scan_with_the_binary_absent_writes_no_record`, `test_enabled_plugin_absent_binary_contributes_nothing`).
+- **AC5:** two `spec-pyforge-warden` memlog entries, a surface-reconcile event naming both files and a decision
+  recording the superseded Story 11.2 row and the effect CAP-23's success line should name. The success line itself
+  waits for the `bmad-spec` re-derive; `SPEC.md` is not hand-edited.
+- **Commands and exit codes:**
+  - `pixi run --frozen -e pyforge-warden pytest src/shared/packages/pyforge-warden/tests/unit/test_tea_advisory.py -q`
+    exit 0 (35 passed).
+  - `pixi run --frozen -e pyforge-warden pyforge-warden-test` exit 0 (2181 passed unit+meta; 265 passed others).
+  - `.pixi/envs/pyforge-guild/bin/ruff check <both files>` exit 0; `ruff format --check <both files>` exit 0 (the
+    `ruff` name in `pyforge-guild` is the `lint_types.py` task, which takes no paths).
+  - `pixi run --frozen -e pyforge-guild python scripts/lint_types.py mypy` exit 0 (`pyforge-warden ok`).
+  - `pixi run --frozen -e pyforge-guild lint-types` exit 1. The failures are not from this story: `ruff` and
+    `ruff-format` red `pyforge-atlas` only, from another agent's uncommitted atlas files in this shared worktree;
+    `pyforge-warden` and `django-warden` report `ok` on every verb.
+  - `pixi run --frozen -e pyforge-warden pyforge-warden-coverage-gate` exit 0, but it reads committed
+    `origin/main..HEAD` and saw no touched module. `tea_advisory.py` measures 91% in `.steward/coverage/warden-unit.json`
+    (floor 80%).
 
 ## Spec Change Log
 
 - 2026-11-01: minted `backlog` from the EGM fleet audit (marshal Story 113.7): finding WAR-M-Z6, accepted by the
   operator, narrowed by the gap check to CAP-23; mode in-PR.
+- 2026-11-01: built (`in-progress` to `in-review`) in the audit's landing worktree; see Auto Run Result.
 
 ## Review Triage Log
 
-- (none yet)
+- **Review 1 (2026-11-01, reviewer: independent session) — PASS.**
+  - Checked: the diff of `tea_advisory.py` and `test_tea_advisory.py` against AC1-AC6 and the Boundaries; `test_tea_advisory.py` exit 0 (35 passed); `tea_advisory.py` unit coverage 91.2%.
+  - Common evidence (one run for all eight stories, exit codes read from `$?`): `pixi run --frozen -e pyforge-warden pyforge-warden-test` exit 0 (2255 unit+meta, 265 other); the twelve touched warden unit/meta test files together exit 0 (290 passed, 0 skipped; opengrep 1.30.2 and osv-scanner present); `ruff check` and `ruff format --check` over every changed warden, django-warden and platform test file exit 0; `python scripts/lint_types.py ruff-format` exit 0 and `python scripts/lint_types.py mypy` exit 0 (`pyforge-warden ok`); `pixi run --frozen -e pyforge-guild lint-types` exit 1 only from `pyforge-doctor`'s I001 in `tests/unit/test_sources_pages_liveness.py`, another station's in-flight file (`pyforge-warden` and `django-warden` ruff legs ok); `pixi run -e pyforge-guild platform-ci-local -- --test` (private ports) exit 0, RESULT: PASS, 1377 passed / 14 skipped; touched warden modules' unit coverage all at or above 81%. Mutations ran on scratch copies only (warden via `PYTHONPATH`, django-warden via `pytest -o pythonpath=`), never on the worktree.
+  - Mutation: HEAD's `tea_advisory.py` on a scratch copy turns 5 tests red, including `test_enabled_plugin_exit_2_adds_exactly_one_skip_record` and `test_full_scan_with_a_missing_base_ref_reports_the_skip_and_keeps_the_verdict` (AC1).
+  - AC1 holds, with one recorded deviation: the record's `reason` is the result's `skipped_reason` verbatim, `tea-test-review run failed: RuntimeError: tea-test-review exited 2 -- verdict not trusted`, so the AC's quoted text is its suffix, and the tests assert `endswith`. The spec's Problem misdescribed what the runner records; the Approach keeps the runner and `TeaAdvisoryResult` unchanged, and the record carries no score or recommendation key.
+  - AC2-AC4 hold: the end-to-end test compares every report key except `advisory`, and the exit code, with the TEA-disabled run; an absent binary writes no record; a roster without `tea` still records `CONFIG_VALIDATION`.
+  - AC5: the memlog decision names the superseded Story 11.2 'Runner errors' row.
+  - Carried forward, not held against the story: the CAP success-line change is recorded on `spec-pyforge-warden/.memlog.md`; `SPEC.md` is unchanged, as required, and the line waits for the session owner's `bmad-spec` re-derive.
+  - Failures: none.

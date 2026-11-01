@@ -6,6 +6,9 @@ which lines define a requirement, what an arrow may carry, where a bare or
 prefixed ``CAP-m`` resolves, which second definitions are duplicates, when a
 lockstep run is a counted run, and how the baseline ratchet hides, stales
 and prunes -- through the library and through ``scripts/fr_baseline.py``.
+Story 50.2 adds fixture git repositories with a ``refs/remotes/origin/main``:
+a key added since the merge-base is ``fr-baseline-grown`` unless the script's
+``forced`` record names it, and an unread base is one WARN.
 The live-tree legs at the bottom pin the reference-heading and
 honest-lockstep cases this checkout carries.
 """
@@ -14,6 +17,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import subprocess
 from pathlib import Path
 from types import ModuleType
 
@@ -601,17 +605,20 @@ def test_snapshot_records_the_arrowless_population_only_and_carries_the_rest(tmp
         '#### FR-1: cited ← CAP-1\n\n#### FR-2: bare\n\n#### FR-3: constraint ← Constraint "x"\n\n- **NFR-1 (y).**\n'
         "- **NFR-P-warm (z):** malformed and bare\n",
     )
+    forced = [{"station": _STATION, "kind": "findings", "key": "k", "head": "def456"}]
     existing = {
         "ruling_sha": "abc123",
         "projects": {},
         "owners": {_STATION: ["108.2 (NFR lines)"]},
         "findings": {_STATION: ["k"]},
         "findings_sha": "def456",
+        "forced": forced,
     }
     data = one_chain.snapshot_fr_baseline(root, ruling_sha="abc123", existing=existing)
     assert data["projects"] == {_STATION: ["FR-2", "NFR-1", "NFR-P-warm"]}
     assert data["findings"] == {_STATION: ["k"]} and data["findings_sha"] == "def456"
     assert data["owners"] == {_STATION: ["108.2 (NFR lines)"]}
+    assert data["forced"] == forced  # Story 50.2: a re-snapshot never drops the script's record
     assert any("only shrinks" in line for line in data["$comment"])
 
 
@@ -709,7 +716,222 @@ def test_cli_snapshot_findings_is_one_time_and_force_prints_the_delta(
     assert cli.main(["--snapshot-findings", "--force"]) == 0
     out = capsys.readouterr().out
     assert "ADD    fr-id-unhyphenated:FR35" in out
-    assert _read_baseline(root)["findings"] == {_STATION: ["fr-id-unhyphenated:FR35"]}
+    assert f"FORCED {_STATION} findings fr-id-unhyphenated:FR35 @ unknown" in out
+    data = _read_baseline(root)
+    assert data["findings"] == {_STATION: ["fr-id-unhyphenated:FR35"]}
+    # Story 50.2 (AC5): the forced key is recorded with the run's HEAD; FR33's record left with its key.
+    assert data["forced"] == [
+        {"station": _STATION, "kind": "findings", "key": "fr-id-unhyphenated:FR35", "head": "unknown"}
+    ]
+
+
+def test_cli_project_prints_the_delta_and_refuses_growth_without_force(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    """Story 50.2 AC5 (mutation: `--project` growth admitted without `--force`)."""
+    root = _tree(tmp_path, "#### FR-1: cited ← CAP-1\n\n#### FR-2: bare\n")
+    _baseline(root, projects={_STATION: ["FR-2", "FR-9"]}, findings={_STATION: []})
+    cli = _cli(monkeypatch, root)
+    assert cli.main(["--project", _STATION]) == 0  # shrinking needs no --force
+    out = capsys.readouterr().out
+    assert "REMOVE FR-9" in out and "refusing" not in out
+    assert _read_baseline(root)["projects"] == {_STATION: ["FR-2"]}
+    prd = root / "_bmad-output" / "projects" / _STATION / "planning-artifacts" / "prds" / f"prd-{_STATION}-2026-01-01"
+    (prd / "prd.md").write_text("#### FR-1: cited ← CAP-1\n\n#### FR-2: bare\n\n#### FR-3: bare, minted since\n")
+    before = (root / one_chain.FR_BASELINE_REL).read_text()
+    assert cli.main(["--project", _STATION]) == 1  # refused: it would launder FR-3 in
+    out = capsys.readouterr().out
+    assert f"{_STATION}: +1 -0" in out and "ADD    FR-3" in out
+    assert "refusing" in out and "would ADD 1 id(s)" in out
+    assert (root / one_chain.FR_BASELINE_REL).read_text() == before  # untouched
+    assert cli.main(["--project", _STATION, "--force"]) == 0
+    out = capsys.readouterr().out
+    assert "ADD    FR-3" in out and f"FORCED {_STATION} projects FR-3 @ unknown" in out
+    data = _read_baseline(root)
+    assert data["projects"] == {_STATION: ["FR-2", "FR-3"]}
+    assert data["forced"] == [{"station": _STATION, "kind": "projects", "key": "FR-3", "head": "unknown"}]
+
+
+# --- 10. the ratchet against the merge-base (Story 50.2) ----------------------
+
+# `git init` inherits GIT_DIR / GIT_WORK_TREE from a hook's environment, and
+# `cli_bridge.run_git` copies os.environ at call time, so the scrub mutates
+# os.environ (the same scrub tests/unit/test_sources_ledger.py documents).
+_LEAKY_GIT_VARS = (
+    "GIT_DIR",
+    "GIT_WORK_TREE",
+    "GIT_INDEX_FILE",
+    "GIT_OBJECT_DIRECTORY",
+    "GIT_CEILING_DIRECTORIES",
+    "GIT_COMMON_DIR",
+)
+
+
+@pytest.fixture(autouse=True)
+def _isolate_git_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    for var in _LEAKY_GIT_VARS:
+        monkeypatch.delenv(var, raising=False)
+
+
+def _git(repo: Path, *args: str) -> str:
+    return subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True, check=True).stdout
+
+
+def _commit(repo: Path, message: str) -> str:
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", message)
+    return _git(repo, "rev-parse", "HEAD").strip()
+
+
+def _repo(root: Path, *, origin_main: bool = True) -> str:
+    """Commit ``root`` as the base, point ``refs/remotes/origin/main`` at it (the full
+    refname, never a local branch), and branch off it. Returns the base sha."""
+    _git(root, "init", "-q", "--initial-branch=main")
+    _git(root, "config", "user.email", "doctor-test@example.com")
+    _git(root, "config", "user.name", "Doctor Test")
+    _git(root, "config", "commit.gpgsign", "false")
+    _git(root, "config", "core.hooksPath", "/dev/null")
+    sha = _commit(root, "base")
+    if origin_main:
+        _git(root, "update-ref", "refs/remotes/origin/main", sha)
+    _git(root, "checkout", "-q", "-b", "topic")
+    return sha
+
+
+def _edit_baseline(root: Path, **changes: object) -> None:
+    data = _read_baseline(root)
+    data.update(changes)
+    (root / one_chain.FR_BASELINE_REL).write_text(json.dumps(data))
+
+
+_RATCHET_PRD = (
+    "#### FR-1: cited ← CAP-1\n\n#### FR-2: bare, minted after the rule\n\n- **FR33** ← CAP-1 *(v1)*: unhyphenated\n"
+)
+
+
+def test_hand_added_baseline_keys_fail_and_hide_nothing(tmp_path: Path) -> None:
+    """AC1 (mutation: the base comparison removed -- a hand-added key passes)."""
+    root = _tree(tmp_path, _RATCHET_PRD)
+    _baseline(root, projects={_STATION: []}, findings={_STATION: []})
+    base = _repo(root)
+    _edit_baseline(root, projects={_STATION: ["FR-2"]}, findings={_STATION: ["fr-id-unhyphenated:FR33"]})
+    _commit(root, "launder FR-2 and FR33 by hand")
+    findings = one_chain.gather_fr_without_cap(root)
+    by = _by_check(findings)
+    assert [(f.status, f.evidence) for f in by["fr-baseline-grown"]] == [
+        (DoctorStatus.FAIL, {"station": "marshal", "kind": "projects", "key": "FR-2", "merge_base": base}),
+        (
+            DoctorStatus.FAIL,
+            {"station": "marshal", "kind": "findings", "key": "fr-id-unhyphenated:FR33", "merge_base": base},
+        ),
+    ]
+    assert all(_STATION in f.message for f in by["fr-baseline-grown"])
+    # the findings the two keys would have hidden still fail
+    assert [(f.evidence["fr"], f.status) for f in by["fr-without-cap"]] == [("FR-2", DoctorStatus.FAIL)]
+    assert [f.status for f in by["fr-id-unhyphenated"]] == [DoctorStatus.FAIL]
+    assert "fr-baselined" not in by and "fr-baseline-base-unread" not in by
+    assert exit_code_for(findings) == 2
+    # an uncommitted hand edit is judged the same way: the working tree is what the detector reads
+    _edit_baseline(root, findings={_STATION: ["fr-id-unhyphenated:FR33", "fr-cap-unresolved:FR-7"]})
+    keys = [f.evidence["key"] for f in _by_check(one_chain.gather_fr_without_cap(root))["fr-baseline-grown"]]
+    assert keys == ["FR-2", "fr-id-unhyphenated:FR33", "fr-cap-unresolved:FR-7"]
+
+
+def test_a_key_the_script_forced_is_admitted_and_an_owners_row_is_not(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    """AC2 (mutation: the forced record ignored -- a forced key FAILs)."""
+    root = _tree(tmp_path, _RATCHET_PRD)
+    _baseline(root, projects={_STATION: []}, findings={_STATION: []})
+    _repo(root)
+    head = _git(root, "rev-parse", "HEAD").strip()
+    cli = _cli(monkeypatch, root)
+    assert cli.main(["--project", _STATION, "--force"]) == 0
+    assert cli.main(["--snapshot-findings", "--force"]) == 0
+    capsys.readouterr()
+    assert _read_baseline(root)["forced"] == [
+        {"station": _STATION, "kind": "projects", "key": "FR-2", "head": head},
+        {"station": _STATION, "kind": "findings", "key": "fr-id-unhyphenated:FR33", "head": head},
+    ]
+    _commit(root, "the reviewed --force")
+    findings = one_chain.gather_fr_without_cap(root)
+    by = _by_check(findings)
+    assert "fr-baseline-grown" not in by and not _fails(findings)
+    assert by["fr-baselined"][0].evidence["keys"] == ["fr-id-unhyphenated:FR33"]
+    assert exit_code_for(findings) == 0
+    # a key added by hand whose only cover is an `owners` row still fails
+    prd = root / "_bmad-output" / "projects" / _STATION / "planning-artifacts" / "prds" / f"prd-{_STATION}-2026-01-01"
+    (prd / "prd.md").write_text(_RATCHET_PRD + "\n#### FR-3: bare, owned by a story\n")
+    _edit_baseline(root, projects={_STATION: ["FR-2", "FR-3"]}, owners={_STATION: ["99.1 (FR-3)"]})
+    by = _by_check(one_chain.gather_fr_without_cap(root))
+    assert [(f.status, f.evidence["key"]) for f in by["fr-baseline-grown"]] == [(DoctorStatus.FAIL, "FR-3")]
+    assert [f.evidence["fr"] for f in by["fr-without-cap"]] == ["FR-3"]
+
+
+def test_a_removed_key_and_an_unchanged_file_are_silent(tmp_path: Path) -> None:
+    """AC3."""
+    root = _tree(tmp_path, _RATCHET_PRD)
+    _baseline(root, projects={_STATION: ["FR-2"]}, findings={_STATION: ["fr-id-unhyphenated:FR33"]})
+    _repo(root)
+    findings = one_chain.gather_fr_without_cap(root)
+    by = _by_check(findings)
+    assert "fr-baseline-grown" not in by and "fr-baseline-base-unread" not in by and not _fails(findings)
+    _edit_baseline(root, projects={_STATION: []}, findings={_STATION: []})
+    _commit(root, "shrink")
+    by = _by_check(one_chain.gather_fr_without_cap(root))
+    assert "fr-baseline-grown" not in by and "fr-baseline-base-unread" not in by
+    # what the removed keys hid now fails on its own check, never as growth
+    assert [f.status for f in by["fr-without-cap"] + by["fr-id-unhyphenated"]] == [DoctorStatus.FAIL] * 2
+
+
+@pytest.mark.parametrize("shape", ["no-origin-main", "no-merge-base", "absent-at-base", "not-a-checkout"])
+def test_an_unread_base_is_one_warn_and_the_arrows_are_judged_as_before(tmp_path: Path, shape: str) -> None:
+    """AC4 (mutation: the no-base WARN turned into a FAIL)."""
+    root = _tree(tmp_path, "#### FR-1: cited ← CAP-1\n\n#### FR-2: bare\n\n#### FR-3: bare too\n")
+    baseline = root / one_chain.FR_BASELINE_REL
+    if shape == "absent-at-base":
+        baseline.unlink()
+    if shape != "not-a-checkout":
+        _repo(root, origin_main=shape != "no-origin-main")
+    if shape == "no-merge-base":  # origin/main on an unrelated history, as a shallow clone can leave it
+        _git(root, "checkout", "-q", "--orphan", "unrelated")
+        _git(root, "update-ref", "refs/remotes/origin/main", _commit(root, "unrelated history"))
+        _git(root, "checkout", "-q", "topic")
+    _baseline(root, projects={_STATION: ["FR-2"]})  # added on the branch, with no base to judge it by
+    findings = one_chain.gather_fr_without_cap(root)
+    by = _by_check(findings)
+    (w,) = by["fr-baseline-base-unread"]
+    assert w.status is DoctorStatus.WARN
+    cause = {
+        "no-origin-main": "no refs/remotes/origin/main in this checkout",
+        "no-merge-base": "HEAD and origin/main have no merge-base",
+        "absent-at-base": "docs/governance/fr-baseline.json is absent at the merge-base",
+        "not-a-checkout": "is not the top of a git checkout",
+    }[shape]
+    assert cause in w.evidence["cause"] and cause in w.message
+    assert "fr-baseline-grown" not in by
+    # the arrows as the detector judged them before Story 50.2: `projects` hides FR-2, FR-3 fails
+    assert [(f.evidence["fr"], f.status) for f in by["fr-without-cap"]] == [("FR-3", DoctorStatus.FAIL)]
+    assert {f.check for f in _fails(findings)} == {"fr-without-cap"}
+
+
+def test_record_and_prune_keep_one_record_per_present_key(tmp_path: Path) -> None:
+    """The record names only keys the file holds: a pruned key takes its record with it."""
+    previous = {"projects": {_STATION: ["FR-1"]}, "findings": {_STATION: []}}
+    data = {"projects": {_STATION: ["FR-1", "FR-2"]}, "findings": {_STATION: ["k"]}}
+    assert one_chain.record_fr_additions(None, data, "abc") == [] and "forced" not in data
+    assert one_chain.record_fr_additions(previous, data, "abc") == [
+        (_STATION, "projects", "FR-2"),
+        (_STATION, "findings", "k"),
+    ]
+    assert one_chain.record_fr_additions(previous, data, "def") == []  # recorded once, at the first HEAD
+    assert [r["head"] for r in data["forced"]] == ["abc", "abc"]
+    root = _tree(tmp_path, "#### FR-1: cited ← CAP-1\n\n#### FR-2: cited now ← CAP-2\n")
+    _baseline(root, projects={_STATION: ["FR-2"]})
+    _edit_baseline(root, forced=[{"station": _STATION, "kind": "projects", "key": "FR-2", "head": "abc"}, "junk"])
+    pruned, removed = one_chain.prune_fr_baseline(root)
+    assert pruned is not None and pruned["projects"] == {_STATION: []} and pruned["forced"] == []
+    assert removed == [f"{_STATION}: FR-2", f"{_STATION}: forced projects FR-2"]
 
 
 # --- live tree ---------------------------------------------------------------

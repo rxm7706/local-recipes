@@ -5,7 +5,9 @@ Covers the intent-contract I/O matrix: a provisioned-but-unreachable TEA
 ``TeaRosterMissingError`` -- AD-10, resolved 2026-09-07 per DW-FU-11-2), an
 injected low-scoring runner (a note appears, ``compose()``'s output is
 unaffected), and a runner that errors or returns unparsable output
-(fail-open, identical to the provisioned-but-unreachable case). Never
+(fail-open: never raises; since Story 13.2 such a started-then-skipped run
+adds one skip record to the advisory, while the provisioned-but-unreachable
+case still adds nothing). Never
 invokes a real agent-backed ``tea-test-review`` run: the "binary absent"
 scenario is exercised via a deterministic ``shutil.which`` monkeypatch (see
 its own test's docstring for why — this repo's ambient dev shells can leak
@@ -404,7 +406,11 @@ def test_enabled_plugin_with_low_score_runner_adds_advisory_note_only(tmp_path):
     }
 
 
-def test_enabled_plugin_runner_error_never_propagates_and_adds_no_note(tmp_path):
+def test_enabled_plugin_runner_error_never_propagates_and_adds_a_skip_record_only(tmp_path):
+    """Story 13.2 supersedes Story 11.2's "runner errors leave no note" row
+    for a run that started: the error still never propagates, and the
+    report now says the review skipped instead of staying silent."""
+
     def raising_runner(target: Path, json_path: Path) -> None:
         raise RuntimeError("forced failure")
 
@@ -418,8 +424,181 @@ def test_enabled_plugin_runner_error_never_propagates_and_adds_no_note(tmp_path)
 
     plugin.call("around", context)  # must not raise
 
-    assert context["advisory_notes"] == []
     assert context["plugin_findings"] == []
+    assert len(context["advisory_notes"]) == 1
+    record = context["advisory_notes"][0]
+    assert record["skipped"] is True
+    assert "forced failure" in record["reason"]
+    assert "score" not in record
+    assert "recommendation" not in record
+
+
+# --- warden Story 13.2 (spec-pyforge-warden CAP-23): a started-then-skipped run reaches the report ----
+
+_EXIT_2_REASON = "tea-test-review exited 2 -- verdict not trusted"
+
+
+def _exit_2_runner(target: Path, json_path: Path) -> subprocess.CompletedProcess[str]:
+    """TEA's ENV_ERROR: ``refs/remotes/origin/main`` does not exist, so the
+    CLI exits 2 and leaves no ``--json`` verdict."""
+    return subprocess.CompletedProcess(args=["tea-test-review"], returncode=2, stdout="", stderr="")
+
+
+def _enabled_context(target: Path) -> dict[str, Any]:
+    return {
+        "enabled_optional": ("tea-test-review",),
+        "plugin_findings": [],
+        "advisory_notes": [],
+        "target": target,
+    }
+
+
+def test_enabled_plugin_exit_2_adds_exactly_one_skip_record(tmp_path):
+    """AC1 at the plugin boundary: the missing-ref exit 2 becomes one skip
+    record naming the reason, with no score and no recommendation, and
+    never a finding. Restoring ``_contribute``'s bare ``if not result.ran:
+    return`` turns this red."""
+    _write_tea_roster(tmp_path)
+    plugin = TeaAdvisoryScanPlugin(runner=_exit_2_runner)
+    context = _enabled_context(tmp_path)
+
+    plugin.call("around", context)
+
+    assert context["plugin_findings"] == []
+    assert len(context["advisory_notes"]) == 1
+    record = context["advisory_notes"][0]
+    assert set(record) == {"tool", "skipped", "reason", "summary"}
+    assert record["tool"] == "tea-test-review"
+    assert record["skipped"] is True
+    assert record["reason"].endswith(_EXIT_2_REASON)
+    assert _EXIT_2_REASON in record["summary"]
+
+
+def test_enabled_plugin_tea_own_skip_adds_a_skip_record_with_tea_reason(tmp_path):
+    """The I/O matrix's "TEA reports nothing to review" row: TEA's own
+    ``skipped: true`` verdict reaches the report with TEA's reason."""
+
+    def skipped_runner(target: Path, json_path: Path) -> None:
+        _write_verdict(json_path, {"skipped": True, "reason": "no changed test files in diff"})
+
+    plugin = TeaAdvisoryScanPlugin(runner=skipped_runner)
+    context = _enabled_context(tmp_path)
+
+    plugin.call("around", context)
+
+    assert context["plugin_findings"] == []
+    assert context["advisory_notes"] == [
+        {
+            "tool": "tea-test-review",
+            "skipped": True,
+            "reason": "no changed test files in diff",
+            "summary": "skipped: no changed test files in diff",
+        }
+    ]
+
+
+def test_enabled_plugin_non_object_verdict_adds_a_skip_record(tmp_path):
+    def list_runner(target: Path, json_path: Path) -> None:
+        json_path.write_text("[]", encoding="utf-8")
+
+    plugin = TeaAdvisoryScanPlugin(runner=list_runner)
+    context = _enabled_context(tmp_path)
+
+    plugin.call("around", context)
+
+    assert [note["reason"] for note in context["advisory_notes"]] == ["tea-test-review produced a non-object verdict"]
+
+
+def _defaults_only_registry() -> PluginRegistry:
+    from pyforge.warden.engines import engine_factories
+    from pyforge.warden.scanner_plugins import _plugin_for_factory
+
+    registry = PluginRegistry()
+    for factory in engine_factories():
+        registry.register(_plugin_for_factory(factory))
+    return registry
+
+
+def _scan_json(monkeypatch, capsys, target: Path, *, enabled: bool, plugin: TeaAdvisoryScanPlugin | None):
+    import pyforge.warden.scanner_plugins as scanner_plugins_module
+    from pyforge.warden.cli import main
+
+    def _registry() -> PluginRegistry:
+        registry = _defaults_only_registry()
+        if plugin is not None:
+            registry.register(plugin)
+        return registry
+
+    if enabled:
+        monkeypatch.setenv("WARDEN_OPTIONAL_SCANNERS", "tea-test-review")
+    else:
+        monkeypatch.delenv("WARDEN_OPTIONAL_SCANNERS", raising=False)
+    monkeypatch.setattr(scanner_plugins_module, "scanner_plugin_registry", _registry)
+    rc = main(["scan", str(target), "--format", "json", "--allow-empty"])
+    return rc, json.loads(capsys.readouterr().out)
+
+
+def test_full_scan_with_a_missing_base_ref_reports_the_skip_and_keeps_the_verdict(monkeypatch, tmp_path, capsys):
+    """AC1 + AC3 end to end: with TEA enabled, a suite:AD-9 roster naming
+    ``tea`` and a runner that exits 2, the report's ``advisory`` carries
+    exactly one ``tea-test-review`` skip record; the status, the findings,
+    the errors and the exit code equal the same scan with TEA disabled."""
+    _write_tea_roster(tmp_path)
+
+    rc_disabled, disabled = _scan_json(monkeypatch, capsys, tmp_path, enabled=False, plugin=None)
+    rc_skipped, skipped = _scan_json(
+        monkeypatch, capsys, tmp_path, enabled=True, plugin=TeaAdvisoryScanPlugin(runner=_exit_2_runner)
+    )
+
+    assert rc_skipped == rc_disabled
+    assert disabled.get("advisory") is None
+    tea_records = [note for note in skipped["advisory"] if note["tool"] == "tea-test-review"]
+    assert len(tea_records) == 1
+    record = tea_records[0]
+    assert record["skipped"] is True
+    assert record["reason"].endswith(_EXIT_2_REASON)
+    assert "score" not in record
+    assert "recommendation" not in record
+    for key in disabled:
+        if key == "advisory":
+            continue
+        assert skipped[key] == disabled[key], f"{key!r} differs when the TEA run skipped"
+
+
+def test_full_scan_with_tea_not_enabled_carries_no_tea_record(monkeypatch, tmp_path, capsys):
+    """AC2: the plugin registered with the same exit-2 runner, but TEA not
+    in ``WARDEN_OPTIONAL_SCANNERS`` -- the report carries no TEA record."""
+    _write_tea_roster(tmp_path)
+
+    def exploding_runner(target: Path, json_path: Path) -> None:
+        raise AssertionError("must not be called while TEA is not enabled")
+
+    rc, report = _scan_json(
+        monkeypatch, capsys, tmp_path, enabled=False, plugin=TeaAdvisoryScanPlugin(runner=exploding_runner)
+    )
+
+    assert report.get("advisory") is None
+    assert not any(e["owner"] == "tea-test-review" for e in report["errors"])
+    assert rc == _scan_json(monkeypatch, capsys, tmp_path, enabled=False, plugin=None)[0]
+
+
+def test_full_scan_with_the_binary_absent_writes_no_record(monkeypatch, tmp_path, capsys):
+    """AC4: a roster naming ``tea`` but no binary on PATH is Story 9.3's
+    omit-not-error -- no record, no error, the same exit code."""
+    _write_tea_roster(tmp_path)
+    real_which = tea_advisory.shutil.which
+
+    def which_without_tea(name: str, *args: Any, **kwargs: Any) -> str | None:
+        return None if name == tea_advisory.TEA_TEST_REVIEW_BINARY else real_which(name, *args, **kwargs)
+
+    monkeypatch.setattr(tea_advisory.shutil, "which", which_without_tea)
+
+    rc_disabled, _ = _scan_json(monkeypatch, capsys, tmp_path, enabled=False, plugin=None)
+    rc_absent, absent = _scan_json(monkeypatch, capsys, tmp_path, enabled=True, plugin=TeaAdvisoryScanPlugin())
+
+    assert rc_absent == rc_disabled
+    assert absent.get("advisory") is None
+    assert not any(e["owner"] == "tea-test-review" for e in absent["errors"])
 
 
 def test_enabled_plugin_absent_binary_contributes_nothing(monkeypatch, tmp_path):

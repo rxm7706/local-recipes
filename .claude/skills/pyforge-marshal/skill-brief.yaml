@@ -7,7 +7,8 @@ source_authority: internal
 language: python
 description: >
   Deterministic BMAD-loop supervisor CLI. Agents use the marshal CLI
-  (status, homes, check, seed) rather than importing pyforge.marshal internals.
+  (status, homes, check, seed, factory dispatch / spin / challenge, context
+  advisory / retrieve) rather than importing pyforge.marshal internals.
 forge_tier: Quick
 created: '2026-08-25'
 created_by: skf-create-skill
@@ -20,6 +21,10 @@ scope:
     - src/pyforge/marshal/cli/check.py
     - src/pyforge/marshal/cli/init.py
     - src/pyforge/marshal/cli/seed.py
+    - src/pyforge/marshal/cli/spin.py
+    - src/pyforge/marshal/cli/dispatch.py
+    - src/pyforge/marshal/cli/context.py
+    - src/pyforge/marshal/cli/challenge.py
     - README.md
   exclude:
     - tests/**
@@ -27,6 +32,9 @@ scope:
   notes: >
     CAP-15 compile for marshal. Public contract is the marshal CLI (AD-7).
     Portal django-marshal is out of scope. Do not wire bmad-loop ingest.
+    Scope widened 2026-11-01 (steward Story 29.4, EGM audit RUL-CL2): spin.py,
+    dispatch.py (where factory dispatch registers), context.py and challenge.py
+    carry the verbs AGENTS.md names; recompiled in place at 0.1.0.
   rationale:
     recommended: specific-modules
     chosen: specific-modules

@@ -2,7 +2,7 @@
 title: "19.6: Mason's skill meta-tests scan every skill file, G-id and CLI verb"
 type: 'fix'
 created: '2026-11-01'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: true
@@ -166,15 +166,140 @@ Parent: CAP-29
 
 ## Auto Run Result
 
-Status: backlog
+Status: done
 
-Summary: not yet dispatched.
+Summary: implemented 2026-11-01 in the EGM landing worktree (branch `egm-audit-2026-11`), tests only plus one
+two-token pointer repair; nothing committed.
+
+**What changed**
+
+- `src/shared/packages/pyforge-mason/tests/meta/test_mason_skills.py` (AC1-AC4): `mason_skill_files()` reads every
+  `*.md` under the four hand-authored skills (with `references/`) and
+  `.claude/skills/pyforge-mason/active/pyforge-mason/`. `skill_file_violations()` reds three things, each naming the
+  file (and line for a heading or a G-id): a gotcha heading at any level (`#{1,6} G<n>[a-z]?.`); a cited G-id (a
+  `G31–G34` range expands, and a letter suffix such as `G8b` is its own id, never `G8`) with no `### G<n>.` heading in
+  `.claude/skills/conda-forge-expert/SKILL.md`; and a CFE `**Fix**` prose sentence of 60 or more characters copied
+  verbatim, which is the spec's "copied fix text" (fenced code is skipped, and a shorter gist passes).
+  `test_skill_tier_scan_is_not_vacuous` plants each one in a `references/worked-examples.md` under `tmp_path`, and
+  checks that `- **G95** (BCTB block, see CFE) — …` passes. `pointer_violation()` requires a Markdown link to
+  `.claude/skills/<skill>/SKILL.md` in both how-tos and both `archive/docs/specs/` stubs. The test is parametrised
+  over the four files, and a stripped copy proves the check reds. The Story 19.2 checks are unchanged.
+- `src/shared/packages/pyforge-mason/tests/meta/test_skf_mason_skill.py` (AC5): `registered_verbs(build_parser())`
+  walks the argparse tree. All 12 `recipe`/`package`/`environment` verbs must appear as `"<noun> <verb>"` in the
+  station `SKILL.md`, and the failure message names `skf-update-skill` from `skill-brief.yaml` as the remedy. A
+  `planted-verb` added to the live parser reds the check.
+- `src/shared/packages/pyforge-mason/tests/meta/test_persona_consults_cfe.py` (AC6, AC7): `skf_block_violations()`
+  checks for a `[SKF Skills]|<n> skills|<n> stack` header, a `|[pyforge-mason v…]|root: .claude/skills/pyforge-mason/`
+  entry and a `|[<station> v` entry for each of the other seven stations. It pins no count and no version (the old
+  `|[<station> v0.1.0]|` loop had the same problem as the mason literal, so it was loosened too). A 9-skill block with
+  mason at `v0.2.0` passes, and a block without the mason entry fails. `notes_name_mason_as_skf_skill()` requires
+  `` `pyforge-mason` `` in `docs/reference/agent-instruction-notes.md` § *SKF skills block*, and fails when that name
+  is replaced.
+- `.claude/skills/mason-feedstock-platform-expansion/SKILL.md` (lines 286 and 522): **one deviation, for review.**
+  The spec's probe said no G-id dangles. The new AC2 check found that `G8b` does: CFE has never had a `### G8b.`
+  heading (`git log -S` traces it to the CFE v8.23.0 guide, where it meant step 8's `get_build_summary`
+  false-negative caveat), and the old probe read `G8b` as `G8`. Both citations now read `G85` ("A native
+  `trigger_build` reports 'No build summary found' even on SUCCESS — confirm from the `.conda` artifact"), the gotcha
+  their gist describes. The gist text is unchanged and the pointer stays a pointer. I read the boundary "never rewrite
+  a gotcha pointer that carries a one-line gist" as protecting gist pointers from the restatement rule, not as
+  forbidding the repair of a dangling id. If the reviewer reads it literally, the alternative is to block the story
+  on AC2/AC8. The same dangling `G8b` remains at `.claude/skills/conda-forge-expert/guides/feedstock-platform-expansion.md:295,543`.
+  That is CFE surface, outside this story's boundary, and needs a `retro(cfe):` follow-up.
+- Spec memlog: two events. The first is the surface reconcile naming the three test paths and the skill file. The
+  second states CAP-29's new success behaviour for `mason-c01`'s `bmad-spec` re-derive.
+
+**Not touched:** `.claude/skills/pyforge-mason/**` (all 12 verbs are already present, so no SKF regeneration was
+needed), `AGENTS.md`, any CFE path, any `SPEC.md` or ledger.
+
+**Commands run (exit codes)**
+
+- Before the G8b repair: `pixi run --frozen -e pyforge-mason pytest …/tests/meta/test_mason_skills.py -q` gave exit 1
+  (the new dangling-G-id check named `G8b` at `mason-feedstock-platform-expansion/SKILL.md:286`). After the repair it
+  passes.
+- `pixi run --frozen -e pyforge-mason pytest src/shared/packages/pyforge-mason/tests/meta/test_mason_skills.py src/shared/packages/pyforge-mason/tests/meta/test_skf_mason_skill.py src/shared/packages/pyforge-mason/tests/meta/test_persona_consults_cfe.py -q`
+  exited 0 (39 passed).
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` exited 0 (1656 + 2 + 12 passed, about 25 s, full suite).
+- `ruff check` exited 0 and `ruff format --check` exited 0 on the three test files. Both ran from the package dir with
+  `.pixi/envs/pyforge-guild/bin/ruff`, because the `ruff` task is not defined in `pyforge-mason`. One import-order
+  fix was applied by `ruff check --fix`.
+- `mypy -p pyforge.mason` from the package dir (the lint-types slice, `pyforge-guild` mypy) exited 0. Tests are
+  outside lint-types' mypy scope.
+- Not run here (the session owner's landing steps): full-scope `pr-preflight`, `spec-surface-check`, and the scoped
+  stamps.
 
 ## Spec Change Log
 
 - 2026-11-01: minted from the EGM fleet audit (marshal Story 113.7), findings MAS-M-Z4 and MAS-M-D5, cluster
   `mason-c06-skill-metatests`; fix under `spec-pyforge-mason` CAP-29, no new CAP, no flag.
+- 2026-11-01 (dev): the dangling-G-id check (AC2) found that `G8b` is cited by
+  `.claude/skills/mason-feedstock-platform-expansion/SKILL.md`, contradicting the Intent's "no dangling G-id" probe.
+  The two citations were repointed to `G85`, keeping the gist. The CFE guide's own `G8b` is left for a CFE retro.
 
 ## Review Triage Log
 
-- (none yet)
+### 2026-11-01 — Review pass (reviewer: independent session)
+
+- Verdict: **pass**. Every AC holds, with evidence observed in this review. Failures: none. One deviation is accepted
+  (see the first item under "Deviation and observations").
+- What was checked (every verdict read from the exit code):
+  - AC 1: `mason_skill_files()` was probed on the live tree. It scans 8 files: the four hand-authored `SKILL.md`, both
+    `references/worked-examples.md`, and the station skill's `SKILL.md` and `context-snippet.md` (through
+    `active/`). A planted `## G1.` heading in a `references/` file under tmp is reported with its file and line, so
+    any heading level is caught.
+  - AC 2: run against HEAD's `.claude/skills/mason-feedstock-platform-expansion/SKILL.md`,
+    `skill_file_violations` reports `SKILL.md:286: cites G8b, which has no '### G8b.' heading`. The check is real,
+    and it would have failed the tree before the repair. CFE defines 123 G-ids, including G85; it does not define
+    G8b.
+  - AC 3: `test_skill_tier_scan_is_not_vacuous` plants a heading, a dangling `G999`, a `G8b` suffix and a copied
+    G85 fix sentence, each in a `references/` file under `tmp_path`. Each one fails the check. The pointer
+    `**G95** (BCTB block, see CFE)` passes.
+  - AC 4: `test_campaign_how_to_and_stub_link_their_skill` covers both how-tos and both `archive/docs/specs/`
+    stubs, and passes. The stripped-copy test proves that the check reds when the link is removed.
+  - AC 5: `registered_verbs(build_parser())` returns 12 pairs. All 12 appear in the station `SKILL.md`. A planted
+    `recipe planted-verb` is reported as missing.
+  - AC 6: `skf_block_violations` returns `[]` on the live `AGENTS.md` block. It also returns `[]` for a 9-skill block
+    with mason at `v0.2.0`. When the mason entry is removed, it names the missing entry. The literals `8 skills` and
+    `v0.1.0` are gone.
+  - AC 7: `notes_name_mason_as_skf_skill` holds on the live notes and fails when `` `pyforge-mason` `` is replaced.
+  - AC 8: the three meta files exit 0 (39 passed), and `pyforge-mason-test` exits 0 (1656 + 2 + 12 passed).
+  - Always boundary: the Story 19.2 checks in `test_mason_skills.py` are unchanged, because the diff only adds.
+  - Lint and checks: `ruff check` and `ruff format --check` on the three test files (package config) exit 0.
+    `spec-surface-check` (read-only) exit 0. `docs-skills-catalog -- --check` exit 0, so the skill edit leaves the
+    catalog current.
+  - Nothing else runs these test files: no pixi task, workflow or script other than the mason suite.
+  - `.claude/skills/pyforge-mason/**`, `AGENTS.md` and every CFE-surface path are untouched. `.claude/skills/mason-*`
+    is not CFE surface (`scripts/mason_cfe_surface_check.py`).
+- Deviation and observations:
+  - **Accepted: `G8b` became `G85` in `.claude/skills/mason-feedstock-platform-expansion/SKILL.md:286,522`.** This
+    file is outside the story's Surface, and "tests only" did not foresee it. The Intent's probe was wrong: it read
+    `G8b` as `G8`. As a result, AC 2 and AC 8 could not both hold without this repair. The Never clause ("Rewrite a
+    gotcha pointer that carries a one-line gist") is read here as a ban on rewriting gist pointers to satisfy the
+    restatement rule. The repair stays inside that reading:
+    - the gist text is unchanged, and the line is still a pointer;
+    - the id now resolves to the gotcha its gist describes, since CFE G85's Symptom and Fix are the native
+      `get_build_summary` "status: unknown" false negative, confirmed from the `.conda` artifact;
+    - the change is recorded in the Spec Change Log and the memlog;
+    - the file is in no Spec's surface (baseline count 0);
+    - no CFE gotcha moved.
+  - Follow-up for the session owner (named blocker: this story's Never clause on CFE surface):
+    `.claude/skills/conda-forge-expert/guides/feedstock-platform-expansion.md:295,543` still cites the dangling `G8b`.
+    It needs a CFE-skill change with a `retro(cfe):` commit and a CHANGELOG entry. Record it as a deferred-work row,
+    so that it does not live only in this spec.
+  - Observation, not a failure: `pointer_violation` matches a link whose *text* names
+    `.claude/skills/<skill>/SKILL.md`. Its target is not checked: the live links point at the skill directory on
+    GitHub. This matches the live convention, but a wrong target with the right text would pass.
+  - Not run here: the full-scope `pr-preflight` (a manual check). Other agents are editing other stations in this
+    worktree, and the one-preflight-per-machine rule applies. It stays with the session owner, together with the
+    scoped stamps and the ledger promotion.
+
+## Dev Notes
+
+- Review follow-up 2026-11-01 (station-tests routing): steward's trigger map
+  (`src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py`) derives five reads this story's
+  tests added, and `mason_paths` in `.github/workflows/pyforge-station-tests.yml` carried none of them:
+  `archive/docs/specs/feedstock-failure-remediation.md`, `archive/docs/specs/feedstock-platform-expansion.md`,
+  `docs/how-to/feedstock-failure-remediation.md` and `docs/how-to/feedstock-platform-expansion.md` (`CAMPAIGN_POINTERS`
+  in `src/shared/packages/pyforge-mason/tests/meta/test_mason_skills.py`), and
+  `docs/reference/agent-instruction-notes.md` (`NOTES_MD` in
+  `src/shared/packages/pyforge-mason/tests/meta/test_persona_consults_cfe.py`). The array now carries all five, so an
+  edit to any of them runs `mason-test`. The tests and their assertions are unchanged; the meta-test exits 0.

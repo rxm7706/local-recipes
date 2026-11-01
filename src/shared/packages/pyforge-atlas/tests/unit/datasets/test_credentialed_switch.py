@@ -276,10 +276,15 @@ def test_the_autouse_guard_fails_a_credentialed_request_without_the_switch(heade
         requests.get("https://api.github.com/x", headers={header: "t"}, timeout=1)
 
 
-def test_with_the_flag_on_a_host_or_registry_request_carries_a_no_op_auth_and_no_credential(monkeypatch):
+@pytest.mark.parametrize("switch", [None, "", "0", "true", "1"], ids=["unset", "empty", "0", "true", "1"])
+def test_a_host_or_registry_request_carries_the_credential_only_with_the_flag_off_and_the_switch(monkeypatch, switch):
+    """Story 35.5 (ATL-M-D4): flag on, no credential whatever the switch (Story 35.4's request,
+    unchanged); flag off, the catalog credential only when the switch is exactly ``1``."""
     from pyforge.atlas.datasets import public_sources
     from pyforge.atlas.datasets.vcs_sources import USER_AGENT, _request_kwargs
 
+    if switch is not None:
+        monkeypatch.setenv(credential_switch.SWITCH, switch)
     monkeypatch.setattr(credential_switch, "live_vcs_universe", lambda: True)
     on = _request_kwargs(30, ["PRIVATE-TOKEN", "stub"])
     monkeypatch.setattr(credential_switch, "live_vcs_universe", lambda: False)
@@ -287,32 +292,142 @@ def test_with_the_flag_on_a_host_or_registry_request_carries_a_no_op_auth_and_no
 
     # no credential; the no-op auth keeps ~/.netrc out; Story 35.4 names atlas as the agent
     assert on == {"load_args": {**public_sources.request_args(30), "headers": {"User-Agent": USER_AGENT}}}
-    assert off == {"load_args": {"timeout": 30}, "credentials": ["PRIVATE-TOKEN", "stub"]}
+    if switch == "1":  # the operator opted in: the catalog credential rides, as before
+        assert off == {"load_args": {"timeout": 30}, "credentials": ["PRIVATE-TOKEN", "stub"]}
+    else:  # no credential key, and the same no-op auth the flag-on path uses
+        assert off == {"load_args": public_sources.request_args(30)}
 
 
+_CREDENTIAL_HEADERS = ("Authorization", "Proxy-Authorization", "PRIVATE-TOKEN", "X-NuGet-ApiKey")
+
+
+@pytest.mark.parametrize("switch", [False, True], ids=["switch-off", "switch-on"])
 @pytest.mark.parametrize("flag", [True, False], ids=["flag-on", "flag-off"])
 @pytest.mark.parametrize("kind", ["gitlab-host", "npm-registry"])
-def test_a_vcs_host_sends_its_credential_only_with_the_flag_off(fake_transport, tmp_path, monkeypatch, flag, kind):
-    # Story 35.4 decides which hosts may authenticate; until then the flag-on path is public
+def test_a_vcs_host_or_registry_sends_its_credential_only_with_the_flag_off_and_the_switch(
+    fake_transport, tmp_path, monkeypatch, flag, switch, kind
+):
+    """Story 35.5 (ATL-M-D4): over the transport fixture, a host or registry request carries a
+    credential only with the flag off and the switch on (the catalog pair, as Basic auth). A
+    ``~/.netrc`` entry for the host never rides: without the switch the guard would refuse it."""
+    import base64
+
+    netrc = tmp_path / "netrc"
+    netrc.write_text(
+        "machine gitlab.com login netrc-user password netrc-secret\n"
+        "machine registry.npmjs.org login netrc-user password netrc-secret\n",
+        encoding="utf-8",
+    )
+    netrc.chmod(0o600)
+    monkeypatch.setenv("NETRC", str(netrc))
     monkeypatch.setattr(credential_switch, "live_vcs_universe", lambda: flag)
+    if switch:
+        monkeypatch.setenv(credential_switch.SWITCH, "1")
     common = {"filepath": str(tmp_path / "store"), "max_retries": 0, "sleep": lambda _s: None}
     if kind == "gitlab-host":
-        ds = VcsHostSeedDataset(
-            url="https://gitlab.com/api/v4", host="gitlab", credentials=["PRIVATE-TOKEN", "stub"], **common
-        )
+        pair = ["PRIVATE-TOKEN", "stub"]
+        ds = VcsHostSeedDataset(url="https://gitlab.com/api/v4", host="gitlab", credentials=pair, **common)
     else:
-        ds = RegistryUpstreamDataset(
-            url="https://registry.npmjs.org", registry="npm", credentials=["npm", "stub"], **common
-        )
+        pair = ["npm", "stub"]
+        ds = RegistryUpstreamDataset(url="https://registry.npmjs.org", registry="npm", credentials=pair, **common)
 
-    if flag:
-        with contextlib.suppress(Exception):  # the fake transport answers 404; only the request matters
-            ds.fetch_one("group/project")
-        assert fake_transport.sent
-        assert not any("Authorization" in r.headers or "PRIVATE-TOKEN" in r.headers for r in fake_transport.sent)
+    # the fake transport answers 404; only the request matters. The guard's pytest.fail is not an
+    # Exception, so a credential sent without the switch still fails this test.
+    with contextlib.suppress(Exception):
+        ds.fetch_one("group/project")
+
+    assert fake_transport.sent
+    sent = [{h: r.headers.get(h) for h in _CREDENTIAL_HEADERS if r.headers.get(h)} for r in fake_transport.sent]
+    if switch and not flag:  # the operator opted in on the legacy branch: the catalog pair, never netrc's
+        basic = "Basic " + base64.b64encode(":".join(pair).encode()).decode()
+        assert all(headers == {"Authorization": basic} for headers in sent)
     else:
-        with pytest.raises(pytest.fail.Exception):  # today's path sends the pair as Basic auth: the guard refuses
-            ds.fetch_one("group/project")
+        assert all(headers == {} for headers in sent)
+
+
+@pytest.mark.parametrize("switch", [None, "", "0", "true", "1"], ids=["unset", "empty", "0", "true", "1"])
+def test_the_flag_off_github_batch_hands_over_the_credential_only_with_the_switch(tmp_path, monkeypatch, switch):
+    """Story 35.5 review follow-up 2 (ATL-M-D4): with the flag off, ``save()`` runs the repo-health
+    batch (``_fetch_batch_with_retry``'s own request), which gets the catalog credential only when the
+    switch is exactly ``1``; without it, no credential and the no-op auth that keeps ``~/.netrc`` out.
+    kedro's ``APIDataset.load()`` refuses a POST before it sends anything, so the request is checked
+    where it is built."""
+    import pyforge.atlas.datasets.request_datasets as RD
+    from kedro.io import DatasetError
+
+    from pyforge.atlas.datasets import public_sources
+
+    if switch is not None:
+        monkeypatch.setenv(credential_switch.SWITCH, switch)
+    built: list[dict] = []
+
+    class _Recorder:
+        def __init__(self, **kwargs) -> None:  # noqa: ANN003
+            built.append(kwargs)
+
+        def load(self):  # noqa: ANN202 -- kedro's own refusal of a POST load
+            raise DatasetError("Only GET method is supported for load().")
+
+    pair = ["stub-user", "stub-secret"]
+    ds = _dataset(tmp_path, credentials=pair)
+    monkeypatch.setattr(RD, "APIDataset", _Recorder)  # after construction: only the batch's requests are recorded
+
+    ds.save(_request(("o", "r")))
+
+    body = ds.build_batch_query([("o", "r")])
+    assert len(built) == 2  # the first attempt and its one retry (max_retries=1)
+    for kwargs in built:
+        assert (kwargs["url"], kwargs["method"]) == (GRAPHQL, "POST")
+        if switch == "1":  # the operator opted in: the catalog credential rides, as before
+            assert kwargs["credentials"] == pair
+            assert kwargs["load_args"] == {"json": body, "timeout": ds._timeout_seconds}
+        else:
+            assert kwargs.get("credentials") is None
+            assert kwargs["load_args"] == {"json": body, **public_sources.request_args(ds._timeout_seconds)}
+
+
+@pytest.mark.parametrize("switch", [False, True], ids=["switch-off", "switch-on"])
+@pytest.mark.parametrize("kind", ["github", "anaconda"])
+def test_a_request_dataset_fetch_one_sends_its_credential_only_with_the_switch(
+    fake_transport, tmp_path, monkeypatch, switch, kind
+):
+    """Story 35.5 review follow-up 2 (ATL-M-D4): the shared ``fetch_one`` of the request-parameterized
+    datasets (GitHubRequestDataset inherits it) carries the catalog pair, as Basic auth, only with the
+    switch; without it, no credential and never a ``~/.netrc`` entry. The catalog's GitHub entry is a
+    POST, which ``APIDataset.load()`` refuses before sending, so the GitHub case is built as a GET."""
+    import base64
+
+    from pyforge.atlas.datasets import AnacondaDownloadsDataset
+    from pyforge.atlas.datasets.refresh import DEFAULT_REFRESH_TIMEOUT_SECONDS
+
+    netrc = tmp_path / "netrc"
+    netrc.write_text(
+        "machine api.github.com login netrc-user password netrc-secret\n"
+        "machine api.anaconda.org login netrc-user password netrc-secret\n",
+        encoding="utf-8",
+    )
+    netrc.chmod(0o600)
+    monkeypatch.setenv("NETRC", str(netrc))
+    if switch:
+        monkeypatch.setenv(credential_switch.SWITCH, "1")
+    pair = ["stub-user", "stub-secret"]
+    if kind == "github":
+        ds = GitHubRequestDataset(url=GRAPHQL, filepath=str(tmp_path / "store"), method="GET", credentials=pair)
+    else:
+        ds = AnacondaDownloadsDataset(url="https://api.anaconda.org/package", credentials=pair)
+
+    # the fake transport answers 404; only the request matters. The guard's pytest.fail is not an
+    # Exception, so a credential sent without the switch still fails this test.
+    with contextlib.suppress(Exception):
+        ds.fetch_one("conda-forge/numpy")
+
+    assert len(fake_transport.sent) == 1
+    headers = {h: fake_transport.sent[0].headers.get(h) for h in _CREDENTIAL_HEADERS if fake_transport.sent[0].headers.get(h)}
+    if switch:  # the catalog pair, never netrc's
+        assert headers == {"Authorization": "Basic " + base64.b64encode(":".join(pair).encode()).decode()}
+    else:
+        assert headers == {}
+    assert fake_transport.timeouts == [DEFAULT_REFRESH_TIMEOUT_SECONDS]  # a fan-out request never waits forever
 
 
 def test_the_real_reader_reads_off_when_the_tree_lacks_the_key(tmp_path, monkeypatch):

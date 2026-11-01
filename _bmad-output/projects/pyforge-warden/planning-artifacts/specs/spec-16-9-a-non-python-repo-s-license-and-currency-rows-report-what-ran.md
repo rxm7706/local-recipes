@@ -2,7 +2,7 @@
 title: "16.9: A non-Python repo's license and currency rows report what ran"
 type: 'fix'
 created: '2026-11-01'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
@@ -119,16 +119,64 @@ Parent: CAP-26
 
 ## Auto Run Result
 
-Status: backlog
+Status: done
 
-Summary: not yet dispatched.
+Summary: implemented 2026-11-01 in the EGM audit landing worktree (branch `egm-audit-2026-11`); not committed.
+
+**Probe (AC3) — it held.** osv-scanner 2.4.0 without `--all-packages`, run on a two-package npm lock that matches no
+advisory, wrote `"results": []` (0 components); with `--all-packages` it listed both packages. So a clean npm lock
+inventoried 0 components and composed the empty-extraction `indeterminate`, and a mixed lock listed only its
+vulnerable packages.
+
+**What changed:**
+- `src/shared/packages/pyforge-warden/src/pyforge/warden/native_lockfiles.py` — `inventory_count_for_axis` counts every
+  component on the vulnerability, license and currency axes and leaves native components out on hygiene only, so the
+  license and currency rows report the N components their engines judged (AC1). `scan_native_lockfile` passes
+  `--all-packages` (2.4.0, inside the tested `>=2.4.0,<2.5`; the version-range meta-test still passes) (AC3). The
+  `is_non_python_native_ecosystem` docstring no longer calls license and currency N/A.
+- `src/shared/packages/pyforge-warden/src/pyforge/warden/interfaces.py` — the native-component comment in
+  `DefaultPolicy.evaluate` describes what runs: osv-scanner's vuln scan, hygiene out of scope, and the license and
+  currency engines emitting `license:unknown` / `currency:unknown` (warn ungated, indeterminate gated, never clean) (AC4).
+- `src/shared/packages/pyforge-warden/src/pyforge/warden/report.py` — a comment at the per-axis total; no code change
+  (the row fix flows through `inventory_count_for_axis`). Schema stays 1.1.0; no engine skips a native component.
+- `src/shared/packages/pyforge-warden/tests/unit/test_non_python_lockfiles.py` — the old `license deps_total == 0`
+  assertion now reads `== inventory_count == 1`; `inventory_count_for_axis` asserts license/currency counts; new
+  `test_scan_native_lockfile_inventories_a_clean_lock` (AC3), `test_npm_license_and_currency_rows_count_what_ran`
+  (clean N=2, vulnerable N=1; AC1/AC3) and `test_npm_lock_composed_status_is_pinned` (clean and vulnerable lock ×
+  ungated / `--deny-licenses GPL-3.0-only` / `--fail-on-eol`: ungated `warn` exit 0, gated `indeterminate` exit 1
+  driven by the gated axis with its row `gating: true`, the vulnerable lock carries
+  `vuln:PDOS-NPM-FIXTURE-0001:pdos-npm-vuln-fixture@1.0.0`, `schema_version` 1.1.0; AC2/AC6). The clean lock is
+  written into `tmp_path`, so no new fixture file.
+- Mutation check: dropping `--all-packages` fails 5 tests (every clean-lock case); restoring the old
+  `inventory_count_for_axis` fails 8 (the counting test, both row tests, the vuln-lock row assertion, the four gated
+  cases). The file was restored byte-identical (`cmp`).
+- AC5: two events appended to `spec-pyforge-warden/.memlog.md` (the surface reconcile and the CAP-26 behaviour line);
+  the CAP-26 text itself changes only through the session's `bmad-spec` re-derive (with WAR-CL-3's), never by hand.
+
+**Commands run (exit codes):**
+- `pixi run --frozen -e pyforge-warden pytest src/shared/packages/pyforge-warden/tests/unit/test_non_python_lockfiles.py -q` — 0 (28 passed).
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — 0 (2238 unit + 265 meta/integration passed).
+- `ruff check` / `ruff format --check` (pyforge-guild's ruff, run from the package directory as `lint-types` does)
+  over the four changed files and over the whole package's `src tests` — 0 / 0.
+- `mypy -p pyforge.warden` from the package directory (pyforge-guild env, scratch cache dir) — 0 (44 source files).
+- `pixi run --frozen -e pyforge-guild lint-types` — 1, not from this story: its ruff leg reds on
+  `src/shared/packages/pyforge-doctor/tests/unit/test_sources_pages_liveness.py` (I001), another station's in-flight
+  edit in this shared worktree; `pyforge-warden` and `django-warden` report `ok`, and the chain stops before the
+  format and mypy legs (warden's slices of both are green above).
 
 ## Spec Change Log
 
 - 2026-11-01: minted `backlog` from the EGM fleet audit (marshal Story 113.7): cluster WAR-CL-5, findings WAR-M-D1
   (contested, false-green refuted) and WAR-M-C2, accepted by the operator; operator ruling 2026-11-01 (state today's
   unknown-then-warn behaviour and fix the `deps_total=0` rows); mode in-PR.
+- 2026-11-01: implemented; the AC3 probe held (`--all-packages` added); status `in-review`.
 
 ## Review Triage Log
 
-- (none yet)
+- **Review 1 (2026-11-01, reviewer: independent session) — PASS.**
+  - Checked: the `native_lockfiles.py`, `interfaces.py` and `report.py` diffs and the tests against AC1-AC6 and the Boundaries; the osv version-range meta test passes with `--all-packages`; no engine skips a native component.
+  - Common evidence (one run for all eight stories, exit codes read from `$?`): `pixi run --frozen -e pyforge-warden pyforge-warden-test` exit 0 (2255 unit+meta, 265 other); the twelve touched warden unit/meta test files together exit 0 (290 passed, 0 skipped; opengrep 1.30.2 and osv-scanner present); `ruff check` and `ruff format --check` over every changed warden, django-warden and platform test file exit 0; `python scripts/lint_types.py ruff-format` exit 0 and `python scripts/lint_types.py mypy` exit 0 (`pyforge-warden ok`); `pixi run --frozen -e pyforge-guild lint-types` exit 1 only from `pyforge-doctor`'s I001 in `tests/unit/test_sources_pages_liveness.py`, another station's in-flight file (`pyforge-warden` and `django-warden` ruff legs ok); `pixi run -e pyforge-guild platform-ci-local -- --test` (private ports) exit 0, RESULT: PASS, 1377 passed / 14 skipped; touched warden modules' unit coverage all at or above 81%. Mutations ran on scratch copies only (warden via `PYTHONPATH`, django-warden via `pytest -o pythonpath=`), never on the worktree.
+  - Reviewer probe: four npm reports (clean lock, vulnerable lock, clean lock gated on license, mixed dry-run) validate against `report-schema.json` at 1.1.0; the license and currency rows read N=2 (clean) and N=1 (vulnerable); ungated `warn`, gated `indeterminate`.
+  - Mutations: dropping `--all-packages` turns 5 red (every clean-lock case); the old `inventory_count_for_axis` turns 8 red.
+  - Carried forward, not held against the story: the CAP success-line change is recorded on `spec-pyforge-warden/.memlog.md`; `SPEC.md` is unchanged, as required, and the line waits for the session owner's `bmad-spec` re-derive.
+  - Failures: none.

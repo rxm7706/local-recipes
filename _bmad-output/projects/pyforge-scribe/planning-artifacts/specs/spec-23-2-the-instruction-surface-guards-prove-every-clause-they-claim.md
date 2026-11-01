@@ -2,7 +2,7 @@
 title: '23.2: The instruction-surface guards prove every clause they claim'
 type: 'fix'
 created: '2026-11-01'
-status: 'backlog'
+status: 'in-progress'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -208,4 +208,143 @@ See `epics.md` § Story 23.2 for the full Given / When / Then / And.
 
 ## Auto Run Result
 
-Status: backlog
+Status: in-review
+
+### What changed
+
+- `src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py`:
+  - AC1 / CAP-27: `_skf_end_state_breaks` + `test_the_2026_09_26_skf_end_state_holds` check three clauses. `CLAUDE.md`
+    has no `<!-- SKF:BEGIN`. `_bmad/skf/config.yaml` `ides` (read with `yaml.safe_load`, never written) equals
+    `['other']`. AGENTS.md's Pre-PR item 10 `governance-currency` bullet, with its continuation lines joined by
+    `_governance_currency_bullet`, names `` `detectors-ci` `` and `` `pr-preflight` ``.
+    `test_skf_end_state_guard_names_each_broken_clause` has four ids. Each one breaks one clause on the live inputs
+    and asserts that exactly that clause is reported. The test does not re-assert that AGENTS.md carries the SKF
+    block, because mason holds that check.
+  - AC2–AC4 / CAP-29: `_stub_claude` writes an executable `claude` with a `sys.executable` shebang into `tmp_path`.
+    `_run_mode_check` runs the script with `PATH` set to that one directory and a tmp `--settings` file.
+    - `test_runtime_mode_check_is_silent_without_claude_on_path`: exit 0, `stdout == ""`.
+    - `test_runtime_mode_check_branches_with_a_stub_claude[old-runtime-warns]`: 2.1.276 with pinned settings exits 1.
+    - `[unpinned-mode-warns]`: 2.1.300 with `{}` exits 1.
+    - `[pinned-current-ok]`: 2.1.300 with pinned settings exits 0.
+    - `test_runtime_mode_check_could_not_run_on_a_missing_claude_path`: exit 2, `could-not-run`.
+    The old `..._registered_and_silent_without_claude` test is now `test_runtime_mode_check_is_registered`. It keeps
+    only the registration and `configured_mode` asserts. The stub tests skip on win32 because the stub is a shebang
+    script.
+  - AC5 / CAP-29: the H2 intersection moves into `_duplicate_h2`. The guard is parametrized over
+    `DUPLICATE_GUARD_FILES` (`POINTER_FILES` + every `.cursor/rules/*.mdc` + `CLAUDE.md`, deduplicated, so
+    `specs.mdc` no longer runs twice). `CLAUDE.md` is not in `POINTER_FILES`, so the 60-line rule never reaches it.
+    `test_duplicate_guard_reports_a_planted_normalised_duplicate_in_claude_md` checks three things. Live `CLAUDE.md`
+    has no collision, since its H2s are Interactive session path, Where moved sections went and Team Memory. A
+    planted `## Behavioral Guidelines` is reported against the live AGENTS.md. `CLAUDE.md` is outside
+    `POINTER_FILES`.
+  - AC6 / CAP-30: `test_aspiration_guard_reports_every_branch_inside_and_ignores_it_outside[fixme|not-yet-landed|not-landed]`.
+  - AC7 / CAP-32: `_TYPED_COUNT` and `test_managed_block_types_no_suite_member_or_skill_family_count` pass on the live
+    block. The refresh in `db3a81aede` already dropped the counts. `test_typed_count_guard_reports_a_planted_count_inside_the_block[13-members|16-skf-ones]`
+    reds a count inside the markers and ignores the same line outside them.
+  - AC8: `test_project_settings_custom_instructions_point_at_agents_md` now requires exactly one entry, one sentence
+    with no `:` list, the section name, and none of the bolded principle names it parses from AGENTS.md's section
+    (8 today).
+- `scripts/claude_instruction_mode_check.py`: the no-binary branch no longer prints and still exits 0 (AC2). Before
+  the change I confirmed that `scripts/detectors.py` `run_one` maps rc 0 to `pass` whatever stdout says, and empty
+  stdout gives `summary: ""`. The docstring, the `pixi.toml` task text, CAP-29 and Story 19.3 already said
+  "silent", so `pixi.toml` and `environment.yaml` are untouched. Fixed in the touched file: `subprocess.run(...,
+  check=False)` (PLW1510) and mode 100755 to match its shebang (EXE001). The file was also ruff-formatted, so
+  `ruff format --check` on it is green. That is formatting only, about 30 lines, with no behaviour change.
+- `.claude/settings.json`: `customInstructions` is now the single sentence "Follow the behavioural guidelines in
+  AGENTS.md § Behavioural guidelines (every harness)." (operator ruling 2026-11-01; the ruling records its runtime
+  effect as unverified in this Spec's memlog.)
+- `spec-pyforge-scribe` memlog: one surface-reconcile event naming all three paths, and one CAP-27 success event
+  naming the end-state asserts. CAP-29 is not amended because "silent" now holds as written.
+
+### Commands run (exit codes)
+
+- `pixi run --frozen -e pyforge-scribe python -m pytest src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py`
+  — 0 (49 passed).
+- AC9 mutation probes on scratch copies of the test file. Each copy points at the worktree root and has one change;
+  the tracked files are untouched. Every probe exited 1, and only the guarding test(s) failed:
+  - old script with the ok print → the silent test failed.
+  - HEAD `.claude/settings.json` → the customInstructions test failed.
+  - `03a7aff5d9` AGENTS.md (block still typing "13 members" / "16 skf ones") → the typed-count test failed and named
+    both lines.
+  - `FIXME` branch dropped from `_ASPIRATION` → `[fixme]` failed.
+  - not-(yet-)landed branch dropped → `[not-yet-landed]` and `[not-landed]` failed.
+  - `CLAUDE.md` dropped from `DUPLICATE_GUARD_FILES` → the planted duplicate self-test failed.
+  - each `_skf_end_state_breaks` clause disabled in turn → its own mutation id failed.
+  - typed-count match disabled → both planted ids failed.
+- `pixi run --frozen -e pyforge-mason python -m pytest src/shared/packages/pyforge-mason/tests/meta/test_persona_consults_cfe.py` — 0 (19 passed).
+- Station SKF marker checks (AC9): doctor, marshal and warden `tests/meta/test_skf_domain_skill.py` — 0, 0, 0 (6, 8,
+  6 passed). steward `tests/meta/test_skf_domain_skills.py` — 0 (6 passed).
+- `pixi run --frozen -e pyforge-guild python -m pytest tests/scripts/test_detectors_task_match.py` — 0 (36 passed).
+- `pixi run -e pyforge-guild claude-instruction-mode-check` — 0 (`ok -- Claude Code 2.1.314 with
+  instructionFiles=claude-md-and-agents-md` on this host). With `--settings /nonexistent/x.json` — 1 (warn).
+- `pixi run --frozen -e pyforge-guild python scripts/detectors.py --scope runtime --list` — 0; lists
+  `claude_instruction_mode_check task=claude-instruction-mode-check`.
+- `pixi run -e pyforge-guild governance-currency` — 0.
+- `pixi run -e pyforge-scribe-pg scribe-pg-up` — 0. Then `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — 0
+  (451 passed, 12 skipped; the full suite).
+- `.pixi/envs/pyforge-guild/bin/ruff check` and `ruff format --check` on the test file and on
+  `scripts/claude_instruction_mode_check.py` — 0, 0, 0, 0. The scribe lint-types ruff slice (`ruff check src tests` and
+  `ruff format --check src tests` from the package dir) — 0, 0. mypy is not affected, because `lint-types` runs
+  `mypy -p pyforge.scribe` and only `tests/` changed in the package.
+- `pixi run -e pyforge-guild spec-surface-check` — 0 (read-only; no stamp written).
+
+### Left for the session owner
+
+- The CAP-27 re-derive through `bmad-spec` and its two self-validate passes (AC10's memlog half) belong to the
+  re-derive phase, which reads the CAP-27 success event appended here.
+- Co-governor reconciles and the scoped `--write-baseline` stamps (spec-surface-check is green on this tree).
+- Same PR as marshal Story 113.7's `bmad-project-context` refresh (`db3a81aede`), which the typed-count assert needs.
+
+## Review Triage Log
+
+### 2026-11-01 — Independent review (reviewer: independent session) — FAIL (back to in-progress)
+
+Judged against this spec's ACs and Boundaries from `git diff HEAD` of the parity meta-test,
+`scripts/claude_instruction_mode_check.py` and `.claude/settings.json`, not the implementer's summary. Every verdict
+read from the exit code.
+
+Checked and holding:
+- AC1 — `test_the_2026_09_26_skf_end_state_holds` passes on the live tree; `test_skf_end_state_guard_names_each_broken_clause`
+  (4 ids) reds exactly the broken clause.
+- AC2 — no-binary branch prints nothing, exit 0; `scripts/detectors.py` `run_one` maps rc 0 to `pass` whatever stdout
+  says, so CAP-29's "silent" stands. `test_runtime_mode_check_is_silent_without_claude_on_path` pins it.
+- AC3 / AC4 — stub-`claude` tests: 2.1.276 → 1, 2.1.300 unpinned → 1, 2.1.300 pinned → 0; missing `--claude` → 2
+  (`…could_not_run_on_a_missing_claude_path`). `pixi run -e pyforge-guild claude-instruction-mode-check` exit 0 on this
+  host; `detectors.py --scope runtime --list` exit 0 and lists it; `tests/scripts/test_detectors_task_match.py` exit 0.
+- AC5 — `_duplicate_h2` + `DUPLICATE_GUARD_FILES` read `CLAUDE.md`, `POINTER_FILES` and every `.cursor/rules/*.mdc`;
+  `CLAUDE.md` is not in `POINTER_FILES`; the planted `## Behavioral Guidelines` is reported.
+- AC6 — FIXME:, "not yet landed", "not landed" each reported inside the markers, ignored outside.
+- AC7 — typed-count assert passes on the live block (113.7's refresh in `db3a81aede`) and reds both planted counts.
+- AC8 — `customInstructions` is the one sentence pointing at `AGENTS.md § Behavioural guidelines (every harness)`.
+- AC9 — mutations re-observed on scratch copies of the test (tracked files untouched), each exit 1 with only the
+  guarding test red: HEAD script with the ok print; HEAD `settings.json`; `03a7aff5d9` AGENTS.md (typed counts);
+  FIXME branch dropped; not-(yet-)landed branch dropped; `CLAUDE.md` dropped from the guard files; each SKF end-state
+  clause disabled; typed-count match disabled. Station SKF marker checks: doctor/marshal/warden
+  `test_skf_domain_skill.py` and steward `test_skf_domain_skills.py` exit 0; mason `test_persona_consults_cfe.py` exit 0.
+- AC10 (first half) — `pyforge-scribe-test` exit 0 (460 passed, 12 skipped); memlog carries the surface-reconcile event
+  naming the asserts and a CAP-27 success event.
+- Ruff check / format --check on the test (package config) and on the script: 0 each. governance-currency exit 0,
+  spec-surface-check exit 0. `.claude/settings.json` diff is the one `customInstructions` line.
+
+Failures:
+1. AC10 (second half) not met: there is no CAP-27 `bmad-spec` re-derive and no self-validate Pass 1 / Pass 2 logged in
+   `spec-pyforge-scribe/.memlog.md` for this story, and `spec-pyforge-scribe/SPEC.md` is unchanged in the worktree.
+   Approach step 8 and AC10 put the re-derive in this story; the Auto Run Result defers it to an unnamed "re-derive
+   phase". Close it by running `bmad-spec` on the CAP-27 success event and logging both self-validate passes, then
+   return the story to `in-review`.
+
+Non-blocking observations:
+- The parity module imports `yaml` at module level, but PyYAML is not a declared dependency of `pyforge-scribe` or of
+  `feature.pyforge-scribe`; it arrives only transitively (cocoindex → watchdog → pyyaml, `pixi tree --invert`). If that
+  chain moves, the whole module fails to collect. A regex read of `ides` would avoid the dependency.
+- `scripts/claude_instruction_mode_check.py` was reformatted to ruff's default 88 columns (no root ruff config); style
+  only, no behaviour change.
+
+## Dev Notes
+
+- Review follow-up 2026-11-01 (station-tests routing): `SKF_CONFIG` in
+  `src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py` reads `_bmad/skf/config.yaml`,
+  which steward's trigger map (`src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py`)
+  derives as a scribe read, and `scribe_paths` in `.github/workflows/pyforge-station-tests.yml` did not carry it. It
+  does now, so an edit there runs `scribe-test`. The test and its assertions are unchanged; the meta-test and
+  `test_instruction_surface_parity.py` exit 0.

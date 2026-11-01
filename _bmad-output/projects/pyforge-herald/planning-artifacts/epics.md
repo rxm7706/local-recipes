@@ -2018,7 +2018,7 @@ So that a stale `ci-status.json` snapshot can never render as current while `pag
 **When** `test_one_generator.py`'s `built` fixture builds the tracked tree with `pyforge.herald.status_pages` and `pyforge.herald.ci_surfaces_tile` on (`PYFORGE_STATUS_PAGES=1`, `PYFORGE_CI_SURFACES_TILE=1`)
 **Then** a test asserts that `status/ci/index.html` carries exactly one `<time datetime="F">F</time>` inside its "Snapshot captured" line, where F is `ci-status.json`'s `fetched_at` read from the file, and the sentence "nothing on this page is live"; a test asserts that `herald/dossier/index.html` and the artifact build `herald/artifact/dossier.html` each carry "Snapshot captured at F" exactly once
 **And** each mutation fails its test and is restored afterwards: the `<time>` element or the not-live sentence dropped from `docs-site/src/pages/status/ci/[...index].astro`, the soft-note line dropped from the `ci_surfaces` case of `docs-site/src/lib/dossier-blocks.ts`; the story neither refreshes nor edits `ci-status.json`; under `HERALD_DOCS_SITE_REQUIRED=1` the new tests run, never skip; `pixi run --frozen -e pyforge-herald pyforge-herald-test-built` exits 0
-**Status:** backlog
+**Status:** done
 
 ## Epic 43: One generator renders the whole Pages site (spec-pyforge-herald CAP-61)
 

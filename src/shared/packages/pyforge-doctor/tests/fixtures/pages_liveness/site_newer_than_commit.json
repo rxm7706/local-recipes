@@ -2,5 +2,6 @@
   "case": "The site was deployed after the latest published-input commit (the normal case; the live header measured 2026-10-14 16:41 UTC).",
   "head": {"status": 200, "headers": {"last-modified": "Wed, 14 Oct 2026 15:46:03 GMT"}},
   "git_log": "3c1f0a9d2b7e4f6a8c5d1e0b9a7f6e5d4c3b2a10 2026-10-14T14:00:00+00:00",
-  "expect": {"check": "pages-liveness", "status": "ok", "requests": ["HEAD"], "lag_hours": -2}
+  "now": "2026-10-14T16:41:00Z",
+  "expect": {"check": "pages-liveness", "status": "ok", "requests": ["HEAD"], "lag_hours": -2, "waited_hours": 0}
 }

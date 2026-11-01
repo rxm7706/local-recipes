@@ -19,6 +19,7 @@ scope:
     - src/pyforge/atlas/__init__.py
     - src/pyforge/atlas/mcp/__init__.py
     - src/pyforge/atlas/mcp/tools.py
+    - src/pyforge/atlas/mcp/server.py
     - pyproject.toml
     - README.md
   exclude:
@@ -27,6 +28,9 @@ scope:
   notes: >
     CAP-15 compile for atlas. cf-atlas-legacy remains a separate legacy-orchestrator
     skill and is not this package. Portal django-atlas is out of this story.
+    Scope widened 2026-11-01 (steward Story 29.4, EGM audit RUL-CL13):
+    mcp/server.py registers the MCP tool names (run_<pipeline>_pipeline,
+    read_atlas_dataset, list_atlas_*); recompiled in place at 0.1.0.
   rationale:
     recommended: specific-modules
     chosen: specific-modules

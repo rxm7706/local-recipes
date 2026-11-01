@@ -2,11 +2,13 @@
 
 Compares two dates nothing else compares: the live Pages root's ``last-modified``
 response header (when the site was last deployed) and the committer date of the
-latest commit on ``refs/remotes/origin/main`` that touched a published input
-(when the site's inputs last changed). A commit more than ``STALE_AFTER`` newer
-than the deploy is one ``pages-liveness-stale`` WARN; anything this source cannot
-read is one ``pages-liveness-unavailable`` WARN and never an OK (the 2026-10-06
-deploy sat in ``waiting`` for six days and nothing said so).
+latest first-parent commit on ``refs/remotes/origin/main`` that touched a published
+input (when that input landed on main). Story 48.3 reads the clock: an input that
+landed after the deploy and has waited more than ``STALE_AFTER`` by ``now`` is one
+``pages-liveness-stale`` WARN; an input the site was deployed after is the OK row
+whatever the clock reads. Anything this source cannot read is one
+``pages-liveness-unavailable`` WARN and never an OK (the 2026-10-06 deploy sat in
+``waiting`` for six days and nothing said so).
 
 Read-only (NFR-1): one HEAD to the public root (one GET follows when HEAD answers
 outside 2xx; the body is never read) and one ``git log`` through
@@ -17,8 +19,8 @@ Every finding is a WARN or the one OK row (AD-2). Not in ``doctor check``'s defa
 set, ``monitor``'s axes or ``detectors-ci``: its read is live, as
 ``sibling-dreams-drift``'s and ``ci-pause-drift``'s are.
 
-``urlopen`` is a module attribute so tests replace it; ``cli_bridge.run_git`` is
-reached through the module, so tests replace it there.
+``urlopen`` and ``now`` are module attributes so tests replace them;
+``cli_bridge.run_git`` is reached through the module, so tests replace it there.
 """
 
 from __future__ import annotations
@@ -43,8 +45,11 @@ __all__ = ("PAGES_ROOT_URL", "PUBLISHED_INPUTS", "STALE_AFTER", "gather")
 #: The live Pages root (the second host is Spec open question 1; a constant until then).
 PAGES_ROOT_URL = "https://rxm7706.github.io/local-recipes/"
 
-#: The herald Dream's M1 published-inputs list, less ``docsite`` (herald Story 43.7 retired it: ``docs-site``
-#: is the one generator). The workflow itself is excluded: a workflow edit deploys nothing new.
+#: ``.github/workflows/pages.yml``'s own ``on.push.paths`` filter, each trailing ``/**`` dropped, less the
+#: files that build or deploy the site and publish nothing: the workflow itself, ``scripts/pages_*.py``,
+#: steward's ``pages.py`` and ``marketplace_pages.py``, and herald's ``pages_env.py``. ``docsite`` left with
+#: herald Story 43.7 (``docs-site`` is the one generator). The filter is steward's; Story 48.3's
+#: ``test_the_published_inputs_are_pages_yml_s_filter_less_the_named_exclusions`` pins this list to it.
 PUBLISHED_INPUTS: tuple[str, ...] = (
     "docs/tutorials",
     "docs/how-to",
@@ -54,12 +59,13 @@ PUBLISHED_INPUTS: tuple[str, ...] = (
     "docs/404.md",
     "docs/map.yaml",
     "docs/dashboard",
+    "docs/foundry/marketplace",
     "docs-site",
     "presentations",
 )
 
-#: The registry's ``dashboard.deploy`` ``stuck_rules.deploy_waiting_hours: 24``
-#: (``pyforge-steward:CAP-166``); this source never reads the registry.
+#: The ``pages`` row's ``stuck_rules.deploy_waiting_hours: 24`` in ``docs/governance/ci-surfaces.yaml``
+#: (``pyforge-steward:CAP-166``), kept here as a constant: no Doctor code reads steward's registry.
 STALE_AFTER = timedelta(hours=24)
 
 _HTTP_TIMEOUT_SECONDS = 10.0
@@ -70,6 +76,14 @@ _CHECK_UNAVAILABLE = "pages-liveness-unavailable"
 
 #: Replaced by tests; the one network call this source makes goes through it.
 urlopen: Callable[..., Any] = urllib.request.urlopen
+
+
+def _utc_now() -> datetime:
+    return datetime.now(UTC)
+
+
+#: Replaced by tests, as ``urlopen`` is: the clock an input's wait is measured against.
+now: Callable[[], datetime] = _utc_now
 
 
 class _Unavailable(Exception):
@@ -91,10 +105,18 @@ def _gather(target: Path) -> tuple[Finding, ...]:
     except _Unavailable as exc:
         return _unavailable(str(exc))
 
+    clock = now()
     lag = commit_date - last_modified
-    lag_hours, remainder = divmod(int(lag.total_seconds()), 3600)
+    lag_hours = int(lag.total_seconds()) // 3600
+    # Stale only when the input landed after the deploy and has waited more than STALE_AFTER since:
+    # an input the site was deployed after is the OK row whatever the clock reads.
+    pending = commit_date > last_modified
+    waited = max(clock - commit_date, timedelta(0)) if pending else timedelta(0)
+    waited_hours, remainder = divmod(int(waited.total_seconds()), 3600)
+    stale_after_hours = int(STALE_AFTER.total_seconds() // 3600)
     shown_ref = display_ref(ORIGIN_MAIN)
     last_modified_text = last_modified.strftime("%Y-%m-%dT%H:%M:%SZ")
+    now_text = clock.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     evidence: dict[str, Any] = {
         "url": PAGES_ROOT_URL,
         "last_modified": last_modified_text,
@@ -102,26 +124,33 @@ def _gather(target: Path) -> tuple[Finding, ...]:
         "commit_date": commit_text,
         "ref": ORIGIN_MAIN,
         "lag_hours": lag_hours,
-        "stale_after_hours": int(STALE_AFTER.total_seconds() // 3600),
+        "now": now_text,
+        "waited_hours": waited_hours,
+        "stale_after_hours": stale_after_hours,
         "requests": requests,
     }
-    if lag > STALE_AFTER:
-        # Whole hours, never rounded down into reading as the threshold itself: a lag of 24 h 30 min
-        # is "more than 24 hours". The lag and both dates lead, so fleet-picture's 110-character
-        # ATTENTION line keeps the evidence; the commit and the URL follow.
-        lag_text = f"{lag_hours} hours" if remainder == 0 else f"more than {lag_hours} hours"
+    if pending and waited > STALE_AFTER:
+        # Whole hours, never rounded down into reading as the threshold itself: a wait of 24 h 30 min
+        # is "more than 24 hours". The wait and both dates lead, so fleet-picture's 110-character
+        # ATTENTION line keeps the evidence; the commit, the clock and the URL follow.
+        wait_text = f"{waited_hours} hours" if remainder == 0 else f"more than {waited_hours} hours"
         return (
             Finding(
                 source=Source.PAGES_LIVENESS,
                 check=_CHECK_STALE,
                 status=DoctorStatus.WARN,
                 message=(
-                    f"Pages deploy {lag_text} behind: last-modified {last_modified_text}, inputs {commit_text} "
-                    f"(published-input commit {sha} on {shown_ref}), {PAGES_ROOT_URL}"
+                    f"Pages input waited {wait_text}: last-modified {last_modified_text}, inputs {commit_text} "
+                    f"(published-input commit {sha} on {shown_ref}, undeployed at {now_text}), {PAGES_ROOT_URL}"
                 ),
                 evidence=evidence,
             ),
         )
+    standing = (
+        f"not yet deployed, waiting within {stale_after_hours} hours (clock {now_text})"
+        if pending
+        else f"deployed after it (clock {now_text})"
+    )
     return (
         Finding(
             source=Source.PAGES_LIVENESS,
@@ -129,8 +158,7 @@ def _gather(target: Path) -> tuple[Finding, ...]:
             status=DoctorStatus.OK,
             message=(
                 f"Pages deploy current: {PAGES_ROOT_URL} last-modified {last_modified_text}, "
-                f"latest published-input commit on {shown_ref} at {commit_text} "
-                f"(not more than {evidence['stale_after_hours']} hours newer)"
+                f"latest published-input commit on {shown_ref} at {commit_text}, {standing}"
             ),
             evidence=evidence,
         ),

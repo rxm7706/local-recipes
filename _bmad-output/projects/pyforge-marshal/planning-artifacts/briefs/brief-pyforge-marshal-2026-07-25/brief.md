@@ -2,7 +2,8 @@
 title: Marshal — graduated autonomy on the factory floor
 status: draft
 created: 2026-07-25
-updated: 2026-10-04  # currency reconciliation — the preserved-work-refs research (2026-10-04) and its review folded in; durability of saved work joins the problem and success criteria. See "Currency reconciliation — 2026-10-04".
+updated: 2026-11-01  # currency reconciliation — the EGM audit research (2026-11-01) folded in; the zero-false-greens criterion extends to the challenger's own reads. See "Currency reconciliation — 2026-11-01".
+# 2026-10-04  # currency reconciliation — the preserved-work-refs research (2026-10-04) and its review folded in; durability of saved work joins the problem and success criteria. See "Currency reconciliation — 2026-10-04".
 # 2026-08-26  # currency reconciliation — the 2026-08-08 research triad (domain/market/technical refresh + technical-pyforge-unification) folded in; shipped state re-grounded at 165/165 stories, Epics 1-27; harness era corrected to bmad-loop >=0.11.0,<0.12. See "Currency reconciliation - 2026-08-26" at the end of this file.
 # 2026-08-02  # genesis-installer brief consolidated in as a Satellite section (explicit user override); competitive re-framing + Epic-1 shipped facts + Q3 resolution (see JSON block)
 project: pyforge-marshal
@@ -633,3 +634,20 @@ the *work* itself.
    `preserve_keep` knob it already renders. An upstream change remains an operator-only ask.
 
 Decomposed as `spec-pyforge-marshal` CAP-287 → PRD FR-234 → spine AD-81 → Epic 87.
+
+## Currency reconciliation — 2026-11-01
+
+The research `egm-audit-2026-11-01.md` (the one-time EGM fleet audit, marshal Story 113.7) post-dates this brief's
+last update (2026-10-04). It changes the brief in one place: the fresh-context challenger of the station Dream's
+2026-11-01 entry is read-only and advisory, and the audit found that a challenge that did not fully run read as clean.
+
+1. **Problem, extended.** A review the factory relies on can false-green too: a session whose report omitted a
+   reviewer it dispatched, or listed none, exited 0 like a clean read, and a dispatch's readiness result never
+   reached the screens the operator watches (findings MAR-M-D1, MAR-M-Z4).
+2. **Success criteria, extended.** *Zero false greens* covers the challenger's own reads: a challenge or audit sweep
+   that did not fully run is unevaluable and exits 1, never clean, and the readiness result shows in
+   `marshal status` and `marshal watch`. Findings still never change an exit code.
+3. **Unchanged.** The challenger never gates; the gate stays `detectors-ci` plus Warden.
+
+Decomposed as `spec-pyforge-marshal` CAP-298..CAP-303 → PRD FR-240..FR-245 → Epic 113 (the audit's fixes are
+Stories 113.8–113.14).

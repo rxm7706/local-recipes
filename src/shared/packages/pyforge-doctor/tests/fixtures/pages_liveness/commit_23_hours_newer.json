@@ -1,6 +1,0 @@
-{
-  "case": "The latest published-input commit is 23 hours newer than the deploy: within a day.",
-  "head": {"status": 200, "headers": {"last-modified": "Tue, 13 Oct 2026 12:00:00 GMT"}},
-  "git_log": "a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5 2026-10-14T11:00:00+00:00",
-  "expect": {"check": "pages-liveness", "status": "ok", "requests": ["HEAD"], "lag_hours": 23}
-}

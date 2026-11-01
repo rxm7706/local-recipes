@@ -3301,20 +3301,35 @@ On a fresh data root, `pyforge-atlas-bootstrap` then `pyforge atlas run` fills e
 unauthenticated, live and in-package. Realizes UJ-2's "the atlas answers from its own data".
 
 **Consequences (testable):**
-- Each dataset `live-sources.md` lists for a public source holds rows within the tolerance its story records against
-  the legacy `cf_atlas.db` measure of the same day.
-- With the network blocked the same run exits 0 and every public store keeps last-good under a `stale` marker (AD-13).
+- Each dataset on a row `live-sources.md` assigns to CAP-64 holds rows at or above the floor that row records, the
+  story-close measurement against the legacy `cf_atlas.db` measure of the same day *(amended 2026-11-01, EGM audit
+  ATL-M-Z2, ATL-M-D3, ATL-M-C2, ATL-D-R3; it read "Each dataset `live-sources.md` lists for a public source holds rows
+  within the tolerance its story records against the legacy `cf_atlas.db` measure of the same day")*.
+- A second run with the network blocked, over the root the first run filled, exits 0 and every public store keeps
+  last-good under a `stale` marker (AD-13), the three core sources the enumeration reads included (Story 34.15)
+  *(amended 2026-11-01, EGM audit cluster ATL-K1; it read "With the network blocked the same run exits 0 and every
+  public store keeps last-good under a `stale` marker (AD-13)")*.
+- A plain run (`pyforge atlas run` with no `--pipelines`) runs `__default__`, which leaves out `catalog_index`,
+  `query_plane_cache` and `universal_sbom`, so it exits 0 on a fresh data root; `tests/integration/test_plain_run_fresh_root.py`
+  proves both runs *(added 2026-11-01, Stories 34.14 and 34.15; EGM audit ATL-M-D1, ATL-D-R2, ATL-D-C3)*.
 - The no-inline-IO denylist is unchanged; fetches compose `APIDataset` or run through `pyforge.core.process`.
 - Decomposes into **Epic 34**, Stories 34.1–34.10 (34.10, Phase H coverage, minted 2026-10-18 with Story 34.2).
 
 #### FR-73: VCS and registry fetches cover the full universe, credentialed on opt-in ← CAP-65
 
-The GitHub, GitLab, Codeberg and eight registry fetches cover the actionable conda-forge universe, as legacy Phases K,
-L and N select it; a request that carries a credential runs only under `PYFORGE_ATLAS_CREDENTIALED=1`.
+The GitHub, GitLab, Codeberg and five batched registry fetches (npm, Maven, crates, RubyGems and NuGet; CRAN, CPAN
+and LuaRocks are wired but unbatched, as legacy Phase L leaves them) cover the actionable conda-forge universe, as
+legacy Phases K, L and N select it *(amended 2026-11-01, EGM audit ATL-D-C2; it read "eight registry fetches")*; a
+request that carries a credential runs only under `PYFORGE_ATLAS_CREDENTIALED=1`, whichever state
+`pyforge.atlas.live_vcs_universe` reads (Story 35.5).
 
 **Consequences (testable):**
-- With the opt-in, the four `vcs_*` primaries fill within tolerance of legacy K, L, N and E.5.
-- Without it, a transport fixture proves no request carries a credential.
+- With the opt-in, the four `vcs_*` primaries fill at or above the floors their `live-sources.md` rows record against
+  legacy K, L, N and E.5 *(amended 2026-11-01; it read "within tolerance of")*.
+- Without it, a plain run still fills `vcs_registry_versions` and the GitLab and Codeberg upstream versions *(added
+  2026-11-01, EGM audit ATL-M-C4)*.
+- Without it, a transport fixture proves no request carries a credential, with `pyforge.atlas.live_vcs_universe` on
+  or off *(amended 2026-11-01, Story 35.5, EGM audit ATL-M-D4)*.
 - The batch population comes from the universe, not `identity_packages_primary`.
 - Decomposes into **Epic 35**, Stories 35.1–35.4.
 
@@ -3322,24 +3337,31 @@ L and N select it; a request that carries a credential runs only under `PYFORGE_
 
 Driver nodes query Basilisk for the conda PURL population and fetch details for matched advisories.
 
-**Consequences (testable):** against a recorded fixture the three Basilisk datasets fill; a live run's population
-equals `core_packages_enumerated`; an unreachable endpoint keeps last-good. Decomposes into **Epic 36**, Story 36.1.
+**Consequences (testable):** against a recorded fixture the three Basilisk datasets fill; an attended run with the
+opt-in and a token has a population ≈ the distinct non-null `conda_name` count of `core_packages_enumerated` *(amended
+2026-11-01, EGM audit ATL-M-Z5, ATL-M-D5; it read "a live run's population equals `core_packages_enumerated`")*; an
+unreachable endpoint keeps last-good. Decomposes into **Epic 36**, Story 36.1.
 
 #### FR-75: The OpenTeams identity sources fill on opt-in ← CAP-67
 
 The OpenTeams board and the staged-recipes PR list fetch under the opt-in, beside the public identity lists.
 
 **Consequences (testable):** with the opt-in, `identity_packages_primary` holds rows from each `identity_source`, and the
-identity exports and inventory priorities fill; without it, no request carries a credential. Decomposes into
-**Epic 36**, Story 36.2.
+identity exports and inventory priorities fill; without it, no request carries a credential. The sources are
+`openteams-board`, `purl-associator` and `inventory`, and `none` marks an unmapped row that counts toward no source; a
+public run, with no opt-in, gives the identity datasets the `purl-associator` and `inventory` rows only *(added
+2026-11-01, EGM audit ATL-M-C4, ATL-M-D5)*. Decomposes into **Epic 36**, Story 36.2.
 
 #### FR-76: The query-plane estate source has a producer ← CAP-68
 
 A named atlas node writes `query_plane_estate_source`, so `query_plane_cache` builds from data.
 
-**Consequences (testable):** `pyforge atlas run --pipelines query_plane_cache` on a fresh data root exits 0 and the
-estate model answers its measures. Decomposes into **Epic 36**, Story 36.3 (its source tables are an open question on
-the Spec).
+**Consequences (testable):** `pyforge atlas run --pipelines query_plane_cache` on a fresh data root exits 0, writes a
+non-empty `query_plane_estate` built from the steward export's rows (never a fixture, an empty frame or the
+`sku`/`units` model), and the estate model answers its measures *(amended 2026-11-01, EGM audit ATL-M-Z1, ATL-M-C1;
+it read "exits 0 and the estate model answers its measures")*. Decomposes into **Epic 36**, Story 36.3, deferred
+2026-10-18 until a steward export through `pyforge.core.station_port` exists, which no steward story owns yet
+*(amended 2026-11-01; it read "(its source tables are an open question on the Spec)")*.
 
 **ONE FR space now FR-1..FR-76** (FR-77 = next free id). **Content changed:** FR-72..FR-76 registered; no FR
 renumbered or removed. The spine amends AD-6 and notes AD-11 and AD-13 (its reconciliation of the same date).
@@ -3364,12 +3386,18 @@ The dashboard's data root is the one Kedro writes, and each board whose content 
 dataset; a board's dimension names stay, its path and expressions move.
 
 **Consequences (testable):**
-- `dashboard.data.default_data_root()` resolves the member's `data/` (or `PYFORGE_ATLAS_DATA_ROOT`).
-- On a data root a public `pyforge atlas run` wrote, each of the 12 wired and 10 rewired boards whose dataset holds
-  rows renders a non-empty table in `dashboard-dryrun` and the static export.
-- A test per rewired board proves its loader on a fixture shaped like the produced dataset; the provenance test still
-  pins each page to its constant.
-- The six boards no pipeline feeds are backlog stories (Stories 37.5-37.10); the on-demand boards stay honest-empty.
+- `dashboard.data.default_data_root()` resolves `PYFORGE_ATLAS_DATA_ROOT` when set (a relative value anchored at the
+  member), else the member's `data/`; the member is `src/shared/packages/pyforge-atlas` *(amended 2026-11-01, EGM
+  audit ATL-M-C3; it read "resolves the member's `data/` (or `PYFORGE_ATLAS_DATA_ROOT`)")*.
+- On a data root a public `pyforge atlas run` wrote, with `pyforge.atlas.board_projections` on, each of the 28 boards
+  CAP-69 lists by page id (12 wired, 10 rewired, 6 from Stories 37.5-37.10) renders a non-empty table in
+  `dashboard-dryrun` and the static export, except estate-cache (until CAP-68) and the cve-watcher on a root with no
+  earlier run's rollup *(amended 2026-11-01, EGM audit ATL-M-Z4, ATL-M-D2, ATL-D-C4; it read "each of the 12 wired and
+  10 rewired boards whose dataset holds rows")*.
+- A test per rewired and new-node board proves its loader on a fixture shaped like the produced dataset; the
+  provenance test still pins each page to its constant *(amended 2026-11-01; it read "A test per rewired board")*.
+- The six boards no pipeline fed are realized by Stories 37.5-37.10 *(amended 2026-11-01; it read "are backlog stories
+  (Stories 37.5-37.10)")*; the six on-demand boards stay honest-empty.
 - Decomposes into **Epic 37**, Stories 37.1, 37.3 and 37.4.
 
 **ONE FR space now FR-1..FR-77** (FR-78 = next free id). **Content changed:** this section and `updated:`; FR-71
@@ -3420,7 +3448,9 @@ a CAP (`SPEC.md` still reads `updated: "2026-10-19"`), so no FR moves.
   `blocked`. So a plain `pyforge atlas run` stops at that load (`DW-atlas-37-2-1`, open, medium). The Pages job names
   its pipelines instead.
 - **FR-73 ← CAP-65.** Holds as written. Stories 35.2–35.4 (#2279–#2281) take the batches from the universe behind
-  `pyforge.atlas.live_vcs_universe`, and they fill GitLab, Codeberg and the eight registries. The flag is off by
+  `pyforge.atlas.live_vcs_universe`, and they fill GitLab, Codeberg and the eight registries *(corrected 2026-11-01,
+  EGM audit ATL-D-C2: five registries are batched, npm, Maven, crates, RubyGems and NuGet; CRAN, CPAN and LuaRocks
+  are wired but unbatched)*. The flag is off by
   default and on in `dev` (`src/platform/config/flags.json`, `flag-overlays.json`).
 - **FR-77 ← CAP-69.** Holds as written. These stories landed under it:
   - 37.4 (#2282), behind the new flag `pyforge.atlas.board_projections`;

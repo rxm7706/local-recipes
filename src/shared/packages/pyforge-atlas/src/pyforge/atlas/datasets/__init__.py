@@ -32,6 +32,7 @@ from .core_sources import (
     CondaRepodataDataset,
     CrossChannelRepodataDataset,
     FeedstockOutputsArchiveDataset,
+    LastGoodFrameDataset,
     ParselmouthMappingDataset,
     PyPISimpleIndexDataset,
     channeldata_json_to_rows,
@@ -256,6 +257,8 @@ __all__ = [
     "parse_fedora_packages",
     # Core raw-source parsers + datasets (B1 ingest gap)
     "FeedstockOutputsArchiveDataset",
+    # Story 34.15: the last-good base the feedstock-outputs, repodata and PyPI simple-index sources share
+    "LastGoodFrameDataset",
     "CondaRepodataDataset",
     "CondaChanneldataDataset",
     "CfGraphTarballDataset",

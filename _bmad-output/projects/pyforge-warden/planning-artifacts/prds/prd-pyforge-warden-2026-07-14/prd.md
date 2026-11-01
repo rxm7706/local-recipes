@@ -926,55 +926,107 @@ canopy chain.
 #### FR-41: The fix-PR actuator finishes the fix on the estate's repos ← CAP-24
 
 FR-40's upgrade PR stops being a pointer. For a `vuln:` finding the actuator resolves the target version — the lowest
-release the finding's OSV advisory names as fixed that the estate's own solver accepts — edits the declaring manifest,
-re-solves the lock, and opens a **draft** PR carrying that diff, on the estate's own repos (`rxm7706/local-recipes`,
-`rxm7706/python-foundry`). FR-40's promises hold unchanged: forge egress only in the actuator, strictly post-verdict,
-inert without the flag, never writing the scanned working tree, a failed step recorded in `actuation` and never a
-rung or an exit code.
+release the finding's OSV advisory names as fixed that the estate's own solver accepts, found by a bounded search
+that probes each candidate through the fix's own manifest edit — edits the declaring manifest, re-solves the lock, and
+opens a **draft** PR carrying that diff, on the estate's own repos: the estate allowlist, the `fix-pr-estate-repos`
+key (default `rxm7706/local-recipes`, `rxm7706/python-foundry`). FR-40's promises hold unchanged: forge egress only in
+the actuator, strictly post-verdict, inert without the flag, never writing the scanned working tree, a failed step
+recorded in `actuation` and never a rung or an exit code.
+
+*Amended 2026-11-01 (EGM fleet audit re-derive of CAP-24, findings WAR-M-Z1, WAR-M-D2, WAR-M-C1, WAR-M-Z5, WAR-M-C5,
+WAR-D-C2, WAR-D-R1, WAR-M-D5; Story 14.4): the bounded solver, the estate allowlist and its per-call fleet
+authorization, and every failure path join the consequences.*
 
 **Consequences (testable):**
 - Candidates are every `ECOSYSTEM`/`SEMVER` `fixed` event of the matching `affected[]` entry at or above the current
   version, ascending; the first the solver accepts is the target (a fixture solver that refuses 1.2.3 yields 1.3.0).
+- The solver probes a candidate through the fix's own manifest edit (a bare or quoted `pixi.toml` key, a
+  `pyproject.toml` dependency, a recipe requirement line) in a copy without `.pixi/` or `.git`; it tries at most 5
+  candidates within an 1800 s solve budget per finding, each `pixi lock` pinned to the copy by `--manifest-path` and
+  bounded by the smaller of its configurable 600 s timeout and the budget left.
 - `--fix-prs-dry-run` still opens no socket: it names the lowest candidate with the solver marked not-run.
 - The edit and the re-solve happen in a `mkdtemp` (`0700`) copy that is gone after success and failure; the scanned
   tree is byte-identical after the run.
 - The diff arrives as one commit on a `warden/fix/` branch behind a draft PR, through the forge API's Git Data
-  endpoints; a repo outside the estate allowlist gets no manifest-edit PR.
-- pixi runs only on the real `--open-fix-prs` path, as a named engine subprocess under a tested version range.
-- Decomposes into **Epic 14** (Stories 14.1–14.3).
+  endpoints; a repo outside the estate allowlist gets no manifest-edit PR, absent a per-call CAP-26 authorization
+  naming that repo for its one approved finding, which never widens the allowlist.
+- Each failure is a `failed` outcome in `actuation` naming its reason, with the status and exit code unchanged: no
+  `fixed` candidate, every candidate refused, the cap or the budget reached, an out-of-range pixi, a dependency no
+  manifest declares, a failed manifest edit, a failed PR-open.
+- pixi runs only on the real `--open-fix-prs` path, as a named engine subprocess under a tested version range
+  (`>=0.80.0,<0.82`) whose floor is `pixi.toml`'s `requires-pixi`.
+- Verified by `pixi run --frozen -e pyforge-warden pyforge-warden-test` (exit 0) and the opt-in real-pixi test
+  (`pytest src/shared/packages/pyforge-warden/tests/integration/test_fix_solver_real_pixi.py -m slow`, exit 0).
+- Decomposes into **Epic 14** (Stories 14.1–14.4).
 
 #### FR-42: SAST joins as an optional plugin, and informs without publishing ← CAP-25
 
 Opengrep takes the SAST slot on the PR-gate hook book (canopy:FR-44's optional-plugin shape) with rules the estate owns,
-run offline. Its results are advisory notes, the TEA lens's shape: they inform the report's reader and never publish a
-verdict. CodeQL is rejected on its licence.
+run offline with its metrics and version check off. Its results are advisory notes, the TEA lens's shape: they inform
+the report's reader and never publish a verdict. CodeQL is rejected on its licence.
+
+*Amended 2026-11-01 (EGM fleet audit re-derive of CAP-25, findings WAR-M-Z5, WAR-M-C4, WAR-D-C6, WAR-M-D6; Story
+15.2): the shipped estate rules and the telemetry-off argv and environment join the consequences; the Story 9.3
+pointer becomes the behaviour it named.*
 
 **Consequences (testable):**
-- With `opengrep` enabled and an estate rule tripped, the report's `advisory` names the rule, path and line, and the
-  status and exit code equal the same run with the scanner disabled.
-- No rule is fetched over the network; an absent binary is omit-not-error (Story 9.3's test stays green).
+- The package ships the estate rules `subprocess-shell-true`, `yaml-unsafe-load` and `eval-exec`, and no test-only
+  marker rule.
+- With `opengrep` enabled and an estate rule tripped, the report's `advisory` names the bare rule id, path and line,
+  and the status and exit code equal the same run with the scanner disabled.
+- No rule is fetched over the network: the invocation names only the local rules path, and carries
+  `--disable-version-check` with `SEMGREP_SEND_METRICS=off` and `OPENGREP_ENABLE_VERSION_CHECK=0`, pinned by test
+  because the socket guard cannot see a subprocess's egress.
+- An absent opengrep binary omits the scanner, and a default run's status and exit code stay unchanged.
 - The `ComplianceReport` stays at 1.1.0 (the `advisory` slot is already an open array).
-- Decomposes into **Epic 15** (Story 15.1, ledger `blocked` until mason Story 21.4 ships the opengrep package).
+- Verified by `pixi run --frozen -e pyforge-warden pyforge-warden-test` (exit 0; `tests/unit/test_sast_opengrep.py`).
+- Decomposes into **Epic 15** (Stories 15.1–15.2; mason Story 21.4 ships the opengrep package).
 
 #### FR-43: Warden scans the enterprise fleet, one verdict per repo ← CAP-26
 
-A fleet run inventories a GitHub Enterprise organisation and scans each repo with `warden scan`. This lifts two
-Non-goals by operator ruling (2026-09-28): *Fleet aggregation* (a fleet run is now Warden's, still one verdict per repo
-and never a fleet-level pass/fail) and *Non-Python osv-scanner ecosystems* (the security axis over osv-scanner's native
-lockfile parsers; container and artifact scanning stay out). Fixes on fleet repos wait in a proposal queue and open only
-on the operator's approval.
+A fleet run, started only by an operator action, inventories an operator-designated github.com organisation (never
+named in a tracked file) and scans each repo with `warden scan`. This lifts two Non-goals by operator ruling
+(2026-09-28): *Fleet aggregation* (a fleet run is now Warden's, still one verdict per repo and never a fleet-level
+pass/fail) and *Non-Python osv-scanner ecosystems* (the security axis over osv-scanner's native lockfile parsers;
+container and artifact scanning stay out). Fixes on fleet repos wait in a proposal queue and open only on the operator's
+approval.
+
+*Amended 2026-11-01 (EGM fleet audit re-derive of CAP-26, findings WAR-M-Z1..Z4, WAR-M-D1..D4, WAR-M-C1..C3,
+WAR-D-C1, WAR-D-R3, WAR-D-R4, WAR-D-C5; the operator's rulings of 2026-10-11 and 2026-11-01; Stories 16.6–16.10): the
+github.com host and `gh`-login read path replace GitHub Enterprise and Steward's credentials, and the export fields,
+time bounds, approve rules, non-Python proposal outcome and unknown-then-warn license and currency rows join the
+consequences.*
 
 **Consequences (testable):**
-- The run persists on `django-warden`'s `ComplianceJob` pattern (keys-not-blobs; a job status that is never a verdict —
-  no CLEAN or VULNERABLE second verdict); each per-repo row carries that repo's own `warden scan` report and exit code.
-- The inventory is published as a JSON export other stations read as data (Atlas, `spec-pyforge-atlas:CAP-61`).
-- Throwaway clones are removed on success and on failure.
-- A planned fleet fix is a queued proposal; no forge call is made until an approve action, after which that one proposal
-  opens as a draft PR through FR-41's path.
-- A fixture npm `package-lock.json` pinning a known-vulnerable version yields a `vuln:` finding, `hygiene`
-  `not-applicable`.
-- GHE credentials come from Steward (steward Story 75.1). Decomposes into **Epic 16** (Stories 16.1–16.4; 16.1 ledger
-  `blocked` on steward Story 75.1).
+- The inventory and the items of the operator-designated GitHub Projects are read through the operator's `gh` login
+  at run time, GET-only over REST and query-only over GraphQL, each client refusing anything else before a socket
+  opens; the token is held in memory for the run only. Steward's GitHub Enterprise identities
+  (`spec-pyforge-steward:CAP-164`) stay the path for a future GitHub Enterprise target; the credential for a live fleet
+  scan and an approved proposal's draft PR is the operator's, not yet ruled.
+- The run persists on `django-warden`'s `ComplianceJob` pattern (keys-not-blobs: the Celery message carries ids only;
+  run and per-repo rows carry a job status that is never a verdict — no CLEAN or VULNERABLE second verdict); each
+  per-repo row carries that repo's own `warden scan` report and exit code. A proposal's lifecycle (queued, approved,
+  opened, failed, dismissed) is never a verdict either.
+- The inventory is published as a gitignored JSON export other stations read as data (Atlas,
+  `spec-pyforge-atlas:CAP-61`): every `repos[]` row carries `full_name`, `default_branch`, `clone_url`, `archived` and
+  a non-empty `head_sha`; a repo with no readable tip is listed under `skipped` with its reason; any other failure
+  writes no export.
+- Throwaway clones are removed on success and on failure. Each repo scan and each approve run under a 240 s soft and a
+  300 s hard limit, and every `git` call of a clone under a 120 s timeout; a timeout fails only that repo's row, and
+  the run stays succeeded as a job while it records its failed and skipped repo counts.
+- A planned fleet fix on a PyPI or conda component is a queued proposal holding the dry-run target; an npm, Go or Cargo
+  finding queues nothing. No forge call is made until an approve action, which refuses an approval older than the
+  expiry (default seven days), re-clones, re-scans and refuses a finding the fresh report no longer lists, re-solves on
+  the clone, and opens that one proposal as a draft PR through FR-41's path whose one commit carries the manifest edit;
+  an approve with no manifest edit records `failed` with zero forge writes.
+- A fixture npm `package-lock.json` pinning a known-vulnerable version, scanned offline against a per-ecosystem
+  database the provisioning script fills (PyPI, npm, Go, crates.io), yields a `vuln:` finding, `hygiene`
+  `not-applicable`; with no database for its ecosystem it reads `indeterminate`, never `clean`. Its components draw
+  `license:unknown` and `currency:unknown` findings — `warn` ungated, `indeterminate` gated — and the license and
+  currency rows count them.
+- Verified by `pixi run --frozen -e pyforge-warden pyforge-warden-test` and the platform suite,
+  `pixi run -e pyforge-guild platform-ci-local -- --test` (each exit 0, no real network). Decomposes into **Epic 16**
+  (Stories 16.1–16.10).
 
 **ONE FR space now FR-1..FR-43** (FR-44 = next free id; `canopy:FR-44` is a different space).
 

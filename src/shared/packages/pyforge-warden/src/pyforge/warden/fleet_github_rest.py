@@ -1,5 +1,10 @@
 """GET-only GitHub REST org listing for fleet inventory (Story 16.1).
 
+Each listed repo also carries its default-branch tip, ``head_sha`` (Story 16.10):
+one ``GET /repos/{owner}/{repo}/git/ref/heads/{branch}`` per repo, after the
+listing. A repo with no tip to read (an empty repo has none) is recorded as
+skipped with its reason, never listed without one.
+
 Lives in pyforge-warden so django_warden_fabric stays free of raw HTTP imports
 (platform ``test_portal_raw_http_to_a_service_is_review_blocking``).
 
@@ -49,10 +54,24 @@ _AUTHORIZATION_PLACEHOLDER_BYTES = _AUTHORIZATION_PLACEHOLDER.encode("ascii")
 _FRAGMENT_BYTES = 32
 _TOKEN_SHAPE = re.compile(r"[\x21-\x7e]+")
 _REQUIRED_TEXT_FIELDS = ("full_name", "default_branch", "clone_url")
+_BRANCH_TIP_PATH = "/repos/{owner}/{repo}/git/ref/heads/{branch}"
+# A SHA-1 commit id, or a SHA-256 one (a repository in the SHA-256 object format).
+_COMMIT_SHA = re.compile(r"[0-9a-f]{40}(?:[0-9a-f]{24})?")
+# The answers that mean "this repo has no default-branch tip": 409 for an empty
+# repository, 404 for a default branch that does not exist. Any other error fails the run.
+_NO_TIP_STATUSES = frozenset({404, 409})
 
 
 class FleetInventoryApiError(PyforgeError, Exception):
-    """GitHub listing failed — never carries a token."""
+    """GitHub listing failed — never carries a token.
+
+    ``http_status`` is the HTTP error status GitHub answered with, when it answered
+    with one (its number only, never the body); ``None`` for every other failure.
+    """
+
+    def __init__(self, message: str, *, http_status: int | None = None) -> None:
+        super().__init__(message)
+        self.http_status = http_status
 
 
 class HttpMethodRefusedError(FleetInventoryApiError):
@@ -69,6 +88,17 @@ class OffApiHostRefusedError(FleetInventoryApiError):
 
 @dataclass(frozen=True)
 class ListedRepo:
+    full_name: str
+    default_branch: str
+    clone_url: str
+    archived: bool
+    head_sha: str
+
+
+@dataclass(frozen=True)
+class _ListedFields:
+    """A listing entry's own fields, before its default-branch tip is read."""
+
     full_name: str
     default_branch: str
     clone_url: str
@@ -125,8 +155,8 @@ def _parse_link_next(link_header: str | None) -> str | None:
     return match.group(1)
 
 
-def _listed_repo_from_api(entry: object) -> ListedRepo | str:
-    """The repo, or the reason the entry cannot be inventoried."""
+def _listed_repo_from_api(entry: object) -> _ListedFields | str:
+    """The entry's fields, or the reason the entry cannot be inventoried."""
     if not isinstance(entry, dict):
         return "entry is not a JSON object"
     missing = [name for name in _REQUIRED_TEXT_FIELDS if not isinstance(entry.get(name), str) or not entry.get(name)]
@@ -135,12 +165,31 @@ def _listed_repo_from_api(entry: object) -> ListedRepo | str:
     archived = entry.get("archived")
     if not isinstance(archived, bool):
         return "archived is not a boolean"
-    return ListedRepo(
+    return _ListedFields(
         full_name=entry["full_name"],
         default_branch=entry["default_branch"],
         clone_url=entry["clone_url"],
         archived=archived,
     )
+
+
+def _branch_tip_path(listed: _ListedFields) -> str | None:
+    """The ref path of ``listed``'s default branch; ``None`` when its name is not owner/repo."""
+    owner, _, name = listed.full_name.partition("/")
+    if not owner or not name or "/" in name:
+        return None
+    return _BRANCH_TIP_PATH.format(
+        owner=urllib.parse.quote(owner, safe=""),
+        repo=urllib.parse.quote(name, safe=""),
+        branch=urllib.parse.quote(listed.default_branch, safe="/"),
+    )
+
+
+def _head_sha_from_api(payload: object) -> str | None:
+    """The commit id a ref answer points at; ``None`` when it names no commit id."""
+    target = payload.get("object") if isinstance(payload, dict) else None
+    sha = target.get("sha") if isinstance(target, dict) else None
+    return sha if isinstance(sha, str) and _COMMIT_SHA.fullmatch(sha) else None
 
 
 def _transport_failure(exc: BaseException) -> str:
@@ -322,7 +371,7 @@ class _ApiHostRedirectHandler(urllib.request.HTTPRedirectHandler):
 
 
 class GitHubRestOrgReposClient:
-    """GET-only GitHub REST client for ``/orgs/{org}/repos`` pagination."""
+    """GET-only GitHub REST client: ``/orgs/{org}/repos`` pagination, then each repo's tip."""
 
     def __init__(
         self,
@@ -354,7 +403,7 @@ class GitHubRestOrgReposClient:
         url: str | None = (
             f"https://{self._api_host}{_ORG_REPOS_PATH.format(organisation=encoded)}?type=all&per_page=100"
         )
-        collected: list[ListedRepo] = []
+        listed_entries: list[tuple[int, int, _ListedFields]] = []
         skipped: list[SkippedRepoEntry] = []
         seen: set[str] = set()
         page = 0
@@ -370,8 +419,8 @@ class GitHubRestOrgReposClient:
                 raise FleetInventoryApiError(msg)
             for position, entry in enumerate(payload, start=1):
                 listed = _listed_repo_from_api(entry)
-                if isinstance(listed, ListedRepo):
-                    collected.append(listed)
+                if isinstance(listed, _ListedFields):
+                    listed_entries.append((page, position, listed))
                     continue
                 name = entry.get("full_name") if isinstance(entry, dict) else None
                 skipped.append(
@@ -385,7 +434,44 @@ class GitHubRestOrgReposClient:
             url = _parse_link_next(link)
             if url is not None and not is_api_url(url, self._api_host):
                 raise OffApiHostRefusedError("a pagination link", url, self._api_host)
+        # Every page first, then one tip read per listed repo (Story 16.10).
+        collected: list[ListedRepo] = []
+        for page_number, position, listed in listed_entries:
+            repo = self._with_head_sha(listed)
+            if isinstance(repo, ListedRepo):
+                collected.append(repo)
+                continue
+            skipped.append(
+                SkippedRepoEntry(page=page_number, position=position, full_name=listed.full_name, reason=repo)
+            )
+        skipped.sort(key=lambda entry: (entry.page, entry.position))
         return OrgReposListing(repos=tuple(collected), skipped=tuple(skipped))
+
+    def _with_head_sha(self, listed: _ListedFields) -> ListedRepo | str:
+        """The repo with its default-branch tip, or the reason it has no tip to read.
+
+        One GET per repo. An empty repository (409) or a missing default branch (404)
+        is a reason; any other failure is raised, so the run fails and no export is written.
+        """
+        path = _branch_tip_path(listed)
+        if path is None:
+            return "full_name is not owner/repo"
+        try:
+            payload, _link = self._get_json(f"https://{self._api_host}{path}")
+        except FleetInventoryApiError as exc:
+            if exc.http_status not in _NO_TIP_STATUSES:
+                raise
+            return f"no default-branch tip to read (GitHub API HTTP {exc.http_status})"
+        head_sha = _head_sha_from_api(payload)
+        if head_sha is None:
+            return "the default-branch ref names no commit id"
+        return ListedRepo(
+            full_name=listed.full_name,
+            default_branch=listed.default_branch,
+            clone_url=listed.clone_url,
+            archived=listed.archived,
+            head_sha=head_sha,
+        )
 
     def _get_json(self, url: str) -> tuple[Any, str | None]:
         if not is_api_url(url, self._api_host):
@@ -407,9 +493,10 @@ class GitHubRestOrgReposClient:
             traceback.clear_frames(exc.__traceback__)
             raise
         except urllib.error.HTTPError as exc:
-            msg = f"GitHub API HTTP {exc.code}"
+            status = exc.code
+            msg = f"GitHub API HTTP {status}"
             traceback.clear_frames(exc.__traceback__)
-            raise FleetInventoryApiError(msg) from None
+            raise FleetInventoryApiError(msg, http_status=status) from None
         except urllib.error.URLError as exc:
             msg = f"GitHub API request failed: {exc.reason}"
             traceback.clear_frames(exc.__traceback__)

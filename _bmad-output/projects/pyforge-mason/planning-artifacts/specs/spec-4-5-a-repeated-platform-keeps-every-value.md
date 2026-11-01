@@ -2,7 +2,7 @@
 title: "4.5: A repeated --platform keeps every value"
 type: 'fix'
 created: '2026-11-01'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
@@ -161,9 +161,73 @@ Parent: CAP-4
 
 ## Auto Run Result
 
-Status: backlog
+Status: done
 
-Summary: not yet dispatched.
+Summary: implemented 2026-11-01 in the EGM landing worktree (branch `egm-audit-2026-11`), uncommitted; the session
+owner commits, stamps and lands it.
+
+### Dev notes
+
+What changed:
+
+- `src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py`:
+  - `environment lock` and `environment check` register `--platform` with `action="append"`.
+  - New `_join_platform_flags()` joins the values, in the order given, into the one comma-separated string
+    `environment.lock()` / `environment.check()` already split, strip and empty-drop. One flattening rule serves
+    both verbs, and `environment.py` is unchanged. No flag stays `None`, so the engine gets `platforms=()` and
+    conda-lock's default applies.
+  - New `_StoreOnceAction` backs `package ship --to` and the `package --ship` alias. A second occurrence raises
+    `argparse.ArgumentError` ("argument --to: may be given only once -- ..."), which is exit 2 (`EXIT_USAGE`) at parse
+    time, before any build, check or ship. A single `--to pypi-test,pypi` still targets both.
+  - Help strings: both `--platform` argument helps name the repeated and comma forms, and the two verb help constants
+    say "repeatable and/or comma-separated". The `--to` / `--ship` helps say "give the flag once".
+  - The registration comments that recorded the single-store choice now describe the new behaviour.
+- `src/shared/packages/pyforge-mason/tests/unit/test_cli.py`:
+  - `test_environment_lock_passes_platform_flag_through_unparsed` and
+    `test_environment_check_passes_platform_flag_through_unparsed` keep their names. Each is now parametrized over the
+    comma, repeated and mixed forms and asserts the joined string (AC 6: updated, not skipped).
+  - `test_environment_engine_receives_every_platform_in_order` is new. It covers lock and check × repeated, comma,
+    mixed, order-kept, empty-tokens and no-flag. Only the conda-lock adapter is mocked, at
+    `pyforge.mason.environment.condalock.*`, and the test asserts both the engine's `platforms` tuple and the JSON
+    envelope (ACs 1-4).
+  - `test_environment_text_output_names_every_repeated_platform` is new and covers lock and check text output (AC 1).
+  - `test_package_ship_repeated_targets_flag_is_a_usage_error` is new. It covers `--to`, `--to` with `--yes`,
+    `--to=`, the `--ship` alias, and the `--ship` alias with `--yes`. Each case expects exit 2, `argument <flag>:` on
+    stderr, and no call to ship or build (AC 5).
+  - `test_package_ship_single_targets_flag_still_names_every_target` is new and covers `--to` and `--ship` (AC 5).
+- `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-4-3-mason-environment-lock.md`: one dated Spec
+  Change Log line. The body is untouched (AC 7).
+- `.claude/skills/mason-environment/SKILL.md` is unchanged. Its `--platform` wording ("comma-separated platforms")
+  still holds, because the comma form is unchanged. `.claude/skills/pyforge-mason/**` is unchanged: its grammar text
+  `[--platform PLATFORMS]` / `--to TARGETS` still holds. Its `[SRC:cli.py:Lnnn]` anchors after line 435 have shifted
+  by about 30 lines. That is a refresh for `skf-update-skill`, never a hand edit. The range-only meta-test
+  (`test_skf_mason_skill.py`) stays green.
+- Memlog: one surface-reconcile event appended to `spec-pyforge-mason/.memlog.md` naming `cli.py` and `test_cli.py`.
+  CAP-4's success line is unchanged, so no second event was added. The `spec-pyforge-core` memlog entry and both
+  scoped stamps are left to the session owner, per the run's rules.
+
+Commands (each verdict read from `$?`):
+
+- Red first (AC 6): `pixi run --frozen -e pyforge-mason pytest src/shared/packages/pyforge-mason/tests/unit/test_cli.py
+  -q -k "platform or repeated_targets or single_targets"` was run against the unchanged `cli.py`. It exited 1 with
+  17 failed and 12 passed. The 17 failures are the repeated, mixed and order-kept platform cases and every repeated
+  targets-flag case. The comma, empty-token and no-flag cases passed as regression guards. The worktree `cli.py`
+  equalled `origin/main`'s (`git diff --quiet origin/main HEAD -- cli.py` exit 0).
+- `pixi run --frozen -e pyforge-mason pytest src/shared/packages/pyforge-mason/tests/unit/test_cli.py -q` exited 0
+  (315 passed).
+- `pixi run --frozen -e pyforge-mason pytest src/shared/packages/pyforge-mason/tests/unit/test_environment.py -q`
+  exited 0 (23 passed).
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` exited 0 (1645 + 2 + 12 passed).
+- `pixi run --frozen -e pyforge-mason pyforge-mason-coverage-gate` exited 0. Nothing is committed yet, so it saw no
+  touched module. The same gate over the touched paths, `python scripts/coverage_gates_ci.py --paths-file <cli.py,
+  test_cli.py> --suites unit --report .steward/coverage/mason-unit.json` with `COVERAGE_GATES_STATIONS=mason`,
+  exited 0 with `pyforge.mason.cli` ≥ 80%.
+- ruff check, run from the package dir with the pyforge-guild `ruff` binary on `cli.py` and `test_cli.py`, exited 0.
+  ruff format --check on the same files exited 0. The `ruff` pixi task is the `lint_types.py` wrapper and takes no
+  file arguments, and pyforge-mason has no ruff.
+- mypy, as `lint_types.py`'s slice (`mypy --cache-dir .mypy_cache/pyforge-guild -p pyforge.mason` from the
+  package dir, pyforge-guild binary), exited 0 with no issues in 23 files.
+- `pixi run --frozen -e pyforge-guild spec-surface-check` exited 0. It is read-only, and no stamp was taken.
 
 ## Spec Change Log
 
@@ -172,4 +236,41 @@ Summary: not yet dispatched.
 
 ## Review Triage Log
 
-- (none yet)
+### 2026-11-01 — Review pass (reviewer: independent session)
+
+- Verdict: **pass**. Every AC holds, with evidence observed in this review. Failures: none.
+- What was checked (every verdict read from the exit code):
+  - ACs 1-4: `git diff HEAD` of `cli.py`. Both `environment lock` and `environment check` register `--platform`
+    with `action="append"`. `_join_platform_flags` joins the values, in order, into the one comma string that
+    `environment.py` already splits. A missing flag stays `None`. `test_environment_engine_receives_every_platform_in_order`
+    covers lock and check across the repeated, comma, mixed, order-kept, empty-token and no-flag forms. It mocks
+    only the conda-lock adapter and asserts both the engine's `platforms` tuple and the JSON envelope.
+    `test_environment_text_output_names_every_repeated_platform` covers the rendered text.
+  - AC 5: `_StoreOnceAction` backs `--to` and the `--ship` alias. Run by hand,
+    `pyforge mason package ship --to pypi-test --to pypi` and `pyforge mason package --ship pypi-test --ship pypi`
+    each exited 2 with `argument --to:` or `argument --ship:` respectively. The tests assert that nothing is built or
+    shipped, and that a single `--to pypi-test,pypi` still names both targets.
+  - AC 6 (red first): `head_cli.py` (HEAD's `cli.py`, which equals origin/main: `git diff --quiet` exit 0) was loaded
+    in place of the worktree module through a scratch pytest plugin. `test_cli.py -k "platform or repeated_targets or
+    single_targets"` exited 1, with 17 failed and 12 passed. Every repeated, mixed and order-kept platform case and
+    every repeated-targets case failed. The comma, empty-token and no-flag cases passed and act as regression guards.
+    The two tests that pinned the single-store shape were parametrized to the new contract, not skipped.
+  - AC 7: `environment lock --help` was read. Both `--platform` helps and both verb help constants name the repeated
+    form and the comma form. Story 4.3's spec gained one dated Change Log line, and its body is untouched.
+    `.claude/skills/mason-environment/SKILL.md` still says "comma-separated", which is still true, and it is
+    unchanged. `.claude/skills/pyforge-mason/**` is untouched.
+  - AC 8: `pyforge-mason-test` exit 0 (1656 + 2 + 12 passed). `test_cli.py` exit 0 (315 passed).
+    `test_environment.py` exit 0 (23 passed). `pyforge-mason-coverage-gate` exited 0 but saw no touched module,
+    because nothing is committed. The same gate was then run over `cli.py` and `test_cli.py`
+    (`COVERAGE_GATES_STATIONS=mason … --paths-file`) and exited 0, with `pyforge.mason.cli` at 99%.
+  - Lint and types: `ruff check` and `ruff format --check` on `cli.py` and `test_cli.py` (package config) exit 0.
+    `mypy -p pyforge.mason` exit 0. `spec-surface-check` (read-only) exit 0.
+  - Regressions: no caller outside `cli.py` passes `--platform`, `--to` or `--ship` (grep of `src/shared/packages`,
+    `django-mason` and `src/platform`). No doc captures the old help text.
+- Left to the session owner. These are landing steps, not failures of this story:
+  - the `spec-pyforge-core` memlog entry;
+  - the scoped stamps of `spec-pyforge-mason` and `spec-pyforge-core`, after `git add`;
+  - the ledger promotion through the Tier-3 feed and `sprint-ledger-sync`.
+- Follow-up: the station skill's `[SRC:cli.py:Lnnn]` anchors past line 435 (`L530`, `L583`, `L1106`, `L1119`,
+  `L1510`) now sit about 30-57 lines early. Refresh them through `skf-update-skill` when the skill is next
+  regenerated. They must never be hand-edited (AC 7).

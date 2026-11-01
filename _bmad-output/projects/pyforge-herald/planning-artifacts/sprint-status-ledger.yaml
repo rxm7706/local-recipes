@@ -134,7 +134,7 @@ development_status:
   42-1-the-fleet-board-and-guild-status-pages-render-at-build: done
   42-2-the-kedro-viz-mount-is-an-artifact-handoff-that-tolerates-absence: done
   42-3-the-second-host-needs-no-flag: done
-  42-4-the-status-pages-pin-their-snapshot-lines: backlog
+  42-4-the-status-pages-pin-their-snapshot-lines: done
   43-1-astro-renders-the-dossier-from-dossier-yml: done
   43-2-the-overview-gallery-and-deck-family-pages-are-astro-pages: done
   43-3-astro-assembles-the-artifact-mounts-redirects-and-search: done
@@ -238,7 +238,7 @@ development_status:
   epic-40-retrospective: optional
   epic-41: done
   epic-41-retrospective: optional
-  epic-42: in-progress
+  epic-42: done
   epic-42-retrospective: optional
   epic-43: done
   epic-43-retrospective: optional

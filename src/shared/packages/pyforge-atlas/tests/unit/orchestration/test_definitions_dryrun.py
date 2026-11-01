@@ -755,12 +755,33 @@ def test_node_timeouts_covers_the_story_21_5_nodes():
         assert name in D.NODE_TIMEOUTS, f"{name} missing from NODE_TIMEOUTS"
 
 
-def test_every_node_of_the_default_pipeline_has_its_own_timeout():
+def test_every_node_of_every_registered_pipeline_has_its_own_timeout(monkeypatch):
     """Story 34.8: the dict's stated invariant, pinned for every node rather than per story.
     Fifteen nodes (Stories 21.6 and 23.1 and the derived/Artifactory joins) had fallen back
-    to DEFAULT_TIMEOUT by omission; Story 34.8's driver joined with its own entry."""
-    from pyforge.atlas.pipeline_registry import register_pipelines
+    to DEFAULT_TIMEOUT by omission; Story 34.8's driver joined with its own entry. Story 34.14:
+    read every registered pipeline, not ``__default__`` alone, which now leaves out the
+    pipelines a run names (``query_plane_cache``, ``universal_sbom``); their nodes keep budgets."""
+    from pyforge.atlas import pipeline_registry
 
-    names = {n.name for n in register_pipelines()["__default__"].nodes}
+    monkeypatch.setattr(pipeline_registry, "kill_switch_on", lambda _key: True)  # universal_sbom registered
+    registered = pipeline_registry.register_pipelines()
+    names = {n.name for pipeline in registered.values() for n in pipeline.nodes}
     assert sorted(names - set(D.NODE_TIMEOUTS)) == []
     assert sorted(set(D.NODE_TIMEOUTS) - names) == []
+    for name in pipeline_registry.NAMED_RUN_ONLY_PIPELINES:
+        assert {n.name for n in registered[name].nodes} <= set(D.NODE_TIMEOUTS)
+
+
+def test_the_bootstrap_job_carries_no_op_of_a_pipeline_a_run_must_name(defs, monkeypatch):
+    """Story 34.14 (CAP-64, AC5): ``bootstrap_data`` is built from the translated ``__default__``, so it
+    loses ``query_plane_cache``'s and ``universal_sbom``'s ops with it; both stay reachable by name."""
+    from pyforge.atlas import pipeline_registry
+
+    monkeypatch.setattr(pipeline_registry, "kill_switch_on", lambda _key: True)
+    registered = pipeline_registry.register_pipelines()
+    excluded = {n.name for name in pipeline_registry.NAMED_RUN_ONLY_PIPELINES for n in registered[name].nodes}
+    assert excluded
+    job = next(j for j in defs.jobs if j.name == D.BOOTSTRAP_JOB_NAME)
+    ops = {n.name for n in job.graph.nodes}
+    assert ops, "bootstrap_data resolved to zero ops"
+    assert sorted(ops & excluded) == []

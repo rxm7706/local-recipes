@@ -1,0 +1,15 @@
+# Estate SAST rule (Story 15.2, spec-pyforge-warden CAP-25): shipped in the
+# package's data, never fetched from a registry. Drawn from the Spec's
+# Constraints: "No execution of untrusted input" (no eval/exec). Its trip
+# fixture is tests/fixtures/sast-trips/eval-exec/trips.py.
+rules:
+  - id: eval-exec
+    message: >-
+      eval/exec runs a string as Python code; parse data with a safe parser
+      instead (spec-pyforge-warden Constraints: no execution of untrusted
+      input).
+    severity: ERROR
+    languages: [python]
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: exec(...)

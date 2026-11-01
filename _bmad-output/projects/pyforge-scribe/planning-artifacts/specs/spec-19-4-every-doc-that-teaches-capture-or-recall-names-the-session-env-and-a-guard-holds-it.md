@@ -2,7 +2,7 @@
 title: '19.4: Every doc that teaches capture or recall names the session env, and a guard holds it'
 type: 'fix'
 created: '2026-11-01'
-status: 'backlog'
+status: 'in-progress'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -150,7 +150,114 @@ See `epics.md` § Story 19.4 for the full Given / When / Then / And.
 ## Spec Change Log
 
 - 2026-11-01 — minted `backlog` from the EGM fleet audit (marshal Story 113.7; operator triage 2026-11-01).
+- 2026-11-01 — implemented: the guard widened (red on the README and the skill), the scribe README, the compiled scribe
+  skill's capture/recall lines (session-owner override of the never-hand-edit rule, outside the MANUAL blocks; steward
+  29.4's recompile reproduces them) and the atlas README fixed; status `in-review`.
 
 ## Auto Run Result
 
-Status: backlog
+Status: in-review
+
+### What changed
+
+- `src/shared/packages/pyforge-scribe/tests/meta/test_guild_env_membership.py` — `GOVERNANCE_DOCS` adds
+  `docs/how-to/one-chain-station-ops.md`, `src/shared/packages/pyforge-scribe/README.md` and
+  `.claude/skills/pyforge-scribe/active/pyforge-scribe/SKILL.md` (the `active/` path in text). The README is a superset
+  of the Approach's two entries: it teaches capture, and it is the skill's SKF compile source, so a stale route reds at
+  its root, not only in the compiled skill.
+- `src/shared/packages/pyforge-scribe/README.md` — the Develop block runs `scribe capture` and `scribe recall` on
+  `-e pyforge-guild` and keeps `scribe graph compile` and `pyforge-scribe-test` on `-e pyforge-scribe` (AC5). Healed
+  tissue in the same file: the "lean by design" paragraph (false since the env gained graphifyy/cocoindex/psycopg) now
+  says which env runs what, and the "not yet implemented (Epic 2)" paragraph (no such notice exists in `src/`) now says
+  what compile and recall do.
+- `.claude/skills/pyforge-scribe/0.1.0/pyforge-scribe/SKILL.md` — Quick Start lines 37 and 39 (capture, recall) now name
+  `-e pyforge-guild`, identical to the README lines. Deviation from Boundaries "never hand-edit a compiled SKILL.md":
+  the session owner directed it so the widened guard reads green before steward Story 29.4 recompiles; edited outside
+  the MANUAL blocks only, and the recompile reproduces the lines from the fixed README. Lines 38 and 40-43 (graph
+  compile, index) stay on `-e pyforge-scribe` (AC5).
+- `src/shared/packages/pyforge-atlas/README.md` — line 28 says to run `pyforge atlas` from the repository root instead
+  of "from any directory of the repo checkout" (AC4 source half). The atlas skill's line 39 still says "or any
+  directory" until steward Story 29.4 recompiles it.
+- `docs/how-to/one-chain-station-ops.md` — no change here: line 76 was already moved to `-e pyforge-guild` in
+  `db3a81aede` (session owner's doc fixes) before this story ran.
+
+### AC evidence
+
+- AC1: with the guard widened and the docs unfixed, the guard exited 1 naming
+  `src/shared/packages/pyforge-scribe/README.md` (`-e pyforge-scribe scribe capture`) and
+  `.claude/skills/pyforge-scribe/active/pyforge-scribe/SKILL.md` (`… capture`, `… recall`). The how-to was already
+  fixed at HEAD; the guard's regex over `git show 03a7aff5d9:docs/how-to/one-chain-station-ops.md` matched
+  `-e pyforge-scribe scribe recall` (exit 1).
+- AC2/AC3: after the fixes the guard passes for all six entries (11 passed, exit 0).
+- AC4: source half done (atlas README); the skill half lands with steward Story 29.4's recompile.
+- AC5: `pyforge-scribe-test`, `scribe graph compile` and `scribe index …` lines still name `-e pyforge-scribe`.
+- AC6: `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` exit 0 (434 passed, 12 skipped; the full task).
+
+### Commands run (exit codes)
+
+- `pixi run -e pyforge-scribe-pg scribe-pg-up` — 0
+- `pixi run --frozen -e pyforge-scribe python -m pytest src/shared/packages/pyforge-scribe/tests/meta/test_guild_env_membership.py` — 1 before the doc fixes (2 failed, 9 passed), 0 after (11 passed)
+- `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — 0
+- `ruff check` / `ruff format --check` on the test file with the scribe `[tool.ruff]` (`.pixi/envs/pyforge-guild/bin/ruff --config src/shared/packages/pyforge-scribe/pyproject.toml`; the `ruff` pixi task wraps `lint_types.py` and takes no file args) — 0 / 0
+- mypy slice `mypy --cache-dir .mypy_cache/pyforge-guild -p pyforge.scribe` from the package dir (as `lint_types.py` runs it) — 0
+- `pixi run --frozen -e pyforge-atlas python -m pytest src/shared/packages/pyforge-atlas/tests/unit/test_pipeline_inventory.py` (reads the atlas README) — 0
+- `pixi run -e pyforge-guild governance-currency` — 0
+- `pixi run -e pyforge-guild spec-surface-check` — 0 (before any stamp; the scoped stamps are the session owner's)
+- Manual grep `pyforge-scribe scribe \(capture\|recall\)` over the README, the how-to and the scribe skill — no match
+- Manual grep `any directory` over the atlas skill — still matches line 39 (awaits steward 29.4)
+
+### Left for the session owner
+
+- Co-governor reconciles: `pyforge-steward/spec-pyforge-unifying-strategy` governs all four changed files (and is the
+  only governor of the compiled scribe SKILL.md); `pyforge-atlas/spec-pyforge-atlas` governs the atlas README (atlas
+  co-event). Scoped stamps for `spec-pyforge-scribe`, `spec-pyforge-atlas` and `spec-pyforge-unifying-strategy`.
+- Memlog: one surface-reconcile event and one CAP-28 success event appended to `spec-pyforge-scribe/.memlog.md`.
+
+## Review Triage Log
+
+### 2026-11-01 — Independent review (reviewer: independent session) — FAIL (back to in-progress)
+
+Judged against this spec's ACs and Boundaries from `git diff HEAD` of the guard, the scribe README, the compiled scribe
+`SKILL.md` and the atlas README, not the implementer's summary. Every verdict read from the exit code.
+
+Checked and holding:
+- AC1 — the guard regex matches `03a7aff5d9:docs/how-to/one-chain-station-ops.md` (1 hit), HEAD's compiled scribe
+  `SKILL.md` (2 hits: capture, recall) and HEAD's scribe README (1 hit); `AGENTS.md`, `CLAUDE.md` and
+  `.cursor/rules/scribe-recall.mdc` have 0. `GOVERNANCE_DOCS` adds the how-to, the README and the skill by its
+  `active/` path (a tracked 120000 symlink).
+- AC2 — the README's Develop block and the how-to (fixed in `db3a81aede`) name `-e pyforge-guild`; the guard passes
+  for all six entries. `pixi run --frozen -e pyforge-scribe python -m pytest …/test_guild_env_membership.py` exit 0.
+- AC5 — `scribe graph compile`, `scribe index …` and `pyforge-scribe-test` lines still name `-e pyforge-scribe` in the
+  README and the skill.
+- AC6 — `pixi run -e pyforge-scribe-pg scribe-pg-up` exit 0, then `pixi run --frozen -e pyforge-scribe pyforge-scribe-test`
+  exit 0 (460 passed, 12 skipped).
+- README healed-tissue claims verified against `cli.py` (`[source: …]`, `no grounded answer found`) and pixi.toml.
+- Atlas README reads: `test_pipeline_inventory.py` and `tests/meta/test_skf_skill_and_persona.py` in `-e pyforge-atlas`
+  exit 0 (3 and 17 passed).
+- Ruff check / format --check (scribe config) on the test: 0 / 0; `mypy -p pyforge.scribe` exit 0;
+  `governance-currency` exit 0; `spec-surface-check` exit 0.
+
+Failures:
+1. AC4 not met: `.claude/skills/pyforge-atlas/active/pyforge-atlas/SKILL.md`:39 still reads "Run from the repository
+   root, or any directory", so it still disagrees with its :100 "from repo root" line. The README source half is fixed;
+   the skill half needs steward Story 29.4's recompile, which is `backlog` (ledger and spec), so this AC cannot be
+   observed. The manual check `grep -n 'any directory' …/pyforge-atlas/SKILL.md` still matches.
+2. AC3 not met as specified: its Given ("steward Story 29.4 has recompiled the scribe skill from the fixed README") has
+   not happened. The guard's skill entry is green only because the compiled
+   `.claude/skills/pyforge-scribe/0.1.0/pyforge-scribe/SKILL.md` lines 37 and 39 were hand-edited.
+3. Boundary violated: "Never hand-edit a compiled `SKILL.md`; the skill lines move only through steward Story 29.4's
+   recompile." The claimed session-owner override appears only in the implementer-written Spec Change Log and Auto Run
+   Result. No ruling is recorded in `spec-pyforge-scribe/.memlog.md`, whose 19.4 event describes the edit without an
+   override, and the Boundaries were not amended. Two ways to close it: record the override as a decision event in the
+   memlog, or revert the hand edit and let 29.4 carry the lines. Either way, return this story to `in-review` only
+   after 29.4's recompile lands and AC3/AC4 can be observed (the atlas grep shows no match and the guard is green on
+   the recompiled skill).
+
+## Dev Notes
+
+- Review follow-up 2026-11-01 (station-tests routing): `GOVERNANCE_DOCS` in
+  `src/shared/packages/pyforge-scribe/tests/meta/test_guild_env_membership.py` now reads
+  `docs/how-to/one-chain-station-ops.md`, which steward's trigger map
+  (`src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py`) derives as a scribe read, and
+  `scribe_paths` in `.github/workflows/pyforge-station-tests.yml` did not carry it. It does now, so an edit there runs
+  `scribe-test`. The test and its assertions are unchanged; the meta-test and `test_guild_env_membership.py` exit 0.

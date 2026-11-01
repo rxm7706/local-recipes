@@ -526,9 +526,14 @@ def bmad_core_drift_findings(
 
 
 def ci_pause_drift_findings(
-    repo: pathlib.Path = REPO, timeout: int = 120
+    repo: pathlib.Path = REPO, timeout: int = 150
 ) -> list[dict]:
-    """WARN Findings from ``pyforge.doctor``'s ci-pause-drift source (Story 45.1)."""
+    """WARN Findings from ``pyforge.doctor``'s ci-pause-drift source (Story 45.1).
+
+    The 150 s bound stays above the source's own 120 s dispatch bound
+    (``_DISPATCH_TIMEOUT``), so a hung steward reaches ATTENTION as the
+    source's ``ci-pause-unobserved`` WARN, not as "could not check CI
+    pauses" (Story 45.4, DOC-M-D4)."""
     result = subprocess.run(
         [sys.executable, "-m", "pyforge.doctor.sources", "ci-pause-drift", "--json"],
         cwd=repo,

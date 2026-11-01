@@ -1,5 +1,8 @@
 """Story 16.1 — GET-only GitHub REST org listing (fixture organisation only).
 
+Story 16.10 — each listed repo carries its default-branch tip (``head_sha``), read
+with one GET per repo; a repo with no tip to read is skipped with its reason.
+
 Every test drives the real client, the real urllib and the real http.client
 through a fake socket server: ``HTTPConnection.connect`` and
 ``HTTPSConnection.connect`` hand the connection a scripted socket instead of
@@ -43,9 +46,12 @@ from pyforge.warden.fleet_github_rest import (
     RedactedBytes,
     _ApiConnection,
     _ApiHTTPSHandler,
+    _branch_tip_path,
     _Credential,
     _CredentialSplicingSocket,
+    _head_sha_from_api,
     _listed_repo_from_api,
+    _ListedFields,
     _parse_link_next,
     is_api_url,
 )
@@ -225,9 +231,33 @@ def fake(monkeypatch: pytest.MonkeyPatch) -> _FakeGitHub:
     return _FakeGitHub().install(monkeypatch)
 
 
+def _tip(name: str) -> str:
+    """A fixture repo's default-branch tip: 40 hex digits, distinct per repo."""
+    return name.encode().hex().ljust(40, "0")[:40]
+
+
+def _ref_url(name: str, branch: str = "main") -> str:
+    return f"{_API}/repos/{_EXAMPLE_ORG}/{name}/git/ref/heads/{branch}"
+
+
+def _ref_answer(sha: str) -> bytes:
+    """GitHub's answer to ``GET /repos/{owner}/{repo}/git/ref/heads/{branch}``."""
+    return _json_page({"ref": "refs/heads/main", "object": {"type": "commit", "sha": sha}})
+
+
+def _serve_tip(fake: _FakeGitHub, name: str, branch: str = "main") -> None:
+    fake.routes[_ref_url(name, branch)] = _ref_answer(_tip(name))
+
+
+_FIXTURE_ORG = (("alpha", "main"), ("beta", "develop"), ("archived-one", "main"))
+_FIXTURE_REF_URLS = [_ref_url(name, branch) for name, branch in _FIXTURE_ORG]
+
+
 def _serve_two_pages(fake: _FakeGitHub) -> None:
     fake.routes[_FIRST_PAGE] = _json_page([_repo("alpha"), _repo("beta", branch="develop")], next_url=_SECOND_PAGE)
     fake.routes[_SECOND_PAGE] = _json_page([_repo("archived-one", archived=True)])
+    for name, branch in _FIXTURE_ORG:
+        _serve_tip(fake, name, branch)
 
 
 def _repo(name: str, *, archived: bool = False, branch: str = "main") -> dict[str, object]:
@@ -251,12 +281,14 @@ def test_pagination_reads_every_page_through_link_next(fake: _FakeGitHub) -> Non
         f"{_EXAMPLE_ORG}/archived-one",
     ]
     assert listing.skipped == ()
-    assert [exchange.url for exchange in fake.exchanges] == [_FIRST_PAGE, _SECOND_PAGE]
+    # Every page first, then one tip read per listed repo (Story 16.10).
+    assert [exchange.url for exchange in fake.exchanges] == [_FIRST_PAGE, _SECOND_PAGE, *_FIXTURE_REF_URLS]
     assert listing.repos[2] == ListedRepo(
         full_name=f"{_EXAMPLE_ORG}/archived-one",
         default_branch="main",
         clone_url=f"https://github.com/{_EXAMPLE_ORG}/archived-one.git",
         archived=True,
+        head_sha=_tip("archived-one"),
     )
     assert fake.stack_leaks == []
 
@@ -265,7 +297,7 @@ def test_every_outgoing_request_is_a_get(fake: _FakeGitHub) -> None:
     """The method is read off the bytes the client really sent, not off a fake."""
     _serve_two_pages(fake)
     fake.client().list_org_repos(_EXAMPLE_ORG)
-    assert [exchange.method for exchange in fake.exchanges] == ["GET", "GET"]
+    assert [exchange.method for exchange in fake.exchanges] == ["GET"] * 5
 
 
 def test_each_request_uses_the_request_timeout(fake: _FakeGitHub) -> None:
@@ -296,7 +328,7 @@ def test_the_token_reaches_the_wire_but_no_library_frame(fake: _FakeGitHub) -> N
     """On the wire the API sees the real credential; urllib's Request and every frame never hold it."""
     _serve_two_pages(fake)
     fake.client().list_org_repos(_EXAMPLE_ORG)
-    assert [exchange.authorization for exchange in fake.exchanges] == [_BEARER, _BEARER]
+    assert [exchange.authorization for exchange in fake.exchanges] == [_BEARER] * 5
     assert fake.stack_leaks == []
 
 
@@ -353,11 +385,12 @@ def test_redirect_within_the_api_origin_carries_the_token(fake: _FakeGitHub) -> 
     moved = f"{_API}/organizations/1/repos?type=all&per_page=100"
     fake.routes[_FIRST_PAGE] = _http_response(301, headers={"Location": moved})
     fake.routes[moved] = _json_page([_repo("alpha")])
+    _serve_tip(fake, "alpha")
     listing = fake.client().list_org_repos(_EXAMPLE_ORG)
     assert [repo.full_name for repo in listing.repos] == [f"{_EXAMPLE_ORG}/alpha"]
-    assert [exchange.url for exchange in fake.exchanges] == [_FIRST_PAGE, moved]
-    assert [exchange.method for exchange in fake.exchanges] == ["GET", "GET"]
-    assert [exchange.authorization for exchange in fake.exchanges] == [_BEARER, _BEARER]
+    assert [exchange.url for exchange in fake.exchanges] == [_FIRST_PAGE, moved, _ref_url("alpha")]
+    assert [exchange.method for exchange in fake.exchanges] == ["GET"] * 3
+    assert [exchange.authorization for exchange in fake.exchanges] == [_BEARER] * 3
     assert fake.stack_leaks == []
 
 
@@ -600,8 +633,10 @@ def test_incomplete_entries_are_recorded_not_defaulted_or_dropped(fake: _FakeGit
     del no_archived["archived"]
     payload: list[Any] = ["not-a-dict", {"default_branch": "main"}, no_branch, no_clone, no_archived, _repo("good")]
     fake.routes[_FIRST_PAGE] = _json_page(payload)
+    _serve_tip(fake, "good")
     listing = fake.client().list_org_repos(_EXAMPLE_ORG)
     assert [repo.full_name for repo in listing.repos] == [f"{_EXAMPLE_ORG}/good"]
+    assert [exchange.url for exchange in fake.exchanges] == [_FIRST_PAGE, _ref_url("good")]
     assert [(entry.page, entry.position, entry.full_name, entry.reason) for entry in listing.skipped] == [
         (1, 1, None, "entry is not a JSON object"),
         (1, 2, None, "missing full_name, clone_url"),
@@ -626,6 +661,123 @@ def test_parse_link_next() -> None:
 def test_fleet_inventory_api_error_is_pyforge_error() -> None:
     assert issubclass(FleetInventoryApiError, PyforgeError)
     assert issubclass(OffApiHostRefusedError, FleetInventoryApiError)
+    assert FleetInventoryApiError("any failure").http_status is None
+
+
+# --- Story 16.10: each listed repo carries its default-branch tip (head_sha) ---------------------
+
+
+def test_each_listed_repo_carries_its_default_branch_tip(fake: _FakeGitHub) -> None:
+    """AC1/AC2: three rows, each with the fixture's tip, read by one GET per repo, token on no frame."""
+    _serve_two_pages(fake)
+    listing = fake.client().list_org_repos(_EXAMPLE_ORG)
+    assert [(repo.full_name, repo.default_branch, repo.head_sha) for repo in listing.repos] == [
+        (f"{_EXAMPLE_ORG}/{name}", branch, _tip(name)) for name, branch in _FIXTURE_ORG
+    ]
+    assert all(repo.head_sha for repo in listing.repos)
+    assert listing.skipped == ()
+    tip_reads = [exchange for exchange in fake.exchanges if "/git/ref/heads/" in exchange.url]
+    assert [exchange.url for exchange in tip_reads] == _FIXTURE_REF_URLS
+    assert {(exchange.method, exchange.authorization, exchange.timeout) for exchange in tip_reads} == {
+        ("GET", _BEARER, _REQUEST_TIMEOUT)
+    }
+    assert fake.stack_leaks == []
+
+
+@pytest.mark.parametrize(
+    ("status", "body"),
+    [(409, b'{"message": "Git Repository is empty."}'), (404, b'{"message": "Not Found"}')],
+    ids=["empty-repository", "no-default-branch"],
+)
+def test_a_repo_with_no_tip_is_skipped_with_its_reason(fake: _FakeGitHub, status: int, body: bytes) -> None:
+    """AC3: a repo with no commits is under skipped, with its reason, and absent from the repos."""
+    _serve_two_pages(fake)
+    fake.routes[_ref_url("beta", "develop")] = _http_response(status, body=body)
+    listing = fake.client().list_org_repos(_EXAMPLE_ORG)
+    assert [repo.full_name for repo in listing.repos] == [f"{_EXAMPLE_ORG}/alpha", f"{_EXAMPLE_ORG}/archived-one"]
+    assert [(entry.page, entry.position, entry.full_name, entry.reason) for entry in listing.skipped] == [
+        (1, 2, f"{_EXAMPLE_ORG}/beta", f"no default-branch tip to read (GitHub API HTTP {status})"),
+    ]
+    assert fake.stack_leaks == []
+
+
+def test_skipped_entries_keep_listing_order_across_both_kinds(fake: _FakeGitHub) -> None:
+    """A tip skip and a listing skip sit in page and position order, whichever was found first."""
+    fake.routes[_FIRST_PAGE] = _json_page([_repo("empty"), "not-a-dict", _repo("good")])
+    fake.routes[_ref_url("empty")] = _http_response(409, body=b"{}")
+    _serve_tip(fake, "good")
+    listing = fake.client().list_org_repos(_EXAMPLE_ORG)
+    assert [(entry.position, entry.full_name) for entry in listing.skipped] == [
+        (1, f"{_EXAMPLE_ORG}/empty"),
+        (2, None),
+    ]
+
+
+@pytest.mark.parametrize(
+    "answer",
+    [{}, {"object": None}, {"object": {"type": "commit"}}, {"object": {"sha": "not-a-commit-id"}}, []],
+    ids=["no-object", "null-object", "no-sha", "not-hex", "array"],
+)
+def test_a_ref_answer_naming_no_commit_id_is_skipped(fake: _FakeGitHub, answer: object) -> None:
+    fake.routes[_FIRST_PAGE] = _json_page([_repo("alpha")])
+    fake.routes[_ref_url("alpha")] = _json_page(answer)
+    listing = fake.client().list_org_repos(_EXAMPLE_ORG)
+    assert listing.repos == ()
+    assert [entry.reason for entry in listing.skipped] == ["the default-branch ref names no commit id"]
+
+
+@pytest.mark.parametrize("status", [401, 403, 500, 503])
+def test_any_other_tip_read_failure_fails_the_whole_listing(
+    fake: _FakeGitHub, caplog: pytest.LogCaptureFixture, status: int
+) -> None:
+    """No partial listing: a tip read GitHub refuses for any other reason is typed and raised."""
+    _serve_two_pages(fake)
+    fake.routes[_ref_url("beta", "develop")] = _http_response(status, body=b'{"message": "refused"}')
+    with pytest.raises(FleetInventoryApiError, match=f"HTTP {status}") as caught:
+        fake.client().list_org_repos(_EXAMPLE_ORG)
+    assert caught.value.http_status == status
+    assert [exchange.url for exchange in fake.exchanges][-1] == _ref_url("beta", "develop")
+    _assert_sentinel_absent(caught.value, caplog)
+    assert fake.stack_leaks == []
+
+
+def test_a_tip_read_transport_failure_fails_the_whole_listing(fake: _FakeGitHub) -> None:
+    _serve_two_pages(fake)
+    fake.script(_ref_url("alpha"), b"", TimeoutError("timed out"))
+    with pytest.raises(FleetInventoryApiError, match="transport failed: TimeoutError") as caught:
+        fake.client().list_org_repos(_EXAMPLE_ORG)
+    assert caught.value.http_status is None
+    assert fake.stack_leaks == []
+
+
+def _fields(full_name: str, branch: str = "main") -> _ListedFields:
+    return _ListedFields(full_name=full_name, default_branch=branch, clone_url="https://c.git", archived=False)
+
+
+def test_the_ref_path_quotes_each_segment_and_keeps_branch_slashes() -> None:
+    assert _branch_tip_path(_fields("example-org/a.b", "release/1#x")) == (
+        "/repos/example-org/a.b/git/ref/heads/release/1%23x"
+    )
+    assert _branch_tip_path(_fields("example-org/r?x", "main")) == "/repos/example-org/r%3Fx/git/ref/heads/main"
+    for name in ("no-slash", "/r", "example-org/", "example-org/a/b"):
+        assert _branch_tip_path(_fields(name)) is None
+
+
+def test_a_name_that_is_not_owner_repo_is_skipped_without_a_request(fake: _FakeGitHub) -> None:
+    fake.routes[_FIRST_PAGE] = _json_page([{**_repo("alpha"), "full_name": "no-slash"}])
+    listing = fake.client().list_org_repos(_EXAMPLE_ORG)
+    assert listing.repos == ()
+    assert [(entry.full_name, entry.reason) for entry in listing.skipped] == [
+        ("no-slash", "full_name is not owner/repo")
+    ]
+    assert [exchange.url for exchange in fake.exchanges] == [_FIRST_PAGE]
+
+
+def test_head_sha_from_api_accepts_only_a_commit_id() -> None:
+    assert _head_sha_from_api({"object": {"sha": "a" * 40}}) == "a" * 40
+    assert _head_sha_from_api({"object": {"sha": "b" * 64}}) == "b" * 64
+    for sha in ("", "a" * 39, "a" * 41, "A" * 40, "g" * 40, 7):
+        assert _head_sha_from_api({"object": {"sha": sha}}) is None
 
 
 # --- Story 16.5 F3: the splice touches only the header block, once; a body never carries it ------

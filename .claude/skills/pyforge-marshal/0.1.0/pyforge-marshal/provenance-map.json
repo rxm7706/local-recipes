@@ -3,14 +3,14 @@
   "skill_name": "pyforge-marshal",
   "skill_type": "single",
   "source_repo": "src/shared/packages/pyforge-marshal",
-  "source_commit": "865b95dc951c8a6de87d05bb10c8395a75da8008",
+  "source_commit": "03a7aff5d911e4c4b9a590fcd00dadc96f8e698c",
   "source_ref": "local",
-  "generated_at": "2026-08-25T19:00:00Z",
+  "generated_at": "2026-11-01T00:00:00Z",
   "grounding": {
-    "date": "2026-08-25",
-    "commit_short": "865b95dc951",
+    "date": "2026-11-01",
+    "commit_short": "03a7aff5d9",
     "station": "marshal",
-    "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-27-1-skf-skill-and-persona-for-marshal.md"
+    "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-29-4-the-station-skills-are-recompiled-to-cover-the-verbs-the-contract-names.md"
   },
   "entries": [
     {
@@ -22,7 +22,7 @@
       ],
       "return_type": "int",
       "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py",
-      "source_line": 323,
+      "source_line": 332,
       "confidence": "T1-low",
       "extraction_method": "skf-extract-public-api",
       "ast_node_type": null,
@@ -37,7 +37,7 @@
       ],
       "return_type": "int",
       "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py",
-      "source_line": 1149,
+      "source_line": 1731,
       "confidence": "T1-low",
       "extraction_method": "source-reading",
       "ast_node_type": null,
@@ -52,7 +52,7 @@
       ],
       "return_type": "int",
       "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py",
-      "source_line": 1015,
+      "source_line": 1057,
       "confidence": "T1-low",
       "extraction_method": "source-reading",
       "ast_node_type": null,
@@ -67,7 +67,7 @@
       ],
       "return_type": "int",
       "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/check.py",
-      "source_line": 201,
+      "source_line": 199,
       "confidence": "T1-low",
       "extraction_method": "source-reading",
       "ast_node_type": null,
@@ -82,9 +82,144 @@
       ],
       "return_type": "None",
       "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py",
-      "source_line": 846,
+      "source_line": 1250,
       "confidence": "T1-low",
       "extraction_method": "source-reading",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "add_factory_subparser",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "subparsers: argparse._SubParsersAction"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py",
+      "source_line": 1111,
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "run_spin",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py",
+      "source_line": 1569,
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "add_factory_dispatch_subparser",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "factory_subparsers: argparse._SubParsersAction"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 267,
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "run_dispatch",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py",
+      "source_line": 2992,
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "add_factory_challenge_subparser",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "factory_subparsers: argparse._SubParsersAction"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 109,
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "run_challenge",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/challenge.py",
+      "source_line": 772,
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "add_context_subparser",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "subparsers: argparse._SubParsersAction"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/context.py",
+      "source_line": 130,
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "run_context_advisory",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/context.py",
+      "source_line": 802,
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "run_context_retrieve",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/context.py",
+      "source_line": 485,
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
       "ast_node_type": null,
       "signature_source": "T1-low"
     }

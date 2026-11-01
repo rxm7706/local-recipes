@@ -1,17 +1,23 @@
-"""Fix-target solver seam (Story 14.1).
+"""Fix-target solver seam (Stories 14.1, 14.4).
 
-The default implementation copies the scan target into a throwaway directory,
-applies a solver-internal floor probe to ``pixi.toml`` (not Story 14.2's PR
-diff plan), and runs ``pixi lock`` through ``engines.run_pixi_lock``. Tests
-inject a fake seam — no subprocess, no manifest touch.
+The default implementation copies the scan target (without ``.pixi/`` or
+``.git``) into a throwaway directory, sets the candidate floor in the one
+manifest that declares the package through
+``manifest_edit.edit_requirement_to_floor`` -- the edit path Story 14.2's fix
+takes, so ``pixi.toml``, ``pyproject.toml`` and recipe declarations are all
+probed -- and runs ``pixi lock`` through ``engines.run_pixi_lock``.
+``resolve_fix_target`` tries at most ``MAX_FIX_CANDIDATES`` candidates within a
+total ``FIX_SOLVE_BUDGET_SECONDS``; an overrun is a failed resolution. Tests
+inject a fake seam -- no subprocess, no manifest touch.
 """
 
 from __future__ import annotations
 
-import re
+import os
 import shutil
 import tempfile
-from collections.abc import Sequence
+import time
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol, runtime_checkable
@@ -19,9 +25,19 @@ from typing import Protocol, runtime_checkable
 from packaging.version import InvalidVersion, Version
 from pyforge.core.errors import PyforgeError
 
-from .engines import PIXI_VERSION_RANGE, run_pixi_lock
+from .engines import PIXI_LOCK_TIMEOUT_SECONDS, PIXI_VERSION_RANGE, run_pixi_lock
+from .manifest_edit import MANIFEST_FILE_NAMES, edit_requirement_to_floor
+from .manifest_fixup import copy_scan_target
 
 SolverVerdict = str  # "accepted" | "rejected"
+
+# Story 14.4 (WAR-M-D5): the candidate loop is bounded. At most this many
+# OSV-fixed candidates are tried, lowest first...
+MAX_FIX_CANDIDATES = 5
+# ...within this total solve budget per finding. The default solver's
+# ``pixi lock`` gets the smaller of ``PIXI_LOCK_TIMEOUT_SECONDS`` and what is
+# left of the budget, so one solve cannot outrun it.
+FIX_SOLVE_BUDGET_SECONDS = 1800.0
 
 
 @runtime_checkable
@@ -91,8 +107,16 @@ def resolve_fix_target(
     dry_run: bool,
     scan_target: Path | None,
     solver: FixTargetSolver | None = None,
+    max_candidates: int = MAX_FIX_CANDIDATES,
+    solve_budget_seconds: float = FIX_SOLVE_BUDGET_SECONDS,
+    pixi_lock_timeout_seconds: float = PIXI_LOCK_TIMEOUT_SECONDS,
+    clock: Callable[[], float] = time.monotonic,
 ) -> FixTargetResolution:
-    """Pick the lowest acceptable fixed release, or report failure."""
+    """Pick the lowest acceptable fixed release, or report failure.
+
+    The real path tries at most ``max_candidates`` candidates and starts no
+    solve once ``solve_budget_seconds`` have passed; either bound ends the
+    loop with a resolution whose ``failure_detail`` names it."""
     candidates = eligible_candidates(finding_id, raw_candidates)
     if not candidates:
         return FixTargetResolution(
@@ -117,10 +141,31 @@ def resolve_fix_target(
             solver="pixi-lock",
             failure_detail="no scan target directory for the solver seam",
         )
-    seam = solver if solver is not None else default_pixi_lock_solver
+    package = _package_from_finding_id(finding_id)
     attempts: list[tuple[str, SolverVerdict]] = []
-    for candidate in candidates:
-        verdict = seam(scan_target=scan_target, package=_package_from_finding_id(finding_id), floor_version=candidate)
+    started = clock()
+    for candidate in candidates[:max_candidates]:
+        remaining = solve_budget_seconds - (clock() - started)
+        if remaining <= 0:
+            return FixTargetResolution(
+                target=None,
+                candidates=candidates,
+                attempts=tuple(attempts),
+                solver="pixi-lock",
+                failure_detail=(
+                    f"solve budget of {solve_budget_seconds:g}s exhausted after "
+                    f"{len(attempts)} of {len(candidates)} candidate(s)"
+                ),
+            )
+        if solver is None:
+            verdict = default_pixi_lock_solver(
+                scan_target=scan_target,
+                package=package,
+                floor_version=candidate,
+                timeout=min(pixi_lock_timeout_seconds, remaining),
+            )
+        else:
+            verdict = solver(scan_target=scan_target, package=package, floor_version=candidate)
         attempts.append((candidate, verdict))
         if verdict == "accepted":
             return FixTargetResolution(
@@ -129,12 +174,19 @@ def resolve_fix_target(
                 attempts=tuple(attempts),
                 solver="pixi-lock",
             )
+    if len(candidates) > max_candidates:
+        failure_detail = (
+            f"candidate cap of {max_candidates} reached: the solver accepted none of the "
+            f"first {max_candidates} of {len(candidates)} candidates"
+        )
+    else:
+        failure_detail = "no candidate was accepted by the solver seam"
     return FixTargetResolution(
         target=None,
         candidates=candidates,
         attempts=tuple(attempts),
         solver="pixi-lock",
-        failure_detail="no candidate was accepted by the solver seam",
+        failure_detail=failure_detail,
     )
 
 
@@ -149,37 +201,44 @@ def _package_from_finding_id(finding_id: str) -> str:
     return tail
 
 
-def _probe_pixi_toml_floor(pixi_toml: Path, package: str, floor: str) -> bool:
-    """Solver-internal: set one pypi dependency line to ``>=floor`` for probing."""
-    if not pixi_toml.is_file():
-        return False
-    text = pixi_toml.read_text(encoding="utf-8")
-    pattern = re.compile(
-        rf'^(\s*"{re.escape(package)}"\s*=\s*")([^"]*)(")\s*$',
-        re.MULTILINE,
+def _editable_manifests(root: Path) -> list[Path]:
+    """Every manifest ``edit_requirement_to_floor`` can edit under ``root``, sorted."""
+    found: list[Path] = []
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames.sort()
+        found.extend(Path(dirpath) / name for name in sorted(filenames) if name.lower() in MANIFEST_FILE_NAMES)
+    return found
+
+
+def _probe_floor(root: Path, package: str, floor: str) -> bool:
+    """Set ``package`` to ``>=floor`` in the copy at ``root`` through the fix's own edit path.
+
+    True when exactly one manifest declares it; a package declared in more than
+    one manifest is refused, as ``prepare_manifest_fix`` refuses it."""
+    edited = sum(
+        1
+        for manifest in _editable_manifests(root)
+        if edit_requirement_to_floor(manifest, package=package, floor=floor).ok
     )
-    if not pattern.search(text):
-        pattern = re.compile(
-            rf"^(\s*{re.escape(package)}\s*=\s*')([^']*)(')\s*$",
-            re.MULTILINE,
-        )
-    replacement = rf"\1>={floor}\3"
-    updated, count = pattern.subn(replacement, text, count=1)
-    if count == 0:
-        return False
-    pixi_toml.write_text(updated, encoding="utf-8")
-    return True
+    return edited == 1
 
 
-def default_pixi_lock_solver(*, scan_target: Path, package: str, floor_version: str) -> SolverVerdict:
-    """Copy ``scan_target``, probe ``pixi.toml``, run ``pixi lock``; never writes the scan tree."""
+def default_pixi_lock_solver(
+    *,
+    scan_target: Path,
+    package: str,
+    floor_version: str,
+    timeout: float = PIXI_LOCK_TIMEOUT_SECONDS,
+) -> SolverVerdict:
+    """Copy ``scan_target``, set the floor, run ``pixi lock``; never writes the scan tree."""
+    if not package:
+        return "rejected"
     temp_dir = Path(tempfile.mkdtemp(prefix="warden-fix-solver-"))
     try:
-        shutil.copytree(scan_target, temp_dir, dirs_exist_ok=True)
-        pixi_toml = temp_dir / "pixi.toml"
-        if not _probe_pixi_toml_floor(pixi_toml, package, floor_version):
+        copy_scan_target(scan_target, temp_dir)
+        if not _probe_floor(temp_dir, package, floor_version):
             return "rejected"
-        error, exit_code = run_pixi_lock(cwd=temp_dir)
+        error, exit_code = run_pixi_lock(cwd=temp_dir, timeout=timeout)
         if error is not None:
             if "outside" in error.message or "incompatible" in error.message:
                 raise PixiVersionOutOfRangeError(str(PIXI_VERSION_RANGE))

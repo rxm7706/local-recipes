@@ -2,7 +2,7 @@
 title: "45.4: The ci-pause relay keeps steward's reason"
 type: 'fix'
 created: '2026-11-01'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
@@ -174,13 +174,95 @@ Parent: spec-pyforge-doctor CAP-89
 
 ## Auto Run Result
 
-Status: backlog
+Status: in-review (implemented 2026-11-01 in the EGM audit landing worktree, branch `egm-audit-2026-11`; not
+committed, not stamped — the session owner commits, reconciles co-governors and stamps).
+
+**What changed**
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ci_pause_drift.py`: `_findings_for_row` reads the
+  row's `detail` once through a new `_reason()` helper (`": <detail>"` for a non-empty string, `""` otherwise) and
+  puts it right after the surface and the rule on all three branches: `drifted{reason} (switch …, owner …)`,
+  `stuck{reason} (switch …, owner …, last_green_run …)`, `past review date{reason} (switch …, owner …, review_by …,
+  N day(s) overdue)`. A row with no detail, or an empty or non-string one, reads exactly as before.
+- `scripts/fleet_picture.py`: `ci_pause_drift_findings`' default `timeout` 120 -> 150 s (above `_DISPATCH_TIMEOUT`,
+  120 s), with a docstring naming why. The 110-character ATTENTION cut is unchanged.
+- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_ci_pause_drift.py`: refusal cases now read exit 127 =
+  `executable not found: 'steward' …` (console script failed to launch) and exit 2 = `station 'steward' is not
+  installed in this environment; …` (dispatch found no steward distribution), with ids; new tests:
+  `test_the_rows_detail_follows_the_rule_before_switch_and_owner` (5 cases: `row_drift.json`,
+  `partial_with_drift.json`, both findings of `row_drift_and_overdue.json`, `row_unregistered_drift.json`; detail
+  starts < 50, follows `": "`, precedes `(switch ` and `, owner `), `test_row_drift_keeps_its_whole_reason_inside_the_cut`
+  (whole detail in `message[:110]`, exact message), `test_drift_past_review_by_names_the_reason_on_both_findings`,
+  `test_a_stuck_row_with_a_detail_names_it` (synthetic stuck row), `test_a_row_without_a_string_detail_reads_as_before`
+  (absent / `""` / null / int / list), `test_recorded_rows_without_a_detail_are_unchanged` (overdue, stuck).
+- `tests/scripts/test_fleet_picture_ci_pauses.py`: `test_probe_timeout_outlasts_the_sources_dispatch_bound` (captures
+  the `timeout` the probe passes to `subprocess.run` and asserts it exceeds `_DISPATCH_TIMEOUT`, read from the
+  source file by `ast`, no `pyforge.doctor` import in that lane) and `test_main_names_a_hung_steward_as_unobserved`
+  (the source's timeout WARN reaches ATTENTION as `ci-pause-unobserved: …`, never `could not check CI pauses`).
+- Chain: `spec-pyforge-doctor/.memlog.md` gains one `(event)` surface reconcile naming the four paths and one
+  `(decision)` amending CAP-89's success (AC8). `SPEC.md` not edited.
+
+**Commands (exit codes)**
+- `pixi run --frozen -e pyforge-doctor python -m pytest src/shared/packages/pyforge-doctor/tests/unit/test_sources_ci_pause_drift.py -q -p no:cacheprovider` — 0 (51 passed).
+- `pixi run --frozen -e pyforge-guild python -m pytest tests/scripts/test_fleet_picture_ci_pauses.py .claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_main_attention.py -q -p no:cacheprovider` — 0 (11 passed).
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — 0 (unit+meta 1213 passed, all segments green).
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-live-test` — 0 (2699 passed; 4 passed).
+- `ruff check` / `ruff format --check` (pyforge-guild's ruff, the doctor package's `[tool.ruff]`) on the two doctor
+  files — 0 / 0. `scripts/` and `tests/scripts/` sit under no repo ruff config or lint lane; no new finding on the
+  changed lines.
+- `mypy --cache-dir .mypy_cache/pyforge-guild -p pyforge.doctor` (the lint-types doctor slice, from the package
+  dir, `-e pyforge-guild`) — 0 (no issues in 50 source files).
+- `grep -n "ci.pause.drift\|ci_pause" scripts/detectors.py` — 1 (no row; AC7).
+
+**AC6 mutations (each applied, run, restored)**
+- detail dropped from the `drift` branch — exit 1: `test_the_rows_detail_follows_the_rule_before_switch_and_owner`
+  [drift, partial-drift, drift-and-overdue:drift, unregistered-drift], `test_row_drift_keeps_its_whole_reason_inside_the_cut`,
+  `test_drift_past_review_by_names_the_reason_on_both_findings`.
+- detail dropped from the `overdue` branch — exit 1: `…before_switch_and_owner[drift-and-overdue:overdue]`,
+  `test_drift_past_review_by_names_the_reason_on_both_findings`.
+- detail moved back after the owner (drift branch) — exit 1: `…before_switch_and_owner` [4 drift cases],
+  `test_row_drift_keeps_its_whole_reason_inside_the_cut`, `test_drift_past_review_by_names_the_reason_on_both_findings`.
+- outer timeout set back to 120 s — exit 1: `test_probe_timeout_outlasts_the_sources_dispatch_bound`.
+- (extra) detail dropped from the `stuck` branch — exit 1: `test_a_stuck_row_with_a_detail_names_it`.
+
+**Left for the session owner (not run here, by the task's rules):** AC9's co-governor reconciles
+(`spec-pyforge-core`, and the Specs `spec-surface-check` names for `scripts/fleet_picture.py` and
+`tests/scripts/test_fleet_picture_ci_pauses.py`), the scoped stamps after `git add`, `lint-types` in full,
+`spec-surface-check`, `detectors-ci` and the full `pr-preflight`.
 
 ## Spec Change Log
 
 - 2026-11-01: minted `backlog` (in-PR) from the EGM audit's cluster DOC-CL-4 (findings DOC-M-Z3, DOC-D-C5; DOC-M-D4's
   code residue) at the operator's acceptance of every recommendation, 2026-11-01; marshal Story 113.7's landing.
+- 2026-11-01: `in-progress` -> `in-review` — implemented as the Auto Run Result records; AC1–AC8 met in the
+  worktree; AC9's stamps and co-governor reconciles left to the session owner.
+- 2026-11-01: `in-review` -> `done` — independent review passed (Review Triage Log); AC9's stamps stay the session
+  owner's.
 
 ## Review Triage Log
 
-- (none yet)
+- 2026-11-01 — reviewer: independent session (did not write this code; judged the diff against this spec, not the
+  Auto Run Result). **Verdict: pass.**
+  - Read: `git diff HEAD` of `ci_pause_drift.py`, `test_sources_ci_pause_drift.py`, `scripts/fleet_picture.py`,
+    `tests/scripts/test_fleet_picture_ci_pauses.py` and the two `spec-pyforge-doctor/.memlog.md` lines; the dispatch
+    exit codes in `src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py` (`EXIT_USAGE` 2 on a
+    `DispatchError`, whose not-installed text the exit-2 case now quotes; `EXIT_NOT_FOUND` 127 on a `ProcessError`,
+    `executable not found: …` in `pyforge/core/process.py`); the fixtures carrying `detail` (exactly the four AC2
+    names); `scripts/detectors.py` (no ci-pause row, AC7); the one caller of `ci_pause_drift_findings`
+    (`fleet_picture.main`, its 110-character cut unchanged).
+  - AC1–AC5, AC7, AC8 hold in code and tests: the reason sits right after the rule on all three branches, a
+    non-string or empty `detail` reads as before (5 cases), the synthetic stuck row names it, the default timeout is
+    150 s against `_DISPATCH_TIMEOUT` 120.0, the memlog decision amends CAP-89 as AC8 words it.
+  - Commands (exit codes read from `$?`): `pytest …/test_sources_ci_pause_drift.py` 0 (51 passed);
+    `pytest tests/scripts/test_fleet_picture_ci_pauses.py …/test_fleet_picture_main_attention.py` (pyforge-guild) 0
+    (11 passed); `pyforge-doctor-test` 0 (1213 passed); `pyforge-doctor-live-test` 0 (2728 + 4 passed);
+    `python scripts/lint_types.py ruff-format` 0 and `mypy` 0; `lint_types.py ruff` 1 for pyforge-doctor, but only
+    on `test_sources_pages_liveness.py` (Story 48.3's file), none on this story's files; `spec-surface-check` 0.
+  - AC6 mutations, each on a scratch mirror of the package and `scripts/` (`PYTHONPATH` to the mirror's `src`),
+    restored each time: detail dropped from `drift` → 6 failed (`…before_switch_and_owner` ×4,
+    `…whole_reason_inside_the_cut`, `…names_the_reason_on_both_findings`); from `overdue` → 2 failed
+    (`…[drift-and-overdue:overdue]`, `…on_both_findings`); moved after the owner → the same 6; outer timeout 120 →
+    `test_probe_timeout_outlasts_the_sources_dispatch_bound`; (extra) dropped from `stuck` →
+    `test_a_stuck_row_with_a_detail_names_it`.
+  - Failures: none.
+  - Left to the session owner (this workflow reserves them; not judged here): AC9's `spec-pyforge-core`
+    co-governor reconcile and the scoped stamps after `git add`; `detectors-ci` and the full `pr-preflight`.

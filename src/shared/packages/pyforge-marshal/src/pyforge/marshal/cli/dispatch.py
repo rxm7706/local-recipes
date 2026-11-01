@@ -1863,6 +1863,7 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
     verification_scope_advisories: tuple[dict[str, object], ...] = ()
     harness_profile: str | None = None
     session_liveness_error: str | None = None
+    readiness_challenge: dict[str, object] | None = None
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAUNCH):
         raw_profile = entry.payload.get("harness_profile")
         if isinstance(raw_profile, str) and raw_profile:
@@ -1879,6 +1880,10 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
             worktree_path = wt if isinstance(wt, str) else None
             baseline_val = entry.payload.get("baseline_head_sha")
             baseline_head_sha = baseline_val if isinstance(baseline_val, str) else None
+            # Story 113.8 (CAP-300): the readiness result rides the launch INTENT; `marshal status` and
+            # `marshal watch` show it from here.
+            raw_readiness = entry.payload.get("readiness_challenge")
+            readiness_challenge = dict(raw_readiness) if isinstance(raw_readiness, Mapping) else None
             try:
                 launched_at = datetime.fromisoformat(entry.ts.replace("Z", "+00:00"))
             except ValueError:
@@ -2009,6 +2014,7 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
         verify_fix_started_at=in_flight_fix.started_at if in_flight_fix is not None else None,
         harness_profile=harness_profile,
         session_liveness_error=session_liveness_error,
+        readiness_challenge=readiness_challenge,
     )
 
 
@@ -3065,9 +3071,11 @@ def _readiness_challenge_before_launch(
     effective_policy: policy.EffectivePolicy,
     findings: list[Finding],
     runner=None,
+    launch_model: str | None = None,
 ) -> dict[str, object] | None:
     """Story 113.3 (CAP-300): the EGM readiness stage reads the story spec cold
-    before the dispatch run exists. Off -- either switch, or no ``readiness`` in
+    before the dispatch run exists. The challenger is never ``launch_model``, the
+    run's resolved launch model (Story 113.9). Off -- either switch, or no ``readiness`` in
     the station's ``[challenge]`` block -- it returns ``None`` and the dispatch is
     byte-identical. On, the challenge run journals its own intent/outcome pair
     under ``implementation-artifacts/egm/`` and this returns the payload the
@@ -3079,7 +3087,12 @@ def _readiness_challenge_before_launch(
         from .challenge import readiness_for_dispatch, readiness_payload
 
         result = readiness_for_dispatch(
-            root=repo_root, slug=slug, story_spec=spec_path, effective=effective_policy, runner=runner
+            root=repo_root,
+            slug=slug,
+            story_spec=spec_path,
+            effective=effective_policy,
+            runner=runner,
+            launch_model=launch_model,
         )
         if not result.ran:
             return None
@@ -3772,7 +3785,12 @@ def dispatch_once(
         return _done()
 
     readiness_challenge = _readiness_challenge_before_launch(
-        repo_root=repo_root, slug=slug, spec_path=spec_path, effective_policy=effective_policy, findings=findings
+        repo_root=repo_root,
+        slug=slug,
+        spec_path=spec_path,
+        effective_policy=effective_policy,
+        findings=findings,
+        launch_model=model,
     )
     if readiness_challenge is not None:
         data["readiness_challenge"] = readiness_challenge

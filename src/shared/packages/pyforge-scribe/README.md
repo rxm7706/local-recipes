@@ -19,13 +19,18 @@ for the full spec.
 Run from the repository root (the parent pixi workspace):
 
 ```bash
-pixi run -e pyforge-scribe scribe capture --type project --text "..."
+pixi run -e pyforge-guild scribe capture --type project --text "..."
+pixi run -e pyforge-guild scribe recall "why did we pin typer"
+pixi run -e pyforge-scribe scribe graph compile
 pixi run -e pyforge-scribe pyforge-scribe-test  # run the test suite
 ```
 
-The `pyforge-scribe` environment is lean by design (`no-default-feature`):
-it carries only the built package plus its runtime deps (`typer`,
-`pydantic`) and a test runner.
+`scribe capture` and `scribe recall` run from the session default
+environment, `pyforge-guild`, which carries the core package
+(`spec-pyforge-scribe` CAP-28). The `pyforge-scribe` environment
+(`no-default-feature`) adds the heavy compile extras (`graphifyy`,
+`cocoindex`, `psycopg`) and the test runner: `scribe graph compile` with an
+extra, `scribe index …` and the test suite run there.
 
 ## `scribe capture`
 
@@ -40,7 +45,6 @@ index line to `.claude/memory/MEMORY.md`. A slug collision appends a
 numeric suffix rather than overwriting the original. No network calls;
 no file outside `.claude/memory/` is ever touched.
 
-`scribe graph compile [--nightly]` and `scribe recall <query>` are
-present but not yet implemented (Epic 2) — they parse their arguments,
-print a "not yet implemented" notice to stderr, and exit `0` without
-touching the filesystem.
+`scribe graph compile [--nightly]` rebuilds the compiled graph, and
+`scribe recall <query>` answers from it with a `[source: …]` citation or
+says `no grounded answer found` (Epic 2).

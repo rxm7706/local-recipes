@@ -1,0 +1,4 @@
+[project]
+name = "sast-trip-yaml-unsafe-load"
+version = "0.0.0"
+dependencies = []

@@ -323,3 +323,57 @@ def test_status_names_the_configured_dir_when_down(
     monkeypatch.setattr(scribe_pg, "_is_up", lambda: False)
     assert scribe_pg.status() == 0
     assert f"socket dir {short / 'sock'} (configured)" in capsys.readouterr().out
+
+
+# --- down (Story 22.2) -------------------------------------------------------------
+
+
+def _stops(calls):
+    return [c for c in calls if c[0] == "pg_ctl" and "stop" in c]
+
+
+def test_down_leaves_another_checkouts_server_alone(
+    scribe_pg, monkeypatch, capsys
+) -> None:
+    _present_cluster(scribe_pg)
+    monkeypatch.setattr(scribe_pg, "_need", lambda binary: binary)
+    monkeypatch.setattr(scribe_pg, "_is_up", lambda: True)
+    calls: list[list[str]] = []
+    monkeypatch.setattr(scribe_pg, "_run", _fake_run(calls))
+    assert scribe_pg.down() == 0
+    assert "[scribe-pg] not running" in capsys.readouterr().out
+    assert not [c for c in calls if c[0] == "pg_ctl"]
+
+
+@pytest.mark.parametrize(
+    ("returncode", "still_up", "expected"), [(0, False, 0), (1, True, 1)]
+)
+def test_down_stops_a_running_cluster(
+    scribe_pg, monkeypatch, capsys, returncode, still_up, expected
+) -> None:
+    _present_cluster(scribe_pg)
+    (scribe_pg.CLUSTER / "postmaster.pid").write_text("4242\n")
+    monkeypatch.setattr(scribe_pg, "_need", lambda binary: binary)
+    monkeypatch.setattr(scribe_pg, "_is_up", lambda: still_up)
+    calls: list[list[str]] = []
+
+    def run(args, **kw):
+        calls.append(list(args))
+        return subprocess.CompletedProcess(args, returncode, "", "stop failed\n")
+
+    monkeypatch.setattr(scribe_pg, "_run", run)
+    assert scribe_pg.down() == expected
+    assert _stops(calls) == [
+        ["pg_ctl", "-D", str(scribe_pg.CLUSTER), "-m", "fast", "-w", "stop"]
+    ]
+    assert ("[scribe-pg] stopped" in capsys.readouterr().out) is (expected == 0)
+
+
+def test_down_without_a_cluster_has_nothing_to_stop(
+    scribe_pg, monkeypatch, capsys
+) -> None:
+    calls: list[list[str]] = []
+    monkeypatch.setattr(scribe_pg, "_run", _fake_run(calls))
+    assert scribe_pg.down() == 0
+    assert "[scribe-pg] no cluster to stop" in capsys.readouterr().out
+    assert not calls

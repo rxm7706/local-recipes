@@ -140,17 +140,17 @@ development_status:
   44-1-the-doctor-check-speed-budget-is-judged-on-the-cpu-the-check-spends: done
   45-1-doctor-names-every-ci-surface-that-drifted-stuck-or-outlived-its-review-date: done
   45-3-the-fleet-picture-meta-test-names-every-probe-main-calls: done
-  45-4-the-ci-pause-relay-keeps-steward-s-reason: backlog
+  45-4-the-ci-pause-relay-keeps-steward-s-reason: done
   46-1-the-env-hygiene-scan-walks-each-tree-once-and-skips-test-code: done
   47-1-the-aggregate-scripts-test-checks-scope-filtering-without-gathering: done
   48-1-one-registry-orders-every-section-of-the-pages-site: done
   48-2-a-pages-deploy-more-than-a-day-behind-its-inputs-is-named-in-fleet-picture: done
-  48-3-pages-liveness-reads-its-published-inputs-from-pages-yml: backlog
+  48-3-pages-liveness-reads-its-published-inputs-from-pages-yml: done
   49-1-a-detector-s-task-is-the-one-that-runs-its-script: done
   5-1-marshal-durability-source-independent-by-construction: done
   5-2-render-the-verdict-through-a-doctor-verb: done
   50-1-fr-without-cap-resolves-every-arrow-against-a-defined-capability-and-names-a-counted-run: done
-  50-2-fr-baseline-json-grows-only-through-its-script: backlog
+  50-2-fr-baseline-json-grows-only-through-its-script: done
   51-1-the-flag-inventory-and-the-gate-measure-the-retrofit-as-ruled: done
   53-1-doctor-s-fourteen-archived-dreams-leave-the-live-tree-and-a-kinship-wikilink-resolves-under-the-archive: done
   54-1-doctor-s-absorbed-spec-folders-move-to-the-archive-home: done
@@ -264,19 +264,19 @@ development_status:
   epic-43-retrospective: optional
   epic-44: done
   epic-44-retrospective: optional
-  epic-45: in-progress
+  epic-45: done
   epic-45-retrospective: optional
   epic-46: done
   epic-46-retrospective: optional
   epic-47: done
   epic-47-retrospective: optional
-  epic-48: in-progress
+  epic-48: done
   epic-48-retrospective: optional
   epic-49: done
   epic-49-retrospective: optional
   epic-5: done
   epic-5-retrospective: optional
-  epic-50: in-progress
+  epic-50: done
   epic-50-retrospective: done
   epic-51: done
   epic-51-retrospective: optional

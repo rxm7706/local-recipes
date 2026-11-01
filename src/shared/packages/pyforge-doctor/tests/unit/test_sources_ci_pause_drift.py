@@ -131,9 +131,16 @@ def test_unregistered_drift_owner_none(monkeypatch, tmp_path: Path) -> None:
     ("exit_code", "stderr_line"),
     [
         (3, "ci: refused — flag pyforge.steward.ci_pause_control is off"),
-        (127, "pyforge.core.dispatch: no steward distribution installed"),
-        (2, "unexpected failure"),
+        # Story 45.4 (DOC-D-C5): pyforge.core.dispatch exits 127 (EXIT_NOT_FOUND) when the mapped console script
+        # fails to launch, and 2 (EXIT_USAGE) when it finds no steward distribution to map.
+        (127, "executable not found: 'steward' ([Errno 2] No such file or directory: 'steward')"),
+        (
+            2,
+            "station 'steward' is not installed in this environment; it runs in -e pyforge-steward: "
+            "pixi run -e pyforge-steward pyforge steward <noun> <verb>",
+        ),
     ],
+    ids=["steward-refused", "console-script-failed-to-launch", "no-steward-distribution"],
 )
 def test_refusal_or_unknown_exit_yields_unobserved(
     monkeypatch, tmp_path: Path, exit_code: int, stderr_line: str
@@ -261,3 +268,130 @@ def test_partial_read_on_stdout(monkeypatch, tmp_path: Path) -> None:
     assert "ci-pause-drift" in _warn_checks(findings)
     assert "ci-pause-partial" in _warn_checks(findings)
     assert "ci-pause-unobserved" not in _checks(findings)
+
+
+# --- Story 45.4 (CAP-89; DOC-M-Z3, DOC-D-C5): steward's reason on every rule, inside fleet-picture's cut ---------
+
+# scripts/fleet_picture.py keeps the first 110 characters of each ATTENTION message (never widened for this).
+_FLEET_PICTURE_CUT = 110
+_REASON_STARTS_WITHIN = 50
+_ABSENT = object()
+
+
+def _gather_fixture(monkeypatch, tmp_path: Path, payload: dict, *, exit_code: int = 0) -> tuple:
+    monkeypatch.setattr(cli_bridge, "run_argv", _fake_bridge(exit_code, payload))
+    return ci_pause_drift.gather(tmp_path)
+
+
+@pytest.mark.parametrize(
+    ("fixture", "exit_code", "check"),
+    [
+        ("row_drift.json", 0, "ci-pause-drift"),
+        ("partial_with_drift.json", 1, "ci-pause-drift"),
+        ("row_drift_and_overdue.json", 0, "ci-pause-drift"),
+        ("row_drift_and_overdue.json", 0, "ci-pause-overdue"),
+        ("row_unregistered_drift.json", 0, "ci-pause-drift"),
+    ],
+    ids=["drift", "partial-drift", "drift-and-overdue:drift", "drift-and-overdue:overdue", "unregistered-drift"],
+)
+def test_the_rows_detail_follows_the_rule_before_switch_and_owner(
+    monkeypatch, tmp_path: Path, fixture: str, exit_code: int, check: str
+) -> None:
+    """AC1/AC2: the reason sits right after the surface and the rule, starting within the first 50 characters.
+
+    Fails when the detail is dropped from the drift or the overdue branch, or moved back after the owner.
+    """
+    payload = _load_fixture(fixture)
+    detail = payload["rows"][0]["detail"]
+    findings = _gather_fixture(monkeypatch, tmp_path, payload, exit_code=exit_code)
+    [finding] = [f for f in findings if f.check == check]
+    assert finding.status == DoctorStatus.WARN
+    at = finding.message.find(detail)
+    assert 0 <= at < _REASON_STARTS_WITHIN, finding.message
+    assert finding.message[at - 2 : at] == ": ", finding.message
+    assert at < finding.message.index("(switch "), finding.message
+    assert at < finding.message.index(", owner "), finding.message
+
+
+def test_row_drift_keeps_its_whole_reason_inside_the_cut(monkeypatch, tmp_path: Path) -> None:
+    """AC2: on row_drift.json the whole detail survives fleet-picture's 110-character ATTENTION cut."""
+    payload = _load_fixture("row_drift.json")
+    detail = payload["rows"][0]["detail"]
+    [finding] = _gather_fixture(monkeypatch, tmp_path, payload)
+    assert detail in finding.message[:_FLEET_PICTURE_CUT]
+    assert finding.message == (
+        "CI surface 'drift-live' drifted: live switch PAUSE_DRIFT_LIVE is true but registry declares live "
+        "(switch 'PAUSE_DRIFT_LIVE', owner pyforge-steward)"
+    )
+
+
+def test_drift_past_review_by_names_the_reason_on_both_findings(monkeypatch, tmp_path: Path) -> None:
+    """AC1: the overdue finding of a drifted row carries the row's detail too, and keeps its own fields after it."""
+    findings = _gather_fixture(monkeypatch, tmp_path, _load_fixture("row_drift_and_overdue.json"))
+    by_check = {f.check: f.message for f in findings}
+    assert by_check == {
+        "ci-pause-drift": (
+            "CI surface 'drift-live' drifted: registry/live mismatch (switch 'PAUSE_DRIFT_LIVE', owner pyforge-steward)"
+        ),
+        "ci-pause-overdue": (
+            "CI surface 'drift-live' past review date: registry/live mismatch (switch 'PAUSE_DRIFT_LIVE', "
+            "owner pyforge-steward, review_by '2026-10-10', 3 day(s) overdue)"
+        ),
+    }
+
+
+def test_a_stuck_row_with_a_detail_names_it(monkeypatch, tmp_path: Path) -> None:
+    """AC1: steward sends no detail on stuck rows today; when it does, the stuck finding carries it."""
+    payload = _load_fixture("row_stuck_cancel_streak.json")
+    payload["rows"][0]["detail"] = "five cancelled runs since the last green one"
+    [finding] = _gather_fixture(monkeypatch, tmp_path, payload)
+    assert finding.check == "ci-pause-stuck"
+    assert finding.message == (
+        "CI surface 'cancel-streak' stuck: five cancelled runs since the last green one "
+        "(switch 'PAUSE_CANCEL_STREAK', owner pyforge-steward, last_green_run '2026-10-05T00:00:00Z')"
+    )
+
+
+@pytest.mark.parametrize(
+    "detail",
+    [_ABSENT, "", None, 42, ["registry/live mismatch"]],
+    ids=["absent", "empty", "null", "int", "list"],
+)
+def test_a_row_without_a_string_detail_reads_as_before(monkeypatch, tmp_path: Path, detail: object) -> None:
+    """AC1: no detail, or an empty or non-string one, leaves every rule's message exactly as before Story 45.4."""
+    payload = _load_fixture("row_drift_and_overdue.json")
+    if detail is _ABSENT:
+        del payload["rows"][0]["detail"]
+    else:
+        payload["rows"][0]["detail"] = detail
+    by_check = {f.check: f.message for f in _gather_fixture(monkeypatch, tmp_path, payload)}
+    assert by_check == {
+        "ci-pause-drift": "CI surface 'drift-live' drifted (switch 'PAUSE_DRIFT_LIVE', owner pyforge-steward)",
+        "ci-pause-overdue": (
+            "CI surface 'drift-live' past review date (switch 'PAUSE_DRIFT_LIVE', owner pyforge-steward, "
+            "review_by '2026-10-10', 3 day(s) overdue)"
+        ),
+    }
+
+
+@pytest.mark.parametrize(
+    ("fixture", "message"),
+    [
+        (
+            "row_overdue.json",
+            "CI surface 'overdue.pause' past review date (switch 'PAUSE_OVERDUE', owner pyforge-steward, "
+            "review_by '2026-10-01', 5 day(s) overdue)",
+        ),
+        (
+            "row_stuck_dashboard_deploy.json",
+            "CI surface 'dashboard.deploy' stuck (switch None, owner pyforge-steward, "
+            "last_green_run '2026-10-01T00:00:00Z')",
+        ),
+    ],
+    ids=["overdue", "stuck"],
+)
+def test_recorded_rows_without_a_detail_are_unchanged(monkeypatch, tmp_path: Path, fixture: str, message: str) -> None:
+    """AC1/AC7: the recorded rows that carry no detail keep today's message, still one WARN each."""
+    [finding] = _gather_fixture(monkeypatch, tmp_path, _load_fixture(fixture))
+    assert finding.status == DoctorStatus.WARN
+    assert finding.message == message

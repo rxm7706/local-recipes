@@ -3035,19 +3035,34 @@ stay unused (reserved by draft PR #2274's range), so these take the next ids aft
 #### FR-50: An NKP cluster is brought up, torn down and reported from one tracked config through `steward deploy nic` ← CAP-176
 
 `steward deploy nic validate|up|kubeconfig|outputs|down` wraps the five `nic` verbs by subprocess over
-`src/platform/deploy/nic/<project_name>.yaml`, reads secrets through `keys`, takes `nic` from the pixi environment and
-`opentofu` from conda-forge through `NIC_TOFU_PATH` for cloud providers, supports local kind first and Hetzner second, refuses a
-config whose operator-owned inputs are missing, journals each run and returns a `DutyResult`. Behind
-`pyforge.steward.nkp_deploy`. Consequence: an attended kind run on the operator's host reaches every NKP ArgoCD Application
-`Healthy`, `outputs` reports the domain and the Keycloak issuer, `down` removes the cluster.
+`src/platform/deploy/nic/<project_name>.yaml` (`down` passes `--auto-approve`), reads each secret the config names in an `env:`
+field through `keys` (the age identity is needed only then), takes `nic` from the pixi environment (SelfExplainML, floor
+`>=0.14.0`, no version cap) and `opentofu` from conda-forge through `NIC_TOFU_PATH` for cloud providers, supports local kind
+first and Hetzner second, refuses with usage code 2 a missing or malformed config, a named secret it cannot map, find or decrypt,
+a missing age identity and a missing `nic`, journals each run and returns a `DutyResult`. Behind `pyforge.steward.nkp_deploy`.
+Consequence: on a rootless-Docker host with `fs.inotify.max_user_instances=1024` and the gateway reached by a loopback
+`kubectl port-forward` (no port override), an attended `deploy nic up` on the kind config exits 0 with every NKP ArgoCD
+Application `Healthy`, `outputs` exits 0 naming the domain and the Keycloak issuer, and `down` exits 0 with the cluster gone; on
+Hetzner (attended and operator-gated, Story 118.3) the same verbs over the `cluster.hetzner` config (one master, two `cpx31`
+workers) exit 0, `outputs` names the real domain and issuer, and `down` leaves no server, volume or load balancer;
+`pyforge-steward-test` exits 0 with the argv map, the refusals and both flag states pinned. *(amended in place 2026-11-01, EGM
+fleet audit (marshal Story 113.7) STW-M-Z5, STW-M-C3, STW-D-R5, STW-D-C4, STW-M-Z3: CAP-176 re-derived; see
+`spec-pyforge-steward`'s memlog of that date)*
 
 #### FR-51: nebi-pack, then the data-science pack, install from the same config as ArgoCD Applications ← CAP-177
 
-The config names the packs and their values (`keycloak.hostname`; `sharedStorage.storageClass`, the chart's NFS server on kind
-and `longhorn` on Hetzner; `nebi.remote.enabled: true`, nebi-pack first in namespace `nebi`); the verb writes each pack's
-ArgoCD `Application` into the GitOps source, labels the pack namespaces `nebari.dev/managed=true` and waits for `Healthy`.
-Behind `pyforge.steward.nkp_packs`. Consequence: on kind, `https://hub.<domain>` signs in through Keycloak, a `small-instance`
-server spawns with `/shared` mounted, the landing page shows the JupyterHub and Nebi cards.
+The config names the packs and their values (`keycloak.hostname`; `nebi.remote.enabled: true`, nebi-pack first in namespace
+`nebi`; `/shared` gated by `sharedStorage.enabled` and served by the chart's NFS server (`sharedStorage.nfsServer.enabled`) on
+rootful-Docker kind or by an RWX `sharedStorage.storageClass`, `longhorn` on Hetzner; on kind, split-horizon OIDC to Keycloak's
+in-cluster Service); the verb writes each pack's ArgoCD `Application` (project `nebari-apps`) into the GitOps source, labels the
+pack namespaces `nebari.dev/managed=true`, waits for `Healthy` on the sync it rendered and journals the pulled chart digests
+(no Warden policy reads them). Behind `pyforge.steward.nkp_packs`. Consequence: on rootless kind, with `/shared` waived
+(operator ruling 2026-11-01), `pyforge-steward-nkp-probes` exits 0 with no probe skipped — `https://hub.<domain>` signs in
+through Keycloak, a `small-instance` server spawns to ready, the landing page shows the JupyterHub and Nebi cards — and the
+pack's Keycloak bootstrap job reads `Complete`; on Hetzner (attended and operator-gated, Story 118.3) the same probes exit 0
+over a Let's Encrypt certificate with `/shared` mounted from `longhorn`. *(amended in place 2026-11-01, EGM fleet audit (marshal
+Story 113.7) STW-M-Z1, STW-D-R2, STW-D-C1, STW-M-D4, STW-M-Z3, STW-M-Z4, STW-D-R3, STW-D-C3: CAP-177 re-derived; see
+`spec-pyforge-steward`'s memlog of that date)*
 
 #### FR-52: The GitOps source is NIC's local directory on kind, or the monorepo on a branch that only `nic` writes ← CAP-178
 

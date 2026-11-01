@@ -1241,7 +1241,7 @@ error naming the flag and builds or ships nothing, while a single `--to pypi-tes
 tests in `src/shared/packages/pyforge-mason/tests/unit/test_cli.py` fail against `main`'s `cli.py` first; CAP-4 is not
 re-derived and the PRD is not edited; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green and
 `pyforge-mason-coverage-gate` holds the touched-module floor
-**Status:** backlog
+**Status:** done
 
 ---
 
@@ -2215,7 +2215,7 @@ their skill, and that `docs/reference/agent-instruction-notes.md` names `pyforge
 `test_skf_mason_skill.py` asserts every verb `build_parser()` registers appears in the station `SKILL.md` (all 12 do at
 `03a7aff5d9`), a planted missing verb failing it; `test_persona_consults_cfe.py` requires a `[pyforge-mason v` entry,
 not a literal count or version; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 20: No station or environment caps pixi (spec-pyforge-mason CAP-30)
 

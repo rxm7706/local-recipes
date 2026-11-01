@@ -9,13 +9,17 @@ nothing noticed. A hand-maintained inventory needs a gate or it rots again.
 from __future__ import annotations
 
 import re
+import tomllib
 from pathlib import Path
 
+import pytest
 from kedro.framework.project import configure_project
 
-from pyforge.atlas.pipeline_registry import register_pipelines
+from pyforge.atlas import pipeline_registry
+from pyforge.atlas.pipeline_registry import AFTER_RUN_PIPELINES, NAMED_RUN_ONLY_PIPELINES, register_pipelines
 
 README = Path(__file__).resolve().parents[2] / "README.md"
+PIXI_TOML = Path(__file__).resolve().parents[6] / "pixi.toml"  # the repo root
 
 # "**Status:** 11 Kedro pipelines live (`a`, `b`, ...)" -- the count and the names
 # are parsed separately so a mismatch between THEM also reds.
@@ -60,3 +64,28 @@ def test_the_bootstrap_task_runs_a_documented_subset_not_the_whole_registry() ->
     excluded = {"universal_sbom", "query_plane_cache", "catalog_index"}
     assert excluded <= _registered()
     assert len(_registered() - excluded) == 9
+
+
+def _bootstrap_task_pipelines() -> list[str]:
+    task = tomllib.loads(PIXI_TOML.read_text(encoding="utf-8"))["feature"]["pyforge-atlas"]["tasks"][
+        "pyforge-atlas-bootstrap"
+    ]
+    return task["cmd"].split("--pipelines ", 1)[1].split()[0].split(",")
+
+
+def test_a_plain_run_leaves_out_what_the_bootstrap_task_leaves_out(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Story 34.14 (CAP-64, AC1): ``__default__`` (a plain ``pyforge atlas run``) leaves out the two pipelines the
+    ``pyforge-atlas-bootstrap`` task leaves out (``catalog_index`` aside, Story 37.10): ``query_plane_cache``, whose
+    estate source has no producer until Story 36.3, and the entry-scoped ``universal_sbom``. Both stay registered, so a
+    run that names them still reaches them."""
+    monkeypatch.setattr(pipeline_registry, "kill_switch_on", lambda _key: True)  # universal_sbom registered
+    configure_project("pyforge.atlas")
+    registered = register_pipelines()
+    left_out = set(registered) - {"__default__"} - set(_bootstrap_task_pipelines()) - set(AFTER_RUN_PIPELINES)
+
+    assert set(NAMED_RUN_ONLY_PIPELINES) == left_out == {"query_plane_cache", "universal_sbom"}
+    default_nodes = {node.name for node in registered["__default__"].nodes}
+    for name in NAMED_RUN_ONLY_PIPELINES:
+        nodes = {node.name for node in registered[name].nodes}
+        assert nodes, f"{name} is no longer registered with nodes"
+        assert sorted(nodes & default_nodes) == [], f"{name} is inside __default__"

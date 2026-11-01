@@ -23,7 +23,7 @@ from typing import Any
 import pandas as pd
 from kedro.io import AbstractDataset, DatasetError
 from kedro_datasets.api import APIDataset
-from pyforge.core.atomic_write import atomic_write
+from pyforge.core.atomic_write import atomic_write, atomic_write_bytes
 from pyforge.core.errors import PyforgeError
 
 from .json_sources import JSONSourceDataset, _describe_exc
@@ -502,8 +502,190 @@ def parse_cf_graph_tarball(tar_bytes: bytes) -> pd.DataFrame:
     return _cf_graph_frame(node_attrs, pi, vpi)
 
 
-class _HttpBytesDataset(AbstractDataset):
-    """Fetch a single URL via composed ``APIDataset`` and return raw bytes."""
+# Story 34.15: the failures a body can cause; anything else a parser raises is logged with its traceback
+_FRAME_BODY_ERRORS = (
+    ValueError,
+    TypeError,
+    KeyError,
+    OSError,
+    EOFError,
+    RecursionError,
+    zipfile.BadZipFile,
+    zlib.error,
+)
+
+
+def _failure_reason(exc: BaseException) -> str:
+    """An exception as a marker line; an exception that cannot describe itself is named by its type."""
+    try:
+        return _describe_exc(exc)
+    except Exception:  # noqa: BLE001
+        return type(exc).__name__
+
+
+def _frame_parquet_bytes(frame: pd.DataFrame) -> bytes:
+    buf = io.BytesIO()
+    frame.to_parquet(buf, index=False)
+    return buf.getvalue()
+
+
+class LastGoodFrameDataset(AbstractDataset):
+    """Story 34.15 (CAP-64, AD-13): a public raw source that keeps its last good frame, as Story 34.12's
+    ``VulnerabilityFeedDataset`` does, so a run with the network refused goes on instead of stopping at its first node.
+
+    ``filepath`` is the source's directory: a good load keeps its frame as ``last_good.parquet`` and removes the
+    ``.staleness.json`` marker; a fetch that fails (no connection, an HTTP error, a timeout), a body that cannot be
+    read, or one that parses to no rows serves that copy (with none, a fresh data root, the empty frame of
+    ``COLUMNS``) under the marker and never raises. A copy whose columns differ or that holds no rows is set aside, never
+    served; a filesystem error on the copy or the marker is logged, never raised. Without ``filepath`` (fixtures) a
+    load fetches, parses and raises as it always did. A subclass sets ``COLUMNS`` (and ``LIST_COLUMNS``, read back
+    from Parquet as lists) and implements ``_fetch`` (the transport) and ``_parse`` (the fetched body to a frame)."""
+
+    LAST_GOOD_FILENAME = "last_good.parquet"
+    STALENESS_FILENAME = ".staleness.json"
+    COLUMNS: list[str] = []
+    LIST_COLUMNS: tuple[str, ...] = ()
+
+    def __init__(self, *, filepath: str | None = None, metadata: dict[str, Any] | None = None) -> None:
+        self._dir = Path(filepath) if filepath else None
+        self.metadata = metadata
+        # whether the last load served a frame it fetched; a served copy (with or without its marker) is not "now"
+        self.refreshed = False
+
+    def _fetch(self) -> Any:
+        raise NotImplementedError
+
+    def _parse(self, payload: Any) -> pd.DataFrame:
+        raise NotImplementedError
+
+    # -- paths and the AD-13 marker ---------------------------------------------------
+
+    @property
+    def last_good_path(self) -> Path | None:
+        return self._dir / self.LAST_GOOD_FILENAME if self._dir is not None else None
+
+    def staleness(self) -> StalenessMarker | None:
+        """The current AD-13 marker, if the last load served last-good or nothing."""
+        if self._dir is None:
+            return None
+        try:
+            raw = json.loads((self._dir / self.STALENESS_FILENAME).read_text(encoding="utf-8"))
+        except OSError, ValueError, RecursionError:  # a missing, garbled or tampered file
+            return None
+        if not isinstance(raw, dict):
+            return None
+        return StalenessMarker(
+            stale=bool(raw.get("stale", True)),
+            reason=str(raw.get("reason", "")),
+            marked_at=_safe_int(raw.get("marked_at", 0)),
+            last_good_exists=bool(raw.get("last_good_exists", False)),
+        )
+
+    def _mark_stale(self, directory: Path, reason: str, *, last_good_exists: bool) -> None:
+        marker = StalenessMarker(stale=True, reason=reason[:300], last_good_exists=last_good_exists)
+
+        def _write(path: Path) -> None:
+            path.write_text(json.dumps(marker.to_dict(), indent=2), encoding="utf-8")
+
+        try:
+            atomic_write(directory / self.STALENESS_FILENAME, _write)
+        except OSError as exc:  # the marker must never take the run down (AD-13)
+            logger.warning("could not write staleness marker for %s: %s", directory, exc)
+
+    # -- last-good ---------------------------------------------------------------------
+
+    def _read_last_good(self, directory: Path) -> pd.DataFrame | None:
+        path = directory / self.LAST_GOOD_FILENAME
+        if not path.is_file():
+            return None
+        try:
+            frame = pd.read_parquet(path)
+        # a truncated or foreign file is no copy; the next good fetch replaces it
+        except Exception as exc:  # noqa: BLE001
+            self._set_aside(path, f"unreadable: {exc}")
+            return None
+        if list(frame.columns) != self.COLUMNS:
+            self._set_aside(path, f"has columns {list(frame.columns)}, not {self.COLUMNS}")
+            return None
+        if frame.empty:
+            self._set_aside(path, "holds no rows")
+            return None
+        for column in self.LIST_COLUMNS:  # Parquet hands a list column back as arrays; nodes read lists
+            frame[column] = [_as_str_list(value) for value in frame[column]]
+        return frame
+
+    def _set_aside(self, path: Path, why: str) -> None:
+        """A copy the load cannot serve is renamed to a dot-name, so neither provenance nor the index-health board
+        reports it as last-good. Kept, not deleted; a rename the data root refuses is logged."""
+        logger.warning("%s: last-good %s %s -- setting it aside", type(self).__name__, path, why)
+        try:
+            path.replace(path.with_name(f".{path.name}.rejected"))
+        except OSError as exc:
+            logger.warning("%s: could not set aside %s: %s", type(self).__name__, path, exc)
+
+    def _keep(self, directory: Path, body: bytes) -> None:
+        """Keep a good frame's Parquet and remove the marker, each on its own: the frame this load serves is fresh
+        whether or not its copy could be written, so an old marker never outlives it (AD-17)."""
+        try:
+            atomic_write_bytes(directory / self.LAST_GOOD_FILENAME, body)
+        except OSError as exc:  # serving the good frame matters more than caching it (AD-13)
+            logger.warning("%s: could not keep last-good in %s: %s", type(self).__name__, directory, exc)
+        try:
+            (directory / self.STALENESS_FILENAME).unlink(missing_ok=True)
+        except OSError as exc:
+            logger.warning("%s: could not remove the staleness marker of %s: %s", type(self).__name__, directory, exc)
+
+    def _degrade(self, directory: Path, what: str, detail: str = "") -> pd.DataFrame:
+        last_good = self._read_last_good(directory)
+        # the verdict before the detail: the marker keeps 300 characters, and a transport's message can be long
+        reason = f"{what} -- {'keeping last-good' if last_good is not None else 'no last-good'}"
+        reason += f": {detail}" if detail else ""
+        logger.warning("%s: %s: %s", type(self).__name__, directory.name, reason)
+        self._mark_stale(directory, reason, last_good_exists=last_good is not None)
+        return last_good if last_good is not None else pd.DataFrame(columns=self.COLUMNS)
+
+    # -- kedro -----------------------------------------------------------------------------
+
+    def load(self) -> pd.DataFrame:
+        self.refreshed = False
+        directory = self._dir
+        if directory is None:  # fixtures: no copy to keep, so a failure raises as it always did
+            frame = self._parse(self._fetch())
+            self.refreshed = True
+            return frame
+        try:
+            payload = self._fetch()
+        except Exception as exc:  # noqa: BLE001 -- kedro wraps every fetch failure as DatasetError (AD-13)
+            return self._degrade(directory, "fetch failed", _failure_reason(exc))
+        try:
+            frame = self._parse(payload)
+        # a body that is not the source's format, whatever raised it, is that load's failure; an unexpected one is
+        # logged with its traceback, so a parser bug is never only a stale serve
+        except Exception as exc:  # noqa: BLE001
+            if not isinstance(exc, _FRAME_BODY_ERRORS):
+                logger.warning("%s: unexpected parse failure", type(self).__name__, exc_info=True)
+            return self._degrade(directory, "body unreadable", _failure_reason(exc))
+        if frame.empty:
+            return self._degrade(directory, "body holds no rows")
+        try:
+            body = _frame_parquet_bytes(frame)
+        # a frame Parquet cannot hold would fail the node that saves it, so it is no body
+        except Exception as exc:  # noqa: BLE001
+            return self._degrade(directory, "body unreadable", f"not storable as Parquet: {_failure_reason(exc)}")
+        self._keep(directory, body)
+        self.refreshed = True
+        return frame
+
+    def save(self, data: Any) -> None:
+        raise NotImplementedError(f"{type(self).__name__} is read-only")
+
+
+class FeedstockOutputsArchiveDataset(LastGoodFrameDataset):
+    """Phase B.5: feedstock-outputs zip → ``conda_name``, ``feedstocks`` frame; last-good with ``filepath``
+    (Story 34.15)."""
+
+    COLUMNS = ["conda_name", "feedstocks"]
+    LIST_COLUMNS = ("feedstocks",)
 
     def __init__(
         self,
@@ -512,8 +694,11 @@ class _HttpBytesDataset(AbstractDataset):
         method: str = "GET",
         load_args: dict[str, Any] | None = None,
         credentials: dict[str, Any] | None = None,
+        filepath: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> None:
+        super().__init__(filepath=filepath, metadata=metadata)
+        self._url = url
         self._inner = APIDataset(
             url=url,
             method=method,
@@ -522,25 +707,23 @@ class _HttpBytesDataset(AbstractDataset):
             metadata=metadata,
         )
 
-    def load(self) -> bytes:
-        return _as_bytes(self._inner.load())
+    def _fetch(self) -> Any:
+        return self._inner.load()
 
-    def save(self, data: Any) -> None:
-        raise NotImplementedError(f"{type(self).__name__} is read-only")
+    def _parse(self, payload: Any) -> pd.DataFrame:
+        return parse_feedstock_outputs_zip(_as_bytes(payload))
 
     def _describe(self) -> dict[str, Any]:
-        return {"url": self._inner._url if hasattr(self._inner, "_url") else "api"}
+        return {"url": self._url, "filepath": str(self._dir) if self._dir else None}
 
 
-class FeedstockOutputsArchiveDataset(_HttpBytesDataset):
-    """Phase B.5: feedstock-outputs zip → ``conda_name``, ``feedstocks`` frame."""
+class CondaRepodataDataset(LastGoodFrameDataset):
+    """Phase B: all platform ``current_repodata.json`` files → flat repodata frame. With ``filepath``, a failed fetch of
+    any subdir serves the whole last-good copy, so a partial universe never replaces it (Story 34.15); a subdir that
+    answers with a body that is not a JSON object is that subdir's failed fetch (Story 34.15 review follow-up). Without
+    ``filepath`` (fixtures) such a subdir is skipped, as before."""
 
-    def load(self) -> pd.DataFrame:
-        return parse_feedstock_outputs_zip(super().load())
-
-
-class CondaRepodataDataset(AbstractDataset):
-    """Phase B: all platform ``current_repodata.json`` files → flat repodata frame."""
+    COLUMNS = ["conda_name", "version", "timestamp", "subdir"]
 
     def __init__(
         self,
@@ -549,15 +732,17 @@ class CondaRepodataDataset(AbstractDataset):
         subdirs: tuple[str, ...] = CONDA_FORGE_SUBDIRS,
         load_args: dict[str, Any] | None = None,
         credentials: dict[str, Any] | None = None,
+        filepath: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> None:
+        super().__init__(filepath=filepath, metadata=metadata)
         self._base_url = url.rstrip("/")
         self._subdirs = subdirs
         self._load_args = load_args
         self._credentials = credentials
-        self.metadata = metadata
 
-    def load(self) -> pd.DataFrame:
+    def _fetch(self) -> list[dict[str, Any]]:
+        # each subdir's body is flattened as it arrives, so only one subdir's payload is held at a time
         rows: list[dict[str, Any]] = []
         for subdir in self._subdirs:
             fetch_url = f"{self._base_url}/{subdir}/current_repodata.json"
@@ -571,17 +756,25 @@ class CondaRepodataDataset(AbstractDataset):
             repodata = _api_json(payload)
             if repodata is not None:
                 rows.extend(repodata_json_to_rows(repodata, subdir))
+            elif self._dir is not None:
+                # a 200 whose body is no JSON object (a gateway page, a truncated body) is this subdir's failed fetch,
+                # as a refused one is: skipping it would let the other subdirs' rows replace last-good
+                raise ValueError(f"subdir {subdir} current_repodata.json is not a JSON object")
             else:
                 logger.warning("subdir %s repodata was not JSON dict — skipped", subdir)
-        if not rows:
-            return pd.DataFrame(columns=["conda_name", "version", "timestamp", "subdir"])
-        return pd.DataFrame(rows)
+        return rows
 
-    def save(self, data: Any) -> None:
-        raise NotImplementedError(f"{type(self).__name__} is read-only")
+    def _parse(self, payload: list[dict[str, Any]]) -> pd.DataFrame:
+        if not payload:
+            return pd.DataFrame(columns=self.COLUMNS)
+        return pd.DataFrame(payload)
 
     def _describe(self) -> dict[str, Any]:
-        return {"base_url": self._base_url, "subdirs": list(self._subdirs)}
+        return {
+            "base_url": self._base_url,
+            "subdirs": list(self._subdirs),
+            "filepath": str(self._dir) if self._dir else None,
+        }
 
 
 class CondaChanneldataDataset(AbstractDataset):
@@ -808,8 +1001,10 @@ def parse_pypi_simple_index(payload: Any) -> pd.DataFrame:
     return pd.DataFrame(rows)[["pypi_name", "last_serial"]].reset_index(drop=True)
 
 
-class PyPISimpleIndexDataset(AbstractDataset):
-    """Phase D/O: PyPI Simple v1 JSON catalog → node-ready frame."""
+class PyPISimpleIndexDataset(LastGoodFrameDataset):
+    """Phase D/O: PyPI Simple v1 JSON catalog → node-ready frame; last-good with ``filepath`` (Story 34.15)."""
+
+    COLUMNS = ["pypi_name", "last_serial"]
 
     def __init__(
         self,
@@ -817,8 +1012,10 @@ class PyPISimpleIndexDataset(AbstractDataset):
         url: str,
         load_args: dict[str, Any] | None = None,
         credentials: dict[str, Any] | None = None,
+        filepath: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> None:
+        super().__init__(filepath=filepath, metadata=metadata)
         args = dict(load_args or {})
         headers = dict(args.get("headers") or {})
         headers.setdefault("Accept", "application/vnd.pypi.simple.v1+json")
@@ -831,16 +1028,15 @@ class PyPISimpleIndexDataset(AbstractDataset):
             credentials=credentials,
             metadata=metadata,
         )
-        self.metadata = metadata
 
-    def load(self) -> pd.DataFrame:
-        return parse_pypi_simple_index(self._inner.load())
+    def _fetch(self) -> Any:
+        return self._inner.load()
 
-    def save(self, data: Any) -> None:
-        raise NotImplementedError(f"{type(self).__name__} is read-only")
+    def _parse(self, payload: Any) -> pd.DataFrame:
+        return parse_pypi_simple_index(payload)
 
     def _describe(self) -> dict[str, Any]:
-        return {"parameterization": type(self).__name__}
+        return {"parameterization": type(self).__name__, "filepath": str(self._dir) if self._dir else None}
 
 
 # Phase Q cross-channel specs: ``(short_name, channel, subdirs)``. Story 21.4 hardened

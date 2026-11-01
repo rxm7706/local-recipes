@@ -1,5 +1,11 @@
 """GitHub.com organisation repo listing for fleet inventory (Story 16.1).
 
+The export (``repos[]``: ``full_name``, ``default_branch``, ``clone_url``, ``archived``
+and ``head_sha``, the default-branch tip; ``skipped[]``: each entry not inventoried,
+with its reason) is the data Atlas's dependency-history sensor reads
+(``spec-pyforge-atlas:CAP-61``), which refuses a row without ``head_sha``
+(Story 16.10).
+
 The listing client (``pyforge.warden.fleet_github_rest``) owns the repo,
 skipped-entry and listing types; this module reads them structurally, so the
 host-side portal can import it without ``pyforge`` installed.
@@ -37,6 +43,9 @@ GH_AUTH_TOKEN_TIMEOUT_SECONDS = 30.0
 # ``TimeoutError`` long before Celery's ``SoftTimeLimitExceeded`` could fire inside
 # urllib: per request 30 s < soft 240 s < hard 300 s. At 1-2 s a page, 240 s covers
 # well over 100 pages (10,000+ repos at 100 a page); ``gh auth token`` has its own 30 s.
+# Story 16.10 adds one tip GET per listed repo, so the repo count, not the page count,
+# now sets the run time: at a few hundred ms a GET, 240 s covers several hundred repos.
+# An organisation that outgrows it fails the run and writes no export.
 FLEET_INVENTORY_REQUEST_TIMEOUT_SECONDS = 30.0
 FLEET_INVENTORY_SOFT_TIME_LIMIT_SECONDS = 240
 FLEET_INVENTORY_TIME_LIMIT_SECONDS = 300
@@ -64,6 +73,13 @@ class GhTimeoutError(FleetInventoryError):
 class GhTokenUnavailableError(FleetInventoryError):
     def __init__(self, failure: str) -> None:
         super().__init__(f"gh auth token failed: {failure}")
+
+
+class ExportRowWithoutHeadShaError(FleetInventoryError):
+    """A listed repo came without a ``head_sha``: no export is written (Atlas refuses one)."""
+
+    def __init__(self, index: int) -> None:
+        super().__init__(f"listed repo {index} has no head_sha; a repo with no tip belongs under skipped")
 
 
 class FleetTargetConfigError(FleetInventoryError):
@@ -244,6 +260,8 @@ class ListedRepoFields(Protocol):
     def clone_url(self) -> str: ...
     @property
     def archived(self) -> bool: ...
+    @property
+    def head_sha(self) -> str: ...
 
 
 class SkippedEntryFields(Protocol):
@@ -269,6 +287,10 @@ class OrgReposListingClient(Protocol):
 
 
 def export_document(listing: OrgReposListingFields) -> dict[str, list[dict[str, Any]]]:
+    """The export; refuses (typed) a listed repo without a ``head_sha`` rather than write it."""
+    for index, repo in enumerate(listing.repos):
+        if not isinstance(repo.head_sha, str) or not repo.head_sha:
+            raise ExportRowWithoutHeadShaError(index)
     return {
         "repos": [
             {
@@ -276,6 +298,7 @@ def export_document(listing: OrgReposListingFields) -> dict[str, list[dict[str, 
                 "default_branch": repo.default_branch,
                 "clone_url": repo.clone_url,
                 "archived": repo.archived,
+                "head_sha": repo.head_sha,
             }
             for repo in listing.repos
         ],
@@ -330,11 +353,12 @@ def run_fleet_inventory_sync(
     """List repos, upsert ``FleetRepo`` rows, write the export atomically.
 
     Entries the listing could not inventory are never upserted; the export
-    names each one under ``skipped`` with its reason.
+    names each one under ``skipped`` with its reason. The export is built (and
+    checked) before any row is upserted, so a refused export changes nothing.
     """
     listing = listing_client.list_org_repos(organisation)
-    persist_fleet_repos(organisation=organisation, repos=listing.repos)
     document = export_document(listing)
+    persist_fleet_repos(organisation=organisation, repos=listing.repos)
     if listing.skipped:
         logger.warning(
             "fleet inventory skipped %d incomplete listing entries (see the export)",

@@ -2,7 +2,7 @@
 title: '42.4: The status pages pin their snapshot lines'
 type: 'fix'
 created: '2026-11-01'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
@@ -166,7 +166,63 @@ is live" sentence, and "Snapshot captured at F" once on the dossier page and onc
 
 ## Auto Run Result
 
-Status: backlog (minted 2026-11-01 by the EGM fleet audit, marshal Story 113.7; mode in-PR).
+Minted: backlog (minted 2026-11-01 by the EGM fleet audit, marshal Story 113.7; mode in-PR).
+
+Status: in-review (implemented 2026-11-01 in the landing worktree, branch `egm-audit-2026-11`; not committed).
+
+**What changed.** Tests only; no generator edit (every pinned line renders as AC1-AC3 state, so the Change Log
+carries no generator entry), `ci-status.json` untouched.
+
+- `src/shared/packages/pyforge-herald/tests/meta/test_one_generator.py`: a `_fetched_at()` helper reads F from
+  `docs-site/src/content/ci-status.json` at test time (never a literal date), and two `needs_astro` tests over the
+  module's `built` fixture (status pages and tile on, every input present, CI's variables):
+  - `test_42_4_ac1_ac2_the_guild_page_names_its_capture_time_and_says_nothing_on_it_is_live` (AC1, AC2):
+    `status/ci/index.html` holds `<time datetime="F">F</time>` exactly once, inside the one paragraph that reads
+    "Snapshot captured", and "nothing on this page is live" exactly once.
+  - `test_42_4_ac3_the_tile_names_its_capture_time_on_the_dossier_and_in_its_artifact_build` (AC3):
+    `herald/dossier/index.html` and `herald/artifact/dossier.html` each hold "Snapshot captured at F" exactly once,
+    asserted as one dict so a failure names both outputs.
+  - The module docstring names Story 42.4.
+- AC5: both tests carry the shared `needs_astro` decorator (Story 45.1), so without the install they skip naming
+  `docs-site-install`, and under `HERALD_DOCS_SITE_REQUIRED=1` they fail instead. With the install they ran and passed.
+
+**Commands (exit codes read from `$?`).** On this host `/tmp` is tmpfs, so Astro's `rename` into the pytest basetemp
+fails with EXDEV. Every build run below used `TMPDIR=$HOME/.cache/pyforge-preflight-tmp/her424` (team memory: full
+preflight needs TMPDIR off tmpfs). The first `-k 42_4` run, without that TMPDIR, errored in the fixture on EXDEV,
+which is the machine and not the diff.
+
+- `pixi run --frozen -e site docs-site-install`: exit 0.
+- `HERALD_DOCS_SITE_REQUIRED=1 pixi run --frozen -e pyforge-herald python -m pytest src/shared/packages/pyforge-herald/tests/meta/test_one_generator.py -q -k 42_4`:
+  exit 0, 2 passed (none skipped).
+- AC4 mutations, each restored byte-for-byte from a scratch copy (sha256 checked):
+  - dropping the `<time ...>` element from `docs-site/src/pages/status/ci/[...index].astro`: exit 1, AC1/AC2 test
+    fails on the `<time>` count.
+  - dropping " A snapshot: nothing on this page is live." from the same page: exit 1, the AC1/AC2 test fails on
+    `assert 0 == 1` for the sentence.
+  - dropping `<p class="soft-note">Snapshot captured at ...</p>` from the `ci_surfaces` case of
+    `docs-site/src/lib/dossier-blocks.ts`: exit 1, the AC3 test fails with both outputs at 0.
+- `HERALD_DOCS_SITE_REQUIRED=1 pixi run --frozen -e pyforge-herald python -m pytest src/shared/packages/pyforge-herald/tests/meta/test_one_generator.py -q`:
+  exit 1, with 31 passed and 1 failed. The failure was
+  `test_43_5_two_builds_two_days_runs_and_commits_apart_differ_only_in_the_built_from_line`: three
+  `pagefind/` index files had different hashed names between its two builds, about 40 s apart. Parallel agents were
+  editing other stations' sources in this worktree during that window, and the dossier measures live `src_lines`.
+  The same test passed alone twice (exit 0), and a two-build diff of the same tree, run back to back, showed no
+  difference. It also passed inside the full suite below. This change does not touch it.
+- `HERALD_DOCS_SITE_REQUIRED=1 pixi run --frozen -e pyforge-herald pyforge-herald-test-built` (it runs
+  `docs-site-install`, then `pyforge-herald-test`): exit 0, 2190 passed and 5 skipped, then 5 passed.
+- `PYFORGE_STATUS_PAGES=1 PYFORGE_CI_SURFACES_TILE=1 pixi run --frozen -e site pages-check`: exit 1, from the build
+  input and not the diff. `docs-site/src/content/fleet-status.json` is a Guild-step input that only `pages.yml` writes
+  (gitignored, absent locally), and the build refused with "fleet-status input missing". Re-run with
+  `PAGES_BUILD_INPUTS_DIR` pointing at the herald fixtures the `built` fixture uses: exit 0, "passes".
+- `ruff check` and `ruff format --check` on the changed file (the `pyforge-guild` env's ruff 0.17.0): exit 0 and 0.
+- `pixi run --frozen -e pyforge-guild lint-types`: exit 0. mypy runs on `-p pyforge.herald` (`src/` only), so
+  the test file is outside it.
+
+**Memlog.** One surface-reconcile event appended to `spec-pyforge-herald/.memlog.md` naming
+`src/shared/packages/pyforge-herald/tests/meta/test_one_generator.py`. The orchestrator's landing step asked for it so
+the governed path's move is reconciled. It is not the CAP-59/CAP-60 re-derive that § Boundaries reserves for the Spec,
+and it changes no CAP's success promise, so no second event was written. No scoped stamp was run here; the session
+owner does it.
 
 ## Spec Change Log
 
@@ -177,4 +233,57 @@ Status: backlog (minted 2026-11-01 by the EGM fleet audit, marshal Story 113.7; 
 
 ## Review Triage Log
 
-- (none yet)
+- 2026-11-01 (reviewer: independent session) — **PASS**; status moved `in-review` -> `done`. I judged the diff
+  against this spec, not against the Auto Run Result. Evidence came from the landing worktree (branch
+  `egm-audit-2026-11`), with `TMPDIR` off tmpfs. Every exit code was read from `$?`.
+  - **Diff read.** `git diff HEAD` on the three reported files. The only code change is in
+    `tests/meta/test_one_generator.py`: the `_fetched_at()` helper, two `needs_astro` tests and one docstring sentence.
+    `git status` on `docs-site/` is clean, so the generator is unedited and `ci-status.json` is untouched. No
+    `pyforge.steward` import was added, and no flag, task or dependency.
+  - **AC1 and AC2 hold.** I read the built `status/ci/index.html`. It holds one
+    `<time datetime="2026-10-14T12:09:30.983070+00:00">…</time>` inside `<p class="status-snapshot">Snapshot
+    captured …`, and "nothing on this page is live" appears once. The test asserts the exact element once, inside
+    the only "Snapshot captured" paragraph, with F read from `ci-status.json` at test time. No date literal is
+    pinned.
+  - **AC3 holds.** `herald/dossier/index.html` and `herald/artifact/dossier.html` each hold
+    `<p class="soft-note">Snapshot captured at F</p>` once. The test asserts a count of 1 on both outputs.
+  - **AC4 holds.** I ran the mutations myself, backed the files up to scratch and checked them with `sha256sum -c`
+    afterwards. Both files were restored OK and `git status docs-site/` was clean.
+    - With the `<time>` element dropped from `[...index].astro`, the `-k 42_4` run exited 1 and the AC1/AC2 test
+      failed on the `<time>` count, 0 == 1.
+    - With the not-live sentence dropped and the soft note dropped from `dossier-blocks.ts`, the run exited 1. The
+      AC1/AC2 test failed on the sentence count, 0 == 1. The AC3 test failed with both outputs at 0.
+  - **AC5 holds.** With the install present, `HERALD_DOCS_SITE_REQUIRED=1` and `-k 42_4` exited 0: 2 passed, none
+    skipped. With node off `PATH` and the variable unset, the run exited 0 with 2 skipped. The skip reason names
+    `pixi run -e site docs-site-install`. With node off `PATH` and the variable set, the run exited 1 with the
+    "promises the install" message.
+  - **AC6 holds for this diff.** `pyforge-herald-test-built` with `HERALD_DOCS_SITE_REQUIRED=1` (it runs
+    `docs-site-install` then `pyforge-herald-test`) exited 0: 2190 passed, 5 skipped, then 5 passed. The full
+    `test_one_generator.py` module exited 0 with 32 passed.
+    - A first `pyforge-herald-test-built` run exited 1. Its one failure was
+      `test_43_5_two_builds_two_days_runs_and_commits_apart_differ_only_in_the_built_from_line`: the two builds had
+      different file keys.
+    - That test passed alone (exit 0), passed in the module run, and passed in the rerun of the gate. This story's
+      tests only read files, so they cannot change a build. The likely cause is other stations' agents editing live
+      sources between the two builds, the same flake the implementer recorded.
+  - **AC6 lint-types.** `pixi run --frozen -e pyforge-guild lint-types` exited 1. The only finding is in another
+    station's uncommitted, in-flight edit: I001 in `pyforge-doctor/tests/unit/test_sources_pages_liveness.py`. The
+    `HEAD` version of that file is ruff-clean (exit 0) and the worktree version is not (exit 1). Herald's own legs
+    all pass:
+    - `ruff`: ok.
+    - `lint_types.py ruff-format`: exit 0, herald ok.
+    - `lint_types.py mypy`: exit 0, herald ok.
+    - `ruff check` and `ruff format --check` on the changed test file (ruff 0.17.0): 0 and 0.
+  - **Verification `pages-check`.** Run exactly as written, with both flags on, it exits 1. The cause is
+    "fleet-status input missing": `docs-site/src/content/fleet-status.json` is a gitignored Guild-step input that is
+    absent locally, so this is not the diff. Re-run with `PAGES_BUILD_INPUTS_DIR` set to the herald fixtures the
+    `built` fixture uses, it exits 0 ("passes").
+    - Nit, not a failure: the spec's Verification line does not name that input precondition.
+  - **Callers and regressions.** `_fetched_at` and the `test_42_4_*` names appear nowhere else in herald's tests.
+    The read-only spec-surface verdict (`python -m pyforge.doctor.sources spec-surface`) exited 0.
+  - **Boundary deviation, judged non-blocking.** § Boundaries says no memlog text is edited by this story, yet the
+    implementer added one surface-reconcile event to `spec-pyforge-herald/.memlog.md`. It names the governed test
+    path (`src/shared/packages/pyforge-herald/**` is in the Spec's `surface:`), and the frontmatter still has a
+    single `updated:` key. AGENTS.md § Pre-PR item 5 requires that event for a governed file to move. It changes no
+    CAP text, so the Boundary's stated purpose holds: the CAP-59/CAP-60 re-derive stays with the Spec.
+  - **Failures:** none.

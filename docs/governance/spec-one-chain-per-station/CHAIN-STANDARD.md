@@ -400,7 +400,16 @@ lands (atlas 41.3, marshal 108.2, mason 33.2, warden 20.2).
 `scripts/fr_baseline.py`, never by hand: `--prune` is the routine verb and only
 removes entries; the file grows only through that script's one-time acts
 (`--snapshot-findings`, and `--project pyforge-<s>` at a station's fold PR).
-Doctor Story 50.2 adds the guard that refuses any other edit.
+Once `findings` exists, `--snapshot-findings` prints the keys it would add
+and remove and refuses without `--force`; `--project` prints the same delta
+and refuses an addition without `--force`; only a review that names each
+added key in the PR justifies `--force`. The script records each key it adds,
+with the HEAD it ran at, in the file's `forced` list. The guard is doctor Story 50.2's: `fr-without-cap`
+reads the file at the merge-base of `HEAD` and `refs/remotes/origin/main`, and
+a `projects` id or `findings` key added since that no `forced` record names is
+`fr-baseline-grown` (FAIL) — an `owners` row, written by hand, never admits
+one. A base it cannot read (no `refs/remotes/origin/main`, a shallow clone,
+the file absent there) is `fr-baseline-base-unread` (WARN), never a FAIL.
 
 **Enforced, not asserted.** `fr-without-cap` (doctor CAP-92, Story 50.1)
 fails, on new findings against a baseline that only shrinks: a post-date
@@ -410,8 +419,10 @@ id (`fr-id-unhyphenated`); an id spelled outside the grammar
 (`fr-id-malformed`); a second definition of an id in one PRD
 (`fr-duplicate-id`); and a counted run — four or more consecutive
 requirements whose CAP number steps with the requirement number while their
-titles share no word with the CAPs' (`fr-counted-run`). A title-overlap
-score is advisory only. The same rule travels as `persistent_facts` in
+titles share no word with the CAPs' (`fr-counted-run`). It fails, too, a
+baseline key added by hand since the merge-base (`fr-baseline-grown`, Story
+50.2), and warns when that base cannot be read (`fr-baseline-base-unread`).
+A title-overlap score is advisory only. The same rule travels as `persistent_facts` in
 `_bmad/custom/bmad-prd.toml`, `bmad-spec.toml` and `bmad-architecture.toml`,
 as the `fr-arrow` review lens in `bmad-build.toml`, and as
 `spec-foundry-regenerate-not-fold` CAP-7's on-ramp line for B.

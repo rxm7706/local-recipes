@@ -2095,7 +2095,7 @@ So that a verb AGENTS.md tells me to run, and an MCP tool the station host regis
 **When** each brief's `scope.include` widens (marshal `src/pyforge/marshal/cli/spin.py`, `cli/dispatch.py` (where `factory dispatch` registers), `cli/context.py`, `cli/challenge.py`; steward `src/pyforge/steward/estate.py`, `ci.py` and `preflight_verify.py`, the duty modules `cli.py` resolves for `estate`, `ci` and `preflight`; scribe `src/pyforge/scribe/catalog.py`; atlas `src/pyforge/atlas/mcp/server.py`), `skf-update-skill` runs once per skill with its MANUAL blocks preserved, and one `skf-export-skill` run regenerates the AGENTS.md SKF block
 **Then** each recompiled `SKILL.md` lists the verbs AGENTS.md names for its station, the atlas skill's Key API names the registered `run_<p>_pipeline`, `read_atlas_dataset` and `list_atlas_*` tools, each MANUAL block cites the station-MCP how-to, AGENTS.md carries a pointer to each skill's `active/` root outside the SKF markers (`snippet_skill_root_override` cannot give per-skill roots), and DW-FU-42-2-11 and DW-steward-75-1-2 close after a re-check against the recompiled files
 **And** `pyforge-steward-test` (the SKF meta-tests), `governance-currency` and the instruction-surface parity test exit 0; the `spec-pyforge-unifying-strategy` surface is reconciled on its memlog and stamped `--spec pyforge-steward/spec-pyforge-unifying-strategy`, then chain-currency re-runs for steward; this story runs last among the PR's code changes (operator ruling 2026-11-01)
-**Status:** backlog
+**Status:** done
 
 ## Epic 30: The old console is gone
 
@@ -8075,7 +8075,7 @@ So that CAP-177's success can be repeated on any cluster, and Story 118.3 has a 
 **When** `src/shared/packages/pyforge-steward/tests/integration/` gains attended probes for the landing SPA's Keycloak auth-code + PKCE sign-in (Story 118.1 AC2), the hub's OAuth sign-in with a `small-instance` spawn, and the landing page's JupyterHub and Nebi cards, each reading the domain and the admin credential from `nic outputs --show-secrets` at run time, storing neither, and skipping with the reason named when no kubeconfig is reachable
 **Then** one pixi task in `[feature.pyforge-steward.tasks]` runs them (`pyforge-steward-test` and `pyforge-steward-live-test` still collect only `tests/unit` and `tests/meta`), `docs/how-to/host-nebari.md` names that command, and DW-steward-118-1, DW-steward-118-2 and DW-steward-118-2-2 each carry a dated note citing it; the Keycloak bootstrap job keeps the tracked `kubectl` check of Story 118.2's spec and is out of scope
 **And** with no kubeconfig the task exits 0 with every probe skipped; the probes take the domain from the config so Story 118.3 AC3 reuses them on Hetzner; `pyforge-steward-test` and `lint-types` exit 0 and the spec-surface stamp is scoped to `pyforge-steward/spec-pyforge-steward`
-**Status:** backlog
+**Status:** done
 
 ### Story 118.7: deploy nic finds kubectl and helm in the pyforge-steward environment
 

@@ -822,7 +822,9 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   origin: spec-deferred 06e7180ee50b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium (unverified)
   promoted: 2026-10-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  resolution: 14-4-the-default-solver-shares-the-manifest-edit-path-and-is-bounded
+  verified: 2026-11-01 — src/shared/packages/pyforge-warden/tests/integration/test_fix_solver_real_pixi.py:73 (opt-in `slow`; the real `pixi lock` re-solves a hermetic local-channel fixture repo's copy at a candidate floor, passed on the workspace pixi 0.81.0)
+  status: closed
 
 ### DW-warden-16-4: Flag-OFF AC asks for byte-identical reports; tests only assert empty discovery and inventory_count.
 
@@ -900,4 +902,18 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   owner: warden
   severity: low
   promoted: 2026-10-17 — recorded with steward Story 103.3's re-review fixes
+  status: open
+
+### DW-warden-egm-2026-11-1: Operator-owned (EGM audit WAR-CL-1, operator ruling 2026-11-01): a live fleet scan and a live approved fix PR need an operator credential; Story 16.6 lands the approve path tested against a fake forge client only.
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-warden/SPEC.md` (CAP-26); `planning-artifacts/specs/spec-16-6-fleet-approve-re-solves-and-delivers-the-fix-it-queued.md`; EGM fleet audit 2026-11-01 (marshal Story 113.7), findings WAR-D-C1 and WAR-D-R3, cluster WAR-CL-1
+  summary: Operator-owned (EGM audit WAR-CL-1, operator ruling 2026-11-01): a live fleet scan and a live approved fix PR need an operator credential; Story 16.6 lands the approve path tested against a fake forge client only.
+  evidence: the 2026-10-11 rulings cover the read-only inventory only (the operator's `gh` login, GET/query); `spec-pyforge-warden/.memlog.md` decision of 2026-10-11, item (9), names a live fleet run (Story 16.2) and an approved proposal (Story 16.3) on the designated organisation as needing a credential decision of their own, and the 2026-11-01 Story 16.6 and 16.7 decisions keep it the operator's (the read/write token split waits on it). Story 16.6 drives the real `run_actuator` against a fake forge at the HTTP seam with a stubbed solver (`src/platform/tests/test_warden_fleet_proposals.py`); no live approve ran. Residue: `planning-artifacts/research/egm-audit-2026-11-01.md`.
+  location: src/shared/packages/django-warden/src/django_warden_fabric/tasks.py (`_run_fix_actuator`, `open_fix_proposal`)
+  origin: EGM fleet audit 2026-11-01 (marshal Story 113.7), operator ruling 2026-11-01
+  fix: the operator rules which credential a live fleet scan and an approved proposal's draft PR use (read and write identities, and where each lives), then runs one live fleet scan and one live approve on the designated organisation and records the result with `scribe capture --type project`; an agent never supplies or improvises a credential.
+  owner: warden
+  severity: medium
+  promoted: 2026-11-01 — EGM audit landing (operator-owned credential decision and live proof)
+  reason: credential-bound and outward (a write to a repository outside rxm7706/local-recipes); only the operator does it.
   status: open

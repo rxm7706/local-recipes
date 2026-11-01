@@ -3670,6 +3670,50 @@ def test_dispatch_tier_mapped_model_with_no_declared_catalog_at_all_is_preserved
     assert not [f for f in attempt.findings if f.code == "MRS-DISP-043"]
 
 
+def test_dispatch_hands_the_readiness_hook_its_resolved_launch_model(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 113.9 (CAP-299): the EGM readiness hook compares the challenger against the run's resolved launch
+    model, so dispatch passes the model it launches with."""
+    from pyforge.marshal.cli import challenge as challenge_module
+    from pyforge.marshal.cli import dispatch as dispatch_module
+    from pyforge.marshal.core import policy
+
+    slug = "pyforge-atlas"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "113-9-launch-model"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / f"spec-{story}.md").write_text(_READY_SPEC, encoding="utf-8")
+    effective, _ = policy.compose(
+        project_slug=slug,
+        project={
+            "harness_preference": ["cursor"],
+            "model_tier_map": {"medium": {"dev": {"harness": "cursor", "model": "composer-2.5-fast"}}},
+        },
+        flags={},
+    )
+    monkeypatch.setattr(dispatch_module, "_compose_policy", lambda _slug, flags=None: effective)
+    seen: list[object] = []
+
+    def readiness(**kwargs: object) -> challenge_module.ReadinessResult:
+        seen.append(kwargs.get("launch_model"))
+        return challenge_module.ReadinessResult(ran=False)
+
+    monkeypatch.setattr(challenge_module, "readiness_for_dispatch", readiness)
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    assert attempt.data.get("model") == "composer-2.5-fast"
+    assert seen == ["composer-2.5-fast"]
+
+
 def test_dispatch_tier_mapped_sonnet_on_claude_is_byte_identical(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

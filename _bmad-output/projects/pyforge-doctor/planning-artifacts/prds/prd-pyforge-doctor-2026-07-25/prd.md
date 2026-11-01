@@ -585,8 +585,11 @@ authority to be the final word on itself.
   generalized and meta-tested across every source. `sources/warden.py` remains the
   deliberate exception: it relays an instrument's self-report about its own
   environment, which is a different act from judging an artifact.
-- Every detector resolves to exactly one owning station, and a newly added detector
-  with no owner is a finding rather than a silent exemption.
+- Every Doctor source's `REGISTRY` entry names exactly one owning station, and an entry
+  with no owner is refused when its registration is built (`ValueError`), never stored as a
+  silent exemption. *(Amended 2026-11-01, EGM fleet audit DOC-M-Z1 / DOC-M-D3 / DOC-M-C1, on
+  the operator's ruling that CAP-93's owner clause narrows to the refusal the code enforces:
+  a `scripts/*_check.py` detector declares a scope, not an owner.)*
 - `doctor check` remains inside **SM-C1 (5.0s)** after the additions — measured, not
   assumed.
 
@@ -726,9 +729,12 @@ declared state, is stuck, or is past its `review_by`.
 
 **Consequences (testable):** on a recorded report, a `drift` row is one `ci-pause-drift` WARN, a `stuck` row (the
 2026-10-06 waiting-deploy replay, a five-cancelled streak, a stale canary) is one `ci-pause-stuck` WARN, and a row whose
-`review_days_left` is below 0 is one `ci-pause-overdue` WARN whatever its verdict; each names the surface, its switch
-and its owner; a report the source cannot read (steward's refusal, steward absent, a timeout, a malformed payload) is
-one `ci-pause-unobserved` WARN and never an OK; a WARN never changes the exit code; `fleet-picture`'s ATTENTION block
+`review_days_left` is below 0 is one `ci-pause-overdue` WARN whatever its verdict; each names the surface and the rule,
+then steward's `detail` when the row carries one, then its switch and its owner, so `fleet-picture`'s 110-character
+ATTENTION line keeps the reason; a report the source cannot read (steward's refusal, steward absent, a timeout, a
+malformed payload) is one `ci-pause-unobserved` WARN and never an OK, and `fleet-picture`'s probe outlasts the source's
+120-second bound so a hung steward reads as that WARN *(amended 2026-11-01, Story 45.4, EGM fleet audit DOC-M-Z3 /
+DOC-D-C5)*; a WARN never changes the exit code; `fleet-picture`'s ATTENTION block
 shows one line per WARN; the source never calls `gh`, never imports `pyforge.steward`, and is not part of
 `detectors-ci`.
 
@@ -754,27 +760,32 @@ table names `docsite/`, `docs-site/` and `presentations/`. Every renderer is her
 field; `docs-map-hygiene` yields one `sections` WARN for a duplicate `key` or `order` or a malformed `href`, one
 `unnamed-top-level` WARN for a tracked top-level directory that is not `docs`, a dot-directory, an allow-listed
 infrastructure directory or the first segment of a path the table names, and never a FAIL from either class; `missing`
-and `unmapped` are unchanged; on the story's tree `docs-map-hygiene-check` exits 0 with the OK row, `docs-map-render`
-leaves `docs/MAP.md` byte-identical and `docs-currency-check` stays green; `sidebar_from_map.py` and `site.yml` are
-untouched.
+and `unmapped` are unchanged; on `main` `docs-map-hygiene-check` exits 0 with the OK row, `docs-map-render`
+leaves `docs/MAP.md` byte-identical and `docs-currency-check` stays green; herald's menus follow `sections:` in
+`order` (herald's nav tests). *(Amended 2026-11-01, EGM fleet audit DOC-M-Z5 / DOC-M-D5: herald Story 43.7 retired
+`docsite/` and `sidebar_from_map.py`, so the clause no longer names the story's tree or those files.)*
 
 **Non-goals:** no renderer change (herald's), no row for a section that does not publish yet, no check that an `href`
-resolves in the built artifact, no rename of `docsite/` or `docs-site/`.
+resolves in the built artifact, no rename of `docs-site/` (`docsite/` retired with herald Story 43.7).
 
 *Decomposed as Epic 48 — Story 48.1. `flag-exempt: docs-only` (coordinator assignment; memlog, 2026-10-14).*
 
 ## FR-24 — A stalled Pages deploy is named within a day (spec-pyforge-doctor CAP-91)
 
 Added 2026-10-14 (the same rulings). The Pages deploy sat in `waiting` from 2026-10-06 to 2026-10-12 and no detector
-saw it; steward's `ci status` now names that class from GitHub's side (`dashboard.deploy`, `deploy_waiting_hours: 24`,
+saw it; steward's `ci status` now names that class from GitHub's side (the `pages` row's `deploy_waiting_hours: 24`,
 relayed by FR-22), but only for a signed-in reader with the steward flag on. A Doctor source, `pages-liveness`, names it
 from the reader's side: one HTTP request to the live Pages root for its `last-modified` header (measured 2026-10-14:
-the header is sent), the latest commit on `refs/remotes/origin/main` that touched a published input through
-`cli_bridge.run_git`, and a WARN when the commit is more than 24 hours newer than the header. No token, no `gh`, no
-GitHub API.
+the header is sent), the latest first-parent commit on `refs/remotes/origin/main` that touched a published input (`pages.yml`'s own
+`on.push.paths` filter less five named build and deploy exclusions) through `cli_bridge.run_git`, and a WARN when an
+input that landed after the deploy has waited more than 24 hours by the clock. No token, no `gh`, no GitHub API.
+*(Amended 2026-11-01, Story 48.3, EGM fleet audit DOC-M-Z4 / DOC-M-D2 / DOC-M-C5 / DOC-D-C2; closes
+`DW-doctor-48-2-1`.)*
 
-**Consequences (testable):** on recorded fixtures a fresh site and one 23 hours behind yield the OK row; one 25 hours
-behind and the 2026-10-06 replay each yield one `pages-liveness-stale` WARN naming both timestamps and the lag; no
+**Consequences (testable):** on recorded fixtures, each with its clock, a site deployed after its latest input, an
+input that has waited 23 hours and one that has waited exactly 24 hours yield the OK row; one that has waited more than
+24 hours and the 2026-10-06 replay each yield one `pages-liveness-stale` WARN naming the wait and both dates; a test
+pins the published inputs to `pages.yml`'s filter less the five exclusions; no
 network, a non-2xx on HEAD and GET, a missing or unparseable header and a failed git read each yield one
 `pages-liveness-unavailable` WARN and never an OK; a WARN never changes the exit code; `fleet-picture`'s ATTENTION
 block shows one line per WARN and `could not check Pages liveness` when the probe raises; the source is not in

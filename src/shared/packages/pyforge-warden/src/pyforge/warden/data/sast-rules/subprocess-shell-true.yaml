@@ -1,0 +1,15 @@
+# Estate SAST rule (Story 15.2, spec-pyforge-warden CAP-25): shipped in the
+# package's data, never fetched from a registry. Drawn from the Spec's
+# Constraints: "shell=True is banned". Its trip fixture is
+# tests/fixtures/sast-trips/subprocess-shell-true/trips.py.
+rules:
+  - id: subprocess-shell-true
+    message: >-
+      subprocess call with shell=True runs its command through a shell; pass an
+      argv list and leave shell off (spec-pyforge-warden Constraints: shell=True
+      is banned).
+    severity: ERROR
+    languages: [python]
+    pattern-either:
+      - pattern: subprocess.$FUNC(..., shell=True, ...)
+      - pattern: subprocess.$FUNC(..., shell=1, ...)
