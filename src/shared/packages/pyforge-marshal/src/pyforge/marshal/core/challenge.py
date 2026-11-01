@@ -20,6 +20,8 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import PurePosixPath
 
+from pyforge.core.errors import PyforgeError
+
 STAGES: tuple[str, ...] = ("mint", "decompose", "readiness", "drift", "rules")
 
 # The plugin's registered reviewer agents, by persona name. The agent type a
@@ -373,7 +375,7 @@ class ChallengeReport:
         )
 
 
-class ReportError(ValueError):
+class ReportError(PyforgeError, ValueError):
     """The session's report is missing a field or malformed."""
 
 

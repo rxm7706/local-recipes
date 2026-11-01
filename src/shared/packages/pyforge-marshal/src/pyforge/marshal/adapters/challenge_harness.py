@@ -17,13 +17,13 @@ from __future__ import annotations
 import json
 import os
 import shutil
-import subprocess
 import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
 from pyforge.core.errors import PyforgeError
+from pyforge.core.process import PosixProcess, ProcessError
 
 from ..core.harness_profile import HarnessProfile, load_packaged_profiles, translate_model
 
@@ -137,20 +137,10 @@ class ClaudeChallengeRunner:
         )
         env = {**os.environ, **dict(profile.env)}
         log_path.parent.mkdir(parents=True, exist_ok=True)
-        with log_path.open("w", encoding="utf-8") as log:
-            try:
-                completed = subprocess.run(  # noqa: S603 -- argv from the packaged profile, no shell
-                    [binary, *argv],
-                    cwd=cwd,
-                    env=env,
-                    stdin=subprocess.DEVNULL,
-                    stdout=log,
-                    stderr=subprocess.STDOUT,
-                    timeout=self.timeout_s,
-                    check=False,
-                )
-            except subprocess.TimeoutExpired as exc:
-                raise ChallengeHarnessError(f"challenge session exceeded {self.timeout_s:.0f}s") from exc
-            except OSError as exc:
-                raise ChallengeHarnessError(f"cannot launch {binary}: {exc}") from exc
-        return completed.returncode
+        try:
+            result = PosixProcess().run([binary, *argv], cwd=cwd, timeout_s=self.timeout_s, env=env)
+        except ProcessError as exc:
+            log_path.write_text(f"challenge session did not complete: {exc}\n", encoding="utf-8")
+            raise ChallengeHarnessError(f"challenge session did not complete: {exc}") from exc
+        log_path.write_text(result.stdout + result.stderr, encoding="utf-8")
+        return result.returncode

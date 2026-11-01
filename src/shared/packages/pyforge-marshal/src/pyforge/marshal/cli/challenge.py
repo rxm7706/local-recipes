@@ -23,7 +23,6 @@ import json
 import os
 import re
 import secrets
-import subprocess
 import sys
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -31,7 +30,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Protocol
 
+from pyforge.core.errors import PyforgeError
 from pyforge.core.flags import FlagConfigError, read_boolean, require
+from pyforge.core.process import PosixProcess, ProcessError
 from pyforge.core.roster import STATIONS, long_form
 
 from ..core import challenge as core
@@ -71,7 +72,7 @@ class ChallengeRunner(Protocol):
     def run(self, *, prompt: str, model: str | None, cwd: Path, log_path: Path) -> int: ...
 
 
-class ChallengeRefused(Exception):
+class ChallengeRefused(PyforgeError, Exception):
     """A refusal the verb reports with the usage code; never a finding."""
 
 
@@ -311,10 +312,8 @@ def append_journal(
 def tree_snapshot(root: Path) -> str | None:
     """``git status --porcelain`` at ``root``; ``None`` when it is not a git tree."""
     try:
-        done = subprocess.run(  # noqa: S603, S607 -- fixed argv, no shell
-            ["git", "status", "--porcelain"], cwd=root, capture_output=True, text=True, check=False, timeout=60
-        )
-    except OSError, subprocess.TimeoutExpired:
+        done = PosixProcess().run(["git", "status", "--porcelain"], cwd=root, timeout_s=60)
+    except ProcessError:
         return None
     return done.stdout if done.returncode == 0 else None
 
@@ -565,23 +564,13 @@ def run_audit(
 
 
 def append_memlog(root: Path, workspace: str, text: str) -> None:
-    subprocess.run(  # noqa: S603 -- the repo's own memlog script, no shell
-        [
-            sys.executable,
-            str(root / MEMLOG_SCRIPT_RELPATH),
-            "append",
-            "--workspace",
-            workspace,
-            "--type",
-            "event",
-            "--text",
-            text,
-        ],
-        cwd=root,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
+    argv = [sys.executable, str(root / MEMLOG_SCRIPT_RELPATH), "append", "--workspace", workspace]
+    try:
+        done = PosixProcess().run([*argv, "--type", "event", "--text", text], cwd=root, timeout_s=60)
+    except ProcessError as exc:
+        raise core.ReportError(f"memlog append did not run: {exc}") from exc
+    if done.returncode != 0:
+        raise core.ReportError(f"memlog append failed: {done.stderr.strip() or done.stdout.strip()}")
 
 
 def run_resolve(args: argparse.Namespace, *, root: Path, memlog: Callable[[Path, str, str], None]) -> int:
@@ -598,8 +587,12 @@ def run_resolve(args: argparse.Namespace, *, root: Path, memlog: Callable[[Path,
     if resolution.memlog_lines and not report.spec_workspace:
         print("marshal factory challenge resolve: the report names no owning Spec (spec_workspace)", file=sys.stderr)
         return EXIT_USAGE
-    for line in resolution.memlog_lines:
-        memlog(root, report.spec_workspace, line)
+    try:
+        for line in resolution.memlog_lines:
+            memlog(root, report.spec_workspace, line)
+    except core.ReportError as exc:
+        print(f"marshal factory challenge resolve: {exc}; the report is unchanged", file=sys.stderr)
+        return EXIT_USAGE
     report_path.write_text(resolution.report.to_json() + "\n", encoding="utf-8")
     print(f"resolved: {len(accept)} accepted (memlog lines on {report.spec_workspace}), {len(reject)} rejected")
     if resolution.memlog_lines:
