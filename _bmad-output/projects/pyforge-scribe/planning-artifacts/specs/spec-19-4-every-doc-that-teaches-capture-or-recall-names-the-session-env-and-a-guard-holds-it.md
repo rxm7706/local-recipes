@@ -2,7 +2,7 @@
 title: '19.4: Every doc that teaches capture or recall names the session env, and a guard holds it'
 type: 'fix'
 created: '2026-11-01'
-status: 'in-progress'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -252,6 +252,62 @@ Failures:
    memlog, or revert the hand edit and let 29.4 carry the lines. Either way, return this story to `in-review` only
    after 29.4's recompile lands and AC3/AC4 can be observed (the atlas grep shows no match and the guard is green on
    the recompiled skill).
+
+### 2026-11-01 — Independent review, second review (reviewer: independent session) — PASS (done)
+
+Judged against this spec's ACs and Boundaries on the committed tree at `812d776dba` (worktree clean), not the
+implementer's summary or the first review. Every verdict read from the exit code, never through a pipe.
+
+- AC1 — holds. A scratch copy of `test_guild_env_membership.py` with `ROOT` pointed at the six `GOVERNANCE_DOCS` taken
+  from `03a7aff5d9` (the skill at its `active/` path) ran `-k governance_docs`: exit 1, 3 failed, 3 passed. The
+  how-to, the scribe README and the compiled scribe skill failed, each message naming the stale
+  `-e pyforge-scribe scribe capture|recall` match. `AGENTS.md`, `CLAUDE.md` and `.cursor/rules/scribe-recall.mdc`
+  passed. Match counts: 1, 1 and 2 at `03a7aff5d9`, and 0 each at HEAD.
+- AC2 — holds. README:22-23 and the how-to name `-e pyforge-guild`.
+  `pixi run --frozen -e pyforge-scribe python -m pytest …/test_guild_env_membership.py -v` exits 0 (11 passed), with
+  all six `GOVERNANCE_DOCS` ids passing.
+- AC3 — holds. Steward Story 29.4 is `done`, and its independent review passed the in-place `0.1.0` recompile, which
+  `bd154aaa17` commits. The guard is green on every entry, including
+  `.claude/skills/pyforge-scribe/active/pyforge-scribe/SKILL.md` (a tracked symlink to `0.1.0`). The skill's capture
+  and recall lines (:45, :47) are byte-identical to README:22-23. The recompile cites them to `[SRC:README.md:L19-L33]`,
+  a new citation that replaces the old `cli.py:L44-L47` one, and that README range holds the lines. The manual grep
+  `pyforge-scribe scribe \(capture\|recall\)` over the README, the how-to and the skill exits 1 (no match).
+- AC4 — holds. `grep -n 'any directory' .claude/skills/pyforge-atlas/active/pyforge-atlas/SKILL.md` exits 1 (no match).
+  The Quick Start line (now :42) reads "Run from the repository root", which agrees with the Usage line (now :125)
+  "from repo root". The atlas README source has no "any directory" either (exit 1). Atlas `test_pipeline_inventory.py`
+  and `tests/meta/test_skf_skill_and_persona.py` exit 0 (21 passed).
+- AC5 — holds. In the README (:24-25) and the skill (:46, :48-51), `scribe graph compile`, `scribe index …` and
+  `pyforge-scribe-test` still name `-e pyforge-scribe`.
+- AC6 — holds. `pixi run -e pyforge-scribe-pg scribe-pg-up` exits 0, with no concurrent scribe or preflight run.
+  `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` then exits 0 (460 passed, 12 skipped).
+- Boundary (no hand edit of a compiled `SKILL.md`) — closed by a recorded ruling. `spec-pyforge-scribe/.memlog.md`
+  carries a `(decision)` entry, the session-owner ruling of 2026-11-01 (Story 19.4 first review). It waives that
+  Boundary for the scribe skill's env lines only, because 29.4 then recompiled the skill in place from the fixed
+  README. The tree is consistent with that ruling:
+  - the recompiled lines equal the README source byte for byte;
+  - the recompile re-sourced them, giving them the README citation and the env prose of README:28-33;
+  - 29.4's review found every `[SRC]` citation in range (139 across the four recompiled skills), and the MANUAL blocks
+    unchanged.
+
+  `bd154aaa17` carries the hand edit and the recompile together, so history cannot tell them apart. The end state is
+  the one a recompile alone would give.
+- Station-tests routing (Dev Notes) — holds. `.github/workflows/pyforge-station-tests.yml`:387 routes
+  `docs/how-to/one-chain-station-ops.md` to the scribe job.
+  `pixi run --frozen -e pyforge-steward pytest src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py -q`
+  exits 0 (51 passed).
+- Verification — `pixi run -e pyforge-guild governance-currency` exits 0, `spec-surface-check` exits 0 ("no drift"),
+  and `story-status-check` exits 0 before this status edit.
+
+Failures: none.
+
+Left for the session owner, none of them an AC:
+- The ledger row `19-4-…` is still `backlog`. Promote it through the Tier-3 feed, then
+  `sprint-ledger-sync -- --project pyforge-scribe`, then `story-status-check`. A merged story left at `backlog`
+  respawns.
+- Self-validate Pass 2 (2026-11-01) left Story 19.4's CAP-28 success event unrendered while 19.4 was in progress. CAP-28's
+  current success wording ("a governance doc") still covers the widened guard, so whether to render it is the session
+  owner's call. The spec needs no change.
+- The Spec Change Log has no line for the waiver. The memlog `(decision)` entry is the record.
 
 ## Dev Notes
 

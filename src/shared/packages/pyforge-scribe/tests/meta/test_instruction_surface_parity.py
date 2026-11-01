@@ -21,7 +21,6 @@ import sys
 from pathlib import Path
 
 import pytest
-import yaml
 
 
 def _repo_root() -> Path:
@@ -506,8 +505,31 @@ def _skf_end_state_breaks(claude_md: str, skf_ides: object, agents_md: str) -> l
     return breaks
 
 
+def _top_level_list(text: str, key: str) -> list[str] | None:
+    """The block or flow list under a top-level ``key:`` of a flat YAML file, read with the stdlib (Story 23.2
+    review follow-up: PyYAML is not a declared scribe dependency). ``None`` when the key is absent."""
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
+        if not line.startswith(f"{key}:"):
+            continue
+        rest = line[len(key) + 1 :].split("#", 1)[0].strip()
+        if rest.startswith("[") and rest.endswith("]"):
+            return [item.strip().strip("'\"") for item in rest[1:-1].split(",") if item.strip()]
+        items: list[str] = []
+        for follow in lines[i + 1 :]:
+            stripped = follow.strip()
+            if not stripped or stripped.startswith("#"):
+                continue
+            if not follow.startswith((" ", "\t")):
+                break
+            if stripped.startswith("- "):
+                items.append(stripped[2:].split("#", 1)[0].strip().strip("'\""))
+        return items
+    return None
+
+
 def _live_skf_end_state() -> tuple[str, object, str]:
-    ides = yaml.safe_load(SKF_CONFIG.read_text(encoding="utf-8")).get("ides")
+    ides = _top_level_list(SKF_CONFIG.read_text(encoding="utf-8"), "ides")
     return (ROOT / "CLAUDE.md").read_text(encoding="utf-8"), ides, AGENTS.read_text(encoding="utf-8")
 
 

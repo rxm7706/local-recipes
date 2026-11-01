@@ -31,7 +31,7 @@ development_status:
   19-1-one-agents-md-reached-natively-or-by-a-one-line-pointer-from-every-harness: done
   19-2-scribe-capture-and-recall-run-from-the-session-default-environment: done
   19-3-the-instruction-surface-is-version-aware-claude-code-s-built-in-agents-md-mod: done
-  19-4-every-doc-that-teaches-capture-or-recall-names-the-session-env-and-a-guard-holds-it: backlog
+  19-4-every-doc-that-teaches-capture-or-recall-names-the-session-env-and-a-guard-holds-it: done
   2-1-graphstore-port-flat-file-v1-adapter: done
   2-2-nightly-compile-from-named-tool-surfaces: done
   2-3-fact-supersession-in-the-compiled-graph: done
@@ -42,7 +42,7 @@ development_status:
   22-1-scribe-pg-up-succeeds-from-a-long-path-worktree: done
   22-2-scribe-pg-down-stops-only-this-checkout-s-cluster: done
   23-1-the-skf-managed-block-lives-in-agents-md-only: done
-  23-2-the-instruction-surface-guards-prove-every-clause-they-claim: backlog
+  23-2-the-instruction-surface-guards-prove-every-clause-they-claim: done
   24-1-the-bmad-estate-catalog-is-generated-not-written: done
   24-2-the-catalog-cannot-drift-silently: done
   24-3-every-harness-is-pointed-at-the-catalog-once: done
@@ -91,7 +91,7 @@ development_status:
   epic-17-retrospective: optional
   epic-18: done
   epic-18-retrospective: optional
-  epic-19: in-progress
+  epic-19: done
   epic-19-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
@@ -101,7 +101,7 @@ development_status:
   epic-21-retrospective: optional
   epic-22: done
   epic-22-retrospective: optional
-  epic-23: in-progress
+  epic-23: done
   epic-23-retrospective: optional
   epic-24: done
   epic-24-retrospective: optional

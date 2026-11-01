@@ -2,7 +2,7 @@
 title: '23.2: The instruction-surface guards prove every clause they claim'
 type: 'fix'
 created: '2026-11-01'
-status: 'in-progress'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -340,6 +340,64 @@ Non-blocking observations:
 - `scripts/claude_instruction_mode_check.py` was reformatted to ruff's default 88 columns (no root ruff config); style
   only, no behaviour change.
 
+### 2026-11-01 — Independent review, second review (reviewer: independent session) — PASS (done)
+
+Judged against this spec's ACs and Boundaries on the committed tree at `812d776dba` (worktree clean), not the
+implementer's summary or the first review. Every verdict read from the exit code, never through a pipe. Each mutation
+probe ran on a scratch copy of the parity test, with `ROOT`, `SCRIPT`, `AGENTS` or the settings path pointed at the
+mutated input. No tracked file was touched.
+
+- AC1 — holds. `test_the_2026_09_26_skf_end_state_holds` passes on the live tree, and
+  `test_skf_end_state_guard_names_each_broken_clause` (4 ids) reports exactly the broken clause. Disabling the `ides`
+  clause makes `[ides-claude-code]` fail (probe exit 1, 1 failed).
+- AC2 — holds. The no-binary branch returns 0 and prints nothing. `scripts/detectors.py` `run_one` maps rc 0 to `pass`
+  whatever stdout says (`{0: "pass", 1: "FINDINGS"}`), so CAP-29's "silent" stands. With the ok print restored in a
+  copy of the script, `test_runtime_mode_check_is_silent_without_claude_on_path` fails (exit 1).
+- AC3 / AC4 — hold. The stub-`claude` cases are `old-runtime-warns` (2.1.276, rc 1), `unpinned-mode-warns`
+  (2.1.300, rc 1) and `pinned-current-ok` (2.1.300, rc 0). `test_runtime_mode_check_could_not_run_on_a_missing_claude_path`
+  asserts rc 2 and `could-not-run`. `pixi run -e pyforge-guild claude-instruction-mode-check` exits 0 on this host
+  (2.1.314, pinned). `detectors.py --scope runtime --list` exits 0 and lists the check.
+- AC5 — holds. `DUPLICATE_GUARD_FILES` = `POINTER_FILES` + every `.cursor/rules/*.mdc` + `CLAUDE.md`, and `CLAUDE.md`
+  is not in `POINTER_FILES`. With `CLAUDE.md` dropped from the guard files, the planted-duplicate self-test fails
+  (exit 1).
+- AC6 — holds. Dropping the FIXME branch fails `[fixme]`; dropping the not-(yet-)landed branch fails `[not-yet-landed]`
+  and `[not-landed]` (exit 1 each).
+- AC7 — holds. The live block passes. Against `03a7aff5d9`'s `AGENTS.md`, only
+  `test_managed_block_types_no_suite_member_or_skill_family_count` fails. With the match disabled, both planted ids
+  fail.
+- AC8 — holds. `customInstructions` is `["Follow the behavioural guidelines in AGENTS.md § Behavioural guidelines (every
+  harness)."]`. With `03a7aff5d9`'s `settings.json`, `test_project_settings_custom_instructions_point_at_agents_md`
+  fails.
+- AC9 — holds. Each probe above failed with only its guarding test red, and the unmutated copy passes (49 passed). The
+  station SKF marker checks exit 0: doctor, marshal and warden `test_skf_domain_skill.py` (6, 8 and 6 passed) and
+  steward `test_skf_domain_skills.py` (6 passed). Mason's `test_persona_consults_cfe.py` exits 0 (19 passed).
+- AC10 — holds, which closes the first review's failure.
+  - `pixi run -e pyforge-scribe-pg scribe-pg-up` exits 0. `pixi run --frozen -e pyforge-scribe pyforge-scribe-test`
+    then exits 0 (460 passed, 12 skipped), and the parity test alone exits 0 (49 passed).
+  - The memlog carries the surface-reconcile event that names the asserts and the CAP-27 success event (Story 23.2),
+    then the `(capability)` CAP-27 entry that cites "Story 23.2's CAP-27 success event, the re-derive its AC10 names".
+  - Two self-validate events are logged after it: Pass 1 (coherence) and Pass 2 (preservation). These are the two
+    passes `bmad-spec` § Self-Validate requires, each recorded as an `--type event`.
+  - `SPEC.md` was re-derived in `812d776dba`. CAP-27's intent and success are byte-identical to the memlog capability
+    entry, as are CAP-29's and CAP-30's success. The file grows by one line (the `glossary.md` companion), as Pass 2
+    states.
+  - CAP-27's success names what 23.2 built: the three end-state clauses, `test_the_2026_09_26_skf_end_state_holds`,
+    `test_skf_end_state_guard_names_each_broken_clause`, and mason's SKF-block assert left unrepeated. Every test
+    function CAP-27, CAP-29 and CAP-30 name exists in the parity module.
+- Station-tests routing (Dev Notes) — holds. `.github/workflows/pyforge-station-tests.yml`:384 routes
+  `_bmad/skf/config.yaml` to the scribe job. `pixi run --frozen -e pyforge-steward pytest
+  src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py -q` exits 0 (51 passed).
+- Verification — `governance-currency` exits 0, `spec-surface-check` exits 0 ("no drift"), and `story-status-check`
+  exits 0 before this status edit.
+
+Failures: none.
+
+Carried, non-blocking:
+- The first review's PyYAML observation still stands. The parity module imports `yaml` at module level, and PyYAML is
+  still declared neither in `feature.pyforge-scribe.dependencies` nor in the scribe `pyproject.toml`.
+- The ledger row `23-2-…` is still `backlog`. Promote it through the Tier-3 feed, then
+  `sprint-ledger-sync -- --project pyforge-scribe`, then `story-status-check`.
+
 ## Dev Notes
 
 - Review follow-up 2026-11-01 (station-tests routing): `SKF_CONFIG` in
@@ -348,3 +406,5 @@ Non-blocking observations:
   derives as a scribe read, and `scribe_paths` in `.github/workflows/pyforge-station-tests.yml` did not carry it. It
   does now, so an edit there runs `scribe-test`. The test and its assertions are unchanged; the meta-test and
   `test_instruction_surface_parity.py` exit 0.
+
+- Review follow-up 2026-11-01 (second review, non-blocking note): `src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py` no longer imports PyYAML, which no scribe manifest declares (it reached the env only through cocoindex -> watchdog); `_top_level_list` reads the top-level `ides` list of `_bmad/skf/config.yaml` with the stdlib (block and flow forms, comments, absent key). Checked: the parity file 49 passed; the live value is [`other`]; an `ides: [claude-code]` input still breaks the end-state check; ruff clean.

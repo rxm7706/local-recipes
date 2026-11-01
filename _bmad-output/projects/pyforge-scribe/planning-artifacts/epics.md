@@ -749,7 +749,7 @@ So that no doc sends me to an environment my sandbox never installed, and the ne
 **When** `GOVERNANCE_DOCS` gains `docs/how-to/one-chain-station-ops.md` and `.claude/skills/pyforge-scribe/active/pyforge-scribe/SKILL.md`, and the guard runs before any doc is fixed
 **Then** `test_governance_docs_no_longer_route_capture_or_recall_to_the_scribe_env` fails naming the how-to and the skill; once the scribe README and the how-to name `-e pyforge-guild` and steward Story 29.4 recompiles the skill from that README, it passes for every entry
 **And** the atlas README says to run from the repository root, so the recompiled atlas skill no longer says "any directory"; lines that need the station env or the heavy extras (`pyforge-scribe-test`, `scribe graph compile`, `scribe index …`) keep `-e pyforge-scribe`; `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green; co-governor reconcile: a memlog entry on every Spec `spec-surface-check` names (`spec-pyforge-scribe` for the scribe README, `spec-pyforge-doctor` for the how-to, `spec-pyforge-atlas` for the atlas README), then a scoped stamp per Spec, never a bare `--write-baseline`
-**Status:** backlog
+**Status:** done
 
 ## Epic 20: The managed instruction block carries no aspiration (spec-pyforge-scribe CAP-30)
 
@@ -886,7 +886,7 @@ So that a regenerated SKF copy, a dropped regex branch or an untested warn path 
 **When** this story lands
 **Then** the parity test asserts `CLAUDE.md` has no `<!-- SKF:BEGIN`, `ides` equals `['other']` and `AGENTS.md`'s `governance-currency` line names `detectors-ci` and `pr-preflight`; a stub `claude` (an executable in `tmp_path` with a `sys.executable` shebang, `PATH` set to `tmp_path` only) gives absent → exit 0 with empty stdout, 2.1.276 → exit 1, 2.1.300 unpinned → exit 1, 2.1.300 pinned → exit 0, and the missing `--claude` case becomes a could-not-run test asserting exit 2; the no-binary branch prints nothing once `scripts/detectors.py`'s runtime-scope runner is shown to read empty stdout as ok (otherwise the print stays and CAP-29's "silent" is amended to "exit 0, ok line" through the memlog)
 **And** the duplicate-H2 guard runs through a helper over `POINTER_FILES + tuple(CURSOR_RULES) + ("CLAUDE.md",)` (`CLAUDE.md` stays out of `POINTER_FILES`, so the 60-line rule never reaches it) and a planted self-test flags `## Behavioral Guidelines` against `## Behavioural guidelines (every harness)`; the aspiration self-test plants `FIXME:`, "not yet landed" and "not landed" between the markers and one outside them; a new assert reds a suite-member or skill-family count typed into the `bmad:context` block; `customInstructions` is one sentence pointing at `AGENTS.md` § *Behavioural guidelines (every harness)* with no list (operator ruling 2026-11-01); every new assert fails when its guarded state is broken (mutation); the station `test_skf_domain_skill(s).py` marker checks still pass; `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green; a `spec-pyforge-scribe` memlog event names the asserts and `bmad-spec` re-derives CAP-27 (and CAP-29 when "silent" is amended), both self-validate passes logged; co-governor reconcile: a memlog entry on every Spec `spec-surface-check` names, then a scoped stamp per Spec, never a bare `--write-baseline`
-**Status:** backlog
+**Status:** done
 
 ## Epic 24: Every session reads one derived picture of the BMAD estate (spec-pyforge-scribe CAP-32)
 
