@@ -89,7 +89,7 @@ Parent: `spec-pyforge-marshal` CAP-298
 - Two-state flag coverage (the testing kit's `flag_states`): `src/shared/packages/pyforge-marshal/tests/unit/test_factory_challenge.py` — `@flag_states("pyforge.marshal.egm_challenge")`.
 - `pixi run --frozen -e pyforge-guild flag-gate-check` — expected: exit 0.
 - `pixi run --frozen -e pyforge-guild flag-inventory` — expected: exit 0; the row names this story's key.
-- `pixi run --frozen -e pyforge-core pyforge-core-test` — expected: pass (`test_flags.py`'s shipped-flag tables).
+- `pixi run --frozen -e pyforge-core pyforge-core-test` — expected: pass (`src/shared/packages/pyforge-core/tests/unit/test_flags.py`'s shipped-flag tables).
 
 ## Auto Run Result
 
