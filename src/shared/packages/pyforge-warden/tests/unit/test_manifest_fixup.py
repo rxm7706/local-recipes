@@ -215,3 +215,36 @@ def test_throwaway_copy_is_removed_when_the_re_solve_raises(tmp_path: Path, monk
         )
     (copy,) = seen
     assert not copy.exists()
+
+
+def test_prepare_manifest_fix_copy_holds_no_pixi_or_git_and_keeps_crlf(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 14.4: the fix shares the solver's lean copy, and its plan keeps the manifest's line endings."""
+    repo = tmp_path / "repo"
+    (repo / ".pixi" / "envs").mkdir(parents=True)
+    (repo / ".pixi" / "envs" / "big.bin").write_bytes(b"\0" * 64)
+    (repo / ".git").mkdir()
+    (repo / ".git" / "HEAD").write_text("ref: refs/heads/main\n", encoding="utf-8")
+    (repo / "pixi.toml").write_bytes(b'[pypi-dependencies]\r\nleftpad = ">=1.2"\r\n')
+    (repo / "pixi.lock").write_text("lock-version = 1\n", encoding="utf-8")
+    digest_before = tree_content_digest(repo)
+    seen: list[str] = []
+
+    def _fake_lock(*, cwd: Path):  # noqa: ANN202
+        seen.extend(sorted(path.relative_to(cwd).as_posix() for path in cwd.rglob("*")))
+        return None, 0
+
+    monkeypatch.setattr("pyforge.warden.manifest_fixup.run_pixi_lock", _fake_lock)
+    outcome = prepare_manifest_fix(
+        scan_target=repo,
+        package="leftpad",
+        floor="1.3.0",
+        manifest_locations={"leftpad": ("pixi.toml [pypi-dependencies]",)},
+        location_keys=("leftpad",),
+    )
+    assert seen == ["pixi.lock", "pixi.toml"]
+    assert outcome.plan is not None
+    (change,) = outcome.plan.files
+    assert change.content == '[pypi-dependencies]\r\nleftpad = ">=1.3.0"\r\n'
+    assert tree_content_digest(repo) == digest_before

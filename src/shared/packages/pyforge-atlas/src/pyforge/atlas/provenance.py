@@ -48,6 +48,7 @@ from pyforge.atlas.datasets import (
     CfGraphTarballDataset,
     IncrementalParquetDataset,
     JSONSourceDataset,
+    LastGoodFrameDataset,
     PyPIClickHouseDownloadsDataset,
     RepodataUploadsDataset,
     S3DownloadStatsDataset,
@@ -277,6 +278,7 @@ def resolve_for_catalog_dataset(catalog: Any, name: str, loaded_value: Any) -> P
         PyPIClickHouseDownloadsDataset,
         RepodataUploadsDataset,
         VulnerabilityFeedDataset,
+        LastGoodFrameDataset,
     )
     source = dataset if isinstance(dataset, marked) else getattr(dataset, "source", None)
     if isinstance(source, marked):
@@ -289,6 +291,7 @@ def resolve_for_catalog_dataset(catalog: Any, name: str, loaded_value: Any) -> P
         # Story 34.9: PyPIClickHouseDownloadsDataset keeps the same marker beside its last-good.
         # Story 37.6: RepodataUploadsDataset's copy is its subdir cache, dated by its manifest.
         # Story 34.12: the KEV, EPSS and CWE feeds keep last-good beside the same marker.
+        # Story 34.15: the feedstock-outputs, repodata and PyPI simple-index sources keep it the same way.
         marker = source.staleness()
         last_good = source.last_good_path
         fetched = bool(getattr(source, "refreshed", True))

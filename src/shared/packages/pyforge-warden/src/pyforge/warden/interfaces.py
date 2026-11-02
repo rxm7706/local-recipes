@@ -452,9 +452,16 @@ class DefaultPolicy:
             # (rung, id token, finding axis, message) per deficiency.
             derived: list[tuple[Status, str, str, str]] = []
             if is_non_python_native_ecosystem(component.ecosystem):
-                # Story 16.4: native lockfile components are vuln-axis only;
-                # hygiene/license/currency are honestly N/A (report coverage
-                # rows use deps_total=0 for those axes).
+                # Story 16.4: a native lockfile component derives no
+                # per-component rung here. Its vulnerability axis is
+                # osv-scanner's own lockfile scan (vuln: findings, or an
+                # indeterminate when the ecosystem DB is missing); deptry
+                # never judges it, so hygiene leaves it out. Story 16.9: the
+                # license and currency engines DO judge it, resolve nothing
+                # for npm/Go/Cargo, and emit license:unknown /
+                # currency:unknown -- warn ungated, indeterminate gated
+                # (license_rung/currency_rung above), never clean; the
+                # report's license/currency rows count it.
                 continue
             if component.indeterminate_reason is not None:
                 derived.append(

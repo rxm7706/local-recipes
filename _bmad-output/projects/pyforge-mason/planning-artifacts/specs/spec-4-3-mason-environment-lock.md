@@ -140,6 +140,8 @@ paths explicitly as positionals; that positional's `nargs` narrows to allow omis
 
 ## Spec Change Log
 
+- 2026-11-01: Story 4.5 (EGM audit, MAS-D-R4 / MAS-D-C3) makes `--platform` repeatable as CAP-4, FR-27 and Story 19.3 state: it is now `action="append"` and `cli.py` joins the values, in order, into the one comma-separated string `environment.lock()` splits, so the comma form below still holds and a repeated flag no longer keeps only its last value. This spec's single-value reading (Boundaries, Design Notes) is superseded on that point; its body is left as written.
+
 ## Review Triage Log
 
 ### 2026-08-15 — Review pass (verification-repair)

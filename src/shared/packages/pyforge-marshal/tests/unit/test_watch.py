@@ -1612,3 +1612,61 @@ def test_watch_tests_use_only_the_supervisor_verdict_vocabulary():
     literals = set(_re.findall(r'dispatch_completion_verdict["\']?\s*[:=]\s*["\']([^"\']*)["\']', text))
     allowed = {m.value for m in _DSV}
     assert literals <= allowed, sorted(literals - allowed)
+
+
+# --- Story 113.8 AC4 (CAP-300): the dispatch's EGM readiness result on the station screen ----------------------
+
+_READINESS_REPORT = "/repo/_bmad-output/projects/pyforge-warden/implementation-artifacts/egm/r1/report.json"
+
+
+def _dispatch_home(readiness: dict | None) -> dict:
+    home = {
+        "state": "running",
+        "dispatch_run_id": "warden-20261101T000000000Z-abcd1234",
+        "dispatch_completion_verdict": None,
+        "dispatch_verification_verdict": None,
+        "current_story": "11.1",
+        "escalation_reason": None,
+    }
+    if readiness is not None:
+        home["dispatch_readiness_challenge"] = readiness
+    return home
+
+
+def _watch_readiness(tmp_path: Path, capsys, readiness: dict | None) -> tuple[dict, str]:
+    ports = _ports(tmp_path, listed={"runs": []}, home=_dispatch_home(readiness))
+    assert _run(tmp_path, _args(project="pyforge-warden"), ports) == 0
+    data = _payload(capsys)["data"]
+    assert _run(tmp_path / "text", _args(project="pyforge-warden", format="text"), ports) == 0
+    return data, capsys.readouterr().out
+
+
+def test_watch_shows_a_red_readiness_with_its_report_and_the_code(tmp_path: Path, capsys):
+    data, text = _watch_readiness(
+        tmp_path,
+        capsys,
+        {"report": _READINESS_REPORT, "findings": 2, "high": 1, "error": "", "red": True, "code": "MRS-DISP-067"},
+    )
+    view = data["sections"]["readiness_challenge"]
+    assert view["red"] is True and view["code"] == "MRS-DISP-067" and view["report"] == _READINESS_REPORT
+    assert f"**Readiness Challenge:** red MRS-DISP-067: 2 finding(s), 1 high; report {_READINESS_REPORT}" in text
+
+
+def test_watch_shows_a_clean_readiness_as_clean(tmp_path: Path, capsys):
+    data, text = _watch_readiness(
+        tmp_path, capsys, {"report": _READINESS_REPORT, "findings": 0, "high": 0, "error": "", "red": False}
+    )
+    assert data["sections"]["readiness_challenge"]["red"] is False
+    assert f"**Readiness Challenge:** clean, report {_READINESS_REPORT}" in text
+    assert "MRS-DISP-067" not in text
+
+
+def test_watch_without_a_readiness_field_renders_as_before(tmp_path: Path, capsys):
+    data, text = _watch_readiness(tmp_path, capsys, None)
+    clean, clean_text = _watch_readiness(
+        tmp_path / "again", capsys, {"report": _READINESS_REPORT, "findings": 0, "high": 0, "error": ""}
+    )
+    assert "readiness_challenge" not in data["sections"] and "Readiness" not in text
+    # the field adds its own section and its own line, and changes nothing else
+    assert {k: v for k, v in clean["sections"].items() if k != "readiness_challenge"} == data["sections"]
+    assert clean_text.replace(f"**Readiness Challenge:** clean, report {_READINESS_REPORT}\n\n", "") == text

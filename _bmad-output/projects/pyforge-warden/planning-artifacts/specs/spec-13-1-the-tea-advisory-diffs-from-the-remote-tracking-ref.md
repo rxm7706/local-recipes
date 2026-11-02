@@ -70,3 +70,7 @@ Ledger status at mint: `backlog`.
     the new test calls the function with `subprocess.run` replaced. Verified: TEA 1.27.2 rejects only an empty
     base or one starting with `-`, so the full ref is accepted.
 - **Review 2 (2026-09-27, same agent, delta) — PASS.**
+
+## Spec Change Log
+
+- 2026-11-01: amended in place (append-only, EGM audit 2026-11-01, marshal Story 113.7): the `epics.md` Story 13.1 Surface line now names `engines.py` (`_TEA_DEFAULT_BASE_REF`), where Story 11.3 moved the constant from `tea_advisory.py`, and a **Spec:** line links this file (EGM audit WAR-D-C3, WAR-D-R5, WAR-D-R2). No AC, status, heading or key moved; residue `_bmad-output/projects/pyforge-warden/planning-artifacts/research/egm-audit-2026-11-01.md`.

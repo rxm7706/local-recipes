@@ -1,0 +1,25 @@
+# Estate SAST rule (Story 15.2, spec-pyforge-warden CAP-25): shipped in the
+# package's data, never fetched from a registry. Drawn from the Spec's
+# Constraints: "yaml.safe_load only". Its trip fixture is
+# tests/fixtures/sast-trips/yaml-unsafe-load/trips.py.
+rules:
+  - id: yaml-unsafe-load
+    message: >-
+      YAML loaded without the safe loader can construct arbitrary Python
+      objects; use yaml.safe_load (spec-pyforge-warden Constraints: yaml.safe_load
+      only).
+    severity: ERROR
+    languages: [python]
+    pattern-either:
+      - pattern: yaml.unsafe_load(...)
+      - pattern: yaml.unsafe_load_all(...)
+      - pattern: yaml.full_load(...)
+      - pattern: yaml.full_load_all(...)
+      - patterns:
+          - pattern-either:
+              - pattern: yaml.load(...)
+              - pattern: yaml.load_all(...)
+          - pattern-not: yaml.$LOAD(..., Loader=yaml.SafeLoader, ...)
+          - pattern-not: yaml.$LOAD(..., Loader=yaml.CSafeLoader, ...)
+          - pattern-not: yaml.$LOAD($STREAM, yaml.SafeLoader)
+          - pattern-not: yaml.$LOAD($STREAM, yaml.CSafeLoader)

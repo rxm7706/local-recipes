@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: 874ee23ac67ce43e
-story_count: 515
-test_file_count: 271
+source_fingerprint: 01cc4abd931e6cec
+story_count: 522
+test_file_count: 274
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 515
+- **Stories parsed:** 522
 - **Epics parsed:** 111
-- **Test files inventoried:** 271 under `src/shared/packages/pyforge-marshal/tests/`
+- **Test files inventoried:** 274 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `874ee23ac67ce43e`
+- **Source fingerprint:** `01cc4abd931e6cec`
 
 ## Risk Assessment
 
@@ -225,6 +225,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_adapters_cli.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_bmad_loop_status_vocabulary.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_chain_regen.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_challenge_core.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_challenge_harness.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_check.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_checkpoint_cli.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_cli.py` | unit | none observed |
@@ -288,6 +290,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_durability.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_egress.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_engine_preserve.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_factory_challenge.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_findings.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_fold.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_forge_gh.py` | unit | none observed |
@@ -943,6 +946,13 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 113.5 | one audit sweep reports where the fleet stands | none observed |
 | 113.6 | an accepted finding travels the chain's only write path | none observed |
 | 113.7 | the first fleet audit runs and lands its residue | none observed |
+| 113.8 | a challenge that did not fully run never reads as clean, and watch shows the ... | none observed |
+| 113.9 | the challenger model is a Claude entry of marshal's own catalog | none observed |
+| 113.10 | the challenge session carries no house context, checked at runtime | none observed |
+| 113.11 | the challenger checks its preconditions before it spawns a reviewer | none observed |
+| 113.12 | each stage names its standard, and decompose reads its Spec's capability range | none observed |
+| 113.13 | resolve writes only marshal's Spec and prints the memlog command for any other | none observed |
+| 113.14 | a challenge run has a ceiling, and --audit a section selector | none observed |
 
 ## Quality Gates
 

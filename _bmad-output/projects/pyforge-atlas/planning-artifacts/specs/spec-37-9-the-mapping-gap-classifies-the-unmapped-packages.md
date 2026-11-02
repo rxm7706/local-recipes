@@ -169,6 +169,7 @@ Run 2026-10-23 in the landing worktree on `884d7f1106`, every verdict read from 
     and the epic's cf-graph wording are Deviations; the upstream loop drops null names; the catalog pin's comment
     says the dataset buckets by prefix; the board model shows `candidate`.
 - 2026-10-23: drafted from Story 37.9 and DW-atlas-37-9-1.
+- 2026-11-01: epics.md amended in place (append-only, EGM audit ATL-D-R6, ATL-D-C1): the Story 37.9 block gains the Flag line `pyforge.atlas.board_projections` (Story 37.4's, extended to this board; dev on, staging and production off) and its Then line reads "with the flag on", as this spec's `flag:` block has said since mint; this spec is otherwise unchanged.
 
 ## Review Triage Log
 

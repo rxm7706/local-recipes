@@ -3,7 +3,7 @@ title: "Herald Pitch Expansion — Moment 1 Orchestration"
 slug: brief-herald-pitch-2026-08-01
 status: ready
 created: 2026-08-01
-updated: "2026-09-20"
+updated: "2026-11-01"
 context: pyforge-herald
 ---
 
@@ -215,3 +215,22 @@ skills and workflows apply unchanged) post-dated this document. It is input for 
 a capability: no requirement, decision or story changes here until that pass mints the CAP.
 `updated:` bumped to record that the check ran; the six decisions the research asks for are listed
 in its § 3 and on the Dream's 2026-09-20 entry.*
+
+## Currency reconciliation — 2026-11-01
+
+*`research→brief` edge: `research/egm-audit-2026-11-01.md` post-dates this document.* It is the residue
+of the one-time Elephant-Goldfish (EGM) fleet audit (marshal Story 113.7, `spec-pyforge-marshal:CAP-302`).
+Fresh-context reviewers read the Spec's newest capability slice, CAP-58..CAP-61 (the Pages site:
+one menu, the CI surfaces tile, the status pages, one generator), and Epics 39-43. It recorded 30 findings:
+22 accepted, 8 rejected, 0 deferred (mint stage 18: 17 accepted, 1 rejected; decompose stage 12: 5
+accepted, 7 rejected).
+
+None of them touches this brief's vision, problem, scope or success criteria. The accepted findings say
+that the Spec's Pages capabilities lagged the code that shipped. They were fixed downstream of this
+brief. `spec-pyforge-herald` re-derived CAP-47, CAP-58, CAP-59, CAP-60 and CAP-61 on 2026-11-01 (its
+`.memlog.md`, clusters HER-K1..K4 and K6). The PRD and the epics follow (their § Currency reconciliation
+— 2026-11-01). One fix story was minted and is done: Story 42.4, the status pages pin their snapshot
+lines. The operator's two rulings of the same day are outside this brief's scope:
+`ci-status.json` stays an operator refresh at each CI pause and resume, and an operator-owned
+scheduled routine republishes the claude.ai dossier artifact. Both are recorded in CAP-59, CAP-47 and
+deferred-work row `DW-herald-egm-2026-11-01-1`. **Content changed:** this section and `updated:`.

@@ -6,12 +6,12 @@
   "source_authority": "internal",
   "source_repo": "src/shared/packages/pyforge-marshal",
   "source_root": "src/shared/packages/pyforge-marshal",
-  "source_commit": "865b95dc951c8a6de87d05bb10c8395a75da8008",
+  "source_commit": "03a7aff5d911e4c4b9a590fcd00dadc96f8e698c",
   "source_ref": "local",
   "confidence_tier": "Quick",
   "spec_version": "1.3",
-  "generation_date": "2026-08-25T00:00:00Z",
-  "description": "Deterministic BMAD-loop supervisor CLI: fleet status, loop homes, detector check, and Genesis seed. Use when working in src/shared/packages/pyforge-marshal/. Do not import pyforge.marshal internals.",
+  "generation_date": "2026-11-01T00:00:00Z",
+  "description": "Deterministic BMAD-loop supervisor CLI: fleet status, loop homes, detector check, Genesis seed, factory dispatch / spin / challenge, and the context layer (advisory, retrieve). Use when working in src/shared/packages/pyforge-marshal/. Do not import pyforge.marshal internals.",
   "language": "python",
   "exports": [
     "main"
@@ -23,15 +23,15 @@
   },
   "confidence_distribution": {
     "t1": 0,
-    "t1_low": 5,
+    "t1_low": 14,
     "t2": 0,
     "t3": 0
   },
   "stats": {
-    "exports_documented": 5,
+    "exports_documented": 14,
     "exports_public_api": 1,
-    "exports_internal": 4,
-    "exports_total": 5,
+    "exports_internal": 13,
+    "exports_total": 14,
     "public_api_coverage": 1.0,
     "total_coverage": 1.0,
     "scripts_count": 0,

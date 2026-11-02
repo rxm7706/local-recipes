@@ -72,7 +72,22 @@ def _note_from_version_or_parse_failure(message: str) -> OpengrepAdvisoryNote:
     )
 
 
-def parse_opengrep_json(text: str) -> tuple[tuple[OpengrepAdvisoryNote, ...], str | None]:
+def _rules_dir_prefix(rules_dir: Path | None) -> str:
+    """Story 15.2: opengrep prefixes each ``check_id`` with the dotted path of
+    the rules file's directory (``/a/sast-rules/x.yaml`` gives
+    ``a.sast-rules.<id>``); the note names the estate rule id, not that path."""
+    if rules_dir is None:
+        return ""
+    parts = [part for part in rules_dir.parts if part != rules_dir.anchor]
+    return ".".join(parts) + "." if parts else ""
+
+
+def parse_opengrep_json(
+    text: str,
+    *,
+    rules_dir: Path | None = None,
+) -> tuple[tuple[OpengrepAdvisoryNote, ...], str | None]:
+    prefix = _rules_dir_prefix(rules_dir)
     try:
         document = json.loads(text)
     except json.JSONDecodeError:
@@ -89,6 +104,8 @@ def parse_opengrep_json(text: str) -> tuple[tuple[OpengrepAdvisoryNote, ...], st
         if not isinstance(item, Mapping):
             continue
         rule_id = str(item.get("check_id") or item.get("rule_id") or "")
+        if prefix and rule_id.startswith(prefix):
+            rule_id = rule_id[len(prefix) :]
         path = str(item.get("path") or "")
         start = item.get("start")
         line = 0
@@ -126,16 +143,19 @@ def run_opengrep_advisory(
     if runner is None:
         if shutil.which(OPENGREP_BINARY) is None:
             return ()
+        # Story 15.2: the engine runs inside ``cwd`` and also names it as the
+        # scan target, so a relative ``warden scan <dir>`` target must be made
+        # absolute first, or opengrep looks for ``<dir>/<dir>`` and finds nothing.
         text, error, _exit_code = run_opengrep_engine(
             binary=OPENGREP_BINARY,
             rules_dir=rules,
-            cwd=target,
+            cwd=target.absolute(),
         )
         if error is not None:
             return (_note_from_version_or_parse_failure(error.message),)
         if text is None or not text.strip():
             return ()
-        notes, parse_error = parse_opengrep_json(text)
+        notes, parse_error = parse_opengrep_json(text, rules_dir=rules)
         if parse_error is not None:
             return (_note_from_version_or_parse_failure(parse_error),)
         return notes
@@ -156,7 +176,7 @@ def run_opengrep_advisory(
             text = Path(json_path).read_text(encoding="utf-8")
         except OSError:
             return (_note_from_version_or_parse_failure("could not read opengrep JSON output"),)
-        notes, parse_error = parse_opengrep_json(text)
+        notes, parse_error = parse_opengrep_json(text, rules_dir=rules)
         if parse_error is not None:
             return (_note_from_version_or_parse_failure(parse_error),)
         return notes

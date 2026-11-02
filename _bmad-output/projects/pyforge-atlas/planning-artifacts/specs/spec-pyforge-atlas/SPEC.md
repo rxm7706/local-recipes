@@ -2,7 +2,7 @@
 id: SPEC-pyforge-atlas
 spec: pyforge-atlas
 status: ready
-updated: "2026-10-26"   # AMENDED 2026-10-26 (every requirement derives from a capability): CAP-72 minted from the Constraint "Conda-forge-only, pixi-managed, py3.14-floored provisioning" (operator ruling 2026-10-26, reversing the 2026-10-25 "cite the constraint" ruling for FR-15); FR-15 <- CAP-72. Prior "2026-10-25"
+updated: "2026-11-01"   # AMENDED 2026-11-01 (EGM fleet audit, marshal Story 113.7): CAP-64 amended (a plain run is __default__; the pass set and its per-row floors live in live-sources.md; the network-blocked run is over a filled root; Stories 34.14 and 34.15), CAP-65 amended (five batched registries; a plain run fills GitLab, Codeberg and the registries; the switch holds on both live_vcs_universe branches, Story 35.5), CAP-66 amended (population ~ the distinct conda names; no code-method names), CAP-67 amended (the identity_source values; the rows a public run gives), CAP-68 amended (its deferral on the CAP; success needs a non-empty, non-fixture estate frame; spec-qualified cite) and CAP-69 amended (boards listed by page id; Stories 37.5-37.10 realized; the data-root precedence); the Constraint 'Public sources live by default' amended; CAP-68's open question noted; live-sources.md gains CAP and Floor columns and the core-sources row; glossary.md companion added. Prior "2026-10-26"   # AMENDED 2026-10-26 (every requirement derives from a capability): CAP-72 minted from the Constraint "Conda-forge-only, pixi-managed, py3.14-floored provisioning" (operator ruling 2026-10-26, reversing the 2026-10-25 "cite the constraint" ruling for FR-15); FR-15 <- CAP-72. Prior "2026-10-25"
 owner-dream: docs/dreams/pyforge-atlas.md
 covers-dreams:
   - docs/dreams/pyforge-atlas.md
@@ -85,8 +85,9 @@ companions:
   - degradation-contract.md  # the 3 markers, the fixed policy mapping, the frozen exit projection
   - gate-contract.md         # the 7 gates, what each proves and what they refuse to do
   - constitution-provenance.md  # [Unity satellite, folded in 2026-08-02] the 14-Article Constitution map + the 8 required amendments
-  - live-sources.md          # CAP-64..CAP-68: each live source, the datasets it fills, its legacy phase, parity measure, credential, story
+  - live-sources.md          # CAP-64..CAP-68: each live source, the datasets it fills, its legacy phase, parity measure, floor, credential, owning CAP, story
   - catalog-sources.md       # live companion carried 2026-10-27 from spec-atlas-kedro-catalog-expansion (spec-one-chain-per-station:CAP-11)
+  - glossary.md              # the station's own terms, one line each, pointing where each is defined; fleet terms: CHAIN-STANDARD § 0
 sources:
   - ../../../../../../docs/dreams/pyforge-atlas.md
 open_questions: []
@@ -433,74 +434,131 @@ One-chain rebase 2026-09-17. Each reminted CAP keeps provenance `← spec-<old> 
     vizro-static-export` and `retention-days: 90` and no commit or push step. `dashboard-dryrun`, `kedro-test` and
     `kedro-catalog-check` green; the flag test runs the key in both states with `flag_states`.
 
-- **CAP-64 — a plain run fills every dataset a public source serves** ← spec-pyforge-atlas CAP-64 (ready 2026-10-18; supersedes DW-B5-2's Dagster-resource injection for public sources)
-  - **intent:** on a fresh data root, `pyforge-atlas-bootstrap` then `pyforge atlas run` fills, live and in-package,
-    every dataset whose source is public and unauthenticated: dependencies, feedstock health and maintainers from the
-    conda-forge bot's split graph repos (`conda-forge-bot-data-node_attrs`, `-pr_info`, `-version_pr_info`, sharded
-    paths); every download table from Anaconda's monthly S3 parquet; the Phase C mapping from the bot's
-    `mappings/pypi/name_mapping.yaml`; endoflife.date and the SPDX license list as parsed records; the vdb, OSV,
-    five OS-distro, trending, about-maintainers, purl-associator, Anaconda-distribution and AOSS stores through
-    refreshers the datasets own; migration status through a driver node; Phase P from the public ClickHouse mirror.
-    Fetches compose `kedro_datasets.api.APIDataset` or run a subprocess through `pyforge.core.process`; the
-    no-inline-IO denylist does not change. An unreachable endpoint keeps last-good and marks stale (AD-13). BigQuery
-    stays off. Each source, its datasets, its legacy phase and its parity measure: `live-sources.md`.
-  - **success:** on a fresh data root with network and no credentials, the bootstrap plus `pyforge atlas run` exits 0
-    and every dataset `live-sources.md` lists for a public source holds rows, each within the tolerance its story
-    records against the legacy `cf_atlas.db` measure of the same day; with the network blocked the same run exits 0
-    and every public store keeps its last-good file under a `stale` marker; `kedro-test`, `kedro-catalog-check` and
-    the no-inline-IO scan are green and make no network call.
-- **CAP-65 — VCS and registry fetches cover the full universe, credentialed on opt-in** ← spec-pyforge-atlas CAP-65 (ready 2026-10-18; supersedes Story 27.2's identity-derived batches)
-  - **intent:** the GitHub, GitLab, Codeberg and eight registry fetches draw their population from the actionable
+- **CAP-64 — a plain run fills every dataset a public source serves** ← spec-pyforge-atlas CAP-64 (ready 2026-10-18; supersedes DW-B5-2's Dagster-resource injection for public sources; amended 2026-11-01 by the EGM fleet audit and Stories 34.14 and 34.15: a plain run is `__default__`, the pass set and its floors are per row in `live-sources.md`, and the network-blocked run is over a filled root)
+  - **intent:** on a fresh data root, `pyforge-atlas-bootstrap` then a plain `pyforge atlas run` fills, live and
+    in-package, every dataset whose source is public and unauthenticated: dependencies, feedstock health and
+    maintainers from the conda-forge bot's split graph repos (`conda-forge-bot-data-node_attrs`, `-pr_info`,
+    `-version_pr_info`, sharded paths); every download table from Anaconda's monthly S3 parquet; the Phase C mapping
+    from the bot's `mappings/pypi/name_mapping.yaml`; endoflife.date and the SPDX license list as parsed records; the
+    vdb, OSV, five OS-distro, trending, about-maintainers, purl-associator, Anaconda-distribution and AOSS stores
+    through refreshers the datasets own; migration status through a driver node; Phase P from the public ClickHouse
+    mirror. A plain run is `pyforge atlas run` with no `--pipelines`: it runs `__default__`, every registered pipeline
+    except `catalog_index` (run after a build), `query_plane_cache` (until CAP-68's producer lands) and the
+    entry-scoped `universal_sbom`, the last two still reachable by name (Story 34.14). Fetches compose
+    `kedro_datasets.api.APIDataset` or run a subprocess through `pyforge.core.process`; the no-inline-IO denylist does
+    not change. An unreachable endpoint keeps last-good and marks stale (AD-13); the three core sources the
+    enumeration reads (the feedstock-outputs archive, conda-forge's `current_repodata.json` per subdir and the PyPI
+    simple index) keep `raw/<entry>/last_good.parquet` as the vulnerability feeds do (Stories 34.15 and 34.12).
+    BigQuery stays off. Each source, its datasets, its legacy phase, its parity measure, its floor, its credential and
+    the CAP that owns it: `live-sources.md`. CAP-64 owns the rows its CAP column assigns to CAP-64; the GitHub,
+    GitLab, Codeberg and registry rows are CAP-65's, the Basilisk rows CAP-66's, the identity row CAP-67's and the
+    estate row CAP-68's. Each row's floor is the story-close measurement against the legacy figure of the same day
+    (operator ruling 2026-11-01).
+  - **success:** `pixi run --frozen -e pyforge-atlas pytest
+    src/shared/packages/pyforge-atlas/tests/integration/test_plain_run_fresh_root.py -q` exits 0: `__default__` runs
+    to the end over an empty data root with the public fetches served from recorded responses (fixture-scale, so
+    runtime params lower the `verification_sets` floors), and a second run over the root the first filled, with every
+    fetch refused, exits 0 and every public store keeps its last-good file under a `stale` marker. The file exits 1
+    when `query_plane_cache` is put back into `__default__` (Story 34.14 AC6) or the last-good degrade is taken out
+    (Story 34.15 AC8). Live and attended (network on, no credentials, AD-11): the bootstrap plus `pyforge atlas run`
+    exits 0 and every row `live-sources.md` assigns to CAP-64 meets its floor against the legacy `cf_atlas.db` measure
+    of the same day. `pixi run --frozen -e pyforge-atlas kedro-test` and `kedro-catalog-check` exit 0 with the
+    no-inline-IO scan green, under the suite's socket guard (`tests/conftest.py` refuses every non-loopback connect).
+- **CAP-65 — VCS and registry fetches cover the full universe, credentialed on opt-in** ← spec-pyforge-atlas CAP-65 (ready 2026-10-18; supersedes Story 27.2's identity-derived batches; amended 2026-11-01 by the EGM fleet audit and Story 35.5: five registries are batched, a plain run fills GitLab, Codeberg and the registries, and the switch holds whichever state `pyforge.atlas.live_vcs_universe` reads)
+  - **intent:** the GitHub, GitLab, Codeberg and registry fetches draw their population from the actionable
     conda-forge universe (package enumeration joined with the repo, dev and homepage URLs and the registry names
-    node_attrs carries), as legacy Phases K, L and N select it, not from the OpenTeams identity subset. Upstream
-    versions come from releases and tags (Phase K), feedstock health from the feedstock repos (Phases E.5 and N),
-    each batched. GitHub authenticates with a bearer header built from `github_token`, sent to the GitHub host only
-    (AD-2). A request that carries a credential runs only when the operator sets `PYFORGE_ATLAS_CREDENTIALED=1` for
-    the run; unset, its store keeps last-good and marks stale.
-  - **success:** with the opt-in and a token, `pyforge atlas run --pipelines vcs_health` fills `vcs_upstream_versions`,
-    `vcs_registry_versions`, `vcs_live_health` and `vcs_archived_feedstocks`, each within its story's tolerance of
-    legacy K, L, N and E.5 measured the same day; without the opt-in a transport fixture proves no request carries a
-    credential and the credentialed stores mark stale; a population test proves the batches come from the universe,
-    not from `identity_packages_primary`.
-- **CAP-66 — the Basilisk population runs** ← spec-pyforge-atlas CAP-66 (ready 2026-10-18; amended 2026-10-18 by operator ruling: the advisory endpoints need a bearer token)
+    node_attrs carries), as legacy Phases K, L and N select it, not from the OpenTeams identity subset, with
+    `pyforge.atlas.live_vcs_universe` on (the dev overlay; staging and production read it off and keep the
+    identity-scoped batches). Five registries are batched, as legacy Phase L batches them: npm, Maven, crates,
+    RubyGems and NuGet (NuGet returns 0, as in legacy); CRAN, CPAN and LuaRocks are wired but unbatched, because
+    legacy writes no name for them (Story 35.4). Upstream versions come from releases and tags (Phase K), feedstock
+    health from the feedstock repos (Phases E.5 and N), each batched. The registries and Codeberg are public and
+    GitLab runs unauthenticated, sending `PRIVATE-TOKEN` only under the opt-in, so a plain run fills them; GitHub
+    authenticates with a bearer header built from `github_token`, sent to the GitHub host only (AD-2). A request that
+    carries a credential runs only when the operator sets `PYFORGE_ATLAS_CREDENTIALED=1` for the run, whichever state
+    `pyforge.atlas.live_vcs_universe` reads (Story 35.5); unset, its store keeps last-good and marks stale.
+  - **success:** with the opt-in and a token (attended; operator ruling 2026-10-18), `pyforge atlas run --pipelines
+    vcs_health` exits 0 and fills `vcs_upstream_versions`, `vcs_registry_versions`, `vcs_live_health` and
+    `vcs_archived_feedstocks`, each meeting the floor its `live-sources.md` row records against legacy K, L, N and E.5
+    measured the same day; a plain run with no opt-in fills `vcs_registry_versions` and the GitLab and Codeberg
+    upstream versions, and the credentialed GitHub stores mark stale. `pixi run --frozen -e pyforge-atlas pytest
+    src/shared/packages/pyforge-atlas/tests/unit/datasets/test_credentialed_switch.py
+    src/shared/packages/pyforge-atlas/tests/unit/pipelines/vcs_health/test_universe_batches.py -q` exits 0: without
+    the opt-in a transport fixture proves no request carries a credential with `pyforge.atlas.live_vcs_universe` on or
+    off, and the file exits 1 when the switch check is taken out (Story 35.5 AC4); a population test proves the
+    batches come from the universe, not from `identity_packages_primary`.
+- **CAP-66 — the Basilisk population runs** ← spec-pyforge-atlas CAP-66 (ready 2026-10-18; amended 2026-10-18 by operator ruling: the advisory endpoints need a bearer token; amended 2026-11-01 by the EGM fleet audit: the population is ≈ the distinct conda names, as the companion reads, and the intent names no code method)
   - **intent:** the public package listing (`/v1/packages`: each package's highest CVSS and coverage) refreshes
-    unattended into `discovery_basilisk_packages_raw`. Driver nodes call `BasiliskBatchDataset.query_population` over
-    `core_packages_enumerated` (conda PURL keys) and `BasiliskDetailDataset.fetch_details` for the matched advisories
-    with a bearer header built from the token in `PYFORGE_ATLAS_BASILISK_TOKEN` (read at the fetch: a catalog
-    `credentials:` key would fail every run whose `credentials.yml` lacks it), sent to the Basilisk host only and only under
-    `PYFORGE_ATLAS_CREDENTIALED=1`; unset, those stores keep last-good under `stale`. The pre-announcement endpoint
-    degrades per AD-13.
-  - **success:** a plain run with network fills `discovery_basilisk_packages_raw`; against a recorded Basilisk fixture
-    the drivers fill `vulnerability_basilisk_advisories`, `vulnerability_basilisk_details` and
-    `vulnerability_basilisk_rollup`; without the opt-in a transport fixture proves no request carries a credential;
-    with the opt-in and a token a live run's population equals `core_packages_enumerated`'s row count; an unreachable
-    endpoint keeps last-good under `stale`.
-- **CAP-67 — the OpenTeams identity sources fill on opt-in** ← spec-pyforge-atlas CAP-67 (ready 2026-10-18)
+    unattended into `discovery_basilisk_packages_raw`. Driver nodes query the advisories for the conda PURL population
+    of `core_packages_enumerated` (one PURL per distinct non-null `conda_name`) and fetch the details of the matched
+    advisories, with a bearer header built from the token in `PYFORGE_ATLAS_BASILISK_TOKEN` (read at the fetch: a
+    catalog `credentials:` key would fail every run whose `credentials.yml` lacks it), sent to the Basilisk host only
+    and only under `PYFORGE_ATLAS_CREDENTIALED=1`; unset, those stores keep last-good under `stale`. The undocumented
+    Basilisk API degrades per AD-13.
+  - **success:** a plain run with network fills `discovery_basilisk_packages_raw`. `pixi run --frozen -e pyforge-atlas
+    pytest src/shared/packages/pyforge-atlas/tests/unit/datasets/test_basilisk_population.py -q` exits 0: against a
+    recorded Basilisk fixture the drivers fill `vulnerability_basilisk_advisories`, `vulnerability_basilisk_details`
+    and `vulnerability_basilisk_rollup`; without the opt-in or the token a transport fixture proves no request carries
+    a credential; an unreachable or refusing endpoint keeps last-good under `stale`. Live and attended (AD-11; Story
+    36.1's operator-attended clause; no token exists today, `DW-atlas-36-1-1`): with the opt-in and a token, a run's
+    population ≈ the distinct non-null `conda_name` count of `core_packages_enumerated`.
+- **CAP-67 — the OpenTeams identity sources fill on opt-in** ← spec-pyforge-atlas CAP-67 (ready 2026-10-18; amended 2026-11-01 by the EGM fleet audit: the `identity_source` values and the rows a public run gives are named)
   - **intent:** the OpenTeams project board (GraphQL) and the staged-recipes PR list (REST) fetch with `github_token`
     under `PYFORGE_ATLAS_CREDENTIALED=1`, beside the public purl-associator and about-maintainers lists (CAP-64), so
-    `identity_packages_primary`, the identity exports and the inventory priorities fill.
-  - **success:** with the opt-in and a token, `identity_packages_primary` holds rows from each `identity_source`;
-    without it, the board and PR stores mark stale and no request carries a credential; `identity_complete_export`
-    and `inventory_priority_assignments` hold rows.
-- **CAP-68 — the query-plane estate source has a producer** ← spec-pyforge-atlas CAP-68 (ready 2026-10-18; reads canopy CAP-19, the `query_plane_estate` cache)
+    `identity_packages_primary`, the identity exports and the inventory priorities fill. Each
+    `identity_packages_primary` row names its `identity_source`: `openteams-board` (the credentialed board),
+    `purl-associator` and `inventory` (public), or `none`, which marks an unmapped row and counts toward no source
+    (`live-sources.md`).
+  - **success:** `pixi run --frozen -e pyforge-atlas pytest
+    src/shared/packages/pyforge-atlas/tests/unit/datasets/test_identity_live_sources.py -q` exits 0: the board and PR
+    fetches carry the bearer only under the opt-in, and without it the board and PR stores mark stale and no request
+    carries a credential. Live and attended (operator ruling 2026-10-18; Story 36.2): with the opt-in and a token,
+    `identity_packages_primary` holds rows from each of `openteams-board`, `purl-associator` and `inventory`, and
+    `identity_complete_export` and `inventory_priority_assignments` hold rows. A public run, with no opt-in, gives the
+    identity datasets and exports the `purl-associator` and `inventory` rows only (operator ruling 2026-10-21).
+- **CAP-68 — the query-plane estate source has a producer** ← spec-pyforge-atlas CAP-68 (ready 2026-10-18; reads spec-pyforge-unifying-strategy:CAP-19, the `query_plane_estate` cache; deferred 2026-10-18 by operator ruling and kept deferred 2026-11-01: Story 36.3 waits on a steward export through `pyforge.core.station_port` that no steward story owns yet, `DW-steward-egm-2026-11-1`)
   - **intent:** a named atlas node writes `query_plane_estate_source` (declared by steward Story 34.2, read by
-    `query_plane_cache`, canopy FR-47 Mode B), so the estate cache builds from data rather than a test fixture.
-  - **success:** `pyforge atlas run --pipelines query_plane_cache` on a fresh data root exits 0 and writes
-    `query_plane_estate` from the producer's output; the estate semantic model answers its declared measures over it.
-- **CAP-69 — the Vizro boards read the datasets the pipelines write** ← spec-pyforge-atlas CAP-69 (ready 2026-10-19; operator ruling 2026-10-19; extends CAP-8 and CAP-63)
-  - **intent:** `dashboard.data.default_data_root` resolves the data root Kedro writes (the member's `data/`, or
-    `PYFORGE_ATLAS_DATA_ROOT`). Each board whose content a pipeline already produces reads that dataset: the four
-    seed-gap boards from `seed_gaps`' derived reports, version-downloads from `core_version_download_history`,
-    distribution-breakdown from the three `core_downloads_*_breakdown` tables, behind-upstream from
-    `vcs_upstream_versions` against the enumerated latest version, whodepends from `core_dependencies`,
-    live-catalog-coverage from the inventory flags, universe-sbom from the universal SBOM. A board's dimension names
-    stay; only its path and its expressions move. The six boards no pipeline feeds (cve-watcher history, release
-    cadence, find-alternative, export-purls, mapping-gap, bootstrap-index-health) are backlog stories; the on-demand
-    boards stay honest-empty until their tool runs.
-  - **success:** on a data root a public `pyforge atlas run` wrote, every board among the 12 already wired and the 10
-    rewired whose dataset holds rows renders a non-empty table in `dashboard-dryrun` and in the static export; a test
-    per rewired board proves its loader on a fixture shaped like the produced dataset; `dashboard-dryrun`, the
-    provenance test and `kedro-catalog-check` stay green.
+    `query_plane_cache`'s `extract_estate_to_cache`, canopy FR-47 Mode B), so the estate cache builds from data rather
+    than a test fixture. The producer node, the platform tables it reads and its columns are decided with the steward
+    export that carries those tables through `pyforge.core.station_port`; atlas never reads platform OLTP directly.
+    Until the producer lands, `query_plane_cache` stays out of a plain run (CAP-64, Story 34.14).
+  - **success:** `pyforge atlas run --pipelines query_plane_cache` on a fresh data root exits 0 and writes a non-empty
+    `query_plane_estate` built from the steward export's rows, never from a test fixture, an empty frame or the
+    `sku`/`units` model in `semantic/models.py`, and the estate semantic model answers its declared measures over it.
+    Today that run exits 1 at `query_plane_estate_source`, which no node writes.
+- **CAP-69 — the Vizro boards read the datasets the pipelines write** ← spec-pyforge-atlas CAP-69 (ready 2026-10-19; operator ruling 2026-10-19; extends CAP-8 and CAP-63; amended 2026-11-01 by the EGM fleet audit: the boards are listed by page id, the six new-node boards are realized, and the data-root precedence is stated)
+  - **intent:** `dashboard.data.default_data_root` resolves the data root Kedro writes: `PYFORGE_ATLAS_DATA_ROOT` when
+    set (a relative value anchored at the member, a blank one read as unset), else the member's `data/`, where the
+    member is `src/shared/packages/pyforge-atlas`. Each board whose content a pipeline produces reads that dataset:
+    the four seed-gap boards from `seed_gaps`' derived reports, version-downloads from
+    `core_version_download_history`, distribution-breakdown from the three `core_downloads_*_breakdown` tables,
+    behind-upstream from `vcs_upstream_versions` against the enumerated latest version, whodepends from
+    `core_dependencies`, live-catalog-coverage from the inventory flags of `identity_complete_export` (through
+    `derived_live_catalog_coverage`), universe-sbom from `derived_universe_sbom`, which `derived_artifacts`'
+    `build_universe_sbom` writes (through `derived_universe_sbom_summary`). A board's dimension names stay; only its
+    path and its expressions move. The six boards no pipeline fed (cve-watcher history, release cadence,
+    find-alternative, export-purls, mapping-gap, bootstrap-index-health) are realized by Stories 37.5-37.10
+    (2026-10-23); the six on-demand boards stay honest-empty until their tool runs. The projected boards read their
+    datasets with `pyforge.atlas.board_projections` on: the dev overlay sets it, an unset `PYFORGE_ENVIRONMENT`
+    resolves to dev, and staging and production read it off.
+  - **success:** the boards, by page id: the 12 wired (adoption-stage, detail-cf-atlas, estate-cache, factory-status,
+    feedstock-health, identity-catalog, identity-export-snapshot, identity-ops, identity-workbook, my-feedstocks,
+    query-atlas, staleness-report), the 10 rewired (lts-registry-gap, cwe-seed-gap, spdx-schema-gap, license-map-gap,
+    version-downloads, distribution-breakdown, behind-upstream, whodepends, live-catalog-coverage, universe-sbom) and
+    the 6 of Stories 37.5-37.10 (cve-watcher, release-cadence, find-alternative, export-purls, mapping-gap,
+    bootstrap-index-health). `pixi run --frozen -e pyforge-atlas pytest
+    src/shared/packages/pyforge-atlas/tests/unit/test_dashboard_data.py
+    src/shared/packages/pyforge-atlas/tests/unit/test_board_wiring.py
+    src/shared/packages/pyforge-atlas/tests/unit/test_board_projections.py -q` exits 0: `default_data_root` resolves
+    the member's `data/` with no override, wherever the process runs, and the override when one is set; each rewired
+    and new-node board's loader reads a fixture shaped like its produced dataset; the file set exits 1 when the data
+    root walks up to the repo root again or a board reads its old path. With `pyforge.atlas.board_projections` on, on
+    a data root a public `pyforge atlas run` wrote, `pixi run -e local-recipes dashboard-dryrun` exits 0 and every
+    listed board renders a non-empty table there and in the static export, except estate-cache, empty until CAP-68,
+    and the cve-watcher on a root where no earlier run left a rollup (Story 37.5); the identity boards carry their
+    public-derived rows (operator ruling 2026-10-21); the six on-demand boards (scan-project, env-inspect,
+    inventory-match, add-handoff, library-futures, recommend-2027) stay honest-empty. The provenance test and
+    `kedro-catalog-check` exit 0.
 - **CAP-70 — kedro-skills guidance is adopted only after an audit against the architecture invariants** ← spec-kedro-org-tooling-adoption Capability 1 (shipped; restored 2026-10-25: the 2026-09-17 fold minted no CAP from that Spec's plain-list capabilities)
   - **intent:** `kedro-skills`, pinned at the version evaluated, runs against the real `pyforge-atlas` project, and every
     piece of generated guidance is audited against Atlas's AD-invariants (AD-1's no-inline-IO scan, the injected-fetcher
@@ -650,7 +708,9 @@ One-chain rebase 2026-09-17. Each reminted CAP keeps provenance `← spec-<old> 
 - **Public sources live by default; credentials only on the operator's opt-in** *(2026-10-18)*. A dataset whose source
   is public and unauthenticated fetches live in a plain run. A request that carries a credential runs only when the
   operator sets `PYFORGE_ATLAS_CREDENTIALED=1` for that run; no gate, loop path or CI job sets it, so with it unset no
-  request carries a credential. Gates stay fixture-based and network-free.
+  request carries a credential. Gates stay fixture-based and network-free. *(Amended 2026-11-01, Story 35.5 and
+  operator ruling 2026-11-01: the rule holds whichever state `pyforge.atlas.live_vcs_universe` reads; a staging or
+  production run that means a credentialed request sets the switch explicitly for that run.)*
 - **Pipeline snapshots are advisory, never authoritative for authoring.** Before acting, the
   recipe-authoring loop re-verifies live; no surface may position its datasets as a substitute
   for that check, and payloads feeding authoring decisions carry their build timestamp.
@@ -1034,4 +1094,6 @@ Two questions the mint of 2026-10-18 leaves to the operator; both sit on `.memlo
   tables"; the model today is a `sku`/`units` toy), and through which seam does atlas read them
   (`pyforge.core.station_port`, a steward export)? To settle before Story 36.3. *(Answered 2026-10-18: deferred.
   Story 36.3 stays blocked until a steward story exports the platform tables through `pyforge.core.station_port`;
-  atlas never reads platform OLTP directly.)*
+  atlas never reads platform OLTP directly.)* *(2026-11-01: still deferred, by operator ruling. No steward Dream
+  entry, CAP or story owns the export yet; the gap is the steward row `DW-steward-egm-2026-11-1`, and unblocking
+  Story 36.3 is a cross-station decision (EGM finding ATL-D-R1, deferred).)*

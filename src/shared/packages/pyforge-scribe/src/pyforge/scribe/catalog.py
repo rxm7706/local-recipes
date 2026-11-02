@@ -28,6 +28,9 @@ derived facts are digested into a header line
 ``<!-- bmad-estate-digest: <section>=<sha256[:12]> -->``; ``check()`` re-derives
 the facts and names the sections whose digest moved, with their source paths,
 so a prose tweak in the template never reds a clone and a moved fact always does.
+The optional pipeline-truth section renders but carries no digest: an offline
+check cannot re-derive it (Story 25.2). ``write()`` keeps the committed
+``Generated:`` date when nothing else moved, so a no-op write changes no byte.
 """
 
 from __future__ import annotations
@@ -117,6 +120,7 @@ FAMILY_ORDER = (
 )
 
 _DIGEST_RE = re.compile(r"^<!-- bmad-estate-digest: ([a-z_-]+)=([0-9a-f]{12}) -->$", re.MULTILINE)
+_GENERATED_RE = re.compile(r"^> Generated: (\d{4}-\d{2}-\d{2})\. ", re.MULTILINE)
 _FRONTMATTER_RE = re.compile(r"\A---\r?\n(.*?)\r?\n---", re.DOTALL)
 _HARNESS_RANGE_RE = re.compile(r'^HARNESS_VERSION_RANGE_TEXT\s*=\s*"([^"]+)"', re.MULTILINE)
 _CADENCE_STEP_RE = re.compile(r"^(\d+)\.\s+\*\*(.+?)\*\*", re.MULTILINE)
@@ -191,7 +195,11 @@ class Estate:
     pipeline_truth: dict[str, dict[str, str]] = field(default_factory=dict)
 
     def section_facts(self) -> dict[str, object]:
-        """The digestable facts per section -- prose stays out on purpose."""
+        """The digestable facts per section -- prose stays out on purpose.
+
+        ``pipeline_truth`` stays out too (Story 25.2): it is optional input an offline
+        check cannot re-derive, so a digest of it would red whichever invocation lacks it.
+        """
         return {
             "installed": self.installed,
             "skills": {
@@ -209,7 +217,6 @@ class Estate:
             "pins": self.pins,
             "harness": {"range": self.harness_range},
             "cadence": {"steps": self.cadence_steps},
-            "pipeline-truth": self.pipeline_truth,
         }
 
 
@@ -658,7 +665,6 @@ SECTION_SOURCES: dict[str, tuple[str, ...]] = {
     "pins": (PIXI_RELPATH.as_posix(),),
     "harness": (HARNESS_RELPATH.as_posix(),),
     "cadence": (CADENCE_RELPATH.as_posix(),),
-    "pipeline-truth": ("steward suite pipeline-truth --json (optional input)",),
 }
 
 
@@ -852,10 +858,37 @@ def render(estate: Estate, *, today: date | None = None) -> str:
     return "\n".join(lines)
 
 
-def write(root: Path, *, output: Path | None = None, pipeline_truth: Path | None = None) -> Path:
+def _generated_date(text: str) -> date | None:
+    """The ``Generated:`` date a rendered catalog carries, or None when it has none that parses."""
+    match = _GENERATED_RE.search(text)
+    if match is None:
+        return None
+    try:
+        return date.fromisoformat(match.group(1))
+    except ValueError:
+        return None
+
+
+def write(
+    root: Path, *, output: Path | None = None, pipeline_truth: Path | None = None, today: date | None = None
+) -> Path:
+    """Render the catalog into ``output`` (default: the committed path) and return the path.
+
+    Byte-stable (Story 25.2): when a render stamped with the file's own ``Generated:`` date
+    matches it, the file is left untouched. Any other render (a moved source, a template-prose
+    change) is stamped with ``today`` (default ``date.today()``).
+    """
     estate = derive(root, pipeline_truth=pipeline_truth)
     target = output if output is not None else root / CATALOG_RELPATH
-    atomic_write_text(target, render(estate))
+    try:
+        committed: str | None = target.read_text(encoding="utf-8")
+    except OSError, ValueError:
+        committed = None
+    if committed is not None:
+        stamped = _generated_date(committed)
+        if stamped is not None and render(estate, today=stamped) == committed:
+            return target
+    atomic_write_text(target, render(estate, today=today))
     return target
 
 

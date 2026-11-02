@@ -59,6 +59,10 @@ Hand-driven 2026-09-20 in the fleet PR with marshal 46.11.
 **Manual checks:**
 - `pixi run -e pyforge-guild claude-instruction-mode-check` on this host → ok; `docs-map-hygiene` green after the how-to lands.
 
+## Spec Change Log
+
+- 2026-11-01 — `epics.md` § Story 19.3's `Surface:` line amended in place to match this spec's Binding Surface: the `+`-joined script fragment is split so doctor's flag inventory resolves each path, `scripts/detectors.py` is named as unchanged (the `DETECTOR` marker registers the check), and `pixi.toml` plus the three docs this spec binds are added; no criterion, status or key moved (EGM audit SCR-D-C5, marshal Story 113.7; research `_bmad-output/projects/pyforge-scribe/planning-artifacts/research/egm-audit-2026-11-01.md`).
+
 ## Review Triage Log
 
 ### 2026-09-20 — hand-driven pass

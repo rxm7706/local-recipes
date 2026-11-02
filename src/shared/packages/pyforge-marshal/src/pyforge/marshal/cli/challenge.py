@@ -11,8 +11,9 @@ One verb, five stages, three run modes:
 
 Every report lands under Tier 3 (``implementation-artifacts/egm/``), every run is
 journaled, and the exit code carries only the verb's own refusals -- never a
-finding (CAP-298). ``resolve`` turns accepted findings into memlog lines on the
-owning Spec and nothing else (CAP-303). Six kill switches, all default off; the
+finding (CAP-298). ``resolve`` turns accepted findings into memlog lines on
+marshal's own Spec and nothing else, and prints the exact ``memlog.py`` command
+for any other owning Spec (CAP-303, Story 113.13). Six kill switches, all default off; the
 ``[challenge]`` policy block is the one configuration, and absent means off.
 """
 
@@ -24,6 +25,7 @@ import os
 import re
 import secrets
 import sys
+import tomllib
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -35,8 +37,10 @@ from pyforge.core.flags import FlagConfigError, read_boolean, require
 from pyforge.core.process import PosixProcess, ProcessError
 from pyforge.core.roster import STATIONS, long_form
 
+from ..adapters.harness_bmadloop import render_policy_toml
 from ..core import challenge as core
 from ..core import policy
+from ..core.harness_profile import load_packaged_profiles
 from ..core.journal import JournalEntryId, Phase, build_entry, mint_run_id, prepare_for_write
 from ..core.model import Verdict
 from ..core.verdict import EXIT_OK, EXIT_USAGE, exit_code_for
@@ -51,12 +55,23 @@ EGM_AUDIT_FLAG_KEY = "pyforge.marshal.egm_audit"  # CAP-302, Story 113.5
 EGM_RESOLVE_BRIDGE_FLAG_KEY = "pyforge.marshal.egm_resolve_bridge"  # CAP-303, Story 113.6
 
 PLUGINS_ROOT_ENV = "MARSHAL_EGM_PLUGINS_ROOT"
-SETTINGS_RELPATH = ".claude/settings.json"
+# Story 113.9 (operator ruling 2026-11-01): the challenger reads marshal's own model_cost_catalog
+# for every --project and runs on the packaged claude profile.
+CATALOG_PROJECT = "pyforge-marshal"
+CHALLENGER_PROFILE = "claude"
 CHAIN_STANDARD_RELPATH = "docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md"
 CHAIN_STANDARD_SPEC_RELPATH = "docs/governance/spec-one-chain-per-station/SPEC.md"
 CHAIN_STANDARD_DREAM_RELPATH = "docs/dreams/one-chain-per-station.md"
 STORY_SPEC_TEMPLATE_RELPATH = ".claude/skills/bmad-build-auto/spec-template.md"
+SPEC_TEMPLATE_RELPATH = ".claude/skills/bmad-spec/assets/spec-template.md"  # the five-field shape (Story 113.12)
 MEMLOG_SCRIPT_RELPATH = "_bmad/scripts/memlog.py"
+# Story 113.13 (CAP-303, operator ruling 2026-11-01): resolve writes only this project's Spec; a rules
+# target another Spec governs carries that Spec's folder on its report (repo-relative target -> folder).
+OWN_PROJECT = "pyforge-marshal"
+RULES_OWNER_OVERRIDES: Mapping[str, str] = {
+    "AGENTS.md": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe",
+    CHAIN_STANDARD_RELPATH: "docs/governance/spec-one-chain-per-station",
+}
 REPORT_FILENAME = "report.json"
 JOURNAL_FILENAME = "journal.jsonl"
 SESSION_LOG_FILENAME = "session.log"
@@ -69,7 +84,10 @@ _HELP = "Fresh-context EGM review of one chain artifact (Epic 113)."
 
 
 class ChallengeRunner(Protocol):
-    def run(self, *, prompt: str, model: str | None, cwd: Path, log_path: Path) -> int: ...
+    """Runs one session on ``root``'s files; ``target`` is the artifact under review, which the
+    session's Read denies leave readable (Story 113.10). ``root`` is never the session's cwd."""
+
+    def run(self, *, prompt: str, model: str | None, root: Path, target: Path | None, log_path: Path) -> int: ...
 
 
 class ChallengeRefused(PyforgeError, Exception):
@@ -107,7 +125,14 @@ def add_factory_challenge_subparser(factory_subparsers: argparse._SubParsersActi
     parser.add_argument("--format", choices=("text", "json"), default="text")
     parser.set_defaults(handler=run_challenge, challenge_command=None)
     subs = parser.add_subparsers(dest="challenge_command", required=False)
-    resolve_p = subs.add_parser("resolve", help="Accept or reject a report's findings (memlog lines only).")
+    resolve_p = subs.add_parser(
+        "resolve",
+        help="Accept or reject a report's findings: memlog lines on marshal's Spec, a printed command for any other.",
+    )
+    # SUPPRESS: given before or after `resolve`, the one --project survives (a subparser default would erase it).
+    resolve_p.add_argument(
+        "--project", default=argparse.SUPPRESS, help="The project whose Spec owns the report (required)."
+    )
     resolve_p.add_argument("--report", required=True, help="Path to a challenge report.json.")
     resolve_p.add_argument("--accept", action="append", default=[], metavar="ID[:NOTE]")
     resolve_p.add_argument("--reject", action="append", default=[], metavar="ID[:REASON]")
@@ -149,8 +174,24 @@ def challenge_config(effective: policy.EffectivePolicy) -> core.ChallengeConfig:
     return core.config_from_block(value if isinstance(value, Mapping) else None)
 
 
-def session_models(effective: policy.EffectivePolicy) -> list[str]:
-    """Every model the station's sessions author with (``model_tier_map``)."""
+def adapter_models(effective: policy.EffectivePolicy) -> list[str]:
+    """The ``[adapter]`` and ``[adapter.review]`` models the station's bmad-loop policy renders
+    (Story 113.9). A policy bmad-loop refuses to load renders no session, so it names none."""
+    try:
+        rendered = tomllib.loads(render_policy_toml(effective))
+    except ValueError:
+        return []
+    adapter = rendered.get("adapter")
+    if not isinstance(adapter, Mapping):
+        return []
+    tables = [adapter, *(table for table in adapter.values() if isinstance(table, Mapping))]
+    return [table["model"] for table in tables if isinstance(table.get("model"), str) and table["model"]]
+
+
+def session_models(effective: policy.EffectivePolicy, *, launch_model: str | None = None) -> list[str]:
+    """Every model the station's sessions author with (CAP-299, Story 113.9): its
+    ``model_tier_map`` models, its ``[adapter]`` and ``[adapter.review]`` models, and, in a
+    dispatch, the run's resolved launch model."""
     models: list[str] = []
     tier_map = effective.model_tier_map.value
     if isinstance(tier_map, Mapping):
@@ -161,7 +202,43 @@ def session_models(effective: policy.EffectivePolicy) -> list[str]:
                         models.append(entry["model"])
                     elif isinstance(entry, str):
                         models.append(entry)
+    models.extend(adapter_models(effective))
+    if launch_model:
+        models.append(launch_model)
     return models
+
+
+def challenger_catalog(slug: str, effective: policy.EffectivePolicy) -> Mapping[str, object]:
+    """Marshal's own ``model_cost_catalog``, read for every ``--project`` (operator ruling
+    2026-11-01, Story 113.9); ``render_refusals`` keeps only its Anthropic entries."""
+    source = effective if slug == CATALOG_PROJECT else compose_effective(CATALOG_PROJECT)
+    value = source.model_cost_catalog.value
+    return value if isinstance(value, Mapping) else {}
+
+
+def challenger_aliases() -> tuple[str, ...]:
+    """The packaged claude profile's ``[model_list]`` aliases: the profile the challenger runs on."""
+    profile = load_packaged_profiles().get(CHALLENGER_PROFILE)
+    if profile is None or profile.model_list is None:
+        return ()
+    return tuple(profile.model_list.aliases)
+
+
+def model_refusals(
+    config: core.ChallengeConfig,
+    *,
+    slug: str,
+    effective: policy.EffectivePolicy,
+    launch_model: str | None = None,
+) -> list[str]:
+    """``core.render_refusals`` with the challenger's catalog, the station's session models and the
+    claude profile's aliases (CAP-299, Story 113.9)."""
+    return core.render_refusals(
+        config,
+        session_models=session_models(effective, launch_model=launch_model),
+        model_cost_catalog=challenger_catalog(slug, effective),
+        aliases=challenger_aliases(),
+    )
 
 
 def plugins_root(env: Mapping[str, str] | None = None) -> Path:
@@ -169,18 +246,22 @@ def plugins_root(env: Mapping[str, str] | None = None) -> Path:
     return Path(raw) if raw else Path.home() / ".claude" / "plugins"
 
 
-def plugin_refusal(root: Path, plugins: Path, version: str, personas: tuple[str, ...] = ()) -> str | None:
-    """``None`` when ``egm@egm`` is enabled in the tracked settings, Claude Code's
+def plugin_refusal(plugins: Path, version: str, personas: tuple[str, ...] = ()) -> str | None:
+    """``None`` when ``egm@egm`` is enabled in the challenge session's own ``--settings`` (the
+    scope the session runs with, from outside the repo -- Story 113.10), Claude Code's
     installed-plugins index holds exactly the pinned version, the cache manifest
-    agrees, and every persona's adapter omits the instruction files and holds
-    read-only tools; otherwise the reason (CAP-298, CAP-299)."""
-    settings_path = root / SETTINGS_RELPATH
+    agrees, every persona's adapter omits the instruction files and holds
+    read-only tools, and ``claude --version`` reads at or above the Claude Code
+    floor that honours ``omitClaudeMd`` (Story 113.11); otherwise the reason (CAP-298, CAP-299)."""
+    from ..adapters.challenge_harness import ChallengeHarnessError, claude_version, session_settings
+
     try:
-        settings = json.loads(settings_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        return f"cannot read {SETTINGS_RELPATH}: {exc}"
-    if (settings.get("enabledPlugins") or {}).get(core.EGM_PLUGIN_ID) is not True:
-        return f"{core.EGM_PLUGIN_ID} is not enabled in {SETTINGS_RELPATH}"
+        settings = session_settings(plugins)
+    except ChallengeHarnessError as exc:
+        return f"cannot render the challenge session's settings: {exc}"
+    enabled = settings.get("enabledPlugins")
+    if not isinstance(enabled, Mapping) or enabled.get(core.EGM_PLUGIN_ID) is not True:
+        return f"{core.EGM_PLUGIN_ID} is not enabled in the challenge session's --settings"
     try:
         installed = json.loads((plugins / "installed_plugins.json").read_text(encoding="utf-8"))
     except OSError, json.JSONDecodeError:
@@ -204,7 +285,7 @@ def plugin_refusal(root: Path, plugins: Path, version: str, personas: tuple[str,
         violations = core.adapter_isolation_violations(persona, text)
         if violations:
             return "; ".join(violations)
-    return None
+    return core.claude_code_version_refusal(claude_version())
 
 
 # --- paths -------------------------------------------------------------------
@@ -242,12 +323,36 @@ def station_skill_path(root: Path, station: str) -> Path | None:
     return None
 
 
+def owner_override(root: Path, stage: str, target: Path) -> Path | None:
+    """The Spec folder that governs a rules target outside its run's station (Story 113.13, CAP-303):
+    ``AGENTS.md`` is ``spec-pyforge-scribe``'s, ``CHAIN-STANDARD.md`` ``spec-one-chain-per-station``'s."""
+    if stage != "rules":
+        return None
+    resolved = _abs(root, target)
+    for relpath, workspace in RULES_OWNER_OVERRIDES.items():
+        if resolved == root / relpath:
+            return root / workspace
+    return None
+
+
+def owning_spec(root: Path, slug: str, stage: str, target: Path) -> Path:
+    """The Spec folder a run's findings belong to: the override, else the station's own Spec."""
+    return owner_override(root, stage, target) or spec_path(root, slug).parent
+
+
 def artifact_dir(root: Path, slug: str, config: core.ChallengeConfig) -> Path:
     return root / "_bmad-output" / "projects" / slug / config.artifact_dir
 
 
 def default_standards(root: Path, slug: str, stage: str) -> tuple[Path, ...]:
-    if stage in ("mint", "decompose", "rules"):
+    """Each stage's standard when the ``[challenge]`` block names none for it (CAP-299, Story 113.12):
+    mint is judged against the bmad-spec five-field template, decompose against the station Spec whose
+    capability range its stories claim; both also against the chain standard."""
+    if stage == "mint":
+        return (root / CHAIN_STANDARD_RELPATH, root / SPEC_TEMPLATE_RELPATH)
+    if stage == "decompose":
+        return (root / CHAIN_STANDARD_RELPATH, spec_path(root, slug))
+    if stage == "rules":
         return (root / CHAIN_STANDARD_RELPATH,)
     if stage == "readiness":
         return (root / STORY_SPEC_TEMPLATE_RELPATH,)
@@ -350,10 +455,13 @@ def run_one(
     out_dir: Path,
     now: Callable[[], datetime] = lambda: datetime.now(UTC),
     dream: Path | None = None,
+    owner: Path | None = None,
 ) -> RunOutcome:
     """Run one stage on one target. Refusals raise ``ChallengeRefused`` before
-    anything is written; a session that fails or writes no valid report is an
-    ``error`` on the outcome (unevaluable), never a finding."""
+    anything is written; a session that fails, writes no valid report, or writes
+    one that omits a dispatched reviewer or names another stage is an ``error``
+    on the outcome (unevaluable, ``report`` is ``None``), never a finding.
+    ``owner`` is the Spec folder the findings belong to (default ``owning_spec``)."""
     context = build_context(root, slug, stage, target, config, dream=dream)
     violations = core.context_violations(context)
     if violations:
@@ -393,7 +501,11 @@ def run_one(
     before = tree_snapshot(root)
     try:
         returncode = runner.run(
-            prompt=prompt, model=config.model or None, cwd=root, log_path=run_dir / SESSION_LOG_FILENAME
+            prompt=prompt,
+            model=config.model or None,
+            root=root,
+            target=Path(context.target),
+            log_path=run_dir / SESSION_LOG_FILENAME,
         )
         if returncode != 0:
             error = f"challenge session exited {returncode}"
@@ -409,8 +521,14 @@ def run_one(
         except (OSError, core.ReportError) as exc:
             error = f"no valid report at {report_path}: {exc}"
     if report is not None:
-        workspace = spec_path(root, slug).parent
-        report = core.with_provenance(report, project=slug, spec_workspace=str(workspace))
+        reason = core.unevaluable_reason(report, stage=stage, personas=personas)
+        if reason:
+            error = f"the report at {report_path} is unevaluable: {reason}"
+            report = None
+    if report is not None:
+        workspace = owner or owning_spec(root, slug, stage, target)
+        override = "" if workspace == spec_path(root, slug).parent else str(workspace)
+        report = core.with_provenance(report, project=slug, spec_workspace=str(workspace), owner_override=override)
         report_path.write_text(report.to_json() + "\n", encoding="utf-8")
     append_journal(
         journal,
@@ -481,21 +599,22 @@ def write_drift_target(root: Path, slug: str, epic: str, out_dir: Path) -> Path:
 # --- audit (CAP-302) -------------------------------------------------------------
 
 
-def audit_plan(root: Path) -> list[tuple[str, str, Path, Path | None]]:
-    """``(project slug, stage, target, dream)`` for every audit run, in order:
-    the repo rules first, then each station's Spec (mint) and epics (decompose)."""
-    plan: list[tuple[str, str, Path, Path | None]] = [
-        ("pyforge-marshal", "rules", root / "AGENTS.md", root / CHAIN_STANDARD_DREAM_RELPATH),
-        ("pyforge-marshal", "rules", root / CHAIN_STANDARD_RELPATH, root / CHAIN_STANDARD_DREAM_RELPATH),
+def audit_plan(root: Path) -> list[tuple[str, str, Path, Path | None, Path]]:
+    """``(project slug, stage, target, dream, owning Spec folder)`` for every audit run, in order:
+    the repo rules first, then each station's Spec (mint) and epics (decompose). The repo rules
+    run under marshal but carry their governor's Spec (``owning_spec``, Story 113.13)."""
+    runs: list[tuple[str, str, Path, Path | None]] = [
+        (OWN_PROJECT, "rules", root / "AGENTS.md", root / CHAIN_STANDARD_DREAM_RELPATH),
+        (OWN_PROJECT, "rules", root / CHAIN_STANDARD_RELPATH, root / CHAIN_STANDARD_DREAM_RELPATH),
     ]
     for station in STATIONS:
         slug = long_form(station)
         skill = station_skill_path(root, station)
         if skill is not None:
-            plan.append((slug, "rules", skill, None))
-        plan.append((slug, "mint", spec_path(root, slug), None))
-        plan.append((slug, "decompose", epics_path(root, slug), None))
-    return plan
+            runs.append((slug, "rules", skill, None))
+        runs.append((slug, "mint", spec_path(root, slug), None))
+        runs.append((slug, "decompose", epics_path(root, slug), None))
+    return [(slug, stage, target, dream, owning_spec(root, slug, stage, target)) for slug, stage, target, dream in runs]
 
 
 def run_audit(
@@ -514,14 +633,17 @@ def run_audit(
     audit_journal = audit_dir / JOURNAL_FILENAME
     writer = f"challenge-audit-{secrets.token_hex(3)}"
     counter = 0
-    for slug, stage, target, dream in audit_plan(root):
+    for slug, stage, target, dream, owner in audit_plan(root):
         marker = audit_dir / f"{slug}.{stage}.{target.name}.json"
         if marker.is_file() and not force:
             try:
-                reports.setdefault(slug, []).append(core.parse_report(marker.read_text(encoding="utf-8")))
+                kept = core.parse_report(marker.read_text(encoding="utf-8"))
+                if core.unevaluable_reason(kept, stage=stage, personas=config.reviewers_for(stage)):
+                    raise core.ReportError("an incomplete marker")
             except OSError, core.ReportError:
-                pass  # a corrupt marker is re-run below
+                pass  # a corrupt or incomplete marker is re-run below
             else:
+                reports.setdefault(slug, []).append(kept)
                 append_journal(
                     audit_journal,
                     writer=writer,
@@ -545,6 +667,7 @@ def run_audit(
                 out_dir=audit_dir / "runs",
                 now=now,
                 dream=dream,
+                owner=owner,
             )
         except ChallengeRefused as exc:
             errors.append(f"{slug} {stage} {target.name}: refused: {exc}")
@@ -573,28 +696,71 @@ def append_memlog(root: Path, workspace: str, text: str) -> None:
         raise core.ReportError(f"memlog append failed: {done.stderr.strip() or done.stdout.strip()}")
 
 
+def _names(recorded: str, root: Path, expected: Path) -> bool:
+    """``recorded`` (a report's Spec folder) names ``expected``: the same path, or one ending in its
+    repo-relative parts (a report written in another checkout of this repo)."""
+    if not recorded:
+        return False
+    tail = expected.relative_to(root).parts
+    return _abs(root, recorded) == expected or Path(recorded).parts[-len(tail) :] == tail
+
+
+def resolve_owner(root: Path, project: str, report: core.ChallengeReport) -> Path:
+    """The Spec folder ``resolve`` acts on (Story 113.13, CAP-303), derived from ``--project``, or for
+    a rules report that records an owner override, from ``RULES_OWNER_OVERRIDES``; never taken from
+    the report. The report's ``spec_workspace`` must name it, or ``ReportError``."""
+    candidates = [spec_path(root, project).parent]
+    if report.stage == "rules" and report.owner_override:
+        candidates += [
+            root / ws for ws in RULES_OWNER_OVERRIDES.values() if _names(report.owner_override, root, root / ws)
+        ]
+    for candidate in candidates:
+        if _names(report.spec_workspace, root, candidate):
+            return candidate
+    named = ", ".join(c.relative_to(root).as_posix() for c in candidates)
+    raise core.ReportError(
+        f"the report's spec_workspace {report.spec_workspace or '(none)'!r} is not the Spec --project {project} "
+        f"or its owner override names ({named}); nothing was written"
+    )
+
+
 def run_resolve(args: argparse.Namespace, *, root: Path, memlog: Callable[[Path, str, str], None]) -> int:
+    """Marshal writes only its own Spec (Story 113.13): an accepted finding another Spec owns is printed
+    as the exact ``memlog.py`` command the operator runs; rejections go back into the report either way."""
     require(EGM_RESOLVE_BRIDGE_FLAG_KEY)
     report_path = _abs(root, args.report)
+    project = getattr(args, "project", None)
     try:
+        if not project:
+            raise core.ReportError("--project is required: resolve derives the owning Spec from it")
         report = core.parse_report(report_path.read_text(encoding="utf-8"))
+        owner = resolve_owner(root, project, report)
         accept = core.parse_id_notes(args.accept)
         reject = core.parse_id_notes(args.reject)
         resolution = core.resolve(report, accept=accept, reject=reject, report_path=str(report_path))
     except (OSError, core.ReportError) as exc:
         print(f"marshal factory challenge resolve: {exc}", file=sys.stderr)
         return EXIT_USAGE
-    if resolution.memlog_lines and not report.spec_workspace:
-        print("marshal factory challenge resolve: the report names no owning Spec (spec_workspace)", file=sys.stderr)
-        return EXIT_USAGE
+    workspace = owner.relative_to(root).as_posix()
+    if owner != spec_path(root, OWN_PROJECT).parent:
+        for line in resolution.memlog_lines:
+            print(core.memlog_command(script=MEMLOG_SCRIPT_RELPATH, workspace=workspace, text=line))
+        report_path.write_text(resolution.report.to_json() + "\n", encoding="utf-8")
+        print(f"resolved: {len(accept)} accepted (no memlog line written), {len(reject)} rejected")
+        if resolution.memlog_lines:
+            print(
+                f"next: marshal writes only {OWN_PROJECT}'s Spec; run the {len(resolution.memlog_lines)} command(s) "
+                f"above for {workspace}, then re-derive that Spec with bmad-spec in the same change"
+            )
+        return EXIT_OK
     try:
         for line in resolution.memlog_lines:
-            memlog(root, report.spec_workspace, line)
+            memlog(root, str(owner), line)
     except core.ReportError as exc:
         print(f"marshal factory challenge resolve: {exc}; the report is unchanged", file=sys.stderr)
         return EXIT_USAGE
     report_path.write_text(resolution.report.to_json() + "\n", encoding="utf-8")
-    print(f"resolved: {len(accept)} accepted (memlog lines on {report.spec_workspace}), {len(reject)} rejected")
+    print(f"resolved: {len(accept)} accepted (memlog lines on {workspace}), {len(reject)} rejected")
     if resolution.memlog_lines:
         print("next: re-derive the Spec with bmad-spec in the same change, so chain-currency reads both together")
     return EXIT_OK
@@ -631,13 +797,7 @@ def _run(args: argparse.Namespace, *, runner: ChallengeRunner | None, root: Path
     config = challenge_config(effective)
     if not config.enabled:
         raise ChallengeRefused(f"the challenger is off for {slug}: no enabled [challenge] block")
-    refusals = core.render_refusals(
-        config,
-        session_models=session_models(effective),
-        model_cost_catalog=effective.model_cost_catalog.value
-        if isinstance(effective.model_cost_catalog.value, Mapping)
-        else {},
-    )
+    refusals = model_refusals(config, slug=slug, effective=effective)
     if refusals:
         raise ChallengeRefused("; ".join(refusals))
     if args.audit:
@@ -646,7 +806,7 @@ def _run(args: argparse.Namespace, *, runner: ChallengeRunner | None, root: Path
         require(EGM_RETRO_DRIFT_FLAG_KEY)
     plugins = plugins_root()
     personas = tuple(dict.fromkeys(p for stage in core.STAGES for p in config.reviewers_for(stage)))
-    refusal = plugin_refusal(root, plugins, config.plugin_version, personas)
+    refusal = plugin_refusal(plugins, config.plugin_version, personas)
     if refusal:
         journal_refusal(artifact_dir(root, slug, config), slug, refusal, now())
         raise ChallengeRefused(refusal)
@@ -661,7 +821,8 @@ def _run(args: argparse.Namespace, *, runner: ChallengeRunner | None, root: Path
         )
         total = sum(len(r.findings) for rs in reports.values() for r in rs)
         _emit(args, {"audit_dir": str(audit_dir), "stations": len(reports), "findings": total, "errors": errors})
-        return exit_code_for(Verdict.UNEVALUABLE) if errors and not reports else EXIT_OK
+        # CAP-302: one station that did not report makes the sweep unevaluable; findings never do.
+        return exit_code_for(Verdict.UNEVALUABLE) if errors else EXIT_OK
     if not args.stage:
         raise ChallengeRefused("--stage is required (or --audit)")
     if args.stage == "drift":
@@ -719,10 +880,12 @@ def readiness_for_dispatch(
     runner: ChallengeRunner | None = None,
     now: Callable[[], datetime] = lambda: datetime.now(UTC),
     plugins: Path | None = None,
+    launch_model: str | None = None,
 ) -> ReadinessResult:
     """Run the readiness stage before a dispatch's harness launches, when the
     switch is on and the station's block names the stage. Report only: never a
-    status move, never a ledger write, never a refusal of the dispatch."""
+    status move, never a ledger write, never a refusal of the dispatch. The
+    challenger is never ``launch_model``, the run's resolved launch model (Story 113.9)."""
     if not flag_on(EGM_CHALLENGE_FLAG_KEY) or not flag_on(EGM_DISPATCH_READINESS_FLAG_KEY):
         return ReadinessResult(ran=False)
     config = challenge_config(effective)
@@ -737,15 +900,9 @@ def readiness_for_dispatch(
         artifact_dir=config.artifact_dir,
         plugin_version=config.plugin_version,
     )
-    refusals = core.render_refusals(
-        one,
-        session_models=session_models(effective),
-        model_cost_catalog=effective.model_cost_catalog.value
-        if isinstance(effective.model_cost_catalog.value, Mapping)
-        else {},
-    )
+    refusals = model_refusals(one, slug=slug, effective=effective, launch_model=launch_model)
     plugins = plugins or plugins_root()
-    refusal = "; ".join(refusals) or plugin_refusal(root, plugins, one.plugin_version, ("implementation-readiness",))
+    refusal = "; ".join(refusals) or plugin_refusal(plugins, one.plugin_version, ("implementation-readiness",))
     if refusal:
         return ReadinessResult(ran=True, error=f"readiness challenge refused: {refusal}")
     if runner is None:

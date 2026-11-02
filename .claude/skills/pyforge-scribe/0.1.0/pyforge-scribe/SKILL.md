@@ -15,10 +15,14 @@ description: >
 
 Compiles `src/shared/packages/pyforge-scribe/` (PyPI `pyforge-scribe` 0.1.0) as an
 agentskills.io content skill for the **scribe** station. Source: local path
-`src/shared/packages/pyforge-scribe` @ commit `a5e9dad59ab` (`source_ref: local`).
+`src/shared/packages/pyforge-scribe` @ commit `03a7aff5d9` (`source_ref: local`).
 Forge tier: **Quick** (SKF `skf-extract-public-api` + source-reading; T1-low).
-8 CLI exports documented (`capture_cmd`, `graph_compile`, `recall_cmd`, `index_build`,
-`index_report`, `index_move_list`, `index_refresh`, `main`).
+First compiled from `a5e9dad59ab` (Story 29.1); recompiled in place at 0.1.0 on
+2026-11-01 (steward Story 29.4) from the widened scope (`catalog.py`, the
+`scribe catalog` command's module) and the real `scribe --help`, the way Story
+29.1 and atlas Stories 33.1 and 33.2 did.
+9 CLI exports documented (`capture_cmd`, `graph_compile`, `recall_cmd`, `index_build`,
+`index_report`, `index_move_list`, `index_refresh`, `catalog_bmad_estate`, `main`).
 The package `__init__.py` exports only `__version__` — other components integrate
 via the CLI, never by importing internal modules [SRC:src/pyforge/scribe/__init__.py:L9-L14].
 
@@ -31,24 +35,30 @@ write path for team-relevant decisions, ADRs, and project state
 ## Quick Start
 
 Run from the repository root (never a hardcoded absolute path)
-[SRC:src/pyforge/scribe/cli.py:L44-L47]:
+[SRC:src/pyforge/scribe/cli.py:L81-L84]. `scribe capture`, `scribe recall` and
+`scribe catalog` run from the session default environment, `pyforge-guild`,
+which carries the core package; `scribe graph compile` with an extra, `scribe
+index …` and the station suite run in `-e pyforge-scribe`, which adds the heavy
+compile extras [SRC:README.md:L19-L33]:
 
 ```bash
-pixi run -e pyforge-scribe scribe capture --type project --text "..."
+pixi run -e pyforge-guild scribe capture --type project --text "..."
 pixi run -e pyforge-scribe scribe graph compile
-pixi run -e pyforge-scribe scribe recall "why did we pin typer"
+pixi run -e pyforge-guild scribe recall "why did we pin typer"
 pixi run -e pyforge-scribe scribe index build            # graphify extra, explicit
 pixi run -e pyforge-scribe scribe index report            # GRAPH_REPORT + God nodes
 pixi run -e pyforge-scribe scribe index move-list          # foundry-cutover move list
 pixi run -e pyforge-scribe scribe index refresh            # cocoindex incremental refresh
+pixi run -e pyforge-guild scribe catalog bmad-estate --write   # regenerate the BMAD-estate catalog
+pixi run -e pyforge-guild scribe catalog bmad-estate --check   # exit 1 on drift
 ```
 
-**Capture** (`scribe capture`) [SRC:src/pyforge/scribe/cli.py:L73-L139]:
+**Capture** (`scribe capture`) [SRC:src/pyforge/scribe/cli.py:L110-L175]:
 `--type` is `feedback` | `project` | `reference` and `--text` is required unless
 `--promote` or `--transcripts` is set. Writes under `.claude/memory/<type>/` and
 prints `captured: <path>`.
 
-**Compile** (`scribe graph compile [--nightly]`) [SRC:src/pyforge/scribe/cli.py:L251-L269]:
+**Compile** (`scribe graph compile [--nightly]`) [SRC:src/pyforge/scribe/cli.py:L294-L321]:
 full rebuild of the graph; never prompts. When `SCRIBE_GRAPHIFY_EXTRA` is truthy,
 also ingests the named graphify target list (`src/shared/packages/`,
 `src/platform/`, `scripts/` — Story 15.1) through the graphify extra
@@ -61,7 +71,7 @@ never serves a stale node; external consumers (e.g. marshal's planning-graph
 retrieval) reading `GraphNode.stale` from the compiled graph must fall back to
 their own non-graph path instead of serving it.
 
-**Recall** (`scribe recall <query>`) [SRC:src/pyforge/scribe/cli.py]:
+**Recall** (`scribe recall <query>`) [SRC:src/pyforge/scribe/cli.py:L324]:
 prints the answer plus `[source: …]` when grounded, else `no grounded answer found`.
 Default omits `kind=code`; `--kind` selects kinds (Story 8.5). `--mode`
 planning|memory|code is the named bag (Story 16.1), exclusive with `--kind`.
@@ -104,10 +114,32 @@ Consumers (foundry-cutover move-list, marshal Story 28.9's planning-corpus
 retrieval, and, later, marshal Story 28.8's freshness check) bind to this
 grammar only -- never to `pyforge.scribe.extras` internals.
 
+**Catalog** (`scribe catalog bmad-estate [--write | --check]`, Story 24.1, CAP-32)
+[SRC:src/pyforge/scribe/cli.py:L673-L718]: derived catalogs, generated from
+in-tree sources and never hand-written. `bmad-estate` reads the installed
+manifests, every `.claude/skills/*/SKILL.md` frontmatter, `bmad-help.csv`,
+`suite-members.yaml` joined with steward's adoption register, the `bmad-*` pins
+in `pixi.toml`, the marshal harness range and the release-cadence steps --
+offline, no station internals [SRC:src/pyforge/scribe/catalog.py:L1-L30].
+Without a flag it prints the rendered catalog; `--write` renders
+`docs/reference/bmad-estate-llms-full.md`; `--check` compares each section's
+digest against a fresh derive and names the drifted section with its sources.
+Exit 0 rendered / current, 1 drift (`--check`), 2 a source cannot be read or
+`--write` and `--check` were both given. Behind the kill switch
+`pyforge.scribe.bmad_estate_catalog` (default on; off keeps the verb listed,
+marked disabled, and refuses with exit 2) [SRC:src/pyforge/scribe/cli.py:L648].
+The `bmad-estate-check` detector runs the same check; a station skill whose
+frontmatter `description` moves reds it until the catalog is re-rendered.
+
 <!-- [MANUAL:additional-notes] -->
 Frame store (steward Story 53.2 pointer only): Company + eight station Frames live in `docs/foundry/frames/` in git — do not graph-ingest them unless a later Spec says so.
 Session-close ritual, every harness: `scribe capture` (AGENTS.md § Team memory), not restated here.
 <!-- [/MANUAL:additional-notes] -->
+
+<!-- [MANUAL:station-mcp] -->
+Station host: scribe's MCP face is `POST /stations/scribe/mcp` on the platform host. How to start the host, get the
+assertion it accepts and send a request: `docs/how-to/reach-a-station-mcp-endpoint.md`.
+<!-- [/MANUAL:station-mcp] -->
 
 ## Common Workflows
 
@@ -115,16 +147,21 @@ Session-close ritual, every harness: `scribe capture` (AGENTS.md § Team memory)
 [SRC:src/pyforge/scribe/capture.py:L54] → index line on `MEMORY.md`.
 
 **Promote user-local memory:** `scribe capture --promote` → `classify_and_draft`
-then `typer.confirm` then `apply_promotion` [SRC:src/pyforge/scribe/cli.py:L142-L169].
+then `typer.confirm` then `apply_promotion` [SRC:src/pyforge/scribe/cli.py:L178-L206].
 Zero writes before confirm.
 
 **Transcript harvest:** `scribe capture --transcripts` → `scan_transcripts` then
-confirm then `capture()` per candidate [SRC:src/pyforge/scribe/cli.py:L195-L230].
+confirm then `capture()` per candidate [SRC:src/pyforge/scribe/cli.py:L231-L274].
 Does not mutate transcript files.
 
-**Rebuild then query:** `compile_graph(...)` [SRC:src/pyforge/scribe/compile.py:L99]
-then `open_graph_store` [SRC:src/pyforge/scribe/graph_store_plugins.py:L27] then
-`answer(query, store, repo_root=...)` [SRC:src/pyforge/scribe/recall.py:L71].
+**Rebuild then query:** `compile_graph(...)` [SRC:src/pyforge/scribe/compile.py:L194]
+then `open_graph_store` [SRC:src/pyforge/scribe/graph_store_plugins.py:L29] then
+`answer(query, store, repo_root=...)` [SRC:src/pyforge/scribe/recall.py:L199].
+
+**Estate catalog:** `scribe catalog bmad-estate --check` → `check(root)`
+[SRC:src/pyforge/scribe/catalog.py:L899]; on drift, `--write` → `write(root)`
+[SRC:src/pyforge/scribe/catalog.py:L872], which renders `derive(root)`
+[SRC:src/pyforge/scribe/catalog.py:L624].
 
 ## Key API Summary
 
@@ -138,6 +175,7 @@ then `open_graph_store` [SRC:src/pyforge/scribe/graph_store_plugins.py:L27] then
 | `index_report` | GRAPH_REPORT-style summary + God nodes | `--target` |
 | `index_move_list` | Foundry-cutover move-list scan | — |
 | `index_refresh` | Incremental refresh of both Story 6.1 artifacts (Story 6.2) | `--target` |
+| `catalog_bmad_estate` | Render, write or check the derived BMAD-estate catalog (Story 24.1) | `--write`, `--check`, `--root`, `--output`, `--pipeline-truth` |
 | `capture` | Append-only write under memory_root | `memory_root`, `capture_type`, `text` |
 | `compile_graph` | Full graph rebuild via GraphStore port | `memory_root`, `repo_root`, `nightly` |
 | `answer` | Lexical (default) or semantic recall | `query`, `store`, `repo_root`, `mode` |
@@ -145,13 +183,14 @@ then `open_graph_store` [SRC:src/pyforge/scribe/graph_store_plugins.py:L27] then
 | `ingest_repo` | graphify extra: folder -> `GraphNode`s | `repo_root`, `target`, `warnings` |
 | `scan_move_list` | Move-list signal scan (no graphifyy needed) | `repo_root` |
 | `refresh_incremental` | cocoindex extra: skip-if-unchanged over declared artifacts | `repo_root`, `artifacts`, `index_path`, `warnings` |
+| `derive` / `render` / `write` / `check` | BMAD-estate catalog: derive the facts, render, write, digest-check | `root`, `output`, `catalog`, `pipeline_truth` |
 
 ## Key Exports
 
 Public SKF extract of `cli.py` (Quick mode): `capture_cmd`, `graph_compile`,
 `recall_cmd`, `index_build`, `index_report`, `index_move_list`,
-`index_refresh`, `main` [SRC:src/pyforge/scribe/cli.py]. Console script:
-`scribe = pyforge.scribe.cli:main` [SRC:pyproject.toml:L25-L26].
+`index_refresh`, `catalog_bmad_estate`, `main` [SRC:src/pyforge/scribe/cli.py]. Console script:
+`scribe = pyforge.scribe.cli:main` [SRC:pyproject.toml:L35].
 
 ## Usage
 
@@ -186,11 +225,11 @@ code and `refreshed: …; skipped (unchanged): …` output, never to
 **`CaptureResult`** [SRC:src/pyforge/scribe/capture.py:L46] — `record`, `path`,
 `memory_index_line`.
 
-**`RecallAnswer`** [SRC:src/pyforge/scribe/recall.py:L56] — `grounded`, `text`,
+**`RecallAnswer`** [SRC:src/pyforge/scribe/recall.py:L119] — `grounded`, `text`,
 `citation`, `node_id`. `grounded=False` is the explicit miss, never fabricated
 prose.
 
-**`GraphNode`** [SRC:src/pyforge/scribe/models.py:L128] — `id`, `kind`, `title`,
+**`GraphNode`** [SRC:src/pyforge/scribe/models.py:L126] — `id`, `kind`, `title`,
 `text`, `citation`, `valid_from`, `valid_until`, `superseded_by`, `stale`
 (Story 6.3). `is_current` is `valid_until is None`. `stale` is set only on a
 current node; external consumers reading the compiled graph must treat
@@ -202,10 +241,12 @@ serve it as current.
 - **Capture** — only write path into `.claude/memory/<type>/` plus `MEMORY.md` index
   [SRC:src/pyforge/scribe/capture.py:L1-L18].
 - **Compile** — derived read-model; full rebuild; GraphStore port, not a raw engine
-  [SRC:src/pyforge/scribe/compile.py:L4-L11].
+  [SRC:src/pyforge/scribe/compile.py:L1-L98].
 - **Recall** — queries compiled projection only; citation must resolve
-  [SRC:src/pyforge/scribe/recall.py:L3-L16].
-- **CLI** — sole public contract [SRC:src/pyforge/scribe/cli.py:L1-L9].
+  [SRC:src/pyforge/scribe/recall.py:L1-L32].
+- **Catalog** — derives, never decides; offline; structured digests per section
+  [SRC:src/pyforge/scribe/catalog.py:L1-L30].
+- **CLI** — sole public contract [SRC:src/pyforge/scribe/cli.py:L1-L12].
 
 ## CLI
 
@@ -220,10 +261,11 @@ scribe index build [--target PATH]
 scribe index report [--target PATH]
 scribe index move-list
 scribe index refresh [--target PATH]
+scribe catalog bmad-estate [--write | --check] [--root PATH] [--output PATH] [--pipeline-truth PATH]
 ```
 
 `--promote` and `--transcripts` are mutually exclusive with each other and with
-`--type`/`--text` (exit 2) [SRC:src/pyforge/scribe/cli.py:L110-L132].
+`--type`/`--text` (exit 2) [SRC:src/pyforge/scribe/cli.py:L146-L159].
 
 `scribe index build`/`report` exit 2 if graphifyy is not installed
 (`GraphifyUnavailableError`); `scribe index move-list` never depends on

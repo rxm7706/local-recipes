@@ -2,7 +2,7 @@
 title: Product Brief — Steward
 status: draft
 created: 2026-07-25
-updated: "2026-10-07"   # RE-STAMPED 2026-10-07: currency reconciliation — research->brief: the independent review of the free-threading readiness Dream entry (research/free-threading-readiness-dream-review-2026-10-07.md) landed in research/; no change to Steward's charter. See § Currency reconciliation — 2026-10-07. Prior 2026-09-25. Earlier: RE-STAMPED 2026-09-25: currency reconciliation — research->brief: the 2026-09-25 BMAD-method whitepaper verification landed in research/; no change to Steward's charter. Prior 2026-09-14
+updated: "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): currency reconciliation — research->brief: research/egm-audit-2026-11-01.md landed (30 findings on CAP-176..CAP-178 and Epic 118: 25 accepted, 5 rejected, 0 deferred); CAP-176 and CAP-177 re-derived, CAP-178 unchanged (Story 118.8); no change to Steward's charter. See § Currency reconciliation — 2026-11-01. Prior 2026-10-07. Earlier: RE-STAMPED 2026-10-07: currency reconciliation — research->brief: the independent review of the free-threading readiness Dream entry (research/free-threading-readiness-dream-review-2026-10-07.md) landed in research/; no change to Steward's charter. See § Currency reconciliation — 2026-10-07. Prior 2026-09-25. Earlier: RE-STAMPED 2026-09-25: currency reconciliation — research->brief: the 2026-09-25 BMAD-method whitepaper verification landed in research/; no change to Steward's charter. Prior 2026-09-14
 ---
 
 # Product Brief: Steward (`pyforge-steward`)
@@ -230,5 +230,34 @@ pinned estate-wide as a fix story). Read against this brief: the review changes 
 Provisioning and verifying the estate's pixi environments already sits under § What it owns; a readiness read is
 one more way of verifying an environment, not a new duty. No problem statement, success criterion or scope line
 moves. Same-day reconcile.*
+
+**Content changed:** this section only. `updated:` bumped.
+
+## Currency reconciliation — 2026-11-01
+
+*Trigger: the chain-currency `research→brief` edge. `research/egm-audit-2026-11-01.md` landed: the residue of the
+one-time EGM fleet audit (marshal Story 113.7, spec-pyforge-marshal:CAP-302) over the Dream's 2026-10-31 section (Nebari
+hosted), CAP-176..CAP-178 and Epic 118. 30 findings: 25 accepted, 5 rejected, 0 deferred (mint 18: 15 accepted, 3
+rejected; decompose 12: 10 accepted, 2 rejected). Same-day reconcile.*
+
+**What moved upstream.**
+
+- **The Spec.** `spec-pyforge-steward` re-derived CAP-176 and CAP-177 with their ids kept: the rootless host's
+  preconditions (the inotify limit and a loopback `kubectl port-forward`, no port override); `nic` from SelfExplainML at
+  a floor with no version cap; the refusals the verb enforces; an attended, operator-gated Hetzner success; `/shared`
+  waived on rootless kind by the operator's 2026-11-01 ruling and proven on Hetzner by Story 118.3 AC3; split-horizon
+  OIDC on kind; and the Warden clause narrowed to the chart digests steward journals. Both Nebari Open Questions are
+  settled and one is open for Story 118.8. CAP-178 is unchanged: its writer, enforcement and no-secret findings ride
+  Story 118.8. The Spec gained a `glossary.md` companion.
+- **The stories.** 118.6 (the attended sign-in, spawn and landing probes as one tracked task; done), 118.7 (`kubectl`
+  and `helm` in the `pyforge-steward` environment; backlog), 118.8 (the gitops branch's one named writer; backlog, and
+  Story 118.3 now waits on it), and 29.4 (the station skills recompiled; done, under
+  spec-pyforge-unifying-strategy:CAP-15).
+
+**Why the brief does not change.** Every finding sits inside `steward deploy`, a duty this brief already names; the
+Nebari target is the Dream's 2026-10-31 extension of it, not a new duty. No problem statement, success criterion,
+scope line or vision moves. One premise is noted, not moved: the Out-for-v1 line "no live Kubernetes cluster or cloud
+spend ... to allocate against yet" still holds, because the attended kind cluster is local and spends nothing. It ends
+when Story 118.3 runs on Hetzner, and Story 118.8 carries the Spec's matching Non-goal premise.
 
 **Content changed:** this section only. `updated:` bumped.

@@ -2002,3 +2002,42 @@ status: open
   severity: low
   promoted: 2026-10-13 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-mason-egm-2026-11-1: Operator-owned (EGM audit mason-c05, operator ruling 2026-11-01): merge python-foundry commit 157e5e7 (the Frame ruling for Mason's station skill) on B; outward work on B under the writer lock, which only the operator does.
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-mason/SPEC.md` (CAP-29); EGM fleet audit 2026-11-01 (marshal Story 113.7), findings MAS-M-Z3 and MAS-M-D4, cluster mason-c05-cap29-rollout
+  summary: Operator-owned (EGM audit mason-c05, operator ruling 2026-11-01): merge python-foundry commit 157e5e7 (the Frame ruling for Mason's station skill) on B; outward work on B under the writer lock, which only the operator does.
+  evidence: B commit 157e5e7 "frames: Mason's station skill lives under skills/stations/ (operator ruling 2026-09-28)" is on B's local branch frames-mason-station-skill-ruling only (`git -C ../python-foundry branch --contains 157e5e7`, read 2026-11-01); B's origin/main was last fetched 2026-09-14, so its merge state there is unverified. CAP-29's A-only row and its expiry are `docs/foundry/capability-ledger.yaml:5341-5347` (`expiry: 44.5`); the exception is AGENTS.md § Policy. Until now the follow-up lived only in a 2026-09-28 session memory. Residue: `planning-artifacts/research/egm-audit-2026-11-01.md`.
+  location: docs/foundry/capability-ledger.yaml
+  origin: EGM fleet audit 2026-11-01 (marshal Story 113.7), operator ruling 2026-11-01
+  owner: mason
+  severity: low
+  promoted: 2026-11-01 — EGM audit landing (operator-owned outward step on B)
+  status: open
+
+
+### DW-mason-egm-2026-11-2: The conda-forge-expert guide `feedstock-platform-expansion.md` cites a gate G8b that no gate table defines.
+
+- source_spec: `planning-artifacts/specs/spec-19-6-mason-s-skill-meta-tests-scan-every-skill-file-g-id-and-cli-verb.md` (CAP-29); EGM fleet audit 2026-11-01 (marshal Story 113.7)
+  summary: Story 19.6's meta-tests scan every Mason skill file for G-ids, and its independent review found `.claude/skills/conda-forge-expert/guides/feedstock-platform-expansion.md:295` and `:543` naming G8b, which no gate table in the conda-forge-expert skill defines. The fix is an edit inside `.claude/skills/conda-forge-expert/`, which AGENTS.md routes through the skill and a `retro(cfe)` CHANGELOG semver bump, so it lands with the next conda-forge effort rather than in this docs-and-fix PR.
+  evidence: Story 19.6 independent review, 2026-11-01; `grep -n G8b .claude/skills/conda-forge-expert/guides/feedstock-platform-expansion.md`.
+  location: .claude/skills/conda-forge-expert/guides/feedstock-platform-expansion.md:295
+  origin: mason Story 19.6 independent review, 2026-11-01
+  owner: mason
+  severity: low
+  promoted: 2026-11-01 — EGM audit landing
+  status: open
+  reason: A conda-forge-expert skill edit closes with its own retro and CHANGELOG bump (AGENTS.md § Where things are).
+
+### DW-mason-egm-2026-11-3: The compiled `pyforge-mason` station skill's `[SRC:cli.py:Lnnn]` anchors past line 435 point 30-57 lines off.
+
+- source_spec: `planning-artifacts/specs/spec-4-5-a-repeated-platform-keeps-every-value.md` (CAP-4); EGM fleet audit 2026-11-01 (marshal Story 113.7)
+  summary: Story 4.5 changed `src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py`, so the compiled skill's source anchors after line 435 now point 30-57 lines away from what they name. A refresh goes through an SKF recompile of the mason skill; steward Story 29.4's in-place recompile covered the marshal, steward, scribe and atlas skills only.
+  evidence: Story 4.5 independent review, 2026-11-01.
+  location: .claude/skills/pyforge-mason/0.1.0/pyforge-mason/SKILL.md
+  origin: mason Story 4.5 independent review, 2026-11-01
+  owner: mason
+  severity: low
+  promoted: 2026-11-01 — EGM audit landing
+  status: open
+  reason: SKF cannot run headless here (no forge tier); the next mason skill recompile refreshes the anchors.

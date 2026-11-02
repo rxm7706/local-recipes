@@ -217,6 +217,9 @@ SCHEDULED_JOBS: tuple[tuple[str, list[str], str, str, str], ...] = (
 )
 
 # Weekly "everything" bootstrap = the whole migrated DAG EXCEPT Phase P.
+# Story 34.14 (CAP-64): the DAG is the translated ``__default__``, which leaves out
+# ``pipeline_registry.NAMED_RUN_ONLY_PIPELINES`` (``query_plane_cache``, ``universal_sbom``), so this job
+# carries none of their ops; :data:`NODE_TIMEOUTS` keeps their budgets for a run that names them.
 BOOTSTRAP_JOB_NAME = "bootstrap_data"
 BOOTSTRAP_CRON = "0 2 * * 0"  # weekly, Sunday 02:00
 
@@ -351,6 +354,8 @@ NODE_TIMEOUTS: dict[str, int] = {
     "project_artifactory_names": 30,  # Story 21.5 (pure in-memory column projection, no network)
     "fetch_artifactory_consumption": 600,  # network-capable once configured; inert by default
     "build_enterprise_jfrog_consumption": 120,  # pure in-memory join, no network
+    # -- catalog_index (Story 37.10: after a build, never inside __default__) -- #
+    "report_catalog_index_health": 300,  # Story 34.14 — every registered node has a budget; one stat per entry
 }
 
 # Fallback for kedro-dagster's synthetic pipeline-run hook ops (they are cheap

@@ -102,7 +102,8 @@ def test_the_manifest_inventory_switch_unregisters_its_pipeline(
     flag_provider: dict[str, bool], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Re-review finding 4: OFF, `universal_sbom` leaves the registry, so `__default__` (a bare `run`), `--nodes`
-    and a direct `kedro run --pipeline universal_sbom` cannot reach its gate; ON, the registry is unchanged."""
+    and a direct `kedro run --pipeline universal_sbom` cannot reach its gate; ON, the registry is unchanged.
+    Story 34.14: ON, it is registered and reached by name, never through `__default__`, which leaves it out."""
     from kedro.framework.project import configure_project
 
     from pyforge.atlas import pipeline_registry
@@ -115,7 +116,7 @@ def test_the_manifest_inventory_switch_unregisters_its_pipeline(
     default_nodes = {node.name for node in registered["__default__"].nodes}
     if on:
         sbom_nodes = {node.name for node in registered["universal_sbom"].nodes}
-        assert sbom_nodes and sbom_nodes <= default_nodes
+        assert sbom_nodes and not sbom_nodes & default_nodes
     else:
         assert "universal_sbom" not in registered
         assert not any("normalize_intake_to_cyclonedx" in name for name in default_nodes)

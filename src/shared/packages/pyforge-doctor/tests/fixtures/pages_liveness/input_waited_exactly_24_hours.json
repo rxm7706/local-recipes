@@ -1,0 +1,7 @@
+{
+  "case": "Deployed at T; a published input landed at T+2 h and has waited exactly 24 hours by now: not stale (strict comparison).",
+  "head": {"status": 200, "headers": {"last-modified": "Tue, 13 Oct 2026 12:00:00 GMT"}},
+  "git_log": "b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6 2026-10-13T14:00:00+00:00",
+  "now": "2026-10-14T14:00:00Z",
+  "expect": {"check": "pages-liveness", "status": "ok", "requests": ["HEAD"], "waited_hours": 24}
+}

@@ -3,14 +3,14 @@
   "skill_name": "pyforge-steward",
   "skill_type": "single",
   "source_repo": "src/shared/packages/pyforge-steward",
-  "source_commit": "865b95dc951c8a6de87d05bb10c8395a75da8008",
+  "source_commit": "03a7aff5d911e4c4b9a590fcd00dadc96f8e698c",
   "source_ref": "local",
-  "generated_at": "2026-08-25T19:00:00Z",
+  "generated_at": "2026-11-01T00:00:00Z",
   "grounding": {
-    "date": "2026-08-25",
-    "commit_short": "865b95dc951",
+    "date": "2026-11-01",
+    "commit_short": "03a7aff5d9",
     "station": "steward",
-    "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-33-1-skf-skill-and-persona-for-steward.md"
+    "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-29-4-the-station-skills-are-recompiled-to-cover-the-verbs-the-contract-names.md"
   },
   "entries": [
     {
@@ -20,7 +20,7 @@
       "params": [],
       "return_type": "argparse.ArgumentParser",
       "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py",
-      "source_line": 124,
+      "source_line": 328,
       "confidence": "T1-low",
       "extraction_method": "skf-extract-public-api",
       "ast_node_type": null,
@@ -35,7 +35,7 @@
       ],
       "return_type": "Duty",
       "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py",
-      "source_line": 817,
+      "source_line": 1812,
       "confidence": "T1-low",
       "extraction_method": "skf-extract-public-api",
       "ast_node_type": null,
@@ -50,7 +50,7 @@
       ],
       "return_type": "int",
       "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py",
-      "source_line": 891,
+      "source_line": 1958,
       "confidence": "T1-low",
       "extraction_method": "skf-extract-public-api",
       "ast_node_type": null,
@@ -94,6 +94,45 @@
       "source_line": 39,
       "confidence": "T1-low",
       "extraction_method": "source-reading",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "EstateDuty",
+      "export_type": "class",
+      "source_library": "pyforge-steward",
+      "params": [],
+      "return_type": "EstateDuty",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/estate.py",
+      "source_line": 744,
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "CiDuty",
+      "export_type": "class",
+      "source_library": "pyforge-steward",
+      "params": [],
+      "return_type": "CiDuty",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/ci.py",
+      "source_line": 1366,
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "PreflightDuty",
+      "export_type": "class",
+      "source_library": "pyforge-steward",
+      "params": [],
+      "return_type": "PreflightDuty",
+      "source_file": "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_verify.py",
+      "source_line": 227,
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
       "ast_node_type": null,
       "signature_source": "T1-low"
     }

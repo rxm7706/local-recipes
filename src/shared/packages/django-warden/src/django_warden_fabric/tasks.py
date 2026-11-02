@@ -9,12 +9,20 @@ import logging
 import os
 import tempfile
 import traceback
+from collections.abc import Iterator
 from pathlib import Path
 
 from celery import chord, shared_task
 from django.conf import settings
+from django.utils import timezone
 
-from .fleet import mkdtemp_clone_dir, remove_clone_dir, shallow_clone
+from .fleet import (
+    FLEET_APPROVAL_EXPIRY_DEFAULT_SECONDS,
+    FLEET_APPROVAL_EXPIRY_SETTING,
+    mkdtemp_clone_dir,
+    remove_clone_dir,
+    shallow_clone,
+)
 from .fleet_inventory import (
     FLEET_INVENTORY_REQUEST_TIMEOUT_SECONDS,
     FLEET_INVENTORY_SOFT_TIME_LIMIT_SECONDS,
@@ -32,6 +40,15 @@ from .models import ComplianceJob, FixProposal, FleetRepo, FleetRepoScan, FleetR
 from .phases import PHASES, advance
 
 logger = logging.getLogger(__name__)
+
+# Story 16.8: the setting naming the provisioned offline OSV cache, and osv-scanner's
+# own variable the scan reads it from.
+FLEET_OSV_DB_CACHE_SETTING = "WARDEN_OSV_DB_CACHE_DIRECTORY"
+_OSV_DB_CACHE_ENV = "OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY"
+
+# A repo the run did not scan (archived) keeps a SUCCEEDED row whose error says why.
+_SKIPPED_ERROR_PREFIX = "skipped: "
+_SKIPPED_ARCHIVED = f"{_SKIPPED_ERROR_PREFIX}archived"
 
 SUPPORTED_SUFFIXES = frozenset(
     {
@@ -108,6 +125,31 @@ def run_compliance_job(self, job_id: str) -> str:
         raise
 
 
+@contextlib.contextmanager
+def _osv_db_cache_env() -> Iterator[None]:
+    """Point the in-process scan at the provisioned offline OSV databases (Story 16.8).
+
+    ``WARDEN_OSV_DB_CACHE_DIRECTORY`` names the cache that
+    ``scripts/platform-provision-osv-offline-db.sh`` fills (PyPI, npm, Go,
+    crates.io); for the scan it becomes osv-scanner's own
+    ``OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY``, then the worker's environment is
+    restored. Unset, the worker's own environment stands. The scan stays
+    ``--offline``: an ecosystem with no database there is ``indeterminate``."""
+    cache_dir = str(getattr(settings, FLEET_OSV_DB_CACHE_SETTING, "") or "")
+    if not cache_dir:
+        yield
+        return
+    previous = os.environ.get(_OSV_DB_CACHE_ENV)
+    os.environ[_OSV_DB_CACHE_ENV] = cache_dir
+    try:
+        yield
+    finally:
+        if previous is None:
+            os.environ.pop(_OSV_DB_CACHE_ENV, None)
+        else:
+            os.environ[_OSV_DB_CACHE_ENV] = previous
+
+
 def _run_warden_engines(
     target: Path,
     *,
@@ -123,7 +165,7 @@ def _run_warden_engines(
         argv.append("--fix-prs-dry-run")
     out = io.StringIO()
     err = io.StringIO()
-    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+    with _osv_db_cache_env(), contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
         code = warden_main(argv)
     report_json = out.getvalue().strip() or "{}"
     if code not in (0, 1, 2):
@@ -210,12 +252,21 @@ def run_fleet_project_items(self, project_items_run_id: str, organisation: str) 
 
 @shared_task(bind=True, name="warden_fabric.finalize_fleet_run")
 def finalize_fleet_run(self, scan_results: list[object], fleet_run_id: str) -> str:
-    """Mark the fleet run complete after all repo sub-tasks finish."""
+    """Mark the fleet run complete after all repo sub-tasks finish.
+
+    Story 16.7: the run stays SUCCEEDED as a job and records its misses -- the
+    repos whose scan FAILED and the repos it skipped (archived) -- as counts."""
     from .proposals import queue_proposals_from_scan  # noqa: PLC0415
 
     run = FleetRun.objects.get(pk=fleet_run_id)
+    scans = FleetRepoScan.objects.filter(fleet_run=run)
+    run.failed_repo_count = scans.filter(status=JobStatus.FAILED).count()
+    run.skipped_repo_count = scans.filter(
+        status=JobStatus.SUCCEEDED,
+        error__startswith=_SKIPPED_ERROR_PREFIX,
+    ).count()
     run.status = JobStatus.SUCCEEDED
-    run.save(update_fields=["status", "updated_at"])
+    run.save(update_fields=["status", "failed_repo_count", "skipped_repo_count", "updated_at"])
     for scan in FleetRepoScan.objects.filter(fleet_run=run):
         queue_proposals_from_scan(scan)
     return str(run.id)
@@ -237,7 +288,7 @@ def run_fleet_run(self, fleet_run_id: str) -> str:
                     fleet_repo=repo,
                     defaults={
                         "status": JobStatus.SUCCEEDED,
-                        "error": "skipped: archived",
+                        "error": _SKIPPED_ARCHIVED,
                         "commit_sha": "",
                         "report_json": "{}",
                         "scan_exit_code": None,
@@ -258,9 +309,17 @@ def run_fleet_run(self, fleet_run_id: str) -> str:
         raise
 
 
-@shared_task(bind=True, name="warden_fabric.scan_fleet_repo")
+@shared_task(
+    bind=True,
+    name="warden_fabric.scan_fleet_repo",
+    soft_time_limit=FLEET_INVENTORY_SOFT_TIME_LIMIT_SECONDS,
+    time_limit=FLEET_INVENTORY_TIME_LIMIT_SECONDS,
+)
 def scan_fleet_repo(self, fleet_run_id: str, fleet_repo_id: str) -> str:
-    """Clone one repo, run ``warden scan``, persist per-repo verdict."""
+    """Clone one repo, run ``warden scan``, persist per-repo verdict.
+
+    Story 16.7: bounded like ``run_fleet_inventory`` (soft 240 s < hard 300 s), and
+    the clone's ``git`` calls time out first; a timeout is this repo's FAILED row."""
     run = FleetRun.objects.get(pk=fleet_run_id)
     repo = FleetRepo.objects.get(pk=fleet_repo_id)
     row, _created = FleetRepoScan.objects.get_or_create(
@@ -347,11 +406,76 @@ def _findings_for_proposal(scan: FleetRepoScan, finding_id: str):
     raise ValueError(msg)
 
 
+def _stored_fix_candidates(scan: FleetRepoScan, finding_id: str) -> dict[str, tuple[str, ...]]:
+    """The finding's dry-run ``fix_resolution`` candidates from the stored report (Story 16.6)."""
+    document = json.loads(scan.report_json or "{}")
+    actuation = document.get("actuation") if isinstance(document, dict) else None
+    outcomes = actuation.get("outcomes") if isinstance(actuation, dict) else None
+    for outcome in outcomes if isinstance(outcomes, list) else ():
+        if not isinstance(outcome, dict) or outcome.get("finding_id") != finding_id:
+            continue
+        resolution = outcome.get("fix_resolution")
+        candidates = resolution.get("candidates") if isinstance(resolution, dict) else None
+        if isinstance(candidates, list):
+            return {finding_id: tuple(c for c in candidates if isinstance(c, str))}
+    return {}
+
+
+def _approval_expiry_reason(proposal: FixProposal) -> str | None:
+    """Why an approval is too old to act on, or ``None`` (Story 16.7).
+
+    The age is the proposal's, from its queueing to its approval; the bound is the
+    ``WARDEN_FLEET_APPROVAL_EXPIRY_SECONDS`` setting (default seven days)."""
+    expiry = float(getattr(settings, FLEET_APPROVAL_EXPIRY_SETTING, FLEET_APPROVAL_EXPIRY_DEFAULT_SECONDS))
+    age = ((proposal.approved_at or timezone.now()) - proposal.created_at).total_seconds()
+    if age <= expiry:
+        return None
+    return (
+        f"refused: proposal expired -- queued {age:.0f} s before its approval, "
+        f"older than {FLEET_APPROVAL_EXPIRY_SETTING}={expiry:g}"
+    )
+
+
+def _vanished_finding_reason(clone_dir: Path, finding_id: str, commit_sha: str) -> str | None:
+    """Re-scan the fresh clone; why the finding no longer holds, or ``None`` (Story 16.7).
+
+    The approve acts only on a finding a fresh ``warden scan`` of the clone still
+    reports; the stored report may be older than the repo."""
+    report_json, _sbom, exit_code = _run_warden_engines(clone_dir)
+    document = json.loads(report_json or "{}")
+    findings = document.get("findings") if isinstance(document, dict) else None
+    fresh_ids = {
+        entry["id"]
+        for entry in (findings if isinstance(findings, list) else ())
+        if isinstance(entry, dict) and isinstance(entry.get("id"), str)
+    }
+    if finding_id in fresh_ids:
+        return None
+    return (
+        f"refused: finding {finding_id} vanished -- a fresh warden scan of the clone at "
+        f"{commit_sha or 'HEAD'} (exit {exit_code}) no longer reports it"
+    )
+
+
+def _fleet_fix_solver():
+    """The fix-target solver the approve passes to the actuator (Story 16.6).
+
+    ``None`` runs warden's default ``pixi lock`` solver; the one test seam on
+    the approve path -- a test returns a stub here and the real actuator runs."""
+    return None
+
+
 def _run_fix_actuator(scan: FleetRepoScan, finding_id: str, *, clone_dir: Path):
-    """Call EXISTING warden actuator for one stored finding -- never reimplement it."""
+    """Call EXISTING warden actuator for one stored finding -- never reimplement it.
+
+    Story 16.6: the approve re-solves on the fresh clone -- the stored dry-run
+    candidates go in as ``fixed_version_candidates``, the clone's own
+    ``manifest_locations`` come from warden's one builder, and a proposal the
+    actuator prepares no manifest edit for records ``failed`` with no forge call."""
     # Lazy: platform host must import without pyforge installed (Story 10.1
     # boundary), the same seam as _run_warden_engines.
     from pyforge.warden.actuator import run_actuator  # noqa: PLC0415
+    from pyforge.warden.manifest_locations import manifest_locations_for_target  # noqa: PLC0415
 
     repo_full_name = scan.fleet_repo.full_name
     env = os.environ.copy()
@@ -360,29 +484,58 @@ def _run_fix_actuator(scan: FleetRepoScan, finding_id: str, *, clone_dir: Path):
         _findings_for_proposal(scan, finding_id),
         dry_run=False,
         env=env,
+        fixed_version_candidates=_stored_fix_candidates(scan, finding_id),
         scan_target=clone_dir,
+        solver=_fleet_fix_solver(),
         fix_draft_pr_estate_enabled=True,
+        manifest_locations=manifest_locations_for_target(clone_dir),
         authorized_fleet_repo=repo_full_name,
+        require_manifest_fix=True,
     )
 
 
-@shared_task(bind=True, name="warden_fabric.open_fix_proposal")
+def _refuse_proposal(proposal: FixProposal, reason: str) -> str:
+    """Record a refused approve as a failed actuation -- no forge call was made."""
+    proposal.state = FixProposal.State.FAILED
+    proposal.error = reason
+    proposal.pr_url = ""
+    proposal.save(update_fields=["state", "pr_url", "error", "updated_at"])
+    return str(proposal.id)
+
+
+@shared_task(
+    bind=True,
+    name="warden_fabric.open_fix_proposal",
+    soft_time_limit=FLEET_INVENTORY_SOFT_TIME_LIMIT_SECONDS,
+    time_limit=FLEET_INVENTORY_TIME_LIMIT_SECONDS,
+)
 def open_fix_proposal(self, proposal_id: str) -> str:
-    """Clone, act on exactly one approved finding, record opened or failed."""
+    """Clone, act on exactly one approved finding, record opened or failed.
+
+    Story 16.7: bounded like ``scan_fleet_repo``; an approval older than the expiry
+    setting is refused before the clone, and the fresh clone is re-scanned so a
+    finding it no longer reports is refused -- both as a failed actuation with no
+    forge call."""
     proposal = FixProposal.objects.select_related(
         "fleet_repo_scan__fleet_repo",
     ).get(pk=proposal_id)
     if proposal.state != FixProposal.State.APPROVED:
         return str(proposal.id)
+    expired = _approval_expiry_reason(proposal)
+    if expired is not None:
+        return _refuse_proposal(proposal, expired)
     scan = proposal.fleet_repo_scan
     repo = scan.fleet_repo
     clone_dir = mkdtemp_clone_dir(prefix="warden-fleet-open-")
     try:
-        shallow_clone(
+        commit_sha = shallow_clone(
             clone_url=repo.clone_url,
             branch=repo.default_branch,
             dest=clone_dir,
         )
+        vanished = _vanished_finding_reason(clone_dir, proposal.finding_id, commit_sha)
+        if vanished is not None:
+            return _refuse_proposal(proposal, vanished)
         actuation = _run_fix_actuator(scan, proposal.finding_id, clone_dir=clone_dir)
         matching = [outcome for outcome in actuation.outcomes if outcome.finding_id == proposal.finding_id]
         if not matching:

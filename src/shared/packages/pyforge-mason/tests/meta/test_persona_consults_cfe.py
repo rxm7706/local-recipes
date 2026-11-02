@@ -397,19 +397,63 @@ def test_agents_skf_managed_section_well_formed():
     section = (root / "AGENTS.md").read_text(encoding="utf-8")
     begin = section.index("<!-- SKF:BEGIN")
     end = section.index("<!-- SKF:END -->")
-    block = section[begin:end]
-    assert "[SKF Skills]|8 skills|0 stack" in block
-    assert "|[pyforge-mason v0.1.0]|root: .claude/skills/pyforge-mason/" in block
-    for station in (
-        "pyforge-atlas",
-        "pyforge-doctor",
-        "pyforge-herald",
-        "pyforge-marshal",
-        "pyforge-scribe",
-        "pyforge-steward",
-        "pyforge-warden",
-    ):
-        assert f"|[{station} v0.1.0]|" in block
+    violations = skf_block_violations(section[begin:end])
+    assert not violations, violations
+
+
+# Story 19.6 (CAP-29, MAS-M-D5): the block is skf-export-skill's to write, so this
+# test requires each station's entry, never a skill count or a version literal --
+# a ninth SKF skill or a re-export at a new version is not a mason change.
+SKF_HEADER_RE = re.compile(r"^\[SKF Skills\]\|\d+ skills\|\d+ stack$", re.MULTILINE)
+MASON_SKF_ENTRY_RE = re.compile(r"^\|\[pyforge-mason v[^\]\s]+\]\|root: \.claude/skills/pyforge-mason/$", re.MULTILINE)
+OTHER_SKF_STATIONS = (
+    "pyforge-atlas",
+    "pyforge-doctor",
+    "pyforge-herald",
+    "pyforge-marshal",
+    "pyforge-scribe",
+    "pyforge-steward",
+    "pyforge-warden",
+)
+
+
+def skf_block_violations(block: str) -> list[str]:
+    violations: list[str] = []
+    if not SKF_HEADER_RE.search(block):
+        violations.append("SKF block has no '[SKF Skills]|<n> skills|<n> stack' header")
+    if not MASON_SKF_ENTRY_RE.search(block):
+        violations.append("SKF block has no '|[pyforge-mason v…]|root: .claude/skills/pyforge-mason/' entry")
+    violations.extend(f"SKF block has no '|[{s} v…]|' entry" for s in OTHER_SKF_STATIONS if f"|[{s} v" not in block)
+    return violations
+
+
+def test_skf_block_check_survives_a_ninth_skill_and_a_re_export():
+    root = _repo_root()
+    section = (root / "AGENTS.md").read_text(encoding="utf-8")
+    block = section[section.index("<!-- SKF:BEGIN") : section.index("<!-- SKF:END -->")]
+    bumped = re.sub(r"\|\d+ skills\|", "|9 skills|", block).replace("[pyforge-mason v0.1.0]", "[pyforge-mason v0.2.0]")
+    bumped += "|\n|[pyforge-ninth v0.1.0]|root: .claude/skills/pyforge-ninth/\n"
+    assert skf_block_violations(bumped) == []
+    dropped = MASON_SKF_ENTRY_RE.sub("|[elsewhere v0.1.0]|root: .claude/skills/elsewhere/", block)
+    assert skf_block_violations(dropped) == [
+        "SKF block has no '|[pyforge-mason v…]|root: .claude/skills/pyforge-mason/' entry"
+    ]
+
+
+NOTES_MD = "docs/reference/agent-instruction-notes.md"
+SKF_NOTES_SECTION_RE = re.compile(r"^### SKF skills block\b.*?(?=^#{2,3} |\Z)", re.MULTILINE | re.DOTALL)
+
+
+def notes_name_mason_as_skf_skill(text: str) -> bool:
+    match = SKF_NOTES_SECTION_RE.search(text)
+    return match is not None and "`pyforge-mason`" in match.group(0)
+
+
+def test_agent_instruction_notes_name_pyforge_mason_as_an_skf_skill():
+    """Story 19.6 (CAP-29): the old 'delete the no-pyforge-mason sentence' clause, as a positive check."""
+    text = (_repo_root() / NOTES_MD).read_text(encoding="utf-8")
+    assert notes_name_mason_as_skf_skill(text), f"{NOTES_MD} § SKF skills block must name `pyforge-mason`"
+    assert not notes_name_mason_as_skf_skill(text.replace("`pyforge-mason`", "the station skill"))
 
 
 def test_does_not_mint_01_portal_mcp_or_persona():

@@ -265,6 +265,7 @@ after review 3's fixes.
     - `release_trend_label`'s `data_wiring` is `migrated-column`;
     - the request timeout is 90 s of silence, so seven stalled subdirs end inside the node's 900 s.
 - 2026-10-23: drafted from Story 37.6, DW-atlas-37-6-1 and the operator's ruling on the source.
+- 2026-11-01: epics.md amended in place (append-only, EGM audit ATL-D-R6, ATL-D-C1): the Story 37.6 block gains the Flag line `pyforge.atlas.board_projections` (Story 37.4's, extended to this board; dev on, staging and production off) and its Then line reads "with the flag on", as this spec's `flag:` block has said since mint; this spec is otherwise unchanged.
 
 ## Review Triage Log
 

@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import tomllib
 from pathlib import Path
+
+import pytest
 
 from pyforge.warden.manifest_edit import edit_requirement_to_floor
 
@@ -62,3 +65,55 @@ def test_duplicate_declarations_fail(tmp_path: Path) -> None:
     )
     result = edit_requirement_to_floor(manifest, package="leftpad", floor="1.3.0")
     assert not result.ok
+
+
+# --- Story 14.4: the pixi edit writes valid TOML -------------------------------
+
+
+@pytest.mark.parametrize(
+    ("before", "after"),
+    [
+        (
+            '[pypi-dependencies]\nleftpad = ">=1.0"  # pinned\nother = "*"\n',
+            '[pypi-dependencies]\nleftpad = ">=1.3.0"  # pinned\nother = "*"\n',
+        ),
+        (
+            '[pypi-dependencies]\nleftpad = ">=1.0"',
+            '[pypi-dependencies]\nleftpad = ">=1.3.0"',
+        ),
+        (
+            '[pypi-dependencies]\nleftpad = ">=1.0"\n',
+            '[pypi-dependencies]\nleftpad = ">=1.3.0"\n',
+        ),
+        (
+            '[pypi-dependencies]\nleftpad = ">=1.0"\n\n[tasks]\nx = "echo"\n',
+            '[pypi-dependencies]\nleftpad = ">=1.3.0"\n\n[tasks]\nx = "echo"\n',
+        ),
+        (
+            "[pypi-dependencies]\n\"leftpad\" = '>=1.0' # literal\n",
+            "[pypi-dependencies]\n\"leftpad\" = '>=1.3.0' # literal\n",
+        ),
+        (
+            '[pypi-dependencies]\r\nleftpad = ">=1.0"  # crlf\r\n',
+            '[pypi-dependencies]\r\nleftpad = ">=1.3.0"  # crlf\r\n',
+        ),
+    ],
+    ids=["trailing-comment", "last-line-no-newline", "final-newline", "blank-line-after", "literal-string", "crlf"],
+)
+def test_pixi_toml_edit_keeps_quotes_comment_and_line_endings(tmp_path: Path, before: str, after: str) -> None:
+    manifest = tmp_path / "pixi.toml"
+    manifest.write_bytes(before.encode("utf-8"))
+    result = edit_requirement_to_floor(manifest, package="leftpad", floor="1.3.0")
+    assert result.ok
+    text = manifest.read_bytes().decode("utf-8")
+    assert text == after
+    assert tomllib.loads(text)["pypi-dependencies"]["leftpad"] == ">=1.3.0"
+
+
+def test_pixi_toml_edit_never_writes_an_unquoted_value(tmp_path: Path) -> None:
+    before = '[pypi-dependencies]\nleftpad = { version = ">=1.0" }  # table\n'
+    manifest = tmp_path / "pixi.toml"
+    manifest.write_text(before, encoding="utf-8")
+    result = edit_requirement_to_floor(manifest, package="leftpad", floor="1.3.0")
+    assert not result.ok
+    assert manifest.read_text(encoding="utf-8") == before

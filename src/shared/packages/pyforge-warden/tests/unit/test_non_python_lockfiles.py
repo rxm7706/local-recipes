@@ -144,6 +144,11 @@ def test_inventory_count_for_axis_excludes_native_on_hygiene(component_factory) 
     inventory = (npm, pypi)
     assert inventory_count_for_axis(inventory, AXIS_VULNERABILITY) == 2
     assert inventory_count_for_axis(inventory, "hygiene") == 1
+    # Story 16.9: the license and currency engines judge the npm component too.
+    assert inventory_count_for_axis(inventory, "license") == 2
+    assert inventory_count_for_axis(inventory, "currency") == 2
+    assert inventory_count_for_axis((npm,), "license") == 1
+    assert inventory_count_for_axis((npm,), "hygiene") == 0
 
 
 def test_merge_native_scans_empty_returns_unchanged() -> None:
@@ -298,8 +303,9 @@ def test_npm_lock_vuln_with_offline_db(
     assert vuln_cov["deps_assessed"] >= 1
     hygiene_cov = next(c for c in report["coverage"] if c["axis"] == "hygiene")
     assert hygiene_cov["deps_total"] == 0
+    # Story 16.9: the license row counts the npm component its engine judged.
     license_cov = next(c for c in report["coverage"] if c["axis"] == "license")
-    assert license_cov["deps_total"] == 0
+    assert license_cov["deps_total"] == report["inventory_count"] == 1
 
 
 def test_npm_lock_without_npm_db_is_indeterminate(
@@ -387,3 +393,210 @@ def test_sbom_emits_pkg_npm_purl(component_factory) -> None:
     bom = json.loads(render_cyclonedx(inventory, report))
     purl = bom["components"][0]["purl"]
     assert purl == "pkg:npm/leftpad@1.0.0"
+
+
+def test_native_vuln_ecosystems_names_only_vuln_findings() -> None:
+    """Story 16.8: each native ``vuln:`` finding -> its ecosystem; sentinels are left out."""
+    from pyforge.warden.models import Finding
+    from pyforge.warden.native_lockfiles import native_vuln_ecosystems
+
+    vuln = Finding(
+        id="vuln:GHSA-xxxx:leftpad@1.0.0",
+        axis=AXIS_VULNERABILITY,
+        message="leftpad: GHSA-xxxx",
+        subject="leftpad",
+        severity=None,
+    )
+    sentinel = Finding(
+        id="indeterminate:offline-db-unavailable-ecosystem:Go",
+        axis=AXIS_VULNERABILITY,
+        message="no Go DB",
+        subject="Go",
+        severity=None,
+    )
+
+    def _scan(ecosystem: Ecosystem, *findings: Finding) -> NativeLockfileScan:
+        return NativeLockfileScan(
+            components=(),
+            parse=OsvParse(findings=findings, errors=()),
+            ecosystem=ecosystem,
+            db_consulted=True,
+            db_zip=None,
+            snapshot_at=None,
+        )
+
+    scans = (_scan(Ecosystem.NPM, vuln), _scan(Ecosystem.GO, sentinel))
+    assert native_vuln_ecosystems(scans) == {vuln.id: "npm"}
+    assert native_vuln_ecosystems(()) == {}
+
+
+def test_label_outcome_ecosystems_labels_only_the_named_outcomes() -> None:
+    """Story 16.8: a labelled outcome carries ``ecosystem``; every other is unchanged."""
+    from pyforge.warden.actuator import Actuation, PROutcome, label_outcome_ecosystems
+
+    npm = PROutcome(finding_id="vuln:A:leftpad@1.0.0", action="upgrade", subject="leftpad", status="planned")
+    pypi = PROutcome(finding_id="vuln:B:requests@2.0.0", action="upgrade", subject="requests", status="planned")
+    actuation = Actuation(dry_run=True, outcomes=(npm, pypi))
+
+    assert label_outcome_ecosystems(actuation, {}) is actuation
+    labelled = label_outcome_ecosystems(actuation, {npm.finding_id: "npm"})
+    by_id = {outcome["finding_id"]: outcome for outcome in labelled.to_json_dict()["outcomes"]}
+    assert by_id[npm.finding_id]["ecosystem"] == "npm"
+    assert "ecosystem" not in by_id[pypi.finding_id]
+
+
+def test_fix_prs_dry_run_names_the_native_finding_ecosystem(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Story 16.8: in one scan, the npm ``vuln:`` outcome says ``npm``; the PyPI one says nothing."""
+    import shutil
+    import sys
+    from io import StringIO
+
+    builder = _load_builder()
+    cache = tmp_path / "osv-cache"
+    builder.build_offline_db(OSV_NPM_RECORDS, cache, ecosystem="npm")
+    builder.build_offline_db(FIXTURES / "osv-db" / "pypi", cache, ecosystem="PyPI")
+    project = tmp_path / "mixed"
+    shutil.copytree(FIXTURES / "projects" / "vuln_high", project)
+    shutil.copy2(NPM_PROJECT / "package-lock.json", project / "package-lock.json")
+    on_tree = _flag_tree(tmp_path / "flags", enabled=True)
+    monkeypatch.setenv("PYFORGE_ENVIRONMENT", "dev")
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(on_tree))
+    monkeypatch.setenv("OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY", str(cache))
+    buffer = StringIO()
+    monkeypatch.setattr(sys, "stdout", buffer)
+
+    warden_main(["scan", str(project), "--format", "json", "--fix-prs-dry-run"])
+
+    report = json.loads(buffer.getvalue())
+    outcomes = {outcome["finding_id"]: outcome for outcome in report["actuation"]["outcomes"]}
+    npm_outcome = outcomes["vuln:PDOS-NPM-FIXTURE-0001:pdos-npm-vuln-fixture@1.0.0"]
+    pypi_outcome = outcomes["vuln:PDOS-FIXTURE-0002:pdos-vuln-fixture-high@1.0.0"]
+    assert npm_outcome["status"] == pypi_outcome["status"] == "planned"
+    assert npm_outcome["ecosystem"] == "npm"
+    assert "ecosystem" not in pypi_outcome
+
+
+# --- Story 16.9: a non-Python repo's license and currency rows report what ran ---
+
+_CLEAN_NPM_PACKAGES = (("pdos-npm-clean-alpha", "3.1.0"), ("pdos-npm-clean-beta", "0.4.2"))
+
+
+def _clean_lock_project(tmp_path: Path) -> Path:
+    """An npm lock whose packages match no advisory in the npm fixture DB."""
+    project = tmp_path / "npm_clean"
+    project.mkdir()
+    packages: dict[str, object] = {"": {"name": "npm-clean-fixture", "version": "1.0.0"}}
+    dependencies: dict[str, object] = {}
+    for name, version in _CLEAN_NPM_PACKAGES:
+        entry = {
+            "version": version,
+            "resolved": f"https://registry.npmjs.org/{name}/-/{name}-{version}.tgz",
+            "integrity": "sha512-placeholder=",
+        }
+        packages[f"node_modules/{name}"] = entry
+        dependencies[name] = entry
+    lock = {"name": "npm-clean-fixture", "lockfileVersion": 2, "packages": packages, "dependencies": dependencies}
+    (project / "package-lock.json").write_text(json.dumps(lock, indent=2), encoding="utf-8")
+    return project
+
+
+def _npm_project(kind: str, tmp_path: Path) -> tuple[Path, int]:
+    """The clean-lock or vulnerable-lock fixture and its component count N."""
+    if kind == "clean":
+        return _clean_lock_project(tmp_path), len(_CLEAN_NPM_PACKAGES)
+    return NPM_PROJECT, 1
+
+
+def _npm_scan_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    builder = _load_builder()
+    cache = tmp_path / "osv-cache"
+    builder.build_offline_db(OSV_NPM_RECORDS, cache, ecosystem="npm")
+    on_tree = _flag_tree(tmp_path / "flags", enabled=True)
+    monkeypatch.setenv("PYFORGE_ENVIRONMENT", "dev")
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(on_tree))
+    monkeypatch.setenv("OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY", str(cache))
+
+
+def _scan_json(project: Path, monkeypatch: pytest.MonkeyPatch, *extra: str) -> tuple[int, dict]:
+    import sys
+    from io import StringIO
+
+    buffer = StringIO()
+    monkeypatch.setattr(sys, "stdout", buffer)
+    exit_code = warden_main(["scan", str(project), "--format", "json", *extra])
+    return exit_code, json.loads(buffer.getvalue())
+
+
+def test_scan_native_lockfile_inventories_a_clean_lock(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """AC3: osv-scanner lists every package (``--all-packages``), not only the vulnerable ones."""
+    _npm_scan_env(tmp_path, monkeypatch)
+    project = _clean_lock_project(tmp_path)
+
+    scan = scan_native_lockfile(project, ScannedManifest(path="package-lock.json", kind="package-lock.json"))
+
+    assert scan.parse.errors == ()
+    assert [(c.name, c.version) for c in scan.components] == sorted(_CLEAN_NPM_PACKAGES)
+    assert not [f for f in scan.parse.findings if f.id.startswith("vuln:")]
+
+
+@pytest.mark.parametrize("kind", ["clean", "vulnerable"])
+def test_npm_license_and_currency_rows_count_what_ran(
+    kind: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC1/AC3: the license and currency rows count the N components those axes judged."""
+    from pyforge.warden.models import EMPTY_EXTRACTION_DRIVER_ID
+
+    _npm_scan_env(tmp_path, monkeypatch)
+    project, count = _npm_project(kind, tmp_path)
+
+    _exit_code, report = _scan_json(project, monkeypatch)
+
+    assert report["inventory_count"] == count
+    assert not [f for f in report["findings"] if f["id"] == EMPTY_EXTRACTION_DRIVER_ID]
+    rows = {row["axis"]: row for row in report["coverage"]}
+    for axis in ("license", "currency"):
+        assert rows[axis]["deps_total"] == rows[axis]["deps_assessed"] == count, axis
+        unknowns = [f for f in report["findings"] if f["id"].startswith(f"{axis}:unknown:pdos-npm-")]
+        assert len(unknowns) == count, axis
+    assert rows["hygiene"]["deps_total"] == 0
+
+
+@pytest.mark.parametrize(
+    ("gate", "extra", "expected"),
+    [
+        ("ungated", (), "warn"),
+        ("license", ("--deny-licenses", "GPL-3.0-only"), "indeterminate"),
+        ("currency", ("--fail-on-eol",), "indeterminate"),
+    ],
+)
+@pytest.mark.parametrize("kind", ["clean", "vulnerable"])
+def test_npm_lock_composed_status_is_pinned(
+    kind: str,
+    gate: str,
+    extra: tuple[str, ...],
+    expected: str,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """AC2/AC6: unknowns warn ungated and route to indeterminate gated; never clean."""
+    from pyforge.warden.report import REPORT_SCHEMA_VERSION
+
+    _npm_scan_env(tmp_path, monkeypatch)
+    project, _count = _npm_project(kind, tmp_path)
+
+    exit_code, report = _scan_json(project, monkeypatch, *extra)
+
+    assert report["schema_version"] == REPORT_SCHEMA_VERSION == "1.1.0"
+    assert report["status"]["value"] == expected
+    assert exit_code == (0 if expected == "warn" else 1)
+    vuln_ids = [f["id"] for f in report["findings"] if f["id"].startswith("vuln:")]
+    if kind == "vulnerable":
+        assert vuln_ids == ["vuln:PDOS-NPM-FIXTURE-0001:pdos-npm-vuln-fixture@1.0.0"]
+    else:
+        assert vuln_ids == []
+    if gate != "ungated":
+        assert report["status"]["driver"]["axis"] == gate
+        assert next(row for row in report["coverage"] if row["axis"] == gate)["gating"] is True

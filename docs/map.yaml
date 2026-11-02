@@ -96,8 +96,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-10-31T13:47:28-05:00'
-      tree: c258695e071f7a1e3aac3d756803008eef5ddfee-dirty
+      derived_at: '2026-11-01T14:40:02-06:00'
+      tree: f7429083213b03bd1cb0ff33a9d2b6a0392a9905-dirty
   - path: how-to/pause-ci.md
     quadrant: how-to
     owner: pyforge-steward
@@ -113,6 +113,10 @@ pages:
   - path: how-to/purge-preserved-refs.md
     quadrant: how-to
     owner: marshal
+    kind: authored
+  - path: how-to/reach-a-station-mcp-endpoint.md
+    quadrant: how-to
+    owner: steward
     kind: authored
   - path: how-to/recipe-testing-and-builds.md
     quadrant: how-to
@@ -247,8 +251,8 @@ pages:
       - pixi.toml
       - src/shared/packages
     stamp:
-      derived_at: '2026-10-25T12:44:05-05:00'
-      tree: b1dd1daf5e98c077b92c27a19208a89ea0779f15-dirty
+      derived_at: '2026-11-01T15:57:49-06:00'
+      tree: 5c8bfc387743d46c1fa0c3bba5a14d2c7c8f47cd-dirty
   - path: reference/station-verify-commands.md
     quadrant: reference
     owner: fleet

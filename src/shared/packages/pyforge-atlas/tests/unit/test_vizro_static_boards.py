@@ -212,10 +212,12 @@ LAST_GOOD_TYPES = {
         "BasiliskDetailDataset",
         "BasiliskPackagesDataset",
         "CfGraphTarballDataset",
+        "CondaRepodataDataset",  # Story 34.15
         "CisaKevDataset",
         "CweCatalogDataset",
         "DebianPackagesDataset",
         "EpssFeedDataset",
+        "FeedstockOutputsArchiveDataset",  # Story 34.15
         "FedoraPackagesDataset",
         "GitHubRequestDataset",
         "HomebrewPackagesDataset",
@@ -230,6 +232,7 @@ LAST_GOOD_TYPES = {
         "PurlAssociatorMappingsDataset",
         "PyPIClickHouseDownloadsDataset",
         "PyPIJsonFanOutDataset",
+        "PyPISimpleIndexDataset",  # Story 34.15
         "RegistryUpstreamDataset",
         "RepodataUploadsDataset",
         "S3DownloadStatsDataset",

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import importlib.util
 import json
 import subprocess
@@ -16,6 +17,7 @@ pytest.importorskip("yaml")
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 FLEET_PICTURE = REPO_ROOT / "scripts" / "fleet_picture.py"
+CI_PAUSE_SOURCE = REPO_ROOT / "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ci_pause_drift.py"
 
 
 def _load_fleet_picture():
@@ -141,3 +143,45 @@ def test_main_degrades_when_probe_raises(monkeypatch, capsys, tmp_path):
     mod.main()
     out = capsys.readouterr().out
     assert "could not check CI pauses" in out
+
+
+def _source_dispatch_timeout() -> float:
+    """The source's own dispatch bound, read from its file (no ``pyforge.doctor`` import in this lane)."""
+    tree = ast.parse(CI_PAUSE_SOURCE.read_text(encoding="utf-8"))
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == "_DISPATCH_TIMEOUT" for target in node.targets
+        ):
+            return float(ast.literal_eval(node.value))
+    raise AssertionError(f"_DISPATCH_TIMEOUT not found in {CI_PAUSE_SOURCE}")
+
+
+def test_probe_timeout_outlasts_the_sources_dispatch_bound(monkeypatch):
+    """Story 45.4 (DOC-M-D4): the probe main() calls waits longer than the source waits on steward, so a hung
+    steward comes back as the source's ci-pause-unobserved WARN instead of the probe timing out first."""
+    mod = _load_fleet_picture()
+    seen: dict[str, float] = {}
+
+    def _run(cmd, **kwargs):
+        seen["timeout"] = kwargs["timeout"]
+        return _FakeCompletedProcess("[]")
+
+    monkeypatch.setattr(mod.subprocess, "run", _run)
+    assert mod.ci_pause_drift_findings() == []
+    assert seen["timeout"] > _source_dispatch_timeout()
+
+
+def test_main_names_a_hung_steward_as_unobserved(monkeypatch, capsys, tmp_path):
+    """Story 45.4 (AC4): the source's timeout WARN reaches ATTENTION as its own watch line."""
+    mod = _load_fleet_picture()
+    _stub_fleet_main_ambient(mod, monkeypatch, tmp_path)
+    message = "could not read steward ci status --json (cause: timed out after 120s)"
+    monkeypatch.setattr(
+        mod,
+        "ci_pause_drift_findings",
+        lambda repo=mod.REPO, timeout=150: [{"check": "ci-pause-unobserved", "status": "warn", "message": message}],
+    )
+    mod.main()
+    out = capsys.readouterr().out
+    assert f"ci-pause-unobserved: {message}" in out
+    assert "could not check CI pauses" not in out

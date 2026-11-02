@@ -3,11 +3,11 @@
 The framework-neutral contract for every agent and harness (§ *How each harness loads this file*).
 
 <!-- bmad:context -->
-<!-- Verified 2026-10-26 against 92fa3edbbd. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
+<!-- Verified 2026-11-01 against 03a7aff5d9 (EGM audit refresh, marshal Story 113.7). Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
 
 ## local-recipes (PyForge)
 
-This is A (`rxm7706/local-recipes`), the PyForge control plane and BMAD Agentic-SDLC host: Dreams in `docs/dreams/`; Specs, spines, epics and ledgers under `_bmad-output/projects/<station>/planning-artifacts/`; a Django + Wagtail host at `src/platform/` and eight `pyforge-<station>` packages with their `django-<station>` portals under `src/shared/packages/`, on Python 3.14 via pixi (`pixi.toml` is the task and dependency registry). The conda-forge recipe factory (`recipes/`, driven by the `conda-forge-expert` skill) is one cell of A, not the product. B (`rxm7706/python-foundry`, private) is the lasting root, its engines rebuilt from Frame + Spec; A stays the control plane and the oracle, and the root of record until `pyforge.cutover_root` flips to `foundry`; A is never archived. That cutover is under contract (`spec-python-foundry-cutover`, Epic 44, `in-progress`: the Launch stories 44.3 / 44.7 / 44.12 / 44.13 landed; the file-move stories 44.4–44.6 are parked, `backlog` and never dispatched; 44.10 is retired and the other seven 44.x rows stay `blocked` until the operator flips them) — the estate has not moved.
+This is A (`rxm7706/local-recipes`), the PyForge control plane and BMAD Agentic-SDLC host: Dreams in `docs/dreams/`; Specs, spines, epics and ledgers under `_bmad-output/projects/<station>/planning-artifacts/`; a Django + Wagtail host at `src/platform/` and eight `pyforge-<station>` packages with their `django-<station>` portals under `src/shared/packages/`, on Python 3.14 via pixi (`pixi.toml` is the task and dependency registry). The conda-forge recipe factory (`recipes/`, driven by the `conda-forge-expert` skill) is one cell of A, not the product. B (`rxm7706/python-foundry`, private) is the lasting root, its engines rebuilt from Frame + Spec; A stays the control plane and the oracle, and the root of record until `pyforge.cutover_root` flips to `foundry`; A is never archived. That cutover is under contract (`spec-python-foundry-cutover`, Epic 44; its live state is herald's dossier § A→B and the steward ledger, never restated here) — the estate has not moved.
 
 ## Policy
 
@@ -20,9 +20,9 @@ This is A (`rxm7706/local-recipes`), the PyForge control plane and BMAD Agentic-
 - Never hand-edit a `SPEC.md`; append to its `.memlog.md` with `uv run _bmad/scripts/memlog.py` and re-derive with `bmad-spec`.
 - Never hand-edit `sprint-status-ledger.yaml` (generated); write the Tier-3 feed, then `pixi run -e pyforge-guild sprint-ledger-sync -- --project <station>` (the short key, `doctor`, not `pyforge-doctor`).
 - Never track anything under `implementation-artifacts/`; it is Tier 3 and gitignored.
-- Never run `scripts/bmad-switch` from a parallel agent; set `BMAD_ACTIVE_PROJECT=<slug>` and write physical `_bmad-output/projects/<slug>/` paths.
+- Never run `scripts/bmad-switch` from a parallel agent; set `BMAD_ACTIVE_PROJECT=<slug>` (the long form, `pyforge-<station>`) and write physical `_bmad-output/projects/<slug>/` paths.
 - Never run a bare `spec_surface_check.py --write-baseline`; stamp scoped with `--spec <project>/<spec>` after `git add`, from a clean tree.
-- `src/platform/` never imports `pyforge.*`; reach station code through `pyforge.core.station_port`. No `services/` or `:800x` process tree.
+- `src/platform/` never imports `pyforge.*`; reach station code through `pyforge.core.station_port`. One dated carve-out, which only shrinks: `src/platform/ingest/github_projects/` (DW-steward-74-1), allowlisted file by file in steward's `tests/meta/test_object_store_seam_boundaries.py`. No `services/` or `:800x` process tree.
 - Any PR touching a path outside `recipes/` gets the `maintenance` label. A `pixi.toml` change regenerates `environment.yaml` in the same PR through `pixi run -e pyforge-steward pyforge steward estate reconcile` (or the exporter it wraps); that check ignores the label.
 - Never raise a `postgresql`/`libpq` pin to 18 or lift a psycopg/psycopg2/pgvector cap to clear a solve; the estate holds PostgreSQL 17 (fnd:CAP-12).
 - Merge with `gh pr merge --merge`, never `--rebase` (squash is disabled in the repository settings; a rebase merge leaves no merge subject for landing evidence either). Create with `gh pr create --repo rxm7706/local-recipes`.
@@ -36,28 +36,28 @@ This is A (`rxm7706/local-recipes`), the PyForge control plane and BMAD Agentic-
 ## Where things are
 
 - Recipe lifecycle: `.claude/skills/conda-forge-expert/SKILL.md`. Invoke the skill before any conda work, including any edit under `.claude/skills/conda-forge-expert/`, `.claude/scripts/conda-forge-expert/` or `.claude/data/conda-forge-expert/`; where a story conflicts with the skill, the skill wins and the story records the deviation. Every conda-forge effort closes with a retro that edits that skill and its `CHANGELOG.md` with a semver bump — not deferrable; the effort is not done until it lands, and a retro with no findings still writes its CHANGELOG entry.
-- Station code: read `.claude/skills/pyforge-<station>/SKILL.md` before touching `src/shared/packages/pyforge-<station>/`; use the CLI grammar, never `pyforge.<station>` internals.
+- Station code: read `.claude/skills/pyforge-<station>/active/pyforge-<station>/SKILL.md` before touching `src/shared/packages/pyforge-<station>/`; use the CLI grammar, never `pyforge.<station>` internals.
 - **Workspace-package conventions** (`src/shared/packages/pyforge-*/`): tests live in the package's own `tests/{unit,meta,conformance,integration}/` — never under `_bmad-output/projects/<slug>/tests/`, which holds only planning-scaffold mocks/fixtures. Where a package projects an exit-code verdict, that projection has a single-owner module (`verdict.py`) and, where the report contract is externally consumed, a shipped, frozen JSON Schema under `src/pyforge/<name>/data/report-schema.json` (`$id: urn:local-recipes:pyforge-<name>:report-schema`, additive changes only) — re-verified 2026-09-20: `pyforge-doctor`/`pyforge-warden` ship both; `pyforge-core`/`pyforge-marshal` ship `verdict.py` with no schema yet; the rest have neither. Not yet a universal requirement — the shape to follow where a package needs it.
 - Cutover state — A/B roles, modes and the four campaign verbs (Launch the Foundry, Adopt Frames, Build the Intelligence Hub, Wire every BMAD-suite component), each marked done or not done: herald's dossier, `docs-site/src/content/dossier/dossier.yml` § A→B. The contract is `spec-python-foundry-cutover` under `pyforge-steward`; the capability ledger is `docs/foundry/capability-ledger.yaml`.
 - Architecture invariants and naming (station token, `python-<role>-<class>`, id prefixes, ledger keys): `_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md` under `pyforge-steward`; cite `canopy AD-n`, `pap:AD-n` for the host, and `fnd:AD-n` for the cutover ADs (folded into the steward spine 2026-09-08; the prefix remains the citation form).
 - Library availability and pins: `docs/reference/library-llms-full.md` before importing or proposing a dependency.
 - General documentation map: `docs/MAP.md` — Diátaxis-adapted index (`docs/tutorials/`, `docs/how-to/`, `docs/reference/`, `docs/explanation/`).
-- Governance: `docs/governance/`; the chain standard every station conforms to (ids, arrows, statuses, the fold checklist; § 12: a requirement cites defined CAPs only): `docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md`; Dream status vocabulary: `docs/dreams/README.md`; dates versus versions: § Dates below.
+- Governance: `docs/governance/`; the chain standard every station conforms to (ids, arrows, statuses, the fold checklist; § 12: a requirement cites defined CAPs only): `docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md`; fleet terms (CAP, FR, AD, CFE, Frame, the `canopy:`/`pap:`/`fnd:` prefixes) are defined once in its § 0; Dream status vocabulary: `docs/dreams/README.md`; dates versus versions: § Dates below.
 - The incident behind a rule in this file, and the reference material `CLAUDE.md` used to carry: `docs/reference/agent-instruction-notes.md` (§ *Read on trigger* below names when).
 - pyforge-atlas subtree-exclusive rules (Kedro/Dagster/DuckDB internals — testing contract, AD-1 import boundaries, exit-code convention, code-grounded patterns): `src/shared/packages/pyforge-atlas/AGENTS.md`.
-- bmad-suite member wiring (which of the 13 members is adopted, its wielding station, its provisioning path): `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/adoption-register.md` § 2 is the one durable home (AD-2) — routing detail lives in each wielding station's own `bmad-agent-<station>` persona skill, never restated here.
+- bmad-suite member wiring (which member is adopted, its wielding station, its provisioning path): `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/adoption-register.md` § 2 is the one durable home (AD-2) — routing detail lives in each wielding station's own `bmad-agent-<station>` persona skill, never restated here.
 - The BMAD estate — installed core and modules, every skill by family, the suite roster with wielder and provisioning path, `bmad-*` pins, the marshal↔bmad-loop harness range, the release cadence: `docs/reference/bmad-estate-llms-full.md`, generated by `scribe catalog bmad-estate --write` and kept current by `bmad-estate-check`; never restate a version or a verdict from it here.
 
 ## Running and verifying
 
-- The merge gate is `detectors-ci` measured as no new findings against `main`; it has been green at `main` since PR #1072 (2026-09-06), so a red run is yours.
+- The merge bar is a local `detectors-ci` exit 0, run by hand or through `PYFORGE_PREFLIGHT_SCOPE=full pixi run -e pyforge-guild pr-preflight`. The default touched pre-push runs only five fast-core detectors and defers `detectors-ci` to CI, where the detectors check is advisory (it exits 0) except its CFE rebuild guard and ledger-regression steps, so a green CI tick is not evidence. `main` has been green since PR #1072 (2026-09-06), so a red run is yours.
 - Planning edits keep `chain-completeness-check`, `dream-chain-check`, `dreams-hygiene-check`, `deferred-work-check`, `ledger-regression-check` and `story-status-check` green; epic stories and their ledger keys land in the same commit — **and so do epic headings and their `epic-<n>` keys.** Since 2026-09-14 `chain-completeness` INV-B compares `## Epic <n>` headings against `epic-<n>` ledger keys in *both* directions, so a heading with no key, or a key with no heading, is now a FAIL rather than an invisible gap. Two live orphans existed for weeks under the old check (steward Epic 18 was an `###`, marshal Epic 29 had no heading at all).
 - Before any ledger write: `sprint-ledger-sync -- --project <station>`, then `story-status-check`; a bare sync repairs feed-behind-twin drift and names each repaired key — use `--allow-regression` only when the twin is genuinely wrong.
 - To open a landing worktree, prefer `pyforge steward workspace start` / `status` / `clean` over hand-run `git worktree add` (see `spec-scratch-worktree-lifecycle`).
 - Lint and types: `pixi run -e pyforge-guild lint-types` (ruff and `ruff format --check` over the ten `pyforge-*` packages and the nine `django-*` portal packages — each from its own `[tool.ruff]`; django packages on the `NOT_YET_CLEAN` list in `scripts/lint_types.py` only shrink as each station clears them — plus mypy over the ten `pyforge-*` packages from each package's `[tool.mypy]` on py314, mypy strict for `pyforge-core`; `target-version-check` reds a target or `requires-python` floor drifting from the interpreter across the ten `pyforge-*` packages, nine django-* portal packages, and `src/platform`) — the same task `.github/workflows/lint-types.yml` and `pr-preflight`'s first leg run. The 2026-09-20 mypy baseline is disabled per module, per error code (`[[tool.mypy.overrides]]`), never `ignore_errors`; tighten the entry when you touch its module. `src/platform` keeps its own `platform-ci` lane and local twin `platform-ci-local -- --test` (ruff and mypy read `py314` / `3.14` from its `pyproject.toml`).
 - BMAD skill renders need `PYTHONPATH="$PWD/_bmad/scripts:$PYTHONPATH"` in this shell.
 - Pushes run `pr-preflight` through the `pre-push` hook (`.pre-commit-config.yaml`); `pyforge-station-tests` + `detectors-ci` alone miss the touched-module coverage floors (PR #1551 went red that way on 2026-09-20). `PYFORGE_PREFLIGHT_SKIP=1` is the one opt-out, journaled to `.steward/preflight-skips.log`, and it comes first; `dispatch/*` branches are supervisor-gated and skip it, journaled. `PYFORGE_PREFLIGHT_SCOPE=touched` (`full` is every lane CI selects for the diff; unset follows the flag `pyforge.steward.preflight_ci_arbitrates`, on in dev) runs only the lanes the diff touches and five planning detectors, and journals the rest as deferred: CI arbitrates them. `pyforge steward preflight verify-deferred [--since YYYY-MM-DD]` lists what was deferred or skipped and runs the full preflight on HEAD.
-- Only `pyforge-guild` exists at runtime: station code, the tasks it shells to, and docs name `-e pyforge-guild`, never `-e local-recipes` (the 10 GB recipe factory) — steward's `test_no_station_assumes_local_recipes.py` reds a station `src/` that does. On a laptop install `pyforge-foundry-full`, the SBOM and default laptop install (fnd:CAP-12): every station feature plus `build`/`grayskull`, on linux-64, osx-arm64 and win-64; add `pyforge-foundry-full-stack` for the platform's local stack (PostgreSQL 17, redis-server, object storage; linux-64). Its conda-recipe-manager resolves only to 0.5.0 and it has no feedrattler: run current crm/feedrattler with `-e grayskull`.
+- `pyforge-guild` is the session default: station code, the tasks it shells to, and docs name `-e pyforge-guild`, never `-e local-recipes` (the 10 GB recipe factory) — steward's `test_no_station_assumes_local_recipes.py` reds a station `src/` that does. It carries core, doctor, marshal, steward, herald, scribe and mason; atlas and warden run only in `-e pyforge-atlas` and `-e pyforge-warden`, and each station's suite runs in its own `-e pyforge-<station>`. On a laptop install `pyforge-foundry-full`, the SBOM and default laptop install (fnd:CAP-12): every station feature plus `build`/`grayskull`, on linux-64, osx-arm64 and win-64; add `pyforge-foundry-full-stack` for the platform's local stack (PostgreSQL 17, redis-server, object storage; linux-64). Its conda-recipe-manager resolves only to 0.5.0 and it has no feedrattler: run current crm/feedrattler with `-e grayskull`.
 - Recipe-factory work is the one exception to the line above and runs in `-e local-recipes`; `-e pyforge-scribe` is only for `scribe graph compile` with its graphify / cocoindex / postgres extras. `pixi run -e pyforge-guild llms-full-check` exits non-zero when the library catalog drifts from `pixi.toml`.
 - `bmad-estate-check` (repo scope, in `detectors-ci`) reds when `docs/reference/bmad-estate-llms-full.md` no longer matches its sources — reconcile with `pixi run -e pyforge-guild scribe catalog bmad-estate --write`, never by hand; `bmad-method-version-drift-check` (installed core vs the `pixi.toml` floor and upstream, warn-only) runs alone by name; `tea-test-review` (advisory, never a gate) is a `local-recipes` task.
 - Estate pin refresh (policy, six verbs, landing a batch): `docs/how-to/refresh-the-estate.md`; cadence gate: `pixi run -e pyforge-steward pyforge steward estate plan --due`.
@@ -72,7 +72,7 @@ This is A (`rxm7706/local-recipes`), the PyForge control plane and BMAD Agentic-
 - Squash subjects break merge detection; `git merge-base --is-ancestor` is the proof a story landed.
 - `.cmd` shims in `build.bat` need `call`, or the parent script exits.
 - Marshal's `Deps:` parser is station-local; a cross-project gate is a ledger `blocked` row the operator flips.
-- Never run `bmad-module-skill-forge uninstall`: its manifest lists every file under `.claude/skills/`, so it removes every skill dir, not the 16 skf ones (found 2026-09-06; the 6.12 shim retirement moved the exact skill-dir count, so don't restate a count here — `find .claude/skills -maxdepth 1 -mindepth 1 -type d | wc -l` gets the live one).
+- Never run `bmad-module-skill-forge uninstall`: its manifest lists every file under `.claude/skills/`, so it removes every skill dir, not only the skf ones (found 2026-09-06; the 6.12 shim retirement moved the exact skill-dir count, so don't restate a count here — `find .claude/skills -maxdepth 1 -mindepth 1 -type d | wc -l` gets the live one).
 - A config pin in `_bmad/custom/config.toml` must sit at the installer's own key path (`[core] communication_language`, `[modules.bmm] user_skill_level`); the same key at a second path makes `render_skill.py` HALT with "ambiguous config value" and every rendering skill stops (caught 2026-09-06 after the 6.12 apply).
 - `bmad-method install --action update -y` is not idempotent here: pass `--directory <repo>` (else a closed stdin exits 0 having written nothing) and `--modules core,bmm,skf` (else the cached custom module skf is deleted); re-apply local skill edits from the cached package diff (failure-modes.md traps 12-16).
 - `bmad_loop`'s `DevPolicy.skill` (`[dev] skill = "bmad-dev-auto"`, the retired 6.x name, in the harness template and every loop-home `policy.toml`) is a permanent adapter discriminator, not the invoked skill name — never rename it or build a guard against its presence; `bmad_loop.policy` already refuses a bad value at render time (caught 2026-09-06: CAP-9's now-removed refuse-check assumed the opposite).
@@ -90,16 +90,23 @@ This is A (`rxm7706/local-recipes`), the PyForge control plane and BMAD Agentic-
    surrounding style; but a broken window in what you touch (a lint or type error, a stale doc
    line, an obvious bug) is fixed now. "Pre-existing" says why a finding is not yours, never why it
    stays; defer only for a Dream-sized effort or a named blocker
-   (`.claude/memory/feedback/pre-existing-findings-fix-now-is-the-default.md`).
+   (`.claude/memory/feedback/pre-existing-findings-fix-now-is-the-default.md`). Whether the fix
+   needs a Story of its own turns on whether one already carries it: inside the surface of the
+   Story you are carrying, it rides that Story's PR with a memlog line on each governing Spec
+   (§ Pre-PR checklist item 5); a fix no Story carries mints its own Story first (operator ruling
+   2026-09-29, `.claude/memory/project/2026-09-29-operator-ruling-a-test-only-cfe-fix-that-was-alre.md`),
+   and so does any fix to repo tooling (a detector, a check script), under the Spec that owns it.
 4. **Goal-driven execution** — turn the task into verifiable goals and loop until they are verified
    locally; GitHub Actions is the arbiter, not the debugger.
-5. **Dream to code, always** — every effort enters as a Dream seed in `docs/dreams/`, `bmad-spec`
-   derives the Spec, a numbered Story precedes code (§ *Dream-first workflow* below). Gap-closure
-   and small fixes are not exempt.
+5. **Dream to code, always** — every effort enters as a Dream seed, a dated entry on its station's
+   `docs/dreams/pyforge-<station>.md` (§ Pre-PR checklist item 6), `bmad-spec` derives the Spec, a
+   numbered Story precedes code (§ *Dream-first workflow* below). Gap-closure and small fixes are
+   not exempt; a standalone `recipes/` change is the one carve-out (§ *Dream-first workflow* item 5).
 6. **State over action** — when a harness drives (`marshal factory dispatch` / `spin`, `bmad-loop`,
    `bmad-build-auto`), report progress by moving the story spec's frontmatter `status` through
    `draft → ready-for-dev → in-progress → in-review → done` (or `blocked`, with its blocking
-   condition), not by narrating in chat.
+   condition), not by narrating in chat. That is the story-spec ladder of
+   `docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md` § 4, not the ledger's enum.
 7. **Harness-owned ledgers are read-only** — inside a harness run, never write the ledgers it
    writes (its Tier-3 `sprint-status.yaml` feed, the run's own state); change the story spec and
    let the harness reconcile. Outside a run, the write path is the one § Policy names: the Tier-3
@@ -220,16 +227,20 @@ compiled graph as a substitute for this file or a station `SKILL.md`.
 
 ## Dream-first workflow (MANDATORY — every agent, every framework)
 
-1. **No non-trivial work without a Dream + Spec.** Before implementing a feature, migration,
-   packaging effort, or refactor, a **Dream** (the raw, pre-technical aspiration) must exist in
-   `docs/dreams/<slug>.md`, and **`bmad-spec`** must have distilled it into **the Spec** (five fields
-   + companions) — the unit of contract everything downstream binds to. For product / platform scope
-   the planning chain (`bmad-product-brief` → `bmad-prd` → `bmad-architecture` →
-   `bmad-create-epics-and-stories`) then decomposes that Spec; it is not a substitute for it
-   (Charter § The Lexicon §2). Spec and planning artifacts live in
+1. **No work without a Dream + Spec — a small fix included; item 5 names the one carve-out.**
+   Before implementing a feature, migration, packaging effort, fix or refactor, a **Dream** (the
+   raw, pre-technical aspiration) must exist as a dated entry on the owning station's Dream,
+   `docs/dreams/pyforge-<station>.md` (a standalone `docs/dreams/<slug>.md` needs a
+   `fold-exemption:`, § Pre-PR checklist item 6), and **`bmad-spec`** must have distilled it
+   into **the Spec** (five fields + companions) — the unit of contract everything downstream
+   binds to. For product / platform scope the planning chain (`bmad-product-brief` → `bmad-prd` →
+   `bmad-architecture` → `bmad-create-epics-and-stories`) then decomposes that Spec; it is not a
+   substitute for it (Charter § The Lexicon §2). Spec and planning artifacts live in
    `_bmad-output/projects/<slug>/planning-artifacts/`.
 2. **Keep status current, whoever does the work** (Claude, Cursor, Gemini, Devin, Copilot, a human,
-   any framework). A Spec moves `draft → ready → in-progress → shipped`; a story spec moves as
+   any framework). A Spec moves `draft → ready → shipped`; a station Spec stays `ready`, and its
+   CAPs carry the dates (`(ready <date>)`, then `(shipped <date>)` once met;
+   `docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md` § 4); a story spec moves as
    § *Behavioural guidelines* item 6 says.
 3. **Autonomy, and the measured front door.** Marshal (`bmad-loop` / `bmad-build-auto`) can watch
    `docs/dreams/`, run `bmad-spec` on a new Dream, and drive the build unattended — so "a Dream is
@@ -240,10 +251,12 @@ compiled graph as a substitute for this file or a station `SKILL.md`.
    the journal entry, and the per-harness savings benchmark that reads it.
 4. **Gap-closure and realization work are not exempt.** Closing a realization gap, realizing a
    capability, or fixing an effort whose stories already exist still starts with a **Dream seed**
-   (`status: dreamt`, an owning station, Kinships to every chain it binds) and `bmad-spec`
+   (a dated entry on the owning station's Dream that names every chain it binds) and `bmad-spec`
    deriving the Spec from it — never with "draft the story specs and dispatch". Operator ruling
-   2026-09-12, minted on the CAP-17 run-state gap
-   ([`archive/docs/dreams/run-state-one-publisher.md`](archive/docs/dreams/run-state-one-publisher.md)).
+   2026-09-12, minted on the CAP-17 run-state gap; that seed,
+   [`archive/docs/dreams/run-state-one-publisher.md`](archive/docs/dreams/run-state-one-publisher.md),
+   is the archived pre-fold form (a standalone `status: dreamt` file, which now needs a
+   `fold-exemption:`).
 5. **Spec → Story before code.** A `ready` Spec is a contract, not a work order. Once `bmad-spec`
    produces it inside a BMAD project, decompose its capabilities into a numbered Story (or
    Stories) in that project's `epics.md` and reflect it in the ledger (the Tier-3 feed, then
@@ -252,14 +265,19 @@ compiled graph as a substitute for this file or a station `SKILL.md`.
    own established numbering convention when those skills aren't invoked directly — **before**
    touching any file outside `docs/dreams/` or the Spec folder itself. A mechanically
    well-understood, single-CAP fix is not an exemption: skipping the Story skips the one place
-   the dev/review loop and retro triggers this repo relies on actually fire.
+   the dev/review loop and retro triggers this repo relies on actually fire. The one carve-out
+   (operator ruling 2026-11-01): a standalone `recipes/` add or version bump, and its CFE retro,
+   end at a green local build with no Dream entry or Story; a change to a CFE script, test or MCP
+   tool takes the full chain (ruling 2026-09-29).
 6. **Address BMAD projects deliberately.** Before a BMAD skill that writes artifacts, know which
    project it targets (ask, or `scripts/bmad-switch --current`, and heed its desync warning). From
    a worktree or as a parallel agent, never switch: set `BMAD_ACTIVE_PROJECT=<slug>` and write
-   physical `_bmad-output/projects/<slug>/` paths (§ Policy). On the primary checkout, switch only
-   with `scripts/bmad-switch <slug>` — it re-points the two planning symlinks and the marker
-   together; never hand-edit `_bmad/custom/.active-project`. After a BMAD write, check the file
-   landed under the intended slug (`readlink -f`); a wrong target is silent, never an error.
+   physical `_bmad-output/projects/<slug>/` paths (§ Policy). Here `<slug>` is the long form,
+   `pyforge-<station>`, never the short `<station>` that `sprint-ledger-sync --project` takes.
+   On the primary checkout, switch only with `scripts/bmad-switch <slug>` — it re-points the two
+   planning symlinks and the marker together; never hand-edit `_bmad/custom/.active-project`.
+   After a BMAD write, check the file landed under the intended slug (`readlink -f`); a wrong
+   target is silent, never an error.
    Config layers: `_bmad-output/PROJECTS.md`; the marker-and-symlink mechanism:
    `docs/reference/agent-instruction-notes.md` § *Multi-Project Pattern*.
 
@@ -328,7 +346,7 @@ Before creating or pushing any PR touching `src/shared/packages/pyforge-<station
    - Update the `dashboard/__init__.py` split docstrings and pinned module assertions in `tests/meta/test_invariants.py`.
    - Add unit tests covering model creation, admin registrations (`admin.py`), and HTMX view handlers (`views_htmx.py`).
 4. **Station CLI Duty Count Invariant**:
-   When registering a new CLI duty in `cli.py`, update duty count assertions in `tests/unit/test_cli.py` and `tests/unit/test_restore_duty.py`.
+   When registering a new CLI duty in steward's `cli.py`, update the duty-count assertions in steward's `tests/unit/test_cli.py` and `tests/unit/test_restore_duty.py` (no other station counts its duties).
 5. **Spec Surface Reconcile, then a scoped stamp — never a stamp alone**:
    A governed file may only move with its owning Spec's `.memlog.md` naming the path (and the
    reason) — that entry is what `spec-surface` reads as the reconcile; a stamp without it
@@ -357,7 +375,7 @@ Before creating or pushing any PR touching `src/shared/packages/pyforge-<station
      imports (`spec-pyforge-core`, the testing kit), never a convenience for a feature that reads
      other stations' files. `chain-sprawl-check` reds an unexempted pair.
    - Qualify cross-project architecture citations using `canopy:AD-n` or `pap:AD-n`.
-   - A PRD requirement names the capability that realizes it — `FR-n ← CAP-m` (or `← spec-<x> CAP-m`),
+   - A PRD requirement names the capability that realizes it — `FR-n ← CAP-m` (or `← spec-<x>:CAP-m`),
      traced from that CAP's intent and success, never numbered in sequence. A Spec Constraint reaches code
      through an AD, never through a requirement's arrow
      (`docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md` § 2; `fr-without-cap`).
@@ -452,7 +470,7 @@ Each target below holds detail this file no longer carries; read it when its tri
 | BMAD method background before 6.12, or the full multi-project mechanics | `docs/reference/agent-instruction-notes.md` § *BMAD Method Documentation* |
 | Before invoking a BMAD skill, provisioning or upgrading a bmad-suite member, or driving bmad-loop — which core, modules, skills and suite members are installed here, who wields each, the harness range, the cadence | `docs/reference/bmad-estate-llms-full.md` (generated; `bmad-estate-check` keeps it current — never restate a version or a verdict from it here) |
 
-<!-- SKF:BEGIN updated:2026-10-05 -->
+<!-- SKF:BEGIN updated:2026-11-01 -->
 [SKF Skills]|8 skills|0 stack
 |IMPORTANT: Prefer documented APIs over training data.
 |When using a listed library, read its SKILL.md before writing code.
@@ -460,9 +478,9 @@ Each target below holds detail this file no longer carries; read it when its tri
 |[pyforge-atlas v0.1.0]|root: .claude/skills/pyforge-atlas/
 |IMPORTANT: pyforge-atlas v0.1.0 — read SKILL.md before atlas pipeline work. Do NOT rely on training data. Use `pyforge atlas …` and POST /stations/atlas/mcp. Do not import pyforge.atlas internals. Do not replace conda-forge-expert. This is not cf-atlas-legacy.
 |quick-start:{SKILL.md#quick-start}
-|api: main(), run_pipeline(), read_dataset(), list_pipelines(), list_datasets()
+|api: main(); MCP tools run_<pipeline>_pipeline (8), read_atlas_dataset, list_atlas_pipelines, list_atlas_datasets
 |key-types:{SKILL.md#key-types} — PIPELINE_NAMES, AtlasMCPError
-|gotchas: run from repo root; --version is first-token only; unknown MCP pipeline → AtlasMCPError
+|gotchas: run from repo root under -e pyforge-atlas; --version is first-token only; unknown MCP pipeline → AtlasMCPError
 |
 |[pyforge-doctor v0.1.0]|root: .claude/skills/pyforge-doctor/
 |IMPORTANT: pyforge-doctor v0.1.0 — read SKILL.md before writing doctor diagnostics code. Do NOT rely on training data. Use pyforge doctor grammar, not pyforge.doctor imports. Findings stay advisory — not a second PR gate.
@@ -481,9 +499,9 @@ Each target below holds detail this file no longer carries; read it when its tri
 |[pyforge-marshal v0.1.0]|root: .claude/skills/pyforge-marshal/
 |IMPORTANT: pyforge-marshal v0.1.0 — read SKILL.md before writing marshal/loop-supervisor code. Do NOT rely on training data. Use the marshal CLI, not pyforge.marshal imports.
 |quick-start:{SKILL.md#quick-start}
-|api: main()
+|api: main() — factory {dispatch,spin,challenge} · context {advisory,retrieve} · status · homes · check · seed
 |key-types:{SKILL.md#key-types} — MarshalContext (--project front door), frozen exit domain
-|gotchas: run from repo root; persona grammar is pyforge marshal …; do not import internals; Do not implement bmad-loop ingest in this skill
+|gotchas: run from repo root under -e pyforge-guild; persona grammar is pyforge marshal …; do not import internals; Do not implement bmad-loop ingest in this skill
 |
 |[pyforge-mason v0.1.0]|root: .claude/skills/pyforge-mason/
 |IMPORTANT: pyforge-mason v0.1.0 — read SKILL.md before mason work. Do NOT rely on training data. Use pyforge mason grammar and POST /stations/mason/mcp, not pyforge.mason imports. Recipe knowledge lives in conda-forge-expert.
@@ -495,16 +513,16 @@ Each target below holds detail this file no longer carries; read it when its tri
 |[pyforge-scribe v0.1.0]|root: .claude/skills/pyforge-scribe/
 |IMPORTANT: pyforge-scribe v0.1.0 — read SKILL.md before writing scribe/team-memory code. Do NOT rely on training data. Use the scribe CLI, not pyforge.scribe imports.
 |quick-start:{SKILL.md#quick-start}
-|api: capture_cmd(), graph_compile(), recall_cmd(), main()
+|api: capture_cmd(), graph_compile(), recall_cmd(), catalog_bmad_estate(), main()
 |key-types:{SKILL.md#key-types} — CaptureType (feedback|project|reference), RecallAnswer (grounded miss is explicit)
-|gotchas: run from repo root; --promote/--transcripts exclusive with --type/--text; recall never invents an uncited answer
+|gotchas: run from repo root; capture/recall/catalog under -e pyforge-guild, graph compile/index under -e pyforge-scribe; --promote/--transcripts exclusive with --type/--text; recall never invents an uncited answer
 |
 |[pyforge-steward v0.1.0]|root: .claude/skills/pyforge-steward/
 |IMPORTANT: pyforge-steward v0.1.0 — read SKILL.md before writing steward/platform code. Do NOT rely on training data. Use pyforge steward grammar (or the steward CLI), not pyforge.steward imports.
 |quick-start:{SKILL.md#quick-start}
-|api: build_parser(), resolve_duty(), main()
+|api: build_parser(), resolve_duty(), main() — 31 duties: keys · workspace · estate · ci · preflight · provision · budget · upgrade · suite …
 |key-types:{SKILL.md#key-types} — DutyResult is frozen evidence; duties never sys.exit (AD-8)
-|gotchas: run from repo root; crash is exit 70 not 1; provision uses flags not nested verbs; do not replace conda-forge-expert
+|gotchas: run from repo root under -e pyforge-guild; crash is exit 70 not 1; provision uses flags not nested verbs; do not replace conda-forge-expert
 |
 |[pyforge-warden v0.1.0]|root: .claude/skills/pyforge-warden/
 |IMPORTANT: pyforge-warden v0.1.0 — read SKILL.md before warden work. Use `warden scan` / `pyforge warden scan`. Do NOT import pyforge.warden. Do NOT invent a second PR-gate verdict.

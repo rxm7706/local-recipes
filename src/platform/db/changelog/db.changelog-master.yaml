@@ -31,6 +31,9 @@ databaseChangeLog:
       file: changes/python-agent-platform-23-warden-fabric-0003-fix-proposal.sql
       relativeToChangelogFile: true
   - include:
+      file: changes/python-agent-platform-24-warden-fabric-0004-fleet-run-repo-counts.sql
+      relativeToChangelogFile: true
+  - include:
       file: changes/python-agent-platform-15-django-contrib-auth-contenttypes.sql
       relativeToChangelogFile: true
   - include:

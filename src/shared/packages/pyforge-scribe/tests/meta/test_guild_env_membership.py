@@ -5,7 +5,7 @@ session default environment.
 2026-09-19 the scribe CLI lived only in `-e pyforge-scribe`, so a Copilot, Cursor Cloud or
 Claude Code remote session -- whose sandbox installs the Guild default and nothing else --
 could not capture a decision or recall one. This pins the core package's membership and
-keeps the governance docs from telling sessions the old thing.
+keeps every doc that teaches capture or recall (Story 19.4) from telling sessions the old thing.
 """
 
 from __future__ import annotations
@@ -26,7 +26,17 @@ def _repo_root() -> Path:
 
 
 ROOT = _repo_root()
-GOVERNANCE_DOCS = ("AGENTS.md", "CLAUDE.md", ".cursor/rules/scribe-recall.mdc")
+# Every doc that teaches capture or recall (Story 19.4, EGM audit RUL-D6 / RUL-C4): the instruction
+# files, the how-to, the package README (the skill's SKF compile source) and the compiled skill,
+# named by its `active/` path in text.
+GOVERNANCE_DOCS = (
+    "AGENTS.md",
+    "CLAUDE.md",
+    ".cursor/rules/scribe-recall.mdc",
+    "docs/how-to/one-chain-station-ops.md",
+    "src/shared/packages/pyforge-scribe/README.md",
+    ".claude/skills/pyforge-scribe/active/pyforge-scribe/SKILL.md",
+)
 # The extras are heavy and per-env by design (AD-6 air-gap, pixi.toml comment at feature.pyforge-guild):
 # they must NOT ride into the Guild default with the core package.
 HEAVY_EXTRAS = ("graphifyy", "cocoindex", "psycopg")

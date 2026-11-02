@@ -25,6 +25,7 @@ from typing import Any
 from pyforge.core.errors import PyforgeError
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
+from ..core import challenge as challenge_core
 from ..core.context import MarshalContext
 from ..core.dispatch import DispatchJournalFacts
 from ..core.dispatch_completion import DispatchSessionVerdict
@@ -804,6 +805,11 @@ def _render_text(data: Mapping[str, Any], findings: Sequence[Finding]) -> str:
             f"attempt={running.get('attempt')} tokens={running.get('tokens')}"
         )
         lines.append("")
+        # Story 113.8 (CAP-300): the dispatch's EGM readiness review, only when its launch intent carries one.
+        readiness = sections.get("readiness_challenge")
+        if isinstance(readiness, Mapping):
+            lines.append(f"**Readiness Challenge:** {challenge_core.readiness_text(readiness)}")
+            lines.append("")
         lines.append("**Up Next & Full Queue:**")
         for item in sections.get("up_next") or []:
             lines.append(f"- {item}")
@@ -1021,6 +1027,11 @@ def _gather_station(
             stale_loop=stale_loop_id,
         ),
     }
+    # Story 113.8 (CAP-300): `marshal status`'s `dispatch_readiness_challenge` view -- the report path and
+    # whether the readiness review is red (`MRS-DISP-067`). Absent (the switch off), the sections are unchanged.
+    readiness = home.get("dispatch_readiness_challenge")
+    if isinstance(readiness, Mapping):
+        sections["readiness_challenge"] = challenge_core.readiness_view(readiness)
     active = str(home.get("state") or "") in {"running", "dev-running"} and not snap["finished"]
     return {
         "pattern": pattern,

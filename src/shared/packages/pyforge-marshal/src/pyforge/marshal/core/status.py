@@ -77,6 +77,7 @@ from typing import Literal
 from pyforge.core.process import ProcessResult
 
 from ..ports.harness import DeferredStory, TaskPhaseSnapshot
+from .challenge import readiness_view
 from .dispatch_harness_done import FollowupReview
 from .dispatch_supervisor_state import landing_journal_indicates_complete
 from .identity import StoryKey, normalize, render_feed_key
@@ -1042,6 +1043,9 @@ class FleetHomeFacts:
     dispatch_stale_runs: tuple[dict[str, object], ...] = ()
     # Story 92.1 (AC3): the supervisor's last failed process-group read for the latest run, else ``None``.
     dispatch_session_liveness_error: str | None = None
+    # Story 113.8 (CAP-300): the latest run's launch-INTENT ``readiness_challenge`` payload, else ``None``
+    # (the EGM readiness switch off) -- the row then carries no readiness key at all.
+    dispatch_readiness_challenge: dict[str, object] | None = None
     # Story 28.24 (CAP-7): supervisor finalize shell failed — operator must
     # commit/push/verify in the named worktree.
     finalize_escalation_story: str | None = None
@@ -1388,6 +1392,8 @@ def _merge_dispatch_row_fields(row: dict[str, object], facts: FleetHomeFacts) ->
         patched["dispatch_stranded_work"] = facts.dispatch_stranded_work
     if facts.dispatch_session_liveness_error is not None:
         patched["dispatch_session_liveness_error"] = facts.dispatch_session_liveness_error
+    if facts.dispatch_readiness_challenge is not None:
+        patched["dispatch_readiness_challenge"] = readiness_view(facts.dispatch_readiness_challenge)
     phase = derive_dispatch_phase(facts)
     if phase is not None:
         patched["dispatch_phase"] = phase

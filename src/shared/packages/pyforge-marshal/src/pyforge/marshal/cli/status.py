@@ -131,6 +131,7 @@ from ..adapters.clock_system import SystemClock
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import HarnessError, resolve_loop_runner
 from ..adapters.vcs_git import GitVcs, VcsCommandError
+from ..core import challenge as challenge_core
 from ..core import dispatch as dispatch_core
 from ..core import dispatch_fleet, dispatch_landing, layer_savings_sources, promotion
 from ..core import policy as policy_core
@@ -1008,6 +1009,7 @@ def _merge_dispatch_overlay(
         dispatch_wave_id=wave_id,
         dispatch_in_flight_stories=in_flight,
         dispatch_session_liveness_error=journal.session_liveness_error,
+        dispatch_readiness_challenge=journal.readiness_challenge,
     )
 
 
@@ -2825,6 +2827,11 @@ def _render_text_status(data: Mapping[str, object], findings: tuple[Finding, ...
         liveness_error = home.get("dispatch_session_liveness_error")
         if liveness_error:
             line += f" LIVENESS_ERROR={' '.join(str(liveness_error).split())!r}"
+        # Story 113.8 (CAP-300): the SAME `dispatch_readiness_challenge` view the JSON row carries -- the EGM
+        # readiness review's report and whether it is red (`MRS-DISP-067`); absent, the line is unchanged.
+        readiness = home.get("dispatch_readiness_challenge")
+        if isinstance(readiness, Mapping):
+            line += f" READINESS={challenge_core.readiness_text(readiness)!r}"
         # Story 92.1 (AC9): the SAME `dispatch_stale_runs` list the JSON row carries -- each run whose worktree
         # is gone, with its story and missing worktree, and the operator's quarantine remedy (one per station).
         stale_runs = home.get("dispatch_stale_runs") or ()

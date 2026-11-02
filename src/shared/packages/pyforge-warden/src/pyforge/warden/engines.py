@@ -171,9 +171,17 @@ ENGINE_VERSION_CHECK_TIMEOUT_SECONDS = 10
 # not silently pass).
 DEPTRY_VERSION_RANGE = SpecifierSet(">=0.25.1,<0.26")
 OSV_SCANNER_VERSION_RANGE = SpecifierSet(">=2.4.0,<2.5")
-PIXI_VERSION_RANGE = SpecifierSet(">=0.80.0,<0.81")
+# Story 14.4: the fix-PR solver's pixi range admits CI's pinned 0.80.x and the
+# workspace's 0.81.x (installed at mint, re-solved end to end by
+# tests/integration/test_fix_solver_real_pixi.py). Its floor is pixi.toml's
+# ``requires-pixi`` floor -- tests/meta/test_engine_version_range_sync.py reds the
+# two drifting apart -- and it still closes before the next untested minor.
+PIXI_VERSION_RANGE = SpecifierSet(">=0.80.0,<0.82")
 OPENGREP_VERSION_RANGE = SpecifierSet(">=1.30.2,<1.31")
 PIXI_VERSION_PATTERN = re.compile(r"pixi (\d+\.\d+\.\d+)")
+# The default per-solve ``pixi lock`` budget; ``run_pixi_lock(timeout=...)``
+# overrides it, and the fix-target solver passes the smaller of it and the
+# remaining total solve budget (Story 14.4).
 PIXI_LOCK_TIMEOUT_SECONDS = 600.0
 
 # Story 11.3: ``tea-test-review`` advisory spawn budget — mirrors the CLI's
@@ -377,11 +385,17 @@ def _engine_env(
             pass
 
 
-def run_pixi_lock(*, cwd: Path) -> tuple[ErrorRecord | None, int | None]:
+def run_pixi_lock(*, cwd: Path, timeout: float = PIXI_LOCK_TIMEOUT_SECONDS) -> tuple[ErrorRecord | None, int | None]:
     """Story 14.1: run ``pixi lock`` in ``cwd`` through ``_engine_env`` after
     a version pre-flight. Returns ``(None, exit_code)`` on spawn success, or
     ``(ErrorRecord, None)`` when the binary is missing, out of range, or the
-    seam fails before the child completes."""
+    seam fails before the child completes.
+
+    Story 14.4: ``--manifest-path cwd`` pins the solve to the copy. Without it,
+    a copy holding no ``pixi.toml``/``pyproject.toml`` falls back to the
+    ``PIXI_PROJECT_MANIFEST`` a ``pixi run`` parent exports, and ``pixi lock``
+    re-solves the host workspace's own lock. ``timeout`` bounds the solve
+    (default ``PIXI_LOCK_TIMEOUT_SECONDS``)."""
     version_error = _check_engine_version(
         owner="pixi",
         argv=["pixi", "--version"],
@@ -392,10 +406,10 @@ def run_pixi_lock(*, cwd: Path) -> tuple[ErrorRecord | None, int | None]:
     if version_error is not None:
         return version_error, None
     _text, error, exit_code = _engine_env(
-        lambda _output_path: ["pixi", "lock"],
+        lambda _output_path: ["pixi", "lock", "--manifest-path", str(cwd)],
         owner="pixi",
         cwd=cwd,
-        timeout=PIXI_LOCK_TIMEOUT_SECONDS,
+        timeout=timeout,
     )
     if error is not None:
         return error, None

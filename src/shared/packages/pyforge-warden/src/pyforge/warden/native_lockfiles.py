@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 
 from .inventory import Component, Provenance, derive_purl
 from .models import (
+    AXIS_HYGIENE,
     AXIS_VULNERABILITY,
     CveMatchLevel,
     Ecosystem,
@@ -38,6 +39,8 @@ from .vuln import (
 from .vuln import _db_has_valid_advisory as db_has_valid_advisory
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from .interfaces import EngineResult
 
 NON_PYTHON_ECOSYSTEMS_FLAG = "pyforge.warden.non_python_ecosystems"
@@ -108,7 +111,9 @@ def osv_ecosystem_for_kind(kind: str) -> Ecosystem:
 
 
 def is_non_python_native_ecosystem(ecosystem: Ecosystem) -> bool:
-    """Components whose hygiene/license/currency axes are honestly N/A."""
+    """Components outside the Python-scoped producers: hygiene (deptry) never
+    judges them. The license and currency engines still do, and resolve
+    nothing for them -- ``license:unknown`` / ``currency:unknown`` (Story 16.9)."""
     return ecosystem not in (Ecosystem.PYPI, Ecosystem.CONDA)
 
 
@@ -245,11 +250,15 @@ def scan_native_lockfile(target: Path, manifest: ScannedManifest) -> NativeLockf
             snapshot_at=snapshot_at,
         )
 
+    # Story 16.9: ``--all-packages`` -- without it osv-scanner 2.4.0's JSON
+    # lists only the packages that matched an advisory, so a clean lock
+    # inventoried 0 components and composed the empty-extraction indeterminate.
     text, error, exit_code = _engine_env(
         lambda output_path: [
             "osv-scanner",
             "scan",
             "--offline",
+            "--all-packages",
             "--format",
             "json",
             "--output-file",
@@ -350,10 +359,28 @@ def scan_native_lockfile(target: Path, manifest: ScannedManifest) -> NativeLockf
     )
 
 
-def inventory_count_for_axis(inventory_components: tuple[Component, ...], axis: str) -> int:
-    """Per-axis denominator: Python-scoped deps only on non-vuln axes."""
+def native_vuln_ecosystems(native_scans: Sequence[NativeLockfileScan]) -> dict[str, str]:
+    """Each ``vuln:`` finding a native lockfile scan produced -> its ecosystem (Story 16.8).
 
-    if axis == AXIS_VULNERABILITY:
+    The actuator labels these outcomes, so the fleet queues no proposal for a
+    finding CAP-24's edit set (``pixi.toml``, ``pyproject.toml``, recipes) cannot fix."""
+    return {
+        finding.id: scan.ecosystem.value
+        for scan in native_scans
+        for finding in scan.parse.findings
+        if finding.id.startswith("vuln:")
+    }
+
+
+def inventory_count_for_axis(inventory_components: tuple[Component, ...], axis: str) -> int:
+    """Per-axis denominator: the components that axis's engine judges.
+
+    Vulnerability, license and currency judge every component, native ones
+    included (Story 16.9: a non-Python repo's license and currency rows count
+    the components that drew ``license:unknown`` / ``currency:unknown``, never
+    ``deps_total=0`` beside them). Hygiene counts the Python-scoped ones only."""
+
+    if axis != AXIS_HYGIENE:
         return len(inventory_components)
     return sum(1 for c in inventory_components if not is_non_python_native_ecosystem(c.ecosystem))
 

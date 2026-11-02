@@ -25,7 +25,12 @@ from pathlib import Path
 from packaging.specifiers import SpecifierSet
 
 import pyforge.warden
-from pyforge.warden.engines import DEPTRY_VERSION_RANGE, OPENGREP_VERSION_RANGE, OSV_SCANNER_VERSION_RANGE
+from pyforge.warden.engines import (
+    DEPTRY_VERSION_RANGE,
+    OPENGREP_VERSION_RANGE,
+    OSV_SCANNER_VERSION_RANGE,
+    PIXI_VERSION_RANGE,
+)
 
 _PACKAGE_FILE = pyforge.warden.__file__
 if _PACKAGE_FILE is None:
@@ -35,6 +40,9 @@ if _PACKAGE_FILE is None:
 # pixi.toml lives.
 PACKAGE_ROOT = Path(_PACKAGE_FILE).resolve().parent.parent.parent.parent
 PIXI_TOML = PACKAGE_ROOT / "pixi.toml"
+# .../src/shared/packages/pyforge-warden -> the repo root, whose pixi.toml
+# carries the workspace's ``requires-pixi`` floor (Story 14.4).
+ROOT_PIXI_TOML = PACKAGE_ROOT.parents[3] / "pixi.toml"
 
 
 def _run_dependencies() -> dict[str, object]:
@@ -109,3 +117,36 @@ def test_ranges_do_not_widen_to_the_next_untested_minor():
     assert Version("0.26.0") not in DEPTRY_VERSION_RANGE
     assert Version("2.5.0") not in OSV_SCANNER_VERSION_RANGE
     assert Version("1.31.0") not in OPENGREP_VERSION_RANGE
+
+
+def _floor(specifiers: SpecifierSet) -> list[str]:
+    return [spec.version for spec in specifiers if spec.operator == ">="]
+
+
+def test_pixi_range_floor_is_the_requires_pixi_floor():
+    """Story 14.4 (WAR-D-R1): the fix-PR solver's ``PIXI_VERSION_RANGE`` and
+    the root ``pixi.toml``'s ``requires-pixi`` move together -- a requires-pixi
+    bump without the range (or the reverse) reds here."""
+    from packaging.version import Version
+
+    with ROOT_PIXI_TOML.open("rb") as stream:
+        requires_pixi = SpecifierSet(tomllib.load(stream)["workspace"]["requires-pixi"])
+    (workspace_floor,) = _floor(requires_pixi)
+    assert _floor(PIXI_VERSION_RANGE) == [workspace_floor], (
+        f"engines.py's PIXI_VERSION_RANGE ({PIXI_VERSION_RANGE}) and pixi.toml's "
+        f"requires-pixi ({requires_pixi}) have drifted apart -- retest the "
+        "fix-PR solver on the new pixi and edit both together"
+    )
+    assert Version(workspace_floor) in PIXI_VERSION_RANGE
+
+
+def test_pixi_range_admits_the_tested_pixi_and_no_untested_minor():
+    """Story 14.4: 0.80.0 (CI's setup-pixi pin) and 0.81.0 (the workspace pixi
+    the real ``pixi lock`` integration test ran on at mint) are in range; the
+    next minor is not."""
+    from packaging.version import Version
+
+    assert len(PIXI_VERSION_RANGE) >= 2
+    assert Version("0.80.0") in PIXI_VERSION_RANGE
+    assert Version("0.81.0") in PIXI_VERSION_RANGE
+    assert Version("0.82.0") not in PIXI_VERSION_RANGE

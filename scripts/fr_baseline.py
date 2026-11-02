@@ -1,11 +1,14 @@
 #!/usr/bin/env python
-"""Mutation-only companion to `fr-without-cap-check` (doctor Stories 25.2 and 50.1).
+"""Mutation-only companion to `fr-without-cap-check` (doctor Stories 25.2, 50.1 and 50.2).
 
     python scripts/fr_baseline.py --prune                    # the ONLY routine verb: drop ids
                                                              # that gained an arrow and findings
                                                              # keys that stopped firing
     python scripts/fr_baseline.py --project pyforge-<s>      # at that station's fold PR:
-                                                             # re-snapshot its arrowless ids
+                                                             # re-snapshot its arrowless ids;
+                                                             # refused when it would ADD one
+                                                             # (--force only after a review that
+                                                             # names each ADDED id in the PR)
     python scripts/fr_baseline.py --snapshot-findings        # ONE-TIME: write the `findings` map;
                                                              # refused once it exists (--force only
                                                              # after a review that names each
@@ -21,13 +24,21 @@ WARNs `fr-baseline-stale` for an entry that no longer applies. A new finding
 is never laundered in: `--snapshot-findings` prints the keys it would ADD and
 REMOVE and refuses when a `findings` map already exists, unless `--force`.
 `--project` re-baselines ONE station and carries every other station's entry
-over untouched. A bare re-snapshot after the ruling is refused without
-`--force`: it would launder every un-cited FR minted since.
+over untouched; it prints the ids it would ADD and REMOVE and refuses an ADD
+unless `--force` (doctor Story 50.2). A bare re-snapshot after the ruling is
+refused without `--force`: it would launder every un-cited FR minted since.
+
+Every key a write ADDS to the file it read is recorded in the file's `forced`
+list with this run's HEAD (`record_fr_additions`). That record is the only
+escape `fr-without-cap` admits for a key added since the merge-base with
+origin/main (`fr-baseline-grown`, doctor Story 50.2): a hand edit, or an
+`owners` row, never admits one. `--prune` drops a record whose key it removed.
 """
 
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import subprocess
 import sys
@@ -39,6 +50,7 @@ sys.path.insert(0, str(REPO_ROOT / "src" / "shared" / "packages" / "pyforge-doct
 from pyforge.doctor.sources.one_chain import (  # noqa: E402
     FR_BASELINE_REL,
     prune_fr_baseline,
+    record_fr_additions,
     snapshot_fr_baseline,
     snapshot_fr_findings,
 )
@@ -58,8 +70,8 @@ def _write(path: Path, data: dict) -> None:
 
 
 def _print_delta(old: dict[str, list[str]], new: dict[str, list[str]]) -> int:
-    """Print, per station, the keys a `findings` rewrite would ADD and REMOVE;
-    return the number it would add."""
+    """Print, per station, the keys a `findings` or `projects` rewrite would ADD
+    and REMOVE; return the number it would add."""
     added_total = 0
     for slug in sorted(set(old) | set(new)):
         before, after = set(old.get(slug, [])), set(new.get(slug, []))
@@ -72,6 +84,11 @@ def _print_delta(old: dict[str, list[str]], new: dict[str, list[str]]) -> int:
             for key in removed:
                 print(f"  REMOVE {key}")
     return added_total
+
+
+def _print_recorded(recorded: list[tuple[str, str, str]], head: str) -> None:
+    for slug, kind, key in recorded:
+        print(f"  FORCED {slug} {kind} {key} @ {head}")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -128,22 +145,36 @@ def main(argv: list[str] | None = None) -> int:
                       f"shrinks: `--prune` is the routine verb; `--force` only after a review that names "
                       f"each added key in the PR")
                 return 1
+        previous = copy.deepcopy(existing)
+        head = _head_sha(root)
         existing["findings"] = new
-        existing["findings_sha"] = _head_sha(root)
+        existing["findings_sha"] = head
+        recorded = record_fr_additions(previous, existing, head)
         _write(path, existing)
         for slug, keys in new.items():
             print(f"{slug}: {len(keys)} finding(s)")
+        _print_recorded(recorded, head)
         return 0
 
+    head = _head_sha(root)
     data = snapshot_fr_baseline(
         root,
-        ruling_sha=args.ruling_sha or (existing or {}).get("ruling_sha") or _head_sha(root),
+        ruling_sha=args.ruling_sha or (existing or {}).get("ruling_sha") or head,
         only_project=args.project,
         existing=existing,
     )
     if args.project:
-        data["rebaselined"] = {**(existing or {}).get("rebaselined", {}), args.project: _head_sha(root)}
+        before = (existing or {}).get("projects")
+        added = _print_delta(before if isinstance(before, dict) else {}, data["projects"])
+        if added and not args.force:
+            print(f"refusing: --project {args.project} would ADD {added} id(s) to `projects` — the baseline only "
+                  f"shrinks: `--prune` is the routine verb; `--force` only at the station's fold PR, after a review "
+                  f"that names each added id in the PR")
+            return 1
+        data["rebaselined"] = {**(existing or {}).get("rebaselined", {}), args.project: head}
+    recorded = record_fr_additions(existing, data, head)
     _write(path, data)
+    _print_recorded(recorded, head)
     total = sum(len(v) for v in data["projects"].values())
     scope = args.project or "fleet"
     print(f"{scope}: {total} arrowless FR/NFR id(s) across {len(data['projects'])} station PRD(s)")

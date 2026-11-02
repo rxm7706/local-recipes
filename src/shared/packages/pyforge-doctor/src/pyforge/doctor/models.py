@@ -221,8 +221,10 @@ class Source(StrEnum):
     CI_PAUSE_DRIFT = "ci-pause-drift"
     # Story 48.2 (Epic 48 / CAP-91 FR-24): warn-only live read of the Pages
     # root's ``last-modified`` against the latest published-input commit on
-    # ``refs/remotes/origin/main``; a deploy more than 24 hours behind its
-    # inputs is one WARN, an unreadable side is one WARN and never an OK.
+    # ``refs/remotes/origin/main``. Story 48.3 reads the clock: an input that
+    # landed after the deploy and has waited more than 24 hours by now is one
+    # WARN, an input the site was deployed after is the OK row whatever the
+    # clock reads, and an unreadable side is one WARN and never an OK.
     # fleet-picture ATTENTION probes this DISPATCH name. Subject steward (the
     # deploy duct, pages.yml); see sources/pages_liveness.py.
     PAGES_LIVENESS = "pages-liveness"

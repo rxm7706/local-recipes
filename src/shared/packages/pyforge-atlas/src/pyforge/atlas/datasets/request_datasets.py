@@ -350,12 +350,15 @@ class _RequestParameterizedAPIDataset(AbstractDataset):
         # the dataset's credentials go to its own host only, never to an absolute key elsewhere
         if urllib.parse.urlsplit(url).netloc != urllib.parse.urlsplit(self._base_url).netloc:
             raise ValueError(f"{type(self).__name__}.fetch_one: {url!r} is not on {self._base_url!r}")
+        # Story 35.5 (review follow-up 2): the credential rides only with the operator's switch;
+        # without it, no credential and a no-op auth that keeps ~/.netrc out. A catalog timeout
+        # stands; otherwise the refresh default, so a fan-out request never waits forever.
+        timeout = self._load_args.get("timeout", DEFAULT_REFRESH_TIMEOUT_SECONDS)
         inner = APIDataset(
             url=url,
             method=self._method,
-            load_args=self._load_args,
-            credentials=self._credentials,
             metadata=self.metadata,
+            **credential_switch.catalog_request(timeout, self._credentials, **self._load_args),
         )
         return _coerce_api_json(inner.load())
 
@@ -601,12 +604,12 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
                     return fetcher(body), None
                 if auth is not None:
                     return self._post(body, auth), None
+                # Story 35.5 (review follow-up 2): the catalog credential rides only with the switch
                 inner = APIDataset(
                     url=self._base_url,
                     method="POST",
-                    load_args={"json": body, "timeout": self._timeout_seconds},
-                    credentials=self._credentials,
                     metadata=self.metadata,
+                    **credential_switch.catalog_request(self._timeout_seconds, self._credentials, json=body),
                 )
                 return _coerce_api_json(inner.load()), None
             except Exception as exc:  # AD-13: an unreachable endpoint never fails the run.

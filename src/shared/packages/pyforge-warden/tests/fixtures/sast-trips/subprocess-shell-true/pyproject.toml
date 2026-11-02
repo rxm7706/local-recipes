@@ -1,0 +1,4 @@
+[project]
+name = "sast-trip-subprocess-shell-true"
+version = "0.0.0"
+dependencies = []

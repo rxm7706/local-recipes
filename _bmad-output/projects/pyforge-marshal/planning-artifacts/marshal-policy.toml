@@ -1006,12 +1006,16 @@ args = []
 # of bmad-loop scm max_parallel (spin). Must sit BEFORE model_tier_map (TOML
 # table-scoping: trailing root keys nest under the last opened table).
 # [challenge] (Story 113.2, spec-pyforge-marshal CAP-299): the EGM challenger's one
-# configuration. Deliberately NOT declared here: absent means off, exactly as [context].
+# configuration. Deliberately NOT declared here or in the repo default, so it is absent and off
+# (an absent [context] inherits the repo default instead; [challenge] has no default block to inherit).
 # Read only while pyforge.marshal.egm_policy_block is on. Shape, when a station opts in:
 #   [challenge]
 #   enabled = true
 #   stages = ["mint", "decompose", "readiness", "drift", "rules"]
-#   model = "claude-fable-5-1"          # a model_cost_catalog entry, never the station's dev/review model
+#   model = "claude-fable-5-1"          # an anthropic entry of marshal's model_cost_catalog, read for every station;
+#                                       # never the station's own dev/review model (Story 113.9). A station whose own
+#                                       # dev or review model is that entry -- marshal itself, frontier tier -- must
+#                                       # name another Anthropic catalog entry.
 #   reviewers.readiness = ["implementation-readiness"]   # optional; defaults per stage
 #   standards.mint = ["docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md"]  # optional
 #   artifact_dir = "implementation-artifacts/egm"        # optional

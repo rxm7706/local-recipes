@@ -144,3 +144,7 @@ Follow-up review recommendation: false (no high patches; medium patches were mec
 Verification: `pixi run --frozen -e pyforge-warden pyforge-warden-test` passed (2266); `python scripts/spec_surface_reconcile.py` OK. Platform proposal tests require PostgreSQL (`platform-ci-local -- --test` not run in this session).
 
 Residual risks: Portal routes untested via HTTP; production Celery concurrency on duplicate approve not mutex-guarded in task (refused at approve layer).
+
+## Spec Change Log
+
+- 2026-11-01: amended in place (append-only, EGM audit 2026-11-01, marshal Story 113.7): in `epics.md`, a **Spec:** line links this file (EGM audit WAR-D-R2). No AC, status, heading or key moved; residue `_bmad-output/projects/pyforge-warden/planning-artifacts/research/egm-audit-2026-11-01.md`.

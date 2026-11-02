@@ -21,7 +21,9 @@ _STALE = {
     "source": "pages-liveness",
     "check": "pages-liveness-stale",
     "status": "warn",
-    # The source's own shape (doctor 48.2 review): the lag and both dates first, the URL last.
+    # The retired doctor 48.2 message shape, kept as a fixture: the lag and both dates first, the URL last.
+    # Story 48.3 replaced it with "Pages input waited …" (sources/pages_liveness.py); fleet-picture cuts any
+    # message at 110 characters and never parses it, so the fixture still exercises the cut.
     "message": (
         "Pages deploy more than 65 hours behind: last-modified 2026-10-06T03:12:00Z, inputs "
         "2026-10-08T15:30:00-05:00 (published-input commit d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708 on "

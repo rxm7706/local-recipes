@@ -174,3 +174,25 @@ def test_pixi_out_of_range_is_a_whole_run_failure():
     assert outcome.status == "failed"
     assert outcome.finding_id == ""
     assert "pixi out of range" in (outcome.detail or "")
+
+
+def test_candidate_cap_is_a_failed_outcome_naming_the_bound():
+    """Story 14.4: a bounded loop that accepts nothing is a failed actuation outcome, never a rung."""
+    from pyforge.warden.fix_solver import MAX_FIX_CANDIDATES, rejecting_solver
+
+    finding = _vuln()
+    raw = tuple(f"1.{minor}.0" for minor in range(3, 4 + MAX_FIX_CANDIDATES))
+    actuation = run_actuator(
+        [finding],
+        dry_run=False,
+        fix_target_resolution_enabled=True,
+        fixed_version_candidates={finding.id: raw},
+        scan_target=Path("."),
+        solver=rejecting_solver,
+        client=_AcceptAllForge(),
+    )
+    (outcome,) = actuation.outcomes
+    assert outcome.status == "failed"
+    assert f"candidate cap of {MAX_FIX_CANDIDATES}" in (outcome.detail or "")
+    assert outcome.fix_resolution is not None
+    assert len(outcome.fix_resolution.attempts) == MAX_FIX_CANDIDATES

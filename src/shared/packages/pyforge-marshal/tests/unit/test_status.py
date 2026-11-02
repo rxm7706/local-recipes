@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import sys
 from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
@@ -7354,6 +7355,7 @@ def _write_story_dispatch_run(
     worktree: Path,
     session_pid: int,
     extra: list[dict[str, object]] = (),  # type: ignore[assignment]
+    intent_extra: dict[str, object] | None = None,
 ) -> Path:
     run_dir = repo_root / "_bmad-output/projects" / slug / "implementation-artifacts/dispatch-runs" / run_id
     run_dir.mkdir(parents=True)
@@ -7364,7 +7366,7 @@ def _write_story_dispatch_run(
             "run_id": run_id,
             "kind": "dispatch-launch",
             "phase": "intent",
-            "payload": {"story_key": story_key, "worktree_path": str(worktree)},
+            "payload": {"story_key": story_key, "worktree_path": str(worktree), **(intent_extra or {})},
         },
         {
             "id": {"writer_id": "test", "counter": 1},
@@ -7475,3 +7477,84 @@ class TestStaleDispatchRunsInTheSweep:
         assert row["dispatch_session_liveness_error"] == "psutil: invalid attr name 'pgid'"
         assert "dispatch_stale_runs" not in row
         assert "LIVENESS_ERROR=\"psutil: invalid attr name 'pgid'\"" in text
+
+
+class TestReadinessChallengeOnTheRow:
+    """Story 113.8 AC4 (CAP-300): the launch intent's EGM ``readiness_challenge`` reaches ``marshal status``'s
+    dispatch row -- its report path, and red with ``MRS-DISP-067`` -- JSON and text; an intent without the field
+    renders exactly as before (no key, no text)."""
+
+    RUN_ID = "acme-20261101T090000000Z-c0ffee01"
+
+    def _status(self, tmp_path: Path, monkeypatch, capsys, readiness: dict[str, object] | None):
+        worktree = tmp_path / ".worktrees" / "dispatch-acme-113.8"
+        worktree.mkdir(parents=True, exist_ok=True)
+        runs = tmp_path / "_bmad-output/projects/acme/implementation-artifacts/dispatch-runs"
+        if runs.is_dir():
+            shutil.rmtree(runs)
+        _write_story_dispatch_run(
+            tmp_path,
+            "acme",
+            self.RUN_ID,
+            story_key="113.8",
+            worktree=worktree,
+            session_pid=63830,
+            intent_extra={"readiness_challenge": readiness} if readiness is not None else None,
+        )
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        vcs = _FakeVcs(repo_root_value=tmp_path, worktrees=())
+        outputs = []
+        for fmt in ("json", "text"):
+            status_cli.run_status(
+                _args(project="acme", format=fmt),
+                vcs=vcs,
+                fs=LocalFs(),
+                harness=_FakeHarness(),
+                process=_AlivePidsWithUnreadableStart(alive_pids=frozenset({63830, 63831})),
+                clock=_FakeClock(now=_FIXED_NOW),
+            )
+            outputs.append(capsys.readouterr().out)
+        return json.loads(outputs[0])["data"]["homes"][0], outputs[1]
+
+    def test_a_red_readiness_shows_its_report_and_the_code(self, tmp_path, capsys, monkeypatch):
+        report = "/repo/_bmad-output/projects/acme/implementation-artifacts/egm/r1/report.json"
+        row, text = self._status(
+            tmp_path, monkeypatch, capsys, {"report": report, "findings": 2, "high": 1, "error": ""}
+        )
+        assert row["dispatch_readiness_challenge"] == {
+            "report": report,
+            "findings": 2,
+            "high": 1,
+            "error": "",
+            "red": True,
+            "code": "MRS-DISP-067",
+        }
+        assert f"READINESS='red MRS-DISP-067: 2 finding(s), 1 high; report {report}'" in text
+
+    def test_an_unevaluable_readiness_is_red(self, tmp_path, capsys, monkeypatch):
+        row, text = self._status(
+            tmp_path,
+            monkeypatch,
+            capsys,
+            {"report": "/r/report.json", "findings": 0, "high": 0, "error": "report lists no reviewers"},
+        )
+        assert row["dispatch_readiness_challenge"]["red"] is True
+        assert "READINESS='red MRS-DISP-067: report lists no reviewers; report /r/report.json'" in text
+
+    def test_a_clean_readiness_shows_clean(self, tmp_path, capsys, monkeypatch):
+        row, text = self._status(
+            tmp_path, monkeypatch, capsys, {"report": "/r/report.json", "findings": 0, "high": 0, "error": ""}
+        )
+        assert row["dispatch_readiness_challenge"]["red"] is False
+        assert "code" not in row["dispatch_readiness_challenge"]
+        assert "READINESS='clean, report /r/report.json'" in text and "MRS-DISP-067" not in text
+
+    def test_an_intent_without_the_field_renders_as_before(self, tmp_path, capsys, monkeypatch):
+        row, text = self._status(tmp_path, monkeypatch, capsys, None)
+        clean_row, clean_text = self._status(
+            tmp_path, monkeypatch, capsys, {"report": "/r/report.json", "findings": 0, "high": 0, "error": ""}
+        )
+        assert "dispatch_readiness_challenge" not in row and "READINESS" not in text
+        # the field adds its own key and its own text, and changes nothing else
+        assert {k: v for k, v in clean_row.items() if k != "dispatch_readiness_challenge"} == row
+        assert clean_text.replace(" READINESS='clean, report /r/report.json'", "") == text

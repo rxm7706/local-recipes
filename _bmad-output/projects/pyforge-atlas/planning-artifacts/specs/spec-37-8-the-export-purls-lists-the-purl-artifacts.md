@@ -188,6 +188,7 @@ after review 2's fixes.
   - Nits: the node's timeout sits in the derived_artifacts block; `derived_purl_artifacts` has `overwrite: true`, so
     no partition from an earlier run survives; the run times are re-measured above.
 - 2026-10-23: drafted from Story 37.8 and DW-atlas-37-8-1.
+- 2026-11-01: epics.md amended in place (append-only, EGM audit ATL-D-R6, ATL-D-C1): the Story 37.8 block gains the Flag line `pyforge.atlas.board_projections` (Story 37.4's, extended to this board; dev on, staging and production off) and its Then line reads "with the flag on", as this spec's `flag:` block has said since mint; this spec is otherwise unchanged.
 
 ## Review Triage Log
 

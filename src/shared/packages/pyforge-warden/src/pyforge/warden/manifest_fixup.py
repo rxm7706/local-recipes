@@ -44,6 +44,24 @@ def tree_content_digest(root: Path) -> str:
     return hasher.hexdigest()
 
 
+# Story 14.4: an installed pixi environment and the git store are never
+# needed to edit a manifest or re-solve a lock, and can dwarf the repo.
+_COPY_IGNORED_DIRS = (".pixi", ".git")
+
+
+def copy_scan_target(scan_target: Path, destination: Path) -> None:
+    """Copy ``scan_target`` into ``destination`` without ``.pixi/`` or ``.git``.
+
+    The one copy step the fix (``prepare_manifest_fix``) and the fix-target
+    solver probe share; the scanned tree is only read."""
+    shutil.copytree(
+        scan_target,
+        destination,
+        dirs_exist_ok=True,
+        ignore=shutil.ignore_patterns(*_COPY_IGNORED_DIRS),
+    )
+
+
 def _select_manifest_paths(locations: Sequence[str]) -> tuple[str, ...] | None:
     manifests = {path for loc in locations if (path := parse_manifest_path_from_location(loc)) is not None}
     if not manifests:
@@ -76,7 +94,7 @@ def prepare_manifest_fix(
     temp_dir = Path(tempfile.mkdtemp(prefix="warden-manifest-fix-"))
     try:
         os.chmod(temp_dir, 0o700)
-        shutil.copytree(scan_target, temp_dir, dirs_exist_ok=True)
+        copy_scan_target(scan_target, temp_dir)
         manifest_path = temp_dir / manifest_rel
         edit_result = edit_requirement_to_floor(manifest_path, package=package, floor=floor)
         if not edit_result.ok:
@@ -98,8 +116,8 @@ def prepare_manifest_fix(
             original = scan_target / rel
             if not edited.is_file():
                 continue
-            new_content = edited.read_text(encoding="utf-8")
-            if original.is_file() and original.read_text(encoding="utf-8") == new_content:
+            new_content = edited.read_text(encoding="utf-8", newline="")
+            if original.is_file() and original.read_text(encoding="utf-8", newline="") == new_content:
                 continue
             changed.append(ManifestFileChange(path=rel, content=new_content))
         if not changed:

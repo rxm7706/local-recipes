@@ -7,8 +7,8 @@ source_authority: internal
 language: python
 description: >
   Provisioner's CLI for credential lifecycle, deploy, provision, budget,
-  sync, workspace, upgrade, and suite. Agents use pyforge steward grammar
-  rather than importing pyforge.steward internals.
+  sync, workspace, upgrade, suite, estate, ci and preflight. Agents use
+  pyforge steward grammar rather than importing pyforge.steward internals.
 forge_tier: Quick
 created: '2026-08-25'
 created_by: skf-create-skill
@@ -18,6 +18,9 @@ scope:
     - src/pyforge/steward/cli.py
     - src/pyforge/steward/__init__.py
     - src/pyforge/steward/interfaces.py
+    - src/pyforge/steward/estate.py
+    - src/pyforge/steward/ci.py
+    - src/pyforge/steward/preflight_verify.py
     - README.md
   exclude:
     - tests/**
@@ -25,6 +28,9 @@ scope:
   notes: >
     Story 33.1 compile for the steward station. Public contract is the
     steward CLI (AD-7/AD-8). Portal django-steward / Wave B 33.2 is out of scope.
+    Scope widened 2026-11-01 (steward Story 29.4, EGM audit RUL-CL2): estate.py,
+    ci.py and preflight_verify.py are the duty modules cli.py resolves for
+    estate, ci and preflight; recompiled in place at 0.1.0.
   rationale:
     recommended: specific-modules
     chosen: specific-modules

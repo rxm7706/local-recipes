@@ -202,8 +202,12 @@ def _fr_tree(tmp_path: Path) -> Path:
 
 def test_fr_pre_rule_population_is_never_a_finding(tmp_path: Path) -> None:
     root = _fr_tree(tmp_path)
-    (f,) = one_chain.gather_fr_without_cap(root)
-    assert f.check == "fr-without-cap" and f.status is DoctorStatus.OK
+    by = _by_check(one_chain.gather_fr_without_cap(root))
+    # Story 50.2: the fixture is no git checkout, so the merge-base read is one WARN beside the OK row
+    assert sorted(by) == ["fr-baseline-base-unread", "fr-without-cap"]
+    assert by["fr-baseline-base-unread"][0].status is DoctorStatus.WARN
+    (f,) = by["fr-without-cap"]
+    assert f.status is DoctorStatus.OK
     assert f.evidence["new_frs"] == 0
 
 

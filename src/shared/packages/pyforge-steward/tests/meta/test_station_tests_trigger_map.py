@@ -1319,6 +1319,11 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
         "src/shared/packages/pyforge-scribe/tests/meta/test_station_persona.py": _H["GIT_PLATFORM_DIFF"],
     },
     "steward_live": {
+        "src/shared/packages/pyforge-steward/tests/integration/conftest.py": (
+            ("src/platform/deploy/nic/**",),
+            "Story 118.6: the nkp fixture hands the repo root to nkp_probes.connect, which reads the NIC config "
+            "(default src/platform/deploy/nic/my-nebari-local.yaml) and the untracked .env under it",
+        ),
         "src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py": _H["ADOPTION_PIPELINE"],
         "src/shared/packages/pyforge-steward/tests/meta/test_first_portal_slice_provision_list.py": _H[
             "GIT_PLATFORM_DIFF"

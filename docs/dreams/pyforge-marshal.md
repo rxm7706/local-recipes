@@ -13896,3 +13896,28 @@ row; the `steward setup` read rules) · [[pyforge-scribe]] (the
   `research/egm-audit-<date>.md` per station. The plugin was installed at
   user scope the same day so the next interactive session can run the ad hoc
   audit, Tier-3 output only. Next act: `bmad-spec` under `pyforge-marshal`.
+- **2026-11-01 (the audit lands)** — The one-time audit ran by hand on 2026-11-01 (the operator ruled it
+  counts as Story 113.7's run): rules over AGENTS.md, CHAIN-STANDARD.md and the eight station skills, mint and
+  decompose over each station's newest CAP slice. 269 findings (42 Blocker, 205 Major, 22 Nit as audited; 1
+  Blocker after verification) were re-verified on main 03a7aff5d9 and triaged 226 accepted, 41 rejected, 2
+  deferred; the operator accepted every recommendation the same day. Residue: one
+  research/egm-audit-2026-11-01.md per station, rules and fleet totals in
+  `_bmad-output/projects/pyforge-marshal/planning-artifacts/research/egm-audit-2026-11-01.md`. Fixed in the
+  113.7 PR: marshal Stories 113.8-113.13 (the challenger's partial-run, model, isolation, precondition,
+  stage-standard and resolve defects) and 23 fix stories on the other stations; parked at backlog: 113.14 (a
+  size ceiling and section selector, after which the first automated --audit runs).
+- **2026-11-01 (the synthesizer)** — As built, the challenger never spawns `egm:egm-synthesizer`: it dispatches
+  five reviewer agents (zoom-out, design, comprehension, implementation-readiness, codebase-details) in the
+  per-stage groups of `DEFAULT_REVIEWERS`, and the orchestrator session itself assembles `report.json` from their
+  answers. The table in § *Why now* still lists the synthesizer among the plugin's registered agents, which it
+  is; it is left as written (Story 113.12).
+- **2026-11-01 (goldfish context as built)** — The bullet *Goldfish context is the glossary and the Dream entry*
+  stays as written; as built (Story 113.12) the rule binds the context and never the target, so the `rules`
+  stage reads `AGENTS.md` cold as its target. In the `--audit` sweep a repo-rules target (`AGENTS.md`,
+  `CHAIN-STANDARD.md`) takes `docs/dreams/one-chain-per-station.md` plus marshal's glossary and a station
+  `SKILL.md` its whole station Dream; an ad hoc run takes its `--project` station's Dream; the glossary is
+  `glossary.md` when present (six of eight stations have none). Each stage names its standard, a fallback a
+  `[challenge]` block's `standards` overrides: mint `CHAIN-STANDARD.md` and
+  `.claude/skills/bmad-spec/assets/spec-template.md` (the five-field shape), decompose `CHAIN-STANDARD.md` and
+  the station `SPEC.md` whose capability range its stories claim, readiness
+  `.claude/skills/bmad-build-auto/spec-template.md`, drift the station `SPEC.md`, rules `CHAIN-STANDARD.md`.

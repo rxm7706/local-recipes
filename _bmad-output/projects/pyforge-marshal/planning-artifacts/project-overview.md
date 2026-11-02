@@ -452,7 +452,7 @@ If you are an AI agent or human tasked with rebuilding the **architecture and fe
 3. **Read `integration-architecture.md`** to understand cross-part contracts.
 4. **Read `development-guide.md`** for local setup, then `deployment-guide.md` for enterprise / air-gap requirements.
 5. **Cross-check against `project-context.md`** — that file holds the foundational invariants; this doc set is the structural map.
-6. **Plan the Dream-first way.** Work does **not** start at epics any more. Write a Dream in `docs/dreams/<slug>.md`, then run **`bmad-spec`** to produce the Spec into `_bmad-output/projects/<slug>/planning-artifacts/` (small scope), or the full planning chain — `bmad-prd` → `bmad-architecture` → `bmad-create-epics-and-stories` — for a large one. Keep the Spec's status current (`draft → ready → in-progress → shipped`) regardless of who did the work.
+6. **Plan the Dream-first way.** Work does **not** start at epics any more. Write a Dream in `docs/dreams/<slug>.md`, then run **`bmad-spec`** to produce the Spec into `_bmad-output/projects/<slug>/planning-artifacts/` (small scope), or the full planning chain — `bmad-prd` → `bmad-architecture` → `bmad-create-epics-and-stories` — for a large one. Keep the Spec's status current (`draft → ready → shipped`; a station Spec stays `ready` and its CAPs carry `(ready <date>)`, then `(shipped <date>)` — `docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md` § 4) regardless of who did the work.
 7. **Address projects by physical path.** Do not call `scripts/bmad-switch` from a parallel agent — it is per-working-tree global state with no lock.
 
 The 1,664 recipe directories in `recipes/` are out of scope for the rebuild — they are authored *using* the rebuilt factory, not part of it.

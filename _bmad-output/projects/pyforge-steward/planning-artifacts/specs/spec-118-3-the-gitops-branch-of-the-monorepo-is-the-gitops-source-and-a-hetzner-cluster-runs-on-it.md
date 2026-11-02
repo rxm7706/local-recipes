@@ -31,7 +31,7 @@ context:
 **Approach:** `refs/heads/gitops/` joins `docs/governance/guild-roster.json` `protected_refs` as an `operational-branch` (CAP-165), so the session hook denies its deletion and force-push and the live-ruleset proof covers it; `deploy nic validate` refuses a `repository.existing` config whose branch is `main` or outside `gitops/`; the Hetzner config (`cluster.hetzner`: one master and two `cpx31` workers, `longhorn` for `/shared`, Let's Encrypt, `repository.existing` on `rxm7706/local-recipes`, `branch: gitops/<project_name>`, `path: gitops/<project_name>`) runs `up` with `opentofu` resolved through `NIC_TOFU_PATH` and `GIT_TOKEN` (a fine-grained PAT, Contents read and write) through `keys`. Behind `pyforge.steward.nkp_gitops_branch`. The operator-owned inputs — the PAT, `HETZNER_TOKEN`, the domain and DNS, the live ruleset — exist outside git before `up`; without them the story stays `backlog`, and only the operator flips it `blocked`.
 
 Ledger key: `118-3-the-gitops-branch-of-the-monorepo-is-the-gitops-source-and-a-hetzner-cluster-runs-on-it`.
-Type / Effort / Deps: feature / L / S-118.1, S-118.2.
+Type / Effort / Deps: feature / L / S-118.1, S-118.2, S-118.8 (amended 2026-11-01 in place: S-118.8 added, EGM audit STW-M-D1, STW-D-R1).
 
 ### Living CAP citations
 
@@ -67,7 +67,7 @@ Parent: `spec-pyforge-steward` CAP-178
 - Dream: `docs/dreams/pyforge-steward.md` § *2026-10-31 — Nebari hosted: NKP on kind, then Hetzner, with the data-science pack*.
 - Epic: Epic 118, minted with this story.
 - Ledger key: `118-3-the-gitops-branch-of-the-monorepo-is-the-gitops-source-and-a-hetzner-cluster-runs-on-it`.
-- Deps: S-118.1, S-118.2.
+- Deps: S-118.1, S-118.2, S-118.8 (amended 2026-11-01 in place: Story 118.8 names the gitops writer and amends this spec before dispatch, EGM audit STW-M-D1, STW-D-R1).
 - Surface: `marshal-policy.toml` `[epic_surfaces]."118"`.
 - Minted 2026-10-31 in one chain commit with CAP-176..CAP-178, FR-50..FR-52 and Stories 118.1 and 118.2.
 
@@ -93,6 +93,7 @@ Summary: not started.
 
 ## Spec Change Log
 
+- 2026-11-01: Deps gains S-118.8 (EGM fleet audit, marshal Story 113.7; operator ruling 2026-11-01). Story 118.8 names the `gitops/<project_name>` writer and amends this spec's AC1, AC2, AC4, Approach, flag fallback and Surface, and adds the no-secret, `GIT_TOKEN` inventory and consent ACs, before this story is dispatched. No AC body changed here; status unchanged. Findings STW-M-D1, STW-D-R1; residue `_bmad-output/projects/pyforge-steward/planning-artifacts/research/egm-audit-2026-11-01.md`.
 - 2026-10-31 (later): `## Verification` → `**Commands:**` bound to the station's policy verify command so the dispatch gate (`check_spec_binding`, MRS-GATE-011) admits it; the story's own checks moved under their own label.
 - 2026-10-31: minted from the station Dream's 2026-10-31 section (Nebari hosted: NKP on kind, then Hetzner, with the data-science pack) and the operator's four rulings of the same date.
 

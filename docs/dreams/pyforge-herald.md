@@ -779,6 +779,13 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
 
 Herald rebases to one Dream, one Spec, one PRD, one spine, one epic chain. Folded topic Dreams are archived in place with `Consolidated into [[pyforge-herald]]` banners. Station Spec `spec-pyforge-herald` is `ready`; this Dream is `specified`.
 - **2026-10-26 (every requirement derives from a capability) — Found:** the 2026-09-17 fold left 20 of the Spec's capability titles as `from spec-<old>`, 12 intent/success bullets as 'See absorbed Spec memlog and git history.' and 8 cut at their first source line, so an arrow traced by Story 46.1 pointed at a block that said nothing. **Ruled** (2026-10-26, operator, fleet-wide: "yes forbid it" — a requirement cites one or more defined capabilities and nothing else; `spec-one-chain-per-station` CAP-5 as amended, CHAIN-STANDARD § 12). **For herald:** the text is restored by script from `4251c42229^` (9 titles from source lines, 11 authored from intent; 8 bullets from the source, 4 authored where the source carried none; 8 rejoined), every id stable, the authored lines recorded in the memlog for review. Epic 47 / Story 47.1, built in the one-PR effort with the other seven stations; no herald CAP minted, no requirement changes.
+- **2026-11-01 (the EGM fleet audit) — Found:** the one-time fresh-context audit (marshal Story 113.7,
+  spec-pyforge-marshal:CAP-302) read CAP-58..CAP-61 and Epics 39-43: 30 findings, 22 accepted, 8 rejected;
+  residue `_bmad-output/projects/pyforge-herald/planning-artifacts/research/egm-audit-2026-11-01.md`. The
+  2026-10-15 re-derive had left CAP-58, CAP-60 and CAP-61 at their mint text; they re-derive in the 113.7 PR.
+  Fixed in the same PR: Story 42.4 (the status pages pin their snapshot lines, CAP-59, CAP-60). Still open:
+  the Pages duct inputs for /changes/ and /status/runs/ (a steward chain), and the operator-owned dossier
+  routine and ci-status.json refresh.
 
 ## 2026-10-26 — The deck family stays current — infographics re-derived from the ledgers, not remembered (folded from deck-family-currency)
 

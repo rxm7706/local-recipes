@@ -3,7 +3,7 @@ fr-derivation-from: "2026-09-17"
 title: Mason (pyforge-mason)
 status: final
 created: 2026-07-25
-updated: "2026-10-31"   # RE-STAMPED 2026-10-31: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-31 entry (the CFE v8.102.2 Rule-2 retro of the nebari-infrastructure-core 0.14.0 -> 0.17.0 recipe refresh; recipe-factory work, no mason story, no CAP added or moved); no FR registered. See § Currency reconciliation — 2026-10-31. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 33.1): chain-currency cascade (spec -> PRD) after the Spec's capability text was restored from the pre-fold source (no CAP added or moved); no FR, NFR or arrow changes; the NFR lines (no arrows) are Story 33.2's. See § Currency reconciliation — 2026-10-26 (Story 33.1). Prior "2026-10-25"   # RE-STAMPED 2026-10-25 (Story 32.1): three section 4.7 FR arrows the 2026-09-17 fold mapped to CAP-7 by section are re-pointed at the capabilities that realize them (FR-48 to CAP-5, CAP-1; FR-49 to CAP-5, CAP-2; FR-50 to CAP-3); no FR text, number or NFR moves. See § Currency reconciliation — 2026-10-25 (Story 32.1). Prior "2026-10-22"   # RE-STAMPED 2026-10-22: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-13..22 entries (Stories 30.1 and 31.1 surface reconciles; Story 26.2 minted under CAP-34, a fix with no new CAP); no FR registered. See § Currency reconciliation — 2026-10-22. Prior "2026-10-12"   # RE-STAMPED 2026-10-12: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10..12 entries (Track B and CFE-retro surface reconciles; Story 29.1 minted under CAP-18 and CAP-23, a fix with no new CAP); no FR registered. See § Currency reconciliation — 2026-10-12. Prior "2026-10-09"   # RE-STAMPED 2026-10-09: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-09 entries (Story 25.3 minted under CAP-35 / FR-57, CAP-20 and CAP-23, then given a repair mode; Story 25.2 gains Wave 0; no new CAP); no FR registered. See § Currency reconciliation — 2026-10-09 (later). Prior "2026-10-09"   # RE-STAMPED 2026-10-09: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-08..09 entries (Stories 19.2-19.4, 21.1, 21.3-21.5 and 22.2 landed; the operator's two Story 22.1 splits and Stories 22.3 and 22.4, fixes under CAP-32 / FR-54); no FR registered. See § Currency reconciliation — 2026-10-09. Prior 2026-10-05   # RE-STAMPED 2026-10-05: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-03..05 entries (Epic 27 fix stories, Story 27.1 landing, Story 83.24 guard, Story 19.1 station skill); no FR registered. See § Currency reconciliation — 2026-10-05. Prior 2026-10-02   # RE-STAMPED 2026-10-02: chain-currency cascade (spec -> PRD) for Story 26.1 (Epic 26), a fix under CAP-34 / FR-56; no FR registered. See § Currency reconciliation — 2026-10-02. Prior 2026-09-29 (evening)   # RE-STAMPED 2026-09-29 (evening): chain-currency cascade (spec -> PRD) for CAP-35 (Epic 25); FR-57 registered. See § Currency reconciliation — 2026-09-29 (evening). Prior 2026-09-29 (later)   # RE-STAMPED 2026-09-29 (later): chain-currency cascade (spec -> PRD) for CAP-34 (Epic 24); FR-56 registered. See § Currency reconciliation — 2026-09-29 (later). Prior 2026-09-29   # RE-STAMPED 2026-09-29: chain-currency cascade (spec -> PRD) for CAP-33 (Epic 23); FR-55 registered. See § Currency reconciliation — 2026-09-29. Prior 2026-09-28 (night, later)   # RE-STAMPED 2026-09-28 (night, later): chain-currency cascade (spec -> PRD) for CAP-32 (Epic 22); FR-54 registered. See § Currency reconciliation — 2026-09-28 (night, later). Prior 2026-09-28 (night)   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-31 (Epic 21); FR-53 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28 (later)   # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-30 (Epic 20); FR-52 registered. See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-29 (Epic 19); FR-51 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-28 (the recipe CI diffs the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
+updated: "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): chain-currency cascade (spec -> PRD, and research -> brief -> PRD) for the spec memlog's 2026-11-01 entries (CAP-29 and CAP-35 re-derived, no CAP added or dropped; Open Question 14 added; fix Stories 4.5 and 19.6 done, 25.17 and 25.18 at backlog) and research/egm-audit-2026-11-01.md (30 findings, 23 accepted); FR-51 and FR-57 amended in place, no FR registered or renumbered. See § Currency reconciliation — 2026-11-01. Prior "2026-10-31"   # RE-STAMPED 2026-10-31: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-31 entry (the CFE v8.102.2 Rule-2 retro of the nebari-infrastructure-core 0.14.0 -> 0.17.0 recipe refresh; recipe-factory work, no mason story, no CAP added or moved); no FR registered. See § Currency reconciliation — 2026-10-31. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 33.1): chain-currency cascade (spec -> PRD) after the Spec's capability text was restored from the pre-fold source (no CAP added or moved); no FR, NFR or arrow changes; the NFR lines (no arrows) are Story 33.2's. See § Currency reconciliation — 2026-10-26 (Story 33.1). Prior "2026-10-25"   # RE-STAMPED 2026-10-25 (Story 32.1): three section 4.7 FR arrows the 2026-09-17 fold mapped to CAP-7 by section are re-pointed at the capabilities that realize them (FR-48 to CAP-5, CAP-1; FR-49 to CAP-5, CAP-2; FR-50 to CAP-3); no FR text, number or NFR moves. See § Currency reconciliation — 2026-10-25 (Story 32.1). Prior "2026-10-22"   # RE-STAMPED 2026-10-22: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-13..22 entries (Stories 30.1 and 31.1 surface reconciles; Story 26.2 minted under CAP-34, a fix with no new CAP); no FR registered. See § Currency reconciliation — 2026-10-22. Prior "2026-10-12"   # RE-STAMPED 2026-10-12: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10..12 entries (Track B and CFE-retro surface reconciles; Story 29.1 minted under CAP-18 and CAP-23, a fix with no new CAP); no FR registered. See § Currency reconciliation — 2026-10-12. Prior "2026-10-09"   # RE-STAMPED 2026-10-09: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-09 entries (Story 25.3 minted under CAP-35 / FR-57, CAP-20 and CAP-23, then given a repair mode; Story 25.2 gains Wave 0; no new CAP); no FR registered. See § Currency reconciliation — 2026-10-09 (later). Prior "2026-10-09"   # RE-STAMPED 2026-10-09: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-08..09 entries (Stories 19.2-19.4, 21.1, 21.3-21.5 and 22.2 landed; the operator's two Story 22.1 splits and Stories 22.3 and 22.4, fixes under CAP-32 / FR-54); no FR registered. See § Currency reconciliation — 2026-10-09. Prior 2026-10-05   # RE-STAMPED 2026-10-05: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-03..05 entries (Epic 27 fix stories, Story 27.1 landing, Story 83.24 guard, Story 19.1 station skill); no FR registered. See § Currency reconciliation — 2026-10-05. Prior 2026-10-02   # RE-STAMPED 2026-10-02: chain-currency cascade (spec -> PRD) for Story 26.1 (Epic 26), a fix under CAP-34 / FR-56; no FR registered. See § Currency reconciliation — 2026-10-02. Prior 2026-09-29 (evening)   # RE-STAMPED 2026-09-29 (evening): chain-currency cascade (spec -> PRD) for CAP-35 (Epic 25); FR-57 registered. See § Currency reconciliation — 2026-09-29 (evening). Prior 2026-09-29 (later)   # RE-STAMPED 2026-09-29 (later): chain-currency cascade (spec -> PRD) for CAP-34 (Epic 24); FR-56 registered. See § Currency reconciliation — 2026-09-29 (later). Prior 2026-09-29   # RE-STAMPED 2026-09-29: chain-currency cascade (spec -> PRD) for CAP-33 (Epic 23); FR-55 registered. See § Currency reconciliation — 2026-09-29. Prior 2026-09-28 (night, later)   # RE-STAMPED 2026-09-28 (night, later): chain-currency cascade (spec -> PRD) for CAP-32 (Epic 22); FR-54 registered. See § Currency reconciliation — 2026-09-28 (night, later). Prior 2026-09-28 (night)   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-31 (Epic 21); FR-53 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28 (later)   # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-30 (Epic 20); FR-52 registered. See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-29 (Epic 19); FR-51 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-28 (the recipe CI diffs the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
 project: pyforge-mason
 currency_review: "Reviewed 2026-09-14 — chain-currency sweep. spec-pyforge-mason moved to 2026-09-11 (status: shipped added; seven dated verified: CAP lines, two of them PARTIAL with real findings; the realization-gate re-read and its 2026-09-11 resolution) and its memlog to 2026-09-13T23:57 (Story 44.7 foundry-island wiring; PR #1354's AD-14 credential-isolation closure) while this PRD sat at 2026-09-07. Reconciled in § Currency reconciliation — 2026-09-14. ONE REAL DIVERGENCE RECORDED, independently re-verified against live code this pass: FR-14's diff-before-apply consequence and NFR-9's defaults-to-dry-run claim do NOT hold for `mason recipe update` — `--dry-run` is opt-in (`cli.py:711-715`, help text: 'default: writes the field-scoped update for real') and `recipe.py::update()` appends it only when set. Recorded as a divergence, NOT repaired: the repair is a behaviour change and needs its own Dream/Spec. Prior review 2026-08-26 — as-built truth-up against src/shared/packages/pyforge-mason/ after the station completed (fleet ledger 2026-08-21) plus post-completion stories 10.1/11.1/11.2; OQ-4/OQ-6/OQ-8 stamped RESOLVED in place; divergences named in § Currency reconciliation. Prior review 2026-08-04 (structural timestamp bump, no drift)."
 dream: archive/docs/dreams/packaging-factory.md
@@ -1888,23 +1888,30 @@ five-tier rule; `spec-pyforge-steward:CAP-161`, the Guild environment that answe
 
 #### FR-51: Mason has its own skills, and conda-forge-expert is one of them ← CAP-29
 
-An agent doing Mason's work loads Mason's skills: a station skill for the grammar, two craft skills and two campaign
-skills, with `conda-forge-expert` still the recipe skill.
+An agent doing Mason's work loads Mason's skills, six in all: a station skill for the grammar, two craft skills, two
+campaign skills, and `conda-forge-expert`, still the recipe skill.
 
 **Consequences (testable):**
 - `pyforge-mason`, the station skill, is SKF-compiled from `src/shared/packages/pyforge-mason/` like the other seven
   stations' and documents `pyforge mason recipe|package|environment|doctor` and `POST /stations/mason/mcp`, sending every
-  recipe question to `conda-forge-expert`; `AGENTS.md`'s SKF block lists it as the eighth skill, written only by
-  `skf-export-skill`.
+  recipe question to `conda-forge-expert`; `AGENTS.md`'s SKF block lists it, written only by `skf-export-skill`, and no
+  test pins the block's skill count or the skill's version.
 - `mason-package` and `mason-environment` are hand-authored skills that walk the native crafts (`package build|ship`,
   `environment lock|check`); `mason-feedstock-platform-expansion` and `mason-feedstock-failure-remediation` carry the two
-  feedstock campaigns moved verbatim from `docs/how-to/`, linking CFE's guides for the timeless workflow.
-- No Mason skill carries a CFE gotcha heading; a meta-test proves the check with a planted one. CFE is never replaced,
-  forked or demoted, and stays hand-authored and un-nested.
+  feedstock campaigns moved verbatim from `docs/how-to/`, linking CFE's guides for the timeless workflow; each how-to
+  and its `archive/docs/specs/` stub links its skill.
+- No `*.md` in the Mason skill tier (the four hand-authored skills with their `references/`, and the station skill)
+  carries a CFE gotcha heading, a copied CFE fix sentence or a G-id CFE's `SKILL.md` does not define, and the station
+  skill names every verb `build_parser()` registers; `pyforge-mason-test`'s meta-tests prove each check with a planted
+  violation. CFE is never replaced, forked or demoted, and stays hand-authored and un-nested.
 - The Mason persona consults `pyforge-mason` and CFE and acts only through `pyforge mason …` and
   `POST /stations/mason/mcp`.
 - The effort closes with a Rule-2 retro and a CFE `CHANGELOG.md` semver entry (FR-47's rule, applied to this effort).
 - The skills are `A-only` until `pyforge.cutover_root` flips to `foundry`; B rebuilds them under `skills/stations/`.
+
+*(Amended 2026-11-01, EGM fleet audit, marshal Story 113.7: CAP-29 re-derived — the skill tier counts six skills
+(MAS-M-D6, MAS-M-C1), and the SKF-block, pointer and gotcha consequences follow the meta-tests mason Story 19.6 widened
+(MAS-M-Z4, MAS-M-D5). No FR renumbered; the arrow stays `← CAP-29`.)*
 
 **ONE FR space now FR-1..FR-51** (FR-52 = next free id).
 
@@ -2108,13 +2115,27 @@ changes. FR-47's rule (every conda-forge effort closes with a Rule-2 retro) appl
 The feedstock refresh campaign runs as Mason stories, one per track, each against a scope counted live.
 
 **Consequences (testable):**
-- Each track's story records its scope, counted live from the atlas, before it starts.
-- Every recipe in scope reaches its feedstock's published version, with `validate_recipe`, `optimize_recipe` and the
-  CI-parity lint green and either a local build or a recorded G95 test block.
-- Track B drops no co-maintainer from any `recipe-maintainers` list (G53), and authors a local mirror where none exists.
+- Before it starts, each track's story records its scope from one named atlas query (the feedstocks that list
+  `rxm7706` as a maintainer, each mapped to its feedstock through `packages.feedstock_name`), with the atlas's as-of
+  date and count, and compares its own count to it; a feedstock is covered when `recipes/<feedstock>/` declares the
+  package.
+- Every recipe in scope ends `refreshed` (its feedstock's published version — the atlas's `latest_conda_version` from a
+  refresh within `<atlas_max_age_d>` — with a green linux-64 build, a recorded G95 block, or `not-attempted` with a
+  host-blocked reason), `already-current`, or `needs-review` with its reason; none records `failed`. `refresh-wave
+  --apply --gates --build` exits 0. `validate_recipe`, `optimize_recipe` and the G65 CI-parity lint pass, admitting only
+  STD-002 on a C1 recipe and an unresolvable virtual package, each with its reason. A G95 block is a local end state;
+  its static gate applies only before shipping.
+- Every refreshed recipe's `recipe-maintainers` is a superset of the deployed feedstock's (G53) and its pins match the
+  feedstock's (G96); Track B authors a local mirror where none exists.
 - No feedstock or staged-recipes PR is opened without an explicit ask. Each story lands a `retro(cfe):` commit with a CFE
   `CHANGELOG.md` semver entry.
-- `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` becomes a companion of `spec-pyforge-mason` in the PR that empties `docs/specs/`.
+- `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` has been a companion of `spec-pyforge-mason` since 2026-10-10 (doctor Story 37.1).
+
+*(Amended 2026-11-01, EGM fleet audit, marshal Story 113.7: CAP-35 re-derived — the scope query and its compared count,
+the pinned published version and the ruled outcome set with G95 as a local end state (MAS-M-Z1, MAS-M-D3, MAS-M-Z2,
+MAS-M-D2, MAS-D-C2), G96 (MAS-M-Z2), and the companion move in the past tense (MAS-M-C6). CFE diff-apply regeneration
+and platform expansion leave CAP-35 by operator ruling 2026-11-01; this FR never named them. No FR renumbered; the
+arrow stays `← CAP-35`.)*
 
 **ONE FR space now FR-1..FR-57** (FR-58 = next free id).
 
@@ -2304,3 +2325,23 @@ FR was registered or removed. `updated:` bumped.
 ### The FR space: no FR registered
 
 No requirement is added, moved or re-pointed; no NFR changes. **Content changed:** this section and `updated:`.
+
+## Currency reconciliation — 2026-11-01
+
+*Trigger: the chain-currency `spec→prd` and `brief→prd` edges. After the 2026-10-31 section, `spec-pyforge-mason`'s memlog gained 35 entries from the EGM fleet audit (marshal Story 113.7, 2026-11-01): one operator decision, 26 accepted-finding events, two surface reconciles, one behaviour event, the CAP-29 and CAP-35 capability entries, Open Question 14 and two self-validate passes. `SPEC.md` re-derived CAP-29 and CAP-35 from them; no CAP is added, dropped or renumbered. The brief's § Currency reconciliation — 2026-11-01 folds `research/egm-audit-2026-11-01.md` (30 findings: 23 accepted, 7 rejected, 0 deferred).*
+
+### What the Spec's memlog carries
+
+- **Operator ruling, 2026-11-01.** G95 is a local end state; CAP-35 drops CFE diff-apply regeneration and platform expansion, which the campaign never ran; CAP-35 keeps mode `rebuild`.
+- **CAP-29 re-derived** (MAS-M-D6, MAS-M-C1, MAS-M-Z6, MAS-M-C4, MAS-M-Z3, MAS-M-D4, MAS-M-Z4, MAS-M-D5). The skill tier is six skills, five of Mason's own plus `conda-forge-expert`. The `A-only` rollout is named: `AGENTS.md` § Policy, the capability-ledger row's `expiry: 44.5`, `DW-mason-egm-2026-11-1` for B's Frame ruling, and `spec-pyforge-steward:CAP-161`. Success names `pyforge-mason-test` and the meta-tests Story 19.6 widened, with no skill count or version pinned.
+- **CAP-35 re-derived** (MAS-M-Z1, MAS-M-D1, MAS-M-D3, MAS-M-C6, MAS-M-C2, MAS-D-R2, MAS-M-Z2, MAS-M-D2, MAS-D-C2, MAS-M-C3). Success names one atlas scope query and a compared count, the published version as `latest_conda_version` within `<atlas_max_age_d>`, coverage by `recipes/<feedstock>/`, `refresh-wave`'s exit code and the ruled outcome set, the admitted gate findings, G53 and G96.
+- **Open Question 14** (MAS-D-C2): three recorded gate results that no ruling names.
+- **Fix stories.** Story 4.5 (CAP-4) makes `--platform` repeatable in fact and a repeated `package ship --to` an exit-2 usage error; Story 19.6 (CAP-29) widens the skill-tier meta-tests. Both landed `done` with their surface reconciles. Stories 25.17 and 25.18 (CAP-35) are at `backlog`. CAP-4 is not re-derived, because Story 4.5 made its "repeatable" text true.
+
+### The FR space: no FR registered
+
+FR-51 and FR-57 were amended in place on 2026-11-01 (their dated notes above) to follow the re-derived CAP-29 and CAP-35; both arrows stand. FR-27's "`--platform` is repeatable" now holds as built (Story 4.5). No FR is added, renumbered or removed, and no NFR changes.
+
+**ONE FR space still FR-1..FR-57** (FR-58 = next free id).
+
+**Content changed:** this section and `updated:`. FR-51 and FR-57's amendments landed earlier in the same PR.

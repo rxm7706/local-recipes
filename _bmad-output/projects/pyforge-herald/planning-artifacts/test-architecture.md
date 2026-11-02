@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: herald
-source_fingerprint: b5b1e9ca90071f43
-story_count: 151
-test_file_count: 97
+source_fingerprint: 03f98ca35cbcb467
+story_count: 152
+test_file_count: 98
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-herald`
-- **Stories parsed:** 151
+- **Stories parsed:** 152
 - **Epics parsed:** 49
-- **Test files inventoried:** 97 under `src/shared/packages/pyforge-herald/tests/`
+- **Test files inventoried:** 98 under `src/shared/packages/pyforge-herald/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `b5b1e9ca90071f43`
+- **Source fingerprint:** `03f98ca35cbcb467`
 
 ## Risk Assessment
 
@@ -105,6 +105,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-herald/tests/meta/test_docsite_zero_origin.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_dossier_golden.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_herald_pages_model.py` | meta | none observed |
+| `src/shared/packages/pyforge-herald/tests/meta/test_marketplace_mount.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_one_generator.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_pages_artifact.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_pages_site_url.py` | meta | none observed |
@@ -330,6 +331,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 42.1 | The fleet board and guild status pages render at build | none observed |
 | 42.2 | The Kedro-Viz mount is an artifact handoff that tolerates absence | none observed |
 | 42.3 | The second host needs no flag | none observed |
+| 42.4 | The status pages pin their snapshot lines | none observed |
 | 43.1 | Astro renders the dossier from dossier.yml | none observed |
 | 43.2 | The overview, gallery and deck family pages are Astro pages | none observed |
 | 43.3 | Astro assembles the artifact: mounts, redirects and search | none observed |

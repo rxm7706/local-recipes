@@ -6,7 +6,8 @@ Charter §5 shape of 2026-09-14). Mechanism: Doctor's, under §5's
 outcome/mechanism rule -- the same relay as Epic 24.
 
 Three gathers, all ``scope="repo"`` (tracked planning artifacts only, no
-network, no station import):
+network, no station import; ``fr-without-cap`` alone reads git, through
+``cli_bridge.run_git``):
 
 * ``gather_chain_sprawl`` (Story 25.1, CAP-2) -- Dream-**append**-first is
   enforced, not asserted: a Dream file or Spec folder that was not present
@@ -33,7 +34,11 @@ network, no station import):
   turns a known one into ``fr-baselined`` (OK) and a stale ``projects`` id or
   ``findings`` key is ``fr-baseline-stale`` (WARN). ``fr-arrow-no-title-overlap``
   is advisory, one WARN per station; an unreadable PRD is ``fr-prd-unreadable``
-  (WARN), never a silent green.
+  (WARN), never a silent green. Story 50.2 enforces the shrink-only rule: a
+  ``projects`` id or ``findings`` key added since the merge-base of ``HEAD``
+  and ``refs/remotes/origin/main`` is ``fr-baseline-grown`` (FAIL) unless the
+  file's ``forced`` list, written by ``scripts/fr_baseline.py`` alone, names
+  it; a base that cannot be read is ``fr-baseline-base-unread`` (WARN).
 
 * ``gather_fold_complete`` (Story 36.1, CAP-11) -- a fold is complete before
   its file moves. Every ``archive/docs/dreams/*.md`` not in
@@ -55,7 +60,9 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
+from ..refs import ORIGIN_MAIN, display_ref
 from . import degrade_on_exception
 from .chain import _dream_body_after_frontmatter, _frontmatter_parse
 
@@ -70,6 +77,7 @@ __all__ = (
     "long_paragraphs",
     "prune_chain_sprawl_baseline",
     "prune_fr_baseline",
+    "record_fr_additions",
     "snapshot_chain_sprawl_baseline",
     "snapshot_fr_baseline",
     "snapshot_fr_findings",
@@ -904,8 +912,12 @@ _FR_BASELINE_COMMENT = [
     "until `--prune` (the only routine verb) removes it. `--snapshot-findings` is a one-time act: it is",
     "refused once `findings` exists, and `--force` is for a review that names each ADDED key in its PR.",
     "`owners`: hand-maintained -- the story that owns what each station still carries here.",
+    "`forced`: written by scripts/fr_baseline.py alone -- each `projects` id or `findings` key it ADDED",
+    "and the HEAD it ran at. A key added since the merge-base with origin/main that no `forced` record",
+    "names is FAIL fr-baseline-grown (doctor Story 50.2): an `owners` row never admits one.",
 ]
-_FR_BASELINE_CARRIED = ("rebaselined", "owners", "findings_sha", "findings")
+_FR_BASELINE_CARRIED = ("rebaselined", "owners", "findings_sha", "findings", "forced")
+_FR_RATCHETED = ("projects", "findings")  # the two maps that only shrink
 
 
 def snapshot_fr_baseline(
@@ -975,7 +987,132 @@ def prune_fr_baseline(target: Path) -> tuple[dict | None, list[str]]:
             kept = [k for k in keys if k in firing.get(slug, set())]
             removed.extend(f"{slug}: {k}" for k in keys if k not in firing.get(slug, set()))
             data["findings"][slug] = kept
+    if "forced" in data:
+        # A record that outlived its key would admit a later hand re-add of it (Story 50.2).
+        present = set(_fr_baseline_growth({}, data))  # every key the pruned file holds
+        records = _forced_records(data)
+        removed.extend(
+            f"{r['station']}: forced {r['kind']} {r['key']}"
+            for r in records
+            if (r["station"], r["kind"], r["key"]) not in present
+        )
+        data["forced"] = [r for r in records if (r["station"], r["kind"], r["key"]) in present]
     return data, removed
+
+
+# Story 50.2 (spec-pyforge-doctor CAP-92, EGM audit DOC-M-D1) -- the ratchet is
+# enforced against the merge-base, not asserted inside the script: a `projects`
+# id or `findings` key added since `merge-base(HEAD, refs/remotes/origin/main)`
+# is `fr-baseline-grown` (FAIL) unless the file's `forced` list -- written by
+# `scripts/fr_baseline.py` alone, through `record_fr_additions` -- names it. An
+# `owners` row never admits one: `owners` is edited by hand. A base that cannot
+# be read is `fr-baseline-base-unread` (WARN), never a FAIL.
+
+
+def _forced_records(data: dict) -> list[dict]:
+    """The well-formed ``forced`` records of a baseline; a malformed one admits nothing."""
+    raw = data.get("forced")
+    if not isinstance(raw, list):
+        return []
+    return [
+        r for r in raw if isinstance(r, dict) and all(isinstance(r.get(f), str) for f in ("station", "kind", "key"))
+    ]
+
+
+def _fr_baseline_growth(base: dict, head: dict) -> list[tuple[str, str, str]]:
+    """``(station, kind, key)`` for every ``projects`` id or ``findings`` key in
+    ``head`` that ``base`` lacks -- the one definition of growth, shared by
+    ``fr-baseline-grown`` and :func:`record_fr_additions`. A removed key is never
+    growth. Pure."""
+    grown: list[tuple[str, str, str]] = []
+    for kind in _FR_RATCHETED:
+        raw_before, raw_after = base.get(kind), head.get(kind)
+        before: dict = raw_before if isinstance(raw_before, dict) else {}
+        after: dict = raw_after if isinstance(raw_after, dict) else {}
+        for slug in sorted(after):
+            keys = after[slug]
+            if not isinstance(keys, list):
+                continue
+            prior = before.get(slug)
+            prior_keys = {k for k in prior if isinstance(k, str)} if isinstance(prior, list) else set()
+            grown.extend((slug, kind, key) for key in keys if isinstance(key, str) and key not in prior_keys)
+    return grown
+
+
+def record_fr_additions(previous: dict | None, data: dict, head: str) -> list[tuple[str, str, str]]:
+    """Record, in ``data["forced"]``, each key ``data`` adds over ``previous`` (the
+    file ``scripts/fr_baseline.py`` read) with the run's ``head`` -- the one escape
+    ``fr-baseline-grown`` admits -- and drop a record whose key ``data`` no longer
+    holds, so it cannot admit a later hand re-add. Returns the keys it recorded.
+    No previous file, no record: nothing was added to one, and the detector warns
+    that the base lacks it. Pure."""
+    if previous is None:
+        return []
+    present = set(_fr_baseline_growth({}, data))  # every key `data` holds
+    records = [r for r in _forced_records(data) if (r["station"], r["kind"], r["key"]) in present]
+    have = {(r["station"], r["kind"], r["key"]) for r in records}
+    added = [g for g in _fr_baseline_growth(previous, data) if g not in have]
+    records.extend({"station": slug, "kind": kind, "key": key, "head": head} for slug, kind, key in added)
+    if records or "forced" in data:
+        data["forced"] = records
+    return added
+
+
+def _base_fr_baseline(target: Path) -> tuple[dict, str] | str:
+    """``fr-baseline.json`` at ``merge-base(HEAD, refs/remotes/origin/main)`` and that
+    sha, or the cause it cannot be read. Through ``cli_bridge.run_git`` alone (AD-5),
+    by the full refname, never a fetch: a stale remote-tracking ref can only hide
+    growth that is already on main. On main itself the merge-base is ``HEAD``."""
+    rel = FR_BASELINE_REL.as_posix()
+    if not (target / ".git").exists():
+        return f"{target} is not the top of a git checkout"
+    try:
+        run_git(target, ["rev-parse", "--verify", "--quiet", f"{ORIGIN_MAIN}^{{commit}}"])
+    except CliBridgeError:
+        return f"no {ORIGIN_MAIN} in this checkout"
+    try:
+        sha = run_git(target, ["merge-base", "HEAD", ORIGIN_MAIN]).strip()
+    except CliBridgeError as exc:
+        return f"HEAD and {display_ref(ORIGIN_MAIN)} have no merge-base (a shallow clone or unrelated histories): {exc}"
+    try:
+        blob = run_git(target, ["show", f"{sha}:{rel}"])
+    except CliBridgeError as exc:
+        return f"{rel} is absent at the merge-base {sha[:10]}: {exc}"
+    try:
+        data = json.loads(blob)
+    except json.JSONDecodeError as exc:
+        return f"{rel} is not JSON at the merge-base {sha[:10]}: {exc}"
+    if not isinstance(data, dict):
+        return f"{rel} is not a JSON object at the merge-base {sha[:10]}"
+    return data, sha
+
+
+def _grown(slug: str, kind: str, key: str, merge_base: str) -> Finding:
+    what = "`projects` id" if kind == "projects" else "`findings` key"
+    return Finding(
+        source=Source.FR_WITHOUT_CAP,
+        check="fr-baseline-grown",
+        status=DoctorStatus.FAIL,
+        message=(
+            f"{slug}: baseline {what} `{key}` was added since the merge-base {merge_base[:10]} with origin/main "
+            "and no `forced` record names it — the baseline only shrinks: drop it, or add it with "
+            "`python scripts/fr_baseline.py … --force` after a review that names it (an `owners` row never admits one)"
+        ),
+        evidence={"station": slug.removeprefix("pyforge-"), "kind": kind, "key": key, "merge_base": merge_base},
+    )
+
+
+def _base_unread(cause: str) -> Finding:
+    return Finding(
+        source=Source.FR_WITHOUT_CAP,
+        check="fr-baseline-base-unread",
+        status=DoctorStatus.WARN,
+        message=(
+            f"{FR_BASELINE_REL.as_posix()} was not compared with its merge-base with origin/main — {cause}; "
+            "a hand-added baseline key cannot be told from one scripts/fr_baseline.py added"
+        ),
+        evidence={"baseline": FR_BASELINE_REL.as_posix(), "base": display_ref(ORIGIN_MAIN), "cause": cause},
+    )
 
 
 def gather_fr_without_cap(target: Path) -> tuple[Finding, ...]:
@@ -1014,8 +1151,20 @@ def _gather_fr_without_cap(target: Path) -> tuple[Finding, ...]:
     known_findings: dict[str, set[str]] = {}
     if isinstance(baseline.get("findings"), dict):
         known_findings = {k: set(v) for k, v in baseline["findings"].items() if isinstance(v, list)}
-    specs = _SpecIndex(target)
     findings: list[Finding] = []
+    base = _base_fr_baseline(target)
+    if isinstance(base, str):
+        findings.append(_base_unread(base))
+    else:
+        base_data, merge_base = base
+        forced = {(r["station"], r["kind"], r["key"]) for r in _forced_records(baseline)}
+        for slug, kind, key in _fr_baseline_growth(base_data, baseline):
+            if (slug, kind, key) in forced:
+                continue
+            # A grown key hides nothing: the finding it would have hidden still fires.
+            (known if kind == "projects" else known_findings).get(slug, set()).discard(key)
+            findings.append(_grown(slug, kind, key, merge_base))
+    specs = _SpecIndex(target)
     counts: dict[str, dict[str, int]] = {}
     measured_new = 0
     no_overlap: dict[str, list[str]] = {}

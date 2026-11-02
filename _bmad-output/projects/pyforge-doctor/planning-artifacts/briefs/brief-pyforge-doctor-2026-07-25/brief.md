@@ -2,7 +2,7 @@
 title: 'Product Brief: Doctor (pyforge-doctor)'
 status: complete
 created: 2026-07-25
-updated: '2026-09-19'
+updated: '2026-11-01'
 inputs:
   - 'docs/dreams/pyforge-doctor.md'
   - 'docs/dreams/ecosystem-crew.md § 6 Doctor'
@@ -12,6 +12,7 @@ inputs:
   - '_bmad-output/projects/pyforge-doctor/planning-artifacts/research/technical-pyforge-doctor-cli-architecture-research-2026-08-08.md'
   - '_bmad-output/projects/pyforge-doctor/planning-artifacts/research/documentation-currency-and-repeatable-refresh-2026-09-19.md'
   - '_bmad-output/projects/pyforge-doctor/planning-artifacts/research/market-doctor-health-diagnostics-2026-08-08.md'
+  - '_bmad-output/projects/pyforge-doctor/planning-artifacts/research/egm-audit-2026-11-01.md'
   - 'src/shared/packages/pyforge-warden/src/pyforge/warden/{cli,engines}.py (--doctor exit-code + subprocess-seam precedent)'
 ---
 
@@ -309,3 +310,32 @@ first source of that family; the registry and the generated pages follow as Stor
 one more vital sign — whether the documentation matches the code it describes — measured the
 same way as the others: from the code and manifests (`pixi.toml`, the station CLIs, the
 detector registry), never from the prose's own claims.
+
+## Currency reconciliation — 2026-11-01
+
+*Chain-currency sweep (`research→brief`): `research/egm-audit-2026-11-01.md` (now in `inputs:`) post-dated this
+brief. It is the station's record of the one-time Elephant-Goldfish (EGM) fleet audit, landed by marshal Story 113.7
+(`spec-pyforge-marshal:CAP-302`): fresh-context reviewers read Doctor's newest capability slice (CAP-89..CAP-93, the
+2026-10-13, 2026-10-14 and 2026-10-26 Dream entries) and the epics that decompose it (Epics 45, 48 and 50).*
+
+**What the research settled.** 30 findings: 18 at the mint stage (all 18 accepted) and 12 at the decompose stage
+(6 accepted, 6 rejected because the tracked story specs already carried the clauses the reviewers missed in
+`epics.md`); 24 accepted, 6 rejected, 0 deferred, every one re-checked against `main` at `03a7aff5d9` and accepted by
+the operator on 2026-11-01. Of the 24, 14 were fixed by re-deriving the Spec (CAP-89..CAP-93 amended in place, ids
+unchanged; a pointer-only `glossary.md` companion added), 7 by three fix stories (45.4, 48.3 and 50.2, all `done`),
+and 3 by append-only notes on Stories 48.1 and 50.1.
+
+**How it lands on this brief.** The audit found no defect in Doctor's scope or framing; it found Spec text that had
+drifted from the code (a retired `docsite/` tree, a partial report read from stderr, a published-inputs list copied by
+hand) and success clauses that named no test. Two results bear on the brief's terms:
+
+- **"Doctor holds the verdict" means Doctor's own registry.** CAP-93's promise that every detector resolves to one
+  owning station was narrowed by operator ruling to what the code enforces: a Doctor `REGISTRY` entry with no owning
+  station is refused when it is built. A `scripts/*_check.py` detector declares a scope, not an owner. The brief's
+  framing (Doctor judges another station's artifact and stays advisory) is unchanged.
+- **Advisory stays advisory.** The CI-pause and Pages-liveness relays (CAP-89, CAP-91) remain WARN-only and outside
+  `detectors-ci`. The one new FAIL, `fr-baseline-grown` (Story 50.2), sits inside the existing `fr-without-cap`
+  detector, which already reds a PR on a new finding (CAP-92); it adds no second gate.
+
+**Content changed:** this section, the research file added to `inputs:`, and `updated:`. No scope, criterion or
+assumption in the body above changes.

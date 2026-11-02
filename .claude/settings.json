@@ -48,7 +48,7 @@
     }
   },
   "customInstructions": [
-    "Always follow the behavioural guidelines in AGENTS.md \u00a7 Behavioural guidelines (every harness): Think before coding, Simplicity first, Surgical changes, Goal-driven execution, Dream to code always."
+    "Follow the behavioural guidelines in AGENTS.md \u00a7 Behavioural guidelines (every harness)."
   ],
   "hooks": {
     "PreToolUse": [

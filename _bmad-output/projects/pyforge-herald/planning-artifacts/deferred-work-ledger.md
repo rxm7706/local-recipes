@@ -1575,3 +1575,17 @@ deployment.
   severity: low
   promoted: 2026-10-18 — atlas Story 33.1 review
   status: open
+
+### DW-herald-egm-2026-11-01-1: operator: republish the claude.ai dossier artifact on a scheduled routine, and refresh `ci-status.json` at each CI pause and resume
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-herald/SPEC.md`
+  summary: Two operator-owned acts keep the Pages site's two hand-carried copies current; neither is an agent act. (1) The claude.ai dossier artifact ("The PyForge Dossier", `site.yml`'s `artifact.url`) is republished from `docs-site/build/site/herald/artifact/dossier.html` by an operator-owned scheduled routine that CAP-47 names (the Dream's 2026-10-13 ask, "a scheduled routine once the stats are computed"; Story 43.5 computed the stats, and until this row nothing carried the refresh); the session-close line in `docs-site/README.md` (§ *The artifact build*) stays the manual fallback. (2) `docs-site/src/content/ci-status.json` (the snapshot CAP-59's tile and CAP-60's `/status/ci/` page both read) is refreshed by the operator running `pixi run -e pyforge-guild pyforge steward ci status --json` at each CI pause and resume and committing its stdout; no scheduled job refreshes it (CAP-59's open question, closed by the same ruling). On 2026-11-01 the snapshot's `fetched_at` is 2026-10-14 (last written in `fa6e11d4e4`), while #2247 resumed every CI surface on 2026-10-16, so the live dossier and `/status/ci/` show rows as stuck or paused that are live; the capture-time lines herald Story 42.4 pinned are what tell a reader so.
+  evidence: operator ruling 2026-11-01 (EGM fleet audit triage, marshal Story 113.7), `spec-pyforge-herald/.memlog.md` decision entry of 2026-11-01; findings HER-K6 (HER-M-Z5, HER-M-D5), HER-M-Z5 and HER-K4 (HER-M-Z4, HER-M-D4) in `planning-artifacts/research/egm-audit-2026-11-01.md`; `git log -1 --format=%h -- docs-site/src/content/ci-status.json` names `fa6e11d4e4`.
+  location: docs-site/src/content/ci-status.json; docs-site/build/site/herald/artifact/dossier.html (the routine's input)
+  origin: EGM fleet audit 2026-11-01 (marshal Story 113.7; HER-K6, HER-M-Z5, HER-K4), operator ruling 2026-11-01
+  fix: (1) the operator sets up the scheduled routine that republishes the dossier artifact after a Pages build (outward and credential-bound: it writes to the operator's claude.ai account) and records it with `scribe capture --type project`; (2) the operator runs `pixi run -e pyforge-guild pyforge steward ci status --json > docs-site/src/content/ci-status.json` at each pause and resume and lands it through a PR, the next due now (every surface resumed 2026-10-16). The Pages duct inputs for `/changes/` and `/status/runs/` (EGM HER-K5) are steward's `DW-steward-43-6-1`, not this row.
+  owner: pyforge-herald (operator-owned acts)
+  severity: low
+  promoted: 2026-11-01 — EGM fleet audit (marshal Story 113.7), operator ruling 2026-11-01
+  reason: outward and credential-bound acts (a scheduled routine on the operator's claude.ai account; a snapshot that needs a token that reads repository variables); an agent never does either.
+  status: open

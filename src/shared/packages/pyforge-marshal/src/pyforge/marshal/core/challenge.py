@@ -2,10 +2,13 @@
 
 A *challenge* is a fresh-context, read-only review of one chain artifact by the
 Elephant-Goldfish Model's reviewer agents (``google/elephant-goldfish-model``,
-a Claude Code plugin pinned in ``.claude/settings.json``). Marshal never makes
-the model call and never loads a persona: it renders one task prompt, a harness
-session spawns the plugin's registered agents, and Marshal reads the session's
-JSON report back as data (AD-1).
+a Claude Code plugin pinned by the ``[challenge].plugin_version`` policy key,
+default ``0.1.0``, and checked against Claude Code's installed-plugins index and
+the plugin cache's ``plugin.json``). The reviewers' ``omitClaudeMd`` needs Claude
+Code 2.1.271 or later; below that floor the challenger refuses (Story 113.11).
+Marshal never makes the model call and never loads a persona: it renders one task
+prompt, a harness session spawns the plugin's registered agents, and Marshal reads
+the session's JSON report back as data (AD-1).
 
 Everything here is a pure function over values (AD-4): the stage vocabulary and
 its default reviewer groups, the ``[challenge]`` policy block's shape check, the
@@ -16,11 +19,15 @@ bridge's accept/reject arithmetic. The CLI (``cli/challenge.py``) owns the I/O.
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping, Sequence
+import re
+import shlex
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import PurePosixPath
 
 from pyforge.core.errors import PyforgeError
+
+from .model_cost import ADAPTER_TO_PROVIDER, provider_declaring_model
 
 STAGES: tuple[str, ...] = ("mint", "decompose", "readiness", "drift", "rules")
 
@@ -46,6 +53,9 @@ EGM_MARKETPLACE = "egm"
 EGM_MARKETPLACE_REPO = "google/elephant-goldfish-model"
 EGM_PLUGIN_VERSION = "0.1.0"
 DEFAULT_ARTIFACT_DIR = "implementation-artifacts/egm"
+# Story 113.11 (CAP-298): Claude Code honours an agent's ``omitClaudeMd`` from 2.1.271 on.
+CLAUDE_CODE_FLOOR: tuple[int, int, int] = (2, 1, 271)
+_CLAUDE_CODE_VERSION = re.compile(r"\b(\d+)\.(\d+)\.(\d+)\b")
 
 # The goldfish context rule (CAP-299): a reviewer never receives the house's
 # instruction files, a memlog, a URL or session text.
@@ -69,6 +79,11 @@ SEVERITIES: tuple[str, ...] = ("high", "medium", "low")
 CHALLENGE_BLOCK_KEYS: frozenset[str] = frozenset(
     {"enabled", "stages", "reviewers", "model", "standards", "artifact_dir", "plugin_version"}
 )
+
+# Story 113.9: the challenger runs on the packaged claude profile, so its model is an entry the
+# claude adapter's catalog provider declares (``anthropic``).
+CHALLENGER_PROVIDER = ADAPTER_TO_PROVIDER["claude"]
+_MODEL_TOKEN_SPLIT = re.compile(r"[-._]")
 
 
 def agent_type(persona: str) -> str:
@@ -169,15 +184,32 @@ def config_from_block(block: Mapping[str, object] | None) -> ChallengeConfig:
     )
 
 
-def _cataloged_models(model_cost_catalog: Mapping[str, object]) -> frozenset[str]:
-    names: set[str] = set()
-    providers = model_cost_catalog.get("providers") if isinstance(model_cost_catalog, Mapping) else None
-    if isinstance(providers, Mapping):
-        for provider in providers.values():
-            models = provider.get("models") if isinstance(provider, Mapping) else None
-            if isinstance(models, Mapping):
-                names.update(str(name) for name in models)
-    return frozenset(names)
+def alias_of(model: str, aliases: Collection[str]) -> str | None:
+    """The harness alias whose family ``model`` belongs to (Story 113.9), else ``None``.
+
+    An alias such as ``sonnet`` names its family's current model, so a model id normalises to the
+    alias that is one of its ``-``/``.``/``_``-separated tokens (``sonnet-5`` and
+    ``claude-sonnet-4-5`` are ``sonnet``). An alias is its own family; ``default`` (the account's
+    default) is a token of no id, so it matches only itself."""
+    by_name = {alias.lower(): alias for alias in aliases if alias}
+    lowered = model.lower()
+    if lowered in by_name:
+        return by_name[lowered]
+    tokens = set(_MODEL_TOKEN_SPLIT.split(lowered))
+    for name, alias in by_name.items():
+        if name in tokens:
+            return alias
+    return None
+
+
+def same_model(challenger: str, station_model: str, *, aliases: Collection[str]) -> bool:
+    """CAP-299's same-model check, aliases normalised first (Story 113.9): equal ids are one model,
+    and so are an alias and any id of its family -- whichever side carries the alias."""
+    if challenger == station_model:
+        return True
+    challenger_alias = alias_of(challenger, aliases)
+    station_alias = alias_of(station_model, aliases)
+    return challenger_alias is not None and (station_model == challenger_alias or challenger == station_alias)
 
 
 def render_refusals(
@@ -185,23 +217,33 @@ def render_refusals(
     *,
     session_models: Sequence[str],
     model_cost_catalog: Mapping[str, object],
+    aliases: Collection[str] = (),
 ) -> list[str]:
-    """Refusals at policy render (CAP-299): the challenger model must be a
-    ``model_cost_catalog`` entry and never the dispatching session's own; a
-    structure/style persona or an EGM ``document_standards`` path is refused."""
+    """Refusals at policy render (CAP-299, Story 113.9): the challenger model must be an
+    ``anthropic`` entry of ``model_cost_catalog`` (marshal's own, read for every ``--project``:
+    the challenger runs on the packaged claude profile, which passes the id verbatim to
+    ``claude --model``) and never one of the station's ``session_models``, an alias of either
+    normalised first (``aliases``: the claude profile's ``[model_list]`` aliases). A
+    structure/style persona or an EGM ``document_standards`` path is refused too."""
     reasons: list[str] = []
     if not config.enabled:
         return reasons
     if not config.model:
         reasons.append("[challenge].model is required when the block is enabled")
     else:
-        catalog = _cataloged_models(model_cost_catalog)
-        if config.model not in catalog:
+        provider = provider_declaring_model(model_cost_catalog, config.model)
+        if provider is None:
             reasons.append(f"[challenge].model {config.model!r} is not a model_cost_catalog entry")
-        if config.model in {m for m in session_models if m}:
+        elif provider != CHALLENGER_PROVIDER:
             reasons.append(
-                f"[challenge].model {config.model!r} is the dispatching session's own model; "
-                "the challenger must be a different model"
+                f"[challenge].model {config.model!r} is catalogued under {provider!r}; the challenger runs on "
+                f"the claude profile and takes only an {CHALLENGER_PROVIDER!r} entry"
+            )
+        clashes = sorted({m for m in session_models if m and same_model(config.model, m, aliases=aliases)})
+        if clashes:
+            reasons.append(
+                f"[challenge].model {config.model!r} is the dispatching session's own model "
+                f"({', '.join(clashes)}); the challenger must be a different model"
             )
     for stage, personas in config.reviewers.items():
         bad = sorted(set(personas) & FORBIDDEN_PERSONAS)
@@ -296,6 +338,21 @@ def installed_version_refusal(installed: Mapping[str, object], plugin_id: str, p
     return None
 
 
+def claude_code_version_refusal(output: str | None) -> str | None:
+    """Story 113.11 (CAP-298): ``None`` when ``claude --version``'s ``output`` names a version
+    at or above ``CLAUDE_CODE_FLOOR``; otherwise the reason. No output, or output with no
+    ``X.Y.Z`` in it, refuses too: a version that cannot be read cannot prove the floor."""
+    floor = ".".join(str(part) for part in CLAUDE_CODE_FLOOR)
+    match = _CLAUDE_CODE_VERSION.search(output or "")
+    if match is None:
+        shown = (output or "").strip()[:80]
+        return f"cannot read Claude Code's version from `claude --version` ({shown!r}); the challenger needs >= {floor}"
+    found = (int(match.group(1)), int(match.group(2)), int(match.group(3)))
+    if found < CLAUDE_CODE_FLOOR:
+        return f"Claude Code {match.group(0)} is below {floor}, the floor for the reviewers' omitClaudeMd"
+    return None
+
+
 _REPORT_SCHEMA_HINT = (
     '{"stage": "<stage>", "target": "<absolute path>", "reviewers": ["<agent type>", ...], '
     '"findings": [{"id": "F1", "reviewer": "<agent type>", "severity": "high|medium|low", '
@@ -305,7 +362,7 @@ _REPORT_SCHEMA_HINT = (
 
 def render_prompt(*, stage: str, personas: Sequence[str], context: ChallengeContext, report_path: str) -> str:
     """The one task prompt a harness session receives. It names the reviewer
-    agents, hands each the four context paths and nothing else, and asks for
+    agents, hands each the target and its context paths and nothing else, and asks for
     one JSON report at ``report_path``."""
     agents = ", ".join(f"`{agent_type(p)}`" for p in personas)
     standards = "\n".join(f"  - {path}" for path in context.standards)
@@ -348,6 +405,8 @@ class ChallengeReport:
     findings: tuple[ReportFinding, ...]
     project: str = ""
     spec_workspace: str = ""
+    # Story 113.13: the Spec folder that governs a rules target outside its run's station, when one does.
+    owner_override: str = ""
 
     def to_json(self) -> str:
         return json.dumps(
@@ -356,6 +415,7 @@ class ChallengeReport:
                 "target": self.target,
                 "project": self.project,
                 "spec_workspace": self.spec_workspace,
+                **({"owner_override": self.owner_override} if self.owner_override else {}),
                 "reviewers": list(self.reviewers),
                 "findings": [
                     {
@@ -423,11 +483,71 @@ def parse_report(text: str) -> ChallengeReport:
         findings=tuple(findings),
         project=str(data.get("project") or ""),
         spec_workspace=str(data.get("spec_workspace") or ""),
+        owner_override=str(data.get("owner_override") or ""),
     )
 
 
-def with_provenance(report: ChallengeReport, *, project: str, spec_workspace: str) -> ChallengeReport:
-    """Stamp the owning project and Spec folder (the resolve bridge's target)."""
+def unevaluable_reason(report: ChallengeReport, *, stage: str, personas: Sequence[str]) -> str | None:
+    """Why a parsed report cannot be read as the requested review (CAP-298), else ``None``.
+
+    The orchestrator writes the report's ``reviewers`` list itself, so a report that omits a
+    dispatched reviewer, lists none, or names another stage did not fully run: unevaluable,
+    never clean -- whatever its finding count."""
+    if report.stage != stage:
+        return f"report stage {report.stage!r} is not the requested {stage!r}"
+    listed = {reviewer.strip() for reviewer in report.reviewers}
+    if not listed - {""}:
+        return "report lists no reviewers"
+    missing = [agent_type(p) for p in personas if agent_type(p) not in listed]
+    if missing:
+        return f"report omits dispatched reviewer(s) {', '.join(missing)}"
+    return None
+
+
+# The finding code a red readiness review carries (CAP-300; ``cli/dispatch.py``'s launch hook, WARN).
+READINESS_RED_CODE = "MRS-DISP-067"
+
+
+def _count(value: object) -> int:
+    return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else 0
+
+
+def readiness_view(payload: Mapping[str, object]) -> dict[str, object]:
+    """The launch intent's ``readiness_challenge`` payload as ``marshal status`` and ``marshal
+    watch`` show it (CAP-300): the report path, the counts, and ``red`` -- the review reported a
+    finding or could not run, the same rule that raises ``MRS-DISP-067`` at launch -- with the
+    code when red. Idempotent: a view reads back as itself."""
+    error = str(payload.get("error") or "")
+    findings = _count(payload.get("findings"))
+    view: dict[str, object] = {
+        "report": str(payload.get("report") or ""),
+        "findings": findings,
+        "high": _count(payload.get("high")),
+        "error": error,
+        "red": bool(error) or findings > 0,
+    }
+    if view["red"]:
+        view["code"] = READINESS_RED_CODE
+    return view
+
+
+def readiness_text(view: Mapping[str, object]) -> str:
+    """One line for a text renderer: ``clean`` or ``red MRS-DISP-067``, the detail, the report."""
+    report = str(view.get("report") or "") or "(none)"
+    if not view.get("red"):
+        return f"clean, report {report}"
+    detail = " ".join(str(view.get("error") or "").split()) or (
+        f"{view.get('findings')} finding(s), {view.get('high')} high"
+    )
+    return f"red {view.get('code') or READINESS_RED_CODE}: {detail}; report {report}"
+
+
+def with_provenance(
+    report: ChallengeReport, *, project: str, spec_workspace: str, owner_override: str = ""
+) -> ChallengeReport:
+    """Stamp the run's project and the owning Spec folder; ``owner_override`` records a rules
+    target's governor when it is not the project's own Spec (Story 113.13). ``resolve`` checks
+    these against ``--project`` and never takes its write target from them (CAP-303)."""
     return ChallengeReport(
         stage=report.stage,
         target=report.target,
@@ -435,6 +555,7 @@ def with_provenance(report: ChallengeReport, *, project: str, spec_workspace: st
         findings=report.findings,
         project=project,
         spec_workspace=spec_workspace,
+        owner_override=owner_override,
     )
 
 
@@ -485,6 +606,7 @@ def resolve(
         findings=tuple(findings),
         project=report.project,
         spec_workspace=report.spec_workspace,
+        owner_override=report.owner_override,
     )
     return Resolution(report=resolved, memlog_lines=tuple(lines))
 
@@ -499,6 +621,13 @@ def _resolved(f: ReportFinding, resolution: str, reason: str) -> ReportFinding:
         resolution=resolution,
         reason=reason,
     )
+
+
+def memlog_command(*, script: str, workspace: str, text: str) -> str:
+    """The exact command an operator pastes, from the repo root, to append ``text`` as a memlog
+    event on ``workspace`` (Story 113.13, CAP-303): marshal writes only its own Spec, so an accepted
+    finding any other Spec owns gets this line instead. Each value is shell-quoted as one argument."""
+    return f"uv run {script} append --workspace {shlex.quote(workspace)} --type event --text {shlex.quote(text)}"
 
 
 def parse_id_notes(entries: Sequence[str]) -> dict[str, str]:

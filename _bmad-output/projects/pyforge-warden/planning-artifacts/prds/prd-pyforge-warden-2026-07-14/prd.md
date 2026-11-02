@@ -15,7 +15,7 @@ stepsCompleted:
   - step-10-nonfunctional
   - step-11-polish
   - step-12-complete
-updated: "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 20.2): the 23 lettered NFR lines gain `← CAP-m` arrows traced from the Spec's capability intent and success text; by the operator's ruling of 2026-10-26 (option A) eight ids are re-spelled to CHAIN-STANDARD § 6's grammar (NFR-R3a/NFR-R3b → NFR-R3.1/NFR-R3.2, NFR-P-warm/-cold/-concurrency → NFR-P2/P3/P4, FR33/FR35 → FR-33/FR-35), the FR30 traceability note names FR-30 after its title, and the six FR-NEW-* journey rows name their canonical FRs; no NFR or FR text, number or arrow target changes. See § Currency reconciliation — 2026-10-26 (Story 20.2). Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 20.1): chain-currency cascade (spec -> PRD) after the Spec's capability text was restored from the pre-fold source (no CAP added or moved); no FR, NFR or arrow changes; the NFR lines (no arrows) are Story 20.2's. See § Currency reconciliation — 2026-10-26 (Story 20.1). Prior "2026-10-25"   # RE-STAMPED 2026-10-25 (Story 19.1): FR-11 and FR-12 re-pointed at CAP-11, CAP-4, FR-34 and FR-36 at CAP-4, CAP-11 (on the review), and FR33 and FR35, which the 2026-09-17 fold skipped, gain CAP-5 (FR35 also CAP-11); no FR text, number, spelling or NFR moves. See § Currency reconciliation — 2026-10-25 (Story 19.1). Prior "2026-10-11"   # RE-STAMPED 2026-10-11: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-11 entries (operator rulings: the fleet is an operator-designated github.com organisation read through the operator's gh login and never named in a tracked file; Story 16.1 re-scoped, Story 16.5 minted under CAP-26 / FR-43); no FR registered. See § Currency reconciliation — 2026-10-11. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Stories 15.1 and 16.1's gates cleared, their keys flipped blocked -> backlog by operator ruling) and the 2026-10-07 mint of fix Story 11.3; no FR registered. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-03..07 surface-reconcile entries (Story 17.1 landing, Story 14.1 landing, Story 14.2); no FR registered. See § Currency reconciliation — 2026-10-07. Prior 2026-10-03 (Phase 4+5)   # RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 17, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-24..26 (Epics 14-16); FR-41..FR-43 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-23 (the TEA advisory's base is the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (py-rattler test-oracle floor 0.26.0 → 0.25.0 for the pyforge-foundry-full union solve; surface reconcile); no requirement/AD/story delta. Prior 2026-09-17
+updated: "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): chain-currency cascade (spec -> PRD) for the Spec's 2026-11-01 re-derive of CAP-23..CAP-26 (research/egm-audit-2026-11-01.md: 30 findings, 28 accepted, 2 rejected, 0 deferred; fix stories 13.2, 14.4, 15.2 and 16.6-16.10, all done); FR-41..FR-43 carry their dated 2026-11-01 amendments; NFR-C1's pixi floor reads 0.80.0 (was 0.72.2) and NFR-S2's egress rule is scoped by process, its arrow gaining CAP-26; no FR added, renumbered or removed. See § Currency reconciliation — 2026-11-01. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 20.2): the 23 lettered NFR lines gain `← CAP-m` arrows traced from the Spec's capability intent and success text; by the operator's ruling of 2026-10-26 (option A) eight ids are re-spelled to CHAIN-STANDARD § 6's grammar (NFR-R3a/NFR-R3b → NFR-R3.1/NFR-R3.2, NFR-P-warm/-cold/-concurrency → NFR-P2/P3/P4, FR33/FR35 → FR-33/FR-35), the FR30 traceability note names FR-30 after its title, and the six FR-NEW-* journey rows name their canonical FRs; no NFR or FR text, number or arrow target changes. See § Currency reconciliation — 2026-10-26 (Story 20.2). Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 20.1): chain-currency cascade (spec -> PRD) after the Spec's capability text was restored from the pre-fold source (no CAP added or moved); no FR, NFR or arrow changes; the NFR lines (no arrows) are Story 20.2's. See § Currency reconciliation — 2026-10-26 (Story 20.1). Prior "2026-10-25"   # RE-STAMPED 2026-10-25 (Story 19.1): FR-11 and FR-12 re-pointed at CAP-11, CAP-4, FR-34 and FR-36 at CAP-4, CAP-11 (on the review), and FR33 and FR35, which the 2026-09-17 fold skipped, gain CAP-5 (FR35 also CAP-11); no FR text, number, spelling or NFR moves. See § Currency reconciliation — 2026-10-25 (Story 19.1). Prior "2026-10-11"   # RE-STAMPED 2026-10-11: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-11 entries (operator rulings: the fleet is an operator-designated github.com organisation read through the operator's gh login and never named in a tracked file; Story 16.1 re-scoped, Story 16.5 minted under CAP-26 / FR-43); no FR registered. See § Currency reconciliation — 2026-10-11. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Stories 15.1 and 16.1's gates cleared, their keys flipped blocked -> backlog by operator ruling) and the 2026-10-07 mint of fix Story 11.3; no FR registered. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-03..07 surface-reconcile entries (Story 17.1 landing, Story 14.1 landing, Story 14.2); no FR registered. See § Currency reconciliation — 2026-10-07. Prior 2026-10-03 (Phase 4+5)   # RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 17, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-24..26 (Epics 14-16); FR-41..FR-43 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-23 (the TEA advisory's base is the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (py-rattler test-oracle floor 0.26.0 → 0.25.0 for the pyforge-foundry-full union solve; surface reconcile); no requirement/AD/story delta. Prior 2026-09-17
 currency_review: "Reviewed 2026-09-14 — chain-currency sweep. spec-pyforge-warden moved to 2026-09-12 (a 2-path surface-drift-exclude block; twelve dated verified: CAP lines from the 2026-09-11 sweep; three open_questions hoisted into frontmatter 2026-09-11; the story-set Assumption re-grounded from 31/6 to 43 keys/11 epics) while this PRD sat at 2026-09-07. Reconciled in § Currency reconciliation — 2026-09-14. ONE REAL GAP RECORDED, independently re-verified: `review_required` — named in FR9, in the acceptance matrix and in the bypass success criteria — occurs ZERO times in shipped src/ or tests/. Recorded, NOT repaired: adding the field is a behaviour + schema change needing its own Dream/Spec. The Spec's three open questions remain OPERATOR-OWNED and unanswered; the station's coherence checkpoint stays red by design until they are answered. Prior — Reviewed 2026-09-07 — reconciled against Epic 11 (bmad-os-review-pr/findings-triage + tea-test-review, both advisory lenses, landed since the 2026-08-26 pass) and the DW-FU-11-2 fail-closed judgment call. v1 FR1-FR40 content verified unchanged; post-v1 growth recorded in § Currency reconciliation — 2026-09-07 (and the 2026-08-26 entry above it)."
 classification:
   projectType: cli_tool
@@ -606,7 +606,7 @@ Offline-operation *property* (mechanism behind FR11) · noise-free machine-outpu
 
 ### Security *(each stated as an enforced, testable mechanism)*
 - **NFR-S1 (no *execution* of untrusted input — the constraint is no-execution, NOT stdlib-only)** ← CAP-2: the extraction module **imports no execution primitive** (`eval`/`exec`/`compile`/`__import__`/`os.system`/`subprocess.*`, AST-asserted denylist; subprocess confined to a separate whitelisted engine-runner) and **never renders templates** (`re`-scrape for Jinja recipes, **no `jinja2` import**); **safe parsers are permitted** — `yaml.safe_load` (clean-YAML lockfiles), `tomllib`, `packaging`, `cyclonedx-python-lib` are allowed because they don't execute input. Asserted against a malicious-manifest fixture corpus.
-- **NFR-S2 (no silent egress)** ← CAP-11, CAP-12: the **orchestrator's own process opens no socket** (socket-guard test); all network is confined to the named engine subprocesses; air-gapped mode passes explicit `--offline`/local-DB flags (osv-scanner defaults *online* — an assertion, not a hope). KEV, **FIRST EPSS**, and endoflife.date are **cached feeds under the same posture** (offline default; opt-in online, never silent — FR36/FR34). The FR40 fix-PR actuator is the **sole exception with forge-API egress** — opt-in flag, env credentials, post-verdict, never touching the scanned tree.
+- **NFR-S2 (no silent egress)** ← CAP-11, CAP-12, CAP-26: the **orchestrator's own process — `warden scan`'s — opens no socket** (socket-guard test); all network is confined to the named engine subprocesses; air-gapped mode passes explicit `--offline`/local-DB flags (osv-scanner defaults *online* — an assertion, not a hope). KEV, **FIRST EPSS**, and endoflife.date are **cached feeds under the same posture** (offline default; opt-in online, never silent — FR36/FR34). The FR40 fix-PR actuator is the **sole exception with forge-API egress inside that process** — opt-in flag, env credentials, post-verdict, never touching the scanned tree; an operator-approved fleet proposal's draft PR leaves through the same actuator. The fleet's own egress (FR-43) — its read-only GitHub clients and its `git` clones — is explicit and operator-started, and runs only in `django-warden`'s Celery worker, outside `warden scan`'s process. *(Scoped by process 2026-11-01, following the Spec's re-derived Constraint; EGM audit WAR-M-C3.)*
 - **NFR-S3 (waiver untrusted + least-privilege)** ← CAP-6: the waiver file is schema-validated, expiry enforced against wall-clock, **never executed**; waivers are **least-privilege** (specific vuln-id + package + ecosystem, **no wildcards**) and **every applied waiver is echoed in output** so a broad suppression is review-visible; authorship/integrity delegated to code review + CODEOWNERS.
 - **NFR-S4 (no repo writes + secure temp)** ← CAP-10: no writes into the repository tree; temp artifacts via `mkstemp`/`mkdtemp` (`0600`/`0700`) under the system temp dir (`mkstemp` *is* the symlink/TOCTOU defense).
 - **NFR-S5 (ReDoS / resource bound)** ← CAP-2, CAP-11: extraction is **line-bounded with a per-line byte cap** and a total manifest-size cap `M`; **no compiled pattern contains nested unbounded quantifiers** (static assertion); offline-DB extraction carries a **decompression bound** (zip-bomb). A pathological manifest can never hang or OOM the tool.
@@ -630,7 +630,7 @@ Offline-operation *property* (mechanism behind FR11) · noise-free machine-outpu
 - **NFR-U2 (safe-by-default + on-ramp)** ← CAP-9, CAP-5: the zero-config default is the **secure** one (fail on critical, expiring waivers, unknown/incompatible engine → fail-loud, air-gap explicit), **paired** with the documented warn-only adoption on-ramp (FR23) so a repo's pre-existing debt doesn't trigger a day-one mass-disable. *(The fuller baseline-bootstrap ships v1 as FR39 — baseline & grandfathering, D12.)*
 
 ### Portability / Compatibility
-- **NFR-C1** ← CAP-8: runs on **Python ≥ 3.12**; requires deptry + osv-scanner on PATH within a **tested version range** and **fails loud when an engine is out-of-range** (guarding against silent output-schema drift — the engine comes from the feedstock, so a range, not an exact pin); requires **pixi ≥ 0.72.2** for the pixi path; conda + wheel + sdist build green. **The engine version-range is also the distribution gate (story 6.6, 2026-07-15):** internal JFrog v1 and public v1.x publish only after `pixi.toml`'s `deptry`/`osv-scanner` run-deps carry the tested range (both are `"*"` today).
+- **NFR-C1** ← CAP-8: runs on **Python ≥ 3.12**; requires deptry + osv-scanner on PATH within a **tested version range** and **fails loud when an engine is out-of-range** (guarding against silent output-schema drift — the engine comes from the feedstock, so a range, not an exact pin); requires **pixi ≥ 0.80.0**, the workspace's `requires-pixi`, for the pixi path (a build/dev-environment floor; at runtime only FR-41's real fix-PR path runs pixi, under a tested range whose floor is that same `requires-pixi`; corrected 2026-11-01 from 0.72.2, Story 14.4); conda + wheel + sdist build green. **The engine version-range is also the distribution gate (story 6.6, 2026-07-15):** internal JFrog v1 and public v1.x publish only after `pixi.toml`'s `deptry`/`osv-scanner` run-deps carry the tested range (both are `"*"` today).
 
 *Cut/deferred this step: standalone "fleet-scale" NFR (folded into NFR-P4) · broad observability/telemetry (kernel → NFR-U1) · forward-compat migration machinery (trimmed to NFR-I2). Accessibility skipped.*
 
@@ -926,55 +926,107 @@ canopy chain.
 #### FR-41: The fix-PR actuator finishes the fix on the estate's repos ← CAP-24
 
 FR-40's upgrade PR stops being a pointer. For a `vuln:` finding the actuator resolves the target version — the lowest
-release the finding's OSV advisory names as fixed that the estate's own solver accepts — edits the declaring manifest,
-re-solves the lock, and opens a **draft** PR carrying that diff, on the estate's own repos (`rxm7706/local-recipes`,
-`rxm7706/python-foundry`). FR-40's promises hold unchanged: forge egress only in the actuator, strictly post-verdict,
-inert without the flag, never writing the scanned working tree, a failed step recorded in `actuation` and never a
-rung or an exit code.
+release the finding's OSV advisory names as fixed that the estate's own solver accepts, found by a bounded search
+that probes each candidate through the fix's own manifest edit — edits the declaring manifest, re-solves the lock, and
+opens a **draft** PR carrying that diff, on the estate's own repos: the estate allowlist, the `fix-pr-estate-repos`
+key (default `rxm7706/local-recipes`, `rxm7706/python-foundry`). FR-40's promises hold unchanged: forge egress only in
+the actuator, strictly post-verdict, inert without the flag, never writing the scanned working tree, a failed step
+recorded in `actuation` and never a rung or an exit code.
+
+*Amended 2026-11-01 (EGM fleet audit re-derive of CAP-24, findings WAR-M-Z1, WAR-M-D2, WAR-M-C1, WAR-M-Z5, WAR-M-C5,
+WAR-D-C2, WAR-D-R1, WAR-M-D5; Story 14.4): the bounded solver, the estate allowlist and its per-call fleet
+authorization, and every failure path join the consequences.*
 
 **Consequences (testable):**
 - Candidates are every `ECOSYSTEM`/`SEMVER` `fixed` event of the matching `affected[]` entry at or above the current
   version, ascending; the first the solver accepts is the target (a fixture solver that refuses 1.2.3 yields 1.3.0).
+- The solver probes a candidate through the fix's own manifest edit (a bare or quoted `pixi.toml` key, a
+  `pyproject.toml` dependency, a recipe requirement line) in a copy without `.pixi/` or `.git`; it tries at most 5
+  candidates within an 1800 s solve budget per finding, each `pixi lock` pinned to the copy by `--manifest-path` and
+  bounded by the smaller of its configurable 600 s timeout and the budget left.
 - `--fix-prs-dry-run` still opens no socket: it names the lowest candidate with the solver marked not-run.
 - The edit and the re-solve happen in a `mkdtemp` (`0700`) copy that is gone after success and failure; the scanned
   tree is byte-identical after the run.
 - The diff arrives as one commit on a `warden/fix/` branch behind a draft PR, through the forge API's Git Data
-  endpoints; a repo outside the estate allowlist gets no manifest-edit PR.
-- pixi runs only on the real `--open-fix-prs` path, as a named engine subprocess under a tested version range.
-- Decomposes into **Epic 14** (Stories 14.1–14.3).
+  endpoints; a repo outside the estate allowlist gets no manifest-edit PR, absent a per-call CAP-26 authorization
+  naming that repo for its one approved finding, which never widens the allowlist.
+- Each failure is a `failed` outcome in `actuation` naming its reason, with the status and exit code unchanged: no
+  `fixed` candidate, every candidate refused, the cap or the budget reached, an out-of-range pixi, a dependency no
+  manifest declares, a failed manifest edit, a failed PR-open.
+- pixi runs only on the real `--open-fix-prs` path, as a named engine subprocess under a tested version range
+  (`>=0.80.0,<0.82`) whose floor is `pixi.toml`'s `requires-pixi`.
+- Verified by `pixi run --frozen -e pyforge-warden pyforge-warden-test` (exit 0) and the opt-in real-pixi test
+  (`pytest src/shared/packages/pyforge-warden/tests/integration/test_fix_solver_real_pixi.py -m slow`, exit 0).
+- Decomposes into **Epic 14** (Stories 14.1–14.4).
 
 #### FR-42: SAST joins as an optional plugin, and informs without publishing ← CAP-25
 
 Opengrep takes the SAST slot on the PR-gate hook book (canopy:FR-44's optional-plugin shape) with rules the estate owns,
-run offline. Its results are advisory notes, the TEA lens's shape: they inform the report's reader and never publish a
-verdict. CodeQL is rejected on its licence.
+run offline with its metrics and version check off. Its results are advisory notes, the TEA lens's shape: they inform
+the report's reader and never publish a verdict. CodeQL is rejected on its licence.
+
+*Amended 2026-11-01 (EGM fleet audit re-derive of CAP-25, findings WAR-M-Z5, WAR-M-C4, WAR-D-C6, WAR-M-D6; Story
+15.2): the shipped estate rules and the telemetry-off argv and environment join the consequences; the Story 9.3
+pointer becomes the behaviour it named.*
 
 **Consequences (testable):**
-- With `opengrep` enabled and an estate rule tripped, the report's `advisory` names the rule, path and line, and the
-  status and exit code equal the same run with the scanner disabled.
-- No rule is fetched over the network; an absent binary is omit-not-error (Story 9.3's test stays green).
+- The package ships the estate rules `subprocess-shell-true`, `yaml-unsafe-load` and `eval-exec`, and no test-only
+  marker rule.
+- With `opengrep` enabled and an estate rule tripped, the report's `advisory` names the bare rule id, path and line,
+  and the status and exit code equal the same run with the scanner disabled.
+- No rule is fetched over the network: the invocation names only the local rules path, and carries
+  `--disable-version-check` with `SEMGREP_SEND_METRICS=off` and `OPENGREP_ENABLE_VERSION_CHECK=0`, pinned by test
+  because the socket guard cannot see a subprocess's egress.
+- An absent opengrep binary omits the scanner, and a default run's status and exit code stay unchanged.
 - The `ComplianceReport` stays at 1.1.0 (the `advisory` slot is already an open array).
-- Decomposes into **Epic 15** (Story 15.1, ledger `blocked` until mason Story 21.4 ships the opengrep package).
+- Verified by `pixi run --frozen -e pyforge-warden pyforge-warden-test` (exit 0; `tests/unit/test_sast_opengrep.py`).
+- Decomposes into **Epic 15** (Stories 15.1–15.2; mason Story 21.4 ships the opengrep package).
 
 #### FR-43: Warden scans the enterprise fleet, one verdict per repo ← CAP-26
 
-A fleet run inventories a GitHub Enterprise organisation and scans each repo with `warden scan`. This lifts two
-Non-goals by operator ruling (2026-09-28): *Fleet aggregation* (a fleet run is now Warden's, still one verdict per repo
-and never a fleet-level pass/fail) and *Non-Python osv-scanner ecosystems* (the security axis over osv-scanner's native
-lockfile parsers; container and artifact scanning stay out). Fixes on fleet repos wait in a proposal queue and open only
-on the operator's approval.
+A fleet run, started only by an operator action, inventories an operator-designated github.com organisation (never
+named in a tracked file) and scans each repo with `warden scan`. This lifts two Non-goals by operator ruling
+(2026-09-28): *Fleet aggregation* (a fleet run is now Warden's, still one verdict per repo and never a fleet-level
+pass/fail) and *Non-Python osv-scanner ecosystems* (the security axis over osv-scanner's native lockfile parsers;
+container and artifact scanning stay out). Fixes on fleet repos wait in a proposal queue and open only on the operator's
+approval.
+
+*Amended 2026-11-01 (EGM fleet audit re-derive of CAP-26, findings WAR-M-Z1..Z4, WAR-M-D1..D4, WAR-M-C1..C3,
+WAR-D-C1, WAR-D-R3, WAR-D-R4, WAR-D-C5; the operator's rulings of 2026-10-11 and 2026-11-01; Stories 16.6–16.10): the
+github.com host and `gh`-login read path replace GitHub Enterprise and Steward's credentials, and the export fields,
+time bounds, approve rules, non-Python proposal outcome and unknown-then-warn license and currency rows join the
+consequences.*
 
 **Consequences (testable):**
-- The run persists on `django-warden`'s `ComplianceJob` pattern (keys-not-blobs; a job status that is never a verdict —
-  no CLEAN or VULNERABLE second verdict); each per-repo row carries that repo's own `warden scan` report and exit code.
-- The inventory is published as a JSON export other stations read as data (Atlas, `spec-pyforge-atlas:CAP-61`).
-- Throwaway clones are removed on success and on failure.
-- A planned fleet fix is a queued proposal; no forge call is made until an approve action, after which that one proposal
-  opens as a draft PR through FR-41's path.
-- A fixture npm `package-lock.json` pinning a known-vulnerable version yields a `vuln:` finding, `hygiene`
-  `not-applicable`.
-- GHE credentials come from Steward (steward Story 75.1). Decomposes into **Epic 16** (Stories 16.1–16.4; 16.1 ledger
-  `blocked` on steward Story 75.1).
+- The inventory and the items of the operator-designated GitHub Projects are read through the operator's `gh` login
+  at run time, GET-only over REST and query-only over GraphQL, each client refusing anything else before a socket
+  opens; the token is held in memory for the run only. Steward's GitHub Enterprise identities
+  (`spec-pyforge-steward:CAP-164`) stay the path for a future GitHub Enterprise target; the credential for a live fleet
+  scan and an approved proposal's draft PR is the operator's, not yet ruled.
+- The run persists on `django-warden`'s `ComplianceJob` pattern (keys-not-blobs: the Celery message carries ids only;
+  run and per-repo rows carry a job status that is never a verdict — no CLEAN or VULNERABLE second verdict); each
+  per-repo row carries that repo's own `warden scan` report and exit code. A proposal's lifecycle (queued, approved,
+  opened, failed, dismissed) is never a verdict either.
+- The inventory is published as a gitignored JSON export other stations read as data (Atlas,
+  `spec-pyforge-atlas:CAP-61`): every `repos[]` row carries `full_name`, `default_branch`, `clone_url`, `archived` and
+  a non-empty `head_sha`; a repo with no readable tip is listed under `skipped` with its reason; any other failure
+  writes no export.
+- Throwaway clones are removed on success and on failure. Each repo scan and each approve run under a 240 s soft and a
+  300 s hard limit, and every `git` call of a clone under a 120 s timeout; a timeout fails only that repo's row, and
+  the run stays succeeded as a job while it records its failed and skipped repo counts.
+- A planned fleet fix on a PyPI or conda component is a queued proposal holding the dry-run target; an npm, Go or Cargo
+  finding queues nothing. No forge call is made until an approve action, which refuses an approval older than the
+  expiry (default seven days), re-clones, re-scans and refuses a finding the fresh report no longer lists, re-solves on
+  the clone, and opens that one proposal as a draft PR through FR-41's path whose one commit carries the manifest edit;
+  an approve with no manifest edit records `failed` with zero forge writes.
+- A fixture npm `package-lock.json` pinning a known-vulnerable version, scanned offline against a per-ecosystem
+  database the provisioning script fills (PyPI, npm, Go, crates.io), yields a `vuln:` finding, `hygiene`
+  `not-applicable`; with no database for its ecosystem it reads `indeterminate`, never `clean`. Its components draw
+  `license:unknown` and `currency:unknown` findings — `warn` ungated, `indeterminate` gated — and the license and
+  currency rows count them.
+- Verified by `pixi run --frozen -e pyforge-warden pyforge-warden-test` and the platform suite,
+  `pixi run -e pyforge-guild platform-ci-local -- --test` (each exit 0, no real network). Decomposes into **Epic 16**
+  (Stories 16.1–16.10).
 
 **ONE FR space now FR-1..FR-43** (FR-44 = next free id; `canopy:FR-44` is a different space).
 
@@ -1193,3 +1245,39 @@ was read against the success text quoted in the memlog table and stands.
 **Content changed:** this section; 23 NFR lines gain arrows; eight ids re-spelled, one note and six journey rows
 re-shaped as references, and the mentions of those ids in the live text follow; no NFR or FR text, number or arrow
 target moved otherwise; no FR registered or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-11-01
+
+*Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-warden`'s `SPEC.md` and memlog moved 2026-11-01 with the
+EGM fleet audit re-derive (marshal Story 113.7) while this PRD sat at 2026-10-26.* Reconciled against the re-derived
+Spec, the audit's residue `research/egm-audit-2026-11-01.md` and the as-built fix stories.
+
+- **The research.** 30 findings on CAP-23..CAP-26 and Epics 13–16 (18 at the mint stage, 12 at the decompose stage):
+  28 accepted, 2 rejected (WAR-D-R6, WAR-D-C4), 0 deferred. Four were audited as Blockers and one stayed a Blocker
+  after verification (WAR-D-C1). The 28 accepted findings route to a Spec re-derive (12), code (11), an operator
+  decision (2: WAR-M-D1 and WAR-M-C2, ruled unknown-then-warn) and append-only story notes (3).
+- **The CAPs re-derived.** CAP-23: an enabled TEA run that skipped (exit 2, ENV_ERROR) reaches the report's
+  `advisory` as one skip record (Story 13.2). CAP-24: the estate allowlist is the `fix-pr-estate-repos` key, CAP-26's
+  per-call authorization is its one exception, the default solver is bounded, and every failure path lands in
+  `actuation` (Story 14.4). CAP-25: the three shipped estate rules and the telemetry-off argv and environment (Story
+  15.2). CAP-26: the github.com host read through the operator's `gh` login, the export pinned with `head_sha`, job
+  and proposal statuses never a verdict, time bounds, approve-time expiry, re-scan and re-solve, no proposal outside
+  PyPI and conda, per-ecosystem offline databases, and unknown-then-warn license and currency (Stories 16.6–16.10).
+  The *No silent egress* and *Runtime shape* Constraints and the fleet-verdict Non-goal are re-worded, and
+  `glossary.md` joins the companions. CAP ids and markers are kept.
+- **FR-41, FR-42 and FR-43** carry the dated *Amended 2026-11-01* notes written with the re-derive. Each consequence
+  list was read against its CAP's re-derived intent and success and contradicts neither; each now names its command
+  and exit code. CAP-23 still has no FR (§ Currency reconciliation — 2026-09-27): its skip record is an advisory note
+  inside the FR20/J9 verdict contract.
+- **Corrected in place.** NFR-C1's pixi floor reads 0.80.0, the workspace's `requires-pixi` (it read 0.72.2; the
+  Spec's *Runtime shape* Constraint and Story 14.4's `PIXI_VERSION_RANGE`, `>=0.80.0,<0.82`). NFR-S2 follows the
+  Spec's *No silent egress* Constraint, scoped by process (WAR-M-C3): the actuator is the sole forge-API egress inside
+  `warden scan`'s process, and the fleet's read-only clients and clones egress only in `django-warden`'s
+  operator-started worker. Its arrow gains CAP-26, whose intent states that egress.
+- **The fix stories.** 13.2, 14.4, 15.2, 16.6, 16.7, 16.8, 16.9 and 16.10 were minted under CAP-23..CAP-26 (fixes:
+  no CAP, no FR, no flag) and are `done` on the EGM audit branch, not yet on `main`. Epics 13–16 close again at 2, 4,
+  2 and 10 stories.
+
+**ONE FR space still FR-1..FR-43** (FR-44 = next free id; `canopy:FR-44` is a different space).
+
+**Content changed:** this section, NFR-C1 and NFR-S2 in place, and `updated:`. No FR added, renumbered or removed.

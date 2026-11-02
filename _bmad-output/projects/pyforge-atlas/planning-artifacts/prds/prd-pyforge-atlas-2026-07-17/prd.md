@@ -3,7 +3,7 @@ fr-derivation-from: "2026-09-17"
 title: cf_atlas Kedro/Dagster/DuckDB Migration
 status: final
 created: 2026-07-17
-updated: "2026-10-26"   # RE-STAMPED 2026-10-26 (CAP-7 retrofit, Epic 42): the station memlog gained the retrofit decision; no requirement changes. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 41.1): FR-15's arrow re-pointed from the Constraint to CAP-72, minted from that Constraint on the operator ruling of 2026-10-26 that a requirement cites defined capabilities only (reverses the 2026-10-25 ruling for Story 40.1); no FR added, renumbered or amended; the ten NFR lines (no arrows) are Story 41.3's; the satellite FR ids are Story 41.2's. See § Currency reconciliation — 2026-10-26 (Story 41.1). Prior "2026-10-25"   # RE-STAMPED 2026-10-25 (Story 40.1): spec -> PRD for CAP-70 and CAP-71, kedro-org Capabilities 1 and 3 restored on the operator's ruling; FR-61 and FR-63 cite them, and FR-15 cites the Spec constraint it derives from (ruling "Cite the constraint"); DW-atlas-39-1 closed; no FR text, number or NFR moves. See § Currency reconciliation — 2026-10-25 (Story 40.1). Earlier 2026-10-25: RE-STAMPED 2026-10-25 (Stories 33.2 and 34.13): spec -> PRD for the memlog's decisions on the 2026-10-25 retro's atlas fixes; FR-7, FR-15 and FR-72 hold as written; no FR added, renumbered or amended. See § Currency reconciliation — 2026-10-25 (Stories 33.2 and 34.13). Earlier 2026-10-25: RE-STAMPED 2026-10-25 (Story 39.1, the FR arrows were counted, not traced): 23 FR heading arrows re-mapped to the spec-pyforge-atlas capabilities that realize them (the memlog's 2026-10-25 approved re-map, amended for FR-6 after review); the `### FR-61..FR-68 delivered` heading loses its counted arrow; the fold-provenance line gains a correction; FR-15, FR-61 and FR-63 keep their arrows pending a source-capability decision. No FR added, renumbered or amended in text. See § Currency reconciliation — 2026-10-25 (Story 39.1). Earlier 2026-10-25: RE-STAMPED 2026-10-25 (chain-currency behind-code: the package pyproject.toml moved with marshal Story 103.1's numpy>=2.5.3 declaration, #2307): the atlas landings since the 2026-10-22 stamp (Stories 35.2-35.4, 37.4-37.13, 38.1, 34.12, 27.6) and the Spec memlog through 2026-10-25 folded; no FR added, renumbered or amended; FR-72's plain-run consequence recorded as not holding on a fresh data root (DW-atlas-37-2-1). See § Currency reconciliation — 2026-10-25. Prior: RE-STAMPED 2026-10-22 (UTC; 2026-10-21 local): FR-71 amended in place with CAP-63's 2026-10-21 operator ruling (on Pages the identity boards show what public inputs give them; credentialed and enterprise sources stay empty). See § Currency reconciliation — 2026-10-22. Prior: RE-STAMPED 2026-10-19: FR-77 registered from spec-pyforge-atlas CAP-69 (the Vizro boards read the datasets the pipelines write; Epic 37) and FR-71 amended with CAP-63 (the producer builds the public data first, weekly and on push). See § Currency reconciliation — 2026-10-19. Prior: RE-STAMPED 2026-10-18 (later): FR-72..FR-76 registered from spec-pyforge-atlas CAP-64..CAP-68 (atlas fills its own data; Epics 34-36). Earlier the same day: chain-currency cascade (spec -> PRD) for atlas Story 33.1, a fix under spec-pyforge-atlas CAP-9 (the atlas CLI reaches the verbs its contracts name, from any directory); no FR added, renumbered or amended, no AD moved. See § Currency reconciliation — 2026-10-18. Prior: RE-STAMPED 2026-10-15: CAP-63 amended (the vizro-static-export task and job run in -e pyforge-atlas; the vendored plotly.min.js is the one exact-file VENDORED_ROOTS entry); FR-71 follows in place, no FR added or removed, no AD moved. See § Currency reconciliation — 2026-10-15. Prior: RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for CAP-62 and CAP-63 (Epic 30): FR-70 and FR-71 registered (the Kedro-Viz DAG export reaches Pages as a workflow artifact, amending CAP-41 / FR-62's producer; Vizro boards publish as static exports under /dashboard/vizro/). See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-13 entries (Story 28.1 landed; Epic 29 / Story 29.1 minted and implemented, a fix under CAP-16 -- the range test server records each response before writing it); no CAP added or amended, no FR moved. See § Currency reconciliation — 2026-10-13. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Story 25.1's gate cleared, its key flipped blocked -> backlog by operator ruling); no FR registered. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for marshal Story 66.2's backfill of atlas's deferred-work ledger (co-governor surface reconcile); no FR registered. See § Currency reconciliation — 2026-10-03. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-61 (Epic 25); FR-69 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-20 (fleet consistency pass).
+updated: "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): spec -> PRD for spec-pyforge-atlas CAP-64..CAP-69 as re-derived 2026-11-01 from the audit (research/egm-audit-2026-11-01.md) and fix Stories 34.14, 34.15 and 35.5; FR-72..FR-77's consequences amended in place, each marked with its finding; no FR added, renumbered or removed; FR-72's 2026-10-25 recorded divergence (DW-atlas-37-2-1) repaired by Story 34.14. See § Currency reconciliation — 2026-11-01 (EGM fleet audit). Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (CAP-7 retrofit, Epic 42): the station memlog gained the retrofit decision; no requirement changes. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 41.1): FR-15's arrow re-pointed from the Constraint to CAP-72, minted from that Constraint on the operator ruling of 2026-10-26 that a requirement cites defined capabilities only (reverses the 2026-10-25 ruling for Story 40.1); no FR added, renumbered or amended; the ten NFR lines (no arrows) are Story 41.3's; the satellite FR ids are Story 41.2's. See § Currency reconciliation — 2026-10-26 (Story 41.1). Prior "2026-10-25"   # RE-STAMPED 2026-10-25 (Story 40.1): spec -> PRD for CAP-70 and CAP-71, kedro-org Capabilities 1 and 3 restored on the operator's ruling; FR-61 and FR-63 cite them, and FR-15 cites the Spec constraint it derives from (ruling "Cite the constraint"); DW-atlas-39-1 closed; no FR text, number or NFR moves. See § Currency reconciliation — 2026-10-25 (Story 40.1). Earlier 2026-10-25: RE-STAMPED 2026-10-25 (Stories 33.2 and 34.13): spec -> PRD for the memlog's decisions on the 2026-10-25 retro's atlas fixes; FR-7, FR-15 and FR-72 hold as written; no FR added, renumbered or amended. See § Currency reconciliation — 2026-10-25 (Stories 33.2 and 34.13). Earlier 2026-10-25: RE-STAMPED 2026-10-25 (Story 39.1, the FR arrows were counted, not traced): 23 FR heading arrows re-mapped to the spec-pyforge-atlas capabilities that realize them (the memlog's 2026-10-25 approved re-map, amended for FR-6 after review); the `### FR-61..FR-68 delivered` heading loses its counted arrow; the fold-provenance line gains a correction; FR-15, FR-61 and FR-63 keep their arrows pending a source-capability decision. No FR added, renumbered or amended in text. See § Currency reconciliation — 2026-10-25 (Story 39.1). Earlier 2026-10-25: RE-STAMPED 2026-10-25 (chain-currency behind-code: the package pyproject.toml moved with marshal Story 103.1's numpy>=2.5.3 declaration, #2307): the atlas landings since the 2026-10-22 stamp (Stories 35.2-35.4, 37.4-37.13, 38.1, 34.12, 27.6) and the Spec memlog through 2026-10-25 folded; no FR added, renumbered or amended; FR-72's plain-run consequence recorded as not holding on a fresh data root (DW-atlas-37-2-1). See § Currency reconciliation — 2026-10-25. Prior: RE-STAMPED 2026-10-22 (UTC; 2026-10-21 local): FR-71 amended in place with CAP-63's 2026-10-21 operator ruling (on Pages the identity boards show what public inputs give them; credentialed and enterprise sources stay empty). See § Currency reconciliation — 2026-10-22. Prior: RE-STAMPED 2026-10-19: FR-77 registered from spec-pyforge-atlas CAP-69 (the Vizro boards read the datasets the pipelines write; Epic 37) and FR-71 amended with CAP-63 (the producer builds the public data first, weekly and on push). See § Currency reconciliation — 2026-10-19. Prior: RE-STAMPED 2026-10-18 (later): FR-72..FR-76 registered from spec-pyforge-atlas CAP-64..CAP-68 (atlas fills its own data; Epics 34-36). Earlier the same day: chain-currency cascade (spec -> PRD) for atlas Story 33.1, a fix under spec-pyforge-atlas CAP-9 (the atlas CLI reaches the verbs its contracts name, from any directory); no FR added, renumbered or amended, no AD moved. See § Currency reconciliation — 2026-10-18. Prior: RE-STAMPED 2026-10-15: CAP-63 amended (the vizro-static-export task and job run in -e pyforge-atlas; the vendored plotly.min.js is the one exact-file VENDORED_ROOTS entry); FR-71 follows in place, no FR added or removed, no AD moved. See § Currency reconciliation — 2026-10-15. Prior: RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for CAP-62 and CAP-63 (Epic 30): FR-70 and FR-71 registered (the Kedro-Viz DAG export reaches Pages as a workflow artifact, amending CAP-41 / FR-62's producer; Vizro boards publish as static exports under /dashboard/vizro/). See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-13 entries (Story 28.1 landed; Epic 29 / Story 29.1 minted and implemented, a fix under CAP-16 -- the range test server records each response before writing it); no CAP added or amended, no FR moved. See § Currency reconciliation — 2026-10-13. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Story 25.1's gate cleared, its key flipped blocked -> backlog by operator ruling); no FR registered. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for marshal Story 66.2's backfill of atlas's deferred-work ledger (co-governor surface reconcile); no FR registered. See § Currency reconciliation — 2026-10-03. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-61 (Epic 25); FR-69 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-20 (fleet consistency pass).
 project: pyforge-atlas
 intent_source: docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.6, ANALYSIS COMPLETE)
 currency_review: Reviewed 2026-08-01 — spec corrections applied to PRD. CAP-8 "28-CLI inventory is answerable" false claim corrected to "8 pages + factory-status; full 28-CLI deferred (DW-D2-1)". FR-4 run-admission retirement (silent-drop cap) already correctly stated (line 248-249). AD-23 lock-store placement details remain architectural (not PRD-level). Reviewed again 2026-08-26 — post-08-08 spec-estate and code motion reconciled in the appended section "Currency reconciliation — 2026-08-26" (Epics 12-19 delivery, four post-migration capability specs, CAP-19 query-plane ownership, spec archivals/parking).
@@ -3301,20 +3301,35 @@ On a fresh data root, `pyforge-atlas-bootstrap` then `pyforge atlas run` fills e
 unauthenticated, live and in-package. Realizes UJ-2's "the atlas answers from its own data".
 
 **Consequences (testable):**
-- Each dataset `live-sources.md` lists for a public source holds rows within the tolerance its story records against
-  the legacy `cf_atlas.db` measure of the same day.
-- With the network blocked the same run exits 0 and every public store keeps last-good under a `stale` marker (AD-13).
+- Each dataset on a row `live-sources.md` assigns to CAP-64 holds rows at or above the floor that row records, the
+  story-close measurement against the legacy `cf_atlas.db` measure of the same day *(amended 2026-11-01, EGM audit
+  ATL-M-Z2, ATL-M-D3, ATL-M-C2, ATL-D-R3; it read "Each dataset `live-sources.md` lists for a public source holds rows
+  within the tolerance its story records against the legacy `cf_atlas.db` measure of the same day")*.
+- A second run with the network blocked, over the root the first run filled, exits 0 and every public store keeps
+  last-good under a `stale` marker (AD-13), the three core sources the enumeration reads included (Story 34.15)
+  *(amended 2026-11-01, EGM audit cluster ATL-K1; it read "With the network blocked the same run exits 0 and every
+  public store keeps last-good under a `stale` marker (AD-13)")*.
+- A plain run (`pyforge atlas run` with no `--pipelines`) runs `__default__`, which leaves out `catalog_index`,
+  `query_plane_cache` and `universal_sbom`, so it exits 0 on a fresh data root; `tests/integration/test_plain_run_fresh_root.py`
+  proves both runs *(added 2026-11-01, Stories 34.14 and 34.15; EGM audit ATL-M-D1, ATL-D-R2, ATL-D-C3)*.
 - The no-inline-IO denylist is unchanged; fetches compose `APIDataset` or run through `pyforge.core.process`.
 - Decomposes into **Epic 34**, Stories 34.1–34.10 (34.10, Phase H coverage, minted 2026-10-18 with Story 34.2).
 
 #### FR-73: VCS and registry fetches cover the full universe, credentialed on opt-in ← CAP-65
 
-The GitHub, GitLab, Codeberg and eight registry fetches cover the actionable conda-forge universe, as legacy Phases K,
-L and N select it; a request that carries a credential runs only under `PYFORGE_ATLAS_CREDENTIALED=1`.
+The GitHub, GitLab, Codeberg and five batched registry fetches (npm, Maven, crates, RubyGems and NuGet; CRAN, CPAN
+and LuaRocks are wired but unbatched, as legacy Phase L leaves them) cover the actionable conda-forge universe, as
+legacy Phases K, L and N select it *(amended 2026-11-01, EGM audit ATL-D-C2; it read "eight registry fetches")*; a
+request that carries a credential runs only under `PYFORGE_ATLAS_CREDENTIALED=1`, whichever state
+`pyforge.atlas.live_vcs_universe` reads (Story 35.5).
 
 **Consequences (testable):**
-- With the opt-in, the four `vcs_*` primaries fill within tolerance of legacy K, L, N and E.5.
-- Without it, a transport fixture proves no request carries a credential.
+- With the opt-in, the four `vcs_*` primaries fill at or above the floors their `live-sources.md` rows record against
+  legacy K, L, N and E.5 *(amended 2026-11-01; it read "within tolerance of")*.
+- Without it, a plain run still fills `vcs_registry_versions` and the GitLab and Codeberg upstream versions *(added
+  2026-11-01, EGM audit ATL-M-C4)*.
+- Without it, a transport fixture proves no request carries a credential, with `pyforge.atlas.live_vcs_universe` on
+  or off *(amended 2026-11-01, Story 35.5, EGM audit ATL-M-D4)*.
 - The batch population comes from the universe, not `identity_packages_primary`.
 - Decomposes into **Epic 35**, Stories 35.1–35.4.
 
@@ -3322,24 +3337,31 @@ L and N select it; a request that carries a credential runs only under `PYFORGE_
 
 Driver nodes query Basilisk for the conda PURL population and fetch details for matched advisories.
 
-**Consequences (testable):** against a recorded fixture the three Basilisk datasets fill; a live run's population
-equals `core_packages_enumerated`; an unreachable endpoint keeps last-good. Decomposes into **Epic 36**, Story 36.1.
+**Consequences (testable):** against a recorded fixture the three Basilisk datasets fill; an attended run with the
+opt-in and a token has a population ≈ the distinct non-null `conda_name` count of `core_packages_enumerated` *(amended
+2026-11-01, EGM audit ATL-M-Z5, ATL-M-D5; it read "a live run's population equals `core_packages_enumerated`")*; an
+unreachable endpoint keeps last-good. Decomposes into **Epic 36**, Story 36.1.
 
 #### FR-75: The OpenTeams identity sources fill on opt-in ← CAP-67
 
 The OpenTeams board and the staged-recipes PR list fetch under the opt-in, beside the public identity lists.
 
 **Consequences (testable):** with the opt-in, `identity_packages_primary` holds rows from each `identity_source`, and the
-identity exports and inventory priorities fill; without it, no request carries a credential. Decomposes into
-**Epic 36**, Story 36.2.
+identity exports and inventory priorities fill; without it, no request carries a credential. The sources are
+`openteams-board`, `purl-associator` and `inventory`, and `none` marks an unmapped row that counts toward no source; a
+public run, with no opt-in, gives the identity datasets the `purl-associator` and `inventory` rows only *(added
+2026-11-01, EGM audit ATL-M-C4, ATL-M-D5)*. Decomposes into **Epic 36**, Story 36.2.
 
 #### FR-76: The query-plane estate source has a producer ← CAP-68
 
 A named atlas node writes `query_plane_estate_source`, so `query_plane_cache` builds from data.
 
-**Consequences (testable):** `pyforge atlas run --pipelines query_plane_cache` on a fresh data root exits 0 and the
-estate model answers its measures. Decomposes into **Epic 36**, Story 36.3 (its source tables are an open question on
-the Spec).
+**Consequences (testable):** `pyforge atlas run --pipelines query_plane_cache` on a fresh data root exits 0, writes a
+non-empty `query_plane_estate` built from the steward export's rows (never a fixture, an empty frame or the
+`sku`/`units` model), and the estate model answers its measures *(amended 2026-11-01, EGM audit ATL-M-Z1, ATL-M-C1;
+it read "exits 0 and the estate model answers its measures")*. Decomposes into **Epic 36**, Story 36.3, deferred
+2026-10-18 until a steward export through `pyforge.core.station_port` exists, which no steward story owns yet
+*(amended 2026-11-01; it read "(its source tables are an open question on the Spec)")*.
 
 **ONE FR space now FR-1..FR-76** (FR-77 = next free id). **Content changed:** FR-72..FR-76 registered; no FR
 renumbered or removed. The spine amends AD-6 and notes AD-11 and AD-13 (its reconciliation of the same date).
@@ -3364,12 +3386,18 @@ The dashboard's data root is the one Kedro writes, and each board whose content 
 dataset; a board's dimension names stay, its path and expressions move.
 
 **Consequences (testable):**
-- `dashboard.data.default_data_root()` resolves the member's `data/` (or `PYFORGE_ATLAS_DATA_ROOT`).
-- On a data root a public `pyforge atlas run` wrote, each of the 12 wired and 10 rewired boards whose dataset holds
-  rows renders a non-empty table in `dashboard-dryrun` and the static export.
-- A test per rewired board proves its loader on a fixture shaped like the produced dataset; the provenance test still
-  pins each page to its constant.
-- The six boards no pipeline feeds are backlog stories (Stories 37.5-37.10); the on-demand boards stay honest-empty.
+- `dashboard.data.default_data_root()` resolves `PYFORGE_ATLAS_DATA_ROOT` when set (a relative value anchored at the
+  member), else the member's `data/`; the member is `src/shared/packages/pyforge-atlas` *(amended 2026-11-01, EGM
+  audit ATL-M-C3; it read "resolves the member's `data/` (or `PYFORGE_ATLAS_DATA_ROOT`)")*.
+- On a data root a public `pyforge atlas run` wrote, with `pyforge.atlas.board_projections` on, each of the 28 boards
+  CAP-69 lists by page id (12 wired, 10 rewired, 6 from Stories 37.5-37.10) renders a non-empty table in
+  `dashboard-dryrun` and the static export, except estate-cache (until CAP-68) and the cve-watcher on a root with no
+  earlier run's rollup *(amended 2026-11-01, EGM audit ATL-M-Z4, ATL-M-D2, ATL-D-C4; it read "each of the 12 wired and
+  10 rewired boards whose dataset holds rows")*.
+- A test per rewired and new-node board proves its loader on a fixture shaped like the produced dataset; the
+  provenance test still pins each page to its constant *(amended 2026-11-01; it read "A test per rewired board")*.
+- The six boards no pipeline fed are realized by Stories 37.5-37.10 *(amended 2026-11-01; it read "are backlog stories
+  (Stories 37.5-37.10)")*; the six on-demand boards stay honest-empty.
 - Decomposes into **Epic 37**, Stories 37.1, 37.3 and 37.4.
 
 **ONE FR space now FR-1..FR-77** (FR-78 = next free id). **Content changed:** this section and `updated:`; FR-71
@@ -3420,7 +3448,9 @@ a CAP (`SPEC.md` still reads `updated: "2026-10-19"`), so no FR moves.
   `blocked`. So a plain `pyforge atlas run` stops at that load (`DW-atlas-37-2-1`, open, medium). The Pages job names
   its pipelines instead.
 - **FR-73 ← CAP-65.** Holds as written. Stories 35.2–35.4 (#2279–#2281) take the batches from the universe behind
-  `pyforge.atlas.live_vcs_universe`, and they fill GitLab, Codeberg and the eight registries. The flag is off by
+  `pyforge.atlas.live_vcs_universe`, and they fill GitLab, Codeberg and the eight registries *(corrected 2026-11-01,
+  EGM audit ATL-D-C2: five registries are batched, npm, Maven, crates, RubyGems and NuGet; CRAN, CPAN and LuaRocks
+  are wired but unbatched)*. The flag is off by
   default and on in `dev` (`src/platform/config/flags.json`, `flag-overlays.json`).
 - **FR-77 ← CAP-69.** Holds as written. These stories landed under it:
   - 37.4 (#2282), behind the new flag `pyforge.atlas.board_projections`;
@@ -3530,3 +3560,36 @@ the next free id). `DW-atlas-39-1` is closed.
 ## Currency reconciliation — 2026-10-26 (CAP-7 retrofit, Epic 42)
 
 Trigger: the station Spec's `.memlog.md` gained the 2026-10-26 decision (the Guild flag rule's retrofit, operator rulings R1–R8). No requirement, arrow or capability changes: every pre-rule runtime capability gains a kill switch under the Guild rule; the station Spec mints no CAP. `updated:` bumped so the chain reads current.
+
+## Currency reconciliation — 2026-11-01 (EGM fleet audit)
+
+*Trigger: `spec→prd`. `spec-pyforge-atlas` re-derived CAP-64..CAP-69 on 2026-11-01 (the `.memlog.md` capability
+entries of that date). The source is the EGM fleet audit (marshal Story 113.7, `spec-pyforge-marshal:CAP-302`), whose
+residue is `research/egm-audit-2026-11-01.md`: 30 findings, 23 accepted, 6 rejected, 1 deferred.* The FR text
+amendments landed in place with the re-derive; this section records what moved and why.
+
+- **FR-72 ← CAP-64.** Each source's floor is now the row in `live-sources.md` that CAP-64 owns. The floor is the
+  story-close measurement against the same-day legacy figure (operator ruling 2026-11-01). The network-blocked run is
+  a second run over a filled root. A plain run is `__default__`. The divergence recorded in § Currency
+  reconciliation — 2026-10-25 is repaired: Story 34.14 keeps `query_plane_cache` and `universal_sbom` out of
+  `__default__`, so a plain run on a fresh data root exits 0, and `DW-atlas-37-2-1` is closed. Story 34.15 gives the
+  three core sources (the feedstock-outputs archive, `current_repodata.json` per subdir, the PyPI simple index) AD-13's
+  last-good. Both run clauses are owned by `tests/integration/test_plain_run_fresh_root.py`. Epic 34 now runs
+  34.1–34.15; the decomposition line above still reads 34.1–34.10.
+- **FR-73 ← CAP-65.** Five registries are batched: npm, Maven, crates, RubyGems and NuGet. A plain run fills GitLab,
+  Codeberg and those registries. Story 35.5 makes the credentialed switch hold on the `pyforge.atlas.live_vcs_universe`
+  off branch (ATL-M-D4; operator ruling 2026-11-01: staging and production set the switch explicitly for a
+  credentialed run). Epic 35 now runs 35.1–35.5.
+- **FR-74 ← CAP-66.** The attended population is ≈ the distinct non-null `conda_name` count, where it said "equals".
+- **FR-75 ← CAP-67.** The `identity_source` values are named, and so are the rows a public run gives.
+- **FR-76 ← CAP-68.** Success needs a non-empty estate frame built from the steward export, never a fixture. The CAP
+  stays deferred: no steward story owns the export (`DW-steward-egm-2026-11-1`; ATL-D-R1 deferred).
+- **FR-77 ← CAP-69.** The 28 boards are listed by page id, the data-root precedence is stated, and Stories 37.5–37.10
+  are realized.
+- **Not moved.** CAP-1..CAP-63 and CAP-70..CAP-72 hold. The Spec Constraint "Public sources live by default" gains
+  Story 35.5's sentence; no FR cites a Constraint. The new `glossary.md` companion is Spec-side only.
+
+**Content changed:** FR-72..FR-77's consequences (amended in place, each marked), FR-73's line in § Currency
+reconciliation — 2026-10-25, this section and `updated:`. No FR is added, renumbered or removed; the FR space stays
+FR-1..FR-77 (FR-78 is the next free id). The spine's reconciliation of the same date amends AD-3's as-built pipeline
+count; no AD rule moves.

@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: db4bdee52b2c15d2
-story_count: 157
-test_file_count: 188
+source_fingerprint: 544bfa19ffd6de52
+story_count: 160
+test_file_count: 190
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 157
+- **Stories parsed:** 160
 - **Epics parsed:** 44
-- **Test files inventoried:** 188 under `src/shared/packages/pyforge-atlas/tests/`
+- **Test files inventoried:** 190 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `db4bdee52b2c15d2`
+- **Source fingerprint:** `544bfa19ffd6de52`
 
 ## Risk Assessment
 
@@ -98,6 +98,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_vizro_static_export_flag.py` | integration | none observed |
 | `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_zero_deferred_e2e_gate.py` | integration | none observed |
 | `src/shared/packages/pyforge-atlas/tests/integration/publish/test_emit_range.py` | integration | none observed |
+| `src/shared/packages/pyforge-atlas/tests/integration/test_plain_run_fresh_root.py` | integration | none observed |
 | `src/shared/packages/pyforge-atlas/tests/integration/wasm/test_wasm_smoke.py` | integration | none observed |
 | `src/shared/packages/pyforge-atlas/tests/meta/test_cli_tool_parity.py` | meta | none observed |
 | `src/shared/packages/pyforge-atlas/tests/meta/test_foundry_full_mypy_lane.py` | meta | none observed |
@@ -124,6 +125,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_cf_graph_split.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_clickhouse_downloads.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_core_sources.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_core_sources_last_good.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_credentialed_switch.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_dependency_history.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_github_versions_health.py` | unit | none observed |
@@ -403,10 +405,13 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 34.11 | The Phase C mapping fills legacy's name-coincidence and recipe-source tiers | none observed |
 | 34.12 | A vulnerability feed that cannot be reached keeps its last good copy | none observed |
 | 34.13 | Atlas declares the brotli its nixpkgs store decodes | none observed |
+| 34.14 | A plain run on a fresh data root exits 0 | none observed |
+| 34.15 | The three core sources keep last-good when the network is refused | none observed |
 | 35.1 | One opt-in switch, and GitHub authenticates | none observed |
 | 35.2 | The VCS batches come from the whole universe | none observed |
 | 35.3 | Upstream versions and feedstock health come from GitHub | none observed |
 | 35.4 | GitLab, Codeberg and the eight registries fill | none observed |
+| 35.5 | The legacy VCS branch honours the credentialed switch | none observed |
 | 36.1 | The Basilisk population runs | none observed |
 | 36.2 | The OpenTeams board and the staged-recipes PRs fill on opt-in | none observed |
 | 36.3 | The query-plane estate source has a producer | none observed |

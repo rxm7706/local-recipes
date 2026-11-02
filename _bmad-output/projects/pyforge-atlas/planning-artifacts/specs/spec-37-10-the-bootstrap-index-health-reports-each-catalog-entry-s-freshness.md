@@ -208,6 +208,7 @@ from its exit code. The numbers are those after the review rework.
     - every `stat` sits behind an `OSError` guard;
     - `docs/how-to/pixi-tasks.md` stays as generated (a residual above).
 - 2026-10-23: drafted from Story 37.10, DW-atlas-37-10-1 and Story 20.9's open path.
+- 2026-11-01: epics.md amended in place (append-only, EGM audit ATL-D-R6, ATL-D-C1): the Story 37.10 block gains the Flag line `pyforge.atlas.board_projections` (Story 37.4's, extended to this board; dev on, staging and production off) and its Then line reads "with the flag on", as this spec's `flag:` block has said since mint; this spec is otherwise unchanged.
 
 ## Review Triage Log
 

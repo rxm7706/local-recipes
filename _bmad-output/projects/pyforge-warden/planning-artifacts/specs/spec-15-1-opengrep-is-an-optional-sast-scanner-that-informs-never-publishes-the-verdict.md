@@ -166,3 +166,7 @@ Verification:
 - `python scripts/spec_surface_reconcile.py` — exit 0 after memlog reconciles on `spec-pyforge-warden`, `spec-pyforge-core`, `spec-pyforge-unifying-strategy`
 
 Residual: opengrep conda package is linux-64-only on SelfExplainML; other platforms omit-not-error. Landing requires commit, scoped spec-surface baseline stamps (human), and PR.
+
+## Spec Change Log
+
+- 2026-11-01: amended in place (append-only, EGM audit 2026-11-01, marshal Story 113.7): the `epics.md` Story 15.1 Surface line now names the package `pixi.toml` (:58) for the run-dependency range instead of its `pyproject.toml`, adds `cli.py` (the flag-OFF filter) and the two test files, with every path in full, and a **Spec:** line links this file (EGM audit WAR-D-C3, WAR-D-R2). The Deps line is left as minted; § Currency reconciliation — 2026-10-10 records the flip. No AC, status, heading or key moved; residue `_bmad-output/projects/pyforge-warden/planning-artifacts/research/egm-audit-2026-11-01.md`.

@@ -999,7 +999,26 @@ def test_run_pixi_lock_success_returns_exit_code(monkeypatch, tmp_path):
     error, exit_code = run_pixi_lock(cwd=tmp_path)
     assert error is None
     assert exit_code == 0
-    assert ["pixi", "lock"] in calls
+    # Story 14.4: the solve is pinned to ``cwd`` -- a pixi run parent's
+    # PIXI_PROJECT_MANIFEST never redirects it to the host workspace.
+    assert ["pixi", "lock", "--manifest-path", str(tmp_path)] in calls
+
+
+def test_run_pixi_lock_passes_its_timeout_to_the_engine_seam(monkeypatch, tmp_path):
+    """Story 14.4: the lock timeout is a parameter (default PIXI_LOCK_TIMEOUT_SECONDS)."""
+    from pyforge.warden.engines import PIXI_LOCK_TIMEOUT_SECONDS
+
+    monkeypatch.setattr(subprocess, "run", _fake_run_version(b"pixi 0.81.0\n"))
+    seen: list[float] = []
+
+    def fake_engine_env(_build_argv, *, owner, cwd, timeout, **_kwargs):
+        seen.append(timeout)
+        return "", None, 0
+
+    monkeypatch.setattr("pyforge.warden.engines._engine_env", fake_engine_env)
+    assert run_pixi_lock(cwd=tmp_path) == (None, 0)
+    assert run_pixi_lock(cwd=tmp_path, timeout=42.0) == (None, 0)
+    assert seen == [PIXI_LOCK_TIMEOUT_SECONDS, 42.0]
 
 
 def test_run_pixi_lock_engine_env_error(monkeypatch, tmp_path):

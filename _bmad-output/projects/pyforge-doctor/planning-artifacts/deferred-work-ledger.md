@@ -3034,8 +3034,9 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/pages_liveness.py:109
   origin: story-48-2 independent review, iteration 1 (finding 3)
   severity: medium
-  status: open
+  status: closed
   reason: Needs a `bmad-spec` change to CAP-91 first; Story 48.2's AC1/AC2 define the rule it ships. The identical-build false positive the review also ruled is not this row: it is a "Named, not fixed here" line on the story spec, closed in the duct by steward 102.3's daily refresh.
+  closed: 2026-11-01 — doctor Story 48.3 (spec `planning-artifacts/specs/spec-48-3-pages-liveness-reads-its-published-inputs-from-pages-yml.md`, Epic 48, a fix under CAP-91; folded in by the operator's EGM-audit ruling of 2026-11-01): the rule reads an injectable module clock and reports stale only when `last-modified` is before the latest first-parent input commit and `now` is more than `STALE_AFTER` (24 h) past that commit; exactly 24 h is OK, 24 h + 1 s is stale, a commit at or before `last-modified` is OK whatever the clock says (`src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/pages_liveness.py`; fixtures `input_waited_23`, `exactly_24`, `24h+1s`, `25`, `fresh_input_on_a_two_day_old_deploy`). CAP-91 re-derives in the same PR.
 
 ### DW-doctor-34-7: A flag key that no story spec's `flag:` block names can leave the tree with no `retires-flag:` declaration, so neither `flag-key-not-in-tree` nor the retired-read walk ever judges its removal.
 

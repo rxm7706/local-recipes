@@ -1,8 +1,9 @@
-"""Story 48.2 -- pages-liveness source (spec-pyforge-doctor CAP-91 / FR-24).
+"""Stories 48.2 and 48.3 -- pages-liveness source (spec-pyforge-doctor CAP-91 / FR-24).
 
-Every test replaces ``pages_liveness.urlopen`` and ``cli_bridge.run_git`` with readers of a
-recorded fixture under ``tests/fixtures/pages_liveness/``; an autouse guard refuses every socket
-(and fails the test at teardown if one was even attempted), so nothing here touches the network.
+Every test replaces ``pages_liveness.urlopen``, ``pages_liveness.now`` and ``cli_bridge.run_git``
+with readers of a recorded fixture under ``tests/fixtures/pages_liveness/`` (every fixture that
+reaches the rule names its ``now``); an autouse guard refuses every socket (and fails the test at
+teardown if one was even attempted), so nothing here touches the network.
 """
 
 from __future__ import annotations
@@ -16,10 +17,12 @@ import re
 import socket
 import urllib.error
 import urllib.request
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 import pytest
+import yaml
 
 from pyforge.doctor import cli_bridge
 from pyforge.doctor.cli_bridge import CliBridgeError
@@ -40,6 +43,22 @@ _UNAVAILABLE_FIXTURES = [
 ]
 _URL = "https://rxm7706.github.io/local-recipes/"
 _SOURCE_FILE = Path(pages_liveness.__file__)
+_REPO_ROOT = Path(__file__).resolve().parents[6]
+_PAGES_WORKFLOW = _REPO_ROOT / ".github" / "workflows" / "pages.yml"
+#: Story 48.3: on pages.yml's filter, these build or deploy the site and publish nothing (Story 48.2's
+#: change log); every other filter entry is a published input.
+_NOT_PUBLISHED = frozenset(
+    {
+        ".github/workflows/pages.yml",
+        "scripts/pages_*.py",
+        "src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py",
+        "src/shared/packages/pyforge-steward/src/pyforge/steward/marketplace_pages.py",
+        "src/shared/packages/pyforge-herald/src/pyforge/herald/pages_env.py",
+    }
+)
+#: Read by a fixture-less clock: a date no fixture is near, so a read the test did not expect never
+#: passes for a fresh one.
+_UNSET_CLOCK = datetime(1970, 1, 1, tzinfo=UTC)
 
 
 # --- the socket guard ---------------------------------------------------------------------------
@@ -114,6 +133,7 @@ class _Recorder:
     def __init__(self) -> None:
         self.requests: list[dict[str, Any]] = []
         self.git_argvs: list[list[str]] = []
+        self.clock_reads = 0
 
     @property
     def methods(self) -> list[str]:
@@ -139,9 +159,20 @@ def _install(monkeypatch: pytest.MonkeyPatch, case: dict[str, Any]) -> _Recorder
         line = case["git_log"]
         return f"{line}\n" if line else ""
 
+    def fake_now() -> datetime:
+        recorder.clock_reads += 1
+        return _parse_now(case["now"]) if "now" in case else _UNSET_CLOCK
+
     monkeypatch.setattr(pages_liveness, "urlopen", fake_urlopen)
+    monkeypatch.setattr(pages_liveness, "now", fake_now)
     monkeypatch.setattr(cli_bridge, "run_git", fake_run_git)
     return recorder
+
+
+def _parse_now(text: str) -> datetime:
+    parsed = datetime.fromisoformat(text)
+    assert parsed.tzinfo is not None, f"a fixture clock names its zone: {text!r}"
+    return parsed
 
 
 def _gather(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, name: str):
@@ -167,6 +198,14 @@ def test_every_fixture_yields_exactly_its_recorded_verdict(
     assert recorder.methods == expect["requests"]
     if "lag_hours" in expect:
         assert finding.evidence["lag_hours"] == expect["lag_hours"]
+    if "waited_hours" in expect:
+        assert finding.evidence["waited_hours"] == expect["waited_hours"]
+    if "now" in case:
+        # The rule reads the injected clock once and names it.
+        assert recorder.clock_reads == 1
+        assert _parse_now(finding.evidence["now"]) == _parse_now(case["now"])
+    else:
+        assert recorder.clock_reads == 0
     if "cause" in expect:
         assert expect["cause"] in finding.message
         assert finding.evidence["unevaluable"] is True
@@ -179,7 +218,7 @@ def test_every_fixture_yields_exactly_its_recorded_verdict(
 # --- AC1: fresh, and within a day ---------------------------------------------------------------
 
 
-def test_site_newer_than_its_inputs_is_one_ok_row_naming_the_url_and_both_dates(
+def test_site_newer_than_its_inputs_is_one_ok_row_naming_the_url_both_dates_and_the_clock(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     findings, recorder, _ = _gather(monkeypatch, tmp_path, "site_newer_than_commit.json")
@@ -188,42 +227,113 @@ def test_site_newer_than_its_inputs_is_one_ok_row_naming_the_url_and_both_dates(
     assert _URL in message
     assert "2026-10-14T15:46:03Z" in message
     assert "2026-10-14T14:00:00+00:00" in message
+    assert "deployed after it (clock 2026-10-14T16:41:00Z)" in message
     assert recorder.methods == ["HEAD"]
 
 
-def test_a_commit_23_hours_newer_is_one_ok_row(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    findings, _, _ = _gather(monkeypatch, tmp_path, "commit_23_hours_newer.json")
+def test_an_input_waiting_23_hours_is_one_ok_row(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    findings, _, _ = _gather(monkeypatch, tmp_path, "input_waited_23_hours.json")
     assert [(f.check, f.status) for f in findings] == [("pages-liveness", DoctorStatus.OK)]
-    assert "2026-10-13T12:00:00Z" in findings[0].message
-    assert "2026-10-14T11:00:00+00:00" in findings[0].message
+    message = findings[0].message
+    assert "2026-10-13T12:00:00Z" in message
+    assert "2026-10-13T14:00:00+00:00" in message
+    assert "not yet deployed, waiting within 24 hours (clock 2026-10-14T13:00:00Z)" in message
 
 
 # --- AC2: stale ---------------------------------------------------------------------------------
 
 
-def test_a_commit_25_hours_newer_is_one_stale_warn_naming_both_dates_the_sha_and_the_lag(
+def test_an_input_waiting_25_hours_is_one_stale_warn_naming_both_dates_the_sha_and_the_wait(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    findings, _, case = _gather(monkeypatch, tmp_path, "commit_25_hours_newer.json")
+    """48.3 AC4: deployed at T, an input landing at T+2 h, the clock at T+2 h+25 h -- the stall
+    within a day of the last good deploy, which the commit-against-header rule read as OK."""
+    findings, _, case = _gather(monkeypatch, tmp_path, "input_waited_25_hours.json")
     assert [(f.check, f.status) for f in findings] == [("pages-liveness-stale", DoctorStatus.WARN)]
     message = findings[0].message
     sha, _, commit_date = case["git_log"].partition(" ")
+    assert message.startswith("Pages input waited 25 hours: last-modified 2026-10-13T12:00:00Z, ")
     assert _URL in message
-    assert "2026-10-13T12:00:00Z" in message
     assert commit_date in message
     assert sha in message
-    assert "25 hours" in message
+    assert "2026-10-14T15:00:00Z" in message
     assert "more than" not in message  # a whole 25 hours reads exactly
     assert findings[0].evidence["commit"] == sha
+    assert findings[0].evidence["lag_hours"] == 2
+    assert findings[0].evidence["waited_hours"] == 25
+    assert findings[0].evidence["now"] == "2026-10-14T15:00:00Z"
 
 
-def test_mutation_a_lag_of_exactly_24_hours_is_the_ok_row_not_stale(
+def test_mutation_a_wait_of_exactly_24_hours_is_the_ok_row_not_stale(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """AC9: reporting a lag of exactly 24 hours stale (``>=`` for ``>``) fails here."""
-    findings, _, _ = _gather(monkeypatch, tmp_path, "commit_exactly_24_hours_newer.json")
+    """48.3 AC6: reporting a wait of exactly 24 hours stale (``>=`` for ``>``) fails here."""
+    findings, _, _ = _gather(monkeypatch, tmp_path, "input_waited_exactly_24_hours.json")
     assert [(f.check, f.status) for f in findings] == [("pages-liveness", DoctorStatus.OK)]
-    assert findings[0].evidence["lag_hours"] == 24
+    assert findings[0].evidence["waited_hours"] == 24
+
+
+def test_a_wait_of_24_hours_and_one_second_is_stale(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    findings, _, _ = _gather(monkeypatch, tmp_path, "input_waited_24_hours_and_one_second.json")
+    assert [(f.check, f.status) for f in findings] == [("pages-liveness-stale", DoctorStatus.WARN)]
+    assert "Pages input waited more than 24 hours: " in findings[0].message
+
+
+def test_mutation_a_fresh_input_on_a_two_day_old_deploy_is_the_ok_row(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """48.3 AC4/AC6: an input that landed fifteen minutes ago is in its build-and-deploy window,
+    however old the deploy; the commit-against-header rule (47 h 45 min) read it stale."""
+    findings, _, _ = _gather(monkeypatch, tmp_path, "fresh_input_on_a_two_day_old_deploy.json")
+    assert [(f.check, f.status) for f in findings] == [("pages-liveness", DoctorStatus.OK)]
+    assert findings[0].evidence["lag_hours"] == 47
+    assert findings[0].evidence["waited_hours"] == 0
+    assert "2026-10-14T12:00:00Z" in findings[0].message
+
+
+@pytest.mark.parametrize(
+    "clock",
+    ["2026-10-14T16:41:00Z", "2026-10-15T16:00:00Z", "2026-11-14T00:00:00Z", "2027-10-14T00:00:00Z"],
+)
+def test_an_input_the_site_was_deployed_after_is_the_ok_row_whatever_the_clock(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, clock: str
+) -> None:
+    case = {**_load("site_newer_than_commit.json"), "now": clock}
+    _install(monkeypatch, case)
+    findings = pages_liveness.gather(tmp_path)
+    assert [(f.check, f.status) for f in findings] == [("pages-liveness", DoctorStatus.OK)]
+    assert findings[0].evidence["waited_hours"] == 0
+    assert findings[0].evidence["now"] == clock
+
+
+def test_an_input_dated_at_the_deploy_itself_is_the_ok_row(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Stale needs ``last-modified`` before the commit: a commit at the deploy's own second is published."""
+    case = {
+        **_load("site_newer_than_commit.json"),
+        "git_log": "3c1f0a9d2b7e4f6a8c5d1e0b9a7f6e5d4c3b2a10 2026-10-14T15:46:03+00:00",
+        "now": "2026-10-20T00:00:00Z",
+    }
+    _install(monkeypatch, case)
+    findings = pages_liveness.gather(tmp_path)
+    assert [(f.check, f.status) for f in findings] == [("pages-liveness", DoctorStatus.OK)]
+
+
+def test_mutation_the_rule_reads_the_injected_clock_never_the_real_one(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """48.3 AC6: reading ``datetime.now`` in place of the module's ``now`` fails here -- the
+    fixture's clock is in October 2026, a day after the input; any later real clock reads stale."""
+    findings, recorder, _ = _gather(monkeypatch, tmp_path, "input_waited_23_hours.json")
+    assert recorder.clock_reads == 1
+    assert [(f.check, f.status) for f in findings] == [("pages-liveness", DoctorStatus.OK)]
+    assert findings[0].evidence["now"] == "2026-10-14T13:00:00Z"
+
+
+def test_the_module_clock_is_an_aware_utc_now() -> None:
+    before = datetime.now(UTC)
+    reading = pages_liveness._utc_now()
+    assert reading.tzinfo is not None
+    assert before <= reading <= datetime.now(UTC) + timedelta(seconds=1)
 
 
 # --- AC3: the 2026-10-06 replay ------------------------------------------------------------------
@@ -232,38 +342,36 @@ def test_mutation_a_lag_of_exactly_24_hours_is_the_ok_row_not_stale(
 def test_the_2026_10_06_replay_is_stale_by_its_own_figure(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     findings, _, _ = _gather(monkeypatch, tmp_path, "replay_2026_10_06.json")
     assert [(f.check, f.status) for f in findings] == [("pages-liveness-stale", DoctorStatus.WARN)]
-    # 2026-10-06T03:12Z to 2026-10-08T15:30-05:00 (20:30Z) is 65 h 18 min.
+    # 2026-10-06T03:12Z to 2026-10-08T15:30-05:00 (20:30Z) is 65 h 18 min; from that landing to the
+    # clock (2026-10-12T03:12Z, six days after the deploy) is 78 h 42 min.
     assert findings[0].evidence["lag_hours"] == 65
-    assert findings[0].evidence["lag_hours"] >= 24
-    assert "65 hours" in findings[0].message
+    assert findings[0].evidence["waited_hours"] == 78
+    assert "more than 78 hours" in findings[0].message
     assert "2026-10-06T03:12:00Z" in findings[0].message
     assert "2026-10-08T15:30:00-05:00" in findings[0].message
 
 
-def test_a_stale_lag_never_reads_as_the_threshold(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_a_stale_wait_never_reads_as_the_threshold(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """24 h 30 min is stale, and its message says "more than 24 hours", never "24 hours" next to a
     rule of "more than 24"."""
-    case = {
-        **_load("commit_25_hours_newer.json"),
-        "git_log": "c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f7 2026-10-14T12:30:00+00:00",
-    }
+    case = {**_load("input_waited_25_hours.json"), "now": "2026-10-14T14:30:00Z"}
     _install(monkeypatch, case)
     findings = pages_liveness.gather(tmp_path)
     assert [(f.check, f.status) for f in findings] == [("pages-liveness-stale", DoctorStatus.WARN)]
     message = findings[0].message
-    assert "more than 24 hours behind" in message
+    assert "waited more than 24 hours:" in message
     assert not re.search(r"(?<!than )\b24 hours", message)
-    assert findings[0].evidence["lag_hours"] == 24
+    assert findings[0].evidence["waited_hours"] == 24
 
 
 def test_the_stale_line_keeps_its_evidence_inside_fleet_pictures_cut(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """fleet-picture prints a WARN's first 110 characters: the lag and both dates lead, the URL is last."""
+    """fleet-picture prints a WARN's first 110 characters: the wait and both dates lead, the URL is last."""
     findings, _, case = _gather(monkeypatch, tmp_path, "replay_2026_10_06.json")
     message = findings[0].message
     cut = message[:110]
-    assert "more than 65 hours" in cut
+    assert "more than 78 hours" in cut
     assert "2026-10-06T03:12:00Z" in cut
     assert "2026-10-08T15:30:00-05:00" in cut
     assert message.endswith(_URL)
@@ -309,6 +417,15 @@ def test_mutation_an_unreadable_side_is_never_the_ok_row(
     assert [(f.check, f.status) for f in findings] == [("pages-liveness-unavailable", DoctorStatus.WARN)]
     assert not any(f.status is DoctorStatus.OK for f in findings)
     assert case["expect"]["cause"] in findings[0].message
+
+
+def test_every_fixture_that_reaches_the_rule_names_its_clock() -> None:
+    """48.3 AC5: a fixture with a verdict names the ``now`` it was judged at; an unreadable one
+    never reaches the rule, so it names none (and the every-fixture test proves no clock read)."""
+    for path in _ALL_FIXTURES:
+        case = json.loads(path.read_text(encoding="utf-8"))
+        reaches_rule = case["expect"]["check"] != "pages-liveness-unavailable"
+        assert ("now" in case) is reaches_rule, path.name
 
 
 def test_the_unavailable_set_covers_every_named_cause() -> None:
@@ -406,7 +523,7 @@ def test_an_unexpected_exception_degrades_to_one_unavailable_warn(
 
 
 def test_a_zoneless_http_date_reads_as_utc(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    case = _load("commit_25_hours_newer.json")
+    case = _load("input_waited_25_hours.json")
     case["head"] = {"status": 200, "headers": {"last-modified": "Tue, 13 Oct 2026 12:00:00 -0000"}}
     _install(monkeypatch, case)
     findings = pages_liveness.gather(tmp_path)
@@ -494,21 +611,60 @@ def test_mutation_the_git_argv_names_the_full_refname_never_a_bare_main(
     assert tuple(argv[separator + 1 :]) == pages_liveness.PUBLISHED_INPUTS
 
 
-def test_the_published_inputs_are_the_herald_dreams_m1_list() -> None:
-    assert pages_liveness.PUBLISHED_INPUTS == (
-        "docs/tutorials",
-        "docs/how-to",
-        "docs/reference",
-        "docs/explanation",
-        "docs/index.md",
-        "docs/404.md",
-        "docs/map.yaml",
-        "docs/dashboard",
-        "docs-site",
-        "presentations",
+def _pages_push_paths() -> list[str]:
+    data = yaml.safe_load(_PAGES_WORKFLOW.read_text(encoding="utf-8"))
+    # PyYAML (YAML 1.1) reads the bare ``on:`` key as the boolean True.
+    triggers = data.get("on", data.get(True))
+    paths = triggers["push"]["paths"]
+    assert isinstance(paths, list) and paths, f"{_PAGES_WORKFLOW} carries no on.push.paths filter"
+    return [str(path) for path in paths]
+
+
+def test_the_published_inputs_are_pages_yml_s_filter_less_the_named_exclusions() -> None:
+    """48.3 AC1: the source's inputs are the deploy's own trigger filter (each trailing ``/**``
+    dropped) less what builds or deploys the site and publishes nothing; a filter change is
+    steward's, and this pin names what the source must follow."""
+    filter_paths = [path.removesuffix("/**") for path in _pages_push_paths()]
+    missing_exclusions = sorted(_NOT_PUBLISHED - set(filter_paths))
+    assert not missing_exclusions, f"named exclusions no longer on pages.yml's filter: {missing_exclusions}"
+    expected = set(filter_paths) - _NOT_PUBLISHED
+    inputs = pages_liveness.PUBLISHED_INPUTS
+    duplicates = sorted({path for path in inputs if inputs.count(path) > 1})
+    assert not duplicates, f"PUBLISHED_INPUTS repeats {duplicates}"
+    missing_from_source = sorted(expected - set(inputs))
+    not_on_filter = sorted(set(inputs) - expected)
+    assert not missing_from_source and not not_on_filter, (
+        f"PUBLISHED_INPUTS lacks pages.yml filter paths {missing_from_source}; "
+        f"PUBLISHED_INPUTS names paths not on the filter (or excluded) {not_on_filter}"
     )
+
+
+def test_mutation_the_marketplace_tree_is_a_published_input() -> None:
+    """48.3 AC2/AC6: dropping ``docs/foundry/marketplace`` (steward Story 109.3) fails here and in
+    the pin above; a stuck marketplace-only deploy would read clean."""
+    assert "docs/foundry/marketplace" in pages_liveness.PUBLISHED_INPUTS
+
+
+def test_mutation_no_excluded_path_is_a_published_input() -> None:
+    """48.3 AC6: adding an excluded path (``scripts/pages_*.py``) to the inputs fails here and in the
+    pin above: a build-script edit publishes nothing new."""
+    assert not set(pages_liveness.PUBLISHED_INPUTS) & _NOT_PUBLISHED
+
+
+def test_the_url_and_the_threshold_are_constants() -> None:
     assert pages_liveness.PAGES_ROOT_URL == _URL
     assert pages_liveness.STALE_AFTER.total_seconds() == 24 * 3600
+
+
+def test_the_comments_name_pages_yml_and_the_pages_row_never_a_retired_source() -> None:
+    """48.3 AC3: the comments say where the inputs and the 24 h come from; neither names
+    ``dashboard.deploy`` nor the herald Dream's M1 list as the source."""
+    text = _SOURCE_FILE.read_text(encoding="utf-8")
+    assert "dashboard.deploy" not in text
+    assert "M1" not in text
+    assert ".github/workflows/pages.yml" in text
+    assert "docs/governance/ci-surfaces.yaml" in text
+    assert "``pages`` row" in text
 
 
 def _module_tree() -> ast.Module:

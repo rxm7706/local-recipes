@@ -75,6 +75,11 @@ from .hooks import PR_GATE_SCAN
 
 TEA_TEST_REVIEW_BINARY = "tea-test-review"
 
+# The one skip that never reaches the report: the binary is not on PATH, so
+# no run started (Story 9.3, omit-not-error). Story 13.2: every other skip
+# (a run that started and gave no trusted verdict) does reach it.
+_BINARY_ABSENT_REASON = f"{TEA_TEST_REVIEW_BINARY} not found on PATH"
+
 # argv defaults (--base, --agent, timeout) live in ``engines.run_tea_test_
 # review_engine`` (Story 11.3); warden Story 13.1 / CAP-23 documents the
 # full remote-tracking ref for ``--base``.
@@ -185,8 +190,9 @@ def run_tea_test_review(
     gap, not a governance one. A present binary that errors (an exit code
     outside ``{0, 1}``, a timeout, no/garbled ``--json`` output) ALSO
     degrades to ``ran=False`` -- the advisory contract for an environmental
-    problem is "contribute nothing, never error", not "assume the tool
-    works". Exit 0 and exit 1 are BOTH trusted (``test-review.js``'s own
+    problem is "contribute no score, never error", not "assume the tool
+    works" (the plugin reports such a started-then-skipped run as a skip
+    record, Story 13.2). Exit 0 and exit 1 are BOTH trusted (``test-review.js``'s own
     documented semantics: exit 1 is a legitimate "verdict fail" -- a real
     score below ``--min-score`` -- never a subprocess failure); only an
     exit code outside that pair is treated as untrusted, regardless of
@@ -214,7 +220,7 @@ def run_tea_test_review(
                 score=None,
                 recommendation=None,
                 summary="",
-                skipped_reason=f"{TEA_TEST_REVIEW_BINARY} not found on PATH",
+                skipped_reason=_BINARY_ABSENT_REASON,
             )
         active_runner: TeaRunner = partial(_default_runner, binary)
     else:
@@ -330,13 +336,24 @@ class TeaAdvisoryScanPlugin:
         return context
 
     def _contribute(self, context: MutableMapping[str, Any]) -> None:
-        """Fail-open at the plugin boundary too (belt-and-suspenders): any
-        subprocess/parse/binary defect degrades silently. The ONE
-        deliberate exception is ``TeaRosterMissingError`` (AD-10,
-        DW-FU-11-2) -- re-raised, not swallowed, so a genuinely
-        unprovisioned AD-9 roster propagates out of the PR-gate scan for
-        ``cli.py`` to record as a loud ``CONFIG_VALIDATION`` error instead
-        of a silent no-op."""
+        """Fail-open at the plugin boundary too (belt-and-suspenders): no
+        subprocess/parse/binary defect ever raises. The ONE deliberate
+        exception is ``TeaRosterMissingError`` (AD-10, DW-FU-11-2) --
+        re-raised, not swallowed, so a genuinely unprovisioned AD-9 roster
+        propagates out of the PR-gate scan for ``cli.py`` to record as a
+        loud ``CONFIG_VALIDATION`` error instead of a silent no-op.
+
+        Story 13.2 (spec-pyforge-warden CAP-23): a run that started and gave
+        no trusted verdict (a non-0/1 exit such as TEA's ENV_ERROR on a
+        missing ``--base`` ref, a runner error, an unparsable or non-object
+        verdict, or TEA's own skip) appends one skip record -- ``tool``,
+        ``skipped: True``, ``reason`` and a ``summary`` for the text
+        renderer, with no score and no recommendation -- so a skipped
+        review no longer looks like TEA never enabled. It supersedes
+        Story 11.2's "runner errors leave no note" row for that case. An
+        absent binary (no run started) still contributes nothing
+        (Story 9.3, omit-not-error). A skip record is advisory like every
+        note: never ``plugin_findings``, a rung or the exit code."""
         target = context.get("target")
         if not isinstance(target, Path):
             return
@@ -347,12 +364,22 @@ class TeaAdvisoryScanPlugin:
         except Exception:  # noqa: BLE001 -- fail-open: never raise (except
             # the roster-missing refusal above, which AD-10 requires loud)
             return
-        if not result.ran:
+        if not result.ran and result.skipped_reason in (None, _BINARY_ABSENT_REASON):
             return
         notes = context.get("advisory_notes")
         if not isinstance(notes, list):
             notes = []
             context["advisory_notes"] = notes
+        if not result.ran:
+            notes.append(
+                {
+                    "tool": self.scanner_id,
+                    "skipped": True,
+                    "reason": result.skipped_reason,
+                    "summary": f"skipped: {result.skipped_reason}",
+                }
+            )
+            return
         notes.append(
             {
                 "tool": self.scanner_id,

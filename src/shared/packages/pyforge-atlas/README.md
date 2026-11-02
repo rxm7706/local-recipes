@@ -24,11 +24,12 @@ and `tests/unit/test_pipeline_inventory.py` reds when the two drift (it carried
 ## Run
 
 `pyforge atlas …` (or the `pyforge-atlas` binary) is Kedro's project command
-group for this project: `run`, `ipython` and `package` (Story 33.1). It works
-from any directory of the repo checkout (the package is repo-local; an install
-outside the checkout has no project to bootstrap): the binary runs each command
-against this member dir's `conf/` and `data/`, the same project root the MCP
-face uses, and gives the caller its cwd back afterwards. Because the command
+group for this project: `run`, `ipython` and `package` (Story 33.1). Run it
+from the repository root, like every pixi task here (the package is
+repo-local; an install outside the checkout has no project to bootstrap): the
+binary runs each command against this member dir's `conf/` and `data/`, the
+same project root the MCP face uses, and gives the caller its cwd back
+afterwards. Because the command
 runs with the member dir as its cwd, a relative path you pass to `run`
 (`--config`, `--conf-source`) or put in a `PYFORGE_ATLAS_*` variable resolves
 against `src/shared/packages/pyforge-atlas/`, not your shell's directory; pass

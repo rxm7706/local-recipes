@@ -23,11 +23,11 @@ Dispatch of stories that already exist is a different job: [`driving-a-pyforge-s
 Write or refresh the gitignored Tier-3 sprint feed under `_bmad-output/projects/pyforge-<s>/implementation-artifacts/` so it lists every ledger key the tracked twin should carry, at the status that key should keep, then regenerate the tracked ledger from the repo root:
 
 ```bash
-pixi run -e pyforge-guild sprint-ledger-sync -- --project pyforge-<s>
+pixi run -e pyforge-guild sprint-ledger-sync -- --project <s>
 pixi run -e pyforge-guild story-status-check
 ```
 
-Never hand-edit `sprint-status-ledger.yaml`. A bare `sprint-ledger-sync` repairs feed-behind-twin drift and names each repaired key; use `--allow-regression` only when the tracked twin is genuinely wrong.
+`--project` takes the short form `<s>` (a dashboard key such as `doctor`); it refuses `pyforge-<s>`. Never hand-edit `sprint-status-ledger.yaml`. A bare `sprint-ledger-sync` repairs feed-behind-twin drift and names each repaired key; use `--allow-regression` only when the tracked twin is genuinely wrong.
 
 On a mop, the re-key map (`planning-artifacts/rekey-<date>.md`) and the feed use the same keys. If the map says `3-1-foo` became `1-1-foo`, the feed row is the new key at the old status. That is how a `done` row moves as `done` instead of drop-plus-add.
 
@@ -73,7 +73,7 @@ Serialize writes to shared memlogs, `docs/governance/fr-baseline.json`, and `doc
 
 Run every detector, ledger sync, surface stamp, and this Spec's derive path as `pixi run -e pyforge-guild …` from the **repository root**. `uv run` from a package directory creates a stray `.venv` there. Load `local-recipes` only when the change actually needs Mason's recipe factory. When rendering BMAD skills, set `PYTHONPATH="$PWD/_bmad/scripts:$PYTHONPATH"`.
 
-Station code is the station CLI (`pyforge <s> …`), not `import pyforge.<s>`. Scribe recall for a team decision or an active Spec is `pixi run -e pyforge-scribe scribe recall "…" --mode planning`.
+Station code is the station CLI (`pyforge <s> …`), not `import pyforge.<s>`. Scribe recall for a team decision or an active Spec is `pixi run -e pyforge-guild scribe recall "…" --mode planning`, and a team decision is captured with `pixi run -e pyforge-guild scribe capture`.
 
 ## What You Get
 

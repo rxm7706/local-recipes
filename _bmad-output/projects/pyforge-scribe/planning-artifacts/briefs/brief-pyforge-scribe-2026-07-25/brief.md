@@ -2,7 +2,7 @@
 title: "Product Brief: pyforge-scribe"
 status: "complete"
 created: "2026-07-25"
-updated: "2026-09-19"   # RE-STAMPED 2026-09-19: research→brief edge (multi-harness-instruction-surface-2026-09-19.md); § Currency reconciliation — 2026-09-19 appended, scope folded in.
+updated: "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): research→brief edge (research/egm-audit-2026-11-01.md); § Currency reconciliation — 2026-11-01 appended; problem, users and scope unchanged. Prior "2026-09-19"   # RE-STAMPED 2026-09-19: research→brief edge (multi-harness-instruction-surface-2026-09-19.md); § Currency reconciliation — 2026-09-19 appended, scope folded in.
 inputs:
   - "docs/dreams/pyforge-scribe.md"
   - "docs/dreams/team-memory.md"
@@ -160,3 +160,34 @@ copies multiply and contradict.
 **"Who this serves" widens accordingly:** the operator running concurrent BMAD projects now runs
 them across harnesses (three dispatch lanes on 2026-09-19 alone), and a hosted agent with a
 59-minute sandbox is a first-class reader of team memory.
+
+## Currency reconciliation — 2026-11-01
+
+*Chain-currency sweep: `research/egm-audit-2026-11-01.md` (new that day, marshal Story 113.7)
+fired the `research→brief` edge against this brief's 2026-09-19 stamp.*
+
+**What the research is.** The residue of the one-time Elephant-Goldfish (EGM) fleet audit.
+Fresh-context reviewers read scribe's newest capability slice (CAP-29 to CAP-32, from the Dream
+entries of 2026-09-25, 2026-09-26 and 2026-09-29) and the stories that decompose it (Story 19.3 to
+Epic 25). They raised 31 findings: 23 accepted, 7 rejected and 1 deferred (mint stage 18: 15, 2
+and 1; decompose stage 13: 8, 5 and 0). The same audit's rules review of `AGENTS.md`, the
+instruction surface scribe owns under CAP-27, recorded 15 more accepted findings on this station's
+Spec memlog (RUL-*). Their fixes are `AGENTS.md` text (the managed block through
+`bmad-project-context`, the SKF rows through steward Story 29.4's recompile), except RUL-D6 and
+RUL-C4, which Story 19.4 fixed in code.
+
+**What it changes about the problem: nothing.** Every accepted finding is about how exactly the
+shipped contract is stated or tested, not about who Scribe serves or why. The fixes land in four
+places, all inside the Wave 3 scope folded in on 2026-09-19 or in CAPs minted since:
+- *The instruction surface.* CAP-27, CAP-29 and CAP-30 were re-derived on the Spec. The parity
+  meta-test now guards the Dream § 2026-09-26 end state (the SKF block in `AGENTS.md` only), runs
+  every branch of the runtime mode check, and reads `CLAUDE.md` for duplicates (Story 23.2).
+- *Capture and recall on the session default.* Every doc and compiled skill that teaches them names
+  `-e pyforge-guild`, and the CAP-28 meta-test reads each one (Story 19.4).
+- *The local Postgres cluster.* CAP-31 states one server per host on :5433, reused across checkouts,
+  and `scribe-pg-down` stops only this checkout's cluster (Story 22.2).
+- *The estate catalog.* CAP-32 states drift as a per-section digest of derived facts. The write and
+  the check are byte-stable (Story 25.2), and `AGENTS.md` types no derived count.
+
+**Scope, users and success criteria are unchanged.** No CAP was minted. The four fix stories are
+done.

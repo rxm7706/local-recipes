@@ -312,7 +312,11 @@ def test_missing_source_raises_never_false_green(estate_root: Path) -> None:
         catalog.derive(estate_root)
 
 
-def test_pipeline_truth_input_adds_stage_columns(estate_root: Path, tmp_path: Path) -> None:
+_TRUTH_ROW = "| `bmad-method` | 6.12.0 | 6.12.0 | 6.12.0 | present | 6.12.0 | v6.12.0 | — |"
+
+
+def _truth_file(tmp_path: Path) -> Path:
+    """A `steward suite pipeline-truth --json` output with one package."""
     truth = tmp_path / "truth.json"
     truth.write_text(
         json.dumps(
@@ -334,12 +338,110 @@ def test_pipeline_truth_input_adds_stage_columns(estate_root: Path, tmp_path: Pa
         ),
         encoding="utf-8",
     )
+    return truth
+
+
+def test_pipeline_truth_input_adds_stage_columns(estate_root: Path, tmp_path: Path) -> None:
+    truth = _truth_file(tmp_path)
     estate = catalog.derive(estate_root, pipeline_truth=truth)
     assert estate.pipeline_truth["bmad-method"]["wired"] == "present"
     text = catalog.render(estate)
-    assert "| `bmad-method` | 6.12.0 | 6.12.0 | 6.12.0 | present | 6.12.0 | v6.12.0 | — |" in text
+    assert _TRUTH_ROW in text
     with pytest.raises(catalog.CatalogSourceError, match="pipeline-truth"):
         catalog.derive(estate_root, pipeline_truth=tmp_path / "absent.json")
+
+
+# Story 25.2 (spec-pyforge-scribe CAP-32): the catalog writes and checks byte-stably.
+
+
+def _bmad_estate(root: Path, *args: str) -> tuple[int, str]:
+    result = runner.invoke(app, ["catalog", "bmad-estate", "--root", str(root), *args])
+    return result.exit_code, result.output
+
+
+def test_25_2_ac1_written_with_pipeline_truth_checks_clean_without_it(estate_root: Path, tmp_path: Path) -> None:
+    truth = _truth_file(tmp_path)
+    code, output = _bmad_estate(estate_root, "--write", "--pipeline-truth", str(truth))
+    assert code == 0, output
+    assert _TRUTH_ROW in (estate_root / catalog.CATALOG_RELPATH).read_text(encoding="utf-8")
+    code, output = _bmad_estate(estate_root, "--check")
+    assert code == 0, output
+    assert "ok -- the catalog matches its sources" in output
+
+
+def test_25_2_ac2_written_bare_checks_clean_with_pipeline_truth(estate_root: Path, tmp_path: Path) -> None:
+    code, output = _bmad_estate(estate_root, "--write")
+    assert code == 0, output
+    code, output = _bmad_estate(estate_root, "--check", "--pipeline-truth", str(_truth_file(tmp_path)))
+    assert code == 0, output
+    assert "ok -- the catalog matches its sources" in output
+
+
+def test_25_2_ac3_pipeline_truth_renders_but_records_no_digest(estate_root: Path, tmp_path: Path) -> None:
+    estate = catalog.derive(estate_root, pipeline_truth=_truth_file(tmp_path))
+    text = catalog.render(estate, today=date(2026, 11, 1))
+    assert "## 8. Pipeline truth (optional input)" in text
+    assert _TRUTH_ROW in text
+    assert "bmad-estate-digest: pipeline-truth=" not in text
+    recorded = catalog.recorded_digests(text)
+    assert "pipeline-truth" not in recorded
+    assert set(recorded) == set(catalog.SECTION_SOURCES)
+    assert recorded == catalog.digests(estate) == catalog.digests(catalog.derive(estate_root))
+
+
+def _untouched_stamp(path: Path) -> tuple[int, int]:
+    stat = path.stat()
+    return stat.st_ino, stat.st_mtime_ns
+
+
+def test_25_2_ac4_a_no_op_write_on_a_new_day_leaves_the_file_untouched(estate_root: Path) -> None:
+    target = catalog.write(estate_root, today=date(2026, 10, 31))
+    first = target.read_bytes()
+    assert b"> Generated: 2026-10-31. " in first
+    stamp = _untouched_stamp(target)
+    assert catalog.write(estate_root, today=date(2026, 11, 1)) == target
+    assert target.read_bytes() == first
+    assert _untouched_stamp(target) == stamp
+
+
+def test_25_2_ac5_a_moved_source_or_a_prose_change_re_stamps_the_date(estate_root: Path) -> None:
+    target = catalog.write(estate_root, today=date(2026, 10, 31))
+    manifest = estate_root / catalog.MANIFEST_RELPATH
+    manifest.write_text(
+        _MANIFEST.replace("version: 6.12.0\n  installDate", "version: 6.13.0\n  installDate"), encoding="utf-8"
+    )
+    catalog.write(estate_root, today=date(2026, 11, 1))
+    text = target.read_text(encoding="utf-8")
+    assert "> Generated: 2026-11-01. " in text and "`6.13.0`" in text
+    assert catalog.check(estate_root) == []
+    # A template-prose change: the committed prose no longer matches what the template renders.
+    target.write_text(text.replace("Every fact below is", "Each fact below is"), encoding="utf-8")
+    catalog.write(estate_root, today=date(2026, 11, 2))
+    text = target.read_text(encoding="utf-8")
+    assert "> Generated: 2026-11-02. " in text and "Every fact below is" in text
+
+
+@pytest.mark.parametrize("stamp", ["> Generated: 2026-13-45. ", "> Generated: someday. ", ""])
+def test_25_2_an_unparsable_committed_date_renders_with_today(estate_root: Path, stamp: str) -> None:
+    target = catalog.write(estate_root, today=date(2026, 10, 31))
+    text = target.read_text(encoding="utf-8").replace("> Generated: 2026-10-31. ", stamp)
+    target.write_text(text, encoding="utf-8")
+    catalog.write(estate_root, today=date(2026, 11, 1))
+    assert "> Generated: 2026-11-01. " in target.read_text(encoding="utf-8")
+
+
+def test_25_2_ac6_a_section_removed_from_the_file_reds_the_check(estate_root: Path) -> None:
+    target = catalog.write(estate_root)
+    kept = [
+        line
+        for line in target.read_text(encoding="utf-8").splitlines(keepends=True)
+        if not line.startswith("<!-- bmad-estate-digest: harness=")
+    ]
+    target.write_text("".join(kept), encoding="utf-8")
+    code, output = _bmad_estate(estate_root, "--check")
+    assert code == 1, output
+    assert "section `harness` drifted" in output
+    assert catalog.HARNESS_RELPATH.as_posix() in output
 
 
 def test_cli_write_check_and_exit_codes(estate_root: Path) -> None:

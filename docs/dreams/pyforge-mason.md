@@ -791,6 +791,13 @@ Station Dream status is `specified` (Spec `spec-pyforge-mason` is `ready`). Maso
   with a CHANGELOG MINOR bump (AD-15), because the change adds gotcha G123. No pyforge-atlas, `pixi.toml` or `recipes/**`
   change. A fix under CAP-24 (atlas intelligence: "what depends on it"): no flag and no new CAP. Owner: mason.
   → Epic 34 / Story 34.1, specced 2026-10-26.
+- **2026-11-01 (the EGM fleet audit) — Found:** the one-time fresh-context audit (marshal Story 113.7,
+  spec-pyforge-marshal:CAP-302) read CAP-29, CAP-35 and Epics 19 and 25: 30 findings, 23 accepted, 7 rejected;
+  residue `_bmad-output/projects/pyforge-mason/planning-artifacts/research/egm-audit-2026-11-01.md`. Fixed in
+  the same PR: Stories 4.5 (a repeated --platform keeps every value, CAP-4) and 19.6 (the skill meta-tests
+  scan every skill file, CAP-29); the skill gains its outward-work caveat for --yes. Parked at backlog: 25.17
+  (Epic 25's recipes rebuilt so their build records match) and 25.18 (Wave A's no-refresh residue re-bucketed
+  live).
 
 ## 2026-10-26 — Rebuild conda-forge-expert as a Skill-Forge-authored skill, slice by slice (folded from conda-forge-expert-rebuild)
 

@@ -60,6 +60,36 @@ same for gateway-enforced apps (the landing page, Nebi): their SecurityPolicy's 
 `tokenEndpoint` are the in-cluster URL while `authorizationEndpoint` stays public. A real cluster
 whose CoreDNS resolves the domain can drop the three values.
 
+## Check sign-in, spawn and the landing cards
+
+Story 118.6 makes CAP-177's sign-in, spawn and landing-card checks one command:
+
+```bash
+pixi run -e pyforge-steward pyforge-steward-nkp-probes
+pixi run -e pyforge-steward pyforge-steward-nkp-probes -- --nkp-connect-to 127.0.0.1
+pixi run -e pyforge-steward pyforge-steward-nkp-probes -- --nkp-config <another NIC config>
+```
+
+The task runs `src/shared/packages/pyforge-steward/tests/integration/` alone. It has three probes:
+
+- The landing SPA signs in as `admin` through Keycloak with the auth-code + PKCE flow (client
+  `nebari-system-nebari-landing-spa`, realm `nebari`).
+- The hub signs in through Keycloak, and a `small-instance` server spawns and reaches ready. The
+  probe stops that server when it finishes. If `admin` already has a server running, the probe
+  refuses to start.
+- The landing page's `/api/v1/services` lists JupyterHub and Nebi, both `healthy`.
+
+Each probe reads the domain, the Keycloak URL and the bootstrap admin password from
+`nic outputs --format json --show-secrets -f <config>` at run time. The password is never written
+to disk, to a log or to pytest's output. The probes skip TLS verification for the kind profile's
+self-signed certificate and verify a real certificate. On rootless kind, port-forward the gateway
+as in § Prerequisites and pass `--nkp-connect-to 127.0.0.1`. The probes then connect to that
+address for the domain and its subdomains, and keep the host name for TLS and the `Host` header.
+Without a reachable kubeconfig (`nic kubeconfig` fails, or the API server it names does not
+answer), every probe skips, names the reason, and the task exits 0. `pyforge-steward-test`,
+`pyforge-steward-live-test` and CI never run the probes. The Keycloak bootstrap job keeps its own
+`kubectl` check in Story 118.2's spec (AC2).
+
 ## What the attended pack run looked like (2026-10-31, chart 0.1.7 / nebi-pack 0.1.0, operator 0.1.0-alpha.20)
 
 - Every pack value the kind profile carries was found on this run, each with its error beside it in the config: nebi-pack refuses to render without `nebariapp.hostname`; chart 0.1.7 renders `landingPage.iconLight`/`iconDark`, which the operator's NebariApp CRD does not declare and server-side apply refuses (`field not declared in schema`), so both are `null` — and a `null` only reaches Helm through `helm.values` (the apiserver drops null entries from `valuesObject`); the z2jh `block-cloud-metadata` init container fails on rootless kind (`iptables ... can't initialize iptables table 'filter'`), so `blockWithIptables: false`; the chart's transitional NFS server cannot start inside the node's user namespace (`rpc.nfsd: Unable to access /proc/fs/nfsd`) and the node's kernel NFS client answers `mount.nfs: Operation not permitted`, so `sharedStorage.enabled: false` on rootless Docker — `/shared/<group>` needs rootful Docker (keep `nfsvers=3` for kind's overlayfs) or a cluster with an RWX StorageClass.

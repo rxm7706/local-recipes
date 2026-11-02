@@ -389,6 +389,12 @@ def assemble_report(
         # verdict change). Behavior-neutral, and forward-compatible: a 6.2/6.3
         # producer registering an EngineResult coverage claim flips the axis
         # applicable automatically (it enters assessed_by_axis).
+        #
+        # Story 16.9: the per-axis total counts native-lockfile components on
+        # license and currency (both engines judge them), so a non-Python
+        # repo's rows report what ran -- never deps_total=0 beside its
+        # license:unknown / currency:unknown findings. Hygiene alone leaves
+        # them out (deptry is Python-only).
         from .native_lockfiles import inventory_count_for_axis
 
         axis_inventory_total = inventory_count_for_axis(inventory.components, axis)

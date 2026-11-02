@@ -8,7 +8,10 @@
     "reported as fr-baselined, never FAIL. Either entry that stopped applying is WARN fr-baseline-stale",
     "until `--prune` (the only routine verb) removes it. `--snapshot-findings` is a one-time act: it is",
     "refused once `findings` exists, and `--force` is for a review that names each ADDED key in its PR.",
-    "`owners`: hand-maintained -- the story that owns what each station still carries here."
+    "`owners`: hand-maintained -- the story that owns what each station still carries here.",
+    "`forced`: written by scripts/fr_baseline.py alone -- each `projects` id or `findings` key it ADDED",
+    "and the HEAD it ran at. A key added since the merge-base with origin/main that no `forced` record",
+    "names is FAIL fr-baseline-grown (doctor Story 50.2): an `owners` row never admits one."
   ],
   "ruling_sha": "e630e43330",
   "projects": {

@@ -1,7 +1,7 @@
 ---
 title: Doctor (pyforge-doctor)
 created: 2026-07-25
-updated: '2026-10-27'   # RE-STAMPED 2026-10-27 (chain currency, behind-code): Story 55.4 registered the live_tree pytest marker in the package pyproject.toml on 2026-10-27, so the code stage moved past this PRD; no requirement, arrow or capability changes. See § Currency reconciliation — 2026-10-27 (behind-code). Prior '2026-10-26'   # RE-STAMPED 2026-10-26 (CAP-7 retrofit, Epic 51): the station memlog gained the retrofit decision; no requirement changes. Prior '2026-10-26'   # RE-STAMPED 2026-10-26 (Story 50.1): FR-14 <- CAP-9 and FR-15 <- CAP-93 (minted 2026-10-26; no capability carried FR-15) on the operator ruling of 2026-10-26 that a requirement cites defined capabilities only, never a Charter clause; FR-16 (the classifier recognizes a spike report, Story 6.11) gains the PRD heading it lacked, <- CAP-11, CAP-12; no FR renumbered or amended. See § Currency reconciliation — 2026-10-26 (Story 50.1). Prior '2026-10-24'   # RE-STAMPED 2026-10-24: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-24 entries (Story 30.4 minted and promoted done, a fix under FR-17 / CAP-84 and CAP-42: the docs, Dream and planning warn backlog); no FR registered. See § Currency reconciliation — 2026-10-24. Prior '2026-10-22'   # RE-STAMPED 2026-10-22: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-22 entries (Story 45.3 minted done, a test-only fix under FR-22 / CAP-89); no FR registered. See § Currency reconciliation — 2026-10-22. Prior '2026-10-17'   # RE-STAMPED 2026-10-17: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-14..17 entries (Story 49.1 minted, a fix under FR-15; co-governor surface reconciles); no FR registered. See § Currency reconciliation — 2026-10-17. Prior '2026-10-14'   # RE-STAMPED 2026-10-14 (Pages site): chain-currency cascade (spec -> PRD) for FR-23 / CAP-90 and FR-24 / CAP-91 (Epic 48, the Pages site registry and the pages-liveness source); FR-23 and FR-24 registered; § Currency reconciliation — 2026-10-14 (Pages site) appended. Prior '2026-10-14'   # RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for FR-22 / CAP-89 (Epic 45, the ci-pause-drift source, consuming spec-pyforge-steward:CAP-166); FR-22 registered; § Currency reconciliation — 2026-10-14 appended. Prior '2026-10-13'   # RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10..13 entries (Stories 42.1, 43.1, 44.1 and 46.1 minted and landed; co-governor surface reconciles); no FR registered. See § Currency reconciliation — 2026-10-13. Prior '2026-10-10'   # RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Stories 33.1 and 37.1's gates cleared, their keys flipped blocked -> backlog by operator ruling) and the 2026-10-07 mint of fix Stories 6.13 and 34.6; no FR registered; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 26 entries of 2026-10-04..07 (Stories 41.2, 41.3, 41.4, 41.6, 6.12, 40.2, 34.3 and 27.6, Story 41.5's review fixes, four co-governor regenerations, herald 28.1); no FR registered; § Currency reconciliation — 2026-10-07 appended. Prior: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for Story 41.5 (Epic 41), a fix under FR-15 / CAP-78; no FR registered; § Currency reconciliation — 2026-10-04 appended. Prior: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD) for FR-21 / CAP-88 (Epic 38); § Currency reconciliation — 2026-10-01 appended. Prior: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. Prior: RE-STAMPED 2026-09-27 (late): chain-currency cascade (spec -> PRD) for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. Prior: RE-STAMPED 2026-09-24: chain-currency sweep (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full — the .memlog''s 2026-09-24 entry moved spec ahead of this PRD past the 2-day feeds grace window); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-11-01'   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): chain-currency cascade (research -> brief -> PRD and spec -> PRD) for research/egm-audit-2026-11-01.md (30 findings, 24 accepted, 6 rejected) and the Spec re-derive that amended CAP-89..CAP-93 in place; FR-15, FR-22, FR-23 and FR-24 carry dated in-place amendments; fix Stories 45.4, 48.3 and 50.2 done; no FR registered, renumbered or removed. See § Currency reconciliation — 2026-11-01. Prior '2026-10-27'   # RE-STAMPED 2026-10-27 (chain currency, behind-code): Story 55.4 registered the live_tree pytest marker in the package pyproject.toml on 2026-10-27, so the code stage moved past this PRD; no requirement, arrow or capability changes. See § Currency reconciliation — 2026-10-27 (behind-code). Prior '2026-10-26'   # RE-STAMPED 2026-10-26 (CAP-7 retrofit, Epic 51): the station memlog gained the retrofit decision; no requirement changes. Prior '2026-10-26'   # RE-STAMPED 2026-10-26 (Story 50.1): FR-14 <- CAP-9 and FR-15 <- CAP-93 (minted 2026-10-26; no capability carried FR-15) on the operator ruling of 2026-10-26 that a requirement cites defined capabilities only, never a Charter clause; FR-16 (the classifier recognizes a spike report, Story 6.11) gains the PRD heading it lacked, <- CAP-11, CAP-12; no FR renumbered or amended. See § Currency reconciliation — 2026-10-26 (Story 50.1). Prior '2026-10-24'   # RE-STAMPED 2026-10-24: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-24 entries (Story 30.4 minted and promoted done, a fix under FR-17 / CAP-84 and CAP-42: the docs, Dream and planning warn backlog); no FR registered. See § Currency reconciliation — 2026-10-24. Prior '2026-10-22'   # RE-STAMPED 2026-10-22: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-22 entries (Story 45.3 minted done, a test-only fix under FR-22 / CAP-89); no FR registered. See § Currency reconciliation — 2026-10-22. Prior '2026-10-17'   # RE-STAMPED 2026-10-17: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-14..17 entries (Story 49.1 minted, a fix under FR-15; co-governor surface reconciles); no FR registered. See § Currency reconciliation — 2026-10-17. Prior '2026-10-14'   # RE-STAMPED 2026-10-14 (Pages site): chain-currency cascade (spec -> PRD) for FR-23 / CAP-90 and FR-24 / CAP-91 (Epic 48, the Pages site registry and the pages-liveness source); FR-23 and FR-24 registered; § Currency reconciliation — 2026-10-14 (Pages site) appended. Prior '2026-10-14'   # RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for FR-22 / CAP-89 (Epic 45, the ci-pause-drift source, consuming spec-pyforge-steward:CAP-166); FR-22 registered; § Currency reconciliation — 2026-10-14 appended. Prior '2026-10-13'   # RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10..13 entries (Stories 42.1, 43.1, 44.1 and 46.1 minted and landed; co-governor surface reconciles); no FR registered. See § Currency reconciliation — 2026-10-13. Prior '2026-10-10'   # RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Stories 33.1 and 37.1's gates cleared, their keys flipped blocked -> backlog by operator ruling) and the 2026-10-07 mint of fix Stories 6.13 and 34.6; no FR registered; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 26 entries of 2026-10-04..07 (Stories 41.2, 41.3, 41.4, 41.6, 6.12, 40.2, 34.3 and 27.6, Story 41.5's review fixes, four co-governor regenerations, herald 28.1); no FR registered; § Currency reconciliation — 2026-10-07 appended. Prior: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for Story 41.5 (Epic 41), a fix under FR-15 / CAP-78; no FR registered; § Currency reconciliation — 2026-10-04 appended. Prior: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD) for FR-21 / CAP-88 (Epic 38); § Currency reconciliation — 2026-10-01 appended. Prior: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. Prior: RE-STAMPED 2026-09-27 (late): chain-currency cascade (spec -> PRD) for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. Prior: RE-STAMPED 2026-09-24: chain-currency sweep (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full — the .memlog''s 2026-09-24 entry moved spec ahead of this PRD past the 2-day feeds grace window); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 status: final
 currency_review: 'Reviewed 2026-09-24 — chain-currency sweep (doctor Story 30.3 landing).
   Story 30.2 (docs/map.yaml + the three docs-currency checks, hand-landed ''Merge
@@ -585,8 +585,11 @@ authority to be the final word on itself.
   generalized and meta-tested across every source. `sources/warden.py` remains the
   deliberate exception: it relays an instrument's self-report about its own
   environment, which is a different act from judging an artifact.
-- Every detector resolves to exactly one owning station, and a newly added detector
-  with no owner is a finding rather than a silent exemption.
+- Every Doctor source's `REGISTRY` entry names exactly one owning station, and an entry
+  with no owner is refused when its registration is built (`ValueError`), never stored as a
+  silent exemption. *(Amended 2026-11-01, EGM fleet audit DOC-M-Z1 / DOC-M-D3 / DOC-M-C1, on
+  the operator's ruling that CAP-93's owner clause narrows to the refusal the code enforces:
+  a `scripts/*_check.py` detector declares a scope, not an owner.)*
 - `doctor check` remains inside **SM-C1 (5.0s)** after the additions — measured, not
   assumed.
 
@@ -726,9 +729,12 @@ declared state, is stuck, or is past its `review_by`.
 
 **Consequences (testable):** on a recorded report, a `drift` row is one `ci-pause-drift` WARN, a `stuck` row (the
 2026-10-06 waiting-deploy replay, a five-cancelled streak, a stale canary) is one `ci-pause-stuck` WARN, and a row whose
-`review_days_left` is below 0 is one `ci-pause-overdue` WARN whatever its verdict; each names the surface, its switch
-and its owner; a report the source cannot read (steward's refusal, steward absent, a timeout, a malformed payload) is
-one `ci-pause-unobserved` WARN and never an OK; a WARN never changes the exit code; `fleet-picture`'s ATTENTION block
+`review_days_left` is below 0 is one `ci-pause-overdue` WARN whatever its verdict; each names the surface and the rule,
+then steward's `detail` when the row carries one, then its switch and its owner, so `fleet-picture`'s 110-character
+ATTENTION line keeps the reason; a report the source cannot read (steward's refusal, steward absent, a timeout, a
+malformed payload) is one `ci-pause-unobserved` WARN and never an OK, and `fleet-picture`'s probe outlasts the source's
+120-second bound so a hung steward reads as that WARN *(amended 2026-11-01, Story 45.4, EGM fleet audit DOC-M-Z3 /
+DOC-D-C5)*; a WARN never changes the exit code; `fleet-picture`'s ATTENTION block
 shows one line per WARN; the source never calls `gh`, never imports `pyforge.steward`, and is not part of
 `detectors-ci`.
 
@@ -754,27 +760,32 @@ table names `docsite/`, `docs-site/` and `presentations/`. Every renderer is her
 field; `docs-map-hygiene` yields one `sections` WARN for a duplicate `key` or `order` or a malformed `href`, one
 `unnamed-top-level` WARN for a tracked top-level directory that is not `docs`, a dot-directory, an allow-listed
 infrastructure directory or the first segment of a path the table names, and never a FAIL from either class; `missing`
-and `unmapped` are unchanged; on the story's tree `docs-map-hygiene-check` exits 0 with the OK row, `docs-map-render`
-leaves `docs/MAP.md` byte-identical and `docs-currency-check` stays green; `sidebar_from_map.py` and `site.yml` are
-untouched.
+and `unmapped` are unchanged; on `main` `docs-map-hygiene-check` exits 0 with the OK row, `docs-map-render`
+leaves `docs/MAP.md` byte-identical and `docs-currency-check` stays green; herald's menus follow `sections:` in
+`order` (herald's nav tests). *(Amended 2026-11-01, EGM fleet audit DOC-M-Z5 / DOC-M-D5: herald Story 43.7 retired
+`docsite/` and `sidebar_from_map.py`, so the clause no longer names the story's tree or those files.)*
 
 **Non-goals:** no renderer change (herald's), no row for a section that does not publish yet, no check that an `href`
-resolves in the built artifact, no rename of `docsite/` or `docs-site/`.
+resolves in the built artifact, no rename of `docs-site/` (`docsite/` retired with herald Story 43.7).
 
 *Decomposed as Epic 48 — Story 48.1. `flag-exempt: docs-only` (coordinator assignment; memlog, 2026-10-14).*
 
 ## FR-24 — A stalled Pages deploy is named within a day (spec-pyforge-doctor CAP-91)
 
 Added 2026-10-14 (the same rulings). The Pages deploy sat in `waiting` from 2026-10-06 to 2026-10-12 and no detector
-saw it; steward's `ci status` now names that class from GitHub's side (`dashboard.deploy`, `deploy_waiting_hours: 24`,
+saw it; steward's `ci status` now names that class from GitHub's side (the `pages` row's `deploy_waiting_hours: 24`,
 relayed by FR-22), but only for a signed-in reader with the steward flag on. A Doctor source, `pages-liveness`, names it
 from the reader's side: one HTTP request to the live Pages root for its `last-modified` header (measured 2026-10-14:
-the header is sent), the latest commit on `refs/remotes/origin/main` that touched a published input through
-`cli_bridge.run_git`, and a WARN when the commit is more than 24 hours newer than the header. No token, no `gh`, no
-GitHub API.
+the header is sent), the latest first-parent commit on `refs/remotes/origin/main` that touched a published input (`pages.yml`'s own
+`on.push.paths` filter less five named build and deploy exclusions) through `cli_bridge.run_git`, and a WARN when an
+input that landed after the deploy has waited more than 24 hours by the clock. No token, no `gh`, no GitHub API.
+*(Amended 2026-11-01, Story 48.3, EGM fleet audit DOC-M-Z4 / DOC-M-D2 / DOC-M-C5 / DOC-D-C2; closes
+`DW-doctor-48-2-1`.)*
 
-**Consequences (testable):** on recorded fixtures a fresh site and one 23 hours behind yield the OK row; one 25 hours
-behind and the 2026-10-06 replay each yield one `pages-liveness-stale` WARN naming both timestamps and the lag; no
+**Consequences (testable):** on recorded fixtures, each with its clock, a site deployed after its latest input, an
+input that has waited 23 hours and one that has waited exactly 24 hours yield the OK row; one that has waited more than
+24 hours and the 2026-10-06 replay each yield one `pages-liveness-stale` WARN naming the wait and both dates; a test
+pins the published inputs to `pages.yml`'s filter less the five exclusions; no
 network, a non-2xx on HEAD and GET, a missing or unparseable header and a failed git read each yield one
 `pages-liveness-unavailable` WARN and never an OK; a WARN never changes the exit code; `fleet-picture`'s ATTENTION
 block shows one line per WARN and `could not check Pages liveness` when the probe raises; the source is not in
@@ -1265,3 +1276,39 @@ Trigger: the station Spec's `.memlog.md` gained the 2026-10-26 decision (the Gui
 ## Currency reconciliation — 2026-10-27 (behind-code)
 
 Trigger: `behind-code` — Story 55.4 (doctor's live-tree half, a relay of `spec-pyforge-steward:CAP-175` ruling D4) registered the `live_tree` pytest marker in `src/shared/packages/pyforge-doctor/pyproject.toml` on 2026-10-27, so the code stage dates 2026-10-27 while this PRD read 2026-10-26. Bookkeeping only: no requirement, arrow or capability changes; the FR space stays FR-1..FR-24. `updated:` bumped to record that the check ran.
+
+## Currency reconciliation — 2026-11-01
+
+*Chain-currency cascade (`research→brief→prd` and `spec→prd`). Two things moved upstream on 2026-11-01: the station's
+EGM audit record, `research/egm-audit-2026-11-01.md` (marshal Story 113.7, `spec-pyforge-marshal:CAP-302`), which the
+brief folds in its own 2026-11-01 section, and `spec-pyforge-doctor`'s re-derive of the same day.*
+
+- **The audit.** 30 findings on CAP-89..CAP-93 and Epics 45, 48 and 50: 24 accepted (all 18 mint-stage, 6 of 12
+  decompose-stage), 6 rejected, 0 deferred. Routing: 14 to the Spec re-derive, 7 to three fix stories, 3 to
+  append-only story notes.
+- **The Spec re-derive (no CAP added, ids unchanged).** CAP-89: each `ci-pause-*` finding names steward's `detail`
+  after the rule and before the switch and owner; the partial read comes from stdout (steward 103.7); exit 2, exit 127
+  and the 120-second bound read as `ci-pause-unobserved`; steward's thresholds are cited (`spec-pyforge-steward:CAP-166`),
+  not restated. CAP-90: success re-runs on `main` after herald Story 43.7 retired `docsite/` and
+  `sidebar_from_map.py`; the menu cite is qualified `spec-pyforge-herald:CAP-58`. CAP-91: subject steward; inputs pinned
+  to `pages.yml`'s `on.push.paths` less five named exclusions; `--first-parent`; the clock-aware rule. CAP-92: the base
+  `fr-without-cap` finding, the counted-run and content-word rules, and the merge-base ratchet (`fr-baseline-grown`,
+  `fr-baseline-base-unread`). CAP-93: its evidence named by test, the owner clause narrowed to the `REGISTRY` refusal,
+  realizers Stories 6.1, 6.2, 6.4–6.8, 6.9, 6.10 and 49.1 (the 2026-10-26 section above named 6.2, 6.8, 6.9 and 49.1).
+  One Constraint, one Non-goal and one Assumption follow; Open Question 2 is answered by Story 48.3; `glossary.md` is a
+  new companion.
+- **Fix stories, minted and `done` 2026-11-01.** 45.4 (the ci-pause relay keeps steward's reason; DOC-M-Z3, DOC-D-C5),
+  48.3 (pages-liveness reads its published inputs from `pages.yml`; DOC-M-Z4, DOC-M-D2, DOC-M-C5, DOC-D-C2; closes
+  `DW-doctor-48-2-1`) and 50.2 (`fr-baseline.json` grows only through its script; DOC-M-D1). Epics 45, 48 and 50 are
+  `done` again.
+- **This PRD's requirements.** The in-place amendments dated 2026-11-01 above carry the change: FR-15's owner bullet
+  (the `REGISTRY` refusal), FR-22's consequences (the detail's position, the probe outlasting the bound), FR-23's
+  consequences and non-goals (re-runnable on `main`, `docsite/` retired) and FR-24's intro and consequences (the
+  `pages` row's figure, `pages.yml`'s filter, `--first-parent`, the clock). FR-23's "Added 2026-10-14" paragraph keeps
+  the mint-time picture (`docsite/content/site.yml`, `sidebar_from_map.py`, five sections) as history. CAP-92 still
+  registers no FR: the requirement is the Guild's (`spec-one-chain-per-station:CAP-5`).
+
+**The FR space: no FR registered.** The FR space stays FR-1..FR-24 (FR-25 is the next free id).
+
+**Content changed:** this section and `updated:`. The FR-15, FR-22, FR-23 and FR-24 amendments landed earlier in the
+same EGM-audit change, with the fix stories and the re-derive. No FR renumbered or removed.

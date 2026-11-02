@@ -86,6 +86,85 @@ def test_render_passes_a_clean_block() -> None:
     assert core.render_refusals(_config(), session_models=["composer-2.5-fast"], model_cost_catalog=CATALOG) == []
 
 
+# Story 113.9: marshal's catalog shape, every provider declared (marshal-policy.toml's model_cost_catalog).
+FLEET_CATALOG = {
+    "providers": {
+        "cursor": {"models": {"composer-2.5": {}, "composer-2.5-fast": {}}},
+        "anthropic": {"models": {"sonnet-5": {}, "claude-fable-5-1": {}, "opus-5": {}}},
+        "openai": {"models": {"gpt-5.6-terra": {}}},
+        "google": {"models": {"gemini-3.7-flash": {}}},
+    }
+}
+ALIASES = ("sonnet", "opus", "haiku", "default")
+
+
+@pytest.mark.parametrize(
+    ("model", "provider"),
+    [("gemini-3.7-flash", "google"), ("gpt-5.6-terra", "openai"), ("composer-2.5-fast", "cursor")],
+)
+def test_render_refuses_a_catalog_entry_of_another_provider(model: str, provider: str) -> None:
+    """Story 113.9 AC1: the claude profile passes the id verbatim to ``claude --model``."""
+    reasons = core.render_refusals(_config(model=model), session_models=[], model_cost_catalog=FLEET_CATALOG)
+    assert reasons == [
+        f"[challenge].model {model!r} is catalogued under {provider!r}; the challenger runs on "
+        "the claude profile and takes only an 'anthropic' entry"
+    ]
+
+
+def test_render_refuses_an_id_absent_from_the_catalog_and_an_alias() -> None:
+    for model in ("claude-unknown-9", "sonnet"):
+        reasons = core.render_refusals(
+            _config(model=model), session_models=[], model_cost_catalog=FLEET_CATALOG, aliases=ALIASES
+        )
+        assert reasons == [f"[challenge].model {model!r} is not a model_cost_catalog entry"]
+
+
+def test_render_passes_an_anthropic_catalog_entry() -> None:
+    for model in ("sonnet-5", "claude-fable-5-1", "opus-5"):
+        config = _config(model=model)
+        assert core.render_refusals(config, session_models=[], model_cost_catalog=FLEET_CATALOG, aliases=ALIASES) == []
+
+
+@pytest.mark.parametrize(
+    ("challenger", "station", "same"),
+    [
+        ("sonnet-5", "sonnet", True),  # the station runs the alias of the challenger's family
+        ("sonnet", "claude-sonnet-4-5", True),  # the challenger names the alias of the station's family
+        ("opus-5", "opus", True),
+        ("claude-fable-5-1", "claude-fable-5-1", True),
+        ("sonnet-5", "claude-sonnet-4-5", False),  # two pinned ids of one family are two models
+        ("claude-fable-5-1", "sonnet", False),
+        ("opus-5", "sonnet", False),
+        ("sonnet-5", "default", False),  # the account default names no family
+    ],
+)
+def test_same_model_normalises_aliases(challenger: str, station: str, same: bool) -> None:
+    assert core.same_model(challenger, station, aliases=ALIASES) is same
+
+
+def test_render_refuses_an_alias_of_a_station_model() -> None:
+    """Story 113.9 AC3: an alias that normalises to a station model is the station model."""
+    reasons = core.render_refusals(
+        _config(model="opus-5"),
+        session_models=["composer-2.5", "opus"],
+        model_cost_catalog=FLEET_CATALOG,
+        aliases=ALIASES,
+    )
+    assert reasons == [
+        "[challenge].model 'opus-5' is the dispatching session's own model (opus); "
+        "the challenger must be a different model"
+    ]
+    assert (
+        core.render_refusals(
+            _config(model="opus-5"),
+            session_models=["composer-2.5", "sonnet"],
+            model_cost_catalog=FLEET_CATALOG,
+            aliases=ALIASES,
+        )
+        == []
+    )
+
+
 def _context(**overrides: object) -> core.ChallengeContext:
     values: dict[str, object] = {
         "target": "/repo/SPEC.md",
@@ -209,3 +288,63 @@ def test_installed_version_must_be_exactly_the_pin() -> None:
     assert core.installed_version_refusal({"plugins": {}}, "egm@egm", "0.1.0")
     two = {"plugins": {"egm@egm": [{"version": "0.1.0"}, {"version": "0.2.0"}]}}
     assert core.installed_version_refusal(two, "egm@egm", "0.1.0")
+
+
+# --- Story 113.8 (CAP-298, CAP-300): a review that did not fully run is unevaluable; readiness on screen ---------
+
+
+def _parsed(*, stage: str = "mint", reviewers: list[str] | None = None) -> core.ChallengeReport:
+    data = json.loads(_report())
+    data["stage"] = stage
+    if reviewers is not None:
+        data["reviewers"] = reviewers
+    return core.parse_report(json.dumps(data))
+
+
+MINT_AGENTS = [core.agent_type(p) for p in core.DEFAULT_REVIEWERS["mint"]]
+
+
+def test_a_report_naming_every_dispatched_reviewer_and_the_stage_is_evaluable() -> None:
+    report = _parsed(reviewers=MINT_AGENTS)
+    assert core.unevaluable_reason(report, stage="mint", personas=core.DEFAULT_REVIEWERS["mint"]) is None
+    # order and surrounding whitespace do not matter; an extra name does not either
+    shuffled = _parsed(reviewers=[" egm:egm-comprehension ", *MINT_AGENTS[:2], "egm:egm-extra"])
+    assert core.unevaluable_reason(shuffled, stage="mint", personas=core.DEFAULT_REVIEWERS["mint"]) is None
+
+
+def test_a_report_that_omits_a_dispatched_reviewer_is_unevaluable() -> None:
+    report = _parsed(reviewers=MINT_AGENTS[:2])
+    reason = core.unevaluable_reason(report, stage="mint", personas=core.DEFAULT_REVIEWERS["mint"])
+    assert reason is not None and "egm:egm-comprehension" in reason and "egm:egm-zoom-out" not in reason
+
+
+@pytest.mark.parametrize("reviewers", [[], [""], ["  "]])
+def test_a_report_with_no_reviewers_is_unevaluable_even_with_no_findings(reviewers: list[str]) -> None:
+    data = json.loads(_report([]))
+    data["reviewers"] = reviewers
+    report = core.parse_report(json.dumps(data))
+    assert core.unevaluable_reason(report, stage="mint", personas=core.DEFAULT_REVIEWERS["mint"]) == (
+        "report lists no reviewers"
+    )
+
+
+def test_a_report_for_another_stage_is_unevaluable() -> None:
+    report = _parsed(stage="decompose", reviewers=MINT_AGENTS)
+    reason = core.unevaluable_reason(report, stage="mint", personas=core.DEFAULT_REVIEWERS["mint"])
+    assert reason == "report stage 'decompose' is not the requested 'mint'"
+
+
+def test_readiness_view_clean_red_and_error() -> None:
+    clean = core.readiness_view({"report": "/r.json", "findings": 0, "high": 0, "error": ""})
+    assert clean == {"report": "/r.json", "findings": 0, "high": 0, "error": "", "red": False}
+    assert core.readiness_text(clean) == "clean, report /r.json"
+    red = core.readiness_view({"report": "/r.json", "findings": 2, "high": 1, "error": ""})
+    assert red["red"] is True and red["code"] == core.READINESS_RED_CODE == "MRS-DISP-067"
+    assert core.readiness_text(red) == "red MRS-DISP-067: 2 finding(s), 1 high; report /r.json"
+    # the launch hook's own failure payload carries only an error
+    failed = core.readiness_view({"error": "readiness challenge failed:\n boom"})
+    assert failed["red"] is True and failed["report"] == "" and failed["findings"] == 0
+    assert core.readiness_text(failed) == "red MRS-DISP-067: readiness challenge failed: boom; report (none)"
+    # idempotent, and junk counts never fabricate a red
+    assert core.readiness_view(red) == red
+    assert core.readiness_view({"findings": "3", "high": True})["red"] is False

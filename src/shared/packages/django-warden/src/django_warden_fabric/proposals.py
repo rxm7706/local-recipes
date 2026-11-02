@@ -34,8 +34,35 @@ def _planned_paths_from_outcome(outcome: dict[str, object]) -> list[str]:
     return sorted(paths)
 
 
+def _resolved_target_from_outcome(outcome: dict[str, object]) -> str:
+    """The dry-run ``fix_resolution`` target (Story 16.6) -- a version, never the package name."""
+    resolution = outcome.get("fix_resolution")
+    if not isinstance(resolution, dict):
+        return ""
+    target = resolution.get("target")
+    return target if isinstance(target, str) else ""
+
+
+# Operator ruling 2026-11-01 (Story 16.8): only a finding on a PyPI or conda
+# component queues a proposal. Warden names the ecosystem on the outcome of a
+# native non-Python lockfile's finding (npm, Go, Cargo, ...); the fleet's edit set
+# (pixi.toml, pyproject.toml, recipes) cannot fix one, so it stays in the report only.
+_QUEUEABLE_ECOSYSTEMS = frozenset({"pypi", "conda"})
+
+
+def _is_non_python_outcome(outcome: dict[str, object]) -> bool:
+    return "ecosystem" in outcome and outcome["ecosystem"] not in _QUEUEABLE_ECOSYSTEMS
+
+
 def queue_proposals_from_scan(scan: FleetRepoScan) -> int:
-    """Create queued proposals for each planned actuation outcome."""
+    """Create queued proposals for each planned actuation outcome.
+
+    Story 16.6: the proposal records the dry-run target only; the candidates
+    stay in the scan's stored ``report_json`` and no diff is stored -- the
+    approve re-solves on a fresh clone (``tasks._run_fix_actuator``).
+
+    Story 16.8: an outcome whose finding is on a non-PyPI, non-conda component
+    queues nothing; its finding stays in the stored report."""
     if not read_boolean(FLEET_FIX_PROPOSALS_FLAG, default=False):
         return 0
     if scan.status != JobStatus.SUCCEEDED:
@@ -55,14 +82,13 @@ def queue_proposals_from_scan(scan: FleetRepoScan) -> int:
     for raw in outcomes:
         if not isinstance(raw, dict):
             continue
-        if raw.get("status") != "planned":
+        if raw.get("status") != "planned" or _is_non_python_outcome(raw):
             continue
         finding_id = raw.get("finding_id")
         action = raw.get("action")
         if not isinstance(finding_id, str) or not isinstance(action, str):
             continue
-        subject = raw.get("subject")
-        target = subject if isinstance(subject, str) else ""
+        target = _resolved_target_from_outcome(raw)
         paths = _planned_paths_from_outcome(raw)
         _, was_created = FixProposal.objects.get_or_create(
             fleet_repo_scan=scan,

@@ -9,7 +9,9 @@ lives (AC9). The built half needs docs-site installed (``pixi run -e site docs-s
 no font or script from a CDN (AC8), gives every page one CSP (the CSP decision), carries the artifact build of the
 dossier and the font licences, lists every gallery and family page in ``/llms.txt``, and a second build two days, two
 runs and two commits later differs only in the built-from line (Story 43.5's proof over the whole artifact).
-Story 43.5's measured-dossier tests moved here from the retired parity test.
+Story 43.5's measured-dossier tests moved here from the retired parity test. Story 42.4 pins, over the same build, the
+lines that say the status pages serve a snapshot: the guild page's capture time and not-live sentence, and the tile's
+capture time on the dossier and in its artifact build.
 """
 
 from __future__ import annotations
@@ -250,6 +252,36 @@ def test_the_status_pages_carry_the_built_from_line_and_no_stamp_of_their_own(bu
     assert guild.count("data-surface=") == len(
         json.loads((DOCS_SITE / "src/content/ci-status.json").read_text())["rows"]
     )
+
+
+def _fetched_at() -> str:
+    """F (Story 42.4): the committed snapshot's capture time, read at test time -- never a literal date -- so the
+    operator's refresh of ``ci-status.json`` at each pause and resume keeps the pins below green."""
+    return json.loads((DOCS_SITE / "src/content/ci-status.json").read_text(encoding="utf-8"))["fetched_at"]
+
+
+@needs_astro
+def test_42_4_ac1_ac2_the_guild_page_names_its_capture_time_and_says_nothing_on_it_is_live(built: Path) -> None:
+    """Story 42.4 (CAP-60, herald:AD-21): ``/status/ci/`` serves a committed snapshot, and says so -- one ``<time>``
+    holding the snapshot's ``fetched_at`` inside the "Snapshot captured" paragraph (AC1), and the not-live sentence
+    once (AC2)."""
+    captured = _fetched_at()
+    guild = (built / "status/ci/index.html").read_text(encoding="utf-8")
+    element = f'<time datetime="{captured}">{captured}</time>'
+    assert guild.count(element) == 1, element
+    paragraphs = [p for p in re.findall(r"<p\b[^>]*>(.*?)</p>", guild, re.S) if "Snapshot captured" in p]
+    assert len(paragraphs) == 1 and element in paragraphs[0], paragraphs
+    assert guild.count("nothing on this page is live") == 1
+
+
+@needs_astro
+def test_42_4_ac3_the_tile_names_its_capture_time_on_the_dossier_and_in_its_artifact_build(built: Path) -> None:
+    """Story 42.4 (CAP-59): with the tile on, the dossier page and the artifact build cut from it each say once when the
+    snapshot the tile shows was captured."""
+    line = f"Snapshot captured at {_fetched_at()}"
+    outputs = ("herald/dossier/index.html", "herald/artifact/dossier.html")
+    counts = {rel: (built / rel).read_text(encoding="utf-8").count(line) for rel in outputs}
+    assert counts == dict.fromkeys(outputs, 1), line
 
 
 @needs_astro

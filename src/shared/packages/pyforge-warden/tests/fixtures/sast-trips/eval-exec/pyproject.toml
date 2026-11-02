@@ -1,0 +1,4 @@
+[project]
+name = "sast-trip-eval-exec"
+version = "0.0.0"
+dependencies = []

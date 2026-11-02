@@ -150,3 +150,7 @@ Status: done
 **Verification:** `pixi run --frozen -e pyforge-warden pyforge-warden-test` — 2139 passed; `python scripts/spec_surface_reconcile.py` — exit 0 after memlog reconciles on `spec-pyforge-warden`, `spec-feature-flag-governance`, and co-governor `spec-pyforge-core`.
 
 **Residual risks:** Default production solver depends on throwaway-copy TOML probing until Story 14.2's `manifest_edit.py`; no integration test runs real `pixi lock` in CI.
+
+## Spec Change Log
+
+- 2026-11-01: amended in place (append-only, EGM audit 2026-11-01, marshal Story 113.7): the `epics.md` Story 14.1 Surface line now names `fix_solver.py`, where the resolver and the default solver landed, with every path in full, and a **Spec:** line links this file (EGM audit WAR-D-C3, WAR-D-R2). No AC, status, heading or key moved; residue `_bmad-output/projects/pyforge-warden/planning-artifacts/research/egm-audit-2026-11-01.md`.

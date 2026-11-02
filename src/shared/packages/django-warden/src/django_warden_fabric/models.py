@@ -86,6 +86,10 @@ class FleetRun(models.Model):
     )
     phase_index = models.PositiveSmallIntegerField(default=0)
     error = models.TextField(blank=True, default="")
+    # Story 16.7: a run ends SUCCEEDED as a job when some repos fail; these say
+    # what it missed. Filled when the run finalizes, counts only, never a verdict.
+    failed_repo_count = models.PositiveIntegerField(default=0)
+    skipped_repo_count = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
