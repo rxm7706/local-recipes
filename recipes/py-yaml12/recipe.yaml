@@ -13,7 +13,7 @@ source:
   sha256: b8326c144e26a4ae7e03d13175667d85c580a9f0512fd7b809e5c92b5569f74e
 
 build:
-  number: 0
+  number: 1
   script:
     env:
       CARGO_PROFILE_RELEASE_STRIP: symbols
@@ -73,6 +73,7 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - jsmolic
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -96,11 +97,12 @@ extra:
   cfe-generated-by-version: 8.99.1
   cfe-generated-at-datetime: 2026-10-10T08:27:50Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: '2026-10-10T08:35:31Z'
+  cfe-local-build-datetime: 2026-11-02T02:12:39Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
 #    Story 25.4: canonical block stamped before Wave 0-leftovers repair rerun.
+#    # 2026-11-01 Story 25.17: jsmolic re-merged from the deployed maintainer list (G53); build.number 0 -> 1 to match the feedstock at the same version.
 ####

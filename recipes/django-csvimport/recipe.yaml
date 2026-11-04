@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django-csvimport-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/django-csvimport/django_csvimport-${{ version }}.tar.gz
   sha256: ad7cad94ce287360cc09dcf2c5c7910dc568ccbaef0ca828f0b8343b912a74bf
 
 build:
@@ -25,7 +25,7 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }},<4.0
-    - django >=2.2.5
+    - django >=4.2
     - chardet
     - dateparser
 
@@ -67,12 +67,13 @@ extra:
   cfe-last-checked: 2026-10-10T08:27:50Z
   cfe-generated-by-version: 8.99.1
   cfe-generated-at-datetime: 2026-10-10T08:27:50Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: '2026-10-10T08:35:31Z'
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-02T02:09:22Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
 #    Story 25.4: canonical block stamped before Wave 0-leftovers repair rerun.
+#    # 2026-11-01 Story 25.17 BFP: source.url named django-csvimport-3.3.tar.gz, which 404s; PyPI's sdist is django_csvimport-3.3.tar.gz. URL made literal with the underscore filename (sha256 unchanged). run django floor raised to >=4.2 to match the feedstock (G96). The local meta.yaml is gone: the feedstock is v1 (C2, G94).
 ####

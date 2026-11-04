@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "4.3.4"
+  version: "4.3.5"
 
 package:
   name: pptxgenjs-plus
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://registry.npmjs.org/pptxgenjs-plus/-/pptxgenjs-plus-${{ version }}.tgz
-  sha256: 91dad0729f2fb3f9e4df490fe02ce2bc23cd3e3554e5f04cfbcbca317be30144
+  sha256: b870ca62c287d090ca784a5ce9973b3bb5c5ca05e46f7a541b65c288bb925b41
 
 build:
   number: 0
@@ -44,7 +44,7 @@ requirements:
   host:
     - nodejs >=24
   run:
-    - nodejs >=24
+    - nodejs
 
 tests:
   - script:
@@ -73,6 +73,7 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - pb01ka
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -88,15 +89,15 @@ extra:
   cfe-source-kind: npm-registry-tarball
   cfe-noarch: generic
   cfe-pip-check: "false:not-a-python-package"
-  cfe-on-conda-forge-status: pending-submission-to-conda-forge
-  cfe-on-conda-forge-feedstock: none
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pptxgenjs-plus-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: "2026-10-09T04:00:00Z"
+  cfe-last-checked: 2026-11-02T03:34:21Z
   cfe-generated-by-version: 8.84.0
   cfe-generated-at-datetime: "2026-08-25T23:15:00Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-10-09T03:48:00Z"
+  cfe-local-build-datetime: 2026-11-02T02:45:51Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -106,6 +107,9 @@ extra:
 #    # G58: no conda-forge/pptxgenjs-plus-feedstock. Shape copied from
 #    # recipes/pptxgenjs (bin-less Node library, noarch generic, G100 does
 #    # not apply). JSX helper pptxgenjs-plus-jsx is a separate npm package.
+#    # 2026-11-01 refresh_wave B-25-18-b2: refreshed 4.3.4 -> 4.3.5; maintainers added: pb01ka
+#    # 2026-11-01 mason Story 25.18 hand steps before refresh-wave: run nodejs left bare like the feedstock (G103: the host nodejs run_export carries the floor)
+#    # 2026-11-01 mason Story 25.18 review round: conda-forge/pptxgenjs-plus-feedstock verified live; on-conda-forge status and feedstock set (G78)
 # requirements:
 #    # engines.node is >=24 (npm package.json); pin nodejs accordingly.
 #    # Runtime npm deps (@node-projects/jszip, @rgrove/parse-xml, pako) are

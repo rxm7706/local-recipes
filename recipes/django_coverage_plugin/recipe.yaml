@@ -1,0 +1,97 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.2.2"
+
+package:
+  name: django_coverage_plugin
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django_coverage_plugin/django_coverage_plugin-${{ version }}.tar.gz
+  sha256: fcc507ee02f3a8f7c1d79b6eba1bafebb4a95b5055801987b715f4f88270c441
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django
+    - coverage
+
+tests:
+  - python:
+      imports:
+        - django_coverage_plugin
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - files:
+      recipe:
+        - run_test.py
+    requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - python run_test.py
+
+about:
+  homepage: https://github.com/nedbat/django_coverage_plugin
+  repository: https://github.com/nedbat/django_coverage_plugin
+  documentation: http://coverage.readthedocs.io/en/latest/plugins.html
+  license: Apache-2.0
+  license_file:
+    - LICENSE.txt
+    - NOTICE.txt
+  summary: A plugin for coverage.py to measure Django template execution
+  description: A coverage.py plugin to measure the coverage of Django templates. Supported Python versions are 2.7, 3.4, 3.5 and 3.6. Supported Django versions are 1.8 through 1.11. Supported coverage.py versions are 4.0 and higher.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - cshaley
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django_coverage_plugin
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django_coverage_plugin
+  cfe-purls:
+    - pkg:conda/django_coverage_plugin@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-coverage-plugin@${{ version }}
+  cfe-upstream-repo: https://github.com/nedbat/django_coverage_plugin
+  cfe-upstream-homepage: https://github.com/nedbat/django_coverage_plugin
+  cfe-import-names: [django_coverage_plugin]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django_coverage_plugin-feedstock
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-02T02:40:08Z
+  cfe-generated-by-version: 8.102.2
+  cfe-generated-at-datetime: 2026-11-02T03:34:31Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-02T02:40:44Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-01 mason Story 25.18: v1 recipe.yaml authored by hand from the deployed v0 feedstock
+#    # (C1 keep-meta) at the local mirror's old version, so refresh-wave performs the bump and mirrors
+#    # meta.yaml byte-for-byte. Feedstock files LICENSE and run_test.py are copied verbatim; the v1
+#    # recipe reads the sdist's LICENSE.txt and NOTICE.txt (Apache-2.0 NOTICE rule) and runs the
+#    # feedstock's run_test.py as a script test.
+#    # 2026-11-01 refresh_wave B-25-18-b2: refreshed 3.1.0 -> 3.2.2
+####

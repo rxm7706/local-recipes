@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.0.0"
+  version: "2.0.0"
 
 package:
   name: openfeature-flagd-core
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/openfeature-flagd-core/openfeature_flagd_core-${{ version }}.tar.gz
-  sha256: e843d395de54dbc83d4d46fcee6cbc276204f3dfe5e8cc24ae3ea7247479c232
+  sha256: b416396949ee766f791ade3c5880fb15407b774349ee13b72f5e76ccfe932ca8
 
 build:
   number: 0
@@ -29,6 +29,7 @@ requirements:
     - mmh3 <6.0.0,>=5.0.0
     - panzi-json-logic ==1.0.1
     - semver <4,>=3
+    - cbor2 <6.0.0,>=5.6.5
 
 tests:
   - python:
@@ -50,6 +51,8 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - pb01ka
+    - jsmolic
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -65,18 +68,21 @@ extra:
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
   cfe-pip-check: "true"
-  cfe-on-conda-forge-status: pending-submission-to-conda-forge
-  cfe-on-conda-forge-feedstock: none
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/openfeature-flagd-core-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-25T08:49:03Z
+  cfe-last-checked: 2026-11-02T03:34:21Z
   cfe-generated-by-version: 8.84.0
   cfe-generated-at-datetime: 2026-08-25T08:49:03Z
-  cfe-local-build-status: not-attempted
-  cfe-local-build-datetime: none
-  cfe-local-build-platform: none
-  cfe-local-build-tool: none
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-02T02:43:43Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-01 refresh_wave B-25-18-b2: refreshed 1.0.0 -> 2.0.0; maintainers added: pb01ka, jsmolic
+#    # 2026-11-01 mason Story 25.18 hand steps before refresh-wave: run synced to the feedstock (G96: +cbor2 for 2.0.0)
+#    # 2026-11-01 mason Story 25.18 review round: conda-forge/openfeature-flagd-core-feedstock verified live; on-conda-forge status and feedstock set (G78)
 ####

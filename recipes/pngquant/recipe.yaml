@@ -100,6 +100,10 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - izahn
+    - killua156
+    - soapy1
+    - owenlamont
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -147,6 +151,7 @@ extra:
 #    # the latter is out of scope while the operator has asked for local-only,
 #    # no PRs. Until one of those happens, the ocrmypdf target-gate in pixi.toml
 #    # stays.
+#    # 2026-11-01 mason Story 25.18: current at the published version; maintainers added (G53): izahn, killua156, soapy1, owenlamont
 # build:
 #    # The deployed cf v0 recipe is missing stdlib('c') (STD-001) -- included
 #    # here. pkg-config is required: libpng-sys / lcms2-sys locate their C

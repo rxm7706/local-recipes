@@ -14,7 +14,7 @@ source:
   sha256: d1b22706557186e6058da88ba0f85837401b2ae9de157f59353dc978d825187a
 
 build:
-  number: 2
+  number: 3
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
@@ -48,3 +48,36 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - jsmolic
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: timelib
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: timelib
+  cfe-purls:
+    - pkg:conda/timelib@${{ version }}?channel=conda-forge
+    - pkg:pypi/timelib@${{ version }}
+  cfe-upstream-repo: https://github.com/pediapress/timelib
+  cfe-upstream-homepage: https://github.com/pediapress/timelib/
+  cfe-import-names: [timelib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/timelib-feedstock
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-02T03:49:53Z
+  cfe-generated-by-version: 8.102.2
+  cfe-generated-at-datetime: 2026-11-02T03:49:53Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-02T03:53:28Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-01 mason Story 25.18 review round: canonical CFE block added by hand so the driver can write the
+#    # build record; build.number 2 -> 3 to match the deployed feedstock's meta.yaml.
+####

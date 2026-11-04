@@ -1,18 +1,18 @@
 {% set name = "wagtailtables" %}
-{% set version = "0.2.2" %}
+{% set version = "0.3.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/wagtailtables-{{ version }}.tar.gz
-  sha256: 45bfcfda12e56e479fae05e0438efb5026928793d588c9d08101d5af27021544
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/wagtailtables-{{ version }}.tar.gz
+  sha256: fc05a63a659597706cfd4eb82c9a18fa6678addb50c500ab28ea3534f19d4c43
 
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 1
+  number: 0
 
 requirements:
   host:
@@ -21,7 +21,7 @@ requirements:
     - setuptools
   run:
     - python >={{ python_min }}
-    - wagtail >=3.0
+    - wagtail >=7.0
 
 test:
   imports:

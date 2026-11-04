@@ -69,6 +69,11 @@ EDITS = {
             # noarch: python collapses upstream's per-interpreter marker split
             # and would otherwise silently drop cp314.
             "onnxruntime": "onnxruntime>=1.20",
+            "pydantic": "pydantic>=2.13.0,<3.0.0",
+            # conda-forge's mcp feedstock jumped straight from 1.28.1 to 2.0.0,
+            # skipping 1.29.x/1.30.x, so upstream's >=1.30.0 can never resolve
+            # there. 2.x is a breaking rewrite;
+            "mcp": "mcp>=1.28.0,<2.0.0",
         },
     },
     "langflow": {
@@ -82,6 +87,18 @@ EDITS = {
         "path": "src/bundles/ibm/pyproject.toml",
         # ibm_db has no linux-aarch64 build; it is a run_constraint instead.
         "remove": ["ibm-db"],
+    },
+    "lfx": {
+        "path": "src/lfx/pyproject.toml",
+        "replace": {
+            # Upstream's <2.14 cap predates the pydantic 2.14 release (Oct 2026);
+            # matches the pydantic >=2.0.0,<3.0.0 run dep below.
+            "pydantic": "pydantic>=2.0.0,<3.0.0",
+            # See the matching mcp entry under langflow-base above: conda-forge
+            # has no build in [1.29.0, 2.0.0), so this loosens to the newest
+            # pre-2.0 version actually available.
+            "mcp": "mcp>=1.28.0,<2.0.0",
+        },
     },
 }
 

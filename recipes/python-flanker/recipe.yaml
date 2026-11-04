@@ -55,6 +55,7 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - jsmolic
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -76,4 +77,8 @@ extra:
   cfe-last-checked: 2026-06-19T13:36:19Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####
+# CFE comments
+# Header:
+#    # 2026-11-01 mason Story 25.18: current at the published version; maintainers added (G53): jsmolic
 ####

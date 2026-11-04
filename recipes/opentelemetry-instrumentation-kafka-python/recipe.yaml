@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.65b0"
+  version: "0.66b1"
 
 package:
   name: opentelemetry-instrumentation-kafka-python
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-kafka-python/opentelemetry_instrumentation_kafka_python-${{ version }}.tar.gz
-  sha256: e909be2bfacfd5d271bb3249b3f393348bbe4ebbc57e87983345cb253d419c4b
+  sha256: 68574ccc6984be59b8856dea9546ad83d15cf6c2582a674d0e7bdd7d3952a1f4
 
 build:
   number: 0
@@ -50,6 +50,7 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - jsmolic
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -69,15 +70,16 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-kafka-python-feedstock
   cfe-forge-recipe-updates-needed: [version-bump-to-0.64b0]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-last-checked: 2026-11-02T02:36:21Z
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-datetime: 2026-11-02T02:37:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
 #    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+#    # 2026-11-01 refresh_wave B-25-18-b1: refreshed 0.65b0 -> 0.66b1; maintainers added: jsmolic
 ####

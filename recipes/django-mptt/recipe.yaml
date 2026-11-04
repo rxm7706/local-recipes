@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: django-mptt
-  version: "0.18.0"
+  version: "0.21.0"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_mptt-${{ version }}.tar.gz
-  sha256: cf5661357ff22bc64e20d3341c26e538aa54583aea0763cfe6aaec0ab8e3a8ee
+  url: https://pypi.org/packages/source/d/django-mptt/django_mptt-${{ version }}.tar.gz
+  sha256: 0796064448aa874f74a8b35e6f516e489199d37892191f917cc0012850b39363
 
 build:
   number: 0
@@ -20,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - hatchling
     - pip
   run:
@@ -51,3 +51,36 @@ extra:
     - sannykr
     - rxm7706
     - MichelML
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-mptt
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-mptt
+  cfe-purls:
+    - pkg:conda/django-mptt@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-mptt@${{ version }}
+  cfe-upstream-repo: https://github.com/django-mptt/django-mptt
+  cfe-upstream-homepage: https://github.com/django-mptt/django-mptt
+  cfe-import-names: [mptt, mptt.templatetags]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-mptt-feedstock
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-02T02:38:01Z
+  cfe-generated-by-version: 8.102.2
+  cfe-generated-at-datetime: 2026-11-02T03:34:31Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-02T02:55:45Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-01 mason Story 25.18: canonical CFE block added by hand before refresh-wave (no-cfe-block)
+#    # 2026-11-01 refresh_wave B-25-18-b2: refreshed 0.18.0 -> 0.21.0
+#    # 2026-11-01 mason Story 25.18 hand steps: CFE block added; literal source.url; host python pin .*
+####

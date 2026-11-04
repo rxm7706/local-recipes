@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "2.7.0"
+  version: "4.0.1"
 
 package:
   name: caveman-installer
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://github.com/JuliusBrussee/caveman/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 0f8b833ef65be67b565573d075264b7acab645e80241cfdae016421211d41147
+  sha256: 318de4d81d21f9ec4bb66ab9bb3e832606d3ee004079881321e7a6a0f03218c5
 
 build:
   number: 0
@@ -56,8 +56,7 @@ requirements:
     # Lift this hold when the env itself moves to nodejs 26 (i.e. when the
     # marp-cli/a2a-sdk libabseil gap closes and codegraph rebuilds on 26).
     - nodejs 24.*
-  run:
-    - nodejs >=18
+  run: []
 
 tests:
   - script:
@@ -67,7 +66,7 @@ about:
   license: MIT
   license_file:
     - LICENSE
-    - LICENSE.BSL
+    - LICENSE-MIT
     - LICENSING.md
     - ThirdPartyLicenses.txt
   summary: One-shot installer that wires the caveman Claude Code skill into ~30 AI coding agents
@@ -86,6 +85,7 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - pb01ka
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -105,11 +105,11 @@ extra:
   cfe-on-conda-forge-feedstock: conda-forge/caveman-installer-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-09-24T17:33:12Z
+  cfe-last-checked: 2026-11-02T02:36:46Z
   cfe-generated-by-version: 8.90.5
   cfe-generated-at-datetime: "2026-09-24T17:33:12Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-09-24T17:45:00Z
+  cfe-local-build-datetime: 2026-11-02T02:58:09Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -124,6 +124,8 @@ extra:
 #    # conda-forge/caveman-installer-feedstock verbatim except for the
 #    # nodejs 24.* host hold, which this repo needs and the feedstock does
 #    # not (no codegraph dependency there).
+#    # 2026-11-01 refresh_wave B-25-18-b2: refreshed 2.7.0 -> 4.0.1; maintainers added: pb01ka
+#    # 2026-11-01 mason Story 25.18 hand steps: run synced (no nodejs >=18, G103; the commented host nodejs 24.* hold kept); license_file LICENSE.BSL -> LICENSE-MIT (feedstock)
 # about:
 #    # The "installs the `caveman` CLI" wording in the description is the
 #    # feedstock's own verbatim text (product name "caveman", installed

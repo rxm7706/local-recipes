@@ -1,0 +1,22 @@
+From 195f8e657794133a60bc22983f2dd79d20f2b0e5 Mon Sep 17 00:00:00 2001
+From: "H. Vetinari" <h.vetinari@gmx.com>
+Date: Tue, 24 Mar 2026 23:29:38 +1100
+Subject: [PATCH] make tests importable out-of-tree
+
+---
+ tests/test_config_basic.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tests/test_config_basic.py b/tests/test_config_basic.py
+index 332cb47..ec953b5 100644
+--- a/tests/test_config_basic.py
++++ b/tests/test_config_basic.py
+@@ -12,7 +12,7 @@ import pytest
+ from hypothesis import HealthCheck, given, settings
+ 
+ from confection import Config
+-from tests.strategies import (
++from strategies import (
+     circular_interpolated_config,
+     config_dicts,
+     interpolated_config,

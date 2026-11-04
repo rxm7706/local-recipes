@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.3.3"
+  version: "1.3.4"
 
 package:
   name: confection
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://github.com/explosion/confection/archive/refs/tags/release-v${{ version }}.tar.gz
-  sha256: f0f6810d567ff73993fe74d218ca5e1ffb6a44fb03f391257fc5d033546cbfaa
+  sha256: de38c7495831257bd93a15641ff776b2235940b3af7df6034817ed4815e72eee
   patches:
     - patches/0001-make-tests-importable-out-of-tree.patch
 
@@ -21,7 +21,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -40,7 +40,7 @@ tests:
         - tests/
     requirements:
       run:
-        - python ${{ python_min }}
+        - python ${{ python_min }}.*
         - pytest
         - hypothesis
         - numpy
@@ -83,19 +83,21 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/confection-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-1.3.3
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-17T07:13:16Z
+  cfe-last-checked: 2026-11-02T02:31:50Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-17T07:13:16Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-08-17T07:13:16Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-02T02:51:57Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-01 refresh_wave B-25-18-b1: refreshed 1.3.3 -> 1.3.4
+#    # 2026-11-01 mason Story 25.18 hand steps: BFP: host/test python pin .*; mirrored the missing feedstock patches/ file
 ####

@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "42.7.13"
+  version: "42.7.14"
 
 package:
   name: pgjdbc
@@ -10,9 +10,7 @@ package:
 
 source:
   url: https://repo1.maven.org/maven2/org/postgresql/postgresql/${{ version }}/postgresql-${{ version }}-jdbc-src.tar.gz
-  sha256: 4537ba157c6eab9022d0a48bb6e6ca5a736ced8cc7121e1276322fb104dd3718
-  patches:
-    - 0001-shade-scram-into-the-driver-jar.patch
+  sha256: 1f38e5e32f1e9b2200f6c0e7cce02d635d7bc14b35dff803a52e09cd666a16b9
 
 build:
   number: 0
@@ -70,6 +68,7 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - pb01ka
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -85,16 +84,16 @@ extra:
   cfe-source-kind: maven-jdbc-src
   cfe-noarch: generic
   cfe-pip-check: "false:not-a-python-package"
-  cfe-on-conda-forge-status: pending-approval-on-conda-forge
-  cfe-on-conda-forge-feedstock: none
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pgjdbc-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
   cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/34956
-  cfe-last-checked: "2026-09-26T17:05:00Z"
+  cfe-last-checked: 2026-11-02T03:34:21Z
   cfe-generated-by-version: 8.90.6
   cfe-generated-at-datetime: "2026-09-26T16:30:00Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-09-26T16:50:00Z"
+  cfe-local-build-datetime: 2026-11-02T03:39:30Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -107,6 +106,8 @@ extra:
 #    # `liquibase-postgresql` 42.7.13 (recipes/liquibase-postgresql) IS this
 #    # driver under a colliding name; pgjdbc is its conda-forge replacement.
 #    # Name: upstream project name (github.com/pgjdbc/pgjdbc, "PgJDBC").
+#    # 2026-11-01 refresh_wave B-25-18-b1: refreshed 42.7.13 -> 42.7.14; maintainers added: pb01ka
+#    # 2026-11-01 mason Story 25.18 review round: conda-forge/pgjdbc-feedstock verified live; on-conda-forge status and feedstock set (G78)
 # source:
 #    # Built from the distro source release on Maven Central
 #    # (postgresql-<v>-jdbc-src.tar.gz, Maven pom.xml + LICENSE) -- the same
@@ -114,12 +115,12 @@ extra:
 #    # Gradle build. Maven fetches plugins/deps at build time (build-time
 #    # network is allowed on conda-forge; the offline phase is the test), the same
 #    # as conda-forge's liquibase and liquibase-postgresql feedstocks.
-#    # The jdbc-src pom declares com.ongres.scram:scram-client as a plain
-#    # dependency and has no shade step, so a bare build would NOT carry the SCRAM
-#    # client (PostgreSQL's default auth since 14). The patch adds maven-shade
-#    # relocating com.ongres -> org.postgresql.shaded.com.ongres, matching the
-#    # published postgresql-<v>.jar (scram-client/scram-common 3.2,
-#    # saslprep/stringprep 2.2).
+#    # Through 42.7.13 this mirror carried 0001-shade-scram-into-the-driver-jar.patch
+#    # to add the maven-shade step. The feedstock dropped it at 42.7.14: the
+#    # jdbc-src pom's default shade-dependencies profile already relocates
+#    # com.ongres -> org.postgresql.shaded.com.ongres, matching the published
+#    # postgresql-<v>.jar (scram-client/scram-common, saslprep/stringprep).
+#    # 2026-11-01: patch dropped here too; build.sh and build.bat mirrored from the feedstock.
 # build:
 #    # Installs to share/liquibase/lib/postgresql.jar (operator decision
 #    # 2026-09-26): a drop-in for Liquibase's auto-load directory, the same layout

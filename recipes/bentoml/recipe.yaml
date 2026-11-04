@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: bentoml
-  version: "1.4.39"
+  version: "1.4.40"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/bentoml-${{ version }}.tar.gz
-  sha256: e92381702fc13ac926fd41c48fee6721f5c50f6f9bbed6c8cfc3b9346b6b0d41
+  url: https://pypi.org/packages/source/b/bentoml/bentoml-${{ version }}.tar.gz
+  sha256: e46c06da1577b669d178541873b5938ac772e3882339b942e138a0c8fb245abc
 
 build:
   number: 0
@@ -27,7 +27,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - hatchling
     - hatch-vcs >=0.3.0
     - pip
@@ -86,7 +86,7 @@ tests:
   - requirements:
       run:
         - pip
-        - python ${{ python_min }}
+        - python ${{ python_min }}.*
     script:
       - if: linux
         then: pip check
@@ -110,3 +110,36 @@ extra:
     - rxm7706
     - sugatoray
     # co-maintainers from upstream
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bentoml
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: bentoml
+  cfe-purls:
+    - pkg:conda/bentoml@${{ version }}?channel=conda-forge
+    - pkg:pypi/bentoml@${{ version }}
+  cfe-upstream-repo: https://github.com/bentoml/BentoML
+  cfe-upstream-homepage: https://github.com/bentoml/BentoML
+  cfe-import-names: [bentoml]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "false:python-test-off-script-runs-pip-check-on-linux-only"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/bentoml-feedstock
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-02T02:36:12Z
+  cfe-generated-by-version: 8.102.2
+  cfe-generated-at-datetime: 2026-11-02T03:34:31Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-02T02:55:10Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-01 mason Story 25.18: canonical CFE block added by hand before refresh-wave (no-cfe-block)
+#    # 2026-11-01 refresh_wave B-25-18-b2: refreshed 1.4.39 -> 1.4.40
+#    # 2026-11-01 mason Story 25.18 hand steps: CFE block added; literal source.url; host/test python pin .*
+####

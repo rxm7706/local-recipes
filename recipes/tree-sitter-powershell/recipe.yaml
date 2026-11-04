@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.26.5"
+  version: "0.26.6"
 
 package:
   name: tree-sitter-powershell
@@ -10,10 +10,10 @@ package:
 
 source:
   url: https://github.com/airbus-cert/tree-sitter-powershell/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: a949ac2bccd74b94b6199702c8b119cb353785e8a8828150a763b202ae8d4534
+  sha256: ef50282d95bb66fac71e0ae65308358a5f4bd1da1606cb01149b201eb92c42c5
 
 build:
-  number: 1
+  number: 0
   # abi3 packages build once at python_min and ship one artifact per platform.
   skip: is_abi3 and not is_python_min
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
@@ -64,3 +64,36 @@ extra:
     - killua156
     - mgorny
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tree-sitter-powershell
+  cfe-upstream-registry: github
+  cfe-upstream-name: tree-sitter-powershell
+  cfe-purls:
+    - pkg:conda/tree-sitter-powershell@${{ version }}?channel=conda-forge
+    - pkg:github/airbus-cert/tree-sitter-powershell@${{ version }}
+  cfe-upstream-repo: https://github.com/airbus-cert/tree-sitter-powershell
+  cfe-upstream-homepage: https://github.com/airbus-cert/tree-sitter-powershell
+  cfe-import-names: [tree_sitter_powershell]
+  cfe-source-kind: github-tag
+  cfe-noarch: compiled
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tree-sitter-powershell-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-02T02:46:55Z
+  cfe-generated-by-version: 8.102.2
+  cfe-generated-at-datetime: 2026-11-02T03:34:31Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-02T02:47:35Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-01 mason Story 25.18: canonical CFE block added by hand before refresh-wave (no-cfe-block)
+#    # 2026-11-01 refresh_wave B-25-18-b2: refreshed 0.26.5 -> 0.26.6
+#    # 2026-11-01 mason Story 25.18 hand steps before refresh-wave: no further hand step beyond the CFE block
+####

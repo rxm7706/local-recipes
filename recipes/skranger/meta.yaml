@@ -6,13 +6,13 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/skranger-{{ version }}.tar.gz
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/skranger-{{ version }}.tar.gz
   sha256: c97530f66a0f30b36d8e65b816932e79bda7ed09f7dd0db0694ba4c042e7724d
 
 build:
   skip: true  # [py>=400 or py2k]
   script: {{ PYTHON }} -m pip install . -vv
-  number: 5
+  number: 6
 
 requirements:
   build:
@@ -49,3 +49,4 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - jsmolic

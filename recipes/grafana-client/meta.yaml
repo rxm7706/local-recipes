@@ -1,5 +1,5 @@
 {% set name = "grafana-client" %}
-{% set version = "5.1.3" %}
+{% set version = "5.1.4" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/grafana_client-{{ version }}.tar.gz
-  sha256: f8d66e6210512914f3d2f3e9a726f9452e6c45a0e3670d6098552ab50d83f1c8
+  sha256: 3783261a9600e7104b8bf6243cfa71f548f3ee13456753510cf2c109124aa23b
 
 build:
   noarch: python

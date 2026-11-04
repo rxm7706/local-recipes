@@ -50,6 +50,8 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - cshaley
+    - sannykr
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -80,4 +82,5 @@ extra:
 # CFE comments
 # Header:
 #    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+#    # 2026-11-01 mason Story 25.18: current at the published version; maintainers added (G53): cshaley, sannykr
 ####

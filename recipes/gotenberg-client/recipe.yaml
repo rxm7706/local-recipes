@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: gotenberg-client
-  version: "1.0.0"
+  version: "1.1.0"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/g/gotenberg-client/gotenberg_client-${{ version }}.tar.gz
-  sha256: 871b339ed98911279f94f3aaa6403ca7c59aaa695d8663249be6314ccd46719c
+  sha256: f250120a82af88bd8d1c9108d4c42cde10c70ad0580ce28208a9584fc2dd7f83
 
 build:
   number: 0
@@ -21,7 +21,7 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling >=1.27.0,<1.28.dev0
+    - hatchling >=1.27,<2
     - pip
   run:
     - python >=${{ python_min }},<4
@@ -29,11 +29,13 @@ requirements:
     - typing_extensions
 
 tests:
-- python:
-    imports:
-      - gotenberg_client
-    pip_check: true
-    python_version: ${{ python_min }}.*
+  - python:
+      imports:
+        - gotenberg_client
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   summary: A Python client for interfacing with the Gotenberg API
@@ -44,6 +46,7 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - jsmolic
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -64,15 +67,17 @@ extra:
   cfe-forge-recipe-updates-needed:
     - recipe-regenerate
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-11-02T02:31:53Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: '2026-10-09T10:42:11Z'
+  cfe-local-build-datetime: 2026-11-02T03:35:55Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
+# Header:
+#    # 2026-11-01 refresh_wave B-25-18-b1: refreshed 1.0.0 -> 1.1.0; maintainers added: jsmolic
 # context:
 #    # version bumped 0.12.0 -> 0.13.1 (feedstock-refresh Wave B). Full CFE
 #    # regenerate diff-applied onto the local mirror; sha256 from PyPI sdist.
@@ -80,8 +85,8 @@ extra:
 #  host:
 #    # hatchling pin modernized >=1.27.0,<1.28.dev0 -> >=1.27,<2 to match
 #    # upstream pyproject [build-system].requires = "hatchling>=1.27,<2".
-#    # The deployed feedstock still carries the stale grayskull <1.28.dev0
-#    # pin -> recipe-regenerate owed.
+#    # The deployed feedstock now carries the same >=1.27,<2 pin; the local body was
+#    # synced to it 2026-11-01 (it had kept <1.28.dev0 until then).
 #  run:
 #    # dropped speculative python ,<4 upper bound (upstream requires-python
 #    # is bare >=3.9; no upper bound). httpx[http2] extra in upstream

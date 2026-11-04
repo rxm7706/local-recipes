@@ -1,13 +1,13 @@
 {% set name = "djangorestframework-jsonapi" %}
-{% set version = "8.1.0" %}
+{% set version = "9.0.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
-  sha256: d02defa331c240cef136dc522f670e5535a2f1fad182dc04bd4abf4c4a747340
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: b0e0d2b31ad07cefae6475a267be82de48a563d26678c5c9da0b97221641c8ba
 
 build:
   noarch: python
@@ -23,8 +23,8 @@ requirements:
     - django-filter
     - python >={{ python_min }}
     - inflection >=0.5.0
-    - djangorestframework >=3.15
-    - django >=4.2
+    - djangorestframework >=3.17
+    - django >=5.2
 
 test:
   imports:

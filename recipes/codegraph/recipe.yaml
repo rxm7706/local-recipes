@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.6.0"
+  version: "1.6.2"
 
 package:
   name: codegraph
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://github.com/colbymchenry/codegraph/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 9b264c584395e69595d0b8c602a7f5c65a19d16a26673953721829f32cfda119
+  sha256: 10bbcceaba46be5d37324e94427684a6d33dcbb592c35fbe4d387c2a14a36ff9
 
 build:
   number: 0
@@ -20,6 +20,7 @@ build:
     - if: unix
       then: |
         set -ex
+        printf 'packages:\n  - "ui"\n' > pnpm-workspace.yaml
         pnpm install --ignore-scripts
         npm run build
         export CFLAGS="${CFLAGS:-} -D_BSD_SOURCE -D_DEFAULT_SOURCE"
@@ -42,6 +43,8 @@ build:
         ( cd codegraph-kernel && cargo-bundle-licenses --format yaml --output THIRDPARTY.yml )
         pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt
       else: |
+        (echo packages:& echo   - "ui")> pnpm-workspace.yaml
+        if %ERRORLEVEL% neq 0 exit /b 1
         call pnpm install --ignore-scripts
         if %ERRORLEVEL% neq 0 exit /b 1
         call npm run build
@@ -129,6 +132,7 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - pb01ka
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -144,16 +148,16 @@ extra:
   cfe-source-kind: github-tag
   cfe-noarch: compiled
   cfe-pip-check: "false:not-a-python-package"
-  cfe-on-conda-forge-status: pending-approval-on-conda-forge
-  cfe-on-conda-forge-feedstock: none
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/codegraph-feedstock
   cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/34314
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: "2026-08-30T05:55:00Z"
+  cfe-last-checked: 2026-11-02T03:34:21Z
   cfe-generated-by-version: 8.84.0
   cfe-generated-at-datetime: "2026-07-12T16:35:00Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-08-30T00:19:00Z"
+  cfe-local-build-datetime: 2026-11-02T02:59:42Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -213,6 +217,9 @@ extra:
 #    #  run_export (G103 -- do not also hand-pin `run: nodejs <25`, that
 #    #  would conflict with the run_export and make the test env
 #    #  unsolvable).
+#    # 2026-11-01 refresh_wave B-25-18-b1: refreshed 1.6.0 -> 1.6.2; maintainers added: pb01ka
+#    # 2026-11-01 mason Story 25.18 hand steps: BFP: write pnpm-workspace.yaml (ui workspace) before pnpm install, as the feedstock build.sh does; host nodejs >=20,<25 hold kept
+#    # 2026-11-01 mason Story 25.18 review round: conda-forge/codegraph-feedstock verified live; on-conda-forge status and feedstock set (G78)
 # build:
 #    # Only the linux-64 leg (unix branch, `cargo build --release` +
 #    # `npm run build`) was actually built + tested locally this session.

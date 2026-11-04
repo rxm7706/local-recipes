@@ -42,6 +42,7 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - pb01ka
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -77,6 +78,7 @@ extra:
 #    # mirrors the deployed v0 feedstock verbatim; this recipe.yaml is the
 #    # proposed v1 migration we maintain locally. cfe-forge-recipe-updates-needed
 #    # carries meta-yaml-to-recipe-yaml (the feedstock owes the v0 to v1 switch).
+#    # 2026-11-01 mason Story 25.18: current at the published version; maintainers added (G53): pb01ka
 # package:
 #    # Distribution name is docstring_parser_fork (PyPI canonical form uses an
 #    # underscore; pkg:pypi purl normalizes to the hyphenated docstring-parser-fork).

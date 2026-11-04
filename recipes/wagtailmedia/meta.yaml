@@ -1,5 +1,5 @@
 {% set name = "wagtailmedia" %}
-{% set version = "0.18.1" %}
+{% set version = "0.19.1" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/wagtailmedia-{{ version }}.tar.gz
-  sha256: 65986deef9359749c25d0190ffeea4a71c6f9ac5195161110b076c026f735871
+  sha256: 692ba48f19d15ec10e2fed341e429d727a3db631d6ec228d77911238420f9491
 
 build:
   noarch: python
@@ -43,4 +43,5 @@ about:
 
 extra:
   recipe-maintainers:
+    - jsmolic
     - rxm7706

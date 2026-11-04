@@ -1,4 +1,5 @@
-# Local + SelfExplainML solve: hatch-protobuf and the flagd siblings are
-# not on conda-forge. Do not submit this file to staged-recipes.
+# Local build solve order. hatch-protobuf and the flagd siblings are now on
+# conda-forge (verified 2026-11-01 against channeldata.json); SelfExplainML stays
+# listed second for the estate builds. Not part of the feedstock recipe.
 channel_sources:
   - conda-forge,SelfExplainML

@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: django-test-plus
-  version: "2.6.2"
+  version: "2.7.0"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: 3b12bdc8ebd2df439f8cd5a62923acea345135f96f2bcbedfc17dec3eefb94f7
+  url: https://pypi.org/packages/source/d/django-test-plus/django_test_plus-${{ version }}.tar.gz
+  sha256: 83081e56479727620b937b56af9e30d3d8bf5510b26a2ce2d6b23a7018b675d8
 
 build:
   number: 0
@@ -20,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pytest-runner
     - pytest-django
     - hatchling
@@ -35,7 +35,7 @@ tests:
   - requirements:
       run:
         - pip
-        - python ${{ python_min }}
+        - python ${{ python_min }}.*
     script:
       - pip check
 
@@ -58,3 +58,36 @@ extra:
     - cshaley
     - rxm7706
     - sannykr
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-test-plus
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-test-plus
+  cfe-purls:
+    - pkg:conda/django-test-plus@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-test-plus@${{ version }}
+  cfe-upstream-repo: https://github.com/revsys/django-test-plus
+  cfe-upstream-homepage: https://github.com/revsys/django-test-plus
+  cfe-import-names: [test_plus]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-test-plus-feedstock
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-02T02:39:36Z
+  cfe-generated-by-version: 8.102.2
+  cfe-generated-at-datetime: 2026-11-02T03:34:31Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-02T02:56:55Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-01 mason Story 25.18: canonical CFE block added by hand before refresh-wave (no-cfe-block)
+#    # 2026-11-01 refresh_wave B-25-18-b2: refreshed 2.6.2 -> 2.7.0
+#    # 2026-11-01 mason Story 25.18 hand steps: CFE block added; literal source.url; host/test python pin .*; feedstock LICENSE and run_test.py mirrored
+####

@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: opentelemetry-resourcedetector-gcp
-  version: 1.12.0a0
+  version: 1.14.0
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: d5e3f78283a272eb92547e00bbeff45b7332a34ae791a70ab4eba81af9bc3baf
+  url: https://pypi.org/packages/source/o/opentelemetry-resourcedetector-gcp/opentelemetry_resourcedetector_gcp-${{ version }}.tar.gz
+  sha256: 10b41802acf815838a85c9fe1dae02f5d27ebc17527b77441111c010bead95bc
 
 build:
   number: 0
@@ -20,9 +20,9 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - hatchling
   run:
     - typing_extensions >=4.0,<5.dev0
     - python >=${{ python_min }}
@@ -37,7 +37,9 @@ tests:
       imports:
         - opentelemetry
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   summary: Google Cloud resource detector for OpenTelemetry
@@ -48,6 +50,7 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - jsmolic
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -69,11 +72,11 @@ extra:
     - recipe-regenerate
     - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-11-02T02:44:37Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-11-02T03:37:14Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -84,6 +87,8 @@ extra:
 #    recipe.yaml is the proposed v1 migration. cfe-forge-recipe-updates-needed
 #    carries meta-yaml-to-recipe-yaml because the feedstock owes the v0->v1
 #    switch.
+#    # 2026-11-01 refresh_wave B-25-18-b2: refreshed 1.12.0a0 -> 1.14.0; maintainers added: jsmolic
+#    # 2026-11-01 mason Story 25.18 hand steps before refresh-wave: source.url rewritten to the literal pypi.org form; host synced to the feedstock (hatchling replaces setuptools, G96)
 # context:
 #    version is the EXACT deployed/PyPI pre-release string "1.12.0a0", quoted
 #    so YAML keeps it a string (an unquoted pre-release can mis-type).
