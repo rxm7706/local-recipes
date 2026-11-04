@@ -6475,6 +6475,22 @@ So that the next landing knows `main` is broken before it merges on top.
 **And** the envelope still validates against the schema (fixtures included); a missing, stale or unreadable snapshot prints one line and nothing else; the verdict and exit code never change; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
 **Status:** done
 
+### Story 99.9: The CI pause dry-run test carries its own clock
+
+As the operator landing any branch on or after a date a test names,
+I want the `ci pause` dry-run test to read a fixed clock, as its sibling tests do,
+So that `pyforge-steward-live-test` does not go red on `main` on a calendar date with no code change.
+
+**Type:** fix • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-166 (FR-39) • Dream 2026-11-04 (a test that reads the real clock expires) • landed with the parked EGM stories because its red blocks the merge bar
+**Flag:** none (a fix, spec-feature-flag-governance Q1)
+**Surface:** `src/shared/packages/pyforge-steward/tests/unit/test_ci_pause.py` (`test_main_pause_dry_run_no_live_gh`)
+**Spec:** `planning-artifacts/specs/spec-99-9-the-ci-pause-dry-run-test-carries-its-own-clock.md`
+**Given** `9c04677719`, where `test_main_pause_dry_run_no_live_gh` passes `--review-by 2026-11-01` through `main` with the real clock
+**When** the suite runs after 2026-11-01
+**Then** the test passes, because its `CiDeps` injects `now` at 2026-10-13 like every sibling test in the file
+**And** `ci.py` does not change: a past `review_by` is still refused; `pixi run --frozen -e pyforge-steward pyforge-steward-live-test` green
+**Status:** done
+
 ## Epic 100: The estate's library and BMAD pins move on one policy-driven, measured, repeatable path (spec-pyforge-steward CAP-167)
 
 Minted 2026-10-13 from the station Dream's entry of that date (estate refresh) and its plan

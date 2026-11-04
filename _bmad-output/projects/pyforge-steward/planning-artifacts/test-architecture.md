@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 3fa5fc2096f11c04
-story_count: 438
-test_file_count: 154
+source_fingerprint: c4a63f27a99eceee
+story_count: 439
+test_file_count: 158
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 438
+- **Stories parsed:** 439
 - **Epics parsed:** 118
-- **Test files inventoried:** 154 under `src/shared/packages/pyforge-steward/tests/`
+- **Test files inventoried:** 158 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `3fa5fc2096f11c04`
+- **Source fingerprint:** `c4a63f27a99eceee`
 
 ## Risk Assessment
 
@@ -159,6 +159,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 
 | Relative path | Level | Linked stories |
 |---------------|-------|----------------|
+| `src/shared/packages/pyforge-steward/tests/integration/test_nkp_hub_spawn.py` | integration | none observed |
+| `src/shared/packages/pyforge-steward/tests/integration/test_nkp_landing_cards.py` | integration | none observed |
+| `src/shared/packages/pyforge-steward/tests/integration/test_nkp_landing_signin.py` | integration | none observed |
+| `src/shared/packages/pyforge-steward/tests/integration/test_nkp_probes_offline.py` | integration | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_cfe_regression_net_paths.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_first_portal_slice_provision_list.py` | meta | none observed |
@@ -688,6 +692,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 99.6 | A paused expensive build still runs once a week | none observed |
 | 99.7 | The hand-disabled workflows are retired or parked, and the convention is docu... | none observed |
 | 99.8 | A red main run on a CI surface reaches the next preflight | none observed |
+| 99.9 | The CI pause dry-run test carries its own clock | none observed |
 | 100.1 | The pin policy is declared once and an upgrade is judged against it | none observed |
 | 100.2 | One command moves the library pins on the policy and restores what the upgrad... | none observed |
 | 100.3 | Every derived surface regenerates from the lock by its own generator | none observed |

@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 674
+# stories: 675
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -452,6 +452,7 @@ development_status:
   99-6-a-paused-expensive-build-still-runs-once-a-week: done
   99-7-the-hand-disabled-workflows-are-retired-or-parked-and-the-convention-is-documented: done
   99-8-a-red-main-run-on-a-ci-surface-reaches-the-next-preflight: done
+  99-9-the-ci-pause-dry-run-test-carries-its-own-clock: done
   epic-1: done
   epic-1-retrospective: optional
   epic-10: done

@@ -2107,6 +2107,10 @@ Drift — orphaned between stations.
   (Recommended)"); the PR trigger option was declined ("Red-main banner (Recommended)"); no new GitHub call from the
   preflight, and no change to which lanes run. Owner `spec-pyforge-steward`. → Epic 99 / Story 99.8, specced
   2026-10-25; it reopens Epic 99.
+- **2026-11-04 (a test that reads the real clock expires) — Found: `test_main_pause_dry_run_no_live_gh` passed a fixed
+  `--review-by 2026-11-01` through `main`, which reads the real clock, so it went red on `main` on 2026-11-02 with no
+  code change (`ci pause: refused — review_by 2026-11-01 is in the past`). Every sibling test in that file injects
+  `now`. Story 99.9 gives it the same fixed clock, under CAP-166; no CAP moves.**
 - **2026-10-25 (FR-1..FR-31 never got their arrows) — Found: the steward PRD's first 31 requirements name no
   capability.** A fleet audit of every station PRD's `FR-n ← CAP-m` arrows, run after marshal Story 105.1 found
   marshal's counted rather than traced, found steward's arrows right where they exist, and missing on FR-1..FR-31.

@@ -515,8 +515,9 @@ Report directories (Tier 3): `_bmad-output/projects/pyforge-mason/implementation
 (`dryrun`, `b2-dry`, `b2-dry2`, `b1`, `b2`, `b3`, `b4`, gate re-runs `g1`, `g2`, and the review round's `b5`,
 `b6`, `b7`, `b8`). Driver exit codes recorded in a file: `dryrun` 0, `b1` 0, `b2` 1 (the `click-repl` `failed` below),
 `b3` 0, `b5` 0, `b6` 0, `b7` 1 (`prophecy-build-tool` red, below), `b8` 0; not recorded (no `.rc` file was written) for
-`b2-dry`, `b2-dry2`, `b4`, `g1`, `g2`. Before CFE v8.103.0 a run exited 0 even when a build failed, so read `b1` and `b5`
-by the build status in each report row; `b7` ran with the fix and exited 1 on its red build. Every refresh ran
+`b2-dry`, `b2-dry2`, `b4`, `g1`, `g2`. Before CFE v8.103.0 a run exited 0 even when a build failed, so read `b1`, `b2`, `b3`
+and `b5` by the build status in each report row (`b2`'s 1 came from `click-repl` alone); `b7` ran with the fix and exited 1
+on its red build. Every refresh ran
 `refresh_wave.py <manifest> --apply --gates --build --report-dir <dir>` from the worktree with the primary checkout's
 `local-recipes` env; every build is isolated in `build_artifacts/<name>/` (G52). Rebuilds after a hand fix used
 `--rebuild`, so each `cfe-local-build-*` field below was written by its own build (the driver stamps UTC, so the
@@ -633,7 +634,7 @@ files. Every recipe whose body changed in the review round was rebuilt through t
 - Mirrors still miss feedstock files the recipe names (`patches/`, `LICENSE`, `run_test.py`); a listing check of the
   feedstock's `recipe/` against the mirror before the build would catch them (G94).
 - `refresh_wave.py` exits 0 when a build fails: a build failure leaves the outcome `refreshed` or `already-current`,
-  and only a `failed` outcome sets exit 1. `b1` exited 0 with four red builds, and `b5` exited 0 with `django-libsass`
+  and only a `failed` outcome sets exit 1. `b1` exited 0 with four red builds, `b3` with `weasel` red, and `b5` with `django-libsass`
   red. The build status lives only in each report row, so a caller reading the exit code alone sees green.
 - A version match does not prove mirror fidelity: current-bucket mirrors carried a `meta.yaml` two releases old
   (`prophecy-build-tool`, `wagtailmedia`), a `meta.yaml` the v1-only feedstock no longer has (7 recipes), a structurally
@@ -657,7 +658,7 @@ Summary (2026-11-01, landed in one PR with marshal 113.14, mason 25.17 and stewa
 - AC7: the `retro(cfe):` commit lands CFE v8.103.0, shared with Story 25.17.
 - AC8: `pyforge-mason-test` runs in the landing PR's preflight once the retro commit exists (its CFE-surface guards refuse an uncommitted CFE edit).
 - Deferrals: `DW-mason-25-18` (55 refreshed feedstocks behind again; outside this story's boundary).
-- Independent review: two rounds, every finding fixed (see the Review Triage Log).
+- Independent review: three rounds, every finding fixed (see the Review Triage Log).
 
 ## Spec Change Log
 
@@ -677,4 +678,5 @@ Summary (2026-11-01, landed in one PR with marshal 113.14, mason 25.17 and stewa
 ## Review Triage Log
 
 - 2026-11-01 — independent review 1 (separate agent, read-only): findings, all fixed: the 55 feedstocks behind again were unlisted (listed, deferred as `DW-mason-25-18`); `meta.yaml` mirrors stale on 7 current recipes and left beside v1-only feedstocks on 7 (re-copied, deleted); `django-libsass` structurally stale (rebuilt from its feedstock); CFEP-25 tests behind their feedstocks on four recipes (synced, rebuilt) and an optimize claim that overreached (rewritten); `repoze.lru` package name wrong (fixed, rebuilt); `pgjdbc` carried a stale patch (dropped; build scripts from the feedstock); eight recipes' on-conda-forge fields stale (set from live feedstocks); nits on times, duplicate CFE comments and exit codes.
-- 2026-11-01 — re-review 2: every fix verified by blob sha, record field and `deferred-work-check`; nits taken: the 55-versus-54 difference named (`dbt`), driver exit codes stated as recorded or not, `skranger` and `timelib` build numbers synced and rebuilt, `prophecy-build-tool`'s `failed` record replaced by a real green build (`b8`). The implementer's last round was checked by the coordinator against `b7` and `b8` report rows and each recipe's sha; no reviewer read that round, because the review agent had already closed.
+- 2026-11-01 — re-review 2: every fix verified by blob sha, record field and `deferred-work-check`; nits taken: the 55-versus-54 difference named (`dbt`), driver exit codes stated as recorded or not, `skranger` and `timelib` build numbers synced and rebuilt, `prophecy-build-tool`'s `failed` record replaced by a real green build (`b8`).
+- 2026-11-04 — review 3 of that last round (separate agent, read-only): `build.number`, `prophecy-build-tool`'s run list and every record checked against `meta.yaml` and the newest report rows; all hold. One nit taken: `b3` and `b2`'s red builds named beside `b1` and `b5`.
