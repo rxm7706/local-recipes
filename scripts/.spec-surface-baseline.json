@@ -6583,7 +6583,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_budget_set.py": "a37933e90a8b2d17482e303f48ff74906d3a93d2",
    "src/shared/packages/pyforge-steward/tests/unit/test_budget_show.py": "96ce4521fed3373d4febc52e41ebdf23d2e372b3",
    "src/shared/packages/pyforge-steward/tests/unit/test_catalog.py": "9c127fb6b36dd35fee475e54c7f4710a36a067bf",
-   "src/shared/packages/pyforge-steward/tests/unit/test_ci_pause.py": "a7e48bf693fe94277fc5544371ffb8d606da7ccb",
+   "src/shared/packages/pyforge-steward/tests/unit/test_ci_pause.py": "394c40a3d6dec6ad8b37faf26ccef83b66a348ee",
    "src/shared/packages/pyforge-steward/tests/unit/test_ci_status.py": "5230aa8edf20d5d8c3823d73a53aafb60843c4cf",
    "src/shared/packages/pyforge-steward/tests/unit/test_cli.py": "85b2226685e200843e7c0db8bd0f7ff166f728f8",
    "src/shared/packages/pyforge-steward/tests/unit/test_corridor.py": "bd4d36df15999bdae35ac39cf5faa68710ea5308",
@@ -6714,7 +6714,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "37969f0a29b90be9897883cc83125c79299829e0"
+  "memlog": "758efaa829983ae846fdfced89d46a36ee8990a8"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
