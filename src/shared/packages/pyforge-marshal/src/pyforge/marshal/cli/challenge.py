@@ -6,8 +6,15 @@ One verb, five stages, three run modes:
 * **integrated** -- ``marshal factory dispatch`` runs the ``readiness`` stage on a
   story spec before its harness launches (``readiness_for_dispatch``), and a
   ``bmad-retrospective`` on a marshal epic runs ``--stage drift --epic <n>``;
-* **audit** -- ``--audit`` sweeps every station's Dream, Spec and ``epics.md`` and
-  the repo's rules once.
+* **audit** -- ``--audit`` sweeps every station's newest CAP slice and the epic range
+  that decomposes it, each with the Dream entry it cites, and the repo's rules once.
+
+A whole ``SPEC.md``, ``epics.md`` or Dream outgrows one reviewer's context, so a review
+can take a slice (Story 113.14): ``--section`` cuts a CAP range, an epic range or one
+heading's section out of ``--target``, and ``--dream-section`` does the same to the Dream
+context, each into a Tier-3 file under ``implementation-artifacts/egm/`` whose absolute
+path is what the reviewer receives. Every session has a ceiling, the stage's
+``[challenge].timeout_s`` (CAP-299); a session past it is killed and unevaluable.
 
 Every report lands under Tier 3 (``implementation-artifacts/egm/``), every run is
 journaled, and the exit code carries only the verb's own refusals -- never a
@@ -24,10 +31,11 @@ import json
 import os
 import re
 import secrets
+import shutil
 import sys
 import tomllib
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Protocol
@@ -79,15 +87,22 @@ KIND_CHALLENGE_RUN = "challenge-run"
 KIND_DISPATCH_READINESS = "dispatch-challenge-readiness"
 KIND_CHALLENGE_REFUSED = "challenge-refused"
 KIND_AUDIT_SKIP = "challenge-audit-skip"
+SLICES_DIRNAME = core.SLICES_DIRNAME
+# Story 113.14: a slice is written only under a project's Tier-3 implementation-artifacts/.
+_TIER3_PARTS = ("_bmad-output", "projects")
+_TIER3_DIRNAME = "implementation-artifacts"
 
 _HELP = "Fresh-context EGM review of one chain artifact (Epic 113)."
 
 
 class ChallengeRunner(Protocol):
     """Runs one session on ``root``'s files; ``target`` is the artifact under review, which the
-    session's Read denies leave readable (Story 113.10). ``root`` is never the session's cwd."""
+    session's Read denies leave readable (Story 113.10). ``root`` is never the session's cwd.
+    ``timeout_s`` is the stage's ceiling (Story 113.14): a session past it is killed and raises."""
 
-    def run(self, *, prompt: str, model: str | None, root: Path, target: Path | None, log_path: Path) -> int: ...
+    def run(
+        self, *, prompt: str, model: str | None, root: Path, target: Path | None, log_path: Path, timeout_s: float
+    ) -> int: ...
 
 
 class ChallengeRefused(PyforgeError, Exception):
@@ -115,9 +130,34 @@ def add_factory_challenge_subparser(factory_subparsers: argparse._SubParsersActi
     parser.add_argument("--project", help="The BMAD project slug whose [challenge] block configures the run.")
     parser.add_argument("--stage", choices=core.STAGES, help="Which review the goldfish run.")
     parser.add_argument("--target", help="The artifact to review (repo-relative or absolute).")
+    parser.add_argument(
+        "--section",
+        metavar="SELECTOR",
+        help=(
+            "Review only one section of --target, cut into a Tier-3 slice in the run's own directory "
+            "(<artifact_dir>/<run>/slices/) and passed as an absolute path: CAP-298..CAP-303 (a CAP range of a SPEC.md), epic:113 or epic:112..113,115 (an "
+            "epic range of an epics.md), or heading:<text> (the heading whose text is, or else starts with, <text>, "
+            "through its section; a dated '## <date> ...' Dream entry runs to the next dated entry; when several "
+            "headings match, heading:<text>#N picks the Nth in file order, 1-based)."
+        ),
+    )
+    parser.add_argument(
+        "--dream-section",
+        metavar="SELECTOR",
+        help=(
+            "Give the reviewers only this section of the --project station's Dream as their Dream context, cut the "
+            "same way (usually heading:<YYYY-MM-DD> — <title>, the Dream entry the target cites). Not with --audit, "
+            "which cuts its own."
+        ),
+    )
     parser.add_argument("--epic", help="With --stage drift: the epic number whose code is read against its Spec.")
     parser.add_argument(
-        "--audit", action="store_true", help="Sweep every station's Dream, Spec, epics.md and the repo rules once."
+        "--audit",
+        action="store_true",
+        help=(
+            "Sweep the repo rules and every station's newest CAP slice (mint) and the epic range naming it "
+            "(decompose), each with the Dream entry the slice cites; never a whole SPEC.md, epics.md or Dream."
+        ),
     )
     parser.add_argument(
         "--force", action="store_true", help="With --audit: re-run stations whose report already exists."
@@ -367,12 +407,22 @@ def build_context(
     config: core.ChallengeConfig,
     *,
     dream: Path | None = None,
+    standards_fallback: tuple[Path, ...] = (),
+    omit_dream: bool = False,
 ) -> core.ChallengeContext:
-    standards = tuple(_abs(root, s) for s in config.standards.get(stage, ())) or default_standards(root, slug, stage)
+    """The reviewer's context. A block's ``standards`` entry for the stage wins; else ``standards_fallback`` (the
+    audit's decompose run reads the CAP slice its epics claim, Story 113.14); else ``default_standards``. The Dream
+    is ``dream``, else the station's whole Dream, unless ``omit_dream`` (an audit run with no entry to cut) gives
+    the reviewer none."""
+    standards = (
+        tuple(_abs(root, s) for s in config.standards.get(stage, ()))
+        or standards_fallback
+        or default_standards(root, slug, stage)
+    )
     return core.ChallengeContext(
         target=str(_abs(root, target)),
         glossary=str(glossary_path(root, slug)) if glossary_path(root, slug).is_file() else "",
-        dream=str(dream or dream_path(root, slug)),
+        dream="" if omit_dream else str(dream or dream_path(root, slug)),
         standards=tuple(str(s) for s in standards),
     )
 
@@ -444,6 +494,13 @@ def journal_refusal(out_dir: Path, slug: str, reason: str, now: datetime) -> Pat
 # --- one challenge -------------------------------------------------------------
 
 
+def new_run_dir(out_dir: Path, slug: str, moment: datetime) -> Path:
+    """A fresh run directory, named by its run id, under ``out_dir``."""
+    run_dir = out_dir / mint_run_id(slug, _utc_compact(moment), secrets.token_hex(4))
+    run_dir.mkdir(parents=True, exist_ok=False)
+    return run_dir
+
+
 def run_one(
     *,
     root: Path,
@@ -456,13 +513,22 @@ def run_one(
     now: Callable[[], datetime] = lambda: datetime.now(UTC),
     dream: Path | None = None,
     owner: Path | None = None,
+    standards: tuple[Path, ...] = (),
+    dream_choice: str = "",
+    omit_dream: bool = False,
+    run_dir: Path | None = None,
 ) -> RunOutcome:
     """Run one stage on one target. Refusals raise ``ChallengeRefused`` before
-    anything is written; a session that fails, writes no valid report, or writes
-    one that omits a dispatched reviewer or names another stage is an ``error``
-    on the outcome (unevaluable, ``report`` is ``None``), never a finding.
-    ``owner`` is the Spec folder the findings belong to (default ``owning_spec``)."""
-    context = build_context(root, slug, stage, target, config, dream=dream)
+    anything is written; a session that fails, outlives its ``[challenge].timeout_s``
+    ceiling, writes no valid report, or writes one that omits a dispatched reviewer or
+    names another stage is an ``error`` on the outcome (unevaluable, ``report`` is
+    ``None``), never a finding. ``owner`` is the Spec folder the findings belong to
+    (default ``owning_spec``); ``standards`` is ``build_context``'s fallback; ``dream_choice`` (the audit's
+    ``cited``, ``names-cap`` or ``newest``) is journaled with the intent so a reader can tell a weak fallback.
+    ``run_dir`` is a run directory the caller already made (``new_run_dir``) to hold the run's own slices."""
+    context = build_context(
+        root, slug, stage, target, config, dream=dream, standards_fallback=standards, omit_dream=omit_dream
+    )
     violations = core.context_violations(context)
     if violations:
         raise ChallengeRefused("; ".join(violations))
@@ -470,12 +536,12 @@ def run_one(
         if not Path(path).is_file():
             raise ChallengeRefused(f"{path} does not exist")
     moment = now()
-    run_id = mint_run_id(slug, _utc_compact(moment), secrets.token_hex(4))
-    run_dir = out_dir / run_id
-    run_dir.mkdir(parents=True, exist_ok=False)
+    run_dir = run_dir or new_run_dir(out_dir, slug, moment)
+    run_id = run_dir.name
     report_path = run_dir / REPORT_FILENAME
     journal = run_dir / JOURNAL_FILENAME
     personas = config.reviewers_for(stage)
+    timeout_s = config.timeout_for(stage)
     prompt = core.render_prompt(stage=stage, personas=personas, context=context, report_path=str(report_path))
     writer = f"challenge-{secrets.token_hex(3)}"
     intent = append_journal(
@@ -492,6 +558,8 @@ def run_one(
             "reviewers": [core.agent_type(p) for p in personas],
             "model": config.model,
             "plugin_version": config.plugin_version,
+            "timeout_s": timeout_s,
+            **({"dream": context.dream, "dream_choice": dream_choice} if dream_choice else {}),
             "report": str(report_path),
         },
         now=moment,
@@ -506,6 +574,7 @@ def run_one(
             root=root,
             target=Path(context.target),
             log_path=run_dir / SESSION_LOG_FILENAME,
+            timeout_s=timeout_s,
         )
         if returncode != 0:
             error = f"challenge session exited {returncode}"
@@ -596,25 +665,151 @@ def write_drift_target(root: Path, slug: str, epic: str, out_dir: Path) -> Path:
     return target
 
 
+# --- slices (Story 113.14) ----------------------------------------------------------
+
+
+def _require_tier3(root: Path, path: Path) -> None:
+    """Refuse ``path`` unless it lies under a project's Tier-3 ``implementation-artifacts/``, judged on the path as
+    written, so a ``..`` part (``implementation-artifacts/../planning-artifacts``) is refused, never followed."""
+    try:
+        parts = path.relative_to(root).parts
+    except ValueError:
+        parts = ()
+    if ".." in path.parts or len(parts) < 4 or parts[:2] != _TIER3_PARTS or parts[3] != _TIER3_DIRNAME:
+        raise ChallengeRefused(
+            f"{path} is not under a project's Tier-3 {_TIER3_DIRNAME}/; slices are written only there"
+        )
+
+
+def _write_tier3(root: Path, out_dir: Path, name: str, text: str) -> Path:
+    """Write ``text`` as ``out_dir / name`` under Tier 3 (``_require_tier3``); return the file's absolute path, the
+    form a reviewer receives."""
+    _require_tier3(root, out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path = Path(os.path.abspath(out_dir / name))
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def _read_source(source: Path) -> str:
+    try:
+        return source.read_text(encoding="utf-8")
+    except (OSError, ValueError) as exc:  # ValueError: an undecodable file (UnicodeDecodeError) refuses, never crashes
+        raise ChallengeRefused(f"cannot read {source} to slice it: {exc}") from exc
+
+
+def cut_slice(source: Path, selector: core.Selector) -> tuple[str, str]:
+    """``(file name, text)`` of ``selector``'s section of ``source``, cut in memory so a selector that names
+    nothing refuses before anything is written."""
+    try:
+        section = core.select_section(_read_source(source), selector)
+    except core.SelectorError as exc:
+        raise ChallengeRefused(f"{source}: {exc}") from exc
+    return f"{source.stem}--{selector.slug}.md", section
+
+
+def write_slice(root: Path, source: Path, selector: core.Selector, out_dir: Path) -> Path:
+    """Cut ``selector``'s section of ``source`` into a Tier-3 file under ``out_dir`` holding exactly that section,
+    the way ``write_drift_target`` writes the drift target (Story 113.14, CAP-302)."""
+    return _write_tier3(root, out_dir, *cut_slice(source, selector))
+
+
+def write_dream_entry(root: Path, slug: str, cap_slice: core.CapSlice, out_dir: Path) -> tuple[Path, str]:
+    """The Dream entry ``cap_slice`` takes, cut from the station's Dream into a Tier-3 file, and the rule that chose
+    it (``core.dream_entry_section``): the entry it cites, else the newest entry naming one of its CAPs, else the
+    newest dated entry."""
+    dream = dream_path(root, slug)
+    try:
+        heading, section, choice = core.dream_entry_section(
+            _read_source(dream),
+            cap_slice.dream_date,
+            cap_slice.dream_title,
+            caps=range(cap_slice.first, cap_slice.last + 1),
+            own_spec=spec_path(root, slug).parent.name,
+        )
+    except core.SelectorError as exc:
+        raise ChallengeRefused(f"{dream}: {exc}") from exc
+    return _write_tier3(root, out_dir, f"{dream.stem}--dream-entry-{heading[:10]}.md", section), choice
+
+
 # --- audit (CAP-302) -------------------------------------------------------------
 
 
-def audit_plan(root: Path) -> list[tuple[str, str, Path, Path | None, Path]]:
-    """``(project slug, stage, target, dream, owning Spec folder)`` for every audit run, in order:
-    the repo rules first, then each station's Spec (mint) and epics (decompose). The repo rules
-    run under marshal but carry their governor's Spec (``owning_spec``, Story 113.13)."""
-    runs: list[tuple[str, str, Path, Path | None]] = [
-        (OWN_PROJECT, "rules", root / "AGENTS.md", root / CHAIN_STANDARD_DREAM_RELPATH),
-        (OWN_PROJECT, "rules", root / CHAIN_STANDARD_RELPATH, root / CHAIN_STANDARD_DREAM_RELPATH),
+@dataclass(frozen=True)
+class AuditRun:
+    """One review the sweep makes. ``dream`` ``None`` gives the reviewer no Dream (a station skill's rules run when
+    its station has no slice) -- never the whole station Dream;
+    ``standards`` is ``build_context``'s fallback (the decompose run's CAP slice); ``dream_choice`` is the rule that
+    chose the Dream entry (``cited``, ``names-cap`` or ``newest``) of a mint or decompose run and of a station
+    skill's rules run, which borrows its station's mint entry; it is empty for a repo-rules run, which reads
+    ``one-chain-per-station.md``, and for a skill run whose station has no slice (no Dream)."""
+
+    slug: str
+    stage: str
+    target: Path
+    dream: Path | None
+    owner: Path
+    standards: tuple[Path, ...] = ()
+    dream_choice: str = ""
+
+
+def _station_slices(root: Path, slug: str, out_dir: Path) -> tuple[list[AuditRun], list[str]]:
+    """A station's mint run (its newest CAP slice) and decompose run (the epic range whose headings name a CAP
+    of that slice), both with the Dream entry the slice cites -- read from the station's own Spec only
+    (operator ruling 2026-11-01) -- and, for a run whose slice cannot be cut, why."""
+    spec = spec_path(root, slug)
+    try:
+        cap_slice = core.newest_cap_slice(_read_source(spec))
+        if cap_slice is None:
+            raise ChallengeRefused(f"{spec} defines no CAP")
+        caps = write_slice(root, spec, cap_slice.selector, out_dir)
+        dream, choice = write_dream_entry(root, slug, cap_slice, out_dir)
+    except (OSError, ValueError, ChallengeRefused) as exc:
+        return [], [f"{slug} mint and decompose: no slice: {exc}"]
+    runs = [AuditRun(slug, "mint", caps, dream, spec.parent, dream_choice=choice)]
+    epics = epics_path(root, slug)
+    try:
+        epic_range = core.epics_naming(_read_source(epics), cap_slice, spec.parent.name)
+        if epic_range is None:
+            raise ChallengeRefused(f"no '## Epic' heading in {epics} names {cap_slice.selector.slug}")
+        decomposed = write_slice(root, epics, epic_range, out_dir)
+    except (OSError, ValueError, ChallengeRefused) as exc:
+        return runs, [f"{slug} decompose: no slice: {exc}"]
+    standards = (root / CHAIN_STANDARD_RELPATH, caps)
+    runs.append(AuditRun(slug, "decompose", decomposed, dream, spec.parent, standards, dream_choice=choice))
+    return runs, []
+
+
+def audit_plan(root: Path, slice_dir: Path) -> tuple[list[AuditRun], list[str]]:
+    """Every audit run, in order, and why any station's slice could not be cut: the repo rules first, then each
+    station's skill (rules), its newest CAP slice (mint) and the epic range that decomposes it (decompose), the
+    slices written under ``slice_dir/<slug>/`` -- never a whole ``SPEC.md``, ``epics.md`` or Dream, and never a
+    story spec, which the readiness stage reads (Story 113.14). The repo rules run under marshal but carry their
+    governor's Spec (``owning_spec``, Story 113.13)."""
+    runs: list[AuditRun] = [
+        AuditRun(
+            OWN_PROJECT,
+            "rules",
+            target,
+            root / CHAIN_STANDARD_DREAM_RELPATH,
+            owning_spec(root, OWN_PROJECT, "rules", target),
+        )
+        for target in (root / "AGENTS.md", root / CHAIN_STANDARD_RELPATH)
     ]
+    gaps: list[str] = []
     for station in STATIONS:
         slug = long_form(station)
+        station_runs, station_gaps = _station_slices(root, slug, slice_dir / slug)
         skill = station_skill_path(root, station)
         if skill is not None:
-            runs.append((slug, "rules", skill, None))
-        runs.append((slug, "mint", spec_path(root, slug), None))
-        runs.append((slug, "decompose", epics_path(root, slug), None))
-    return [(slug, stage, target, dream, owning_spec(root, slug, stage, target)) for slug, stage, target, dream in runs]
+            # the skill is read against the Dream entry its station's mint run takes, else against no Dream
+            mint = next((run for run in station_runs if run.stage == "mint"), None)
+            dream, choice = (mint.dream, mint.dream_choice) if mint is not None else (None, "")
+            owner = owning_spec(root, slug, "rules", skill)
+            runs.append(AuditRun(slug, "rules", skill, dream, owner, dream_choice=choice))
+        runs.extend(station_runs)
+        gaps.extend(station_gaps)
+    return runs, gaps
 
 
 def run_audit(
@@ -633,7 +828,10 @@ def run_audit(
     audit_journal = audit_dir / JOURNAL_FILENAME
     writer = f"challenge-audit-{secrets.token_hex(3)}"
     counter = 0
-    for slug, stage, target, dream, owner in audit_plan(root):
+    plan, gaps = audit_plan(root, audit_dir / SLICES_DIRNAME)
+    errors.extend(gaps)  # a station the sweep could not slice did not report: the sweep is unevaluable
+    for run in plan:
+        slug, stage, target = run.slug, run.stage, run.target
         marker = audit_dir / f"{slug}.{stage}.{target.name}.json"
         if marker.is_file() and not force:
             try:
@@ -666,8 +864,11 @@ def run_audit(
                 runner=runner,
                 out_dir=audit_dir / "runs",
                 now=now,
-                dream=dream,
-                owner=owner,
+                dream=run.dream,
+                owner=run.owner,
+                standards=run.standards,
+                dream_choice=run.dream_choice,
+                omit_dream=run.dream is None,
             )
         except ChallengeRefused as exc:
             errors.append(f"{slug} {stage} {target.name}: refused: {exc}")
@@ -804,6 +1005,7 @@ def _run(args: argparse.Namespace, *, runner: ChallengeRunner | None, root: Path
         require(EGM_AUDIT_FLAG_KEY)
     elif args.stage == "drift":
         require(EGM_RETRO_DRIFT_FLAG_KEY)
+    section, dream_section = _selectors(args)
     plugins = plugins_root()
     personas = tuple(dict.fromkeys(p for stage in core.STAGES for p in config.reviewers_for(stage)))
     refusal = plugin_refusal(plugins, config.plugin_version, personas)
@@ -833,9 +1035,36 @@ def _run(args: argparse.Namespace, *, runner: ChallengeRunner | None, root: Path
         target = _abs(root, args.target)
     else:
         raise ChallengeRefused("--target is required for this stage")
-    outcome = run_one(
-        root=root, slug=slug, stage=args.stage, target=target, config=config, runner=runner, out_dir=out_root, now=now
-    )
+    # Cut in memory first, so a selector that names nothing refuses before anything is written; the slices then go
+    # into this run's own directory, so two runs never overwrite each other's (Story 113.14).
+    target_cut = cut_slice(target, section) if section is not None else None
+    dream_cut = cut_slice(dream_path(root, slug), dream_section) if dream_section is not None else None
+    run_dir: Path | None = None
+    dream: Path | None = None
+    if target_cut is not None or dream_cut is not None:
+        _require_tier3(root, out_root)
+        run_dir = new_run_dir(out_root, slug, now())
+        if target_cut is not None:
+            target = _write_tier3(root, run_dir / SLICES_DIRNAME, *target_cut)
+        if dream_cut is not None:
+            dream = _write_tier3(root, run_dir / SLICES_DIRNAME, *dream_cut)
+    try:
+        outcome = run_one(
+            root=root,
+            slug=slug,
+            stage=args.stage,
+            target=target,
+            config=config,
+            runner=runner,
+            out_dir=out_root,
+            now=now,
+            dream=dream,
+            run_dir=run_dir,
+        )
+    except ChallengeRefused:
+        if run_dir is not None:  # a refusal leaves no orphan <run_id>/slices/ behind
+            shutil.rmtree(run_dir, ignore_errors=True)
+        raise
     _emit(
         args,
         {
@@ -846,6 +1075,22 @@ def _run(args: argparse.Namespace, *, runner: ChallengeRunner | None, root: Path
         },
     )
     return exit_code_for(Verdict.UNEVALUABLE) if outcome.error else EXIT_OK
+
+
+def _selectors(args: argparse.Namespace) -> tuple[core.Selector | None, core.Selector | None]:
+    """``--section`` and ``--dream-section``, parsed before anything is written (Story 113.14)."""
+    raw_section, raw_dream = getattr(args, "section", None), getattr(args, "dream_section", None)
+    if args.audit and (raw_section or raw_dream):
+        raise ChallengeRefused("--section and --dream-section slice an ad hoc run; --audit cuts its own slices")
+    if raw_section and (args.stage == "drift" or not args.target):
+        raise ChallengeRefused("--section slices --target (a drift run writes its own target)")
+    try:
+        return (
+            core.parse_selector(raw_section) if raw_section else None,
+            core.parse_selector(raw_dream) if raw_dream else None,
+        )
+    except core.SelectorError as exc:
+        raise ChallengeRefused(str(exc)) from exc
 
 
 def _emit(args: argparse.Namespace, data: Mapping[str, object]) -> None:
@@ -885,21 +1130,17 @@ def readiness_for_dispatch(
     """Run the readiness stage before a dispatch's harness launches, when the
     switch is on and the station's block names the stage. Report only: never a
     status move, never a ledger write, never a refusal of the dispatch. The
-    challenger is never ``launch_model``, the run's resolved launch model (Story 113.9)."""
+    challenger is never ``launch_model``, the run's resolved launch model (Story 113.9).
+    The wait is bounded by the block's ``timeout_s.readiness`` (default 600 s, Story 113.14):
+    a session past it is killed and reported as an unevaluable result, and the dispatch proceeds."""
     if not flag_on(EGM_CHALLENGE_FLAG_KEY) or not flag_on(EGM_DISPATCH_READINESS_FLAG_KEY):
         return ReadinessResult(ran=False)
     config = challenge_config(effective)
     if not config.stage_on("readiness"):
         return ReadinessResult(ran=False)
-    one = core.ChallengeConfig(
-        enabled=True,
-        stages=("readiness",),
-        reviewers={"readiness": ("implementation-readiness",)},
-        model=config.model,
-        standards=dict(config.standards),
-        artifact_dir=config.artifact_dir,
-        plugin_version=config.plugin_version,
-    )
+    # Everything else the block says -- the model, standards, artifact_dir, plugin_version and the readiness
+    # ceiling (``timeout_s``, Story 113.14) -- carries over unchanged.
+    one = replace(config, enabled=True, stages=("readiness",), reviewers={"readiness": ("implementation-readiness",)})
     refusals = model_refusals(one, slug=slug, effective=effective, launch_model=launch_model)
     plugins = plugins or plugins_root()
     refusal = "; ".join(refusals) or plugin_refusal(plugins, one.plugin_version, ("implementation-readiness",))

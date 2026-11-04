@@ -3,13 +3,19 @@
 Story 113.10 (CAP-299): the session carries no house context, checked at runtime -- hooks off,
 Read denies on the instruction files, memlogs and team memory (the target excepted), no
 ``instructionFiles`` plugin config, ``egm@egm`` enabled in the session's own settings, and a cwd
-outside the repo."""
+outside the repo.
+
+Story 113.14 (CAP-298, CAP-299): the session's ceiling is the stage's ``[challenge].timeout_s``, else
+its per-stage default; a session past it is killed and raised, never waited on."""
 
 from __future__ import annotations
 
 import dataclasses
 import json
+import os
+import subprocess
 import tempfile
+import time
 from pathlib import Path, PurePosixPath
 
 import pytest
@@ -125,7 +131,8 @@ def test_the_target_is_excepted_from_the_read_denies(target: str, excepted: str 
     every = [f"Read(/{root / glob})" for glob in harness.FORBIDDEN_READ_GLOBS]
     assert rules == [rule for rule in every if excepted is None or rule != f"Read(/{root / excepted})"]
     _argv, settings = _render(tmp_path, target=root / target)
-    assert settings["permissions"]["deny"][len(harness.DENIED_TOOLS) :] == rules
+    # after the tools comes the run folder's slices/ Write deny (Story 113.14), then the read denies
+    assert settings["permissions"]["deny"][len(harness.DENIED_TOOLS) + 1 :] == rules
 
 
 def test_a_target_outside_the_repo_keeps_every_read_deny(tmp_path: Path) -> None:
@@ -202,9 +209,9 @@ def fake_process(monkeypatch: pytest.MonkeyPatch):
 
 
 def test_runner_launches_the_claude_binary_and_logs_its_output(fake_process, tmp_path: Path) -> None:
-    runner = harness.ClaudeChallengeRunner(plugins_root=tmp_path / "plugins", timeout_s=12)
+    runner = harness.ClaudeChallengeRunner(plugins_root=tmp_path / "plugins")
     log = tmp_path / "run" / "session.log"
-    code = runner.run(prompt="P", model="claude-fable-5-1", root=tmp_path, target=None, log_path=log)
+    code = runner.run(prompt="P", model="claude-fable-5-1", root=tmp_path, target=None, log_path=log, timeout_s=12)
     assert code == 3 and log.read_text(encoding="utf-8") == "out\nerr\n"
     (call,) = fake_process.calls
     assert call["argv"][0] == "/usr/bin/claude" and call["argv"][-1] == "P" and call["timeout_s"] == 12
@@ -222,7 +229,9 @@ def test_runner_launches_from_a_directory_outside_the_repo(
     root.mkdir()
     monkeypatch.setenv(harness.ADDITIONAL_DIRS_CLAUDE_MD_ENV, "1")
     runner = harness.ClaudeChallengeRunner(plugins_root=tmp_path / "plugins")
-    runner.run(prompt="P", model=None, root=root, target=root / "AGENTS.md", log_path=tmp_path / "run" / "log")
+    runner.run(
+        prompt="P", model=None, root=root, target=root / "AGENTS.md", log_path=tmp_path / "run" / "log", timeout_s=60
+    )
     (call,) = fake_process.calls
     cwd = Path(call["cwd"])
     assert not cwd.resolve().is_relative_to(root.resolve()) and cwd.name.startswith("marshal-egm-")
@@ -240,7 +249,7 @@ def test_runner_refuses_a_session_directory_inside_the_repo(
     monkeypatch.setattr(tempfile, "tempdir", str(root / "tmp"))
     runner = harness.ClaudeChallengeRunner(plugins_root=tmp_path / "plugins")
     with pytest.raises(harness.ChallengeHarnessError, match="inside"):
-        runner.run(prompt="P", model=None, root=root, target=None, log_path=tmp_path / "run" / "log")
+        runner.run(prompt="P", model=None, root=root, target=None, log_path=tmp_path / "run" / "log", timeout_s=60)
     assert fake_process.calls == []
 
 
@@ -249,7 +258,7 @@ def test_runner_reports_a_session_that_does_not_complete(fake_process, tmp_path:
     runner = harness.ClaudeChallengeRunner(plugins_root=tmp_path)
     log = tmp_path / "session.log"
     with pytest.raises(harness.ChallengeHarnessError):
-        runner.run(prompt="P", model=None, root=tmp_path, target=None, log_path=log)
+        runner.run(prompt="P", model=None, root=tmp_path, target=None, log_path=log, timeout_s=60)
     assert "did not complete" in log.read_text(encoding="utf-8")
 
 
@@ -258,10 +267,10 @@ def test_runner_refuses_a_missing_binary_or_profile(monkeypatch: pytest.MonkeyPa
     monkeypatch.setattr(harness.shutil, "which", lambda binary: None)
     monkeypatch.setattr(harness, "_resolve_binary", lambda profile: None)
     with pytest.raises(harness.ChallengeHarnessError, match="not on PATH"):
-        runner.run(prompt="P", model=None, root=tmp_path, target=None, log_path=tmp_path / "log")
+        runner.run(prompt="P", model=None, root=tmp_path, target=None, log_path=tmp_path / "log", timeout_s=60)
     monkeypatch.setattr(harness, "load_packaged_profiles", lambda: {})
     with pytest.raises(harness.ChallengeHarnessError, match="no packaged"):
-        runner.run(prompt="P", model=None, root=tmp_path, target=None, log_path=tmp_path / "log")
+        runner.run(prompt="P", model=None, root=tmp_path, target=None, log_path=tmp_path / "log", timeout_s=60)
 
 
 def test_binary_resolution_falls_back_to_the_profile_dirs(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -341,9 +350,13 @@ def test_plugin_refusal_checks_the_session_settings_scope(tmp_path: Path, monkey
 class _RecordingRunner:
     def __init__(self) -> None:
         self.calls: list[dict] = []
+        self.timeouts: list[float] = []
 
-    def run(self, *, prompt: str, model: str | None, root: Path, target: Path | None, log_path: Path) -> int:
+    def run(
+        self, *, prompt: str, model: str | None, root: Path, target: Path | None, log_path: Path, timeout_s: float
+    ) -> int:
         self.calls.append({"root": root, "target": target})
+        self.timeouts.append(timeout_s)
         return 1
 
 
@@ -367,3 +380,121 @@ def test_run_one_hands_the_runner_the_repo_and_the_target(tmp_path: Path) -> Non
     (call,) = runner.calls
     assert call == {"root": root, "target": root / "AGENTS.md"}
     assert f"Read(/{root}/AGENTS.md)" not in harness.forbidden_read_rules(call["root"], call["target"])
+
+
+# --- 113.14: every session has a ceiling, and the ceiling is configuration ------------------------------
+
+
+def test_no_literal_ceiling_remains_in_the_harness() -> None:
+    """AC1: the session's ceiling comes from the stage, never a constant in the adapter."""
+    assert "3600" not in Path(harness.__file__).read_text(encoding="utf-8")
+    assert core.DEFAULT_TIMEOUT_S == {
+        "mint": 3600.0,
+        "decompose": 3600.0,
+        "readiness": 600.0,
+        "drift": 3600.0,
+        "rules": 3600.0,
+    }
+    assert set(core.DEFAULT_TIMEOUT_S) == set(core.STAGES)
+
+
+@pytest.mark.parametrize(
+    ("block_timeouts", "expected"),
+    [
+        ({}, {stage: core.DEFAULT_TIMEOUT_S[stage] for stage in core.STAGES}),
+        ({"mint": 42, "readiness": 7.5}, {**core.DEFAULT_TIMEOUT_S, "mint": 42.0, "readiness": 7.5}),
+    ],
+    ids=["the-stage-defaults", "the-block-values"],
+)
+def test_run_one_hands_the_runner_the_stage_s_ceiling(block_timeouts: dict, expected: dict, tmp_path: Path) -> None:
+    """AC1: the runner's timeout for a stage is the block's ``timeout_s`` value, else the per-stage default."""
+    root = tmp_path / "repo"
+    for relpath in (
+        "AGENTS.md",
+        cli.CHAIN_STANDARD_RELPATH,
+        cli.SPEC_TEMPLATE_RELPATH,
+        cli.STORY_SPEC_TEMPLATE_RELPATH,
+        "docs/dreams/d.md",
+    ):
+        _write(root / relpath, "x\n")
+    _write(cli.spec_path(root, "pyforge-marshal"), "x\n")
+    block = core.valid_challenge_block({"enabled": True, "stages": list(core.STAGES), "timeout_s": block_timeouts})
+    config = core.config_from_block(block)
+    runner = _RecordingRunner()
+    for stage in core.STAGES:
+        cli.run_one(
+            root=root,
+            slug="pyforge-marshal",
+            stage=stage,
+            target=root / "AGENTS.md",
+            config=config,
+            runner=runner,
+            out_dir=tmp_path / "out" / stage,
+            dream=root / "docs/dreams/d.md",
+        )
+    assert dict(zip(core.STAGES, runner.timeouts, strict=True)) == expected
+    (run_dir,) = (tmp_path / "out" / "readiness").iterdir()
+    intent = json.loads((run_dir / cli.JOURNAL_FILENAME).read_text(encoding="utf-8").splitlines()[0])
+    assert intent["payload"]["timeout_s"] == expected["readiness"]
+
+
+def test_a_session_past_its_ceiling_is_a_timeout(fake_process, tmp_path: Path) -> None:
+    """AC2: a timed-out session raises ``ChallengeTimeout`` naming the ceiling; another failure stays generic."""
+    fake_process.error = ProcessError("command timed out")
+    fake_process.error.__cause__ = subprocess.TimeoutExpired(["claude"], 5)
+    runner = harness.ClaudeChallengeRunner(plugins_root=tmp_path)
+    log = tmp_path / "session.log"
+    with pytest.raises(harness.ChallengeTimeout, match="outlived its 5 s ceiling"):
+        runner.run(prompt="P", model=None, root=tmp_path / "repo", target=None, log_path=log, timeout_s=5)
+    assert "outlived its 5 s ceiling and was killed" in log.read_text(encoding="utf-8")
+    assert fake_process.calls[0]["timeout_s"] == 5
+    fake_process.error = ProcessError("cannot launch")
+    with pytest.raises(harness.ChallengeHarnessError) as raised:
+        runner.run(prompt="P", model=None, root=tmp_path / "repo", target=None, log_path=log, timeout_s=5)
+    assert not isinstance(raised.value, harness.ChallengeTimeout)
+
+
+def test_a_real_session_past_its_ceiling_is_killed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """AC2: a session binary that would run for 30 s is killed at its 1.5 s ceiling, not waited on."""
+    pidfile = tmp_path / "claude.pid"
+    binary = tmp_path / "bin" / "claude"
+    _write(binary, f"#!/bin/sh\necho $$ > {pidfile}\nexec sleep 30\n")
+    binary.chmod(0o755)
+    monkeypatch.setattr(harness, "_resolve_binary", lambda profile: str(binary))
+    runner = harness.ClaudeChallengeRunner(plugins_root=tmp_path / "plugins")
+    started = time.monotonic()
+    with pytest.raises(harness.ChallengeTimeout):
+        runner.run(
+            prompt="P",
+            model=None,
+            root=tmp_path / "repo",
+            target=None,
+            log_path=tmp_path / "run" / "log",
+            timeout_s=1.5,
+        )
+    assert time.monotonic() - started < 20
+    with pytest.raises(ProcessLookupError):
+        os.kill(int(pidfile.read_text(encoding="utf-8")), 0)
+
+
+def test_the_session_may_not_rewrite_its_slices(fake_process, tmp_path: Path) -> None:
+    """Story 113.14 review A: the run folder's ``slices/`` holds the target and Dream the reviewers read; the session's
+    one ``Write`` allow covers the run folder, and a ``Write`` deny on ``slices/`` (deny wins over allow in Claude
+    Code's permission rules) keeps the reviewed slice out of the session's reach."""
+    run_dir = tmp_path / "run"
+    _argv, settings = _render(tmp_path)
+    deny, allow = settings["permissions"]["deny"], settings["permissions"]["allow"]
+    assert f"Write(/{run_dir}/**)" in allow
+    assert (
+        deny[len(harness.DENIED_TOOLS)]
+        == f"Write(/{run_dir}/{core.SLICES_DIRNAME}/**)"
+        == f"Write(/{run_dir}/slices/**)"
+    )
+    bare = json.loads(harness.widen_settings("", []))  # no run folder: no Write allow, no slices deny
+    assert not [rule for rule in bare["permissions"]["deny"] if rule.startswith("Write(")]
+    runner = harness.ClaudeChallengeRunner(plugins_root=tmp_path / "plugins")
+    log = tmp_path / "adhoc-run" / "session.log"
+    runner.run(prompt="P", model=None, root=tmp_path / "repo", target=None, log_path=log, timeout_s=60)
+    (call,) = fake_process.calls
+    rendered = json.loads(call["argv"][call["argv"].index("--settings") + 1])["permissions"]
+    assert f"Write(/{log.parent}/slices/**)" in rendered["deny"] and f"Write(/{log.parent}/**)" in rendered["allow"]

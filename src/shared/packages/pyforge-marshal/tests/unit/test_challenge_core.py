@@ -37,6 +37,7 @@ def test_valid_block_round_trips() -> None:
         "standards": {"mint": ["docs/x.md"]},
         "artifact_dir": "implementation-artifacts/egm",
         "plugin_version": "0.1.0",
+        "timeout_s": {"readiness": 120, "mint": 900.5},
     }
     validated = core.valid_challenge_block(block)
     assert validated is not None
@@ -44,6 +45,10 @@ def test_valid_block_round_trips() -> None:
     assert config.stage_on("readiness") and not config.stage_on("drift")
     assert config.reviewers_for("readiness") == ("implementation-readiness",)
     assert config.reviewers_for("mint") == core.DEFAULT_REVIEWERS["mint"]
+    # Story 113.14: the block's ceiling, else the per-stage default (readiness short).
+    assert config.timeout_for("readiness") == 120.0 and config.timeout_for("mint") == 900.5
+    assert config.timeout_for("rules") == core.STAGE_TIMEOUT_S == 3600.0
+    assert core.OFF.timeout_for("readiness") == core.READINESS_TIMEOUT_S == 600.0
 
 
 @pytest.mark.parametrize(
@@ -56,6 +61,17 @@ def test_valid_block_round_trips() -> None:
         {"model": ""},
         {"unknown": 1},
         "not a table",
+        {"timeout_s": 600},
+        {"timeout_s": {"nope": 60}},
+        {"timeout_s": {"mint": 0}},
+        {"timeout_s": {"mint": -5}},
+        {"timeout_s": {"mint": True}},
+        {"timeout_s": {"mint": "60"}},
+        {"timeout_s": {"mint": float("inf")}},
+        {"timeout_s": {"mint": float("nan")}},
+        {"timeout_s": {"mint": 10**400}},  # past float range: excluded, never an OverflowError
+        {"artifact_dir": "implementation-artifacts/../planning-artifacts"},
+        {"artifact_dir": "/tmp/egm"},
     ],
 )
 def test_malformed_block_is_excluded(block: object) -> None:
@@ -348,3 +364,357 @@ def test_readiness_view_clean_red_and_error() -> None:
     # idempotent, and junk counts never fabricate a red
     assert core.readiness_view(red) == red
     assert core.readiness_view({"findings": "3", "high": True})["red"] is False
+
+
+# --- Story 113.14: the section selector --------------------------------------------------------------
+
+SPEC = """# Spec
+
+## Capabilities
+
+- **CAP-1 — the first** ← Dream entry 2026-09-01
+  - **intent:** one
+- **CAP-2 — the second** ← Dream entry 2026-10-01 (The second dream); operator ruling
+  - **intent:** two
+
+  - **success:** two, after a blank line
+- **CAP-3 — the third** ← Dream entry 2026-09-01, Dream entry 2026-10-01
+  - **intent:** three
+
+## Constraints
+
+- **CAP-3 keeps its shape** -- a Constraint names a CAP without defining one.
+"""
+CAP_2 = "- **CAP-2 — the second** ← Dream entry 2026-10-01 (The second dream); operator ruling\n  - **intent:** two\n\n  - **success:** two, after a blank line\n"
+CAP_3 = "- **CAP-3 — the third** ← Dream entry 2026-09-01, Dream entry 2026-10-01\n  - **intent:** three\n"
+
+EPICS = """# Epics
+
+## Epic 4: The second and third (CAP-2..CAP-3)
+
+### Story 4.1: x
+
+```
+## Epic 99: inside a fence is no heading
+```
+
+## Epic 5: Another Spec's CAP (spec-one-chain-per-station:CAP-3; spec-x CAP-2, fnd:CAP-3)
+
+## Epic 6: Own and qualified (fix under spec-pyforge-marshal CAP-1 and CAP-3)
+
+# Appendix
+"""
+EPIC_4 = "## Epic 4: The second and third (CAP-2..CAP-3)\n\n### Story 4.1: x\n\n```\n## Epic 99: inside a fence is no heading\n```\n"
+EPIC_6 = "## Epic 6: Own and qualified (fix under spec-pyforge-marshal CAP-1 and CAP-3)\n"
+
+DREAM = """# Dream
+
+## The Dream
+
+intro
+
+## 2026-09-01 — First
+
+first
+
+## 2026-10-01 — The second dream (folded from x)
+
+## The second dream
+
+### Body
+
+two
+
+## 2026-10-01 — Same day, another entry
+
+another
+"""
+SECOND_ENTRY = "## 2026-10-01 — The second dream (folded from x)\n\n## The second dream\n\n### Body\n\ntwo\n"
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("CAP-298..CAP-303", core.Selector(kind="caps", ranges=((298, 303),))),
+        ("CAP-7", core.Selector(kind="caps", ranges=((7, 7),))),
+        ("epic:113", core.Selector(kind="epics", ranges=((113, 113),))),
+        ("epic:112..113, 115", core.Selector(kind="epics", ranges=((112, 113), (115, 115)))),
+        ("heading: 2026-11-01 — A stranger", core.Selector(kind="heading", heading="2026-11-01 — A stranger")),
+    ],
+)
+def test_a_selector_parses(raw: str, expected: core.Selector) -> None:
+    assert core.parse_selector(raw) == expected
+
+
+@pytest.mark.parametrize("raw", ["CAP-3..CAP-1", "CAP-x", "epic:", "epic:3..1", "epic:a", "heading:", "Epic 113", ""])
+def test_a_malformed_selector_is_refused(raw: str) -> None:
+    with pytest.raises(core.SelectorError):
+        core.parse_selector(raw)
+
+
+def test_selector_slugs_are_filename_safe() -> None:
+    assert core.parse_selector("CAP-298..CAP-303").slug == "CAP-298..CAP-303"
+    assert core.parse_selector("CAP-7").slug == "CAP-7"
+    assert core.parse_selector("epic:112..113,115").slug == "epic-112..113,115"
+    assert core.parse_selector("heading:2026-11-01 — A: b/c").slug == "heading-2026-11-01-A-b-c"
+
+
+def test_a_cap_range_selects_exactly_its_blocks() -> None:
+    """AC3: each CAP block whole -- its indented lines, a blank line inside included -- and nothing else."""
+    assert core.select_section(SPEC, core.parse_selector("CAP-2..CAP-3")) == CAP_2 + CAP_3
+    assert core.select_section(SPEC, core.parse_selector("CAP-3")) == CAP_3
+    with pytest.raises(core.SelectorError, match="CAP-9 defined nowhere"):
+        core.select_section(SPEC, core.parse_selector("CAP-2..CAP-9"))
+
+
+def test_an_epic_range_selects_exactly_its_sections() -> None:
+    """AC3: a ``## Epic N`` section runs to the next level-1 or level-2 heading; a fenced line is no heading."""
+    assert core.select_section(EPICS, core.parse_selector("epic:4")) == EPIC_4
+    assert core.select_section(EPICS, core.parse_selector("epic:4,6")) == EPIC_4 + EPIC_6
+    with pytest.raises(core.SelectorError, match="Epic 99"):
+        core.select_section(EPICS, core.parse_selector("epic:99"))
+
+
+def test_a_heading_selects_its_section_and_a_dream_entry_runs_to_the_next_entry() -> None:
+    """AC3: an exact heading, else a unique prefix; a dated Dream entry keeps its folded body."""
+    assert core.select_section(DREAM, core.parse_selector("heading:2026-10-01 — The second")) == SECOND_ENTRY
+    assert core.select_section(DREAM, core.parse_selector("heading:The second dream")) == (
+        "## The second dream\n\n### Body\n\ntwo\n"
+    )
+    with pytest.raises(core.SelectorError, match="2 headings match"):
+        core.select_section(DREAM, core.parse_selector("heading:2026-10-01"))
+    with pytest.raises(core.SelectorError, match="no heading"):
+        core.select_section(DREAM, core.parse_selector("heading:2027"))
+
+
+def test_the_newest_cap_slice_is_the_run_citing_the_newest_dream_entry() -> None:
+    """Operator ruling 2026-11-01: the highest CAP and the contiguous run below it citing the same newest Dream
+    entry; a CAP with no Dream entry is a slice of one; no CAP is no slice."""
+    assert core.newest_cap_slice(SPEC) == core.CapSlice(
+        first=2, last=3, dream_date="2026-10-01", dream_title="The second dream"
+    )
+    lone = SPEC.replace(
+        "- **CAP-3 — the third** ← Dream entry 2026-09-01, Dream entry 2026-10-01", "- **CAP-3 — x** ← Constraint"
+    )
+    assert core.newest_cap_slice(lone) == core.CapSlice(first=3, last=3)
+    assert core.newest_cap_slice("# Spec\n") is None
+
+
+def test_an_epic_heading_names_only_its_own_spec_s_caps() -> None:
+    own = "spec-pyforge-marshal"
+    assert core.caps_named_in("Epic 4: x (CAP-2..CAP-3)", own) == {2, 3}
+    assert core.caps_named_in("Epic 5: (spec-one-chain-per-station:CAP-3; spec-x CAP-2, fnd:CAP-3)", own) == set()
+    epic_6 = "Epic 6: (fix under spec-pyforge-marshal CAP-1 and CAP-3; relay of spec-y:CAP-2)"
+    assert core.caps_named_in(epic_6, own) == {1, 3}
+
+
+@pytest.mark.parametrize(
+    ("heading", "named"),
+    [
+        # a qualifier binds only the mention it touches: after the comma, CAP-93 is the station's own
+        ("Epic 55: (spec-pyforge-core CAP-3, CAP-93)", {93}),
+        ("Epic 9: (fnd:CAP-12; pyforge-core:CAP-12; spec-pyforge-x:CAP-12)", set()),
+        (
+            "Epic 9: (doctor:CAP-12, pyforge-doctor:CAP-13, spec-pyforge-doctor:CAP-14, spec-pyforge-doctor CAP-15)",
+            {12, 13, 14, 15},
+        ),
+        ("Epic 9: (CAP-90–CAP-93)", {90, 91, 92, 93}),  # en dash
+        ("Epic 9: (CAP-90—CAP-92)", {90, 91, 92}),  # em dash
+        # a hyphen joins a range only with CAP- on the right: CAP-90-93 is the one id CAP-90
+        ("Epic 9: (CAP-90-93, CAP-95..CAP-96)", {90, 95, 96}),
+        ("Epic 9: (CAP-90-CAP-93)", {90, 91, 92, 93}),
+        ("Epic 9: (CAP-90..93; CAP-97–98)", {90, 91, 92, 93, 97, 98}),
+        ("Dream: CAP-35—2026-10-31 shipped", {35}),  # a date after an em dash is no 1,992-CAP range
+        ("Dream: CAP-35-2026", {35}),
+        ("Story CAP-5-1", {5}),
+        ("CAP-1-30000000", {1}),
+        ("CAP-1..CAP-30000000", {1, 30000000}),  # past MAX_CAP_RANGE_SPAN: only the ids written as CAP-n
+        ("CAP-93..CAP-90", {90, 93}),  # reversed: no range
+        ("CAP-93..90", {93}),
+        ("CAP-1..500", set(range(1, 501))),  # exactly MAX_CAP_RANGE_SPAN CAPs
+        ("CAP-1..501", {1}),
+        ("Epic 9: (CAP-350, XCAP-35)", {350}),
+        ("Epic 9: (spec-pyforge-x CAP-90–CAP-93)", set()),
+    ],
+)
+def test_epic_headings_and_dream_text_share_one_cap_rule(heading: str, named: set[int]) -> None:
+    """Story 113.14 review: ``caps_named_in`` (epic headings) and ``names_cap`` (Dream entries) read a mention the
+    same way -- a whole id or a ``..``/dash range, foreign when any other qualifier touches it."""
+    own = "spec-pyforge-doctor"
+    assert core.caps_named_in(heading, own) == named
+    for cap in range(1, 400):
+        assert core.names_cap(heading, {cap}, own) is (cap in named)
+
+
+def test_the_epic_range_takes_only_headings_naming_the_slice() -> None:
+    own = "spec-pyforge-marshal"
+    cap_slice = core.newest_cap_slice(SPEC)
+    assert cap_slice is not None
+    assert core.epics_naming(EPICS, cap_slice, own) == core.Selector(kind="epics", ranges=((4, 4), (6, 6)))
+    assert core.epics_naming(EPICS, core.CapSlice(first=50, last=50), own) is None
+
+
+def test_the_dream_entry_a_slice_cites_else_the_newest() -> None:
+    assert core.dream_entry_section(DREAM, "2026-10-01", "The second dream") == (
+        "2026-10-01 — The second dream (folded from x)",
+        SECOND_ENTRY,
+        core.DREAM_CITED,
+    )
+    newest = ("2026-10-01 — Same day, another entry", "## 2026-10-01 — Same day, another entry\n\nanother\n")
+    assert core.dream_entry_section(DREAM) == (*newest, core.DREAM_NEWEST)
+    assert core.dream_entry_section(DREAM, "2026-10-01") == (*newest, core.DREAM_CITED)
+    with pytest.raises(core.SelectorError, match="2025-01-01"):
+        core.dream_entry_section(DREAM, "2025-01-01")
+    with pytest.raises(core.SelectorError, match="no dated"):
+        core.dream_entry_section("# Dream\n\n## Not dated\n")
+
+
+# Mason's Spec defines CAP-1..CAP-27 as bullets (some again as headings) and CAP-28 on as ``### CAP-n — `` headings.
+MIXED_BULLETS = "".join(
+    f"- **CAP-{n} — bullet {n}** ← spec-pyforge-mason CAP-{n} (shipped 2026-09-11)\n  - **intent:** b{n}\n"
+    for n in range(1, 28)
+)
+CAP_30 = "### CAP-30 — no station caps pixi\n\n- **intent:** thirty\n- **success:** thirty ok\n"
+CAP_31 = (
+    "### CAP-31 — the intake toolchain\n\n- **intent:** thirty-one\n\n```\n### not a heading inside a fence\n```\n\n"
+    "#### A sub-heading stays in the block\n\nmore\n"
+)
+MIXED_SPEC = (
+    "# Spec\n\n## Capabilities\n\n"
+    + MIXED_BULLETS
+    + "\n### CAP-28 — the recipe CI ref\n\n- **intent:** twenty-eight\n\n"
+    + "### CAP-29 — mason skills ← Dream entry 2026-09-26\n\n- **intent:** twenty-nine\n\n"
+    + CAP_30
+    + "\n"
+    + CAP_31
+    + "\n### CAP-32 — sentinel key ← Dream entry 2026-09-29\n\n- **intent:** thirty-two\n\n"
+    + "### CAP-33 — the generator asks\n\n← Dream entry 2026-10-09 (The refresh campaign)\n\n- **intent:** x\n\n"
+    + "### CAP-34 — host-gate tests ← Dream entry 2026-10-09\n\n- **intent:** y\n\n"
+    + "### CAP-35 — the feedstock refresh campaign\n\n← operator ruling; Dream entry 2026-10-09\n\n"
+    + "- **intent:** z\n- **success:** Dream entry 2026-11-30 in a success clause is no provenance\n\n"
+    + "## Constraints\n\n- **CAP-35 keeps its scope**\n\n## Fold provenance\n\n"
+    + "- **CAP-22 — bullet 22 again** ← spec-x CAP-2 (shipped 2026-09-17)\n"
+)
+
+
+def test_a_heading_form_spec_slices_its_newest_cap_run() -> None:
+    """Story 113.14: a ``### CAP-n — `` heading defines a CAP as a bullet does; its provenance may sit on the lines
+    before its first bullet. The newest slice is CAP-35's run, and a heading range cuts exactly its blocks."""
+    numbers = [number for number, _block in core.cap_blocks(MIXED_SPEC)]
+    assert numbers == [*range(1, 36), 22]
+    assert core.newest_cap_slice(MIXED_SPEC) == core.CapSlice(
+        first=33, last=35, dream_date="2026-10-09", dream_title="The refresh campaign"
+    )
+    assert core.select_section(MIXED_SPEC, core.parse_selector("CAP-30..CAP-31")) == CAP_30 + CAP_31
+    cut = core.select_section(MIXED_SPEC, core.parse_selector("CAP-35"))
+    assert cut.startswith("### CAP-35 — ") and cut.endswith("is no provenance\n") and "## Constraints" not in cut
+    both = core.select_section(MIXED_SPEC, core.parse_selector("CAP-22"))
+    assert both == (
+        "- **CAP-22 — bullet 22** ← spec-pyforge-mason CAP-22 (shipped 2026-09-11)\n  - **intent:** b22\n"
+        "- **CAP-22 — bullet 22 again** ← spec-x CAP-2 (shipped 2026-09-17)\n"
+    )
+    no_dream = MIXED_SPEC.replace("← operator ruling; Dream entry 2026-10-09", "(Operator ruling 2026-11-01.)")
+    assert core.newest_cap_slice(no_dream) == core.CapSlice(first=35, last=35)
+    assert core.epics_naming(
+        "## Epic 25: The refresh campaign (spec-pyforge-mason CAP-35)\n", core.CapSlice(35, 35), "spec-pyforge-mason"
+    ) == core.Selector(kind="epics", ranges=((25, 25),))
+
+
+# Story 113.14: with no cited Dream entry, the newest dated entry that names a CAP of the slice wins over the newest.
+NAMING_DREAM = """# Dream
+
+## 2026-08-01 — Older, names it
+
+Realizes CAP-35 (and CAP-3).
+
+## 2026-09-29 — Names it too
+
+The Spec's CAP-35, first cut.
+
+## 2026-10-01 — Wrong tokens only
+
+CAP-350, XCAP-35, spec-pyforge-x:CAP-35, `pyforge-core:CAP-35` and spec-pyforge-x CAP-35 name no mason CAP.
+
+## 2026-10-26 — Newest, unrelated (folded from y)
+
+## Unrelated
+
+Nothing here.
+"""
+
+
+@pytest.mark.parametrize(
+    ("text", "named"),
+    [
+        ("realizes CAP-35.", True),
+        ("(CAP-34..CAP-35)", True),
+        ("spec-pyforge-mason:CAP-35", True),
+        ("spec-pyforge-mason CAP-35", True),
+        ("pyforge-mason:CAP-35", True),
+        ("mason:CAP-35", True),
+        ("see: CAP-35", True),
+        ("CAP-350", False),
+        ("CAP-3", False),
+        ("XCAP-35", False),
+        ("spec-pyforge-x:CAP-35", False),
+        ("`spec-pyforge-x:CAP-35`", False),
+        ("spec-pyforge-x CAP-35", False),
+        ("pyforge-core:CAP-35", False),
+    ],
+)
+def test_a_dream_names_a_cap_only_as_a_whole_own_token(text: str, named: bool) -> None:
+    assert core.names_cap(text, {34, 35}, "spec-pyforge-mason") is named
+
+
+def test_an_uncited_slice_prefers_the_newest_entry_naming_one_of_its_caps() -> None:
+    heading, section, choice = core.dream_entry_section(NAMING_DREAM, caps={35}, own_spec="spec-pyforge-mason")
+    assert (heading, choice) == ("2026-09-29 — Names it too", core.DREAM_NAMES_CAP)
+    assert section == "## 2026-09-29 — Names it too\n\nThe Spec's CAP-35, first cut.\n"
+    # a CAP no entry names (whole token, own Spec) falls back to the newest dated entry
+    heading, _section, choice = core.dream_entry_section(NAMING_DREAM, caps={36}, own_spec="spec-pyforge-mason")
+    assert (heading, choice) == ("2026-10-26 — Newest, unrelated (folded from y)", core.DREAM_NEWEST)
+    # an own-qualified mention in the newest entry wins; a cited date wins over any naming
+    own = NAMING_DREAM.replace("Nothing here.", "Ships spec-pyforge-mason:CAP-35.")
+    heading, _section, choice = core.dream_entry_section(own, caps={35}, own_spec="spec-pyforge-mason")
+    assert heading.startswith("2026-10-26") and choice == core.DREAM_NAMES_CAP
+    cited = core.dream_entry_section(NAMING_DREAM, "2026-10-01", caps={35}, own_spec="spec-pyforge-mason")
+    assert (cited[0], cited[2]) == ("2026-10-01 — Wrong tokens only", core.DREAM_CITED)
+
+
+def test_a_fenced_cap_defines_nothing() -> None:
+    """Story 113.14 review: neither form defines a CAP inside a fenced code block, so an example never becomes the
+    newest slice."""
+    spec = (
+        "- **CAP-1 — real** ← Dream entry 2026-09-01\n  - **intent:** one\n\n"
+        "```markdown\n- **CAP-999 — example** ← Dream entry 2026-12-01\n### CAP-998 — example heading\n```\n\n"
+        "~~~\n- **CAP-997 — another example**\n~~~\n"
+    )
+    assert [number for number, _block in core.cap_blocks(spec)] == [1]
+    assert core.newest_cap_slice(spec) == core.CapSlice(first=1, last=1, dream_date="2026-09-01")
+
+
+def test_a_heading_occurrence_picks_one_of_several_matches() -> None:
+    """Story 113.14 review: ``heading:<text>#N`` picks the Nth matching heading (1-based); the ambiguity error says
+    so; a ``#`` after whitespace is heading text."""
+    text = "# D\n\n## Realization log\n\none\n\n## Realization log\n\ntwo\n\n## Issue #3\n\nthree\n"
+    assert core.parse_selector("heading:Realization log#2") == core.Selector(
+        kind="heading", heading="Realization log", occurrence=2
+    )
+    assert core.parse_selector("heading:Realization log#2").slug == "heading-Realization-log--2"
+    assert core.select_section(text, core.parse_selector("heading:Realization log#2")) == "## Realization log\n\ntwo\n"
+    assert core.select_section(text, core.parse_selector("heading:Realization log#1")) == "## Realization log\n\none\n"
+    with pytest.raises(core.SelectorError, match=r"heading:Realization log#N \(1-based\)"):
+        core.select_section(text, core.parse_selector("heading:Realization log"))
+    with pytest.raises(core.SelectorError, match="only 2 heading"):
+        core.select_section(text, core.parse_selector("heading:Realization log#3"))
+    with pytest.raises(core.SelectorError, match="count from 1"):
+        core.parse_selector("heading:Realization log#0")
+    assert core.parse_selector("heading:Issue #3") == core.Selector(kind="heading", heading="Issue #3")
+    assert core.select_section(text, core.parse_selector("heading:Issue #3")) == "## Issue #3\n\nthree\n"
+
+
+def test_a_context_without_a_dream_names_none() -> None:
+    """Story 113.14 review: an audit rules run whose station has no slice gets no Dream line, never the whole Dream."""
+    context = core.ChallengeContext(target="/r/SKILL.md", glossary="", dream="", standards=("/r/CHAIN-STANDARD.md",))
+    prompt = core.render_prompt(stage="rules", personas=("zoom-out",), context=context, report_path="/r/report.json")
+    assert "Dream" not in prompt and context.context_paths() == ("/r/CHAIN-STANDARD.md",)

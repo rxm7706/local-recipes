@@ -16,6 +16,12 @@ scope; the session runs from a temporary directory outside the repo, so no
 ``CLAUDE.md``, ``AGENTS.md`` or git status is discovered. Managed (policy)
 settings still load.
 
+Every session has a ceiling (Story 113.14, CAP-298): the caller passes the stage's
+``[challenge].timeout_s`` (else its per-stage default, ``core.challenge.DEFAULT_TIMEOUT_S``),
+and a session that outlives it is killed and raised as ``ChallengeTimeout`` -- the run is
+unevaluable, never a hang. The packaged claude profile declares no turn-cap flag, so the
+ceiling is time alone.
+
 Marshal reads nothing the session says; the caller reads the JSON report file
 the session was told to write (AD-1).
 """
@@ -25,6 +31,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import subprocess
 import tempfile
 import uuid
 from collections.abc import Mapping, Sequence
@@ -34,11 +41,10 @@ from pathlib import Path, PurePosixPath
 from pyforge.core.errors import PyforgeError
 from pyforge.core.process import PosixProcess, ProcessError
 
-from ..core.challenge import EGM_PLUGIN_ID
+from ..core.challenge import EGM_PLUGIN_ID, SLICES_DIRNAME
 from ..core.harness_profile import HarnessProfile, load_packaged_profiles, translate_model
 
 _PROFILE_NAME = "claude"
-_DEFAULT_TIMEOUT_S = 3600.0
 _VERSION_TIMEOUT_S = 30.0
 _PLUGIN_CACHE_READ_DIRS: tuple[str, ...] = ("agents", "docs", "resources", "skills")
 # The orchestrator session spawns reviewers and writes one report; nothing else (review S5).
@@ -64,6 +70,10 @@ _SESSION_DIR_PREFIX = "marshal-egm-"
 
 class ChallengeHarnessError(PyforgeError, Exception):
     """The challenge session could not be launched."""
+
+
+class ChallengeTimeout(ChallengeHarnessError):
+    """The challenge session outlived its ceiling and was killed (Story 113.14)."""
 
 
 def plugin_cache_read_rules(plugins_root: Path) -> list[str]:
@@ -102,8 +112,10 @@ def widen_settings(
 ) -> str:
     """Add the orchestrator's permissions to a profile's ``--settings`` JSON: the
     plugin-cache read rules, read-only tools plus ``Agent``, one ``Write`` rule
-    confined to the run folder, and an explicit deny list (the tools, then
-    ``deny_rules``). Story 113.10: every hook off, no ``instructionFiles`` plugin
+    confined to the run folder, and an explicit deny list (the tools, a ``Write``
+    deny on the run folder's ``slices/`` -- the sliced target and Dream the reviewers
+    read, which deny-over-allow keeps the session from rewriting, Story 113.14 --
+    then ``deny_rules``). Story 113.10: every hook off, no ``instructionFiles`` plugin
     config, and ``egm@egm`` enabled in this scope."""
     try:
         settings = json.loads(settings_json) if settings_json else {}
@@ -115,7 +127,8 @@ def widen_settings(
     allow.extend(rule for rule in wanted if rule not in allow)
     permissions["allow"] = allow
     deny = list(permissions.get("deny") or [])
-    deny.extend(rule for rule in (*DENIED_TOOLS, *deny_rules) if rule not in deny)
+    slices_deny = [f"Write(/{run_dir / SLICES_DIRNAME}/**)"] if run_dir is not None else []
+    deny.extend(rule for rule in (*DENIED_TOOLS, *slices_deny, *deny_rules) if rule not in deny)
     permissions["deny"] = deny
     settings["permissions"] = permissions
     configs = {
@@ -230,13 +243,15 @@ def claude_version() -> str | None:
 
 @dataclass
 class ClaudeChallengeRunner:
-    """Launches one challenge session and waits for it. Injected in tests."""
+    """Launches one challenge session and waits for it, at most ``timeout_s``. Injected in tests."""
 
     plugins_root: Path
-    timeout_s: float = _DEFAULT_TIMEOUT_S
 
-    def run(self, *, prompt: str, model: str | None, root: Path, target: Path | None, log_path: Path) -> int:
-        """Run the session on ``root``'s files from a fresh directory outside ``root``."""
+    def run(
+        self, *, prompt: str, model: str | None, root: Path, target: Path | None, log_path: Path, timeout_s: float
+    ) -> int:
+        """Run the session on ``root``'s files from a fresh directory outside ``root``. ``timeout_s`` is the
+        stage's configured ceiling; past it the session is killed and ``ChallengeTimeout`` raised."""
         profile = _claude_profile()
         binary = _resolve_binary(profile)
         if binary is None:
@@ -260,8 +275,12 @@ class ClaudeChallengeRunner:
                     f"the session directory {session_dir} is inside {root}; set TMPDIR outside the repo"
                 )
             try:
-                result = PosixProcess().run([binary, *argv], cwd=session_dir, timeout_s=self.timeout_s, env=env)
+                result = PosixProcess().run([binary, *argv], cwd=session_dir, timeout_s=timeout_s, env=env)
             except ProcessError as exc:
+                if isinstance(exc.__cause__, subprocess.TimeoutExpired):
+                    reason = f"challenge session outlived its {timeout_s:g} s ceiling and was killed"
+                    log_path.write_text(reason + "\n", encoding="utf-8")
+                    raise ChallengeTimeout(reason) from exc
                 log_path.write_text(f"challenge session did not complete: {exc}\n", encoding="utf-8")
                 raise ChallengeHarnessError(f"challenge session did not complete: {exc}") from exc
         log_path.write_text(result.stdout + result.stderr, encoding="utf-8")
