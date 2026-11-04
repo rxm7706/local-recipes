@@ -18,17 +18,20 @@ Manifest (YAML or JSON)::
 
 CLI::
 
-    refresh_wave.py MANIFEST [--repair] [--apply] [--gates] [--build]
+    refresh_wave.py MANIFEST [--repair] [--apply] [--gates] [--build] [--rebuild]
                     [--report-dir DIR] [--force] [--json]
 
 Dry-run is the default: it reads, plans and writes only the report. ``--apply``
-writes; ``--gates`` and ``--build`` run only with ``--apply``. The report
+writes; ``--gates`` and ``--build`` run only with ``--apply``. ``--rebuild`` also
+runs them on a recipe that is already current, so its ``cfe-local-build-*``
+record is written by a build of the recipe as it stands. The report
 (``report.json`` is the resume state, ``report.md`` the per-bucket summary) goes
 to ``.claude/data/conda-forge-expert/refresh-waves/<track>-<wave>/`` unless
 ``--report-dir`` says otherwise; a report directory under ``recipes/`` is refused.
 
-Exit codes: 0 the run completed (``needs-review`` and ``blocked`` are data);
-1 at least one recipe ended ``failed``; 2 the manifest or the environment made
+Exit codes: 0 the run completed (``needs-review``, ``blocked`` and a
+``build-clean-test-blocked`` build are data); 1 at least one recipe ended
+``failed`` or one of its builds failed; 2 the manifest or the environment made
 the run impossible.
 
 Everything the driver does stays on the local disk. It reads feedstocks only
@@ -455,6 +458,33 @@ def _replace_key_line(text: str, key: str, value: str) -> tuple[str, bool]:
     return pat.sub(lambda m: f"{m.group(1)} {value}", text, count=1), True
 
 
+def _append_list_items(text: str, key: str, items: list[str]) -> Optional[str]:
+    """Add ``items`` straight after the last item of the block list under ``key``, text-level.
+
+    ``recipe_editor``'s ``add_to_list`` lands a new item after the comment lines ruamel attaches
+    to the old last item, which for ``extra.recipe-maintainers`` is the whole ``#### CFE metadata``
+    block: the YAML still parses, but conda-smithy's recipe parser then fails ``validate``
+    (mason Story 25.18, 18 of 18 recipes). ``None`` when the list is not a plain block list here.
+    """
+    lines = text.split("\n")
+    heads = [i for i, line in enumerate(lines) if re.fullmatch(rf"([ \t]*){re.escape(key)}:[ \t]*", line)]
+    if len(heads) != 1:
+        return None
+    head = heads[0]
+    key_indent = len(lines[head]) - len(lines[head].lstrip())
+    last = None
+    item_prefix = None
+    for i in range(head + 1, len(lines)):
+        m = re.match(r"([ \t]*)- \S", lines[i])
+        if not m or len(m.group(1)) < key_indent or (item_prefix is not None and m.group(1) != item_prefix):
+            break
+        item_prefix, last = m.group(1), i
+    if last is None:
+        return None
+    new = [f"{item_prefix}- {item}" for item in items]
+    return "\n".join(lines[: last + 1] + new + lines[last + 1 :])
+
+
 def _add_updates_needed_token(text: str, token: str) -> str:
     """Add ``token`` to ``cfe-forge-recipe-updates-needed`` (scalar, flow or block list)."""
     pat = re.compile(r"^([ \t]*)cfe-forge-recipe-updates-needed:([^\n]*)$", re.MULTILINE)
@@ -669,28 +699,46 @@ def _run_build(recipe_yaml: Path, name: str, rec: dict[str, Any]) -> None:
     argv, out_dir = _build_argv(recipe_yaml, name)
     rc, out, err = _run(argv, timeout=BUILD_TIMEOUT_S)
     status = _classify_build(rc, out + "\n" + err, out_dir)
-    rec["build"] = {"status": status, "returncode": rc, "output_dir": str(out_dir)}
+    stamp = _iso(_now())
+    rec["build"] = {
+        "status": status, "returncode": rc, "output_dir": str(out_dir), "datetime": stamp, "stamped": False,
+    }
     if status != "success":
         rec["notes"].append(f"build {status} (exit {rc})")
-    # Stamp the real outcome into the CFE block (meta.yaml stays where it is).
+    # Stamp the real outcome into the CFE block (meta.yaml stays where it is),
+    # all four keys or none: a new status beside an older datetime would be a
+    # record no build wrote. ``stamped`` says whether all four now carry this
+    # build, so a report row whose recipe kept its older record is visible.
     try:
         text = _read_text(recipe_yaml)
-    except OSError:
+    except OSError as exc:
+        rec["notes"].append(f"build stamp not written: recipe unreadable ({exc})")
         return
     stamped = text
+    unstamped: list[str] = []
     for key, value in (
         ("cfe-local-build-status", status),
-        ("cfe-local-build-datetime", _iso(_now())),
+        ("cfe-local-build-datetime", stamp),
         ("cfe-local-build-platform", _host_subdir()),
         ("cfe-local-build-tool", "rattler-build"),
     ):
-        stamped, _ = _replace_key_line(stamped, key, value)
+        stamped, ok = _replace_key_line(stamped, key, value)
+        if not ok:
+            unstamped.append(key)
+    if unstamped:
+        rec["notes"].append(
+            "build stamp not written: " + ", ".join(unstamped) + " missing or not exactly once in the recipe"
+        )
+        return
+    written = stamped == text
     if stamped != text:
         problems = _write_check(text, stamped)
         if problems:
             rec["notes"].append("build stamp skipped: " + "; ".join(problems))
         else:
             _write_text(recipe_yaml, stamped)
+            written = True
+    rec["build"]["stamped"] = written
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -712,7 +760,8 @@ def _version_node(ctx: Any, target: str) -> Any:
 
 
 def refresh_recipe(
-    entry: dict[str, Any], *, track: str, wave: str, apply: bool, gates: bool, build: bool
+    entry: dict[str, Any], *, track: str, wave: str, apply: bool, gates: bool, build: bool,
+    rebuild: bool = False,
 ) -> dict[str, Any]:
     name = entry["name"]
     rec = _new_record(entry, apply=apply)
@@ -755,7 +804,14 @@ def refresh_recipe(
         return _finish(rec, "needs-review", f"non-pep440-version: local {local_version!r}, target {target!r}")
     if lv >= tv:
         rec["to_version"] = local_version
-        return _finish(rec, "already-current")
+        _finish(rec, "already-current")
+        if rebuild:
+            if gates:
+                _run_gates(recipe_path, rec)
+            if build:
+                _run_build(recipe_path, name, rec)
+            rec["recipe_sha256"] = _file_hash(recipe_path)
+        return rec
     if not fs["readable"]:
         return _finish(rec, "needs-review", fs["error"] or "feedstock-unread")
     if fs["version"] is None:
@@ -831,11 +887,9 @@ def refresh_recipe(
         url = _first_url(node)
         if url is not None and re.search(r"\$\{\{\s*version\b", url):
             actions.append({"action": "calculate_hash", "path": path})
-    if additions:
-        if had_list:
-            actions.extend({"action": "add_to_list", "path": "extra.recipe-maintainers", "value": h} for h in additions)
-        else:
-            actions.append({"action": "update", "path": "extra.recipe-maintainers", "value": merged})
+    # A present list grows text-level after the edit (``_append_list_items``); a missing one is set whole.
+    if additions and not had_list:
+        actions.append({"action": "update", "path": "extra.recipe-maintainers", "value": merged})
 
     def _restore() -> None:
         recipe_path.write_bytes(orig_bytes)
@@ -861,6 +915,15 @@ def refresh_recipe(
         return _finish(rec, "needs-review", f"sha256-mismatch: recomputed {new_sha} != feedstock {fs['sha256']}")
     if not fs["sha256"]:
         rec["notes"].append("feedstock sha256 unavailable; recomputed hash not cross-checked")
+
+    if additions and had_list:
+        grown = _append_list_items(edited_text, "recipe-maintainers", list(additions))
+        if grown is None:
+            _restore()
+            rec["recipe_sha256"] = _sha256_bytes(orig_bytes)
+            rec["maintainers_added"] = []
+            return _finish(rec, "needs-review", "maintainers-not-a-block-list: add the deployed handles by hand (G53)")
+        edited_text = grown
 
     comment = f"{_now():%Y-%m-%d} refresh_wave {track}-{wave}: refreshed {local_version} -> {target}"
     if additions:
@@ -1176,7 +1239,8 @@ def _render_markdown(report: dict[str, Any]) -> str:
             if r.get("gates"):
                 extra.append("gates: " + ", ".join(f"{g}={rc}" for g, rc in r["gates"].items()))
             if r.get("build"):
-                extra.append(f"build: {r['build']['status']}")
+                when = r["build"].get("datetime")
+                extra.append(f"build: {r['build']['status']}" + (f" at {when}" if when else ""))
             if r.get("dependency_diff"):
                 extra.append("dependency diff: " + _dependency_summary(r["dependency_diff"]))
             tail = f" — {'; '.join(r['reasons'])}" if r.get("reasons") else ""
@@ -1198,8 +1262,12 @@ def _load_prev(report_dir: Path, mode: str, track: str, wave: str) -> dict[str, 
     return {r["name"]: r for r in prev.get("recipes", []) if isinstance(r, dict) and "name" in r}
 
 
-def _resumable(prev: Optional[dict[str, Any]], entry: dict[str, Any], *, apply: bool) -> bool:
+def _resumable(
+    prev: Optional[dict[str, Any]], entry: dict[str, Any], *, apply: bool, rebuild: bool = False
+) -> bool:
     if not prev or prev.get("outcome") not in TERMINAL_OUTCOMES:
+        return False
+    if rebuild and prev.get("outcome") == "already-current" and not prev.get("build"):
         return False
     if prev.get("manifest_entry") != entry:
         return False
@@ -1212,7 +1280,7 @@ def _resumable(prev: Optional[dict[str, Any]], entry: dict[str, Any], *, apply: 
 
 def run_wave(
     manifest: dict[str, Any], *, repair: bool, apply: bool, gates: bool, build: bool,
-    report_dir: Path, force: bool, echo: Any = None,
+    report_dir: Path, force: bool, echo: Any = None, rebuild: bool = False,
 ) -> dict[str, Any]:
     mode = "repair" if repair else "refresh"
     track, wave = manifest["track"], manifest["wave"]
@@ -1230,7 +1298,7 @@ def run_wave(
         "summary": {},
     }
     for entry in manifest["recipes"]:
-        if _resumable(prev.get(entry["name"]), entry, apply=apply):
+        if _resumable(prev.get(entry["name"]), entry, apply=apply, rebuild=rebuild and apply):
             rec = dict(prev[entry["name"]])
             rec["resumed"] = True
         else:
@@ -1241,6 +1309,7 @@ def run_wave(
                     rec = refresh_recipe(
                         entry, track=track, wave=wave, apply=apply,
                         gates=gates and apply, build=build and apply,
+                        rebuild=rebuild and apply,
                     )
             except Exception as exc:  # one recipe never takes the wave down
                 rec = _finish(_new_record(entry, apply=apply), "failed", f"unexpected: {type(exc).__name__}: {exc}")
@@ -1273,6 +1342,9 @@ def build_parser() -> argparse.ArgumentParser:
                         help="With --apply, run validate, optimize, check-deps and scan on each written recipe.")
     parser.add_argument("--build", action="store_true",
                         help="With --apply, build each refreshed recipe into build_artifacts/<name> (refused with --repair).")
+    parser.add_argument("--rebuild", action="store_true",
+                        help="With --apply, also run --gates and --build on a recipe that is already current "
+                             "(refused with --repair).")
     parser.add_argument("--report-dir", type=Path, default=None,
                         help="Report directory (default: .claude/data/conda-forge-expert/refresh-waves/<track>-<wave>/).")
     parser.add_argument("--force", action="store_true", help="Reprocess recipes a previous run recorded as terminal.")
@@ -1285,6 +1357,8 @@ def main(argv: Optional[list[str]] = None) -> int:
     args = parser.parse_args(argv)
     if args.repair and args.build:
         parser.error("--build is refused with --repair")
+    if args.repair and args.rebuild:
+        parser.error("--rebuild is refused with --repair")
 
     try:
         manifest = load_manifest(args.manifest)
@@ -1310,7 +1384,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     report = run_wave(
         manifest,
         repair=args.repair, apply=args.apply, gates=args.gates, build=args.build,
-        report_dir=report_dir.resolve(), force=args.force,
+        report_dir=report_dir.resolve(), force=args.force, rebuild=args.rebuild,
         echo=None if args.json else (lambda line: print(line, file=sys.stderr)),
     )
     if args.json:
@@ -1319,7 +1393,12 @@ def main(argv: Optional[list[str]] = None) -> int:
         counts = ", ".join(f"{k} {v}" for k, v in sorted(report["summary"].items()))
         print(f"refresh-wave {report['mode']} {'apply' if args.apply else 'dry-run'}: {counts}")
         print(f"report: {report_dir.resolve() / 'report.md'}")
-    return 1 if any(r["outcome"] == "failed" for r in report["recipes"]) else 0
+    # A red build fails the run as a failed edit does (mason Story 25.18: a wave with four
+    # red builds used to exit 0).
+    failed = any(
+        r["outcome"] == "failed" or (r.get("build") or {}).get("status") == "failed" for r in report["recipes"]
+    )
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":

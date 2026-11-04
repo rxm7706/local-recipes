@@ -440,6 +440,18 @@ def test_deployed_maintainers_are_unioned_with_local_order_first(rw, env):
     assert rec_of(report)["maintainers_added"] == ["bob"]
     assert set(["bob", "carol", "rxm7706"]) <= set(parsed["extra"]["recipe-maintainers"])
     assert "maintainers added: bob" in path.read_text()
+    # The new handle sits with the list, above the CFE block, never under its comments (Story 25.18).
+    text = path.read_text()
+    assert text.index("    - bob") < text.index("#### CFE metadata")
+    assert "    - carol\n    - bob\n" in text
+
+
+def test_append_list_items_lands_after_the_last_item_not_after_trailing_comments(rw):
+    text = "extra:\n  recipe-maintainers:\n    - a\n    - b\n\n#### CFE metadata AND comments\n# CFE metadata\n  cfe-x: 1\n"
+    out = rw._append_list_items(text, "recipe-maintainers", ["c", "d"])
+    assert out == "extra:\n  recipe-maintainers:\n    - a\n    - b\n    - c\n    - d\n\n#### CFE metadata AND comments\n# CFE metadata\n  cfe-x: 1\n"
+    assert rw._append_list_items("extra:\n  recipe-maintainers: [a, b]\n", "recipe-maintainers", ["c"]) is None
+    assert rw._append_list_items("a:\n  recipe-maintainers:\n    - x\nb:\n  recipe-maintainers:\n    - y\n", "recipe-maintainers", ["c"]) is None
 
 
 def test_no_maintainer_handle_is_ever_dropped(rw, env):
@@ -638,9 +650,91 @@ def test_a_failed_build_is_stamped_failed(rw, env):
     path = env.write_recipe()
     env.add_feedstock("widget", "v1", fs_v1_raw())
     env.run_handler = lambda argv: (1, "compile error", "")
-    _, report = env.invoke([{"name": "widget"}], "--apply", "--build")
+    rc, report = env.invoke([{"name": "widget"}], "--apply", "--build")
     assert rec_of(report)["build"]["status"] == "failed"
     assert "cfe-local-build-status: failed" in path.read_text()
+    # A red build fails the run (Story 25.18: a wave with four red builds exited 0).
+    assert rc == 1
+
+
+def test_rebuild_builds_and_stamps_an_already_current_recipe(rw, env):
+    path = env.write_recipe(version="2.0.0")
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+    before_body = body_of(path.read_text())
+    _, report = env.invoke([{"name": "widget"}], "--apply", "--gates", "--build", "--rebuild")
+    text = path.read_text()
+    rec = rec_of(report)
+    assert rec["outcome"] == "already-current"
+    assert rec["build"]["status"] == "success"
+    assert set(rec["gates"]) == {"validate", "optimize", "check-deps", "scan"}
+    assert [a[0] for a in env.run_calls].count("rattler-build") == 1
+    assert "cfe-local-build-status: success" in text
+    assert "cfe-local-build-tool: rattler-build" in text
+    assert "cfe-local-build-datetime: none" not in text
+    assert body_of(text) == before_body  # only the CFE record moved
+    assert rec["recipe_sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
+    # The report carries the datetime the build stamped, so a run table can be read back.
+    assert rec["build"]["stamped"] is True
+    assert f"cfe-local-build-datetime: {rec['build']['datetime']}" in text
+    assert f"at {rec['build']['datetime']}" in (env.report / "report.md").read_text()
+
+
+def test_already_current_without_rebuild_is_not_built(rw, env):
+    path = env.write_recipe(version="2.0.0")
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+    before = path.read_bytes()
+    _, report = env.invoke([{"name": "widget"}], "--apply", "--gates", "--build")
+    assert rec_of(report)["outcome"] == "already-current"
+    assert rec_of(report)["build"] is None
+    assert env.run_calls == []
+    assert path.read_bytes() == before
+
+
+def test_rebuild_does_not_resume_an_unbuilt_already_current_record(rw, env):
+    path = env.write_recipe(version="2.0.0")
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+    env.invoke([{"name": "widget"}])  # dry-run: a terminal already-current record, no build
+    _, report = env.invoke([{"name": "widget"}], "--apply", "--build", "--rebuild")
+    assert not rec_of(report).get("resumed")
+    assert rec_of(report)["build"]["status"] == "success"
+    assert "cfe-local-build-status: success" in path.read_text()
+    # The built record carries the stamped file's hash, so the next run resumes it.
+    env.run_calls.clear()
+    _, report = env.invoke([{"name": "widget"}], "--apply", "--build", "--rebuild")
+    assert rec_of(report)["resumed"] is True
+    assert env.run_calls == []
+
+
+@pytest.mark.parametrize("damage", ["missing", "duplicated"])
+def test_build_reports_unstamped_when_a_record_key_is_not_there_exactly_once(rw, env, damage):
+    path = env.write_recipe(version="2.0.0")
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+    text = path.read_text()
+    line = "  cfe-local-build-datetime: none\n"
+    if damage == "missing":
+        text = text.replace(line, "")
+    else:
+        # A second copy under another mapping still parses, but the key is no longer unique.
+        text = text.replace("about:\n", "about:\n" + line, 1)
+    path.write_text(text)
+    before = path.read_bytes()
+    _, report = env.invoke([{"name": "widget"}], "--apply", "--build", "--rebuild")
+    rec = rec_of(report)
+    assert rec["build"]["status"] == "success"
+    assert rec["build"]["stamped"] is False
+    assert any("cfe-local-build-datetime" in n and "build stamp not written" in n for n in rec["notes"])
+    # All four keys or none: the recipe keeps its whole older record, never a new
+    # status beside an older datetime.
+    assert path.read_bytes() == before
+    assert rec["build"]["datetime"] not in path.read_text()
+
+
+def test_rebuild_is_refused_with_repair(rw, env):
+    env.write_recipe()
+    manifest = env.tmp / "m.json"
+    manifest.write_text(json.dumps({"schema_version": 1, "track": "B", "wave": "B1", "recipes": [{"name": "widget"}]}))
+    with pytest.raises(SystemExit):
+        rw.main([str(manifest), "--repair", "--rebuild"])
 
 
 def test_build_clean_test_blocked_needs_an_artifact_and_a_solver_message(rw, tmp_path):
