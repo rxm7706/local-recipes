@@ -321,6 +321,18 @@ Report: `.claude/data/conda-forge-expert/refresh-waves/B-25-7/report.json`.
 
 **Gates:** Expected `optimize=1` on several recipes (STD-002 on C1 mirrors). `langchain-litellm` / `milvus-lite` CRM parse errors cleared by fixing maintainer list placement after driver apply.
 
+## Correction (Story 25.17, 2026-11-01)
+
+Story 25.17 read each recipe's own `cfe-local-build-*` record back against the run table above and found they disagreed. Each recipe was rebuilt on linux-64 through `refresh_wave.py --apply --gates --build --rebuild --force` (reports `_bmad-output/projects/pyforge-mason/implementation-artifacts/refresh-waves/25-17/report.json` and, for the recipes rebuilt after the independent review, `.../25-17/review/report.json`; Tier 3). Every *after* value was written by that build, and equals `build.datetime` in the report that rebuilt it last. The run table above is left as it was.
+
+| Recipe | Record before (status, datetime, version) | Record after (status, datetime, version) |
+|---|---|---|
+| langflow | success, 2026-09-03T09:29:20Z (1.12.4) | success, 2026-11-02T02:07:49Z (1.13.0) |
+
+- The *before* record was written on 2026-09-03, before Story 25.7 moved the recipe to 1.12.4.
+- The feedstock is now at 1.13.0. The driver bumps only `context.version`, so the 1.13.0 build first ran against the 1.12.4 dependency set; `recipe.yaml` and `patch_deps.py` were then re-mirrored from the feedstock.
+- After the re-mirror, `langflow-base` failed its test `pip check`: conda-forge `openinference-instrumentation-langchain` 0.1.80 and 0.1.81 declare `openinference-instrumentation >=0.1.27` in their conda depends while their wheels require `>=0.1.71`, and conda-forge stops at 0.1.66. That is the G36 / G77 pattern (conda depends looser than the wheel), not external skew. Following G77 remedy 0, `langflow-base` caps `openinference-instrumentation-langchain >=0.1.29,<0.1.80`, a local deviation recorded in the recipe's CFE comments with its revert trigger; 0.1.76 needs only `>=0.1.61`. With `build_artifacts/langflow` cleaned first (G68), all eight outputs, the final `langflow` included, build and pass their tests.
+
 ## Review Triage Log
 
 ### 2026-10-10 — build-auto pass

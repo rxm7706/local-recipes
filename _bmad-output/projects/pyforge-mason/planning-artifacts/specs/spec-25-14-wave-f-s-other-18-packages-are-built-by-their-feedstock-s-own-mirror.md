@@ -340,6 +340,16 @@ Registry (`conda-forge/feedstock-outputs`, sharded `outputs/` tree): all 16 `dbg
 
 - Closed **DW-mason-25-2** (“Twenty genuinely-missing local mirrors…”) — Wave F completed by Stories **25.13** and **25.14**.
 
+## Correction (Story 25.17, 2026-11-01)
+
+Story 25.17 read each recipe's own `cfe-local-build-*` record back against the run table above and found they disagreed. Each recipe was rebuilt on linux-64 through `refresh_wave.py --apply --gates --build --rebuild --force` (reports `_bmad-output/projects/pyforge-mason/implementation-artifacts/refresh-waves/25-17/report.json` and, for the recipes rebuilt after the independent review, `.../25-17/review/report.json`; Tier 3). Every *after* value was written by that build, and equals `build.datetime` in the report that rebuilt it last. The run table above is left as it was.
+
+| Recipe | Record before (status, datetime, version) | Record after (status, datetime, version) |
+|---|---|---|
+| langflow | success, 2026-09-03T09:29:20Z (1.12.4) | success, 2026-11-02T02:07:49Z (1.13.0) |
+
+- The `recipes/langflow` subsection above says its build record from Story 25.7 stands; that record was dated 2026-09-03, before 25.7. See the Story 25.7 correction: the suite is now at the feedstock's 1.13.0 (bundles 0.2.0 / 0.2.0 / 0.3.0 / 0.2.1) and its record is a green build of all eight outputs, with one local cap on `openinference-instrumentation-langchain` (G36 / G77).
+
 ## Review Triage Log
 
 ### 2026-10-10 — Review pass

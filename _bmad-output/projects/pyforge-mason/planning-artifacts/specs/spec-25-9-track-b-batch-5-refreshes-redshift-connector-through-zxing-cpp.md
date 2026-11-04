@@ -296,6 +296,24 @@ Ten `would-refresh`; **tree-sitter-swift** still `url-version-baked`; **zxing-cp
 
 **Gates:** Expected `optimize=1` on several C1 v0 mirrors (STD-002). **selectolax** `check-deps=1` (virtual/cross-python placeholder pattern).
 
+## Correction (Story 25.17, 2026-11-01)
+
+Story 25.17 read each recipe's own `cfe-local-build-*` record back against the run table above and found they disagreed. Each recipe was rebuilt on linux-64 through `refresh_wave.py --apply --gates --build --rebuild --force` (reports `_bmad-output/projects/pyforge-mason/implementation-artifacts/refresh-waves/25-17/report.json` and, for the recipes rebuilt after the independent review, `.../25-17/review/report.json`; Tier 3). Every *after* value was written by that build, and equals `build.datetime` in the report that rebuilt it last. The run table above is left as it was.
+
+| Recipe | Record before (status, datetime, version) | Record after (status, datetime, version) |
+|---|---|---|
+| robocorp-workitems | failed, 2026-10-10T14:43:04Z (1.5.1) | success, 2026-11-02T01:21:22Z (1.5.1) |
+| StringZilla | failed, 2026-10-10T14:49:40Z (5.2.0) | success, 2026-11-02T02:14:58Z (5.3.2) |
+| tree-sitter-php | failed, 2026-10-10T14:52:32Z (0.25.1) | success, 2026-11-02T02:16:35Z (0.25.1) |
+| vlmrun | failed, 2026-10-10T14:53:48Z (0.9.0) | success, 2026-11-02T01:19:37Z (0.9.0) |
+| wagtail | failed, 2026-10-10T14:55:20Z (8.0) | success, 2026-11-02T02:24:45Z (8.0.1) |
+| zxing-cpp | not-attempted, none (3.1.1) | success, 2026-11-02T02:10:53Z (3.1.1) |
+
+- `zxing-cpp` had never been built (`not-attempted`, no datetime). It builds green. `conda-forge.yml` was re-mirrored from the feedstock (the local copy carried a leftover `azure.store_build_artifacts`), and the recipe-dir `conda_build_config.yaml`, which the feedstock does not have, was removed (G94); the build does not need it.
+- `StringZilla` (refreshed 5.2.0 → 5.3.2): the test imported a `cli` package and declared `sz_split` / `sz_wc` entry points that upstream no longer ships; the test now imports `stringzilla` with `pip check`, as the feedstock does.
+- `tree-sitter-php`: its license patch no longer applied (0.25.1 declares `license.text = "MIT"`); the patch was removed, as the feedstock did.
+- `wagtail` (8.0 → 8.0.1) was behind its feedstock and was refreshed by the driver; its `wagtail` entry point, `wagtail help` test, `about` block (with `wagtail/models/copying.py` in `license_file`) and `--disable-pip-version-check` were then synced from the feedstock (G96). Its last record is in `.../25-17/review-wagtail/report.json`. `robocorp-workitems` and `vlmrun` built green with no fix; their `failed` records were stale.
+
 ## Review Triage Log
 
 ### 2026-10-10 — build-auto pass
