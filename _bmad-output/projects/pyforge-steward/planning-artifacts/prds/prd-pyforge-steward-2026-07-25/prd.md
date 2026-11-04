@@ -2,7 +2,9 @@
 fr-derivation-from: "2026-09-17"
 title: Steward (pyforge-steward)
 created: 2026-07-25
-updated: "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): chain-currency cascade (brief -> PRD, spec -> PRD) for research/egm-audit-2026-11-01.md (25 of 30 findings accepted) and spec-pyforge-steward's re-derive of CAP-176 and CAP-177; FR-50 and FR-51 amended in place, FR-52 unchanged (CAP-178 rides Story 118.8); no FR registered, renumbered or removed. See § Currency reconciliation — 2026-11-01 (EGM fleet audit). Prior "2026-10-31"
+updated: "2026-11-04"   # RE-STAMPED 2026-11-04: chain-currency cascade (spec -> PRD) (the Surface reconcile of Stories 118.7 and 118.8 on spec-pyforge-steward and spec-pyforge-unifying-strategy); no CAP, FR, AD, epic or story moved. See § Currency reconciliation — 2026-11-04.
+# 2026-11-01  # RE-STAMPED 2026-11-01 (steward Stories 118.7 and 118.8): chain-currency cascade (spec -> PRD) for spec-pyforge-steward's amendments of CAP-176, CAP-177 and CAP-178; FR-50, FR-51 and FR-52 amended in place; no FR registered, renumbered or removed. See § Currency reconciliation — 2026-11-01 (Stories 118.7 and 118.8). Prior "2026-11-01"
+# 2026-11-01  # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): chain-currency cascade (brief -> PRD, spec -> PRD) for research/egm-audit-2026-11-01.md (25 of 30 findings accepted) and spec-pyforge-steward's re-derive of CAP-176 and CAP-177; FR-50 and FR-51 amended in place, FR-52 unchanged (CAP-178 rides Story 118.8); no FR registered, renumbered or removed. See § Currency reconciliation — 2026-11-01 (EGM fleet audit). Prior "2026-10-31"
 # 2026-10-31  # RE-STAMPED 2026-10-31 (CAP-176..CAP-178): chain-currency cascade (spec -> PRD) for the Dream's 2026-10-31 section (Nebari hosted: NKP on kind, then Hetzner, with the data-science pack); FR-50, FR-51 and FR-52 registered, each derived from its CAP; no FR renumbered or removed. See § Currency reconciliation — 2026-10-31 (CAP-176..CAP-178). Prior "2026-10-30"   # RE-STAMPED 2026-10-30: chain-currency (spec -> PRD) for Stories 109.6, 109.1 and 109.7 (fixes and a closing review under CAP-169..CAP-171; no CAP, FR or AD moved). See § Currency reconciliation — 2026-10-30.
 # 2026-10-27  # RE-STAMPED 2026-10-27 (CAP-175): chain-currency cascade (spec -> PRD) for CAP-175 (the preflight and a PR's CI answer within a measured budget, and a station suite runs once, as its package-local and live-tree halves); FR-49 registered, derived from the CAP. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (CAP-7 retrofit, Epic 114): the station memlog gained the retrofit decision; no requirement changes. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (CAP-174): chain-currency cascade (spec -> PRD) for CAP-174 (the Platform CI test job's budget and its browser install); FR-48 registered (FR-42..FR-47 are claimed by draft PR #2274). See § Currency reconciliation — 2026-10-26 (CAP-174). Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 111.1): chain-currency cascade (spec -> PRD) after the Spec's capability text was restored from the pre-fold source (titles, intents, successes; no CAP added or moved); no FR, NFR or arrow changes. See § Currency reconciliation — 2026-10-26 (Story 111.1). Prior "2026-10-25"   # RE-STAMPED 2026-10-25 (Story 110.1): FR-1..FR-31, which the 2026-09-17 fold left without arrows, now name the capabilities that realize them (CAP-1..CAP-4, CAP-18..CAP-20, CAP-127..CAP-131, CAP-57..CAP-61; FR-8..FR-11 also CAP-168); no FR text, number or NFR moves. See § Currency reconciliation — 2026-10-25 (Story 110.1). Prior "2026-10-23"   # RE-STAMPED 2026-10-23: chain-currency (spec -> PRD) for Story 71.12's decision and mint (a fix under CAP-159: every cancelled preflight lane names what stopped the run), then Stories 71.13 (CAP-159) and 13.6 (CAP-157 amended in place: the trunk joins a workspace's source as a landing ref); no CAP or FR added, no FR or AD amended; FR-32 holds as written. See § Currency reconciliation — 2026-10-23. Prior: RE-STAMPED 2026-10-21: chain-currency (spec -> PRD) for CAP-169..CAP-173 (BMAD marketplace reset; Epic 109). FR-42..FR-46 registered. See § Currency reconciliation — 2026-10-21. Prior: RE-STAMPED 2026-10-17: chain-currency (spec -> PRD) for Story 108.1's mint (fixes under CAP-167 and CAP-166) and the memlog entries since 2026-10-14; no CAP, FR or AD added or amended; FR-40's consequence (the env matrix and the BMAD-estate catalog) is met as written; FR-32 and Story 103.6's touched scope recorded, not re-derived. See § Currency reconciliation — 2026-10-17. Prior: RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for CAP-168 (the Pages duct; operator rulings 2026-10-13); FR-41 registered; FR-8 and FR-11 move onto `steward pages build|status`, FR-9 and FR-10 retire with `deploy dashboard` (superseded in part, nothing renumbered); D6's no-new-workflow clause retired; SM-2 recorded as history. See § Currency reconciliation — 2026-10-14 (the Pages duct). Prior: RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for CAP-167 (estate refresh; the plan's recommended answers Q1-Q9 adopted as assumptions); FR-40 registered. See § Currency reconciliation — 2026-10-13 (estate refresh). Prior: RE-STAMPED 2026-10-12: chain-currency cascade (spec -> PRD) for CAP-166 (the CI pause control plane, operator rulings Q1-Q8); FR-39 registered. See § Currency reconciliation — 2026-10-12. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entries (Story 67.4 re-scoped repo-only under fnd:CAP-13; Stories 85.5 and 72.2 unblocked and index row 49.13 done; Story 86.1 minted, a fix under CAP-114); no CAP minted, no FR registered. See § Currency reconciliation — 2026-10-10.. Prior: RE-STAMPED 2026-10-07 (later): chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-04..07 entries (Stories 85.1-85.4 landed under FR-38; Story 74.2, the chart, under FR-36, and the flag on in dev and staging); no FR registered. See § Currency reconciliation — 2026-10-07 (later: Stories 85.1–85.4 and 74.2).. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec memlog -> PRD) for the independent review of the free-threading Dream entry (research/free-threading-readiness-dream-review-2026-10-07.md; four operator rulings); no CAP minted, no FR registered. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for CAP-165 (Epic 85, preserved-work refs; CAP-156 and CAP-157 amended); FR-38 registered. Earlier: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for the Phase 3 rulings (CAP-60 amended, Epic 84); no FR registered. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec memlog -> PRD) for Epic 78 (security hotfix; defects of CAP-99, CAP-86 and unifying CAP-12; no FR registered). Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-163 (Epic 74) and CAP-164 (Epic 75); FR-36 and FR-37 registered; the Guild's spec-feature-flag-governance CAP-5 routed to Epic 76 with no FR. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
 # 2026-10-25  # RE-STAMPED 2026-10-25: chain-currency (spec -> PRD) for Stories 71.14 and 99.8 (fixes under CAP-159 and CAP-166) and Story 13.7 (a fix under CAP-107 and CAP-157: clean --delete moves a landed workspace's Tier-3 files to the main checkout and names every refusal); no CAP or FR added, no FR or AD amended. See § Currency reconciliation — 2026-10-25 (Stories 71.14, 99.8 and 13.7).
@@ -3037,10 +3039,12 @@ stay unused (reserved by draft PR #2274's range), so these take the next ids aft
 
 `steward deploy nic validate|up|kubeconfig|outputs|down` wraps the five `nic` verbs by subprocess over
 `src/platform/deploy/nic/<project_name>.yaml` (`down` passes `--auto-approve`), reads each secret the config names in an `env:`
-field through `keys` (the age identity is needed only then), takes `nic` from the pixi environment (SelfExplainML, floor
-`>=0.14.0`, no version cap) and `opentofu` from conda-forge through `NIC_TOFU_PATH` for cloud providers, supports local kind
-first and Hetzner second, refuses with usage code 2 a missing or malformed config, a named secret it cannot map, find or decrypt,
-a missing age identity and a missing `nic`, journals each run and returns a `DutyResult`. Behind `pyforge.steward.nkp_deploy`.
+field through `keys` (the age identity is needed only then), takes `nic`, `kubectl` and `helm` from the `pyforge-steward` pixi
+environment (`nic` from SelfExplainML, floor `>=0.14.0`, no version cap) and `opentofu` from conda-forge through `NIC_TOFU_PATH`
+for cloud providers, supports local kind first and Hetzner second, refuses with usage code 2 a missing or malformed config, a
+named secret it cannot map, find or decrypt, a missing age identity and a missing `nic`, runs a non-local `up` only under the
+operator's `--yes` (an agent's `deploy nic up --yes` is a session denial), journals each run and returns a `DutyResult`. Behind
+`pyforge.steward.nkp_deploy`.
 Consequence: on a rootless-Docker host with `fs.inotify.max_user_instances=1024` and the gateway reached by a loopback
 `kubectl port-forward` (no port override), an attended `deploy nic up` on the kind config exits 0 with every NKP ArgoCD
 Application `Healthy`, `outputs` exits 0 naming the domain and the Keycloak issuer, and `down` exits 0 with the cluster gone; on
@@ -3048,30 +3052,40 @@ Hetzner (attended and operator-gated, Story 118.3) the same verbs over the `clus
 workers) exit 0, `outputs` names the real domain and issuer, and `down` leaves no server, volume or load balancer;
 `pyforge-steward-test` exits 0 with the argv map, the refusals and both flag states pinned. *(amended in place 2026-11-01, EGM
 fleet audit (marshal Story 113.7) STW-M-Z5, STW-M-C3, STW-D-R5, STW-D-C4, STW-M-Z3: CAP-176 re-derived; see
-`spec-pyforge-steward`'s memlog of that date)*
+`spec-pyforge-steward`'s memlog of that date; amended in place 2026-11-01, Stories 118.7 and 118.8 (STW-M-C6, the consent
+half of STW-M-D2): `kubectl` and `helm` in the environment, the operator's `--yes` on a non-local `up`)*
 
 #### FR-51: nebi-pack, then the data-science pack, install from the same config as ArgoCD Applications ← CAP-177
 
 The config names the packs and their values (`keycloak.hostname`; `nebi.remote.enabled: true`, nebi-pack first in namespace
 `nebi`; `/shared` gated by `sharedStorage.enabled` and served by the chart's NFS server (`sharedStorage.nfsServer.enabled`) on
 rootful-Docker kind or by an RWX `sharedStorage.storageClass`, `longhorn` on Hetzner; on kind, split-horizon OIDC to Keycloak's
-in-cluster Service); the verb writes each pack's ArgoCD `Application` (project `nebari-apps`) into the GitOps source, labels the
-pack namespaces `nebari.dev/managed=true`, waits for `Healthy` on the sync it rendered and journals the pulled chart digests
-(no Warden policy reads them). Behind `pyforge.steward.nkp_packs`. Consequence: on rootless kind, with `/shared` waived
+in-cluster Service); the pack step refuses by name a missing `kubectl` or `helm` before it writes or runs anything; on kind the
+verb writes each pack's ArgoCD `Application` (project `nebari-apps`) into NIC's local GitOps directory and commits it, and on a
+cloud config it applies the same Applications to the cluster with `kubectl` and never commits or pushes (only `nic` writes
+`gitops/*`); it labels the pack namespaces `nebari.dev/managed=true`, waits for `Healthy` on the sync it rendered and journals
+the pulled chart digests (no Warden policy reads them). Behind `pyforge.steward.nkp_packs`. Consequence: on rootless kind, with `/shared` waived
 (operator ruling 2026-11-01), `pyforge-steward-nkp-probes` exits 0 with no probe skipped — `https://hub.<domain>` signs in
 through Keycloak, a `small-instance` server spawns to ready, the landing page shows the JupyterHub and Nebi cards — and the
 pack's Keycloak bootstrap job reads `Complete`; on Hetzner (attended and operator-gated, Story 118.3) the same probes exit 0
 over a Let's Encrypt certificate with `/shared` mounted from `longhorn`. *(amended in place 2026-11-01, EGM fleet audit (marshal
 Story 113.7) STW-M-Z1, STW-D-R2, STW-D-C1, STW-M-D4, STW-M-Z3, STW-M-Z4, STW-D-R3, STW-D-C3: CAP-177 re-derived; see
-`spec-pyforge-steward`'s memlog of that date)*
+`spec-pyforge-steward`'s memlog of that date; amended in place 2026-11-01, Stories 118.7 and 118.8 (STW-M-C6, STW-M-D1,
+STW-M-Z6): the by-name CLI refusal and the cloud write location, on the operator's 2026-11-01 ruling)*
 
-#### FR-52: The GitOps source is NIC's local directory on kind, or the monorepo on a branch that only `nic` writes ← CAP-178
+#### FR-52: The GitOps source is NIC's local directory on kind, or the monorepo on a branch only `nic`'s deploy key writes ← CAP-178
 
 A kind config uses `repository.local`; a cloud config uses `repository.existing` on `rxm7706/local-recipes` with
-`branch: gitops/<project_name>` and `path: gitops/<project_name>`; `refs/heads/gitops/` joins the roster's `protected_refs`
-as an `operational-branch` (CAP-165); the verb refuses `branch: main` or any branch outside `gitops/`; `GIT_TOKEN` is a
-fine-grained PAT read through `keys`. Behind `pyforge.steward.nkp_gitops_branch`. Consequence: after a cloud deploy
-`origin/main` carries no `nic` commit and `gitops/<project_name>` holds the generated Applications.
+`branch: gitops/<project_name>` and `path: gitops/<project_name>`, written only by `nic` under its own deploy key
+(`GITOPS_DEPLOY_KEY`, read through `keys`, with a keys-inventory row; it replaces the `GIT_TOKEN` PAT); a `gitops/**` server
+ruleset (creation, update, deletion, non-fast-forward) whose only bypass is that key refuses every other writer, and
+`refs/heads/gitops/` joins the roster's `protected_refs` as an `operational-branch` (CAP-165) for the hook's deletion denial;
+the verb refuses, for every action, `branch: main` or any branch outside `gitops/`; no secret-shaped value enters the tracked
+config or the rendered tree (on cloud checked after `up` over `origin/main..origin/gitops/<project_name>`), and the verb never echoes `nic`'s output unredacted. Behind `pyforge.steward.nkp_gitops_branch`.
+Consequence: after a cloud deploy every commit in `origin/main..origin/gitops/<project_name>` is authored and committed
+by `Nebari Infrastructure Core <nic[bot]@users.noreply.github.com>`, and `gitops/<project_name>/` holds the
+generated Applications. *(amended in place 2026-11-01, Story 118.8 (STW-M-D1, STW-M-Z2, STW-M-Z6, STW-M-C4, STW-D-R1,
+STW-D-C5, STW-M-D5): CAP-178 re-derived; see `spec-pyforge-steward`'s memlog of that date)*
 
 **Content changed:** this section added; FR-50..FR-52 registered, each derived from its CAP; no FR renumbered or removed.
 `updated:` bumped.
@@ -3105,3 +3119,30 @@ accepted, 5 rejected, 0 deferred), and the `spec→prd` edge: `spec-pyforge-stew
 
 **Content changed:** this section added; FR-50 and FR-51 amended in place (in this PR, dated in their own text); no FR
 registered, renumbered or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-11-01 (Stories 118.7 and 118.8)
+
+*Trigger: the `spec→prd` edge after `spec-pyforge-steward`'s memlog of 2026-11-01 — the nic 0.17.0 source read, the
+operator's ruling that cloud pack Applications are applied to the cluster and never committed, the CAP-176, CAP-177 and
+CAP-178 amendments, the cost Non-goal decision and the settled Open Question. Same-day reconcile.*
+
+- **FR-50 ← CAP-176, amended in place above.** `kubectl` and `helm` come from the `pyforge-steward` environment (Story 118.7,
+  STW-M-C6); a non-local `up` runs only under the operator's `--yes`, an agent's `deploy nic up --yes` being a session denial
+  (Story 118.8, the consent half of STW-M-D2).
+- **FR-51 ← CAP-177, amended in place above.** The pack step refuses a missing `kubectl` or `helm` by name (Story 118.7); on a
+  cloud config the Applications are applied with `kubectl` and never committed or pushed (Story 118.8, STW-M-D1, STW-M-Z6).
+- **FR-52 ← CAP-178, amended in place above.** The writer is `nic`'s deploy key; the enforcement is the `gitops/**` ruleset;
+  the branch refusal covers every action; the consequence is the identity probe on `origin/gitops/<project_name>`; the
+  no-secret rule enters the requirement (Story 118.8).
+- **Stories under these FRs.** 118.7 and 118.8 land together (operator 2026-11-01); 118.3 stays `backlog` with Deps S-118.1,
+  S-118.2, S-118.8 until its operator-owned inputs exist.
+
+**Content changed:** this section added; FR-50, FR-51 and FR-52 amended in place (dated in their own text); no FR registered,
+renumbered or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-11-04
+
+`spec→prd` edge: the governing Spec memlogs moved to 2026-11-04 for the Surface reconcile of Stories 118.7 and 118.8 on spec-pyforge-steward and spec-pyforge-unifying-strategy. Stories 118.7 and 118.8 landed with marshal 113.14 and mason 25.17 and 25.18 in one PR (operator 2026-11-01). The requirements those stories realize were
+amended on 2026-11-01 and stand as written.
+
+**Content changed:** this section added; no FR registered, amended, renumbered or removed. `updated:` bumped.

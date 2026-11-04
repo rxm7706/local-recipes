@@ -287,6 +287,12 @@ def run_nic(deps: NicDeps, *, action: str, config: Path) -> DutyResult:
             summary="deploy nic: refused — nic is not installed in the pixi environment (CONDA_PREFIX/bin/nic)",
             details={"exit_code": EXIT_USAGE},
         )
+    if action == "up":
+        from .deploy_nic_packs import preflight_pack_clis
+
+        refused = preflight_pack_clis(document)
+        if refused is not None:
+            return refused
     subcommand = _NIC_SUBCOMMAND[action]
     argv = [nic, subcommand, "-f", str(config_path), *_NIC_EXTRA_ARGS.get(action, ())]
     child_env = {k: v for k, v in os.environ.items() if k not in secret_env and k not in required}

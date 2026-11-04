@@ -2,7 +2,7 @@
 title: "118.8: The gitops branch has one named writer, enforced"
 type: 'fix'
 created: '2026-11-01'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
@@ -99,14 +99,24 @@ Parent: `spec-pyforge-steward` CAP-178
 
 ## Auto Run Result
 
-Status: backlog
+Status: done
 
-Summary: not started.
+Summary (2026-11-01, hand-driven in the five-story EGM landing PR):
+- AC1: the nic 0.17.0 source (the recipe's source tarball, sha256 `9dc0aac3…c028`, read read-only) is recorded in one memlog event: `repository.existing` clones into a temporary `nic-gitops-*` directory deleted when `nic deploy` exits; a branch absent on the remote starts from `main`'s tip; push sends only the configured branch; the commit stages everything in the clone (`AddWithOptions{All: true}`) as `Nebari Infrastructure Core <nic[bot]@users.noreply.github.com>`; auth reads `auth.token.env` or `auth.ssh.env`.
+- The reading made AC7's "write pack Applications into nic's clone before `nic deploy`" impossible; the operator ruled on 2026-11-01 that on a cloud config steward applies the pack Applications to the cluster with `kubectl` and never commits or pushes (memlog `(decision)` of that date).
+- AC2: the Dream's 2026-10-31 section Realization log carries the 2026-11-01 ruling-4 addendum.
+- AC3/AC4: `--type capability` entries amend CAP-178 (deploy key `GITOPS_DEPLOY_KEY` replacing `GIT_TOKEN`; the `gitops/**` ruleset with creation, update, deletion and non_fast_forward, the deploy key its only bypass; the hook narrowed to deletion; the identity probe on `origin/gitops/<project_name>`; the no-secret rule, the inventory row and an unechoed summary; the branch refusal and the flag fallback on every action), CAP-176 (the operator's `--yes` on a non-local `up`; the Non-goal's premise ends with the first Hetzner `up`) and CAP-177 (the cloud write location; the Warden clause stays as narrowed on 2026-11-01).
+- AC5: `docs/governance/guild-roster.json` `session_denials` gains `steward-deploy-nic-up-yes`, `.claude/hooks/pre-shell.py` gains `match_steward_deploy_nic_up_yes` in the same change, and `tests/scripts/test_pre_shell_hook.py` pins three denied and four allowed forms (163 passed); `tests/scripts/test_session_denial_forms.py` exits 0 (its backticked forms resolve).
+- AC6: all eight finding ids already carry their 2026-11-01 audit events, so no new per-finding event; `SPEC.md` re-derived by scratchpad render (operator approval 2026-11-01; both self-validate passes on the memlog); FR-50, FR-51 and FR-52 amended in place with a 2026-11-01 currency reconciliation.
+- AC7: Story 118.3's spec and its `epics.md` block are amended (the Approach follows the 2026-11-01 ruling, not AC7's clone wording); 118.3 stays `backlog`.
+- AC8: no file under `src/shared/packages/pyforge-steward/src/` changed for this story (the one change there is Story 118.7's `deploy_nic_packs.py`); the checks run in the landing PR's preflight.
 
 ## Spec Change Log
 
+- 2026-11-01: the nic source read showed nic's cloud clone is a temporary directory inside `nic deploy`, so AC4's and AC7's "pack Applications are written into nic's clone before `nic deploy`" cannot hold; on the operator's ruling of 2026-11-01, CAP-177 and Story 118.3 say instead that steward applies the cloud pack Applications to the cluster with `kubectl` and never commits or pushes. AC3(d)'s `GIT_TOKEN` inventory row becomes a `GITOPS_DEPLOY_KEY` row: the ruling's deploy key replaces the PAT. Lands in one PR with the other four parked EGM stories (operator 2026-11-01).
 - 2026-11-01: minted from the EGM fleet audit (marshal Story 113.7), clusters STW-CL-5, STW-CL-6 and STW-CL-7, with the operator's ruling of the same date; parked at `backlog`. Deviation from the triage's fix steps: the `session_denials` entry and its `.claude/hooks/pre-shell.py` matcher land in one change here, not the entry here and the matcher in Story 118.3, because the hook refuses a declared rule with no matcher.
 
 ## Review Triage Log
 
-- (none yet)
+- 2026-11-01 — independent review 1 (separate agent, read-only): AC2–AC7 met; major: the new `session_denials` matcher (and its `steward-estate-*` siblings) was bypassed by argparse abbreviations (`--y`, `--ye`), `python -m pyforge.steward`, a binary path, `sh -lc` and `env bash -c` → fixed with an abbreviation-proof flag match, any steward entry point and wrapped shells; minor, all fixed: the identity probe listed `main`'s authors (now `origin/main..origin/gitops/<p>`), the cloud no-secret rule had no mechanism (a post-`up` scan of that range), "non-local" was defined two ways (now any provider but local kind), stale `GIT_TOKEN` in the how-to and the spine, 118.3's Verification and Never list, the 118.7/118.8 epics blocks, the `down`/direct-nic consent residual named in CAP-176, the DeployKey-bypass caveat in CAP-178.
+- 2026-11-01 — re-review 2: every fix verified; remaining wrapper gaps (`timeout … bash -c`, `nohup`, `bash --login -c`, `bash -o pipefail -c`, `env -u`, `( … --yes)`, `$( … --yes)`, `--yes>log`) → fixed and tested (183 hook tests); `echo … | bash` and a future `-y` alias stay instruction-only. Nits fixed: duplicated date, how-to wording, spine notes, CAP text re-wrapped to 128 columns.

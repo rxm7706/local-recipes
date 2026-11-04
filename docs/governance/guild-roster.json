@@ -359,6 +359,12 @@
       "reason": "Installer-owned trees re-apply only under operator `pyforge steward estate realize --yes` — agents run `pyforge steward estate realize --plan` (ruling Q10)."
     },
     {
+      "id": "steward-deploy-nic-up-yes",
+      "applies_to": "bash",
+      "trigger": "pyforge steward deploy nic up … --yes (or pixi run … pyforge steward deploy nic up … --yes)",
+      "reason": "A non-local NKP bring-up (deploy nic up on any provider but local kind) builds cloud resources only under the operator's own `--yes` (spec-pyforge-steward CAP-176, Story 118.8) — agents run `pyforge steward deploy nic validate --config <cfg>`, and kind's local up needs no `--yes`."
+    },
+    {
       "id": "bmad-switch-unsafe",
       "applies_to": "bash",
       "trigger": "scripts/bmad-switch run from a worktree, or with BMAD_ACTIVE_PROJECT already set",

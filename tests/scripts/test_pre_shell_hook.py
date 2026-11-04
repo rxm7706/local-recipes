@@ -353,6 +353,57 @@ def test_pixi_task_add_allowed(fake_repo: Path) -> None:
 
 
 # --------------------------------------------------------------------------
+# steward-deploy-nic-up-yes (Story 118.8, spec-pyforge-steward CAP-176)
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "pyforge steward deploy nic up --config src/platform/deploy/nic/my-nebari-hetzner.yaml --yes",
+        "pixi run -e pyforge-steward pyforge steward deploy nic up -f cfg.yaml --yes",
+        "steward deploy nic up --yes --config cfg.yaml",
+        # argparse abbreviations, other entry points and wrapped shells (Story 118.8 review)
+        "pyforge steward deploy nic up -f cfg.yaml --y",
+        "pyforge steward deploy nic up -f cfg.yaml --ye",
+        "pyforge steward deploy nic up -f cfg.yaml --yes=true",
+        "python -m pyforge.steward deploy nic up --yes -f cfg.yaml",
+        ".pixi/envs/pyforge-steward/bin/steward deploy nic up --yes -f cfg.yaml",
+        "sh -lc 'pyforge steward deploy nic up -f cfg.yaml --yes'",
+        "env FOO=1 bash -c 'pyforge steward deploy nic up -f cfg.yaml --yes'",
+        "timeout 3600 bash -c 'pyforge steward deploy nic up -f cfg.yaml --yes'",
+        "nohup bash -c 'pyforge steward deploy nic up -f cfg.yaml --yes'",
+        "bash --login -c 'pyforge steward deploy nic up -f cfg.yaml --yes'",
+        "bash -o pipefail -c 'pyforge steward deploy nic up -f cfg.yaml --yes'",
+        "env -u FOO bash -c 'pyforge steward deploy nic up -f cfg.yaml --yes'",
+        "(pyforge steward deploy nic up -f cfg.yaml --yes)",
+        "out=$(pyforge steward deploy nic up -f cfg.yaml --yes)",
+        "pyforge steward deploy nic up -f cfg.yaml --yes>up.log",
+    ],
+)
+def test_deploy_nic_up_yes_denied(fake_repo: Path, command: str) -> None:
+    result = _run(_claude_bash(command, fake_repo), fake_repo)
+    assert result.returncode == 0
+    assert _claude_deny_reason(result) == _real_session_denial_reason("steward-deploy-nic-up-yes")
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "pyforge steward deploy nic up --config src/platform/deploy/nic/my-nebari-local.yaml",
+        "pyforge steward deploy nic validate --config cfg.yaml",
+        "pyforge steward deploy nic down --config cfg.yaml",
+        "pyforge steward ci pause --yes test-linux",
+        "pyforge steward deploy nic up -f cfg.yaml --yaml-out x",
+    ],
+)
+def test_deploy_nic_without_up_yes_allowed(fake_repo: Path, command: str) -> None:
+    result = _run(_claude_bash(command, fake_repo), fake_repo)
+    assert result.returncode == 0
+    assert _claude_deny_reason(result) != _real_session_denial_reason("steward-deploy-nic-up-yes")
+
+
+# --------------------------------------------------------------------------
 # Rule 4: bmad-switch-unsafe
 # --------------------------------------------------------------------------
 
@@ -1299,3 +1350,27 @@ def test_drifted_session_denials_fails_loud(fake_repo: Path, tmp_path: Path) -> 
     result = _run(_claude_bash("ls -la", other), other, hook_path=hook_copy)
     assert result.returncode == 2
     assert "drifted" in result.stderr
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "pyforge steward estate realize --ye",
+        "python -m pyforge.steward estate realize --yes",
+        "bash -lc 'pyforge steward estate realize --yes'",
+    ],
+)
+def test_estate_realize_yes_abbreviations_and_wrappers_denied(fake_repo: Path, command: str) -> None:
+    result = _run(_claude_bash(command, fake_repo), fake_repo)
+    assert result.returncode == 0
+    assert _claude_deny_reason(result) == _real_session_denial_reason("steward-estate-realize-yes")
+
+
+def test_split_subcommands_sees_env_and_bundled_c_shells(hook_module) -> None:
+    assert ["echo", "inner"] in hook_module.split_subcommands("env A=1 bash -c 'echo inner'")
+    assert ["echo", "inner"] in hook_module.split_subcommands("sh -lc 'echo inner'")
+    assert ["echo", "inner"] in hook_module.split_subcommands("/bin/bash -ec 'echo inner'")
+    assert hook_module.split_subcommands("bash script.sh -c x") == [["bash", "script.sh", "-c", "x"]]
+    assert ["echo", "inner"] in hook_module.split_subcommands("timeout -k 5 60 bash -c 'echo inner'")
+    assert ["echo", "inner"] in hook_module.split_subcommands("sudo -u root nice -n 5 sh -o pipefail -c 'echo inner'")
+    assert hook_module.split_subcommands("timeout 60 python run.py") == [["timeout", "60", "python", "run.py"]]

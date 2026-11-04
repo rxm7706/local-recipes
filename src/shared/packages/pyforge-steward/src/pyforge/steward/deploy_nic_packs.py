@@ -6,13 +6,15 @@ refreshes the ``nebari-root`` Application so Argo CD reads the commit now rather
 next repo poll, polls until each pack Application exists (``kubectl wait`` on a resource that
 is not there yet fails at once with ``NotFound``), waits for ``Healthy``, labels pack
 namespaces, and journals OCI chart digests for Warden. Gated by ``pyforge.steward.nkp_packs``;
-a config without ``packs:`` is unchanged. Attended run 2026-10-31 (Story 118.5).
+a config without ``packs:`` is unchanged. Attended run 2026-10-31 (Story 118.5). Refuses by name,
+before it writes or runs anything, when ``kubectl`` or ``helm`` is not on ``PATH`` (Story 118.7).
 """
 
 from __future__ import annotations
 
 import json
 import re
+import shutil
 import subprocess
 import time
 from collections.abc import Callable, Mapping, Sequence
@@ -31,6 +33,7 @@ PACK_PROJECT = "nebari-apps"
 ROOT_APPLICATION = "nebari-root"
 ARGOCD_NAMESPACE = "argocd"
 ALLOWED_PACKS: tuple[str, ...] = ("nebi-pack", "data-science-pack")
+PACK_CLIS: tuple[str, ...] = ("kubectl", "helm")
 _DEFAULT_DATA_SCIENCE_VALUES: dict[str, Any] = {
     "keycloak": {"hostname": "keycloak.nebari.local"},
     "sharedStorage": {"nfsServer": {"enabled": True}},
@@ -46,6 +49,7 @@ class _Completed:
 
 
 SubprocessRunner = Callable[[list[str], Path | None, dict[str, str] | None], _Completed]
+CliLookup = Callable[[str], str | None]
 
 
 @dataclass(frozen=True)
@@ -62,6 +66,7 @@ class PackDeps:
     gitops_root: Path
     runner: SubprocessRunner
     kubeconfig: Path | None = None
+    which: CliLookup | None = None
 
 
 def _deep_merge(base: dict[str, Any], overlay: Mapping[str, Any]) -> dict[str, Any]:
@@ -517,6 +522,45 @@ def collect_pull_manifest(specs: Sequence[PackSpec], digests: Mapping[str, str |
     return rows
 
 
+def missing_pack_clis(which: CliLookup | None = None) -> list[str]:
+    """The pack step's CLIs (``kubectl``, ``helm``) that are not on ``PATH`` (Story 118.7)."""
+    lookup = which or shutil.which
+    return [name for name in PACK_CLIS if lookup(name) is None]
+
+
+def require_pack_clis(which: CliLookup | None = None) -> DutyResult | None:
+    """Refuse by name when a pack CLI is absent, before anything is written or run (AD-8)."""
+    from .cli import EXIT_USAGE
+
+    missing = missing_pack_clis(which)
+    if not missing:
+        return None
+    names = " and ".join(missing)
+    return DutyResult(
+        ok=False,
+        summary=(
+            f"deploy nic packs: refused — {names} not on PATH; the pyforge-steward environment provides both "
+            "(pixi run -e pyforge-steward pyforge steward deploy nic up ...)"
+        ),
+        details={"missing_clis": missing, "exit_code": EXIT_USAGE},
+    )
+
+
+def preflight_pack_clis(document: Mapping[str, Any], which: CliLookup | None = None) -> DutyResult | None:
+    """``deploy nic up``'s check before ``nic`` starts: a config whose pack step would run needs the
+    pack CLIs, so a missing one refuses before the cluster is built, never after (Story 118.7)."""
+    from pyforge.core.flags import read_boolean
+
+    if not read_boolean(NKP_PACKS_FLAG, default=True):
+        return None
+    specs, failure = parse_packs(document)
+    if failure is not None:
+        return failure  # a malformed packs: block refuses before the cluster is built, too
+    if not specs:
+        return None
+    return require_pack_clis(which)
+
+
 def append_pack_journal(root: Path, record: dict[str, Any]) -> None:
     path = root / PACK_JOURNAL_RELATIVE
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -545,6 +589,9 @@ def apply_nkp_packs(
     if failure is not None:
         return failure
     assert gitops_root is not None
+    refused = require_pack_clis(pack_deps.which if pack_deps is not None else None)
+    if refused is not None:
+        return refused
     if pack_deps is None:
         pack_deps = PackDeps(gitops_root=gitops_root, runner=_default_runner)
     else:
@@ -552,6 +599,7 @@ def apply_nkp_packs(
             gitops_root=gitops_root,
             runner=pack_deps.runner,
             kubeconfig=pack_deps.kubeconfig,
+            which=pack_deps.which,
         )
     paths = write_pack_applications(gitops_root, specs)
     commit = git_commit_applications(pack_deps, paths)

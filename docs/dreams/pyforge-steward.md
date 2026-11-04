@@ -8027,3 +8027,16 @@ this host; the ruling on the capability-ledger mode.
   stories. → **Minted the same day:** CAP-176..CAP-178 on `spec-pyforge-steward` (the cluster, the packs,
   the gitops branch), FR-50..FR-52, no AD moves, Epic 118 / Stories 118.1–118.3 (`backlog`); the Spec's Open
   Questions carry the Keycloak-on-kind and `nic`-channel questions for the stories to settle.
+- **2026-11-01** — Ruling 4 addendum (steward Story 118.8, after a read-only pass over the NIC 0.17.0
+  source). The operator ruled on 2026-11-01 that `nic` alone writes `gitops/<project_name>`, under its own
+  deploy key, and that a non-local `deploy nic up` needs the operator's `--yes` behind a `session_denials`
+  entry; the `/shared` waiver on rootless kind is ratified. The source read showed that NIC's cloud clone
+  is a temporary directory that exists only inside `nic deploy`, and that its commit stages everything in
+  that clone as `Nebari Infrastructure Core <nic[bot]@users.noreply.github.com>`. So the operator ruled on
+  2026-11-01 that, on a cloud config, steward applies the pack Applications to the cluster with `kubectl`
+  and never commits or pushes; on kind it keeps committing into NIC's local directory. The deploy key
+  (`GITOPS_DEPLOY_KEY`) replaces the `GIT_TOKEN` PAT, a `gitops/**` server ruleset whose only bypass is that
+  key does the enforcing, and no secret-shaped value enters the tracked config or the rendered tree.
+  CAP-176, CAP-177 and CAP-178 are amended on `spec-pyforge-steward` (its memlog's 2026-11-01 entries carry
+  the record); Story 118.3 is amended to match and stays `backlog` until its operator-owned inputs exist.
+  Story 118.7 put `kubectl` and `helm` into the `pyforge-steward` environment the same day.

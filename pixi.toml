@@ -615,6 +615,8 @@ asgiref = ">=3.12.1,<4.0"         # Story 9.5: load-bearing, not transitive (AD-
 channels_redis = ">=4.3.0,<5.0"   # Story 9.5 (AD-5): the sanctioned cross-worker channel-layer backend, required only once workers>1 -- optional at runtime, but always installed with the extra (single `[dashboard]` extra, no nested `[dashboard-*]` split per this story's spec). Floor matches recipes/channels_redis/meta.yaml's shipped 4.2.0. MUST stay byte-identical to pyproject.toml's `dashboard` extra pin
 pyjwt = ">=2.15.0"                # Story 48.6: EventsStreamConsumer verifies RS256 assertions via django-pyforge (test-time + dashboard websocket face)
 redis-py = ">=8.1.0"              # Story 48.6: browser relay tail-read tests (imports as `redis`)
+kubernetes-client = ">=1.37.1"    # Story 118.7 (spec-pyforge-steward CAP-176/CAP-177, pap:AD-16): `deploy nic up`'s pack step shells kubectl; same floor as [feature.platform-dev.dependencies]
+kubernetes-helm = ">=4.3.0"       # Story 118.7: the pack step's `helm pull` chart-digest read; same floor as [feature.platform-dev.dependencies]
 bmad-eval-quality = ">=4.3.0"     # DW-OPS-2026-09-20-1 (2026-09-20): steward WIELDS eval-quality (suite.py's adoption-register live probe, Story 45.1) but the CLI was pinned only in local-recipes + pyforge-guild, so under `-e pyforge-steward` shutil.which never saw it and suite.py fell back to <repo>/.pixi/envs/local-recipes/bin -- present on the primary checkout, absent in every fresh worktree (test_wired_column_agrees_with_live_pipeline_truth failed there, 2026-09-20). Same floor as the Guild/local-recipes pins; keep the three in step.
 
 [feature.pyforge-steward.target.linux-64.dependencies]
