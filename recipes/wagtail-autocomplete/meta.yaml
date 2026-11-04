@@ -1,13 +1,13 @@
 {% set name = "wagtail-autocomplete" %}
-{% set version = "0.12.0" %}
+{% set version = "0.12.1" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/wagtail_autocomplete-{{ version }}.tar.gz
-  sha256: d1cd315475e8c776c85a75ba5eb76ceb2eb680c18334e7e9424040d7faa9b538
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/wagtail_autocomplete-{{ version }}.tar.gz
+  sha256: 87ae8b42bc67016417e6c108befef84a451bdfe0eb8e9b5e86a9bbdb420bb55d
 
 build:
   noarch: python

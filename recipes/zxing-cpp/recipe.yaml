@@ -113,12 +113,13 @@ extra:
   cfe-last-checked: 2026-10-10T14:50:00Z
   cfe-generated-by-version: 8.99.10
   cfe-generated-at-datetime: 2026-10-10T14:50:00Z
-  cfe-local-build-status: not-attempted
-  cfe-local-build-datetime: none
-  cfe-local-build-platform: none
-  cfe-local-build-tool: none
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-02T02:10:53Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
 #    # 2026-10-10 Story 25.9: re-mirrored C++ library feedstock (AC 13); PyPI bindings recipe replaced
+#    # 2026-11-01 Story 25.17: first local build (the record was not-attempted with no reason). conda-forge.yml re-mirrored byte-for-byte from the feedstock (drops the local azure.store_build_artifacts leftover and adds the feedstock's osx_arm64 provider); the recipe-dir conda_build_config.yaml (a noarch_platform selector list) is removed, as the feedstock has none (G94).
 ####

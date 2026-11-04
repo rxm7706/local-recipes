@@ -445,7 +445,13 @@ def test_main_pause_dry_run_no_live_gh(tmp_path: Path, monkeypatch: pytest.Monke
 
     monkeypatch.setattr(
         "pyforge.steward.ci._production_deps",
-        lambda root: CiDeps(root=root, runner=runner, registry_path=reg_path, flag_on=lambda: True),
+        lambda root: CiDeps(
+            root=root,
+            runner=runner,
+            registry_path=reg_path,
+            flag_on=lambda: True,
+            now=lambda: datetime(2026, 10, 13, tzinfo=timezone.utc),
+        ),
     )
     code = main(
         [

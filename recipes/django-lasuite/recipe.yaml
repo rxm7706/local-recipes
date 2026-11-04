@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.0.30"
+  version: "1.0.0"
 
 package:
   name: django-lasuite
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/d/django-lasuite/django_lasuite-${{ version }}.tar.gz
-  sha256: 97eceb03f20e1fbeb85ca17297fdc49e15ef0ff1c0b86051921e3d3014115b6e
+  sha256: 8921aaba5a78f1f9728cee2cc4596755478108f17146d4a2fccb393c043a05a3
 
 build:
   number: 0
@@ -24,22 +24,16 @@ requirements:
     - hatchling
   run:
     - python >=${{ python_min }}
-    - django >=5.0
-    - djangorestframework >=3.15.2
-    - joserfc >=1.4.0
-    - mozilla-django-oidc >=4.0.1
-    - pyjwt >=2.8.0
-    - requests-toolbelt >=1.0.0
-    - requests >=2.32.3
+    - django >=5.2
 
 tests:
-- python:
-    imports:
-      - lasuite
-    pip_check: true
-    python_version:
-      - ${{ python_min }}.*
-      - "*"
+  - python:
+      imports:
+        - lasuite
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   homepage: https://github.com/suitenumerique/django-lasuite
@@ -75,15 +69,18 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-lasuite-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-10T08:27:50Z
+  cfe-last-checked: 2026-11-02T01:12:16Z
   cfe-generated-by-version: 8.99.1
   cfe-generated-at-datetime: 2026-10-10T08:27:50Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: '2026-10-10T08:35:31Z'
+  cfe-local-build-datetime: 2026-11-02T02:18:24Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
 #    Story 25.4: canonical block stamped before Wave 0-leftovers repair rerun.
+#    # 2026-11-02 refresh_wave B-S25-17: needs-review, dependency-fix (run -djangorestframework -joserfc -mozilla-django-oidc -pyjwt -requests -requests-toolbelt)
+#    # 2026-11-01 Story 25.17: G96 pre-sync to the feedstock for 1.0.0 (upstream 1.0.0 requires only django >=5.2; DRF, OIDC, JWT and requests moved to optional extras all, drf, oidc-login, oidc-resource-server, malware-detection).
+#    # 2026-11-02 refresh_wave B-S25-17: refreshed 0.0.30 -> 1.0.0
 ####

@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: grafana-client
-  version: "5.1.3"
+  version: "5.1.4"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/g/grafana-client/grafana_client-${{ version }}.tar.gz
-  sha256: f8d66e6210512914f3d2f3e9a726f9452e6c45a0e3670d6098552ab50d83f1c8
+  sha256: 3783261a9600e7104b8bf6243cfa71f548f3ee13456753510cf2c109124aa23b
 
 build:
   number: 0
@@ -69,11 +69,11 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/grafana-client-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-10T11:37:35Z
+  cfe-last-checked: 2026-11-02T00:28:06Z
   cfe-generated-by-version: 8.99.6
   cfe-generated-at-datetime: 2026-10-10T00:00:00Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-10-10T11:38:11Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-02T01:17:47Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -82,4 +82,5 @@ extra:
 # CFE comments
 # Header:
 #    # 2026-10-10 refresh_wave B-25-6: refreshed 5.1.0 -> 5.1.3
+#    # 2026-11-02 refresh_wave B-S25-17: refreshed 5.1.3 -> 5.1.4
 ####

@@ -6,12 +6,12 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/timelib-{{ version }}.tar.gz
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/timelib-{{ version }}.tar.gz
   sha256: d1b22706557186e6058da88ba0f85837401b2ae9de157f59353dc978d825187a
 
 build:
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 2
+  number: 3
 
 requirements:
   build:
@@ -43,4 +43,5 @@ about:
 
 extra:
   recipe-maintainers:
+    - jsmolic
     - rxm7706

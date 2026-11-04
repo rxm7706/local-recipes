@@ -7,7 +7,7 @@ Bring up a local Nebari Kubernetes Platform cluster with the steward `deploy nic
 - Docker. Rootless Docker works, with two host settings the attended run of 2026-10-31 needed (both `sudo`, both persist under `/etc/sysctl.d/`):
   - `fs.inotify.max_user_instances=1024` — rootless Docker charges every container's inotify instances to your uid; at the default 128 the cloudnative-pg, envoy-gateway and metallb controllers crash-loop with `too many open files`.
   - `net.ipv4.ip_unprivileged_port_start=0` only when the NIC config publishes ports 80/443 on the host. NIC 0.14.0's local provider publishes 6443 alone and hands the gateway a MetalLB address on the kind Docker network (`192.168.1.100`), which rootless Docker does not route to the host — reach it with `kubectl port-forward -n envoy-gateway-system svc/<envoy-gateway-service> 443:443 80:80` and `curl --resolve nebari.local:443:127.0.0.1`, or `/etc/hosts` entries for `nebari.local` and `keycloak.nebari.local` pointing at `127.0.0.1`.
-- The `pyforge-steward` pixi environment (`nic` is pinned there; `kubectl` lives in `platform-dev`).
+- The `pyforge-steward` pixi environment: it provides `nic`, `kubectl` and `helm`. Run every `deploy nic` verb through it (`pixi run -e pyforge-steward pyforge steward deploy nic …`); without `kubectl` or `helm` on `PATH`, `up` on a config with packs refuses by name before `nic` starts.
 - An age identity (`SOPS_AGE_KEY_FILE` or an issued row in `.steward/keys-inventory.yaml`) when the config declares provider credentials.
 
 ## Tracked config
@@ -19,7 +19,7 @@ The kind profile lives at `src/platform/deploy/nic/my-nebari-local.yaml` (`repos
 Map each NIC environment variable to an age-encrypted file in an untracked `.env` at the repo root:
 
 ```bash
-GIT_TOKEN=.steward/nkp-secrets/git-token.age
+GITOPS_DEPLOY_KEY=.steward/nkp-secrets/gitops-deploy-key.age
 ```
 
 Steward decrypts through `keys` before starting `nic`; nothing sensitive is read from the parent shell environment. A `repository.local` config declares no credential, so `.env` is not read for it.

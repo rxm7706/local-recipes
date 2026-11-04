@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "8.0"
+  version: "8.0.1"
 
 package:
   name: wagtail
@@ -10,12 +10,15 @@ package:
 
 source:
   url: https://pypi.org/packages/source/w/wagtail/wagtail-${{ version }}.tar.gz
-  sha256: 8fb2aa39bb8ff9e7709ba848a1bba2fea332ce32368c7ba4820008c0cfcc0019
+  sha256: 819865a10bce86b16288cfaefa4195b90ffb5e7ac494fb18659e7be099ef386f
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  python:
+    entry_points:
+      - wagtail = wagtail.bin.wagtail:main
 
 requirements:
   host:
@@ -54,16 +57,25 @@ tests:
       python_version:
         - ${{ python_min }}.*
         - "*"
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - wagtail help
 
 about:
+  summary: A Django content management system focused on flexibility and user experience
   homepage: https://wagtail.org/
-  license: BSD-3-Clause
-  license_file: LICENSE
-  summary: A Django content management system.
   description: |
-    A Django content management system.
+    Wagtail is an open source content management system built on Django, with a strong community and commercial support.
+    It's focused on user experience, and offers precise control for designers and developers.
   repository: https://github.com/wagtail/wagtail
-  documentation: https://docs.wagtail.org
+  documentation: https://docs.wagtail.org/en/stable/
+  license: BSD-3-Clause
+  license_file:
+    - LICENSE
+    - wagtail/models/copying.py
 
 extra:
   recipe-maintainers:
@@ -88,15 +100,17 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-10T14:53:49Z
+  cfe-last-checked: 2026-11-02T00:30:30Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T12:36:26Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-10-10T14:55:20Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-02T02:24:45Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
 #    # 2026-10-10 refresh_wave B-25-9: refreshed 7.4.2 -> 8.0
+#    # 2026-11-02 refresh_wave B-S25-17: refreshed 8.0 -> 8.0.1
+#    # 2026-11-01 Story 25.17 (G96): build.python.entry_points `wagtail = wagtail.bin.wagtail:main`, the `wagtail help` script test, the build script's --disable-pip-version-check and the whole about block (text, documentation URL, and license_file now LICENSE plus wagtail/models/copying.py) synced from the feedstock. The body differs from the feedstock only in the literal package name and source URL (CFE canonical form), the order of the host list, and blank lines and quote style.
 ####

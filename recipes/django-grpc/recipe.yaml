@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: django-grpc
-  version: "1.2.15"
+  version: "1.2.20"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django-grpc-${{ version }}.tar.gz
-  sha256: eb80b1e5dcf855f421ffd363571cecd592ea298a5dbbc8b6b7306288cac81d3e
+  url: https://pypi.org/packages/source/d/django-grpc/django_grpc-${{ version }}.tar.gz
+  sha256: 46ec3e8001bd2e13ef286d82142b606b4ff5af2f27ff7afdfb5a21f86774345a
 
 build:
   number: 0
@@ -20,24 +20,25 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - poetry-core
   run:
     - python >=${{ python_min }}
     - setuptools
-    - django >=4.2
-    - protobuf >=4.21.4
-    - grpcio >=1.47.0,<2.0.0
-    - grpcio-tools >=1.47.0,<2.0.0
+    - django >=4.2,<7.0
+    - protobuf
+    - grpcio
+    - grpcio-tools
+    - grpcio-reflection
 
 tests:
-- python:
-    imports:
-      - django_grpc
-      - django_grpc_testtools
-    pip_check: true
-    python_version: ${{ python_min }}
+  - python:
+      imports:
+        - django_grpc
+        - django_grpc_testtools
+      pip_check: true
+      python_version: ${{ python_min }}.*
 
 about:
   summary: Easy Django based gRPC service
@@ -48,6 +49,7 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - pb01ka
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -67,15 +69,18 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-grpc-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-10T08:27:50Z
+  cfe-last-checked: 2026-11-02T01:08:36Z
   cfe-generated-by-version: 8.99.1
   cfe-generated-at-datetime: 2026-10-10T08:27:50Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: '2026-10-10T08:35:31Z'
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-02T02:17:11Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
 #    Story 25.4: canonical block stamped before Wave 0-leftovers repair rerun.
+#    # 2026-11-02 refresh_wave B-S25-17: needs-review, dependency-fix (host +poetry-core -setuptools; run +grpcio-reflection; run pin grpcio-tools (grpcio-tools >=1.47.0,<2.0.0 vs grpcio-tools))
+#    # 2026-11-01 Story 25.17: G96 pre-sync to the feedstock (host poetry-core, the upstream build backend since 1.2.15; run grpcio-reflection, django <7.0, unpinned grpc stack); host and test python pins take .* (rattler rejects a bare python 3.11); sdist URL literal with the underscore filename (the hyphen form 404s); pb01ka re-merged (G53).
+#    # 2026-11-02 refresh_wave B-S25-17: refreshed 1.2.15 -> 1.2.20
 ####

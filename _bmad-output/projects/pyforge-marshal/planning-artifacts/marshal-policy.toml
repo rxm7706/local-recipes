@@ -1020,6 +1020,8 @@ args = []
 #   standards.mint = ["docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md"]  # optional
 #   artifact_dir = "implementation-artifacts/egm"        # optional
 #   plugin_version = "0.1.0"                             # optional; the pinned EGM release
+#   timeout_s.readiness = 600                            # optional; seconds per stage, a session past it is killed
+#                                                        # (defaults: readiness 600, every other stage 3600)
 
 [dispatch]
 max_parallel = 2

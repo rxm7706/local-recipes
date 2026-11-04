@@ -2,7 +2,7 @@
 title: "118.7: deploy nic finds kubectl and helm in the pyforge-steward environment"
 type: 'fix'
 created: '2026-11-01'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
@@ -61,7 +61,7 @@ Parent: `spec-pyforge-steward` CAP-176
 - Epic: Epic 118.
 - Ledger key: `118-7-deploy-nic-finds-kubectl-and-helm-in-the-pyforge-steward-environment`.
 - Deps: S-118.5.
-- Surface: `marshal-policy.toml` `[epic_surfaces]."118"`; the story's files are `pixi.toml`, `pixi.lock`, `environment.yaml`, `src/shared/packages/pyforge-steward/src/pyforge/steward/deploy_nic_packs.py`, `src/shared/packages/pyforge-steward/tests/unit/test_deploy_nic_packs.py` and `docs/how-to/host-nebari.md`.
+- Surface: `marshal-policy.toml` `[epic_surfaces]."118"`; the story's files are `pixi.toml`, `pixi.lock`, `environment.yaml`, `src/shared/packages/pyforge-steward/src/pyforge/steward/deploy_nic_packs.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/deploy_nic.py` (the refusal before `nic` starts, added 2026-11-01 after review), `src/shared/packages/pyforge-steward/tests/unit/test_deploy_nic_packs.py` and `docs/how-to/host-nebari.md`.
 - Audit: EGM audit 2026-11-01 finding STW-M-C6 (cluster STW-CL-9); residue `_bmad-output/projects/pyforge-steward/planning-artifacts/research/egm-audit-2026-11-01.md`.
 - Minted 2026-11-01 by the EGM fleet audit landing (marshal Story 113.7); parked at `backlog` because a `pixi.toml` change lands alone through the estate-refresh lane.
 
@@ -83,14 +83,20 @@ Parent: `spec-pyforge-steward` CAP-176
 
 ## Auto Run Result
 
-Status: backlog
+Status: done
 
-Summary: not started.
+Summary (2026-11-01, hand-driven in the five-story EGM landing PR):
+- AC1: `pixi.toml` `[feature.pyforge-steward.dependencies]` gains `kubernetes-client >=1.37.1` and `kubernetes-helm >=4.3.0` (the `platform-dev` floors); `pixi lock` exit 0 added kubernetes-client 1.37.2 and kubernetes-helm 4.3.1 to `pyforge-steward`, `pyforge-container` and `pyforge-foundry-full` on every platform (`pyforge-foundry-full-stack` already had both through `platform-dev`), and changed nothing else; `pixi project export conda-environment -e build` is byte-identical to the tracked `environment.yaml` (the `build` environment does not compose the `pyforge-steward` feature), so `environment.yaml` does not move; `pixi run -e pyforge-steward kubectl version --client` and `helm version` exit 0.
+- AC2: `deploy_nic_packs.py` gains `missing_pack_clis` / `require_pack_clis` (a `shutil.which` lookup, injectable through `PackDeps.which`); `apply_nkp_packs` refuses with `DutyResult(ok=False)` naming the missing CLI, before it writes an Application or runs a subprocess. `tests/unit/test_deploy_nic_packs.py` pins each absence, both, the present case and the default lookup. After the independent review the refusal also runs in `run_nic` before `nic` starts (`preflight_pack_clis`, only when the pack step would run), carries usage code 2 and the `refused —` form like the verb's other refusals (`test_run_nic_up_refuses_a_missing_pack_cli_before_nic_starts`, `test_run_nic_validate_with_packs_needs_no_pack_cli`); the pack and deploy-nic files give 62 passed, 2 skipped. Mutation: dropping the refusal fails `test_apply_nkp_packs_default_lookup_is_shutil_which` ("no subprocess may run when a pack CLI is missing").
+- AC3: `docs/how-to/host-nebari.md`'s prerequisites line names the `pyforge-steward` environment for `nic`, `kubectl` and `helm`.
+- AC4/AC5: verified in the landing PR's full preflight and scoped stamps.
 
 ## Spec Change Log
 
+- 2026-11-01: lands in one PR with marshal 113.14, mason 25.17/25.18 and steward 118.8 (operator 2026-11-01: the five parked EGM stories as a single PR), not alone through the estate-refresh lane; the `pixi.toml` change is the two pins only. `environment.yaml` is regenerated and unchanged (its `build` environment does not compose `pyforge-steward`). The refusal is injectable through `PackDeps.which`, so the existing pack tests stay hermetic.
 - 2026-11-01: minted from the EGM fleet audit (marshal Story 113.7), finding STW-M-C6, cluster STW-CL-9; parked at `backlog` for the estate-refresh lane.
 
 ## Review Triage Log
 
-- (none yet)
+- 2026-11-01 — independent review 1 (separate agent, read-only): AC1–AC3 met; the refusal exited 1 without the verb's `refused —` form and fired only after `nic deploy` had built the cluster → fixed: usage code 2, the `refused —` form, and `preflight_pack_clis` in `run_nic` before `nic` starts (a malformed `packs:` block refuses there too); nits (the `helm pull` comment, the test counts, the lock's environment list) fixed; AC5 (the scoped reconcile) runs last in the landing.
+- 2026-11-01 — re-review 2: every fix verified; tests hermetic with and without the CLIs on `PATH`; no new defect.

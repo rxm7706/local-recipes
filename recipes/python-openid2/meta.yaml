@@ -42,5 +42,6 @@ about:
 
 extra:
   recipe-maintainers:
+    - jsmolic
     - mxr-conda
     - rxm7706

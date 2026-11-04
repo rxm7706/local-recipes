@@ -1,18 +1,18 @@
 {% set name = "wagtail-json-widget" %}
-{% set version = "0.0.7" %}
+{% set version = "0.0.9" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://github.com/cursive-works/wagtail-json-widget/archive/{{ version }}.tar.gz
-  sha256: aee47b62b78d3192fe08759fda6081d016d7bddb0270fbe09348bb1326f57767
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/wagtail_json_widget-{{ version }}.tar.gz
+  sha256: 2d80976cc7d9d0754b06a0779ff10ad76b89b38570f597b2231cb1ea61a9359c 
 
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 1
+  number: 0
 
 requirements:
   host:

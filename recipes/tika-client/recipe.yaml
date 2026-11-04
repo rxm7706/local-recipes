@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: tika-client
-  version: "1.0.0"
+  version: "2.0.0"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/t/tika-client/tika_client-${{ version }}.tar.gz
-  sha256: 899c2fd08c717d8d590d46d76942103ef972fc37d43eadbfd6772a9961351ced
+  sha256: 0a3957e188ede45149c1ae2895967e05f823e5ebabfaa2d9122623648cc6fc43
 
 build:
   number: 0
@@ -30,11 +30,13 @@ requirements:
     - typing_extensions
 
 tests:
-- python:
-    imports:
-      - tika_client
-    pip_check: true
-    python_version: ${{ python_min }}.*
+  - python:
+      imports:
+        - tika_client
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   summary: A modern REST client for Apache Tika server
@@ -45,6 +47,7 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - jsmolic
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -64,15 +67,16 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tika-client-feedstock
   cfe-forge-recipe-updates-needed: [version-bump-to-0.11.0]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-last-checked: 2026-11-02T02:37:56Z
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: '2026-10-09T11:23:48Z'
+  cfe-local-build-datetime: 2026-11-02T03:37:51Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
 #    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+#    # 2026-11-01 refresh_wave B-25-18-b1: refreshed 1.0.0 -> 2.0.0; maintainers added: jsmolic
 ####

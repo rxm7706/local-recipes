@@ -3405,7 +3405,7 @@ recipe-lint its AC 6 left out has run for them
 done story's status moves; the scope is Epic 25's recipes only (the 495 `failed` records estate-wide are not this
 story's); nothing leaves the local repo; the `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry teaching CFE
 to read a run table back against the recipe's own record; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 25.18: Wave A's no-refresh recipes are re-bucketed live from the atlas
 
@@ -3438,7 +3438,7 @@ with `pixi run -e local-recipes refresh-wave` to an end state in CAP-35's outcom
 **And** `DW-mason-25-14` closes with a cited `verified:` line once the mapping is applied; nothing leaves the local repo;
 the `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry (shared with Story 25.17's if both land together);
 `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 26: CFE's tests never ask GitHub whether a recipe maintainer exists (spec-pyforge-mason CAP-34)
 

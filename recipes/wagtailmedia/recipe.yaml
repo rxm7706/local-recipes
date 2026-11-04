@@ -46,6 +46,7 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - jsmolic
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -81,6 +82,7 @@ extra:
 #    # from 0.14.5); authored this v1 recipe.yaml alongside as the proposed
 #    # migration. updates-needed carries meta-yaml-to-recipe-yaml (the
 #    # feedstock owes the v0->v1 switch).
+#    # 2026-11-01 mason Story 25.18: current at the published version; maintainers added (G53): jsmolic
 # requirements:
 #  run:
 #    # django-taggit + djangorestframework are load-bearing transitive deps:

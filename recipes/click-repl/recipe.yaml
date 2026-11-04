@@ -2,15 +2,15 @@
 schema_version: 1
 
 context:
-  version: "0.3.0"
+  version: "0.4.1"
 
 package:
   name: click-repl
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/c/click-repl/click-repl-${{ version }}.tar.gz
-  sha256: 17849c23dba3d667247dc4defe1757fff98694e90fe37474f3feebb69ced26a9
+  url: https://pypi.org/packages/source/c/click-repl/click_repl-${{ version }}.tar.gz
+  sha256: c32a1cf6f95e5bd6e92076f81ce24eafd33f2f0ffb0135887e335b8e446d1c0b
 
 build:
   number: 0
@@ -24,9 +24,10 @@ requirements:
     - setuptools
     - wheel
   run:
+    - click <9.0,>=7.0
+    - prompt_toolkit >=3.0.36
+    - typing-extensions >=4.7.0
     - python >=${{ python_min }}
-    - click
-    - prompt-toolkit
 
 tests:
   - python:
@@ -49,6 +50,7 @@ extra:
   recipe-maintainers:
     - rxm7706
     - izahn
+    - jsmolic
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -66,19 +68,21 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/click-repl-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-0.3.0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-17T07:01:28Z
+  cfe-last-checked: 2026-11-02T02:50:43Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-17T07:01:28Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-17T07:01:28Z
+  cfe-local-build-datetime: 2026-11-02T03:00:28Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-01 refresh_wave B-25-18-b3: refreshed 0.3.0 -> 0.4.1; maintainers added: jsmolic
+#    # 2026-11-01 mason Story 25.18 hand steps: run synced to the feedstock (G96); sdist filename moved to click_repl- at 0.4.x
 ####

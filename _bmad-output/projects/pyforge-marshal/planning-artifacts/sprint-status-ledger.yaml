@@ -97,7 +97,7 @@ development_status:
   113-11-the-challenger-checks-its-preconditions-before-it-spawns-a-reviewer: done
   113-12-each-stage-names-its-standard-and-decompose-reads-its-spec-s-capability-range: done
   113-13-resolve-writes-only-marshal-s-spec-and-prints-the-memlog-command-for-any-other: done
-  113-14-a-challenge-run-has-a-ceiling-and-audit-a-section-selector: backlog
+  113-14-a-challenge-run-has-a-ceiling-and-audit-a-section-selector: done
   113-2-the-challenge-policy-block-configures-the-challenger-and-absent-means-off: done
   113-3-dispatch-runs-the-readiness-stage-before-the-dev-session-starts: done
   113-4-the-drift-stage-reads-an-epic-s-code-against-its-spec-at-retro-time: done
@@ -568,7 +568,7 @@ development_status:
   epic-111-retrospective: optional
   epic-112: done
   epic-112-retrospective: optional
-  epic-113: in-progress
+  epic-113: done
   epic-113-retrospective: optional
   epic-12: done
   epic-12-retrospective: optional

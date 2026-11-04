@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: fs.googledrivefs
-  version: "2.6.2"
+  version: "2.6.3"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fs_googledrivefs-${{ version }}.tar.gz
-  sha256: ea94d33930a6883d13f5eceebde10156333ea83e9417a30409d1a53ad44d46c4
+  url: https://pypi.org/packages/source/f/fs.googledrivefs/fs_googledrivefs-${{ version }}.tar.gz
+  sha256: e356cf5705b158630e0f9b61cd2f69a5ad87a86bc1f6360711672ef08cf59737
 
 build:
   number: 0
@@ -20,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - hatchling
     - pip
   run:
@@ -49,6 +49,7 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - pb01ka
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -70,11 +71,11 @@ extra:
     - meta-yaml-to-recipe-yaml
     - dependency-fix
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-11-02T02:41:57Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-11-02T02:42:30Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -84,6 +85,8 @@ extra:
 #    # mirror of the deployed v0 feedstock (also at 2.6.2). recipe.yaml is the
 #    # proposed v1 migration at 2.6.2, modernized to the fully-literal
 #    # package.name + source.url form.
+#    # 2026-11-01 refresh_wave B-25-18-b2: refreshed 2.6.2 -> 2.6.3; maintainers added: pb01ka
+#    # 2026-11-01 mason Story 25.18 hand steps before refresh-wave: source.url rewritten to the literal pypi.org form; host python pin given .* (v1 match spec)
 # requirements:
 #  host:
 #    # hatchling-only build backend (pyproject [build-system] requires =

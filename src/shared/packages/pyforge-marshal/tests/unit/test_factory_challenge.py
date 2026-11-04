@@ -9,8 +9,10 @@ from __future__ import annotations
 import argparse
 import itertools
 import json
+import os
 import re
 import shlex
+import time
 import tomllib
 from datetime import UTC, datetime
 from pathlib import Path
@@ -43,6 +45,40 @@ CATALOG = {
 TIERS = {"medium": {"dev": {"harness": "cursor", "model": "composer-2.5-fast"}}}
 NOW = datetime(2026, 11, 1, 12, 0, 0, tzinfo=UTC)
 CLAUDE_AT_FLOOR = "2.1.271 (Claude Code)\n"  # `claude --version`'s shape; the seam is stubbed, never run
+
+# Story 113.14: each fixture station's Spec, epics.md and Dream carry a newest CAP slice, the epic naming it and
+# the Dream entry it cites, so the audit can cut slices and never reads a whole file.
+MARSHAL_CAPS = (
+    "- **CAP-2 — the second** ← Dream entry 2026-10-01 (The second dream)\n  - **intent:** two\n"
+    "- **CAP-3 — the third** ← Dream entry 2026-10-01; operator ruling\n  - **intent:** three\n"
+)
+MARSHAL_SPEC = (
+    "# Spec\n\n## Capabilities\n\n- **CAP-1 — the first** ← Dream entry 2026-09-01\n  - **intent:** one\n"
+    + MARSHAL_CAPS
+    + "\n## Constraints\n\n- **CAP-3 keeps its shape**\n"
+)
+MARSHAL_EPIC_7 = (
+    "## Epic 7: A thing (CAP-2..CAP-3)\n\n### Story 7.1: x\n\n**Surface:** `src/pkg/mod.py`, `docs/x.md`\n"
+    "**Spec:** `planning-artifacts/specs/spec-7-1-x.md`\n"
+)
+MARSHAL_EPICS = (
+    MARSHAL_EPIC_7
+    + "\n## Epic 8: Other (spec-one-chain-per-station:CAP-3)\n**Spec:** `planning-artifacts/specs/spec-8-1.md`\n"
+)
+MARSHAL_ENTRY = "## 2026-10-01 — The second dream (folded from x)\n\n## The second dream\n\ntwo\n"
+MARSHAL_DREAM = (
+    "# Dream\n\n## 2026-09-01 — First\n\none\n\n" + MARSHAL_ENTRY + "\n## 2026-10-01 — Later that day\n\nlater\n"
+)
+ATLAS_CAPS = "- **CAP-5 — atlas's newest** ← spec-pyforge-atlas CAP-5 (ready 2026-10-18)\n  - **intent:** five\n"
+ATLAS_SPEC = "# Spec\n\n- **CAP-4 — older** ← Dream entry 2026-08-01\n  - **intent:** four\n" + ATLAS_CAPS
+ATLAS_EPIC_3 = "## Epic 3: Atlas's newest (spec-pyforge-atlas CAP-5)\n\n### Story 3.1: y\n"
+ATLAS_EPICS = "# Epics\n\n## Epic 2: older (CAP-4)\n\n" + ATLAS_EPIC_3
+ATLAS_ENTRY = "## 2026-10-18 — Atlas newest\n\nb\n"
+ATLAS_DREAM = "# Dream\n\n## 2026-08-01 — Older\n\na\n\n" + ATLAS_ENTRY
+FIXTURE_TEXTS = {
+    "pyforge-marshal": (MARSHAL_SPEC, MARSHAL_EPICS, MARSHAL_DREAM),
+    "pyforge-atlas": (ATLAS_SPEC, ATLAS_EPICS, ATLAS_DREAM),
+}
 
 
 def _flags(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, **on: bool) -> None:
@@ -87,22 +123,17 @@ def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         _write(plugins / "cache/egm/egm/0.1.0/.claude-plugin/agents" / filename, _adapter(persona))
     monkeypatch.setenv(cli.PLUGINS_ROOT_ENV, str(plugins))
     monkeypatch.setattr(harness, "claude_version", lambda: CLAUDE_AT_FLOOR)  # Story 113.11: never shell to claude
-    for slug in ("pyforge-marshal", "pyforge-atlas"):
+    for slug, (spec, epics, dream) in FIXTURE_TEXTS.items():
         _write(cli.glossary_path(root, slug), "# Glossary\n")
-        _write(cli.spec_path(root, slug), "# Spec\n")
-        _write(cli.dream_path(root, slug), "# Dream\n")
-        _write(cli.epics_path(root, slug), "# Epics\n")
+        _write(cli.spec_path(root, slug), spec)
+        _write(cli.dream_path(root, slug), dream)
+        _write(cli.epics_path(root, slug), epics)
     _write(root / cli.CHAIN_STANDARD_RELPATH)
     _write(root / cli.STORY_SPEC_TEMPLATE_RELPATH)
     _write(root / cli.SPEC_TEMPLATE_RELPATH)
     _write(root / cli.CHAIN_STANDARD_DREAM_RELPATH)
     _write(root / "AGENTS.md")
     _write(root / "src/pkg/mod.py")
-    _write(
-        cli.epics_path(root, SLUG),
-        "## Epic 7: A thing\n\n### Story 7.1: x\n\n**Surface:** `src/pkg/mod.py`, `docs/x.md`\n"
-        "**Spec:** `planning-artifacts/specs/spec-7-1-x.md`\n\n## Epic 8: Other\n**Spec:** `planning-artifacts/specs/spec-8-1.md`\n",
-    )
     _write(cli.epics_path(root, SLUG).parent / "specs/spec-7-1-x.md", "# 7.1\n")
     monkeypatch.setattr(cli, "compose_effective", lambda slug: _effective())
     return root
@@ -126,9 +157,13 @@ class FakeRunner:
         self.findings, self.returncode, self.write = findings, returncode, write
         self.reviewers, self.stage, self.fail_on = reviewers, stage, fail_on
         self.prompts: list[str] = []
+        self.timeouts: list[float] = []
 
-    def run(self, *, prompt: str, model: str | None, root: Path, target: Path | None, log_path: Path) -> int:
+    def run(
+        self, *, prompt: str, model: str | None, root: Path, target: Path | None, log_path: Path, timeout_s: float
+    ) -> int:
         self.prompts.append(prompt)
+        self.timeouts.append(timeout_s)
         self.model = model
         if self.fail_on is not None and self.fail_on in prompt:
             return 1
@@ -164,6 +199,8 @@ def _args(**values: object) -> argparse.Namespace:
         "project": SLUG,
         "stage": None,
         "target": None,
+        "section": None,
+        "dream_section": None,
         "epic": None,
         "audit": False,
         "force": False,
@@ -782,8 +819,8 @@ def test_a_partly_errored_audit_is_unevaluable(repo: Path, tmp_path: Path, monke
     _flags(tmp_path, monkeypatch, egm_challenge=True, egm_policy_block=True, egm_audit=True)
     monkeypatch.setattr(cli, "STATIONS", ("marshal", "atlas"))
     args = _args(audit=True)
-    # atlas's epics.md is the target of its decompose run alone (its SPEC.md is also decompose's standard)
-    failing = FakeRunner(findings=1, fail_on=str(cli.epics_path(repo, "pyforge-atlas")))
+    # atlas's epic-range slice is the target of its decompose run alone (Story 113.14)
+    failing = FakeRunner(findings=1, fail_on="slices/pyforge-atlas/epics--")
     assert cli.run_challenge(args, runner=failing, root=repo, now=lambda: NOW) == 1
     out = json.loads(capsys.readouterr().out)
     assert out["stations"] == 2 and len(out["errors"]) == 1 and "pyforge-atlas decompose" in out["errors"][0]
@@ -998,12 +1035,18 @@ def test_resolve_takes_project_before_or_after_the_subverb() -> None:
     assert after.project == before.project == "pyforge-atlas"
 
 
+def _audit_slices(repo: Path) -> Path:
+    return repo / "_bmad-output/projects" / SLUG / "implementation-artifacts/egm/audit-2026-11-01/slices"
+
+
 def test_audit_plan_gives_each_rules_file_its_governor(repo: Path, monkeypatch) -> None:
     """Story 113.13 AC4: AGENTS.md is scribe's, CHAIN-STANDARD.md the chain standard's; a station skill and
     every mint and decompose target keep their station Spec."""
     monkeypatch.setattr(cli, "STATIONS", ("marshal", "atlas"))
     _write(repo / ".claude/skills/pyforge-atlas/SKILL.md")
-    owners = {(slug, stage, target): owner for slug, stage, target, _dream, owner in cli.audit_plan(repo)}
+    plan, gaps = cli.audit_plan(repo, _audit_slices(repo))
+    assert gaps == []
+    owners = {(run.slug, run.stage, run.target): run.owner for run in plan}
     assert owners[(SLUG, "rules", repo / "AGENTS.md")] == repo / SCRIBE_WS
     assert owners[(SLUG, "rules", repo / cli.CHAIN_STANDARD_RELPATH)] == repo / CHAIN_WS
     station = {key: owner for key, owner in owners.items() if key[2].name not in ("AGENTS.md", "CHAIN-STANDARD.md")}
@@ -1023,3 +1066,356 @@ def test_an_audit_rules_report_records_its_governor(repo: Path, tmp_path: Path, 
     assert chain["spec_workspace"] == chain["owner_override"] == str(repo / CHAIN_WS)
     mint = json.loads(next(audit_dir.glob(f"{SLUG}.mint.*.json")).read_text(encoding="utf-8"))
     assert mint["spec_workspace"] == str(cli.spec_path(repo, SLUG).parent) and "owner_override" not in mint
+
+
+# --- 113.14: a challenge run has a ceiling, and --audit a section selector --------------------------------
+
+
+def _sleeping_claude(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """A ``claude`` that would run for 30 s; the real runner launches it. Returns the file its pid lands in."""
+    pidfile = tmp_path / "claude.pid"
+    binary = _write(tmp_path / "bin/claude", f"#!/bin/sh\necho $$ > {pidfile}\nexec sleep 30\n")
+    binary.chmod(0o755)
+    monkeypatch.setattr(harness, "_resolve_binary", lambda profile: str(binary))
+    return pidfile
+
+
+def test_a_timeout_s_block_validates_and_composes() -> None:
+    """AC1: ``timeout_s`` is a stage -> seconds map that composes like the block's other keys; a malformed one
+    excludes the layer (MRS-POLICY-002)."""
+    block = {**BLOCK, "timeout_s": {"readiness": 120, "mint": 900}}
+    effective, findings = policy.compose(project_slug=SLUG, repo_defaults={}, project={"challenge": block}, flags={})
+    assert not [f for f in findings if f.code == "MRS-POLICY-002"]
+    assert dict(effective.challenge.value)["timeout_s"] == {"readiness": 120.0, "mint": 900.0}
+    config = core.config_from_block(effective.challenge.value)
+    assert (config.timeout_for("readiness"), config.timeout_for("mint"), config.timeout_for("drift")) == (
+        120.0,
+        900.0,
+        3600.0,
+    )
+    effective, findings = policy.compose(project_slug=SLUG, repo_defaults={"challenge": block}, project={}, flags={})
+    assert effective.challenge.layer is policy.PolicyLayer.REPO_DEFAULTS
+    assert core.config_from_block(effective.challenge.value).timeout_for("readiness") == 120.0
+    effective, findings = policy.compose(
+        project_slug=SLUG, repo_defaults={}, project={"challenge": {**BLOCK, "timeout_s": {"mint": 0}}}, flags={}
+    )
+    assert effective.challenge.value == {} and any(f.code == "MRS-POLICY-002" for f in findings)
+
+
+@pytest.mark.parametrize(
+    ("timeouts", "mint", "readiness"),
+    [(None, 3600.0, 600.0), ({"mint": 42, "readiness": 7}, 42.0, 7.0)],
+    ids=["the-stage-defaults", "the-block-values"],
+)
+def test_the_session_ceiling_is_the_block_value_else_the_stage_default(
+    timeouts: dict | None, mint: float, readiness: float, repo: Path, tmp_path: Path, monkeypatch
+) -> None:
+    """AC1: the ad hoc verb and the dispatch hook hand the runner the stage's ceiling."""
+    _flags(tmp_path, monkeypatch, egm_challenge=True, egm_policy_block=True, egm_dispatch_readiness=True)
+    block = {**BLOCK, **({"timeout_s": timeouts} if timeouts else {})}
+    monkeypatch.setattr(cli, "compose_effective", lambda slug: _effective(block))
+    runner = FakeRunner()
+    assert cli.run_challenge(_args(stage="mint", target=str(cli.spec_path(repo, SLUG))), runner=runner, root=repo) == 0
+    _hook(repo, runner, _effective(block))
+    assert runner.timeouts == [mint, readiness]
+
+
+def test_a_session_past_its_ceiling_exits_1_with_outcome_error(repo: Path, tmp_path: Path, monkeypatch, capsys) -> None:
+    """AC2: the real runner kills a session that outlives its ``timeout_s``; the run is unevaluable, never a hang."""
+    _flags(tmp_path, monkeypatch, egm_challenge=True, egm_policy_block=True)
+    pidfile = _sleeping_claude(tmp_path, monkeypatch)
+    monkeypatch.setattr(cli, "compose_effective", lambda slug: _effective({**BLOCK, "timeout_s": {"mint": 1.5}}))
+    args = _args(stage="mint", target=str(cli.spec_path(repo, SLUG)))
+    started = time.monotonic()
+    assert cli.run_challenge(args, root=repo, now=lambda: NOW) == 1
+    assert time.monotonic() - started < 20
+    out = json.loads(capsys.readouterr().out)
+    assert "outlived its 1.5 s ceiling" in out["error"] and out["findings"] == 0
+    (run_dir,) = _egm_runs(repo)
+    intent, outcome = (entry["payload"] for entry in _journal(run_dir))
+    assert intent["timeout_s"] == 1.5
+    assert outcome["status"] == "error" and "ceiling" in outcome["error"]
+    with pytest.raises(ProcessLookupError):
+        os.kill(int(pidfile.read_text(encoding="utf-8")), 0)
+
+
+def test_dispatch_hook_reports_a_timed_out_readiness_review_and_proceeds(
+    repo: Path, tmp_path: Path, monkeypatch
+) -> None:
+    """AC2: a readiness session past its ceiling is MRS-DISP-067 on the dispatch, and the hook returns (the
+    launch proceeds; ``test_dispatch.py`` pins the launch itself)."""
+    _flags(tmp_path, monkeypatch, egm_challenge=True, egm_policy_block=True, egm_dispatch_readiness=True)
+    _sleeping_claude(tmp_path, monkeypatch)
+    effective = _effective({**BLOCK, "timeout_s": {"readiness": 1.5}})
+    payload, findings = _hook(repo, harness.ClaudeChallengeRunner(plugins_root=tmp_path / "plugins"), effective)
+    assert [f.code for f in findings] == ["MRS-DISP-067"]
+    assert "outlived its 1.5 s ceiling" in payload["error"] and payload["report"].endswith("report.json")
+    assert core.readiness_view(payload)["red"] is True
+
+
+def _prompt_path(prompt: str, label: str) -> Path:
+    return Path(re.search(rf"{label}: (\S+)", prompt).group(1))
+
+
+@pytest.mark.parametrize(
+    ("stage", "source", "selector", "expected"),
+    [
+        ("mint", "spec", "CAP-2..CAP-3", MARSHAL_CAPS),
+        ("decompose", "epics", "epic:7", MARSHAL_EPIC_7),
+        ("mint", "dream", "heading:2026-10-01 — The second", MARSHAL_ENTRY),
+    ],
+    ids=["cap-range", "epic-range", "dream-heading"],
+)
+def test_section_slices_the_target_into_a_tier_3_file(
+    stage: str, source: str, selector: str, expected: str, repo: Path, tmp_path: Path, monkeypatch
+) -> None:
+    """AC3: ``--section`` cuts exactly the named section of ``--target`` into a Tier-3 file the reviewer receives
+    by absolute path."""
+    _flags(tmp_path, monkeypatch, egm_challenge=True, egm_policy_block=True)
+    whole = {"spec": cli.spec_path, "epics": cli.epics_path, "dream": cli.dream_path}[source](repo, SLUG)
+    runner = FakeRunner()
+    args = _args(stage=stage, target=str(whole), section=selector)
+    assert cli.run_challenge(args, runner=runner, root=repo, now=lambda: NOW) == 0
+    target = _prompt_path(runner.prompts[0], "target")
+    (run_dir,) = _egm_runs(repo)  # the slice lives in the run's own directory, so concurrent runs never collide
+    assert target.is_absolute() and target.parent == run_dir / cli.SLICES_DIRNAME and target != whole
+    assert target.read_text(encoding="utf-8") == expected
+    if source != "dream":  # a Dream target keeps the whole Dream as its context unless --dream-section cuts it
+        assert str(whole) not in runner.prompts[0]
+
+
+def test_dream_section_slices_the_dream_context(repo: Path, tmp_path: Path, monkeypatch) -> None:
+    """AC3: ``--dream-section`` hands the reviewers one Dream entry, never the whole Dream."""
+    _flags(tmp_path, monkeypatch, egm_challenge=True, egm_policy_block=True)
+    runner = FakeRunner()
+    args = _args(
+        stage="mint",
+        target=str(cli.spec_path(repo, SLUG)),
+        section="CAP-2..CAP-3",
+        dream_section="heading:2026-10-01 — The second dream",
+    )
+    assert cli.run_challenge(args, runner=runner, root=repo, now=lambda: NOW) == 0
+    dream = _prompt_path(runner.prompts[0], r"Dream \(read the dated entry the target cites\)")
+    (run_dir,) = _egm_runs(repo)
+    assert dream.is_absolute() and dream.parent == run_dir / cli.SLICES_DIRNAME
+    assert _prompt_path(runner.prompts[0], "target").parent == run_dir / cli.SLICES_DIRNAME
+    assert dream.read_text(encoding="utf-8") == MARSHAL_ENTRY
+    assert str(cli.dream_path(repo, SLUG)) not in runner.prompts[0]
+
+
+@pytest.mark.parametrize(
+    ("values", "needle"),
+    [
+        ({"stage": "mint", "target": "SPEC", "section": "CAP-9"}, "CAP-9 defined nowhere"),
+        ({"stage": "mint", "target": "SPEC", "section": "caps 2 to 3"}, "is none of"),
+        ({"stage": "mint", "target": "SPEC", "dream_section": "heading:2027"}, "no heading"),
+        ({"stage": "mint", "section": "CAP-2"}, "--section slices --target"),
+        ({"audit": True, "section": "CAP-2"}, "--audit cuts its own slices"),
+    ],
+    ids=["names-no-section", "malformed", "dream-names-no-heading", "no-target", "with-audit"],
+)
+def test_a_selector_that_cuts_nothing_refuses_before_any_spawn(
+    values: dict, needle: str, repo: Path, tmp_path: Path, monkeypatch, capsys
+) -> None:
+    _flags(tmp_path, monkeypatch, egm_challenge=True, egm_policy_block=True, egm_audit=True)
+    if values.get("target") == "SPEC":
+        values = {**values, "target": str(cli.spec_path(repo, SLUG))}
+    runner = FakeRunner()
+    assert cli.run_challenge(_args(**values), runner=runner, root=repo, now=lambda: NOW) == USAGE
+    assert runner.prompts == [] and needle in capsys.readouterr().err
+
+
+def test_the_parser_takes_the_two_selectors() -> None:
+    parser = argparse.ArgumentParser()
+    cli.add_factory_challenge_subparser(parser.add_subparsers())
+    args = parser.parse_args(["challenge", "--section", "CAP-298..CAP-303", "--dream-section", "heading:2026-11-01"])
+    assert (args.section, args.dream_section) == ("CAP-298..CAP-303", "heading:2026-11-01")
+
+
+def test_a_slice_is_written_only_under_tier_3(repo: Path) -> None:
+    """Story 113.14 Always: a slice outside a project's implementation-artifacts/ is refused."""
+    selector = core.parse_selector("CAP-2")
+    with pytest.raises(cli.ChallengeRefused, match="Tier-3"):
+        cli.write_slice(repo, cli.spec_path(repo, SLUG), selector, cli.epics_path(repo, SLUG).parent / "slices")
+    escape = repo / "_bmad-output/projects" / SLUG / "implementation-artifacts/../planning-artifacts/slices"
+    with pytest.raises(cli.ChallengeRefused, match="Tier-3"):  # judged as written: a '..' part never passes
+        cli.write_slice(repo, cli.spec_path(repo, SLUG), selector, escape)
+    assert not (cli.epics_path(repo, SLUG).parent / "slices").exists()
+    tier3 = repo / "_bmad-output/projects" / SLUG / "implementation-artifacts/egm/slices"
+    assert cli.write_slice(repo, cli.spec_path(repo, SLUG), selector, tier3) == tier3 / "SPEC--CAP-2.md"
+
+
+def test_an_artifact_dir_that_leaves_tier_3_is_no_block() -> None:
+    """Story 113.14 review: a ``..`` or absolute ``artifact_dir`` excludes the block, so nothing is written there."""
+    for artifact_dir in ("implementation-artifacts/../planning-artifacts", "/tmp/egm"):
+        effective, findings = policy.compose(
+            project_slug=SLUG,
+            repo_defaults={},
+            project={"challenge": {**BLOCK, "artifact_dir": artifact_dir}},
+            flags={},
+        )
+        assert effective.challenge.value == {} and any(f.code == "MRS-POLICY-002" for f in findings)
+    effective, findings = policy.compose(
+        project_slug=SLUG, repo_defaults={}, project={"challenge": {**BLOCK, "timeout_s": {"mint": 10**400}}}, flags={}
+    )
+    assert effective.challenge.value == {} and any(f.code == "MRS-POLICY-002" for f in findings)
+
+
+def test_an_undecodable_source_is_a_refusal_or_a_gap_never_a_crash(
+    repo: Path, tmp_path: Path, monkeypatch, capsys
+) -> None:
+    """Story 113.14 review: an ad hoc --section on a file that is not UTF-8 refuses with the usage code; in the sweep
+    the station gaps (exit 1) and every other station still reviews."""
+    _flags(tmp_path, monkeypatch, egm_challenge=True, egm_policy_block=True, egm_audit=True)
+    bad = repo / "docs/bad.md"
+    bad.write_bytes(b"\xff\xfe not utf-8 \x80\n")
+    runner = FakeRunner()
+    args = _args(stage="mint", target=str(bad), section="heading:x")
+    assert cli.run_challenge(args, runner=runner, root=repo, now=lambda: NOW) == USAGE
+    assert runner.prompts == [] and "cannot read" in capsys.readouterr().err
+    monkeypatch.setattr(cli, "STATIONS", ("marshal", "atlas"))
+    cli.spec_path(repo, "pyforge-atlas").write_bytes(b"\xff\xfe\x80")
+    assert cli.run_challenge(_args(audit=True), runner=runner, root=repo, now=lambda: NOW) == 1
+    (error,) = json.loads(capsys.readouterr().out)["errors"]
+    assert error.startswith(
+        f"pyforge-atlas mint and decompose: no slice: cannot read {cli.spec_path(repo, 'pyforge-atlas')}"
+    )
+    assert len(runner.prompts) == 4  # 2 repo rules + marshal's mint and decompose
+
+
+def test_the_audit_plan_targets_each_station_s_newest_cap_slice_and_its_epic_range(repo: Path, monkeypatch) -> None:
+    """AC4: per station, mint reviews the newest CAP slice and decompose the epic range naming it (the CAP slice
+    its standard), each with the Dream entry the slice cites -- never a whole SPEC.md, epics.md or Dream, and no
+    story spec."""
+    monkeypatch.setattr(cli, "STATIONS", ("marshal", "atlas"))
+    slices = _audit_slices(repo)
+    plan, gaps = cli.audit_plan(repo, slices)
+    assert gaps == []
+    station = {(run.slug, run.stage): run for run in plan if run.stage != "rules"}
+    assert set(station) == {(s, stage) for s in FIXTURE_TEXTS for stage in ("mint", "decompose")}
+    whole = {f(repo, s) for s in FIXTURE_TEXTS for f in (cli.spec_path, cli.epics_path, cli.dream_path)}
+    for (slug, stage), run in station.items():
+        for path in (run.target, run.dream, *run.standards):
+            assert path is not None and path.is_absolute() and path not in whole
+        assert run.target.parent == slices / slug and run.dream.parent == slices / slug
+    expected = {
+        "pyforge-marshal": (MARSHAL_CAPS, MARSHAL_EPIC_7, MARSHAL_ENTRY),
+        "pyforge-atlas": (ATLAS_CAPS, ATLAS_EPIC_3, ATLAS_ENTRY),
+    }
+    for slug, (caps, epics, entry) in expected.items():
+        mint, decompose = station[(slug, "mint")], station[(slug, "decompose")]
+        assert mint.target.read_text(encoding="utf-8") == caps
+        assert decompose.target.read_text(encoding="utf-8") == epics
+        assert mint.dream == decompose.dream and mint.dream.read_text(encoding="utf-8") == entry
+        assert decompose.standards == (repo / cli.CHAIN_STANDARD_RELPATH, mint.target)
+    # marshal's slice cites its Dream entry; atlas's cites none and no entry names CAP-5: the newest, recorded as such
+    assert {(slug, run.dream_choice) for (slug, _stage), run in station.items()} == {
+        ("pyforge-marshal", core.DREAM_CITED),
+        ("pyforge-atlas", core.DREAM_NEWEST),
+    }
+    assert {run.dream_choice for run in plan if run.stage == "rules"} == {""}
+    every_path = [p for run in plan for p in (run.target, run.dream, *run.standards) if p is not None]
+    assert not [p for p in every_path if p.name.startswith("spec-")]  # no story spec
+
+
+def _station_skill(repo: Path, slug: str) -> Path:
+    return _write(repo / ".claude/skills" / slug / "active" / slug / "SKILL.md", f"# {slug}\n")
+
+
+def test_the_audit_prompts_never_name_a_whole_station_file(repo: Path, tmp_path: Path, monkeypatch, capsys) -> None:
+    """AC4: what the reviewers receive -- target, Dream and standards -- carries no whole SPEC.md, epics.md or
+    Dream of a station; a station skill's rules run reads the Dream entry its station's mint run takes."""
+    _flags(tmp_path, monkeypatch, egm_challenge=True, egm_policy_block=True, egm_audit=True)
+    monkeypatch.setattr(cli, "STATIONS", ("marshal", "atlas"))
+    skills = {slug: _station_skill(repo, slug) for slug in FIXTURE_TEXTS}
+    runner = FakeRunner(findings=0)
+    assert cli.run_challenge(_args(audit=True), runner=runner, root=repo, now=lambda: NOW) == 0
+    assert len(runner.prompts) == 8  # 2 repo rules + (skill rules + mint + decompose) x 2
+    whole = [str(f(repo, s)) for s in FIXTURE_TEXTS for f in (cli.spec_path, cli.epics_path, cli.dream_path)]
+    assert not [path for path in whole for prompt in runner.prompts if f"{path}\n" in prompt]
+    dream_label = r"Dream \(read the dated entry the target cites\)"
+    for slug, skill in skills.items():
+        (skill_prompt,) = [prompt for prompt in runner.prompts if f"  - target: {skill}\n" in prompt]
+        (mint_prompt,) = [p for p in runner.prompts if f"slices/{slug}/SPEC--" in str(_prompt_path(p, "target"))]
+        assert _prompt_path(skill_prompt, dream_label) == _prompt_path(mint_prompt, dream_label)
+
+
+def test_a_station_skill_whose_station_has_no_slice_reads_no_dream(repo: Path, monkeypatch) -> None:
+    """Story 113.14 review: with no mint slice to borrow, the skill's rules run takes no Dream, never the whole one."""
+    monkeypatch.setattr(cli, "STATIONS", ("atlas",))
+    _station_skill(repo, "pyforge-atlas")
+    _write(cli.spec_path(repo, "pyforge-atlas"), "# Spec without a CAP\n")
+    plan, gaps = cli.audit_plan(repo, _audit_slices(repo))
+    (rules,) = [run for run in plan if run.slug == "pyforge-atlas"]
+    assert rules.stage == "rules" and rules.dream is None and rules.dream_choice == ""
+    assert gaps == [
+        f"pyforge-atlas mint and decompose: no slice: {cli.spec_path(repo, 'pyforge-atlas')} defines no CAP"
+    ]
+    runner = FakeRunner(findings=0)
+    config = core.config_from_block(BLOCK)
+    out = repo / "_bmad-output/projects" / SLUG / "implementation-artifacts/egm/runs"
+    cli.run_one(
+        root=repo,
+        slug=rules.slug,
+        stage="rules",
+        target=rules.target,
+        config=config,
+        runner=runner,
+        out_dir=out,
+        dream=rules.dream,
+        owner=rules.owner,
+        omit_dream=True,
+    )
+    assert "Dream" not in runner.prompts[0] and str(cli.dream_path(repo, "pyforge-atlas")) not in runner.prompts[0]
+
+
+def test_a_station_the_audit_cannot_slice_is_unevaluable(repo: Path, tmp_path: Path, monkeypatch, capsys) -> None:
+    """A station whose epics name no CAP of its newest slice has no decompose review: the sweep says so and
+    exits 1, never false-green; its mint review still runs."""
+    _flags(tmp_path, monkeypatch, egm_challenge=True, egm_policy_block=True, egm_audit=True)
+    monkeypatch.setattr(cli, "STATIONS", ("marshal", "atlas"))
+    _write(cli.epics_path(repo, "pyforge-atlas"), "# Epics\n\n## Epic 2: older (CAP-4)\n")
+    runner = FakeRunner(findings=0)
+    assert cli.run_challenge(_args(audit=True), runner=runner, root=repo, now=lambda: NOW) == 1
+    (error,) = json.loads(capsys.readouterr().out)["errors"]
+    assert error.startswith("pyforge-atlas decompose: no slice") and "CAP-5" in error
+    assert len(runner.prompts) == 5
+
+
+def test_an_uncited_slice_takes_the_entry_naming_its_cap_and_journals_the_choice(
+    repo: Path, tmp_path: Path, monkeypatch, capsys
+) -> None:
+    """Story 113.14: atlas's CAP-5 cites no Dream entry; the older entry that names CAP-5 beats the newest one, and
+    the run's intent records ``dream_choice`` so a reader can tell it from a weak fallback."""
+    _flags(tmp_path, monkeypatch, egm_challenge=True, egm_policy_block=True, egm_audit=True)
+    monkeypatch.setattr(cli, "STATIONS", ("atlas",))
+    named = "## 2026-08-01 — Older\n\nThis entry becomes spec-pyforge-atlas:CAP-5.\n"
+    _write(cli.dream_path(repo, "pyforge-atlas"), "# Dream\n\n" + named + "\n" + ATLAS_ENTRY)
+    plan, gaps = cli.audit_plan(repo, _audit_slices(repo))
+    assert gaps == []
+    (mint,) = [run for run in plan if run.stage == "mint"]
+    assert mint.dream_choice == core.DREAM_NAMES_CAP and mint.dream.read_text(encoding="utf-8") == named
+    assert cli.run_challenge(_args(audit=True), runner=FakeRunner(findings=0), root=repo, now=lambda: NOW) == 0
+    audit_dir = Path(json.loads(capsys.readouterr().out)["audit_dir"])
+    intents = {
+        entry["payload"]["stage"]: entry["payload"]
+        for run_dir in (audit_dir / "runs").iterdir()
+        for entry in _journal(run_dir)
+        if entry["phase"] == "intent"
+    }
+    assert intents["mint"]["dream_choice"] == intents["decompose"]["dream_choice"] == core.DREAM_NAMES_CAP
+    assert intents["mint"]["dream"] == str(mint.dream)
+    assert "dream_choice" not in intents["rules"]
+
+
+def test_a_refused_ad_hoc_run_leaves_no_orphan_slices(repo: Path, tmp_path: Path, monkeypatch, capsys) -> None:
+    """Story 113.14 review nit: the slices are written into a run folder made before ``run_one``; when ``run_one``
+    then refuses (here: the block names a standard that does not exist), that folder is removed."""
+    _flags(tmp_path, monkeypatch, egm_challenge=True, egm_policy_block=True)
+    block = {**BLOCK, "standards": {"mint": ["docs/missing-standard.md"]}}
+    monkeypatch.setattr(cli, "compose_effective", lambda slug: _effective(block))
+    runner = FakeRunner()
+    args = _args(stage="mint", target=str(cli.spec_path(repo, SLUG)), section="CAP-2..CAP-3")
+    assert cli.run_challenge(args, runner=runner, root=repo, now=lambda: NOW) == USAGE
+    assert runner.prompts == [] and "missing-standard.md does not exist" in capsys.readouterr().err
+    assert _egm_runs(repo) == []

@@ -285,6 +285,38 @@ Closed `DW-mason-25-2-2` — resolution: Story 25.4; 14/14 `repaired`; builds 12
 - `python scripts/spec_surface_reconcile.py` — exit 0 after memlog reconcile (no `--write-baseline`).
 - `git diff origin/main...HEAD -- recipes/` — 14 directories only; no version/number/requirement/maintainer line changes.
 
+## Correction (Story 25.17, 2026-11-01)
+
+Story 25.17 read each recipe's own `cfe-local-build-*` record back against the run table above and found they disagreed. Each recipe was rebuilt on linux-64 through `refresh_wave.py --apply --gates --build --rebuild --force` (reports `_bmad-output/projects/pyforge-mason/implementation-artifacts/refresh-waves/25-17/report.json` and, for the recipes rebuilt after the independent review, `.../25-17/review/report.json`; Tier 3). Every *after* value was written by that build, and equals `build.datetime` in the report that rebuilt it last. The run table above is left as it was.
+
+| Recipe | Record before (status, datetime, version) | Record after (status, datetime, version) |
+|---|---|---|
+| microsoft-agents-m365copilot | success, 2026-10-10T08:35:31Z (1.10.0) | success, 2026-11-02T01:32:48Z (1.11.0) |
+| py-yaml12 | success, 2026-10-10T08:35:31Z (0.2.0) | success, 2026-11-02T02:12:39Z (0.2.0) |
+| py3langid | success, 2026-10-10T08:35:31Z (0.4.0) | success, 2026-11-02T01:33:24Z (0.4.0) |
+| solvor | success, 2026-10-10T08:35:31Z (0.6.3) | success, 2026-11-02T01:27:46Z (0.6.3) |
+| django-csvimport | failed, 2026-10-10T08:35:31Z (3.3) | success, 2026-11-02T02:09:22Z (3.3) |
+| django-grpc | failed, 2026-10-10T08:35:31Z (1.2.15) | success, 2026-11-02T02:17:11Z (1.2.20) |
+| django-lasuite | success, 2026-10-10T08:35:31Z (0.0.30) | success, 2026-11-02T02:18:24Z (1.0.0) |
+| pixitainer | success, 2026-10-10T08:35:31Z (0.9.0) | success, 2026-11-02T02:15:04Z (0.9.0) |
+| django-weasyprint | success, 2026-10-10T08:35:31Z (2.6.0) | success, 2026-11-02T01:31:29Z (2.6.0) |
+| robocorp-storage | success, 2026-10-10T08:35:31Z (1.1.1) | success, 2026-11-02T01:33:57Z (1.1.1) |
+| robocorp-vault | success, 2026-10-10T08:35:31Z (1.4.1) | success, 2026-11-02T01:34:31Z (1.4.2) |
+| wagtail-autocomplete | success, 2026-10-10T08:35:31Z (0.12.1) | success, 2026-11-02T01:35:08Z (0.12.1) |
+| wagtail-json-widget | success, 2026-10-10T08:35:31Z (0.0.9) | success, 2026-11-02T01:36:08Z (0.0.9) |
+| wagtailtables | success, 2026-10-10T08:35:31Z (0.3.0) | success, 2026-11-02T01:36:47Z (0.3.0) |
+
+- The fourteen *before* datetimes are one shared stamp, `2026-10-10T08:35:31Z`, which no single build wrote.
+- `django-csvimport`: the build failed because `source.url` named `django-csvimport-3.3.tar.gz`, which 404s; PyPI's sdist is `django_csvimport-3.3.tar.gz`. URL fixed (literal form); sha256 unchanged.
+- `django-grpc`: the same hyphen-for-underscore 404, plus a host `python ${{ python_min }}` that rattler-build rejects. URL fixed, host and test python pins take `.*`, dependencies synced to the feedstock (G96: host `poetry-core`, run `grpcio-reflection`, `django <7.0`), `pb01ka` re-merged (G53); the driver then refreshed it 1.2.15 → 1.2.20.
+- `django-lasuite`: dependencies synced to the feedstock's 1.0.0 (upstream moved DRF, OIDC, JWT and requests into extras); the driver refreshed it 0.0.30 → 1.0.0.
+- `microsoft-agents-m365copilot` (1.10.0 → 1.11.0) and `robocorp-vault` (1.4.1 → 1.4.2) were behind their feedstocks and were refreshed by the driver.
+- `py-yaml12` and `solvor`: `jsmolic` re-merged from the deployed feedstock lists (G53). `pixitainer`: body restored to the feedstock's indentation (whitespace only), which clears the conda-recipe-manager parse error behind its `validate` red.
+- `django-csvimport`: run `django` floor raised from `>=2.2.5` to the feedstock's `>=4.2` (G96). Its local `meta.yaml` was removed: the feedstock is v1 (C2, G94).
+- `robocorp-storage`, `django-weasyprint`, `wagtail-autocomplete`, `wagtail-json-widget` and `wagtailtables` kept `meta.yaml` mirrors from older versions; each was re-mirrored byte-for-byte from its v0 feedstock (C1). Their `recipe.yaml` files did not change, so their records stand.
+- `py-yaml12`: `build.number` 0 → 1, the feedstock's value at the same version.
+- Gate reasons (AC 3). `py-yaml12` and `solvor`: `check-deps` 1 comes only from `cross-python_PLACEHOLDER`, the checker's rendering of the templated `cross-python_${{ target_platform }}` build dependency, which is not a real package name. `validate` and `optimize` are 0 for both. CI-parity lint (`pixi exec --spec "conda-smithy>=2026.6.14" conda-smithy recipe-lint --conda-forge`): both in fine form. `pixitainer`: `validate` 0 after the whitespace restore, `optimize` 1 is TEST-001 (multi-output, G29), CI-parity lint in fine form.
+
 ## Auto Run Result
 
 Status: done

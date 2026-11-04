@@ -1968,7 +1968,9 @@ status: open
   location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md
   origin: spec-deferred 532381eb779f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 25.18 (25-18-wave-a-s-no-refresh-recipes-are-re-bucketed-live-from-the-atlas)
+  verified: 2026-11-01 — resolved — _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-18-wave-a-s-no-refresh-recipes-are-re-bucketed-live-from-the-atlas.md:182 (§ Run record, Method step 2: all 318 co-maintained packages mapped to their 293 feedstocks through the atlas's `packages.feedstock_name`, each feedstock to `recipes/<feedstock_name>/`; the bucket table names every package with its feedstock and mirror)
 
 ### DW-mason-25-14-2: refresh-wave moves context.version only (refresh_recipe compares lv/tv from context.version); G72 suites keep sdk_version and bundle context pins behind unless hand-synced or re-mirrored.
 
@@ -2041,3 +2043,25 @@ status: open
   promoted: 2026-11-01 — EGM audit landing
   status: open
   reason: SKF cannot run headless here (no forge tier); the next mason skill recompile refreshes the anchors.
+
+### DW-mason-25-17: refresh_wave's --rebuild path on an already-current recipe runs no C1/C2 meta.yaml action, no G53 union and no G96 diff; the driver never compares build.number, entry points, tests, about.license_file, conda-forge.yml or a recipe-folder CBC with the feedstock, reads only top-level requirements (multi-output recipes get no G96 diff), discards each build's output, files a clean build whose test pip check failed as failed, never cleans build_artifacts/<name> (G68) and dates its comment lines in UTC... [truncated, 688 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-25-17-epic-25-s-recipes-carry-the-build-records-their-stories-claim.md`
+  summary: refresh_wave's --rebuild path on an already-current recipe runs no C1/C2 meta.yaml action, no G53 union and no G96 diff; the driver never compares build.number, entry points, tests, about.license_file, conda-forge.yml or a recipe-folder CBC with the feedstock, reads only top-level requirements (multi-output recipes get no G96 diff), discards each build's output, files a clean build whose test pip check failed as failed, never cleans build_artifacts/<name> (G68) and dates its comment lines in UTC... [truncated, 688 chars total]
+  evidence: refresh_wave's --rebuild path on an already-current recipe runs no C1/C2 meta.yaml action, no G53 union and no G96 diff; the driver never compares build.number, entry points, tests, about.license_file, conda-forge.yml or a recipe-folder CBC with the feedstock, reads only top-level requirements (multi-output recipes get no G96 diff), discards each build's output, files a clean build whose test pip check failed as failed, never cleans build_artifacts/<name> (G68) and dates its comment lines in UTC... [truncated, 688 chars total]
+  location: .claude/skills/conda-forge-expert/scripts/refresh_wave.py:747
+  origin: spec-deferred 5fc2515f3185 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-11-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-25-18: 55 of the 99 co-maintained feedstocks that Epic 25 stories had already refreshed or re-mirrored (25.2 pilots, 25.5-25.12, 25.13, 25.14, 25.16) are behind their published version again on the 2026-11-01 atlas snapshot (the otel family at 1.45.1/0.66b1 vs 1.45.2/0.66b2, selectolax 0.4.13 vs 1.0.2, django-allauth, tox, sentry-sdk, graphifyy, bmad-method, cachetools, fastmcp and more). Story 25.18 was bounded to Wave A's no-refresh set and did not refresh them; the run record lists every one with it... [truncated, 541 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-25-18-wave-a-s-no-refresh-recipes-are-re-bucketed-live-from-the-atlas.md`
+  summary: 55 of the 99 co-maintained feedstocks that Epic 25 stories had already refreshed or re-mirrored (25.2 pilots, 25.5-25.12, 25.13, 25.14, 25.16) are behind their published version again on the 2026-11-01 atlas snapshot (the otel family at 1.45.1/0.66b1 vs 1.45.2/0.66b2, selectolax 0.4.13 vs 1.0.2, django-allauth, tox, sentry-sdk, graphifyy, bmad-method, cachetools, fastmcp and more). Story 25.18 was bounded to Wave A's no-refresh set and did not refresh them; the run record lists every one with it... [truncated, 541 chars total]
+  evidence: 55 of the 99 co-maintained feedstocks that Epic 25 stories had already refreshed or re-mirrored (25.2 pilots, 25.5-25.12, 25.13, 25.14, 25.16) are behind their published version again on the 2026-11-01 atlas snapshot (the otel family at 1.45.1/0.66b1 vs 1.45.2/0.66b2, selectolax 0.4.13 vs 1.0.2, django-allauth, tox, sentry-sdk, graphifyy, bmad-method, cachetools, fastmcp and more). Story 25.18 was bounded to Wave A's no-refresh set and did not refresh them; the run record lists every one with it... [truncated, 541 chars total]
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-18-wave-a-s-no-refresh-recipes-are-re-bucketed-live-from-the-atlas.md:200
+  origin: spec-deferred cd2dbe6c1af7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-11-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

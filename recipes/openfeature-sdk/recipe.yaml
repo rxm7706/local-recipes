@@ -45,6 +45,7 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - pb01ka
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -60,11 +61,11 @@ extra:
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
   cfe-pip-check: "true"
-  cfe-on-conda-forge-status: pending-submission-to-conda-forge
-  cfe-on-conda-forge-feedstock: none
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/openfeature-sdk-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-25T08:49:01Z
+  cfe-last-checked: 2026-11-02T03:34:21Z
   cfe-generated-by-version: 8.84.0
   cfe-generated-at-datetime: 2026-08-25T08:49:01Z
   cfe-local-build-status: not-attempted
@@ -74,4 +75,6 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-11-01 mason Story 25.18: current at the published version; maintainers added (G53): pb01ka
+#    # 2026-11-01 mason Story 25.18 review round: conda-forge/openfeature-sdk-feedstock verified live; on-conda-forge status and feedstock set (G78)
 ####

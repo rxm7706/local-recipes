@@ -2107,6 +2107,10 @@ Drift — orphaned between stations.
   (Recommended)"); the PR trigger option was declined ("Red-main banner (Recommended)"); no new GitHub call from the
   preflight, and no change to which lanes run. Owner `spec-pyforge-steward`. → Epic 99 / Story 99.8, specced
   2026-10-25; it reopens Epic 99.
+- **2026-11-04 (a test that reads the real clock expires) — Found: `test_main_pause_dry_run_no_live_gh` passed a fixed
+  `--review-by 2026-11-01` through `main`, which reads the real clock, so it went red on `main` on 2026-11-02 with no
+  code change (`ci pause: refused — review_by 2026-11-01 is in the past`). Every sibling test in that file injects
+  `now`. Story 99.9 gives it the same fixed clock, under CAP-166; no CAP moves.**
 - **2026-10-25 (FR-1..FR-31 never got their arrows) — Found: the steward PRD's first 31 requirements name no
   capability.** A fleet audit of every station PRD's `FR-n ← CAP-m` arrows, run after marshal Story 105.1 found
   marshal's counted rather than traced, found steward's arrows right where they exist, and missing on FR-1..FR-31.
@@ -8027,3 +8031,16 @@ this host; the ruling on the capability-ledger mode.
   stories. → **Minted the same day:** CAP-176..CAP-178 on `spec-pyforge-steward` (the cluster, the packs,
   the gitops branch), FR-50..FR-52, no AD moves, Epic 118 / Stories 118.1–118.3 (`backlog`); the Spec's Open
   Questions carry the Keycloak-on-kind and `nic`-channel questions for the stories to settle.
+- **2026-11-01** — Ruling 4 addendum (steward Story 118.8, after a read-only pass over the NIC 0.17.0
+  source). The operator ruled on 2026-11-01 that `nic` alone writes `gitops/<project_name>`, under its own
+  deploy key, and that a non-local `deploy nic up` needs the operator's `--yes` behind a `session_denials`
+  entry; the `/shared` waiver on rootless kind is ratified. The source read showed that NIC's cloud clone
+  is a temporary directory that exists only inside `nic deploy`, and that its commit stages everything in
+  that clone as `Nebari Infrastructure Core <nic[bot]@users.noreply.github.com>`. So the operator ruled on
+  2026-11-01 that, on a cloud config, steward applies the pack Applications to the cluster with `kubectl`
+  and never commits or pushes; on kind it keeps committing into NIC's local directory. The deploy key
+  (`GITOPS_DEPLOY_KEY`) replaces the `GIT_TOKEN` PAT, a `gitops/**` server ruleset whose only bypass is that
+  key does the enforcing, and no secret-shaped value enters the tracked config or the rendered tree.
+  CAP-176, CAP-177 and CAP-178 are amended on `spec-pyforge-steward` (its memlog's 2026-11-01 entries carry
+  the record); Story 118.3 is amended to match and stays `backlog` until its operator-owned inputs exist.
+  Story 118.7 put `kubectl` and `helm` into the `pyforge-steward` environment the same day.

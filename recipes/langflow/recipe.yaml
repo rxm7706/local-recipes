@@ -2,14 +2,14 @@
 schema_version: 1
 
 context:
-  version: "1.12.4"
+  version: "1.13.0"
   sdk_version: "0.4.0"
   # lfx-* extension bundles are versioned independently of langflow itself
   # (src/bundles/<name>/pyproject.toml), so each gets its own context pin.
-  duckduckgo_version: "0.1.5"
-  arxiv_version: "0.1.5"
-  ibm_version: "0.2.5"
-  docling_version: "0.1.7"
+  duckduckgo_version: "0.2.0"
+  arxiv_version: "0.2.0"
+  ibm_version: "0.3.0"
+  docling_version: "0.2.1"
 
 recipe:
   name: langflow-suite
@@ -17,7 +17,7 @@ recipe:
 
 source:
   url: https://github.com/langflow-ai/langflow/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 1390218c57834bfb3714987d776274f12a8b0d44414b732e588ae09b677f1afb
+  sha256: b99aa5c12ccf45ea49dc982119da1cbe3c15ff624505bdfcec666fb53fa4e399
   # Langflow bundles a very large number of third-party integrations (IBM watsonx,
   # MongoDB, ClickHouse, etc.) as hard dependencies by default. patch_deps.py strips
   # out everything that isn't needed to import and run langflow. Nobody uses all of
@@ -69,6 +69,7 @@ outputs:
     build:
       noarch: python
       script:
+        - ${{ PYTHON }} "${{ RECIPE_DIR }}/patch_deps.py" lfx
         - ${{ PYTHON }} -m pip install src/lfx -vv --no-deps --no-build-isolation
     requirements:
       host:
@@ -79,8 +80,8 @@ outputs:
         - python >=${{ python_min }},<3.15
         - langchain-core >=1.2.28,<2.0.0
         - pandas >=2.0.0,<3.0.0
-        - pydantic >=2.0.0,<2.14
-        - pillow >=11.1.0,<13.0.0
+        - pydantic >=2.0.0,<3.0.0
+        - pillow >=12.3.0,<13.0.0
         - openpyxl >=3.1.5,<4.0.0
         - fastapi >=0.135.0,<1.0.0
         - uvicorn >=0.34.3,<1.0.0
@@ -107,6 +108,9 @@ outputs:
         - chardet >=7.3.0
         - defusedxml >=0.7.1,<1.0.0
         - passlib >=1.7.4,<2.0.0
+        - bcrypt >=4.3.0,<6.0.0
+        - jsonschema >=4.20.0,<5.0.0
+        - referencing >=0.31.0,<1.0.0
         - pydantic-settings >=2.10.1,<3.0.0
         - toml >=0.10.2,<1.0.0
         - tomli >=2.2.1,<3.0.0
@@ -119,16 +123,16 @@ outputs:
         - langchain-classic >=1.0.7,<1.1.0
         - validators >=0.34.0,<1.0.0
         - filelock >=3.20.1,<4.0.0
-        - pypdf >=6.10.0,<7.0.0
-        - cryptography >=48.0.1
-        - pyjwt >=2.10.0,<3.0.0
+        - pypdf >=6.19.0,<7.0.0
+        - cryptography >=50.0.0
+        - pyjwt >=2.15.1,<3.0.0
         - sqlalchemy >=2.0.38,<2.1.0
         - ag-ui-protocol >=0.1.10
         - ${{ pin_subpackage('langflow-sdk', exact=True) }}
         - markitdown >=0.1.4,<2.0.0
         - setuptools >=83.0.0,<84.0.0
         - wheel >=0.46.2,<1.0.0
-        - mcp >=1.17.0,<2.0.0
+        - mcp >=1.28.0,<2.0.0
         - psutil >=5.9.0,<8.0.0
         - beautifulsoup4 >=4.12.3,<5.0.0
       run_constraints:
@@ -140,6 +144,9 @@ outputs:
         - if: not linux
           then:
             - wcwidth !=0.9.1
+        - if: not win
+          then:
+            - msal_extensions >=1.3.0
     tests:
       - python:
           imports:
@@ -318,12 +325,17 @@ outputs:
       run:
         - python >=${{ python_min }},<3.15
         - ${{ pin_subpackage('lfx', exact=True) }}
-        - fastapi >=0.135.0,<1.0.0
+        - fastapi >=0.139.0,<1.0.0
+        - starlette >=1.5.0
         - slowapi >=0.1.9,<1.0.0
         - httpx >=0.27,<1.0.0
         - h2 >=4.4.1
         - aiofile >=3.9.0,<4.0.0
-        - uvicorn >=0.30.0,<1.0.0
+        - uvicorn >=0.45.0,<1.0.0
+        - websockets >=13.0,<16.0
+        - croniter >=2.0.0,<7.0.0
+        - urllib3 >=2.8.0,<3.0.0
+        - pyyaml >=6.0.2,<7.0.0
         - langchain >=1.3.0,<1.4.0
         - langchain-community >=0.4.1,<0.5.0
         - langchain-weaviate >=0.0.6
@@ -333,11 +345,11 @@ outputs:
         - structlog >=25.4.0,<26.0.0
         - rich >=13.7.0,<14.0.0
         - langchain-experimental >=0.4.1,<0.5.0
-        - sqlmodel >=0.0.37,<0.0.45
+        - sqlmodel >=0.0.46,<0.1.0
         - pydantic >=2.13.0,<3.0.0
         - pydantic-settings >=2.2.0,<3.0.0
         - email-validator >=2.0.0
-        - typer >=0.13.0,<1.0.0
+        - typer >=0.19.0,<1.0.0
         - cachetools >=6.0.0
         - platformdirs >=4.2.0,<5.0.0
         - python-multipart >=0.0.12,<1.0.0
@@ -347,15 +359,15 @@ outputs:
         # Loosened from an exact ==4.0.1 pin (upstream PR #1266): ==4.0.1 has no
         # py3.14 (cp314) conda-forge build. <5 avoids adopting bcrypt's next major.
         - bcrypt >=4.0.1,<5
-        - pillow >=12.1.1,<13.0.0
+        - pillow >=12.3.0,<13.0.0
         - docstring_parser >=0.16,<1.0.0
-        - pyjwt >=2.12.1
+        - pyjwt >=2.15.1,<3.0.0
         - pandas >=2.2.3
         - multiprocess >=0.70.14,<1.0.0
         - python-docx >=1.1.0,<2.0.0
         - nest-asyncio >=1.6.0,<2.0.0
         - emoji >=2.12.0,<3.0.0
-        - cryptography >=48.0.1
+        - cryptography >=50.0.0
         - asyncer >=0.0.5,<1.0.0
         - pyperclip >=1.8.2,<2.0.0
         - uncurl >=0.0.11,<1.0.0
@@ -373,7 +385,7 @@ outputs:
         - opentelemetry-instrumentation-system-metrics >=0.50b0,<1.0.0
         - prometheus_client >=0.20.0,<1.0.0
         - aiofiles >=24.1.0,<25.0.0
-        - pip >=26.0.0,<27.0.0
+        - pip >=26.2.1,<27.0.0
         - setuptools >=83.0.0,<84.0.0
         - nanoid >=2.0.0,<3.0.0
         - filelock >=3.20.1,<4.0.0
@@ -381,12 +393,13 @@ outputs:
         - assemblyai >=0.33.0,<1.0.0
         - fastapi-pagination >=0.13.1,<1.0.0
         - defusedxml >=0.7.1,<1.0.0
-        - pypdf >=6.10.0,<7.0.0
+        - pypdf >=6.19.0,<7.0.0
         - validators >=0.34.0,<1.0.0
         - networkx >=3.4.2,<4.0.0
         - json-repair >=0.30.3,<1.0.0
+        # See the matching mcp entry in the lfx output above.
         - mcp >=1.28.0,<2.0.0
-        - a2a-sdk >=1.1.0,<2.0.0
+        - a2a-sdk >=1.2.1,<2.0.0
         - ag-ui-protocol ==0.1.18
         - aiosqlite >=0.20.0,<1.0.0
         - greenlet >=3.1.1,<4.0.0
@@ -401,7 +414,7 @@ outputs:
         - dynaconf >=3.2.13,<4.0.0
         - pyasn1 >=0.6.3,<0.7.0
         - langgraph-checkpoint >4.0.0,<5.0.0
-        - transformers >=5.6.0,<6.0.0
+        - transformers >=5.10.1,<6.0.0
         # Upstream's "service-complete" runtime deps. patch_deps.py strips the
         # rest of that list: langfuse and langwatch aren't packaged on
         # conda-forge, and redis (via slowapi) and traceloop-sdk (via chromadb)
@@ -409,8 +422,10 @@ outputs:
         - chromadb >=1.0.0,<2.0.0
         - langsmith >=0.3.42,<1.0.0
         - arize-phoenix-otel >=0.6.1
-        - openinference-instrumentation-langchain >=0.1.29
+        - openinference-instrumentation-langchain >=0.1.29,<0.1.80
         - opik >=2.0.0,<3.0.0
+        # Opik installs LiteLLM even without the optional litellm extra.
+        - litellm >=1.103.1,<2.0.0,!=1.107.0
         - openlayer >=0.9.0,<1.0.0
         - python-kubernetes >=31.0.0,<33.0.0
         - aiobotocore >=3.7.0,<4.0.0
@@ -444,13 +459,13 @@ outputs:
             - langflow/frontend/index.html
             - langflow/frontend/assets/*.js
       - script:
-          - python -c "from passlib.context import CryptContext; ctx = CryptContext(schemes=['bcrypt'], deprecated='auto'); h = ctx.hash('bcrypt-pin-loosen-roundtrip'); assert ctx.verify('bcrypt-pin-loosen-roundtrip', h), 'bcrypt verify failed'; import bcrypt as _b; _ver = getattr(_b, '__version__', '0.0'); _tup = 
+          - python -c "from passlib.context import CryptContext; ctx = CryptContext(schemes=['bcrypt'], deprecated='auto'); h = ctx.hash('bcrypt-pin-loosen-roundtrip'); assert ctx.verify('bcrypt-pin-loosen-roundtrip', h), 'bcrypt verify failed'; import bcrypt as _b; _ver = getattr(_b, '__version__', '0.0'); _tup =
             tuple(int(x) for x in _ver.split('.')[:2]); assert _tup >= (4, 1), f'expected resolved bcrypt >=4.1 to prove the loosened pin actually took effect, got {_ver}'; print('bcrypt version:', _ver); print('bcrypt hash/verify OK')"
         requirements:
           run:
             - python 3.14.*
       - script:
-          - python -c "import sys; import langflow; import markitdown; import onnxruntime as ort; from magika import Magika; ver = ort.__version__; parts = [int(x) for x in ver.split('.')[:3]]; parts += [0] * (3 - len(parts)); assert not (sys.version_info >= (3, 14) and tuple(parts) < (1, 25, 1)), f'py3.14 needs 
+          - python -c "import sys; import langflow; import markitdown; import onnxruntime as ort; from magika import Magika; ver = ort.__version__; parts = [int(x) for x in ver.split('.')[:3]]; parts += [0] * (3 - len(parts)); assert not (sys.version_info >= (3, 14) and tuple(parts) < (1, 25, 1)), f'py3.14 needs
             onnxruntime >=1.25.1, got {ver}'; r = Magika().identify_bytes(b'hello py314 onnxruntime'); assert r.output.label; print('onnxruntime version:', ver); print('langflow + markitdown/magika/onnxruntime OK:', r.output.label)"
         requirements:
           run:
@@ -482,7 +497,7 @@ outputs:
         - fastmcp >=3.2.0
         - lark ==1.2.2
         - sseclient-py ==1.8.0
-        - litellm >=1.85.1,<2.0.0
+        - litellm >=1.85.1,<2.0.0,!=1.107.0
         - openai >=1.68.2,<3.0.0
         - langchain-anthropic >=1.4.6,<1.5.0
         - langchain-aws >=1.1.0,<1.2.0
@@ -570,14 +585,13 @@ extra:
   cfe-pip-check: true
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/langflow-feedstock
-  cfe-forge-recipe-updates-needed: 
-    - loosen-langchain-chroma-run-constraint-for-py314 (feedstock PR pending)
+  cfe-forge-recipe-updates-needed: "cap openinference-instrumentation-langchain <0.1.80 in langflow-base: conda-forge 0.1.80 and 0.1.81 declare openinference-instrumentation >=0.1.27 while their wheels need >=0.1.71, newer than conda-forge carries (0.1.66); the feedstock merged 1.13.0 on 2026-10-23, before 0.1.80 published, so its next rebuild hits the same pip check failure"
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-09-03T09:21:44Z
+  cfe-last-checked: 2026-11-02T00:34:11Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-09-03T09:29:20Z
+  cfe-local-build-datetime: 2026-11-02T02:07:49Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -625,4 +639,8 @@ extra:
 # lines when pushing to the feedstock (matches the bcrypt/onnxruntime style).
 # run_constraints:
 #   langchain-chroma >=0.2.6,<2.0.0  # was <0.3.0; 0.2.6 caps python <3.13
+# Header:
+#    # 2026-11-02 refresh_wave B-S25-17: refreshed 1.12.4 -> 1.13.0
+#    # 2026-11-01 Story 25.17 BFP: the driver bumps only context.version, so 1.13.0 first built against the 1.12.4 dependency set and langflow-base failed pip check (croniter missing, sqlmodel ~=0.0.46, websockets <16). Re-mirrored recipe.yaml and patch_deps.py byte-for-byte from langflow-feedstock at 1.13.0 (bundle context versions 0.2.0 / 0.2.0 / 0.3.0 / 0.2.1 and the run sets); this drops the Story 25.7 local pydantic <2.14 lfx pin. The feedstock already carries the langchain-chroma <2.0.0 loosening, so that update-needed entry is cleared.
+#    # 2026-11-01 Story 25.17 local deviation (G36 / G77 remedy 0): langflow-base run caps openinference-instrumentation-langchain at <0.1.80. conda-forge 0.1.80 and 0.1.81 declare openinference-instrumentation >=0.1.27 in their conda depends while their wheels require >=0.1.71, and conda-forge stops at openinference-instrumentation 0.1.66, so the solver picks 0.1.81 + 0.1.66 and pip check fails. 0.1.76, the newest build below the cap, requires only >=0.1.61. Revert trigger: conda-forge publishes openinference-instrumentation >=0.1.71, or openinference-instrumentation-langchain's feedstock raises its depends to match the wheel; then drop the cap and match the feedstock line again.
 ####

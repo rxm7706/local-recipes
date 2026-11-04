@@ -275,6 +275,19 @@ Report: `.claude/data/conda-forge-expert/refresh-waves/B-25-6/report.json` (giti
 
 Driver note: `django-fsm-log` apply failed on `calculate_hash` using `django-fsm-log-5.0.2.tar.gz` (404); PyPI sdist is `django_fsm_log-5.0.2.tar.gz` — hand-completed refresh (AC 10 gap already on Story 25.4).
 
+## Correction (Story 25.17, 2026-11-01)
+
+Story 25.17 read each recipe's own `cfe-local-build-*` record back against the run table above and found they disagreed. Each recipe was rebuilt on linux-64 through `refresh_wave.py --apply --gates --build --rebuild --force` (reports `_bmad-output/projects/pyforge-mason/implementation-artifacts/refresh-waves/25-17/report.json` and, for the recipes rebuilt after the independent review, `.../25-17/review/report.json`; Tier 3). Every *after* value was written by that build, and equals `build.datetime` in the report that rebuilt it last. The run table above is left as it was.
+
+| Recipe | Record before (status, datetime, version) | Record after (status, datetime, version) |
+|---|---|---|
+| django-silk | failed, 2026-10-10T11:35:41Z (5.6.0) | success, 2026-11-02T01:16:20Z (5.6.0) |
+| fastmcp-slim | failed, 2026-10-10T11:36:52Z (4.1.0) | success, 2026-11-02T01:18:06Z (4.1.4) |
+| grafana-client | failed, 2026-10-10T11:38:11Z (5.1.3) | success, 2026-11-02T01:17:47Z (5.1.4) |
+| import-linter | failed, 2026-10-10T11:43:45Z (2.15) | success, 2026-11-02T01:17:08Z (2.15) |
+
+- All four built green with no recipe fix: their `failed` records were stale. `grafana-client` (5.1.3 → 5.1.4) and `fastmcp-slim` (4.1.0 → 4.1.4, manifest `feedstock: fastmcp`) were behind their feedstocks and were refreshed by the driver.
+
 ## Review Triage Log
 
 ### 2026-10-10 — Review pass (build-auto)

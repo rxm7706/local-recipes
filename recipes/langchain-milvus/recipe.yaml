@@ -54,6 +54,7 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - pb01ka
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -71,16 +72,21 @@ extra:
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
   cfe-pip-check: true
-  cfe-on-conda-forge-status: pending-approval-on-conda-forge
-  cfe-on-conda-forge-feedstock: none
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/langchain-milvus-feedstock
   cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33894
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-25T05:00:00Z
+  cfe-last-checked: 2026-11-02T03:34:21Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
   cfe-local-build-status: failed
   cfe-local-build-datetime: '2026-10-09T11:02:22Z'
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-01 mason Story 25.18: current at the published version; maintainers added (G53): pb01ka
+#    # 2026-11-01 mason Story 25.18 review round: conda-forge/langchain-milvus-feedstock verified live; on-conda-forge status and feedstock set (G78)
 ####

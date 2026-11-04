@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: StringZilla
-  version: "5.2.0"
+  version: "5.3.2"
 
 package:
   name: ${{ name|lower }}
@@ -11,17 +11,13 @@ package:
 
 source:
   url: https://github.com/ashvardanian/StringZilla/archive/v${{ version }}.tar.gz
-  sha256: 95b0f91a013a1113fd6dc5585f39a31f2fe2321a0ea0ed64334e57f0383f4b56
+  sha256: c64f6359015205f6a492fecfbc6f092e5ae45b54ce44998c4a96f9e1e91a88ae
   #patches:
   #- patches/0001-fix-build-option.patch
 
 build:
   number: 0
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - sz_split=cli.split:main
-      - sz_wc=cli.wc:main
 
 requirements:
   build:
@@ -42,14 +38,8 @@ requirements:
 tests:
   - python:
       imports:
-        - cli
+        - stringzilla
       pip_check: true
-  - requirements:
-      run:
-        - pip
-    script:
-      - sz_split --help
-      - sz_wc --help
 
 about:
   summary: SIMD-accelerated string search, sort, hashes, fingerprints, & edit distances
@@ -74,7 +64,7 @@ extra:
     - pkg:pypi/stringzilla@${{ version }}
   cfe-upstream-repo: https://github.com/ashvardanian/StringZilla
   cfe-upstream-homepage: https://github.com/ashvardanian/StringZilla
-  cfe-import-names: [cli]
+  cfe-import-names: [stringzilla]
   cfe-source-kind: github-tag
   cfe-noarch: compiled
   cfe-pip-check: true
@@ -82,11 +72,11 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/stringzilla-feedstock
   cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-10T14:47:48Z
+  cfe-last-checked: 2026-11-02T00:31:53Z
   cfe-generated-by-version: 8.98.0
   cfe-generated-at-datetime: 2026-10-09T10:08:00Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-10-10T14:49:40Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-02T02:14:58Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -98,6 +88,8 @@ extra:
 #    # The recipe-dir conda_build_config.yaml (c_stdlib_version 10.13 on osx, below the 11.0 baseline) is
 #    # removed: the feedstock has none (G94), and it failed validate_recipe's lint.
 #    # 2026-10-10 refresh_wave B-25-9: refreshed 4.6.3 -> 5.2.0; maintainers added: pb01ka
+#    # 2026-11-02 refresh_wave B-S25-17: refreshed 5.2.0 -> 5.3.2
+#    # 2026-11-01 Story 25.17 BFP: the v1 recipe still declared the sz_split / sz_wc entry points and an import test of the cli package, which upstream no longer ships (setup.py registers no console_scripts; the only module is stringzilla). Test now imports stringzilla with pip check and the entry points are gone, matching the feedstock meta.yaml.
 # tests:
-#    # LOCAL BUILD 2026-10-09 (linux-64): py3.11-3.14 built; imports, pip check and both CLIs passed.
+#    # LOCAL BUILD 2026-10-09 (linux-64, 4.6.3): py3.11-3.14 built; imports, pip check and both CLIs passed. 5.x ships no CLIs (2026-11-01 note above); the current build record is the cfe-local-build-* fields.
 ####

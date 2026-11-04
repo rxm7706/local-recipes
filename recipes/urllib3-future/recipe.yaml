@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: urllib3-future
+  version: "2.25.905"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/u/urllib3-future/urllib3_future-${{ version }}.tar.gz
+  sha256: d5bd25dad01d7358b33f4c7b3f225506231158086ff790028c1de5b38c26e89e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling >=1.6.0,<2
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - qh3 >=1.5.4,<2.0.0
+    - h11 >=0.11.0,<1.0.0
+    - jh2 >=5.0.3,<6.0.0
+
+tests:
+  - python:
+      imports:
+        - urllib3_future
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: urllib3.future is a powerful HTTP 1.1, 2, and 3 client with both sync and async interfaces
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/jawah/urllib3.future
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: urllib3-future
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: urllib3-future
+  cfe-purls:
+    - pkg:conda/urllib3-future@${{ version }}?channel=conda-forge
+    - pkg:pypi/urllib3-future@${{ version }}
+  cfe-upstream-repo: https://github.com/jawah/urllib3.future
+  cfe-upstream-homepage: https://github.com/jawah/urllib3.future
+  cfe-import-names: [urllib3_future]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/urllib3-future-feedstock
+  cfe-forge-recipe-updates-needed: [source-url-pypi-org-canonical]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-02T02:48:21Z
+  cfe-generated-by-version: 8.102.2
+  cfe-generated-at-datetime: 2026-11-02T03:34:31Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-02T02:48:56Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-01 mason Story 25.18: v1 recipe.yaml authored by hand from the deployed v1 feedstock body
+#    # (C2 catch-up) at the local mirror's old version, so refresh-wave performs the bump; the local
+#    # v0 meta.yaml is removed by refresh-wave (G94). Body is feedstock-faithful except the canonical
+#    # literal source URL. The feedstock test pins python_version to python_min only (TEST-002 left
+#    # as the feedstock has it, coordination rule 2).
+#    # 2026-11-01 refresh_wave B-25-18-b2: refreshed 2.10.902 -> 2.25.905
+####

@@ -2,7 +2,7 @@
 title: "113.14: a challenge run has a ceiling, and --audit a section selector"
 type: 'fix'
 created: '2026-11-01'
-status: 'backlog'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 declared_low_risk: false
@@ -135,16 +135,27 @@ Parent: `spec-pyforge-marshal` CAP-298, CAP-299 and CAP-302 (a fix; no CAP minte
 
 ## Auto Run Result
 
-Status: backlog
+Status: done
 
-Summary: not yet dispatched; parked at backlog by the operator's ruling of 2026-11-01.
+Summary (2026-11-01, landed in one PR with mason 25.17/25.18 and steward 118.7/118.8, operator 2026-11-01):
+- Ask-first answered by the operator 2026-11-01 (marshal memlog `(decision)`): `readiness` 600 s, every other stage 3600 s; the newest CAP slice comes from the station's own Spec, the highest CAP plus the contiguous run citing the same newest `Dream entry <date>`, and the epic range is the epics whose heading names a slice CAP.
+- AC1: `timeout_s` joins `CHALLENGE_BLOCK_KEYS` (a stage → positive finite seconds map; anything else excludes the layer, `MRS-POLICY-002`); `ChallengeConfig.timeout_for(stage)` falls back to `READINESS_TIMEOUT_S` / `STAGE_TIMEOUT_S`; `ChallengeRunner.run` takes the ceiling; no `3600` remains in `adapters/challenge_harness.py`.
+- AC2: a session past its ceiling is killed (`ChallengeTimeout`), the verb exits 1 with outcome `error`; a timed-out dispatch readiness review reports `MRS-DISP-067` and the launch proceeds (`test_dispatch.py::test_a_timed_out_readiness_review_warns_and_the_launch_proceeds`). No turn cap: the packaged `claude` profile declares none.
+- AC3: `--section` / `--dream-section` take `CAP-a..CAP-b`, `epic:N[..M][,...]` or `heading:<text>` and write the slice under `implementation-artifacts/egm/` (refused elsewhere); CAPs are read as bullets and as `### CAP-n — ` headings (mason writes CAP-14..CAP-35 as headings).
+- AC4: `audit_plan` returns `AuditRun`s targeting each station's newest CAP slice (mint) and epic range (decompose), never a whole `SPEC.md`, `epics.md` or Dream, no story spec; the audit's decompose standard is the CAP slice; the Dream context is the cited entry, else the newest entry naming a slice CAP, else the newest entry, journaled as `dream_choice`; a station that cannot be sliced is a gap (exit 1). On main: marshal CAP-298..303 / Epic 113 (cited); atlas CAP-72, scribe CAP-32, steward CAP-178 (names-cap); herald CAP-61, warden CAP-26, mason CAP-35, doctor CAP-93 (newest); no gaps.
+- AC5: CAP-298, CAP-299, CAP-300 and CAP-302 re-derived by script render (operator approval 2026-11-01), both self-validate passes on the memlog; FR-240/241/242/244 amended in place.
+- AC6: restoring a literal 3600 fails `test_no_literal_ceiling_remains_in_the_harness`, `test_a_session_past_its_ceiling_is_a_timeout` and `test_runner_launches_the_claude_binary_and_logs_its_output`; returning whole files from `audit_plan` fails `test_the_audit_plan_targets_each_station_s_newest_cap_slice_and_its_epic_range` and `test_the_audit_prompts_never_name_a_whole_station_file`. Both restored byte-identical.
+- AC7: the three challenge test files 227 passed; `pyforge-marshal-test` 13,736 passed with one failure outside this story (`test_conda_forge_expert_not_replaced`, the uncommitted CFE retro of Story 25.17, which clears once that lands in its `retro(cfe):` commit); coverage of the three modules 99.4 / 88.8 / 97.4 %; `lint-types` exit 0. Final numbers are the landing PR's preflight.
 
 ## Spec Change Log
 
+- 2026-11-01: implemented. Deviations, flagged for the operator: the Dream-context fallback for a slice that cites no Dream entry (names-cap, else newest, journaled as `dream_choice`) and the gap rule are the session owner's choices, recorded as a marshal memlog `(decision)`; the audit's decompose standard narrows from the whole `SPEC.md` to the CAP slice (else the decompose run would still read the whole Spec); `marshal-policy.toml`'s commented `[challenge]` example gains the `timeout_s` key; mason's newest-entry Dream context (a CI/CD entry) is unrelated to CAP-35 until a Dream entry names it.
 - 2026-11-01: minted from the EGM fleet audit (`research/egm-audit-2026-11-01.md`, cluster MAR-CL9: MAR-M-D6, MAR-E4)
   and the operator's ruling of 2026-11-01 (`--audit` scope is each station's newest CAP slice and its epic range; story
   specs left to readiness; L effort, parked at backlog). `type: fix`, no flag, no CAP.
 
 ## Review Triage Log
 
-- (none yet)
+- 2026-11-01 — independent review 1 (read-only, separate agent; diff against this spec): 1 major, 7 minor, 4 nits. Major: in `--audit` a station skill's `rules` run still read the whole station Dream (AC4) → fixed: it takes its station's mint Dream slice, or no Dream. Minor, all fixed: the Tier-3 guard was lexical (`..` escaped it; `artifact_dir` now refused when absolute or with `..`); a 401-digit `timeout_s` raised `OverflowError` from compose; fenced bullet CAPs counted; `caps_named_in` and `names_cap` disagreed on qualifiers and en-dash ranges (one rule now); an undecodable file crashed instead of refusing or gapping; duplicate headings were unselectable (`heading:<text>#N`); ad hoc slices shared one folder across runs (now the run folder). Nits 9 (a trailing non-dated heading joins the last dated Dream entry), 10 (the kill reaches only the direct child; the hook's wall time adds the version probe and two git status calls) and 12 (tiny ceilings accepted; a station block replaces the repo default's `timeout_s` whole) left as recorded.
+- 2026-11-01 — re-review 2: fixes 1–7 and 11 verified; two new minor defects from the fixes: the session could rewrite its run-folder slices (→ a `Write(/{run_dir}/slices/**)` deny), and CAP dash ranges were unbounded and read a bare hyphen as a range (→ a hyphen range needs `CAP-` on the right; ascending, at most 500 wide). Nits: `AuditRun` docstring; an orphan run folder on refusal (now removed).
+- 2026-11-01 — re-review 3: A, B and the nits verified fixed, no new defect; the four test files 407 passed; SPEC CAP-298/CAP-302 wording matches the code.

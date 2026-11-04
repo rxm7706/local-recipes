@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 674
+# stories: 675
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -96,8 +96,8 @@ development_status:
   118-4-steward-deploy-nic-down-tears-the-cluster-down-without-a-prompt: done
   118-5-deploy-nic-up-installs-the-packs-under-nebari-apps-and-waits-for-the-sync-it-rendered: done
   118-6-the-attended-nkp-sign-in-spawn-and-landing-probes-are-tracked-commands: done
-  118-7-deploy-nic-finds-kubectl-and-helm-in-the-pyforge-steward-environment: backlog
-  118-8-the-gitops-branch-has-one-named-writer-enforced: backlog
+  118-7-deploy-nic-finds-kubectl-and-helm-in-the-pyforge-steward-environment: done
+  118-8-the-gitops-branch-has-one-named-writer-enforced: done
   12-1-the-vanilla-chart-with-an-ocp-overlay: done
   12-2-gke-as-a-portability-profile: done
   12-3-air-gap-parity-is-a-failing-check: done
@@ -452,6 +452,7 @@ development_status:
   99-6-a-paused-expensive-build-still-runs-once-a-week: done
   99-7-the-hand-disabled-workflows-are-retired-or-parked-and-the-convention-is-documented: done
   99-8-a-red-main-run-on-a-ci-surface-reaches-the-next-preflight: done
+  99-9-the-ci-pause-dry-run-test-carries-its-own-clock: done
   epic-1: done
   epic-1-retrospective: optional
   epic-10: done

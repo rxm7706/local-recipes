@@ -11,14 +11,18 @@ prompt, a harness session spawns the plugin's registered agents, and Marshal rea
 the session's JSON report back as data (AD-1).
 
 Everything here is a pure function over values (AD-4): the stage vocabulary and
-its default reviewer groups, the ``[challenge]`` policy block's shape check, the
-goldfish context rule, the task prompt, the report's shape, and the resolve
-bridge's accept/reject arithmetic. The CLI (``cli/challenge.py``) owns the I/O.
+its default reviewer groups and session ceilings, the ``[challenge]`` policy block's
+shape check, the goldfish context rule, the task prompt, the report's shape, the
+section selector that cuts a slice out of a Spec, an ``epics.md`` or a Dream
+(Story 113.14), and the resolve bridge's accept/reject arithmetic. The CLI
+(``cli/challenge.py``) owns the I/O.
 """
 
 from __future__ import annotations
 
+import itertools
 import json
+import math
 import re
 import shlex
 from collections.abc import Collection, Mapping, Sequence
@@ -53,6 +57,8 @@ EGM_MARKETPLACE = "egm"
 EGM_MARKETPLACE_REPO = "google/elephant-goldfish-model"
 EGM_PLUGIN_VERSION = "0.1.0"
 DEFAULT_ARTIFACT_DIR = "implementation-artifacts/egm"
+# Story 113.14: the folder of a run (or an audit) that holds its slices -- read-only to the challenge session.
+SLICES_DIRNAME = "slices"
 # Story 113.11 (CAP-298): Claude Code honours an agent's ``omitClaudeMd`` from 2.1.271 on.
 CLAUDE_CODE_FLOOR: tuple[int, int, int] = (2, 1, 271)
 _CLAUDE_CODE_VERSION = re.compile(r"\b(\d+)\.(\d+)\.(\d+)\b")
@@ -77,8 +83,21 @@ _EGM_DOCUMENT_STANDARDS_SEGMENT = "document_standards"
 SEVERITIES: tuple[str, ...] = ("high", "medium", "low")
 
 CHALLENGE_BLOCK_KEYS: frozenset[str] = frozenset(
-    {"enabled", "stages", "reviewers", "model", "standards", "artifact_dir", "plugin_version"}
+    {"enabled", "stages", "reviewers", "model", "standards", "artifact_dir", "plugin_version", "timeout_s"}
 )
+
+# Story 113.14 (CAP-298, CAP-299; operator ruling 2026-11-01): every challenge session has a ceiling, and the
+# ceiling is configuration -- the block's ``timeout_s`` per stage, else these defaults. ``readiness`` is short
+# because the dispatch hook waits on it synchronously before the harness launches (CAP-300).
+READINESS_TIMEOUT_S = 600.0
+STAGE_TIMEOUT_S = 3600.0
+DEFAULT_TIMEOUT_S: Mapping[str, float] = {
+    "mint": STAGE_TIMEOUT_S,
+    "decompose": STAGE_TIMEOUT_S,
+    "readiness": READINESS_TIMEOUT_S,
+    "drift": STAGE_TIMEOUT_S,
+    "rules": STAGE_TIMEOUT_S,
+}
 
 # Story 113.9: the challenger runs on the packaged claude profile, so its model is an entry the
 # claude adapter's catalog provider declares (``anthropic``).
@@ -103,6 +122,7 @@ class ChallengeConfig:
     standards: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
     artifact_dir: str = DEFAULT_ARTIFACT_DIR
     plugin_version: str = EGM_PLUGIN_VERSION
+    timeout_s: Mapping[str, float] = field(default_factory=dict)
 
     def stage_on(self, stage: str) -> bool:
         return self.enabled and stage in self.stages
@@ -110,8 +130,31 @@ class ChallengeConfig:
     def reviewers_for(self, stage: str) -> tuple[str, ...]:
         return tuple(self.reviewers.get(stage) or DEFAULT_REVIEWERS[stage])
 
+    def timeout_for(self, stage: str) -> float:
+        """The stage's session ceiling in seconds: the block's ``timeout_s`` entry, else the
+        per-stage default (Story 113.14)."""
+        return float(self.timeout_s.get(stage) or DEFAULT_TIMEOUT_S[stage])
+
 
 OFF = ChallengeConfig()
+
+
+def _timeout_map(value: object) -> dict[str, float] | None:
+    """``timeout_s``: a stage -> positive, finite seconds map; any other shape is malformed."""
+    if not isinstance(value, Mapping):
+        return None
+    result: dict[str, float] = {}
+    for stage, seconds in value.items():
+        if stage not in STAGES or isinstance(seconds, bool) or not isinstance(seconds, int | float):
+            return None
+        try:
+            as_float = float(seconds)
+        except OverflowError:  # an int past float range (10**400): malformed, never a raise (compose never raises)
+            return None
+        if not math.isfinite(as_float) or as_float <= 0:
+            return None
+        result[stage] = as_float
+    return result
 
 
 def _str_tuple(value: object) -> tuple[str, ...] | None:
@@ -165,6 +208,16 @@ def valid_challenge_block(value: object) -> dict[str, object] | None:
             if not isinstance(value[key], str) or not value[key].strip():
                 return None
             result[key] = value[key]
+    # Story 113.14: reports and slices stay under the project's folder -- no absolute or ``..`` artifact_dir.
+    if "artifact_dir" in result:
+        artifact = PurePosixPath(str(result["artifact_dir"]))
+        if artifact.is_absolute() or ".." in artifact.parts:
+            return None
+    if "timeout_s" in value:
+        timeouts = _timeout_map(value["timeout_s"])
+        if timeouts is None:
+            return None
+        result["timeout_s"] = timeouts
     return result
 
 
@@ -181,6 +234,7 @@ def config_from_block(block: Mapping[str, object] | None) -> ChallengeConfig:
         standards={k: tuple(v) for k, v in dict(block.get("standards") or {}).items()},  # type: ignore[call-overload]
         artifact_dir=str(block.get("artifact_dir") or DEFAULT_ARTIFACT_DIR),
         plugin_version=str(block.get("plugin_version") or EGM_PLUGIN_VERSION),
+        timeout_s={k: float(v) for k, v in dict(block.get("timeout_s") or {}).items()},  # type: ignore[call-overload]
     )
 
 
@@ -367,6 +421,7 @@ def render_prompt(*, stage: str, personas: Sequence[str], context: ChallengeCont
     agents = ", ".join(f"`{agent_type(p)}`" for p in personas)
     standards = "\n".join(f"  - {path}" for path in context.standards)
     glossary = f"  - glossary: {context.glossary}\n" if context.glossary else ""
+    dream = f"  - Dream (read the dated entry the target cites): {context.dream}\n" if context.dream else ""
     return (
         f"EGM challenge, stage `{stage}`. You are the orchestrator; you do not review.\n\n"
         f"Spawn one fresh agent per reviewer, in parallel, with the Agent tool: {agents}. "
@@ -375,7 +430,7 @@ def render_prompt(*, stage: str, personas: Sequence[str], context: ChallengeCont
         "files, no memory, no memlog, no URL, none of this prompt's other text:\n"
         f"  - target: {context.target}\n"
         f"{glossary}"
-        f"  - Dream (read the dated entry the target cites): {context.dream}\n"
+        f"{dream}"
         f"  - standard(s):\n{standards}\n\n"
         "Ask each reviewer for what does not make sense, what is assumed but never written, and "
         "what is promised but never tested in the target, judged against the standard(s).\n\n"
@@ -654,3 +709,375 @@ def fleet_summary(station_reports: Mapping[str, Sequence[ChallengeReport]]) -> s
             highs.extend(f"- **{station} / {report.stage} / {f.id}** — {f.claim} ({f.evidence})" for f in high)
     lines += ["", "## High-severity findings", "", *(highs or ["_None._"])]
     return "\n".join(lines) + "\n"
+
+
+# --- the section selector (Story 113.14, CAP-302) -------------------------------------------------------
+#
+# A whole SPEC.md, epics.md or Dream outgrows one reviewer's context (marshal's epics.md is over 1 MB), so a
+# review takes a slice: a CAP range of a Spec, an epic range of an epics.md, or one heading's section. Each
+# selection returns exactly that text; the CLI writes it into a Tier-3 file and hands the reviewer its path.
+
+
+class SelectorError(PyforgeError, ValueError):
+    """A section selector that does not parse, or names no section of its source."""
+
+
+_CAP_SELECTOR = re.compile(r"CAP-(\d+)(?:\.\.CAP-(\d+))?")
+_EPIC_ITEM = re.compile(r"(\d+)(?:\.\.(\d+))?")
+_HEADING_PREFIX = "heading:"
+# ``heading:<text>#N`` picks the Nth (1-based) heading that matches; a ``#`` after whitespace is heading text.
+_HEADING_OCCURRENCE = re.compile(r"(?P<text>.*\S)#(?P<n>\d+)")
+_EPIC_PREFIX = "epic:"
+# A capability is defined in one of two forms: a bullet (CHAIN-STANDARD's CAP line) or a heading (mason's
+# ``### CAP-n — title``). A Constraint bullet that starts ``- **CAP-n keeps ...`` names a CAP without defining one,
+# so the em dash is load-bearing in both.
+_CAP_DEFINITION = re.compile(r"^- \*\*CAP-(\d+) — ")
+_CAP_HEADING = re.compile(r"^CAP-(\d+) — ")
+_EPIC_SECTION = re.compile(r"^## Epic (\d+)\b")
+_MD_HEADING = re.compile(r"^(#{1,6}) (.+?)\s*$")
+_FENCE = re.compile(r"^ {0,3}(```|~~~)")
+_DREAM_ENTRY = re.compile(r"Dream entry (\d{4}-\d{2}-\d{2})(?: \(([^()]*)\))?")
+_DATED_HEADING = re.compile(r"^(\d{4}-\d{2}-\d{2})\b")
+# A CAP mention in prose or an epic heading: one id, or a range. ``..``, an en dash or an em dash may take a bare
+# number on the right (``CAP-90..93``); a hyphen joins a range only with ``CAP-`` on the right (``CAP-90-CAP-93``),
+# so ``CAP-5-1`` or ``CAP-35-2026`` is the one id CAP-5 or CAP-35.
+_CAP_MENTION = re.compile(r"(?<![\w-])CAP-(?P<first>\d+)(?:(?:\.\.|[–—])(?P<last>(?:CAP-)?\d+)|-(?P<capped>CAP-\d+))?")
+# A range spans at most this many CAPs; a longer or reversed one is no range (``CAP-35—2026-10-31`` is not 1,992
+# CAPs): only the ids written as ``CAP-n`` count.
+MAX_CAP_RANGE_SPAN = 500
+# The qualifier written straight before a mention: ``<word>:CAP-n`` or ``spec-<slug> CAP-n``.
+_COLON_QUALIFIER = re.compile(r"([A-Za-z][\w-]*):$")
+_SPACE_QUALIFIER = re.compile(r"\b(spec-[a-z0-9](?:[a-z0-9-]*[a-z0-9])?) $")
+_SLUG_UNSAFE = re.compile(r"[^A-Za-z0-9._-]+")
+
+
+@dataclass(frozen=True)
+class Selector:
+    """A parsed ``--section`` / ``--dream-section`` value: ``CAP-a..CAP-b``, ``epic:N[..M][,...]`` or
+    ``heading:<text>[#N]``. ``ranges`` holds inclusive ``(first, last)`` number pairs for the two range kinds."""
+
+    kind: str
+    ranges: tuple[tuple[int, int], ...] = ()
+    heading: str = ""
+    occurrence: int = 0  # heading:<text>#N -- the Nth matching heading (1-based); 0 means the match must be unique
+
+    @property
+    def slug(self) -> str:
+        """A filename-safe name for the slice this selector cuts."""
+        if self.kind == "caps":
+            ((first, last),) = self.ranges
+            return f"CAP-{first}" if first == last else f"CAP-{first}..CAP-{last}"
+        if self.kind == "epics":
+            return "epic-" + ",".join(str(a) if a == b else f"{a}..{b}" for a, b in self.ranges)
+        name = "heading-" + (_SLUG_UNSAFE.sub("-", self.heading).strip("-")[:80] or "section")
+        return f"{name}--{self.occurrence}" if self.occurrence else name
+
+
+def _ordered(first: int, last: int, raw: str) -> tuple[int, int]:
+    if first > last:
+        raise SelectorError(f"selector {raw!r}: {first} comes after {last}")
+    return first, last
+
+
+def parse_selector(raw: str) -> Selector:
+    """Parse one selector; anything that is not one of the three forms is a ``SelectorError``."""
+    text = raw.strip()
+    cap = _CAP_SELECTOR.fullmatch(text)
+    if cap:
+        first = int(cap.group(1))
+        return Selector(kind="caps", ranges=(_ordered(first, int(cap.group(2) or first), raw),))
+    if text.startswith(_EPIC_PREFIX):
+        ranges: list[tuple[int, int]] = []
+        for item in text[len(_EPIC_PREFIX) :].split(","):
+            match = _EPIC_ITEM.fullmatch(item.strip())
+            if match is None:
+                raise SelectorError(f"selector {raw!r}: {item.strip()!r} is not an epic number or N..M range")
+            first = int(match.group(1))
+            ranges.append(_ordered(first, int(match.group(2) or first), raw))
+        return Selector(kind="epics", ranges=tuple(ranges))
+    heading = text[len(_HEADING_PREFIX) :].strip() if text.startswith(_HEADING_PREFIX) else ""
+    if heading:
+        occurrence = _HEADING_OCCURRENCE.fullmatch(heading)
+        if occurrence is None:
+            return Selector(kind="heading", heading=heading)
+        if int(occurrence.group("n")) < 1:
+            raise SelectorError(f"selector {raw!r}: #{occurrence.group('n')} -- occurrences count from 1")
+        return Selector(kind="heading", heading=occurrence.group("text"), occurrence=int(occurrence.group("n")))
+    raise SelectorError(f"selector {raw!r} is none of CAP-<a>..CAP-<b>, epic:<n>[..<m>][,...] or heading:<text>[#<n>]")
+
+
+def _trimmed(lines: Sequence[str], start: int, end: int) -> str:
+    while end > start and not lines[end - 1].strip():
+        end -= 1
+    return "\n".join(lines[start:end]) + "\n"
+
+
+def _fenced(lines: Sequence[str]) -> list[bool]:
+    """Per line, whether it is a fence line or inside a fenced code block (where nothing is a heading or a CAP)."""
+    flags: list[bool] = []
+    inside = False
+    for line in lines:
+        fence = _FENCE.match(line) is not None
+        flags.append(inside or fence)
+        inside = inside != fence
+    return flags
+
+
+def _headings(lines: Sequence[str]) -> list[tuple[int, int, str]]:
+    """``(line index, level, text)`` of every Markdown heading outside a fenced code block."""
+    found: list[tuple[int, int, str]] = []
+    for index, (line, fenced) in enumerate(zip(lines, _fenced(lines), strict=True)):
+        match = None if fenced else _MD_HEADING.match(line)
+        if match:
+            found.append((index, len(match.group(1)), match.group(2)))
+    return found
+
+
+def _is_dream_entry(heading: tuple[int, int, str]) -> bool:
+    return heading[1] == 2 and _DATED_HEADING.match(heading[2]) is not None
+
+
+def _section_end(lines: Sequence[str], headings: Sequence[tuple[int, int, str]], at: int) -> int:
+    """The line after heading ``at``'s section: the next heading of the same or a higher level, else the end. A
+    dated ``## <YYYY-MM-DD> ...`` Dream entry runs to the next dated entry, so a folded entry keeps the body under
+    its own ``## <title>`` heading."""
+    level = headings[at][1]
+    entry = _is_dream_entry(headings[at])
+    for later in headings[at + 1 :]:
+        if entry and later[1] == 2 and not _is_dream_entry(later):
+            continue
+        if later[1] <= level:
+            return later[0]
+    return len(lines)
+
+
+def cap_blocks(text: str) -> list[tuple[int, str]]:
+    """Each capability a Spec defines, in file order: ``(CAP number, its block)``. A bullet's block is the
+    ``- **CAP-n — `` line and the indented lines under it (``intent``, ``success``), up to the next line that starts
+    at column 0; a heading's block is the ``#… CAP-n — `` heading and its section, up to the next heading of the same
+    or a higher level. A Spec that defines a CAP in both forms yields both blocks; inside a fenced code block
+    neither form defines one."""
+    lines = text.splitlines()
+    found: list[tuple[int, int, str]] = []
+    for index, (line, fenced) in enumerate(zip(lines, _fenced(lines), strict=True)):
+        match = None if fenced else _CAP_DEFINITION.match(line)
+        if not match:
+            continue
+        end = index + 1
+        while end < len(lines) and (not lines[end].strip() or lines[end][0].isspace()):
+            end += 1
+        found.append((index, int(match.group(1)), _trimmed(lines, index, end)))
+    headings = _headings(lines)
+    for at, (index, _level, heading) in enumerate(headings):
+        match = _CAP_HEADING.match(heading)
+        if match:
+            found.append((index, int(match.group(1)), _trimmed(lines, index, _section_end(lines, headings, at))))
+    return [(number, block) for _index, number, block in sorted(found)]
+
+
+def _select_caps(text: str, first: int, last: int) -> str:
+    blocks = cap_blocks(text)
+    defined = {number for number, _block in blocks}
+    missing = [f"CAP-{n}" for n in (first, last) if n not in defined]
+    if missing:
+        raise SelectorError(f"{' and '.join(dict.fromkeys(missing))} defined nowhere in this Spec")
+    return "".join(block for number, block in blocks if first <= number <= last)
+
+
+def _select_epics(text: str, ranges: Sequence[tuple[int, int]]) -> str:
+    lines = text.splitlines()
+    headings = _headings(lines)
+    sections: list[tuple[int, str]] = []
+    for at, (index, level, _heading) in enumerate(headings):
+        match = _EPIC_SECTION.match(lines[index])
+        if level == 2 and match:
+            sections.append((int(match.group(1)), _trimmed(lines, index, _section_end(lines, headings, at))))
+    for first, last in ranges:
+        if not any(first <= number <= last for number, _section in sections):
+            shown = str(first) if first == last else f"{first}..{last}"
+            raise SelectorError(f"no '## Epic {shown}' heading in this epics file")
+    return "".join(section for number, section in sections if any(a <= number <= b for a, b in ranges))
+
+
+def _select_heading(text: str, wanted: str, occurrence: int = 0) -> str:
+    lines = text.splitlines()
+    headings = _headings(lines)
+    exact = [at for at, (_i, _l, heading) in enumerate(headings) if heading == wanted]
+    chosen = exact or [at for at, (_i, _l, heading) in enumerate(headings) if heading.startswith(wanted)]
+    if not chosen:
+        raise SelectorError(f"no heading is, or starts with, {wanted!r}")
+    if occurrence:
+        if occurrence > len(chosen):
+            raise SelectorError(f"heading:{wanted}#{occurrence}: only {len(chosen)} heading(s) match {wanted!r}")
+        at = chosen[occurrence - 1]
+    elif len(chosen) > 1:
+        shown = "; ".join(repr(headings[at][2]) for at in chosen[:5])
+        raise SelectorError(
+            f"{len(chosen)} headings match {wanted!r} ({shown}); give more of the heading, or pick the Nth in file "
+            f"order with heading:{wanted}#N (1-based)"
+        )
+    else:
+        (at,) = chosen
+    return _trimmed(lines, headings[at][0], _section_end(lines, headings, at))
+
+
+def select_section(text: str, selector: Selector) -> str:
+    """Exactly the section ``selector`` names: every CAP block in its range (a Spec), every ``## Epic N``
+    section in its ranges (an epics file) or the one heading's section through its end (any Markdown)."""
+    if selector.kind == "caps":
+        ((first, last),) = selector.ranges
+        return _select_caps(text, first, last)
+    if selector.kind == "epics":
+        return _select_epics(text, selector.ranges)
+    return _select_heading(text, selector.heading, selector.occurrence)
+
+
+@dataclass(frozen=True)
+class CapSlice:
+    """A station's newest CAP slice (operator ruling 2026-11-01): ``first..last`` and the Dream entry it cites."""
+
+    first: int
+    last: int
+    dream_date: str = ""
+    dream_title: str = ""
+
+    @property
+    def selector(self) -> Selector:
+        return Selector(kind="caps", ranges=((self.first, self.last),))
+
+
+def _provenance(block: str) -> str:
+    """A CAP's ``←`` provenance: its defining line after the arrow and, for the heading form, the lines between the
+    heading and its first bullet (where a heading-form CAP states where it came from)."""
+    head, *rest = block.split("\n")
+    tail = head.split("←", 1)[1] if "←" in head else ""
+    if head.startswith("#"):
+        preamble = itertools.takewhile(lambda line: not line.lstrip().startswith("- "), rest)
+        tail = " ".join([tail, *preamble])
+    return tail
+
+
+def newest_cap_slice(spec_text: str) -> CapSlice | None:
+    """The station's newest CAP slice from its own Spec: the highest-numbered CAP and the contiguous run of CAPs
+    immediately below it whose provenance (``_provenance``, either form) cites the same newest ``Dream entry <date>``
+    (a CAP that cites none is a slice of one). ``None`` when the Spec defines no CAP."""
+    provenance: dict[int, str] = {}
+    for number, block in cap_blocks(spec_text):
+        provenance[number] = f"{provenance.get(number, '')} {_provenance(block)}"
+    if not provenance:
+        return None
+    newest = max(provenance)
+    dates = {m.group(1) for m in _DREAM_ENTRY.finditer(provenance[newest])}
+    if not dates:
+        return CapSlice(first=newest, last=newest)
+    date = max(dates)
+    first = newest
+    while first - 1 in provenance and any(m.group(1) == date for m in _DREAM_ENTRY.finditer(provenance[first - 1])):
+        first -= 1
+    titles = [
+        m.group(2).strip()
+        for number in range(first, newest + 1)
+        for m in _DREAM_ENTRY.finditer(provenance[number])
+        if m.group(1) == date and m.group(2)
+    ]
+    return CapSlice(first=first, last=newest, dream_date=date, dream_title=titles[0] if titles else "")
+
+
+def caps_named_in(text: str, own_spec: str) -> set[int]:
+    """The CAP numbers ``text`` (an epic heading, a Dream entry) names on ``own_spec`` (``spec-pyforge-<station>``).
+    A mention is one whole id (``CAP-35``, never ``CAP-350``) or a range (``CAP-90..CAP-93``, ``CAP-90–93``,
+    ``CAP-90-CAP-93``; ``_CAP_MENTION``, at most ``MAX_CAP_RANGE_SPAN`` CAPs, never reversed -- otherwise only the
+    ids written as ``CAP-n`` count), and it is the station's own when bare or qualified straight before it by the
+    station's own Spec,
+    long name or short name (``spec-pyforge-mason:CAP-35``, ``spec-pyforge-mason CAP-35``, ``mason:CAP-35``). Any
+    other qualifier makes it foreign (``spec-pyforge-x CAP-35``, ``pyforge-core:CAP-35``, ``fnd:CAP-12``); a
+    qualifier binds only the mention it touches, so in ``spec-pyforge-x CAP-3, CAP-93`` CAP-93 is the station's."""
+    slug = own_spec.removeprefix("spec-")
+    own = {own_spec, slug, slug.removeprefix("pyforge-")}
+    named: set[int] = set()
+    for match in _CAP_MENTION.finditer(text):
+        before = text[max(0, match.start() - 80) : match.start()]
+        qualifier = _COLON_QUALIFIER.search(before) or _SPACE_QUALIFIER.search(before)
+        if qualifier is not None and qualifier.group(1) not in own:
+            continue
+        named.update(_mentioned(match))
+    return named
+
+
+def _mentioned(match: re.Match[str]) -> set[int]:
+    """The CAP numbers one ``_CAP_MENTION`` names: its range when forward and at most ``MAX_CAP_RANGE_SPAN`` long,
+    else only the ids written as ``CAP-n`` (the left one, and the right one when it carries ``CAP-``)."""
+    first = int(match.group("first"))
+    right = match.group("last") or match.group("capped")
+    if right is None:
+        return {first}
+    last = int(right.removeprefix("CAP-"))
+    if first <= last and last - first < MAX_CAP_RANGE_SPAN:
+        return set(range(first, last + 1))
+    return {first, last} if right.startswith("CAP-") else {first}
+
+
+def epics_naming(epics_text: str, cap_slice: CapSlice, own_spec: str) -> Selector | None:
+    """The epic range that decomposes ``cap_slice``: each ``## Epic N`` whose heading names one of its CAPs on
+    ``own_spec``; ``None`` when no heading does."""
+    wanted = set(range(cap_slice.first, cap_slice.last + 1))
+    lines = epics_text.splitlines()
+    numbers = sorted(
+        {
+            int(match.group(1))
+            for index, level, heading in _headings(lines)
+            if level == 2 and (match := _EPIC_SECTION.match(lines[index])) and caps_named_in(heading, own_spec) & wanted
+        }
+    )
+    return Selector(kind="epics", ranges=tuple((n, n) for n in numbers)) if numbers else None
+
+
+# Story 113.14: which rule chose a slice's Dream entry, recorded on the run so a reader can tell a weak fallback.
+DREAM_CITED = "cited"  # the slice cites ``Dream entry <date>``
+DREAM_NAMES_CAP = "names-cap"  # it cites none; the newest dated entry whose body names one of its CAPs
+DREAM_NEWEST = "newest"  # it cites none and no entry names one: the newest dated entry
+
+
+def names_cap(text: str, caps: Collection[int], own_spec: str) -> bool:
+    """Whether ``text`` names one of ``caps`` on ``own_spec``, by ``caps_named_in``'s rule."""
+    return not caps_named_in(text, own_spec).isdisjoint(caps)
+
+
+def dream_entry_section(
+    dream_text: str,
+    date: str = "",
+    title: str = "",
+    *,
+    caps: Collection[int] = (),
+    own_spec: str = "",
+) -> tuple[str, str, str]:
+    """``(heading, section, choice)`` of the Dream entry a CAP slice takes. With a cited ``date`` (``cited``): the
+    ``## <date> ...`` entry whose heading carries ``title`` when one does, else the last entry of that date. With
+    none: the newest dated entry whose section names one of ``caps`` on ``own_spec`` (``names-cap``), else the
+    newest dated entry (``newest``); of entries sharing a date, the last."""
+    lines = dream_text.splitlines()
+    headings = _headings(lines)
+    dated = [
+        (at, match.group(1))
+        for at, (_index, level, heading) in enumerate(headings)
+        if level == 2 and (match := _DATED_HEADING.match(heading))
+    ]
+    if not dated:
+        raise SelectorError("the Dream has no dated '## <YYYY-MM-DD> ...' entry")
+
+    def section(at: int) -> str:
+        return _trimmed(lines, headings[at][0], _section_end(lines, headings, at))
+
+    if date:
+        candidates = [at for at, entry_date in dated if entry_date == date]
+        if not candidates:
+            raise SelectorError(f"no Dream entry heading starts with {date}")
+        titled = [at for at in candidates if title and title in headings[at][2]]
+        at, choice = (titled[0] if titled else candidates[-1]), DREAM_CITED
+    else:
+        naming = [(entry_date, at) for at, entry_date in dated if caps and names_cap(section(at), caps, own_spec)]
+        if naming:
+            at, choice = max(naming)[1], DREAM_NAMES_CAP
+        else:
+            at, choice = max((entry_date, at) for at, entry_date in dated)[1], DREAM_NEWEST
+    return headings[at][2], section(at), choice

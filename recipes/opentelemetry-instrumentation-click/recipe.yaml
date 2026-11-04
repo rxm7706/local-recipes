@@ -2,17 +2,15 @@
 schema_version: 1
 
 context:
-  version: "0.64b0"
+  version: "0.66b1"
 
 package:
   name: opentelemetry-instrumentation-click
   version: ${{ version }}
 
 source:
-  url: 
-    https://pypi.org/packages/source/o/opentelemetry-instrumentation-click/opentelemetry_instrumentation_click-${{
-    version }}.tar.gz
-  sha256: e819f7caa98c79177a4977a7ad30cdcbc86b62475e285aadf47fef08dd88ac1f
+  url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-click/opentelemetry_instrumentation_click-${{ version }}.tar.gz
+  sha256: db6c3d1d950227d23f6e03e8ffc83a73eb36928c619fd65e0161fd15e74a5dbc
 
 build:
   number: 0
@@ -43,8 +41,7 @@ tests:
         - "*"
 
 about:
-  homepage: 
-    https://github.com/open-telemetry/opentelemetry-python-contrib/tree/v0.64b0/instrumentation/opentelemetry-instrumentation-click
+  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/v0.64b0/instrumentation/opentelemetry-instrumentation-click
   license: Apache-2.0
   license_file: LICENSE
   summary: Click instrumentation for OpenTelemetry
@@ -57,6 +54,7 @@ extra:
     - pb01ka
     - rxm7706
     - conda-forge/opentelemetry-api
+    - jsmolic
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -76,15 +74,16 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-click-feedstock
   cfe-forge-recipe-updates-needed: [version-bump-to-0.64b0]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-last-checked: 2026-11-02T02:35:10Z
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
-  cfe-local-build-status: build-clean-test-blocked
-  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-02T02:35:46Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
 #    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+#    # 2026-11-01 refresh_wave B-25-18-b1: refreshed 0.64b0 -> 0.66b1; maintainers added: jsmolic
 ####

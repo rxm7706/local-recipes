@@ -23,9 +23,11 @@ from pyforge.steward.deploy_nic_packs import (
     git_commit_applications,
     gitops_root_for,
     label_pack_namespaces,
+    missing_pack_clis,
     parse_packs,
     refresh_root_application,
     render_application,
+    require_pack_clis,
     wait_applications_exist,
     wait_applications_healthy,
     write_pack_applications,
@@ -39,6 +41,10 @@ class _Proc:
         self.returncode = returncode
         self.stdout = stdout
         self.stderr = stderr
+
+
+def _on_path(name: str) -> str:
+    return f"/usr/bin/{name}"
 
 
 def _pack_config(tmp_path: Path) -> Path:
@@ -458,7 +464,7 @@ def test_apply_nkp_packs_uses_custom_journal_callback(tmp_path: Path, monkeypatc
     outcome = apply_nkp_packs(
         repo_root=tmp_path,
         document=document,
-        pack_deps=PackDeps(gitops_root=gitops, runner=runner),
+        pack_deps=PackDeps(gitops_root=gitops, runner=runner, which=_on_path),
         journal=lambda row: journal_rows.append(row),
     )
     assert outcome is not None and outcome.ok is True
@@ -590,6 +596,7 @@ def test_run_nic_up_with_packs_writes_apps_labels_and_waits(
         "pyforge.steward.deploy_nic_packs.gitops_root_for",
         lambda _doc: (gitops, None),
     )
+    monkeypatch.setattr("pyforge.steward.deploy_nic_packs.shutil.which", _on_path)
 
     deps = NicDeps(
         root=tmp_path,
@@ -611,3 +618,116 @@ def test_run_nic_up_with_packs_writes_apps_labels_and_waits(
     record = json.loads(journal_path.read_text(encoding="utf-8").splitlines()[-1])
     assert record["packs"] == ["nebi-pack", "data-science-pack"]
     assert record["pull_manifest"]
+
+
+# Story 118.7 (CAP-176/CAP-177): the pack step refuses by name, before any write or subprocess,
+# when kubectl or helm is not on PATH.
+
+
+@pytest.mark.parametrize(
+    ("absent", "expected"),
+    [({"kubectl"}, ["kubectl"]), ({"helm"}, ["helm"]), ({"kubectl", "helm"}, ["kubectl", "helm"]), (set(), [])],
+)
+def test_missing_pack_clis_names_each_absent_cli(absent: set[str], expected: list[str]) -> None:
+    assert missing_pack_clis(lambda name: None if name in absent else f"/usr/bin/{name}") == expected
+
+
+def test_require_pack_clis_present_is_none() -> None:
+    assert require_pack_clis(_on_path) is None
+
+
+@pytest.mark.parametrize("absent", ["kubectl", "helm"])
+def test_apply_nkp_packs_refuses_a_missing_cli_before_any_write_or_subprocess(
+    absent: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("pyforge.core.flags.read_boolean", lambda _key, default=False, **_kw: True)
+    gitops = tmp_path / "gitops"
+    gitops.mkdir()
+    monkeypatch.setattr("pyforge.steward.deploy_nic_packs.gitops_root_for", lambda _doc: (gitops, None))
+    calls: list[list[str]] = []
+
+    def runner(argv: list[str], _cwd: Path | None, _env: dict[str, str] | None) -> _Proc:
+        calls.append(list(argv))
+        return _Proc()
+
+    document = {
+        "project_name": "p",
+        "repository": {"local": {}},
+        "packs": {"nebi-pack": {"chart": "nebari-nebi-pack", "version": "0.1.0", "namespace": "nebi"}},
+    }
+    outcome = apply_nkp_packs(
+        repo_root=tmp_path,
+        document=document,
+        pack_deps=PackDeps(
+            gitops_root=gitops,
+            runner=runner,
+            which=lambda name: None if name == absent else f"/usr/bin/{name}",
+        ),
+    )
+    assert outcome is not None
+    assert outcome.ok is False
+    assert absent in outcome.summary
+    assert outcome.details == {"missing_clis": [absent], "exit_code": 2}
+    assert "refused" in outcome.summary
+    assert calls == []
+    assert not (gitops / "apps").exists()
+
+
+def test_apply_nkp_packs_default_lookup_is_shutil_which(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("pyforge.core.flags.read_boolean", lambda _key, default=False, **_kw: True)
+    gitops = tmp_path / "gitops"
+    gitops.mkdir()
+    monkeypatch.setattr("pyforge.steward.deploy_nic_packs.gitops_root_for", lambda _doc: (gitops, None))
+    monkeypatch.setattr("pyforge.steward.deploy_nic_packs.shutil.which", lambda _name: None)
+
+    def explode(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("no subprocess may run when a pack CLI is missing")
+
+    monkeypatch.setattr("pyforge.steward.deploy_nic_packs.subprocess.run", explode)
+    document = {
+        "project_name": "p",
+        "repository": {"local": {}},
+        "packs": {"nebi-pack": {"chart": "nebari-nebi-pack", "version": "0.1.0", "namespace": "nebi"}},
+    }
+    outcome = apply_nkp_packs(repo_root=tmp_path, document=document)
+    assert outcome is not None and outcome.ok is False
+    assert outcome.details == {"missing_clis": ["kubectl", "helm"], "exit_code": 2}
+
+
+@flag_states("pyforge.steward.nkp_packs")
+def test_run_nic_up_refuses_a_missing_pack_cli_before_nic_starts(
+    flag_provider: dict[str, bool], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _pack_config(tmp_path)
+    monkeypatch.setattr(
+        "pyforge.steward.deploy_nic_packs.shutil.which", lambda name: None if name == "helm" else f"/usr/bin/{name}"
+    )
+    calls: list[list[str]] = []
+
+    def runner(argv: list[str], cwd: Path, env: dict[str, str]) -> _Proc:
+        calls.append(list(argv))
+        return _Proc()
+
+    deps = NicDeps(root=tmp_path, runner=runner, nic_executable=lambda: "/usr/bin/nic")
+    if not flag_provider["pyforge.steward.nkp_packs"]:
+        # Packs off: no pack step, so no pack CLI is needed and nic runs.
+        monkeypatch.setattr("pyforge.steward.deploy_nic_packs.apply_nkp_packs", lambda **_kw: None)
+        assert run_nic(deps, action="up", config=config).ok is True
+        assert any(len(cmd) > 1 and cmd[1] == "deploy" for cmd in calls)
+        return
+    result = run_nic(deps, action="up", config=config)
+    assert result.ok is False
+    assert "helm" in result.summary and "refused" in result.summary
+    assert result.details is not None and result.details["exit_code"] == 2
+    assert calls == []
+
+
+def test_run_nic_validate_with_packs_needs_no_pack_cli(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    config = _pack_config(tmp_path)
+    monkeypatch.setattr("pyforge.steward.deploy_nic_packs.shutil.which", lambda _name: None)
+
+    def runner(argv: list[str], cwd: Path, env: dict[str, str]) -> _Proc:
+        return _Proc()
+
+    deps = NicDeps(root=tmp_path, runner=runner, nic_executable=lambda: "/usr/bin/nic")
+    assert run_nic(deps, action="validate", config=config).ok is True

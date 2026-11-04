@@ -1,31 +1,32 @@
 {% set name = "django-grpc" %}
-{% set version = "1.0.21" %}
+{% set version = "1.2.20" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django-grpc-{{ version }}.tar.gz
-  sha256: 87adcfb7a20e56a5d04f9c50b820ac95e2815fb31370aa7fa5f2385a61899613
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/django_grpc-{{ version }}.tar.gz
+  sha256: 46ec3e8001bd2e13ef286d82142b606b4ff5af2f27ff7afdfb5a21f86774345a
 
 build:
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 1
+  script: {{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+  number: 0
 
 requirements:
   host:
     - python {{ python_min }}
     - pip
-    - setuptools
+    - poetry-core
   run:
     - python >={{ python_min }}
     - setuptools
-    - django >=4.2
-    - protobuf >=4.21.4
-    - grpcio >=1.47.0,<2.0.0
-    - grpcio-tools >=1.47.0,<2.0.0
+    - django >=4.2,<7.0
+    - protobuf
+    - grpcio
+    - grpcio-tools
+    - grpcio-reflection
 
 test:
   imports:
@@ -46,3 +47,4 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - pb01ka

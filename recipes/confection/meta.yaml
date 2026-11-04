@@ -1,4 +1,4 @@
-{% set version = "1.3.3" %}
+{% set version = "1.3.4" %}
 
 package:
   name: confection
@@ -6,7 +6,7 @@ package:
 
 source:
   url: https://github.com/explosion/confection/archive/refs/tags/release-v{{ version }}.tar.gz
-  sha256: c977841f277255b0b59acb5b4e8a2d7d266ee4369278308fc2b820ec314fc5d7
+  sha256: de38c7495831257bd93a15641ff776b2235940b3af7df6034817ed4815e72eee
   patches:
     - patches/0001-make-tests-importable-out-of-tree.patch
 

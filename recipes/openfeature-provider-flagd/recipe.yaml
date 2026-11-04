@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.5.0"
+  version: "0.6.1"
 
 package:
   name: openfeature-provider-flagd
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/openfeature-provider-flagd/openfeature_provider_flagd-${{ version }}.tar.gz
-  sha256: d5cac8fb9194ccd454f67fa48da195b0e9d629c77493160b93fa2cf5400ec288
+  sha256: f6a3f9b9873923f0ba8cae10248f3503e1f6929b5b60909f54677cdb8868f4b8
 
 build:
   number: 0
@@ -23,16 +23,16 @@ requirements:
     - pip
     - hatchling
     - hatch-protobuf
-    - grpcio-tools 1.81.1.*
+    - grpcio-tools 1.82.1.*
     - mypy-protobuf >=3,<4
-    - protobuf >=6.30.0,<7.0.0
+    - protobuf >=7.35.1,<8.0.0
   run:
     - python >=${{ python_min }}
-    - cachebox <6.0.0,>=5.1.0
-    - grpcio >=1.81.0
-    - openfeature-flagd-core <2,>=1.0.0
+    - cachebox >=5.1.0,<6.0.0
+    - grpcio >=1.82.1
+    - openfeature-flagd-core >=2.0.0,<3
     - openfeature-sdk >=0.8.2
-    - protobuf <7.0.0,>=6.30.0
+    - protobuf >=7.35.1,<8.0.0
     - pyyaml >=6.0.1
 
 tests:
@@ -55,6 +55,7 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - jsmolic
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -70,18 +71,21 @@ extra:
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
   cfe-pip-check: "true"
-  cfe-on-conda-forge-status: pending-submission-to-conda-forge
-  cfe-on-conda-forge-feedstock: none
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/openfeature-provider-flagd-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-25T08:49:04Z
+  cfe-last-checked: 2026-11-02T03:34:21Z
   cfe-generated-by-version: 8.84.0
   cfe-generated-at-datetime: 2026-08-25T08:49:04Z
-  cfe-local-build-status: not-attempted
-  cfe-local-build-datetime: none
-  cfe-local-build-platform: none
-  cfe-local-build-tool: none
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-02T02:53:10Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-01 refresh_wave B-25-18-b1: refreshed 0.5.0 -> 0.6.1; maintainers added: jsmolic
+#    # 2026-11-01 mason Story 25.18 hand steps: BFP: host/run pins synced to the feedstock (protobuf >=7.35.1, grpcio >=1.82.1, flagd-core >=2) after the test failed on a protobuf gencode/runtime mismatch
+#    # 2026-11-01 mason Story 25.18 review round: conda-forge/openfeature-provider-flagd-feedstock verified live; on-conda-forge status and feedstock set (G78)
 ####

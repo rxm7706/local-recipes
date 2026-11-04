@@ -73,6 +73,8 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - jsmolic
+    - soapy1
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -99,4 +101,8 @@ extra:
   cfe-local-build-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-01 mason Story 25.18: current at the published version; maintainers added (G53): jsmolic, soapy1
 ####

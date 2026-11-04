@@ -284,6 +284,16 @@ Report: `.claude/data/conda-forge-expert/refresh-waves/B-25-8/report.json`.
 
 **Gates:** Expected `optimize=1` on several noarch/C1 mirrors (STD-002). `openlineage-sql` `check-deps=1` (virtual/cross-python placeholder pattern).
 
+## Correction (Story 25.17, 2026-11-01)
+
+Story 25.17 read each recipe's own `cfe-local-build-*` record back against the run table above and found they disagreed. Each recipe was rebuilt on linux-64 through `refresh_wave.py --apply --gates --build --rebuild --force` (reports `_bmad-output/projects/pyforge-mason/implementation-artifacts/refresh-waves/25-17/report.json` and, for the recipes rebuilt after the independent review, `.../25-17/review/report.json`; Tier 3). Every *after* value was written by that build, and equals `build.datetime` in the report that rebuilt it last. The run table above is left as it was.
+
+| Recipe | Record before (status, datetime, version) | Record after (status, datetime, version) |
+|---|---|---|
+| pillow-heif | failed, 2026-10-10T13:58:48Z (1.8.0) | success, 2026-11-02T02:15:53Z (1.8.1) |
+
+- Refreshed 1.8.0 → 1.8.1. The compile failure was a host leak: `setup.py` adds `-I/usr/include` on Linux, and on a multiarch (Debian/Ubuntu) build host the host `stdlib.h` shadows the sysroot. A local-only patch drops the two host include dirs; `run_test.py`, which the mirror lacked, was restored from the feedstock.
+
 ## Review Triage Log
 
 ### 2026-10-10 — build-auto pass

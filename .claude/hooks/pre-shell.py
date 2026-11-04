@@ -242,14 +242,91 @@ def split_subcommands(command: str) -> list[list[str]]:
         if not tokens:
             continue
         result.append(tokens)
-        if len(tokens) >= 3 and tokens[0] in ("bash", "sh", "zsh") and tokens[1] == "-c":
-            result.extend(split_subcommands(tokens[2]))
+        inner = _shell_c_payload(tokens)
+        if inner is not None:
+            result.extend(split_subcommands(inner))
     return result
+
+
+_SHELLS = ("bash", "sh", "zsh")
+# Prefix commands that run the rest of the line, each with the options that take an argument.
+_WRAPPERS: dict[str, tuple[str, ...]] = {
+    "env": ("-u", "--unset", "-C", "--chdir", "-S", "--split-string"),
+    "timeout": ("-k", "--kill-after", "-s", "--signal"),
+    "nice": ("-n", "--adjustment"),
+    "nohup": (),
+    "sudo": ("-u", "-g", "-C", "-D", "-h", "-p", "-U"),
+    "command": (),
+    "exec": ("-a",),
+}
+_SHELL_ARG_OPTS = ("-o", "+o", "-O", "+O", "--rcfile", "--init-file")
+
+
+def _shell_c_payload(tokens: list[str]) -> Optional[str]:
+    """The `-c` payload of `bash -c "..."`, also behind prefix commands (`env`, `timeout N`,
+    `nohup`, `nice`, `sudo`, `command`, `exec`), with a bundled option such as `-lc`, and past
+    long options and `-o <opt>` (Story 118.8 reviews)."""
+    i = 0
+    while i < len(tokens):
+        name = os.path.basename(tokens[i])
+        if name not in _WRAPPERS:
+            break
+        i += 1
+        takes_arg = _WRAPPERS[name]
+        while i < len(tokens):
+            tok = tokens[i]
+            if tok in takes_arg:
+                i += 2
+            elif tok.startswith("-") or (name == "env" and "=" in tok):
+                i += 1
+            elif name == "timeout" and tok[:1].isdigit():
+                i += 1  # the DURATION operand
+                break
+            else:
+                break
+    if i >= len(tokens) or os.path.basename(tokens[i]) not in _SHELLS:
+        return None
+    j = i + 1
+    while j < len(tokens) - 1:
+        opt = tokens[j]
+        if opt in _SHELL_ARG_OPTS:
+            j += 2
+            continue
+        if opt.startswith("--"):
+            j += 1
+            continue
+        if not opt.startswith(("-", "+")):
+            break
+        if opt.startswith("-") and "c" in opt[1:]:
+            return tokens[j + 1]
+        j += 1
+    return None
 
 
 def _contains(tokens: list[str], seq: list[str]) -> bool:
     n = len(seq)
     return any(tokens[i : i + n] == seq for i in range(len(tokens) - n + 1))
+
+
+def _has_long_flag(tokens: list[str], flag: str) -> bool:
+    """`flag`, `flag=...`, or an argparse abbreviation of it (`--ye` for `--yes`): steward's
+    parsers keep argparse's allow_abbrev, so an exact-token check is bypassed (Story 118.8 review)."""
+    for raw in tokens:
+        # `--yes)` in a subshell, `--yes>log` with a redirect glued on (Story 118.8 review)
+        tok = re.split(r"[)(;<>|&]", raw, maxsplit=1)[0]
+        if tok == flag or tok.startswith(flag + "="):
+            return True
+        if len(tok) >= 3 and tok.startswith("--") and flag.startswith(tok):
+            return True
+    return False
+
+
+def _is_steward_invocation(tokens: list[str]) -> bool:
+    """`steward` as a token or a binary path, `pyforge steward ...`, or `python -m pyforge.steward`."""
+    return any(
+        tok == "steward" or os.path.basename(tok) == "steward" or tok.startswith("pyforge.steward")
+        for tok in tokens
+    )
 
 
 # --------------------------------------------------------------------------
@@ -508,11 +585,11 @@ def match_pixi_add_or_update(ctx: Context, rule: dict[str, Any]) -> Optional[str
 
 def match_steward_estate_transitive(ctx: Context, rule: dict[str, Any]) -> Optional[str]:
     for tokens in ctx.subcommands:
-        if "--transitive" not in tokens:
+        if not _has_long_flag(tokens, "--transitive"):
             continue
         if not _contains(tokens, ["estate", "refresh"]):
             continue
-        if "steward" not in tokens:
+        if not _is_steward_invocation(tokens):
             continue
         return str(rule["reason"])
     return None
@@ -520,11 +597,25 @@ def match_steward_estate_transitive(ctx: Context, rule: dict[str, Any]) -> Optio
 
 def match_steward_estate_realize_yes(ctx: Context, rule: dict[str, Any]) -> Optional[str]:
     for tokens in ctx.subcommands:
-        if "--yes" not in tokens:
+        if not _has_long_flag(tokens, "--yes"):
             continue
         if not _contains(tokens, ["estate", "realize"]):
             continue
-        if "steward" not in tokens:
+        if not _is_steward_invocation(tokens):
+            continue
+        return str(rule["reason"])
+    return None
+
+
+def match_steward_deploy_nic_up_yes(ctx: Context, rule: dict[str, Any]) -> Optional[str]:
+    """Story 118.8 (spec-pyforge-steward CAP-176): a `deploy nic up --yes` is the operator's
+    consent to a non-local NKP bring-up. kind's local `up` never takes `--yes`."""
+    for tokens in ctx.subcommands:
+        if not _has_long_flag(tokens, "--yes"):
+            continue
+        if not _contains(tokens, ["deploy", "nic", "up"]):
+            continue
+        if not _is_steward_invocation(tokens):
             continue
         return str(rule["reason"])
     return None
@@ -1566,6 +1657,7 @@ MATCHERS: dict[str, Callable[[Context, dict[str, Any]], Optional[str]]] = {
     "pixi-add-or-update": match_pixi_add_or_update,
     "steward-estate-transitive": match_steward_estate_transitive,
     "steward-estate-realize-yes": match_steward_estate_realize_yes,
+    "steward-deploy-nic-up-yes": match_steward_deploy_nic_up_yes,
     "bmad-switch-unsafe": match_bmad_switch_unsafe,
     "git-commit-guardrail": match_git_commit_guardrail,
     "gh-pr-merge-squash": match_gh_pr_merge_squash,

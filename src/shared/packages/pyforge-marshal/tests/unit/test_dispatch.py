@@ -3714,6 +3714,40 @@ def test_dispatch_hands_the_readiness_hook_its_resolved_launch_model(
     assert seen == ["composer-2.5-fast"]
 
 
+def test_a_timed_out_readiness_review_warns_and_the_launch_proceeds(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 113.14 (CAP-300): a readiness session killed at its ``[challenge].timeout_s`` ceiling comes back as an
+    unevaluable result; dispatch reports it as the MRS-DISP-067 WARN and launches the harness anyway."""
+    from pyforge.marshal.cli import challenge as challenge_module
+
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "113-14-ceiling"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / f"spec-{story}.md").write_text(_READY_SPEC, encoding="utf-8")
+    effective, _ = policy.compose(
+        project_slug=slug, project={"model_tier_map": {"medium": {"dev": "sonnet"}}}, flags={}
+    )
+    monkeypatch.setattr(dispatch_module, "_compose_policy", lambda _slug, flags=None: effective)
+    error = "challenge session did not run: challenge session outlived its 600 s ceiling and was killed"
+    monkeypatch.setattr(
+        challenge_module,
+        "readiness_for_dispatch",
+        lambda **_kwargs: challenge_module.ReadinessResult(ran=True, report_path="/r/report.json", error=error),
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    attempt = dispatch_once(
+        slug=slug, story=story, fs=FakeFs(), vcs=FakeVcs(tmp_path), build_harness=harness, process=FakeProcess()
+    )
+    (warn,) = [f for f in attempt.findings if f.code == "MRS-DISP-067"]
+    assert warn.severity is Severity.WARN and "ceiling" in warn.message
+    assert attempt.data["readiness_challenge"]["error"] == error
+    assert len(harness.calls) == 1  # the harness launched
+
+
 def test_dispatch_tier_mapped_sonnet_on_claude_is_byte_identical(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

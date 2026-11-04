@@ -1,13 +1,13 @@
 {% set name = "robocorp" %}
-{% set version = "3.1.1" %}
+{% set version = "3.1.6" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/robocorp-{{ version }}.tar.gz
-  sha256: 8365686b0bf93b2fe21e205cdc9c1bb783c0e4075ad2196f9d882cb225ccc502
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/robocorp-{{ version }}.tar.gz
+  sha256: 05804e484792e47cac4c7f0ff8dabc57bebc4128fbe8f2784fb5c089ae80aaf8
 
 build:
   noarch: python
@@ -25,10 +25,10 @@ requirements:
   run:
     - python >={{ python_min }},<4.0.0
     - robocorp-tasks >=4.1.1,<5.0.0
-    - robocorp-log >=3.1.2,<4.0.0
-    - robocorp-workitems >=1.5.0,<2.0.0
-    - robocorp-vault >=1.4.0,<2.0.0
-    - robocorp-storage >=1.1.0,<2.0.0
+    - robocorp-log >=3.1.6,<4.0.0
+    - robocorp-workitems >=1.5.1,<2.0.0
+    - robocorp-vault >=1.4.2,<2.0.0
+    - robocorp-storage >=1.1.1,<2.0.0
 
 test:
   imports:

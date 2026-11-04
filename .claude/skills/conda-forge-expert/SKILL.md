@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.102.2
+version: 8.103.0
 allowed-tools: [conda_forge_server]
 ---
 
@@ -902,6 +902,9 @@ Use the **move-aside + fresh-generate + diff + selective-apply** pattern:
 - **A recipe with no CFE metadata block stops the driver in both modes (v8.99.1).** Refresh reports `no-cfe-block`. `--repair` reports the same cause two other ways: `failed` with `write-check: cfe-metadata-block-count=0; cfe-conda-name-count=0`, or `needs-review` with `indent-repair-refused: #### CFE metadata count changed`. Both mean the block is absent, not that it changed. When the only repair is a URL, a `--repair` dry-run still lists such a recipe as `would-repair`, because the write check runs only under `--apply`. When a recipe also has no `extra.cfe-upstream-name`, the URL repair reads the dist name from the feedstock's PyPI URL, and it can read only a literal path segment, so the conda-forge v0 default `{{ name[0] }}/{{ name }}` gives `no-dist-name`. Add the canonical CFE block by hand, with `cfe-upstream-name` (§ *Never Add AI Comments Inline*, canonical layout), then rerun the wave; that clears both reasons.
 - **`url-unrenderable: … uses a variable outside context`** also fires when the variable is in `context` but the URL uses an expression on it (`${{ name[0] }}`, `${{ name | replace(...) }}`): the driver renders only a bare `${{ var }}`, as `recipe_editor`'s `calculate_hash` does. Bump such a recipe by hand, or rewrite its URL in the literal form (§ *PyPI `source.url` Must Use the `pypi.org/packages/...` Pattern*) and rerun.
 - Before you write a batch manifest, scan its recipes for the two static blockers above (no CFE block; a URL expression) and put only the clean ones in the driver batch. The rest need the hand step first.
+- **`--rebuild` re-builds what is already current (v8.103.0, mason Story 25.17).** Without it, `--build` runs only on a recipe the wave refreshed, so a recipe whose version already matches its feedstock never gets a build-written record. With `--apply --build --rebuild` an `already-current` recipe is gated and built too; a dry-run `already-current` record without a build is not resumed. The report's `build` row now carries `datetime` (the one stamp written into the recipe) and `stamped`; the driver stamps all four `cfe-local-build-*` keys or none, and `stamped: false` with a note means the recipe kept its older record (a key missing or not there exactly once). A run table reads back mechanically: each row's status and datetime must equal the recipe's record (G124).
+- **What `--rebuild` does not do (known driver gaps, mason Story 25.17).** On an `already-current` recipe it runs no C1/C2 `meta.yaml` mirror or removal, no G53 maintainer union and no G96 dependency diff; across all recipes it never compares `build.number`, entry points, tests, `about.license_file`, `source.patches` (a patch the feedstock dropped, as pgjdbc's shade patch at 42.7.14, survives a bump), `conda-forge.yml` or a recipe-folder CBC with the feedstock, reads only top-level `requirements` (a multi-output recipe gets no G96 diff, and a G72 suite's bundle versions go stale), discards each build's output (re-run a failed build by hand to read it), files a clean build whose test `pip check` failed as `failed`, never cleans `build_artifacts/<name>` between passes (G68), and dates its CFE comment lines in UTC. Story 25.17 found five stale `meta.yaml` mirrors, a `meta.yaml` beside a v1 feedstock, three dropped deployed maintainers and two G96 drifts this way. After a `--rebuild` pass, check each recipe against its feedstock by hand for those items.
+- **More driver lessons from Wave A's re-bucket (mason Story 25.18, 2026-11-01).** The G53 union used `recipe_editor`'s `add_to_list`, which put each new handle after the comment lines ruamel attaches to the old last item, that is under the `#### CFE metadata` block: the YAML parsed and the write check passed, but conda-smithy's parser then failed `validate` on 18 of 18 recipes (Story 25.7 hit it too). Since v8.103.0 the driver appends handles text-level straight after the last list item, and reports `needs-review` when the list is not a plain block list. Still open: `_dependency_diff` compares names, and pins only where a maintainer comment marks one, so a version-only bump keeps stale pins (`protobuf` 6 against a provider that needs 7, an `==1.44.0` sibling pin; `DW-mason-25-14-2`); a renamed sdist (`click-repl` → `click_repl-<v>.tar.gz`) fails as an `edit-failed` 404 naming `files.pythonhosted.org`, not the canonical URL; a v1 recipe mirrored from v0 can still carry `python ${{ python_min }}` without `.*`, an invalid match spec under rattler-build 0.76; and a mirror can lack files its recipe names (`patches/`, `LICENSE`, test scripts; G94), so list the feedstock's `recipe/` against the mirror before a wave builds.
 
 **Known grayskull-path emit drifts** to expect during step 4 (do not silently inherit):
 - Long `source.url` line-folded across two lines by ruamel.yaml's default `width=80` — looks like `weasyprint-${{ version \n    }}.tar.gz`. Cosmetic only; recipe still builds. The v8.11.1 line-fold fix landed in `edit_recipe` but not in the grayskull subprocess emit path. Restore the clean single-line form.
@@ -1127,6 +1130,8 @@ When a **full-dependency-graph** test-env solve fails but **each conflicting sub
 - an observability cluster (`otel` / `traceloop-sdk` / `openinference-*` / `langchain`) with mutually-incompatible pins across its feedstocks.
 
 **Diagnosis test**: drop the full env and solve each conflicting sub-cluster on conda-forge alone (`fastapi` + `litellm`; the otel/traceloop/openinference set; etc.). If each sub-cluster solves fine in isolation but the union does not, and the conflicting constraints come from **published feedstock pins you don't control**, it's external skew — resolution requires **feedstock-level pin convergence upstream**, which is out of scope for the consumer recipe.
+
+**First rule out G36/G77 (v8.103.0).** Before you call a `pip check` failure "external skew", list the offending package's conda-forge builds with each one's **wheel** requirement on the dependency that fails. If an older build's wheel requirement is satisfiable on conda-forge, the failure is a looser-conda-deps-than-wheel bug (G36/G77) and the consumer fix is a version cap, recorded as a local deviation with its revert trigger (G77 remedy 0). Story 25.17 (2026-11-01): langflow-base 1.13.0 failed `pip check` because conda-forge `openinference-instrumentation-langchain` 0.1.80/0.1.81 declare `openinference-instrumentation >=0.1.27` while their wheels need `>=0.1.71`, and conda-forge stops at 0.1.66. It was first recorded as skew; 0.1.76's wheel needs only `>=0.1.61`, so `openinference-instrumentation-langchain >=0.1.29,<0.1.80` turned all eight outputs green.
 
 **Action**: do NOT loosen, force, or work around the pins in the consumer recipe (that hides the skew and ships a recipe that can't actually install). Instead:
 1. Record the conflicting packages **and their exact pins** in the recipe's `cfe-forge-blocker-list`.
@@ -4589,6 +4594,23 @@ always returned nothing. The four archives measured 37, 7, 2 and 4 MB. An indepe
 first port, both fixed before landing. A resuming downloader could splice a retry onto a partial file that still
 validated at its head. And Phase M zeroed the open-PR columns when `pr_json` was missing.
 
+### G124. A run table is a claim; the recipe's own `cfe-local-build-*` record is the fact — read every row back before a story closes
+
+**Symptom**: a done story's run table says its recipes were built, while their records say `failed`, `not-attempted`, a success dated before the story, or one datetime shared by many recipes.
+
+**Why**: a run table is written by whoever ran the wave, from memory or a summary. The record is written by the build. Nothing compared them. mason Story 25.17 (2026-11-01) found 26 recipes across six done stories (25.4, 25.6–25.9, 25.14) where the two disagreed: twelve recorded `failed`, `zxing-cpp` `not-attempted`, langflow a success from before the stories, and fourteen shared the stamp `2026-10-10T08:35:31Z`, which no single build wrote (Story 25.4 had hand-stamped them). Rebuilt through the driver, seven of the "failed" recipes went green with no change at all, and two "failures" blamed on an unrendered `${{ name }}` were really 404s on a hyphenated sdist filename (PyPI serves `django_grpc-<v>.tar.gz`, the recipe asked for `django-grpc-<v>.tar.gz`; see § *PyPI `source.url`*).
+
+**Fix**: before a story that claims builds closes, read each run-table row back against the recipe's record: status and `cfe-local-build-datetime` must equal the build's report row (`refresh-wave`'s `build.datetime`, v8.103.0). Never hand-write those four fields, never copy one recipe's stamp to another, and never write a failure reason without the log that shows it. Correct a wrong table by appending a dated correction section, never by rewriting rows of a done story.
+
+### G125. A `setup.py` that adds the host's `/usr/include` breaks the build on a multiarch host and leaks host glibc headers everywhere else
+
+**Symptom**: a C-extension build fails at compile time on a Debian/Ubuntu host with `fatal error: bits/libc-header-start.h: No such file or directory`, while conda-forge CI (RHEL-like images) builds it.
+
+**Why**: the package's `setup.py` appends `/usr/include` (and often `/usr/lib`) to the include and library paths on Linux. On a multiarch host those headers expect `/usr/include/x86_64-linux-gnu`, so they shadow the conda sysroot and fail; on a RHEL-like image they compile but silently mix host glibc headers into a conda build. Story 25.8 had filed pillow-heif's failure as an unfixable local environment defect.
+
+**Fix**: a local source patch that stops `setup.py` adding host system paths (the conda compilers already search `$PREFIX/include` and the sysroot). Live: `recipes/pillow-heif/patches/0001-do-not-add-host-usr-include-dirs.patch` (Story 25.17), green on linux-64 after it. Keep the patch local until upstream or the feedstock carries it, and say so in the CFE comments.
+
+
 ---
 
 ## Skill Automation
@@ -4616,7 +4638,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 | `pixi run -e local-recipes sync-upstream-conda-forge` | Sync fork with `conda-forge/staged-recipes` |
 | `pixi run -e local-recipes submit-pr <name>` | Submit a finished recipe to conda-forge |
 | `pixi run -e local-recipes autotick <path>` | Manually run the autotick bot on a recipe |
-| `pixi run -e local-recipes refresh-wave <manifest> [--apply] [--gates] [--build]` | Bulk-refresh the recipes in a wave manifest to their feedstock's published version (dry-run by default; local only; resume state in `report.json`) |
+| `pixi run -e local-recipes refresh-wave <manifest> [--apply] [--gates] [--build] [--rebuild]` | Bulk-refresh the recipes in a wave manifest to their feedstock's published version (dry-run by default; local only; resume state in `report.json`); `--rebuild` also gates and builds recipes already current, so every record is build-written (G124) |
 | `pixi run -e local-recipes refresh-wave <manifest> --repair [--apply]` | Undo the Wave H damage: hashed PyPI URLs, FMT-001 list indentation, a hidden `meta.yaml` (changes nothing else) |
 | `pixi run -e local-recipes update-cve-db` | Refresh the local CVE database |
 | `pixi run -e local-recipes update-mapping-cache` | Refresh the PyPI name mapping cache |
@@ -4629,6 +4651,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.103.0** (Nov 1, 2026) — **mason Stories 25.17 and 25.18 Rule-2 retro: `refresh-wave --rebuild`, build-written records read back against run tables (G124), the host-header leak (G125), the skew-versus-G77 test, and the G53 handle placement fix (MINOR).** See `CHANGELOG.md`.
 - **v8.102.2** (Oct 31, 2026) — **Recipe refresh retro: `nebari-infrastructure-core` 0.14.0 → 0.17.0; go.mod now needs `go 1.26.10`, which only conda-forge's go-nocgo 1.27 line satisfies (PATCH; CHANGELOG and version carriers only).** See `CHANGELOG.md`.
 - **v8.102.1** (Oct 27, 2026) — **mason Story 36.1 Rule-2 retro: three meta-test docstrings name the archived paths they cite. `spec-pyforge-mason` now governs this skill's surface with normal drift, so a CFE edit needs a mason memlog line and a scoped stamp (PATCH; docstrings only).** See `CHANGELOG.md`.
 - **v8.102.0** (Oct 26, 2026) — **mason Story 34.1 Rule-2 retro: the atlas reads the conda-forge bot's split graph repos; G123 (a redirected repo serves another repo's archive) (MINOR).** See `CHANGELOG.md`.

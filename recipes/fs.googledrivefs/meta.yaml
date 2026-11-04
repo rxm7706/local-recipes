@@ -1,13 +1,13 @@
 {% set name = "fs.googledrivefs" %}
-{% set version = "2.6.2" %}
+{% set version = "2.6.3" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/fs_googledrivefs-{{ version }}.tar.gz
-  sha256: ea94d33930a6883d13f5eceebde10156333ea83e9417a30409d1a53ad44d46c4
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/fs_googledrivefs-{{ version }}.tar.gz
+  sha256: e356cf5705b158630e0f9b61cd2f69a5ad87a86bc1f6360711672ef08cf59737
 
 build:
   noarch: python
@@ -46,4 +46,5 @@ about:
 
 extra:
   recipe-maintainers:
+    - pb01ka
     - rxm7706

@@ -4,7 +4,7 @@
 # "Recipe Authoring Gotchas" section. Hand edits are detectably wrong —
 # regenerating overwrites them; see tests/meta/test_failure_catalog_freshness.py.
 schema_version: 1
-source_sha256: "0e946a07795a9cd404689e3daebdcfb503d32ab29231741b8444ef15b94707f0"
+source_sha256: "847008d09997334006b0fe2e3b5d06d5458cf2fdb6266907adc4ba2ddf04fe38"
 rows:
   - id: G1
     title: "Don't rely on env vars carrying across `script:` list entries — older rattler-build ran each entry in its own shell"
@@ -1007,4 +1007,14 @@ rows:
       - "feedstock-health"
       - "test_atlas_clis_smoke.py::test_whodepends_reverse_json"
       - "pr-preflight"
+    enforced_by: null
+  - id: G124
+    title: "A run table is a claim; the recipe's own `cfe-local-build-*` record is the fact — read every row back before a story closes"
+    symptom_signature:
+      - "not-attempted"
+    enforced_by: null
+  - id: G125
+    title: "A `setup.py` that adds the host's `/usr/include` breaks the build on a multiarch host and leaks host glibc headers everywhere else"
+    symptom_signature:
+      - "fatal error: bits/libc-header-start.h: No such file or directory"
     enforced_by: null

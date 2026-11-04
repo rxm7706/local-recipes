@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: fastmcp
-  version: "4.1.0"
+  version: "4.1.4"
 
 recipe:
   name: ${{ name|lower }}
@@ -11,10 +11,10 @@ recipe:
 
 source:
   - url: https://pypi.org/packages/source/f/fastmcp/fastmcp-${{ version }}.tar.gz
-    sha256: 7a8bf4e58cc6c2f3a8552b5a7a17ba1e4682b6fd4cafb7f461920a66dbd2499f
+    sha256: 2398be351ec343466f0510dc9e281d3a848bc3370c17b0a2807fcccc6f1ffe3b
     target_directory: fastmcp/
   - url: https://pypi.org/packages/source/f/fastmcp-slim/fastmcp_slim-${{ version }}.tar.gz
-    sha256: 390b2b430195e0cdd0327aff80fe5dceb862b2421baf71de6d4eec92f80f99f8
+    sha256: d1034317e4e2960dd619930c01baabbc77e60825f55c09f93471afa427a68cd7
     target_directory: fastmcp-slim/
 
 build:
@@ -197,11 +197,11 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/fastmcp-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-10T11:36:41Z
+  cfe-last-checked: 2026-11-02T00:28:47Z
   cfe-generated-by-version: 8.99.6
   cfe-generated-at-datetime: 2026-10-10T00:00:00Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-10-10T11:36:52Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-02T01:18:06Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -210,4 +210,5 @@ extra:
 # CFE comments
 # Header:
 #    # 2026-10-10 refresh_wave B-25-6: refreshed 3.4.7 -> 4.1.0
+#    # 2026-11-02 refresh_wave B-S25-17: refreshed 4.1.0 -> 4.1.4
 ####

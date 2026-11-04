@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.44.0"
+  version: "1.45.1"
 
 package:
   name: opentelemetry-exporter-otlp
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-exporter-otlp/opentelemetry_exporter_otlp-${{ version }}.tar.gz
-  sha256: af1cde7c33ea8ed624bf04ac49a885730fe44c1f1ad698656e592c38f70ce106
+  sha256: d0ac35592e77663a9fabf2740b4818c57196b1b764e0c8449d0d7bb2c7b2bc67
 
 build:
   number: 0
@@ -24,8 +24,8 @@ requirements:
     - hatchling
   run:
     - python >=${{ python_min }}
-    - opentelemetry-exporter-otlp-proto-grpc ==1.44.0
-    - opentelemetry-exporter-otlp-proto-http ==1.44.0
+    - opentelemetry-exporter-otlp-proto-grpc ${{ version }}.*
+    - opentelemetry-exporter-otlp-proto-http ${{ version }}.*
 
 tests:
   - python:
@@ -56,6 +56,7 @@ extra:
     - conda-forge/opentelemetry-exporter-otlp-proto-common
     - conda-forge/opentelemetry-exporter-otlp-proto-grpc
     - conda-forge/opentelemetry-exporter-otlp-proto-http
+    - xhochy
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -73,19 +74,21 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-exporter-otlp-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-1.44.0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T02:20:05Z
+  cfe-last-checked: 2026-11-02T02:33:02Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T02:20:05Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-18T02:20:05Z
+  cfe-local-build-datetime: 2026-11-02T02:52:35Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-01 refresh_wave B-25-18-b1: refreshed 1.44.0 -> 1.45.1; maintainers added: xhochy
+#    # 2026-11-01 mason Story 25.18 hand steps: BFP: run pins ==1.44.0 -> <version>.* (feedstock); the driver moves context.version only
 ####

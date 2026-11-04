@@ -3,42 +3,44 @@ schema_version: 1
 
 context:
   name: nbqa
-  version: "1.9.0"
+  version: "1.9.1"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 48c0acd83675bd6d086efba3885e1137d9475c0da328c74f46b9acbc664fe36f
+  url: https://pypi.org/packages/source/n/nbqa/nbqa-${{ version }}.tar.gz
+  sha256: a1f4bcf587c597302fed295951001fc4e1be4ce0e77e1ab1b25ac2fbe3db0cdd
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
-      - nbqa=nbqa.__main__:main
+      - nbqa = nbqa.__main__:main
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.8.0
+    - setuptools <81.0.0
   run:
-    - python >=3.8.0
+    - python >=${{ python_min }},<4
     - autopep8 >=1.5
     - ipython >=7.8.0
-    - tomli
     - tokenize-rt >=3.2.0
-    # Only required for [py<38] but always include so this can be noarch: python
-    - importlib-metadata >=1.4
+    - tomli
 
 tests:
   - python:
       imports:
         - nbqa
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
   - requirements:
       run:
         - pip
@@ -56,3 +58,38 @@ extra:
     - s-weigand
     - MarcoGorelli
     - girip11
+    - rxm7706
+    - jsmolic
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: nbqa
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: nbqa
+  cfe-purls:
+    - pkg:conda/nbqa@${{ version }}?channel=conda-forge
+    - pkg:pypi/nbqa@${{ version }}
+  cfe-upstream-repo: https://github.com/nbQA-dev/nbQA
+  cfe-upstream-homepage: https://github.com/nbQA-dev/nbQA
+  cfe-import-names: [nbqa]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/nbqa-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-02T02:42:31Z
+  cfe-generated-by-version: 8.102.2
+  cfe-generated-at-datetime: 2026-11-02T03:34:31Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-02T03:38:31Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-01 mason Story 25.18: canonical CFE block added by hand before refresh-wave (no-cfe-block)
+#    # 2026-11-01 refresh_wave B-25-18-b2: refreshed 1.9.0 -> 1.9.1; maintainers added: rxm7706, jsmolic
+#    # 2026-11-01 mason Story 25.18 hand steps before refresh-wave: source.url rewritten to the literal pypi.org form; host and run synced to the deployed feedstock (G96: python_min machinery, setuptools <81, importlib-metadata dropped)
+####

@@ -14,7 +14,7 @@ source:
   sha256: c97530f66a0f30b36d8e65b816932e79bda7ed09f7dd0db0694ba4c042e7724d
 
 build:
-  number: 5
+  number: 6
   skip: py>=400 or match(python, ">=2,<3")
   script: ${{ PYTHON }} -m pip install . -vv
 
@@ -51,6 +51,7 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - jsmolic
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -76,7 +77,7 @@ extra:
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-21T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-datetime: 2026-11-02T03:51:54Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -84,10 +85,11 @@ extra:
 # Header:
 #    # WAVE-D C1: feedstock still v0 (meta.yaml, 404 on recipe/recipe.yaml).
 #    # Kept the deployed v0 0.8.0 meta.yaml mirror (faithful, un-annotated)
-#    # and authored this v1 recipe.yaml alongside it. Deployed feedstock
-#    # build.number is 5; this v1 resets to 0 (version-bump-equivalent: the
-#    # v0 mirror still carries 5). meta.yaml-to-recipe-yaml is owed to the
+#    # and authored this v1 recipe.yaml alongside it, at the deployed
+#    # feedstock's build.number (6). meta.yaml-to-recipe-yaml is owed to the
 #    # feedstock.
+#    # 2026-11-01 mason Story 25.18: current at the published version; maintainers added (G53): jsmolic
+#    # 2026-11-01 mason Story 25.18 review round: build.number 5 -> 6 to match the deployed feedstock's meta.yaml (the line above about a reset to 0 is stale)
 # build:
 #    # COMPILED (Cython ranger.pyx -> C++ via -std=c++11, build.py). The local
 #    # 0.7.0 meta.yaml was WRONGLY noarch:python; fixed. compiler('cxx') +
