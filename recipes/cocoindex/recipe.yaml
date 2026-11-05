@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.0.25"
+  version: "1.1.1"
 
 package:
   name: cocoindex
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/c/cocoindex/cocoindex-${{ version }}.tar.gz
-  sha256: faac790054b9404a12e08fe08b2d19478f2746a515b9cc8b897e0e57f374157a
+  sha256: 0d12fc99e68e540a28c7962ede60432173db1cb5aa11f7b347e26e552bd6e335
 
 build:
   number: 0
@@ -131,11 +131,15 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/cocoindex-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-last-checked: 2026-11-05T18:22:11Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-10-09T09:20:00Z
+  cfe-local-build-datetime: 2026-11-05T18:25:28Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-05 refresh_wave A-W19-1: refreshed 1.0.25 -> 1.1.1
 ####

@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: copilotkit
-  version: "1.68.1"
+  version: "1.84.1"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/CopilotKit/CopilotKit/archive/v${{ version }}.tar.gz
-  sha256: dcfac64f367be6485ef75a2db429898f4883c64e39805870032fc3f8f88b7cbc
+  sha256: af2533045c460b4f33f4931ad8982c7750a6c3ed0d8fb412bd637252e56e58e0
 
 build:
   number: 0
@@ -72,11 +72,11 @@ extra:
   cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-last-checked: 2026-11-05T18:24:36Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-21T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-datetime: 2026-11-05T18:25:50Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -91,6 +91,7 @@ extra:
 #    # real advance. Verified 2026-06-21: PyPI latest stable is 0.1.94, but the
 #    # deployed feedstock is at v1.57.2 (= 0.1.88), so local already matches the
 #    # deployed code; no version change made.
+#    # 2026-11-05 refresh_wave A-W19-2: refreshed 1.68.1 -> 1.84.1
 # context:
 #    # version tracks the GitHub TAG (1.57.2), matching the deployed feedstock,
 #    # NOT the PyPI 0.1.88 numbering. python_min omitted: upstream

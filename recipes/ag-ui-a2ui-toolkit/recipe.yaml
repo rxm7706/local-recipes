@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.0.4"
+  version: "0.0.6"
 
 package:
   name: ag-ui-a2ui-toolkit
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/a/ag-ui-a2ui-toolkit/ag_ui_a2ui_toolkit-${{ version }}.tar.gz
-  sha256: 172e2724e53df8173685a3fb896a6e5175eea06e1dc166c715db110ba4beba76
+  sha256: 063576165d92149957e1b9cf17626b6feff0b9d758d4cf9fdebc81fa3f5be746
 
 build:
   number: 0
@@ -63,15 +63,16 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ag-ui-a2ui-toolkit-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-11-05T17:29:39Z
+  cfe-last-checked: 2026-11-05T18:08:42Z
   cfe-generated-by-version: 8.103.0
   cfe-generated-at-datetime: 2026-11-05T17:29:39Z
-  cfe-local-build-status: not-attempted
-  cfe-local-build-datetime: none
-  cfe-local-build-platform: none
-  cfe-local-build-tool: none
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T18:09:37Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
 #    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
+#    # 2026-11-05 refresh_wave A-W19-2: refreshed 0.0.4 -> 0.0.6
 ####

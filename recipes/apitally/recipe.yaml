@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.25.1"
+  version: "1.0.0"
 
 package:
   name: apitally
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/a/apitally/apitally-${{ version }}.tar.gz
-  sha256: 2681e925deffbc94eb7fc65e1f0db397df58634ab1d90597be458d69b2185f7b
+  sha256: 8682cb8121cbcbf53b614e36496fb9fd1cf3697ebf48df6c55c91e446f44627a
 
 build:
   number: 0
@@ -24,10 +24,13 @@ requirements:
     - hatchling
   run:
     - python >=${{ python_min }}
-    - backoff >=2.0.0
     - opentelemetry-sdk <2.0.0,>=1.39.1
     - psutil >=5.9.6
-    - typing_extensions >=4.0.0
+    - opentelemetry-api >=1.42.0,<2.0.0
+    - opentelemetry-instrumentation >=0.63b0
+    - opentelemetry-instrumentation-logging >=0.63b0
+    - opentelemetry-proto >=1.42.0,<2.0.0
+    - requests >=2.26.0
 
 tests:
   - python:
@@ -69,15 +72,17 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/apitally-feedstock
   cfe-forge-recipe-updates-needed: [version-bump-to-0.25.1]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-last-checked: 2026-11-05T18:10:23Z
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-datetime: 2026-11-05T18:11:18Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: requirements taken from the feedstock so the refresh can proceed: -backoff -typing-extensions +opentelemetry-api +opentelemetry-instrumentation +opentelemetry-instrumentation-logging +opentelemetry-proto +requests.
 #    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+#    # 2026-11-05 refresh_wave A-W19-5: refreshed 0.25.1 -> 1.0.0
 ####

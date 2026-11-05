@@ -14,7 +14,7 @@ source:
   sha256: 030912182530f8a6a74c3f435cd651dc466dd6cc28ca7505f054558183b9cebf
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script:
     - if: unix
@@ -26,9 +26,11 @@ build:
 requirements:
   host:
     - python >=3.8
+    - setuptools
     - pip
   run:
     - python >=3.8
+    - setuptools <81
     - numpy >=1.17.2
     - pandas >=0.25.1
     - scikit-learn >=0.22.1
@@ -74,12 +76,15 @@ extra:
   cfe-last-checked: 2026-11-05T17:29:39Z
   cfe-generated-by-version: 8.103.0
   cfe-generated-at-datetime: 2026-11-05T17:29:39Z
-  cfe-local-build-status: not-attempted
-  cfe-local-build-datetime: none
-  cfe-local-build-platform: none
-  cfe-local-build-tool: none
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T21:51:21Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: run setuptools below 81: a dependency imports pkg_resources, which current setuptools no longer ships.
+#    # 2026-11-05 Story 25.19: host setuptools added: upstream ships no pyproject and pip needs the setuptools backend on the current python.
 #    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
 ####

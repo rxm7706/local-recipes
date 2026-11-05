@@ -13,7 +13,7 @@ source:
   sha256: f588045669c222a02ed703386aad8b02d0d41aa87a0122a06182e7623fad4ec2
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
@@ -32,6 +32,7 @@ requirements:
     - pip
   run:
     - python >=${{ python_min }},<3.14
+    - huggingface_hub <2
     - datasets >=2.16.0
     - evaluate
     - scipy >=1.10.1
@@ -88,11 +89,14 @@ extra:
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-19T17:11:43Z
+  cfe-local-build-datetime: 2026-11-05T21:58:59Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
+# Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: huggingface_hub capped below 2: gradio in the test environment requires it and pip check reports the conflict.
 # requirements:
 #  run:
 #    # Upper bound: unitxt 1.26.10's custom dataclass system reads

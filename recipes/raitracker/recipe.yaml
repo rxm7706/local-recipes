@@ -14,7 +14,7 @@ source:
   sha256: f464f9a74e5e2b9e10ffbfa484489c2073f096c4af962bf720dcec15e60500e5
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv
 
@@ -28,6 +28,8 @@ requirements:
     - pip
   run:
     - python >=3.7
+    - tensorflow
+    - keras
     - jupyterlab >=3
     - mlflow >=2
     - numpy >=1
@@ -71,12 +73,15 @@ extra:
   cfe-last-checked: 2026-11-05T17:29:39Z
   cfe-generated-by-version: 8.103.0
   cfe-generated-at-datetime: 2026-11-05T17:29:39Z
-  cfe-local-build-status: not-attempted
-  cfe-local-build-datetime: none
-  cfe-local-build-platform: none
-  cfe-local-build-tool: none
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T21:54:51Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: run tensorflow added: importing raitracker imports keras, and keras needs a backend.
+#    # 2026-11-05 Story 25.19: run keras added: mlflow.keras needs it and mlflow does not bring it.
 #    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
 ####

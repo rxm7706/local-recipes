@@ -19,7 +19,7 @@ source:
   sha256: 84c782f59cd34ca90adc59097707589980c6cbd049adad2bf34c36c4ccd2ba08
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -166,6 +166,10 @@ tests:
             - tox-uv ==1.19.1
             - cryptography >=2.6,!=35,<45
             - requests ==2.32.3
+            - binaryornot ==0.4.4
+            - cookiecutter ==2.6
+            - djlint ==1.36.4
+            - pyyaml ==6.0.2
           else:
             - python >=${{ python_min }},<${{ python_max }}
             - pip
@@ -184,6 +188,10 @@ tests:
             - tox-uv ==1.19.1
             - cryptography >=2.6,!=35,<45
             - requests ==2.32.3
+            - binaryornot ==0.4.4
+            - cookiecutter ==2.6
+            - djlint ==1.36.4
+            - pyyaml ==6.0.2
   - python:
       imports:
         - cookiecutter
@@ -240,18 +248,19 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/cookiecutter-django-core-feedstock
   cfe-forge-recipe-updates-needed: [version-bump-to-2026.07.02, pin-resync-from-pyproject]
-  cfe-forge-blocker-list:
-    - sh ==2.3.0 not on cf (latest 2.2.4) — sh-feedstock has 3 stale bot PRs (#46-#48, sole maintainer inactive there); pip check cannot pass until sh 2.3.0 lands
+  cfe-forge-blocker-list: []
   cfe-last-checked: 2026-07-03T19:44:41Z
   cfe-generated-by-version: 8.67.0
   cfe-generated-at-datetime: 2026-07-03T19:44:41Z
-  cfe-local-build-status: build-clean-test-blocked
-  cfe-local-build-datetime: 2026-07-03T19:44:41Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T21:33:31Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: test environment pins binaryornot, cookiecutter, djlint and pyyaml exactly, as upstream does, so pip check holds.
 #    # 2026-07-03 Set E wave (tracker audit findings) — LOCAL BUILDS ONLY per user
 #    # direction.
 # context:

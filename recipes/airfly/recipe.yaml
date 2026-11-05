@@ -4,6 +4,7 @@ schema_version: 1
 context:
   name: airfly
   version: "1.1.0"
+  python_min: "3.10"
 
 package:
   name: ${{ name|lower }}
@@ -14,7 +15,7 @@ source:
   sha256: ac8ee0fa19003b141c536969479915609dc560c5b61c02ef8dda5d15ad08109d
 
 build:
-  number: 1
+  number: 2
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
@@ -85,12 +86,14 @@ extra:
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-11-05T21:29:37Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: python_min 3.10: upstream or a pinned dependency only supports python below 3.11, the conda-forge floor; the rebuild tests on 3.10.
 #    # C2 refresh: deployed feedstock already migrated v0->v1 at 1.1.0.
 #    # Local mirror was stale v0 (meta.yaml 1.0.0); authored this recipe.yaml
 #    # diff-applied against the deployed v1 feedstock (authoritative) and

@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.8.3"
+  version: "0.9.1"
 
 package:
   name: ironcalc
@@ -10,7 +10,7 @@ package:
 
 source:
   - url: https://pypi.org/packages/source/i/ironcalc/ironcalc-${{ version }}.tar.gz
-    sha256: 03216b56acdd7baa8b5dda6ae535bac4707b593b75227bfd7ed4dc2b3d047714
+    sha256: 1f6b641b9fb2cf262000c3e078338709c42ff6264f809605ade18ec27d891f94
 
 build:
   number: 0
@@ -81,13 +81,13 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ironcalc-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-last-checked: 2026-11-05T19:17:04Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
-  cfe-local-build-status: not-attempted
-  cfe-local-build-datetime: none
-  cfe-local-build-platform: none
-  cfe-local-build-tool: none
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T19:19:13Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
@@ -96,6 +96,7 @@ extra:
 #    # (modal 27-PR PyO3 sample, Mar 2020 – May 2026). Recipe shape follows the
 #    # 2026 grayskull / conda-forge convention: literal ``package.name``, literal
 #    # ``source.url`` (only ``${ version }`` templated), no ``name`` in context.
+#    # 2026-11-05 refresh_wave A-W19-4: refreshed 0.8.3 -> 0.9.1
 # build:
 #  script:
 #    env:

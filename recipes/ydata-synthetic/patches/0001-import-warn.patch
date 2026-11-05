@@ -1,0 +1,8 @@
+--- a/src/ydata_synthetic/__init__.py
++++ b/src/ydata_synthetic/__init__.py
+@@ -1,4 +1,5 @@
+ #from .version import __version__
++from warnings import warn
+ 
+ warn(
+     """

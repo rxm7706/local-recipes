@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "7.2.8"
+  version: "7.3.1"
 
 package:
   name: edge-tts
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/e/edge-tts/edge_tts-${{ version }}.tar.gz
-  sha256: fcf185a0d527a0d2d003f9d5841facc1d5e0e7b3b88d5df9c32990402c6b8cd0
+  sha256: ee1fabf911b9ea83b38ae93aee5619ee41eaf0b109fef6e65d797dc4ebf1f20f
 
 build:
   number: 0
@@ -88,11 +88,11 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: "2026-07-26T00:00:00Z"
+  cfe-last-checked: 2026-11-05T19:20:30Z
   cfe-generated-by-version: 8.79.1
   cfe-generated-at-datetime: "2026-07-26T00:00:00Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-07-26T16:27:18Z"
+  cfe-local-build-datetime: 2026-11-05T19:21:25Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -103,6 +103,7 @@ extra:
 #    # and ppt-master, whose recipe comment records "edge-tts is omitted --
 #    # not on conda-forge -- so audio narration degrades gracefully".
 #    # Also listed in bmad-manticore's REEL_PIP set.
+#    # 2026-11-05 refresh_wave A-W19-3: refreshed 7.2.8 -> 7.3.1
 # about:
 #    # License is LGPL-3.0-only, taken from the setup.cfg classifier
 #    # "License :: OSI Approved :: GNU Lesser General Public License v3

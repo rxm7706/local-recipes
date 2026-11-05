@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: drf-pydantic
-  version: "2.9.2"
+  version: "2.9.3"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/d/drf-pydantic/drf_pydantic-${{ version }}.tar.gz
-  sha256: cf909c9120079d212ed71406f775e5c7005768205a247c75e9ae2ffaf10ecc25
+  sha256: 411764ea80355a7fd7c666dc6b731705fd5573c5bcd9c856f2f5d65af8b09d2f
 
 build:
   number: 0
@@ -29,11 +29,11 @@ requirements:
     - djangorestframework >=3.13.0
 
 tests:
-- python:
-    imports:
-      - drf_pydantic
-    pip_check: true
-    python_version: ${{ python_min }}
+  - python:
+      imports:
+        - drf_pydantic
+      pip_check: true
+      python_version: ${{ python_min }}
 
 about:
   summary: Use pydantic with the Django REST framework
@@ -65,11 +65,11 @@ extra:
     - meta-yaml-to-recipe-yaml
     - dependency-fix
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-11-05T19:19:35Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: '2026-10-09T10:53:04Z'
+  cfe-local-build-datetime: 2026-11-05T19:20:27Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -78,6 +78,7 @@ extra:
 #    # WAVE-C C1: feedstock still v0/meta.yaml at 2.9.1. meta.yaml refreshed to
 #    # faithfully mirror the deployed feedstock; this recipe.yaml is the proposed
 #    # v0-to-v1 migration. Both files coexist until the feedstock migrates.
+#    # 2026-11-05 refresh_wave A-W19-3: refreshed 2.9.2 -> 2.9.3
 # requirements:
 #  host:
 #    # hatchling only (build-system.requires = ["hatchling"]); dropped the

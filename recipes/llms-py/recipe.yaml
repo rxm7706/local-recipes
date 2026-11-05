@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: llms-py
-  version: "4.0.23"
+  version: "4.0.26"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: e087a11269fe733bc178617c931e4bbb0f216324d0750476d226a08bc5c41d30
+  url: https://pypi.org/packages/source/l/llms-py/llms_py-${{ version }}.tar.gz
+  sha256: 44938fc7bb8515e201a4063a87185e1c910e9aefbb28c4df73b570f305d4ab57
 
 build:
   number: 0
@@ -74,15 +74,17 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/llms-py-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-last-checked: 2026-11-05T18:35:46Z
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-10-09T08:45:00Z
+  cfe-local-build-datetime: 2026-11-05T18:37:33Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: source URL written out literally, the canonical form, so the refresh can read it.
 #    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+#    # 2026-11-05 refresh_wave A-W19-5: refreshed 4.0.23 -> 4.0.26
 ####

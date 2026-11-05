@@ -4,6 +4,7 @@ schema_version: 1
 context:
   name: feathr
   version: "1.0.0"
+  python_min: "3.10"
 
 package:
   name: ${{ name|lower }}
@@ -14,7 +15,7 @@ source:
   sha256: 04951c3e0ce6c757323a5a667e2b9c790af7b0ca2e40f13543c13345b1f5ee37
 
 build:
-  number: 1
+  number: 2
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
@@ -106,13 +107,15 @@ extra:
   cfe-last-checked: 2026-11-05T17:29:39Z
   cfe-generated-by-version: 8.103.0
   cfe-generated-at-datetime: 2026-11-05T17:29:39Z
-  cfe-local-build-status: not-attempted
-  cfe-local-build-datetime: none
-  cfe-local-build-platform: none
-  cfe-local-build-tool: none
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T21:42:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: python_min 3.10: upstream or a pinned dependency only supports python below 3.11, the conda-forge floor; the rebuild tests on 3.10.
 #    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
 #    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
 ####

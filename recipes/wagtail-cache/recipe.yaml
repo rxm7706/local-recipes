@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: wagtail-cache
-  version: "3.0.0"
+  version: "3.1.0"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/coderedcorp/wagtail-cache/archive/v${{ version }}.tar.gz
-  sha256: 3265216885459445531806d37fd6eadc899c56742cb3924094efbd037df37311
+  sha256: 1d041bb67bf93d653e597ff573c36c80f7d92afad2f62c91b6c2f9ee3e6e9bac
 
 build:
   number: 0
@@ -25,7 +25,7 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
-    - wagtail >=3.0,<8.0
+    - wagtail >=3.0,<9.0
 
 tests:
   - python:
@@ -62,21 +62,23 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-cache-feedstock
   cfe-forge-recipe-updates-needed: meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-last-checked: 2026-11-05T18:47:21Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-21T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-datetime: 2026-11-05T18:48:18Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: requirements taken from the feedstock so the refresh can proceed: ~wagtail.
 #    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
 #    # WAVE-E gh-numbering: GENUINELY BEHIND (true positive). Local was 2.4.0;
 #    # deployed feedstock + PyPI both at 3.0.0 (MAJOR bump). GitHub-tag version
 #    # vX matches PyPI version exactly — congruent numbering, no copilotkit-style
 #    # divergence. C1: feedstock still v0 (meta.yaml), so meta.yaml mirror kept.
+#    # 2026-11-05 refresh_wave A-W19-5: refreshed 3.0.0 -> 3.1.0
 # source:
 #    # github-tag (vX archive), mirroring the deployed feedstock's source-kind;
 #    # the upstream tag scheme matches the PyPI release exactly.

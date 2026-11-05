@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: django-tenants
-  version: "3.14.0"
+  version: "4.0.1"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: 55dc64bcd4293a03fab7108f4c4e1724c2f53ef09a1c7f9e5f75a136fccc3146
+  url: https://pypi.org/packages/source/d/django-tenants/django_tenants-${{ version }}.tar.gz
+  sha256: 769a0934507305c55b7b6e49b788df6627dcc546d7f4e187812285bad1c6270b
 
 build:
   number: 0
@@ -83,21 +83,23 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-tenants-feedstock
   cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-11-05T18:20:38Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-11-05T18:21:46Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: source URL written out literally, the canonical form, so the refresh can read it.
 #    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
 #    # WAVE-C C1: conda-forge feedstock is STILL v0/meta.yaml (recipe.yaml 404).
 #    # Local meta.yaml refreshed to mirror the deployed feedstock at 3.10.1
 #    # (clean, un-annotated); this recipe.yaml is the proposed v1 migration
 #    # (cfe-forge-recipe-updates-needed: meta-yaml-to-recipe-yaml). Both coexist.
+#    # 2026-11-05 refresh_wave A-W19-5: refreshed 3.14.0 -> 4.0.1
 # requirements:
 #  host:
 #    # setuptools kept in host — setup.cfg project (no pyproject.toml build-system

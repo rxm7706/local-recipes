@@ -13,7 +13,7 @@ source:
   sha256: 9075bdd9712b03a9dad78652425081bbee63c9ad759bf9efb3a0eb1cd1b180c3
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -76,12 +76,13 @@ extra:
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T07:43:48Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-11-05T17:45:13Z
+  cfe-local-build-datetime: 2026-11-05T21:27:48Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
 #    # 2026-11-05 Story 25.19: host flake8 and tomli, run tomli and license_file taken from the feedstock.
 #    # added run deps from import test: ['flake8']
 ####

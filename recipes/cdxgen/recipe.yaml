@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "12.7.1"
+  version: "12.9.0"
 
 package:
   name: cdxgen
@@ -10,10 +10,10 @@ package:
 
 source:
   url: https://registry.npmjs.org/@cyclonedx/cdxgen/-/cdxgen-${{ version }}.tgz
-  sha256: 52061c32e7795bfe6f1133944e408af76c9d3e3a4a8fa6dc59bb0015cf440ef3
+  sha256: 56a4d2b7042620e419617b6620f2b5ac7f61265d296601e5bda41e3a7c672b0f
 
 build:
-  number: 1
+  number: 0
   # Per-arch (NOT noarch), following the openspec/bmalph pattern: each
   # platform's npm global install lays down native shims for all 16 bin
   # entries (symlinks on unix, .cmd on win), which a single noarch
@@ -50,7 +50,7 @@ requirements:
   host:
     - nodejs >=20,<26
   run:
-    - nodejs >=20,<26
+    - nodejs >=20,<27
 
 tests:
   - script:
@@ -104,19 +104,21 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: "2026-07-12T21:58:13Z"
+  cfe-last-checked: 2026-11-05T18:13:55Z
   cfe-generated-by-version: 8.76.0
   cfe-generated-at-datetime: "2026-07-12T17:10:00Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-07-12T21:55:00Z"
+  cfe-local-build-datetime: 2026-11-05T18:16:03Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: requirements taken from the feedstock so the refresh can proceed: ~nodejs.
 #    # Packaged 2026-07-12 (user request). Complements the CFE estate's
 #    # AppThreat integration (v8.6.0) and the cyclonedx-universe-inventory
 #    # tooling; NOT on conda-forge as of packaging.
+#    # 2026-11-05 refresh_wave A-W19-5: refreshed 12.7.1 -> 12.9.0
 # build:
 #    # npm's --omit=optional is IGNORED by `npm install -g <tarball>` (npm 11.x):
 #    # the per-platform @cdxgen/cdxgen-plugins-bin-* optionalDependencies

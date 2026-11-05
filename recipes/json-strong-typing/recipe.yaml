@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: json-strong-typing
-  version: "0.4.3"
+  version: "0.5.0"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/json_strong_typing-${{ version }}.tar.gz
-  sha256: eda43764914141d609be5cdb020c01c6fb5ee2f533382707fd382bd302b2a496
+  url: https://pypi.org/packages/source/j/json-strong-typing/json_strong_typing-${{ version }}.tar.gz
+  sha256: 0b7c490670fdf36c73510b41d2942f6375a29fae7e5c880b3c85b82dae213c13
 
 build:
   number: 0
@@ -66,15 +66,18 @@ extra:
     - recipe-regenerate
     - dependency-fix
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-11-05T18:34:48Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-11-05T18:35:42Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
+# Header:
+#    # 2026-11-05 Story 25.19: source URL written out literally, the canonical form, so the refresh can read it.
+#    # 2026-11-05 refresh_wave A-W19-5: refreshed 0.4.3 -> 0.5.0
 # requirements:
 #  run:
 #    # upstream marks typing_extensions >=4.15 with python_version < "3.11";

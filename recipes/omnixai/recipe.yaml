@@ -14,7 +14,7 @@ source:
   sha256: 060a77f5accdab388097f92ed7635c7bd94e0ecebe9b4730445527857b0609dc
 
 build:
-  number: 1
+  number: 2
   noarch: python
   script:
     - ${{ PYTHON }} -m pip install . -vv
@@ -28,11 +28,12 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }},<4.0
+    - setuptools <81
     - numpy >=1.17,<1.24
     - pandas >=1.1.0
     - scikit-learn >=0.24,<1.2
     - scipy >=1.5.0
-    - scikit-image >=0.17.2
+    - scikit-image >=0.17.2,<0.25
     - matplotlib-base
     - pillow <10.0
     - lime
@@ -86,13 +87,16 @@ extra:
   cfe-last-checked: 2026-11-05T17:29:39Z
   cfe-generated-by-version: 8.103.0
   cfe-generated-at-datetime: 2026-11-05T17:29:39Z
-  cfe-local-build-status: not-attempted
-  cfe-local-build-datetime: none
-  cfe-local-build-platform: none
-  cfe-local-build-tool: none
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T21:47:23Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: scikit-image capped below 0.25: 0.25 needs numpy and pillow above the caps upstream sets.
+#    # 2026-11-05 Story 25.19: run setuptools below 81: upstream imports pkg_resources, which current setuptools no longer ships.
 #    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
 #    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
 ####

@@ -16,7 +16,7 @@ source:
     - patches/fix-package-location.patch
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install .
   python:
@@ -30,7 +30,7 @@ requirements:
     - pip
   run:
     - python >=${{ python_min }},<4.0
-    - mcp >=1.10.1
+    - mcp >=1.10.1,<2
     - fastmcp >=2.0.0,<3.0.0
     - openpyxl >=3.1.5
     - typer >=0.16.0
@@ -82,11 +82,14 @@ extra:
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-11-05T21:43:52Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
+# Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: mcp capped below 2: fastmcp 2 requires it.
 # source:
 #    # sdist pyproject.toml declares packages = ["src/excel_mcp"] but the sdist
 #    # unpacks excel_mcp/ at the root; patches/fix-package-location.patch

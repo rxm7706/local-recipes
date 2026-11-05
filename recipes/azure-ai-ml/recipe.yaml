@@ -13,7 +13,7 @@ source:
   sha256: 4ac8f77fb56e0793d012ae3f9a38550883b07175bdae4742554cc3c3a17f0231
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -24,6 +24,7 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
+    - msal_extensions >=1.2
     - pyyaml >=5.1.0,<7.0.0
     - azure-core >=1.23.0
     - azure-mgmt-core >=1.3.0
@@ -86,11 +87,13 @@ extra:
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-10-09T09:20:00Z
+  cfe-local-build-datetime: 2026-11-05T21:32:14Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: msal_extensions floor added: the python 3.15 test leg solved to msal_extensions 0.3.0, whose portalocker pin fails pip check.
 #    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
 ####

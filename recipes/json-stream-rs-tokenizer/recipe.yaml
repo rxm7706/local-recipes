@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: json-stream-rs-tokenizer
-  version: "0.5.3"
+  version: "0.5.4"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: 88828b11ecd24692473728f237e19d6a48b20cb6472c64a029c734b6d616fbc4
+  url: https://pypi.org/packages/source/j/json-stream-rs-tokenizer/json_stream_rs_tokenizer-${{ version }}.tar.gz
+  sha256: 7e5a56d03e00f194a21cb1a0e7ff03c75a07c1bf0a16b1676828605410579909
 
 build:
   number: 0
@@ -76,19 +76,21 @@ extra:
     - meta-yaml-to-recipe-yaml
     - platform-expansion
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-last-checked: 2026-11-05T18:32:01Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-21T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-datetime: 2026-11-05T18:34:47Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: source URL written out literally, the canonical form, so the refresh can read it.
 #    # WAVE-D C1: feedstock still v0 (meta.yaml). Authored recipe.yaml at 0.5.1
 #    # alongside a faithful 0.5.1 meta.yaml mirror; both coexist until the
 #    # feedstock completes its v0 to v1 switch.
+#    # 2026-11-05 refresh_wave A-W19-5: refreshed 0.5.3 -> 0.5.4
 # build:
 #    # setuptools-rust (PyO3) extension. NOT abi3 — setup.py sets
 #    # py_limited_api=False (required for num_bigint compat), so this is a

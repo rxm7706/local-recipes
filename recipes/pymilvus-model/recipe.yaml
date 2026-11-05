@@ -14,7 +14,7 @@ source:
 
 build:
   noarch: python
-  number: 0
+  number: 1
   script:
     # Overwrite the broken helper file to export a static version string
     - python -c "open('_version_helper.py', 'w').write('version = \"${{ version }}\"\n')"
@@ -28,6 +28,7 @@ requirements:
     - pip
   run:
     - python >=${{ python_min }}
+    - requests
     - transformers >=4.36.0
     - onnxruntime
     - scipy >=1.10.0
@@ -83,12 +84,14 @@ extra:
   cfe-generated-by-version: 8.34.0
   cfe-generated-at-datetime: 2026-06-19T20:40:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T01:36:04Z
+  cfe-local-build-datetime: 2026-11-05T21:51:04Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: run requests added: upstream imports it and no dependency brings it any more.
 #    # PyPI distribution `pymilvus-model` (canonical/normalized name on PyPI:
 #    # `pymilvus.model`). The `model` subpackage published for
 #    # `pymilvus[model]`; transitive langflow blocker via opendsstar (needs

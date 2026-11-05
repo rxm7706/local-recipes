@@ -13,7 +13,7 @@ source:
   sha256: f37f83104e26b0824531675396fe9108b0e2d2a1936b2d85d24ae2d9314c9977
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -101,11 +101,12 @@ extra:
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T03:42:04Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-11-05T17:52:13Z
+  cfe-local-build-datetime: 2026-11-05T21:35:19Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
 #    # 2026-11-05 Story 25.19: host hatch-jupyter-builder and run analytics-python and python-quickjs taken from the feedstock.
 ####

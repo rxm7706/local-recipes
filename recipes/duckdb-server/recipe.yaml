@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: duckdb-server
-  version: "0.30.0"
+  version: "0.31.0"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/duckdb_server-${{ version }}.tar.gz
-  sha256: dcd1b877d50ef790cd241295dcba67a1399b7868d8d9dbb76ccfb2fcf4c91c23
+  url: https://pypi.org/packages/source/d/duckdb-server/duckdb_server-${{ version }}.tar.gz
+  sha256: 69b7b4eea190b301ab15273beeb14caf9a9c87e1311f0baa29a8f5af334a6cbf
 
 build:
   number: 0
@@ -71,21 +71,23 @@ extra:
   cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-11-05T18:23:09Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-11-05T18:24:29Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: source URL written out literally, the canonical form, so the refresh can read it.
 #    # WAVE-C C1: conda-forge feedstock is still v0/meta.yaml (no recipe.yaml
 #    # on the feedstock as of this refresh). meta.yaml kept alongside as a
 #    # faithful mirror of the deployed v0 feedstock at 0.27.0; this recipe.yaml
 #    # is the proposed v1 migration. Local mirror bumped 0.12.0 -> 0.27.0 (the
 #    # feedstock's deployed version, matching PyPI latest).
+#    # 2026-11-05 refresh_wave A-W19-5: refreshed 0.30.0 -> 0.31.0
 # package:
 #    # import name is "pkg", NOT "duckdb_server" (G7): the distribution
 #    # "duckdb-server" ships its code under the top-level package "pkg"

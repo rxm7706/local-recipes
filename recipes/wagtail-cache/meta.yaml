@@ -1,5 +1,5 @@
 {% set name = "wagtail-cache" %}
-{% set version = "3.0.0" %}
+{% set version = "3.1.0" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://github.com/coderedcorp/wagtail-cache/archive/v{{ version }}.tar.gz
-  sha256: 3265216885459445531806d37fd6eadc899c56742cb3924094efbd037df37311
+  sha256: 1d041bb67bf93d653e597ff573c36c80f7d92afad2f62c91b6c2f9ee3e6e9bac
 
 build:
   noarch: python
@@ -21,7 +21,7 @@ requirements:
     - setuptools
   run:
     - python >={{ python_min }}
-    - wagtail >=3.0,<8.0
+    - wagtail >=3.0,<9.0
 
 test:
   imports:

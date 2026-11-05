@@ -15,7 +15,7 @@ source:
   sha256: 95d834c3b758f5e47bd568cabb0b9181d97ca1a6dcbc14dcbfdcac35682aad76
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -27,8 +27,8 @@ requirements:
     - pip
   run:
     - python >=${{ python_min }}
-    - django <6.1,>=6.0
-    - pymongo
+    - django <6.2,>=6.1
+    - pymongo <5.0,>=4.7
     # - sphinx-copybutton
     # - sphinx >=7
     # - furo >=2025.7.19
@@ -84,13 +84,15 @@ extra:
   cfe-last-checked: 2026-06-20T00:00:00Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
-  cfe-local-build-status: build-clean-test-blocked
-  cfe-local-build-datetime: 2026-10-09T09:23:01Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T21:37:41Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: django and pymongo taken from the feedstock.
 #    # WAVE-C C1: feedstock is STILL v0/meta.yaml (deployed at 6.0.3). Local
 #    # meta.yaml refreshed to faithfully mirror the deployed feedstock; this
 #    # recipe.yaml is the proposed v0 to v1 migration at the same version.

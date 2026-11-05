@@ -14,7 +14,7 @@ source:
   sha256: 8c4197af695e1c8bbbce5fad39ca10f7f00bcb678ac231a064ce63fc55f21b8b
 
 build:
-  number: 2
+  number: 3
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -26,7 +26,7 @@ requirements:
   run:
     - python >=${{ python_min }},<4.0
     - datasette
-    - selectolax
+    - selectolax <1
     - datasette-template-sql
     - pluggy
     - httpx
@@ -73,12 +73,14 @@ extra:
   cfe-last-checked: 2026-11-05T17:29:39Z
   cfe-generated-by-version: 8.103.0
   cfe-generated-at-datetime: 2026-11-05T17:29:39Z
-  cfe-local-build-status: not-attempted
-  cfe-local-build-datetime: none
-  cfe-local-build-platform: none
-  cfe-local-build-tool: none
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T21:35:19Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: selectolax capped below 1: upstream imports the Modest backend, which selectolax 1 removed.
 #    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
 ####

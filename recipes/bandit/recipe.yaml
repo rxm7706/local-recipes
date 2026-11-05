@@ -13,7 +13,7 @@ source:
   sha256: b589e5de2afe70bd4d53fa0c1da6199f4085af666fde00e8a034f152a52cd628
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -81,11 +81,12 @@ extra:
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T08:18:04Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-11-05T17:45:20Z
+  cfe-local-build-datetime: 2026-11-05T21:27:53Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
 #    # 2026-11-05 Story 25.19: host pbr and run colorama and gitpython taken from the feedstock.
 ####

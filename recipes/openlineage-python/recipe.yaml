@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.53.0"
+  version: "1.55.0"
 
 package:
   name: openlineage-python
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://github.com/OpenLineage/OpenLineage/archive/refs/tags/${{ version }}.tar.gz
-  sha256: f78ef097dd2f9e67b359d5624b9b3eabed2b44f5058fe4d2f2afad08c5781eaa
+  sha256: e2183a44767491b1b9f59dba56ebf54c575a9d79181d8e0d806f56e4f2a92cb6
 
 build:
   number: 0
@@ -77,16 +77,17 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/openlineage-python-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-10T14:30:00Z
+  cfe-last-checked: 2026-11-05T21:31:08Z
   cfe-generated-by-version: 8.99.9
   cfe-generated-at-datetime: 2026-10-10T00:00:00Z
-  cfe-local-build-status: not-attempted
-  cfe-local-build-datetime: none
-  cfe-local-build-platform: none
-  cfe-local-build-tool: none
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T21:32:21Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
 #    # 2026-10-10 Story 25.8: mirror feedstock github source (G54); was pypi wheel
 #    # 2026-10-10 Story 25.8: templated wheel source.url on ${{ version }} (AC 2)
+#    # 2026-11-05 refresh_wave B-W19-na: refreshed 1.53.0 -> 1.55.0
 ####

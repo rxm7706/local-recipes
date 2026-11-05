@@ -13,7 +13,7 @@ source:
   sha256: 82ba17b077bef19a189d9ec8d77ca632496cb444e0f4fa37e27e90041cf0da8f
 
 build:
-  number: 0
+  number: 1
   script:
     env:
       PYTHONUTF8: "1"
@@ -116,12 +116,13 @@ extra:
   cfe-generated-by-version: 8.34.0
   cfe-generated-at-datetime: 2026-06-19T20:40:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-11-05T17:50:45Z
+  cfe-local-build-datetime: 2026-11-05T21:33:46Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
 #    # 2026-11-05 Story 25.19: license_file path taken from the feedstock.
 #    # 2026-11-01 mason Story 25.18: current at the published version; maintainers added (G53): pb01ka
 # build:

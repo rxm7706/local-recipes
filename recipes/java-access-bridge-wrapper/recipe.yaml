@@ -77,6 +77,7 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: not-attempted is host-blocked: the package requires __win, so a linux-64 test environment cannot solve; a faithful build needs a Windows host.
 #    # 2026-11-05 Story 25.19: removed stray quotes from an entry point.
 #    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
 #    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.

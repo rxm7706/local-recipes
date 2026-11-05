@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: h2o-lightwave-web
-  version: "1.8.14"
+  version: "1.8.17"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/h2oai/wave/archive/v${{ version }}.tar.gz
-  sha256: 1e9c69a5e7158d2c5958585991968b360a099be90ae4da714f330a8d94b0b2af
+  sha256: 31f882e16b67dac76562caf395bba9303358027181fb962b1b1930122168c43d
 
 build:
   number: 0
@@ -27,11 +27,11 @@ requirements:
     - python >=${{ python_min }}
 
 tests:
-- python:
-    imports:
-      - h2o_lightwave_web
-    pip_check: true
-    python_version: ${{ python_min }}
+  - python:
+      imports:
+        - h2o_lightwave_web
+      pip_check: true
+      python_version: ${{ python_min }}
 
 about:
   description: Web assets for H2O Lightwave.
@@ -69,11 +69,11 @@ extra:
     - meta-yaml-to-recipe-yaml
     - recipe-regenerate
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-last-checked: 2026-11-05T19:28:00Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-21T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: '2026-10-09T10:58:51Z'
+  cfe-local-build-datetime: 2026-11-05T19:29:06Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -84,6 +84,7 @@ extra:
 #    # This recipe.yaml is the proposed v0-to-v1 migration. Both files coexist
 #    # until the feedstock itself migrates. gh-numbering: NOT an artifact —
 #    # PyPI history is monotonic 0.24.2 to 1.8.9; local 1.0.0 genuinely behind.
+#    # 2026-11-05 refresh_wave A-W19-3: refreshed 1.8.14 -> 1.8.17
 # source:
 #    # CORRECTION vs the deployed feedstock: the feedstock builds from the
 #    # h2oai/wave GitHub monorepo archive (./py/h2o_lightwave_web), but that

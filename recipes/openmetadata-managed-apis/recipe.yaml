@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: openmetadata-managed-apis
-  version: "2.0.5.0"
+  version: "2.1.0.0"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/openmetadata-managed-apis/openmetadata_managed_apis-${{ version }}.tar.gz
-  sha256: 39a769f0b53bd75b9957ce1af97b2b598c5eb091bc759f3c9f8f780485bba832
+  sha256: a822f2091c2c86a192d388826cf5028d7370b54a64532f511fdac72b0cf2cc91
 
 build:
   number: 0
@@ -35,11 +35,11 @@ requirements:
     # Pip Check Error cryptography 46.0.1 has requirement cffi>=2.0.0; python_full_version >= "3.9" and platform_python_implementation != "PyPy", but you have cffi 1.17.1.
 
 tests:
-- python:
-    imports:
-      - openmetadata_managed_apis
-    pip_check: true
-    python_version: ${{ python_min }}
+  - python:
+      imports:
+        - openmetadata_managed_apis
+      pip_check: true
+      python_version: ${{ python_min }}
 
 about:
   summary: Airflow REST APIs to create and manage DAGS
@@ -72,11 +72,11 @@ extra:
     - meta-yaml-to-recipe-yaml
     - recipe-regenerate
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-11-05T19:36:54Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: '2026-10-09T11:07:19Z'
+  cfe-local-build-datetime: 2026-11-05T19:38:39Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -85,6 +85,7 @@ extra:
 #    C1 keep-meta refresh. The conda-forge feedstock is still v0 (meta.yaml);
 #    meta.yaml in this dir faithfully mirrors the deployed v1.13.0.0 recipe.
 #    This recipe.yaml is the proposed v0-to-v1 migration at the same version.
+#    # 2026-11-05 refresh_wave A-W19-2: refreshed 2.0.5.0 -> 2.1.0.0
 # context:
 #    python_min omitted: upstream requires-python is >=3.9, which clamps to the
 #    conda-forge 3.10 floor; let conda-forge-pinning supply python_min.

@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: 0.6.4
+  version: 0.6.5
 
 package:
   name: markdown-to-confluence
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/m/markdown-to-confluence/markdown_to_confluence-${{ version }}.tar.gz
-  sha256: b9bc29ee05db72caa026d1430190af575afcbcd7c3cf9acd1cae804dac1dd29d
+  sha256: 853b1ee42812edcf4b3f4f2a8f7b1d900edc09809659b8ec83030e708db50f77
 
 build:
   number: 0
@@ -41,18 +41,18 @@ requirements:
     - matplotlib >=3.10
 
 tests:
-- python:
-    imports:
-      - md2conf
-    pip_check: true
-    python_version:
-      - ${{ python_min }}.*
-      - '*'
-- requirements:
-    run:
-      - python ${{ python_min }}.*
-  script:
-    - md2conf --help
+  - python:
+      imports:
+        - md2conf
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - '*'
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - md2conf --help
 
 about:
   summary: Publish Markdown files to Confluence wiki
@@ -82,11 +82,15 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/markdown-to-confluence-feedstock
   cfe-forge-recipe-updates-needed: [version-bump-to-0.6.1]
-  cfe-last-checked: 2026-07-03T22:07:06Z
+  cfe-last-checked: 2026-11-05T19:41:22Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: '2026-10-09T11:05:38Z'
+  cfe-local-build-datetime: 2026-11-05T19:42:25Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-05 refresh_wave A-W19-1: refreshed 0.6.4 -> 0.6.5
 ####

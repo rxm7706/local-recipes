@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "6.0.0"
+  version: "10.1.0"
 
 package:
   name: http-router
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/h/http-router/http_router-${{ version }}.tar.gz
-  sha256: 17d486280081c1f8c04583e37ffb242f02940a083feca26fe4649e11d2150e74
+  sha256: 53b4e5b2dc42db02c46e47ab367e01581b1348bd85b14bb0fba2bda6a2896ed8
 
 build:
   number: 0
@@ -75,11 +75,11 @@ extra:
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list:
     - "upstream ships NO license file: absent from the PyPI sdist AND from the GitHub repo (develop branch, verified 2026-07-14 via the GitHub license API which returns no license). Only PyPI metadata + an OSI classifier declare MIT. conda-forge requires a packaged license file, so the vendored LICENSE here is a reconstruction, not an upstream artifact. File an upstream issue asking klen to add LICENSE before submitting."
-  cfe-last-checked: 2026-07-14T00:00:00Z
+  cfe-last-checked: 2026-11-05T19:38:33Z
   cfe-generated-by-version: 8.77.0
   cfe-generated-at-datetime: 2026-07-14T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-07-14T19:01:00Z
+  cfe-local-build-datetime: 2026-11-05T19:40:06Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -90,6 +90,7 @@ extra:
 #    reactpy-router 3.0.0b1 requires reactpy[asgi]; conda has no extras (G25), so
 #    that extra is flattened into reactpy-router's run deps, which drags in
 #    asgi-tools, which needs this package.
+#    # 2026-11-05 refresh_wave A-W19-3: refreshed 6.0.0 -> 10.1.0
 # build:
 #    NOT noarch. The generator emitted `noarch: python` alongside `compiler('c')`
 #    -- contradictory. Verified compiled per G46/G48: the sdist ships

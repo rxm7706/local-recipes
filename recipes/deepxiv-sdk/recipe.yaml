@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.0.0"
+  version: "1.2.2"
 
 package:
   name: deepxiv-sdk
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/d/deepxiv-sdk/deepxiv_sdk-${{ version }}.tar.gz
-  sha256: 42021ad250d167a083cf8441e6634ecd6376198a961acbd3c39420859846e8a1
+  sha256: 9545abd9c640afe8b82be888e272f36b59c7e225795a68c09de02c201f90969c
 
 build:
   number: 0
@@ -22,7 +22,6 @@ requirements:
     - python ${{ python_min }}.*
     - pip
     - setuptools >=45,<70
-    - wheel
   run:
     - python >=${{ python_min }}
     - requests >=2.31.0
@@ -70,14 +69,16 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/deepxiv-sdk-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-17T05:16:15Z
+  cfe-last-checked: 2026-11-05T18:16:03Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-17T05:16:15Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-17T05:16:15Z
+  cfe-local-build-datetime: 2026-11-05T18:17:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: requirements taken from the feedstock so the refresh can proceed: -wheel.
+#    # 2026-11-05 refresh_wave A-W19-5: refreshed 1.0.0 -> 1.2.2
 ####

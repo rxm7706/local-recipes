@@ -14,7 +14,7 @@ source:
   sha256: 2baed3e5510d759de5eac0a1ef554d0d321d03a561ccbfd3af8c7b29edfe244b
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
@@ -74,12 +74,13 @@ extra:
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-11-05T17:49:50Z
+  cfe-local-build-datetime: 2026-11-05T21:53:03Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
 #    # 2026-11-05 Story 25.19: removed a test entry with no test type; playwright floor taken from the feedstock.
 #    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
 ####

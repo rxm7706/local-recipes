@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: pytest-playwright
-  version: "0.9.0"
+  version: "0.10.0"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pytest_playwright-${{ version }}.tar.gz
-  sha256: bd44daa852b0fb8b0e55a2f88b727507dedda0e350bea5d09420647252f2454b
+  url: https://pypi.org/packages/source/p/pytest-playwright/pytest_playwright-${{ version }}.tar.gz
+  sha256: 47baf574dfb120bb53675d05c9784f8bf94e04c6dd7477dc56159ce732191952
 
 build:
   number: 0
@@ -67,21 +67,23 @@ extra:
   cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-11-05T18:41:01Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-11-05T18:41:59Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: source URL written out literally, the canonical form, so the refresh can read it.
 #    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
 #    # WAVE-C C1: conda-forge feedstock is still v0/meta.yaml at 0.8.0. Kept the
 #    # deployed meta.yaml (clean upstream mirror) and authored this v1 recipe.yaml
 #    # alongside at the same version. Feedstock owes the v0-to-v1 migration
 #    # (cfe-forge-recipe-updates-needed: meta-yaml-to-recipe-yaml).
+#    # 2026-11-05 refresh_wave A-W19-5: refreshed 0.9.0 -> 0.10.0
 # context:
 #    # python_min omitted: upstream requires-python is >=3.10, the conda-forge
 #    # default floor, so conda-forge-pinning supplies python_min. No override needed.

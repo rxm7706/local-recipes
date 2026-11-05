@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: py-key-value
-  version: "0.4.5"
+  version: "0.4.6"
 
 recipe:
   name: py-key-value
   version: ${{ version }}
 
 source:
-  - url: https://pypi.org/packages/source/${{ name[0] }}/py_key_value_aio/py_key_value_aio-${{ version }}.tar.gz
-    sha256: c6563a2c6abe5da5e20f4f9e875c2a9b425a2244a54fadbf46cf140a9eea45d7
+  - url: https://pypi.org/packages/source/p/py_key_value_aio/py_key_value_aio-${{ version }}.tar.gz
+    sha256: 267c03c3e24cb99d3097612f8a5cfd8e11785c6a2975e272db0e303ea1850bfd
     target_directory: py-key-value-aio
 
 build:
@@ -129,15 +129,17 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/py-key-value-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-11-05T17:29:39Z
+  cfe-last-checked: 2026-11-05T18:40:52Z
   cfe-generated-by-version: 8.103.0
   cfe-generated-at-datetime: 2026-11-05T17:29:39Z
-  cfe-local-build-status: not-attempted
-  cfe-local-build-datetime: none
-  cfe-local-build-platform: none
-  cfe-local-build-tool: none
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T18:41:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: source URL written out literally, the canonical form, so the refresh can read it.
 #    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
+#    # 2026-11-05 refresh_wave A-W19-5: refreshed 0.4.5 -> 0.4.6
 ####

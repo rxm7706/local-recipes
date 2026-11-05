@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "3.10.6"
+  version: "3.20.0"
 
 package:
   name: html-to-markdown
@@ -14,7 +14,7 @@ source:
   # `cargo metadata` fails before the maturin build can start. The GitHub
   # tag tarball ships the full workspace. Same class as SKILL.md G5.
   url: https://github.com/kreuzberg-dev/html-to-markdown/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: f60377560af6333b1f34481a00d9d52a6e09287f5517db646e9465d9d98d96a1
+  sha256: cb4d097d830727ca33f50d6fc89ddeda99c8840a7718384f29dbbf48c23fc08e
 
 build:
   number: 0
@@ -103,11 +103,11 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/html-to-markdown-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-11-05T19:29:23Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-11-05T19:38:31Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -127,4 +127,8 @@ extra:
 # build:
 #    # version_independent: true — upstream builds a single cp310-abi3 wheel per
 #    # platform (pyo3/abi3-py310), so one build covers Python 3.10+.
+####
+# CFE comments
+# Header:
+#    # 2026-11-05 refresh_wave A-W19-3: refreshed 3.10.6 -> 3.20.0
 ####

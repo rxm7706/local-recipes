@@ -13,7 +13,7 @@ source:
   sha256: f6ae5a4638a4ee66492b28a5ef62f9de8684e95a51bab8d76aaa3a0f80e1594a
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -35,8 +35,8 @@ tests:
         - kedro_datasets_benchmarks
         - kedro_datasets_experimental
         - kedro
-        - kedro_benchmarks
       pip_check: true
+      python_version: ${{ python_min }}.*
   - requirements:
       run:
         - pip
@@ -89,12 +89,15 @@ extra:
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-11-05T21:44:22Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: test import kedro_benchmarks removed: kedro-datasets does not ship that module.
+#    # 2026-11-05 Story 25.19: python test pinned to python_min: on the newest python kedro raises KedroPythonVersionWarning at import.
 #    # WAVE-C C1 (KEEP-meta): conda-forge feedstock is STILL v0/meta.yaml.
 #    # meta.yaml kept as a faithful, un-annotated mirror of the deployed v0
 #    # feedstock (9.4.0); this recipe.yaml is the proposed v1 migration,

@@ -13,7 +13,7 @@ source:
   sha256: 5ee2fe9a1210cf63db4fdffa802311b233a394562a40d6bdc37c6ea2de273110
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -83,11 +83,12 @@ extra:
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T08:30:54Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-11-05T18:03:26Z
+  cfe-local-build-datetime: 2026-11-05T21:33:09Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
 #    # 2026-11-05 Story 25.19: licence, license_file and run pins taken from the feedstock; the licence blocker is resolved.
 ####

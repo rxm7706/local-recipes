@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: djlint
-  version: "1.46.4"
+  version: "1.49.9"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/d/djlint/djlint-${{ version }}.tar.gz
-  sha256: 5e05f356bf14a7ecd3d885867b5110e778dafba19640ef88e701c060f3a98a20
+  sha256: 358f4f6afa0431b7526f18764ea38f470becbbfcced825e90bcb406e48592afe
 
 build:
   number: 0
@@ -43,17 +43,17 @@ requirements:
     - tqdm >=4.62.2
 
 tests:
-- python:
-    imports:
-      - djlint
-    pip_check: true
-    python_version: ${{ python_min }}
-- requirements:
-    run:
-      - python ${{ python_min }}.*
-      - pip
-  script:
-    - djlint --help
+  - python:
+      imports:
+        - djlint
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pip
+    script:
+      - djlint --help
 
 about:
   summary: HTML Template Linter and Formatter
@@ -84,11 +84,11 @@ extra:
   cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-11-05T19:07:06Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: '2026-10-09T10:52:20Z'
+  cfe-local-build-datetime: 2026-11-05T19:07:54Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -98,6 +98,7 @@ extra:
 #    # meta.yaml refreshed to faithfully mirror the deployed v0 feedstock at
 #    # 1.39.2; recipe.yaml authored alongside as the proposed v1 migration.
 #    # Delete meta.yaml only after the feedstock completes its v0 to v1 switch.
+#    # 2026-11-05 refresh_wave A-W19-1: refreshed 1.46.4 -> 1.49.9
 # requirements:
 #  host:
 #    # hatchling-only build-system (pyproject [build-system].requires =

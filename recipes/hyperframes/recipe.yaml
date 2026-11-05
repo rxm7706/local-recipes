@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.7.72"
+  version: "0.9.15"
 
 package:
   name: hyperframes
@@ -10,7 +10,7 @@ package:
 
 source:
   - url: https://registry.npmjs.org/hyperframes/-/hyperframes-${{ version }}.tgz
-    sha256: 958a29b1908dc29d7ed6ca24f98a6fd32f4fbdef05f9f3fec6c81217c3945216
+    sha256: 8a41e40c991d418c0caa3ae110d42c362692e2d98e4fb23a3f88f748a85740ef
   # The npm tarball's `files` array is ["bin","dist"], so LICENSE is not
   # published. Take it from the matching repo tag.
   - url: https://raw.githubusercontent.com/heygen-com/hyperframes/v${{ version }}/LICENSE
@@ -61,6 +61,7 @@ requirements:
     # constraint. Upstream's `engines: {node: ">=22"}` floor is mirrored on
     # build/host so the right variant is selected (SKILL.md G103).
     - nodejs
+    - ffmpeg
 
 tests:
   - script:
@@ -111,21 +112,23 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: "2026-07-26T00:00:00Z"
+  cfe-last-checked: 2026-11-05T18:30:31Z
   cfe-generated-by-version: 8.79.1
   cfe-generated-at-datetime: "2026-07-26T00:00:00Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-07-26T16:32:46Z"
+  cfe-local-build-datetime: 2026-11-05T18:32:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: requirements taken from the feedstock so the refresh can proceed: +ffmpeg.
 #    # Authored 2026-07-26 to close bmad-manticore's motion-graphics gap.
 #    # manticore 2.0.0 "consolidated on HyperFrames as the single
 #    # motion-graphics engine; Remotion is retired", and mc-setup's
 #    # check_deps.py requires npx specifically for "hyperframes CLI, skills,
 #    # and catalog blocks". Every manticore graphics skill shells out to it.
+#    # 2026-11-05 refresh_wave A-W19-5: refreshed 0.7.72 -> 0.9.15
 # build:
 #    # This is a REAL npm CLI (17 runtime deps), not a G101-style shim over
 #    # per-platform prebuilt binaries -- package.json has no platform

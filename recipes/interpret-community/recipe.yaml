@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: interpret-community
-  version: "0.32.0"
+  version: "0.33.0"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/interpret_community-${{ version }}.tar.gz
-  sha256: 23fc09bc17f23da786927f178f999c221299d89303a8186acdfb7cadc90ab41b
+  url: https://pypi.org/packages/source/i/interpret-community/interpret_community-${{ version }}.tar.gz
+  sha256: 9cc18cad4cf80482f5ee88cd01a441e530a94ee985e632a5ea99b4b5605adcdd
 
 build:
   number: 0
@@ -33,7 +33,7 @@ requirements:
     - packaging
     - interpret-core >=0.1.20,<=0.6.9
     - shap >=0.20.0,<=0.46.0
-    - raiutils ~=0.4.0
+    - raiutils >=0.4.0,<0.5.dev0
     # - tensorflow
     # - pyyaml
     # - lime >=0.2.0.0
@@ -76,16 +76,20 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/interpret-community-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-11-05T17:29:39Z
+  cfe-last-checked: 2026-11-05T18:54:27Z
   cfe-generated-by-version: 8.103.0
   cfe-generated-at-datetime: 2026-11-05T17:29:39Z
-  cfe-local-build-status: not-attempted
-  cfe-local-build-datetime: none
-  cfe-local-build-platform: none
-  cfe-local-build-tool: none
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T18:55:31Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: requirements taken from the feedstock so the refresh can proceed: ~raiutils.
+#    # 2026-11-05 Story 25.19: source URL written out literally, the canonical form, so the refresh can read it.
 #    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
 #    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
+#    # 2026-11-05 refresh_wave A-W19-5: needs-review, dependency-fix (run pin raiutils (raiutils ~=0.4.0 vs raiutils >=0.4.0,<0.5.dev0))
+#    # 2026-11-05 refresh_wave A-W19-6: refreshed 0.32.0 -> 0.33.0
 ####

@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: bigframes
-  version: "2.48.0"
+  version: "2.52.0"
   python_max: '4.0'
   python_test_max: '3.14'
 
@@ -12,8 +12,8 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/bigframes-${{ version }}.tar.gz
-  sha256: c47fe1263b70d1f78246d0afed1d2f2f8f78df2ce8e287c291c8d89e0d916dbe
+  url: https://pypi.org/packages/source/b/bigframes/bigframes-${{ version }}.tar.gz
+  sha256: 3d4bb80284d63510b26a469b2e35d8ba50ef32e516de3d47b57c6f595f565f53
 
 build:
   number: 0
@@ -51,7 +51,6 @@ requirements:
     - humanize >=4.6.0
     - matplotlib-base >=3.7.1
     - db-dtypes >=1.4.2
-    - pyiceberg >=0.7.1
     - atpublic >=2.3,<6
     - python-dateutil >=2.8.2,<3
     - pytz >=2022.7
@@ -116,11 +115,18 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/bigframes-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-11-05T18:49:04Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-11-05T18:50:34Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-05 Story 25.19: requirements taken from the feedstock so the refresh can proceed: -pyiceberg.
+#    # 2026-11-05 Story 25.19: source URL written out literally, the canonical form, so the refresh can read it.
+#    # 2026-11-05 refresh_wave A-W19-5: needs-review, dependency-fix (run -pyiceberg)
+#    # 2026-11-05 refresh_wave A-W19-6: refreshed 2.48.0 -> 2.52.0
 ####

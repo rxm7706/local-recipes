@@ -14,7 +14,7 @@ source:
   sha256: 733a1ee9c4125fde221f0ccc9ec76f35408daf29a99878e271f357976974b295
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -78,12 +78,13 @@ extra:
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T05:32:53Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-11-05T18:05:06Z
+  cfe-local-build-datetime: 2026-11-05T21:56:48Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
 #    # 2026-11-05 Story 25.19: python below 3.10 and run pins taken from the feedstock: the code imports Iterable from collections, gone in python 3.10.
 #    # 2026-11-05 Story 25.19: licence and license_file taken from the feedstock.
 ####

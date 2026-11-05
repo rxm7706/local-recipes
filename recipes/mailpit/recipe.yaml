@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.31.4"
+  version: "1.33.0"
 
 package:
   name: mailpit
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://github.com/axllent/mailpit/archive/v${{ version }}.tar.gz
-  sha256: cd4d0d40044dde07df8ff5c168f6d95356770dca45627a9f9910ba66e70d7832
+  sha256: 4c43bef67f3aabd8eb1e571829ddafad42da33061a911ae9cea19ad209ba3c64
 
 build:
   number: 0
@@ -29,8 +29,8 @@ requirements:
     - nodejs >=18
 
 tests:
-- script:
-  - mailpit --help
+  - script:
+      - mailpit --help
 
 about:
   summary: A small, fast, low memory, zero-dependency, multi-platform email testing tool & API for developers
@@ -77,11 +77,11 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/mailpit-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-28T00:00:00Z
+  cfe-last-checked: 2026-11-05T19:28:52Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-21T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: '2026-10-09T11:04:55Z'
+  cfe-local-build-datetime: 2026-11-05T19:31:03Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -95,6 +95,7 @@ extra:
 #    # mailpit = axllent/mailpit, a Go-source email/SMTP testing tool (NOT
 #    # Python). Builds from the GitHub tag: web UI via npm, two Go binaries
 #    # (mailpit + mailpit-sendmail) via build.sh/build.bat.
+#    # 2026-11-05 refresh_wave A-W19-4: refreshed 1.31.4 -> 1.33.0
 # source:
 #    # github-tag source (vX.Y.Z); upstream tag scheme matches the release
 #    # version exactly -- no gh-numbering anomaly. sha256 verified against the

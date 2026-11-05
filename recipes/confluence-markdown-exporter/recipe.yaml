@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "5.5.0"
+  version: "5.6.0"
 
 package:
   name: confluence-markdown-exporter
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/c/confluence-markdown-exporter/confluence_markdown_exporter-${{ version }}.tar.gz
-  sha256: c94c7026b0886c652dd294a16cb8d7535f2a7896b4f7d7c3841ff558568156db
+  sha256: 36fe5102550b4652d05dd1e881733b8dad50148f117c21675563cf86bafe974f
 
 build:
   number: 0
@@ -74,15 +74,16 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/confluence-markdown-exporter-feedstock
   cfe-forge-recipe-updates-needed: [version-bump-to-5.2.1]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-last-checked: 2026-11-05T18:23:13Z
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-10-09T09:20:00Z
+  cfe-local-build-datetime: 2026-11-05T18:24:32Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
 #    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+#    # 2026-11-05 refresh_wave A-W19-3: refreshed 5.5.0 -> 5.6.0
 ####
