@@ -312,6 +312,16 @@ def test_a_report_keeps_its_dream_choice_across_the_marker() -> None:
     assert core.parse_report(_run("mint", "").to_json()).dream_choice == ""
 
 
+def test_a_kept_report_with_no_recorded_rule_counts_and_says_so() -> None:
+    """Story 113.19 review: an old marker read a Dream entry too, so it stays in the denominator and is not ``—``."""
+    summary = core.fleet_summary(
+        {"pyforge-atlas": [_run("mint", core.DREAM_UNKNOWN), _run("decompose", core.DREAM_NEWEST)]}
+    )
+    assert "| pyforge-atlas | mint | 0 | 0 | unknown |" in summary
+    assert "1 of 2 runs that read a Dream entry took `newest`" in summary
+    assert "1 kept report recorded no rule" in summary
+
+
 def test_a_summary_with_no_recorded_choice_makes_no_count() -> None:
     assert "took `newest`" not in core.fleet_summary({"pyforge-atlas": [_run("rules", "")]})
 
@@ -722,6 +732,7 @@ def test_an_uncited_slice_prefers_the_newest_entry_naming_one_of_its_caps() -> N
     [
         ("Dream entry 2026-11-01", "2026-11-01", ""),
         ("Dream entry 2026-11-01 (A stranger reads the chain)", "2026-11-01", "A stranger reads the chain"),
+        ("Dream entry 2026-11-01 ( a padded title )", "2026-11-01", "a padded title"),
         ("Dream 2026-10-13, *one registry orders the site*", "2026-10-13", "one registry orders the site"),
         ("Dream § 2026-09-29 *Every session knows the estate*", "2026-09-29", "Every session knows the estate"),
         ("the station Dream's 2026-10-26 entry *every requirement derives*", "2026-10-26", "every requirement derives"),
@@ -745,6 +756,22 @@ def test_an_uncited_slice_prefers_the_newest_entry_naming_one_of_its_caps() -> N
 def test_a_slice_reads_every_citation_form_a_live_spec_uses(cited: str, date: str, title: str) -> None:
     spec = f"- **CAP-1 — one** ← {cited}\n  - **intent:** x\n"
     assert core.newest_cap_slice(spec) == core.CapSlice(first=1, last=1, dream_date=date, dream_title=title)
+
+
+def test_a_slice_takes_the_first_title_in_the_order_it_is_written() -> None:
+    """Story 113.19 review: citations read in text order across forms, and the slice's lowest CAP names the title."""
+    one_line = (
+        "- **CAP-1 — one** ← Dream: § Realization log, the 2026-10-13 bullet *the bullet first*; "
+        "Dream entry 2026-10-13 (the entry second)\n"
+    )
+    assert core.newest_cap_slice(one_line).dream_title == "the bullet first"
+    two_caps = (
+        "- **CAP-1 — one** ← Dream entry 2026-10-13 (the lower CAP)\n"
+        "- **CAP-2 — two** ← Dream entry 2026-10-13 (the higher CAP)\n"
+    )
+    assert core.newest_cap_slice(two_caps) == core.CapSlice(
+        first=1, last=2, dream_date="2026-10-13", dream_title="the lower CAP"
+    )
 
 
 def test_a_cap_with_no_arrow_cites_from_what_follows_its_title() -> None:
@@ -818,8 +845,33 @@ def test_a_title_selects_the_entry_among_those_sharing_the_date() -> None:
     )
     assert core.dream_entry_section(wrapped, "2026-10-26", title)[1].startswith("- **2026-10-26 (every requirement")
     assert core.dream_entry_section(BULLET_DREAM, "2026-10-26", "A folded entry")[0].startswith("2026-10-26 — A folded")
-    for missing in ("", "no such title"):
+    for missing in ("", "a title nothing carries"):
         assert core.dream_entry_section(BULLET_DREAM, "2026-10-26", missing)[0].startswith("2026-10-26 — A folded")
+
+
+def test_a_title_in_a_bullet_s_body_selects_that_bullet() -> None:
+    """Story 113.19 review: most dated bullets have only the date in bold, so the title sits in the body; the sentence
+    wraps there, and the last bullet of the date is not the one cited."""
+    dream = (
+        "# Dream\n\n## Realization log\n\n"
+        "- **2026-11-05** — The first automated\n  sweep ran, and it was long.\n"
+        "- **2026-11-05** — A later bullet of that date.\n"
+    )
+    _label, section, choice = core.dream_entry_section(dream, "2026-11-05", "The first automated sweep ran")
+    assert section.startswith("- **2026-11-05** — The first automated") and choice == core.DREAM_CITED
+    assert core.dream_entry_section(dream, "2026-11-05", "no such words")[1].endswith("A later bullet of that date.\n")
+
+
+def test_a_title_prefers_the_label_then_the_heading_then_the_first() -> None:
+    """Story 113.19 review: a heading wins over a bullet carrying the same title, and the first of equals wins."""
+    dream = (
+        "# Dream\n\n## Realization log\n\n"
+        "- **2026-03-03 (same title) — Found:** the first bullet.\n"
+        "- **2026-03-03 (same title) — Found:** the second bullet.\n"
+    )
+    assert core.dream_entry_section(dream, "2026-03-03", "same title")[1].endswith("the first bullet.\n")
+    headed = dream + "\n## 2026-03-03 — same title\n\nThe heading.\n"
+    assert core.dream_entry_section(headed, "2026-03-03", "same title")[0] == "2026-03-03 — same title"
 
 
 def test_a_cited_date_only_a_bullet_carries_yields_that_bullet() -> None:
@@ -851,6 +903,39 @@ def test_an_uncited_slice_keeps_names_cap_then_newest() -> None:
     foreign = BULLET_DREAM.replace("→ CAP-93 / Epic 50", "→ spec-pyforge-x:CAP-93 / Epic 50")
     heading, _section, choice = core.dream_entry_section(foreign, caps={93}, **DOCTOR)
     assert heading.startswith("2026-11-02") and choice == core.DREAM_NEWEST
+
+
+# A dated heading's section runs through a ``## Realization log`` below it, so its text holds every log bullet.
+SWALLOWED_LOG = """# Dream
+
+## 2026-01-01 — Old heading
+
+## Realization log
+
+- **2026-01-02 (minted) — Found:** the arrow points at it. → CAP-5 / Epic 1 / Story 1.1.
+- **2026-11-05 (first apply, 1.0 → 2.0, PR #7):** the audit read CAP-5 and CAP-6; a log line.
+- **2026-11-06 (a foreign link) — Found:** another Spec's. → `spec-pyforge-x` CAP-8 / Epic 2.
+
+## 2026-02-02 — Later heading, unrelated
+
+Nothing.
+"""
+
+
+def test_a_log_line_under_a_heading_loses_to_the_arrow_that_minted_the_cap() -> None:
+    """Story 113.19 review: a heading naming a CAP in its own text comes first, then a bullet whose ``→`` points at it,
+    then a heading whose section only runs through a bullet that mentions it. An arrow at anything else is prose."""
+    heading, section, choice = core.dream_entry_section(SWALLOWED_LOG, caps={5}, **DOCTOR)
+    assert heading.startswith("2026-01-02 (minted)") and choice == core.DREAM_NAMES_CAP
+    assert section == "- **2026-01-02 (minted) — Found:** the arrow points at it. → CAP-5 / Epic 1 / Story 1.1.\n"
+    heading, _section, choice = core.dream_entry_section(SWALLOWED_LOG, caps={6}, **DOCTOR)
+    assert heading == "2026-01-01 — Old heading" and choice == core.DREAM_NAMES_CAP
+    heading, _section, choice = core.dream_entry_section(SWALLOWED_LOG, caps={8}, **DOCTOR)
+    assert heading == "2026-01-01 — Old heading" and choice == core.DREAM_NAMES_CAP  # a foreign arrow is no link
+    heading, _section, choice = core.dream_entry_section(SWALLOWED_LOG, caps={9}, **DOCTOR)
+    assert heading.startswith("2026-02-02") and choice == core.DREAM_NEWEST
+    own = SWALLOWED_LOG.replace("Nothing.", "Realizes CAP-5.")
+    assert core.dream_entry_section(own, caps={5}, **DOCTOR)[0].startswith("2026-02-02")
 
 
 def test_a_dream_of_bullets_alone_still_has_a_newest() -> None:

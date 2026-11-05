@@ -606,8 +606,8 @@ def with_provenance(
 ) -> ChallengeReport:
     """Stamp the run's project and the owning Spec folder; ``owner_override`` records a rules
     target's governor when it is not the project's own Spec (Story 113.13), and ``dream_choice`` the rule that chose
-    the run's Dream entry (Story 113.19). ``resolve`` checks the first two against ``--project`` and never takes its
-    write target from them (CAP-303)."""
+    the run's Dream entry (Story 113.19). ``resolve`` checks ``spec_workspace`` and ``owner_override`` against
+    ``--project`` and never takes its write target from them (CAP-303)."""
     return ChallengeReport(
         stage=report.stage,
         target=report.target,
@@ -722,11 +722,13 @@ def fleet_summary(station_reports: Mapping[str, Sequence[ChallengeReport]]) -> s
             highs.extend(f"- **{station} / {report.stage} / {f.id}** — {f.claim} ({f.evidence})" for f in high)
             choices += [report.dream_choice] if report.dream_choice else []
     if choices:
+        unknown = choices.count(DREAM_UNKNOWN)
+        kept = f" {unknown} kept report{'' if unknown == 1 else 's'} recorded no rule." if unknown else ""
         lines += [
             "",
             f"**Dream context:** {choices.count(DREAM_NEWEST)} of {len(choices)} runs that read a Dream entry took "
             "`newest`, an entry their slice neither cites nor is named by, so treat a broken-link finding from those "
-            "runs as unverified.",
+            f"runs as unverified.{kept}",
         ]
     lines += ["", "## High-severity findings", "", *(highs or ["_None._"])]
     return "\n".join(lines) + "\n"
@@ -772,6 +774,9 @@ _DREAM_CITATIONS = (
 )
 _DATED_HEADING = re.compile(rf"^({_DATE})\b")
 _DATED_BULLET = re.compile(rf"^- \*\*({_DATE})\b")
+# A Dream bullet's link to what it minted: an arrow straight at a capability (``→ CAP-60 / CAP-61``, ``→ spec-pyforge-x
+# CAP-24 / Epic 14``), to the end of that sentence. An arrow at anything else is prose (``6.11.0 → 6.12.0``).
+_MINT_ARROW = re.compile(r"→ ((?:spec-[a-z0-9-]+ )?CAP-\d.*?)(?:\.(?:\s|$)|$)")
 # A CAP mention in prose or an epic heading: one id, or a range. ``..``, an en dash or an em dash may take a bare
 # number on the right (``CAP-90..93``); a hyphen joins a range only with ``CAP-`` on the right (``CAP-90-CAP-93``),
 # so ``CAP-5-1`` or ``CAP-35-2026`` is the one id CAP-5 or CAP-35.
@@ -1077,8 +1082,9 @@ def epics_naming(epics_text: str, cap_slice: CapSlice, own_spec: str) -> Selecto
 
 # Story 113.14: which rule chose a slice's Dream entry, recorded on the run so a reader can tell a weak fallback.
 DREAM_CITED = "cited"  # the slice cites a Dream entry, in any ``_DREAM_CITATIONS`` form
-DREAM_NAMES_CAP = "names-cap"  # it cites none; the newest dated entry naming one of its CAPs, else the bullet ``→``
+DREAM_NAMES_CAP = "names-cap"  # it cites none; a dated entry names one of its CAPs (``dream_entry_section``'s tiers)
 DREAM_NEWEST = "newest"  # it cites none and nothing names one: the newest dated entry
+DREAM_UNKNOWN = "unknown"  # a kept report from before Story 113.19, whose run read a Dream entry by an unrecorded rule
 
 
 def names_cap(text: str, caps: Collection[int], own_spec: str) -> bool:
@@ -1090,36 +1096,54 @@ def names_cap(text: str, caps: Collection[int], own_spec: str) -> bool:
 class _DreamEntry:
     """A dated place in a Dream that can serve as a slice's Dream context: a ``## <date> ...`` heading's section or a
     dated bullet (Story 113.19). ``label`` is the heading, or the bullet's bold lead on one line; it starts with the
-    date."""
+    date. ``own`` is the text without the dated bullets a heading's section runs through."""
 
     date: str
     label: str
     text: str
+    own: str
 
 
-def _heading_entries(lines: Sequence[str], headings: Sequence[tuple[int, int, str]]) -> list[_DreamEntry]:
-    return [
-        _DreamEntry(match.group(1), heading, _trimmed(lines, index, _section_end(lines, headings, at)))
-        for at, (index, level, heading) in enumerate(headings)
-        if level == 2 and (match := _DATED_HEADING.match(heading))
-    ]
-
-
-def _bullet_entries(lines: Sequence[str]) -> list[_DreamEntry]:
-    """Every dated bullet of a Dream, wherever it sits (a Realization log or a fold section; a station's Spec cites
-    both): a ``- **<YYYY-MM-DD> ...`` line outside a fenced code block and the lines under it, blank ones included,
-    up to the next line at column 0."""
+def _bullet_spans(lines: Sequence[str]) -> list[tuple[int, int, str]]:
+    """``(first line, line after, date)`` of every dated bullet of a Dream, wherever it sits (a Realization log or a
+    fold section; a station's Spec cites both): a ``- **<YYYY-MM-DD> ...`` line outside a fenced code block and the
+    lines under it, blank ones included, up to the next line at column 0."""
     fenced = _fenced(lines)
-    bullets: list[_DreamEntry] = []
+    spans: list[tuple[int, int, str]] = []
     for start, line in enumerate(lines):
         match = None if fenced[start] else _DATED_BULLET.match(line)
-        if match is None:
-            continue
-        rest = range(start + 1, len(lines))
-        stop = next((n for n in rest if lines[n].strip() and not lines[n][0].isspace()), len(lines))
+        if match is not None:
+            rest = range(start + 1, len(lines))
+            stop = next((n for n in rest if lines[n].strip() and not lines[n][0].isspace()), len(lines))
+            spans.append((start, stop, match.group(1)))
+    return spans
+
+
+def _heading_entries(
+    lines: Sequence[str], headings: Sequence[tuple[int, int, str]], spans: Sequence[tuple[int, int, str]]
+) -> list[_DreamEntry]:
+    in_bullet = {line for start, stop, _date in spans for line in range(start, stop)}
+    entries: list[_DreamEntry] = []
+    for at, (index, level, heading) in enumerate(headings):
+        match = _DATED_HEADING.match(heading) if level == 2 else None
+        if match is not None:
+            end = _section_end(lines, headings, at)
+            own = "\n".join(lines[line] for line in range(index, end) if line not in in_bullet)
+            entries.append(_DreamEntry(match.group(1), heading, _trimmed(lines, index, end), own))
+    return entries
+
+
+def _bullet_entries(lines: Sequence[str], spans: Sequence[tuple[int, int, str]]) -> list[_DreamEntry]:
+    entries: list[_DreamEntry] = []
+    for start, stop, date in spans:
         text = _trimmed(lines, start, stop)
-        bullets.append(_DreamEntry(match.group(1), " ".join(text.split()).split("**")[1], text))
-    return bullets
+        entries.append(_DreamEntry(date, " ".join(text.split()).split("**")[1], text, text))
+    return entries
+
+
+def _minted(bullet: str) -> str:
+    """What ``bullet``'s arrows point at (``_MINT_ARROW``), one sentence each; backticks go, so a qualifier binds."""
+    return " ".join(_MINT_ARROW.findall(" ".join(bullet.split()).replace("`", "")))
 
 
 def _newest_entry(entries: Sequence[_DreamEntry]) -> _DreamEntry:
@@ -1136,14 +1160,16 @@ def dream_entry_section(
     own_spec: str = "",
 ) -> tuple[str, str, str]:
     """``(label, section, choice)`` of the Dream entry a CAP slice takes (CAP-302). With a cited ``date`` (``cited``):
-    the heading or dated bullet of that date whose label carries ``title`` when one does, else the last heading of
-    that date, else the last bullet of it. With none: the newest dated heading whose section names one of
-    ``caps`` on ``own_spec``, else the newest dated bullet whose ``→`` names one, the Dream's link to what it minted
-    (``names-cap``; a bullet that only mentions a CAP is an audit's or a fix's log line), else the newest dated
-    heading, or bullet in a Dream with no dated heading (``newest``); of entries sharing a date, the last."""
+    of that date's headings and dated bullets, the first whose label carries ``title``, else the first bullet then
+    heading whose body does, else the last heading of that date, else its last bullet. With none (``names-cap``): the
+    newest dated heading whose own text names one of ``caps`` on ``own_spec``, else the newest dated bullet whose
+    ``→`` points at one (the Dream's link to what it minted; ``_MINT_ARROW``), else the newest dated heading whose
+    section names one only through a bullet it runs through, which may be an audit's log line. Else (``newest``): the
+    newest dated heading, or bullet in a Dream with no dated heading. Of entries sharing a date, the last."""
     lines = dream_text.splitlines()
     headings = _headings(lines)
-    entries, bullets = _heading_entries(lines, headings), _bullet_entries(lines)
+    spans = _bullet_spans(lines)
+    entries, bullets = _heading_entries(lines, headings, spans), _bullet_entries(lines, spans)
     if not entries and not bullets:
         raise SelectorError("the Dream has no dated '## <YYYY-MM-DD> ...' entry and no dated bullet")
     if date:
@@ -1151,12 +1177,22 @@ def dream_entry_section(
         dated_bullets = [bullet for bullet in bullets if bullet.date == date]
         if not dated and not dated_bullets:
             raise SelectorError(f"no Dream entry heading or bullet is dated {date}")
-        titled = [entry for entry in (*dated, *dated_bullets) if title and title in entry.label]
+        wanted = " ".join(title.split())
+        titled = [entry for entry in (*dated, *dated_bullets) if wanted and wanted in entry.label] or [
+            entry for entry in (*dated_bullets, *dated) if wanted and wanted in " ".join(entry.text.split())
+        ]
         chosen, choice = (titled[0] if titled else (dated or dated_bullets)[-1]), DREAM_CITED
     else:
-        naming = [entry for entry in entries if caps and names_cap(entry.text, caps, own_spec)] or [
-            bullet for bullet in bullets if caps and names_cap(bullet.text.partition("→")[2], caps, own_spec)
-        ]
+
+        def named(text: str) -> bool:
+            return bool(caps) and names_cap(text, caps, own_spec)
+
+        tiers = (
+            [entry for entry in entries if named(entry.own)],
+            [bullet for bullet in bullets if named(_minted(bullet.text))],
+            [entry for entry in entries if named(entry.text)],
+        )
+        naming = next((tier for tier in tiers if tier), None)
         if naming:
             chosen, choice = _newest_entry(naming), DREAM_NAMES_CAP
         else:

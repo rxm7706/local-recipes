@@ -576,8 +576,8 @@ def run_one(
     names another stage is an ``error`` on the outcome (unevaluable, ``report`` is
     ``None``), never a finding. ``owner`` is the Spec folder the findings belong to
     (default ``owning_spec``); ``standards`` is ``build_context``'s fallback; ``dream_choice`` (the audit's
-    ``cited``, ``names-cap`` or ``newest``) is journaled with the intent so a reader can tell a weak fallback.
-    ``run_dir`` is a run directory the caller already made (``new_run_dir``) to hold the run's own slices."""
+    ``cited``, ``names-cap`` or ``newest``) is journaled with the intent and stamped on the report, so a reader can
+    tell a weak fallback. ``run_dir`` is a run directory the caller already made (``new_run_dir``) to hold the run's own slices."""
     context = build_context(
         root, slug, stage, target, config, dream=dream, standards_fallback=standards, omit_dream=omit_dream
     )
@@ -895,6 +895,8 @@ def run_audit(
             except OSError, core.ReportError:
                 pass  # a corrupt or incomplete marker is re-run below
             else:
+                if run.dream_choice and not kept.dream_choice:  # a marker from before Story 113.19
+                    kept = replace(kept, dream_choice=core.DREAM_UNKNOWN)
                 reports.setdefault(slug, []).append(kept)
                 append_journal(
                     audit_journal,
