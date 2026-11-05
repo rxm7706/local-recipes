@@ -2,7 +2,7 @@
 id: SPEC-pyforge-mason
 spec: pyforge-mason
 status: ready
-updated: "2026-11-05"   # AMENDED 2026-11-05 (EGM audit, marshal Story 113.18): CAP-35 re-derived. Prior "2026-11-01": AMENDED 2026-11-01 (EGM fleet audit, marshal Story 113.7; operator rulings 2026-11-01): CAP-29 amended (the skill tier is six skills, five of Mason's own plus conda-forge-expert; the A-only rollout observables and spec-pyforge-steward:CAP-161 named; success names pyforge-mason-test and the skill-tier meta-tests Story 19.6 widened, with no skill-count or version literal; MAS-M-D6, MAS-M-C1, MAS-M-Z6, MAS-M-C4, MAS-M-Z3, MAS-M-D4, MAS-M-Z4, MAS-M-D5); CAP-35 amended (intent in the past tense, CFE diff-apply regeneration and platform expansion dropped by operator ruling, CAP-29 cited for the campaign skills; success names the atlas scope query and its compared count, latest_conda_version within <atlas_max_age_d>, the recipes/<feedstock>/ coverage rule, refresh-wave's exit code and the ruled outcome set with G95 as a local end state, the admitted gate findings, G53 and G96; MAS-M-Z1, MAS-M-D1, MAS-M-D3, MAS-M-C6, MAS-M-C2, MAS-D-R2, MAS-M-Z2, MAS-M-D2, MAS-D-C2, MAS-M-C3); Open Question 14 added (MAS-D-C2); the feedstock-refresh.md companion cites doctor Story 37.1 (MAS-M-C6). Prior "2026-09-29"
+updated: "2026-11-05"   # AMENDED 2026-11-05 (mason Story 25.19, operator ruling 2026-11-05): CAP-35 takes its dated marker. Prior "2026-11-05": AMENDED 2026-11-05 (EGM audit, marshal Story 113.18): CAP-35 re-derived. Prior "2026-11-01": AMENDED 2026-11-01 (EGM fleet audit, marshal Story 113.7; operator rulings 2026-11-01): CAP-29 amended (the skill tier is six skills, five of Mason's own plus conda-forge-expert; the A-only rollout observables and spec-pyforge-steward:CAP-161 named; success names pyforge-mason-test and the skill-tier meta-tests Story 19.6 widened, with no skill-count or version literal; MAS-M-D6, MAS-M-C1, MAS-M-Z6, MAS-M-C4, MAS-M-Z3, MAS-M-D4, MAS-M-Z4, MAS-M-D5); CAP-35 amended (intent in the past tense, CFE diff-apply regeneration and platform expansion dropped by operator ruling, CAP-29 cited for the campaign skills; success names the atlas scope query and its compared count, latest_conda_version within <atlas_max_age_d>, the recipes/<feedstock>/ coverage rule, refresh-wave's exit code and the ruled outcome set with G95 as a local end state, the admitted gate findings, G53 and G96; MAS-M-Z1, MAS-M-D1, MAS-M-D3, MAS-M-C6, MAS-M-C2, MAS-D-R2, MAS-M-Z2, MAS-M-D2, MAS-D-C2, MAS-M-C3); Open Question 14 added (MAS-D-C2); the feedstock-refresh.md companion cites doctor Story 37.1 (MAS-M-C6). Prior "2026-09-29"
 owner-dream: docs/dreams/pyforge-mason.md
 covers-dreams:
   - docs/dreams/pyforge-mason.md
@@ -358,7 +358,11 @@ A pain to solve, and an asset to free. The repository's packaging capability is 
   feedstock's list (G53), and its pins match the feedstock's (G96). Each story lands a `retro(cfe):` commit with a CFE
   `CHANGELOG.md` semver entry, and `pixi run --frozen -e pyforge-mason pyforge-mason-test` exits 0. CAP-35 is a one-time
   campaign: met means met at the recorded atlas snapshot, and a feedstock that moves on later does not reopen it. (Minted
-  2026-09-29; amended 2026-11-01, EGM fleet audit; amended 2026-11-05, EGM audit MAS-M-F1, MAS-M-F2.)
+  2026-09-29; amended 2026-11-01, EGM fleet audit; amended 2026-11-05, EGM audit MAS-M-F1, MAS-M-F2. Marker 2026-11-05,
+  Story 25.19, at atlas snapshot 2026-11-05T17:50:14Z: the `grep` clause holds over both tracks but for `ydata-quality`,
+  exempt by name (operator ruling 2026-11-05: its upstream stops below the floor, so no build can run); Track A has run
+  through the tracked driver; Track B's version clause stands at its 2026-11-01 snapshot, Story 25.18. Not claimed:
+  `optimize_recipe` suggestions beyond STD-002 remain on 65 refreshed recipes, `DW-mason-25-19-5`.)
 
 ## Constraints
 

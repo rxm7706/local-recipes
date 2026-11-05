@@ -2,7 +2,7 @@
 title: "25.19: The recipes that still record a failed build get their own build"
 type: 'fix'
 created: '2026-11-05'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '836a2ee286'
 review_loop_iteration: 1
 followup_review_recommended: false
@@ -58,7 +58,7 @@ Ledger key: `25-19-the-recipes-that-still-record-a-failed-build-get-their-own-bu
 
 - **AC1 — The scope.** The story records each track's live scope from the named atlas query, with the as-of date and count, and how many of the 446 records dated 2026-08 fall inside either track. At least 7 look co-maintained by their local `recipe-maintainers` lists (atlas not queried), among them `bandit`, `culsans` and `pylint-django`.
 - **AC2 — The run.** `pixi run -e local-recipes refresh-wave <manifest> --apply --gates --build --rebuild --force --report-dir <dir>` runs Track A's scope and every in-scope `failed` record, and `report.json` ends every recipe in the ruled outcome set.
-- **AC3 — The clause.** `grep -l 'cfe-local-build-status: failed'` over the `recipe.yaml` of every recipe in either track's scope matches none (grep exits 1).
+- **AC3 — The clause.** `grep -l 'cfe-local-build-status: failed'` over the `recipe.yaml` of every recipe in either track's scope matches none (grep exits 1). Exempt by name, on the operator's ruling of 2026-11-05: `recipes/ydata-quality/recipe.yaml`.
 - **AC4 — The marker.** CAP-35 takes its dated marker at the recorded atlas snapshot through a memlog line and a re-derive, only when AC3 holds over both tracks.
 - **AC5 — The retro.** The story lands a `retro(cfe):` commit with a CFE `CHANGELOG.md` entry, and `pixi run --frozen -e pyforge-mason pyforge-mason-test` exits 0.
 
@@ -91,7 +91,7 @@ Parent: `spec-pyforge-mason` CAP-35
 
 ## Run record (2026-11-05)
 
-**State: AC3 and AC4 are open on one recipe, `ydata-quality`, which waits on an operator ruling.** Everything else below holds.
+**State: done.** Operator ruling 2026-11-05: "Exempt it by name", so `ydata-quality` keeps its true `failed` record and AC3 and AC4 hold with that one named exception.
 
 ### AC1: scope
 
@@ -131,13 +131,13 @@ Gates on the 93 refreshed recipes, re-run after the last build: `validate_recipe
 
 ### AC3: the clause
 
-`grep -l 'cfe-local-build-status: failed'` over the 880 `recipe.yaml` of the 881 in-scope feedstocks matches one: `recipes/ydata-quality/recipe.yaml`. So the clause does not yet hold. The 437 `failed` records outside both tracks are not this story's.
+`grep -l 'cfe-local-build-status: failed'` over the 880 `recipe.yaml` of the 881 in-scope feedstocks matches one: `recipes/ydata-quality/recipe.yaml`. The operator exempted that recipe by name on 2026-11-05, so the clause holds with one named exception. The 437 `failed` records outside both tracks are not this story's.
 
-`ydata-quality` declares `python_requires <3.9,>=3.6`, so pip refuses to install it on the 3.11 floor and the build fails: `ERROR: Package 'ydata-quality' requires a different Python: 3.11.18 not in '<3.9,>=3.6'`. Its record said `failed` on `main`. The feedstock sets `python_min: '3.7'`, which § Python Version Policy rules 4 and 5 and `test_no_redundant_python_min.py` forbid here. A hand-written record is forbidden too, so this story leaves the true `failed` and asks the operator.
+`ydata-quality` declares `python_requires <3.9,>=3.6`, so pip refuses to install it on the 3.11 floor and the build fails: `ERROR: Package 'ydata-quality' requires a different Python: 3.11.18 not in '<3.9,>=3.6'`. Its record said `failed` on `main`. The feedstock sets `python_min: '3.7'`, which § Python Version Policy rules 4 and 5 and `test_no_redundant_python_min.py` forbid here. A hand-written record is forbidden too, so this story left the true `failed` and asked the operator. Operator ruling 2026-11-05: "Exempt it by name". The record stands as it is, and no build can change it while upstream stops below the floor.
 
 ### AC4: the marker
 
-Withheld: CAP-35 takes its marker only when AC3 holds over both tracks. A first draft of this story carried the marker; the independent review's findings removed its basis, and `SPEC.md` is back to what `main` has.
+CAP-35 takes its dated marker at the atlas snapshot above, through a memlog line and a scripted re-derive. It names `ydata-quality` as the one exception, says Track A has run through the tracked driver, leaves Track B's version clause at its own snapshot, 2026-11-01 (Story 25.18), and says what is not claimed. A first draft of this story carried a marker that the independent review's findings removed; this one follows the ruling.
 
 ### G124 read-back and corrections
 
@@ -171,4 +171,5 @@ A separate reviewer read the diff against this spec on 2026-11-05 and found two 
 ## Spec Change Log
 
 - 2026-11-05: minted at `backlog` by marshal Story 113.18.
-- 2026-11-05: run, retro `v8.104.0`, read-back and independent review recorded; AC3 and AC4 open on `ydata-quality`, status `in-progress`.
+- 2026-11-05: run, retro `v8.104.0`, read-back and independent review recorded.
+- 2026-11-05: the operator exempted `ydata-quality` from AC3 by name; marker taken, status `done`.

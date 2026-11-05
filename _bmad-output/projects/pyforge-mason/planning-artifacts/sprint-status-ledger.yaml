@@ -88,7 +88,7 @@ development_status:
   25-16-three-dbt-adapter-recipes-are-re-mirrored-from-their-own-feedstocks: done
   25-17-epic-25-s-recipes-carry-the-build-records-their-stories-claim: done
   25-18-wave-a-s-no-refresh-recipes-are-re-bucketed-live-from-the-atlas: done
-  25-19-the-recipes-that-still-record-a-failed-build-get-their-own-build: in-progress
+  25-19-the-recipes-that-still-record-a-failed-build-get-their-own-build: done
   25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work: done
   25-20-refresh-wave-records-what-a-build-did: done
   25-3-cfe-gains-a-tracked-bulk-recipe-refresh-driver-that-the-refresh-waves-run-through: done
@@ -174,7 +174,7 @@ development_status:
   epic-23-retrospective: optional
   epic-24: done
   epic-24-retrospective: optional
-  epic-25: in-progress
+  epic-25: done
   epic-25-retrospective: optional
   epic-26: done
   epic-26-retrospective: optional

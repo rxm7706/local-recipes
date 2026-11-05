@@ -3459,7 +3459,8 @@ So that CAP-35's `grep` over `cfe-local-build-status: failed` matches nothing an
 **When** each track's scope is re-counted live from the atlas through `packages.feedstock_name`, and Track A's scope with every in-scope `failed` record runs through `pixi run -e local-recipes refresh-wave <manifest> --apply --gates --build --rebuild --force --report-dir <dir>`, because without `--rebuild` an `already-current` recipe finishes with no build and keeps its record
 **Then** the build stamps come from the CFE tools, never by hand, the `report.json` ends every recipe in the ruled outcome set, and `grep -l 'cfe-local-build-status: failed'` over the scope matches none
 **And** CAP-35's marker is dated at the recorded atlas snapshot only when that `grep` matches none over both tracks, the story lands a `retro(cfe):` commit with its CFE `CHANGELOG.md` entry, no feedstock or staged-recipes PR opens, and `pixi run --frozen -e pyforge-mason pyforge-mason-test` exits 0
-**Status:** in-progress
+**Ruling (operator, 2026-11-05):** `ydata-quality` is exempt by name from the `grep`: its upstream stops below the floor, so no build can run, and its `failed` record stands.
+**Status:** done
 
 ### Story 25.20: refresh-wave records what a build did
 
