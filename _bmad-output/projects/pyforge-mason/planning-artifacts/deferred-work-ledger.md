@@ -2071,30 +2071,52 @@ status: open
 - source_spec: `planning-artifacts/specs/spec-25-19-the-recipes-that-still-record-a-failed-build-get-their-own-build.md`
   summary: ibm-watsonx-orchestrate-core stays at 2.12.0, needs-review: refresh-wave recomputed 3a38ab17eed5380db21eafeb8cbaf37aa5e828e7e5be2055cffadd303bf3e092 for the 2.19.0 GitHub archive, and the feedstock declares ae99a16d5cf48005ad4ecb817d2d74fea1029e60c5cd66f044dd54bd04351deb. Read the feedstock's source before the bump; a mismatch is never overridden.
   evidence: ibm-watsonx-orchestrate-core stays at 2.12.0, needs-review: refresh-wave recomputed 3a38ab17eed5380db21eafeb8cbaf37aa5e828e7e5be2055cffadd303bf3e092 for the 2.19.0 GitHub archive, and the feedstock declares ae99a16d5cf48005ad4ecb817d2d74fea1029e60c5cd66f044dd54bd04351deb. Read the feedstock's source before the bump; a mismatch is never overridden.
-  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-19-the-recipes-that-still-record-a-failed-build-get-their-own-build.md:84
-  origin: spec-deferred cc5295875036 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-19-the-recipes-that-still-record-a-failed-build-get-their-own-build.md:92
+  origin: spec-deferred a0942e396429 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-11-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
-### DW-mason-25-19-2: refresh_wave gaps from the first tracked Track A run: _TEST_BLOCK_RE misses rattler-build's own wording, so a clean build with an unsolvable test environment stamps failed, not build-clean-test-blocked; no build log is kept; there is no render-only pre-check; a skip over every variant stamps success with 0 outputs; a ${{ name[0] }} URL is unrenderable. Each is a CFE script change and takes its own Story.
+### DW-mason-25-19-2: refresh_wave gaps left by the first tracked Track A run: no build log is kept, there is no render-only pre-check, and a ${{ name[0] }} URL is unrenderable. Each is a CFE script change and takes its own Story.
 
 - source_spec: `planning-artifacts/specs/spec-25-19-the-recipes-that-still-record-a-failed-build-get-their-own-build.md`
-  summary: refresh_wave gaps from the first tracked Track A run: _TEST_BLOCK_RE misses rattler-build's own wording, so a clean build with an unsolvable test environment stamps failed, not build-clean-test-blocked; no build log is kept; there is no render-only pre-check; a skip over every variant stamps success with 0 outputs; a ${{ name[0] }} URL is unrenderable. Each is a CFE script change and takes its own Story.
-  evidence: refresh_wave gaps from the first tracked Track A run: _TEST_BLOCK_RE misses rattler-build's own wording, so a clean build with an unsolvable test environment stamps failed, not build-clean-test-blocked; no build log is kept; there is no render-only pre-check; a skip over every variant stamps success with 0 outputs; a ${{ name[0] }} URL is unrenderable. Each is a CFE script change and takes its own Story.
-  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-19-the-recipes-that-still-record-a-failed-build-get-their-own-build.md:84
-  origin: spec-deferred 5b47495ef89a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  summary: refresh_wave gaps left by the first tracked Track A run: no build log is kept, there is no render-only pre-check, and a ${{ name[0] }} URL is unrenderable. Each is a CFE script change and takes its own Story.
+  evidence: refresh_wave gaps left by the first tracked Track A run: no build log is kept, there is no render-only pre-check, and a ${{ name[0] }} URL is unrenderable. Each is a CFE script change and takes its own Story.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-19-the-recipes-that-still-record-a-failed-build-get-their-own-build.md:92
+  origin: spec-deferred 55f95d674201 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-11-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
-### DW-mason-25-19-3: 65 of the 93 refreshed recipes keep optimize_recipe suggestions beyond STD-002 (TEST-002, DEP-002, PIN-001, SEL-002, DEP-001, TEST-001, LIC-001), mirrored from their feedstocks. They are suggestions, not errors, and optimize exits 1 on them, so CAP-35's admitted-findings clause is not closed for these recipes.
+### DW-mason-25-19-3: reactpy, conda, apache-airflow-providers-google and grpc-cpp carry patch files their recipe.yaml never names. Story 25.19 found dataprofiler, gibr and datasketches in the same state, each losing source.patches in the identity-snapshot mirror. Read each patch against the feedstock and reconnect or delete it.
+
+- source_spec: `planning-artifacts/specs/spec-25-19-the-recipes-that-still-record-a-failed-build-get-their-own-build.md`
+  summary: reactpy, conda, apache-airflow-providers-google and grpc-cpp carry patch files their recipe.yaml never names. Story 25.19 found dataprofiler, gibr and datasketches in the same state, each losing source.patches in the identity-snapshot mirror. Read each patch against the feedstock and reconnect or delete it.
+  evidence: reactpy, conda, apache-airflow-providers-google and grpc-cpp carry patch files their recipe.yaml never names. Story 25.19 found dataprofiler, gibr and datasketches in the same state, each losing source.patches in the identity-snapshot mirror. Read each patch against the feedstock and reconnect or delete it.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-19-the-recipes-that-still-record-a-failed-build-get-their-own-build.md:92
+  origin: spec-deferred 27cdaa3e8d9d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-11-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-25-19-4: ydata-synthetic stays at 2.0.0 and its 2026-07 G95 record: PyPI no longer serves the sdist the recipe and the feedstock name, and 2.0.1 is a stub that renames the project to fg-data-synthetic and fails on import. Whether the recipe follows the rename is a maintainer decision.
+
+- source_spec: `planning-artifacts/specs/spec-25-19-the-recipes-that-still-record-a-failed-build-get-their-own-build.md`
+  summary: ydata-synthetic stays at 2.0.0 and its 2026-07 G95 record: PyPI no longer serves the sdist the recipe and the feedstock name, and 2.0.1 is a stub that renames the project to fg-data-synthetic and fails on import. Whether the recipe follows the rename is a maintainer decision.
+  evidence: ydata-synthetic stays at 2.0.0 and its 2026-07 G95 record: PyPI no longer serves the sdist the recipe and the feedstock name, and 2.0.1 is a stub that renames the project to fg-data-synthetic and fails on import. Whether the recipe follows the rename is a maintainer decision.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-19-the-recipes-that-still-record-a-failed-build-get-their-own-build.md:92
+  origin: spec-deferred cdeaec8b7fb1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-11-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-25-19-5: 65 of the 93 refreshed recipes keep optimize_recipe suggestions beyond STD-002 (TEST-002, DEP-002, PIN-001, SEL-002, DEP-001, TEST-001, LIC-001), mirrored from their feedstocks. They are suggestions, not errors, and optimize exits 1 on them, so CAP-35's admitted-findings clause is not closed for these recipes.
 
 - source_spec: `planning-artifacts/specs/spec-25-19-the-recipes-that-still-record-a-failed-build-get-their-own-build.md`
   summary: 65 of the 93 refreshed recipes keep optimize_recipe suggestions beyond STD-002 (TEST-002, DEP-002, PIN-001, SEL-002, DEP-001, TEST-001, LIC-001), mirrored from their feedstocks. They are suggestions, not errors, and optimize exits 1 on them, so CAP-35's admitted-findings clause is not closed for these recipes.
   evidence: 65 of the 93 refreshed recipes keep optimize_recipe suggestions beyond STD-002 (TEST-002, DEP-002, PIN-001, SEL-002, DEP-001, TEST-001, LIC-001), mirrored from their feedstocks. They are suggestions, not errors, and optimize exits 1 on them, so CAP-35's admitted-findings clause is not closed for these recipes.
-  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-19-the-recipes-that-still-record-a-failed-build-get-their-own-build.md:84
-  origin: spec-deferred 2b18c9cfa964 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-19-the-recipes-that-still-record-a-failed-build-get-their-own-build.md:92
+  origin: spec-deferred 0034080f154b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-11-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open

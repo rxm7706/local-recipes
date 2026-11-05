@@ -3459,6 +3459,22 @@ So that CAP-35's `grep` over `cfe-local-build-status: failed` matches nothing an
 **When** each track's scope is re-counted live from the atlas through `packages.feedstock_name`, and Track A's scope with every in-scope `failed` record runs through `pixi run -e local-recipes refresh-wave <manifest> --apply --gates --build --rebuild --force --report-dir <dir>`, because without `--rebuild` an `already-current` recipe finishes with no build and keeps its record
 **Then** the build stamps come from the CFE tools, never by hand, the `report.json` ends every recipe in the ruled outcome set, and `grep -l 'cfe-local-build-status: failed'` over the scope matches none
 **And** CAP-35's marker is dated at the recorded atlas snapshot only when that `grep` matches none over both tracks, the story lands a `retro(cfe):` commit with its CFE `CHANGELOG.md` entry, no feedstock or staged-recipes PR opens, and `pixi run --frozen -e pyforge-mason pyforge-mason-test` exits 0
+**Status:** in-progress
+
+### Story 25.20: refresh-wave records what a build did
+
+As the maintainer of the feedstock refresh campaign,
+I want `refresh-wave` to stamp a clean build with an unsolvable test environment as G95, and to stamp nothing when every variant is skipped,
+So that a recipe's `cfe-local-build-*` record says what its build did.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-35 (FR-57); a fix, no new CAP; AD-1; CFE Rule 1 + Rule 2 • Found by Story 25.19's independent review, 2026-11-05
+**Flag:** none (a fix carries no flag, `spec-feature-flag-governance` Q1)
+**Surface:** `.claude/skills/conda-forge-expert/scripts/refresh_wave.py`, `.claude/skills/conda-forge-expert/tests/unit/test_refresh_wave.py`, and the CFE retro surface
+**Spec:** `planning-artifacts/specs/spec-25-20-refresh-wave-records-what-a-build-did.md`
+**Given** rattler-build reports an unsolvable test environment as `failed to setup test environment`, and a recipe with every variant skipped as `Starting build of 0 outputs` with exit 0
+**When** `refresh-wave --build` classifies that output
+**Then** the first stamps `build-clean-test-blocked` when an artifact exists, and the second reports `skipped`, stamps nothing and does not fail the run
+**And** a failure before any artifact exists still stamps `failed`, and the change lands in a `retro(cfe):` commit with its tests and CHANGELOG entry
 **Status:** done
 
 ## Epic 26: CFE's tests never ask GitHub whether a recipe maintainer exists (spec-pyforge-mason CAP-34)

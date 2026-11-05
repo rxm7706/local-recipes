@@ -765,6 +765,16 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   no flag, no `SPEC.md` change; no detector rule changes. Operator ruling, 2026-10-25: "Do rows 1-5 in one PR". Owner
   `spec-pyforge-mason`. → Epic 32 / Story 32.1, specced 2026-10-25.
 
+- **2026-11-05 (Story 25.19's independent review) — Found: `refresh-wave` writes a record no build earned.** Two
+  records from the first tracked Track A run were wrong in opposite directions. A clean build whose test environment
+  cannot solve stamps `failed`, because `_TEST_BLOCK_RE` never matches rattler-build's own wording, `failed to setup
+  test environment`; G95's `build-clean-test-blocked` is the true record. A recipe whose every variant is skipped exits
+  0 with 0 outputs and stamps `success`, as `pyobjc-framework-applicationservices` and
+  `pyobjc-framework-systemconfiguration` did on linux-64. **What it looks like when fixed:** the first reads
+  `build-clean-test-blocked`; the second reports `skipped` and leaves the recipe's record alone. **Constraints:** a CFE
+  script change, so the full chain (operator ruling 2026-09-29); a fix under `spec-pyforge-mason` CAP-35, no new CAP, no
+  flag; the status vocabulary stays. Owner `spec-pyforge-mason`. → Epic 25 / Story 25.20, specced 2026-11-05.
+
 ## One-chain fold — 2026-09-17
 
 Station Dream status is `specified` (Spec `spec-pyforge-mason` is `ready`). Mason-owned satellite Dreams archive in place with Consolidated-into banners. Practice Dream `packaging-factory` is archived into this station Dream (CHAIN-STANDARD precedence; no new station Dream minted). Recipe work stays `conda-forge-expert`; this fold is planning-chain only.
