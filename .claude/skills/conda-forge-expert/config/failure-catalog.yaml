@@ -4,7 +4,7 @@
 # "Recipe Authoring Gotchas" section. Hand edits are detectably wrong —
 # regenerating overwrites them; see tests/meta/test_failure_catalog_freshness.py.
 schema_version: 1
-source_sha256: "56ce768f0828f9c97d9215bb189b56a974d9d28c2a3e1bbe740642b74d0318c8"
+source_sha256: "56b96f07c49a7ac1720f003590715dd2b6ed3b5254ddbcb0ed33efc5f2434f37"
 rows:
   - id: G1
     title: "Don't rely on env vars carrying across `script:` list entries — older rattler-build ran each entry in its own shell"
@@ -1027,7 +1027,7 @@ rows:
       - "Field.__init__() got an unexpected keyword argument 'default'"
     enforced_by: null
   - id: G127
-    title: "`python >=${{ python_min }},<3.11` is an empty spec at the 3.11 floor"
+    title: "`python >=${{ python_min }},<3.11` is an empty spec at the 3.11 floor — the record is G95, never a lower `python_min`"
     symptom_signature:
       - "python >=3.11,<3.11, for which no candidates were found"
       - "pandas <1.5"
@@ -1035,6 +1035,7 @@ rows:
       - "selenium ==3.141"
       - "chardet ==4.0.0"
       - "sdv ==0.18.0"
+      - "requires a different Python: 3.11.18 not in '<3.11,>=3.8'"
     enforced_by: null
   - id: G128
     title: "Keep a Windows-only recipe off a Linux `--rebuild` manifest"
