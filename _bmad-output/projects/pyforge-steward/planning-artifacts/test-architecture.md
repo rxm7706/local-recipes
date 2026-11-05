@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: c4a63f27a99eceee
-story_count: 439
+source_fingerprint: 2a931760f192e26b
+story_count: 440
 test_file_count: 158
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 439
+- **Stories parsed:** 440
 - **Epics parsed:** 118
 - **Test files inventoried:** 158 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `c4a63f27a99eceee`
+- **Source fingerprint:** `2a931760f192e26b`
 
 ## Risk Assessment
 
@@ -753,6 +753,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 117.10 | Each station suite runs as N sharded jobs whose coverage the gate merges | none observed |
 | 117.11 | The changes gate and the gate diffs run on shallow fetches of the PR base | none observed |
 | 117.12 | The platform suite runs under xdist, its checks in a parallel job | none observed |
+| 117.13 | The herald job builds on the checkout's filesystem | none observed |
 | 118.1 | steward deploy nic brings up and tears down an NKP cluster on local kind | none observed |
 | 118.2 | nebi-pack and the data-science pack reach Healthy on kind and a notebook spawns | none observed |
 | 118.3 | The gitops branch of the monorepo is the GitOps source and a Hetzner cluster ... | none observed |

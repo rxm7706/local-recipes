@@ -860,6 +860,9 @@ jobs:
       - run: pixi run --frozen -e pyforge-herald pyforge-herald-test-built
         env:
           HERALD_DOCS_SITE_REQUIRED: "1"
+          # Story 117.13: Astro renames docs-site/.astro/ into pytest's temp dir, which fails with EXDEV when /tmp is
+          # another filesystem, as on runner image 20261101.64.1. runner.temp sits beside the checkout.
+          TMPDIR: ${{ runner.temp }}
       # Story 117.10: this shard's report; the herald-gate job merges every shard's and judges the floor.
       - name: Name this shard's coverage report
         run: mv .steward/coverage/herald-unit.json .steward/coverage/herald-unit-${{ matrix.group }}.json
