@@ -1016,7 +1016,9 @@ args = []
 #                                       # never a model the station's sessions can run on (Story 113.9): its tier map,
 #                                       # an [adapter] or [adapter.review] baseline a tier can still fall to (Story
 #                                       # 113.16), and a dispatch's launch model. So claude-fable-5-1 refuses on marshal
-#                                       # (its frontier tier) and renders on the seven others.
+#                                       # (its frontier tier) and renders on the seven others. drift also refuses a
+#                                       # model a marshal factory spin session can run on (Story 113.17), so this
+#                                       # example runs every stage but drift.
 #   reviewers.readiness = ["implementation-readiness"]   # optional; defaults per stage
 #   standards.mint = ["docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md"]  # optional
 #   artifact_dir = "implementation-artifacts/egm"        # optional

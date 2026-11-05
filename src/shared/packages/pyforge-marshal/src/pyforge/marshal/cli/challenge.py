@@ -51,7 +51,7 @@ from ..core import policy
 from ..core.harness_profile import load_packaged_profiles
 from ..core.journal import JournalEntryId, Phase, build_entry, mint_run_id, prepare_for_write
 from ..core.model import Verdict
-from ..core.tier_routing import normalize_stage_entries
+from ..core.tier_routing import normalize_stage_entries, resolve_tier_launch
 from ..core.verdict import EXIT_OK, EXIT_USAGE, exit_code_for
 from .config import PolicyIOError, _read_project_policy, conventional_project_policy_path, read_repo_policy_defaults
 from .config import repo_root as _default_repo_root
@@ -219,10 +219,9 @@ def adapter_models(effective: policy.EffectivePolicy) -> list[str]:
     """The ``[adapter]`` (``dev``) and ``[adapter.review]`` (``review``) baselines of the station's bmad-loop policy
     that a session can still run on by the station's declared tiers (Story 113.9, narrowed by Story 113.16): a
     ``model_tier_map`` tier that leaves a stage unset runs it on its baseline, and a station with no tier map runs on
-    both. The fail-safe paths past the declared tiers (a ``marshal factory spin`` run with no declared difficulty, a
-    tier stage bmad-loop cannot launch) stay out: no ``[challenge]`` stage reads those sessions' model. ``triage``
-    inherits ``[adapter]`` too, but a triage session authors no chain artifact. A policy bmad-loop refuses to load
-    renders no session, so it names none."""
+    both. What a ``marshal factory spin`` session runs on is ``spin_models``, which the ``drift`` stage reads (Story
+    113.17). ``triage`` inherits ``[adapter]`` too, but a triage session authors no chain artifact. A policy that cannot
+    render names no baseline."""
     try:
         rendered = tomllib.loads(render_policy_toml(effective))
     except ValueError:
@@ -241,6 +240,31 @@ def adapter_models(effective: policy.EffectivePolicy) -> list[str]:
         and table["model"]
         and not (tiers and all(tier.get(stage) for tier in tiers))
     ]
+
+
+def spin_models(effective: policy.EffectivePolicy) -> list[str]:
+    """Every model a ``marshal factory spin`` session can author with (Story 113.17): the ``dev`` and ``review`` models
+    of the policy spin renders for each ``model_tier_map`` tier and for a run with no declared difficulty. Read from
+    that render, never from the tier map: bmad-loop has no Cursor adapter, so on a station that declares a catalog spin
+    drops a Cursor tier's model and runs on the ``[adapter]`` baselines. It reads the policy as it stands now, never
+    what a past run launched. A render that fails raises ``ValueError``: spin can still run on the policy file already
+    on disk, so the caller must not read a failed render as no model."""
+    tier_map = effective.model_tier_map.value
+    models: list[str] = []
+    for difficulty in (None, *(tier_map if isinstance(tier_map, Mapping) else ())):
+        resolution = resolve_tier_launch(effective, difficulty)
+        rendered = tomllib.loads(
+            render_policy_toml(
+                effective, difficulty=difficulty, adapter=resolution.adapter_name, tier_resolution=resolution
+            )
+        )
+        adapter = rendered.get("adapter")
+        if not isinstance(adapter, Mapping):
+            continue
+        for table in (adapter.get("dev") or adapter, adapter.get("review")):
+            if isinstance(table, Mapping) and isinstance(table.get("model"), str) and table["model"]:
+                models.append(table["model"])
+    return list(dict.fromkeys(models))
 
 
 def session_models(effective: policy.EffectivePolicy, *, launch_model: str | None = None) -> list[str]:
@@ -282,15 +306,31 @@ def model_refusals(
     slug: str,
     effective: policy.EffectivePolicy,
     launch_model: str | None = None,
+    stage: str | None = None,
 ) -> list[str]:
     """``core.render_refusals`` with the challenger's catalog, the station's session models and the
-    claude profile's aliases (CAP-299, Story 113.9)."""
-    return core.render_refusals(
+    claude profile's aliases (CAP-299, Story 113.9). ``drift``'s whole target is what dev sessions wrote, so it also
+    refuses a model a ``marshal factory spin`` session can run on, and refuses when spin's policy cannot render
+    (CAP-301, Story 113.17)."""
+    aliases = challenger_aliases()
+    refusals = core.render_refusals(
         config,
         session_models=session_models(effective, launch_model=launch_model),
         model_cost_catalog=challenger_catalog(slug, effective),
-        aliases=challenger_aliases(),
+        aliases=aliases,
     )
+    if stage == "drift" and config.enabled:
+        try:
+            clashes = sorted({m for m in spin_models(effective) if core.same_model(config.model, m, aliases=aliases)})
+        except ValueError as exc:
+            refusals.append(f"the drift stage cannot read what marshal factory spin renders for {slug}: {exc}")
+            return refusals
+        if clashes:
+            refusals.append(
+                f"[challenge].model {config.model!r} cannot run the drift stage: the epic's code may come from "
+                f"a marshal factory spin session on {', '.join(clashes)}"
+            )
+    return refusals
 
 
 def plugins_root(env: Mapping[str, str] | None = None) -> Path:
@@ -1010,7 +1050,7 @@ def _run(args: argparse.Namespace, *, runner: ChallengeRunner | None, root: Path
     config = challenge_config(effective)
     if not config.enabled:
         raise ChallengeRefused(f"the challenger is off for {slug}: no enabled [challenge] block")
-    refusals = model_refusals(config, slug=slug, effective=effective)
+    refusals = model_refusals(config, slug=slug, effective=effective, stage=args.stage)
     if refusals:
         raise ChallengeRefused("; ".join(refusals))
     if args.audit:

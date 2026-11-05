@@ -38,7 +38,8 @@ Ledger key: `113-16-a-sonnet-can-challenge-every-station`. Type / Effort / Deps:
 
 ## Acceptance Criteria
 
-- **AC1 — A Sonnet renders.** `claude-sonnet-5-5` draws no refusal on any of the eight stations' live policies.
+- **AC1 — A Sonnet renders.** `claude-sonnet-5-5` draws no refusal on any of the eight stations' live policies, for every
+  stage but `drift` (Story 113.17).
 - **AC2 — A live baseline still counts.** A station with no tier map, or a tier that leaves `dev` unset, counts `sonnet`;
   a tier that leaves `review` unset counts `opus`, so an `opus` id stays refused on the live stations.
 - **AC3 — The author's model still refuses.** `claude-fable-5-1` stays refused on marshal, and a dispatch's launch model is
@@ -53,11 +54,8 @@ Ledger key: `113-16-a-sonnet-can-challenge-every-station`. Type / Effort / Deps:
 
 - `same_model`, `alias_of` and `render_refusals` do not change: only what the station's session models are.
 - No station's `[challenge]` block, flag or tier map changes.
-- Accepted gap, the fail-safe paths past the declared tiers. A `marshal factory spin` run with no declared difficulty keeps
-  the `[adapter]` baseline, since spin renders one policy per run from the most frequent declared difficulty
-  (`cli/spin.py:631`) and an unmapped difficulty is no override. A tier stage whose harness cannot launch, or whose model the
-  adapter's provider does not declare, keeps its baseline (`adapters/harness_bmadloop.py:660`). Both are bmad-loop paths, and
-  the dispatch readiness hook, the one stage that compares a session's model, does not run on them.
+- `drift` is Story 113.17's: its whole target is what dev sessions wrote, so it compares what `marshal factory spin` really
+  runs on.
 
 ## Binding
 
@@ -79,5 +77,8 @@ pixi run --frozen -e pyforge-marshal pyforge-marshal-test
   failed Fable run.
 - 2026-11-04: independent review (a fresh reviewer, on the diff against this spec) failed the first cut on three counts,
   all fixed here: "a stage every tier sets never falls to its baseline" overstated the code (the accepted gap now names the
-  fail-safe paths), a dispatch that dropped its model override compared nothing (it now refuses), and a fallthrough-list
+  paths past the tiers), a dispatch that dropped its model override compared nothing (it now refuses), and a fallthrough-list
   tier stage's models were not session models (they now are).
+- 2026-11-04: the operator ruled the accepted gap closed. It was misdescribed here as rare fail-safe paths: bmad-loop has no
+  Cursor adapter, so on marshal every tier but `frontier` runs `marshal factory spin` on the baselines, and `drift` does read
+  what those sessions wrote. Story 113.17 narrows it, and that story's spec carries what remains.

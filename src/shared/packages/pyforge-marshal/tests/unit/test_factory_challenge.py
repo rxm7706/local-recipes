@@ -606,6 +606,11 @@ def test_a_sonnet_renders_on_all_eight_live_stations() -> None:
         assert "opus" in cli.session_models(effective) and "sonnet" not in cli.session_models(effective), slug
         refused = cli.model_refusals(fable, slug=slug, effective=effective)
         assert bool(refused) is (slug == "pyforge-marshal"), slug
+        assert "marshal factory spin" in " ".join(
+            cli.model_refusals(sonnet, slug=slug, effective=effective, stage="drift")
+        )
+        drift = cli.model_refusals(fable, slug=slug, effective=effective, stage="drift")
+        assert bool(drift) is (slug == "pyforge-marshal"), slug
 
 
 def test_the_catalog_sonnet_is_an_id_claude_launches() -> None:
@@ -1497,3 +1502,43 @@ def test_a_dropped_launch_model_refuses_the_readiness_review(repo: Path, tmp_pat
     assert runner.prompts == []
     assert "harness's own default" in str(payload["error"])
     assert [finding.code for finding in findings] == ["MRS-DISP-067"]
+
+
+def test_spin_models_are_what_spin_renders() -> None:
+    """Story 113.17: bmad-loop has no Cursor adapter, so spin drops a Cursor tier's model and runs on the [adapter]
+    baselines whatever the tier map says; a Claude tier's model renders; a run with no declared difficulty is the
+    baselines. ``triage`` authors nothing the challenger reads."""
+    effective = _effective(catalog=FLEET_CATALOG, tiers=FRONTIER_TIERS)
+    assert sorted(cli.spin_models(effective)) == ["claude-fable-5-1", "opus", "sonnet"]
+    assert sorted(cli.spin_models(_effective(catalog=FLEET_CATALOG, tiers={}))) == ["opus", "sonnet"]
+
+
+def test_drift_refuses_a_model_a_spin_session_can_run_on(repo: Path, tmp_path: Path, monkeypatch, capsys) -> None:
+    """Story 113.17: drift reads an epic's code, which a spin session may have written on the [adapter] baseline, so a
+    Sonnet refuses there before any spawn. Every other stage reads what no spin session authors, so it renders."""
+    _flags(tmp_path, monkeypatch, egm_challenge=True, egm_policy_block=True, egm_retro_drift=True)
+    block = {**BLOCK, "model": "claude-sonnet-5-5"}
+    monkeypatch.setattr(
+        cli, "compose_effective", lambda slug: _effective(block, catalog=FLEET_CATALOG, tiers=FRONTIER_TIERS)
+    )
+    runner = FakeRunner()
+    assert cli.run_challenge(_args(stage="drift", epic="7"), runner=runner, root=repo, now=lambda: NOW) == USAGE
+    assert runner.prompts == []
+    assert "a marshal factory spin session on sonnet" in capsys.readouterr().err
+    args = _args(stage="mint", target=str(cli.spec_path(repo, SLUG)))
+    assert cli.run_challenge(args, runner=runner, root=repo, now=lambda: NOW) == 0
+    assert runner.model == "claude-sonnet-5-5"
+
+
+def test_a_spin_policy_that_cannot_render_refuses_drift(monkeypatch) -> None:
+    """Story 113.17 review: spin can still run on the policy file on disk after a render fails, so a failed render
+    refuses ``drift`` and is never read as no model."""
+    effective = _effective(catalog=FLEET_CATALOG, tiers=FRONTIER_TIERS)
+    config = core.ChallengeConfig(enabled=True, stages=("drift",), model="claude-opus-9")
+
+    def broken(*_args: object, **_kwargs: object) -> str:
+        raise ValueError("max_dev_attempts is 0")
+
+    monkeypatch.setattr(cli, "render_policy_toml", broken)
+    reasons = cli.model_refusals(config, slug=SLUG, effective=effective, stage="drift")
+    assert any("cannot read what marshal factory spin renders" in reason for reason in reasons)

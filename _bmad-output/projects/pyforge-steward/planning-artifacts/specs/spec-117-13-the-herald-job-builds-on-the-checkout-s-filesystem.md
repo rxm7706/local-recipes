@@ -55,3 +55,6 @@ gh pr checks 2360 --repo rxm7706/local-recipes
 ## Spec Change Log
 
 - 2026-11-04: minted `done` from PR #2360's CI, where the new runner image blocked the merge; landed in that PR.
+- 2026-11-04: AC1 is proved by this PR's own `herald-test` run, which a spec cannot cite because its own commit starts that
+  run. The local half is the full preflight, which runs the same built-site tests with `TMPDIR` on the checkout's filesystem;
+  they fail with the same `EXDEV` when `TMPDIR` is on the laptop's tmpfs.

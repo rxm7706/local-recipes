@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 746
+# stories: 747
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -100,6 +100,7 @@ development_status:
   113-14-a-challenge-run-has-a-ceiling-and-audit-a-section-selector: done
   113-15-the-challenge-session-can-write-its-report: done
   113-16-a-sonnet-can-challenge-every-station: done
+  113-17-drift-refuses-a-model-a-spin-session-can-run-on: done
   113-2-the-challenge-policy-block-configures-the-challenger-and-absent-means-off: done
   113-3-dispatch-runs-the-readiness-stage-before-the-dev-session-starts: done
   113-4-the-drift-stage-reads-an-epic-s-code-against-its-spec-at-retro-time: done
