@@ -4,7 +4,7 @@
 # "Recipe Authoring Gotchas" section. Hand edits are detectably wrong —
 # regenerating overwrites them; see tests/meta/test_failure_catalog_freshness.py.
 schema_version: 1
-source_sha256: "847008d09997334006b0fe2e3b5d06d5458cf2fdb6266907adc4ba2ddf04fe38"
+source_sha256: "56ce768f0828f9c97d9215bb189b56a974d9d28c2a3e1bbe740642b74d0318c8"
 rows:
   - id: G1
     title: "Don't rely on env vars carrying across `script:` list entries — older rattler-build ran each entry in its own shell"
@@ -1017,4 +1017,35 @@ rows:
     title: "A `setup.py` that adds the host's `/usr/include` breaks the build on a multiarch host and leaks host glibc headers everywhere else"
     symptom_signature:
       - "fatal error: bits/libc-header-start.h: No such file or directory"
+    enforced_by: null
+  - id: G126
+    title: "A stale mirror's unpinned run deps rot on their own — `--rebuild` finds it, and each class has one fix"
+    symptom_signature:
+      - "ModuleNotFoundError: No module named 'pkg_resources'"
+      - "No module named 'mcp.server.fastmcp'"
+      - "Cannot import 'setuptools.build_meta'"
+      - "Field.__init__() got an unexpected keyword argument 'default'"
+    enforced_by: null
+  - id: G127
+    title: "`python >=${{ python_min }},<3.11` is an empty spec at the 3.11 floor"
+    symptom_signature:
+      - "python >=3.11,<3.11, for which no candidates were found"
+      - "pandas <1.5"
+      - "pytest <7"
+      - "selenium ==3.141"
+      - "chardet ==4.0.0"
+      - "sdv ==0.18.0"
+    enforced_by: null
+  - id: G128
+    title: "Keep a Windows-only recipe off a Linux `--rebuild` manifest"
+    symptom_signature:
+      - "not-attempted"
+      - "__win, for which no candidates were found"
+      - "comtypes"
+    enforced_by: null
+  - id: G129
+    title: "A build inside this repo lets `git describe` see this repo's tags"
+    symptom_signature:
+      - "packaging.version.InvalidVersion: Invalid version: 'r0.0.0'"
+      - "could not determine package version"
     enforced_by: null

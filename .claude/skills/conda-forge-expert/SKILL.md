@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.103.0
+version: 8.104.0
 allowed-tools: [conda_forge_server]
 ---
 
@@ -905,6 +905,8 @@ Use the **move-aside + fresh-generate + diff + selective-apply** pattern:
 - **`--rebuild` re-builds what is already current (v8.103.0, mason Story 25.17).** Without it, `--build` runs only on a recipe the wave refreshed, so a recipe whose version already matches its feedstock never gets a build-written record. With `--apply --build --rebuild` an `already-current` recipe is gated and built too; a dry-run `already-current` record without a build is not resumed. The report's `build` row now carries `datetime` (the one stamp written into the recipe) and `stamped`; the driver stamps all four `cfe-local-build-*` keys or none, and `stamped: false` with a note means the recipe kept its older record (a key missing or not there exactly once). A run table reads back mechanically: each row's status and datetime must equal the recipe's record (G124).
 - **What `--rebuild` does not do (known driver gaps, mason Story 25.17).** On an `already-current` recipe it runs no C1/C2 `meta.yaml` mirror or removal, no G53 maintainer union and no G96 dependency diff; across all recipes it never compares `build.number`, entry points, tests, `about.license_file`, `source.patches` (a patch the feedstock dropped, as pgjdbc's shade patch at 42.7.14, survives a bump), `conda-forge.yml` or a recipe-folder CBC with the feedstock, reads only top-level `requirements` (a multi-output recipe gets no G96 diff, and a G72 suite's bundle versions go stale), discards each build's output (re-run a failed build by hand to read it), files a clean build whose test `pip check` failed as `failed`, never cleans `build_artifacts/<name>` between passes (G68), and dates its CFE comment lines in UTC. Story 25.17 found five stale `meta.yaml` mirrors, a `meta.yaml` beside a v1 feedstock, three dropped deployed maintainers and two G96 drifts this way. After a `--rebuild` pass, check each recipe against its feedstock by hand for those items.
 - **More driver lessons from Wave A's re-bucket (mason Story 25.18, 2026-11-01).** The G53 union used `recipe_editor`'s `add_to_list`, which put each new handle after the comment lines ruamel attaches to the old last item, that is under the `#### CFE metadata` block: the YAML parsed and the write check passed, but conda-smithy's parser then failed `validate` on 18 of 18 recipes (Story 25.7 hit it too). Since v8.103.0 the driver appends handles text-level straight after the last list item, and reports `needs-review` when the list is not a plain block list. Still open: `_dependency_diff` compares names, and pins only where a maintainer comment marks one, so a version-only bump keeps stale pins (`protobuf` 6 against a provider that needs 7, an `==1.44.0` sibling pin; `DW-mason-25-14-2`); a renamed sdist (`click-repl` → `click_repl-<v>.tar.gz`) fails as an `edit-failed` 404 naming `files.pythonhosted.org`, not the canonical URL; a v1 recipe mirrored from v0 can still carry `python ${{ python_min }}` without `.*`, an invalid match spec under rattler-build 0.76; and a mirror can lack files its recipe names (`patches/`, `LICENSE`, test scripts; G94), so list the feedstock's `recipe/` against the mirror before a wave builds.
+
+- **Driver lessons from the first tracked Track A run (mason Story 25.19, 2026-11-05).** `_TEST_BLOCK_RE` does not match rattler-build's own wording (`failed to setup test environment`, `Cannot solve the request`), so a clean build with an unsolvable test environment stamps `failed`, not G95's `build-clean-test-blocked`. The driver still discards each build's output: a wave that must name its causes puts a logging `rattler-build` shim first on `PATH`. `rattler-build build --render-only` over a manifest takes seconds and finds what a wave would otherwise spend builds on: 182 of 572 recipes failed it, 177 on a bare `python ${{ python_min }}`, which rattler-build rejects where `python ${{ python_min }}.*` is meant. A `skip:` that drops every variant makes rattler-build exit 0 with 0 outputs, and the driver stamps `success` (G128). Each `already-current` recipe skips the G96 diff, so read the feedstock yourself when one fails. A CFE comment can outlive the body it describes: `dataprofiler`'s G26 note and its patch file stayed while the identity-snapshot mirror lost `source.patches` and `setuptools <81`, so check a recipe's notes against its body before you cap anything.
 
 **Known grayskull-path emit drifts** to expect during step 4 (do not silently inherit):
 - Long `source.url` line-folded across two lines by ruamel.yaml's default `width=80` — looks like `weasyprint-${{ version \n    }}.tar.gz`. Cosmetic only; recipe still builds. The v8.11.1 line-fold fix landed in `edit_recipe` but not in the grayskull subprocess emit path. Restore the clean single-line form.
@@ -4611,6 +4613,51 @@ validated at its head. And Phase M zeroed the open-PR columns when `pr_json` was
 **Fix**: a local source patch that stops `setup.py` adding host system paths (the conda compilers already search `$PREFIX/include` and the sysroot). Live: `recipes/pillow-heif/patches/0001-do-not-add-host-usr-include-dirs.patch` (Story 25.17), green on linux-64 after it. Keep the patch local until upstream or the feedstock carries it, and say so in the CFE comments.
 
 
+### G126. A stale mirror's unpinned run deps rot on their own — `--rebuild` finds it, and each class has one fix
+
+**Symptom**: a recipe whose version and body have not moved for months now fails its test: `ModuleNotFoundError: No module named 'pkg_resources'`, `No module named 'mcp.server.fastmcp'`, `Cannot import 'setuptools.build_meta'`, `Field.__init__() got an unexpected keyword argument 'default'`.
+
+**Why**: the recipe records what upstream needed on the day it was written. An open floor (`mcp >=1.6.0`, `marshmallow`, `transformers`) follows the channel into the next major version, and the host python moves too. Nothing re-tests a recipe that is already current, so the rot stays out of sight until a wave runs `--rebuild`. mason Story 25.19 (2026-11-05): 58 of the 573 recipes in its Track A pass failed, about 10%; two of those are G128, the rest this.
+
+**Fix**, by class:
+
+| Decisive log line | Cause | Fix in the recipe |
+|---|---|---|
+| `Cannot import 'setuptools.build_meta'` | no `pyproject.toml`, and python 3.12+ no longer brings setuptools | host `setuptools` |
+| `No module named 'pkg_resources'` | current setuptools no longer ships it; its own deprecation notice says to pin below 81 | run `setuptools <81`, host too if the build imports it (`html5lib-modern`) |
+| `mcp.server.fastmcp`, `'Server' object has no attribute` | `mcp` 2 | `mcp <2` |
+| `Field.__init__() … 'default'`, `marshmallow.base` | `marshmallow` 4 | `marshmallow <4` |
+| `airflow.hooks.base_hook` | Airflow 3 | `apache-airflow <3` |
+| `TransfoXLModel` | `transformers` 5 | `transformers <5`, and `sentence-transformers <6` in the same environment |
+| `has requirement X==a, but you have X b` from the package itself | upstream pins exactly | pin the same in the recipe (`gibr`) |
+| `Y requires X, which is not installed` from a dependency | a dependency's package omits it | add `X` to `run` with a comment, or fix the dependency's feedstock |
+
+A cap names its evidence in the recipe's CFE comment. It is G36/G77's consumer cap, not a pin for taste. Read a pip check failure's other lines before you cap: one capped run dep can pull an old sibling that then fails `pip check` itself (`mlxtend` 0.25 needs numpy 2.3, so `raimitigations` also caps `mlxtend <0.24`).
+
+### G127. `python >=${{ python_min }},<3.11` is an empty spec at the 3.11 floor
+
+**Symptom**: the build is clean, then the test environment fails with `python >=3.11,<3.11, for which no candidates were found`, or a pinned dependency's every build needs python below 3.11 (`pandas <1.5`, `pytest <7`, `selenium ==3.141`, `chardet ==4.0.0`, `sdv ==0.18.0`).
+
+**Why**: the recipe takes `python_min` from the variant config, so the conda-forge floor moved under it (3.10 was dropped on 2026-09-02). Upstream's own ceiling has not moved.
+
+**Fix**: when upstream or a pin truly stops below the floor, set `python_min: "3.10"` in `context` and say why in the CFE comments. The test then runs on a python the package supports, and conda-forge's old builds still solve. This is a statement about an existing recipe, not a new recipe below the floor, which § Python Version Floor still forbids. A dependency that follows (`airfly` on `asttrs`) takes the same override. Live: Story 25.19's eleven recipes, all `success` on linux-64.
+
+### G128. Keep a Windows-only recipe off a Linux `--rebuild` manifest
+
+**Symptom**: a recipe that recorded `not-attempted` with a reason now records `failed`, with `__win, for which no candidates were found` or a host dependency with no linux candidate (`comtypes`).
+
+**Why**: `--rebuild` builds what the manifest names. A noarch recipe with `__win` in `run` cannot solve its test environment on linux-64, and `comtypes` has no linux build, so the driver stamps a failure that says nothing about the recipe. `skip: not win` is worse: rattler-build exits 0 and the driver stamps `success` for a build that never ran.
+
+**Fix**: leave such a recipe out of the manifest and keep `not-attempted` with its host-blocked reason in the CFE comments, which CAP-35's outcome set admits. If a wave has already stamped it, restore the file's committed record (`git checkout`, never a hand-written value) and record the correction in the run table. Live: `uiautomation`, `java-access-bridge-wrapper`, Story 25.19.
+
+### G129. A build inside this repo lets `git describe` see this repo's tags
+
+**Symptom**: a package that takes its version from git fails in metadata generation: `packaging.version.InvalidVersion: Invalid version: 'r0.0.0'`, with `could not determine package version` earlier in the log.
+
+**Why**: `build_artifacts/<name>/bld/…/work` sits inside the repository's working tree. `git describe --tags` run there walks up and answers for this repo, not the package, so the package skips the `version.txt` its sdist ships.
+
+**Fix**: point git away in the build script (`export GIT_DIR="${SRC_DIR}/.no-git"`) so the sdist's cached version wins. conda-forge CI has no enclosing repo, so a recipe that fails only here is not broken there, but the local record must still come from a real build. Live: `versiontag`.
+
 ---
 
 ## Skill Automation
@@ -4651,6 +4698,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.104.0** (Nov 5, 2026) — **mason Story 25.19 Rule-2 retro: the first tracked Track A run; G126 (a stale mirror's open run deps rot, by class), G127 (`<3.11` is an empty spec at the 3.11 floor), G128 (keep Windows-only recipes off a Linux `--rebuild`), G129 (`git describe` sees this repo) (MINOR; skill text only, no script change).** 621 recipes through the driver: 617 `success`, 2 host-blocked `not-attempted`, 1 `needs-review`, 1 `blocked`. Driver gaps recorded, each for a Story of its own.
 - **v8.103.0** (Nov 1, 2026) — **mason Stories 25.17 and 25.18 Rule-2 retro: `refresh-wave --rebuild`, build-written records read back against run tables (G124), the host-header leak (G125), the skew-versus-G77 test, and the G53 handle placement fix (MINOR).** See `CHANGELOG.md`.
 - **v8.102.2** (Oct 31, 2026) — **Recipe refresh retro: `nebari-infrastructure-core` 0.14.0 → 0.17.0; go.mod now needs `go 1.26.10`, which only conda-forge's go-nocgo 1.27 line satisfies (PATCH; CHANGELOG and version carriers only).** See `CHANGELOG.md`.
 - **v8.102.1** (Oct 27, 2026) — **mason Story 36.1 Rule-2 retro: three meta-test docstrings name the archived paths they cite. `spec-pyforge-mason` now governs this skill's surface with normal drift, so a CFE edit needs a mason memlog line and a scoped stamp (PATCH; docstrings only).** See `CHANGELOG.md`.
