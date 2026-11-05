@@ -30,7 +30,7 @@
  "pyforge-atlas/spec-pyforge-atlas": {
   "files": {
    ".github/workflows/kedro-viz-publish.yml": "3e4292d500ec2809c29799f8852d53801e664b56",
-   "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md": "e5266166cc79c2d2d73e1314e34cdfccc1da26f3",
+   "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md": "2962c602e5e83084139deb4d00fbebba65bfb1bb",
    "conf/conda-forge-packaging-inventory-operations.local.env.example": "e55c099b03392fa21a2ebd9aec433a0252024656",
    "conf/conda-forge-packaging-inventory-operations_curated_groups.json": "07c799631537e1ff4e9b3c81770ad2082a0060fb",
    "scripts/conda-forge-packaging-inventory-operations_metrics.py": "be74945eb4937c831e11f146630485f6779a1193",
@@ -540,7 +540,7 @@
    "src/shared/packages/pyforge-atlas/wasm/index.html": "58d44155379ec640d36caf59b8c701ec8fcfce27",
    "src/shared/packages/pyforge-atlas/wasm/package.json": "e8ec7eef8dff664e2910f4fee67ada79e4105d93"
   },
-  "memlog": "835efb191fe4671587b8e218a33d3db147dca6aa"
+  "memlog": "a0393f02693d78112c0ab6e22b5ccc04fe940d55"
  },
  "pyforge-atlas/spec-pyforge-atlas-intelligence-platform": {
   "files": {},
@@ -6015,7 +6015,7 @@
    ".cursorrules": "7116ec0f9c0cfab974c6c3de7ba8ef973e02ec36",
    ".gemini/settings.json": "0e37d00cae3c091c91cd7a53792762eb300fa527",
    ".github/copilot-instructions.md": "9b6735392a0561c1b34d4c8c025998ff179bb71f",
-   "AGENTS.md": "5aa171352ece01b57b8ac19243e880c7ad9439b3",
+   "AGENTS.md": "5b258aee7de1b56dbab21fd6ba58c590143c7743",
    "CLAUDE.md": "b33a436429dd7ee6fed499526ac99a5e677cc02d",
    "GEMINI.md": "c4766a51e9cadecf25618732601e4374c27bf1b3",
    "scripts/bmad_estate_check.py": "71122d85b48fc0a9b9e6496be5e4f4015430cada",
@@ -6079,7 +6079,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "f6ce29ae9ababcd02c5cbb5ab4f87047b6cb125a"
+  "memlog": "57ba9f6ffc452e4ac20306c899534c04b5eefbf7"
  },
  "pyforge-scribe/spec-pyforge-scribe-team-memory": {
   "files": {},

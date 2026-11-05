@@ -801,6 +801,10 @@ Folded topic Dreams: [[artifactory-download-intelligence]], [[atlas-kedro-catalo
   (`www-authenticate: Bearer`), so the advisory drivers send a token from `PYFORGE_ATLAS_BASILISK_TOKEN` only
   under the credentialed opt-in, and the advisories stay stale until the operator adds one (`DW-atlas-36-1-1`).
   Still open: CAP-68's missing steward export owner, deferred with a steward deferred-work row.
+- **2026-11-05 (the first automated EGM audit) — Found:** `marshal factory challenge --audit` (marshal Story 113.18,
+  spec-pyforge-marshal:CAP-302) read the compiled skill, CAP-72 and Epic 41: 16 high findings, 7 accepted, 7 rejected,
+  2 deferred, with 60 medium and 24 low not triaged; residue
+  `_bmad-output/projects/pyforge-atlas/planning-artifacts/research/egm-audit-2026-11-05.md`. The accepted findings land here as one re-derive of CAP-70, CAP-71 and CAP-72; Story 29.5 carries the skill note.
 
 ## 2026-10-26 — An enterprise Artifactory mirror's own download telemetry joins the universe picture (folded from artifactory-download-intelligence)
 

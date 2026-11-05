@@ -2,7 +2,7 @@
 id: SPEC-pyforge-warden
 spec: pyforge-warden
 status: ready
-updated: "2026-11-01"   # AMENDED 2026-11-01 (EGM fleet audit, marshal Story 113.7): CAP-23 (an enabled TEA run that skipped reaches the report as one advisory skip record; Story 13.2), CAP-24 (the estate allowlist and its per-call fleet authorization, the bounded solver sharing the fix's own edit, every failure path in actuation; Story 14.4), CAP-25 (the shipped estate rules, the telemetry-off argv and env pinned by test; Story 15.2) and CAP-26 (an operator-started fleet run over an operator-designated github.com organisation read through the gh login, the export pinned with head_sha, job and proposal statuses never a verdict, time bounds, approve-time expiry, re-scan and re-solve, no non-PyPI/conda proposal, per-ecosystem offline DBs, unknown-then-warn license and currency; title drops 'on GitHub Enterprise'; Stories 16.6-16.10) amended, each success naming its command and exit code (CHAIN-STANDARD section 2); the No-silent-egress Constraint re-scoped by process, the Runtime-shape pixi floor (0.80.0, the workspace requires-pixi) and scope sentence and the fleet-verdict Non-goal re-worded; glossary.md added to companions; the legacy source cited at its archive path and spec-one-chain-per-station:CAP-3 qualified twice; markers stay (ready <date>) until the fix stories land on main; findings WAR-M-Z1..Z6, WAR-M-D1..D6, WAR-M-C1..C6, WAR-D-C1, WAR-D-C2, WAR-D-C5, WAR-D-C6, WAR-D-R1, WAR-D-R3, WAR-D-R4. Prior "2026-09-28"
+updated: "2026-11-05"   # AMENDED 2026-11-05 (EGM audit, marshal Story 113.18): CAP-26 re-derived. Prior "2026-11-01": AMENDED 2026-11-01 (EGM fleet audit, marshal Story 113.7): CAP-23 (an enabled TEA run that skipped reaches the report as one advisory skip record; Story 13.2), CAP-24 (the estate allowlist and its per-call fleet authorization, the bounded solver sharing the fix's own edit, every failure path in actuation; Story 14.4), CAP-25 (the shipped estate rules, the telemetry-off argv and env pinned by test; Story 15.2) and CAP-26 (an operator-started fleet run over an operator-designated github.com organisation read through the gh login, the export pinned with head_sha, job and proposal statuses never a verdict, time bounds, approve-time expiry, re-scan and re-solve, no non-PyPI/conda proposal, per-ecosystem offline DBs, unknown-then-warn license and currency; title drops 'on GitHub Enterprise'; Stories 16.6-16.10) amended, each success naming its command and exit code (CHAIN-STANDARD section 2); the No-silent-egress Constraint re-scoped by process, the Runtime-shape pixi floor (0.80.0, the workspace requires-pixi) and scope sentence and the fleet-verdict Non-goal re-worded; glossary.md added to companions; the legacy source cited at its archive path and spec-one-chain-per-station:CAP-3 qualified twice; markers stay (ready <date>) until the fix stories land on main; findings WAR-M-Z1..Z6, WAR-M-D1..D6, WAR-M-C1..C6, WAR-D-C1, WAR-D-C2, WAR-D-C5, WAR-D-C6, WAR-D-R1, WAR-D-R3, WAR-D-R4. Prior "2026-09-28"
 owner-dream: docs/dreams/pyforge-warden.md
 covers-dreams:
   - docs/dreams/pyforge-warden.md
@@ -212,12 +212,15 @@ serves.
     `test_build_opengrep_scan_argv_uses_local_rules_only`); an absent opengrep binary omits the scanner, and a default
     run's status and exit code stay unchanged (`test_run_opengrep_advisory_absent_binary_is_silent`,
     `tests/unit/test_default_warden_without_checkmarx.py`).
-- **CAP-26 — Warden scans the enterprise fleet, one verdict per repo** ← spec-pyforge-warden CAP-26 (ready 2026-09-28)
+- **CAP-26 — Warden scans the enterprise fleet, one verdict per repo** ← spec-pyforge-warden CAP-26 (ready 2026-09-28; amended 2026-11-05 by the EGM audit, WAR-D-F4, WAR-D-F6)
   - **intent:** A fleet run inventories the repos of an operator-designated github.com organisation and scans each one
     with `warden scan` — one verdict per repo, exactly as today, and no fleet-level pass/fail. A run starts only from an
-    operator action, the `warden_fleet_run` management command or its portal action, never a webhook. The organisation
-    is never named in a tracked file: it lives in a gitignored local config, tests use a fictional organisation, and the
-    leak guard forbids its name in tracked files. The inventory, and the items of the operator-designated GitHub
+    operator action, the `warden_fleet_run` management command, never a webhook. The organisation's name lives in a
+    gitignored local config, and tests use a fictional organisation. The leak guard forbids the listed terms in every
+    tracked file. It forbids the organisation's name in warden's own files, in a team-memory entry that names warden,
+    and on any line naming warden in `MEMORY.md`, an outside memlog or a file the branch changes (Story 18.1). What stays
+    private is that warden inventories the organisation, and the live guard runs only where the operator's config is.
+    The inventory, and the items of the operator-designated GitHub
     Projects, are read through the operator's `gh` login at run time, with the token held in memory for that run only,
     and are read-only by construction: the REST client sends GET only and the GraphQL client query operations only, each
     refusing anything else before a socket opens. Both are published as gitignored JSON exports that other stations read

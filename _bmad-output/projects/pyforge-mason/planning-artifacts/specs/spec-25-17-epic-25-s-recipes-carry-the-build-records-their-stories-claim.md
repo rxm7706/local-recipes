@@ -309,6 +309,8 @@ Summary (2026-11-01, landed in one PR with marshal 113.14, mason 25.18 and stewa
 
 ## Spec Change Log
 
+
+- 2026-11-05: dated note added (EGM audit MAS-D-F2, marshal Story 113.18): landed 2026-11-04 (`c806b74707`); its Parked text is history.
 - 2026-11-01: minted from the EGM fleet audit (marshal Story 113.7), finding MAS-D-C1, cluster
   `mason-c08-epic25-build-records`; fix under `spec-pyforge-mason` CAP-35, no new CAP; parked at `backlog`.
 

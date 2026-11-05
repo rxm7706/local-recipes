@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 2a931760f192e26b
-story_count: 440
+source_fingerprint: aaaba2582d1a53de
+story_count: 441
 test_file_count: 158
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 440
+- **Stories parsed:** 441
 - **Epics parsed:** 118
 - **Test files inventoried:** 158 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `2a931760f192e26b`
+- **Source fingerprint:** `aaaba2582d1a53de`
 
 ## Risk Assessment
 
@@ -447,6 +447,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 29.2 | Personas act only through grammar and MCP | none observed |
 | 29.3 | Five-tier check | none observed |
 | 29.4 | The station skills are recompiled to cover the verbs the contract names | none observed |
+| 29.5 | The station skills carry the fixes the 2026-11-05 audit accepted | none observed |
 | 30.1 | Remaining console surfaces have a home | none observed |
 | 30.2 | Delete the generator and its inbound refs | none observed |
 | 31.1 | Class-keyed playbook is the operator path | none observed |

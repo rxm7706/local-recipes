@@ -178,7 +178,12 @@ rxm7706/local-recipes`, `uv run` off the repo root, a bare `spec_surface_check.p
 `.claude/hooks/pre-shell.py`. It is registered on `Bash`, on `Edit`/`Write`, and on the three
 conda_forge_server MCP submission tools in `.claude/settings.json` (Claude Code) and on
 `beforeShellExecution` (deny) / `afterFileEdit` (warn — Cursor has no before-edit deny) in
-`.cursor/hooks.json` (Cursor). **One script serves both harnesses.**
+`.cursor/hooks.json` (Cursor). **One script serves both harnesses.** The same hook also denies three
+steward operator-consent actions, and these are rules too: never run `pyforge steward estate refresh
+--transitive` (`pixi update` is operator-only; run `estate refresh` without it, in a worktree that
+lands through a PR); never run `pyforge steward estate realize --yes` (agents run `--plan`); never run
+`deploy nic up --yes` on any provider but local kind (agents run `pyforge steward deploy nic validate
+--config <cfg>`, and kind's local up needs no `--yes`).
 
 The closed list of what it denies, and the one-line reason it gives for each — naming the
 sanctioned form — lives in `docs/governance/guild-roster.json`'s `session_denials` array, the ONE
@@ -187,7 +192,7 @@ script asserts its matchers are exactly that list at every run (a drift between 
 failure, not a silent gap) and never denies anything not on the list.
 
 **Gemini CLI, GitHub Copilot CLI, and Devin have no verified deny surface for this hook.** For
-them these sixteen rules remain instruction-only, exactly as written elsewhere in this file — do not
+them these sixteen rules and the three steward denials remain instruction-only, exactly as written elsewhere in this file — do not
 assume they are enforced there.
 
 **Cursor** registers the same script on `beforeShellExecution` (deny) and `afterFileEdit` (warn); it
@@ -315,9 +320,10 @@ Keeping the Dream → spec handoff portable across agents is **Marshal's** job.
 - Each tool writes its working output into **its own** area (BMAD → `implementation-artifacts/`;
   Cursor → `.cursor/`; etc.) and **reads the spec from the BMAD planning folder** (Tier 2).
 - `implementation-artifacts/` is gitignored/local-only — **nothing there should be git-tracked.**
-- **Story specs are durable, not Tier 3.** A run drafts a story spec into its Tier-3
-  `implementation-artifacts/`; once the story merges, promote that spec into the tracked
-  `planning-artifacts/specs/` and commit it — it is the source of record.
+- **Story specs are durable, not Tier 3.** The tracked story spec is minted with its Story under
+  `planning-artifacts/specs/` (`CHAIN-STANDARD.md` § 3 step 5) and is the source of record. A harness
+  run's Tier-3 draft is scratch: promote it into `planning-artifacts/specs/` only if no tracked spec
+  exists, once the story merges.
 
 ## Pre-PR Pre-flight Checklist & Station Invariants
 

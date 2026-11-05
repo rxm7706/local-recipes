@@ -2,7 +2,7 @@
 fr-derivation-from: "2026-09-17"
 title: Steward (pyforge-steward)
 created: 2026-07-25
-updated: "2026-11-04"   # RE-STAMPED 2026-11-04: chain-currency cascade (spec -> PRD) (the Surface reconcile of Stories 118.7 and 118.8 on spec-pyforge-steward and spec-pyforge-unifying-strategy); no CAP, FR, AD, epic or story moved. See § Currency reconciliation — 2026-11-04.
+updated: "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief -> PRD and spec -> PRD); no CAP, FR or AD is minted. Prior "2026-11-04"   # RE-STAMPED 2026-11-04: chain-currency cascade (spec -> PRD) (the Surface reconcile of Stories 118.7 and 118.8 on spec-pyforge-steward and spec-pyforge-unifying-strategy); no CAP, FR, AD, epic or story moved. See § Currency reconciliation — 2026-11-04.
 # 2026-11-01  # RE-STAMPED 2026-11-01 (steward Stories 118.7 and 118.8): chain-currency cascade (spec -> PRD) for spec-pyforge-steward's amendments of CAP-176, CAP-177 and CAP-178; FR-50, FR-51 and FR-52 amended in place; no FR registered, renumbered or removed. See § Currency reconciliation — 2026-11-01 (Stories 118.7 and 118.8). Prior "2026-11-01"
 # 2026-11-01  # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): chain-currency cascade (brief -> PRD, spec -> PRD) for research/egm-audit-2026-11-01.md (25 of 30 findings accepted) and spec-pyforge-steward's re-derive of CAP-176 and CAP-177; FR-50 and FR-51 amended in place, FR-52 unchanged (CAP-178 rides Story 118.8); no FR registered, renumbered or removed. See § Currency reconciliation — 2026-11-01 (EGM fleet audit). Prior "2026-10-31"
 # 2026-10-31  # RE-STAMPED 2026-10-31 (CAP-176..CAP-178): chain-currency cascade (spec -> PRD) for the Dream's 2026-10-31 section (Nebari hosted: NKP on kind, then Hetzner, with the data-science pack); FR-50, FR-51 and FR-52 registered, each derived from its CAP; no FR renumbered or removed. See § Currency reconciliation — 2026-10-31 (CAP-176..CAP-178). Prior "2026-10-30"   # RE-STAMPED 2026-10-30: chain-currency (spec -> PRD) for Stories 109.6, 109.1 and 109.7 (fixes and a closing review under CAP-169..CAP-171; no CAP, FR or AD moved). See § Currency reconciliation — 2026-10-30.
@@ -3146,3 +3146,9 @@ renumbered or removed. `updated:` bumped.
 amended on 2026-11-01 and stand as written.
 
 **Content changed:** this section added; no FR registered, amended, renumbered or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-11-05
+
+*Chain-currency cascade (research -> brief -> PRD and spec -> PRD), EGM audit, marshal Story 113.18.*
+
+`research/egm-audit-2026-11-05.md` (marshal Story 113.18, `spec-pyforge-marshal:CAP-302`): 19 high findings, 4 accepted, 10 rejected, 5 deferred; the medium and low findings are not triaged. Nothing in the Spec's contract moved; Story 118.3's text takes the `/shared` probe proof and the `gitops/**` bypass actor. No FR is added, renumbered or re-scoped.

@@ -917,3 +917,17 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   promoted: 2026-11-01 — EGM audit landing (operator-owned credential decision and live proof)
   reason: credential-bound and outward (a write to a repository outside rxm7706/local-recipes); only the operator does it.
   status: open
+
+### DW-warden-egm-2026-11-05-1: A hard-limit kill leaves the clone directory and a RUNNING row (WAR-M-F18)
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-warden/SPEC.md`; EGM audit 2026-11-05 (marshal Story 113.18)
+  summary: A hard-limit kill leaves the clone directory and a RUNNING row (WAR-M-F18)
+  evidence: a 300 s hard-limit kill ends the worker child, so its finally does not run: the clone directory stays and the run stays RUNNING.
+  location: src/shared/packages/django-warden/src/django_warden_fabric/tasks.py
+  origin: EGM audit 2026-11-05 (marshal Story 113.18)
+  fix: add the hard-limit sweep (an orphan clone reaper and a run reconciler), citing Story 16.7's note, and have CAP-26 say 'removed on a caught failure' at its next re-derive.
+  owner: warden
+  severity: low
+  promoted: 2026-11-05 — EGM audit landing (marshal Story 113.18)
+  reason: deferred by triage, so it is not among the 53 the operator accepted, and the re-derive of 2026-11-05 left CAP-26's clause: the operator-started worker can be cleared by hand until a story lands.
+  status: open

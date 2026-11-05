@@ -798,6 +798,10 @@ Station Dream status is `specified` (Spec `spec-pyforge-mason` is `ready`). Maso
   scan every skill file, CAP-29); the skill gains its outward-work caveat for --yes. Parked at backlog: 25.17
   (Epic 25's recipes rebuilt so their build records match) and 25.18 (Wave A's no-refresh residue re-bucketed
   live).
+- **2026-11-05 (the first automated EGM audit) — Found:** `marshal factory challenge --audit` (marshal Story 113.18,
+  spec-pyforge-marshal:CAP-302) read the compiled skill, CAP-35 and Epic 25: 17 high findings, 10 accepted, 7 rejected,
+  0 deferred, with 67 medium and 24 low not triaged; residue
+  `_bmad-output/projects/pyforge-mason/planning-artifacts/research/egm-audit-2026-11-05.md`. CAP-35 is re-derived, and Story 25.19 is parked at `backlog`: 33 recipes still record a failed build outside Story 25.17's list, and Track A has no tracked-driver report.
 
 ## 2026-10-26 — Rebuild conda-forge-expert as a Skill-Forge-authored skill, slice by slice (folded from conda-forge-expert-rebuild)
 

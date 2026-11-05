@@ -279,7 +279,7 @@
     "script serves both harnesses (Claude Code's `PreToolUse` on `Bash` and on",
     "`Edit`/`Write`; Cursor's `beforeShellExecution` deny and `afterFileEdit`",
     "warn -- Cursor has no before-edit deny). Gemini CLI, GitHub Copilot CLI",
-    "and Devin have no verified deny surface for this hook; the sixteen rules stay",
+    "and Devin have no verified deny surface for this hook; the sixteen rules and three steward denials stay",
     "instruction-only there, as written in AGENTS.md.",
     "",
     "Each entry's `id` MUST have exactly one matching callable in the script's",

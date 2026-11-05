@@ -3157,3 +3157,45 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: low
   promoted: 2026-10-26 — the retrofit chain commit
   status: open
+
+### DW-doctor-egm-2026-11-05-1: CAP-93's title and intent say every detector while its success pins ten (DOC-M-F4)
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-doctor/SPEC.md`; EGM audit 2026-11-05 (marshal Story 113.18)
+  summary: CAP-93's title and intent say every detector while its success pins ten (DOC-M-F4)
+  evidence: CAP-93's title says 'every conformance detector'; its success names the ten FR-15 sources; later Sources are neither included nor excluded.
+  location: planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  origin: EGM audit 2026-11-05 (marshal Story 113.18)
+  fix: at CAP-93's next re-derive, add one clause: 'every' means the ten FR-15 names, and later Sources are owned by their own capabilities.
+  owner: doctor
+  severity: low
+  promoted: 2026-11-05 — EGM audit landing (marshal Story 113.18)
+  reason: deferred by triage, so it is not among the 53 the operator accepted, and the re-derive of 2026-11-05 left it: no reader acts wrongly on it today.
+  status: open
+
+### DW-doctor-egm-2026-11-05-2: No detector checks the (ready) and (shipped) date markers CHAIN-STANDARD requires (RUL-C-F5)
+
+- source_spec: `docs/governance/spec-one-chain-per-station/SPEC.md`; EGM audit 2026-11-05 (marshal Story 113.18)
+  summary: No detector checks the (ready) and (shipped) date markers CHAIN-STANDARD requires (RUL-C-F5)
+  evidence: CHAIN-STANDARD section 4 asks for the markers; no detector reads them; qualified cites are checked only where an FR arrow resolves them.
+  location: scripts/
+  origin: EGM audit 2026-11-05 (marshal Story 113.18)
+  fix: add the marker check to a doctor source if the operator wants it enforced.
+  owner: doctor
+  severity: low
+  promoted: 2026-11-05 — EGM audit landing (marshal Story 113.18)
+  reason: deferred by triage: a new check is a Dream-sized choice.
+  status: open
+
+### DW-doctor-egm-2026-11-05-3: The fr-baseline forced-record guard admits any well-formed record (RUL-C-F6)
+
+- source_spec: `docs/governance/spec-one-chain-per-station/SPEC.md`; EGM audit 2026-11-05 (marshal Story 113.18)
+  summary: The fr-baseline forced-record guard admits any well-formed record (RUL-C-F6)
+  evidence: `one_chain.py`'s guard admits any well-formed `forced` record, so a hand-added key plus a hand-added record passes, and no check proves the named review happened (verifier and review, 2026-11-05).
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/one_chain.py
+  origin: EGM audit 2026-11-05 (marshal Story 113.18)
+  fix: if the operator wants it closed, have the guard require the forced record's HEAD to be an ancestor and the key absent at that HEAD; otherwise record it as an accepted limit.
+  owner: doctor
+  severity: low
+  promoted: 2026-11-05 — EGM audit landing (marshal Story 113.18)
+  reason: deferred by triage: a code change with no running failure.
+  status: open

@@ -2,7 +2,7 @@
 id: SPEC-pyforge-atlas
 spec: pyforge-atlas
 status: ready
-updated: "2026-11-01"   # AMENDED 2026-11-01 (EGM fleet audit, marshal Story 113.7): CAP-64 amended (a plain run is __default__; the pass set and its per-row floors live in live-sources.md; the network-blocked run is over a filled root; Stories 34.14 and 34.15), CAP-65 amended (five batched registries; a plain run fills GitLab, Codeberg and the registries; the switch holds on both live_vcs_universe branches, Story 35.5), CAP-66 amended (population ~ the distinct conda names; no code-method names), CAP-67 amended (the identity_source values; the rows a public run gives), CAP-68 amended (its deferral on the CAP; success needs a non-empty, non-fixture estate frame; spec-qualified cite) and CAP-69 amended (boards listed by page id; Stories 37.5-37.10 realized; the data-root precedence); the Constraint 'Public sources live by default' amended; CAP-68's open question noted; live-sources.md gains CAP and Floor columns and the core-sources row; glossary.md companion added. Prior "2026-10-26"   # AMENDED 2026-10-26 (every requirement derives from a capability): CAP-72 minted from the Constraint "Conda-forge-only, pixi-managed, py3.14-floored provisioning" (operator ruling 2026-10-26, reversing the 2026-10-25 "cite the constraint" ruling for FR-15); FR-15 <- CAP-72. Prior "2026-10-25"
+updated: "2026-11-05"   # AMENDED 2026-11-05 (EGM audit, marshal Story 113.18): CAP-70, CAP-71 and CAP-72 re-derived. Prior "2026-11-01": AMENDED 2026-11-01 (EGM fleet audit, marshal Story 113.7): CAP-64 amended (a plain run is __default__; the pass set and its per-row floors live in live-sources.md; the network-blocked run is over a filled root; Stories 34.14 and 34.15), CAP-65 amended (five batched registries; a plain run fills GitLab, Codeberg and the registries; the switch holds on both live_vcs_universe branches, Story 35.5), CAP-66 amended (population ~ the distinct conda names; no code-method names), CAP-67 amended (the identity_source values; the rows a public run gives), CAP-68 amended (its deferral on the CAP; success needs a non-empty, non-fixture estate frame; spec-qualified cite) and CAP-69 amended (boards listed by page id; Stories 37.5-37.10 realized; the data-root precedence); the Constraint 'Public sources live by default' amended; CAP-68's open question noted; live-sources.md gains CAP and Floor columns and the core-sources row; glossary.md companion added. Prior "2026-10-26"   # AMENDED 2026-10-26 (every requirement derives from a capability): CAP-72 minted from the Constraint "Conda-forge-only, pixi-managed, py3.14-floored provisioning" (operator ruling 2026-10-26, reversing the 2026-10-25 "cite the constraint" ruling for FR-15); FR-15 <- CAP-72. Prior "2026-10-25"
 owner-dream: docs/dreams/pyforge-atlas.md
 covers-dreams:
   - docs/dreams/pyforge-atlas.md
@@ -559,7 +559,7 @@ One-chain rebase 2026-09-17. Each reminted CAP keeps provenance `← spec-<old> 
     public-derived rows (operator ruling 2026-10-21); the six on-demand boards (scan-project, env-inspect,
     inventory-match, add-handoff, library-futures, recommend-2027) stay honest-empty. The provenance test and
     `kedro-catalog-check` exit 0.
-- **CAP-70 — kedro-skills guidance is adopted only after an audit against the architecture invariants** ← spec-kedro-org-tooling-adoption Capability 1 (shipped; restored 2026-10-25: the 2026-09-17 fold minted no CAP from that Spec's plain-list capabilities)
+- **CAP-70 — kedro-skills guidance is adopted only after an audit against the architecture invariants** ← spec-kedro-org-tooling-adoption Capability 1 (shipped 2026-08-09; restored 2026-10-25: the 2026-09-17 fold minted no CAP from that Spec's plain-list capabilities)
   - **intent:** `kedro-skills`, pinned at the version evaluated, runs against the real `pyforge-atlas` project, and every
     piece of generated guidance is audited against Atlas's AD-invariants (AD-1's no-inline-IO scan, the injected-fetcher
     seams, the `kedro-catalog-check` invariant, the credential-scoping allowlist) before any of it lands in
@@ -568,20 +568,28 @@ One-chain rebase 2026-09-17. Each reminted CAP keeps provenance `← spec-<old> 
     content is committed reproducibly and version-pinned, contradicting content is excluded with the contradiction
     recorded, a version bump re-triggers the audit, and a "not yet" verdict is a valid final outcome. Realized by atlas
     Story 11.1.
-- **CAP-71 — the vscode-kedro adopt-or-defer decision is recorded** ← spec-kedro-org-tooling-adoption Capability 3 (shipped; restored 2026-10-25: the 2026-09-17 fold minted no CAP from that Spec's plain-list capabilities)
+- **CAP-71 — the vscode-kedro adopt-or-defer decision is recorded** ← spec-kedro-org-tooling-adoption Capability 3 (shipped 2026-08-09; restored 2026-10-25: the 2026-09-17 fold minted no CAP from that Spec's plain-list capabilities)
   - **intent:** an explicit adopt-or-defer decision on `vscode-kedro`, with its reason, is committed where the next
     reader finds it.
   - **success:** the decision record exists (`spec-kedro-org-tooling-adoption/vscode-kedro-decision.md`), with an
     optional one-line `.vscode/extensions.json` recommendation if deferred; either outcome closes the capability, and
     silence does not. Realized by atlas Story 11.3.
-- **CAP-72 — every atlas component provisions from conda-forge through pixi on the 3.14 floor, air-gapped** ← Constraint "Conda-forge-only, pixi-managed, py3.14-floored provisioning" (shipped — Epic 2 / Story A1 delivered it; minted 2026-10-26 on the operator ruling that a requirement cites capabilities only, reversing the 2026-10-25 "cite the constraint" ruling for FR-15; the Constraint stays, as its provenance)
+- **CAP-72 — every atlas component provisions from conda-forge through pixi on the 3.14 floor, air-gapped** ← Constraint "Conda-forge-only, pixi-managed, py3.14-floored provisioning" (shipped 2026-07-17; Epic 2 / Stories 2.1 and 2.2, the spec's Stories A1 and A2, delivered it; minted 2026-10-26 on the operator ruling that a requirement cites capabilities only, reversing the 2026-10-25 "cite the constraint" ruling for FR-15; the Constraint stays, as its provenance; success made checkable 2026-11-05 on the EGM audit, ATL-M-F2)
   - **intent:** an operator or agent provisions the whole atlas stack — every component — from conda-forge through
     `pixi.toml`, scaffolded by `nebi`, with no standalone binary or JVM, on the Python 3.14 floor, and the same
-    provisioning works air-gapped through both routing layers (`_http.py` and `.pixi/config.toml [pypi-config]`);
-    the scaffolded project ships its own lean pixi env and the `kedro-test` verify task.
-  - **success:** the stack resolves at its pins on Python 3.14; `llms-full-check` passes after any dependency change,
-    with the catalog updated in the same PR; the lean env and `kedro-test` run in a worktree without materializing
-    the fat `local-recipes` env; both air-gap routing layers route every outbound fetch. Delivered by Story A1 (Epic 2, done); FR-15 derives from it.
+    provisioning works air-gapped through both routing layers: `.pixi/config.toml [pypi-config]` at install, and at
+    run time the catalog-level `${env_or:<HOST>_BASE_URL,<default>}` globals in `conf/base/globals.yml`, the successor to
+    the legacy `_http.py` convention; the scaffolded project ships its own lean pixi env and the `kedro-test` verify task.
+  - **success:** `pixi install --frozen -e pyforge-atlas` exits 0 on Python 3.14 at the locked pins;
+    `pixi run -e pyforge-guild llms-full-check` exits 0, with the library catalog (`docs/reference/library-llms-full.md`)
+    updated in the same PR as any dependency change; `pixi run --frozen -e pyforge-atlas kedro-test` exits 0 in a worktree
+    from that env alone, without the fat `local-recipes` env; `pixi run --frozen -e pyforge-atlas kedro-catalog-check`
+    exits 0, and with it `tests/unit/catalog/test_override_points.py::test_catalog_never_hardcodes_a_host` and
+    `tests/unit/catalog/test_no_inline_io.py::test_no_inline_io_in_package_code` prove that every URL in `catalog.yml`
+    routes through a global and that package code opens no HTTP client inline. That is all the air-gap claim proves:
+    `.pixi/config.toml` is an operator file outside the repo, the channel fallback in `datasets/core_sources.py` reads
+    `<CHANNEL>_BASE_URL` directly and hard-codes its public defaults, and no network-denied run is part of this success.
+    Delivered by Stories 2.1 and 2.2 (the spec's Stories A1 and A2, Epic 2, done); FR-15 derives from it.
 
 ## Constraints
 

@@ -3,7 +3,7 @@ title: "Herald Pitch Expansion — Moment 1 Orchestration"
 slug: brief-herald-pitch-2026-08-01
 status: ready
 created: 2026-08-01
-updated: "2026-11-01"
+updated: "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior "2026-11-01"
 context: pyforge-herald
 ---
 
@@ -234,3 +234,9 @@ lines. The operator's two rulings of the same day are outside this brief's scope
 `ci-status.json` stays an operator refresh at each CI pause and resume, and an operator-owned
 scheduled routine republishes the claude.ai dossier artifact. Both are recorded in CAP-59, CAP-47 and
 deferred-work row `DW-herald-egm-2026-11-01-1`. **Content changed:** this section and `updated:`.
+
+## Currency reconciliation — 2026-11-05
+
+*Chain-currency cascade (research -> brief), EGM audit, marshal Story 113.18.*
+
+The station's audit record joins this brief's inputs: `research/egm-audit-2026-11-05.md` (marshal Story 113.18, `spec-pyforge-marshal:CAP-302`): 14 high findings, 4 accepted, 7 rejected, 3 deferred; the medium and low findings are not triaged. The product scope does not change.

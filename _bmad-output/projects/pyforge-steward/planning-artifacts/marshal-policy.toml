@@ -1524,6 +1524,9 @@ verify_commands = [
   "src/platform/config/flags.json",
   "docs/governance/guild-roster.json",
   "docs/governance/rulesets/protected-refs.json",
+  "scripts/_protected_refs_ruleset_lib.py",  # Story 118.3 AC1 (EGM audit STW-M-F2, 2026-11-05)
+  "scripts/protected_refs_ruleset_check.py",
+  "tests/scripts/test_protected_refs_ruleset_check.py",
   "docs/how-to/host-nebari.md",
   "pixi.toml",
   "pixi.lock",

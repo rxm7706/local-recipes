@@ -2,7 +2,7 @@
 title: "Product Brief: pyforge-scribe"
 status: "complete"
 created: "2026-07-25"
-updated: "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): research→brief edge (research/egm-audit-2026-11-01.md); § Currency reconciliation — 2026-11-01 appended; problem, users and scope unchanged. Prior "2026-09-19"   # RE-STAMPED 2026-09-19: research→brief edge (multi-harness-instruction-surface-2026-09-19.md); § Currency reconciliation — 2026-09-19 appended, scope folded in.
+updated: "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): research→brief edge (research/egm-audit-2026-11-01.md); § Currency reconciliation — 2026-11-01 appended; problem, users and scope unchanged. Prior "2026-09-19"   # RE-STAMPED 2026-09-19: research→brief edge (multi-harness-instruction-surface-2026-09-19.md); § Currency reconciliation — 2026-09-19 appended, scope folded in.
 inputs:
   - "docs/dreams/pyforge-scribe.md"
   - "docs/dreams/team-memory.md"
@@ -191,3 +191,9 @@ places, all inside the Wave 3 scope folded in on 2026-09-19 or in CAPs minted si
 
 **Scope, users and success criteria are unchanged.** No CAP was minted. The four fix stories are
 done.
+
+## Currency reconciliation — 2026-11-05
+
+*Chain-currency cascade (research -> brief), EGM audit, marshal Story 113.18.*
+
+The station's audit record joins this brief's inputs: `research/egm-audit-2026-11-05.md` (marshal Story 113.18, `spec-pyforge-marshal:CAP-302`): 11 high findings, 3 accepted, 5 rejected, 3 deferred; the medium and low findings are not triaged. The product scope does not change.

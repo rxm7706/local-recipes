@@ -724,6 +724,10 @@ Folded Dreams: [[bmad-drift-new-artifact-shape]], [[bmad-method-version-drift]],
   same PR: Stories 45.4 (the ci-pause relay keeps steward's reason, CAP-89), 48.3 (pages-liveness reads its
   inputs from pages.yml, CAP-91) and 50.2 (fr-baseline.json grows only through its script, CAP-92); CAP-93's
   owner clause narrows to the REGISTRY refusal.
+- **2026-11-05 (the first automated EGM audit) — Found:** `marshal factory challenge --audit` (marshal Story 113.18,
+  spec-pyforge-marshal:CAP-302) read the compiled skill, CAP-93 and Epic 50: 12 high findings, 1 accepted, 9 rejected,
+  2 deferred, with 45 medium and 15 low not triaged; residue
+  `_bmad-output/projects/pyforge-doctor/planning-artifacts/research/egm-audit-2026-11-05.md`. CAP-93 names its pre-write guard test. Most highs were rejected: the tracked story specs already decide them.
 
 ## 2026-10-26 — A spike report is not a corrupt file, and the classifier can't yet tell the difference (folded from bmad-drift-new-artifact-shape)
 

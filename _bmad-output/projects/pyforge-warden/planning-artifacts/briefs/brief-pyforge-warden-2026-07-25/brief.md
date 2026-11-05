@@ -2,7 +2,7 @@
 title: 'Product Brief: Warden (pyforge-warden)'
 status: complete
 created: 2026-07-25
-updated: "2026-11-01"
+updated: "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior "2026-11-01"
 inputs:
   - 'docs/dreams/pyforge-warden.md'
   - 'docs/dreams/pyforge-charter.md § 4 Warden'
@@ -312,3 +312,9 @@ on `main`, so CAP-23..CAP-26 keep `(ready <date>)`. The ledger reads 76 of 76 st
 
 **5. No architecture decision moved.** The fix stories land on the spine's 2026-09-28 Decision 1 (pixi runs only
 inside the actuator's real path) and Decision 2 (the fleet lives in `django-warden`).
+
+## Currency reconciliation — 2026-11-05
+
+*Chain-currency cascade (research -> brief), EGM audit, marshal Story 113.18.*
+
+The station's audit record joins this brief's inputs: `research/egm-audit-2026-11-05.md` (marshal Story 113.18, `spec-pyforge-marshal:CAP-302`): 21 high findings, 6 accepted, 14 rejected, 1 deferred; the medium and low findings are not triaged. The product scope does not change.

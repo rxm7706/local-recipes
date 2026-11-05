@@ -2,7 +2,7 @@
 title: Marshal — graduated autonomy on the factory floor
 status: draft
 created: 2026-07-25
-updated: 2026-11-01  # currency reconciliation — the EGM audit research (2026-11-01) folded in; the zero-false-greens criterion extends to the challenger's own reads. See "Currency reconciliation — 2026-11-01".
+updated: "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior 2026-11-01  # currency reconciliation — the EGM audit research (2026-11-01) folded in; the zero-false-greens criterion extends to the challenger's own reads. See "Currency reconciliation — 2026-11-01".
 # 2026-10-04  # currency reconciliation — the preserved-work-refs research (2026-10-04) and its review folded in; durability of saved work joins the problem and success criteria. See "Currency reconciliation — 2026-10-04".
 # 2026-08-26  # currency reconciliation — the 2026-08-08 research triad (domain/market/technical refresh + technical-pyforge-unification) folded in; shipped state re-grounded at 165/165 stories, Epics 1-27; harness era corrected to bmad-loop >=0.11.0,<0.12. See "Currency reconciliation - 2026-08-26" at the end of this file.
 # 2026-08-02  # genesis-installer brief consolidated in as a Satellite section (explicit user override); competitive re-framing + Epic-1 shipped facts + Q3 resolution (see JSON block)
@@ -651,3 +651,9 @@ last update (2026-10-04). It changes the brief in one place: the fresh-context c
 
 Decomposed as `spec-pyforge-marshal` CAP-298..CAP-303 → PRD FR-240..FR-245 → Epic 113 (the audit's fixes are
 Stories 113.8–113.14).
+
+## Currency reconciliation — 2026-11-05
+
+*Chain-currency cascade (research -> brief), EGM audit, marshal Story 113.18.*
+
+The station's audit record joins this brief's inputs: `research/egm-audit-2026-11-05.md` (marshal Story 113.18, `spec-pyforge-marshal:CAP-302`): 15 high findings, 11 accepted, 4 rejected, 0 deferred; the medium and low findings are not triaged. The product scope does not change.

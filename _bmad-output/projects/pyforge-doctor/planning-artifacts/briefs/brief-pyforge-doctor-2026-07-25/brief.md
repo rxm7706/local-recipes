@@ -2,7 +2,7 @@
 title: 'Product Brief: Doctor (pyforge-doctor)'
 status: complete
 created: 2026-07-25
-updated: '2026-11-01'
+updated: '2026-11-05'   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior '2026-11-01'
 inputs:
   - 'docs/dreams/pyforge-doctor.md'
   - 'docs/dreams/ecosystem-crew.md § 6 Doctor'
@@ -339,3 +339,9 @@ hand) and success clauses that named no test. Two results bear on the brief's te
 
 **Content changed:** this section, the research file added to `inputs:`, and `updated:`. No scope, criterion or
 assumption in the body above changes.
+
+## Currency reconciliation — 2026-11-05
+
+*Chain-currency cascade (research -> brief), EGM audit, marshal Story 113.18.*
+
+The station's audit record joins this brief's inputs: `research/egm-audit-2026-11-05.md` (marshal Story 113.18, `spec-pyforge-marshal:CAP-302`): 12 high findings, 1 accepted, 9 rejected, 2 deferred; the medium and low findings are not triaged. The product scope does not change.

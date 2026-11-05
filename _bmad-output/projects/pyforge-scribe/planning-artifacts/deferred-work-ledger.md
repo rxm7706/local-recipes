@@ -442,3 +442,45 @@ sibling ledgers and the detector both use.
   severity: low
   promoted: 2026-10-26 — the retrofit chain commit
   status: open
+
+### DW-scribe-egm-2026-11-05-1: Nothing fails if the catalog's Read-on-trigger row leaves AGENTS.md (SCR-D-F1)
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-scribe/SPEC.md`; EGM audit 2026-11-05 (marshal Story 113.18)
+  summary: Nothing fails if the catalog's Read-on-trigger row leaves AGENTS.md (SCR-D-F1)
+  evidence: a guard covers only typed counts in the bmad:context block (Story 23.2).
+  location: src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py
+  origin: EGM audit 2026-11-05 (marshal Story 113.18)
+  fix: add the pointer assertion to the parity test.
+  owner: scribe
+  severity: low
+  promoted: 2026-11-05 — EGM audit landing (marshal Story 113.18)
+  reason: deferred by triage: a test gap with no running failure.
+  status: open
+
+### DW-scribe-egm-2026-11-05-2: Four of the seven digested catalog sections have no drift test (SCR-M-F3)
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-scribe/SPEC.md`; EGM audit 2026-11-05 (marshal Story 113.18)
+  summary: Four of the seven digested catalog sections have no drift test (SCR-M-F3)
+  evidence: only installed, skills and harness have a test that moves a source and expects exit 1.
+  location: src/shared/packages/pyforge-scribe/tests/unit/test_catalog_bmad_estate.py
+  origin: EGM audit 2026-11-05 (marshal Story 113.18)
+  fix: add the four drift cases.
+  owner: scribe
+  severity: low
+  promoted: 2026-11-05 — EGM audit landing (marshal Story 113.18)
+  reason: deferred by triage: a test gap with no running failure.
+  status: open
+
+### DW-scribe-egm-2026-11-05-3: Accepted finding RUL-A-F3 waits for the next bmad-project-context refresh
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-scribe/SPEC.md`; EGM audit 2026-11-05 (marshal Story 113.18)
+  summary: Accepted finding RUL-A-F3 waits for the next bmad-project-context refresh
+  evidence: the operator accepted the text 2026-11-05; the line sits in AGENTS.md's bmad:context block, which only a refresh may change, and a refresh re-verifies the whole block and stamps its date and SHA.
+  location: AGENTS.md (bmad:context block, the Policy line on the foundry target tree)
+  origin: EGM audit 2026-11-05 (marshal Story 113.18)
+  fix: at the next bmad-project-context refresh, say 'never mint a lasting src/shared/packages/ package (a new package directory; files in an existing station package are not new paths)'.
+  owner: scribe
+  severity: low
+  promoted: 2026-11-05 — EGM audit landing (marshal Story 113.18)
+  reason: a full refresh is its own reviewed pass, and the line misleads nobody into a wrong write today.
+  status: open
