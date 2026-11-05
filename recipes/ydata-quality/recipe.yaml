@@ -79,6 +79,7 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: failed stands and is exempt by name from CAP-35's grep (operator ruling 2026-11-05): upstream requires python below 3.9, pip refuses it on the 3.11 floor, and no build can run until upstream moves or the feedstock retires.
 #    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
 #    # 2026-11-05 Story 25.19: python_min stays at the floor although the feedstock sets 3.7: rules 4 and 5 of the python version policy forbid a value below it (G127).
 #    # 2026-07-03 Set F wave (tracker residuals) — LOCAL BUILDS ONLY.
