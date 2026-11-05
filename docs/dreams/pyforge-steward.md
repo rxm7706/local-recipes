@@ -2111,6 +2111,10 @@ Drift — orphaned between stations.
   `--review-by 2026-11-01` through `main`, which reads the real clock, so it went red on `main` on 2026-11-02 with no
   code change (`ci pause: refused — review_by 2026-11-01 is in the past`). Every sibling test in that file injects
   `now`. Story 99.9 gives it the same fixed clock, under CAP-166; no CAP moves.**
+- **2026-11-04 (a runner image moved /tmp)** — Found: `herald-test` failed with `EXDEV` on PR #2360 and no diff caused it. Astro
+  renames its build into pytest's temp dir, and runner image 20261101.64.1 put `/tmp` on another filesystem, the failure the
+  operator's laptop has shown since 2026-10. The built-site step now sets `TMPDIR` to `runner.temp` (Story 117.13). Shape: a
+  test that writes across a filesystem boundary passes only while the image keeps both sides on one disk.
 - **2026-10-25 (FR-1..FR-31 never got their arrows) — Found: the steward PRD's first 31 requirements name no
   capability.** A fleet audit of every station PRD's `FR-n ← CAP-m` arrows, run after marshal Story 105.1 found
   marshal's counted rather than traced, found steward's arrows right where they exist, and missing on FR-1..FR-31.

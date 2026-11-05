@@ -49,7 +49,7 @@ _VERSION_TIMEOUT_S = 30.0
 _PLUGIN_CACHE_READ_DIRS: tuple[str, ...] = ("agents", "docs", "resources", "skills")
 # The orchestrator session spawns reviewers and writes one report; nothing else (review S5).
 ORCHESTRATOR_TOOLS: tuple[str, ...] = ("Agent", "Read", "Grep", "Glob")
-DENIED_TOOLS: tuple[str, ...] = ("Bash", "Edit", "MultiEdit", "NotebookEdit", "WebFetch", "WebSearch")
+DENIED_TOOLS: tuple[str, ...] = ("Bash", "Edit", "NotebookEdit", "WebFetch", "WebSearch")
 _PERMISSION_MODE = "default"  # never the dispatch profile's bypassPermissions: the allow/deny lists must bind
 # Story 113.10 (CAP-299): repo-relative globs no reviewer may Read -- the instruction files at the
 # root and nested, every memlog and the team memory. ``*/**/`` is one directory deep or more, so the
@@ -111,23 +111,25 @@ def widen_settings(
     deny_rules: Sequence[str] = (),
 ) -> str:
     """Add the orchestrator's permissions to a profile's ``--settings`` JSON: the
-    plugin-cache read rules, read-only tools plus ``Agent``, one ``Write`` rule
-    confined to the run folder, and an explicit deny list (the tools, a ``Write``
+    plugin-cache read rules, read-only tools plus ``Agent``, one ``Edit`` path rule
+    confined to the run folder, and an explicit deny list (the tools, an ``Edit``
     deny on the run folder's ``slices/`` -- the sliced target and Dream the reviewers
     read, which deny-over-allow keeps the session from rewriting, Story 113.14 --
-    then ``deny_rules``). Story 113.10: every hook off, no ``instructionFiles`` plugin
-    config, and ``egm@egm`` enabled in this scope."""
+    then ``deny_rules``). Claude Code matches a path rule only as ``Edit(<path>)``, which
+    covers the ``Write`` tool; a ``Write(<path>)`` rule binds nothing (Story 113.15). Story
+    113.10: every hook off, no ``instructionFiles`` plugin config, and ``egm@egm`` enabled
+    in this scope."""
     try:
         settings = json.loads(settings_json) if settings_json else {}
     except json.JSONDecodeError as exc:
         raise ChallengeHarnessError(f"claude profile --settings is not JSON: {exc}") from exc
     permissions = dict(settings.get("permissions") or {})
     allow = list(permissions.get("allow") or [])
-    wanted = [*ORCHESTRATOR_TOOLS, *read_rules, *([f"Write(/{run_dir}/**)"] if run_dir is not None else [])]
+    wanted = [*ORCHESTRATOR_TOOLS, *read_rules, *([f"Edit(/{run_dir}/**)"] if run_dir is not None else [])]
     allow.extend(rule for rule in wanted if rule not in allow)
     permissions["allow"] = allow
     deny = list(permissions.get("deny") or [])
-    slices_deny = [f"Write(/{run_dir / SLICES_DIRNAME}/**)"] if run_dir is not None else []
+    slices_deny = [f"Edit(/{run_dir / SLICES_DIRNAME}/**)"] if run_dir is not None else []
     deny.extend(rule for rule in (*DENIED_TOOLS, *slices_deny, *deny_rules) if rule not in deny)
     permissions["deny"] = deny
     settings["permissions"] = permissions

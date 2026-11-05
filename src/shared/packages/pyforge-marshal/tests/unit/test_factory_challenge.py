@@ -19,6 +19,7 @@ from pathlib import Path
 
 import pytest
 from pyforge.core.flags import FlagOff
+from pyforge.core.roster import STATIONS, long_form
 from pyforge.testing_kit.flags import flag_states, flagd_tree
 
 from pyforge.marshal.adapters import challenge_harness as harness
@@ -513,7 +514,7 @@ _PRICE = {"input_per_million": 1, "output_per_million": 2}
 FLEET_CATALOG = {
     "providers": {
         "cursor": {"models": {"composer-2.5": _PRICE, "composer-2.5-fast": _PRICE}},
-        "anthropic": {"models": {"claude-fable-5-1": _PRICE, "sonnet-5": _PRICE, "opus-5": _PRICE, "haiku-5": _PRICE}},
+        "anthropic": {"models": {"claude-fable-5-1": _PRICE, "claude-sonnet-5-5": _PRICE, "opus-5": _PRICE}},
         "openai": {"models": {"gpt-5.6-terra": _PRICE}},
         "google": {"models": {"gemini-3.7-flash": _PRICE}},
     }
@@ -527,15 +528,16 @@ FRONTIER_TIERS = {
 }
 
 
-def test_session_models_carry_the_adapter_models_and_the_launch_model() -> None:
-    """Story 113.9: 'session model' is the tier map's models plus the [adapter] and [adapter.review] models."""
+def test_session_models_carry_the_tier_models_the_live_baselines_and_the_launch_model() -> None:
+    """Story 113.9, narrowed by Story 113.16: 'session model' is the tier map's models, the [adapter] and
+    [adapter.review] baselines a tier can still fall to, and a dispatch's launch model. Every fixture tier sets
+    ``dev``, so ``sonnet`` is none; ``medium`` leaves ``review`` unset, so ``opus`` is one."""
     effective = _effective(tiers=FRONTIER_TIERS)
-    assert cli.adapter_models(effective) == ["sonnet", "opus"]
+    assert cli.adapter_models(effective) == ["opus"]
     assert cli.session_models(effective) == [
         "composer-2.5-fast",
         "claude-fable-5-1",
         "claude-fable-5-1",
-        "sonnet",
         "opus",
     ]
     assert cli.session_models(effective, launch_model="composer-2.5")[-1] == "composer-2.5"
@@ -566,14 +568,74 @@ def test_a_model_that_is_no_anthropic_catalog_entry_refuses_at_render(
     assert f"[challenge].model {model!r} {reason}" in capsys.readouterr().err
 
 
-@pytest.mark.parametrize("model", ["claude-fable-5-1", "sonnet-5", "opus-5"])
+_STAGE = {"harness": "cursor", "model": "composer-2.5-fast"}
+
+
+@pytest.mark.parametrize(
+    ("tiers", "baselines"),
+    [
+        ({}, ["sonnet", "opus"]),  # no tier map: every session runs on the baselines
+        ({"medium": {"review": _STAGE}}, ["sonnet"]),  # a tier leaves dev unset
+        ({"medium": {"dev": _STAGE}}, ["opus"]),  # a tier leaves review unset
+        ({"medium": {"dev": _STAGE, "review": _STAGE}}, []),  # every stage set: no session falls to a baseline
+        ({"heavy": {"dev": _STAGE, "review": _STAGE}, "easy": {"dev": _STAGE}}, ["opus"]),  # one tier is enough
+    ],
+)
+def test_a_baseline_counts_only_while_a_tier_can_fall_to_it(tiers: dict[str, object], baselines: list[str]) -> None:
+    """Story 113.16 AC2: an [adapter] or [adapter.review] baseline is a session model only while a stage can run on
+    it, so a station whose tiers all set a stage never authors on that stage's baseline."""
+    assert cli.adapter_models(_effective(tiers=tiers)) == baselines
+
+
+def test_a_dispatch_launch_model_still_refuses_a_sonnet_challenger() -> None:
+    """Story 113.16 AC3: a Sonnet renders while no session runs on one; a ``sonnet`` launch is the author's model."""
+    effective = _effective(catalog=FLEET_CATALOG, tiers=FRONTIER_TIERS)
+    config = core.ChallengeConfig(enabled=True, stages=("readiness",), model="claude-sonnet-5-5")
+    assert cli.model_refusals(config, slug=SLUG, effective=effective) == []
+    assert "own model" in " ".join(cli.model_refusals(config, slug=SLUG, effective=effective, launch_model="sonnet"))
+
+
+def test_a_sonnet_renders_on_all_eight_live_stations() -> None:
+    """Story 113.16 AC1, AC3, read from the live policies: the comment's example renders on every station; the
+    ``easy`` tier leaves ``review`` on its baseline, so ``opus`` stays a session model; Fable refuses only on marshal."""
+    sonnet = core.ChallengeConfig(enabled=True, stages=("mint",), model="claude-sonnet-5-5")
+    fable = core.ChallengeConfig(enabled=True, stages=("mint",), model="claude-fable-5-1")
+    for slug in (long_form(station) for station in STATIONS):
+        effective = cli.compose_effective(slug)
+        assert cli.model_refusals(sonnet, slug=slug, effective=effective) == [], slug
+        assert "opus" in cli.session_models(effective) and "sonnet" not in cli.session_models(effective), slug
+        refused = cli.model_refusals(fable, slug=slug, effective=effective)
+        assert bool(refused) is (slug == "pyforge-marshal"), slug
+        assert "marshal factory spin" in " ".join(
+            cli.model_refusals(sonnet, slug=slug, effective=effective, stage="drift")
+        )
+        drift = cli.model_refusals(fable, slug=slug, effective=effective, stage="drift")
+        assert bool(drift) is (slug == "pyforge-marshal"), slug
+
+
+def test_the_catalog_sonnet_is_an_id_claude_launches() -> None:
+    """Story 113.16 AC4: ``claude --model sonnet-5`` exits 1 (``claude-code:unrecognized_model``), so the catalog names
+    ``claude-sonnet-5-5`` at the same rates."""
+    text = config_cli.conventional_project_policy_path(SLUG).read_text(encoding="utf-8")
+    models = tomllib.loads(text)["model_cost_catalog"]["providers"]["anthropic"]["models"]
+    assert "sonnet-5" not in models
+    assert models["claude-sonnet-5-5"] == {
+        "input_per_million": 2.0,
+        "output_per_million": 10.0,
+        "cache_read_per_million": 0.2,
+        "cache_write_per_million": 2.5,
+    }
+
+
+@pytest.mark.parametrize("model", ["claude-fable-5-1", "opus-5"])
 def test_a_station_model_or_an_alias_of_one_refuses_at_render(
     model: str, repo: Path, tmp_path: Path, monkeypatch, capsys
 ) -> None:
-    """Story 113.9 AC3: the frontier model, and the [adapter] (``sonnet``) and [adapter.review] (``opus``) models
-    through their aliases, are each the station's own model; ``haiku-5`` (no station model) renders."""
+    """Story 113.9 AC3: the frontier model, and through its alias the [adapter.review] baseline (``opus``) a tier can
+    still fall to, are each the station's own model; ``claude-sonnet-5-5`` renders, since every tier sets ``dev`` and
+    no session runs on the [adapter] baseline (Story 113.16)."""
     _flags(tmp_path, monkeypatch, egm_challenge=True, egm_policy_block=True)
-    for candidate, expected in ((model, USAGE), ("haiku-5", 0)):
+    for candidate, expected in ((model, USAGE), ("claude-sonnet-5-5", 0)):
         block = {**BLOCK, "model": candidate}
         monkeypatch.setattr(
             cli, "compose_effective", lambda slug, b=block: _effective(b, catalog=FLEET_CATALOG, tiers=FRONTIER_TIERS)
@@ -584,7 +646,7 @@ def test_a_station_model_or_an_alias_of_one_refuses_at_render(
         if expected == USAGE:
             assert runner.prompts == [] and "own model" in capsys.readouterr().err
         else:
-            assert runner.model == "haiku-5"
+            assert runner.model == "claude-sonnet-5-5"
 
 
 def test_another_station_reads_marshal_s_catalog(repo: Path, tmp_path: Path, monkeypatch) -> None:
@@ -626,35 +688,38 @@ def _documented_example_model(text: str) -> str:
     return model
 
 
-def test_the_documented_example_renders_off_marshal_and_refuses_on_marshal() -> None:
-    """Story 113.9 AC4 (amended 2026-11-01): the marshal-policy.toml comment example names ``claude-fable-5-1``,
-    marshal's own frontier model. Against the live policies it renders on another station (atlas) and refuses on
-    marshal with a reason naming that frontier model; neither marshal-policy.toml nor the repo default declares
-    ``[challenge]``."""
+def test_the_documented_example_renders_and_marshal_s_frontier_model_refuses_on_marshal() -> None:
+    """Story 113.9 AC4 (amended by Story 113.16): the marshal-policy.toml comment example names ``claude-sonnet-5-5``,
+    which renders on marshal; ``claude-fable-5-1``, marshal's own frontier model, refuses there with a reason naming
+    it; neither marshal-policy.toml nor the repo default declares ``[challenge]``."""
     path = config_cli.conventional_project_policy_path(SLUG)
     text = path.read_text(encoding="utf-8")
     assert "challenge" not in tomllib.loads(text)
     repo_defaults, _ = config_cli.read_repo_policy_defaults()
     assert "challenge" not in repo_defaults
     example = _documented_example_model(text)
-    assert example == "claude-fable-5-1"
-    example_config = core.config_from_block({"enabled": True, "stages": list(core.STAGES), "model": example})
-
-    atlas = "pyforge-atlas"
-    assert cli.model_refusals(example_config, slug=atlas, effective=cli.compose_effective(atlas)) == []
-
+    assert example == "claude-sonnet-5-5"
     marshal = cli.compose_effective(SLUG)
+    example_config = core.config_from_block({"enabled": True, "stages": list(core.STAGES), "model": example})
+    assert cli.model_refusals(example_config, slug=SLUG, effective=marshal) == []
+
+    fable = "claude-fable-5-1"
     frontier = dict(marshal.model_tier_map.value)["frontier"]
-    assert frontier["dev"]["model"] == frontier["review"]["model"] == example
-    (reason,) = cli.model_refusals(example_config, slug=SLUG, effective=marshal)
-    assert reason.startswith(f"[challenge].model {example!r} is the dispatching session's own model ({example})")
+    assert frontier["dev"]["model"] == frontier["review"]["model"] == fable
+    fable_config = core.config_from_block({"enabled": True, "stages": list(core.STAGES), "model": fable})
+    (reason,) = cli.model_refusals(fable_config, slug=SLUG, effective=marshal)
+    assert reason.startswith(f"[challenge].model {fable!r} is the dispatching session's own model ({fable})")
 
 
 # --- 113.3: the dispatch hook (pyforge.marshal.egm_dispatch_readiness) ---------------------------------
 
 
 def _hook(
-    repo: Path, runner: FakeRunner, effective: policy.EffectivePolicy | None = None, *, launch_model: str | None = None
+    repo: Path,
+    runner: FakeRunner,
+    effective: policy.EffectivePolicy | None = None,
+    *,
+    launch_model: str | None = "composer-2.5-fast",
 ) -> tuple[object, list]:
     from pyforge.marshal.cli.dispatch import _readiness_challenge_before_launch
 
@@ -1419,3 +1484,61 @@ def test_a_refused_ad_hoc_run_leaves_no_orphan_slices(repo: Path, tmp_path: Path
     assert cli.run_challenge(args, runner=runner, root=repo, now=lambda: NOW) == USAGE
     assert runner.prompts == [] and "missing-standard.md does not exist" in capsys.readouterr().err
     assert _egm_runs(repo) == []
+
+
+def test_a_fallthrough_list_s_models_are_session_models() -> None:
+    """Story 113.16 review: a tier stage may be a list of candidates (``core/tier_routing.py``); every one can run."""
+    composer = {"harness": "cursor", "model": "composer-2.5-fast"}
+    tiers = {"medium": {"dev": [composer, {"harness": "claude", "model": "claude-fable-5-1"}], "review": composer}}
+    assert cli.session_models(_effective(tiers=tiers)) == ["composer-2.5-fast", "claude-fable-5-1", "composer-2.5-fast"]
+
+
+def test_a_dropped_launch_model_refuses_the_readiness_review(repo: Path, tmp_path: Path, monkeypatch) -> None:
+    """Story 113.16 review: with a tier map, no launch model means ``MRS-DISP-043`` dropped the run's override, so the
+    session runs on the harness's own default and the challenger cannot be shown to differ; the dispatch proceeds."""
+    _flags(tmp_path, monkeypatch, egm_challenge=True, egm_policy_block=True, egm_dispatch_readiness=True)
+    runner = FakeRunner(findings=0)
+    payload, findings = _hook(repo, runner, launch_model=None)
+    assert runner.prompts == []
+    assert "harness's own default" in str(payload["error"])
+    assert [finding.code for finding in findings] == ["MRS-DISP-067"]
+
+
+def test_spin_models_are_what_spin_renders() -> None:
+    """Story 113.17: bmad-loop has no Cursor adapter, so spin drops a Cursor tier's model and runs on the [adapter]
+    baselines whatever the tier map says; a Claude tier's model renders; a run with no declared difficulty is the
+    baselines. ``triage`` authors nothing the challenger reads."""
+    effective = _effective(catalog=FLEET_CATALOG, tiers=FRONTIER_TIERS)
+    assert sorted(cli.spin_models(effective)) == ["claude-fable-5-1", "opus", "sonnet"]
+    assert sorted(cli.spin_models(_effective(catalog=FLEET_CATALOG, tiers={}))) == ["opus", "sonnet"]
+
+
+def test_drift_refuses_a_model_a_spin_session_can_run_on(repo: Path, tmp_path: Path, monkeypatch, capsys) -> None:
+    """Story 113.17: drift reads an epic's code, which a spin session may have written on the [adapter] baseline, so a
+    Sonnet refuses there before any spawn. Every other stage reads what no spin session authors, so it renders."""
+    _flags(tmp_path, monkeypatch, egm_challenge=True, egm_policy_block=True, egm_retro_drift=True)
+    block = {**BLOCK, "model": "claude-sonnet-5-5"}
+    monkeypatch.setattr(
+        cli, "compose_effective", lambda slug: _effective(block, catalog=FLEET_CATALOG, tiers=FRONTIER_TIERS)
+    )
+    runner = FakeRunner()
+    assert cli.run_challenge(_args(stage="drift", epic="7"), runner=runner, root=repo, now=lambda: NOW) == USAGE
+    assert runner.prompts == []
+    assert "a marshal factory spin session on sonnet" in capsys.readouterr().err
+    args = _args(stage="mint", target=str(cli.spec_path(repo, SLUG)))
+    assert cli.run_challenge(args, runner=runner, root=repo, now=lambda: NOW) == 0
+    assert runner.model == "claude-sonnet-5-5"
+
+
+def test_a_spin_policy_that_cannot_render_refuses_drift(monkeypatch) -> None:
+    """Story 113.17 review: spin can still run on the policy file on disk after a render fails, so a failed render
+    refuses ``drift`` and is never read as no model."""
+    effective = _effective(catalog=FLEET_CATALOG, tiers=FRONTIER_TIERS)
+    config = core.ChallengeConfig(enabled=True, stages=("drift",), model="claude-opus-9")
+
+    def broken(*_args: object, **_kwargs: object) -> str:
+        raise ValueError("max_dev_attempts is 0")
+
+    monkeypatch.setattr(cli, "render_policy_toml", broken)
+    reasons = cli.model_refusals(config, slug=SLUG, effective=effective, stage="drift")
+    assert any("cannot read what marshal factory spin renders" in reason for reason in reasons)

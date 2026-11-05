@@ -242,7 +242,7 @@ def alias_of(model: str, aliases: Collection[str]) -> str | None:
     """The harness alias whose family ``model`` belongs to (Story 113.9), else ``None``.
 
     An alias such as ``sonnet`` names its family's current model, so a model id normalises to the
-    alias that is one of its ``-``/``.``/``_``-separated tokens (``sonnet-5`` and
+    alias that is one of its ``-``/``.``/``_``-separated tokens (``claude-sonnet-5-5`` and
     ``claude-sonnet-4-5`` are ``sonnet``). An alias is its own family; ``default`` (the account's
     default) is a token of no id, so it matches only itself."""
     by_name = {alias.lower(): alias for alias in aliases if alias}

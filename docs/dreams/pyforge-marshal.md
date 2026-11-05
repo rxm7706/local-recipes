@@ -13921,3 +13921,17 @@ row; the `steward setup` read rules) · [[pyforge-scribe]] (the
   `.claude/skills/bmad-spec/assets/spec-template.md` (the five-field shape), decompose `CHAIN-STANDARD.md` and
   the station `SPEC.md` whose capability range its stories claim, readiness
   `.claude/skills/bmad-build-auto/spec-template.md`, drift the station `SPEC.md`, rules `CHAIN-STANDARD.md`.
+- **2026-11-04 (the first pilot, and what it cost)** — The operator ran one review before the first `--audit`: a mint
+  review of atlas CAP-72. It paid for itself. Every reviewer finished and the run still ended unevaluable, because the
+  session could not write its report: the challenger's `Write(<path>)` rule binds nothing on Claude Code 2.1.318, which
+  matches path rules only in the `Edit(<path>)` form, so all 26 runs of a sweep would have failed the same way (Story
+  113.15). The pilot also ran on `claude-fable-5-1` at five times the Sonnet rates, because no Sonnet could pass: the
+  check counted an `[adapter]` baseline that every tier on every station overrides, and the catalog's `sonnet-5` is no id
+  `claude --model` accepts. The operator ruled the same day that a Sonnet must be able to challenge (Story 113.16). The
+  rule the operator set on 2026-11-01 stands: the challenger is never the model that authored the artifact.
+- **2026-11-04 (the spin gap narrowed)** — Story 113.16 accepted a gap it called two rare fallback paths. The operator said
+  close it, and rendering the live policies showed it was not rare: bmad-loop has no Cursor adapter, so on marshal every tier
+  but `frontier` runs `marshal factory spin` on `sonnet` and `opus`, and `drift` reads what those sessions wrote. `drift` now
+  compares what spin renders and refuses a Sonnet (Story 113.17). The audit stages keep it: they read planning and rules
+  files, which a dev session can touch but does not author whole. That residual is real, and only a challenger model no
+  session can author with removes it.

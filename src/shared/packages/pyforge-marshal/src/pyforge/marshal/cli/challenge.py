@@ -51,6 +51,7 @@ from ..core import policy
 from ..core.harness_profile import load_packaged_profiles
 from ..core.journal import JournalEntryId, Phase, build_entry, mint_run_id, prepare_for_write
 from ..core.model import Verdict
+from ..core.tier_routing import normalize_stage_entries, resolve_tier_launch
 from ..core.verdict import EXIT_OK, EXIT_USAGE, exit_code_for
 from .config import PolicyIOError, _read_project_policy, conventional_project_policy_path, read_repo_policy_defaults
 from .config import repo_root as _default_repo_root
@@ -215,8 +216,12 @@ def challenge_config(effective: policy.EffectivePolicy) -> core.ChallengeConfig:
 
 
 def adapter_models(effective: policy.EffectivePolicy) -> list[str]:
-    """The ``[adapter]`` and ``[adapter.review]`` models the station's bmad-loop policy renders
-    (Story 113.9). A policy bmad-loop refuses to load renders no session, so it names none."""
+    """The ``[adapter]`` (``dev``) and ``[adapter.review]`` (``review``) baselines of the station's bmad-loop policy
+    that a session can still run on by the station's declared tiers (Story 113.9, narrowed by Story 113.16): a
+    ``model_tier_map`` tier that leaves a stage unset runs it on its baseline, and a station with no tier map runs on
+    both. What a ``marshal factory spin`` session runs on is ``spin_models``, which the ``drift`` stage reads (Story
+    113.17). ``triage`` inherits ``[adapter]`` too, but a triage session authors no chain artifact. A policy that cannot
+    render names no baseline."""
     try:
         rendered = tomllib.loads(render_policy_toml(effective))
     except ValueError:
@@ -224,24 +229,55 @@ def adapter_models(effective: policy.EffectivePolicy) -> list[str]:
     adapter = rendered.get("adapter")
     if not isinstance(adapter, Mapping):
         return []
-    tables = [adapter, *(table for table in adapter.values() if isinstance(table, Mapping))]
-    return [table["model"] for table in tables if isinstance(table.get("model"), str) and table["model"]]
+    tier_map = effective.model_tier_map.value
+    tiers = [tier for tier in tier_map.values() if isinstance(tier, Mapping)] if isinstance(tier_map, Mapping) else []
+    baselines = (("dev", adapter), ("review", adapter.get("review")))
+    return [
+        table["model"]
+        for stage, table in baselines
+        if isinstance(table, Mapping)
+        and isinstance(table.get("model"), str)
+        and table["model"]
+        and not (tiers and all(tier.get(stage) for tier in tiers))
+    ]
+
+
+def spin_models(effective: policy.EffectivePolicy) -> list[str]:
+    """Every model a ``marshal factory spin`` session can author with (Story 113.17): the ``dev`` and ``review`` models
+    of the policy spin renders for each ``model_tier_map`` tier and for a run with no declared difficulty. Read from
+    that render, never from the tier map: bmad-loop has no Cursor adapter, so on a station that declares a catalog spin
+    drops a Cursor tier's model and runs on the ``[adapter]`` baselines. It reads the policy as it stands now, never
+    what a past run launched. A render that fails raises ``ValueError``: spin can still run on the policy file already
+    on disk, so the caller must not read a failed render as no model."""
+    tier_map = effective.model_tier_map.value
+    models: list[str] = []
+    for difficulty in (None, *(tier_map if isinstance(tier_map, Mapping) else ())):
+        resolution = resolve_tier_launch(effective, difficulty)
+        rendered = tomllib.loads(
+            render_policy_toml(
+                effective, difficulty=difficulty, adapter=resolution.adapter_name, tier_resolution=resolution
+            )
+        )
+        adapter = rendered.get("adapter")
+        if not isinstance(adapter, Mapping):
+            continue
+        for table in (adapter.get("dev") or adapter, adapter.get("review")):
+            if isinstance(table, Mapping) and isinstance(table.get("model"), str) and table["model"]:
+                models.append(table["model"])
+    return list(dict.fromkeys(models))
 
 
 def session_models(effective: policy.EffectivePolicy, *, launch_model: str | None = None) -> list[str]:
-    """Every model the station's sessions author with (CAP-299, Story 113.9): its
-    ``model_tier_map`` models, its ``[adapter]`` and ``[adapter.review]`` models, and, in a
+    """Every model the station's sessions can author with (CAP-299, Stories 113.9 and 113.16): its
+    ``model_tier_map`` models, the ``adapter_models`` baselines a tier can still fall to, and, in a
     dispatch, the run's resolved launch model."""
     models: list[str] = []
     tier_map = effective.model_tier_map.value
     if isinstance(tier_map, Mapping):
         for stages in tier_map.values():
             if isinstance(stages, Mapping):
-                for entry in stages.values():
-                    if isinstance(entry, Mapping) and isinstance(entry.get("model"), str):
-                        models.append(entry["model"])
-                    elif isinstance(entry, str):
-                        models.append(entry)
+                for candidates in normalize_stage_entries(stages).values():
+                    models.extend(candidate.model for candidate in candidates)
     models.extend(adapter_models(effective))
     if launch_model:
         models.append(launch_model)
@@ -270,15 +306,31 @@ def model_refusals(
     slug: str,
     effective: policy.EffectivePolicy,
     launch_model: str | None = None,
+    stage: str | None = None,
 ) -> list[str]:
     """``core.render_refusals`` with the challenger's catalog, the station's session models and the
-    claude profile's aliases (CAP-299, Story 113.9)."""
-    return core.render_refusals(
+    claude profile's aliases (CAP-299, Story 113.9). ``drift``'s whole target is what dev sessions wrote, so it also
+    refuses a model a ``marshal factory spin`` session can run on, and refuses when spin's policy cannot render
+    (CAP-301, Story 113.17)."""
+    aliases = challenger_aliases()
+    refusals = core.render_refusals(
         config,
         session_models=session_models(effective, launch_model=launch_model),
         model_cost_catalog=challenger_catalog(slug, effective),
-        aliases=challenger_aliases(),
+        aliases=aliases,
     )
+    if stage == "drift" and config.enabled:
+        try:
+            clashes = sorted({m for m in spin_models(effective) if core.same_model(config.model, m, aliases=aliases)})
+        except ValueError as exc:
+            refusals.append(f"the drift stage cannot read what marshal factory spin renders for {slug}: {exc}")
+            return refusals
+        if clashes:
+            refusals.append(
+                f"[challenge].model {config.model!r} cannot run the drift stage: the epic's code may come from "
+                f"a marshal factory spin session on {', '.join(clashes)}"
+            )
+    return refusals
 
 
 def plugins_root(env: Mapping[str, str] | None = None) -> Path:
@@ -998,7 +1050,7 @@ def _run(args: argparse.Namespace, *, runner: ChallengeRunner | None, root: Path
     config = challenge_config(effective)
     if not config.enabled:
         raise ChallengeRefused(f"the challenger is off for {slug}: no enabled [challenge] block")
-    refusals = model_refusals(config, slug=slug, effective=effective)
+    refusals = model_refusals(config, slug=slug, effective=effective, stage=args.stage)
     if refusals:
         raise ChallengeRefused("; ".join(refusals))
     if args.audit:
@@ -1132,7 +1184,9 @@ def readiness_for_dispatch(
     status move, never a ledger write, never a refusal of the dispatch. The
     challenger is never ``launch_model``, the run's resolved launch model (Story 113.9).
     The wait is bounded by the block's ``timeout_s.readiness`` (default 600 s, Story 113.14):
-    a session past it is killed and reported as an unevaluable result, and the dispatch proceeds."""
+    a session past it is killed and reported as an unevaluable result, and the dispatch proceeds.
+    With a tier map and no ``launch_model``, ``MRS-DISP-043`` dropped the run's override: the session runs on the
+    harness's own default, which no policy names, so the review refuses (Story 113.16)."""
     if not flag_on(EGM_CHALLENGE_FLAG_KEY) or not flag_on(EGM_DISPATCH_READINESS_FLAG_KEY):
         return ReadinessResult(ran=False)
     config = challenge_config(effective)
@@ -1142,6 +1196,11 @@ def readiness_for_dispatch(
     # ceiling (``timeout_s``, Story 113.14) -- carries over unchanged.
     one = replace(config, enabled=True, stages=("readiness",), reviewers={"readiness": ("implementation-readiness",)})
     refusals = model_refusals(one, slug=slug, effective=effective, launch_model=launch_model)
+    if launch_model is None and effective.model_tier_map.value:
+        refusals.append(
+            "the run launches on the harness's own default (its model override was dropped), "
+            "which cannot be shown to differ from [challenge].model"
+        )
     plugins = plugins or plugins_root()
     refusal = "; ".join(refusals) or plugin_refusal(plugins, one.plugin_version, ("implementation-readiness",))
     if refusal:
