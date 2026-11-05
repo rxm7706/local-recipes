@@ -34,6 +34,6 @@ defined. Fleet terms (station, `CAP-n`, `FR-n`, `AD-n`, A and B, the tiers, Path
 - **Operator-designated organisation** — the github.com organisation named only in the gitignored `.warden/fleet-target.toml` (`WARDEN_FLEET_TARGET_CONFIG`; `fleet_inventory.py`); fixtures say `example-org`.
 - **Fleet exports** — the gitignored `.warden/fleet-inventory.json` and `.warden/fleet-project-items.json` (`fleet_inventory.py`, `fleet_project_items.py`).
 - **`head_sha`** — a listed repo's default-branch tip, read by `fleet_github_rest.py`.
-- **Leak guard** — the platform test that forbids the organisation's name and the listed terms in tracked files (`src/platform/tests/test_warden_fleet_inventory.py`; `_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-18-1-the-leak-guard-forbids-the-listed-terms-everywhere-and-the-organisation-s-name-in-warden-s-files.md`).
+- **Leak guard** — the platform test that forbids the listed terms in every tracked file and the organisation's name in warden's own files (`src/platform/tests/test_warden_fleet_inventory.py`; `_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-18-1-the-leak-guard-forbids-the-listed-terms-everywhere-and-the-organisation-s-name-in-warden-s-files.md`).
 - **Platform suite** — `pixi run -e pyforge-guild platform-ci-local -- --test`, the local twin of `src/platform`'s CI lane (AGENTS.md § *Running and verifying*).
 - **`pyforge-warden-test`** — the station suite, `pixi run --frozen -e pyforge-warden pyforge-warden-test`.

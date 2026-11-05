@@ -255,6 +255,10 @@ One-chain fold: satellite Dreams archived in place with `Consolidated into [[pyf
   shares the manifest edit path, CAP-24), 15.2 (Opengrep runs estate-authored rules, CAP-25) and 16.6-16.10
   (fleet approve delivers, runs are time-bounded, non-Python lockfiles and rows report what ran, the export
   carries head_sha, CAP-26).
+- **2026-11-05 (the first automated EGM audit) — Found:** `marshal factory challenge --audit` (marshal Story 113.18,
+  spec-pyforge-marshal:CAP-302) read the compiled skill, CAP-26 and Epics 16 and 18: 21 high findings, 6 accepted, 14 rejected,
+  1 deferred, with 86 medium and 16 low not triaged; residue
+  `_bmad-output/projects/pyforge-warden/planning-artifacts/research/egm-audit-2026-11-05.md`. CAP-26 is re-derived with the leak guard's real scope and without a portal action that does not exist.
 
 ## 2026-10-26 — A web face for the compliance factory — upload a manifest, watch warden and atlas analyze it (folded from compliance-factory-web-face)
 

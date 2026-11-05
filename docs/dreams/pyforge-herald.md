@@ -786,6 +786,10 @@ Herald rebases to one Dream, one Spec, one PRD, one spine, one epic chain. Folde
   Fixed in the same PR: Story 42.4 (the status pages pin their snapshot lines, CAP-59, CAP-60). Still open:
   the Pages duct inputs for /changes/ and /status/runs/ (a steward chain), and the operator-owned dossier
   routine and ci-status.json refresh.
+- **2026-11-05 (the first automated EGM audit) — Found:** `marshal factory challenge --audit` (marshal Story 113.18,
+  spec-pyforge-marshal:CAP-302) read the compiled skill, CAP-61 and Epics 43 and 45: 14 high findings, 4 accepted, 7 rejected,
+  3 deferred, with 95 medium and 34 low not triaged; residue
+  `_bmad-output/projects/pyforge-herald/planning-artifacts/research/egm-audit-2026-11-05.md`. The accepted findings are skill findings, parked on Story 29.5. `DW-steward-43-6-1` stays open: `/changes/` and `/status/runs/` still publish "input absent".
 
 ## 2026-10-26 — The deck family stays current — infographics re-derived from the ledgers, not remembered (folded from deck-family-currency)
 

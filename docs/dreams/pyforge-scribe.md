@@ -284,6 +284,10 @@ owner of the facts (the register, `pipeline-truth`), Doctor of any ambient verdi
   (scribe-pg-down stops only this checkout's cluster, CAP-31), 23.2 (the instruction-surface guards prove
   every clause, CAP-27, CAP-29, CAP-30) and 25.2 (the estate catalog writes and checks byte-stably, CAP-32);
   AGENTS.md is corrected outside the bmad:context block and the block is refreshed by bmad-project-context.
+- **2026-11-05 (the first automated EGM audit) — Found:** `marshal factory challenge --audit` (marshal Story 113.18,
+  spec-pyforge-marshal:CAP-302) read the compiled skill, CAP-32 and Epics 24 and 25: 11 high findings, 3 accepted, 5 rejected,
+  3 deferred, with 79 medium and 27 low not triaged; residue
+  `_bmad-output/projects/pyforge-scribe/planning-artifacts/research/egm-audit-2026-11-05.md`. CAP-32 drops its `governance-currency` clause, which proved nothing about the catalog. Story 29.5 carries the staleness wording fix.
 
 ## 2026-10-26 — Dream — PyForge Scribe: Team Memory Management (folded from pyforge-scribe-team-memory)
 

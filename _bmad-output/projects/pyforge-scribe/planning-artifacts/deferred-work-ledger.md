@@ -442,3 +442,31 @@ sibling ledgers and the detector both use.
   severity: low
   promoted: 2026-10-26 — the retrofit chain commit
   status: open
+
+### DW-scribe-egm-2026-11-05-1: Nothing fails if the catalog's Read-on-trigger row leaves AGENTS.md (SCR-D-F1)
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-scribe/SPEC.md`; EGM audit 2026-11-05 (marshal Story 113.18)
+  summary: Nothing fails if the catalog's Read-on-trigger row leaves AGENTS.md (SCR-D-F1)
+  evidence: a guard covers only typed counts in the bmad:context block (Story 23.2).
+  location: src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py
+  origin: EGM audit 2026-11-05 (marshal Story 113.18)
+  fix: add the pointer assertion to the parity test.
+  owner: scribe
+  severity: low
+  promoted: 2026-11-05 — EGM audit landing (marshal Story 113.18)
+  reason: deferred by triage: a test gap with no running failure.
+  status: open
+
+### DW-scribe-egm-2026-11-05-2: Four of the seven digested catalog sections have no drift test (SCR-M-F3)
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-scribe/SPEC.md`; EGM audit 2026-11-05 (marshal Story 113.18)
+  summary: Four of the seven digested catalog sections have no drift test (SCR-M-F3)
+  evidence: only installed, skills and harness have a test that moves a source and expects exit 1.
+  location: src/shared/packages/pyforge-scribe/tests/unit/test_catalog_bmad_estate.py
+  origin: EGM audit 2026-11-05 (marshal Story 113.18)
+  fix: add the four drift cases.
+  owner: scribe
+  severity: low
+  promoted: 2026-11-05 — EGM audit landing (marshal Story 113.18)
+  reason: deferred by triage: a test gap with no running failure.
+  status: open

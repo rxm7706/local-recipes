@@ -210,6 +210,9 @@ treadmill.** This Dream is the rule first, the fold second.
   station Dream; the rule covers Dreams first, then absorbed Spec folders,
   `docs/intake/` and `docs/specs/`. Spec CAP-11; § *2026-09-29 — One
   archive home* below. Status stays `specified`.
+- **2026-11-01 (noted 2026-11-05, EGM audit RUL-C-F1).** `CHAIN-STANDARD.md` was amended on the four operator rulings of
+  2026-11-01, recorded in `docs/governance/spec-one-chain-per-station/.memlog.md`, each citing marshal Story 113.7. The marshal
+  Dream's entry *A stranger reads the chain* tells that story. This line ties the amendment back to this Dream.
 
 ## 2026-09-17 — Lock, mop, and exemption — the portable rerun
 

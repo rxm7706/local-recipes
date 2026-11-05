@@ -94,6 +94,7 @@ Summary: built by hand in the single Epic 113 PR (2026-11-01, operator direction
 
 - 2026-11-01: minted from the station Dream's entry of 2026-11-01 (EGM challenger).
 - 2026-11-01: built. A finding already resolved in the report is refused rather than appended twice (review nit).
+- 2026-11-05: dated note added (EGM audit MAR-D-F6, MAR-D-F7, MAR-D-F8, marshal Story 113.18): the verb's flags, the memlog line's fields, and marshal's own Spec as the only write target.
 
 ## Review Triage Log
 

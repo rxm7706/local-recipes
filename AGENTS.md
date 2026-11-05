@@ -3,7 +3,7 @@
 The framework-neutral contract for every agent and harness (§ *How each harness loads this file*).
 
 <!-- bmad:context -->
-<!-- Verified 2026-11-01 against 03a7aff5d9 (EGM audit refresh, marshal Story 113.7). Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
+<!-- Verified 2026-11-01 against 03a7aff5d9 (EGM audit refresh, marshal Story 113.7); one Policy line amended 2026-11-05 (EGM audit RUL-A-F3, marshal Story 113.18), block not re-verified. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
 
 ## local-recipes (PyForge)
 
@@ -30,7 +30,7 @@ This is A (`rxm7706/local-recipes`), the PyForge control plane and BMAD Agentic-
 - Never open a feedstock, staged-recipes or upstream PR without an explicit ask; a green local build ends the task.
 - Never flip a ledger `blocked` key, and never dispatch outward work (a new repo, an upstream PR, disabling CI) without operator confirmation.
 <!-- governance-currency:ignore-start (the foundry target tree is not built on A; .claude/skills/pyforge-mason/ resolves only once mason Story 19.1 compiles it under the dated A-only exception below -- Mason's skill cell is then pyforge-mason plus conda-forge-expert, operator ruling 2026-09-28) -->
-- New paths must fit the foundry target tree (`src/packages/`, `factory/`, `skills/{stations,personas,domain}/`, `docs/foundry/`); never mint a lasting `src/shared/packages/` path. One dated exception (operator ruling 2026-09-28; `docs/dreams/pyforge-mason.md` § Realization log, the 2026-09-27 entry *Mason has its own skills*): `.claude/skills/pyforge-mason/`, Mason's SKF-compiled station skill, is `A-only` until `pyforge.cutover_root` flips to `foundry`; B rebuilds Mason's skills under `skills/stations/`.
+- New paths must fit the foundry target tree (`src/packages/`, `factory/`, `skills/{stations,personas,domain}/`, `docs/foundry/`); never mint a lasting `src/shared/packages/` package (a new package directory; files in an existing station package are not new paths). One dated exception (operator ruling 2026-09-28; `docs/dreams/pyforge-mason.md` § Realization log, the 2026-09-27 entry *Mason has its own skills*): `.claude/skills/pyforge-mason/`, Mason's SKF-compiled station skill, is `A-only` until `pyforge.cutover_root` flips to `foundry`; B rebuilds Mason's skills under `skills/stations/`.
 <!-- governance-currency:ignore-end -->
 
 ## Where things are
@@ -178,7 +178,9 @@ rxm7706/local-recipes`, `uv run` off the repo root, a bare `spec_surface_check.p
 `.claude/hooks/pre-shell.py`. It is registered on `Bash`, on `Edit`/`Write`, and on the three
 conda_forge_server MCP submission tools in `.claude/settings.json` (Claude Code) and on
 `beforeShellExecution` (deny) / `afterFileEdit` (warn — Cursor has no before-edit deny) in
-`.cursor/hooks.json` (Cursor). **One script serves both harnesses.**
+`.cursor/hooks.json` (Cursor). **One script serves both harnesses.** The same hook also carries three
+steward operator-consent denials that no rule in this file states: `steward-estate-transitive`,
+`steward-estate-realize-yes` and `steward-deploy-nic-up-yes`.
 
 The closed list of what it denies, and the one-line reason it gives for each — naming the
 sanctioned form — lives in `docs/governance/guild-roster.json`'s `session_denials` array, the ONE
@@ -187,7 +189,7 @@ script asserts its matchers are exactly that list at every run (a drift between 
 failure, not a silent gap) and never denies anything not on the list.
 
 **Gemini CLI, GitHub Copilot CLI, and Devin have no verified deny surface for this hook.** For
-them these sixteen rules remain instruction-only, exactly as written elsewhere in this file — do not
+them these sixteen rules and the three steward denials remain instruction-only, exactly as written elsewhere in this file — do not
 assume they are enforced there.
 
 **Cursor** registers the same script on `beforeShellExecution` (deny) and `afterFileEdit` (warn); it
@@ -315,9 +317,10 @@ Keeping the Dream → spec handoff portable across agents is **Marshal's** job.
 - Each tool writes its working output into **its own** area (BMAD → `implementation-artifacts/`;
   Cursor → `.cursor/`; etc.) and **reads the spec from the BMAD planning folder** (Tier 2).
 - `implementation-artifacts/` is gitignored/local-only — **nothing there should be git-tracked.**
-- **Story specs are durable, not Tier 3.** A run drafts a story spec into its Tier-3
-  `implementation-artifacts/`; once the story merges, promote that spec into the tracked
-  `planning-artifacts/specs/` and commit it — it is the source of record.
+- **Story specs are durable, not Tier 3.** The tracked story spec is minted with its Story under
+  `planning-artifacts/specs/` (`CHAIN-STANDARD.md` § 3 step 5) and is the source of record. A harness
+  run's Tier-3 draft is scratch: promote it into `planning-artifacts/specs/` only if no tracked spec
+  exists, once the story merges.
 
 ## Pre-PR Pre-flight Checklist & Station Invariants
 

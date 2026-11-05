@@ -13943,3 +13943,12 @@ row; the `steward setup` read rules) · [[pyforge-scribe]] (the
   keeps the baseline, as it already did on marshal, and the run journal stops naming a model that never ran (Story 33.16). A
   bare string names no harness, so it stays outside the rule: the tier maps carry none, and a test reds if one lands. The
   price of the fix is that a declared difficulty on those seven stations now runs `sonnet` and `opus` where it used to fail.
+- **2026-11-05** — The first automated sweep ran. The operator said "Yes, set it up": `marshal factory challenge --audit` on
+  `claude-sonnet-5-5`, with the `[challenge]` block and the flags uncommitted in a scratch worktree, exited 0 after 26 runs and
+  2 h 44 min at $45.11. It reported 1,057 findings: 139 high, 680 medium, 238 low. Nine agents verified the highs against `main`
+  and five more tried to overturn the results. None stayed high; 53 went forward to accept, 68 to reject and 18 to defer, and the
+  operator ruled "Accept all 53". The audit's yield is stale contract text and skills that lag the code, not a running defect.
+  Half the runs read the wrong Dream entry, because a citation by date and title was not read as a citation, so a reviewer
+  reported a broken link that was not broken (Story 113.19). Story 113.18 lands the residue, Stories 25.19 and 29.5 are parked,
+  and the 918 medium and low findings stay not triaged, never rejected. The triage also found that the start/get runner on seven
+  station MCP faces reports `completed: True` and does no work; that decision is the operator's (`DW-steward-egm-2026-11-05-1`).

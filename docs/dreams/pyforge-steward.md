@@ -2282,6 +2282,10 @@ Drift — orphaned between stations.
   PR: Stories 118.6 (the attended NKP probes are tracked commands, CAP-177) and 29.4 (the station skills
   recompiled, spec-pyforge-unifying-strategy:CAP-15). Parked at backlog: 118.7 (kubectl and helm in the
   pyforge-steward env) and 118.8 (the gitops writer identity; Story 118.3 waits on it).
+- **2026-11-05 (the first automated EGM audit) — Found:** `marshal factory challenge --audit` (marshal Story 113.18,
+  spec-pyforge-marshal:CAP-302) read the compiled skill, CAP-178 and Epic 118: 19 high findings, 4 accepted, 10 rejected,
+  5 deferred, with 66 medium and 26 low not triaged; residue
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/research/egm-audit-2026-11-05.md`. Story 118.3's text takes the `/shared` probe proof and the `gitops/**` bypass actor, and its status does not move. Story 29.5 is parked at `backlog` for the station skill recompiles. The MCP runner decision is `DW-steward-egm-2026-11-05-1`.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

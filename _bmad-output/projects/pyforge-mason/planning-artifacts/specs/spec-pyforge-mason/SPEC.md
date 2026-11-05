@@ -339,7 +339,8 @@ A pain to solve, and an asset to free. The repository's packaging capability is 
   scope from one named atlas query — the feedstocks that list `rxm7706` as a maintainer in `cf_atlas.db` (Track A one
   maintainer, Track B more than one), each package mapped to its feedstock through the atlas's
   `packages.feedstock_name` (the companion's Track B Wave A step A3), never by directory name — with the atlas's as-of
-  date and the query's count, and compares its own count to that count. A feedstock is covered when
+  date and the query's count; its own count equals that count, or every difference is named per feedstock with its
+  reason. A feedstock is covered when
   `recipes/<feedstock>/` declares the package (the 2026-10-09 Wave F ruling), not when a `recipes/<name>/` directory
   exists. A recipe's published version is the atlas's `latest_conda_version` from a refresh no older than
   `<atlas_max_age_d>` (3 days, the companion's § Parameters), its date recorded.
@@ -355,8 +356,9 @@ A pain to solve, and an asset to free. The repository's packaging capability is 
   companion's expected STD-002 on a C1 (keep-`meta.yaml`) recipe and a virtual package that `check_dependencies` cannot
   resolve, each with its reason recorded. Every refreshed recipe's `recipe-maintainers` is a superset of the deployed
   feedstock's list (G53), and its pins match the feedstock's (G96). Each story lands a `retro(cfe):` commit with a CFE
-  `CHANGELOG.md` semver entry, and `pixi run --frozen -e pyforge-mason pyforge-mason-test` exits 0. (Minted 2026-09-29;
-  amended 2026-11-01, EGM fleet audit.)
+  `CHANGELOG.md` semver entry, and `pixi run --frozen -e pyforge-mason pyforge-mason-test` exits 0. CAP-35 is a one-time
+  campaign: met means met at the recorded atlas snapshot, and a feedstock that moves on later does not reopen it. (Minted
+  2026-09-29; amended 2026-11-01, EGM fleet audit; amended 2026-11-05, EGM audit MAS-M-F1, MAS-M-F2.)
 
 ## Constraints
 

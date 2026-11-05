@@ -59,7 +59,8 @@ reports them all `not-applicable` would say nothing true about them. osv-scanner
 list) and routes each to osv-scanner's own parser by path (`-L <parser>:<path>`), the way PyPI inputs are already
 delegated (CAP-2) — `extract/` gains no parser and imports no execution primitive. The resulting components carry their
 native ecosystem identity and a concrete version, so `vuln_matchable` holds on that identity (no conda↔PyPI mapping is
-involved). The security axis assesses them; hygiene, license and currency report them honestly `not-applicable`, with
+involved). The security axis assesses them; hygiene, license and currency report them honestly `not-applicable` (Story 16.9
+supersedes this for license and currency; hygiene stays not-applicable; note 2026-11-05, EGM audit WAR-D-F3), with
 per-axis denominators that say so. The SBOM carries source-registry-correct purls (`pkg:npm/…`, `pkg:golang/…`,
 `pkg:cargo/…`). The offline database must hold the ecosystem: a missing or stale one routes to `indeterminate`, never
 `clean`. Container and artifact scanning stay out of scope.
@@ -77,7 +78,7 @@ Type / Effort / Deps: feature / M / —.
 ## Acceptance Criteria
 
 - Given a fixture repo whose `package-lock.json` pins a known-vulnerable npm version and a fixture offline database holding that advisory, When `warden scan` runs with the flag ON, Then the report carries a `vuln:` finding for it and the security axis counts it as assessed
-- Given the same component, When the other axes report, Then hygiene, license and currency count it `not-applicable`, and their denominators say so
+- Given the same component, When the other axes report, Then hygiene, license and currency count it `not-applicable`, and their denominators say so (Story 16.9 supersedes this for license and currency; note 2026-11-05, EGM audit WAR-D-F3)
 - Given the SBOM, When it is emitted, Then the component's purl is `pkg:npm/<name>@<version>`
 - Given no database for the ecosystem, or a stale one, When the scan runs, Then the verdict is `indeterminate` naming the ecosystem, never `clean`
 - Given the flag OFF, When the same repo is scanned, Then the report is byte-identical to today's (the lockfile is not discovered)
@@ -169,4 +170,6 @@ Status: done
 
 ## Spec Change Log
 
+
+- 2026-11-05: two supersession notes added (EGM audit WAR-D-F3, marshal Story 113.18): Story 16.9 owns license and currency on a non-Python lockfile.
 - 2026-11-01: amended in place (append-only, EGM audit 2026-11-01, marshal Story 113.7): the `epics.md` Story 16.4 Surface line now names `native_lockfiles.py`, `interfaces.py`, `report.py`, `cli.py` and `models.py`, where the scan landed (merge `de5a1331f9`), notes that `routing.py` and `engines.py` hold none of it and that `go.sum` is read through the sibling `go.mod` parser, with every path in full, and a **Spec:** line links this file (EGM audit WAR-D-C3, WAR-D-R2). No AC, status, heading or key moved; residue `_bmad-output/projects/pyforge-warden/planning-artifacts/research/egm-audit-2026-11-01.md`.

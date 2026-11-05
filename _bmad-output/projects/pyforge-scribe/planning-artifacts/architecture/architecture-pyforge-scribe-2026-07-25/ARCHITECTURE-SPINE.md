@@ -7,7 +7,7 @@ paradigm: 'event-sourced capture with a derived, rebuildable read-model (CQRS-li
 scope: 'Scribe capture/promotion (Wave 1, FR-1..FR-8) + graph compile/recall (Wave 2, FR-9..FR-13) + package/CLI surface (FR-14/FR-15)'
 status: final
 created: '2026-07-25'
-updated: "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): prd->arch cascade for the PRD's § Currency reconciliation — 2026-11-01 (EGM fleet audit) (CAP-27 and CAP-29..32 re-derived; fix stories 19.4, 22.2, 23.2, 25.2); checked against every AD, no AD moves. See § Currency reconciliation — 2026-11-01 (EGM fleet audit). Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (CAP-7 retrofit, Epic 29): prd->arch cascade; no decision changes. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 27.1): prd->arch cascade for the PRD's § Currency reconciliation — 2026-10-26 (Story 27.1) (the instruction surface; no requirement moves); no AD moves. See § Currency reconciliation — 2026-10-26 (Story 27.1). Prior "2026-10-15"   # RE-STAMPED 2026-10-15: prd->arch cascade after the 2026-10-15 PRD re-stamp (a stale surface glob re-pointed); no AD amended. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): prd->arch cascade for the Phase 4+5 deferral rulings (Epic 26, a fix story); no AD amended. Earlier: RE-STAMPED 2026-09-28: chain-currency cascade (prd -> spine) after the 2026-09-28 PRD re-stamp; no AD change. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (prd -> spine) after the 2026-09-25 PRD re-stamp; no AD change. Prior 2026-09-20
+updated: "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (PRD -> arch); no CAP, FR or AD is minted. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): prd->arch cascade for the PRD's § Currency reconciliation — 2026-11-01 (EGM fleet audit) (CAP-27 and CAP-29..32 re-derived; fix stories 19.4, 22.2, 23.2, 25.2); checked against every AD, no AD moves. See § Currency reconciliation — 2026-11-01 (EGM fleet audit). Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (CAP-7 retrofit, Epic 29): prd->arch cascade; no decision changes. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 27.1): prd->arch cascade for the PRD's § Currency reconciliation — 2026-10-26 (Story 27.1) (the instruction surface; no requirement moves); no AD moves. See § Currency reconciliation — 2026-10-26 (Story 27.1). Prior "2026-10-15"   # RE-STAMPED 2026-10-15: prd->arch cascade after the 2026-10-15 PRD re-stamp (a stale surface glob re-pointed); no AD amended. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): prd->arch cascade for the Phase 4+5 deferral rulings (Epic 26, a fix story); no AD amended. Earlier: RE-STAMPED 2026-09-28: chain-currency cascade (prd -> spine) after the 2026-09-28 PRD re-stamp; no AD change. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (prd -> spine) after the 2026-09-25 PRD re-stamp; no AD change. Prior 2026-09-20
 currency_review: "Reviewed 2026-09-17 — one-chain scribe fold remint; no AD added or changed."
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15]
 sources:
@@ -391,3 +391,9 @@ scribe module is involved, so the earlier sections' "`src/platform/` still impor
 scribe.
 
 **Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-11-05
+
+*Chain-currency cascade (PRD -> arch), EGM audit, marshal Story 113.18.*
+
+The audit record `research/egm-audit-2026-11-05.md` and the Spec memlog moved on 2026-11-05. No AD moves.

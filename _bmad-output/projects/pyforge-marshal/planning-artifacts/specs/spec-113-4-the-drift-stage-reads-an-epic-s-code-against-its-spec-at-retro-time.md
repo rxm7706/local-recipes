@@ -94,6 +94,7 @@ Summary: built by hand in the single Epic 113 PR (2026-11-01, operator direction
 
 - 2026-11-01: minted from the station Dream's entry of 2026-11-01 (EGM challenger); operator answer 3 (all five stages in v1) binds here.
 - 2026-11-01: built. The retro override is `_bmad/custom/bmad-retrospective.toml` (`[workflow] activation_steps_append`), not the installer-owned `.claude/skills/bmad-retrospective/customize.toml`; the drift target is a Tier-3 file listing the epic's story specs and the `src/` paths its Surface lines name.
+- 2026-11-05: dated note added (EGM audit MAR-D-F6, marshal Story 113.18): the verb also takes `--project`.
 
 ## Review Triage Log
 

@@ -2,7 +2,7 @@
 title: "Product Brief: Mason (pyforge-mason)"
 status: draft
 created: 2026-07-25
-updated: 2026-11-01
+updated: "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior 2026-11-01
 project: pyforge-mason
 dream: docs/dreams/packaging-factory.md
 adopted_kernel: _bmad-output/projects/local-recipes/planning-artifacts/specs/spec-packaging-factory/SPEC.md
@@ -399,3 +399,9 @@ Two gates that don't collapse into each other, because either one failing kills 
 ## Vision
 
 Two to three years out, if this works: the OCP image is a reference deployment pattern other regulated-enterprise AI tooling in this factory follows (the Steward station already exists for exactly this); `chromium` lands on conda-forge directly and the vendored-binary recipe retires; upstream Presenton open-sources its export pipeline and the clean-room reimplementations retire too; and — the harder-nosed version of this vision — the product's reason to exist is still standing because Microsoft's on-prem stack turned out to be infrastructure without the application layer, or arrived too late, or arrived and this product had already earned the trust relationship. Either way, the six-week fire drill to find out happens in Phase 0, not two years from now.
+
+## Currency reconciliation — 2026-11-05
+
+*Chain-currency cascade (research -> brief), EGM audit, marshal Story 113.18.*
+
+The station's audit record joins this brief's inputs: `research/egm-audit-2026-11-05.md` (marshal Story 113.18, `spec-pyforge-marshal:CAP-302`): 17 high findings, 10 accepted, 7 rejected, 0 deferred; the medium and low findings are not triaged. The product scope does not change.

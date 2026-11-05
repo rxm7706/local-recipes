@@ -212,12 +212,13 @@ serves.
     `test_build_opengrep_scan_argv_uses_local_rules_only`); an absent opengrep binary omits the scanner, and a default
     run's status and exit code stay unchanged (`test_run_opengrep_advisory_absent_binary_is_silent`,
     `tests/unit/test_default_warden_without_checkmarx.py`).
-- **CAP-26 — Warden scans the enterprise fleet, one verdict per repo** ← spec-pyforge-warden CAP-26 (ready 2026-09-28)
+- **CAP-26 — Warden scans the enterprise fleet, one verdict per repo** ← spec-pyforge-warden CAP-26 (ready 2026-09-28; amended 2026-11-05 by the EGM audit, WAR-D-F4, WAR-D-F6)
   - **intent:** A fleet run inventories the repos of an operator-designated github.com organisation and scans each one
     with `warden scan` — one verdict per repo, exactly as today, and no fleet-level pass/fail. A run starts only from an
-    operator action, the `warden_fleet_run` management command or its portal action, never a webhook. The organisation
-    is never named in a tracked file: it lives in a gitignored local config, tests use a fictional organisation, and the
-    leak guard forbids its name in tracked files. The inventory, and the items of the operator-designated GitHub
+    operator action, the `warden_fleet_run` management command, never a webhook. The organisation's name lives in a
+    gitignored local config, and tests use a fictional organisation. The leak guard forbids the listed terms in every
+    tracked file and the organisation's name in warden's own files (Story 18.1); other stations' files may name the
+    public organisation. The inventory, and the items of the operator-designated GitHub
     Projects, are read through the operator's `gh` login at run time, with the token held in memory for that run only,
     and are read-only by construction: the REST client sends GET only and the GraphQL client query operations only, each
     refusing anything else before a socket opens. Both are published as gitignored JSON exports that other stations read

@@ -4,7 +4,7 @@ type: companion
 spec: one-chain-per-station
 status: ready
 created: "2026-09-16"
-updated: "2026-11-01"   # AMENDED 2026-11-01 (EGM audit, marshal Story 113.7; operator rulings 2026-11-01): § 0 terms and provenance; CAP date markers (ready <date>)/(shipped <date>), qualified spec-<x>:CAP-n cites and success clauses that name their command and exit code (§§ 1-4); the story-spec ladder (§ 4); station long and short forms (§ 5); B named rxm7706/python-foundry; § 11 item 3 dated done; counts read at their amendment; fr-baseline.json's one writer (§ 12). Prior "2026-10-26": AMENDED 2026-10-26 (CAP-5): a requirement cites defined CAPs only — §2, §6 (NFR families), §12 (the ruling and the arrows it reverses). Prior "2026-09-17"
+updated: "2026-11-05"   # AMENDED 2026-11-05 (EGM audit 2026-11-05 RUL-C-F3, RUL-C-F4, RUL-C-F7, marshal Story 113.18): § 4 names the feed words, § 11 step 2 says where a live companion goes, § 12 scopes the no-stable-id reason. Prior 2026-11-01: AMENDED 2026-11-01 (EGM audit, marshal Story 113.7; operator rulings 2026-11-01): § 0 terms and provenance; CAP date markers (ready <date>)/(shipped <date>), qualified spec-<x>:CAP-n cites and success clauses that name their command and exit code (§§ 1-4); the story-spec ladder (§ 4); station long and short forms (§ 5); B named rxm7706/python-foundry; § 11 item 3 dated done; counts read at their amendment; fr-baseline.json's one writer (§ 12). Prior "2026-10-26": AMENDED 2026-10-26 (CAP-5): a requirement cites defined CAPs only — §2, §6 (NFR families), §12 (the ruling and the arrows it reverses). Prior "2026-09-17"
 ---
 
 # The chain standard
@@ -158,12 +158,14 @@ frontmatter: it copies the Tier-3 feed's story values into the twin unchanged, k
 `done` terminal and story `blocked` sticky, and ranks feed values
 (`_STORY_PROGRESS_RANK`: `backlog` 0, `ready-for-dev` 1, `in-progress` 2,
 `review` 3, `done` 4) only to roll up epics and to pick between a stale and a
-current key. The one place story-spec values are read is a landing
+current key. `ready-for-dev` and `review` are feed words from BMAD's lattice; the
+ledger never rests on them. The one place story-spec values are read is a landing
 (`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py`,
 `PRE_DONE_SPEC_STATUSES` and `TERMINAL_SPEC_STATUSES`, applied by
 `dispatch_land_finalize`): a merged story's tracked spec at `draft`,
-`ready-for-dev`, `in-progress` or `in-review` (or at the ledger words
-`backlog`, `ready` or `review` that older specs carry) is set to `done`;
+`ready-for-dev`, `in-progress` or `in-review` (or at the words `backlog`,
+`ready` or `review` that older specs carry: `backlog` is a ledger word, `review`
+a feed word and `ready` a retired story-spec word) is set to `done`;
 `done`, `blocked` and `superseded` are left alone, as deliberate states; any
 other value is a warning.
 
@@ -329,7 +331,9 @@ is all that is left to do.
 1. Archived Dreams, one station per PR (§9's mop shape). Steward goes
    first, because its bodies are already in its station Dream.
 2. Absorbed and archived Spec folders, each with its memlog and every
-   companion (§7 item 3 still holds; it now holds under `archive/`).
+   companion (§7 item 3 still holds; it now holds under `archive/`). A live
+   companion is carried into the station Spec folder, and only a retired one
+   goes to `archive/` (the Dream's 2026-10-27 ruling 2).
    `owner-dream:` and `covers-dreams:` are repointed in the same PR.
 3. `docs/intake/`, which keeps only its README, because the inbox rule
    stays. `docs/specs/`, whose legacy tier retires once its last files are
@@ -365,8 +369,9 @@ the artifact moves; Spec CAP-7 names FR ← CAP as B's (`rxm7706/python-foundry`
 starting discipline; the capability ledger (`docs/foundry/capability-ledger.yaml`)
 routes only capabilities, so a requirement sourced from a Constraint has no
 rebuild/retire decision anywhere; Constraints have no stable id, so a
-quoted-text arrow breaks on the first rewording and no detector can resolve
-it; and every Constraint-cited requirement already lived as an AD in its
+quoted-text arrow that a detector must resolve breaks on the first rewording
+(an AD naming a Constraint by its bolded lead is prose provenance, checked at
+review, and rewording that lead updates the AD in the same change); and every Constraint-cited requirement already lived as an AD in its
 spine (atlas AD-16; marshal A-04, A-05, P-10, L-01).
 
 **The ruling it records, and the rulings it reverses.** Operator,

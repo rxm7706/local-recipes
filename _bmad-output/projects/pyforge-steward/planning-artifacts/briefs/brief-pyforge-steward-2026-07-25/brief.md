@@ -2,7 +2,7 @@
 title: Product Brief — Steward
 status: draft
 created: 2026-07-25
-updated: "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): currency reconciliation — research->brief: research/egm-audit-2026-11-01.md landed (30 findings on CAP-176..CAP-178 and Epic 118: 25 accepted, 5 rejected, 0 deferred); CAP-176 and CAP-177 re-derived, CAP-178 unchanged (Story 118.8); no change to Steward's charter. See § Currency reconciliation — 2026-11-01. Prior 2026-10-07. Earlier: RE-STAMPED 2026-10-07: currency reconciliation — research->brief: the independent review of the free-threading readiness Dream entry (research/free-threading-readiness-dream-review-2026-10-07.md) landed in research/; no change to Steward's charter. See § Currency reconciliation — 2026-10-07. Prior 2026-09-25. Earlier: RE-STAMPED 2026-09-25: currency reconciliation — research->brief: the 2026-09-25 BMAD-method whitepaper verification landed in research/; no change to Steward's charter. Prior 2026-09-14
+updated: "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief); no CAP, FR or AD is minted. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): currency reconciliation — research->brief: research/egm-audit-2026-11-01.md landed (30 findings on CAP-176..CAP-178 and Epic 118: 25 accepted, 5 rejected, 0 deferred); CAP-176 and CAP-177 re-derived, CAP-178 unchanged (Story 118.8); no change to Steward's charter. See § Currency reconciliation — 2026-11-01. Prior 2026-10-07. Earlier: RE-STAMPED 2026-10-07: currency reconciliation — research->brief: the independent review of the free-threading readiness Dream entry (research/free-threading-readiness-dream-review-2026-10-07.md) landed in research/; no change to Steward's charter. See § Currency reconciliation — 2026-10-07. Prior 2026-09-25. Earlier: RE-STAMPED 2026-09-25: currency reconciliation — research->brief: the 2026-09-25 BMAD-method whitepaper verification landed in research/; no change to Steward's charter. Prior 2026-09-14
 ---
 
 # Product Brief: Steward (`pyforge-steward`)
@@ -261,3 +261,9 @@ spend ... to allocate against yet" still holds, because the attended kind cluste
 when Story 118.3 runs on Hetzner, and Story 118.8 carries the Spec's matching Non-goal premise.
 
 **Content changed:** this section only. `updated:` bumped.
+
+## Currency reconciliation — 2026-11-05
+
+*Chain-currency cascade (research -> brief), EGM audit, marshal Story 113.18.*
+
+The station's audit record joins this brief's inputs: `research/egm-audit-2026-11-05.md` (marshal Story 113.18, `spec-pyforge-marshal:CAP-302`): 19 high findings, 4 accepted, 10 rejected, 5 deferred; the medium and low findings are not triaged. The product scope does not change.

@@ -6869,3 +6869,17 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-11-01 — EGM audit landing (deferred by operator ruling; its own chain)
   status: open
+
+### DW-steward-egm-2026-11-05-1: Operator decision: the start/get runner on seven station MCP faces reports completed and does no work (triage finding N1)
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-steward/SPEC.md`; EGM audit 2026-11-05 (marshal Story 113.18)
+  summary: Operator decision: the start/get runner on seven station MCP faces reports completed and does no work (triage finding N1)
+  evidence: seven `mcp_asgi.py` runners end `return {"target": target, "completed": True}`; on six faces that pair is the whole face; CAP-73, CAP-74 and DW-scribe-5-2 know part of it; skills name the route as sanctioned.
+  location: src/shared/packages/django-*/src/*/mcp_asgi.py
+  origin: EGM audit 2026-11-05 (marshal Story 113.18)
+  fix: the operator rules: make the runner say it ran nothing and correct the skills, or wire it to the CLI grammar. Story 29.5 follows the ruling.
+  owner: operator
+  severity: medium
+  promoted: 2026-11-05 — EGM audit landing (marshal Story 113.18)
+  reason: only the operator chooses between the two designs.
+  status: open

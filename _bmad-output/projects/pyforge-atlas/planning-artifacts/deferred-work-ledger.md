@@ -5303,3 +5303,17 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-11-01 — EGM audit landing
   status: open
+
+### DW-atlas-egm-2026-11-05-1: Nothing runs `skf-verify-provenance-completeness`, so a compiled skill's citations can go stale unseen (ATL-R-F3)
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-atlas/SPEC.md`; EGM audit 2026-11-05 (marshal Story 113.18)
+  summary: Nothing runs `skf-verify-provenance-completeness`, so a compiled skill's citations can go stale unseen (ATL-R-F3)
+  evidence: before steward Story 29.4 the four old provenance maps held 5/3/7/7 stale citations; nothing in pixi.toml, scripts, .github or a package test runs the verifier (second pass, 2026-11-05).
+  location: .claude/skills/pyforge-atlas/
+  origin: EGM audit 2026-11-05 (marshal Story 113.18)
+  fix: wire the SKF provenance verifier into a repo check, or record that it stays attended.
+  owner: steward
+  severity: low
+  promoted: 2026-11-05 — EGM audit landing (marshal Story 113.18)
+  reason: deferred by triage: a fleet SKF property, not an atlas defect; it fits a recompile pass.
+  status: open
