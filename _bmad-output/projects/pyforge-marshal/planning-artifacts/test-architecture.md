@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: 01cc4abd931e6cec
-story_count: 522
+source_fingerprint: c9afd352564e5384
+story_count: 524
 test_file_count: 274
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 522
+- **Stories parsed:** 524
 - **Epics parsed:** 111
 - **Test files inventoried:** 274 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `01cc4abd931e6cec`
+- **Source fingerprint:** `c9afd352564e5384`
 
 ## Risk Assessment
 
@@ -953,6 +953,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 113.12 | each stage names its standard, and decompose reads its Spec's capability range | none observed |
 | 113.13 | resolve writes only marshal's Spec and prints the memlog command for any other | none observed |
 | 113.14 | a challenge run has a ceiling, and --audit a section selector | none observed |
+| 113.15 | the challenge session can write its report | none observed |
+| 113.16 | a Sonnet can challenge every station | none observed |
 
 ## Quality Gates
 

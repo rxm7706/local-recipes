@@ -55,7 +55,7 @@ def test_argv_widens_the_profile_settings_with_plugin_cache_read_rules(tmp_path:
     settings = _settings(argv)
     allow = settings["permissions"]["allow"]
     assert set(rules) <= set(allow) and set(harness.ORCHESTRATOR_TOOLS) <= set(allow)
-    assert f"Write(/{run_dir}/**)" in allow and "Write" not in allow and "Bash" not in allow
+    assert f"Edit(/{run_dir}/**)" in allow and "Write" not in allow and "Bash" not in allow
     assert set(harness.DENIED_TOOLS) <= set(settings["permissions"]["deny"])
     assert argv[argv.index("--permission-mode") + 1] == "default" and "bypassPermissions" not in argv
     assert all(rule.startswith("Read(//") and "/cache/egm/egm/*/" in rule for rule in rules)
@@ -162,12 +162,12 @@ def test_the_globs_cover_the_house_context_and_not_the_context(path: str, forbid
 
 
 def test_the_guards_stay_with_hooks_off(tmp_path: Path) -> None:
-    """AC3: Bash, Edit and Write stay denied except the one run-folder Write rule."""
+    """AC3: Bash and the Edit tool stay denied, and writes stay bound by the one run-folder ``Edit`` rule."""
     argv, settings = _render(tmp_path)
-    assert harness.DENIED_TOOLS == ("Bash", "Edit", "MultiEdit", "NotebookEdit", "WebFetch", "WebSearch")
+    assert harness.DENIED_TOOLS == ("Bash", "Edit", "NotebookEdit", "WebFetch", "WebSearch")
     deny, allow = settings["permissions"]["deny"], settings["permissions"]["allow"]
     assert deny[: len(harness.DENIED_TOOLS)] == list(harness.DENIED_TOOLS)
-    assert [rule for rule in allow if rule.startswith(("Write", "Edit", "Bash"))] == [f"Write(/{tmp_path / 'run'}/**)"]
+    assert [rule for rule in allow if rule.startswith(("Write", "Edit", "Bash"))] == [f"Edit(/{tmp_path / 'run'}/**)"]
     assert [rule for rule in allow if "(" not in rule] == list(harness.ORCHESTRATOR_TOOLS)
     assert argv[argv.index("--permission-mode") + 1] == "default" and settings["disableAllHooks"] is True
 
@@ -216,7 +216,7 @@ def test_runner_launches_the_claude_binary_and_logs_its_output(fake_process, tmp
     (call,) = fake_process.calls
     assert call["argv"][0] == "/usr/bin/claude" and call["argv"][-1] == "P" and call["timeout_s"] == 12
     settings = json.loads(call["argv"][call["argv"].index("--settings") + 1])
-    assert f"Write(/{log.parent}/**)" in settings["permissions"]["allow"]
+    assert f"Edit(/{log.parent}/**)" in settings["permissions"]["allow"]
 
 
 def test_runner_launches_from_a_directory_outside_the_repo(
@@ -479,22 +479,30 @@ def test_a_real_session_past_its_ceiling_is_killed(tmp_path: Path, monkeypatch: 
 
 def test_the_session_may_not_rewrite_its_slices(fake_process, tmp_path: Path) -> None:
     """Story 113.14 review A: the run folder's ``slices/`` holds the target and Dream the reviewers read; the session's
-    one ``Write`` allow covers the run folder, and a ``Write`` deny on ``slices/`` (deny wins over allow in Claude
+    one ``Edit`` allow covers the run folder, and an ``Edit`` deny on ``slices/`` (deny wins over allow in Claude
     Code's permission rules) keeps the reviewed slice out of the session's reach."""
     run_dir = tmp_path / "run"
     _argv, settings = _render(tmp_path)
     deny, allow = settings["permissions"]["deny"], settings["permissions"]["allow"]
-    assert f"Write(/{run_dir}/**)" in allow
+    assert f"Edit(/{run_dir}/**)" in allow
     assert (
-        deny[len(harness.DENIED_TOOLS)]
-        == f"Write(/{run_dir}/{core.SLICES_DIRNAME}/**)"
-        == f"Write(/{run_dir}/slices/**)"
+        deny[len(harness.DENIED_TOOLS)] == f"Edit(/{run_dir}/{core.SLICES_DIRNAME}/**)" == f"Edit(/{run_dir}/slices/**)"
     )
-    bare = json.loads(harness.widen_settings("", []))  # no run folder: no Write allow, no slices deny
-    assert not [rule for rule in bare["permissions"]["deny"] if rule.startswith("Write(")]
+    bare = json.loads(harness.widen_settings("", []))  # no run folder: no run-folder allow, no slices deny
+    assert not [rule for rule in bare["permissions"]["deny"] if rule.startswith(("Write(", "Edit("))]
+    assert not [rule for rule in bare["permissions"]["allow"] if rule.startswith(("Write(", "Edit("))]
     runner = harness.ClaudeChallengeRunner(plugins_root=tmp_path / "plugins")
     log = tmp_path / "adhoc-run" / "session.log"
     runner.run(prompt="P", model=None, root=tmp_path / "repo", target=None, log_path=log, timeout_s=60)
     (call,) = fake_process.calls
     rendered = json.loads(call["argv"][call["argv"].index("--settings") + 1])["permissions"]
-    assert f"Write(/{log.parent}/slices/**)" in rendered["deny"] and f"Write(/{log.parent}/**)" in rendered["allow"]
+    assert f"Edit(/{log.parent}/slices/**)" in rendered["deny"] and f"Edit(/{log.parent}/**)" in rendered["allow"]
+
+
+def test_every_write_rule_is_in_the_form_claude_code_matches(tmp_path: Path) -> None:
+    """Story 113.15 AC2, AC3: Claude Code matches a path rule only as ``Edit(<path>)``, which covers the ``Write`` tool.
+    A ``Write(<path>)`` rule binds nothing (the 2026-11-04 pilot's report was refused), and ``MultiEdit`` is no tool."""
+    _argv, settings = _render(tmp_path)
+    rules = [*settings["permissions"]["allow"], *settings["permissions"]["deny"]]
+    assert [rule for rule in rules if rule.startswith("Write")] == []
+    assert "MultiEdit" not in rules

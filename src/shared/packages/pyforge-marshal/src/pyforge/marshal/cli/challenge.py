@@ -51,6 +51,7 @@ from ..core import policy
 from ..core.harness_profile import load_packaged_profiles
 from ..core.journal import JournalEntryId, Phase, build_entry, mint_run_id, prepare_for_write
 from ..core.model import Verdict
+from ..core.tier_routing import normalize_stage_entries
 from ..core.verdict import EXIT_OK, EXIT_USAGE, exit_code_for
 from .config import PolicyIOError, _read_project_policy, conventional_project_policy_path, read_repo_policy_defaults
 from .config import repo_root as _default_repo_root
@@ -215,8 +216,13 @@ def challenge_config(effective: policy.EffectivePolicy) -> core.ChallengeConfig:
 
 
 def adapter_models(effective: policy.EffectivePolicy) -> list[str]:
-    """The ``[adapter]`` and ``[adapter.review]`` models the station's bmad-loop policy renders
-    (Story 113.9). A policy bmad-loop refuses to load renders no session, so it names none."""
+    """The ``[adapter]`` (``dev``) and ``[adapter.review]`` (``review``) baselines of the station's bmad-loop policy
+    that a session can still run on by the station's declared tiers (Story 113.9, narrowed by Story 113.16): a
+    ``model_tier_map`` tier that leaves a stage unset runs it on its baseline, and a station with no tier map runs on
+    both. The fail-safe paths past the declared tiers (a ``marshal factory spin`` run with no declared difficulty, a
+    tier stage bmad-loop cannot launch) stay out: no ``[challenge]`` stage reads those sessions' model. ``triage``
+    inherits ``[adapter]`` too, but a triage session authors no chain artifact. A policy bmad-loop refuses to load
+    renders no session, so it names none."""
     try:
         rendered = tomllib.loads(render_policy_toml(effective))
     except ValueError:
@@ -224,24 +230,30 @@ def adapter_models(effective: policy.EffectivePolicy) -> list[str]:
     adapter = rendered.get("adapter")
     if not isinstance(adapter, Mapping):
         return []
-    tables = [adapter, *(table for table in adapter.values() if isinstance(table, Mapping))]
-    return [table["model"] for table in tables if isinstance(table.get("model"), str) and table["model"]]
+    tier_map = effective.model_tier_map.value
+    tiers = [tier for tier in tier_map.values() if isinstance(tier, Mapping)] if isinstance(tier_map, Mapping) else []
+    baselines = (("dev", adapter), ("review", adapter.get("review")))
+    return [
+        table["model"]
+        for stage, table in baselines
+        if isinstance(table, Mapping)
+        and isinstance(table.get("model"), str)
+        and table["model"]
+        and not (tiers and all(tier.get(stage) for tier in tiers))
+    ]
 
 
 def session_models(effective: policy.EffectivePolicy, *, launch_model: str | None = None) -> list[str]:
-    """Every model the station's sessions author with (CAP-299, Story 113.9): its
-    ``model_tier_map`` models, its ``[adapter]`` and ``[adapter.review]`` models, and, in a
+    """Every model the station's sessions can author with (CAP-299, Stories 113.9 and 113.16): its
+    ``model_tier_map`` models, the ``adapter_models`` baselines a tier can still fall to, and, in a
     dispatch, the run's resolved launch model."""
     models: list[str] = []
     tier_map = effective.model_tier_map.value
     if isinstance(tier_map, Mapping):
         for stages in tier_map.values():
             if isinstance(stages, Mapping):
-                for entry in stages.values():
-                    if isinstance(entry, Mapping) and isinstance(entry.get("model"), str):
-                        models.append(entry["model"])
-                    elif isinstance(entry, str):
-                        models.append(entry)
+                for candidates in normalize_stage_entries(stages).values():
+                    models.extend(candidate.model for candidate in candidates)
     models.extend(adapter_models(effective))
     if launch_model:
         models.append(launch_model)
@@ -1132,7 +1144,9 @@ def readiness_for_dispatch(
     status move, never a ledger write, never a refusal of the dispatch. The
     challenger is never ``launch_model``, the run's resolved launch model (Story 113.9).
     The wait is bounded by the block's ``timeout_s.readiness`` (default 600 s, Story 113.14):
-    a session past it is killed and reported as an unevaluable result, and the dispatch proceeds."""
+    a session past it is killed and reported as an unevaluable result, and the dispatch proceeds.
+    With a tier map and no ``launch_model``, ``MRS-DISP-043`` dropped the run's override: the session runs on the
+    harness's own default, which no policy names, so the review refuses (Story 113.16)."""
     if not flag_on(EGM_CHALLENGE_FLAG_KEY) or not flag_on(EGM_DISPATCH_READINESS_FLAG_KEY):
         return ReadinessResult(ran=False)
     config = challenge_config(effective)
@@ -1142,6 +1156,11 @@ def readiness_for_dispatch(
     # ceiling (``timeout_s``, Story 113.14) -- carries over unchanged.
     one = replace(config, enabled=True, stages=("readiness",), reviewers={"readiness": ("implementation-readiness",)})
     refusals = model_refusals(one, slug=slug, effective=effective, launch_model=launch_model)
+    if launch_model is None and effective.model_tier_map.value:
+        refusals.append(
+            "the run launches on the harness's own default (its model override was dropped), "
+            "which cannot be shown to differ from [challenge].model"
+        )
     plugins = plugins or plugins_root()
     refusal = "; ".join(refusals) or plugin_refusal(plugins, one.plugin_version, ("implementation-readiness",))
     if refusal:
