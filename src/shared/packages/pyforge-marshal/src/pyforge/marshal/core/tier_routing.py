@@ -11,7 +11,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from .harness_profile import bmadloop_adapter_for_preference
+from .harness_profile import BMADLOOP_ADAPTER_BY_PROFILE, bmadloop_adapter_for_preference
 from .harness_session import classify_session_log, is_transient_harness_session_outcome
 from .model_cost import catalog_declared, resolve_model_price
 
@@ -272,6 +272,15 @@ def resolve_tier_launch(
         serving_pools=serving_pools,
         resolved_models=resolved_models,
     )
+
+
+def resolve_bmadloop_tier_launch(policy: EffectivePolicy, difficulty: str | None) -> TierLaunchResolution:
+    """Tier routing for a launch bmad-loop runs (Story 33.16). bmad-loop has no Cursor or Devin adapter, so a stage on a
+    harness with no ``BMADLOOP_ADAPTER_BY_PROFILE`` entry is unavailable here: it falls through to its next launchable
+    candidate or resolves to nothing, and the render keeps the ``[adapter]`` baseline. Without this, a station with no
+    ``model_cost_catalog`` writes a Cursor model under the ``claude`` adapter, which ``claude --model`` refuses.
+    ``marshal factory dispatch`` launches Cursor itself and stays on ``resolve_tier_launch``."""
+    return resolve_tier_launch(policy, difficulty, check_profile=BMADLOOP_ADAPTER_BY_PROFILE.__contains__)
 
 
 def _parse_candidate_mapping(raw: object) -> StageCandidate:

@@ -34,6 +34,7 @@ from pyforge.marshal.adapters.harness_bmadloop import (
     write_policy_toml,
 )
 from pyforge.marshal.core.policy import compose
+from pyforge.marshal.core.tier_routing import resolve_bmadloop_tier_launch
 from pyforge.marshal.ports.harness import LayerSavings
 
 _SAMPLE_CATALOG = {
@@ -241,6 +242,23 @@ def test_tier_batching_never_writes_a_stage_model_catalogued_under_a_different_p
     assert "dev" not in doc["adapter"]
     assert doc["adapter"]["model"] == "sonnet"
     assert doc["adapter"]["review"]["model"] == "opus"
+
+
+def test_a_cursor_tier_renders_the_baselines_with_no_catalog():
+    """Story 33.16 AC3: no catalog can name the model's owner, but the stage names its harness, and bmad-loop has no
+    Cursor adapter. ``claude --model composer-2.5-fast`` exits 1, so the render must keep the baselines."""
+    stage = {"harness": "cursor", "model": "composer-2.5-fast"}
+    effective = _compose(harness_preference=["cursor"], model_tier_map={"heavy": {"dev": stage, "review": stage}})
+    launch = resolve_bmadloop_tier_launch(effective, "heavy")
+    for rendered in (
+        render_policy_toml(effective, difficulty="heavy"),
+        render_policy_toml(effective, difficulty="heavy", adapter=launch.adapter_name, tier_resolution=launch),
+    ):
+        doc = tomllib.loads(rendered)
+        assert doc["adapter"]["name"] == "claude"
+        assert "dev" not in doc["adapter"]
+        assert doc["adapter"]["model"] == "sonnet"
+        assert doc["adapter"]["review"]["model"] == "opus"
 
 
 def test_tier_batching_still_applies_a_stage_model_catalogued_under_the_resolved_adapters_own_provider():

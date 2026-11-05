@@ -236,7 +236,7 @@ from ..core.model_cost import (
     weighted_total,
 )
 from ..core.recall_feedback import RecallInjectionResult
-from ..core.tier_routing import TierLaunchResolution, resolve_tier_launch
+from ..core.tier_routing import TierLaunchResolution, resolve_bmadloop_tier_launch
 from ..ports.fs import FsPort
 from ..ports.harness import (
     AdapterProbe,
@@ -609,7 +609,7 @@ def render_policy_toml(
     else:
         resolved_tier = tier_resolution
         if resolved_tier is None and difficulty is not None:
-            resolved_tier = resolve_tier_launch(effective, difficulty)
+            resolved_tier = resolve_bmadloop_tier_launch(effective, difficulty)
         if isinstance(resolved_tier, TierLaunchResolution) and resolved_tier.adapter_name:
             doc["adapter"]["name"] = resolved_tier.adapter_name
         else:
@@ -622,7 +622,7 @@ def render_policy_toml(
     if isinstance(tier_resolution, TierLaunchResolution) and tier_resolution.resolved_models:
         stage_models = dict(tier_resolution.resolved_models)
     elif tier_resolution is None and difficulty is not None:
-        launch = resolve_tier_launch(effective, difficulty)
+        launch = resolve_bmadloop_tier_launch(effective, difficulty)
         if launch.resolved_models:
             stage_models = dict(launch.resolved_models)
     elif difficulty is not None and difficulty in tier_map:

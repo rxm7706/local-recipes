@@ -338,7 +338,7 @@ from ..core.journal import (
 from ..core.model import Finding, Severity, build_envelope
 from ..core.spec_difficulty import DifficultyParseError, parse_declared_difficulty
 from ..core.supervise import EscalationStatus, evaluate_escalation, evaluate_retry_escalation
-from ..core.tier_routing import TierLaunchResolution, resolve_tier_launch
+from ..core.tier_routing import TierLaunchResolution, resolve_bmadloop_tier_launch
 from ..core.verdict import compute_verdict, exit_code_for, relay_exit_code
 from ..ports.fs import FsPort
 from ..ports.harness import DeferredStory, HarnessPort
@@ -838,7 +838,7 @@ def _resolve_model_tiering(
 
     effective_policy, tier_policy_findings = _compose_spin_policy(slug)
     _warn_spin_policy_compose_findings(findings, tier_policy_findings)
-    tier_resolution = resolve_tier_launch(effective_policy, governing)
+    tier_resolution = resolve_bmadloop_tier_launch(effective_policy, governing)
     data["resolved_models"] = dict(tier_resolution.resolved_models)
     if tier_resolution.serving_pools:
         data["serving_pool"] = dict(tier_resolution.serving_pools)

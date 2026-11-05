@@ -4182,6 +4182,34 @@ def test_spin_persists_the_resolved_model_tier_to_the_loop_homes_policy_toml(hom
     assert parsed["adapter"]["review"]["model"] == "opus"
 
 
+def test_spin_journals_and_writes_the_baselines_for_a_cursor_tier(home, tmp_path, monkeypatch):
+    """Story 33.16 AC4: bmad-loop has no Cursor adapter, so the journal names no Cursor model and the file
+    ``bmad-loop run`` reads holds the baselines, with no catalog to name the model's owner."""
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text(
+        'harness_preference = ["cursor"]\n'
+        "[model_tier_map.heavy]\n"
+        'dev = { harness = "cursor", model = "composer-2.5-fast" }\n'
+        'review = { harness = "cursor", model = "composer-2.5-fast" }\n',
+        encoding="utf-8",
+    )
+    _write_story_spec(home, "1-1", difficulty_frontmatter="difficulty: heavy\n")
+    monkeypatch.setattr(spin_module, "conventional_project_policy_path", lambda slug: policy_path)
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    assert exit_code == EXIT_OK
+    outcome = json.loads(fs.appended_lines[1][1])
+    assert outcome["payload"]["resolved_models"] == {}
+    parsed = tomllib.loads((home / ".bmad-loop" / "policy.toml").read_text(encoding="utf-8"))
+    assert "dev" not in parsed["adapter"]
+    assert parsed["adapter"]["model"] == "sonnet"
+    assert parsed["adapter"]["review"]["model"] == "opus"
+
+
 def test_spin_declared_difficulty_absent_from_map_resolves_no_override(home, tmp_path, monkeypatch):
     """A declared difficulty NOT present in `model_tier_map` is treated
     identically to undeclared -- never an error (`model_tier_map` is this
