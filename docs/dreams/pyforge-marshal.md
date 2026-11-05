@@ -13952,3 +13952,6 @@ row; the `steward setup` read rules) · [[pyforge-scribe]] (the
   reported a broken link that was not broken (Story 113.19). Story 113.18 lands the residue, Stories 25.19 and 29.5 are parked,
   and the 918 medium and low findings stay not triaged, never rejected. The triage also found that the start/get runner on seven
   station MCP faces reports `completed: True` and does no work; that decision is the operator's (`DW-steward-egm-2026-11-05-1`).
+- **2026-11-05** — An audit run reads the Dream entry its slice cites (Story 113.19). The reader now takes every citation form a
+  live Spec writes, a dated bullet can serve as the Dream context wherever it sits, and a CAP that cites nothing finds the bullet
+  whose `→` names it. Each report names every run's `dream_choice`. The live plan moves from 12 runs on `newest` to none.

@@ -649,7 +649,9 @@ def run_one(
     if report is not None:
         workspace = owner or owning_spec(root, slug, stage, target)
         override = "" if workspace == spec_path(root, slug).parent else str(workspace)
-        report = core.with_provenance(report, project=slug, spec_workspace=str(workspace), owner_override=override)
+        report = core.with_provenance(
+            report, project=slug, spec_workspace=str(workspace), owner_override=override, dream_choice=dream_choice
+        )
         report_path.write_text(report.to_json() + "\n", encoding="utf-8")
     append_journal(
         journal,
@@ -768,8 +770,8 @@ def write_slice(root: Path, source: Path, selector: core.Selector, out_dir: Path
 
 def write_dream_entry(root: Path, slug: str, cap_slice: core.CapSlice, out_dir: Path) -> tuple[Path, str]:
     """The Dream entry ``cap_slice`` takes, cut from the station's Dream into a Tier-3 file, and the rule that chose
-    it (``core.dream_entry_section``): the entry it cites, else the newest entry naming one of its CAPs, else the
-    newest dated entry."""
+    it (``core.dream_entry_section``): the entry or dated bullet it cites, else the newest entry naming one of its
+    CAPs, else the newest dated entry."""
     dream = dream_path(root, slug)
     try:
         heading, section, choice = core.dream_entry_section(
