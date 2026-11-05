@@ -164,7 +164,7 @@ A separate reviewer read the diff against this spec on 2026-11-05 and found two 
 - 219 Track A recipes had no CFE block and 5 more lacked its build keys, and the driver cannot stamp either. A script added each at `not-attempted` from the recipe body and the atlas, and proved the body unchanged. Only the driver wrote a build record.
 - A `rattler-build --render-only` pass ran first, because 182 of 572 recipes failed to parse: 210 specs fixed, 3 empty test entries dropped, one junk `python_min` removed, one recipe's quoted entry points unquoted.
 - `xorq` and `wagtail-linkchecker` carry `pip_check: false` with a `cfe-pip-check` waiver.
-- 60 same-version recipes moved `build.number` (G113) and were rebuilt, so each record describes what lands.
+- 61 same-version recipes moved `build.number` (G113) and were rebuilt, so each record describes what lands.
 - `dlt-pendulum` skips python 3.14+ and `datasketches` skips 3.13+, where a pinned dependency has no support.
 - The driver's `already-current` path leaves `meta.yaml` mirrors alone. Its `refreshed` path rewrote 46 and removed 2 (`django-slick-reporting`, `interpret-community`), as C1 and C2 say.
 
