@@ -51,7 +51,7 @@ from ..core import policy
 from ..core.harness_profile import load_packaged_profiles
 from ..core.journal import JournalEntryId, Phase, build_entry, mint_run_id, prepare_for_write
 from ..core.model import Verdict
-from ..core.tier_routing import normalize_stage_entries, resolve_tier_launch
+from ..core.tier_routing import normalize_stage_entries, resolve_bmadloop_tier_launch
 from ..core.verdict import EXIT_OK, EXIT_USAGE, exit_code_for
 from .config import PolicyIOError, _read_project_policy, conventional_project_policy_path, read_repo_policy_defaults
 from .config import repo_root as _default_repo_root
@@ -245,14 +245,14 @@ def adapter_models(effective: policy.EffectivePolicy) -> list[str]:
 def spin_models(effective: policy.EffectivePolicy) -> list[str]:
     """Every model a ``marshal factory spin`` session can author with (Story 113.17): the ``dev`` and ``review`` models
     of the policy spin renders for each ``model_tier_map`` tier and for a run with no declared difficulty. Read from
-    that render, never from the tier map: bmad-loop has no Cursor adapter, so on a station that declares a catalog spin
-    drops a Cursor tier's model and runs on the ``[adapter]`` baselines. It reads the policy as it stands now, never
+    that render, never from the tier map: bmad-loop has no Cursor adapter, so spin drops a Cursor tier's model and runs
+    on the ``[adapter]`` baselines (Story 33.16). It reads the policy as it stands now, never
     what a past run launched. A render that fails raises ``ValueError``: spin can still run on the policy file already
     on disk, so the caller must not read a failed render as no model."""
     tier_map = effective.model_tier_map.value
     models: list[str] = []
     for difficulty in (None, *(tier_map if isinstance(tier_map, Mapping) else ())):
-        resolution = resolve_tier_launch(effective, difficulty)
+        resolution = resolve_bmadloop_tier_launch(effective, difficulty)
         rendered = tomllib.loads(
             render_policy_toml(
                 effective, difficulty=difficulty, adapter=resolution.adapter_name, tier_resolution=resolution

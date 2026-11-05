@@ -4,12 +4,19 @@ from __future__ import annotations
 
 import tomllib
 
+from pyforge.core.roster import STATIONS, long_form
+
 from pyforge.marshal.adapters.harness_bmadloop import render_policy_toml
+from pyforge.marshal.cli.challenge import compose_effective
 from pyforge.marshal.core import policy
+from pyforge.marshal.core.dispatch import resolve_tier_harness
+from pyforge.marshal.core.harness_profile import BMADLOOP_ADAPTER_BY_PROFILE
 from pyforge.marshal.core.tier_routing import (
     StageCandidate,
     candidate_pool_from_catalog,
+    normalize_stage_entries,
     parse_stage_entry,
+    resolve_bmadloop_tier_launch,
     resolve_stage_candidate,
     resolve_tier_launch,
     sort_candidates_by_pool_preference,
@@ -251,3 +258,87 @@ def test_dispatch_fallback_uses_medium_tier():
     )
     resolution = resolve_tier_launch(effective, "unknown", allow_unmapped_fallback=True)
     assert resolution.resolved_models["dev"] == "sonnet-5"
+
+
+_CURSOR_STAGE = {"harness": "cursor", "model": "composer-2.5-fast"}
+
+
+def test_a_bmadloop_launch_resolves_no_stage_on_a_harness_with_no_adapter():
+    """Story 33.16 AC1: bmad-loop has no Cursor or Devin adapter, so the journal's ``resolved_models`` stays empty."""
+    for harness in ("cursor", "devin"):
+        effective = _compose(
+            harness_preference=[harness],
+            model_tier_map={
+                "heavy": {"dev": {"harness": harness, "model": "x"}, "review": {"harness": harness, "model": "x"}}
+            },
+        )
+        launch = resolve_bmadloop_tier_launch(effective, "heavy")
+        assert launch.stages == {}
+        assert launch.resolved_models == {}
+
+
+def test_a_bmadloop_launch_keeps_a_harness_with_an_adapter():
+    effective = _compose(
+        harness_preference=["cursor"],
+        model_tier_map={"frontier": {"dev": {"harness": "claude", "model": "claude-fable-5-1"}}},
+    )
+    launch = resolve_bmadloop_tier_launch(effective, "frontier")
+    assert launch.resolved_models == {"dev": "claude-fable-5-1"}
+    assert launch.adapter_name == "claude"
+
+
+def test_a_bmadloop_launch_falls_through_to_the_next_launchable_candidate():
+    """Story 33.16 AC2."""
+    effective = _compose(
+        harness_preference=["cursor"],
+        model_tier_map={
+            "heavy": {
+                "dev": [_CURSOR_STAGE, {"harness": "claude", "model": "claude-sonnet-5-5"}],
+                "review": [_CURSOR_STAGE, {"harness": "claude", "model": "opus"}],
+            }
+        },
+    )
+    launch = resolve_bmadloop_tier_launch(effective, "heavy")
+    assert launch.resolved_models == {"dev": "claude-sonnet-5-5"}, "review holds to its first candidate's model"
+    assert launch.adapter_name == "claude"
+
+
+def test_dispatch_still_resolves_the_cursor_model():
+    """Story 33.16 AC6: ``marshal factory dispatch`` launches Cursor itself, so only a bmad-loop launch drops it."""
+    effective = _compose(harness_preference=["cursor"], model_tier_map={"heavy": {"dev": _CURSOR_STAGE}})
+    assert resolve_tier_harness(effective, difficulty="heavy").resolved_models == {"dev": "composer-2.5-fast"}
+
+
+def _spin_render(effective, difficulty):
+    """The adapter name and every stage model of the policy spin writes."""
+    launch = resolve_bmadloop_tier_launch(effective, difficulty)
+    adapter = tomllib.loads(
+        render_policy_toml(effective, difficulty=difficulty, adapter=launch.adapter_name, tier_resolution=launch)
+    )["adapter"]
+    stages = (adapter.get("dev") or adapter, adapter["review"], adapter.get("triage", {}))
+    return adapter["name"], {stage["model"] for stage in stages if "model" in stage}
+
+
+def _launchable_models(stages):
+    return {
+        candidate.model
+        for candidates in normalize_stage_entries(stages).values()
+        for candidate in candidates
+        if candidate.harness in BMADLOOP_ADAPTER_BY_PROFILE
+    }
+
+
+def test_no_live_tier_renders_a_model_its_adapter_cannot_run():
+    """Story 33.16 AC5: every tier of all eight live policies renders the baselines or a stage bmad-loop can launch, so
+    a Cursor model reds here whatever its shape, a bare string included, and with or without a catalog."""
+    for slug in (long_form(station) for station in STATIONS):
+        effective = compose_effective(slug)
+        tier_map = effective.model_tier_map.value
+        assert tier_map, f"{slug} composed no tier map, so this test would prove nothing for it"
+        _, baselines = _spin_render(effective, None)
+        for difficulty, stages in tier_map.items():
+            adapter, models = _spin_render(effective, difficulty)
+            assert adapter in BMADLOOP_ADAPTER_BY_PROFILE.values(), (slug, difficulty)
+            assert models <= baselines | _launchable_models(stages), (slug, difficulty)
+    marshal = compose_effective("pyforge-marshal")
+    assert _spin_render(marshal, "frontier")[1] == _launchable_models(marshal.model_tier_map.value["frontier"])

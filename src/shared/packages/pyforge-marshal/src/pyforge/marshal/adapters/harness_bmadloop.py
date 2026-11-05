@@ -236,7 +236,7 @@ from ..core.model_cost import (
     weighted_total,
 )
 from ..core.recall_feedback import RecallInjectionResult
-from ..core.tier_routing import TierLaunchResolution, resolve_tier_launch
+from ..core.tier_routing import TierLaunchResolution, resolve_bmadloop_tier_launch
 from ..ports.fs import FsPort
 from ..ports.harness import (
     AdapterProbe,
@@ -531,10 +531,11 @@ def render_policy_toml(
 
     FR-51 tier-batching: when ``difficulty`` is given and is a key of
     ``effective.model_tier_map.value``, each of ``dev``/``review``/``triage``
-    present in that difficulty's stage map gets ``[adapter.<stage>].model``
-    set to the mapped model name; a stage absent from the map (or
-    ``difficulty`` being ``None``/unknown) keeps the template's baseline --
-    no override table is written for it. Never an error: resolving which
+    that ``resolve_bmadloop_tier_launch`` resolves gets
+    ``[adapter.<stage>].model`` set to the mapped model name; a stage absent
+    from the map, a stage on a harness with no bmad-loop adapter (Story
+    33.16), or ``difficulty`` being ``None``/unknown keeps the template's
+    baseline -- no override table is written for it. Never an error: resolving which
     difficulty applies to a story/batch is a later story's concern.
 
     Raises ``ValueError`` when ``max_dev_attempts`` or ``max_review_cycles``
@@ -609,7 +610,7 @@ def render_policy_toml(
     else:
         resolved_tier = tier_resolution
         if resolved_tier is None and difficulty is not None:
-            resolved_tier = resolve_tier_launch(effective, difficulty)
+            resolved_tier = resolve_bmadloop_tier_launch(effective, difficulty)
         if isinstance(resolved_tier, TierLaunchResolution) and resolved_tier.adapter_name:
             doc["adapter"]["name"] = resolved_tier.adapter_name
         else:
@@ -617,21 +618,13 @@ def render_policy_toml(
             if derived is not None and str(doc["adapter"]["name"]) != derived:
                 doc["adapter"]["name"] = derived
 
-    tier_map = effective.model_tier_map.value
     stage_models: dict[str, str] = {}
     if isinstance(tier_resolution, TierLaunchResolution) and tier_resolution.resolved_models:
         stage_models = dict(tier_resolution.resolved_models)
     elif tier_resolution is None and difficulty is not None:
-        launch = resolve_tier_launch(effective, difficulty)
+        launch = resolve_bmadloop_tier_launch(effective, difficulty)
         if launch.resolved_models:
             stage_models = dict(launch.resolved_models)
-    elif difficulty is not None and difficulty in tier_map:
-        raw_stages = tier_map[difficulty]
-        if isinstance(raw_stages, Mapping):
-            for stage in _ADAPTER_STAGES:
-                entry = raw_stages.get(stage)
-                if isinstance(entry, str) and entry:
-                    stage_models[stage] = entry
 
     if stage_models:
         adapter_table = doc["adapter"]

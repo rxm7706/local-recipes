@@ -13935,3 +13935,11 @@ row; the `steward setup` read rules) · [[pyforge-scribe]] (the
   compares what spin renders and refuses a Sonnet (Story 113.17). The audit stages keep it: they read planning and rules
   files, which a dev session can touch but does not author whole. That residual is real, and only a challenger model no
   session can author with removes it.
+- **2026-11-04 (spin writes a model its adapter cannot run)** — Rendering the live policies for the spin gap showed a second
+  fault. On the seven stations with no model catalog, a Cursor tier renders `composer-2.5-fast` under the `claude` adapter, in
+  21 of the 33 renders, and `claude --model composer-2.5-fast` exits 1 with `unrecognized_model`. The fail-safe only ever
+  asked the catalog who owns a model, and those stations have none, though each tier stage names its harness outright. The
+  operator said fix it. A launch bmad-loop runs now treats a harness with no bmad-loop adapter as unavailable, so the stage
+  keeps the baseline, as it already did on marshal, and the run journal stops naming a model that never ran (Story 33.16). A
+  bare string names no harness, so it stays outside the rule: the tier maps carry none, and a test reds if one lands. The
+  price of the fix is that a declared difficulty on those seven stations now runs `sonnet` and `opus` where it used to fail.

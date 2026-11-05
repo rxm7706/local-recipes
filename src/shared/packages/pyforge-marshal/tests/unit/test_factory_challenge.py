@@ -1510,6 +1510,11 @@ def test_spin_models_are_what_spin_renders() -> None:
     baselines. ``triage`` authors nothing the challenger reads."""
     effective = _effective(catalog=FLEET_CATALOG, tiers=FRONTIER_TIERS)
     assert sorted(cli.spin_models(effective)) == ["claude-fable-5-1", "opus", "sonnet"]
+    assert sorted(cli.spin_models(_effective(catalog=None, tiers=FRONTIER_TIERS))) == [
+        "claude-fable-5-1",
+        "opus",
+        "sonnet",
+    ]
     assert sorted(cli.spin_models(_effective(catalog=FLEET_CATALOG, tiers={}))) == ["opus", "sonnet"]
 
 

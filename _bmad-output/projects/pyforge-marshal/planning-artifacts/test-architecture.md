@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: 685bb9a0767653f4
-story_count: 525
+source_fingerprint: 1135d83f80fb3f92
+story_count: 526
 test_file_count: 274
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 525
+- **Stories parsed:** 526
 - **Epics parsed:** 111
 - **Test files inventoried:** 274 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `685bb9a0767653f4`
+- **Source fingerprint:** `1135d83f80fb3f92`
 
 ## Risk Assessment
 
@@ -684,6 +684,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 33.13 | CAP-3's mechanism tier — the automated proof `platform-ci-local` gates on | none observed |
 | 33.14 | CAP-5's deployed profile — a real device-code/PKCE `pyforge login` | none observed |
 | 33.15 | The tier map names Cursor models before any unattended drain | none observed |
+| 33.16 | A tier stage bmad-loop cannot launch keeps the baseline | none observed |
 | 34.1 | `factory spin` refuses a second launch against a live loop home | none observed |
 | 34.2 | A dispatch/spin session's worktree is checkpointed before it can be lost to a... | none observed |
 | 34.3 | `factory drain` tells a crashed session apart from a genuinely failed one | none observed |
