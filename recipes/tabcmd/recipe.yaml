@@ -23,7 +23,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - python-build
     - setuptools >=62
     - wheel
@@ -55,7 +55,7 @@ tests:
       python_version: ${{ python_min }}
   - requirements:
       run:
-        - python ${{ python_min }}
+        - python ${{ python_min }}.*
     script:
       - tabcmd --help
 
@@ -98,6 +98,7 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
 #    # WAVE-C C1 KEEP-meta: conda-forge tabcmd-feedstock is still v0/meta.yaml
 #    # (deployed 2.0.18). meta.yaml kept as a faithful clean mirror of the
 #    # deployed feedstock; this recipe.yaml is our v1 at the same version 2.0.18.

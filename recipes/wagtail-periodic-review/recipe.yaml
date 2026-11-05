@@ -20,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - flit-core >=3.2,<4
     - pip
   run:
@@ -75,6 +75,7 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
 #    # WAVE-C C1 keep-meta: feedstock still v0 (recipe.yaml -> 404). meta.yaml
 #    # kept as the deployed-state mirror at 0.5.0; this recipe.yaml is the v1 we
 #    # maintain locally and the proposed migration. cfe-forge-recipe-updates-

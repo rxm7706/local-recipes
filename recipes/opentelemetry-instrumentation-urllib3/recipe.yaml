@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.66b1"
+  version: "0.66b2"
 
 package:
   name: opentelemetry-instrumentation-urllib3
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-urllib3/opentelemetry_instrumentation_urllib3-${{ version }}.tar.gz
-  sha256: 31e84a2ccfa86ca1d4f1209ea66c1f709c335348d5c487477d3843172efcc408
+  sha256: b499b037087c949fd70aecd28f07c7c05fc22df706a36be633072c4cc94da444
 
 build:
   number: 0
@@ -25,9 +25,9 @@ requirements:
   run:
     - python >=${{ python_min }}
     - opentelemetry-api ~=1.12
-    - opentelemetry-instrumentation ==0.66b1
-    - opentelemetry-semantic-conventions ==0.66b1
-    - opentelemetry-util-http ==0.66b1
+    - opentelemetry-instrumentation ==0.66b2
+    - opentelemetry-semantic-conventions ==0.66b2
+    - opentelemetry-util-http ==0.66b2
     - wrapt <3.0.0,>=1.0.0
 
 tests:
@@ -75,11 +75,11 @@ extra:
     - version-update-to-0.65b0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-10T18:02:08Z
+  cfe-last-checked: 2026-11-05T17:39:18Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T10:52:32Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-10-10T18:02:53Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T18:04:47Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -87,4 +87,5 @@ extra:
 # Header:
 #    # added run deps from import test: ['urllib3']
 #    # 2026-10-10 refresh_wave B-25-12: refreshed 0.65b0 -> 0.66b1
+#    # 2026-11-05 refresh_wave B-W19-failed: refreshed 0.66b1 -> 0.66b2
 ####

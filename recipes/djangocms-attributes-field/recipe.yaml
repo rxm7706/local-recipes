@@ -20,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -74,6 +74,7 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
 #    # C1 KEEP-meta: feedstock still v0/meta.yaml at 4.1.2. meta.yaml mirrors
 #    # the deployed feedstock (clean); recipe.yaml is our proposed v1 migration
 #    # bumped to the same upstream 4.1.2. Both files coexist until the feedstock

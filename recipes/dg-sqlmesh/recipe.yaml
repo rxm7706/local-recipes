@@ -52,3 +52,34 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dg-sqlmesh
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dg-sqlmesh
+  cfe-purls:
+    - pkg:conda/dg-sqlmesh@${{ version }}?channel=conda-forge
+    - pkg:pypi/dg-sqlmesh@${{ version }}
+  cfe-upstream-repo: https://github.com/fosk06/dagster-sqlmesh
+  cfe-upstream-homepage: https://github.com/fosk06/dagster-sqlmesh
+  cfe-import-names: [dg_sqlmesh]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dg-sqlmesh-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-05T17:29:39Z
+  cfe-generated-by-version: 8.103.0
+  cfe-generated-at-datetime: 2026-11-05T17:29:39Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
+####

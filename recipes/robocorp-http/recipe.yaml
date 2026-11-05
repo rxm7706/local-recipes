@@ -25,7 +25,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - poetry-core
     - pip
   run:
@@ -78,6 +78,7 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
 #    # WAVE-C C1: conda-forge feedstock is still v0 (meta.yaml); local meta.yaml
 #    # refreshed to faithfully mirror the deployed feedstock at 0.4.1. This
 #    # recipe.yaml is the proposed v1 migration, authored alongside meta.yaml.

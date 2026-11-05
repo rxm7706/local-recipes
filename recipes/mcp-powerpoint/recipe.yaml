@@ -65,3 +65,34 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mcp-powerpoint
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mcp-powerpoint
+  cfe-purls:
+    - pkg:conda/mcp-powerpoint@${{ version }}?channel=conda-forge
+    - pkg:pypi/mcp-powerpoint@${{ version }}
+  cfe-upstream-repo: https://github.com/CannonJunior/mcp-powerpoint
+  cfe-upstream-homepage: https://github.com/CannonJunior/mcp-powerpoint
+  cfe-import-names: [mcp_powerpoint]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "false:recipe-sets-pip-check-false"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/mcp-powerpoint-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-05T17:29:39Z
+  cfe-generated-by-version: 8.103.0
+  cfe-generated-at-datetime: 2026-11-05T17:29:39Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
+####

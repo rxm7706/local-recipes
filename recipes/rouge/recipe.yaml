@@ -37,7 +37,7 @@ tests:
 
 about:
   homepage: http://github.com/pltrdy/rouge
-  license: LICENCE.txt
+  license: Apache-2.0
   license_file: LICENSE
   summary: Full Python ROUGE Score Implementation (not a wrapper)
   description: |
@@ -71,11 +71,12 @@ extra:
   cfe-last-checked: 2026-08-18T05:05:00Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T05:05:00Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-08-18T05:05:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T17:48:57Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: licence taken from the feedstock.
 ####

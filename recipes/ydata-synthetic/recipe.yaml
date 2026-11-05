@@ -20,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -44,10 +44,6 @@ tests:
         - ydata_synthetic
       pip_check: false
       python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
 
 about:
   summary: Synthetic data generation methods with different synthetization methods.
@@ -88,5 +84,6 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec. removed a test entry with no test type.
 #    # 2026-07-03 Set F wave (tracker residuals) — LOCAL BUILDS ONLY.
 ####

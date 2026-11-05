@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: django-revproxy
   version: "0.13.0"
-  python_min: python_min|default("3.8")
 
 package:
   name: ${{ name|lower }}
@@ -24,7 +23,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - setuptools >=45
     - wheel
     - setuptools-scm >=6.2
@@ -53,3 +52,36 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-revproxy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-revproxy
+  cfe-purls:
+    - pkg:conda/django-revproxy@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-revproxy@${{ version }}
+  cfe-upstream-repo: https://github.com/jazzband/django-revproxy
+  cfe-upstream-homepage: https://github.com/jazzband/django-revproxy
+  cfe-import-names: [revproxy]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-revproxy-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-05T17:29:39Z
+  cfe-generated-by-version: 8.103.0
+  cfe-generated-at-datetime: 2026-11-05T17:29:39Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # 2026-11-05 Story 25.19: removed a python_min context value that never rendered, so the global floor applies.
+#    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
+#    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
+####

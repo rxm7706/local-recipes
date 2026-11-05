@@ -23,7 +23,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -40,7 +40,7 @@ tests:
   - requirements:
       run:
         - pip
-        - python ${{ python_min }}
+        - python ${{ python_min }}.*
     script:
       - gita --help
 
@@ -83,6 +83,7 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
 #    # WAVE-C C1 (KEEP-meta): conda-forge gita-feedstock is still v0/meta.yaml at
 #    # 0.16.8.2. meta.yaml kept as a faithful mirror of the deployed feedstock;
 #    # this recipe.yaml is our proposed v1 migration at the same version.

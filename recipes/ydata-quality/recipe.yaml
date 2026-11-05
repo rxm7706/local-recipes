@@ -4,6 +4,7 @@ schema_version: 1
 context:
   name: ydata-quality
   version: "0.1.0"
+  python_min: "3.7"
 
 package:
   name: ${{ name|lower }}
@@ -72,13 +73,14 @@ extra:
   cfe-last-checked: 2026-07-03T22:07:06Z
   cfe-generated-by-version: 8.67.0
   cfe-generated-at-datetime: 2026-07-03T22:07:06Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-07-03T22:07:06Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T17:55:26Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: python_min 3.7 mirrors the feedstock: upstream needs python below 3.9.
 #    # 2026-07-03 Set F wave (tracker residuals) — LOCAL BUILDS ONLY.
 # Header:
 #    # TERMINAL: python cap below cf floor; tracker issue 088 closed as unshippable.

@@ -49,3 +49,34 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dremio-simple-query
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dremio-simple-query
+  cfe-purls:
+    - pkg:conda/dremio-simple-query@${{ version }}?channel=conda-forge
+    - pkg:pypi/dremio-simple-query@${{ version }}
+  cfe-upstream-repo: https://github.com/developer-advocacy-dremio/dremio_simple_query
+  cfe-upstream-homepage: https://github.com/developer-advocacy-dremio/dremio_simple_query
+  cfe-import-names: [dremio_simple_query]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dremio-simple-query-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-05T17:29:39Z
+  cfe-generated-by-version: 8.103.0
+  cfe-generated-at-datetime: 2026-11-05T17:29:39Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
+####

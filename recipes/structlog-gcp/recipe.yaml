@@ -51,3 +51,34 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: structlog-gcp
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: structlog-gcp
+  cfe-purls:
+    - pkg:conda/structlog-gcp@${{ version }}?channel=conda-forge
+    - pkg:pypi/structlog-gcp@${{ version }}
+  cfe-upstream-repo: https://github.com/multani/structlog-gcp
+  cfe-upstream-homepage: https://github.com/multani/structlog-gcp
+  cfe-import-names: [structlog_gcp]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/structlog-gcp-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-05T17:29:39Z
+  cfe-generated-by-version: 8.103.0
+  cfe-generated-at-datetime: 2026-11-05T17:29:39Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
+####

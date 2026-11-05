@@ -20,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - hatchling
     - pip
   run:
@@ -72,6 +72,7 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
 #    # WAVE-C C1 keep-meta: feedstock still v0 (recipe/meta.yaml). Refreshed
 #    # local meta.yaml to mirror the deployed v0 at 4.1.2 (un-annotated) and
 #    # authored this v1 recipe.yaml alongside. MAJOR bump from local 3.0.0;

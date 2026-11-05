@@ -22,7 +22,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - six >=1.9
     - setuptools
@@ -81,6 +81,7 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
 #    # C1 keep-meta: conda-forge feedstock is still v0/meta.yaml at 12.0.0.
 #    # meta.yaml refreshed to mirror the deployed feedstock; this recipe.yaml is
 #    # the proposed v1 migration, bumped local 4.0.6 to upstream 12.0.0.

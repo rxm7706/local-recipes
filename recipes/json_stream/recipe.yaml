@@ -20,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - setuptools
     - wheel
     - pip
@@ -74,6 +74,7 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
 #    json_stream is a still-v0 (meta.yaml) conda-forge feedstock. The local
 #    meta.yaml mirrors the deployed feedstock at 2.5.1 verbatim; this
 #    recipe.yaml is the proposed v1 migration (built/tested locally).

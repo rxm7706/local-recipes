@@ -21,12 +21,11 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - poetry-core >=1.0.0
+    - uv-build >=0.12.5,<0.13
     - pip
   run:
     - python >=${{ python_min }},<4.0.0
-    - django >=4
-    - requests >=2.0.0,<3.0.0
+    - django >=5.2
 
 tests:
 - python:
@@ -67,13 +66,14 @@ extra:
   cfe-last-checked: 2026-06-20T00:00:00Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: '2026-10-09T11:00:27Z'
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T18:04:11Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: host uv-build and run taken from the feedstock; the feedstock leaves the ssr extra out.
 #    # WAVE-C C1 (keep-meta): conda-forge feedstock is still v0/meta.yaml at
 #    # 1.2.0. meta.yaml kept as a faithful mirror of the deployed feedstock;
 #    # this recipe.yaml is the proposed v1 migration (cfe-forge-recipe-updates-

@@ -84,7 +84,7 @@ about:
   repository: https://github.com/deedy5/primp
   license: MIT
   license_file:
-    - crates/primp/LICENSE-MIT
+    - crates/primp/LICENSE
     - THIRDPARTY.yml
   summary: HTTP client that can impersonate web browsers, mimicking their headers and `TLS/JA3/JA4/HTTP2` fingerprints
 
@@ -115,13 +115,14 @@ extra:
   cfe-last-checked: 2026-06-25T03:00:00Z
   cfe-generated-by-version: 8.34.0
   cfe-generated-at-datetime: 2026-06-19T20:40:00Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: '2026-10-09T11:12:56Z'
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T17:50:45Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: license_file path taken from the feedstock.
 #    # 2026-11-01 mason Story 25.18: current at the published version; maintainers added (G53): pb01ka
 # build:
 #  script:

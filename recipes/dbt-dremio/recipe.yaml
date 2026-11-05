@@ -20,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -74,6 +74,7 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
 #    # WAVE-C C1 (KEEP-meta): conda-forge feedstock is still v0/meta.yaml and is
 #    # ALREADY at 1.10.1. Local meta.yaml refreshed to mirror the deployed v0
 #    # state verbatim (clean upstream copy, no annotations). This recipe.yaml is

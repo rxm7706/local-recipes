@@ -22,10 +22,12 @@ requirements:
     - python ${{ python_min }}.*
     - pip
     - flit-core >=3.4
+    - flake8
+    - tomli
   run:
     - python >=${{ python_min }}
     - flake8 >=5
-    - tomli <2
+    - tomli
 
 tests:
   - python:
@@ -39,7 +41,7 @@ tests:
 about:
   homepage: https://pypi.org/project/Flake8-pyproject/
   license: MIT
-  license_file: LICENSE
+  license_file: license.txt
   summary: Flake8 plug-in loading the configuration from pyproject.toml
   description: |
     Flake8 plug-in loading the configuration from pyproject.toml
@@ -73,12 +75,13 @@ extra:
   cfe-last-checked: 2026-08-18T07:43:48Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T07:43:48Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-08-18T07:43:48Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T17:45:13Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: host flake8 and tomli, run tomli and license_file taken from the feedstock.
 #    # added run deps from import test: ['flake8']
 ####

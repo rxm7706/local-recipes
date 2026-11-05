@@ -2,7 +2,7 @@
 title: "25.19: The recipes that still record a failed build get their own build"
 type: 'fix'
 created: '2026-11-05'
-status: 'backlog'
+status: 'in-progress'
 baseline_revision: '836a2ee286'
 review_loop_iteration: 0
 followup_review_recommended: false

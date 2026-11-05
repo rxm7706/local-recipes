@@ -36,8 +36,8 @@ tests:
 
 about:
   homepage: https://github.com/ankushshah89/python-docx2txt
-  license: REPLACE_LICENSE
-  license_file: LICENSE
+  license: MIT
+  license_file: LICENSE.txt
   summary: A pure python-based utility to extract text and images from docx files.
   description: |
     A pure python-based utility to extract text and images from docx files.
@@ -68,19 +68,16 @@ extra:
     - meta-yaml-to-recipe-yaml
     - version-update-to-0.9
 
-  cfe-forge-blocker-list:
-    - license-unresolved:REPLACE_LICENSE
-
+  cfe-forge-blocker-list: []
   cfe-last-checked: 2026-08-18T09:05:17Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T09:05:17Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-08-18T09:05:17Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T17:46:29Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
-#    # license:REPLACE_LICENSE
-#    # blocker: license-unresolved:REPLACE_LICENSE
+#    # 2026-11-05 Story 25.19: licence and license_file taken from the feedstock.
 ####

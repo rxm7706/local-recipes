@@ -20,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - flit-core >=2,<4
     - pip
   run:
@@ -74,6 +74,7 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
 #    # WAVE-C C1: feedstock is STILL v0/meta.yaml at 0.2.1; meta.yaml kept as a
 #    # faithful mirror of the deployed feedstock, recipe.yaml is the proposed v1.
 #    # cfe-forge-recipe-updates-needed carries meta-yaml-to-recipe-yaml (the

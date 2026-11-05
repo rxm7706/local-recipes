@@ -1,5 +1,5 @@
 {% set name = "wasmtime" %}
-{% set version = "49.0.0" %}
+{% set version = "50.0.1" %}
 
 package:
   name: {{ name }}-py
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
-  sha256: fe0bf510ebdaf9432b756e320d2da2347f159e241f468c961b95164ab06cfdc1
+  sha256: d9a1eb530e5c4a55853784ae6bff0053db3cad89299097ad00e352e3d48c3cc1
 
 build:
   number: 0

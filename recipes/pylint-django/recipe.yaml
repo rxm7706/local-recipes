@@ -38,7 +38,7 @@ tests:
 
 about:
   homepage: https://github.com/pylint-dev/pylint-django
-  license: GPL-2.0
+  license: GPL-2.0-only
   license_file: LICENSE
   summary: A Pylint plugin to help Pylint understand the Django web framework
   description: |
@@ -75,11 +75,12 @@ extra:
   cfe-last-checked: 2026-08-18T11:23:35Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T11:23:35Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-08-18T11:23:35Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T17:53:06Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: licence identifier taken from the feedstock.
 ####

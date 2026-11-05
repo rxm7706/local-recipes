@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.66b1"
+  version: "0.66b2"
 
 package:
   name: opentelemetry-instrumentation-botocore
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-botocore/opentelemetry_instrumentation_botocore-${{ version }}.tar.gz
-  sha256: c601923e40aa008f4c0466b714c112fe47da07adb72ae6c69e2ac95992bcd66e
+  sha256: 744959d5f6bae940d3d41e5f2663fad733b50dedf742bc55da9bbbcfb9773903
 
 build:
   number: 0
@@ -25,9 +25,9 @@ requirements:
   run:
     - python >=${{ python_min }}
     - opentelemetry-api ~=1.37
-    - opentelemetry-instrumentation ==0.66b1
+    - opentelemetry-instrumentation ==0.66b2
     - opentelemetry-propagator-aws-xray ~=1.0
-    - opentelemetry-semantic-conventions ==0.66b1
+    - opentelemetry-semantic-conventions ==0.66b2
 
 tests:
   - python:
@@ -74,11 +74,11 @@ extra:
     - version-update-to-0.65b0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-10T17:26:27Z
+  cfe-last-checked: 2026-11-05T17:52:43Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T10:33:41Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-10-10T17:27:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T17:53:34Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -86,4 +86,6 @@ extra:
 # Header:
 #    # added run deps from import test: ['botocore']
 #    # 2026-10-10 refresh_wave B-25-11: refreshed 0.65b0 -> 0.66b1
+#    # 2026-11-05 refresh_wave B-W19-failed: needs-review, dependency-fix (run pin opentelemetry-semantic-conventions (opentelemetry-semantic-conventions ==0.66b2 vs opentelemetry-semantic-conventions ==0.66b2))
+#    # 2026-11-05 refresh_wave B-W19-fix1: refreshed 0.66b1 -> 0.66b2
 ####

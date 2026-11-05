@@ -3,6 +3,7 @@ schema_version: 1
 
 context:
   version: "1.0.1"
+  python_min: "3.9"
 
 package:
   name: skope-rules
@@ -23,11 +24,11 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }}
-    - numpy
-    - scikit-learn
-    - scipy
-    - pandas
+    - python >=${{ python_min }},<3.10
+    - numpy >=1.10.4
+    - scikit-learn >=0.17.1,<1.0.0
+    - scipy >=0.17.0
+    - pandas >=0.18.1
 
 tests:
   - python:
@@ -40,8 +41,10 @@ tests:
 
 about:
   homepage: https://github.com/scikit-learn-contrib/skope-rules
-  license: REPLACE_LICENSE
-  license_file: LICENSE
+  license: BSD-3-Clause AND MIT
+  license_file:
+    - license.txt
+    - COPYING
   summary: Machine Learning with Interpretable Rules
   description: |
     Machine Learning with Interpretable Rules
@@ -70,19 +73,17 @@ extra:
     - meta-yaml-to-recipe-yaml
     - version-update-to-1.0.1
 
-  cfe-forge-blocker-list:
-    - license-unresolved:REPLACE_LICENSE
-
+  cfe-forge-blocker-list: []
   cfe-last-checked: 2026-08-18T05:32:53Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T05:32:53Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-08-18T05:32:53Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T18:05:06Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
-#    # license:REPLACE_LICENSE
-#    # blocker: license-unresolved:REPLACE_LICENSE
+#    # 2026-11-05 Story 25.19: python below 3.10 and run pins taken from the feedstock: the code imports Iterable from collections, gone in python 3.10.
+#    # 2026-11-05 Story 25.19: licence and license_file taken from the feedstock.
 ####

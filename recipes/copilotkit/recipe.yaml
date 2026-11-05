@@ -20,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - poetry-core
     - pip
   run:
@@ -37,7 +37,7 @@ tests:
   - requirements:
       run:
         - pip
-        - python ${{ python_min }}
+        - python ${{ python_min }}.*
     script:
       - pip check
 
@@ -82,6 +82,7 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
 #    # WAVE-E gh-numbering archetype. The GitHub monorepo tag vX.Y.Z numbers
 #    # the JS/npm release; the Python package on PyPI is versioned 0.1.x for
 #    # the SAME code. GitHub tag v1.57.2 == sdk-python pyproject version 0.1.88

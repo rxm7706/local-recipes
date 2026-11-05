@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.66b1"
+  version: "0.66b2"
 
 package:
   name: opentelemetry-instrumentation-tornado
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-tornado/opentelemetry_instrumentation_tornado-${{ version }}.tar.gz
-  sha256: d571e50cb4cf4b387e8496babbdafdaf8b11dcd93df8b9b7bb26c763da25263f
+  sha256: ac84b708ff4c6fdba8f52607344d5a0a1471bcf6aa1baeaa1ce8a18e60db7831
 
 build:
   number: 0
@@ -25,9 +25,9 @@ requirements:
   run:
     - python >=${{ python_min }}
     - opentelemetry-api ~=1.12
-    - opentelemetry-instrumentation ==0.66b1
-    - opentelemetry-semantic-conventions ==0.66b1
-    - opentelemetry-util-http ==0.66b1
+    - opentelemetry-instrumentation ==0.66b2
+    - opentelemetry-semantic-conventions ==0.66b2
+    - opentelemetry-util-http ==0.66b2
 
 tests:
   - python:
@@ -74,11 +74,11 @@ extra:
     - version-update-to-0.65b0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-10T18:01:20Z
+  cfe-last-checked: 2026-11-05T18:03:06Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T10:50:52Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-10-10T18:02:07Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T18:04:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -86,4 +86,6 @@ extra:
 # Header:
 #    # added run deps from import test: ['tornado']
 #    # 2026-10-10 refresh_wave B-25-12: refreshed 0.65b0 -> 0.66b1
+#    # 2026-11-05 refresh_wave B-W19-failed: needs-review, dependency-fix (run pin opentelemetry-util-http (opentelemetry-util-http ==0.66b2 vs opentelemetry-util-http ==0.66b2))
+#    # 2026-11-05 refresh_wave B-W19-fix1: refreshed 0.66b1 -> 0.66b2
 ####

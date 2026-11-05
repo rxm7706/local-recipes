@@ -40,7 +40,7 @@ tests:
 about:
   homepage: https://github.com/x42005e1f/culsans
   license: ISC
-  license_file: LICENSE
+  license_file: ISC.txt
   summary: Thread-safe async-aware queue for Python
   description: |
     Thread-safe async-aware queue for Python
@@ -77,13 +77,14 @@ extra:
   cfe-last-checked: 2026-08-18T08:35:06Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T08:35:06Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-08-18T08:35:06Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T17:46:19Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: license_file taken from the feedstock.
 #    # license: rattler-build did not copy a license file; recorded, retrying common names
 #    # blocker: missing-license-file
 ####

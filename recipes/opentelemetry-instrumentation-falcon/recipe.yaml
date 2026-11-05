@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: opentelemetry-instrumentation-falcon
-  version: 0.66b1
+  version: 0.66b2
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-falcon/opentelemetry_instrumentation_falcon-${{ version }}.tar.gz
-  sha256: 08a1304c2e7a50888e2161ea31f87df2455a763b1166b651540caff1d722cddc
+  sha256: 2d77297aad473fc4f9b90e16d63d442a9a28bf4be65bfde58b64f9caa916096f
 
 build:
   number: 0
@@ -26,10 +26,10 @@ requirements:
   run:
     - python >=${{ python_min }}
     - opentelemetry-api ~=1.12
-    - opentelemetry-instrumentation-wsgi ==0.66b1
-    - opentelemetry-instrumentation ==0.66b1
-    - opentelemetry-semantic-conventions ==0.66b1
-    - opentelemetry-util-http ==0.66b1
+    - opentelemetry-instrumentation-wsgi ==0.66b2
+    - opentelemetry-instrumentation ==0.66b2
+    - opentelemetry-semantic-conventions ==0.66b2
+    - opentelemetry-util-http ==0.66b2
     - packaging >=20.0
     - falcon <5.0.0,>=1.4.1
 
@@ -75,15 +75,18 @@ extra:
     - version-update-to-0.65b0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-10T17:29:18Z
+  cfe-last-checked: 2026-11-05T17:35:43Z
   cfe-generated-by-version: 8.99.14
   cfe-generated-at-datetime: 2026-10-10T12:00:00Z
   cfe-local-build-status: failed
   cfe-local-build-datetime: 2026-10-10T17:30:04Z
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
 ####
 # CFE comments
 ####
 # CFE comments
 # Header:
 #    # 2026-10-10 refresh_wave B-25-11: refreshed 0.65b0 -> 0.66b1
+#    # 2026-11-05 refresh_wave B-W19-failed: refreshed 0.66b1 -> 0.66b2
 ####

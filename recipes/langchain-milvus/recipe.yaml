@@ -24,8 +24,9 @@ requirements:
     - pip
   run:
     - python >=${{ python_min }}
-    - langchain-core >=1.0.0
-    - pymilvus >=2.6.0,<3.0
+    - langchain-core >=1.4.9,<2.0.0
+    - pymilvus >=3.0.0,<4.0
+    - milvus-lite >=3.1.0,<4.0
 
 tests:
 - python:
@@ -80,13 +81,14 @@ extra:
   cfe-last-checked: 2026-11-02T03:34:21Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: '2026-10-09T11:02:22Z'
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T17:47:44Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: run pins and milvus-lite taken from the feedstock.
 #    # 2026-11-01 mason Story 25.18: current at the published version; maintainers added (G53): pb01ka
 #    # 2026-11-01 mason Story 25.18 review round: conda-forge/langchain-milvus-feedstock verified live; on-conda-forge status and feedstock set (G78)
 ####
