@@ -11323,9 +11323,9 @@ So that a reviewer never reports a broken Dream link because the sweep handed it
 **Spec:** `planning-artifacts/specs/spec-113-19-an-audit-run-reads-the-dream-entry-its-slice-cites.md`
 **Given** the 2026-11-05 sweep, where every run on doctor, herald, mason and warden took `dream_choice: newest` and at least six high findings reported a Dream link broken that the Dream carries, because a slice that cites an entry by date and italic title, or a Realization-log bullet, is not read as a citation, and `fleet.md` does not show the choice
 **When** the story lands
-**Then** a slice's citation by date and title selects that entry among those sharing the date, a dated Realization-log bullet can serve as the Dream context, and `fleet.md` and each station report name every run's `dream_choice` and count the `newest` runs
+**Then** a slice's citation by date and title selects that entry among those sharing the date, a dated bullet, in a Realization log or a fold section, can serve as the Dream context, and `fleet.md` and each station report name every run's `dream_choice` and count the `newest` runs
 **And** CAP-302 is re-derived with the forms it reads, a slice citing nothing still falls back as it does today, and `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` exits 0
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

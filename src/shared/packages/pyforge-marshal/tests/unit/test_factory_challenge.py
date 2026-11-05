@@ -879,6 +879,44 @@ def test_pyforge_marshal_egm_audit(flag_provider, repo: Path, tmp_path: Path, mo
     assert not list((repo / "_bmad-output").rglob("research/*"))  # nothing under planning-artifacts
 
 
+def test_the_audit_reports_name_every_run_s_dream_choice(repo: Path, tmp_path: Path, monkeypatch, capsys) -> None:
+    """Story 113.19 AC4: fleet.md and each station report name the rule that chose each run's Dream entry, fleet.md
+    counts the newest runs, and a resumed sweep reports the choice its kept reports ran under."""
+    _flags(tmp_path, monkeypatch, egm_challenge=True, egm_policy_block=True, egm_audit=True)
+    monkeypatch.setattr(cli, "STATIONS", ("marshal", "atlas"))
+    runner = FakeRunner(findings=1)
+    args = _args(audit=True)
+    assert cli.run_challenge(args, runner=runner, root=repo, now=lambda: NOW) == 0
+    audit_dir = Path(json.loads(capsys.readouterr().out)["audit_dir"])
+    assert cli.run_challenge(args, runner=runner, root=repo, now=lambda: NOW) == 0  # resumed from the markers
+    fleet = (audit_dir / "fleet.md").read_text(encoding="utf-8")
+    assert "| pyforge-marshal | mint | 1 | 1 | cited |" in fleet
+    assert "| pyforge-atlas | decompose | 1 | 1 | newest |" in fleet
+    assert "| pyforge-marshal | rules | 1 | 1 | — |" in fleet  # a repo-rules run reads no Dream entry
+    assert "2 of 4 runs that read a Dream entry took `newest`" in fleet
+    assert "| pyforge-atlas | mint | 1 | 1 | newest |" in (audit_dir / "pyforge-atlas.md").read_text(encoding="utf-8")
+
+
+def test_a_resumed_sweep_reads_an_old_marker_as_unknown(repo: Path, tmp_path: Path, monkeypatch, capsys) -> None:
+    """Story 113.19 review: a marker from before the field read a Dream entry its plan row still names, so the summary
+    says ``unknown`` rather than the ``—`` of a run that read none."""
+    _flags(tmp_path, monkeypatch, egm_challenge=True, egm_policy_block=True, egm_audit=True)
+    monkeypatch.setattr(cli, "STATIONS", ("marshal", "atlas"))
+    runner = FakeRunner(findings=1)
+    args = _args(audit=True)
+    assert cli.run_challenge(args, runner=runner, root=repo, now=lambda: NOW) == 0
+    audit_dir = Path(json.loads(capsys.readouterr().out)["audit_dir"])
+    for marker in audit_dir.glob("*.json"):
+        data = json.loads(marker.read_text(encoding="utf-8"))
+        data.pop("dream_choice", None)
+        marker.write_text(json.dumps(data), encoding="utf-8")
+    assert cli.run_challenge(args, runner=runner, root=repo, now=lambda: NOW) == 0
+    fleet = (audit_dir / "fleet.md").read_text(encoding="utf-8")
+    assert "| pyforge-atlas | mint | 1 | 1 | unknown |" in fleet
+    assert "| pyforge-marshal | rules | 1 | 1 | — |" in fleet
+    assert "0 of 4 runs that read a Dream entry took `newest`" in fleet
+
+
 def test_a_partly_errored_audit_is_unevaluable(repo: Path, tmp_path: Path, monkeypatch, capsys) -> None:
     """Story 113.8 (CAP-302): one station's session fails, the rest report -- the sweep exits 1."""
     _flags(tmp_path, monkeypatch, egm_challenge=True, egm_policy_block=True, egm_audit=True)

@@ -3630,7 +3630,8 @@ hand-edited), and `mint` and `decompose` over each station's newest CAP slice an
 (the highest CAP of the station's own Spec and the run below it citing the same newest Dream entry; never a whole
 `SPEC.md`, `epics.md` or Dream, never a story spec, which the `readiness` stage reads; the Dream context's choosing rule
 journaled as `dream_choice`, and a station skill's `rules` run takes that same Dream slice; a station it cannot slice or
-read is a gap that makes the sweep exit 1) (§ 50), writes one fleet report and one per station under Tier 3, and exits 0 when every station reported
+read is a gap that makes the sweep exit 1) (§ 50), writes one fleet report and one per station under Tier 3, each naming
+every run's `dream_choice` and counting the runs on `newest` (Story 113.19), and exits 0 when every station reported
 (whatever the findings) and 1 when any station's session errored (§ 48); a sweep resumes in its
 `implementation-artifacts/egm/audit-<date>/` folder, re-running only a target with no complete kept report unless
 `--force`, so "one-time" is how the operator uses the audit (§ 53); the durable residue is one

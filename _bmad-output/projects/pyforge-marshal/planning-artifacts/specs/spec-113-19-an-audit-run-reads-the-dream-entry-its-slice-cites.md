@@ -2,9 +2,9 @@
 title: "113.19: An audit run reads the Dream entry its slice cites"
 type: 'fix'
 created: '2026-11-05'
-status: 'backlog'
-baseline_revision: '836a2ee286'
-review_loop_iteration: 0
+status: 'done'
+baseline_revision: 'd28d532eaf'
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
@@ -44,7 +44,7 @@ Ledger key: `113-19-an-audit-run-reads-the-dream-entry-its-slice-cites`. Type / 
 
 ## Boundaries & Constraints
 
-- Parked at `backlog` by the session owner on 2026-11-05. It reruns no audit.
+- Parked at `backlog` by the session owner on 2026-11-05 and started the same day on the operator's word. It reruns no audit.
 
 </intent-contract>
 
@@ -58,7 +58,13 @@ Parent: `spec-pyforge-marshal` CAP-302
 ## Verification
 
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: exit 0.
+- `cli.audit_plan` on the live tree, cutting slices only and starting no session — expected: no gap and no run on `newest`.
 
 ## Spec Change Log
 
 - 2026-11-05: minted at `backlog` by marshal Story 113.18.
+- 2026-11-05: carried by hand in an interactive session on the operator's "Do it here", so the run is unmeasured. `SPEC.md` is re-derived by an anchored script, as Story 113.18's were, on the operator's approval for this session.
+- 2026-11-05: two findings from the live tree widen the Approach, and the Intent above stays as minted. (1) Doctor's cited bullet sits under `## Fold — one chain (2026-09-17)`, not a Realization log, so any dated bullet in a Dream counts. (2) Herald's CAP-61, mason's CAP-35 and warden's CAP-26 cite no Dream entry, so the citation fix alone leaves all nine of their runs on `newest`. The Dream does link them, from the other side: a bullet's `→ CAP-n` names what it minted. AC3's order stands, and `names-cap` gains tiers: a heading's own text, then a dated bullet's `→`, then a heading whose section only runs through a mention. The last tier exists because a dated heading's section runs through a `## Realization log` below it, and that log holds the audit's own lines.
+- 2026-11-05: on the live tree the plan now takes 9 `cited` and 15 `names-cap`, none `newest`, and no gap. The 2026-11-05 sweep took 12 `newest`. Doctor's slice grows to CAP-92..CAP-93, which both cite the entry. Atlas's three runs reach `names-cap` only on the last tier, through a mention in the 2026-10-26 bullet and the audit's own log line, both under `## 2026-09-17 — One-chain fold`. Read them as weak: CAP-72 cites no entry, and the reviewer gets the right bullet only because it sits inside that section.
+- 2026-11-05: an independent review on the diff found 2 high, 3 medium and 3 low, all fixed here. High: no scoped stamp and no co-governor entry on `spec-pyforge-core`, and three status sources that disagreed. Medium: a title could not match a bullet whose bold lead is only the date (416 of 876 dated bullets), so the wrong entry came back as `cited`; CAP-302 denied a route the code took on atlas; and a bullet's first arrow read the whole bullet, so prose such as `6.11.0 → 6.12.0` counted. Low: an old marker showed `—` instead of `unknown`; CAP-298, two docstrings and `epics.md` had drifted; five mutations survived and now have tests.
+- 2026-11-05: two limits stay, on purpose. A Dream of bullets alone now takes `newest` where it used to refuse, and CAP-302 says so; no audited Dream has that shape. A cited title that nothing carries still reports `cited` on the last entry of its date; no live citation does.
