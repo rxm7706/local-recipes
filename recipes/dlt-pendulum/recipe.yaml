@@ -103,7 +103,7 @@ extra:
 ####
 # CFE comments
 # Header:
-#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: build.number bumped from 4, the number in the note below: the recipe changed at the same version (G113).
 #    # 2026-11-05 Story 25.19: python 3.14 and newer skipped: the pyo3 0.23.3 that upstream locks supports python up to 3.13.
 #    # v1 migration of the (formerly v0) dlt-pendulum-feedstock.
 #    # Migration PR MERGED: conda-forge/dlt-pendulum-feedstock#5 (v1 recipe.yaml +

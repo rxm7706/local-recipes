@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: wagtail-tag-manager
   version: "2.0.0"
-  python_min: "3.10"
 
 package:
   name: ${{ name|lower }}
@@ -15,7 +14,7 @@ source:
   sha256: aa9bd32de537529240af51866d619440a7171bff401a28b0fa7ebdae31e19691
 
 build:
-  number: 2
+  number: 1
   noarch: python
   script:
     env:
@@ -71,15 +70,13 @@ extra:
   cfe-last-checked: 2026-11-05T17:29:39Z
   cfe-generated-by-version: 8.103.0
   cfe-generated-at-datetime: 2026-11-05T17:29:39Z
-  cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-11-05T22:00:34Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-11-05T22:52:56Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
-#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
-#    # 2026-11-05 Story 25.19: python_min 3.10: upstream or a pinned dependency only supports python below 3.11, the conda-forge floor; the rebuild tests on 3.10.
 #    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
 #    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
 ####

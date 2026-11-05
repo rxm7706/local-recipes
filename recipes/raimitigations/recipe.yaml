@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: raimitigations
   version: "1.1.1"
-  python_min: "3.10"
 
 package:
   name: ${{ name|lower }}
@@ -15,7 +14,7 @@ source:
   sha256: bc02a223ae2a2fb32ca18d518067317f8d62279e080cd74ce6f571866454c9a0
 
 build:
-  number: 2
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv
 
@@ -33,7 +32,7 @@ requirements:
     - scikit-learn
     - imbalanced-learn <=0.9.1
     - sdv ==0.18.0
-    - mlxtend <0.24
+    - mlxtend
     - researchpy
     - catboost
     - statsmodels
@@ -78,16 +77,13 @@ extra:
   cfe-last-checked: 2026-11-05T17:29:39Z
   cfe-generated-by-version: 8.103.0
   cfe-generated-at-datetime: 2026-11-05T17:29:39Z
-  cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-11-05T21:50:04Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-11-05T22:53:41Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
-#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
-#    # 2026-11-05 Story 25.19: mlxtend capped below 0.24: newer mlxtend needs numpy, pandas and scipy above what python 3.10 can solve here.
-#    # 2026-11-05 Story 25.19: python_min 3.10: upstream or a pinned dependency only supports python below 3.11, the conda-forge floor; the rebuild tests on 3.10.
 #    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
 #    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
 ####

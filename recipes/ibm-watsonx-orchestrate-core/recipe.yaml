@@ -83,6 +83,8 @@ extra:
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
+# Header:
+#    # 2026-11-05 Story 25.19: needs review, stays at 2.12.0: refresh-wave recomputed a different sha256 for the 2.19.0 GitHub archive than the feedstock declares (DW-mason-25-19).
 # context:
 #    # Upstream requires-python is ">=3.11,<3.15"; override the conda-forge
 #    # default floor (3.10) upward to 3.11.

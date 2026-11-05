@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "1.0.1"
-  python_min: "3.9"
 
 package:
   name: skope-rules
@@ -77,8 +76,8 @@ extra:
   cfe-last-checked: 2026-08-18T05:32:53Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T05:32:53Z
-  cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-11-05T21:56:48Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-11-05T22:55:16Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

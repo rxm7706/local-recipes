@@ -112,6 +112,8 @@ extra:
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
+# Header:
+#    # 2026-11-05 refresh_wave A-W19-3: refreshed 3.10.6 -> 3.20.0
 # source:
 #    # Sourced from the GitHub tag, not the PyPI sdist: the 3.5.x+ PyPI sdist
 #    # declares a workspace path dep on crates/html-to-markdown/ that the
@@ -127,8 +129,4 @@ extra:
 # build:
 #    # version_independent: true — upstream builds a single cp310-abi3 wheel per
 #    # platform (pyo3/abi3-py310), so one build covers Python 3.10+.
-####
-# CFE comments
-# Header:
-#    # 2026-11-05 refresh_wave A-W19-3: refreshed 3.10.6 -> 3.20.0
 ####

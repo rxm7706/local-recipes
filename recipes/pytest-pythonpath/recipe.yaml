@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: pytest-pythonpath
   version: "0.7.4"
-  python_min: "3.10"
 
 package:
   name: ${{ name|lower }}
@@ -15,7 +14,7 @@ source:
   sha256: 64e195b23a8f8c0c631fb16882d9ad6fa4137ed1f2961ddd15d52065cd435db6
 
 build:
-  number: 2
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -66,15 +65,13 @@ extra:
   cfe-last-checked: 2026-06-20T00:00:00Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
-  cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-11-05T21:51:51Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-11-05T22:51:28Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
-#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
-#    # 2026-11-05 Story 25.19: python_min 3.10: upstream or a pinned dependency only supports python below 3.11, the conda-forge floor; the rebuild tests on 3.10.
 #    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
 #    # WAVE-C C1: feedstock still v0/meta.yaml at 0.7.4 (build 1); kept the
 #    # local meta.yaml as a faithful deployed mirror and authored this v1

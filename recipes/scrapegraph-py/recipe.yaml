@@ -82,11 +82,9 @@ extra:
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
+# Header:
+#    # 2026-11-05 refresh_wave A-W19-1: refreshed 2.1.0 -> 2.3.1
 # context:
 #    # Override above the conda-forge 3.10 floor: upstream pyproject.toml
 #    # declares requires-python = ">=3.12".
-####
-# CFE comments
-# Header:
-#    # 2026-11-05 refresh_wave A-W19-1: refreshed 2.1.0 -> 2.3.1
 ####

@@ -75,6 +75,8 @@ extra:
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
+# Header:
+#    # 2026-11-05 refresh_wave A-W19-2: refreshed 1.0.594 -> 1.0.615
 # requirements:
 #  host:
 #    # setuptools retained in host: upstream is a setup.py/egg-info project
@@ -87,8 +89,4 @@ extra:
 # tests:
 #    # import name is dbtlabs (top-level namespace package, no __init__.py;
 #    # verified from the 1.0.474 sdist) — not dbt_protos (G7).
-####
-# CFE comments
-# Header:
-#    # 2026-11-05 refresh_wave A-W19-2: refreshed 1.0.594 -> 1.0.615
 ####

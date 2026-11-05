@@ -76,12 +76,13 @@ extra:
   cfe-last-checked: 2026-07-03T04:00:00Z
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
-  cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-11-05T19:56:37Z
-  cfe-local-build-platform: linux-64
-  cfe-local-build-tool: rattler-build
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: not-attempted is host-blocked: the recipe skips every variant off macOS, so a linux-64 build has 0 outputs (G128).
 #    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
 ####

@@ -83,14 +83,12 @@ extra:
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
+# Header:
+#    # 2026-11-05 refresh_wave A-W19-4: refreshed 0.15.0 -> 0.22.0
 # about:
 #    # Upstream PyPI metadata classifies this distribution as Apache-2.0
 #    # (matching the conda-forge composio feedstock). The ComposioHQ/composio
 #    # monorepo ships only a root MIT LICENSE and no LICENSE inside the sdist,
 #    # so a canonical Apache-2.0 LICENSE is vendored in-recipe per SKILL.md
 #    # license-file pattern (2).
-####
-# CFE comments
-# Header:
-#    # 2026-11-05 refresh_wave A-W19-4: refreshed 0.15.0 -> 0.22.0
 ####
