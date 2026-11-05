@@ -24,8 +24,9 @@ whose Story 25.10 run table says success, and 13 others, at least 10 of them sin
 tracked driver under CAP-35's terms, and no tracked-driver report for it exists. So CAP-35's `grep` clause is false on `main`
 (EGM audit MAS-D-F4, MAS-D-F8).
 
-**Approach:** Re-count Track A's scope live from the atlas, then run that scope and the 33 through `refresh-wave`. The build stamps
-come from the CFE tools, never by hand.
+**Approach:** Re-count each track's scope live from the atlas, then run Track A's scope and every in-scope `failed` record through
+`refresh-wave --rebuild --force`, because without `--rebuild` an `already-current` recipe finishes with no build and keeps its
+record. The build stamps come from the CFE tools, never by hand.
 
 Ledger key: `25-19-the-recipes-that-still-record-a-failed-build-get-their-own-build`. Type / Effort / Deps: fix / L / none.
 
@@ -35,10 +36,10 @@ Ledger key: `25-19-the-recipes-that-still-record-a-failed-build-get-their-own-bu
 
 ## Acceptance Criteria
 
-- **AC1 — The scope.** The story records Track A's live scope from the named atlas query, with the as-of date and count, and how many of the 446 records dated 2026-08 fall inside it.
-- **AC2 — The run.** `pixi run -e local-recipes refresh-wave <manifest> --apply --gates --build --report-dir <dir>` runs the scope, and `report.json` ends every recipe in the ruled outcome set.
-- **AC3 — The clause.** `grep -l 'cfe-local-build-status: failed'` over the `recipe.yaml` of every recipe in scope matches none (grep exits 1).
-- **AC4 — The marker.** CAP-35 takes its dated marker at the recorded atlas snapshot through a memlog line and a re-derive.
+- **AC1 — The scope.** The story records each track's live scope from the named atlas query, with the as-of date and count, and how many of the 446 records dated 2026-08 fall inside either track. At least 7 look co-maintained by their local `recipe-maintainers` lists (atlas not queried), among them `bandit`, `culsans` and `pylint-django`.
+- **AC2 — The run.** `pixi run -e local-recipes refresh-wave <manifest> --apply --gates --build --rebuild --force --report-dir <dir>` runs Track A's scope and every in-scope `failed` record, and `report.json` ends every recipe in the ruled outcome set.
+- **AC3 — The clause.** `grep -l 'cfe-local-build-status: failed'` over the `recipe.yaml` of every recipe in either track's scope matches none (grep exits 1).
+- **AC4 — The marker.** CAP-35 takes its dated marker at the recorded atlas snapshot through a memlog line and a re-derive, only when AC3 holds over both tracks.
 - **AC5 — The retro.** The story lands a `retro(cfe):` commit with a CFE `CHANGELOG.md` entry, and `pixi run --frozen -e pyforge-mason pyforge-mason-test` exits 0.
 
 ## Boundaries & Constraints
@@ -60,7 +61,13 @@ Parent: `spec-pyforge-mason` CAP-35
 
 ## Verification
 
-- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: exit 0.
+**Commands:**
+
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (the station's `verify_commands`).
+
+**Manual checks:**
+
+- `grep -l 'cfe-local-build-status: failed'` over both tracks' scope — expected: no match.
 
 ## Spec Change Log
 

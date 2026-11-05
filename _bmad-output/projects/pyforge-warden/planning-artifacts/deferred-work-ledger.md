@@ -925,9 +925,9 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   evidence: a 300 s hard-limit kill ends the worker child, so its finally does not run: the clone directory stays and the run stays RUNNING.
   location: src/shared/packages/django-warden/src/django_warden_fabric/tasks.py
   origin: EGM audit 2026-11-05 (marshal Story 113.18)
-  fix: add a sweep or a soft limit that cleans up before the hard kill.
+  fix: add the hard-limit sweep (an orphan clone reaper and a run reconciler), citing Story 16.7's note, and have CAP-26 say 'removed on a caught failure' at its next re-derive.
   owner: warden
   severity: low
   promoted: 2026-11-05 — EGM audit landing (marshal Story 113.18)
-  reason: deferred by triage: the operator-started worker can be cleared by hand until a story lands.
+  reason: deferred by triage, so it is not among the 53 the operator accepted, and the re-derive of 2026-11-05 left CAP-26's clause: the operator-started worker can be cleared by hand until a story lands.
   status: open

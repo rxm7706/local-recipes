@@ -24,7 +24,8 @@ herald's give no exit codes. Two skills inherit their errors from source text, s
 citations from `cli.py`, and scribe's staleness rule from `models.py` and `compile.py`.
 
 **Approach:** Correct the source text first. Then put each fix in the `skill-brief.yaml` scope or the MANUAL region, and recompile
-through `skf-update-skill`, as Story 29.4 did. The seven deferred skill findings ride the same pass.
+through `skf-update-skill`, as Story 29.4 did. Five deferred skill findings ride the same pass. STW-R-F2 and STW-R-F3 stay out,
+because the `--yes` gate they describe is not in the parser until Story 118.3, which recompiles them.
 
 Ledger key: `29-5-the-station-skills-carry-the-fixes-the-2026-11-05-audit-accepted`. Type / Effort / Deps: fix / M / none.
 
@@ -36,8 +37,8 @@ Ledger key: `29-5-the-station-skills-carry-the-fixes-the-2026-11-05-audit-accept
 
 - **AC1 — Source first.** herald's `pull` and `status` help strings cite the right capability, and scribe's `models.py` and `compile.py` docstrings say `compiled_at`.
 - **AC2 — The skills.** Each accepted and carried finding named in the Story's FR/AD line is fixed in its skill, and no `SKILL.md` is hand-edited outside a MANUAL region.
-- **AC3 — The MCP runner.** Each skill says what its station's MCP runner does and does not run, after the operator rules on `DW-steward-egm-2026-11-05-1`.
-- **AC4 — The gates.** `pyforge-steward-test`, `governance-currency` and the instruction-surface parity test exit 0, and the owning Specs' memlogs name the recompiled paths.
+- **AC3 — The MCP runner.** Each skill says what its station's MCP runner does and does not run, as the code stands, whether or not the operator has ruled on `DW-steward-egm-2026-11-05-1`.
+- **AC4 — The gates.** `pyforge-steward-test`, `pyforge-herald-test`, `pyforge-scribe-test`, `governance-currency` and the instruction-surface parity test exit 0, the `spec-pyforge-unifying-strategy` surface is stamped `--spec pyforge-steward/spec-pyforge-unifying-strategy`, and the owning Specs' memlogs name the recompiled paths.
 
 ## Boundaries & Constraints
 
@@ -54,10 +55,19 @@ Parent: `spec-pyforge-unifying-strategy` CAP-15
 
 - Findings: the station research files `research/egm-audit-2026-11-05.md`.
 - Epic: Epic 29.
+- Surface: `marshal-policy.toml` `[epic_surfaces]."29"` covers neither `.claude/skills/` nor the herald and scribe sources, so this story is hand-landed, not dispatched, as Story 29.4 was.
 
 ## Verification
 
-- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: exit 0.
+**Commands:**
+
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: exit 0 (the station suite, the SKF meta-tests included).
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: exit 0.
+- `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — expected: exit 0.
+
+**Story checks:**
+
+- `pixi run -e pyforge-guild governance-currency` — expected: exit 0.
 
 ## Spec Change Log
 

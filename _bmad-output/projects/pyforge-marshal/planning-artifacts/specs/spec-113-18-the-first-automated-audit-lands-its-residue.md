@@ -43,7 +43,7 @@ Ledger key: `113-18-the-first-automated-audit-lands-its-residue`. Type / Effort 
 - **AC2 — The residue.** Eight `research/egm-audit-2026-11-05.md` files, each with every high finding's decision, reason and carrier, the headline counts, and a count of the findings not triaged. Marshal's also carries the rules stage, the fleet totals and the three findings the triage added.
 - **AC3 — The memlogs.** One `EGM audit 2026-11-05 finding <ID> accepted` event per accepted finding on its owning Spec, 53 in all, and the operator's ruling on marshal's memlog.
 - **AC4 — The re-derives.** CAP-70, CAP-71 and CAP-72 (atlas), CAP-93 (doctor), CAP-35 (mason), CAP-32 (scribe) and CAP-26 with the Leak guard glossary line (warden) are re-derived from memlog capability entries, script-rendered, with both self-validate passes logged.
-- **AC5 — The rules.** `AGENTS.md` carries RUL-A-F1 and RUL-A-F2, and RUL-A-F3 through `bmad-project-context`; `CHAIN-STANDARD.md` carries RUL-C-F3, RUL-C-F4 and RUL-C-F7; `docs/dreams/one-chain-per-station.md` carries RUL-C-F1.
+- **AC5 — The rules.** `AGENTS.md` carries RUL-A-F1 and RUL-A-F2, and RUL-A-F3 waits for the next `bmad-project-context` refresh on `DW-scribe-egm-2026-11-05-3`; `CHAIN-STANDARD.md` carries RUL-C-F3, RUL-C-F4 and RUL-C-F7; `docs/dreams/one-chain-per-station.md` carries RUL-C-F1.
 - **AC6 — The notes.** Dated notes land on marshal Stories 113.1, 113.2, 113.4, 113.5 and 113.6, mason Stories 25.1, 25.2, 25.17 and 25.18 and warden Stories 16.2 and 16.4. Story 118.3's text takes STW-D-F6 and STW-M-F2, and its status does not move.
 - **AC7 — What is parked has an owner.** Stories 113.19, 25.19 and 29.5 sit at `backlog` with tracked specs; each deferred finding is on a deferred-work row or names its story; the MCP runner decision is an operator-owned row.
 - **AC8 — The gates.** `chain-completeness-check`, `dream-chain-check`, `deferred-work-check`, `ledger-regression-check`, `story-status-check` and `spec-surface-check` exit 0, and `PYFORGE_PREFLIGHT_SCOPE=full pixi run -e pyforge-guild pr-preflight` exits 0.
@@ -53,6 +53,7 @@ Ledger key: `113-18-the-first-automated-audit-lands-its-residue`. Type / Effort 
 - The 680 medium and 238 low findings are not triaged. The residue counts them as not triaged, never as rejected. Their text stays in the Tier-3 markers.
 - The first-pass brief told verifiers that reviewer severity runs loud, and all 139 highs fell to medium or low. The residue says so.
 - 446 findings came from the 12 runs that read an unrelated Dream entry. Only the high ones were corrected by hand.
+- RUL-A-F3 is accepted and not applied. Its line sits in the `bmad:context` block, which only a refresh may change, and a refresh re-verifies the whole block.
 
 **Never:**
 - Never hand-edit a `SPEC.md`; never write a ledger directly; never accept a finding without the operator's word; never recompile a skill here; never move Story 118.3's status; never write a `cfe-local-build-*` field by hand.
@@ -74,3 +75,4 @@ Parent: `spec-pyforge-marshal` CAP-302
 ## Spec Change Log
 
 - 2026-11-05: minted and landed in one PR on the operator's rulings of 2026-11-05.
+- 2026-11-05: an independent review on the diff found 1 high, 9 medium and 12 low. All are fixed here. The high: CAP-26's first re-derive licensed what the leak guard forbids. RUL-A-F3's first form was a hand edit of the `bmad:context` block, so it is undone and parked. The review also widened Story 25.19 to both tracks and added `--rebuild`, moved STW-R-F2 and STW-R-F3 from Story 29.5 to Story 118.3, and narrowed the atlas and scribe re-derives to what the code does.

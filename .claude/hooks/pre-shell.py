@@ -3,8 +3,9 @@
 
 (steward Story 63.3, spec-pyforge-steward CAP-5)
 
-WHAT THIS IS. A repo-level `PreToolUse` guard for the sixteen AGENTS.md/CLAUDE.md rules and three steward denials
-session rules that were previously prose only. Registered on `Bash` and on
+WHAT THIS IS. A repo-level `PreToolUse` guard for the sixteen AGENTS.md/CLAUDE.md
+session rules that were previously prose only, plus three steward
+operator-consent denials. Registered on `Bash` and on
 `Edit`/`Write`/`NotebookEdit` in `.claude/settings.json` (Claude Code) and on
 `beforeShellExecution` / `afterFileEdit` in `.cursor/hooks.json` (Cursor) --
 THE SAME FILE serves both harnesses; each hook config just points its own

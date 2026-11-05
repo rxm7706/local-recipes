@@ -2117,7 +2117,7 @@ The feedstock refresh campaign runs as Mason stories, one per track, each agains
 **Consequences (testable):**
 - Before it starts, each track's story records its scope from one named atlas query (the feedstocks that list
   `rxm7706` as a maintainer, each mapped to its feedstock through `packages.feedstock_name`), with the atlas's as-of
-  date and count, and compares its own count to it; a feedstock is covered when `recipes/<feedstock>/` declares the
+  date and count, and its own count equals it, or every difference is named per feedstock with its reason; a feedstock is covered when `recipes/<feedstock>/` declares the
   package.
 - Every recipe in scope ends `refreshed` (its feedstock's published version — the atlas's `latest_conda_version` from a
   refresh within `<atlas_max_age_d>` — with a green linux-64 build, a recorded G95 block, or `not-attempted` with a

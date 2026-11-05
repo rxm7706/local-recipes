@@ -3109,6 +3109,7 @@ So that `FR-10` names one requirement, not three, and `fr-duplicate-id` carries 
 **When** the story lands (marshal's 2026-08-08 precedent: its genesis-installer satellite's FR1..FR62 island became FR-66..FR-127)
 **Then** every satellite heading carries a unique id in FR-78..FR-154 and an arrow traced to CAP-18..CAP-31, the re-key map is committed, and every reference resolves to the renumbered id
 **And** `scripts/fr_baseline.py --prune` removes every atlas `fr-duplicate-id` entry; `fr-without-cap`, `chain-completeness` and `detectors-ci` stay green; no kernel FR moves
+**Note 2026-11-05 (EGM audit ATL-D-F5):** when this story is made ready-for-dev, add the map format `<Unity|Wasm> FR-n → FR-m` and list the surfaces to sweep (`epics.md`, the spine, story specs, the Spec and PRD cross-references).
 **Status:** backlog
 
 ### Story 41.3: Every atlas NFR names the capabilities it bounds

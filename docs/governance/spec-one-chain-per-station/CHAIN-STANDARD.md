@@ -158,8 +158,9 @@ frontmatter: it copies the Tier-3 feed's story values into the twin unchanged, k
 `done` terminal and story `blocked` sticky, and ranks feed values
 (`_STORY_PROGRESS_RANK`: `backlog` 0, `ready-for-dev` 1, `in-progress` 2,
 `review` 3, `done` 4) only to roll up epics and to pick between a stale and a
-current key. `ready-for-dev` and `review` are feed words from BMAD's lattice; the
-ledger never rests on them. The one place story-spec values are read is a landing
+current key. `ready-for-dev` and `review` are feed words from BMAD's lattice, outside the
+ledger enum: a sync copies one through if the feed holds it, no check refuses
+it, and no ledger holds one at this amendment. The one place story-spec values are read is a landing
 (`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py`,
 `PRE_DONE_SPEC_STATUSES` and `TERMINAL_SPEC_STATUSES`, applied by
 `dispatch_land_finalize`): a merged story's tracked spec at `draft`,
@@ -224,7 +225,8 @@ A planning artifact never waits on code to conform.
 2. `spec-pyforge-<s>/SPEC.md` at `ready`; `covers-dreams:` lists every folded
    Dream; CAPs sequential from 1 with `← spec-old CAP-m` provenance lines.
 3. Every absorbed Spec folder: pointer header + its memlog + **every
-   companion document it had**. Companions (inventories, whitepapers,
+   companion document it had** (a live companion goes to the station Spec
+   folder, §11 step 2). Companions (inventories, whitepapers,
    audit methods, verification records, playbooks) are *record*, not
    derived bodies; one moves only with a memlog line naming its new path
    and is never deleted. (Marshal pilot, lesson 15: this line read

@@ -984,8 +984,8 @@ pointer becomes the behaviour it named.*
 
 #### FR-43: Warden scans the enterprise fleet, one verdict per repo ← CAP-26
 
-A fleet run, started only by an operator action, inventories an operator-designated github.com organisation (never
-named in a tracked file) and scans each repo with `warden scan`. This lifts two Non-goals by operator ruling
+A fleet run, started only by an operator action, inventories an operator-designated github.com organisation (its name
+lives in a gitignored local config, and the leak guard keeps it out of warden's own files) and scans each repo with `warden scan`. This lifts two Non-goals by operator ruling
 (2026-09-28): *Fleet aggregation* (a fleet run is now Warden's, still one verdict per repo and never a fleet-level
 pass/fail) and *Non-Python osv-scanner ecosystems* (the security axis over osv-scanner's native lockfile parsers;
 container and artifact scanning stay out). Fixes on fleet repos wait in a proposal queue and open only on the operator's

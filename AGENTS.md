@@ -3,7 +3,7 @@
 The framework-neutral contract for every agent and harness (§ *How each harness loads this file*).
 
 <!-- bmad:context -->
-<!-- Verified 2026-11-01 against 03a7aff5d9 (EGM audit refresh, marshal Story 113.7); one Policy line amended 2026-11-05 (EGM audit RUL-A-F3, marshal Story 113.18), block not re-verified. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
+<!-- Verified 2026-11-01 against 03a7aff5d9 (EGM audit refresh, marshal Story 113.7). Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
 
 ## local-recipes (PyForge)
 
@@ -30,7 +30,7 @@ This is A (`rxm7706/local-recipes`), the PyForge control plane and BMAD Agentic-
 - Never open a feedstock, staged-recipes or upstream PR without an explicit ask; a green local build ends the task.
 - Never flip a ledger `blocked` key, and never dispatch outward work (a new repo, an upstream PR, disabling CI) without operator confirmation.
 <!-- governance-currency:ignore-start (the foundry target tree is not built on A; .claude/skills/pyforge-mason/ resolves only once mason Story 19.1 compiles it under the dated A-only exception below -- Mason's skill cell is then pyforge-mason plus conda-forge-expert, operator ruling 2026-09-28) -->
-- New paths must fit the foundry target tree (`src/packages/`, `factory/`, `skills/{stations,personas,domain}/`, `docs/foundry/`); never mint a lasting `src/shared/packages/` package (a new package directory; files in an existing station package are not new paths). One dated exception (operator ruling 2026-09-28; `docs/dreams/pyforge-mason.md` § Realization log, the 2026-09-27 entry *Mason has its own skills*): `.claude/skills/pyforge-mason/`, Mason's SKF-compiled station skill, is `A-only` until `pyforge.cutover_root` flips to `foundry`; B rebuilds Mason's skills under `skills/stations/`.
+- New paths must fit the foundry target tree (`src/packages/`, `factory/`, `skills/{stations,personas,domain}/`, `docs/foundry/`); never mint a lasting `src/shared/packages/` path. One dated exception (operator ruling 2026-09-28; `docs/dreams/pyforge-mason.md` § Realization log, the 2026-09-27 entry *Mason has its own skills*): `.claude/skills/pyforge-mason/`, Mason's SKF-compiled station skill, is `A-only` until `pyforge.cutover_root` flips to `foundry`; B rebuilds Mason's skills under `skills/stations/`.
 <!-- governance-currency:ignore-end -->
 
 ## Where things are
@@ -178,9 +178,12 @@ rxm7706/local-recipes`, `uv run` off the repo root, a bare `spec_surface_check.p
 `.claude/hooks/pre-shell.py`. It is registered on `Bash`, on `Edit`/`Write`, and on the three
 conda_forge_server MCP submission tools in `.claude/settings.json` (Claude Code) and on
 `beforeShellExecution` (deny) / `afterFileEdit` (warn — Cursor has no before-edit deny) in
-`.cursor/hooks.json` (Cursor). **One script serves both harnesses.** The same hook also carries three
-steward operator-consent denials that no rule in this file states: `steward-estate-transitive`,
-`steward-estate-realize-yes` and `steward-deploy-nic-up-yes`.
+`.cursor/hooks.json` (Cursor). **One script serves both harnesses.** The same hook also denies three
+steward operator-consent actions, and these are rules too: never run `pyforge steward estate refresh
+--transitive` (`pixi update` is operator-only; run `estate refresh` without it, in a worktree that
+lands through a PR); never run `pyforge steward estate realize --yes` (agents run `--plan`); never run
+`deploy nic up --yes` on any provider but local kind (agents run `pyforge steward deploy nic validate
+--config <cfg>`, and kind's local up needs no `--yes`).
 
 The closed list of what it denies, and the one-line reason it gives for each — naming the
 sanctioned form — lives in `docs/governance/guild-roster.json`'s `session_denials` array, the ONE

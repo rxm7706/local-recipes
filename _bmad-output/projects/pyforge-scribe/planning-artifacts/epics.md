@@ -924,6 +924,7 @@ So that the estate picture stays current by a gate, not by someone remembering t
 **When** a source moves (a manifest version, a skill description, a member row, a pin, the harness range) and the catalog is not re-rendered
 **Then** `pixi run -e pyforge-guild bmad-estate-check` exits 1 naming the drifted section and its source path; on `main` with a fresh render it exits 0; an unreadable source exits 2, never a false green; `detectors-ci` picks the detector up with no registry edit; OQ-CAP-32-1 is decided in this story's spec (structured diff of derived facts with prose exempt is the recommended default — the library catalog's byte-level check is the one operators keep re-syncing) and the decision is a memlog entry
 **And** `governance-currency` resolves every path the catalog names; the reconcile is the regeneration command in the catalog header, stated once; `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green; co-governor reconcile as in 24.1
+**Note 2026-11-05 (EGM audit SCR-M-F4):** CAP-32 drops the `governance-currency` clause in the And above: that detector scans a fixed document list that does not hold the catalog, so it never proved this.
 **Status:** done
 
 ### Story 24.3: Every harness is pointed at the catalog once

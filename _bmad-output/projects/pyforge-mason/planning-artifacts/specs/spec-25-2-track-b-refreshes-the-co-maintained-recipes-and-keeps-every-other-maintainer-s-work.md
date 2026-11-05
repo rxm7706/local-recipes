@@ -312,3 +312,7 @@ mirrors deferred; G53 not complete across processed set.
 
 - Operator reviews the branch before landing as
   `Merge pyforge-mason/25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work into main`.
+
+## Spec Change Log
+
+- 2026-11-05: dated note added (EGM audit MAS-D-F3, marshal Story 113.18): CFE diff-apply and platform expansion left CAP-35 on 2026-11-01 and were never run.

@@ -470,3 +470,17 @@ sibling ledgers and the detector both use.
   promoted: 2026-11-05 — EGM audit landing (marshal Story 113.18)
   reason: deferred by triage: a test gap with no running failure.
   status: open
+
+### DW-scribe-egm-2026-11-05-3: Accepted finding RUL-A-F3 waits for the next bmad-project-context refresh
+
+- source_spec: `planning-artifacts/specs/spec-pyforge-scribe/SPEC.md`; EGM audit 2026-11-05 (marshal Story 113.18)
+  summary: Accepted finding RUL-A-F3 waits for the next bmad-project-context refresh
+  evidence: the operator accepted the text 2026-11-05; the line sits in AGENTS.md's bmad:context block, which only a refresh may change, and a refresh re-verifies the whole block and stamps its date and SHA.
+  location: AGENTS.md (bmad:context block, the Policy line on the foundry target tree)
+  origin: EGM audit 2026-11-05 (marshal Story 113.18)
+  fix: at the next bmad-project-context refresh, say 'never mint a lasting src/shared/packages/ package (a new package directory; files in an existing station package are not new paths)'.
+  owner: scribe
+  severity: low
+  promoted: 2026-11-05 — EGM audit landing (marshal Story 113.18)
+  reason: a full refresh is its own reviewed pass, and the line misleads nobody into a wrong write today.
+  status: open

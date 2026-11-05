@@ -221,3 +221,7 @@ build-clean-test-blocked; `html-to-markdown` needs manual GH-numbering verificat
 
 - Prior note: operator reviews the branch before landing as
   `Merge pyforge-mason/25-1-track-a-s-wave-h-refreshes-the-sole-maintainer-recipes-the-first-waves-missed into main`.
+
+## Spec Change Log
+
+- 2026-11-05: dated note added (EGM audit MAS-D-F3, marshal Story 113.18): CFE diff-apply and platform expansion left CAP-35 on 2026-11-01 and were never run.

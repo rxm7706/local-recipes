@@ -3165,11 +3165,11 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   evidence: CAP-93's title says 'every conformance detector'; its success names the ten FR-15 sources; later Sources are neither included nor excluded.
   location: planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
   origin: EGM audit 2026-11-05 (marshal Story 113.18)
-  fix: state which later Sources CAP-93 covers, in a re-derive when one next touches it.
+  fix: at CAP-93's next re-derive, add one clause: 'every' means the ten FR-15 names, and later Sources are owned by their own capabilities.
   owner: doctor
   severity: low
   promoted: 2026-11-05 — EGM audit landing (marshal Story 113.18)
-  reason: deferred by triage: no reader acts wrongly on it today.
+  reason: deferred by triage, so it is not among the 53 the operator accepted, and the re-derive of 2026-11-05 left it: no reader acts wrongly on it today.
   status: open
 
 ### DW-doctor-egm-2026-11-05-2: No detector checks the (ready) and (shipped) date markers CHAIN-STANDARD requires (RUL-C-F5)
@@ -3186,14 +3186,14 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   reason: deferred by triage: a new check is a Dream-sized choice.
   status: open
 
-### DW-doctor-egm-2026-11-05-3: The shallow-clone guard admits any well-formed value (RUL-C-F6)
+### DW-doctor-egm-2026-11-05-3: The fr-baseline forced-record guard admits any well-formed record (RUL-C-F6)
 
 - source_spec: `docs/governance/spec-one-chain-per-station/SPEC.md`; EGM audit 2026-11-05 (marshal Story 113.18)
-  summary: The shallow-clone guard admits any well-formed value (RUL-C-F6)
-  evidence: the shallow-clone WARN is documented; the guard admits any well-formed value (verifier, 2026-11-05).
-  location: src/shared/packages/pyforge-doctor/
+  summary: The fr-baseline forced-record guard admits any well-formed record (RUL-C-F6)
+  evidence: `one_chain.py`'s guard admits any well-formed `forced` record, so a hand-added key plus a hand-added record passes, and no check proves the named review happened (verifier and review, 2026-11-05).
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/one_chain.py
   origin: EGM audit 2026-11-05 (marshal Story 113.18)
-  fix: tighten the guard under a doctor story.
+  fix: if the operator wants it closed, have the guard require the forced record's HEAD to be an ancestor and the key absent at that HEAD; otherwise record it as an accepted limit.
   owner: doctor
   severity: low
   promoted: 2026-11-05 — EGM audit landing (marshal Story 113.18)
