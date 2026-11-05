@@ -291,10 +291,15 @@ def test_a_bmadloop_launch_falls_through_to_the_next_launchable_candidate():
     """Story 33.16 AC2."""
     effective = _compose(
         harness_preference=["cursor"],
-        model_tier_map={"heavy": {"dev": [_CURSOR_STAGE, {"harness": "claude", "model": "claude-sonnet-5-5"}]}},
+        model_tier_map={
+            "heavy": {
+                "dev": [_CURSOR_STAGE, {"harness": "claude", "model": "claude-sonnet-5-5"}],
+                "review": [_CURSOR_STAGE, {"harness": "claude", "model": "opus"}],
+            }
+        },
     )
     launch = resolve_bmadloop_tier_launch(effective, "heavy")
-    assert launch.resolved_models == {"dev": "claude-sonnet-5-5"}
+    assert launch.resolved_models == {"dev": "claude-sonnet-5-5"}, "review holds to its first candidate's model"
     assert launch.adapter_name == "claude"
 
 
@@ -305,11 +310,22 @@ def test_dispatch_still_resolves_the_cursor_model():
 
 
 def _spin_render(effective, difficulty):
+    """The adapter name and every stage model of the policy spin writes."""
     launch = resolve_bmadloop_tier_launch(effective, difficulty)
     adapter = tomllib.loads(
         render_policy_toml(effective, difficulty=difficulty, adapter=launch.adapter_name, tier_resolution=launch)
     )["adapter"]
-    return {(adapter.get("dev") or adapter)["model"], adapter["review"]["model"]}
+    stages = (adapter.get("dev") or adapter, adapter["review"], adapter.get("triage", {}))
+    return adapter["name"], {stage["model"] for stage in stages if "model" in stage}
+
+
+def _launchable_models(stages):
+    return {
+        candidate.model
+        for candidates in normalize_stage_entries(stages).values()
+        for candidate in candidates
+        if candidate.harness in BMADLOOP_ADAPTER_BY_PROFILE
+    }
 
 
 def test_no_live_tier_renders_a_model_its_adapter_cannot_run():
@@ -317,13 +333,12 @@ def test_no_live_tier_renders_a_model_its_adapter_cannot_run():
     a Cursor model reds here whatever its shape, a bare string included, and with or without a catalog."""
     for slug in (long_form(station) for station in STATIONS):
         effective = compose_effective(slug)
-        baselines = _spin_render(effective, None)
-        for difficulty, stages in effective.model_tier_map.value.items():
-            launchable = {
-                candidate.model
-                for candidates in normalize_stage_entries(stages).values()
-                for candidate in candidates
-                if candidate.harness in BMADLOOP_ADAPTER_BY_PROFILE
-            }
-            assert _spin_render(effective, difficulty) <= baselines | launchable, (slug, difficulty)
-    assert _spin_render(compose_effective("pyforge-marshal"), "frontier") == {"claude-fable-5-1"}
+        tier_map = effective.model_tier_map.value
+        assert tier_map, f"{slug} composed no tier map, so this test would prove nothing for it"
+        _, baselines = _spin_render(effective, None)
+        for difficulty, stages in tier_map.items():
+            adapter, models = _spin_render(effective, difficulty)
+            assert adapter in BMADLOOP_ADAPTER_BY_PROFILE.values(), (slug, difficulty)
+            assert models <= baselines | _launchable_models(stages), (slug, difficulty)
+    marshal = compose_effective("pyforge-marshal")
+    assert _spin_render(marshal, "frontier")[1] == _launchable_models(marshal.model_tier_map.value["frontier"])

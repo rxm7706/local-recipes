@@ -5275,7 +5275,7 @@ So that a declared difficulty runs its session instead of failing at launch, and
 **difficulty:** medium
 **Given** the seven stations with no `model_cost_catalog`, where every Cursor tier stage names `harness = "cursor"`, bmad-loop has no Cursor adapter, the fail-safe asks only the catalog who owns a model, and so 21 of the 33 live renders write `composer-2.5-fast` or `composer-2.5` under the `claude` adapter, which `claude --model` refuses with `unrecognized_model`
 **When** the story lands
-**Then** a launch bmad-loop runs resolves through `resolve_bmadloop_tier_launch`, where a harness with no bmad-loop adapter is unavailable, so a stage falls through to its next launchable candidate or keeps the `[adapter]` baseline, and spin's journaled `resolved_models` names no model that cannot launch
+**Then** a launch bmad-loop runs resolves through `resolve_bmadloop_tier_launch`, where a harness with no bmad-loop adapter is unavailable, so a `dev` stage falls through to its next launchable candidate, a stage left with none keeps the `[adapter]` baseline, and spin's journaled `resolved_models` names no model on such a harness
 **And** all eight live policies render no Cursor model for any tier, with or without a catalog; marshal's `frontier` tier still renders `claude-fable-5-1`; `marshal factory dispatch` still resolves the Cursor model; CAP-79 and CAP-87 are re-derived; scoped stamp; `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` exits 0
 **Status:** done
 

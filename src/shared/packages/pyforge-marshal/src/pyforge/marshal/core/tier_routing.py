@@ -276,10 +276,11 @@ def resolve_tier_launch(
 
 def resolve_bmadloop_tier_launch(policy: EffectivePolicy, difficulty: str | None) -> TierLaunchResolution:
     """Tier routing for a launch bmad-loop runs (Story 33.16). bmad-loop has no Cursor or Devin adapter, so a stage on a
-    harness with no ``BMADLOOP_ADAPTER_BY_PROFILE`` entry is unavailable here: it falls through to its next launchable
-    candidate or resolves to nothing, and the render keeps the ``[adapter]`` baseline. Without this, a station with no
-    ``model_cost_catalog`` writes a Cursor model under the ``claude`` adapter, which ``claude --model`` refuses.
-    ``marshal factory dispatch`` launches Cursor itself and stays on ``resolve_tier_launch``."""
+    harness with no ``BMADLOOP_ADAPTER_BY_PROFILE`` entry is unavailable here: a ``dev`` stage falls through to its next
+    launchable candidate, and a stage left with none, every ``review`` stage whose first candidate is out included,
+    keeps the ``[adapter]`` baseline. Without this, a station with no ``model_cost_catalog`` writes a Cursor model under
+    the ``claude`` adapter, which ``claude --model`` refuses. A bare-string stage names no harness and is not filtered
+    here. ``marshal factory dispatch`` launches Cursor itself and stays on ``resolve_tier_launch``."""
     return resolve_tier_launch(policy, difficulty, check_profile=BMADLOOP_ADAPTER_BY_PROFILE.__contains__)
 
 

@@ -30,8 +30,8 @@ it, but the run journal still records the Cursor model in `resolved_models` whil
 
 **Approach:** Availability belongs to the resolver. `resolve_tier_launch` already takes a `check_profile` predicate that no
 caller passed. `resolve_bmadloop_tier_launch` passes one: a harness with no entry in `BMADLOOP_ADAPTER_BY_PROFILE` is
-unavailable. A stage then falls through to its next launchable candidate or resolves to nothing and keeps the baseline, and
-`resolved_models` is true for the journal. Spin, the render's own fallback and `spin_models` all use it, so they cannot
+unavailable. A `dev` stage then falls through to its next launchable candidate, a stage left with none keeps the baseline,
+and `resolved_models` names no model on such a harness. Spin, the render's own fallback and `spin_models` all use it, so they cannot
 disagree. A `fix` under CAP-79 and CAP-87: no CAP, no flag.
 
 Ledger key: `33-16-a-tier-stage-bmad-loop-cannot-launch-keeps-the-baseline`. Type / Effort / Deps: fix / S / none.
@@ -41,7 +41,7 @@ Ledger key: `33-16-a-tier-stage-bmad-loop-cannot-launch-keeps-the-baseline`. Typ
 - **AC1 — Unavailable to bmad-loop.** `resolve_bmadloop_tier_launch` resolves no stage for a candidate on `cursor` or `devin`,
   and `resolved_models` is empty for such a tier. A harness with a bmad-loop adapter resolves as before.
 - **AC2 — Fall-through works.** A list-form `dev` stage of a Cursor candidate then a Claude candidate resolves to the Claude
-  candidate.
+  candidate. A `review` stage holds to its first candidate's model, so the same list keeps the review baseline.
 - **AC3 — The baseline, with no catalog.** With no catalog, a Cursor tier renders `[adapter].model` and `[adapter.review].model`
   at their baselines and writes no `[adapter.dev]`, whether the render resolves the tier itself or spin hands it the resolution.
 - **AC4 — The journal tells the truth.** Spin's journaled `resolved_models` is empty for a Cursor tier, and the
@@ -60,8 +60,11 @@ Ledger key: `33-16-a-tier-stage-bmad-loop-cannot-launch-keeps-the-baseline`. Typ
 - A bare-string stage names no harness, so only a declared catalog can place it, and on a catalog-less station it still
   renders. CAP-78 keeps bare Cursor strings out of the eight maps, and AC5's test reds if one lands.
 - A mixed tier is out of scope: `test_render_policy_toml_differs_with_cross_provider_tier_resolution` pins a `claude` review
-  stage's model under a `gemini` adapter. bmad-loop can carry a per-stage `[adapter.review] name`, which the render does not
-  write. No live tier mixes harnesses.
+  stage's model under a `gemini` adapter, and a `dev` stage that falls through to `gemini` flips the adapter while the
+  `[adapter]` baselines stay Claude aliases. bmad-loop can carry a per-stage `[adapter.review] name`, which the render does
+  not write. No live tier mixes harnesses.
+- Retry escalation now reaches these tiers: `[adapter.dev]` used to shadow the `[adapter].model` it patches. A retried story
+  on the seven stations moves from `sonnet` to `opus`.
 - Spin raises no new finding. The operator sees an empty `resolved_models` and the journaled `to_model`.
 
 ## Binding
@@ -79,3 +82,8 @@ pixi run --frozen -e pyforge-marshal pyforge-marshal-test
 ## Spec Change Log
 
 - 2026-11-04: minted `done` from the probe Story 113.17 ran over the live policies; landed in its own PR.
+- 2026-11-04: independent review (a fresh reviewer, on the diff against this spec) passed the fix, with findings. Fixed here:
+  the bare-string exception and the `review` stage's fall-through were missing from the claims; the render's third branch,
+  which could no longer write anything, is deleted; the live test now fails a station that composes no tier map, checks the
+  adapter name and `triage`, and reads `frontier`'s model from the policy; the render docstring names the rule. Not taken: a
+  second filter in the render for a caller that hands it a dispatch resolution, because only spin and `spin_models` pass one.
