@@ -1090,6 +1090,8 @@ _SHIPPED_CLOCKS = {
     "pyforge.steward.marketplace_pages": ("steward", "109-3-", "2026-10-21", "", ""),
     # Story 117.3 (CAP-175): critical-path lane admission; a kill switch ON everywhere from mint day, due 2027-01-25.
     "pyforge.steward.preflight_critical_path": ("steward", "117-3-", "2026-10-27", "2026-10-27", "2027-01-25"),
+    "pyforge.steward.start_tool_cli": ("steward", "119-1-", "2026-11-06", "2026-11-06", "2027-02-04"),
+    "pyforge.steward.start_loop_dispatch": ("steward", "119-4-", "2026-11-06", "", ""),
     "pyforge.steward.nkp_deploy": ("steward", "118-1-", "2026-10-31", "2026-10-31", "2027-01-29"),
     "pyforge.steward.nkp_packs": ("steward", "118-2-", "2026-10-31", "2026-10-31", "2027-01-29"),
 }
@@ -1134,6 +1136,7 @@ _RETROFIT_KILL_SWITCHES = frozenset(
 )
 _LATER_KILL_SWITCHES = {
     "pyforge.steward.preflight_critical_path": "2027-01-25",  # steward Story 117.3 (CAP-175), minted 2026-10-27
+    "pyforge.steward.start_tool_cli": "2027-02-04",  # steward Story 119.1
     "pyforge.steward.nkp_deploy": "2027-01-29",  # steward Story 118.1 (CAP-176), minted 2026-10-31
     "pyforge.steward.nkp_packs": "2027-01-29",  # steward Story 118.2 (CAP-177), minted 2026-10-31
 }
@@ -1165,6 +1168,7 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.steward.ledger_query_jira_github_matrix": False,
         "pyforge.steward.glass_export": False,
         "pyforge.marshal.preserve_refs": False,
+        "pyforge.steward.start_loop_dispatch": False,
         "pyforge.marshal.egm_challenge": False,
         "pyforge.marshal.egm_policy_block": False,
         "pyforge.marshal.egm_dispatch_readiness": False,
@@ -1236,6 +1240,7 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.steward.marketplace_pages": {"dev": True, "staging": False, "production": False},
         # Story 117.3 (CAP-175): critical-path lane admission, a kill switch ON in every environment.
         "pyforge.steward.preflight_critical_path": {"dev": True, "staging": True, "production": True},
+        "pyforge.steward.start_tool_cli": {"dev": True, "staging": True, "production": True},
         "pyforge.steward.nkp_deploy": {"dev": True, "staging": True, "production": True},
         "pyforge.steward.nkp_packs": {"dev": True, "staging": True, "production": True},
         "pyforge.marshal.verify_fix_loop": {"dev": True, "staging": True, "production": False},

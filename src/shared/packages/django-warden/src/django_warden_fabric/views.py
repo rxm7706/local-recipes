@@ -29,7 +29,7 @@ from django_pyforge.supervisor import (
 from .fleet import FLEET_FIX_PROPOSALS_FLAG, FLEET_INVENTORY_FLAG, FLEET_PROJECT_ITEMS_FLAG
 from .fleet_inventory import FleetInventoryError, load_organisation_from_config
 from .fleet_project_items import load_project_numbers_from_config
-from .mcp_asgi import RUN_AUDIT_TOOL, WARDEN_STATION
+from .mcp_asgi import DEFAULT_AUDIT_TARGET, RUN_AUDIT_TOOL, WARDEN_STATION
 from .models import ComplianceJob, FixProposal
 from .phases import current_progress
 from .proposals import ProposalRefusedError, approve_proposal, dismiss_proposal
@@ -92,9 +92,9 @@ def start_audit(request: HttpRequest) -> HttpResponse:
     if identity is None:
         return HttpResponseForbidden()
     sub, roles = identity
-    target = request.POST.get("target", ".")
+    target = request.POST.get("target", DEFAULT_AUDIT_TARGET)
     if not isinstance(target, str) or not target.strip():
-        target = "."
+        target = DEFAULT_AUDIT_TARGET
     else:
         target = target.strip()
     try:

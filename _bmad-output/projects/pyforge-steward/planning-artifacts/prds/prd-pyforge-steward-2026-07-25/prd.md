@@ -2,7 +2,8 @@
 fr-derivation-from: "2026-09-17"
 title: Steward (pyforge-steward)
 created: 2026-07-25
-updated: "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief -> PRD and spec -> PRD); no CAP, FR or AD is minted. Prior "2026-11-04"   # RE-STAMPED 2026-11-04: chain-currency cascade (spec -> PRD) (the Surface reconcile of Stories 118.7 and 118.8 on spec-pyforge-steward and spec-pyforge-unifying-strategy); no CAP, FR, AD, epic or story moved. See § Currency reconciliation — 2026-11-04.
+updated: "2026-11-06"   # RE-STAMPED 2026-11-06 (CAP-20, Epic 119): chain-currency cascade (spec -> PRD); canopy:FR-51 registered, no other FR moves.
+# 2026-11-05  # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (research -> brief -> PRD and spec -> PRD); no CAP, FR or AD is minted. Prior "2026-11-04"   # RE-STAMPED 2026-11-04: chain-currency cascade (spec -> PRD) (the Surface reconcile of Stories 118.7 and 118.8 on spec-pyforge-steward and spec-pyforge-unifying-strategy); no CAP, FR, AD, epic or story moved. See § Currency reconciliation — 2026-11-04.
 # 2026-11-01  # RE-STAMPED 2026-11-01 (steward Stories 118.7 and 118.8): chain-currency cascade (spec -> PRD) for spec-pyforge-steward's amendments of CAP-176, CAP-177 and CAP-178; FR-50, FR-51 and FR-52 amended in place; no FR registered, renumbered or removed. See § Currency reconciliation — 2026-11-01 (Stories 118.7 and 118.8). Prior "2026-11-01"
 # 2026-11-01  # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): chain-currency cascade (brief -> PRD, spec -> PRD) for research/egm-audit-2026-11-01.md (25 of 30 findings accepted) and spec-pyforge-steward's re-derive of CAP-176 and CAP-177; FR-50 and FR-51 amended in place, FR-52 unchanged (CAP-178 rides Story 118.8); no FR registered, renumbered or removed. See § Currency reconciliation — 2026-11-01 (EGM fleet audit). Prior "2026-10-31"
 # 2026-10-31  # RE-STAMPED 2026-10-31 (CAP-176..CAP-178): chain-currency cascade (spec -> PRD) for the Dream's 2026-10-31 section (Nebari hosted: NKP on kind, then Hetzner, with the data-science pack); FR-50, FR-51 and FR-52 registered, each derived from its CAP; no FR renumbered or removed. See § Currency reconciliation — 2026-10-31 (CAP-176..CAP-178). Prior "2026-10-30"   # RE-STAMPED 2026-10-30: chain-currency (spec -> PRD) for Stories 109.6, 109.1 and 109.7 (fixes and a closing review under CAP-169..CAP-171; no CAP, FR or AD moved). See § Currency reconciliation — 2026-10-30.
@@ -1431,6 +1432,21 @@ the dashboard contract. **CAP-19.** Rebuild of 28.2 / in-memory RAG is in scope.
 - The test fails if semantic recall is aliased back to lexical or to a private
   Chroma / in-memory DuckDB.
 
+##### canopy:FR-51: A start tool runs one fixed station verb
+
+Each of the seven `start_*` tools with no work behind it runs one station CLI verb from one closed
+table. **CAP-20.**
+
+**Consequences (testable):**
+- A caller supplies a target only. No tool accepts a verb or a flag.
+- A target that face's validator refuses ends with no subprocess started.
+- A worker with no station CLI ends the run `FAILED`, and the error says so.
+- An exit code the verb defines as a result ends the run `SUCCEEDED` with that code in the result;
+  any other exit code, or a timeout, ends it `FAILED`.
+- `marshal factory dispatch` runs only for a `pyforge:admin` caller with
+  `pyforge.steward.start_loop_dispatch` on.
+- A verb that spends, or that collides with itself, never starts twice for one run.
+
 ---
 
 ### 5. Non-Goals (Explicit)
@@ -1675,7 +1691,7 @@ Every capability has at least one FR; every FR names a capability.
 | CAP-7 | canopy:FR-16 | CAP-16 | canopy:FR-38, canopy:FR-39 |
 | CAP-8 | canopy:FR-17..canopy:FR-20, canopy:FR-29 | CAP-17 | canopy:FR-40, canopy:FR-41, canopy:FR-42 |
 | CAP-9 | canopy:FR-21, canopy:FR-21a, canopy:FR-22..canopy:FR-25 | CAP-18 | canopy:FR-43, canopy:FR-44, canopy:FR-45 |
-| CAP-19 | canopy:FR-46, canopy:FR-47, canopy:FR-48, canopy:FR-49, canopy:FR-50 | | |
+| CAP-19 | canopy:FR-46, canopy:FR-47, canopy:FR-48, canopy:FR-49, canopy:FR-50 | CAP-20 | canopy:FR-51 |
 
 ### 13. Assumptions Index
 
@@ -3152,3 +3168,8 @@ amended on 2026-11-01 and stand as written.
 *Chain-currency cascade (research -> brief -> PRD and spec -> PRD), EGM audit, marshal Story 113.18.*
 
 `research/egm-audit-2026-11-05.md` (marshal Story 113.18, `spec-pyforge-marshal:CAP-302`): 19 high findings, 4 accepted, 10 rejected, 5 deferred; the medium and low findings are not triaged. Nothing in the Spec's contract moved; Story 118.3's text takes the `/shared` probe proof and the `gitops/**` bypass actor. No FR is added, renumbered or re-scoped.
+## Currency reconciliation — 2026-11-06 (CAP-20, Epic 119)
+
+*Chain-currency cascade (spec -> PRD).*
+
+`spec-pyforge-unifying-strategy` CAP-20 (a start tool does the work it names) adds canopy:FR-51, traced from that capability's intent and success. No other FR moves. It takes up the wiring half of the operator's 2026-11-05 ruling on N1, on the rulings of 2026-11-06.

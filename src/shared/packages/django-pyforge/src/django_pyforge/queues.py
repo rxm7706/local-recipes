@@ -60,6 +60,8 @@ DOCTOR_STATION = "doctor"
 #: Mason tools that run rattler-build (or equivalent) and need the builds pool.
 MASON_BUILD_TOOL = "build"
 MASON_REBUILD_TOOL = "rebuild"
+#: The tool ``start_build`` publishes (Story 119.3): the face's name for a build.
+MASON_RUN_BUILD_TOOL = "run_build"
 #: The Doctor tool that applies a remedy -- the work a build flood must not delay.
 DOCTOR_REMEDY_TOOL = "remedy"
 
@@ -68,6 +70,7 @@ DOCTOR_REMEDY_TOOL = "remedy"
 TOOL_ROUTES: dict[tuple[str, str], str] = {
     (MASON_STATION, MASON_BUILD_TOOL): BUILDS_QUEUE,
     (MASON_STATION, MASON_REBUILD_TOOL): BUILDS_QUEUE,
+    (MASON_STATION, MASON_RUN_BUILD_TOOL): BUILDS_QUEUE,
     (DOCTOR_STATION, DOCTOR_REMEDY_TOOL): PRIORITY_QUEUE,
 }
 

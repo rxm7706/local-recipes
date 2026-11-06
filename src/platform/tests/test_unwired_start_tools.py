@@ -1,4 +1,4 @@
-"""Story 21.6: a start tool with no work behind it fails the run and says so."""
+"""Stories 21.6, 119.1: a start tool with no CLI fails the run and says so."""
 
 from __future__ import annotations
 
@@ -40,6 +40,16 @@ FACES: tuple[Face, ...] = (
 )
 
 
+#: ``start_loop`` is refused before a run exists (Story 119.4, ``test_station_cli``).
+UNGATED: tuple[Face, ...] = tuple(face for face in FACES if face.station != "marshal")
+
+
+@pytest.fixture(autouse=True)
+def _no_station_cli(settings: Any) -> None:
+    """This worker has no checkout, whatever the shell running the tests exports."""
+    settings.STATION_CLI_ROOT = ""
+
+
 def _message(face: Face) -> str:
     return f"{face.station} {face.start_tool} ran nothing"
 
@@ -66,7 +76,7 @@ def _start(face: Face, assertion: str) -> str:
         station=face.station,
         assertion=assertion,
         tool=face.run_tool,
-        payload={"target": "."},
+        payload={"target": "numpy"},
     )
 
 
@@ -91,14 +101,14 @@ def test_every_station_face_is_listed_here() -> None:
 @pytest.mark.parametrize("face", FACES, ids=lambda face: face.station)
 def test_runner_refuses_and_names_the_start_tool(face: Face) -> None:
     with pytest.raises(RunnerNotWiredError) as caught:
-        _registered_runner(face)({"target": "."})
+        _registered_runner(face)({"target": "numpy"})
     message = str(caught.value)
     assert _message(face) in message
     assert f"pyforge {face.station}" in message
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("face", FACES, ids=lambda face: face.station)
+@pytest.mark.parametrize("face", UNGATED, ids=lambda face: face.station)
 def test_worker_ends_the_run_failed_and_get_says_so(
     face: Face,
     monkeypatch: pytest.MonkeyPatch,
@@ -121,7 +131,7 @@ def test_worker_ends_the_run_failed_and_get_says_so(
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("face", FACES, ids=lambda face: face.station)
+@pytest.mark.parametrize("face", UNGATED, ids=lambda face: face.station)
 def test_eager_start_keeps_the_handle(face: Face) -> None:
     """Test and local settings run the task inside ``start``: it still returns."""
     _registered_runner(face)

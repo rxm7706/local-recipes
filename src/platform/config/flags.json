@@ -1514,6 +1514,36 @@
         "on_everywhere": "2026-10-31",
         "cleanup_by": "2027-01-29"
       }
+    },
+    "pyforge.steward.start_tool_cli": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on",
+      "metadata": {
+        "owner": "steward",
+        "story": "119-1-a-worker-runs-a-station-verb-from-one-closed-table",
+        "created": "2026-11-06",
+        "on_everywhere": "2026-11-06",
+        "cleanup_by": "2027-02-04"
+      }
+    },
+    "pyforge.steward.start_loop_dispatch": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "steward",
+        "story": "119-4-start-loop-dispatches-only-for-an-admin-with-the-flag-on",
+        "created": "2026-11-06",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
     }
   }
 }

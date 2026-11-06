@@ -1226,6 +1226,14 @@ capabilities:
     expiry: 2026-12-31
     note: host/portals/analytics later; not Launch
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
+  - id: pap:CAP-20
+    spec: pyforge-unifying-strategy
+    station: pyforge-steward
+    heading: A start tool does the work it names, from one closed table
+    mode: A-only
+    expiry: 2026-12-31
+    note: host/portals later; laptop stack first; not Launch
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
   - id: fnd:CAP-1
     spec: python-foundry-cutover
     station: pyforge-steward

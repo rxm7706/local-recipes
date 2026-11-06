@@ -4,19 +4,23 @@ from __future__ import annotations
 
 from typing import Any
 
+from django_pyforge.station_cli import run_start_tool
 from django_pyforge.supervisor import get_run as supervisor_get_run
-from django_pyforge.supervisor import refuse_unwired_run, register_runner, start_bounded
+from django_pyforge.supervisor import register_runner, start_bounded
 
 WARDEN_STATION = "warden"
 RUN_AUDIT_TOOL = "run_audit"
 START_AUDIT_TOOL = "start_audit"
+# The host's own manifests. Warden refuses a tree holding a symlinked directory, and
+# the checkout root is one (Story 119.2).
+DEFAULT_AUDIT_TARGET = "src/platform"
 
 _SERVER: Any = None
 
 
-def run_audit(_payload: dict[str, Any] | None) -> dict[str, Any]:
-    """Run nothing: no work is wired behind ``start_audit`` yet (Story 21.6)."""
-    refuse_unwired_run(WARDEN_STATION, START_AUDIT_TOOL)
+def run_audit(payload: dict[str, Any] | None) -> dict[str, Any]:
+    """Run this face's row of the closed verb table (Epic 119, canopy:AD-24)."""
+    return run_start_tool(WARDEN_STATION, RUN_AUDIT_TOOL, payload)
 
 
 def ensure_warden_runner() -> None:

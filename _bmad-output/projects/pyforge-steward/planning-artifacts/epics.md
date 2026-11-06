@@ -8217,3 +8217,71 @@ re-scoped; each story's status moved with its own commit in that PR.
 *Chain-currency cascade (arch -> epics), EGM audit, marshal Story 113.18.*
 
 Story 29.5 is minted at `backlog`. Story 118.3's text is amended and its status does not move. No epic is added, and no story is renumbered.
+
+## Epic 119: A start tool does the work it names (spec-pyforge-unifying-strategy CAP-20 / canopy:FR-51)
+
+Minted 2026-11-06 from the Realization log entry of that date on `docs/dreams/pyforge-unifying-strategy.md` and the operator's four rulings: all seven faces, laptop stack first, dispatch gated, the verb list accepted. Story 21.6 made the seven runners fail honestly; this Epic gives them work. The worker image that would run these verbs in a cluster is deferred, not here.
+
+### Story 119.1: A worker runs a station verb from one closed table
+
+As an autonomous agent,
+I want a start tool to run one fixed station CLI verb through one closed table,
+So that a caller can ask for a station's work without being able to name a verb or a flag.
+
+**Type:** feature • **Effort:** M • **Deps:** 21.6 • **FR/AD:** spec-pyforge-unifying-strategy CAP-20 / canopy:FR-51 • canopy:AD-24
+**Flag:** `pyforge.steward.start_tool_cli` (default ON in dev, staging and production: a kill switch; OFF ends the run `FAILED` with nothing started)
+**Surface:** `src/shared/packages/django-pyforge/src/django_pyforge/station_cli.py`, `supervisor.py`, `tasks.py`, `src/platform/config/settings/base.py`, `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/platform/tests/`
+**Spec:** `planning-artifacts/specs/spec-119-1-a-worker-runs-a-station-verb-from-one-closed-table.md`
+**Given** seven runners that fail honestly and a worker that has no way to reach a station CLI safely
+**When** a row in the closed table names the verb, target validator, result exit codes, pixi environment and timeout
+**Then** the worker runs that verb with no shell, from `STATION_CLI_ROOT`, under an allowlisted environment, and records exit code and output in the run
+**And** an unset root, a missing executable, the kill switch off, a refused target, an exit code outside the row's list and a timeout each end the run `FAILED` with a message that says what happened; a test pins the table and refuses any token the session hook denies
+**Status:** done
+
+### Story 119.2: Five read faces run their verb
+
+As an autonomous agent,
+I want `start_scan`, `start_notice`, `start_recall`, `start_duty` and `start_audit` to return their station's real output,
+So that `get_*` carries work that happened.
+
+**Type:** feature • **Effort:** M • **Deps:** 119.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-20 / canopy:FR-51 • canopy:AD-24
+**Flag:** `pyforge.steward.start_tool_cli` (Story 119.1's kill switch)
+**Surface:** the `mcp_asgi.py` of `django-doctor`, `django-herald`, `django-scribe`, `django-steward` and `django-warden`, `src/shared/packages/django-pyforge/src/django_pyforge/assertion/client.py`, `station_cli.py`, `src/platform/tests/`
+**Spec:** `planning-artifacts/specs/spec-119-2-five-read-faces-run-their-verb.md`
+**Given** the closed table of Story 119.1
+**When** doctor `diagnose --target`, herald `notice get`, scribe `recall`, steward `ci status`, `estate plan` or `estate status`, and warden `scan` under one root join it
+**Then** each start tool on a laptop checkout ends with the CLI's real output in `get_*`, and warden's portal shows the real report
+**And** warden never passes `--open-fix-prs` or `--bypass`, `_grammar_recall` reads the exit code, and `DW-scribe-5-2` and `DW-steward-21-6-5` close
+**Status:** done
+
+### Story 119.3: start_build builds a tracked recipe on the builds pool
+
+As an autonomous agent,
+I want `start_build` to run `mason recipe build` on a tracked recipe in the builds pool,
+So that a build can finish and cannot reach submission.
+
+**Type:** feature • **Effort:** S • **Deps:** 119.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-20 / canopy:FR-51 • canopy:AD-24
+**Flag:** `pyforge.steward.start_tool_cli` (Story 119.1's kill switch)
+**Surface:** `src/shared/packages/django-mason/src/django_mason_portal/mcp_asgi.py`, `src/shared/packages/django-pyforge/src/django_pyforge/queues.py`, `station_cli.py`, `src/platform/tests/`
+**Spec:** `planning-artifacts/specs/spec-119-3-start-build-builds-a-tracked-recipe-on-the-builds-pool.md`
+**Given** `queues.TOOL_ROUTES` names mason's `build` and `rebuild` while the face runs `run_build`, so a wired build would land on the 300-second pool
+**When** the table gains `mason recipe build` for a flat slug tracked under `recipes/`, and the router names `run_build`
+**Then** a build runs on the `builds` queue under the builds time limit and its result reaches `get_build`
+**And** no row reaches `submit`, `ship` or `update`, and a slug that is not tracked ends with nothing run
+**Status:** done
+
+### Story 119.4: start_loop dispatches only for an admin with the flag on
+
+As the operator,
+I want `start_loop` to run `marshal factory dispatch` only for a `pyforge:admin` caller with a flag I flip,
+So that no MCP caller can spend money or open a PR without my switch.
+
+**Type:** feature • **Effort:** M • **Deps:** 119.1 • **FR/AD:** spec-pyforge-unifying-strategy CAP-20 / canopy:FR-51 • canopy:AD-24
+**Flag:** `pyforge.steward.start_loop_dispatch` (default OFF in dev, staging and production: the operator flips it)
+**Surface:** `src/shared/packages/django-marshal/src/django_marshal_portal/mcp_asgi.py`, `src/shared/packages/django-pyforge/src/django_pyforge/station_cli.py`, `supervisor.py`, `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/platform/tests/`
+**Spec:** `planning-artifacts/specs/spec-119-4-start-loop-dispatches-only-for-an-admin-with-the-flag-on.md`
+**Given** MCP start tools check a signed assertion and no role, and `marshal factory dispatch` launches an unattended agent
+**When** the table gains that verb with a required role and a flag
+**Then** a caller without `pyforge:admin` is refused before a run row exists, and with the flag off the run ends with nothing started
+**And** with the role and the flag on, a run dispatches `<slug> <story>` and `get_loop` carries the CLI's report; a test proves both flag states with no real dispatch
+**Status:** done

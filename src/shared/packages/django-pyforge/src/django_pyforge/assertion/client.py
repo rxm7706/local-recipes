@@ -53,10 +53,10 @@ def recall_cli_argv(query: str, mode: str | None = None) -> list[str]:
     """Portal recall grammar. Story 12.1: never ``--kind``. Story 18.1:
     ``mode`` is optional and never defaults to planning or code."""
     pyforge = shutil.which("pyforge")
-    argv = [pyforge, "scribe", "recall", query] if pyforge else ["scribe", "recall", query]
+    argv = [pyforge, "scribe", "recall"] if pyforge else ["scribe", "recall"]
     if mode:
         argv.extend(["--mode", str(mode)])
-    return argv
+    return [*argv, "--", query]  # Story 119.2: a query is never read as a flag.
 
 
 def _grammar_recall(payload: dict[str, Any]) -> dict[str, Any]:
@@ -69,6 +69,10 @@ def _grammar_recall(payload: dict[str, Any]) -> dict[str, Any]:
         text=True,
         check=False,
     )
+    if completed.returncode != 0:  # Story 119.2: a failed recall never reads as an answer.
+        detail = completed.stderr.strip()[-500:]
+        text = f"scribe recall failed (exit {completed.returncode}): {detail}"
+        return {"grounded": False, "text": text, "citation": None}
     return parse_recall_cli(completed.stdout)
 
 

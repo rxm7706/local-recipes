@@ -9,6 +9,7 @@ from typing import Any
 
 from django_pyforge.assertion.client import register_portal_job
 from django_pyforge.mcp_start_get import attach_supervised_start_get
+from django_pyforge.station_cli import run_start_tool
 from django_pyforge.supervisor import (
     LOOP_COMPLETE_TOOL,
     LOOP_HEARTBEAT_TOOL,
@@ -17,7 +18,6 @@ from django_pyforge.supervisor import (
     heartbeat_held_run,
     list_published_story_tasks,
     publish_held_loop_bounded,
-    refuse_unwired_run,
     register_runner,
 )
 
@@ -31,9 +31,9 @@ WATCH_TOOL = "marshal_watch"
 _CACHE: dict[str, Any] = {}
 
 
-def run_loop(_payload: dict[str, Any] | None) -> dict[str, Any]:
-    """Run nothing: no work is wired behind ``start_loop`` yet (Story 21.6)."""
-    refuse_unwired_run(MARSHAL_STATION, START_LOOP_TOOL)
+def run_loop(payload: dict[str, Any] | None) -> dict[str, Any]:
+    """Run this face's row of the closed verb table (Epic 119, canopy:AD-24)."""
+    return run_start_tool(MARSHAL_STATION, RUN_LOOP_TOOL, payload)
 
 
 def _marshal_watch_job(

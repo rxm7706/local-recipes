@@ -1127,3 +1127,15 @@ Entries through 2026-08-31: [archive § Realization log (historical)](<https://g
   faces to the CLI grammar, each with its own allowlist of verbs, because a worker subprocess
   sits outside the session hook, and a wired `start_duty` or `start_build` could otherwise reach
   what an agent is refused at the shell. `DW-steward-21-6-2` tracks that half.
+- **2026-11-06** — Operator rulings on the second half of N1, after Story 21.6 landed
+  (`a1a2c2a3aa`). Which faces first: "All seven". Where wired tools first do real work: "Laptop stack
+  first". `start_loop`: "Dispatch, gated". The verb list: "Accept list". A survey framed those
+  questions. The platform worker has no repo checkout, carries only the steward and warden CLIs, and
+  no pixi environment holds both Celery and all seven CLIs, so a CLI call from that worker cannot
+  work today. MCP start tools check a signed assertion and no role. Mason's face runs `run_build`
+  while the router names `build`, so a wired build would land on the 300-second pool. Each start
+  tool now runs one verb from one closed table, a caller passes a target and never a verb or a flag,
+  and a worker with no CLI fails the run and says so (`spec-pyforge-unifying-strategy` CAP-20,
+  canopy:FR-51, canopy:AD-24, steward Epic 119). `marshal factory dispatch` spends money and opens
+  PRs, so it runs only for a `pyforge:admin` caller with `pyforge.steward.start_loop_dispatch` on,
+  and that flag ships off. The worker image that would run these in a cluster is a later Story.

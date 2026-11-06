@@ -277,6 +277,8 @@ def start_bounded(
         )
     except RunBoundExceeded as exc:
         raise _tool_refusal(bound_refusal_payload(exc)) from exc
+    except StartRefusedError as exc:
+        raise _tool_refusal({"status": int(HTTPStatus.FORBIDDEN), "error": str(exc)}) from exc
 
 
 @dataclass(frozen=True)
@@ -287,20 +289,54 @@ class BoardSnapshot:
     timing: tuple[dict[str, Any], ...]
 
 
-class RunnerNotWiredError(RuntimeError):
-    """A start tool has no work behind it, so its run fails instead of succeeding."""
+ONLY_ATTEMPT_KEY = "only_attempt_started"
 
 
-def refuse_unwired_run(station: str, start_tool: str) -> NoReturn:
-    """End a run that has no work behind it (Story 21.6).
+class RunEndedError(RuntimeError):
+    """A runner's expected failure: the worker records it and does not re-raise it."""
+
+
+class RunnerNotWiredError(RunEndedError):
+    """A start tool ran nothing, so its run fails instead of succeeding."""
+
+
+class StationVerbFailedError(RunEndedError):
+    """A station CLI verb ran and did not end with a result (Story 119.1)."""
+
+
+class StartRefusedError(HandleRefusedError):
+    """A start tool's gate refused the caller before a run row existed (Story 119.4)."""
+
+
+def refuse_unwired_run(station: str, start_tool: str, reason: str) -> NoReturn:
+    """End a run that started nothing (Stories 21.6, 119.1).
 
     ``execute_supervised_run`` records anything a runner returns as
     ``SUCCEEDED``, so a runner with nothing to do must raise. The worker records
     this error as a ``FAILED`` run and does not re-raise it. The message is what
     ``get_*`` and warden's portal show, so it names the tool the caller called.
     """
-    msg = f"{station} {start_tool} ran nothing: no work is wired behind this tool yet. Use the `pyforge {station}` CLI."
+    msg = f"{station} {start_tool} ran nothing: {reason}. Use the `pyforge {station}` CLI."
     raise RunnerNotWiredError(msg)
+
+
+def claim_only_attempt(run_id: str) -> bool:
+    """True once per run: a verb that spends never starts twice (Story 119.4).
+
+    ``begin_attempt`` allows one redelivery, which suits idempotent work. A run
+    whose first attempt got this far may still have its verb running, so a
+    second attempt ends the run instead of starting it again.
+    """
+    with transaction.atomic():
+        row = RunState.objects.select_for_update().filter(pk=run_id).first()
+        if row is None:
+            return False
+        prior = row.result if isinstance(row.result, dict) else {}
+        if prior.get(ONLY_ATTEMPT_KEY):
+            return False
+        row.result = {**prior, ONLY_ATTEMPT_KEY: True}
+        row.save(update_fields=["result"])
+    return True
 
 
 def register_runner(station: str, tool: str, fn: Any) -> None:
@@ -462,6 +498,9 @@ def publish_start(
     subject = claims.get(CLAIM_SUB)
     if not isinstance(subject, str) or not subject:
         raise HandleRefusedError
+    from django_pyforge.station_cli import check_start  # noqa: PLC0415
+
+    check_start(station, tool, claims)
     tenant = _tenant_from_assertion_claims(claims)
     enforce_run_bounds(station=station, subject=subject)
     token = mint_handle()

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from django_pyforge.mcp_start_get import build_station_mcp_asgi
-from django_pyforge.supervisor import refuse_unwired_run
+from django_pyforge.station_cli import run_start_tool
 
 HERALD_STATION = "herald"
 RUN_NOTICE_TOOL = "run_notice"
@@ -15,9 +15,9 @@ GET_NOTICE_TOOL = "get_notice"
 _CACHE: dict[str, Any] = {}
 
 
-def run_notice(_payload: dict[str, Any] | None) -> dict[str, Any]:
-    """Run nothing: no work is wired behind ``start_notice`` yet (Story 21.6)."""
-    refuse_unwired_run(HERALD_STATION, START_NOTICE_TOOL)
+def run_notice(payload: dict[str, Any] | None) -> dict[str, Any]:
+    """Run this face's row of the closed verb table (Epic 119, canopy:AD-24)."""
+    return run_start_tool(HERALD_STATION, RUN_NOTICE_TOOL, payload)
 
 
 def ensure_herald_runner() -> None:

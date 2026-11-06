@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from django_pyforge.mcp_start_get import build_station_mcp_asgi
-from django_pyforge.supervisor import refuse_unwired_run
+from django_pyforge.station_cli import run_start_tool
 
 MASON_STATION = "mason"
 RUN_BUILD_TOOL = "run_build"
@@ -15,9 +15,9 @@ GET_BUILD_TOOL = "get_build"
 _CACHE: dict[str, Any] = {}
 
 
-def run_build(_payload: dict[str, Any] | None) -> dict[str, Any]:
-    """Run nothing: no work is wired behind ``start_build`` yet (Story 21.6)."""
-    refuse_unwired_run(MASON_STATION, START_BUILD_TOOL)
+def run_build(payload: dict[str, Any] | None) -> dict[str, Any]:
+    """Run this face's row of the closed verb table (Epic 119, canopy:AD-24)."""
+    return run_start_tool(MASON_STATION, RUN_BUILD_TOOL, payload)
 
 
 def ensure_mason_runner() -> None:

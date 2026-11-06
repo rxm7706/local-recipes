@@ -4,7 +4,7 @@ spec: pyforge-unifying-strategy
 status: ready
 chain: pyforge-unifying-strategy
 created: "2026-08-24"
-updated: "2026-11-05"
+updated: "2026-11-06"
 companions:
   - convergence.md
   - resilience-invariants.md
@@ -279,9 +279,9 @@ they are why this is not merely a UI project.
     `src/platform/tests/test_mcp_disconnect_start_get.py` (all eight, including transport
     `http.disconnect` mid-get while a gated worker simulates a multi-minute op).
     Amended 2026-11-05 (Story 21.6): that proof installs a test runner on all eight faces, so it
-    shows the transport survives, not that a station's work ran. Only atlas's real runner does
-    its work; the other seven fail the run and say nothing ran, until the CLI wiring the operator
-    ruled lands (`DW-steward-21-6-2`).
+    shows the transport survives, not that a station's work ran. Amended 2026-11-06 (CAP-20): the
+    other seven run one station CLI verb where a worker has a checkout, and where it has none
+    they fail the run and say so.
   - *(The criterion is deliberately stated as an outcome, not a mechanism. The MCP Tasks extension
     would be the natural vehicle and has no server-side runtime to build on — so binding the
     capability to Tasks would block it on upstream. See the `start`/`get` constraint below.
@@ -528,6 +528,26 @@ they are why this is not merely a UI project.
     (not dual-write — see CAP-14 Story 49.7).
     Not a ninth station. Atlas owns the
     engine; steward owns the through-line.)*
+
+- **CAP-20 — A start tool does the work it names, from one closed table.**
+  - **intent:** Each of the seven `start_*` tools that CAP-4 left with no work behind it runs one
+    station CLI verb, fixed per face in one closed table. A caller passes a validated target,
+    never a verb or a flag. A worker with no station CLI fails the run and says so. The one verb
+    that spends money and opens PRs, `marshal factory dispatch`, runs only for a `pyforge:admin`
+    caller with `pyforge.steward.start_loop_dispatch` on, and that flag ships off.
+  - **success:** On a laptop checkout six of the seven tools run their real CLI through the worker
+    task and `get_*` carries the outcome. `start_loop` reaches a stand-in CLI in both flag states;
+    its first real dispatch is the operator's. A target its validator refuses, a caller without
+    the role, and a worker with no CLI each end with nothing run. A verb that spends never starts
+    twice for one run. A test pins the table, so a verb cannot join it unseen, and the session hook
+    itself would allow every row.
+  - **verified:** `src/platform/tests/test_station_cli.py` (the table, targets, exit codes, process
+    group, at-most-once, both flags); `src/platform/tests/test_station_cli_live.py` (the real CLIs,
+    skipped unless `STATION_CLI_LIVE_ROOT` names a checkout; run 2026-11-06). Not verified: the
+    platform image, where every start tool fails the run and says so, and a real `start_loop`.
+  - *(Minted 2026-11-06 on the operator's rulings: "honest runner first then wire to cli", "All
+    seven", laptop stack first, dispatch gated, verb list accepted. The worker image that would run
+    these verbs in a cluster is a deferred row, not this capability.)*
 
 ## Constraints
 

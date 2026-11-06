@@ -819,6 +819,11 @@ _SHIPPED_BOOLEANS = {
         "staging": True,
         "production": True,
     },
+    "pyforge.steward.start_tool_cli": {
+        "dev": True,
+        "staging": True,
+        "production": True,
+    },
     "pyforge.steward.nkp_packs": {
         "dev": True,
         "staging": True,
@@ -838,6 +843,8 @@ _SHIPPED_BOOLEANS = {
     # Stories 87.3/87.7/87.15; default off (spec flag.default).
     "pyforge.marshal.preserve_refs": False,
     # Epic 113 (CAP-298..CAP-303): the EGM challenger's six switches, default off.
+    # Epic 119: start_loop's dispatch is the operator's to turn on.
+    "pyforge.steward.start_loop_dispatch": False,
     "pyforge.marshal.egm_challenge": False,
     "pyforge.marshal.egm_policy_block": False,
     "pyforge.marshal.egm_dispatch_readiness": False,
