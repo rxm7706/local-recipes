@@ -19,15 +19,20 @@ Manifest (YAML or JSON)::
 CLI::
 
     refresh_wave.py MANIFEST [--repair] [--apply] [--gates] [--build] [--rebuild]
-                    [--report-dir DIR] [--force] [--json]
+                    [--render-check] [--report-dir DIR] [--force] [--json]
 
 Dry-run is the default: it reads, plans and writes only the report. ``--apply``
 writes; ``--gates`` and ``--build`` run only with ``--apply``. ``--rebuild`` also
 runs them on a recipe that is already current, so its ``cfe-local-build-*``
-record is written by a build of the recipe as it stands. The report
-(``report.json`` is the resume state, ``report.md`` the per-bucket summary) goes
-to ``.claude/data/conda-forge-expert/refresh-waves/<track>-<wave>/`` unless
+record is written by a build of the recipe as it stands. ``--render-check`` runs
+``rattler-build build --render-only`` on each recipe, in a dry run too, and writes
+no recipe; ``--build`` implies it for each recipe it would build, and a recipe
+that fails ends ``needs-review``, unedited, with no gate and no build. The report (``report.json`` is the resume state,
+``report.md`` the per-bucket summary) goes to
+``.claude/data/conda-forge-expert/refresh-waves/<track>-<wave>/`` unless
 ``--report-dir`` says otherwise; a report directory under ``recipes/`` is refused.
+Each build's output stays in ``logs/<name>.log`` beside it, and a failed render's
+in ``logs/<name>.render.log``.
 
 Exit codes: 0 the run completed (``needs-review``, ``blocked`` and a
 ``build-clean-test-blocked`` build are data); 1 at least one recipe ended
@@ -88,6 +93,9 @@ _FS_PYPI_DIST_RE = re.compile(
 )
 _DIST_RE = re.compile(r"\A[A-Za-z0-9._-]+\Z")
 _JINJA_OPEN_RE = re.compile(r"\$?\{[{%#]")
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+#: rattler-build's error lines: the headline, then each cause under it.
+_RENDER_ERROR_RE = re.compile(r"^[ \t]*(?:Error:[ \t]*×|[├╰]─▶)[ \t]*(.+)$", re.MULTILINE)
 _PLACEHOLDER = "JINJA_PLACEHOLDER"
 
 #: The four CFE gates, each run through its CFE wrapper script.
@@ -98,6 +106,7 @@ GATE_SCRIPTS = (
     ("scan", "vulnerability_scanner.py"),
 )
 GATE_TIMEOUT_S = 900
+RENDER_TIMEOUT_S = 120
 BUILD_TIMEOUT_S = 7200
 
 
@@ -373,11 +382,8 @@ def _first_url(node: dict) -> Optional[str]:
 
 
 def _render_url(url: str, context: Any) -> str:
-    """Render ``${{ var }}`` the way ``recipe_editor``'s calculate_hash does."""
-    if hasattr(context, "items"):
-        for var_name, var_value in context.items():
-            url = url.replace(f"${{{{ {var_name} }}}}", str(var_value))
-    return url
+    """Render ``${{ ... }}`` through the helper ``calculate_hash`` uses, so probe and hash agree."""
+    return recipe_editor.render_source_url(url, context)
 
 
 def _url_problem(url: str, version: str) -> Optional[tuple[str, str]]:
@@ -604,6 +610,7 @@ def _new_record(entry: dict[str, Any], *, apply: bool) -> dict[str, Any]:
         "maintainers_added": [],
         "dependency_diff": None,
         "gates": {},
+        "render": None,
         "build": None,
         "meta_yaml": None,
         "repairs": [],
@@ -698,20 +705,62 @@ def _classify_build(rc: int, output: str, out_dir: Path) -> str:
     return "failed"
 
 
-def _run_build(recipe_yaml: Path, name: str, rec: dict[str, Any]) -> None:
+def _write_log(log_dir: Optional[Path], filename: str, output: str, rec: dict[str, Any]) -> Optional[str]:
+    """Keep a rattler-build run's output; the path relative to the report directory, or None."""
+    if log_dir is None:
+        return None
+    try:
+        log_dir.mkdir(parents=True, exist_ok=True)
+        (log_dir / filename).write_text(_ANSI_RE.sub("", output), encoding="utf-8")
+    except OSError as exc:
+        rec["notes"].append(f"log not written: {exc}")
+        return None
+    return f"{log_dir.name}/{filename}"
+
+
+def _render_error(output: str) -> str:
+    """rattler-build's error in one line: its headline and causes, else its last line."""
+    plain = _ANSI_RE.sub("", output)
+    found = [m.group(1).strip() for m in _RENDER_ERROR_RE.finditer(plain)]
+    if found:
+        return ": ".join(found)
+    lines = [line.strip() for line in plain.splitlines() if line.strip()]
+    return lines[-1] if lines else "rattler-build gave no output"
+
+
+def _render_check(recipe_yaml: Path, name: str, rec: dict[str, Any], log_dir: Optional[Path]) -> bool:
+    """``rattler-build --render-only`` with the build's own configs; False ends the recipe."""
+    argv, _out_dir = _build_argv(recipe_yaml, name)
+    rc, out, err = _run([*argv, "--render-only"], timeout=RENDER_TIMEOUT_S)
+    if rc == 0:
+        rec["render"] = {"status": "ok"}
+        return True
+    output = out + "\n" + err
+    rec["render"] = {
+        "status": "failed", "returncode": rc, "log": _write_log(log_dir, f"{name}.render.log", output, rec),
+    }
+    _finish(rec, "needs-review", f"render-failed: {_render_error(output)}")
+    return False
+
+
+def _run_build(recipe_yaml: Path, name: str, rec: dict[str, Any], log_dir: Optional[Path] = None) -> None:
     argv, out_dir = _build_argv(recipe_yaml, name)
     rc, out, err = _run(argv, timeout=BUILD_TIMEOUT_S)
-    if rc == 0 and _NO_OUTPUTS_RE.search(out + "\n" + err):
+    output = out + "\n" + err
+    log = _write_log(log_dir, f"{name}.log", output, rec)
+    if rc == 0 and _NO_OUTPUTS_RE.search(output):
         # No build ran, so no record may say one did: the recipe keeps what it has.
         rec["build"] = {
             "status": "skipped", "returncode": rc, "output_dir": str(out_dir), "datetime": None, "stamped": False,
+            "log": log,
         }
         rec["notes"].append("build skipped: every variant is skipped on this host; record left as it is")
         return
-    status = _classify_build(rc, out + "\n" + err, out_dir)
+    status = _classify_build(rc, output, out_dir)
     stamp = _iso(_now())
     rec["build"] = {
         "status": status, "returncode": rc, "output_dir": str(out_dir), "datetime": stamp, "stamped": False,
+        "log": log,
     }
     if status != "success":
         rec["notes"].append(f"build {status} (exit {rc})")
@@ -771,7 +820,7 @@ def _version_node(ctx: Any, target: str) -> Any:
 
 def refresh_recipe(
     entry: dict[str, Any], *, track: str, wave: str, apply: bool, gates: bool, build: bool,
-    rebuild: bool = False,
+    rebuild: bool = False, render_check: bool = False, log_dir: Optional[Path] = None,
 ) -> dict[str, Any]:
     name = entry["name"]
     rec = _new_record(entry, apply=apply)
@@ -798,6 +847,8 @@ def refresh_recipe(
         return _finish(rec, "needs-review", "no-context-version")
     local_version = str(local_version)
     rec["from_version"] = local_version
+    if render_check and not _render_check(recipe_path, name, rec, log_dir):
+        return rec
 
     # Step 1: the feedstock.
     fs = _fs_info(_lookup(entry["feedstock"]))
@@ -816,10 +867,12 @@ def refresh_recipe(
         rec["to_version"] = local_version
         _finish(rec, "already-current")
         if rebuild:
+            if build and not render_check and not _render_check(recipe_path, name, rec, log_dir):
+                return rec
             if gates:
                 _run_gates(recipe_path, rec)
             if build:
-                _run_build(recipe_path, name, rec)
+                _run_build(recipe_path, name, rec, log_dir)
             rec["recipe_sha256"] = _file_hash(recipe_path)
         return rec
     if not fs["readable"]:
@@ -887,6 +940,10 @@ def refresh_recipe(
         if shape:
             rec["meta_yaml"] = "would-mirror" if shape == "mirror-meta-yaml" else "would-remove"
         return _finish(rec, "would-refresh")
+
+    # A recipe that cannot render is never edited: --build would only spend a build on it.
+    if build and not render_check and not _render_check(recipe_path, name, rec, log_dir):
+        return rec
 
     # Step 4: edit through recipe_editor so the canonical indent and width hold.
     actions: list[dict[str, Any]] = [
@@ -965,7 +1022,7 @@ def refresh_recipe(
     if gates:
         _run_gates(recipe_path, rec)
     if build:
-        _run_build(recipe_path, name, rec)
+        _run_build(recipe_path, name, rec, log_dir)
     rec["recipe_sha256"] = _file_hash(recipe_path)
     return rec
 
@@ -1251,6 +1308,10 @@ def _render_markdown(report: dict[str, Any]) -> str:
             if r.get("build"):
                 when = r["build"].get("datetime")
                 extra.append(f"build: {r['build']['status']}" + (f" at {when}" if when else ""))
+                if r["build"].get("log"):
+                    extra.append(f"log: {r['build']['log']}")
+            if (r.get("render") or {}).get("log"):
+                extra.append(f"render log: {r['render']['log']}")
             if r.get("dependency_diff"):
                 extra.append("dependency diff: " + _dependency_summary(r["dependency_diff"]))
             tail = f" — {'; '.join(r['reasons'])}" if r.get("reasons") else ""
@@ -1273,11 +1334,14 @@ def _load_prev(report_dir: Path, mode: str, track: str, wave: str) -> dict[str, 
 
 
 def _resumable(
-    prev: Optional[dict[str, Any]], entry: dict[str, Any], *, apply: bool, rebuild: bool = False
+    prev: Optional[dict[str, Any]], entry: dict[str, Any], *, apply: bool, rebuild: bool = False,
+    render: bool = False,
 ) -> bool:
     if not prev or prev.get("outcome") not in TERMINAL_OUTCOMES:
         return False
     if rebuild and prev.get("outcome") == "already-current" and not prev.get("build"):
+        return False
+    if render and not prev.get("render"):
         return False
     if prev.get("manifest_entry") != entry:
         return False
@@ -1290,7 +1354,7 @@ def _resumable(
 
 def run_wave(
     manifest: dict[str, Any], *, repair: bool, apply: bool, gates: bool, build: bool,
-    report_dir: Path, force: bool, echo: Any = None, rebuild: bool = False,
+    report_dir: Path, force: bool, echo: Any = None, rebuild: bool = False, render_check: bool = False,
 ) -> dict[str, Any]:
     mode = "repair" if repair else "refresh"
     track, wave = manifest["track"], manifest["wave"]
@@ -1307,8 +1371,11 @@ def run_wave(
         "recipes": [],
         "summary": {},
     }
+    render_check = render_check and not repair
     for entry in manifest["recipes"]:
-        if _resumable(prev.get(entry["name"]), entry, apply=apply, rebuild=rebuild and apply):
+        if _resumable(
+            prev.get(entry["name"]), entry, apply=apply, rebuild=rebuild and apply, render=render_check,
+        ):
             rec = dict(prev[entry["name"]])
             rec["resumed"] = True
         else:
@@ -1319,7 +1386,7 @@ def run_wave(
                     rec = refresh_recipe(
                         entry, track=track, wave=wave, apply=apply,
                         gates=gates and apply, build=build and apply,
-                        rebuild=rebuild and apply,
+                        rebuild=rebuild and apply, render_check=render_check, log_dir=report_dir / "logs",
                     )
             except Exception as exc:  # one recipe never takes the wave down
                 rec = _finish(_new_record(entry, apply=apply), "failed", f"unexpected: {type(exc).__name__}: {exc}")
@@ -1355,6 +1422,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--rebuild", action="store_true",
                         help="With --apply, also run --gates and --build on a recipe that is already current "
                              "(refused with --repair).")
+    parser.add_argument("--render-check", action="store_true",
+                        help="Run rattler-build --render-only on each recipe, with or without --apply; a failure "
+                             "ends it needs-review. --build implies it (refused with --repair).")
     parser.add_argument("--report-dir", type=Path, default=None,
                         help="Report directory (default: .claude/data/conda-forge-expert/refresh-waves/<track>-<wave>/).")
     parser.add_argument("--force", action="store_true", help="Reprocess recipes a previous run recorded as terminal.")
@@ -1369,6 +1439,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         parser.error("--build is refused with --repair")
     if args.repair and args.rebuild:
         parser.error("--rebuild is refused with --repair")
+    if args.repair and args.render_check:
+        parser.error("--render-check is refused with --repair")
 
     try:
         manifest = load_manifest(args.manifest)
@@ -1395,6 +1467,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         manifest,
         repair=args.repair, apply=args.apply, gates=args.gates, build=args.build,
         report_dir=report_dir.resolve(), force=args.force, rebuild=args.rebuild,
+        render_check=args.render_check,
         echo=None if args.json else (lambda line: print(line, file=sys.stderr)),
     )
     if args.json:

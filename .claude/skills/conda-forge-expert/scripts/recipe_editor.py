@@ -31,6 +31,42 @@ try:
 except ImportError:
     REQUESTS_AVAILABLE = False
 
+try:
+    import jinja2
+    from jinja2.sandbox import ImmutableSandboxedEnvironment
+    JINJA2_AVAILABLE = True
+except ImportError:
+    JINJA2_AVAILABLE = False
+
+
+def render_source_url(url: str, context: Any) -> str:
+    """Render a source URL's ``${{ ... }}`` expressions from ``context``, as rattler-build does.
+
+    Whatever cannot be rendered stays in the result as written, so a caller tests
+    for a leftover ``${{``. A context value may name another. Recipe text comes
+    from feedstocks, so it renders in a sandbox (mason Story 25.21).
+    """
+    if not hasattr(context, "items"):
+        return url
+    values = {str(key): str(value) for key, value in context.items()}
+    if not JINJA2_AVAILABLE:
+        for key, value in values.items():
+            url = url.replace(f"${{{{ {key} }}}}", value)
+        return url
+    env = ImmutableSandboxedEnvironment(
+        variable_start_string="${{", variable_end_string="}}", undefined=jinja2.StrictUndefined,
+    )
+
+    def render(text: str) -> str:
+        try:
+            return env.from_string(text).render(values)
+        except (jinja2.TemplateError, TypeError, ValueError):
+            return text
+
+    for _ in range(3):  # a context value may name another
+        values = {key: render(value) for key, value in values.items()}
+    return render(url)
+
 def get_nested_item(data: Dict, path: str):
     """Access a nested dictionary item using a dot-separated path."""
     keys = path.split('.')
@@ -133,11 +169,10 @@ def execute_actions(recipe_path: Path, actions: List[Dict[str, Any]]) -> Dict[st
                 if not isinstance(source_block, dict) or "url" not in source_block:
                     raise ValueError(f"Invalid source block at path: {path}")
 
-                url = str(source_block["url"])
-                # Resolve rattler-build context variables (e.g. ${{ version }}) before downloading
-                context = data.get("context", {})
-                for var_name, var_value in context.items():
-                    url = url.replace(f"${{{{ {var_name} }}}}", str(var_value))
+                # Resolve rattler-build context expressions before downloading
+                url = render_source_url(str(source_block["url"]), data.get("context", {}))
+                if "${{" in url:
+                    raise ValueError(f"source url does not render from context: {url}")
 
                 sha256 = calculate_sha256_from_url(url)
                 source_block["sha256"] = sha256
