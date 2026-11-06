@@ -3929,7 +3929,7 @@
    "src/shared/packages/pyforge-core/tests/unit/test_cutover_root.py": "101475d65160b49c9ef311d035b38af01e85b6b1",
    "src/shared/packages/pyforge-core/tests/unit/test_dispatch.py": "491f422edc51af21e0ea1b7dee1ee89daca95f61",
    "src/shared/packages/pyforge-core/tests/unit/test_errors.py": "cb0d234990797d401f15f4b59a247a96537648a9",
-   "src/shared/packages/pyforge-core/tests/unit/test_flags.py": "0d826f0ddd8d89539dea9140faf7c823d67d2c2c",
+   "src/shared/packages/pyforge-core/tests/unit/test_flags.py": "4e415b72a0863ba5604e940e78433c910227bbcf",
    "src/shared/packages/pyforge-core/tests/unit/test_hooks.py": "5ac71315e295d61831cd8b3794e2535cfcf11971",
    "src/shared/packages/pyforge-core/tests/unit/test_landing_evidence.py": "115c10aa12674d205a1d76dc560c0fde5996d098",
    "src/shared/packages/pyforge-core/tests/unit/test_league_measure.py": "9bd6766e602674c54cb06dd67647707f0c442fdd",
@@ -4443,7 +4443,7 @@
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e",
    "tests/scripts/test_tea_playwright_check.py": "be266df25acac99bc9a8a317e4e3f4f68374844b"
   },
-  "memlog": "928f54b1308bbe2a3ced5f53ff931e537dd80c48"
+  "memlog": "3ae9f4eddbf1c6f25117b5f34fe173ecb4ab8a4b"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
@@ -7142,7 +7142,7 @@
    "src/platform/tests/test_startup_stage_two.py": "b9855381c7d8cd501fd4c9f173b5a20f7fefaf6b",
    "src/platform/tests/test_station_api_host_dispatch.py": "672bb4645c89d018efa3076e1ca3eef2f0ac3d16",
    "src/platform/tests/test_station_api_seam.py": "4b9f776c79a6ac4d3e592c6ea8af85e1064cc19e",
-   "src/platform/tests/test_station_cli.py": "14a08de7bd60bd692c9c4f4e31f1b8ac87908e46",
+   "src/platform/tests/test_station_cli.py": "800c301808ba9dbcad2f165614ac6c949ceff094",
    "src/platform/tests/test_station_cli_live.py": "32d89f55cfd705aa6ab69accf4e5b4ac3fbba3a6",
    "src/platform/tests/test_station_port_no_loopback.py": "57d1a5c621cc6855b55d4ee4deb51724b0eec10a",
    "src/platform/tests/test_station_portal_shells.py": "52e05f5e02bf7ec60fef4ee8c878eb9a6bcff8a1",
@@ -7924,7 +7924,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "24403676d6edab824a0200e464b50ae692bbf98b"
+  "memlog": "a241c1c84bfa240313408a0710ba0835b7863d3e"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {},
