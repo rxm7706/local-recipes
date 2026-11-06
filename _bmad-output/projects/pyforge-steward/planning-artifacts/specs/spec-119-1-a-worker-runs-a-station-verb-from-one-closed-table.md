@@ -24,6 +24,14 @@ deferred:
     summary: "The platform image runs no station CLI: it has no repo checkout, its Containerfile copies pyforge core, steward, mason and herald source only, and no pixi environment holds both Celery and all seven CLIs. Wired start tools work on a laptop checkout and fail honestly in the image until a worker image carries Celery, the CLIs and a checkout, on a chart Deployment consuming the station queues. Read from the Containerfile, not from a running image: django_warden_fabric.tasks and atlas's runner import pyforge.warden and pyforge.atlas, which that file does not copy, so check both when the image is built."
     location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-119-1-a-worker-runs-a-station-verb-from-one-closed-table.md:22
     severity: medium
+  - id: revoke-leaves-a-running-verb
+    summary: "revoke_subject signals the pool child, whose default SIGTERM ends it with no cleanup, so a revoked or worker-killed run leaves its verb's process group running. A timeout and the soft limit do stop the group. Read from the code, not run."
+    location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-119-1-a-worker-runs-a-station-verb-from-one-closed-table.md:22
+    severity: medium
+  - id: a-cli-runs-as-the-worker-user
+    summary: "The environment scrub stops inheritance only. A CLI runs as the worker's user, so it can read /proc/<ppid>/environ, HOME and a .env in the checkout, and start_build runs third-party build scripts for any pyforge:station:mason assertion. The worker image should run CLIs as another user, or in a sandbox."
+    location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-119-1-a-worker-runs-a-station-verb-from-one-closed-table.md:22
+    severity: medium
 ---
 
 <intent-contract>
@@ -42,10 +50,11 @@ Ledger key: `119-1-a-worker-runs-a-station-verb-from-one-closed-table`. Type / E
 
 ## Acceptance Criteria
 
-- **AC1 — The table.** `django_pyforge/station_cli.py` holds one row per start tool: station, start tool, argv builder, target validator, result exit codes, pixi environment, timeout. Nothing else in the chrome or the portals names a CLI verb for a start tool.
-- **AC2 — The run.** A row runs `<root>/.pixi/envs/<env>/bin/pyforge <station> ...` with no shell, from `STATION_CLI_ROOT`, under an environment built from an allowlist that excludes the worker's secrets. The result holds the argv, the exit code and capped stdout and stderr.
-- **AC3 — Honest failure.** An unset root, a missing executable, the kill switch off and a refused target each end the run `FAILED` with no subprocess started, and the message says which. An exit code outside the row's list, or a timeout, ends the run `FAILED` with the code or the bound. Under eager settings `start_*` still returns its handle.
-- **AC4 — The pin.** A test pins the whole table and fails on any row token in the session hook's reach: `--yes`, `--open-fix-prs`, `--bypass`, `--auto-approve`, `--transitive`, `submit`, `ship`, `publish`, `author`, `close`, `archive`.
+- **AC1 — The table.** `django_pyforge/station_cli.py` holds one row per start tool: station, start tool, argv builder, target validator, result exit codes, pixi environment, the variables it passes, and whether it runs at most once. Its timeout comes from its queue's limit. Nothing else in the chrome or the portals names a CLI verb for a start tool.
+- **AC2 — The run.** A row runs `<root>/.pixi/envs/<env>/bin/pyforge <station> ...` with no shell, in its own process group, from `STATION_CLI_ROOT`, under an environment built from an allowlist that excludes the worker's secrets. The result holds the argv, the exit code, a stderr tail, and a JSON report or capped stdout. A report keeps its smallest top-level values up to the cap and names the rest with their size.
+- **AC3 — Honest failure.** An unset root, a missing executable, the kill switch off and a refused target each end the run `FAILED` with no subprocess started, and the message says which. An exit code outside the row's list, a non-zero result code with no JSON report, or a timeout ends the run `FAILED` with the code or the bound, and a timeout or the task's soft limit stops the verb's whole process group. Output the run store refuses stays text. Under eager settings `start_*` still returns its handle.
+- **AC4 — The pin.** A test pins the whole table, every steward duty included, and fails on any row token in the session hook's reach: `--yes`, `--open-fix-prs`, `--bypass`, `--auto-approve`, `--transitive`, `submit`, `ship`, `publish`, `author`, `close`, `archive`. A second test asks the real hook about every row, with denied verbs as its control.
+- **AC5 — The limits.** A row's run is published with its own soft and hard limits, above its verb's timeout, because the 60-second soft limit in the settings would stop `estate plan`.
 
 ## Boundaries & Constraints
 

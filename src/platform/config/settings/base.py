@@ -491,6 +491,10 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_TASK_TIME_LIMIT = 5 * 60
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#task-soft-time-limit
 CELERY_TASK_SOFT_TIME_LIMIT = 60
+# The checkout whose pixi environments hold the station CLIs (canopy:AD-24, Story
+# 119.1). Empty on the platform image, which has neither: a start tool there ends
+# its run FAILED and says so.
+STATION_CLI_ROOT = env("STATION_CLI_ROOT", default="")
 # CELERY HARDENING (Story 42.4, CAP-11 / CAP-17, red-team S-2 / T-6 -> R-10)
 # ------------------------------------------------------------------------------
 # At-least-once delivery. A message is acknowledged AFTER the task returns

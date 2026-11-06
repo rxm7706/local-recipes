@@ -19,6 +19,11 @@ context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-21-6-a-start-tool-with-no-work-behind-it-says-so.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-steward-2026-07-25/prd.md
   - docs/dreams/pyforge-unifying-strategy.md
+deferred:
+  - id: first-real-dispatch-through-start-loop
+    summary: "start_loop has only reached a stand-in CLI: Story 119.4 forbids a real dispatch, because it spends. Before relying on it, the operator turns pyforge.steward.start_loop_dispatch on and runs one real dispatch. Dispatch's own steps can outlast the 270-second verb bound (readiness and git checkout each allow 600 s), and a timeout then ends the run with a worktree provisioned and no harness launched."
+    location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-119-4-start-loop-dispatches-only-for-an-admin-with-the-flag-on.md:22
+    severity: medium
 ---
 
 <intent-contract>
@@ -37,10 +42,12 @@ Ledger key: `119-4-start-loop-dispatches-only-for-an-admin-with-the-flag-on`. Ty
 
 ## Acceptance Criteria
 
-- **AC1 — The row.** `marshal factory dispatch <slug> <story> --format json`, with `<slug>/<story>` as the target and each part one token.
-- **AC2 — The role.** A caller without `pyforge:admin` is refused, no run row exists, and the refusal says the role is required.
+- **AC1 — The row.** `marshal factory dispatch <project> <story> --format json`, with `<project>/<story>` as the target, each part one token, and the long project form, `pyforge-<station>`.
+- **AC2 — The role.** A caller without `pyforge:admin` is refused, no run row exists, and the refusal says the role is required, through the MCP transport as well as in the process.
 - **AC3 — The flag.** With the flag off a start is refused the same way; if it flips off after a start, the run ends `FAILED` with nothing dispatched.
 - **AC4 — The two states.** A test proves both flag states with a fake `pyforge`, so no real dispatch runs and no money is spent.
+- **AC5 — Once.** A run whose worker is lost is not dispatched again: it ends `FAILED` and says so, because the first dispatch may be spending. The refusal to re-run is durable on the run row, not read from the broker.
+- **AC6 — The harness.** A dispatch's `PATH` reaches `~/.local/bin`, where `claude` and `cursor-agent` live.
 
 ## Boundaries & Constraints
 

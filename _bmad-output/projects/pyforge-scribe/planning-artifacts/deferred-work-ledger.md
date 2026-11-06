@@ -374,7 +374,8 @@ sibling ledgers and the detector both use.
   origin: spec-deferred e7d4cd4629dc — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-10-08 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Steward Story 119.2: run_recall runs `scribe recall` from the closed verb table (spec-pyforge-unifying-strategy CAP-20).
 
 ### DW-scribe-5-2-2: Real PortalClient.call through emit/verify/subprocess recall still lacks a golden-PEM integration test.
 

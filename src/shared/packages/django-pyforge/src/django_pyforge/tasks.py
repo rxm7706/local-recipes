@@ -41,9 +41,12 @@ from django_pyforge.events.tracing import (
     traceparent_from_task_request,
 )
 from django_pyforge.models import RunState
+from django_pyforge.station_cli import runs_at_most_once, task_limits
 from django_pyforge.supervisor import (
-    RunnerNotWiredError,
+    WORKER_LOST_REASON,
+    RunEndedError,
     begin_attempt,
+    claim_only_attempt,
     complete_run,
     lookup_runner,
     prune_run_state,
@@ -122,12 +125,23 @@ def execute_supervised_run(
         return
     if not begin_attempt(run_id, redelivered=redelivered(self.request)):
         return
+    if runs_at_most_once(station, tool) and not claim_only_attempt(run_id):
+        complete_run(
+            run_id,
+            status=RunState.Status.FAILED,
+            result={
+                "error": f"{station} {tool} was not run again: a worker was lost during it, "
+                "and its verb may still be running or may have finished. Check it by hand.",
+                "reason": WORKER_LOST_REASON,
+            },
+        )
+        return
     try:
         result = lookup_runner(station, tool)(payload)
-    except RunnerNotWiredError as exc:
-        # An expected outcome, not a worker crash: nothing ran, so record that
-        # and stop. Re-raising would, under eager settings, cost the caller the
-        # handle `start_*` is about to return (Story 21.6).
+    except RunEndedError as exc:
+        # An expected outcome, not a worker crash: record it and stop. Re-raising
+        # would, under eager settings, cost the caller the handle `start_*` is
+        # about to return (Stories 21.6, 119.1).
         complete_run(
             run_id,
             status=RunState.Status.FAILED,
@@ -162,6 +176,7 @@ def enqueue_supervised_run(
         args=[run_id, station, tool, payload],
         task_id=task_id,
         headers=headers,
+        **task_limits(station, tool),
     )
 
 

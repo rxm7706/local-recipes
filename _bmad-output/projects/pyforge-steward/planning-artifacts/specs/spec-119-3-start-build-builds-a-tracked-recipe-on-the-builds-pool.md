@@ -41,8 +41,11 @@ Ledger key: `119-3-start-build-builds-a-tracked-recipe-on-the-builds-pool`. Type
 - **AC2 — The target.** A flat slug with no `/`, backslash, `..` or control byte, tracked under `recipes/` in the checkout. Anything else ends with nothing run.
 - **AC3 — The queue.** `queue_for("mason", "run_build")` returns `builds`.
 - **AC4 — The proof.** On a laptop checkout one tracked recipe builds through the worker task, and the result reaches `get_build`.
+- **AC5 — Once.** A run whose worker is lost is not started again: it ends `FAILED` and says so, because a second build would share `build_artifacts/` with a first that may still be running.
 
 ## Boundaries & Constraints
+
+- Mason's own build timeout (3600 s) is the real bound, below the row's.
 
 **Never:**
 - Never add `submit`, `ship`, `update` or `--docker` to the row.

@@ -13,8 +13,9 @@ sources:
   - src/shared/packages/django-pyforge/src/django_pyforge/assertion/views.py
   - src/shared/packages/django-pyforge/src/django_pyforge/assertion/schema.py
   - src/shared/packages/django-pyforge/src/django_pyforge/roles.py
+  - src/shared/packages/django-pyforge/src/django_pyforge/station_cli.py
   - src/shared/packages/django-pyforge/src/django_pyforge/rate_limit.py
-verified: 2026-11-01
+verified: 2026-11-06
 ---
 
 # Reach a station's MCP endpoint
@@ -161,6 +162,48 @@ header, when you send one, must be `2025-03-26`, `2025-06-18`, `2025-11-25` or `
 `initialize` call's `protocolVersion` must be one of the first three. Anything else gets the
 JSON-RPC error `-32022`, whose data lists the supported revisions.
 
+## Run a station's real work
+
+Seven `start_*` tools each run one station CLI verb from one closed table,
+`django_pyforge/station_cli.py`. A tool takes a `target`, never a verb or a flag.
+
+| Tool | `target` | Runs |
+|---|---|---|
+| `start_scan` | a feedstock or maintainer name | `doctor diagnose --target <name> --json` |
+| `start_notice` | a notice's component name | `herald notice get <name>` |
+| `start_recall` | a question | `scribe recall -- <question>` |
+| `start_duty` | `ci-status`, `estate-plan` or `estate-status` | `steward ci status --json`, `steward estate plan --json` or `steward estate status --json` |
+| `start_audit` | a directory under the checkout, with no symlinked directory in it | `warden scan <path> --format json` |
+| `start_build` | a recipe tracked under `recipes/` | `mason recipe build recipes/<name> --format json` |
+| `start_loop` | `<project>/<story key>`, for example `pyforge-steward/119-1-a-worker-runs-a-station-verb-from-one-closed-table` | `marshal factory dispatch <project> <story key> --format json` |
+
+These run from a checkout that holds the pixi environments, so install `pyforge-guild`,
+`pyforge-mason`, `pyforge-warden` and `local-recipes` there (`mason recipe build` reads its pinning
+from `local-recipes`), and set this before you start the host:
+
+```bash
+export STATION_CLI_ROOT="$PWD"
+```
+
+`config.settings.local` runs Celery tasks inline, so a `start_*` call returns when its verb ends: a
+`start_build` call blocks for the whole build. A real worker returns the handle at once.
+
+With no `STATION_CLI_ROOT`, the run ends `failed` and `get_*` says this worker has no station CLI.
+The platform image is that case today.
+
+`get_*` returns the `exit_code`, and either `stdout` or a JSON `report`. A `report` keeps its
+smallest top-level values up to 256 KiB and names the rest in `omitted`, with their size; run the
+CLI itself for those. Warden's exit 1 and doctor's exit 2 are verdicts, so the run succeeds and the
+`report` says what was found. Warden's exit 2 means the audit did not finish, so the run fails.
+`steward ci status` writes `.steward/ci-status.json` in the checkout; the other read verbs write
+nothing. A CLI gets a scrubbed environment and runs as the worker's user, so it can still read what
+that user can.
+
+`start_loop` launches an unattended agent. It needs an assertion with the `pyforge:admin` role and
+the flag `pyforge.steward.start_loop_dispatch` on, and that flag ships off in every environment. A
+`start_build` or `start_loop` run whose worker is lost is not started again: the run ends `failed`,
+and you check the verb by hand.
+
 ## What each refusal means
 
 | Answer | Cause |
@@ -173,6 +216,7 @@ JSON-RPC error `-32022`, whose data lists the supported revisions.
 | `429` with `Retry-After` | The assertion's `sub` used up its calls; wait the named seconds. |
 | `502 mcp-host sidecar unreachable` | `MCP_HOST_SIDECAR_BASE_URL` is set and nothing answers there. |
 | JSON-RPC error `-32022` | An unsupported protocol revision (step 5). |
+| A tool error naming `pyforge:admin` or a flag | `start_loop`'s gate refused the start; no run exists. |
 
 ## Where to go next
 

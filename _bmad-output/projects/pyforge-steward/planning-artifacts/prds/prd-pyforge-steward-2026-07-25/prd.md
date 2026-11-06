@@ -1445,6 +1445,7 @@ table. **CAP-20.**
   any other exit code, or a timeout, ends it `FAILED`.
 - `marshal factory dispatch` runs only for a `pyforge:admin` caller with
   `pyforge.steward.start_loop_dispatch` on.
+- A verb that spends, or that collides with itself, never starts twice for one run.
 
 ---
 

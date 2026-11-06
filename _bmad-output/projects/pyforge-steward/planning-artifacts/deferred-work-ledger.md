@@ -6894,7 +6894,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: spec-deferred 01a2d12dda70 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-11-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Operator rulings 2026-11-06. Epic 119 (spec-pyforge-unifying-strategy CAP-20) wires all seven start tools to one closed verb table on a laptop checkout. The worker image stands as DW-steward-119-1.
 
 ### DW-steward-21-6-4: PortalClient.invoke with no runner returns _argv_projection, a made-up not-linked answer for a station it never asked. Same family as N1, on the path portals use for argv; nothing here changes it.
 
@@ -6916,7 +6917,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: spec-deferred 79f8e74d8f7a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-11-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 119.2: _grammar_recall reads the exit code, and a failed recall answers ungrounded and names it.
 
 ### DW-steward-119-1: The platform image runs no station CLI: it has no repo checkout, its Containerfile copies pyforge core, steward, mason and herald source only, and no pixi environment holds both Celery and all seven CLIs. Wired start tools work on a laptop checkout and fail honestly in the image until a worker image carries Celery, the CLIs and a checkout, on a chart Deployment consuming the station queues. Read from the Containerfile, not from a running image: django_warden_fabric.tasks and atlas's runner impor... [truncated, 605 chars total]
 
@@ -6925,6 +6927,61 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   evidence: The platform image runs no station CLI: it has no repo checkout, its Containerfile copies pyforge core, steward, mason and herald source only, and no pixi environment holds both Celery and all seven CLIs. Wired start tools work on a laptop checkout and fail honestly in the image until a worker image carries Celery, the CLIs and a checkout, on a chart Deployment consuming the station queues. Read from the Containerfile, not from a running image: django_warden_fabric.tasks and atlas's runner impor... [truncated, 605 chars total]
   location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-119-1-a-worker-runs-a-station-verb-from-one-closed-table.md:22
   origin: spec-deferred 544b52b8fd79 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-11-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-steward-119-1-2: revoke_subject signals the pool child, whose default SIGTERM ends it with no cleanup, so a revoked or worker-killed run leaves its verb's process group running. A timeout and the soft limit do stop the group. Read from the code, not run.
+
+- source_spec: `planning-artifacts/specs/spec-119-1-a-worker-runs-a-station-verb-from-one-closed-table.md`
+  summary: revoke_subject signals the pool child, whose default SIGTERM ends it with no cleanup, so a revoked or worker-killed run leaves its verb's process group running. A timeout and the soft limit do stop the group. Read from the code, not run.
+  evidence: revoke_subject signals the pool child, whose default SIGTERM ends it with no cleanup, so a revoked or worker-killed run leaves its verb's process group running. A timeout and the soft limit do stop the group. Read from the code, not run.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-119-1-a-worker-runs-a-station-verb-from-one-closed-table.md:22
+  origin: spec-deferred 9497087786d1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-11-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-steward-119-1-3: The environment scrub stops inheritance only. A CLI runs as the worker's user, so it can read /proc/<ppid>/environ, HOME and a .env in the checkout, and start_build runs third-party build scripts for any pyforge:station:mason assertion. The worker image should run CLIs as another user, or in a sandbox.
+
+- source_spec: `planning-artifacts/specs/spec-119-1-a-worker-runs-a-station-verb-from-one-closed-table.md`
+  summary: The environment scrub stops inheritance only. A CLI runs as the worker's user, so it can read /proc/<ppid>/environ, HOME and a .env in the checkout, and start_build runs third-party build scripts for any pyforge:station:mason assertion. The worker image should run CLIs as another user, or in a sandbox.
+  evidence: The environment scrub stops inheritance only. A CLI runs as the worker's user, so it can read /proc/<ppid>/environ, HOME and a .env in the checkout, and start_build runs third-party build scripts for any pyforge:station:mason assertion. The worker image should run CLIs as another user, or in a sandbox.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-119-1-a-worker-runs-a-station-verb-from-one-closed-table.md:22
+  origin: spec-deferred 19b5f61d0999 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-11-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-steward-119-2: steward estate plan drops the process result of its pixi upgrade dry run (_proc, estate.py), so a failed pixi reads as no moves, exit 0, and start_duty reports success.
+
+- source_spec: `planning-artifacts/specs/spec-119-2-five-read-faces-run-their-verb.md`
+  summary: steward estate plan drops the process result of its pixi upgrade dry run (_proc, estate.py), so a failed pixi reads as no moves, exit 0, and start_duty reports success.
+  evidence: steward estate plan drops the process result of its pixi upgrade dry run (_proc, estate.py), so a failed pixi reads as no moves, exit 0, and start_duty reports success.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-119-2-five-read-faces-run-their-verb.md:22
+  origin: spec-deferred 939d6f0417a1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-11-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-steward-119-2-2: _grammar_recall, the scribe portal's recall path, runs the CLI with the whole process environment, unlike the start tools' scrubbed one.
+
+- source_spec: `planning-artifacts/specs/spec-119-2-five-read-faces-run-their-verb.md`
+  summary: _grammar_recall, the scribe portal's recall path, runs the CLI with the whole process environment, unlike the start tools' scrubbed one.
+  evidence: _grammar_recall, the scribe portal's recall path, runs the CLI with the whole process environment, unlike the start tools' scrubbed one.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-119-2-five-read-faces-run-their-verb.md:22
+  origin: spec-deferred 36df245a8dc8 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-11-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-steward-119-4: start_loop has only reached a stand-in CLI: Story 119.4 forbids a real dispatch, because it spends. Before relying on it, the operator turns pyforge.steward.start_loop_dispatch on and runs one real dispatch. Dispatch's own steps can outlast the 270-second verb bound (readiness and git checkout each allow 600 s), and a timeout then ends the run with a worktree provisioned and no harness launched.
+
+- source_spec: `planning-artifacts/specs/spec-119-4-start-loop-dispatches-only-for-an-admin-with-the-flag-on.md`
+  summary: start_loop has only reached a stand-in CLI: Story 119.4 forbids a real dispatch, because it spends. Before relying on it, the operator turns pyforge.steward.start_loop_dispatch on and runs one real dispatch. Dispatch's own steps can outlast the 270-second verb bound (readiness and git checkout each allow 600 s), and a timeout then ends the run with a worktree provisioned and no harness launched.
+  evidence: start_loop has only reached a stand-in CLI: Story 119.4 forbids a real dispatch, because it spends. Before relying on it, the operator turns pyforge.steward.start_loop_dispatch on and runs one real dispatch. Dispatch's own steps can outlast the 270-second verb bound (readiness and git checkout each allow 600 s), and a timeout then ends the run with a worktree provisioned and no harness launched.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-119-4-start-loop-dispatches-only-for-an-admin-with-the-flag-on.md:22
+  origin: spec-deferred 5bda1ad4e58f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-11-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open

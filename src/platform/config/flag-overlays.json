@@ -100,7 +100,9 @@
     "pyforge.scribe.bmad_estate_catalog": "on",
     "pyforge.steward.preflight_critical_path": "on",
     "pyforge.steward.nkp_deploy": "on",
-    "pyforge.steward.nkp_packs": "on"
+    "pyforge.steward.nkp_packs": "on",
+    "pyforge.steward.start_tool_cli": "on",
+    "pyforge.steward.start_loop_dispatch": "off"
   },
   "staging": {
     "pyforge.cutover_root": "local-recipes",
@@ -203,7 +205,9 @@
     "pyforge.scribe.bmad_estate_catalog": "on",
     "pyforge.steward.preflight_critical_path": "on",
     "pyforge.steward.nkp_deploy": "on",
-    "pyforge.steward.nkp_packs": "on"
+    "pyforge.steward.nkp_packs": "on",
+    "pyforge.steward.start_tool_cli": "on",
+    "pyforge.steward.start_loop_dispatch": "off"
   },
   "production": {
     "pyforge.cutover_root": "local-recipes",
@@ -306,6 +310,8 @@
     "pyforge.scribe.bmad_estate_catalog": "on",
     "pyforge.steward.preflight_critical_path": "on",
     "pyforge.steward.nkp_deploy": "on",
-    "pyforge.steward.nkp_packs": "on"
+    "pyforge.steward.nkp_packs": "on",
+    "pyforge.steward.start_tool_cli": "on",
+    "pyforge.steward.start_loop_dispatch": "off"
   }
 }

@@ -197,11 +197,12 @@ def test_recall_cli_argv_mode_is_optional() -> None:
     assert "--kind" not in bare
     assert "--mode" not in bare
     assert bare[-1] == "what did we decide?"
+    assert bare[-2] == "--"
     planned = recall_cli_argv("what did we decide?", mode="planning")
-    assert planned[-2:] == ["--mode", "planning"]
+    assert planned[-4:] == ["--mode", "planning", "--", "what did we decide?"]
     assert "--kind" not in planned
     coded = recall_cli_argv("q", mode="code")
-    assert coded[-2:] == ["--mode", "code"]
+    assert coded[-4:] == ["--mode", "code", "--", "q"]
 
 
 def test_chrome_home_post_renders_cited_recall_results() -> None:

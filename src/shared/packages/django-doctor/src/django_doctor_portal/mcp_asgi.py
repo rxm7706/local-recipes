@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from django_pyforge.mcp_start_get import build_station_mcp_asgi
-from django_pyforge.supervisor import refuse_unwired_run
+from django_pyforge.station_cli import run_start_tool
 
 DOCTOR_STATION = "doctor"
 RUN_SCAN_TOOL = "run_scan"
@@ -15,9 +15,9 @@ GET_SCAN_TOOL = "get_scan"
 _CACHE: dict[str, Any] = {}
 
 
-def run_scan(_payload: dict[str, Any] | None) -> dict[str, Any]:
-    """Run nothing: no work is wired behind ``start_scan`` yet (Story 21.6)."""
-    refuse_unwired_run(DOCTOR_STATION, START_SCAN_TOOL)
+def run_scan(payload: dict[str, Any] | None) -> dict[str, Any]:
+    """Run this face's row of the closed verb table (Epic 119, canopy:AD-24)."""
+    return run_start_tool(DOCTOR_STATION, RUN_SCAN_TOOL, payload)
 
 
 def ensure_doctor_runner() -> None:

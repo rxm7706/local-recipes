@@ -21,6 +21,8 @@ from django_pyforge.discovery import iter_portal_configs
 from django_pyforge.mcp_http import dispatch_station_mcp
 from django_pyforge.mcp_http import register_station_mcp_app
 from django_pyforge.models import RunState
+from django_pyforge.roles import ROLE_ADMIN
+from django_pyforge.station_cli import START_LOOP_DISPATCH_FLAG_KEY
 from django_pyforge.tasks import execute_supervised_run
 from starlette.testclient import TestClient
 
@@ -57,11 +59,10 @@ def _slow_runner(_payload: dict[str, Any] | None) -> dict[str, Any]:
 
 
 def _assertion(station: str, sub: str = "agent-49-3") -> str:
-    return mint_assertion(
-        sub=sub,
-        roles=[f"pyforge:station:{station}"],
-        station=station,
-    )
+    roles = [f"pyforge:station:{station}"]
+    if station == "marshal":  # Story 119.4: start_loop needs the admin role.
+        roles.append(ROLE_ADMIN)
+    return mint_assertion(sub=sub, roles=roles, station=station)
 
 
 def _clear_station_mcp_cache(station: str) -> None:
@@ -237,6 +238,23 @@ def _disconnect_on_get_asgi(inner: Callable[..., Awaitable[None]]):
 
 
 @pytest.fixture(autouse=True)
+def _start_loop_dispatch_on(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """This proof is about the transport: marshal's gate stays out of its way."""
+    tree = {
+        "flags": {
+            START_LOOP_DISPATCH_FLAG_KEY: {
+                "state": "ENABLED",
+                "variants": {"on": True, "off": False},
+                "defaultVariant": "on",
+            },
+        },
+    }
+    path = tmp_path / "flags.json"
+    path.write_text(json.dumps(tree), encoding="utf-8")
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(path))
+
+
+@pytest.fixture(autouse=True)
 def _reset_slow_gate():
     _SLOW_GATE.clear()
     yield
@@ -280,6 +298,28 @@ def test_start_get_tools_are_listed(face: StationStartGet) -> None:
     names = {tool["name"] for tool in tools}
     assert face.start_tool in names, names
     assert face.get_tool in names, names
+
+
+@pytest.mark.django_db
+def test_a_refused_start_loop_tells_the_caller_why() -> None:
+    """Story 119.4: a refusal crosses the transport as words, not a bare error."""
+    assertion = mint_assertion(
+        sub="agent-119",
+        roles=["pyforge:station:marshal"],
+        station="marshal",
+    )
+    with TestClient(_mcp_app("marshal")) as client:
+        body = _tool_call(
+            client,
+            "marshal",
+            "start_loop",
+            {"target": "pyforge-steward/x", "assertion": assertion},
+            assertion,
+            1,
+        )
+    result = body["result"]
+    assert result["isError"] is True
+    assert ROLE_ADMIN in result["content"][0]["text"]
 
 
 @pytest.mark.django_db(transaction=True)
