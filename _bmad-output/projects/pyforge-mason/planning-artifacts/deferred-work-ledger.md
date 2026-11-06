@@ -2120,3 +2120,14 @@ status: open
   severity: low
   promoted: 2026-11-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-mason-25-22: Outside CAP-35's scope, the identity snapshot left 227 recipes whose recipe.yaml names a patch file that is not on disk, grpc-cpp among them (recipe at 1.83.0, patches from 1.74.1), so they cannot build locally; and 7 recipes keep patch files their recipe.yaml never names: ansi2html, cassandra-driver, dbus-python, grpc-cpp, pymupdf, python-magic and salt. None is built by the campaign. Mirror each patch directory from its feedstock when a story needs that recipe.
+
+- source_spec: `planning-artifacts/specs/spec-25-22-the-in-scope-recipes-take-back-what-the-identity-mirror-dropped.md`
+  summary: Outside CAP-35's scope, the identity snapshot left 227 recipes whose recipe.yaml names a patch file that is not on disk, grpc-cpp among them (recipe at 1.83.0, patches from 1.74.1), so they cannot build locally; and 7 recipes keep patch files their recipe.yaml never names: ansi2html, cassandra-driver, dbus-python, grpc-cpp, pymupdf, python-magic and salt. None is built by the campaign. Mirror each patch directory from its feedstock when a story needs that recipe.
+  evidence: Outside CAP-35's scope, the identity snapshot left 227 recipes whose recipe.yaml names a patch file that is not on disk, grpc-cpp among them (recipe at 1.83.0, patches from 1.74.1), so they cannot build locally; and 7 recipes keep patch files their recipe.yaml never names: ansi2html, cassandra-driver, dbus-python, grpc-cpp, pymupdf, python-magic and salt. None is built by the campaign. Mirror each patch directory from its feedstock when a story needs that recipe.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-22-the-in-scope-recipes-take-back-what-the-identity-mirror-dropped.md:69
+  origin: spec-deferred ada364a0c225 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-11-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
