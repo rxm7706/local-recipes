@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 678
+# stories: 684
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -99,6 +99,10 @@ development_status:
   118-6-the-attended-nkp-sign-in-spawn-and-landing-probes-are-tracked-commands: done
   118-7-deploy-nic-finds-kubectl-and-helm-in-the-pyforge-steward-environment: done
   118-8-the-gitops-branch-has-one-named-writer-enforced: done
+  119-1-a-worker-runs-a-station-verb-from-one-closed-table: in-progress
+  119-2-five-read-faces-run-their-verb: in-progress
+  119-3-start-build-builds-a-tracked-recipe-on-the-builds-pool: in-progress
+  119-4-start-loop-dispatches-only-for-an-admin-with-the-flag-on: in-progress
   12-1-the-vanilla-chart-with-an-ocp-overlay: done
   12-2-gke-as-a-portability-profile: done
   12-3-air-gap-parity-is-a-failing-check: done
@@ -500,6 +504,8 @@ development_status:
   epic-117-retrospective: optional
   epic-118: in-progress
   epic-118-retrospective: optional
+  epic-119: in-progress
+  epic-119-retrospective: optional
   epic-12: done
   epic-12-retrospective: optional
   epic-13: done

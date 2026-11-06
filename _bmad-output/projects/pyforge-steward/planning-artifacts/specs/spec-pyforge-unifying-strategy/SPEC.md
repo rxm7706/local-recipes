@@ -4,7 +4,7 @@ spec: pyforge-unifying-strategy
 status: ready
 chain: pyforge-unifying-strategy
 created: "2026-08-24"
-updated: "2026-11-05"
+updated: "2026-11-06"
 companions:
   - convergence.md
   - resilience-invariants.md
@@ -528,6 +528,20 @@ they are why this is not merely a UI project.
     (not dual-write — see CAP-14 Story 49.7).
     Not a ninth station. Atlas owns the
     engine; steward owns the through-line.)*
+
+- **CAP-20 — A start tool does the work it names, from one closed table.**
+  - **intent:** Each of the seven `start_*` tools that CAP-4 left with no work behind it runs one
+    station CLI verb, fixed per face in one closed table. A caller passes a validated target,
+    never a verb or a flag. A worker with no station CLI fails the run and says so. The one verb
+    that spends money and opens PRs, `marshal factory dispatch`, runs only for a `pyforge:admin`
+    caller with `pyforge.steward.start_loop_dispatch` on, and that flag ships off.
+  - **success:** On a laptop checkout each of the seven tools ends with the CLI's real output in
+    `get_*`. A target its validator refuses, a caller without the role, and a worker with no CLI
+    each end with nothing run. A test pins the table, so a verb cannot join it unseen, and no
+    row names a verb or flag the session hook denies.
+  - *(Minted 2026-11-06 on the operator's rulings: "honest runner first then wire to cli", "All
+    seven", laptop stack first, dispatch gated, verb list accepted. The worker image that would run
+    these verbs in a cluster is a deferred row, not this capability.)*
 
 ## Constraints
 

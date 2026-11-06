@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 6c1559d138630544
-story_count: 442
+source_fingerprint: f84021b5035b7bf0
+story_count: 446
 test_file_count: 158
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 442
-- **Epics parsed:** 118
+- **Stories parsed:** 446
+- **Epics parsed:** 119
 - **Test files inventoried:** 158 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `6c1559d138630544`
+- **Source fingerprint:** `f84021b5035b7bf0`
 
 ## Risk Assessment
 
@@ -144,6 +144,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 116: The absorbed steward Spec folders live in one archive home (spec-one-chain-per-station:CAP-11)
 - Epic 117: The preflight and a PR's CI answer within a measured budget, and a station suite runs once (spec-pyforge-steward CAP-175 / FR-49)
 - Epic 118: An NKP cluster with the data-science pack runs from one tracked config (spec-pyforge-steward CAP-176..CAP-178 / FR-50..FR-52)
+- Epic 119: A start tool does the work it names (spec-pyforge-unifying-strategy CAP-20 / canopy:FR-51)
 
 ### Low-risk epics
 
@@ -764,6 +765,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 118.6 | The attended NKP sign-in, spawn and landing probes are tracked commands | none observed |
 | 118.7 | deploy nic finds kubectl and helm in the pyforge-steward environment | none observed |
 | 118.8 | The gitops branch has one named writer, enforced | none observed |
+| 119.1 | A worker runs a station verb from one closed table | none observed |
+| 119.2 | Five read faces run their verb | none observed |
+| 119.3 | start_build builds a tracked recipe on the builds pool | none observed |
+| 119.4 | start_loop dispatches only for an admin with the flag on | none observed |
 
 ## Quality Gates
 

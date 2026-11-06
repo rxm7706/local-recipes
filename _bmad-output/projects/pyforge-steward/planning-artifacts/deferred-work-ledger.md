@@ -6917,3 +6917,14 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-11-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-steward-119-1: The platform image runs no station CLI: it has no repo checkout, its Containerfile copies pyforge core, steward, mason and herald source only, and no pixi environment holds both Celery and all seven CLIs. Wired start tools work on a laptop checkout and fail honestly in the image until a worker image carries Celery, the CLIs and a checkout, on a chart Deployment consuming the station queues. Read from the Containerfile, not from a running image: django_warden_fabric.tasks and atlas's runner impor... [truncated, 605 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-119-1-a-worker-runs-a-station-verb-from-one-closed-table.md`
+  summary: The platform image runs no station CLI: it has no repo checkout, its Containerfile copies pyforge core, steward, mason and herald source only, and no pixi environment holds both Celery and all seven CLIs. Wired start tools work on a laptop checkout and fail honestly in the image until a worker image carries Celery, the CLIs and a checkout, on a chart Deployment consuming the station queues. Read from the Containerfile, not from a running image: django_warden_fabric.tasks and atlas's runner impor... [truncated, 605 chars total]
+  evidence: The platform image runs no station CLI: it has no repo checkout, its Containerfile copies pyforge core, steward, mason and herald source only, and no pixi environment holds both Celery and all seven CLIs. Wired start tools work on a laptop checkout and fail honestly in the image until a worker image carries Celery, the CLIs and a checkout, on a chart Deployment consuming the station queues. Read from the Containerfile, not from a running image: django_warden_fabric.tasks and atlas's runner impor... [truncated, 605 chars total]
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-119-1-a-worker-runs-a-station-verb-from-one-closed-table.md:22
+  origin: spec-deferred 544b52b8fd79 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-11-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
