@@ -88,6 +88,7 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: patch file deleted: it targets the 2.0.0b13 build hook, the identity mirror replaced that recipe with the feedstock 1.1.0, and 1.1.0 builds without it. The source and patches notes below describe 2.0.0b13.
 #    LOCAL-ONLY v2 recipe. The conda-forge reactpy-feedstock stays at stable
 #    1.1.0 -- see cfe-forge-blocker-list for why. Built to satisfy the
 #    reactpy-django 6.0.0b1 chain, which pins reactpy>=2.0.0b13,<3.

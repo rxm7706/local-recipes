@@ -13,13 +13,14 @@ source:
   sha256: b95b2d28c66efb0a794a83b88c6c6aea5987532a445d20a1cbcfa657022e6e57
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
+    - setuptools-scm
     - pip
     - setuptools
   run:
@@ -80,6 +81,8 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: host setuptools-scm taken from the feedstock: the identity-snapshot mirror dropped it, and no note records a reason.
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
 #    # license: rattler-build did not copy a license file; recorded, retrying common names
 #    # blocker: missing-license-file
 ####
