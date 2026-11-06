@@ -787,7 +787,7 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
 
 - **2026-11-05 (`DW-mason-25-19-3`) — Found: the identity snapshot lost more than patches.** Commit `20b2f459fa`
   mirrored 7,093 files from feedstocks, and Story 25.19 found `dataprofiler`, `gibr` and `datasketches` missing their
-  `source.patches`. A scan against the commit before it found 14 run and host dependencies on 8 in-scope recipes that
+  `source.patches`. A scan against the commit before it found 18 dependencies and constraints on 8 in-scope recipes that
   their feedstocks list and no note explains, and patch files nothing names. Three of the 8 could not solve their
   test environment because of it. **What it looks like when fixed:** every in-scope recipe carries its feedstock's
   dependencies and no unexplained patch file; what the mirror lost outside CAP-35's scope is counted and deferred.
