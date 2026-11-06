@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import importlib
+import inspect
 import re
-from pathlib import Path
 from typing import Any
 from typing import NamedTuple
 
@@ -18,7 +18,6 @@ from django_pyforge.supervisor import get_run
 from django_pyforge.supervisor import start_bounded
 from django_pyforge.tasks import execute_supervised_run
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
 COMPLETED_CLAIM = re.compile(r"""["']completed["']\s*:\s*True""")
 
 
@@ -93,13 +92,7 @@ def test_run_ends_failed_and_get_says_so(
     assert row.run.status == RunState.Status.FAILED
 
 
-def test_no_station_face_claims_a_completed_run() -> None:
-    packages = REPO_ROOT / "src/shared/packages"
-    faces = sorted(packages.glob("django-*/src/*/mcp_asgi.py"))
-    assert len(faces) == len(FACES) + 1  # atlas's face runs its pipeline
-    claims = [
-        str(path.relative_to(REPO_ROOT))
-        for path in faces
-        if COMPLETED_CLAIM.search(path.read_text(encoding="utf-8"))
-    ]
-    assert claims == []
+@pytest.mark.parametrize("face", FACES, ids=lambda face: face.station)
+def test_no_station_face_claims_a_completed_run(face: Face) -> None:
+    source = inspect.getsource(importlib.import_module(face.module))
+    assert COMPLETED_CLAIM.search(source) is None
