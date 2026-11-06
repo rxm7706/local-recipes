@@ -775,6 +775,16 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   script change, so the full chain (operator ruling 2026-09-29); a fix under `spec-pyforge-mason` CAP-35, no new CAP, no
   flag; the status vocabulary stays. Owner `spec-pyforge-mason`. → Epic 25 / Story 25.20, specced 2026-11-05.
 
+- **2026-11-05 (the first tracked Track A run, `DW-mason-25-19-2`) — Found: a wave has to rebuild three things by hand
+  that `refresh-wave` could do itself.** It keeps no build log, so Story 25.19 put a logging `rattler-build` shim on
+  `PATH` to name each cause. It has no render-only step, so 182 of 572 recipes failed to parse in a pass the driver did
+  not run. And it reports `url-unrenderable` for a `${{ name[0] }}` URL, which 445 of the 880 in-scope recipes carry;
+  25 needed a scripted rewrite to refresh. **What it looks like when fixed:** every build leaves a log beside the
+  report; `--render-check` lists each recipe that fails to render, in a dry run too, and `--build` runs it first, so no
+  build is spent on one; a URL expression renders as rattler-build renders it. **Constraints:** a CFE script change, so
+  the full chain (operator ruling 2026-09-29); under `spec-pyforge-mason` CAP-35, no new CAP, no flag. Owner
+  `spec-pyforge-mason`. → Epic 25 / Story 25.21, specced 2026-11-05.
+
 ## One-chain fold — 2026-09-17
 
 Station Dream status is `specified` (Spec `spec-pyforge-mason` is `ready`). Mason-owned satellite Dreams archive in place with Consolidated-into banners. Practice Dream `packaging-factory` is archived into this station Dream (CHAIN-STANDARD precedence; no new station Dream minted). Recipe work stays `conda-forge-expert`; this fold is planning-chain only.

@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: mason
-# stories: 198
+# stories: 199
 development_status:
   1-1-workspace-member-scaffold-and-dual-artifact-build: done
   1-10-configuration-surface-logging-and-child-output-streaming: done
@@ -91,6 +91,7 @@ development_status:
   25-19-the-recipes-that-still-record-a-failed-build-get-their-own-build: done
   25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work: done
   25-20-refresh-wave-records-what-a-build-did: done
+  25-21-refresh-wave-keeps-build-logs-render-checks-first-and-renders-url-expressions: in-progress
   25-3-cfe-gains-a-tracked-bulk-recipe-refresh-driver-that-the-refresh-waves-run-through: done
   25-4-wave-0-s-leftover-recipes-end-repaired-or-carry-a-recorded-reason: done
   25-5-track-b-batch-1-refreshes-airflow-code-editor-through-django-countries: done
@@ -174,7 +175,7 @@ development_status:
   epic-23-retrospective: optional
   epic-24: done
   epic-24-retrospective: optional
-  epic-25: done
+  epic-25: in-progress
   epic-25-retrospective: optional
   epic-26: done
   epic-26-retrospective: optional

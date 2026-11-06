@@ -3478,6 +3478,22 @@ So that a recipe's `cfe-local-build-*` record says what its build did.
 **And** a failure before any artifact exists still stamps `failed`, and the change lands in a `retro(cfe):` commit with its tests and CHANGELOG entry
 **Status:** done
 
+### Story 25.21: refresh-wave keeps build logs, render-checks first and renders URL expressions
+
+As the maintainer of the feedstock refresh campaign,
+I want `refresh-wave` to keep each build's log, to report a recipe that fails to render before it spends a build, and to render a URL expression,
+So that a wave names its causes without a shim, and needs no hand step for what the driver can do itself.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-35 (FR-57); a fix, no new CAP; AD-1; CFE Rule 1 + Rule 2 • Closes `DW-mason-25-19-2`
+**Flag:** none (a fix carries no flag, `spec-feature-flag-governance` Q1); its spec records `flag-exempt: recipe-build`
+**Surface:** `.claude/skills/conda-forge-expert/scripts/refresh_wave.py`, `.claude/skills/conda-forge-expert/scripts/recipe_editor.py`, their unit tests, and the CFE retro surface
+**Spec:** `planning-artifacts/specs/spec-25-21-refresh-wave-keeps-build-logs-render-checks-first-and-renders-url-expressions.md`
+**Given** Story 25.19 needed a logging shim, a scripted render pass and a scripted URL rewrite
+**When** `refresh-wave` runs with `--build`, or with `--render-check` in a dry run
+**Then** every build leaves a log in the report directory, each recipe that fails `rattler-build --render-only` ends `needs-review` with its error and spends no build, and a `${{ name[0] }}`-style URL renders as rattler-build renders it
+**And** an expression the driver cannot render still reports `url-unrenderable`, no recipe body changes, and the change lands in a `retro(cfe):` commit with its tests and CHANGELOG entry
+**Status:** in-progress
+
 ## Epic 26: CFE's tests never ask GitHub whether a recipe maintainer exists (spec-pyforge-mason CAP-34)
 
 Minted 2026-10-02 from the station Dream's entry of the same name, at the operator's request to chain the defects found
