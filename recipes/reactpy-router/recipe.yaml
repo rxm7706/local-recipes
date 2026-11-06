@@ -92,6 +92,7 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.23: reactpy-django, named below as this chain's end, is retired. This recipe stays because reactpy-utils lists it, and it no longer solves against reactpy 1.1.0 (DW-mason-25-23).
 #    LOCAL-ONLY. Middle link of the reactpy v2 chain:
 #    http-router -> asgi-tools -> reactpy-router 3.0.0b1 -> reactpy-django 6.0.0b1.
 #    Authored fresh; the prior local recipe was at 1.0.0 (nodeenv + c/cxx

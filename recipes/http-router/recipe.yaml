@@ -85,6 +85,7 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.23: reactpy-django, named below as this chain's end, is retired. The chain described below no longer ends in a local recipe.
 #    Packaged as a prerequisite of the reactpy v2 chain:
 #    http-router -> asgi-tools -> reactpy-router 3.0.0b1 -> reactpy-django 6.0.0b1.
 #    reactpy-router 3.0.0b1 requires reactpy[asgi]; conda has no extras (G25), so
