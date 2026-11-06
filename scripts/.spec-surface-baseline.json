@@ -7299,7 +7299,7 @@
    "src/shared/packages/django-pyforge/src/django_pyforge/static/django_pyforge/vendor/htmx.min.js": "036c582893290060034d6d74923d43bf549cc64b",
    "src/shared/packages/django-pyforge/src/django_pyforge/station_client.py": "7dcb4ab760727574972398dd0f5f1008b36280ab",
    "src/shared/packages/django-pyforge/src/django_pyforge/station_port.py": "aaec127ba15d2363fa0763af2c8b9e7ed57186cb",
-   "src/shared/packages/django-pyforge/src/django_pyforge/supervisor.py": "167f824d044fbcec8b1b494af6ba64c3cc5ed7f5",
+   "src/shared/packages/django-pyforge/src/django_pyforge/supervisor.py": "6e93f2bb85746f1cda56fe4087c2afc171e23349",
    "src/shared/packages/django-pyforge/src/django_pyforge/tasks.py": "a7130e2d507ba25898fbe81ad12ecf2e9132b578",
    "src/shared/packages/django-pyforge/src/django_pyforge/templates/django_pyforge/base.html": "0aa055ce2a8ee5686472a77fa1147ca3a4fe4d74",
    "src/shared/packages/django-pyforge/src/django_pyforge/templates/django_pyforge/htmx_form.html": "d2935f889ed6a8e25a50e3ef7203cde22e4e2a61",
@@ -7921,7 +7921,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "ee1aad04d265515b65e224bfccf124f3a0d7f584"
+  "memlog": "fc3ca1b4071a17379cfdf9c592929b76dfaaa7cd"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {},
