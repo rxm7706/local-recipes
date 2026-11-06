@@ -14,7 +14,7 @@ source:
   sha256: 16298472d5e43b52d7f419d24476403d265d7fde0b5f487066ed784ce35fe52c
 
 build:
-  number: 1
+  number: 2
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv
 
@@ -34,9 +34,6 @@ tests:
         - dremioarrow
       pip_check: false
       python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
 
 about:
   summary: Dremio SQL Lakehouse Arrow Flight Client.
@@ -47,3 +44,36 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dremio-arrow
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dremio-arrow
+  cfe-purls:
+    - pkg:conda/dremio-arrow@${{ version }}?channel=conda-forge
+    - pkg:pypi/dremio-arrow@${{ version }}
+  cfe-upstream-repo: https://github.com/jaysnm/dremio-arrow
+  cfe-upstream-homepage: https://github.com/jaysnm/dremio-arrow
+  cfe-import-names: [dremioarrow]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "false:recipe-sets-pip-check-false"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dremio-arrow-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-05T17:29:39Z
+  cfe-generated-by-version: 8.103.0
+  cfe-generated-at-datetime: 2026-11-05T17:29:39Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T21:42:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec. removed a test entry with no test type.
+#    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
+####

@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: django-structlog
-  version: 10.1.0
+  version: 11.0.0
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: 812f61dea873e559511f42c0f3a7cdc36d4472f6cc15460565a97e5cbe06a76d
+  url: https://pypi.org/packages/source/d/django-structlog/django_structlog-${{ version }}.tar.gz
+  sha256: 4ec327f669543b05941c5a1ba7881e9a400493a0098d71a5dce0fc7b0ce97558
 
 build:
   number: 0
@@ -29,8 +29,6 @@ requirements:
     - structlog >=21.4.0
     - asgiref >=3.6.0
     - django-ipware >=6.0.2
-    - django-extensions
-    - celery
 tests:
   - python:
       imports:
@@ -66,19 +64,23 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-structlog-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-11-05T18:52:22Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-11-05T18:53:21Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: requirements taken from the feedstock so the refresh can proceed: -celery -django-extensions.
+#    # 2026-11-05 Story 25.19: source URL written out literally, the canonical form, so the refresh can read it.
 #    # WAVE-C C2: feedstock already v1; bumped local v0 meta.yaml (8.0.0) ->
 #    # fresh v1 recipe.yaml at 10.1.0 (MAJOR bump). Deleted stale local
 #    # meta.yaml. sha256 + import name verified against the 10.1.0 sdist.
+#    # 2026-11-05 refresh_wave A-W19-5: needs-review, dependency-fix (run -celery -django-extensions)
+#    # 2026-11-05 refresh_wave A-W19-6: refreshed 10.1.0 -> 11.0.0
 # requirements:
 #  host:
 #    # setuptools >=61.0 retained — setup.cfg + pyproject hybrid with

@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.5.4"
+  version: "0.5.6"
 
 package:
   name: django-pydantic-field
@@ -10,7 +10,7 @@ package:
 
 source:
   - url: https://pypi.org/packages/source/d/django-pydantic-field/django_pydantic_field-${{ version }}.tar.gz
-    sha256: 3c884299ea777e8221e4c0ff222e078960ba3576a3b6970636629524e5d6cf39
+    sha256: 222dc7ee7ffe5fed311b3121811e02cbf26b72c763273e83c4241b72f3d8d3e6
 
 build:
   number: 0
@@ -50,3 +50,35 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-pydantic-field
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-pydantic-field
+  cfe-purls:
+    - pkg:conda/django-pydantic-field@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-pydantic-field@${{ version }}
+  cfe-upstream-repo: https://github.com/surenkov/django-pydantic-field
+  cfe-upstream-homepage: https://github.com/surenkov/django-pydantic-field
+  cfe-import-names: [django_pydantic_field]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-pydantic-field-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-05T18:49:44Z
+  cfe-generated-by-version: 8.103.0
+  cfe-generated-at-datetime: 2026-11-05T17:29:39Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T18:50:57Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
+#    # 2026-11-05 refresh_wave A-W19-4: refreshed 0.5.4 -> 0.5.6
+####

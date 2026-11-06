@@ -14,7 +14,7 @@ source:
   sha256: b7f05d942188d681c165efe04d29be53e032c1ab1fc920cf1191a59f4122a682
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
@@ -31,6 +31,8 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
+    - cryptography
+    - pyjwt >=2.9,<3
     - cloudpickle
     - configparser
     - coverage
@@ -104,13 +106,15 @@ extra:
   cfe-last-checked: 2026-06-20T00:00:00Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: '2026-10-09T11:23:01Z'
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T21:56:24Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: run cryptography and pyjwt taken from the feedstock.
 #    # WAVE-C C1: conda-forge feedstock is still v0/meta.yaml and already
 #    # deployed at 2.14.0. Kept the deployed meta.yaml verbatim as the v0
 #    # mirror; authored this v1 recipe.yaml alongside it. Delete meta.yaml

@@ -14,7 +14,7 @@ source:
   sha256: e3664a317dcf4267771d8031f2338a6636df411f0f8fc002d269fba82d8a8fb4
 
 build:
-  number: 1
+  number: 2
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
@@ -29,7 +29,7 @@ requirements:
   run:
     - python >=${{ python_min }},<4.0
     - markitdown >=0.1.1
-    - mcp >=1.6.0
+    - mcp >=1.6.0,<2
 
 tests:
   - python:
@@ -54,3 +54,36 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: markdownify-mcp-server
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: markdownify-mcp-server
+  cfe-purls:
+    - pkg:conda/markdownify-mcp-server@${{ version }}?channel=conda-forge
+    - pkg:pypi/markdownify-mcp-server@${{ version }}
+  cfe-upstream-repo: https://github.com/zcaceres/markdownify-mcp
+  cfe-upstream-homepage: https://pypi.org/project/markdownify-mcp-server/
+  cfe-import-names: [markdownify_mcp]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/markdownify-mcp-server-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-05T17:29:39Z
+  cfe-generated-by-version: 8.103.0
+  cfe-generated-at-datetime: 2026-11-05T17:29:39Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T21:48:06Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: mcp capped below 2: upstream uses the FastMCP API that mcp 2 renamed.
+#    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
+####

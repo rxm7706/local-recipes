@@ -14,18 +14,18 @@ source:
   sha256: 82cf7ab80272e20b7cae81d907e0adf295ef7a1f735418c046ae7f40f5861e15
 
 build:
-  number: 1
+  number: 2
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - setuptools >=8.0
+    - setuptools >=8.0,<81
 
 tests:
   - python:
@@ -43,3 +43,37 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: setuptools-git-version
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: setuptools-git-version
+  cfe-purls:
+    - pkg:conda/setuptools-git-version@${{ version }}?channel=conda-forge
+    - pkg:pypi/setuptools-git-version@${{ version }}
+  cfe-upstream-repo: https://github.com/pyfidelity/setuptools-git-version
+  cfe-upstream-homepage: https://github.com/pyfidelity/setuptools-git-version
+  cfe-import-names: [setuptools_git_version]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/setuptools-git-version-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-05T17:29:39Z
+  cfe-generated-by-version: 8.103.0
+  cfe-generated-at-datetime: 2026-11-05T17:29:39Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T21:55:47Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: run setuptools below 81: upstream imports pkg_resources, which current setuptools no longer ships.
+#    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
+#    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
+####

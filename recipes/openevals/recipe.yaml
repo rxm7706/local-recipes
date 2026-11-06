@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.2.0"
+  version: "0.2.2"
 
 package:
   name: openevals
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/openevals/openevals-${{ version }}.tar.gz
-  sha256: 7e95fa64625be53eaa8c657d7f69b842a52bda10bdf3bb91781c7d09a385b069
+  sha256: d999b6d044f41f9f6c517cd83565d9be90df8571074f64c513841b74717c872b
 
 build:
   number: 0
@@ -22,7 +22,6 @@ requirements:
     - python ${{ python_min }}.*
     - pip
     - setuptools
-    - wheel
   run:
     - python >=${{ python_min }}
     - langchain >=0.3.18
@@ -71,15 +70,17 @@ extra:
   cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/34044
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-03T12:16:19Z
+  cfe-last-checked: 2026-11-05T18:37:34Z
   cfe-generated-by-version: 8.66.0
   cfe-generated-at-datetime: 2026-07-03T12:05:45Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-07-03T12:05:45Z
+  cfe-local-build-datetime: 2026-11-05T18:38:38Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: requirements taken from the feedstock so the refresh can proceed: -wheel.
 #    # 2026-07-03 net-new prerequisite for agentevals (universal-mcp chain) (tracker punch-list chain).
+#    # 2026-11-05 refresh_wave A-W19-5: refreshed 0.2.0 -> 0.2.2
 ####

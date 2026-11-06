@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: wagtailstreamforms
-  version: "5.2.6"
+  version: "5.3.0"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtailstreamforms-${{ version }}.tar.gz
-  sha256: 2b8d8215a49f4e593d3ffc2465ca197d8d4818a4bdd05a65a44b9a7aae1679f6
+  url: https://pypi.org/packages/source/w/wagtailstreamforms/wagtailstreamforms-${{ version }}.tar.gz
+  sha256: 4c07e419f3b73d4a41a8d1e0cd353d40430e6cf462f63d2898b703d04b68a271
 
 build:
   number: 0
@@ -20,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -32,7 +32,7 @@ requirements:
     - python >=${{ python_min }}
     - wagtail >=6.0,<8.0
     - unidecode >=0.04.14,<2.0
-    - wagtail-generic-chooser >=0.7.0
+    - wagtail-generic-chooser >=0.8
 
 tests:
   - python:
@@ -70,19 +70,24 @@ extra:
   cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-11-05T18:57:32Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-11-05T18:58:32Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: requirements taken from the feedstock so the refresh can proceed: ~wagtail-generic-chooser.
+#    # 2026-11-05 Story 25.19: source URL written out literally, the canonical form, so the refresh can read it.
+#    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
 #    # WAVE-C C1 (keep-meta): feedstock still v0 at 5.2.6. KEEP meta.yaml as the
 #    # faithful deployed mirror; this recipe.yaml is the proposed v0->v1
 #    # migration. Both coexist until the feedstock completes its v0->v1 switch.
+#    # 2026-11-05 refresh_wave A-W19-5: needs-review, dependency-fix (run pin wagtail-generic-chooser (wagtail-generic-chooser >=0.7.0 vs wagtail-generic-chooser >=0.8))
+#    # 2026-11-05 refresh_wave A-W19-6: refreshed 5.2.6 -> 5.3.0
 # about:
 #    # license MIT is authoritative from the shipped LICENSE file (standard MIT
 #    # text, Copyright Accent Design Group). Upstream pyproject.toml v5.2.6

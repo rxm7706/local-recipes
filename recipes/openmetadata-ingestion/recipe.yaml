@@ -119,12 +119,13 @@ extra:
   cfe-last-checked: 2026-06-20T13:00:21Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T13:00:21Z
-  cfe-local-build-status: not-attempted
-  cfe-local-build-datetime: none
-  cfe-local-build-platform: none
-  cfe-local-build-tool: none
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-11-05T22:50:43Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
+# Header:
 # run:
 #    # The run-dep base set is the DEPLOYED v1 feedstock's authoritative set
 #    # (openmetadata-ingestion has a large optional-extras matrix; the feedstock

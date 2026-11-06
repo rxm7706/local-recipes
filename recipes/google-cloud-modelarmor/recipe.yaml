@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.7.0"
+  version: "0.7.3"
 
 package:
   name: google-cloud-modelarmor
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/g/google-cloud-modelarmor/google_cloud_modelarmor-${{ version }}.tar.gz
-  sha256: 2ac62135620cdfc610ad9d9b3f92553de0d27343b693f021fd2012f1898d4ac6
+  sha256: 587ae2fe427222561eb95dcf170f842a05251a87b1a3f7d019ddd3bcb0575771
 
 build:
   noarch: python
@@ -21,14 +21,15 @@ requirements:
   host:
     - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
     - google-api-core >=2.17.1,<3.0.0
     - grpcio >=1.59.0,<2.0.0
-    - grpcio-status >=1.41.0,<2.0.0
     - google-auth >=2.14.1,<3.0.0,!=2.24.0,!=2.25.0
     - proto-plus >=1.22.3,<2.0.0
     - protobuf >=4.25.8,<8.0.0
+    - google-api-core-grpc
 
 tests:
   - python:
@@ -76,15 +77,18 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-last-checked: 2026-11-05T18:27:49Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-19T17:03:36Z
+  cfe-local-build-datetime: 2026-11-05T18:28:46Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
+# Header:
+#    # 2026-11-05 Story 25.19: requirements taken from the feedstock so the refresh can proceed: +setuptools -grpcio-status +google-api-core-grpc.
+#    # 2026-11-05 refresh_wave A-W19-5: refreshed 0.7.0 -> 0.7.3
 # requirements:
 #  run:
 #    # google-api-core[grpc] extra flattened (conda has no extras, G25):

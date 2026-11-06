@@ -679,8 +679,11 @@ def _build_argv(recipe_yaml: Path, name: str) -> tuple[list[str], Path]:
 
 
 _TEST_BLOCK_RE = re.compile(
-    r"(?i)(could not solve|unsolvable|failed to solve|solver.*(?:test|environment)|test (?:env|environment).*(?:solve|fail))"
+    r"(?i)(could not solve|unsolvable|failed to solve|solver.*(?:test|environment)"
+    r"|test (?:env|environment).*(?:solve|fail)|failed to setup test environment)"
 )
+# rattler-build's line when every variant is skipped: it exits 0 and builds nothing (G128).
+_NO_OUTPUTS_RE = re.compile(r"Starting build of 0 outputs")
 
 
 def _classify_build(rc: int, output: str, out_dir: Path) -> str:
@@ -698,6 +701,13 @@ def _classify_build(rc: int, output: str, out_dir: Path) -> str:
 def _run_build(recipe_yaml: Path, name: str, rec: dict[str, Any]) -> None:
     argv, out_dir = _build_argv(recipe_yaml, name)
     rc, out, err = _run(argv, timeout=BUILD_TIMEOUT_S)
+    if rc == 0 and _NO_OUTPUTS_RE.search(out + "\n" + err):
+        # No build ran, so no record may say one did: the recipe keeps what it has.
+        rec["build"] = {
+            "status": "skipped", "returncode": rc, "output_dir": str(out_dir), "datetime": None, "stamped": False,
+        }
+        rec["notes"].append("build skipped: every variant is skipped on this host; record left as it is")
+        return
     status = _classify_build(rc, out + "\n" + err, out_dir)
     stamp = _iso(_now())
     rec["build"] = {

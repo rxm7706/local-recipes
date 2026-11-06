@@ -14,7 +14,7 @@ source:
   sha256: 5077f8fabf5fb621b5ce490afd0db60f21e57b3a451ed14a9f44aef545ea4eee
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -25,7 +25,7 @@ requirements:
     - pip
   run:
     - python >=${{ python_min }},<4.0
-    - mcp >=1.8.0
+    - mcp >=1.8.0,<2
     - django >=4.0
     - djangorestframework >=3.15.0
     - inflection >=0.5.1,<0.6.0
@@ -78,11 +78,14 @@ extra:
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-11-05T21:39:16Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
+# Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: mcp capped below 2: upstream uses the FastMCP API that mcp 2 renamed.
 # tests:
 #    # Django web-app escape hatch: bare `import mcp_server` raises
 #    # ImproperlyConfigured (top-level django.db.models import) without

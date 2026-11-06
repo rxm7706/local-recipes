@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: robocorp-log
-  version: "3.1.5"
+  version: "3.1.7"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/r/robocorp-log/robocorp_log-${{ version }}.tar.gz
-  sha256: 8e74972c60920ca2cf84f61d43895a2a5622e31efa368ca3cd555da09e533377
+  sha256: 182b9832e6ef312c94fde3df536682a6673a915aa5d74653785d5b3892f075e4
 
 build:
   number: 0
@@ -31,14 +31,14 @@ requirements:
   run:
     - python >=${{ python_min }},<4.0.0
     - tomli <3.0.0,>=2.0.1
-    - psutil <8.0,>=5.0
+    - psutil >=5.0,<8.0
 
 tests:
-- python:
-    imports:
-      - robocorp.log
-    pip_check: true
-    python_version: ${{ python_min }}
+  - python:
+      imports:
+        - robocorp.log
+      pip_check: true
+      python_version: ${{ python_min }}
 
 about:
   summary: Automatic trace logging for Python
@@ -69,20 +69,22 @@ extra:
   cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-11-05T18:43:08Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: '2026-10-09T11:17:03Z'
+  cfe-local-build-datetime: 2026-11-05T18:44:05Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: requirements taken from the feedstock so the refresh can proceed: ~psutil.
 #    # WAVE-C C1 keep-meta: conda-forge feedstock is still v0/meta.yaml (no
 #    # recipe.yaml upstream). meta.yaml kept as faithful mirror of the deployed
 #    # 3.1.2 feedstock; this recipe.yaml is the proposed v1 migration.
 #    # cfe-forge-recipe-updates-needed carries meta-yaml-to-recipe-yaml.
+#    # 2026-11-05 refresh_wave A-W19-5: refreshed 3.1.5 -> 3.1.7
 # context:
 #    # python_min omitted — upstream requires-python is <4.0,>=3.10; the 3.10
 #    # floor is the conda-forge default, so it comes from conda-forge-pinning.

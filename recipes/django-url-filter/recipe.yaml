@@ -13,7 +13,7 @@ source:
   sha256: 12d66e4ff0150e10fd4efd1ec292a06a2cec6311ec2e4bd1fc99b2fea18e2a7b
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -24,8 +24,8 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
-    - cached_property
-    - django
+    - cached-property
+    - django >=1.8
     - enum-compat
     - six
     - setuptools
@@ -42,7 +42,7 @@ tests:
 about:
   homepage: https://github.com/miki725/django-url-filter
   license: MIT
-  license_file: LICENSE
+  license_file: LICENSE.rst
   summary: Django URL Filter provides a safe way to filter data via human-friendly URLs.
   description: |
     Django URL Filter provides a safe way to filter data via human-friendly URLs.
@@ -80,13 +80,15 @@ extra:
   cfe-last-checked: 2026-08-18T09:01:19Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T09:01:19Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-08-18T09:01:19Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T21:38:34Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: license_file and run taken from the feedstock.
 #    # license: rattler-build did not copy a license file; recorded, retrying common names
 #    # blocker: missing-license-file
 ####

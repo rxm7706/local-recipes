@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.1.4"
+  version: "0.1.5"
 
 package:
   name: vizro-mcp
@@ -10,10 +10,10 @@ package:
 
 source:
   url: https://pypi.org/packages/source/v/vizro-mcp/vizro_mcp-${{ version }}.tar.gz
-  sha256: b5f819c6c97cb73a7c3ec237d5bb7d5a042371d5e6a013025523834ea8d9b765
+  sha256: 87deb85086a840ed152f5c7d4dab23cca8b788c8016948de009578d756cbbcc1
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
@@ -27,7 +27,6 @@ requirements:
     - pip
   run:
     - python >=${{ python_min }}
-    - pydantic
     - httpx >=0.28.1
     - mcp >=1.6.0
     - vizro >=0.1.46
@@ -37,18 +36,8 @@ requirements:
     - pandas
     # Refer to https://github.com/pandas-dev/pandas/blob/main/pyproject.toml#L68
     # html = ['beautifulsoup4>=4.12.3', 'html5lib>=1.1', 'lxml>=4.9.2']
-    - beautifulsoup4 >=4.12.3
-    - html5lib >=1.1
-    - lxml >=4.9.2
     # excel = ['odfpy>=1.4.1', 'openpyxl>=3.1.2', 'python-calamine>=0.1.7', 'pyxlsb>=1.0.10', 'xlrd>=2.0.1', 'xlsxwriter>=3.2.0']
-    - odfpy >=1.4.1
-    - openpyxl >=3.1.2
-    - python-calamine >=0.1.7
-    - pyxlsb >=1.0.10
-    - xlrd >=2.0.1
-    - xlsxwriter >=3.2.0
     # parquet = ['pyarrow>=10.0.1']
-    - pyarrow >=10.0.1
 
 tests:
   - python:
@@ -96,19 +85,21 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/vizro-mcp-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-04T22:24:52Z
+  cfe-last-checked: 2026-11-05T18:46:08Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-11-05T18:47:20Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: requirements taken from the feedstock so the refresh can proceed: -beautifulsoup4 -html5lib -lxml -odfpy -openpyxl -pyarrow -pydantic -python-calamine -pyxlsb -xlrd -xlsxwriter.
 #    vizro-mcp is published on conda-forge but the feedstock is still v0/meta.yaml.
 #    This recipe.yaml is the proposed v1 migration; meta.yaml is kept alongside as a
 #    faithful mirror of the deployed v0 feedstock until that feedstock migrates.
+#    # 2026-11-05 refresh_wave A-W19-5: refreshed 0.1.4 -> 0.1.5
 # context:
 #    python_min omitted from context: upstream requires-python is >=3.10, the
 #    conda-forge default floor; conda-forge-pinning supplies python_min.

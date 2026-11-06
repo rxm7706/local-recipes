@@ -19,7 +19,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - hatchling
   run:
@@ -74,13 +74,14 @@ extra:
   cfe-last-checked: 2026-08-18T12:00:20Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T12:00:20Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-08-18T12:00:20Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T17:54:03Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: host python spec corrected; a bare version is not a valid match spec.
 #    # generate failed rc=1: Fetching info for redis-py...
 #    Error: Failed to fetch PyPI metadata for 'redis-py' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/redis-py/json
 

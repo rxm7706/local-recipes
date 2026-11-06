@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: h2o-wave
-  version: "1.8.14"
+  version: "1.8.17"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/h2oai/wave/archive/v${{ version }}.tar.gz
-  sha256: 1e9c69a5e7158d2c5958585991968b360a099be90ae4da714f330a8d94b0b2af
+  sha256: 31f882e16b67dac76562caf395bba9303358027181fb962b1b1930122168c43d
 
 build:
   number: 0
@@ -35,11 +35,11 @@ requirements:
     - uvicorn >=0.17.6
 
 tests:
-- python:
-    imports:
-      - h2o_wave
-    pip_check: true
-    python_version: ${{ python_min }}
+  - python:
+      imports:
+        - h2o_wave
+      pip_check: true
+      python_version: ${{ python_min }}
 
 about:
   description: H2O Wave is a lightweight software stack for programming interactive web applications entirely in Python (no HTML/Javascript/CSS required).
@@ -76,11 +76,11 @@ extra:
   cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-last-checked: 2026-11-05T19:12:06Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-21T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: '2026-10-09T10:59:49Z'
+  cfe-local-build-datetime: 2026-11-05T19:13:12Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -91,6 +91,7 @@ extra:
 #    # monotonic scheme v1.0.0 (2023) ... v1.8.9 (latest), 80 PyPI releases.
 #    # Feedstock h2o-wave-feedstock is v0 (C1): meta.yaml mirror KEPT at 1.8.9;
 #    # this recipe.yaml is the proposed v0-to-v1 migration.
+#    # 2026-11-05 refresh_wave A-W19-4: refreshed 1.8.14 -> 1.8.17
 # source:
 #    # github-tag, NOT the per-platform PyPI wheel. PyPI ships per-OS wheels that
 #    # bundle the prebuilt waved Go server binary, but the feedstock deliberately

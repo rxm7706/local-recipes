@@ -13,7 +13,7 @@ source:
   sha256: 42accea9098e4a3298b4bfbae0e4da81f909f8bff0deda9485efbd6035a86d6a
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -38,7 +38,7 @@ tests:
 
 about:
   homepage: https://github.com/pylint-dev/pylint-django
-  license: GPL-2.0
+  license: GPL-2.0-only
   license_file: LICENSE
   summary: A Pylint plugin to help Pylint understand the Django web framework
   description: |
@@ -75,11 +75,13 @@ extra:
   cfe-last-checked: 2026-08-18T11:23:35Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T11:23:35Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-08-18T11:23:35Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T21:36:13Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: licence identifier taken from the feedstock.
 ####

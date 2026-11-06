@@ -14,14 +14,14 @@ source:
   sha256: 1fadbfc27ea955431270e4e79a4a4c290ba11c3a3098a95cc22dc73e312a1768
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.8
-    - setuptools
+    - python ${{ python_min }}.*
+    - setuptools <81
     - wheel
     - pip
   run:
@@ -51,3 +51,37 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: html5lib-modern
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: html5lib-modern
+  cfe-purls:
+    - pkg:conda/html5lib-modern@${{ version }}?channel=conda-forge
+    - pkg:pypi/html5lib-modern@${{ version }}
+  cfe-upstream-repo: https://github.com/ashleysommer/html5lib-modern
+  cfe-upstream-homepage: https://github.com/ashleysommer/html5lib-modern
+  cfe-import-names: [html5lib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/html5lib-modern-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-05T17:29:39Z
+  cfe-generated-by-version: 8.103.0
+  cfe-generated-at-datetime: 2026-11-05T17:29:39Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T21:42:32Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: host python pinned to python_min: the setup.py uses ast.Str, which newer python removed.
+#    # 2026-11-05 Story 25.19: host setuptools below 81: the build imports pkg_resources, which current setuptools no longer ships.
+#    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
+####

@@ -1,13 +1,13 @@
 {% set name = "json-stream-rs-tokenizer" %}
-{% set version = "0.5.3" %}
+{% set version = "0.5.4" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
-  sha256: 88828b11ecd24692473728f237e19d6a48b20cb6472c64a029c734b6d616fbc4
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 7e5a56d03e00f194a21cb1a0e7ff03c75a07c1bf0a16b1676828605410579909
 
 build:
   script:

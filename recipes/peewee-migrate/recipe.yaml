@@ -24,7 +24,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - uv-build >=0.10.2,<0.11.0
   run:
@@ -41,7 +41,7 @@ tests:
   - requirements:
       run:
         - pip
-        - python ${{ python_min }}
+        - python ${{ python_min }}.*
     script:
       - pw_migrate --help
       - pw-migrate --help
@@ -79,12 +79,13 @@ extra:
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-11-05T19:42:04Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
 #    # WAVE-C C1: feedstock still v0/meta.yaml. Kept the local meta.yaml mirror
 #    # (deployed feedstock state, 1.15.0) and authored this v1 recipe.yaml
 #    # alongside. Delete meta.yaml only after the feedstock completes v0 to v1.

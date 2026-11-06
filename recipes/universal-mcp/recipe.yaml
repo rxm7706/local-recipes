@@ -92,8 +92,8 @@ extra:
   cfe-last-checked: 2026-07-03T13:27:24Z
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
-  cfe-local-build-status: build-clean-test-blocked
-  cfe-local-build-datetime: 2026-07-03T12:06:23Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T20:12:53Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

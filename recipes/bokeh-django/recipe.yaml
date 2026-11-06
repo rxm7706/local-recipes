@@ -46,3 +46,34 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bokeh-django
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: bokeh-django
+  cfe-purls:
+    - pkg:conda/bokeh-django@${{ version }}?channel=conda-forge
+    - pkg:pypi/bokeh-django@${{ version }}
+  cfe-upstream-repo: https://github.com/bokeh/bokeh-django
+  cfe-upstream-homepage: https://github.com/bokeh/bokeh-django
+  cfe-import-names: [bokeh_django]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/bokeh-django-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-05T17:29:39Z
+  cfe-generated-by-version: 8.103.0
+  cfe-generated-at-datetime: 2026-11-05T17:29:39Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T18:20:37Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
+####

@@ -12,9 +12,11 @@ package:
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/gibr-${{ version }}.tar.gz
   sha256: 2f278040f5fc8c3e48ea78bb8f9ddb3c6ab86106864afc82bb8b9f12849bbb7f
+  patches:
+    - patches/0001-loosen-runtime-pins.patch
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
@@ -87,11 +89,14 @@ extra:
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-11-05T22:56:43Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
+# Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: source patch reconnected: the G26 note and patch file stayed, but source.patches was lost when the recipe was mirrored.
 # context:
 #    # upstream pyproject.toml: requires-python = ">=3.11" — python_min override
 #    # above the conda-forge 3.10 floor, so declared in context: per policy.

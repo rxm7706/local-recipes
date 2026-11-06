@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: a2a-sdk
-  version: "1.2.2"
+  version: "1.3.0"
   python_check_max: '3.14'
 
 package:
@@ -11,8 +11,8 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/a2a_sdk-${{ version }}.tar.gz
-  sha256: 09be001a90fae9634d54041471feca1014201ec22f7107f0883309a2b4027a15
+  url: https://pypi.org/packages/source/a/a2a-sdk/a2a_sdk-${{ version }}.tar.gz
+  sha256: 73694717de50f36aaebd57b8fc6636ecaa825eb0d4437984fa2cd17f703a6808
 
 build:
   number: 0
@@ -73,15 +73,18 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/a2a-sdk-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T10:21:36Z
+  cfe-last-checked: 2026-11-05T18:09:26Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T10:21:36Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-10-09T09:20:00Z
+  cfe-local-build-datetime: 2026-11-05T18:10:23Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
+# Header:
+#    # 2026-11-05 Story 25.19: source URL written out literally, the canonical form, so the refresh can read it.
+#    # 2026-11-05 refresh_wave A-W19-5: refreshed 1.2.2 -> 1.3.0
 # build:
 #  python:
 #    entry_points:

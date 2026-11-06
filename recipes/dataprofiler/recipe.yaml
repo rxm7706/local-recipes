@@ -12,9 +12,11 @@ package:
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/DataProfiler-${{ version }}.tar.gz
   sha256: 469e3acb234b43300f498b84d678949cee1a02f88e98fadfaad725f63447f086
+  patches:
+    - patches/0001-loosen-requests-pin.patch
 
 build:
-  number: 1
+  number: 2
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv
 
@@ -45,6 +47,7 @@ requirements:
     - boto3 >=1.28.61
   run:
     #### requirements.txt
+    - setuptools <81
     - typing_extensions >=3.10.0.2
     - versioneer
     - python >=${{ python_min }},<4.0
@@ -111,12 +114,15 @@ extra:
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-11-05T21:34:31Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: source patch reconnected: the patch file and its G26 note stayed, but source.patches was lost when the recipe was mirrored.
+#    # 2026-11-05 Story 25.19: run setuptools below 81: upstream imports pkg_resources, which current setuptools no longer ships.
 #    # WAVE-C C2 refresh: feedstock already v1 at 0.13.4; authored canonical
 #    # recipe.yaml and deleted local meta.yaml (was stale at 0.10.7).
 # source:

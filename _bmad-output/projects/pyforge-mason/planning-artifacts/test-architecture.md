@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: 3233b711ebbeaa45
-story_count: 125
+source_fingerprint: f3fb50460bf550b0
+story_count: 126
 test_file_count: 43
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 125
+- **Stories parsed:** 126
 - **Epics parsed:** 36
 - **Test files inventoried:** 43 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `3233b711ebbeaa45`
+- **Source fingerprint:** `f3fb50460bf550b0`
 
 ## Risk Assessment
 
@@ -237,6 +237,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 25.17 | Epic 25's recipes carry the build records their stories claim | none observed |
 | 25.18 | Wave A's no-refresh recipes are re-bucketed live from the atlas | none observed |
 | 25.19 | The recipes that still record a failed build get their own build | none observed |
+| 25.20 | refresh-wave records what a build did | none observed |
 | 26.1 | CFE's tests never ask GitHub whether a recipe maintainer exists | none observed |
 | 26.2 | CFE's tests never fetch conda-smithy's remote lint data | none observed |
 | 27.1 | Mason's package and the repo tooling it owns close their open deferrals | none observed |

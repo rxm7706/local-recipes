@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.5.0"
+  version: "1.6.0"
 
 package:
   name: dj-control-room-base
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/d/dj-control-room-base/dj_control_room_base-${{ version }}.tar.gz
-  sha256: 299bfb1e887c4d9cc024c478f05166185fad7520a0c1a5995b51501871598337
+  sha256: 250c11296baa7e84e4ea988783f70825598523d3fa30f8447db937dabb76b338
 
 build:
   number: 0
@@ -68,14 +68,15 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-17T05:17:15Z
+  cfe-last-checked: 2026-11-05T18:48:28Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-17T05:17:15Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-17T05:17:15Z
+  cfe-local-build-datetime: 2026-11-05T18:49:23Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 refresh_wave A-W19-3: refreshed 1.5.0 -> 1.6.0
 ####

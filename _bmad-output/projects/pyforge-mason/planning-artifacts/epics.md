@@ -3453,14 +3453,30 @@ So that CAP-35's `grep` over `cfe-local-build-status: failed` matches nothing an
 **Type:** fix • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-35 (FR-57); a fix, no new CAP; AD-1; AD-15; CFE Rule 1 + Rule 2 • EGM audit findings MAS-D-F4 and MAS-D-F8, accepted 2026-11-05
 **Flag:** none (a fix carries no flag, `spec-feature-flag-governance` Q1); its spec records `flag-exempt: recipe-build`
 **Recipes:** every recipe in CAP-35's scope, both tracks, that records `cfe-local-build-status: failed`. Known on `main` at `836a2ee286`: 33 records dated 2026-10 outside Story 25.17's list, 20 of them `opentelemetry-*` recipes whose Story 25.10 run table says success and 13 others, at least 10 of them single-maintainer. The 446 records dated 2026-08 are not examined; at least 7 look co-maintained by their local `recipe-maintainers` lists, among them `bandit`, `culsans` and `pylint-django`. The story counts them from the atlas.
-**Parked (session owner, 2026-11-05):** recipe-factory work, L effort. It stays `backlog` until the operator asks for it.
 **Surface:** `recipes/<name>/recipe.yaml` for each recipe rebuilt; the story spec's run record; the CFE retro surface (`.claude/skills/conda-forge-expert/CHANGELOG.md` and its version carriers)
 **Spec:** `planning-artifacts/specs/spec-25-19-the-recipes-that-still-record-a-failed-build-get-their-own-build.md`
 **Given** Story 25.17 rebuilt the recipes on its list, those 33 records remain, and Track A never ran through the tracked driver under CAP-35's terms: Story 25.1 ran on uncommitted `.cursor` scripts, Wave 0 repaired 78 recipes, and no tracked-driver report for Track A exists
 **When** each track's scope is re-counted live from the atlas through `packages.feedstock_name`, and Track A's scope with every in-scope `failed` record runs through `pixi run -e local-recipes refresh-wave <manifest> --apply --gates --build --rebuild --force --report-dir <dir>`, because without `--rebuild` an `already-current` recipe finishes with no build and keeps its record
 **Then** the build stamps come from the CFE tools, never by hand, the `report.json` ends every recipe in the ruled outcome set, and `grep -l 'cfe-local-build-status: failed'` over the scope matches none
 **And** CAP-35's marker is dated at the recorded atlas snapshot only when that `grep` matches none over both tracks, the story lands a `retro(cfe):` commit with its CFE `CHANGELOG.md` entry, no feedstock or staged-recipes PR opens, and `pixi run --frozen -e pyforge-mason pyforge-mason-test` exits 0
-**Status:** backlog
+**Ruling (operator, 2026-11-05):** `ydata-quality` is exempt by name from the `grep`: its upstream stops below the floor, so no build can run, and its `failed` record stands.
+**Status:** done
+
+### Story 25.20: refresh-wave records what a build did
+
+As the maintainer of the feedstock refresh campaign,
+I want `refresh-wave` to stamp a clean build with an unsolvable test environment as G95, and to stamp nothing when every variant is skipped,
+So that a recipe's `cfe-local-build-*` record says what its build did.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-35 (FR-57); a fix, no new CAP; AD-1; CFE Rule 1 + Rule 2 • Found by Story 25.19's independent review, 2026-11-05
+**Flag:** none (a fix carries no flag, `spec-feature-flag-governance` Q1)
+**Surface:** `.claude/skills/conda-forge-expert/scripts/refresh_wave.py`, `.claude/skills/conda-forge-expert/tests/unit/test_refresh_wave.py`, and the CFE retro surface
+**Spec:** `planning-artifacts/specs/spec-25-20-refresh-wave-records-what-a-build-did.md`
+**Given** rattler-build reports an unsolvable test environment as `failed to setup test environment`, and a recipe with every variant skipped as `Starting build of 0 outputs` with exit 0
+**When** `refresh-wave --build` classifies that output
+**Then** the first stamps `build-clean-test-blocked` when an artifact exists, and the second reports `skipped`, stamps nothing and does not fail the run
+**And** a failure before any artifact exists still stamps `failed`, and the change lands in a `retro(cfe):` commit with its tests and CHANGELOG entry
+**Status:** done
 
 ## Epic 26: CFE's tests never ask GitHub whether a recipe maintainer exists (spec-pyforge-mason CAP-34)
 

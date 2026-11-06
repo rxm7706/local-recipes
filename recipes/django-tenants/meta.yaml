@@ -1,13 +1,13 @@
 {% set name = "django-tenants" %}
-{% set version = "3.14.0" %}
+{% set version = "4.0.1" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
-  sha256: 55dc64bcd4293a03fab7108f4c4e1724c2f53ef09a1c7f9e5f75a136fccc3146
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 769a0934507305c55b7b6e49b788df6627dcc546d7f4e187812285bad1c6270b
 
 build:
   noarch: python
@@ -42,6 +42,14 @@ requirements:
     # - psycopg <3.3,>=3.2.1
     # - mypy 
     # - gunicorn ==26.0.0
+    # - coverage 
+    # - psycopg <3.4,>=3.2.1
+    # - mypy 
+    # - gunicorn ==26.2.0
+    # - coverage 
+    # - psycopg <3.4,>=3.2.1
+    # - mypy 
+    # - gunicorn ==26.2.0
     # - coverage 
 
 test:

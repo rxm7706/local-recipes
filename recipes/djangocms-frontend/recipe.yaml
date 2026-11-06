@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: djangocms-frontend
-  version: "2.5.2"
+  version: "2.5.3"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/d/djangocms-frontend/djangocms_frontend-${{ version }}.tar.gz
-  sha256: 7c22e83bc1aa1b2b09ee9308d34e10a7e0de0bd2ac20c5c0a348552bf15854c0
+  sha256: 45dea224f8ca78e9c50383191d8ce27a628c7772a6c14a9cdeb6328eb4f3d7af
 
 build:
   number: 0
@@ -25,6 +25,7 @@ requirements:
     - setuptools
   run:
     - djangocms-link >=5
+    - typing_extensions
     - python >=${{ python_min }}
     - django >=2.2
     - django-cms >=3.7
@@ -35,11 +36,11 @@ requirements:
     - django-entangled >=0.6
 
 tests:
-- python:
-    imports:
-      - djangocms_frontend
-    pip_check: true
-    python_version: ${{ python_min }}
+  - python:
+      imports:
+        - djangocms_frontend
+      pip_check: true
+      python_version: ${{ python_min }}
 
 about:
   summary: Adds abstract User Interface items as plugins to django CMS.
@@ -71,20 +72,22 @@ extra:
   cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-11-05T18:57:51Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: '2026-10-09T10:51:40Z'
+  cfe-local-build-datetime: 2026-11-05T20:54:41Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: run typing_extensions added: django-polymorphic needs it and its package does not bring it, so pip check fails.
 #    # WAVE-C C1 keep-meta: conda-forge feedstock is still v0/meta.yaml at
 #    # 2.3.1; meta.yaml mirrors the deployed feedstock verbatim, recipe.yaml
 #    # is the proposed v1 migration (cfe-forge-recipe-updates-needed names
 #    # meta-yaml-to-recipe-yaml).
+#    # 2026-11-05 refresh_wave A-W19-4: refreshed 2.5.2 -> 2.5.3
 # requirements:
 #  host:
 #    # setuptools kept in host — setup.py-based project (no pyproject.toml,

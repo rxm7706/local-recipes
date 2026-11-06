@@ -14,13 +14,13 @@ source:
   sha256: f8c1dd2757064808a432558f46a395da942f223d74a110419fc689992f9d600e
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - poetry-core >=1.0.0
     - pip
   run:
@@ -34,9 +34,6 @@ tests:
         - assertionengine
       pip_check: false
       python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
 
 about:
   summary: Generic way to create meaningful and easy to use assertions for the Robot Framework libraries.
@@ -72,12 +69,14 @@ extra:
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-11-05T21:55:41Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec. removed a test entry with no test type.
 #    # WAVE-C C1 (KEEP-meta): feedstock still v0/meta.yaml at 5.0.1. meta.yaml
 #    # kept as faithful deployed-state mirror; this recipe.yaml is the proposed
 #    # v1 migration at the same version. Local 2.0.0 -> 5.0.1 MAJOR bump.

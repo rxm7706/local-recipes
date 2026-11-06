@@ -20,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - flit-core >=3.2,<4
     - pip
   run:
@@ -70,12 +70,13 @@ extra:
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-11-05T20:13:30Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
 #    # WAVE-C C1: feedstock still v0 (recipe.yaml 404 / meta.yaml 200). Kept the
 #    # local meta.yaml mirror at the deployed 0.2.1 version; authored this v1
 #    # recipe.yaml alongside it as the proposed migration. cfe-forge-recipe-

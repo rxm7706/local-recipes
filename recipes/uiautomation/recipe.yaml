@@ -20,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - comtypes >=1.2.1
     - setuptools
@@ -76,6 +76,7 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
 #    # WAVE-D Windows-only recipe. C1: feedstock still v0 (recipe/meta.yaml,
 #    # deployed 2.0.29). Kept the v0 meta.yaml mirror refreshed to 2.0.29
 #    # (faithful, un-annotated) AND authored this v1 recipe.yaml. The

@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: django-dbbackup
-  version: 5.3.1
+  version: 5.4.0
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: 029573a760ddd288eae26504dcf3d9013282a4d2fed7d723d113a9c5fefa8aaf
+  url: https://pypi.org/packages/source/d/django-dbbackup/django_dbbackup-${{ version }}.tar.gz
+  sha256: bc846ce4154585d4fd272947141a5b2b884f395f27713bba0bbe7943c9107480
 
 build:
   number: 0
@@ -28,11 +28,11 @@ requirements:
     - python >=${{ python_min }},<4.0
     - django >=5.0
 tests:
-- python:
-    imports:
-      - dbbackup
-    python_version: ${{ python_min }}.*
-    pip_check: true
+  - python:
+      imports:
+        - dbbackup
+      python_version: ${{ python_min }}.*
+      pip_check: true
 
 about:
   summary: Management commands to help backup and restore a project database and media.
@@ -62,21 +62,23 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-dbbackup-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-11-05T18:18:21Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-10-09T09:19:22Z
+  cfe-local-build-datetime: 2026-11-05T18:19:21Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: source URL written out literally, the canonical form, so the refresh can read it.
 #    # WAVE-C C2: feedstock already v1; bumped local stale v0 meta.yaml (4.0.2)
 #    # to a fresh modern v1 recipe.yaml at 5.3.0 and deleted the stale meta.yaml.
 #    # MAJOR bump 4.0.2 to 5.3.0: upstream moved jazzband to Archmonger; Django
 #    # floor jumped 2.2 to 5.0; the old pytz run-dep was dropped upstream;
 #    # sdist filename now uses underscores (django_dbbackup-VER.tar.gz).
+#    # 2026-11-05 refresh_wave A-W19-5: refreshed 5.3.1 -> 5.4.0
 # requirements:
 #  host:
 #    # hatchling-only build backend (pyproject [build-system].requires =

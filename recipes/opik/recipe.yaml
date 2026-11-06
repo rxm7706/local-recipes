@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "2.0.73"
+  version: "2.2.47"
 
 package:
   name: opik
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opik/opik-${{ version }}.tar.gz
-  sha256: c843f60719adfada1ece49dff51a3562ec28baa7ab7f4492d177b06b7e591b09
+  sha256: a4aeb241a44ebf41f321407f40cb40377e5734402471cabe7d10d8cd2e79b25c
   patches:
     # opik's PyPI sdist is the comet-ml/opik monorepo sub-SDK; its setup.py reads
     # ../../README.md (absent from the sdist). Patch long_description="" so
@@ -97,15 +97,17 @@ extra:
   cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33937
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []   # mypy-boto3-bedrock-runtime now on conda-forge (#33918 merged)
-  cfe-last-checked: 2026-06-26T12:00:00Z
+  cfe-last-checked: 2026-11-05T20:01:24Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-26T00:00:00Z
+  cfe-local-build-datetime: 2026-11-05T20:02:39Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
+# Header:
+#    # 2026-11-05 refresh_wave A-W19-3: refreshed 2.0.73 -> 2.2.47
 # context:
 #    # python_min 3.11 (upstream declares >=3.10): on osx-64, conda-forge's
 #    # fastuuid (pulled via litellm) ships no py3.10 build, so this noarch

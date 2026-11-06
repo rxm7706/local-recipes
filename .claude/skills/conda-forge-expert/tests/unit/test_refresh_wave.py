@@ -748,6 +748,31 @@ def test_build_clean_test_blocked_needs_an_artifact_and_a_solver_message(rw, tmp
     assert rw._classify_build(1, "compile error", out) == "failed"
 
 
+# rattler-build's own wording for a test environment that cannot solve (Story 25.20).
+RATTLER_TEST_BLOCK = "Error:   x Test failed\n  |-> failed to setup test environment\n  |-> Cannot solve the request"
+
+
+def test_rattler_builds_own_test_block_wording_is_g95(rw, tmp_path):
+    out = tmp_path / "out"
+    out.mkdir()
+    assert rw._classify_build(1, RATTLER_TEST_BLOCK, out) == "failed"  # no artifact, so nothing built clean
+    (out / "noarch").mkdir()
+    (out / "noarch" / "widget-1-0.conda").write_text("x")
+    assert rw._classify_build(1, RATTLER_TEST_BLOCK, out) == "build-clean-test-blocked"
+
+
+def test_a_build_of_0_outputs_stamps_nothing_and_does_not_fail_the_run(rw, env):
+    path = env.write_recipe()
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+    before = [line for line in path.read_text().splitlines() if "cfe-local-build-" in line]
+    env.run_handler = lambda argv: (0, " Skipping widget - skip conditions evaluated to true\n Starting build of 0 outputs", "")
+    rc, report = env.invoke([{"name": "widget"}], "--apply", "--build")
+    build = rec_of(report)["build"]
+    assert build["status"] == "skipped" and build["stamped"] is False
+    assert [line for line in path.read_text().splitlines() if "cfe-local-build-" in line] == before
+    assert rc == 0
+
+
 # ── dry-run ──────────────────────────────────────────────────────────────────
 
 def test_dry_run_writes_only_the_report(rw, env):

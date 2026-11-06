@@ -14,17 +14,18 @@ source:
   sha256: 29ffadc514bfa306ec1f2ebb145391b9b860c12ba001e2475dffb5fe1be5cac2
 
 build:
-  number: 1
+  number: 2
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
+    - typing_extensions
     - django-cms >=3.7
     - django-filer >=1.7
     - djangocms-attributes-field >=1
@@ -46,3 +47,37 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: djangocms-picture
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: djangocms-picture
+  cfe-purls:
+    - pkg:conda/djangocms-picture@${{ version }}?channel=conda-forge
+    - pkg:pypi/djangocms-picture@${{ version }}
+  cfe-upstream-repo: https://github.com/django-cms/djangocms-picture
+  cfe-upstream-homepage: https://github.com/django-cms/djangocms-picture
+  cfe-import-names: [djangocms_picture]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/djangocms-picture-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-05T17:29:39Z
+  cfe-generated-by-version: 8.103.0
+  cfe-generated-at-datetime: 2026-11-05T17:29:39Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T21:41:09Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: run typing_extensions added: django-polymorphic needs it and its package does not bring it, so pip check fails.
+#    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
+#    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
+####

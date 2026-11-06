@@ -59,3 +59,34 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: kedro-init
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: kedro-init
+  cfe-purls:
+    - pkg:conda/kedro-init@${{ version }}?channel=conda-forge
+    - pkg:pypi/kedro-init@${{ version }}
+  cfe-upstream-repo: https://github.com/astrojuanlu/kedro-init
+  cfe-upstream-homepage: https://pypi.org/project/kedro-init/
+  cfe-import-names: [kedro_init]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/kedro-init-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-05T17:29:39Z
+  cfe-generated-by-version: 8.103.0
+  cfe-generated-at-datetime: 2026-11-05T17:29:39Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T19:45:38Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
+####

@@ -3,15 +3,16 @@ schema_version: 1
 
 context:
   name: wagtail-nav-menus
-  version: "3.14.0"
+  version: "3.15.0"
+  python_min: "3.12"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail_nav_menus-${{ version }}.tar.gz
-  sha256: bd6754b3f46852beae3f4680b37dc4ae9f545beeeeaa594a0756d31a548af9b2
+  url: https://pypi.org/packages/source/w/wagtail-nav-menus/wagtail_nav_menus-${{ version }}.tar.gz
+  sha256: f60ff7e7814f9134b8e6b322a6d736e7c9b0fd2aebb912265bcda08ddcebf3c9
 
 build:
   number: 0
@@ -20,13 +21,13 @@ build:
 
 requirements:
   host:
-    - python 3.11.*
+    - python ${{ python_min }}.*
     - pip
     - hatchling
   run:
     - python >=${{ python_min }},<4.0
-    - wagtail >=7.0
-    - wagtail-modeladmin >=2.3.0,<3
+    - wagtail >=7.4
+    - wagtail-modeladmin >=2.5.0,<3
 
 tests:
   - python:
@@ -64,19 +65,25 @@ extra:
   cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-11-05T18:56:41Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-11-05T21:17:55Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: host python follows python_min: upstream requires 3.12.
+#    # 2026-11-05 Story 25.19: python_min 3.12 and wagtail floor: upstream requires them; the wagtail floor is taken from the feedstock.
+#    # 2026-11-05 Story 25.19: requirements taken from the feedstock so the refresh can proceed: ~wagtail-modeladmin.
+#    # 2026-11-05 Story 25.19: source URL written out literally, the canonical form, so the refresh can read it.
 #    # C1 keep-meta: feedstock is still v0 (recipe.yaml 404 on main, meta.yaml 200
 #    # as of 2026-06-20). meta.yaml retained as a faithful mirror of the deployed
 #    # feedstock state at 3.14.0; this recipe.yaml is the proposed v0->v1 migration.
+#    # 2026-11-05 refresh_wave A-W19-5: needs-review, dependency-fix (run pin wagtail-modeladmin (wagtail-modeladmin >=2.3.0,<3 vs wagtail-modeladmin >=2.5.0,<3))
+#    # 2026-11-05 refresh_wave A-W19-6: refreshed 3.14.0 -> 3.15.0
 # about:
 #    # license: upstream pyproject [project.license].text = "ISC" and the LICENSE
 #    # file is the ISC License (Copyright thelab). The deployed feedstock meta.yaml

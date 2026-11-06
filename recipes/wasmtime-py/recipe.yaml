@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: wasmtime
-  version: "49.0.0"
+  version: "50.0.1"
 
 package:
   name: ${{ name }}-py
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/w/wasmtime/wasmtime-${{ version }}.tar.gz
-  sha256: fe0bf510ebdaf9432b756e320d2da2347f159e241f468c961b95164ab06cfdc1
+  sha256: d9a1eb530e5c4a55853784ae6bff0053db3cad89299097ad00e352e3d48c3cc1
 
 build:
   number: 0
@@ -37,10 +37,10 @@ requirements:
     - python
 
 tests:
-- python:
-    imports:
-      - wasmtime
-    pip_check: true
+  - python:
+      imports:
+        - wasmtime
+      pip_check: true
 
 about:
   summary: A WebAssembly runtime powered by Wasmtime
@@ -77,11 +77,11 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wasmtime-py-feedstock
   cfe-forge-recipe-updates-needed: meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-last-checked: 2026-11-05T17:38:51Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-21T00:00:00Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: '2026-10-09T11:31:54Z'
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T17:40:14Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -90,6 +90,7 @@ extra:
 #    # PyPI distribution name is `wasmtime`; the conda-forge package is
 #    # `wasmtime-py` (disambiguates the pyo3 Python binding from the
 #    # underlying Rust runtime). Import name is `wasmtime` (G7/G10).
+#    # 2026-11-05 refresh_wave A-W19-failed: refreshed 49.0.0 -> 50.0.1
 # build:
 #    # The PyPI sdist uses an in-tree PEP-517 build backend
 #    # (ci/_custom_build/backend.py) that runs ci/download-wasmtime.py to

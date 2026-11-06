@@ -83,5 +83,6 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: not-attempted is host-blocked: the recipe skips every variant off macOS, so a linux-64 build has 0 outputs (G128).
 #    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
 ####

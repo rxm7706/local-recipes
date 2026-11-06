@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: vizro-dash-components
-  version: "0.3.0"
+  version: "0.3.1"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/vizro_dash_components-${{ version }}.tar.gz
-  sha256: ba80928236590ac77ba3aeb01f52cbc39d3cf3a5398527aef82a14e33471b72c
+  url: https://pypi.org/packages/source/v/vizro-dash-components/vizro_dash_components-${{ version }}.tar.gz
+  sha256: 14c724e7d111150dc7ffa55407fa57dc3baa4e18b71002c24f39291c1bdf6703
 
 build:
   number: 0
@@ -48,3 +48,36 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: vizro-dash-components
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: vizro-dash-components
+  cfe-purls:
+    - pkg:conda/vizro-dash-components@${{ version }}?channel=conda-forge
+    - pkg:pypi/vizro-dash-components@${{ version }}
+  cfe-upstream-repo: https://github.com/mckinsey/vizro
+  cfe-upstream-homepage: https://vizro.mckinsey.com/
+  cfe-import-names: [vizro_dash_components]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/vizro-dash-components-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-05T18:45:13Z
+  cfe-generated-by-version: 8.103.0
+  cfe-generated-at-datetime: 2026-11-05T17:29:39Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T18:46:07Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-05 Story 25.19: source URL written out literally, the canonical form, so the refresh can read it.
+#    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
+#    # 2026-11-05 refresh_wave A-W19-5: refreshed 0.3.0 -> 0.3.1
+####

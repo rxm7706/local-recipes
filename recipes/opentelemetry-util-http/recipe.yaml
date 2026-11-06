@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.66b1"
+  version: "0.66b2"
 
 package:
   name: opentelemetry-util-http
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-util-http/opentelemetry_util_http-${{ version }}.tar.gz
-  sha256: 047dea1a628031f857a5a32261dc0e955bc162d39993ed1cffb8f2cff5ba8a62
+  sha256: 7ba066ea609202e474679ddf1d0f753a1e6619bd206b36afaecba4bbb86e25d0
 
 build:
   number: 0
@@ -71,11 +71,11 @@ extra:
     - version-update-to-0.65b0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-10T16:56:54Z
+  cfe-last-checked: 2026-11-05T17:40:09Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T10:57:17Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-10-10T16:57:28Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T18:05:39Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -83,4 +83,5 @@ extra:
 # Header:
 #    # added run deps from import test: ['opentelemetry']
 #    # 2026-10-10 refresh_wave B-25-10: refreshed 0.65b0 -> 0.66b1
+#    # 2026-11-05 refresh_wave B-W19-failed: refreshed 0.66b1 -> 0.66b2
 ####

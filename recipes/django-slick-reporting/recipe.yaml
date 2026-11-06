@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: django-slick-reporting
-  version: 1.4.0
+  version: 1.5.0
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: 6a930f7c911200bca80cf768f84765824198f45c4cae44486b388998b943d27a
+  url: https://pypi.org/packages/source/d/django-slick-reporting/django_slick_reporting-${{ version }}.tar.gz
+  sha256: 0f091439a42ad74a3c23bc277f73a86f17301a27b4d41451a1fae08459dd7181
 
 build:
   number: 0
@@ -36,8 +36,8 @@ tests:
         - slick_reporting
       pip_check: true
       python_version:
-      - ${{ python_min }}.*
-      - "*"
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   summary: A one-stop report and analytics generation and computation with batteries included
@@ -50,3 +50,36 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-slick-reporting
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-slick-reporting
+  cfe-purls:
+    - pkg:conda/django-slick-reporting@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-slick-reporting@${{ version }}
+  cfe-upstream-repo: https://github.com/ra-systems/django-slick-reporting
+  cfe-upstream-homepage: https://django-slick-reporting.com/
+  cfe-import-names: [slick_reporting]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-slick-reporting-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-05T18:19:22Z
+  cfe-generated-by-version: 8.103.0
+  cfe-generated-at-datetime: 2026-11-05T17:29:39Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T18:20:35Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-05 Story 25.19: source URL written out literally, the canonical form, so the refresh can read it.
+#    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
+#    # 2026-11-05 refresh_wave A-W19-5: refreshed 1.4.0 -> 1.5.0
+####

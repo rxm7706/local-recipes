@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: django-data-browser
-  version: "4.2.14"
+  version: "4.2.16"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: 3bdb85b6d453da0d7b8880ec531bd9c26f6bdb90002e37bede677f29488acb55
+  url: https://pypi.org/packages/source/d/django-data-browser/django_data_browser-${{ version }}.tar.gz
+  sha256: 6c74d3fc768d8f8e899fc98783023fb8a72f29aa05e7810182a799a3c5f8c71e
 
 build:
   number: 0
@@ -64,19 +64,21 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-data-browser-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-11-05T18:17:05Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-11-05T18:18:20Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: source URL written out literally, the canonical form, so the refresh can read it.
 #    # WAVE-C C2: feedstock is already v1 at 4.2.14; authored this recipe.yaml to
 #    # match the deployed feedstock and bumped the stale local v0 meta.yaml (was
 #    # 4.2.5), then deleted the meta.yaml.
+#    # 2026-11-05 refresh_wave A-W19-5: refreshed 4.2.14 -> 4.2.16
 # requirements:
 #  host:
 #    # setuptools kept in host — setup.py/setup.cfg project (no pyproject.toml);

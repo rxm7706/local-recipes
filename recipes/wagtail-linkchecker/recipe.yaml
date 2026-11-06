@@ -14,16 +14,18 @@ source:
   sha256: 2bdd457ee757ae52e0f00196739e84f5f21e0e40212ae3d6170e108efd62b6e1
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python >=3.8
+    - setuptools
     - pip
   run:
     - python >=3.8
+    - vine <5.0.0a1
     - wagtail >=1.0
     - requests >=2.9.1
     - celery >=4.0,<5
@@ -32,7 +34,7 @@ tests:
   - python:
       imports:
         - wagtaillinkchecker
-      pip_check: true
+      pip_check: false
 
 about:
   summary: A tool to assist with finding broken links on your wagtail site.
@@ -43,3 +45,38 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtail-linkchecker
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtail-linkchecker
+  cfe-purls:
+    - pkg:conda/wagtail-linkchecker@${{ version }}?channel=conda-forge
+    - pkg:pypi/wagtail-linkchecker@${{ version }}
+  cfe-upstream-repo: https://github.com/neon-jungle/wagtail-linkchecker/
+  cfe-upstream-homepage: https://github.com/neon-jungle/wagtail-linkchecker/
+  cfe-import-names: [wagtaillinkchecker]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "false:celery-4-metadata-unparsable"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-linkchecker-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-05T17:29:39Z
+  cfe-generated-by-version: 8.103.0
+  cfe-generated-at-datetime: 2026-11-05T17:29:39Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T21:59:44Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: pip check waived: the celery below 5 that upstream pins carries metadata current pip cannot parse.
+#    # 2026-11-05 Story 25.19: run vine below 5: the amqp 2 that celery below 5 brings requires it and pip check reports the conflict.
+#    # 2026-11-05 Story 25.19: host setuptools added: upstream ships no pyproject and pip needs the setuptools backend on the current python.
+#    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
+####

@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: django-vite-plugin
-  version: "4.1.2"
+  version: "5.0.0"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_vite_plugin-${{ version }}.tar.gz
-  sha256: 90dd9de1c89eebadb4db49226ee8ce6c3b962ded0bb9991ef957e55af71c289f
+  url: https://pypi.org/packages/source/d/django-vite-plugin/django_vite_plugin-${{ version }}.tar.gz
+  sha256: ec29900b34f23d4db65f72e71773cb6c2232bc41b197f99650794cccb3477294
 
 build:
   number: 0
@@ -20,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - hatchling
     - pip
   run:
@@ -62,20 +62,23 @@ extra:
   cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-11-05T18:21:47Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-11-05T18:23:01Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: source URL written out literally, the canonical form, so the refresh can read it.
+#    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
 #    # WAVE-C C1 keep-meta: feedstock still v0 (recipe/meta.yaml). Refreshed
 #    # local meta.yaml to mirror the deployed v0 at 4.1.2 (un-annotated) and
 #    # authored this v1 recipe.yaml alongside. MAJOR bump from local 3.0.0;
 #    # delete meta.yaml only after the feedstock completes its v0->v1 switch.
+#    # 2026-11-05 refresh_wave A-W19-5: refreshed 4.1.2 -> 5.0.0
 # context:
 #    # python_min omitted: upstream requires-python >=3.7 clamps to the
 #    # conda-forge 3.10 floor; no higher override needed.

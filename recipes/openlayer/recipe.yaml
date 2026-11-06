@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.29.1"
+  version: "0.36.0"
 
 package:
   name: openlayer
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/openlayer/openlayer-${{ version }}.tar.gz
-  sha256: bf2f07b2ba684016ad1afbba1be056877a0a0134344cbd00f696dc61ef910d8c
+  sha256: 6130004af853c58e8dd6a9ec119a049f9e2e17217c7fe153390cb2a44698d784
 
 build:
   noarch: python
@@ -83,11 +83,15 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-27T11:57:49Z
+  cfe-last-checked: 2026-11-05T19:59:03Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-19T16:40:33Z
+  cfe-local-build-datetime: 2026-11-05T20:00:14Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-05 refresh_wave A-W19-3: refreshed 0.29.1 -> 0.36.0
 ####

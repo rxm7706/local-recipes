@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.15.0"
+  version: "0.22.0"
 
 package:
   name: composio-langchain
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/c/composio-langchain/composio_langchain-${{ version }}.tar.gz
-  sha256: ef64bbff8f61d444fca071c4086b06e850c4ad45341a4a3c3f2f04ee4dca4ab7
+  sha256: d6da737d1e2548e7d06a30cdd8c3f2109709b32ac8ae66a7c4f00e4eb3a74286
 
 build:
   number: 0
@@ -74,15 +74,17 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-27T11:57:49Z
+  cfe-last-checked: 2026-11-05T18:22:44Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-19T17:04:03Z
+  cfe-local-build-datetime: 2026-11-05T18:23:55Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
+# Header:
+#    # 2026-11-05 refresh_wave A-W19-4: refreshed 0.15.0 -> 0.22.0
 # about:
 #    # Upstream PyPI metadata classifies this distribution as Apache-2.0
 #    # (matching the conda-forge composio feedstock). The ComposioHQ/composio

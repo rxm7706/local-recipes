@@ -16,7 +16,7 @@ source:
   sha256: 4bfc5384c9411d3b02501d007087827125dadb42ce0c39333e609bdb91c9f3c4
 
 build:
-  number: 2
+  number: 3
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -27,7 +27,7 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }},<4.0
-    - transformers
+    - transformers <5
     - scikit-learn
     - spacy
 
@@ -55,9 +55,9 @@ tests:
         - coverage
         - scikit-learn
         - spacy
-        - sentence-transformers
+        - sentence-transformers <6
         #- neuralcoref needs update
-        - transformers
+        - transformers <5
         - pytorch
 
 about:
@@ -69,3 +69,37 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bert-extractive-summarizer
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: bert-extractive-summarizer
+  cfe-purls:
+    - pkg:conda/bert-extractive-summarizer@${{ version }}?channel=conda-forge
+    - pkg:pypi/bert-extractive-summarizer@${{ version }}
+  cfe-upstream-repo: https://github.com/dmmiller612/bert-extractive-summarizer
+  cfe-upstream-homepage: https://github.com/dmmiller612/bert-extractive-summarizer
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/bert-extractive-summarizer-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-05T17:29:39Z
+  cfe-generated-by-version: 8.103.0
+  cfe-generated-at-datetime: 2026-11-05T17:29:39Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T21:32:22Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: test sentence-transformers capped below 6: version 6 needs transformers 5.
+#    # 2026-11-05 Story 25.19: transformers capped below 5: upstream imports TransfoXLModel, which transformers 5 removed.
+#    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
+####

@@ -20,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -44,10 +44,6 @@ tests:
         - ydata_synthetic
       pip_check: false
       python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
 
 about:
   summary: Synthetic data generation methods with different synthetization methods.
@@ -88,5 +84,6 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: needs review, not rebuilt: PyPI no longer serves the 2.0.0 sdist this recipe and the feedstock name, and 2.0.1 is a stub that renames the project to fg-data-synthetic and fails on import. Whether the recipe follows the rename is a maintainer decision.
 #    # 2026-07-03 Set F wave (tracker residuals) — LOCAL BUILDS ONLY.
 ####

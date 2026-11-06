@@ -14,7 +14,7 @@ source:
   sha256: b553dd479601045696685ba6e6e331ec91ada36226b439265218d05ff9845761
 
 build:
-  number: 2
+  number: 3
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -27,6 +27,7 @@ requirements:
     - pip
   run:
     - python >=${{ python_min }},<4.0
+    - setuptools <81
     - param <2.0.0
     - numpy
     - pandas
@@ -51,3 +52,36 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ahlive
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ahlive
+  cfe-purls:
+    - pkg:conda/ahlive@${{ version }}?channel=conda-forge
+    - pkg:pypi/ahlive@${{ version }}
+  cfe-upstream-repo: https://github.com/ahuang11/ahlive
+  cfe-upstream-homepage: https://github.com/ahuang11/ahlive
+  cfe-import-names: [ahlive]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ahlive-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-05T17:29:39Z
+  cfe-generated-by-version: 8.103.0
+  cfe-generated-at-datetime: 2026-11-05T17:29:39Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T21:28:45Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: run setuptools below 81: upstream imports pkg_resources, which current setuptools no longer ships.
+#    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
+####

@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: django-nyt
-  version: 1.6.0
+  version: 1.6.1
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_nyt-${{ version }}.tar.gz
-  sha256: 8e3ca3d4bf6d91d6adfe10df6b0dc37b48e24cacd790fa93583c01c714cf931b
+  url: https://pypi.org/packages/source/d/django-nyt/django_nyt-${{ version }}.tar.gz
+  sha256: cc05af64718c21110352cbec1e76897212779c6ea221020fcf7b596493a3ba12
 
 build:
   number: 0
@@ -26,7 +26,6 @@ requirements:
   run:
     - python >=${{ python_min }},<4.0
     - django >=4.2,<6.1
-    - channels
 tests:
   - python:
       imports:
@@ -63,19 +62,23 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-nyt-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-11-05T18:50:35Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-11-05T18:51:22Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: requirements taken from the feedstock so the refresh can proceed: -channels.
+#    # 2026-11-05 Story 25.19: source URL written out literally, the canonical form, so the refresh can read it.
 #    # WAVE-C C2: feedstock is already v1; authored fresh recipe.yaml at 1.5.0,
 #    # deleted stale local meta.yaml (was bare "1.3"). Matches the deployed v1
 #    # django-nyt-feedstock shape, modernized.
+#    # 2026-11-05 refresh_wave A-W19-5: needs-review, dependency-fix (run -channels)
+#    # 2026-11-05 refresh_wave A-W19-6: refreshed 1.6.0 -> 1.6.1
 # context:
 #    # python_min omitted from context: upstream requires-python is >=3.8, below
 #    # the conda-forge 3.10 floor, so let conda-forge-pinning supply python_min.

@@ -3,32 +3,32 @@ schema_version: 1
 
 context:
   name: vision-explanation-methods
-  version: "0.1.1"
+  version: "0.1.3"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/vision_explanation_methods-${{ version }}.tar.gz
-  sha256: 03fae114405c4fe3f4da3dba9f8dc3772a19f38125fed98c953fb1ab0f712168
+  url: https://pypi.org/packages/source/v/vision-explanation-methods/vision_explanation_methods-${{ version }}.tar.gz
+  sha256: a3c5a12c6270706142c7ce0589dfe96b88edad94312094c1456cb70baf877021
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - numpy
+    - numpy <3
     - tqdm
-    - matplotlib-base <3.7.0
-    - ml-wrappers
+    - matplotlib-base >=3.9
+    - ml-wrappers >=0.6.0,<0.7
 
 tests:
   - python:
@@ -46,3 +46,40 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: vision-explanation-methods
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: vision-explanation-methods
+  cfe-purls:
+    - pkg:conda/vision-explanation-methods@${{ version }}?channel=conda-forge
+    - pkg:pypi/vision-explanation-methods@${{ version }}
+  cfe-upstream-repo: https://github.com/microsoft/vision-explanation-methods
+  cfe-upstream-homepage: https://github.com/microsoft/vision-explanation-methods
+  cfe-import-names: [vision_explanation_methods]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/vision-explanation-methods-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-05T18:55:31Z
+  cfe-generated-by-version: 8.103.0
+  cfe-generated-at-datetime: 2026-11-05T17:29:39Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T21:03:43Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-05 Story 25.19: numpy and matplotlib-base taken from the feedstock.
+#    # 2026-11-05 Story 25.19: requirements taken from the feedstock so the refresh can proceed: ~ml-wrappers.
+#    # 2026-11-05 Story 25.19: source URL written out literally, the canonical form, so the refresh can read it.
+#    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
+#    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
+#    # 2026-11-05 refresh_wave A-W19-5: needs-review, dependency-fix (run pin ml-wrappers (ml-wrappers vs ml-wrappers >=0.6.0,<0.7))
+#    # 2026-11-05 refresh_wave A-W19-6: refreshed 0.1.1 -> 0.1.3
+####

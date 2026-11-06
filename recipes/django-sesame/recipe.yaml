@@ -20,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - poetry-core >=1.0.0
     - pip
   run:
@@ -67,13 +67,14 @@ extra:
   cfe-last-checked: 2026-06-20T00:00:00Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
-  cfe-local-build-status: build-clean-test-blocked
-  cfe-local-build-datetime: 2026-10-09T09:25:29Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T18:52:59Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
 #    # WAVE-C C1 (KEEP-meta): feedstock still v0/meta.yaml at 3.2.3; local
 #    # meta.yaml refreshed to faithfully mirror the deployed v0 feedstock,
 #    # recipe.yaml authored alongside as the proposed v1 migration. Both

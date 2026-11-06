@@ -14,7 +14,7 @@ source:
   sha256: e32bd5074a490d27606b42004d4d7cfbaaeeac21a403d9e40955ac8fb92c12c8
 
 build:
-  number: 2
+  number: 3
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -73,12 +73,15 @@ extra:
   cfe-generated-by-version: 8.67.0
   cfe-generated-at-datetime: 2026-07-03T22:07:06Z
   cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-07-03T22:07:06Z
+  cfe-local-build-datetime: 2026-11-05T22:55:59Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.19: failed stands and is exempt by name from CAP-35's grep (operator ruling 2026-11-05): upstream requires python below 3.9, pip refuses it on the 3.11 floor, and no build can run until upstream moves or the feedstock retires.
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: python_min stays at the floor although the feedstock sets 3.7: rules 4 and 5 of the python version policy forbid a value below it (G127).
 #    # 2026-07-03 Set F wave (tracker residuals) — LOCAL BUILDS ONLY.
 # Header:
 #    # TERMINAL: python cap below cf floor; tracker issue 088 closed as unshippable.

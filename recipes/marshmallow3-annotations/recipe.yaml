@@ -14,18 +14,18 @@ source:
   sha256: aa804dc43a0f5fa7314724bdef31ecd22391b45d53f7aff5100cc5964e86cd20
 
 build:
-  number: 1
+  number: 2
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - marshmallow >=3.0.0
+    - marshmallow >=3.0.0,<4
 
 tests:
   - python:
@@ -43,3 +43,37 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: marshmallow3-annotations
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: marshmallow3-annotations
+  cfe-purls:
+    - pkg:conda/marshmallow3-annotations@${{ version }}?channel=conda-forge
+    - pkg:pypi/marshmallow3-annotations@${{ version }}
+  cfe-upstream-repo: https://github.com/dkunitsk/marshmallow3-annotations
+  cfe-upstream-homepage: https://github.com/dkunitsk/marshmallow3-annotations
+  cfe-import-names: [marshmallow3_annotations]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/marshmallow3-annotations-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-11-05T17:29:39Z
+  cfe-generated-by-version: 8.103.0
+  cfe-generated-at-datetime: 2026-11-05T17:29:39Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T21:48:49Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: marshmallow capped below 4: upstream imports marshmallow.base, which marshmallow 4 removed.
+#    # 2026-11-05 Story 25.19: python host spec corrected; a bare version is not a valid match spec.
+#    # 2026-11-05 CFE block added by mason Story 25.19 from the recipe body and the atlas; the build record is refresh-wave's.
+####

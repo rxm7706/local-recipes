@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.0.594"
+  version: "1.0.615"
 
 package:
   name: dbt-protos
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/d/dbt-protos/dbt_protos-${{ version }}.tar.gz
-  sha256: 23140898ff8bcbb9291f087c9f344c0a4a4279e31639916196ff98fb2e41967d
+  sha256: 05ee5544ffbc4d105728bdcf78b4d75c9881d66eda36c26a786a1d2f53d49694
 
 build:
   number: 0
@@ -27,13 +27,13 @@ requirements:
     - protobuf >=3.17.1
 
 tests:
-- python:
-    imports:
-      - dbtlabs
-    pip_check: true
-    python_version:
-      - ${{ python_min }}.*
-      - "*"
+  - python:
+      imports:
+        - dbtlabs
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   homepage: https://github.com/dbt-labs/proto-python-public
@@ -66,15 +66,17 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dbt-protos-feedstock
   cfe-forge-recipe-updates-needed: [version-bump-to-1.0.514]
-  cfe-last-checked: 2026-07-03T22:07:06Z
+  cfe-last-checked: 2026-11-05T18:34:54Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T10:33:34Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-10-09T09:14:28Z
+  cfe-local-build-datetime: 2026-11-05T18:35:50Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
+# Header:
+#    # 2026-11-05 refresh_wave A-W19-2: refreshed 1.0.594 -> 1.0.615
 # requirements:
 #  host:
 #    # setuptools retained in host: upstream is a setup.py/egg-info project

@@ -13,7 +13,7 @@ source:
   sha256: f5368329adbef86accd3bc9490522340bb79260455ae89b1a42c10f63801b9a6
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -24,6 +24,7 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
+    - setuptools
 
 tests:
   - python:
@@ -35,9 +36,9 @@ tests:
         - "*"
 
 about:
-  homepage: UNKNOWN
-  license: REPLACE_LICENSE
-  license_file: LICENSE
+  homepage: https://pypi.org/project/hurry.filesize/
+  license: ZPL-2.1
+  license_file: LICENSE.txt
   summary: A simple Python library for human readable file sizes (or anything sized in bytes).
   description: |
     A simple Python library for human readable file sizes (or anything sized in bytes).
@@ -68,19 +69,17 @@ extra:
     - meta-yaml-to-recipe-yaml
     - version-update-to-0.9
 
-  cfe-forge-blocker-list:
-    - license-unresolved:REPLACE_LICENSE
-
+  cfe-forge-blocker-list: []
   cfe-last-checked: 2026-08-18T09:42:35Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T09:42:35Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-08-18T09:42:35Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-05T21:29:09Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
-#    # license:REPLACE_LICENSE
-#    # blocker: license-unresolved:REPLACE_LICENSE
+#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.19: licence, license_file and run setuptools taken from the feedstock; homepage taken from the feedstock.
 ####
