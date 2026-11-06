@@ -57,3 +57,28 @@ class TestRecipeEditor:
         )
         # Should not crash; exit non-zero or produce error JSON
         assert rc != 0 or "error" in (out + err).lower()
+
+    def test_calculate_hash_renders_an_expression_before_it_downloads(self, tmp_path, monkeypatch, load_module):
+        editor = load_module("recipe_editor.py")
+        recipe = tmp_path / "recipe.yaml"
+        recipe.write_text(
+            'schema_version: 1\ncontext:\n  name: my-pkg\n  version: "1.2"\n'
+            "source:\n  url: https://x/${{ name[0] }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz\n"
+        )
+        monkeypatch.setenv("CFE_RECIPES_ROOT", str(tmp_path))
+        seen = []
+        monkeypatch.setattr(editor, "calculate_sha256_from_url", lambda url: seen.append(url) or "0" * 64)
+        result = editor.execute_actions(recipe, [{"action": "calculate_hash", "path": "source"}])
+        assert result["success"] is True and seen == ["https://x/m/my_pkg-1.2.tar.gz"]
+
+    def test_calculate_hash_refuses_an_expression_that_does_not_render(self, tmp_path, monkeypatch, load_module):
+        editor = load_module("recipe_editor.py")
+        recipe = tmp_path / "recipe.yaml"
+        recipe.write_text(
+            'schema_version: 1\ncontext:\n  version: "1.2"\nsource:\n  url: https://x/${{ missing }}-${{ version }}.tar.gz\n'
+        )
+        monkeypatch.setenv("CFE_RECIPES_ROOT", str(tmp_path))
+        seen = []
+        monkeypatch.setattr(editor, "calculate_sha256_from_url", lambda url: seen.append(url) or "0" * 64)
+        result = editor.execute_actions(recipe, [{"action": "calculate_hash", "path": "source"}])
+        assert result["success"] is False and "does not render" in result["error"] and seen == []

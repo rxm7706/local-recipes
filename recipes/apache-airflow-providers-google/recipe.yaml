@@ -164,6 +164,7 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.22: patch file deleted: it removed the litellm pins from pyproject and nothing named it. The feedstock, now at 22.8.0, carries no patch; this recipe stays at 22.3.0.
 #    # (agent rationale parks here, organized by recipe location — never
 #    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
 ####

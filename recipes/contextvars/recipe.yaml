@@ -13,7 +13,7 @@ source:
   sha256: f38c908aaa59c14335eeea12abea5f443646216c4e29380d7bf34d2018e2c39e
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -24,6 +24,7 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
+    - immutables >=0.9
 
 tests:
   - python:
@@ -71,11 +72,13 @@ extra:
   cfe-last-checked: 2026-08-18T08:31:57Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T08:31:57Z
-  cfe-local-build-status: build-clean-test-blocked
-  cfe-local-build-datetime: 2026-08-18T08:31:57Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-06T00:38:23Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.22: run immutables taken from the feedstock: the identity-snapshot mirror dropped it, and no note records a reason.
+#    # 2026-11-05 Story 25.22: build.number bumped: the recipe changed at the same version (G113).
 ####

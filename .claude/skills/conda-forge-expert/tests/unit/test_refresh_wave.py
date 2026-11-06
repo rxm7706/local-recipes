@@ -373,7 +373,7 @@ def test_c1_v0_feedstock_mirrors_meta_yaml_even_when_a_gate_fails(rw, env):
     assert list(d.glob(".meta.yaml*")) == []
     assert rec_of(report)["gates"]["validate"] == 1
     assert set(rec_of(report)["gates"]) == {"validate", "optimize", "check-deps", "scan"}
-    build_calls = [a for a in env.run_calls if a and a[0] == "rattler-build"]
+    build_calls = [a for a in env.run_calls if a and a[0] == "rattler-build" and "--render-only" not in a]
     assert len(build_calls) == 1
     target = build_calls[0][build_calls[0].index("--recipe") + 1]
     assert target == str(path)  # recipe.yaml explicitly, never the directory
@@ -649,7 +649,7 @@ def test_build_stamps_the_real_outcome(rw, env):
 def test_a_failed_build_is_stamped_failed(rw, env):
     path = env.write_recipe()
     env.add_feedstock("widget", "v1", fs_v1_raw())
-    env.run_handler = lambda argv: (1, "compile error", "")
+    env.run_handler = lambda argv: (0, "", "") if "--render-only" in argv else (1, "compile error", "")
     rc, report = env.invoke([{"name": "widget"}], "--apply", "--build")
     assert rec_of(report)["build"]["status"] == "failed"
     assert "cfe-local-build-status: failed" in path.read_text()
@@ -667,7 +667,7 @@ def test_rebuild_builds_and_stamps_an_already_current_recipe(rw, env):
     assert rec["outcome"] == "already-current"
     assert rec["build"]["status"] == "success"
     assert set(rec["gates"]) == {"validate", "optimize", "check-deps", "scan"}
-    assert [a[0] for a in env.run_calls].count("rattler-build") == 1
+    assert len([a for a in env.run_calls if a[0] == "rattler-build" and "--render-only" not in a]) == 1
     assert "cfe-local-build-status: success" in text
     assert "cfe-local-build-tool: rattler-build" in text
     assert "cfe-local-build-datetime: none" not in text
@@ -765,12 +765,275 @@ def test_a_build_of_0_outputs_stamps_nothing_and_does_not_fail_the_run(rw, env):
     path = env.write_recipe()
     env.add_feedstock("widget", "v1", fs_v1_raw())
     before = [line for line in path.read_text().splitlines() if "cfe-local-build-" in line]
-    env.run_handler = lambda argv: (0, " Skipping widget - skip conditions evaluated to true\n Starting build of 0 outputs", "")
+    env.run_handler = lambda argv: (0, "", "") if "--render-only" in argv else (0, " Skipping widget - skip conditions evaluated to true\n Starting build of 0 outputs", "")
     rc, report = env.invoke([{"name": "widget"}], "--apply", "--build")
     build = rec_of(report)["build"]
     assert build["status"] == "skipped" and build["stamped"] is False
     assert [line for line in path.read_text().splitlines() if "cfe-local-build-" in line] == before
     assert rc == 0
+
+
+# ── build logs and the render pre-check (Story 25.21) ────────────────────────
+
+def _build_only_fails(output):
+    """A handler that fails the build and passes the render check before it."""
+    return lambda argv: (0, "", "") if "--render-only" in argv else (1, output, "")
+
+
+def test_every_build_leaves_its_log_beside_the_report(rw, env):
+    env.write_recipe()
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+    env.run_handler = lambda argv: (0, "", "") if "--render-only" in argv else (0, "\x1b[1mbuilt\x1b[0m widget", "a warning")
+    _, report = env.invoke([{"name": "widget"}], "--apply", "--build")
+    build = rec_of(report)["build"]
+    assert build["log"] == "logs/widget.log"
+    log = (env.report / build["log"]).read_text()
+    assert "built widget" in log and "a warning" in log and "\x1b" not in log
+
+
+def test_a_failed_build_keeps_its_log(rw, env):
+    env.write_recipe()
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+    env.run_handler = _build_only_fails("ModuleNotFoundError: No module named 'pkg_resources'")
+    _, report = env.invoke([{"name": "widget"}], "--apply", "--build")
+    assert "pkg_resources" in (env.report / rec_of(report)["build"]["log"]).read_text()
+
+
+def test_a_log_that_cannot_be_written_is_a_note_and_never_fails_the_recipe(rw, env, monkeypatch):
+    env.write_recipe()
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+
+    real_write = Path.write_text
+
+    def refuse_logs(self, *a, **k):
+        if self.suffix == ".log":
+            raise OSError("disk full")
+        return real_write(self, *a, **k)
+
+    monkeypatch.setattr(Path, "write_text", refuse_logs)
+    rc, report = env.invoke([{"name": "widget"}], "--apply", "--build")
+    rec = rec_of(report)
+    assert rc == 0 and rec["build"]["status"] == "success" and rec["build"]["log"] is None
+    assert any("log not written" in note for note in rec["notes"])
+
+
+RENDER_ERROR = (
+    "\x1b[31mError:   \u00d7 Failed to parse recipe\x1b[0m\n"
+    "  \u2570\u2500\u25b6 invalid value for 'item': '*' is incompatible with '==' operator'\n"
+    "    \u256d\u2500[recipe.yaml:33:7]\n"
+)
+
+
+def test_render_check_in_a_dry_run_writes_no_recipe_and_lists_the_failure(rw, env):
+    path = env.write_recipe()
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+    before = path.read_text()
+    env.run_handler = lambda argv: (1, "", RENDER_ERROR)
+    rc, report = env.invoke([{"name": "widget"}], "--render-check")
+    rec = rec_of(report)
+    assert rc == 0 and rec["outcome"] == "needs-review"
+    assert rec["reasons"] == ["render-failed: Failed to parse recipe: invalid value for 'item': '*' is incompatible with '==' operator'"]
+    assert rec["render"]["status"] == "failed" and rec["render"]["log"] == "logs/widget.render.log"
+    assert "Failed to parse recipe" in (env.report / rec["render"]["log"]).read_text()
+    assert path.read_text() == before
+    assert all("--render-only" in a for a in env.run_calls) and len(env.run_calls) == 1
+
+
+def test_render_check_uses_the_builds_own_variant_configs(rw, env, tmp_path, monkeypatch):
+    path = env.write_recipe()
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+    (path.parent / "conda_build_config.yaml").write_text("python_min:\n  - '3.12'\n")
+    env.invoke([{"name": "widget"}], "--render-check")
+    render = next(a for a in env.run_calls if "--render-only" in a)
+    build_argv, _ = rw._build_argv(path, "widget")
+    assert [a for a in render if a != "--render-only"] == build_argv
+
+
+def test_build_implies_the_render_check_and_a_failure_spends_no_gate_or_build(rw, env):
+    path = env.write_recipe()
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+    env.run_handler = lambda argv: (1, "", RENDER_ERROR) if "--render-only" in argv else (0, "", "")
+    before = path.read_text()
+    rc, report = env.invoke([{"name": "widget"}], "--apply", "--gates", "--build")
+    rec = rec_of(report)
+    assert rc == 0 and rec["outcome"] == "needs-review" and rec["build"] is None and rec["gates"] == {}
+    assert len(env.run_calls) == 1
+    assert path.read_text() == before  # a recipe that cannot render is never edited
+
+
+def test_rebuild_render_checks_an_already_current_recipe_first(rw, env):
+    env.write_recipe(version="2.0.0")
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+    env.run_handler = lambda argv: (1, "", RENDER_ERROR) if "--render-only" in argv else (0, "", "")
+    _, report = env.invoke([{"name": "widget"}], "--apply", "--gates", "--build", "--rebuild")
+    rec = rec_of(report)
+    assert rec["outcome"] == "needs-review" and rec["build"] is None and rec["gates"] == {}
+
+
+def test_a_recipe_that_renders_goes_on_to_its_build(rw, env):
+    env.write_recipe()
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+    _, report = env.invoke([{"name": "widget"}], "--apply", "--build")
+    assert rec_of(report)["render"] == {"status": "ok"}
+    assert [("--render-only" in a) for a in env.run_calls] == [True, False]
+
+
+def test_render_check_is_refused_with_repair(rw, env, tmp_path):
+    manifest = tmp_path / "m.yaml"
+    manifest.write_text(json.dumps({"schema_version": 1, "track": "B", "wave": "B1", "recipes": [{"name": "widget"}]}))
+    with pytest.raises(SystemExit):
+        rw.main([str(manifest), "--repair", "--render-check"])
+
+
+def test_a_dry_run_row_without_a_render_is_not_resumed_by_a_render_check(rw, env):
+    env.write_recipe(version="2.0.0")
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+    env.invoke([{"name": "widget"}])
+    assert env.run_calls == []
+    _, report = env.invoke([{"name": "widget"}], "--render-check")
+    assert rec_of(report).get("resumed") is None and rec_of(report)["render"] == {"status": "ok"}
+    env.run_calls.clear()
+    _, report = env.invoke([{"name": "widget"}], "--render-check")
+    assert rec_of(report)["resumed"] is True and env.run_calls == []
+
+
+def test_a_source_annotation_line_is_not_read_as_the_error(rw):
+    output = (
+        "Error:   \u00d7 Failed to parse recipe\n"
+        "  \u2570\u2500\u25b6 missing test type field\n"
+        " 42 \u2502 \u256d\u2500\u25b6   - requirements:\n"
+        " 45 \u2502 \u251c\u2500\u25b6 \n"
+    )
+    assert rw._render_error(output) == "Failed to parse recipe: missing test type field"
+
+
+def test_a_wrapped_cause_is_kept_whole(rw):
+    output = (
+        "Error:   \u00d7 Failed to render recipe with variants\n"
+        "  \u2570\u2500\u25b6 invalid value for 'match spec': Invalid match spec 'python 3.10':\n"
+        "      missing range specifier\n"
+        "    \u256d\u2500[recipe.yaml:12:7]\n"
+        " 12 \u2502     - python 3.10\n"
+    )
+    assert rw._render_error(output) == (
+        "Failed to render recipe with variants: invalid value for 'match spec': "
+        "Invalid match spec 'python 3.10': missing range specifier"
+    )
+
+
+def test_a_render_reason_is_one_short_line(rw):
+    reason = rw._render_error("Error:   \u00d7 " + "x" * 900)
+    assert len(reason) == rw._RENDER_REASON_MAX and "\n" not in reason
+
+
+@pytest.mark.parametrize("rc, stderr", [(127, "rattler-build not found"), (124, "timed out after 120s")])
+def test_a_render_check_that_never_ran_is_not_terminal(rw, env, rc, stderr):
+    env.write_recipe()
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+    env.run_handler = lambda argv: (rc, "", stderr)
+    exit_code, report = env.invoke([{"name": "widget"}], "--render-check")
+    rec = rec_of(report)
+    assert exit_code == 1 and rec["outcome"] == "failed"
+    assert rec["reasons"] == [f"render-check-unavailable: {stderr}"]
+    env.run_handler = lambda argv: (0, "", "")
+    _, report = env.invoke([{"name": "widget"}], "--render-check")
+    assert rec_of(report).get("resumed") is None and rec_of(report)["render"] == {"status": "ok"}
+
+
+def test_a_render_that_passes_clears_the_old_failures_log(rw, env):
+    path = env.write_recipe(version="2.0.0")
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+    env.run_handler = lambda argv: (1, "", RENDER_ERROR)
+    env.invoke([{"name": "widget"}], "--render-check")
+    log = env.report / "logs" / "widget.render.log"
+    assert log.exists()
+    env.run_handler = lambda argv: (0, "", "")
+    path.write_text(path.read_text() + "\n")
+    env.invoke([{"name": "widget"}], "--render-check")
+    assert not log.exists()
+
+
+def test_render_check_with_build_renders_once(rw, env):
+    env.write_recipe()
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+    env.invoke([{"name": "widget"}], "--render-check", "--apply", "--build")
+    assert [("--render-only" in a) for a in env.run_calls].count(True) == 1
+
+
+def test_render_check_with_rebuild_renders_once(rw, env):
+    env.write_recipe(version="2.0.0")
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+    env.invoke([{"name": "widget"}], "--render-check", "--apply", "--build", "--rebuild")
+    assert [("--render-only" in a) for a in env.run_calls].count(True) == 1
+
+
+def test_a_skipped_build_keeps_its_log(rw, env):
+    env.write_recipe()
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+    env.run_handler = lambda argv: (0, "", "") if "--render-only" in argv else (0, "Starting build of 0 outputs", "")
+    _, report = env.invoke([{"name": "widget"}], "--apply", "--build")
+    assert rec_of(report)["build"]["log"] == "logs/widget.log"
+
+
+def test_the_report_names_both_logs(rw, env):
+    env.write_recipe()
+    env.write_recipe(name="broken")
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+    env.add_feedstock("broken", "v1", fs_v1_raw())
+    env.run_handler = lambda argv: (1, "", RENDER_ERROR) if "--render-only" in argv and "broken" in " ".join(argv) else (0, "", "")
+    env.invoke([{"name": "widget"}, {"name": "broken"}], "--apply", "--build")
+    text = (env.report / "report.md").read_text()
+    assert "log: logs/widget.log" in text and "render log: logs/broken.render.log" in text
+
+
+def test_an_unnamed_render_failure_falls_back_to_its_last_line(rw):
+    assert rw._render_error("first\nsecond line\n\n") == "second line"
+    assert rw._render_error("") == "rattler-build gave no output"
+
+
+# ── source URL expressions (Story 25.21) ─────────────────────────────────────
+
+@pytest.mark.parametrize("url, context, expected", [
+    ("https://x/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz",
+     {"name": "my-pkg", "version": "1.2"}, "https://x/m/my-pkg/my_pkg-1.2.tar.gz"),
+    ("https://x/${{ name|lower }}-${{ version }}.zip", {"name": "MyPkg", "version": "1"}, "https://x/mypkg-1.zip"),
+    ("https://x/${{ tag }}.tar.gz", {"version": "0.7", "tag": "${{ version }}-gen"}, "https://x/0.7-gen.tar.gz"),
+])
+def test_render_url_renders_expressions_from_context(rw, url, context, expected):
+    assert rw._render_url(url, context) == expected
+
+
+@pytest.mark.parametrize("url", [
+    "https://x/${{ missing }}-${{ version }}.tar.gz",
+    "https://x/${{ env.get('X') }}-${{ version }}.tar.gz",
+    "https://x/${{ version",
+])
+def test_render_url_leaves_what_it_cannot_render(rw, url):
+    assert "${{" in rw._render_url(url, {"version": "1"})
+
+
+@pytest.mark.parametrize("expression", ["version.__class__", "1/0"])
+def test_render_url_fails_closed_on_an_unsafe_or_raising_expression(rw, expression):
+    url = "https://x/${{ " + expression + " }}.tar.gz"
+    assert rw._render_url(url, {"version": "1"}) == url
+
+
+def test_a_url_expression_refreshes_with_the_rendered_url(rw, env):
+    url = "https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/widget-${{ version }}.tar.gz"
+    path = env.write_recipe(text=make_recipe(url=url).replace("context:\n", "context:\n  name: widget\n"))
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+    rc, report = env.invoke([{"name": "widget"}], "--apply")
+    assert rc == 0 and rec_of(report)["outcome"] == "refreshed"
+    assert env.hash_calls == ["https://pypi.org/packages/source/w/widget/widget-2.0.0.tar.gz"]
+    assert "${{ name[0] }}" in path.read_text()  # the recipe's own form stays
+
+
+def test_a_url_expression_the_driver_cannot_render_stays_url_unrenderable(rw, env):
+    env.write_recipe(url="https://pypi.org/packages/source/w/${{ missing }}/widget-${{ version }}.tar.gz")
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+    _, report = env.invoke([{"name": "widget"}], "--apply")
+    assert rec_of(report)["reasons"][0].startswith("url-unrenderable")
+    assert env.hash_calls == []
 
 
 # ── dry-run ──────────────────────────────────────────────────────────────────

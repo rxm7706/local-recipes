@@ -4,7 +4,7 @@
 # "Recipe Authoring Gotchas" section. Hand edits are detectably wrong —
 # regenerating overwrites them; see tests/meta/test_failure_catalog_freshness.py.
 schema_version: 1
-source_sha256: "28542df6d6c38e13680a7434e376af8199514f871039880028342629005516df"
+source_sha256: "e7824f02f48e0110e4b48c5cfe5a3a27865316a07bf6abb6e6eeabf981f5b336"
 rows:
   - id: G1
     title: "Don't rely on env vars carrying across `script:` list entries — older rattler-build ran each entry in its own shell"
@@ -1049,4 +1049,11 @@ rows:
     symptom_signature:
       - "packaging.version.InvalidVersion: Invalid version: 'r0.0.0'"
       - "could not determine package version"
+    enforced_by: null
+  - id: G130
+    title: "The identity snapshot lost patches and dependencies, and a green record does not prove a recipe is whole"
+    symptom_signature:
+      - "source.patches"
+      - "yaml"
+      - "pyyaml"
     enforced_by: null

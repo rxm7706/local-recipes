@@ -13,18 +13,20 @@ source:
   sha256: 4efb13e62353e34c5eef7ed6582c4920b418d7dedc86d819e22ee089ba01802c
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
+    - six
+    - flake8
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - yaml
+    - pyyaml >=3.11
     - click
 
 tests:
@@ -73,13 +75,15 @@ extra:
   cfe-last-checked: 2026-08-17T07:01:42Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-17T07:01:42Z
-  cfe-local-build-status: build-clean-test-blocked
-  cfe-local-build-datetime: 2026-08-17T07:01:42Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-11-06T00:37:30Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.22: host six and flake8 and run pyyaml taken from the feedstock: the identity-snapshot mirror dropped it, and no note records a reason. The body named the C library yaml.
+#    # 2026-11-05 Story 25.22: build.number bumped: the recipe changed at the same version (G113).
 #    # added run deps from import test: ['click']
 #    # added run deps from import test: ['yaml']
 ####

@@ -13,7 +13,7 @@ source:
   sha256: 1eb4565d19ebe5d48996f4b770b4d2b32887e12cb12cfa637f1a064011b55ffc
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -24,6 +24,8 @@ requirements:
     - flit-core >=3.2,<4
   run:
     - python >=${{ python_min }}
+    - html5lib >=1.1
+    - toml >=0.10
     - cachecontrol >=0.13.0
     - cyclonedx-python-lib <12,>=5
     - packaging >=23.0.0
@@ -83,10 +85,12 @@ extra:
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T11:08:39Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-18T11:08:39Z
+  cfe-local-build-datetime: 2026-11-06T00:40:03Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.22: run html5lib and toml taken from the feedstock: the identity-snapshot mirror dropped it, and no note records a reason.
+#    # 2026-11-05 Story 25.22: build.number bumped: the recipe changed at the same version (G113).
 ####

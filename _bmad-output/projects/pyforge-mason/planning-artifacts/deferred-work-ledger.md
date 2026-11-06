@@ -2086,7 +2086,8 @@ status: open
   origin: spec-deferred 55f95d674201 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-11-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 25.21 (25-21-refresh-wave-keeps-build-logs-render-checks-first-and-renders-url-expressions); the G96 gap stays with DW-mason-25-17
 
 ### DW-mason-25-19-3: reactpy, conda, apache-airflow-providers-google and grpc-cpp carry patch files their recipe.yaml never names. Story 25.19 found dataprofiler, gibr and datasketches in the same state, each losing source.patches in the identity-snapshot mirror. Read each patch against the feedstock and reconnect or delete it.
 
@@ -2097,7 +2098,8 @@ status: open
   origin: spec-deferred 27cdaa3e8d9d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-11-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 25.22 (25-22-the-in-scope-recipes-take-back-what-the-identity-mirror-dropped); grpc-cpp moved to DW-mason-25-22-2
 
 ### DW-mason-25-19-4: ydata-synthetic stays at 2.0.0 and its 2026-07 G95 record: PyPI no longer serves the sdist the recipe and the feedstock name, and 2.0.1 is a stub that renames the project to fg-data-synthetic and fails on import. Whether the recipe follows the rename is a maintainer decision.
 
@@ -2118,5 +2120,27 @@ status: open
   location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-19-the-recipes-that-still-record-a-failed-build-get-their-own-build.md:92
   origin: spec-deferred 0034080f154b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
+  promoted: 2026-11-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-25-22-2: Outside CAP-35's scope, 249 recipes name a patch file that is not on disk, counted by parsing each recipe's source.patches with templated paths skipped, grpc-cpp among them (recipe at 1.83.0, patches from 1.74.1), so they cannot build locally; and 7 recipes keep patch files their recipe.yaml never names: ansi2html, cassandra-driver, dbus-python, grpc-cpp, pymupdf, python-magic and salt. The campaign builds none of them. Mirror each patch directory from its feedstock when a story needs that recip... [truncated, 502 chars total]
+
+- source_spec: `planning-artifacts/specs/spec-25-22-the-in-scope-recipes-take-back-what-the-identity-mirror-dropped.md`
+  summary: Outside CAP-35's scope, 249 recipes name a patch file that is not on disk, counted by parsing each recipe's source.patches with templated paths skipped, grpc-cpp among them (recipe at 1.83.0, patches from 1.74.1), so they cannot build locally; and 7 recipes keep patch files their recipe.yaml never names: ansi2html, cassandra-driver, dbus-python, grpc-cpp, pymupdf, python-magic and salt. The campaign builds none of them. Mirror each patch directory from its feedstock when a story needs that recip... [truncated, 502 chars total]
+  evidence: Outside CAP-35's scope, 249 recipes name a patch file that is not on disk, counted by parsing each recipe's source.patches with templated paths skipped, grpc-cpp among them (recipe at 1.83.0, patches from 1.74.1), so they cannot build locally; and 7 recipes keep patch files their recipe.yaml never names: ansi2html, cassandra-driver, dbus-python, grpc-cpp, pymupdf, python-magic and salt. The campaign builds none of them. Mirror each patch directory from its feedstock when a story needs that recip... [truncated, 502 chars total]
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-22-the-in-scope-recipes-take-back-what-the-identity-mirror-dropped.md:73
+  origin: spec-deferred 2f8b76fc76ce — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-11-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-25-22-3: The identity mirror moved 17 of 949 comparable recipes to an older version, 11 of them in CAP-35's scope, because each sat ahead of its feedstock. CAP-35 holds a recipe at the published version, so most stand. The one that broke something is reactpy: an operator-directed local-only 2.0.0b13 became 1.1.0, so reactpy-django 6.0.0b1, which pins reactpy >=2.0.0b13 and whose success record dates from 2026-07-14, can no longer solve. Restore the v2 chain or retire reactpy-django.
+
+- source_spec: `planning-artifacts/specs/spec-25-22-the-in-scope-recipes-take-back-what-the-identity-mirror-dropped.md`
+  summary: The identity mirror moved 17 of 949 comparable recipes to an older version, 11 of them in CAP-35's scope, because each sat ahead of its feedstock. CAP-35 holds a recipe at the published version, so most stand. The one that broke something is reactpy: an operator-directed local-only 2.0.0b13 became 1.1.0, so reactpy-django 6.0.0b1, which pins reactpy >=2.0.0b13 and whose success record dates from 2026-07-14, can no longer solve. Restore the v2 chain or retire reactpy-django.
+  evidence: The identity mirror moved 17 of 949 comparable recipes to an older version, 11 of them in CAP-35's scope, because each sat ahead of its feedstock. CAP-35 holds a recipe at the published version, so most stand. The one that broke something is reactpy: an operator-directed local-only 2.0.0b13 became 1.1.0, so reactpy-django 6.0.0b1, which pins reactpy >=2.0.0b13 and whose success record dates from 2026-07-14, can no longer solve. Restore the v2 chain or retire reactpy-django.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-22-the-in-scope-recipes-take-back-what-the-identity-mirror-dropped.md:73
+  origin: spec-deferred 4510cb92ba6a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
   promoted: 2026-11-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open

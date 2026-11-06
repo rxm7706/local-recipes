@@ -82,6 +82,7 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.22: patch file kept: source.patches is commented out here, exactly as in the feedstock, and the recipe builds without it.
 #    # mason Story 22.1 (2026-10-09): crm's 2026-08-16 v0->v1 conversion turned the commented-out
 #    # `#patches:` into a SentinelType key (G121). The key is gone; its two comment lines stay under source.
 #    # The feedstock is still v0 and has since moved to 5.2.0; this mirror and its meta.yaml are at 4.6.3.

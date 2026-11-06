@@ -13,13 +13,15 @@ source:
   sha256: 695775cbfe51f5fdffbd9735ba469987fdc5efc96bc40a0ee4808170509c78b2
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
+    - jinja2 >=2.10.1
+    - jupyter >=1.0.0
     - pip
     - setuptools
     - wheel
@@ -27,6 +29,10 @@ requirements:
     - python >=${{ python_min }}
     - jinja2 >=2.10.1
     - numpy >=1.16.4
+  run_constraints:
+    - ipykernel >=5.1.2
+    - ipywidgets >=7,<8
+    - traitlets >=4.3.2
 
 tests:
   - python:
@@ -78,12 +84,14 @@ extra:
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T03:34:20Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-18T03:34:20Z
+  cfe-local-build-datetime: 2026-11-06T00:57:38Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-11-05 Story 25.22: host jinja2 and jupyter and the run_constraints taken from the feedstock: the identity-snapshot mirror dropped it, and no note records a reason.
+#    # 2026-11-05 Story 25.22: build.number bumped: the recipe changed at the same version (G113).
 #    # license: rattler-build did not copy a license file; recorded, retrying common names
 #    # blocker: missing-license-file
 ####

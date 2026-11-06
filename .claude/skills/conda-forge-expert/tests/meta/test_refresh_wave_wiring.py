@@ -314,8 +314,9 @@ def test_an_apply_run_completes_with_every_outbound_seam_armed(load_module, tmp_
     assert rc == 0
     assert report["recipes"][0]["outcome"] == "refreshed"
     assert 'version: "2.0.0"' in recipe.read_text()
-    # Only the four gates and one build went through the seam.
-    assert len(seen) == 5
+    # Only the render check, the four gates and one build went through the seam.
+    assert len(seen) == 6
+    assert "--render-only" in seen[0]
     assert seen[-1][0] == "rattler-build"
     assert report["recipes"][0]["build"]["status"] == "success"
 
