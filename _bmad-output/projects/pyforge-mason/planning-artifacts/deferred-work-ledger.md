@@ -2143,4 +2143,16 @@ status: open
   origin: spec-deferred 4510cb92ba6a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-11-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: closed
+  resolution: Story 25.23 (25-23-reactpy-django-retires); operator ruling 2026-11-05, "Retire reactpy-django"
+
+### DW-mason-25-23: reactpy-router 3.0.0b1 is local-only with no feedstock, pins reactpy >=2.0.0b12, and its success record predates the identity mirror, so it cannot solve against reactpy 1.1.0. reactpy-utils lists it, so it was not retired with reactpy-django. Rebuild reactpy-utils, then decide whether the router stays.
+
+- source_spec: `planning-artifacts/specs/spec-25-23-reactpy-django-retires.md`
+  summary: reactpy-router 3.0.0b1 is local-only with no feedstock, pins reactpy >=2.0.0b12, and its success record predates the identity mirror, so it cannot solve against reactpy 1.1.0. reactpy-utils lists it, so it was not retired with reactpy-django. Rebuild reactpy-utils, then decide whether the router stays.
+  evidence: reactpy-router 3.0.0b1 is local-only with no feedstock, pins reactpy >=2.0.0b12, and its success record predates the identity mirror, so it cannot solve against reactpy 1.1.0. reactpy-utils lists it, so it was not retired with reactpy-django. Rebuild reactpy-utils, then decide whether the router stays.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-23-reactpy-django-retires.md:70
+  origin: spec-deferred 094c45232566 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-11-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open

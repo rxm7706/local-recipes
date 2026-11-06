@@ -125,3 +125,4 @@ A separate reviewer found one high, three medium and five low items. The high: `
 - 2026-11-05: minted from `DW-mason-25-19-3` at the operator's "Do this task here".
 - 2026-11-05: run and retro `v8.105.0` recorded; status `done`.
 - 2026-11-05: review applied.
+- 2026-11-05: the operator retired `reactpy-django`; Story 25.23 carries it, and the `reactpy` patch this story kept goes with it.

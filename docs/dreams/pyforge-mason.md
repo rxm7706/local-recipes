@@ -795,6 +795,14 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   feedstock or upstream PR. Under `spec-pyforge-mason` CAP-35, no new CAP, no flag. Owner `spec-pyforge-mason`.
   → Epic 25 / Story 25.22, specced 2026-11-05.
 
+- **2026-11-05 (`DW-mason-25-22-3`) — Ruled: `reactpy-django` retires.** The identity mirror replaced the local-only
+  `reactpy` 2.0.0b13 with the feedstock's 1.1.0, so `reactpy-django` 6.0.0b1, which pins `reactpy >=2.0.0b13` and has no
+  feedstock, can no longer solve. Operator ruling 2026-11-05: "Retire reactpy-django". **What it looks like when real:**
+  `recipes/reactpy-django/` is gone, the v2 patch that waited on this decision goes with it, and `reactpy` stays at its
+  published 1.1.0. **Constraints:** recipes only; `reactpy-router` 3.0.0b1 stays, because `reactpy-utils` lists it; no
+  feedstock or upstream PR. Under `spec-pyforge-mason` CAP-35, no new CAP, no flag. Owner `spec-pyforge-mason`.
+  → Epic 25 / Story 25.23, specced 2026-11-05.
+
 ## One-chain fold — 2026-09-17
 
 Station Dream status is `specified` (Spec `spec-pyforge-mason` is `ready`). Mason-owned satellite Dreams archive in place with Consolidated-into banners. Practice Dream `packaging-factory` is archived into this station Dream (CHAIN-STANDARD precedence; no new station Dream minted). Recipe work stays `conda-forge-expert`; this fold is planning-chain only.

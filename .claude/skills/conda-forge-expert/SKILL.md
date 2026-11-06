@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.105.0
+version: 8.105.1
 allowed-tools: [conda_forge_server]
 ---
 
@@ -705,7 +705,7 @@ When pattern (2) is used, ship the LICENSE in-recipe and remove the stale "upstr
 2. The bundler **inlines** its entry point's transitive runtime deps into the emitted bundle, so those licenses ship too — read the runtime deps' own `package.json` `dependencies`.
 3. Vendored dists that get copied wholesale often carry their own bundled third-party license texts (e.g. `@pyscript/core/src/3rd-party-licenses/`) — include that directory rather than re-deriving it.
 
-Confirm against `unzip -l <upstream>.whl | grep static/` — only paths present there need licenses. Live: `reactpy-django 6.0.0b1` (2026-07-14) declared `BSD-2-Clause AND Apache-2.0 AND MIT AND EPL-2.0 AND BSD-3-Clause` over ~200 enumerated `node_modules` LICENSE files; the artifact actually ships only `@pyscript/core` (Apache-2.0), `morphdom` (MIT), and `@reactpy/client` (MIT, inlining preact + event-to-object + json-pointer, all MIT). Correct answer: **`MIT AND Apache-2.0`** over 8 entries. The spurious `EPL-2.0` / `BSD-*` came purely from dev-only tooling.
+Confirm against `unzip -l <upstream>.whl | grep static/` — only paths present there need licenses. Seen on `reactpy-django 6.0.0b1` (2026-07-14; retired 2026-11-05, still in git) declared `BSD-2-Clause AND Apache-2.0 AND MIT AND EPL-2.0 AND BSD-3-Clause` over ~200 enumerated `node_modules` LICENSE files; the artifact actually ships only `@pyscript/core` (Apache-2.0), `morphdom` (MIT), and `@reactpy/client` (MIT, inlining preact + event-to-object + json-pointer, all MIT). Correct answer: **`MIT AND Apache-2.0`** over 8 entries. The spurious `EPL-2.0` / `BSD-*` came purely from dev-only tooling.
 
 Why this matters: the conda-forge web-service review accepts any of the three patterns, but reviewers occasionally flag (3) ("can this be simplified?"). (1) is invisible; (2) reads as deliberate and gets a free conversational checkpoint with reviewers ("ship LICENSE in-recipe because upstream archive omits it").
 
@@ -4666,7 +4666,7 @@ A cap names its evidence in the recipe's CFE comment. It is G36/G77's consumer c
 
 **Why**: commit `20b2f459fa` (2026-08-16) wrote 7,093 files from feedstocks. It kept notes and patch files while it lost `source.patches` (`dataprofiler`, `gibr`, `datasketches`), and it lost dependencies. An `already-current` recipe skips the G96 diff, so nothing compares it with its feedstock again. A recipe can stay green without the dependency: mason Story 25.22 restored 18 dependencies and constraints on 8 recipes, and only three of those recipes had shown a symptom, as G95.
 
-**Fix**: compare `git show 20b2f459fa~1:recipes/<name>/recipe.yaml` and the live feedstock with the recipe, and take the feedstock's spec where no note explains the difference. Keep the feedstock's section: `run_constraints` is not `run`. Bump `build.number` at the same version (G113), and rebuild through `refresh-wave`. Reconnect a lost patch before you reach for a pin or a flag (`gibr`, `datasketches`). A patch file nothing names may be stale, not lost: the mirror replaced the local-only `reactpy` 2.0.0b13 with the feedstock's 1.1.0, and that patch belongs to the beta (`DW-mason-25-22-3`). The mirror also moved 17 of 949 recipes to an older version, 11 in scope. Outside CAP-35's scope, 249 recipes name patch files that were never mirrored (`DW-mason-25-22-2`).
+**Fix**: compare `git show 20b2f459fa~1:recipes/<name>/recipe.yaml` and the live feedstock with the recipe, and take the feedstock's spec where no note explains the difference. Keep the feedstock's section: `run_constraints` is not `run`. Bump `build.number` at the same version (G113), and rebuild through `refresh-wave`. Reconnect a lost patch before you reach for a pin or a flag (`gibr`, `datasketches`). A patch file nothing names may be stale, not lost: the mirror replaced the local-only `reactpy` 2.0.0b13 with the feedstock's 1.1.0, and that patch belonged to the beta; the operator retired `reactpy-django` rather than restore it (Story 25.23). The mirror also moved 17 of 949 recipes to an older version, 11 in scope. Outside CAP-35's scope, 249 recipes name patch files that were never mirrored (`DW-mason-25-22-2`).
 
 ---
 
@@ -4708,6 +4708,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.105.1** (Nov 5, 2026) — **mason Story 25.23 Rule-2 retro: `reactpy-django` retires on the operator's ruling (PATCH; no script or test change, no new gotcha).** See `CHANGELOG.md`.
 - **v8.105.0** (Nov 5, 2026) — **mason Stories 25.21 and 25.22 Rule-2 retro: `refresh-wave` keeps each build's log, `--render-check` reports what cannot render before a build is spent, and a URL expression renders as rattler-build renders it; G130 (the identity snapshot lost patches and dependencies) (MINOR).** The helper matches rattler-build on all 810 in-scope recipes it can compare.
 - **v8.104.0** (Nov 5, 2026) — **mason Stories 25.19 and 25.20 Rule-2 retro: the first tracked Track A run. `refresh-wave` records what a build did (G95 from rattler-build's own wording; 0 outputs is `skipped`, never `success`); G126 (a stale mirror's open run deps rot, by class), G127 (`<3.11` at the 3.11 floor is G95, never a lower `python_min`), G128 (keep host-bound recipes off a Linux `--rebuild`), G129 (`git describe` sees this repo) (MINOR).** 621 recipes through the driver: 601 `success`, 12 `build-clean-test-blocked`, 5 `not-attempted`, 1 `failed`, 1 `needs-review`, 1 `blocked`.
 - **v8.103.0** (Nov 1, 2026) — **mason Stories 25.17 and 25.18 Rule-2 retro: `refresh-wave --rebuild`, build-written records read back against run tables (G124), the host-header leak (G125), the skew-versus-G77 test, and the G53 handle placement fix (MINOR).** See `CHANGELOG.md`.
