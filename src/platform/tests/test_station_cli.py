@@ -27,8 +27,6 @@ from django_pyforge.queues import BUILDS_QUEUE
 from django_pyforge.queues import queue_for
 from django_pyforge.roles import ROLE_ADMIN
 from django_pyforge.station_cli import ENVIRONMENT_ALLOWLIST
-from django_pyforge.station_cli import START_LOOP_DISPATCH_FLAG_KEY
-from django_pyforge.station_cli import START_TOOL_CLI_FLAG_KEY
 from django_pyforge.station_cli import STATION_VERBS
 from django_pyforge.station_cli import STEWARD_DUTIES
 from django_pyforge.station_cli import task_limits
@@ -42,6 +40,9 @@ from django_pyforge.tasks import execute_supervised_run
 from mcp.server.mcpserver.exceptions import ToolError
 
 HOOK = Path(__file__).resolve().parents[3] / ".claude" / "hooks" / "pre-shell.py"
+
+START_TOOL_CLI_FLAG_KEY = "pyforge.steward.start_tool_cli"
+START_LOOP_DISPATCH_FLAG_KEY = "pyforge.steward.start_loop_dispatch"
 
 GUILD = "pyforge-guild"
 MASON = "pyforge-mason"
@@ -215,6 +216,11 @@ def _assertion(station: str, *extra: str) -> str:
         roles=[f"pyforge:station:{station}", *extra],
         station=station,
     )
+
+
+def test_the_flag_keys_here_are_the_module_keys() -> None:
+    assert station_cli.START_TOOL_CLI_FLAG_KEY == START_TOOL_CLI_FLAG_KEY
+    assert station_cli.START_LOOP_DISPATCH_FLAG_KEY == START_LOOP_DISPATCH_FLAG_KEY
 
 
 def test_the_table_is_pinned_and_closed() -> None:
