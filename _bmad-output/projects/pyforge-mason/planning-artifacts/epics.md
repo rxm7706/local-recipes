@@ -3515,7 +3515,7 @@ So that a recipe's build record is not green, or blocked, because of what a mirr
 
 As the maintainer of the feedstock refresh campaign,
 I want the local-only `reactpy-django` recipe gone, with the patch that waited on that decision,
-So that no recipe in the repo records a build its dependencies can no longer solve.
+So that `reactpy-django`, whose `reactpy` pin can no longer solve, stops recording a build; `reactpy-router` has the same defect and stays deferred.
 
 **Type:** fix • **Effort:** S • **Deps:** Story 25.22 • **FR/AD:** spec-pyforge-mason CAP-35 (FR-57); a fix, no new CAP; AD-1; CFE Rule 1 + Rule 2 • Closes `DW-mason-25-22-3`; operator ruling 2026-11-05, "Retire reactpy-django"
 **Flag:** none (a fix carries no flag, `spec-feature-flag-governance` Q1); its spec records `flag-exempt: recipe-build`

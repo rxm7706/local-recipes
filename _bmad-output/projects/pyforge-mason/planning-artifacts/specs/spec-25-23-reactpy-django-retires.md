@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-11-05'
 status: 'done'
 baseline_revision: '32cfb7e686'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 flag-exempt: recipe-build
 context:
@@ -66,6 +66,16 @@ Parent: `spec-pyforge-mason` CAP-35
 
 - `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (the station's `verify_commands`).
 - `grep -lE '^\s*-\s*reactpy-django\b' recipes/*/recipe.yaml recipes/*/meta.yaml` — expected: no match.
+
+## Run record (2026-11-05)
+
+`recipes/reactpy-django/` and `recipes/reactpy/patches/` are removed, and git keeps both at `32cfb7e686`. `reactpy` changed one CFE comment line, so its body and `cfe-local-build-*` record stand. No recipe was built: nothing that remains changed a body line. `reactpy-router` and `http-router` each gained a CFE comment saying the chain's end is retired.
+
+`reactpy-router` 3.0.0b1 keeps a 2026-07-14 `success` record it could not earn today, the defect this story removes from `reactpy-django`. It stays because `reactpy-utils` lists `reactpy-router >=1.0.3`, and the ruling names one recipe. `DW-mason-25-23` carries it.
+
+### Independent review
+
+A separate reviewer found no high items and one medium: the Story's "so that" line claimed no recipe in the repo keeps the defect, though `reactpy-router` does. Reworded. Low items are fixed here: the two comments above, this run record, and the CHANGELOG's wording. It confirmed that nothing outside the Warden corpus reads the retired path, and that corpus keeps its own frozen copy.
 
 ## Spec Change Log
 
