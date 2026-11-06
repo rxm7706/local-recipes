@@ -89,6 +89,9 @@ fixed.
 The disconnect suite installs its own runner on all eight faces, so it never touched the seven stubs and needed no change. The new
 tests take the runner through each portal's `ensure_*_runner()`, the registration the portal itself calls.
 
+Two mutants ran together from a committed tree, on a green baseline: `run_scan` returning a dict, and the worker re-raising the
+refusal. The suite went from 1407 passed to 16 failed, and the tree was restored from git.
+
 ### Independent review
 
 A separate reviewer read the diff against this spec and CAP-4 and found no path where an unwired run ends `SUCCEEDED`. It found
