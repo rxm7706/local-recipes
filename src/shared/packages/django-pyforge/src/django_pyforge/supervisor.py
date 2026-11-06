@@ -46,8 +46,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from http import HTTPStatus
-from typing import Any
-from typing import NoReturn
+from typing import Any, NoReturn
 
 from django.conf import settings
 from django.core.cache import cache
@@ -300,10 +299,7 @@ def refuse_unwired_run(station: str, start_tool: str) -> NoReturn:
     this error as a ``FAILED`` run and does not re-raise it. The message is what
     ``get_*`` and warden's portal show, so it names the tool the caller called.
     """
-    msg = (
-        f"{station} {start_tool} ran nothing: no work is wired behind this tool yet. "
-        f"Use the `pyforge {station}` CLI."
-    )
+    msg = f"{station} {start_tool} ran nothing: no work is wired behind this tool yet. Use the `pyforge {station}` CLI."
     raise RunnerNotWiredError(msg)
 
 
