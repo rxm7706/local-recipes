@@ -1116,3 +1116,14 @@ Entries through 2026-08-31: [archive § Realization log (historical)](<https://g
   decompose them with ledger rows and tracked story specs. Nothing implemented; a second-model
   review precedes merge. Also found: #1564's compose would have shrunk `pyforge-foundry-full` to
   linux-64 only.
+- **2026-11-05** — Operator ruling on `DW-steward-egm-2026-11-05-1` (audit finding N1): "honest
+  runner first then wire to cli". Seven of the eight station MCP faces (doctor, herald, marshal,
+  mason, scribe, steward, warden) answer `start_*` with a runner that does no work and returns
+  `completed: True`, and the worker records that as `SUCCEEDED`; only atlas's runner does its
+  work. First half: each of the seven runners raises, so the run ends `FAILED` and says nothing
+  ran (steward Story 21.6, `spec-pyforge-unifying-strategy` CAP-4, canopy:FR-11, canopy:FR-12).
+  No work is lost, because none happens today; warden's portal audit, the one product caller,
+  shows the failure until warden's face is wired. Second half, not yet a capability: wire the
+  faces to the CLI grammar, each with its own allowlist of verbs, because a worker subprocess
+  sits outside the session hook, and a wired `start_duty` or `start_build` could otherwise reach
+  what an agent is refused at the shell. `DW-steward-21-6-2` tracks that half.

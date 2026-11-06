@@ -6882,4 +6882,16 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-11-05 — EGM audit landing (marshal Story 113.18)
   reason: only the operator chooses between the two designs.
+  status: closed
+  resolution: Operator ruling 2026-11-05, "honest runner first then wire to cli". Story 21.6 (21-6-a-start-tool-with-no-work-behind-it-says-so) makes the seven runners fail the run and say so; the wiring half is DW-steward-21-6-2.
+
+### DW-steward-21-6-2: Second half of the operator's ruling on N1: wire the seven start tools to the CLI grammar. It needs a capability, an allowlist of verbs per face, and a check of what the host image can run. A worker subprocess sits outside the session hook, so an unlisted verb on start_duty or start_build would reach what an agent is refused at the shell. Scribe's face closes DW-scribe-5-2 when wired.
+
+- source_spec: `planning-artifacts/specs/spec-21-6-a-start-tool-with-no-work-behind-it-says-so.md`
+  summary: Second half of the operator's ruling on N1: wire the seven start tools to the CLI grammar. It needs a capability, an allowlist of verbs per face, and a check of what the host image can run. A worker subprocess sits outside the session hook, so an unlisted verb on start_duty or start_build would reach what an agent is refused at the shell. Scribe's face closes DW-scribe-5-2 when wired.
+  evidence: Second half of the operator's ruling on N1: wire the seven start tools to the CLI grammar. It needs a capability, an allowlist of verbs per face, and a check of what the host image can run. A worker subprocess sits outside the session hook, so an unlisted verb on start_duty or start_build would reach what an agent is refused at the shell. Scribe's face closes DW-scribe-5-2 when wired.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-21-6-a-start-tool-with-no-work-behind-it-says-so.md:41
+  origin: spec-deferred c86ab71f5576 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-11-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open

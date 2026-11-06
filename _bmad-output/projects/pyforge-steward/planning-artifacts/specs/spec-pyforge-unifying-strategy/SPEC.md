@@ -278,6 +278,9 @@ they are why this is not merely a UI project.
     `src/platform/tests/test_start_get_survives_disconnect.py:82-281` (atlas) and
     `src/platform/tests/test_mcp_disconnect_start_get.py` (all eight, including transport
     `http.disconnect` mid-get while a gated worker simulates a multi-minute op).
+    Amended 2026-11-05 (Story 21.6): that proof runs a test runner on seven faces. Only atlas's
+    runner does its work; the other seven fail the run and say nothing ran, until the CLI wiring
+    the operator ruled lands (`DW-steward-21-6-2`).
   - *(The criterion is deliberately stated as an outcome, not a mechanism. The MCP Tasks extension
     would be the natural vehicle and has no server-side runtime to build on — so binding the
     capability to Tasks would block it on upstream. See the `start`/`get` constraint below.
