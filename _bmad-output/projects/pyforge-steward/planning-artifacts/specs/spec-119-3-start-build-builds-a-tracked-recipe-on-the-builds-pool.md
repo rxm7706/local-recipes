@@ -2,9 +2,9 @@
 title: "119.3: start_build builds a tracked recipe on the builds pool"
 type: 'feature'
 created: '2026-11-06'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'a1a2c2a3aa'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 declared_low_risk: false
 flag:
@@ -40,6 +40,7 @@ Ledger key: `119-3-start-build-builds-a-tracked-recipe-on-the-builds-pool`. Type
 - **AC1 — The row.** `mason recipe build recipes/<slug> --format json`, timeout below the builds time limit.
 - **AC2 — The target.** A flat slug with no `/`, backslash, `..` or control byte, tracked under `recipes/` in the checkout. Anything else ends with nothing run.
 - **AC3 — The queue.** `queue_for("mason", "run_build")` returns `builds`.
+- **AC3a — The verdict.** `mason recipe build` exits 0 whatever the build did, so the row reads `data.returncode`: anything but 0 ends the run `FAILED` with the tail of the build log, which mason forwards to stderr.
 - **AC4 — The proof.** On a laptop checkout one tracked recipe builds through the worker task, and the result reaches `get_build`.
 - **AC5 — Once.** A run whose worker is lost is not started again: it ends `FAILED` and says so, because a second build would share `build_artifacts/` with a first that may still be running.
 
@@ -65,4 +66,8 @@ Parent: `spec-pyforge-unifying-strategy` CAP-20
 
 - `pixi run -e pyforge-guild platform-ci-local -- --test` — expected: exit 0.
 - `src/platform/tests/test_station_cli.py` — runs `pyforge.steward.start_tool_cli` in both states.
+- `STATION_CLI_LIVE_RECIPE=runs` with `src/platform/tests/test_station_cli_live.py` — one real build.
 
+## Run record (2026-11-06)
+
+Built, reviewed and proved with Story 119.1; see its run record.

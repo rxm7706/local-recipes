@@ -6985,3 +6985,14 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-11-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-steward-119-1-4: begin_attempt's redelivered branch and heartbeat_held_run each read and rewrite RunState.result without a lock, and that blob holds the at-most-once marker. A write between their read and write could drop the marker. Unreachable today, because the visibility timeout exceeds any task; move the marker to its own column or lock those writes.
+
+- source_spec: `planning-artifacts/specs/spec-119-1-a-worker-runs-a-station-verb-from-one-closed-table.md`
+  summary: begin_attempt's redelivered branch and heartbeat_held_run each read and rewrite RunState.result without a lock, and that blob holds the at-most-once marker. A write between their read and write could drop the marker. Unreachable today, because the visibility timeout exceeds any task; move the marker to its own column or lock those writes.
+  evidence: begin_attempt's redelivered branch and heartbeat_held_run each read and rewrite RunState.result without a lock, and that blob holds the at-most-once marker. A write between their read and write could drop the marker. Unreachable today, because the visibility timeout exceeds any task; move the marker to its own column or lock those writes.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-119-1-a-worker-runs-a-station-verb-from-one-closed-table.md:22
+  origin: spec-deferred 07603c1754e4 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-11-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

@@ -50,12 +50,14 @@ VERB_MARGIN_SECONDS = 30
 SOFT_LIMIT_MARGIN_SECONDS = 15
 HARD_LIMIT_MARGIN_SECONDS = 5
 
-#: The most a run keeps of stdout or of a JSON report, and of stderr.
+#: The most a run keeps of stdout or of a JSON report, of stderr, and of ``omitted``.
 OUTPUT_CAP_BYTES = 256 * 1024
 STDERR_TAIL_BYTES = 4 * 1024
+OMITTED_KEYS_CAP = 64
 
 QUERY_CAP_CHARS = 2000
 GIT_LOOKUP_SECONDS = 30
+KILL_DRAIN_SECONDS = 5
 
 #: All a CLI sees of the worker's environment, with a row's own ``passthrough``.
 #: ``PATH`` is built, never inherited.
@@ -89,7 +91,9 @@ SYSTEM_PATH = "/usr/local/bin:/usr/bin:/bin"
 
 _TOKEN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}")
 _RECIPE = re.compile(r"[A-Za-z0-9_][A-Za-z0-9._-]{0,127}")
-_CONTROL = re.compile(r"[\x00-\x1f\x7f]")
+_CONTROL = re.compile(r"[\x00-\x1f\x7f\ud800-\udfff]")
+#: A NUL as JSON spells it, not a backslash followed by the text ``u0000``.
+_JSON_NUL = re.compile(r"(?<!\\)(?:\\\\)*\\u0000")
 
 STEWARD_DUTIES: dict[str, tuple[str, ...]] = {
     "ci-status": ("ci", "status", "--json"),
@@ -172,6 +176,22 @@ def _mason_build(target: str, root: Path) -> tuple[str, ...]:
     return ("recipe", "build", _tracked_recipe(target, root), "--format", "json")
 
 
+def _judge_build(report: dict[str, Any], stderr: str) -> dict[str, Any]:
+    """``mason recipe build`` exits 0 whatever the build did: ``data.returncode`` is the verdict.
+
+    Mason forwards the build's log to its own stderr, so the cause is there.
+    """
+    data = report.get("data")
+    if not isinstance(data, dict) or "returncode" not in data:
+        msg = "mason start_build gave no build result"
+        raise StationVerbFailedError(msg)
+    if data["returncode"] != 0:
+        tail = stderr[-STDERR_TAIL_BYTES:].strip()
+        msg = f"mason start_build: the build exited {data['returncode']}: {tail}"
+        raise StationVerbFailedError(msg)
+    return {**report, "data": {**data, "stdout": str(data.get("stdout", ""))[-STDERR_TAIL_BYTES:]}}
+
+
 def _marshal_loop(target: str, _root: Path) -> tuple[str, ...]:
     slug, separator, story = target.partition("/")
     if not separator:
@@ -195,6 +215,8 @@ class StationVerb:
     passthrough: tuple[str, ...] = ()
     #: The verb spends, or a second run collides: a redelivery never starts it again.
     at_most_once: bool = False
+    #: Reads a report whose exit code cannot say how the work went; raises if it failed.
+    judge: Callable[[dict[str, Any], str], dict[str, Any]] | None = None
     admin_only: bool = False
     flag: str | None = None
 
@@ -222,7 +244,15 @@ STATION_VERBS: dict[tuple[str, str], StationVerb] = {
             admin_only=True,
             flag=START_LOOP_DISPATCH_FLAG_KEY,
         ),
-        StationVerb("mason", "run_build", "start_build", MASON_ENVIRONMENT, _mason_build, at_most_once=True),
+        StationVerb(
+            "mason",
+            "run_build",
+            "start_build",
+            MASON_ENVIRONMENT,
+            _mason_build,
+            at_most_once=True,
+            judge=_judge_build,
+        ),
         StationVerb(
             "scribe",
             "run_recall",
@@ -255,8 +285,10 @@ STATION_VERBS: dict[tuple[str, str], StationVerb] = {
 def _flag_on(key: str) -> bool:
     # Lazy: the mcp-host image imports this module through marshal's face and carries
     # no pyforge.core. A gated start there fails closed.
-    from pyforge.core.flags import read_boolean  # noqa: PLC0415
-
+    try:
+        from pyforge.core.flags import read_boolean  # noqa: PLC0415
+    except ImportError:
+        return False
     return read_boolean(key)
 
 
@@ -320,24 +352,27 @@ def _capped(text: str) -> tuple[str, bool]:
     return encoded[:OUTPUT_CAP_BYTES].decode("utf-8", "replace"), True
 
 
-def _refuse_constant(name: str) -> None:
-    msg = f"{name} is not a JSON value the run store can hold"
-    raise ValueError(msg)
+def _clean(text: str) -> str:
+    """Text the run store can hold: JSONB refuses a NUL and a lone surrogate."""
+    return text.replace("\x00", "").encode("utf-8", "replace").decode("utf-8")
 
 
 def _json_report(stdout: str) -> dict[str, Any] | None:
     """A JSON object the run store can hold, or ``None``.
 
-    The store is JSONB: it refuses ``NaN`` and a NUL, and a refused write would
-    leave the run ``RUNNING`` until the sweep.
+    The store is JSONB. A refused write would leave the run ``RUNNING`` until the
+    sweep, so this reads the report the way the store will: no ``NaN``, no float
+    too large to write, no NUL and no lone surrogate.
     """
-    if "\\u0000" in stdout:
-        return None
     try:
-        report = json.loads(stdout, parse_constant=_refuse_constant)
-    except ValueError:
+        report = json.loads(stdout)
+        strict = json.dumps(report, allow_nan=False, ensure_ascii=False)
+        strict.encode("utf-8")
+    except ValueError, RecursionError:
         return None
-    return report if isinstance(report, dict) else None
+    if not isinstance(report, dict) or _JSON_NUL.search(strict):
+        return None
+    return report
 
 
 def _fit_report(report: dict[str, Any]) -> tuple[dict[str, Any], dict[str, dict[str, int]]]:
@@ -345,16 +380,16 @@ def _fit_report(report: dict[str, Any]) -> tuple[dict[str, Any], dict[str, dict[
     kept: dict[str, Any] = {}
     omitted: dict[str, dict[str, int]] = {}
     used = 0
-    sizes = {key: len(json.dumps(value, default=str)) for key, value in report.items()}
+    sizes = {key: len(json.dumps({key: value}, default=str)) for key, value in report.items()}
     for key, size in sorted(sizes.items(), key=lambda item: item[1]):
         value = report[key]
         if used + size <= OUTPUT_CAP_BYTES:
             kept[key] = value
             used += size
-            continue
-        omitted[key] = {"bytes": size}
-        if isinstance(value, list | dict):
-            omitted[key]["items"] = len(value)
+        elif len(omitted) < OMITTED_KEYS_CAP:
+            omitted[key] = {"bytes": size}
+            if isinstance(value, list | dict):
+                omitted[key]["items"] = len(value)
     return kept, omitted
 
 
@@ -365,16 +400,18 @@ def _result(verb: StationVerb, argv: list[str], stdout: str, stderr: str, code: 
         tail = stderr[-STDERR_TAIL_BYTES:].strip()
         msg = f"{verb.station} {verb.start_tool} exited {code} with no report: {tail}"
         raise StationVerbFailedError(msg)
+    if verb.judge is not None:
+        report = verb.judge(report if report is not None else {}, stderr)
     result: dict[str, Any] = {
         "station": verb.station,
         "argv": argv[1:],
         "exit_code": code,
-        "stderr": stderr[-STDERR_TAIL_BYTES:].replace("\x00", ""),
+        "stderr": stderr[-STDERR_TAIL_BYTES:],
     }
     if report is not None:
         result["report"], result["omitted"] = _fit_report(report)
         return result
-    result["stdout"], result["truncated"] = _capped(stdout.replace("\x00", ""))
+    result["stdout"], result["truncated"] = _capped(stdout)
     return result
 
 
@@ -382,7 +419,8 @@ def _kill_group(process: subprocess.Popen[str]) -> None:
     """Stop the verb, not only its ``pyforge`` wrapper: the wrapper waits on the station CLI."""
     with contextlib.suppress(ProcessLookupError, PermissionError):
         os.killpg(process.pid, signal.SIGKILL)
-    process.communicate()
+    with contextlib.suppress(subprocess.TimeoutExpired):  # a child in its own session can hold a pipe
+        process.communicate(timeout=KILL_DRAIN_SECONDS)
 
 
 def _run_verb(verb: StationVerb, argv: list[str], root: Path, env_bin: Path) -> tuple[str, str, int]:
@@ -399,7 +437,7 @@ def _run_verb(verb: StationVerb, argv: list[str], root: Path, env_bin: Path) -> 
             stderr=subprocess.PIPE,
             stdout=subprocess.PIPE,
         )
-    except OSError as exc:
+    except (OSError, ValueError) as exc:
         msg = f"{verb.station} {verb.start_tool} could not start: {exc}"
         raise StationVerbFailedError(msg) from None
     try:
@@ -411,7 +449,7 @@ def _run_verb(verb: StationVerb, argv: list[str], root: Path, env_bin: Path) -> 
     except BaseException:  # Celery's soft limit raises here: the verb stops with the task
         _kill_group(process)
         raise
-    return stdout, stderr, process.returncode
+    return _clean(stdout), _clean(stderr), process.returncode
 
 
 def run_start_tool(station: str, run_tool: str, payload: Mapping[str, Any] | None) -> dict[str, Any]:

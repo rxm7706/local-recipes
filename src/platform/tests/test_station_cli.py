@@ -26,6 +26,7 @@ from django_pyforge.models import RunState
 from django_pyforge.queues import BUILDS_QUEUE
 from django_pyforge.queues import queue_for
 from django_pyforge.roles import ROLE_ADMIN
+from django_pyforge.station_cli import ENVIRONMENT_ALLOWLIST
 from django_pyforge.station_cli import START_LOOP_DISPATCH_FLAG_KEY
 from django_pyforge.station_cli import START_TOOL_CLI_FLAG_KEY
 from django_pyforge.station_cli import STATION_VERBS
@@ -183,6 +184,7 @@ def root(tmp_path: Path, settings: Any) -> Path:
     subprocess.run(["git", "-C", str(checkout), "add", "recipes/demo"], check=True)  # noqa: S603, S607
     for environment in ENVIRONMENTS:
         _fake(checkout, environment, """echo '{"ok": true}'""")
+    _fake(checkout, MASON, _build_report(0))
     settings.STATION_CLI_ROOT = str(checkout)
     return checkout
 
@@ -233,6 +235,50 @@ def test_the_table_names_each_face_own_tools() -> None:
         module = importlib.import_module(MODULES[station])
         assert run_tool in vars(module).values()
         assert verb.start_tool in vars(module).values()
+
+
+def test_each_row_passes_and_repeats_only_what_is_pinned() -> None:
+    assert {
+        key: verb.passthrough for key, verb in STATION_VERBS.items() if verb.passthrough
+    } == {
+        ("scribe", "run_recall"): ("SCRIBE_GRAPH_DSN",),
+        ("warden", "run_audit"): (
+            "OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY",
+            "PYFORGE_WARDEN_FEED_CACHE_DIR",
+        ),
+    }
+    once = {key for key, verb in STATION_VERBS.items() if verb.at_most_once}
+    assert once == {("marshal", "run_loop"), ("mason", "run_build")}
+
+
+def test_the_environment_allowlist_is_pinned() -> None:
+    assert set(ENVIRONMENT_ALLOWLIST) == {
+        "CURL_CA_BUNDLE",
+        "HOME",
+        "HTTPS_PROXY",
+        "HTTP_PROXY",
+        "LANG",
+        "LC_ALL",
+        "LC_CTYPE",
+        "LOGNAME",
+        "NODE_EXTRA_CA_CERTS",
+        "NO_PROXY",
+        "PYFORGE_ENVIRONMENT",
+        "PYFORGE_FLAGS_PATH",
+        "REQUESTS_CA_BUNDLE",
+        "SSL_CERT_DIR",
+        "SSL_CERT_FILE",
+        "TMPDIR",
+        "TZ",
+        "USER",
+        "XDG_CACHE_HOME",
+        "XDG_CONFIG_HOME",
+        "XDG_DATA_HOME",
+        "http_proxy",
+        "https_proxy",
+        "no_proxy",
+    }
+    assert station_cli.SYSTEM_PATH == "/usr/local/bin:/usr/bin:/bin"
 
 
 def test_steward_duties_are_pinned() -> None:
@@ -320,7 +366,7 @@ def test_a_row_runs_its_exact_argv_with_no_shell(
     assert _argv(root) == expected
     assert result["exit_code"] == 0
     assert result["argv"] == expected
-    assert result["report"] == {"ok": True}
+    assert result["report"]["data" if station == "mason" else "ok"]
 
 
 @pytest.mark.parametrize(
@@ -334,6 +380,7 @@ def test_a_row_runs_its_exact_argv_with_no_shell(
         ("herald", "run_notice", "a;id"),
         ("scribe", "run_recall", ""),
         ("scribe", "run_recall", "two\nlines"),
+        ("scribe", "run_recall", "lone \ud800 surrogate"),
         ("scribe", "run_recall", "x" * 2001),
         ("steward", "run_duty", "keys"),
         ("steward", "run_duty", "ci status"),
@@ -342,6 +389,7 @@ def test_a_row_runs_its_exact_argv_with_no_shell(
         ("warden", "run_audit", "/etc"),
         ("warden", "run_audit", "no-such-dir"),
         ("warden", "run_audit", "a\x00b"),
+        ("warden", "run_audit", ""),
         ("mason", "run_build", "../secret"),
         ("mason", "run_build", "recipes/demo"),
         ("mason", "run_build", "untracked"),
@@ -426,6 +474,64 @@ def test_a_missing_environment_says_so(root: Path) -> None:
         _runner("warden", "run_audit")({"target": "."})
 
 
+def _build_report(returncode: int) -> str:
+    report = {"status": "ok", "data": {"returncode": returncode, "stdout": "log"}}
+    return f"echo '{json.dumps(report)}'"
+
+
+def test_a_failed_build_fails_the_run_though_mason_exits_0(root: Path) -> None:
+    _fake(root, MASON, f"{_build_report(1)}\necho 'Script failed' >&2")
+    with pytest.raises(
+        StationVerbFailedError, match="the build exited 1: Script failed"
+    ):
+        _runner("mason", "run_build")({"target": "demo"})
+
+
+def test_a_build_with_no_result_fails_the_run(root: Path) -> None:
+    _fake(root, MASON, """echo '{"status": "ok"}'""")
+    with pytest.raises(StationVerbFailedError, match="no build result"):
+        _runner("mason", "run_build")({"target": "demo"})
+
+
+def test_a_build_keeps_its_verdict_when_the_log_is_large(
+    root: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(station_cli, "STDERR_TAIL_BYTES", 2)
+    _fake(root, MASON, _build_report(0))
+    result = _runner("mason", "run_build")({"target": "demo"})
+    assert result["report"]["data"] == {"returncode": 0, "stdout": "og"}
+
+
+def test_a_report_quoting_the_text_of_a_nul_stays_a_report(root: Path) -> None:
+    _fake(root, GUILD, """cat <<'EOF'\n{"a": "x\\\\u0000y"}\nEOF""")
+    result = _runner("doctor", "run_scan")({"target": "numpy"})
+    assert result["report"] == {"a": "x\\u0000y"}
+
+
+def test_a_report_cap_counts_its_keys(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(station_cli, "OUTPUT_CAP_BYTES", 100)
+    report = {f"{'k' * 40}{index}": 1 for index in range(10)}
+    kept, omitted = station_cli._fit_report(report)  # noqa: SLF001
+    assert len(json.dumps(kept)) <= 100 + len(kept) * 2
+    assert len(kept) + len(omitted) == len(report)
+
+
+def test_a_gated_flag_reads_off_with_no_pyforge_core(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setitem(sys.modules, "pyforge.core.flags", None)
+    assert station_cli._flag_on(START_LOOP_DISPATCH_FLAG_KEY) is False  # noqa: SLF001
+
+
+def test_a_nul_in_a_failed_verb_stderr_never_reaches_the_store(root: Path) -> None:
+    _fake(root, GUILD, "printf 'bad\\000news' >&2\nexit 3")
+    with pytest.raises(StationVerbFailedError) as caught:
+        _runner("doctor", "run_scan")({"target": "numpy"})
+    assert "\x00" not in str(caught.value)
+    assert "badnews" in str(caught.value)
+
+
 def test_an_exit_code_outside_the_row_fails_the_run(root: Path) -> None:
     _fake(root, GUILD, "echo 'it broke' >&2\nexit 3")
     with pytest.raises(StationVerbFailedError, match="exited 3: it broke"):
@@ -493,6 +599,7 @@ def test_a_soft_limit_stops_the_whole_verb(
     def soft_limit_on_first_call(self: Any, *args: Any, **kwargs: Any) -> Any:
         calls.append(1)
         if len(calls) == 1:
+            time.sleep(0.5)  # let the wrapper start its child
             raise SoftTimeLimitExceeded
         return real(self, *args, **kwargs)
 
@@ -517,7 +624,16 @@ def test_a_report_keeps_what_fits_and_names_the_rest(
     assert result["omitted"]["findings"]["items"] == 30  # noqa: PLR2004
 
 
-@pytest.mark.parametrize("body", ['{"a": NaN}', '{"a": "x\\u0000y"}'])
+@pytest.mark.parametrize(
+    "body",
+    [
+        pytest.param('{"a": NaN}', id="nan"),
+        pytest.param('{"a": 1e999}', id="overflow"),
+        pytest.param('{"a": "x\\u0000y"}', id="nul"),
+        pytest.param('{"a": "\\ud800"}', id="surrogate"),
+        pytest.param("[" * 200000, id="deep"),
+    ],
+)
 def test_output_the_run_store_refuses_stays_text(root: Path, body: str) -> None:
     _fake(root, GUILD, f"cat <<'EOF'\n{body}\nEOF")
     result = _runner("herald", "run_notice")({"target": "api"})
@@ -722,11 +838,13 @@ def test_a_lost_worker_never_starts_a_spending_verb_twice(  # noqa: PLR0913, PLR
         station=station, assertion=assertion, tool=tool, payload={"target": target}
     )
     run_id = delayed[0]["args"][0]
-    assert claim_only_attempt(
-        run_id
-    )  # the first attempt got this far, and its worker died
+    assert claim_only_attempt(run_id)  # the first attempt got this far; its worker died
 
-    execute_supervised_run(*delayed[0]["args"])
+    execute_supervised_run.push_request(delivery_info={"redelivered": True})
+    try:
+        execute_supervised_run.run(*delayed[0]["args"])
+    finally:
+        execute_supervised_run.pop_request()
 
     run = get_run(station=station, handle=handle, assertion=assertion)
     assert run["status"] == RunState.Status.FAILED

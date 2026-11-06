@@ -3,7 +3,7 @@
 CI has no pixi environments to call, so this skips unless ``STATION_CLI_LIVE_ROOT``
 names a checkout that has them::
 
-    STATION_CLI_LIVE_ROOT=<checkout> STATION_CLI_LIVE_RECIPE=python-wget \\
+    STATION_CLI_LIVE_ROOT=<checkout> STATION_CLI_LIVE_RECIPE=runs \\
         pixi run -e pyforge-guild platform-ci-local -- --test
 
 No test here turns ``pyforge.steward.start_loop_dispatch`` on, so ``start_loop`` is
@@ -103,7 +103,8 @@ def test_mason_build_builds_a_tracked_recipe(settings: Any) -> None:
         pytest.skip("STATION_CLI_LIVE_RECIPE names no recipe")
     run = _run("mason", "run_build", RECIPE, settings)
     assert run["status"] == RunState.Status.SUCCEEDED, run["result"]
-    assert run["result"]["exit_code"] == 0
+    assert run["result"]["report"]["data"]["returncode"] == 0
+    assert run["result"]["report"]["data"]["artifact_dir"]
 
 
 @pytest.mark.django_db

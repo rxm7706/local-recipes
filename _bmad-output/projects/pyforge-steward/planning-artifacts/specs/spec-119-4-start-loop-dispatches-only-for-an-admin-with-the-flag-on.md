@@ -2,9 +2,9 @@
 title: "119.4: start_loop dispatches only for an admin with the flag on"
 type: 'feature'
 created: '2026-11-06'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'a1a2c2a3aa'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 declared_low_risk: false
 flag:
@@ -72,3 +72,6 @@ Parent: `spec-pyforge-unifying-strategy` CAP-20
 - `pixi run -e pyforge-guild platform-ci-local -- --test` — expected: exit 0.
 - `src/platform/tests/test_station_cli.py` — runs `pyforge.steward.start_loop_dispatch` in both states.
 
+## Run record (2026-11-06)
+
+Built, reviewed and proved with Story 119.1; see its run record.

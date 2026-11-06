@@ -8236,7 +8236,7 @@ So that a caller can ask for a station's work without being able to name a verb 
 **When** a row in the closed table names the verb, target validator, result exit codes, pixi environment and timeout
 **Then** the worker runs that verb with no shell, from `STATION_CLI_ROOT`, under an allowlisted environment, and records exit code and output in the run
 **And** an unset root, a missing executable, the kill switch off, a refused target, an exit code outside the row's list and a timeout each end the run `FAILED` with a message that says what happened; a test pins the table and refuses any token the session hook denies
-**Status:** in-progress
+**Status:** done
 
 ### Story 119.2: Five read faces run their verb
 
@@ -8252,7 +8252,7 @@ So that `get_*` carries work that happened.
 **When** doctor `diagnose --target`, herald `notice get`, scribe `recall`, steward `ci status`, `estate plan` or `estate status`, and warden `scan` under one root join it
 **Then** each start tool on a laptop checkout ends with the CLI's real output in `get_*`, and warden's portal shows the real report
 **And** warden never passes `--open-fix-prs` or `--bypass`, `_grammar_recall` reads the exit code, and `DW-scribe-5-2` and `DW-steward-21-6-5` close
-**Status:** in-progress
+**Status:** done
 
 ### Story 119.3: start_build builds a tracked recipe on the builds pool
 
@@ -8268,7 +8268,7 @@ So that a build can finish and cannot reach submission.
 **When** the table gains `mason recipe build` for a flat slug tracked under `recipes/`, and the router names `run_build`
 **Then** a build runs on the `builds` queue under the builds time limit and its result reaches `get_build`
 **And** no row reaches `submit`, `ship` or `update`, and a slug that is not tracked ends with nothing run
-**Status:** in-progress
+**Status:** done
 
 ### Story 119.4: start_loop dispatches only for an admin with the flag on
 
@@ -8284,4 +8284,4 @@ So that no MCP caller can spend money or open a PR without my switch.
 **When** the table gains that verb with a required role and a flag
 **Then** a caller without `pyforge:admin` is refused before a run row exists, and with the flag off the run ends with nothing started
 **And** with the role and the flag on, a run dispatches `<slug> <story>` and `get_loop` carries the CLI's report; a test proves both flag states with no real dispatch
-**Status:** in-progress
+**Status:** done
