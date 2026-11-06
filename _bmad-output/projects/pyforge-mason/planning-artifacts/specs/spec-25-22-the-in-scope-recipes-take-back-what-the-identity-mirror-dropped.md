@@ -2,7 +2,7 @@
 title: "25.22: The in-scope recipes take back what the identity mirror dropped"
 type: 'fix'
 created: '2026-11-05'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '6d52ea19c3'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -109,8 +109,9 @@ Three recipes moved from G95 to `success`, so the lost dependency was what block
 
 ### AC4: the records
 
-`refresh-wave --apply --gates --build --rebuild --force` ran the 8 recipes in `A-W22-deps` and `B-W22-deps`, on Story 25.21's driver. Each ended `already-current` with `render: ok` and build `success`, and both runs exited 0. The causes came from the driver's own `logs/`, with no shim. `reactpy`, `apache-airflow-providers-google` and `conda` changed no body line, so their records stand.
+`refresh-wave --apply --gates --build --rebuild --force` ran the 8 recipes in `A-W22-deps` and `B-W22-deps`, on Story 25.21's driver. Each ended `already-current` with `render: ok` and build `success`, and both runs exited 0, with each build's log in `logs/`. A first pass was discarded by Story 25.21's reviewer (see that story's record), so these are the second builds. `reactpy`, `apache-airflow-providers-google` and `conda` changed no body line, so their records stand.
 
 ## Spec Change Log
 
 - 2026-11-05: minted from `DW-mason-25-19-3` at the operator's "Do this task here".
+- 2026-11-05: run and retro `v8.105.0` recorded; status `done`.

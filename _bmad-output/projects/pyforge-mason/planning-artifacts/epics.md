@@ -3492,7 +3492,7 @@ So that a wave names its causes without a shim, and needs no hand step for what 
 **When** `refresh-wave` runs with `--build`, or with `--render-check` in a dry run
 **Then** every build leaves a log in the report directory, each recipe that fails `rattler-build --render-only` ends `needs-review` with its error and spends no build, and a `${{ name[0] }}`-style URL renders as rattler-build renders it
 **And** an expression the driver cannot render still reports `url-unrenderable`, no recipe body changes, and the change lands in a `retro(cfe):` commit with its tests and CHANGELOG entry
-**Status:** in-progress
+**Status:** done
 
 ### Story 25.22: The in-scope recipes take back what the identity mirror dropped
 
@@ -3509,7 +3509,7 @@ So that a recipe's build record is not green, or blocked, because of what a mirr
 **When** each in-scope recipe is compared with the commit before it and with its live feedstock
 **Then** each dependency the feedstock lists and no note explains is restored, and each patch file nothing names is reconnected or deleted with a dated reason
 **And** each changed recipe's record is written by a `refresh-wave` build, what lies outside CAP-35's scope is counted and deferred, and no feedstock or upstream PR opens
-**Status:** in-progress
+**Status:** done
 
 ## Epic 26: CFE's tests never ask GitHub whether a recipe maintainer exists (spec-pyforge-mason CAP-34)
 

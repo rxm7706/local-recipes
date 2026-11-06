@@ -2086,7 +2086,8 @@ status: open
   origin: spec-deferred 55f95d674201 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-11-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 25.21 (25-21-refresh-wave-keeps-build-logs-render-checks-first-and-renders-url-expressions); the G96 gap stays with DW-mason-25-17
 
 ### DW-mason-25-19-3: reactpy, conda, apache-airflow-providers-google and grpc-cpp carry patch files their recipe.yaml never names. Story 25.19 found dataprofiler, gibr and datasketches in the same state, each losing source.patches in the identity-snapshot mirror. Read each patch against the feedstock and reconnect or delete it.
 
@@ -2097,7 +2098,8 @@ status: open
   origin: spec-deferred 27cdaa3e8d9d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-11-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 25.22 (25-22-the-in-scope-recipes-take-back-what-the-identity-mirror-dropped); grpc-cpp moved to DW-mason-25-22
 
 ### DW-mason-25-19-4: ydata-synthetic stays at 2.0.0 and its 2026-07 G95 record: PyPI no longer serves the sdist the recipe and the feedstock name, and 2.0.1 is a stub that renames the project to fg-data-synthetic and fails on import. Whether the recipe follows the rename is a maintainer decision.
 
