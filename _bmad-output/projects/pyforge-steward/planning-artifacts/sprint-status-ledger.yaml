@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 677
+# stories: 678
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -152,6 +152,7 @@ development_status:
   21-3-start-get-survives-disconnect: done
   21-4-the-other-seven-mcp-faces: done
   21-5-front-door-queries-the-supervisor: done
+  21-6-a-start-tool-with-no-work-behind-it-says-so: done
   22-1-pyforge-dispatches-without-reimplementing: done
   23-1-same-url-different-rows: done
   24-1-cloudevents-on-redis-broker: done

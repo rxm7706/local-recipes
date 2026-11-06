@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: aaaba2582d1a53de
-story_count: 441
+source_fingerprint: 6c1559d138630544
+story_count: 442
 test_file_count: 158
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 441
+- **Stories parsed:** 442
 - **Epics parsed:** 118
 - **Test files inventoried:** 158 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `aaaba2582d1a53de`
+- **Source fingerprint:** `6c1559d138630544`
 
 ## Risk Assessment
 
@@ -422,6 +422,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 21.3 | start/get survives disconnect | none observed |
 | 21.4 | The other seven MCP faces | none observed |
 | 21.5 | Front door queries the supervisor | none observed |
+| 21.6 | A start tool with no work behind it says so | none observed |
 | 22.1 | pyforge dispatches without reimplementing | none observed |
 | 23.1 | Same URL, different rows | none observed |
 | 24.1 | CloudEvents on redis-broker | none observed |

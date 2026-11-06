@@ -1795,6 +1795,24 @@ So that the published board is not `unavailable` for lack of my home directory.
 **And** timing is ingested at run completion, queryable across runs
 **And** an unreachable supervisor renders explicit unavailable plus age, within the canopy:FR-26 budget — not an empty list presented as current
 
+### Story 21.6: A start tool with no work behind it says so
+
+As an autonomous agent,
+I want a `start_*` tool with no work behind it to end in a failed run that says nothing ran,
+So that I never read `completed: True` for work that did not happen.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-unifying-strategy CAP-4 / canopy:FR-11, canopy:FR-12 • canopy:AD-5, canopy:AD-6, canopy:AD-12; a fix, no new CAP • EGM audit 2026-11-05: finding N1, operator ruling on `DW-steward-egm-2026-11-05-1`
+**Flag:** none (a fix, spec-feature-flag-governance Q1)
+**Surface:** `src/shared/packages/django-pyforge/src/django_pyforge/supervisor.py`, `src/shared/packages/django-pyforge/src/django_pyforge/tasks.py`, the seven `mcp_asgi.py` runners under `src/shared/packages/django-{doctor,herald,marshal,mason,scribe,steward,warden}/`, `src/platform/tests/test_unwired_start_tools.py`, `src/platform/tests/test_warden_portal_audit_start_get.py`
+**Spec:** `planning-artifacts/specs/spec-21-6-a-start-tool-with-no-work-behind-it-says-so.md`
+**Given** seven station runners that do no work and return `{"target": target, "completed": True}`, and a worker that records anything a runner returns as `SUCCEEDED`
+**When** a caller starts one of those runs
+**Then** the run ends `FAILED`, and `get_*` and warden's portal show an error that names the station and the start tool and says nothing ran
+**And** the worker records that refusal and does not re-raise it, so `start_*` keeps its handle under eager settings, and every other runner exception takes the path it took
+**And** atlas's runner, which does its work, does not change, and no station CLI is called: wiring is the second half of the ruling, `DW-steward-21-6-2`
+**And** no `mcp_asgi.py` under `src/shared/packages/django-*/` keeps `"completed": True`, CAP-4's `verified:` note says which face does work, `DW-steward-egm-2026-11-05-1` closes, and the Platform CI test job's local twin exits 0
+**Status:** done
+
 ## Epic 22: One command grammar
 
 ### Story 22.1: pyforge dispatches without reimplementing

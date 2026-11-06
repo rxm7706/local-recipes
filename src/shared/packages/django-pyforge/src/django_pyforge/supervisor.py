@@ -46,7 +46,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from http import HTTPStatus
-from typing import Any
+from typing import Any, NoReturn
 
 from django.conf import settings
 from django.core.cache import cache
@@ -285,6 +285,22 @@ class BoardSnapshot:
     last_ok_at: datetime | None
     live: tuple[dict[str, Any], ...]
     timing: tuple[dict[str, Any], ...]
+
+
+class RunnerNotWiredError(RuntimeError):
+    """A start tool has no work behind it, so its run fails instead of succeeding."""
+
+
+def refuse_unwired_run(station: str, start_tool: str) -> NoReturn:
+    """End a run that has no work behind it (Story 21.6).
+
+    ``execute_supervised_run`` records anything a runner returns as
+    ``SUCCEEDED``, so a runner with nothing to do must raise. The worker records
+    this error as a ``FAILED`` run and does not re-raise it. The message is what
+    ``get_*`` and warden's portal show, so it names the tool the caller called.
+    """
+    msg = f"{station} {start_tool} ran nothing: no work is wired behind this tool yet. Use the `pyforge {station}` CLI."
+    raise RunnerNotWiredError(msg)
 
 
 def register_runner(station: str, tool: str, fn: Any) -> None:

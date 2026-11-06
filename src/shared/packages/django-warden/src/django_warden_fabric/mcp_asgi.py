@@ -5,23 +5,18 @@ from __future__ import annotations
 from typing import Any
 
 from django_pyforge.supervisor import get_run as supervisor_get_run
-from django_pyforge.supervisor import register_runner, start_bounded
+from django_pyforge.supervisor import refuse_unwired_run, register_runner, start_bounded
 
 WARDEN_STATION = "warden"
 RUN_AUDIT_TOOL = "run_audit"
+START_AUDIT_TOOL = "start_audit"
 
 _SERVER: Any = None
 
 
-def run_audit(payload: dict[str, Any] | None) -> dict[str, Any]:
-    """Complete one supervised audit. Returns a payload dict only."""
-    data = payload if isinstance(payload, dict) else {}
-    target = data.get("target")
-    if not isinstance(target, str) or not target.strip():
-        target = "."
-    else:
-        target = target.strip()
-    return {"target": target, "completed": True}
+def run_audit(_payload: dict[str, Any] | None) -> dict[str, Any]:
+    """Run nothing: no work is wired behind ``start_audit`` yet (Story 21.6)."""
+    refuse_unwired_run(WARDEN_STATION, START_AUDIT_TOOL)
 
 
 def ensure_warden_runner() -> None:
