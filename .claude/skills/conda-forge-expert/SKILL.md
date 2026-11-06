@@ -4708,7 +4708,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
-- **v8.105.1** (Nov 5, 2026) — **mason Story 25.23 Rule-2 retro: `reactpy-django` retires on the operator's ruling (PATCH; no script, test or gotcha change).**
+- **v8.105.1** (Nov 5, 2026) — **mason Story 25.23 Rule-2 retro: `reactpy-django` retires on the operator's ruling (PATCH; no script or test change, no new gotcha).** See `CHANGELOG.md`.
 - **v8.105.0** (Nov 5, 2026) — **mason Stories 25.21 and 25.22 Rule-2 retro: `refresh-wave` keeps each build's log, `--render-check` reports what cannot render before a build is spent, and a URL expression renders as rattler-build renders it; G130 (the identity snapshot lost patches and dependencies) (MINOR).** The helper matches rattler-build on all 810 in-scope recipes it can compare.
 - **v8.104.0** (Nov 5, 2026) — **mason Stories 25.19 and 25.20 Rule-2 retro: the first tracked Track A run. `refresh-wave` records what a build did (G95 from rattler-build's own wording; 0 outputs is `skipped`, never `success`); G126 (a stale mirror's open run deps rot, by class), G127 (`<3.11` at the 3.11 floor is G95, never a lower `python_min`), G128 (keep host-bound recipes off a Linux `--rebuild`), G129 (`git describe` sees this repo) (MINOR).** 621 recipes through the driver: 601 `success`, 12 `build-clean-test-blocked`, 5 `not-attempted`, 1 `failed`, 1 `needs-review`, 1 `blocked`.
 - **v8.103.0** (Nov 1, 2026) — **mason Stories 25.17 and 25.18 Rule-2 retro: `refresh-wave --rebuild`, build-written records read back against run tables (G124), the host-header leak (G125), the skew-versus-G77 test, and the G53 handle placement fix (MINOR).** See `CHANGELOG.md`.

@@ -2,7 +2,7 @@
 
 ## TL;DR — what's new in the latest release
 
-**v8.105.1** (Nov 5, 2026, current) — **mason Story 25.23 Rule-2 retro: `reactpy-django` retires on the operator's ruling (PATCH; no script, test or gotcha change).** Closes `DW-mason-25-22-3`.
+**v8.105.1** (Nov 5, 2026, current) — **mason Story 25.23 Rule-2 retro: `reactpy-django` retires on the operator's ruling (PATCH; no script or test change, no new gotcha).** Closes `DW-mason-25-22-3`.
 - **Retired.** `recipes/reactpy-django/` is gone, and so is the `reactpy` v2 patch file Story 25.22 kept until this ruling. `reactpy` stays at the feedstock's 1.1.0. Git keeps both.
 - **Left.** `reactpy-router` 3.0.0b1 stays, because `reactpy-utils` lists it, and its state is deferred. `http-router` and `asgi-tools` stay. The Warden test corpus keeps its own frozen copy.
 - **Refined.** G130 records the outcome, and the licence note that cited `reactpy-django` as live now says it is retired.
