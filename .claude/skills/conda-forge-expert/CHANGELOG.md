@@ -2,7 +2,13 @@
 
 ## TL;DR — what's new in the latest release
 
-**v8.105.0** (Nov 5, 2026, current) — **mason Stories 25.21 and 25.22 Rule-2 retro: `refresh-wave` keeps build logs, render-checks first and renders URL expressions; G130 (MINOR).** Closes `DW-mason-25-19-2` and `DW-mason-25-19-3`.
+**v8.105.1** (Nov 5, 2026, current) — **mason Story 25.23 Rule-2 retro: `reactpy-django` retires on the operator's ruling (PATCH; no script, test or gotcha change).** Closes `DW-mason-25-22-3`.
+- **Retired.** `recipes/reactpy-django/` is gone, and so is the `reactpy` v2 patch file Story 25.22 kept until this ruling. `reactpy` stays at the feedstock's 1.1.0. Git keeps both.
+- **Left.** `reactpy-router` 3.0.0b1 stays, because `reactpy-utils` lists it, and its state is deferred. `http-router` and `asgi-tools` stay. The Warden test corpus keeps its own frozen copy.
+- **Refined.** G130 records the outcome, and the licence note that cited `reactpy-django` as live now says it is retired.
+- **Files:** `SKILL.md` (G130, one note, version, history), `config/skill-config.yaml` (8.105.0 → 8.105.1), `MANIFEST.yaml`, `CHANGELOG.md`, `config/failure-catalog.yaml` (regenerated).
+
+**v8.105.0** (Nov 5, 2026) — **mason Stories 25.21 and 25.22 Rule-2 retro: `refresh-wave` keeps build logs, render-checks first and renders URL expressions; G130 (MINOR).** Closes `DW-mason-25-19-2` and `DW-mason-25-19-3`.
 - **New: build logs.** Every build's output, ANSI-stripped, stays in `logs/<name>.log` in the report directory, and the report row names it in `build.log`. Story 25.19 needed a logging `rattler-build` shim on `PATH` for this.
 - **New: `--render-check`.** It runs `rattler-build build --render-only` with the build's own variant configs on each recipe, in a dry run too, and writes no recipe. `--build` implies it for each recipe it would build, before the first write. A recipe that fails ends `needs-review` with `render-failed: <error>`, unedited, spending no gate or build, and keeps `logs/<name>.render.log`. A check that timed out or found no `rattler-build` ends `failed`, so a rerun retries it. Of the 880 in-scope recipes, 67 fail it today, all in Track B.
 - **Changed: a URL expression renders.** `recipe_editor.render_source_url` renders `${{ name[0] }}`, `${{ name | replace('-', '_') }}` and a context value that names another, in a sandbox, and `calculate_hash` and the driver share it. 445 of the 880 in-scope recipes carry such a URL, and 25 needed a scripted rewrite in Story 25.19. Evidence: on 810 in-scope recipes rattler-build's own rendered URL equals the helper's, with 0 differences; the driver's feedstock sha check then guards a wrong render. A live refresh of a scratch `django-mptt` with an expression URL downloaded the right sdist and built. A recipe keeps its own URL form, and the literal form stays canonical for new recipes. What cannot render still reports `url-unrenderable`, and `calculate_hash` now refuses it before any download.
