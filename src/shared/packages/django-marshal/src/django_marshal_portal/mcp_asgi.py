@@ -17,6 +17,7 @@ from django_pyforge.supervisor import (
     heartbeat_held_run,
     list_published_story_tasks,
     publish_held_loop_bounded,
+    refuse_unwired_run,
     register_runner,
 )
 
@@ -30,15 +31,9 @@ WATCH_TOOL = "marshal_watch"
 _CACHE: dict[str, Any] = {}
 
 
-def run_loop(payload: dict[str, Any] | None) -> dict[str, Any]:
-    """Complete one supervised loop run. Returns a payload dict only."""
-    data = payload if isinstance(payload, dict) else {}
-    target = data.get("target")
-    if not isinstance(target, str) or not target.strip():
-        target = "."
-    else:
-        target = target.strip()
-    return {"target": target, "completed": True}
+def run_loop(_payload: dict[str, Any] | None) -> dict[str, Any]:
+    """Run nothing: no work is wired behind ``start_loop`` yet (Story 21.6)."""
+    refuse_unwired_run(MARSHAL_STATION, RUN_LOOP_TOOL)
 
 
 def _marshal_watch_job(

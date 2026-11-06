@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from django_pyforge.mcp_start_get import build_station_mcp_asgi
+from django_pyforge.supervisor import refuse_unwired_run
 
 MASON_STATION = "mason"
 RUN_BUILD_TOOL = "run_build"
@@ -14,15 +15,9 @@ GET_BUILD_TOOL = "get_build"
 _CACHE: dict[str, Any] = {}
 
 
-def run_build(payload: dict[str, Any] | None) -> dict[str, Any]:
-    """Complete one supervised build. Returns a payload dict only."""
-    data = payload if isinstance(payload, dict) else {}
-    target = data.get("target")
-    if not isinstance(target, str) or not target.strip():
-        target = "."
-    else:
-        target = target.strip()
-    return {"target": target, "completed": True}
+def run_build(_payload: dict[str, Any] | None) -> dict[str, Any]:
+    """Run nothing: no work is wired behind ``start_build`` yet (Story 21.6)."""
+    refuse_unwired_run(MASON_STATION, RUN_BUILD_TOOL)
 
 
 def ensure_mason_runner() -> None:
