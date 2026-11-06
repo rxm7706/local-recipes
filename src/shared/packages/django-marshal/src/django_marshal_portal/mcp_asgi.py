@@ -33,7 +33,7 @@ _CACHE: dict[str, Any] = {}
 
 def run_loop(_payload: dict[str, Any] | None) -> dict[str, Any]:
     """Run nothing: no work is wired behind ``start_loop`` yet (Story 21.6)."""
-    refuse_unwired_run(MARSHAL_STATION, RUN_LOOP_TOOL)
+    refuse_unwired_run(MARSHAL_STATION, START_LOOP_TOOL)
 
 
 def _marshal_watch_job(

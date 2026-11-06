@@ -42,6 +42,7 @@ from django_pyforge.events.tracing import (
 )
 from django_pyforge.models import RunState
 from django_pyforge.supervisor import (
+    RunnerNotWiredError,
     begin_attempt,
     complete_run,
     lookup_runner,
@@ -123,6 +124,16 @@ def execute_supervised_run(
         return
     try:
         result = lookup_runner(station, tool)(payload)
+    except RunnerNotWiredError as exc:
+        # An expected outcome, not a worker crash: nothing ran, so record that
+        # and stop. Re-raising would, under eager settings, cost the caller the
+        # handle `start_*` is about to return (Story 21.6).
+        complete_run(
+            run_id,
+            status=RunState.Status.FAILED,
+            result={"error": str(exc)},
+        )
+        return
     except Exception as exc:
         complete_run(
             run_id,

@@ -17,7 +17,7 @@ _CACHE: dict[str, Any] = {}
 
 def run_duty(_payload: dict[str, Any] | None) -> dict[str, Any]:
     """Run nothing: no work is wired behind ``start_duty`` yet (Story 21.6)."""
-    refuse_unwired_run(STEWARD_STATION, RUN_DUTY_TOOL)
+    refuse_unwired_run(STEWARD_STATION, START_DUTY_TOOL)
 
 
 def ensure_steward_runner() -> None:

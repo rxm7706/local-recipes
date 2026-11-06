@@ -17,7 +17,7 @@ _CACHE: dict[str, Any] = {}
 
 def run_notice(_payload: dict[str, Any] | None) -> dict[str, Any]:
     """Run nothing: no work is wired behind ``start_notice`` yet (Story 21.6)."""
-    refuse_unwired_run(HERALD_STATION, RUN_NOTICE_TOOL)
+    refuse_unwired_run(HERALD_STATION, START_NOTICE_TOOL)
 
 
 def ensure_herald_runner() -> None:

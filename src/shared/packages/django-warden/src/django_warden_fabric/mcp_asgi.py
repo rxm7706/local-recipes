@@ -9,13 +9,14 @@ from django_pyforge.supervisor import refuse_unwired_run, register_runner, start
 
 WARDEN_STATION = "warden"
 RUN_AUDIT_TOOL = "run_audit"
+START_AUDIT_TOOL = "start_audit"
 
 _SERVER: Any = None
 
 
 def run_audit(_payload: dict[str, Any] | None) -> dict[str, Any]:
     """Run nothing: no work is wired behind ``start_audit`` yet (Story 21.6)."""
-    refuse_unwired_run(WARDEN_STATION, RUN_AUDIT_TOOL)
+    refuse_unwired_run(WARDEN_STATION, START_AUDIT_TOOL)
 
 
 def ensure_warden_runner() -> None:

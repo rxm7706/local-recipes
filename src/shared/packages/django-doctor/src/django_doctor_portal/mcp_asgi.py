@@ -17,7 +17,7 @@ _CACHE: dict[str, Any] = {}
 
 def run_scan(_payload: dict[str, Any] | None) -> dict[str, Any]:
     """Run nothing: no work is wired behind ``start_scan`` yet (Story 21.6)."""
-    refuse_unwired_run(DOCTOR_STATION, RUN_SCAN_TOOL)
+    refuse_unwired_run(DOCTOR_STATION, START_SCAN_TOOL)
 
 
 def ensure_doctor_runner() -> None:

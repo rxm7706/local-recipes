@@ -6890,8 +6890,30 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
 - source_spec: `planning-artifacts/specs/spec-21-6-a-start-tool-with-no-work-behind-it-says-so.md`
   summary: Second half of the operator's ruling on N1: wire the seven start tools to the CLI grammar. It needs a capability, an allowlist of verbs per face, and a check of what the host image can run. A worker subprocess sits outside the session hook, so an unlisted verb on start_duty or start_build would reach what an agent is refused at the shell. Scribe's face closes DW-scribe-5-2 when wired.
   evidence: Second half of the operator's ruling on N1: wire the seven start tools to the CLI grammar. It needs a capability, an allowlist of verbs per face, and a check of what the host image can run. A worker subprocess sits outside the session hook, so an unlisted verb on start_duty or start_build would reach what an agent is refused at the shell. Scribe's face closes DW-scribe-5-2 when wired.
-  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-21-6-a-start-tool-with-no-work-behind-it-says-so.md:41
-  origin: spec-deferred c86ab71f5576 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-21-6-a-start-tool-with-no-work-behind-it-says-so.md:14
+  origin: spec-deferred 01a2d12dda70 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
+  promoted: 2026-11-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-steward-21-6-4: PortalClient.invoke with no runner returns _argv_projection, a made-up not-linked answer for a station it never asked. Same family as N1, on the path portals use for argv; nothing here changes it.
+
+- source_spec: `planning-artifacts/specs/spec-21-6-a-start-tool-with-no-work-behind-it-says-so.md`
+  summary: PortalClient.invoke with no runner returns _argv_projection, a made-up not-linked answer for a station it never asked. Same family as N1, on the path portals use for argv; nothing here changes it.
+  evidence: PortalClient.invoke with no runner returns _argv_projection, a made-up not-linked answer for a station it never asked. Same family as N1, on the path portals use for argv; nothing here changes it.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/assertion/client.py:215
+  origin: spec-deferred d58b2cfa9c23 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-11-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-steward-21-6-5: _grammar_recall parses the CLI's stdout and never reads its exit code, so a failed scribe recall reads as an answer. Fix it before wiring scribe's face to that seam.
+
+- source_spec: `planning-artifacts/specs/spec-21-6-a-start-tool-with-no-work-behind-it-says-so.md`
+  summary: _grammar_recall parses the CLI's stdout and never reads its exit code, so a failed scribe recall reads as an answer. Fix it before wiring scribe's face to that seam.
+  evidence: _grammar_recall parses the CLI's stdout and never reads its exit code, so a failed scribe recall reads as an answer. Fix it before wiring scribe's face to that seam.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/assertion/client.py:62
+  origin: spec-deferred 79f8e74d8f7a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
   promoted: 2026-11-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open

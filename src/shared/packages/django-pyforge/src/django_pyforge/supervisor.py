@@ -292,15 +292,16 @@ class RunnerNotWiredError(RuntimeError):
     """A start tool has no work behind it, so its run fails instead of succeeding."""
 
 
-def refuse_unwired_run(station: str, tool: str) -> NoReturn:
+def refuse_unwired_run(station: str, start_tool: str) -> NoReturn:
     """End a run that has no work behind it (Story 21.6).
 
     ``execute_supervised_run`` records anything a runner returns as
-    ``SUCCEEDED``, so a runner with nothing to do must raise. The message is
-    what ``get_*`` and warden's portal show.
+    ``SUCCEEDED``, so a runner with nothing to do must raise. The worker records
+    this error as a ``FAILED`` run and does not re-raise it. The message is what
+    ``get_*`` and warden's portal show, so it names the tool the caller called.
     """
     msg = (
-        f"{station}.{tool} ran nothing: no work is wired behind this tool yet. "
+        f"{station} {start_tool} ran nothing: no work is wired behind this tool yet. "
         f"Use the `pyforge {station}` CLI."
     )
     raise RunnerNotWiredError(msg)

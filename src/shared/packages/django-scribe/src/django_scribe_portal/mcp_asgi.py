@@ -17,7 +17,7 @@ _CACHE: dict[str, Any] = {}
 
 def run_recall(_payload: dict[str, Any] | None) -> dict[str, Any]:
     """Run nothing: no work is wired behind ``start_recall`` yet (Story 21.6)."""
-    refuse_unwired_run(SCRIBE_STATION, RUN_RECALL_TOOL)
+    refuse_unwired_run(SCRIBE_STATION, START_RECALL_TOOL)
 
 
 def ensure_scribe_runner() -> None:

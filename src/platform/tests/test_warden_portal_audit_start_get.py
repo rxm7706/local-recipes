@@ -19,13 +19,12 @@ from django_pyforge.mcp_http import register_station_mcp_app
 from django_pyforge.models import McpHandle
 from django_pyforge.models import RunState
 from django_pyforge.roles import IDP_TOKEN_CLAIMS_SESSION_KEY
-from django_pyforge.supervisor import RunnerNotWiredError
 from django_pyforge.tasks import execute_supervised_run
 from django_warden_fabric.mcp_asgi import build_warden_mcp_asgi
 from django_warden_fabric.mcp_asgi import run_audit
 from starlette.testclient import TestClient
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 HANDLE_RE = re.compile(r'id="warden-audit-handle">([^<]+)</')
 
 
@@ -108,13 +107,11 @@ def test_start_then_get_after_disconnect_does_not_recompute(
 
 @pytest.mark.django_db
 def test_portal_audit_fails_and_says_nothing_ran(client, monkeypatch, settings):
-    """Story 21.6: the real runner through the portal is a failed run, in words."""
-    delayed: list[dict] = []
+    """Story 21.6: the real runner through the portal is a failed run, in words.
 
-    def capture_delay(*_args: object, **kwargs: object) -> None:
-        delayed.append(kwargs)
-
-    monkeypatch.setattr(execute_supervised_run, "apply_async", capture_delay)
+    Test settings run the task eagerly, as local settings do, so this also pins
+    that the refusal reaches the worker and the caller still gets a handle.
+    """
     monkeypatch.setattr(
         "django_pyforge.supervisor._runners",
         {("warden", "run_audit"): run_audit},
@@ -124,15 +121,12 @@ def test_portal_audit_fails_and_says_nothing_ran(client, monkeypatch, settings):
     assert started.status_code == HTTPStatus.OK, started.content
     handle = _handle(started.content.decode())
 
-    with pytest.raises(RunnerNotWiredError):
-        execute_supervised_run(*delayed[0]["args"])
-
     status = client.get("/stations/warden/audits/", {"handle": handle})
     assert status.status_code == HTTPStatus.OK
     body = status.content.decode()
     assert RunState.Status.FAILED.value in body
     assert RunState.Status.SUCCEEDED.value not in body
-    assert "warden.run_audit ran nothing" in body
+    assert "warden start_audit ran nothing" in body
 
 
 @pytest.mark.django_db

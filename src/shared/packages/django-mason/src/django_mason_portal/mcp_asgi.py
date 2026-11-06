@@ -17,7 +17,7 @@ _CACHE: dict[str, Any] = {}
 
 def run_build(_payload: dict[str, Any] | None) -> dict[str, Any]:
     """Run nothing: no work is wired behind ``start_build`` yet (Story 21.6)."""
-    refuse_unwired_run(MASON_STATION, RUN_BUILD_TOOL)
+    refuse_unwired_run(MASON_STATION, START_BUILD_TOOL)
 
 
 def ensure_mason_runner() -> None:
