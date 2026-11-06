@@ -82,8 +82,8 @@ extra:
 ####
 # CFE comments
 # Header:
-#    # 2026-11-05 Story 25.19: host six and flake8 and run pyyaml taken from the feedstock: the identity-snapshot mirror dropped it, and no note records a reason. The body named the C library yaml.
-#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.22: host six and flake8 and run pyyaml taken from the feedstock: the identity-snapshot mirror dropped it, and no note records a reason. The body named the C library yaml.
+#    # 2026-11-05 Story 25.22: build.number bumped: the recipe changed at the same version (G113).
 #    # added run deps from import test: ['click']
 #    # added run deps from import test: ['yaml']
 ####

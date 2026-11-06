@@ -77,6 +77,6 @@ extra:
 ####
 # CFE comments
 # Header:
-#    # 2026-11-05 Story 25.19: run pyarrow-all taken from the feedstock: the identity-snapshot mirror dropped it, and no note records a reason. The body named pyarrow.
-#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.22: run pyarrow-all taken from the feedstock: the identity-snapshot mirror dropped it, and no note records a reason. The body named pyarrow.
+#    # 2026-11-05 Story 25.22: build.number bumped: the recipe changed at the same version (G113).
 ####

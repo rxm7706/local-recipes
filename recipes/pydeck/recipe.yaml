@@ -20,6 +20,7 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
+    - jinja2 >=2.10.1
     - jupyter >=1.0.0
     - pip
     - setuptools
@@ -28,6 +29,10 @@ requirements:
     - python >=${{ python_min }}
     - jinja2 >=2.10.1
     - numpy >=1.16.4
+  run_constraints:
+    - ipykernel >=5.1.2
+    - ipywidgets >=7,<8
+    - traitlets >=4.3.2
 
 tests:
   - python:
@@ -85,8 +90,8 @@ extra:
 ####
 # CFE comments
 # Header:
-#    # 2026-11-05 Story 25.19: host jupyter taken from the feedstock: the identity-snapshot mirror dropped it, and no note records a reason.
-#    # 2026-11-05 Story 25.19: build.number bumped: the recipe changed at the same version (G113).
+#    # 2026-11-05 Story 25.22: host jinja2 and jupyter and the run_constraints taken from the feedstock: the identity-snapshot mirror dropped it, and no note records a reason.
+#    # 2026-11-05 Story 25.22: build.number bumped: the recipe changed at the same version (G113).
 #    # license: rattler-build did not copy a license file; recorded, retrying common names
 #    # blocker: missing-license-file
 ####

@@ -1,0 +1,10 @@
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -76,6 +76,7 @@
+ [[tool.hatch.build.hooks.build-scripts.scripts]]
+ commands = ['python "src/build_scripts/build_py_wheel.py"']
+ artifacts = ["src/reactpy/static/wheels/*.whl"]
++clean_artifacts = false
+ 
+ #############################
+ # >>> Hatch Test Runner <<< #
