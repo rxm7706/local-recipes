@@ -907,6 +907,85 @@ def test_a_source_annotation_line_is_not_read_as_the_error(rw):
     assert rw._render_error(output) == "Failed to parse recipe: missing test type field"
 
 
+def test_a_wrapped_cause_is_kept_whole(rw):
+    output = (
+        "Error:   \u00d7 Failed to render recipe with variants\n"
+        "  \u2570\u2500\u25b6 invalid value for 'match spec': Invalid match spec 'python 3.10':\n"
+        "      missing range specifier\n"
+        "    \u256d\u2500[recipe.yaml:12:7]\n"
+        " 12 \u2502     - python 3.10\n"
+    )
+    assert rw._render_error(output) == (
+        "Failed to render recipe with variants: invalid value for 'match spec': "
+        "Invalid match spec 'python 3.10': missing range specifier"
+    )
+
+
+def test_a_render_reason_is_one_short_line(rw):
+    reason = rw._render_error("Error:   \u00d7 " + "x" * 900)
+    assert len(reason) == rw._RENDER_REASON_MAX and "\n" not in reason
+
+
+@pytest.mark.parametrize("rc, stderr", [(127, "rattler-build not found"), (124, "timed out after 120s")])
+def test_a_render_check_that_never_ran_is_not_terminal(rw, env, rc, stderr):
+    env.write_recipe()
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+    env.run_handler = lambda argv: (rc, "", stderr)
+    exit_code, report = env.invoke([{"name": "widget"}], "--render-check")
+    rec = rec_of(report)
+    assert exit_code == 1 and rec["outcome"] == "failed"
+    assert rec["reasons"] == [f"render-check-unavailable: {stderr}"]
+    env.run_handler = lambda argv: (0, "", "")
+    _, report = env.invoke([{"name": "widget"}], "--render-check")
+    assert rec_of(report).get("resumed") is None and rec_of(report)["render"] == {"status": "ok"}
+
+
+def test_a_render_that_passes_clears_the_old_failures_log(rw, env):
+    path = env.write_recipe(version="2.0.0")
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+    env.run_handler = lambda argv: (1, "", RENDER_ERROR)
+    env.invoke([{"name": "widget"}], "--render-check")
+    log = env.report / "logs" / "widget.render.log"
+    assert log.exists()
+    env.run_handler = lambda argv: (0, "", "")
+    path.write_text(path.read_text() + "\n")
+    env.invoke([{"name": "widget"}], "--render-check")
+    assert not log.exists()
+
+
+def test_render_check_with_build_renders_once(rw, env):
+    env.write_recipe()
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+    env.invoke([{"name": "widget"}], "--render-check", "--apply", "--build")
+    assert [("--render-only" in a) for a in env.run_calls].count(True) == 1
+
+
+def test_render_check_with_rebuild_renders_once(rw, env):
+    env.write_recipe(version="2.0.0")
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+    env.invoke([{"name": "widget"}], "--render-check", "--apply", "--build", "--rebuild")
+    assert [("--render-only" in a) for a in env.run_calls].count(True) == 1
+
+
+def test_a_skipped_build_keeps_its_log(rw, env):
+    env.write_recipe()
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+    env.run_handler = lambda argv: (0, "", "") if "--render-only" in argv else (0, "Starting build of 0 outputs", "")
+    _, report = env.invoke([{"name": "widget"}], "--apply", "--build")
+    assert rec_of(report)["build"]["log"] == "logs/widget.log"
+
+
+def test_the_report_names_both_logs(rw, env):
+    env.write_recipe()
+    env.write_recipe(name="broken")
+    env.add_feedstock("widget", "v1", fs_v1_raw())
+    env.add_feedstock("broken", "v1", fs_v1_raw())
+    env.run_handler = lambda argv: (1, "", RENDER_ERROR) if "--render-only" in argv and "broken" in " ".join(argv) else (0, "", "")
+    env.invoke([{"name": "widget"}, {"name": "broken"}], "--apply", "--build")
+    text = (env.report / "report.md").read_text()
+    assert "log: logs/widget.log" in text and "render log: logs/broken.render.log" in text
+
+
 def test_an_unnamed_render_failure_falls_back_to_its_last_line(rw):
     assert rw._render_error("first\nsecond line\n\n") == "second line"
     assert rw._render_error("") == "rattler-build gave no output"
@@ -931,6 +1010,12 @@ def test_render_url_renders_expressions_from_context(rw, url, context, expected)
 ])
 def test_render_url_leaves_what_it_cannot_render(rw, url):
     assert "${{" in rw._render_url(url, {"version": "1"})
+
+
+@pytest.mark.parametrize("expression", ["version.__class__", "1/0"])
+def test_render_url_fails_closed_on_an_unsafe_or_raising_expression(rw, expression):
+    url = "https://x/${{ " + expression + " }}.tar.gz"
+    assert rw._render_url(url, {"version": "1"}) == url
 
 
 def test_a_url_expression_refreshes_with_the_rendered_url(rw, env):

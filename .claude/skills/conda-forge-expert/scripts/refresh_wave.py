@@ -95,7 +95,10 @@ _DIST_RE = re.compile(r"\A[A-Za-z0-9._-]+\Z")
 _JINJA_OPEN_RE = re.compile(r"\$?\{[{%#]")
 _ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 #: rattler-build's error lines: the headline, then each cause under it.
-_RENDER_ERROR_RE = re.compile(r"^[ \t]*(?:Error:[ \t]*×|[├╰]─▶)[ \t]*(.+)$", re.MULTILINE)
+_RENDER_ERROR_RE = re.compile(r"^[ \t]*(?:Error:[ \t]*×|[├╰]─▶)[ \t]*(.+)$")
+#: Box drawing marks the source excerpt under an error, never a wrapped cause.
+_BOX_DRAWING_RE = re.compile(r"[│╭╮╯╰├─·]")
+_RENDER_REASON_MAX = 300
 _PLACEHOLDER = "JINJA_PLACEHOLDER"
 
 #: The four CFE gates, each run through its CFE wrapper script.
@@ -720,26 +723,40 @@ def _write_log(log_dir: Optional[Path], filename: str, output: str, rec: dict[st
 
 def _render_error(output: str) -> str:
     """rattler-build's error in one line: its headline and causes, else its last line."""
-    plain = _ANSI_RE.sub("", output)
-    found = [m.group(1).strip() for m in _RENDER_ERROR_RE.finditer(plain)]
+    lines = _ANSI_RE.sub("", output).splitlines()
+    found: list[str] = []
+    in_cause = False
+    for line in lines:
+        match = _RENDER_ERROR_RE.match(line)
+        if match:
+            found.append(match.group(1).strip())
+            in_cause = True
+        elif in_cause and line[:1].isspace() and line.strip() and not _BOX_DRAWING_RE.search(line):
+            found[-1] += " " + line.strip()  # rattler-build wraps a long cause
+        else:
+            in_cause = False
     if found:
-        return ": ".join(found)
-    lines = [line.strip() for line in plain.splitlines() if line.strip()]
-    return lines[-1] if lines else "rattler-build gave no output"
+        return ": ".join(found)[:_RENDER_REASON_MAX]
+    rest = [line.strip() for line in lines if line.strip()]
+    return rest[-1][:_RENDER_REASON_MAX] if rest else "rattler-build gave no output"
 
 
 def _render_check(recipe_yaml: Path, name: str, rec: dict[str, Any], log_dir: Optional[Path]) -> bool:
     """``rattler-build --render-only`` with the build's own configs; False ends the recipe."""
     argv, _out_dir = _build_argv(recipe_yaml, name)
     rc, out, err = _run([*argv, "--render-only"], timeout=RENDER_TIMEOUT_S)
+    log_name = f"{name}.render.log"
     if rc == 0:
         rec["render"] = {"status": "ok"}
+        if log_dir is not None:
+            (log_dir / log_name).unlink(missing_ok=True)  # an older failure no longer holds
         return True
     output = out + "\n" + err
-    rec["render"] = {
-        "status": "failed", "returncode": rc, "log": _write_log(log_dir, f"{name}.render.log", output, rec),
-    }
-    _finish(rec, "needs-review", f"render-failed: {_render_error(output)}")
+    rec["render"] = {"status": "failed", "returncode": rc, "log": _write_log(log_dir, log_name, output, rec)}
+    if rc in (124, 127):  # no render ran, so this says nothing of the recipe and must not be terminal
+        _finish(rec, "failed", f"render-check-unavailable: {_render_error(output)}")
+    else:
+        _finish(rec, "needs-review", f"render-failed: {_render_error(output)}")
     return False
 
 

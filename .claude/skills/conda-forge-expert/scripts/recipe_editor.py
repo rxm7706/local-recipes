@@ -60,7 +60,7 @@ def render_source_url(url: str, context: Any) -> str:
     def render(text: str) -> str:
         try:
             return env.from_string(text).render(values)
-        except (jinja2.TemplateError, TypeError, ValueError):
+        except Exception:  # an expression can raise anything; what fails stays unrendered
             return text
 
     for _ in range(3):  # a context value may name another
