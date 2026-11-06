@@ -3511,6 +3511,23 @@ So that a recipe's build record is not green, or blocked, because of what a mirr
 **And** each changed recipe's record is written by a `refresh-wave` build, what lies outside CAP-35's scope is counted and deferred, and no feedstock or upstream PR opens
 **Status:** done
 
+### Story 25.23: reactpy-django retires
+
+As the maintainer of the feedstock refresh campaign,
+I want the local-only `reactpy-django` recipe gone, with the patch that waited on that decision,
+So that no recipe in the repo records a build its dependencies can no longer solve.
+
+**Type:** fix • **Effort:** S • **Deps:** Story 25.22 • **FR/AD:** spec-pyforge-mason CAP-35 (FR-57); a fix, no new CAP; AD-1; CFE Rule 1 + Rule 2 • Closes `DW-mason-25-22-3`; operator ruling 2026-11-05, "Retire reactpy-django"
+**Flag:** none (a fix carries no flag, `spec-feature-flag-governance` Q1); its spec records `flag-exempt: recipe-build`
+**Recipes:** `reactpy-django` retired; `reactpy` loses its v2 patch file
+**Surface:** `recipes/reactpy-django/`, `recipes/reactpy/`, and the CFE retro surface
+**Spec:** `planning-artifacts/specs/spec-25-23-reactpy-django-retires.md`
+**Given** the identity mirror replaced `reactpy` 2.0.0b13 with 1.1.0 and `reactpy-django` 6.0.0b1 pins `reactpy >=2.0.0b13`
+**When** the operator rules that `reactpy-django` retires
+**Then** `recipes/reactpy-django/` is removed, nothing in the repo depends on it, and `reactpy`'s v2 patch file goes with its reason
+**And** `reactpy-router` 3.0.0b1 stays with its state deferred, `DW-mason-25-22-3` closes, and no feedstock or upstream PR opens
+**Status:** done
+
 ## Epic 26: CFE's tests never ask GitHub whether a recipe maintainer exists (spec-pyforge-mason CAP-34)
 
 Minted 2026-10-02 from the station Dream's entry of the same name, at the operator's request to chain the defects found

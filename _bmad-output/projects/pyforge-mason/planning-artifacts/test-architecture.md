@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: f5168579c64575f5
-story_count: 128
+source_fingerprint: 7e6df3106a5e5a98
+story_count: 129
 test_file_count: 43
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 128
+- **Stories parsed:** 129
 - **Epics parsed:** 36
 - **Test files inventoried:** 43 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `f5168579c64575f5`
+- **Source fingerprint:** `7e6df3106a5e5a98`
 
 ## Risk Assessment
 
@@ -240,6 +240,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 25.20 | refresh-wave records what a build did | none observed |
 | 25.21 | refresh-wave keeps build logs, render-checks first and renders URL expressions | none observed |
 | 25.22 | The in-scope recipes take back what the identity mirror dropped | none observed |
+| 25.23 | reactpy-django retires | none observed |
 | 26.1 | CFE's tests never ask GitHub whether a recipe maintainer exists | none observed |
 | 26.2 | CFE's tests never fetch conda-smithy's remote lint data | none observed |
 | 27.1 | Mason's package and the repo tooling it owns close their open deferrals | none observed |
