@@ -982,7 +982,11 @@ pointer becomes the behaviour it named.*
 - Verified by `pixi run --frozen -e pyforge-warden pyforge-warden-test` (exit 0; `tests/unit/test_sast_opengrep.py`).
 - Decomposes into **Epic 15** (Stories 15.1–15.2; mason Story 21.4 ships the opengrep package).
 
-#### FR-43: Warden scans the enterprise fleet, one verdict per repo ← CAP-26
+#### FR-43: Warden scans the enterprise fleet, one verdict per repo ← CAP-26, CAP-29
+
+*Amended 2026-11-10 (the cutover readiness mint; the operator's ruling of 2026-11-10 splits CAP-26): the arrow gains
+CAP-29, the fleet's portal half in `django-warden`. The consequences below are unchanged: the read-only GitHub clients
+and the non-Python security axis trace to CAP-26, the run, its exports, the proposals and the approve to CAP-29.*
 
 A fleet run, started only by an operator action, inventories an operator-designated github.com organisation (its name
 lives in a gitignored local config, and the leak guard keeps it out of warden's own files) and scans each repo with `warden scan`. This lifts two Non-goals by operator ruling
@@ -1287,3 +1291,82 @@ Spec, the audit's residue `research/egm-audit-2026-11-01.md` and the as-built fi
 *Chain-currency cascade (research -> brief -> PRD and spec -> PRD), EGM audit, marshal Story 113.18.*
 
 `research/egm-audit-2026-11-05.md` (marshal Story 113.18, `spec-pyforge-marshal:CAP-302`): 21 high findings, 6 accepted, 14 rejected, 1 deferred; the medium and low findings are not triaged. CAP-26 is re-derived: the leak guard's real scope, and no portal action. No FR is added, renumbered or re-scoped.
+
+## Currency reconciliation — 2026-11-10 (the cutover readiness mint)
+
+*Trigger: the station Dream's entry of 2026-11-10 (the cutover readiness audit) and the operator's rulings of the same
+day (`docs/dreams/pyforge-unifying-strategy.md`, Realization log, second addendum). `spec-pyforge-warden` gained
+CAP-27 (the PR-gate hook book), CAP-28 (the public contract) and CAP-29 (the fleet's portal half, split from CAP-26).
+Each FR below is traced from its CAP's intent and success (CHAIN-STANDARD § 12). Every other edit this PRD owes the
+change (NFR-C1's floor, NFR-S9, the bypass journey, the Epic 9 history line) is Story 25.2's.*
+
+### The FR space: FR-44..FR-50 registered
+
+FR-44 is the next free id. The `canopy:FR-44` citations in this PRD (§ Currency reconciliation — 2026-08-26 item 3,
+FR-42's body) are steward's canopy space, qualified in place, and name a different requirement. FR-44 and FR-45 give
+the two new capabilities their requirements; FR-46..FR-50 give the shipped capabilities CAP-13..CAP-23, which had none,
+theirs. CAP-29 takes no new id: FR-43, which already states the fleet's portal behaviour, is re-traced to
+`← CAP-26, CAP-29` in place.
+
+#### FR-44: The PR-gate hook book ← CAP-27
+
+Warden publishes the three PR-gate hook specs on `pyforge.core.hooks`, ships its own engines as the default plugin
+bundle, runs an optional scanner only when `WARDEN_OPTIONAL_SCANNERS` names it, omits an absent optional scanner without
+failing, and is the only publisher of the PR-gate verdict.
+
+- Verified by `pixi run --frozen -e pyforge-warden pytest` over CAP-27's five test modules (exit 0).
+- Shipped by Epic 9 (Stories 9.1–9.3, 2026-08-24); the capability was minted at the 2026-11-10 mint, and Story 25.1
+  verifies its text.
+
+#### FR-45: The public contract ← CAP-28
+
+`contract.md` beside `SPEC.md` lists every CLI flag, config key, exit code, status rung, error kind, feature-flag key,
+environment variable, MCP tool, management command, plugin entry point, open report slot, engine range and imported
+symbol; `proof-map.md` names the tests that prove each capability; and a test fails when the code and the lists differ.
+
+- Verified by `pixi run --frozen -e pyforge-warden pytest` over `tests/meta/test_public_contract.py`,
+  `tests/meta/test_contract_surface.py` and `tests/meta/test_capability_proof_map.py` (exit 0).
+- Decomposes into **Epic 26** (Stories 26.1–26.3).
+
+#### FR-46: One eligibility answer with its provenance ← CAP-13, CAP-14, CAP-15
+
+Source adapters ingest heterogeneous inventories through one contract and one identity API, the eligibility union
+carries a provenance trail per result, and the answer leaves as deterministic CycloneDX. A library surface: no CLI verb
+or portal calls it today.
+
+- Shipped by Epic 7 (Stories 7.1–7.3).
+
+#### FR-47: A web face for the compliance factory ← CAP-16, CAP-17
+
+An uploaded manifest returns a job id and runs the existing engines asynchronously, and its results render with
+progress derived from phase position. Lives in `django-warden`.
+
+- Shipped by Epic 8 (Stories 8.1–8.2).
+
+#### FR-48: Environment-scoped lockfile extraction ← CAP-18
+
+`warden scan --pixi-environment <name> --pixi-platform <platform>` extracts exactly the packages one pixi environment
+resolves for one platform from a multi-environment `pixi.lock`; unscoped keeps the union and warns.
+
+- Shipped by Epic 12.
+
+#### FR-49: A promotion gate that has seen what it ships ← CAP-19, CAP-20, CAP-21, CAP-22
+
+The platform's promotion scans the shipped closure against a provisioned offline OSV database, records an honest and
+specific verdict, and deploy promotes a digest only when that verdict is clean. Platform code that calls `warden scan`.
+
+- Shipped by Epic 12.
+
+#### FR-50: The TEA advisory ← CAP-23
+
+When enabled, warden runs TEA's test review against the diff from the remote-tracking ref and reports its result, or
+one skip record, in the advisory section; it never becomes a finding, a rung or the exit code, and a roster without
+`tea` refuses loudly.
+
+- Shipped by Epic 13 (Stories 13.1–13.2). This supersedes § Currency reconciliation — 2026-09-27 and 2026-11-01's
+  "CAP-23 still has no FR": the 2026-11-10 audit found CAP-13..CAP-23 with no FR arrow, and each now has one.
+
+**ONE FR space now FR-1..FR-50** (FR-51 = next free id; `canopy:FR-44` is a different space).
+
+**Content changed:** this section added (FR-44..FR-50 registered) and FR-43's arrow re-traced to `← CAP-26, CAP-29`
+with a dated note. No FR renumbered or removed. `updated:` moves with Story 25.2's re-stamp.
