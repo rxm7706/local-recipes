@@ -1139,3 +1139,46 @@ Entries through 2026-08-31: [archive § Realization log (historical)](<https://g
   canopy:FR-51, canopy:AD-24, steward Epic 119). `marshal factory dispatch` spends money and opens
   PRs, so it runs only for a `pyforge:admin` caller with `pyforge.steward.start_loop_dispatch` on,
   and that flag ships off. The worker image that would run these in a cluster is a later Story.
+- **2026-11-10** — Operator rulings after a fleet audit of cutover readiness. Nine read-only audits
+  ran at main `82a2b18828` (the eight stations and the core / testing-kit / host slice); every one
+  returned "not ready" for a rebuild from Frame + Spec. What the audit measured: B's `main` has not
+  moved since 2026-09-14 (`a762a14`, 84 files, pinned to A's PR #1344), and A's core has 17 modules
+  against B's 7; `pyforge.cutover_root` has no consumer beyond its own reader and the summary line
+  `flip` prints; `steward cutover plan|apply` still writes a move manifest and copies
+  `src/shared/packages/` to `src/packages/`; the capability ledger carries no state or claim field,
+  and 162 of its 1,021 rows sit on archived Specs (157 of them duplicate a folded station row);
+  `frozen-path-changed` reads `docs/foundry/manifest.*`, which does not exist, and reports ok; no
+  station imports `pyforge.core.station_port`; the `live_tree` test split exists for steward and
+  doctor only. The operator accepted the four recommended rulings in full ("Accept all"):
+  1. **Writer and seed.** A writes every Dream, Frame, Spec and the capability ledger until the
+     flip; B reads A at a pinned SHA; the flip moves the writer lock. The seed is Dream plus memlog,
+     as `spec-python-foundry-cutover` already says; a Frame is a pointer, not a seed. B keeps its
+     repository, epoch and CI. Its three kernel leaves are a prototype at PR #1344 and are not
+     re-pinned until the core, steward and marshal Specs pass a truth sweep.
+  2. **Fold code and the flag.** `steward cutover apply` and the move-manifest form of `plan`
+     retire; `plan` becomes the ledger generator `fnd:CAP-9` promises; `flip` stays. Stories 44.4,
+     44.5 and 44.6 retire as 44.10 did: their ledger keys move to `blocked` and are never
+     dispatched (they sat at `backlog` with every dependency `done`). `pyforge.cutover_root` means
+     the writer lock and the root of record, with three consumers: a guard on chain writes,
+     marshal's default forge remote, and later, with Story 44.8, Mason's ship and submit root.
+     Routing per capability stays in the ledger row, not in the flag. Story 44.12 stays `done`; the
+     gap takes a new Story.
+  3. **Scope and modes.** Launch is a self-hosting slice, not three whole stations: B lands one
+     story on itself through its own dispatch, gated by its own detectors, and the ledger rows
+     Launch needs derive from that proof. The re-mode rules: a capability whose artifact is deleted
+     on A is `retire`; a closed one-time recipe campaign is `retire`; host, platform and portal
+     capabilities are `A-only` with a Story as their expiry; the rows on archived Specs leave the
+     ledger and the folded station row is the single record; the testing kit is `rebuild`;
+     conda-forge-expert takes explicit `A-only` rows whose expiry is its own Spec Story, after the
+     flip; a capability that was never built is not `rebuild`.
+  4. **Expiries.** The 87 rows dated 2026-12-31 get no blanket extension. They are decided by group
+     (55 sit on archived Specs, and 47 of those contradict the mode of their folded twin), and the
+     expiry gains a detector: a warning 30 days ahead and a finding after.
+
+  A fifth instruction the same day: the whole effort lands as one PR, with the parallel work inside
+  one integration branch (`cutover-readiness-2026-11-10`). Two questions stay with the operator:
+  whether the never-built capabilities (atlas's Unity and Wasm satellites, Mason's Presenton set)
+  are `B-only` or `retire`, and what event triggers the flip. This entry mints no capability.
+  `bmad-spec` re-derives `spec-python-foundry-cutover`, `spec-foundry-regenerate-not-fold` and
+  `spec-foundry-capability-ledger` from it, and each station whose code changes (steward, marshal,
+  doctor, mason) takes its own dated Dream entry first.

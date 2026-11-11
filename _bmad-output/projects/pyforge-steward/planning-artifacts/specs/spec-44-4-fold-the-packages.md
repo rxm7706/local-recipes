@@ -2,7 +2,7 @@
 title: 'Fold the packages'
 type: 'feature'
 created: '2026-09-13'
-status: 'backlog'
+status: 'blocked'
 flag:
   key: pyforge.steward.cutover_fold_packages
   provider: openfeature-file
@@ -19,6 +19,11 @@ warnings: []
 deferred: []
 declared_low_risk: false
 ---
+
+> **Retired 2026-11-10 — never dispatch.** Operator ruling 2 of 2026-11-10
+> (`docs/dreams/pyforge-unifying-strategy.md` § Realization log): the file-move path retires with
+> `steward cutover apply`; a capability reaches foundry by rebuild, never by a fold. The ledger key
+> is `blocked`; an operator flip does not revive it. Text kept as history.
 
 <intent-contract>
 

@@ -2780,6 +2780,12 @@ So that Phase 1 has a lasting root to move into.
 
 ### Story 44.4: Fold the packages
 
+> **Retired 2026-11-10 — never dispatch.** Operator ruling 2 of 2026-11-10
+> (`docs/dreams/pyforge-unifying-strategy.md` § Realization log): the file-move path retires with
+> `steward cutover apply`; a capability reaches foundry by rebuild, never by a fold. The ledger key
+> moves from `backlog` to `blocked`; an operator flip does not revive it. The text below is kept
+> as history.
+
 As a platform operator,
 I want `src/shared/packages/*` under `src/packages/` in foundry with every consumer path rewritten from manifest rows and no source copied into the host image,
 So that station envs solve and the host boots in foundry from workspace members.
@@ -2795,6 +2801,12 @@ So that station envs solve and the host boots in foundry from workspace members.
 
 ### Story 44.5: Move the estate
 
+> **Retired 2026-11-10 — never dispatch.** Operator ruling 2 of 2026-11-10
+> (`docs/dreams/pyforge-unifying-strategy.md` § Realization log): the file-move path retires with
+> `steward cutover apply`; skills and the BMAD chain are re-provisioned on foundry, never copied.
+> The ledger key moves from `backlog` to `blocked`; an operator flip does not revive it. The text
+> below is kept as history.
+
 As a platform operator,
 I want the skills tree, the BMAD chain, the decks and the Dreams in foundry with IDE directories as symlink adapters,
 So that agents and loops resolve everything from the lasting root.
@@ -2808,6 +2820,12 @@ So that agents and loops resolve everything from the lasting root.
 **Status:** backlog
 
 ### Story 44.6: CFE comes home
+
+> **Retired 2026-11-10 — never dispatch.** Operator ruling 2 of 2026-11-10
+> (`docs/dreams/pyforge-unifying-strategy.md` § Realization log): the cell is not moved; a foundry
+> conda-forge-expert is rebuilt from its own Spec after the flip, and until then it stays on
+> `local-recipes`. The ledger key moves from `backlog` to `blocked`; an operator flip does not
+> revive it. The text below is kept as history.
 
 As a platform operator,
 I want the authoritative conda-forge-expert skill, scripts and tools resolving from `skills/domain/conda-forge-expert` in foundry with Mason reaching the island by manifest path,
