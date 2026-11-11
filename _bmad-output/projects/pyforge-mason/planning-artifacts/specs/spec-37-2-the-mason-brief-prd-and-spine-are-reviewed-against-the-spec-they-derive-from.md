@@ -166,3 +166,13 @@ Expect: 0, 0 and 0.
 ## Notes
 
 - The chain-currency sweep is judged once, at Story 37.4, after the retro.
+
+## Planned deferral (written at build)
+
+- **spec-pyforge-mason's `companions:` comments trail the reviewed chain** (severity: low). `SPEC.md`'s frontmatter
+  comments read `FR-1..FR-50 / NFR-1..NFR-16 / D-1..D-13` for the PRD and `AD-1..AD-16 + AD-25/AD-26; Presenton
+  AD-17..AD-24` for the spine; after this review the PRD holds FR-1..FR-64 and the spine adds AD-27 and AD-28.
+  Location: `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md` (`companions:`).
+  This story may not edit `SPEC.md` (memlog entry and anchored render only, Story 37.1's), and no capability text,
+  surface or acceptance criterion depends on the comments. Fix: the next re-derive of `spec-pyforge-mason` restates
+  both ranges. Story 37.4 writes the ledger row (the station closer, per the build rules).

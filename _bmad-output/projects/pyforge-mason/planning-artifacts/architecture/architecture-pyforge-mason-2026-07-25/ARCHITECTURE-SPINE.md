@@ -4,15 +4,15 @@ type: architecture-spine
 purpose: build-substrate
 altitude: feature
 paradigm: 'ports-and-adapters (hexagonal) with a knowledge-free core'
-scope: 'The mason CLI: dist pyforge-mason / module pyforge.mason / CLI mason. Governs FR-1 – FR-50, NFR-1 – NFR-16, D-1 – D-9.'
+scope: 'The mason CLI: dist pyforge-mason / module pyforge.mason / CLI mason. Governs FR-1 – FR-64, NFR-1 – NFR-16, D-1 – D-13.'
 status: final
 created: '2026-07-25'
-updated: "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (PRD -> arch); no CAP, FR or AD is minted. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): prd->arch cascade for the PRD's § Currency reconciliation — 2026-11-01 (CAP-29 and CAP-35 re-derived, FR-51 and FR-57 amended in place; Story 4.5's cli.py flag registration and Story 19.6's skill meta-tests landed); no AD moves. See § Currency reconciliation — 2026-11-01. Prior "2026-10-31"   # RE-STAMPED 2026-10-31: prd->arch cascade for the PRD's § Currency reconciliation — 2026-10-31 (the CFE v8.102.2 retro of the nebari-infrastructure-core recipe refresh; no mason code change); no AD moves. See § Currency reconciliation — 2026-10-31. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 33.1): prd->arch cascade for the PRD's § Currency reconciliation — 2026-10-26 (Story 33.1) (the Spec's capability text restored; no requirement moves); no AD moves. See § Currency reconciliation — 2026-10-26 (Story 33.1). Prior "2026-10-25"   # RE-STAMPED 2026-10-25 (Story 32.1): prd->arch cascade for the PRD's § Currency reconciliation — 2026-10-25 (Story 32.1) (three FR arrows re-pointed at the capabilities that realize them); no AD moves. See § Currency reconciliation — 2026-10-25 (Story 32.1). Prior "2026-10-22"   # RE-STAMPED 2026-10-22: chain-currency cascade (spec -> PRD -> arch) for the spec memlog's 2026-10-13..22 entries (Story 26.2, CFE's tests answer conda-smithy's remote lint reads locally; no AD moves). See § Currency reconciliation — 2026-10-22. Prior "2026-10-12"   # RE-STAMPED 2026-10-12: chain-currency cascade (spec -> PRD -> arch) for the spec memlog's 2026-10-10..12 entries (Story 29.1, a local pwntools mirror with the #2721 backport and the pwndbg python-unicorn fix, under CAP-18 and CAP-23); no AD change. See § Currency reconciliation — 2026-10-12. Prior "2026-10-09"   # RE-STAMPED 2026-10-09: chain-currency cascade (spec -> PRD -> arch) for Story 25.3 (CFE bulk refresh driver and its repair mode, under CAP-35 / FR-57, CAP-20, CAP-23; no new CAP) and Story 25.2's Wave 0; lands on AD-1 and AD-15 as written, no AD amended. See § Currency reconciliation — 2026-10-09 (later). Prior "2026-10-09"   # RE-STAMPED 2026-10-09: chain-currency cascade (spec -> PRD -> arch) for the two Story 22.1 splits and Stories 22.3 and 22.4 (fixes under FR-54 / CAP-32); lands on AD-1 and AD-15 as written, no AD amended. See § Currency reconciliation — 2026-10-09. Prior 2026-10-05   # RE-STAMPED 2026-10-05: chain-currency cascade (spec -> PRD -> arch) for Epic 27 (Story 27.1) and Story 19.1; lands on AD-1, AD-7, AD-8, AD-12 and canopy:AD-17 as written, no AD amended. See § Currency reconciliation — 2026-10-05. Prior 2026-10-02   # RE-STAMPED 2026-10-02: chain-currency cascade (spec -> PRD -> arch) for Story 26.1 (Epic 26), a fix under FR-56 / CAP-34; lands on AD-1 and AD-15 as written, no AD amended. Prior 2026-09-29 (evening)   # RE-STAMPED 2026-09-29 (evening): chain-currency cascade (spec -> PRD -> arch) for FR-57 / CAP-35 (Epic 25); lands on AD-1 and AD-15 as written, no AD amended. Prior 2026-09-29 (later)   # RE-STAMPED 2026-09-29 (later): chain-currency cascade (spec -> PRD -> arch) for FR-56 / CAP-34 (Epic 24); lands on AD-1 and AD-15 as written, no AD amended. Prior 2026-09-29   # RE-STAMPED 2026-09-29: chain-currency cascade (spec -> PRD -> arch) for FR-55 / CAP-33 (Epic 23); lands on AD-1 and AD-15 as written, no AD amended. Prior 2026-09-28 (night, later)   # RE-STAMPED 2026-09-28 (night, later): chain-currency cascade (spec -> PRD -> arch) for FR-54 / CAP-32 (Epic 22); lands on AD-1 and AD-15 as written, no AD amended. Prior 2026-09-28 (night)   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> arch) for FR-53 / CAP-31 (Epic 21); lands on AD-1 and AD-15 as written, no AD amended. Prior 2026-09-28 (later)   # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD -> arch) for FR-52 / CAP-30 (Epic 20); lands on AD-12 as written, no AD amended. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch) for FR-51 / CAP-29 (Epic 19); lands on AD-1, AD-15 and canopy:AD-17, no AD amended. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-28 (prd -> arch), no AD delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17   # RE-STAMPED 2026-09-17: chain-currency cascade (spec/PRD -> spine) after the one-chain fold. No AD added, changed or removed; § Currency reconciliation — 2026-09-17 already present.
-currency_review: "Reviewed 2026-09-17 — one-chain mason fold cascade (Spec and PRD re-dated 2026-09-17). No AD added, changed or removed. Prior review 2026-09-14 — chain-currency sweep cascade (the PRD re-dated 2026-09-14 after recording FR-14's as-built diff-before-apply divergence and folding the realization-gate closure). Appended § Currency reconciliation — 2026-09-14: AD-1's knowledge-free core and AD-14's credential blindness both re-confirmed against the Story 44.7 foundry-island wiring and PR #1354's AD-14 guard fix; the FR-14 divergence is a VERB-LEVEL default, not a structural one, and no port or adapter boundary moves with it. Prior review 2026-08-26 — as-built truth-up against src/shared/packages/pyforge-mason/ after station completion (fleet ledger 2026-08-21): every AD verified holding in code; OQ-A1/OQ-A3/OQ-A4 stamped resolved in place; engine/stack drift and post-completion scope growth named in § Currency reconciliation. Prior review 2026-08-02 (AD-25/AD-26 added for FR-49/FR-50)."
+updated: "2026-11-11"   # REVIEWED 2026-11-11 (mason Story 37.2, the cutover readiness review in feed order): prd -> arch edge for the PRD's § Currency reconciliation — 2026-11-11 (Story 37.2); binds: FR-1..FR-64 and D-1..D-13; the stack row reads 3.14 (decision D6); AD-13 notes the two environment-only factory-island variables; AD-16 amended for the package and live-tree halves (relay of spec-pyforge-steward:CAP-175); AD-27 (the factory-island resolution) and AD-28 (the contract companion and its meta-test) added; capability map rows for FR-51..FR-64. See § Currency reconciliation — 2026-11-11 (Story 37.2). Prior "2026-11-05"   # RE-STAMPED 2026-11-05 (EGM audit, marshal Story 113.18): chain-currency cascade (PRD -> arch); no CAP, FR or AD is minted. Prior "2026-11-01"   # RE-STAMPED 2026-11-01 (EGM fleet audit, marshal Story 113.7): prd->arch cascade for the PRD's § Currency reconciliation — 2026-11-01 (CAP-29 and CAP-35 re-derived, FR-51 and FR-57 amended in place; Story 4.5's cli.py flag registration and Story 19.6's skill meta-tests landed); no AD moves. See § Currency reconciliation — 2026-11-01. Prior "2026-10-31"   # RE-STAMPED 2026-10-31: prd->arch cascade for the PRD's § Currency reconciliation — 2026-10-31 (the CFE v8.102.2 retro of the nebari-infrastructure-core recipe refresh; no mason code change); no AD moves. See § Currency reconciliation — 2026-10-31. Prior "2026-10-26"   # RE-STAMPED 2026-10-26 (Story 33.1): prd->arch cascade for the PRD's § Currency reconciliation — 2026-10-26 (Story 33.1) (the Spec's capability text restored; no requirement moves); no AD moves. See § Currency reconciliation — 2026-10-26 (Story 33.1). Prior "2026-10-25"   # RE-STAMPED 2026-10-25 (Story 32.1): prd->arch cascade for the PRD's § Currency reconciliation — 2026-10-25 (Story 32.1) (three FR arrows re-pointed at the capabilities that realize them); no AD moves. See § Currency reconciliation — 2026-10-25 (Story 32.1). Prior "2026-10-22"   # RE-STAMPED 2026-10-22: chain-currency cascade (spec -> PRD -> arch) for the spec memlog's 2026-10-13..22 entries (Story 26.2, CFE's tests answer conda-smithy's remote lint reads locally; no AD moves). See § Currency reconciliation — 2026-10-22. Prior "2026-10-12"   # RE-STAMPED 2026-10-12: chain-currency cascade (spec -> PRD -> arch) for the spec memlog's 2026-10-10..12 entries (Story 29.1, a local pwntools mirror with the #2721 backport and the pwndbg python-unicorn fix, under CAP-18 and CAP-23); no AD change. See § Currency reconciliation — 2026-10-12. Prior "2026-10-09"   # RE-STAMPED 2026-10-09: chain-currency cascade (spec -> PRD -> arch) for Story 25.3 (CFE bulk refresh driver and its repair mode, under CAP-35 / FR-57, CAP-20, CAP-23; no new CAP) and Story 25.2's Wave 0; lands on AD-1 and AD-15 as written, no AD amended. See § Currency reconciliation — 2026-10-09 (later). Prior "2026-10-09"   # RE-STAMPED 2026-10-09: chain-currency cascade (spec -> PRD -> arch) for the two Story 22.1 splits and Stories 22.3 and 22.4 (fixes under FR-54 / CAP-32); lands on AD-1 and AD-15 as written, no AD amended. See § Currency reconciliation — 2026-10-09. Prior 2026-10-05   # RE-STAMPED 2026-10-05: chain-currency cascade (spec -> PRD -> arch) for Epic 27 (Story 27.1) and Story 19.1; lands on AD-1, AD-7, AD-8, AD-12 and canopy:AD-17 as written, no AD amended. See § Currency reconciliation — 2026-10-05. Prior 2026-10-02   # RE-STAMPED 2026-10-02: chain-currency cascade (spec -> PRD -> arch) for Story 26.1 (Epic 26), a fix under FR-56 / CAP-34; lands on AD-1 and AD-15 as written, no AD amended. Prior 2026-09-29 (evening)   # RE-STAMPED 2026-09-29 (evening): chain-currency cascade (spec -> PRD -> arch) for FR-57 / CAP-35 (Epic 25); lands on AD-1 and AD-15 as written, no AD amended. Prior 2026-09-29 (later)   # RE-STAMPED 2026-09-29 (later): chain-currency cascade (spec -> PRD -> arch) for FR-56 / CAP-34 (Epic 24); lands on AD-1 and AD-15 as written, no AD amended. Prior 2026-09-29   # RE-STAMPED 2026-09-29: chain-currency cascade (spec -> PRD -> arch) for FR-55 / CAP-33 (Epic 23); lands on AD-1 and AD-15 as written, no AD amended. Prior 2026-09-28 (night, later)   # RE-STAMPED 2026-09-28 (night, later): chain-currency cascade (spec -> PRD -> arch) for FR-54 / CAP-32 (Epic 22); lands on AD-1 and AD-15 as written, no AD amended. Prior 2026-09-28 (night)   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> arch) for FR-53 / CAP-31 (Epic 21); lands on AD-1 and AD-15 as written, no AD amended. Prior 2026-09-28 (later)   # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD -> arch) for FR-52 / CAP-30 (Epic 20); lands on AD-12 as written, no AD amended. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch) for FR-51 / CAP-29 (Epic 19); lands on AD-1, AD-15 and canopy:AD-17, no AD amended. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-28 (prd -> arch), no AD delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17   # RE-STAMPED 2026-09-17: chain-currency cascade (spec/PRD -> spine) after the one-chain fold. No AD added, changed or removed; § Currency reconciliation — 2026-09-17 already present.
+currency_review: "Reviewed 2026-11-11 — mason Story 37.2, against the PRD as reviewed the same day and spec-pyforge-mason as Story 37.1 re-derived it. Every AD was read against the capabilities and requirements it binds. Four had fallen behind the code: AD-13 named three of six knob variables and not the two factory-island variables; AD-16 said every test runs against a fake CFE root while the suite now runs as a package half and a live_tree half; the stack row said 3.12; and no AD decided the factory-island resolution (steward Story 44.7, 2026-09-13) or the contract companion (Story 38.1). AD-13 and AD-16 are amended with dated notes, and AD-27 and AD-28 record the two decisions, numbered from the next free id. Reconciled in § Currency reconciliation — 2026-11-11 (Story 37.2). Prior review 2026-09-17 — one-chain mason fold cascade (Spec and PRD re-dated 2026-09-17). No AD added, changed or removed. Prior review 2026-09-14 — chain-currency sweep cascade (the PRD re-dated 2026-09-14 after recording FR-14's as-built diff-before-apply divergence and folding the realization-gate closure). Appended § Currency reconciliation — 2026-09-14: AD-1's knowledge-free core and AD-14's credential blindness both re-confirmed against the Story 44.7 foundry-island wiring and PR #1354's AD-14 guard fix; the FR-14 divergence is a VERB-LEVEL default, not a structural one, and no port or adapter boundary moves with it. Prior review 2026-08-26 — as-built truth-up against src/shared/packages/pyforge-mason/ after station completion (fleet ledger 2026-08-21): every AD verified holding in code; OQ-A1/OQ-A3/OQ-A4 stamped resolved in place; engine/stack drift and post-completion scope growth named in § Currency reconciliation. Prior review 2026-08-02 (AD-25/AD-26 added for FR-49/FR-50)."
 binds:
-  - 'FR-1..FR-50'
+  - 'FR-1..FR-64'
   - 'NFR-1..NFR-16'
-  - 'D-1..D-9'
+  - 'D-1..D-13'
 sources:
   - '../../prds/prd-pyforge-mason-2026-07-25/prd.md'
   - '../../briefs/brief-pyforge-mason-2026-07-25/brief.md'
@@ -192,7 +192,7 @@ graph TD
 
 ### AD-13 — No configuration file in v1
 
-- **Binds:** FR-35, FR-48, NFR-9
+- **Binds:** FR-35, FR-48, FR-58, NFR-9
 - **Prevents:** two configuration systems (flags/env plus a file) with undefined precedence — the
   classic source of "it works on my machine" in CLI tools.
 - **Rule:** Configuration is flags and environment variables only. Precedence is always
@@ -202,6 +202,13 @@ graph TD
   `--cfe-python`/`MASON_CFE_PYTHON`, `--cfe-timeout`/`MASON_CFE_TIMEOUT`, `--format`, `--verbose`,
   `--quiet` — each with both a flag and an environment-variable form; a meta-test asserts no code
   path reads a Mason-specific key from a file.
+- **Amended 2026-11-11 (Story 37.2):** the three output knobs' variables are `MASON_FORMAT`, `MASON_VERBOSE` and
+  `MASON_QUIET`, so the closed set is six flag-and-variable pairs (FR-48 as amended). Two further variables are
+  environment-only and are not knobs: `MASON_FOUNDRY_ROOT`, which the factory-island build reads, and
+  `MASON_FACTORY_ROOT`, which Mason sets; the resolved values of both go to the CFE build child's environment and
+  nowhere else, and the native adapter reads `MASON_FACTORY_ROOT` back from that child environment only to report the
+  artifact directory (AD-27, CAP-36). Neither has a flag form, so the six-knob set stays closed and this rule's precedence
+  holds unchanged for every knob. `contract.md` lists every variable Mason reads or sets (AD-28).
 
 ### AD-14 — Credential blindness
 
@@ -246,13 +253,24 @@ graph TD
 
 ### AD-16 — Every test runs against a fake CFE root
 
-- **Binds:** NFR-13, FR-44, FR-46
+- **Binds:** NFR-13, FR-44, FR-46, FR-61, FR-62
 - **Prevents:** a test suite that only passes inside this repository — which would make Mason's
   own CI dependent on the very co-location D-2 admits is a constraint.
 - **Rule:** The test suite ships a fixture CFE root (stub scripts emitting canned stdout). No test
   requires a real CFE installation, network, or `recipes/` directory. The delegation-fidelity test
   (FR-46) is the single exception and is marked `slow`, mirroring `pyforge-warden`'s marker
   convention.
+- **Amended 2026-11-11 (Story 37.2; relay of spec-pyforge-steward:CAP-175, steward's ruling D4 of 2026-10-27;
+  decision D2 of the cutover readiness plan):** the suite runs as two halves, split by the `live_tree` pytest marker
+  with steward's text. The **package half** (`-m "not slow and not live_tree"`) is the rule above: it runs against the
+  fixture CFE root, needs no real installation, network or `recipes/` directory, and passes from a copy of the package
+  outside any repository. The **live-tree half** (`-m "live_tree and not slow"`) holds every module that reads the
+  repository outside `src/shared/packages/pyforge-mason/` (planning artifacts, the real CFE root, `pixi.toml`, the
+  workflows, other stations); each such module carries `pytestmark = pytest.mark.live_tree`. The two halves together
+  collect what the `not slow` suite collects, and `tests/meta/test_live_tree_split.py` fails on an unmarked module
+  that derives the repository root. The live-tree half is where the checks against real files live:
+  `tests/meta/test_cfe_adapter_argv_live.py` (FR-62) reads the real CFE scripts' source and runs nothing, and
+  `tests/meta/test_public_contract.py` (AD-28) reads the Spec folder. The `slow` exception is unchanged.
 
 ### AD-25 — Delegated child output streams or is captured, never both, and never breaks the JSON envelope
 
@@ -281,6 +299,58 @@ avoid renumbering either.)*
   reach `terminal` success before `pypi` runs. The dry-run plan (AD-9's rendering, PRD FR-19)
   states explicitly that the `pypi` target is irreversible.
 
+### AD-27 — The factory-island build resolves through a second pure chain, environment-only and native-only
+
+*(Added 2026-11-11, Story 37.2: numbered from the spine's next free id, after AD-25 and AD-26. Records the decision
+steward Story 44.7 built on 2026-09-13 as Mason's half of spec-python-foundry-cutover:CAP-4, which no AD held until
+CAP-36.)*
+
+- **Binds:** FR-58, FR-48 (CAP-36)
+- **Prevents:** a second root-resolution system that widens AD-13's closed knob set with a flag, a recipe path that
+  only looks like an island path being built from the wrong root, and Mason's caller seeing an environment the build
+  child was given.
+- **Rule:** Only `factory/recipes/<r>` and `./factory/recipes/<r>` name a recipe in python-foundry's factory island
+  (one leading `./` is stripped, never a run of dots and slashes). Such a path selects a second resolution chain beside
+  AD-5's CFE chain, pure in the same sense: a function over (the value `recipe build` read from `MASON_FOUNDRY_ROOT`,
+  the environment mapping, the start directory) that only reads the filesystem, trying the variable and then an
+  upward walk for a directory holding both `factory/pixi.toml` and `factory/pixi.lock`. It has no flag form, and
+  unlike AD-5's chains its outcome does not record which step matched (`mason doctor` does not report it). The CFE
+  root resolves first, so an unresolved CFE root is still exit 3; a factory-shaped path whose root, island lock or
+  recipe is missing, or whose slug is empty, is `factory:missing-island` (exit 1), and the message names
+  `MASON_FOUNDRY_ROOT` and the walk marker, never a flag. The build is the **native** build only: the CFE native
+  adapter gets the absolute island recipe path and a copy of the caller's environment carrying `MASON_FOUNDRY_ROOT`
+  and `MASON_FACTORY_ROOT` (AD-3's single adapter, AD-14's rule that no value is logged); the caller's mapping is never
+  mutated, and the reported artifact directory is `<factory root>/build_artifacts/<config>`, where the native script
+  writes. The Docker build is outside this decision: its wrapped script reads neither variable, and the island
+  artifact directory Mason reports for it is not where that script writes (a recorded deferral, A-only on
+  conda-forge-expert's side). Mason reads no `pyforge.cutover_root`; until steward Story 44.8 moves the ship and submit
+  root, a conda-forge ship resolves `<cfe-root>/recipes/<name>` only (D-10).
+- **Where it lives:** `resolve.py` (`is_factory_recipe_path`, `resolve_foundry_root`, `resolve_factory_island`),
+  `recipe.py` (`build` selects the chain and builds the child environment), `cfe.py` (the native adapter reports the
+  artifact directory), `errors.py` (`FactoryIslandMissingError`); held by `tests/unit/test_factory_island.py`.
+
+### AD-28 — The public contract is one Spec companion, held to the code by a meta-test
+
+*(Added 2026-11-11, Story 37.2: numbered after AD-27. Records decision D1 of the cutover readiness plan as Story 38.1
+built it.)*
+
+- **Binds:** FR-60, FR-35, FR-48 (CAP-5)
+- **Prevents:** a public surface that is known only by reading the code, so that a rebuild on B from the Spec cannot
+  tell what it must keep, and a written contract that drifts from the code without a failing test.
+- **Rule:** Mason's public contract is one companion of the Spec, `specs/spec-pyforge-mason/contract.md`. As tables it
+  lists every parser path with its positionals and options, each global knob's environment variable, every other
+  environment variable Mason reads or sets, the exit codes, the error identifiers, the MCP tool and portal-job names,
+  and the feature-flag keys Mason reads (none). As prose the test does not judge, it states the JSON envelope's five
+  keys and status values, the four ship-target states with `exit 0 does not mean shipped`, the doctor report fields
+  and the directory layout Mason assumes at the CFE root and the factory island. `tests/meta/test_public_contract.py`
+  extracts the judged families from the code by AST and fails when either side has an item the other lacks. It reads
+  the Spec folder, so it carries the `live_tree` marker and runs in the live-tree half (AD-16 as amended). A change to
+  the public surface edits `contract.md` in the same change; an error identifier stays API (AD-7). The portal and MCP
+  names are `django-mason` code under `spec-pyforge-unifying-strategy`; the contract names them and decides nothing
+  about them (D-8 holds for the package).
+- **Where it lives:** `planning-artifacts/specs/spec-pyforge-mason/contract.md` and
+  `src/shared/packages/pyforge-mason/tests/meta/test_public_contract.py`.
+
 ## Consistency Conventions
 
 | Concern | Convention |
@@ -303,7 +373,7 @@ Seed — verified against the repository's live manifests at authoring; the code
 
 | Name | Version |
 | --- | --- |
-| Python | `>=3.12` (D-6, matching `pyforge-warden`) |
+| Python | `>=3.14` (D-6 as amended 2026-11-11; decision D6 of the cutover readiness plan; was `>=3.12`, matching `pyforge-warden`) |
 | Build backend | `hatchling` (both siblings) |
 | Conda build backend | `pixi-build-python` `0.*` |
 | CLI framework | `argparse` (stdlib — D-9) |
@@ -395,6 +465,12 @@ sequenceDiagram
 | Configuration surface (FR-48) | `cli.py` flag parsing + env-var reads | AD-13 |
 | Logging + child-output handling (FR-49) | `cfe.py`, `engines/*` | AD-25 |
 | Publish rehearsal (FR-50) | `package.py` (`pypi-test` target) | AD-9, AD-26 |
+| Skills, pixi floor, recipe campaigns (FR-51 – FR-57) | `.claude/skills/`, `pixi.toml`, `recipes/`, the CFE surface | AD-1, AD-12, AD-15 (the dated reconciliations of 2026-09-28 and 2026-09-29) |
+| Factory-island build (FR-58) | `resolve.py`, `recipe.py`, `cfe.py`, `errors.py` | AD-3, AD-13, AD-27 |
+| Three sockets (FR-59) | `engines/build_hooks.py`, `airgap_contract.py`, `boot.py` | AD-12 |
+| Public contract (FR-60) | `specs/spec-pyforge-mason/contract.md`, `tests/meta/test_public_contract.py` | AD-7, AD-13, AD-28 |
+| Suite halves and adapter argv check (FR-61, FR-62) | `tests/` (the `live_tree` marker), `pyproject.toml` | AD-3, AD-16 |
+| Containerfile convention, recipe workflow diff base (FR-63, FR-64) | `tests/packaging/`, `.github/workflows/`, outside the package | none: outside Mason's code (§ Currency reconciliation — 2026-09-27) |
 
 ## Deferred
 
@@ -1012,3 +1088,49 @@ No port, adapter or package boundary moves. **Content changed:** this section. `
 *Chain-currency cascade (PRD -> arch), EGM audit, marshal Story 113.18.*
 
 The audit record `research/egm-audit-2026-11-05.md` and the Spec memlog moved on 2026-11-05. No AD moves.
+
+## Currency reconciliation — 2026-11-11 (Story 37.2)
+
+*Trigger: the chain-currency `prd→arch` edge for the PRD's § Currency reconciliation — 2026-11-11 (Story 37.2), which
+reviewed FR-58..FR-64 against `spec-pyforge-mason` as Story 37.1 re-derived it on 2026-11-11 (CAP-36 and CAP-37
+minted, CAP-5 and CAP-7 amended, the Presenton set retired, never built). This is a review, not a re-stamp: every AD
+was read against the capabilities and requirements it binds and against the package as built.* What moved:
+
+- **`binds:` and `scope:`** read FR-1..FR-64 and D-1..D-13. FR-51..FR-64 had no binding, and D-10..D-13 (PRD revision 2)
+  were never added to the range.
+- **The stack row** reads `>=3.14`, decision D6 of the cutover readiness plan, as § Runtime floor — reconciled
+  2026-09-07 already recorded for the package; PRD D-6 and NFR-11 are amended the same day.
+- **AD-13 (no configuration file)** is amended by a dated note: six flag-and-variable knobs, and the two
+  environment-only factory-island variables, which are not knobs and leave the set closed.
+- **AD-16 (fake CFE root)** is amended by a dated note for the two halves split by `live_tree` (relay of
+  spec-pyforge-steward:CAP-175, steward's ruling D4 of 2026-10-27, Story 38.2): the package half keeps the rule as
+  written and passes from a copy outside any repository; the live-tree half holds every module that reads the
+  repository, including FR-62's argv check and AD-28's contract test.
+- **AD-27** (new) records the factory-island resolution: a second pure chain with no flag form, native build only.
+  Steward Story 44.7 built it on 2026-09-13; § Currency reconciliation — 2026-09-14 checked it against AD-1 and AD-14
+  and added no AD, and CAP-36 now carries it.
+- **AD-28** (new) records the contract companion, `contract.md`, and `tests/meta/test_public_contract.py`, decision D1
+  of the cutover readiness plan as Story 38.1 built it.
+- **The Capability → Architecture Map** gains rows for FR-51..FR-64.
+
+They land on the other ADs as written:
+
+- **AD-1 (knowledge-free core).** Neither the factory-island chain, nor `contract.md`, nor the argv check carries a
+  gotcha, pin or recipe-format default; the argv check reads option names from the wrapped scripts' source and runs
+  nothing, and CAP-7's deny-list still scans every module.
+- **AD-3 (the CFE port is the sole caller).** The factory-island build reaches CFE through the one native adapter, and
+  FR-62's check reads the script table from `cfe.py`, where AD-3 puts it.
+- **AD-5 (resolution is pure).** The CFE chains are unchanged; AD-27's chain is pure in the same sense and records no
+  step, which AD-27 states.
+- **AD-7 (one error taxonomy).** `factory:missing-island` is a typed error with exit 1; the CFE root's exit 3 is
+  unchanged. Both are in `contract.md`.
+- **AD-12 (engines are adapters).** CAP-37's build-engine hook selects one plugin by name and spawns nothing of its
+  own; `conda-build` is registered and never spawned.
+- **AD-15 (the CFE surface is read-only).** No mason story of this change edits a CFE file; a mismatch FR-62 finds on
+  CFE's side is a recorded deferral, and conda-forge-expert's own Spec is mason Story 39.2, after the flip.
+- **The Presenton satellite (AD-17..AD-24)** binds nothing: CAP-8..CAP-13 are retired, never built (operator ruling
+  "Retire both", 2026-11-10), and its text stays as history.
+
+No port, adapter or package boundary moves. **The next free id is AD-29.** **Content changed:** this section; the
+frontmatter (`scope:`, `updated:`, `currency_review:`, `binds:`); the stack row; the dated notes on AD-13 and AD-16 and
+their `Binds:` lines; AD-27 and AD-28; six map rows.
