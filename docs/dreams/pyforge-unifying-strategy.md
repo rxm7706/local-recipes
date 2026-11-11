@@ -1190,3 +1190,54 @@ Entries through 2026-08-31: [archive § Realization log (historical)](<https://g
   `retire`, their Spec text says they were never built, and B does not rebuild them. The planning
   text that describes them stays on A as history; a later want re-enters as a new Dream entry. The
   flip trigger is still the operator's to name.
+- **2026-11-10 (second addendum)** — A design pass turned the audit into one plan for the single PR
+  (104 Stories across the eight BMAD projects) and returned 22 questions. The operator accepted every
+  recommendation ("Accept all, run mint"):
+  1. **The flip trigger.** The operator flips `pyforge.cutover_root` by hand, with no loop running,
+     once the Launch slice is proven: B lands one story on itself through its own dispatch and its
+     own detectors, and every Launch row of the case list reads `verified-in-foundry`. Nothing flips
+     it automatically. This closes the last open question of the 2026-11-10 entry.
+  2. **Markers.** CHAIN-STANDARD § 4 gains a third capability marker, `(retired <date>[: <reason>])`,
+     and allows a qualifier after a semicolon: `not met: <clause>, DW-<id>`, `operator act open,
+     DW-<id>`, `superseded by CAP-n`. There is no separate `(unbuilt)` marker.
+  3. **Control plane.** A Story minted `blocked` (steward 121.5) is the expiry of the host, platform
+     and portal rows. The session denial for a chain write off the writer joins
+     `docs/governance/guild-roster.json` under ruling 2. Story 44.1 retires like 44.4 to 44.6.
+     `fnd:CAP-9`'s four scored signals retire in favour of the written rules in `modes.md`.
+  4. **Disputed modes.** `spec-pyforge-testing-charter:CAP-4` (the coverage gate) is `rebuild`;
+     its CAP-1, CAP-2 and CAP-5 are `A-only` with a Story as expiry. `spec-pyforge-warden:CAP-13` to
+     `CAP-15` are `A-only`, expiry steward Story 44.8. Steward's restore and revoke duties are
+     `A-only` on Story 121.5. Doctor's closed one-time campaigns retire. `spec-pyforge-herald:CAP-6`
+     retires; CAP-11's cost-derivation clause is struck; CAP-38 and CAP-39 are restated to the
+     operator-run form. `spec-pyforge-scribe:CAP-34` (`index move-list`) retires. A capability never
+     built is `B-only` when a live `blocked` or `backlog` Story carries it (so
+     `spec-pyforge-atlas:CAP-68` is `B-only`) and `retire` when none does. `spec-pyforge-atlas:CAP-7`
+     is `A-only` on mason Story 39.2; atlas CAP-64 and CAP-65 hold to the story-close figures
+     recorded in `live-sources.md`.
+  5. **No new behaviour in this PR.** No retrofit kill switch is added; each gap is a deferred-work
+     row. Only ruling 2's three consumers follow the root of record; the forge slug table is a
+     constant in `pyforge.core.cutover_root`; the station-package directory is B's to settle; with no
+     flag tree `root_of_record()` answers the default with `source='default'`. The `league_measure`
+     validator stays shipped and its consumer half is marked retired, never built.
+  6. **Station answers.** Marshal registers its two preserve tools on the MCP face behind
+     `pyforge.marshal.preserve_refs` (off), lets seed verbs keep their own exit codes, and retires
+     its deleted console capabilities while the six that still run stay shipped. Markers of
+     capabilities this PR builds flip to shipped at each station's closing Story; re-parenting the
+     exception classes stays out. Doctor reads a source that measured nothing as `unmeasured`
+     (warn), and `doctor flags kill-switch` stays in Doctor. `steward session check` takes
+     `bmad-drift-check`'s verdict for the bmad-method precondition. Mason Story 39.2 is the one
+     conda-forge-expert Spec Story, minted `blocked`; Mason CAP-32 is `A-only` on it; `--docker`
+     and the rebuild guard script stay as they are. Atlas Story 41.3 retires, and Story 48.3
+     deletes `pyforge/atlas/views/` again (its 2026-09-18 return was a mistake). Warden CAP-26 splits
+     into a kernel capability (`rebuild`) and a portal capability (`A-only`); its schema stays
+     1.1.0, and the map-snapshot Constraint and the SBOM text are narrowed to what the code does.
+  7. **Seed, memory and chores.** The seed includes `archive/**/.memlog.md`, with no backfill. `scribe
+     capture --supersedes` stays library-only. The 45 superseded team-memory records move with `git
+     mv` to `archive/.claude/memory/`. Story 120.3 also re-derives `spec-coverage-gate-independence`.
+     Two per-PR approvals are given: SPEC.md renders run through the anchored script render with both
+     self-validate passes logged, and scribe Story 32.1 refreshes the `bmad:context` block of
+     `AGENTS.md` from these rulings with the whole block shown in the PR. The session refreshes
+     `docs-site/src/content/ci-status.json` at the end of the branch; `DW-21-7-1` stays open.
+
+  This entry mints no capability. The mint that follows writes each station's Dream entry, Spec
+  amendments, Stories, ledger keys and story specs.
